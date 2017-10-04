@@ -10,5 +10,6 @@ setup(name='fda',
       packages=['fda'],
       install_requires=[
           'numpy',
+          'scipy'
       ],
       zip_safe=False)

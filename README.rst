@@ -1,0 +1,53 @@
+fda
+===
+
+|build-status| |docs|
+
+fda: Functional Data Analysis in Python
+
+Functional Data Analysis is the field of Statistics tahat analyses data that
+come in the shape of functions. To know more about fda have a look at fda_ or read [RS07]_.
+
+This package offers classes, methods and functions to give support to fda
+in Python. The idea is to give a wide range of utils to work with functional data
+in Python. This utils include discrete points and basis representation of functional
+data and allows to calculate basic statistics such as mean, variance or covariance,
+smooth the functional data, calculate norms, distances, perform linear regression and
+much more.
+
+For more information read the documentation.
+
+Installation
+============
+
+Under construction. 
+
+.. todo:: installation
+
+Requirements
+------------
+
+fda is available in Python 3.7 or above, in all operating systems. To be reviewed.
+
+.. todo:: test for other python versions
+
+Documentation
+=============
+The documentation can be found in https://fda.readthedocs.io/en/latest/?badge=latest
+
+References
+==========
+
+.. [RS07] Ramsay, J., Silverman, B. W. (2005). *Functional Data Analysis*. Springler.
+
+.. _fda: http://www.functionaldata.org/
+
+.. |build-status| image:: https://api.travis-ci.org/vnmabus/dcor.svg?branch=master
+    :alt: build status
+    :scale: 100%
+    :target: https://travis-ci.org/vnmabus/dcor
+
+.. |docs| image:: https://readthedocs.org/projects/fda/badge/?version=latest
+    :alt: Documentation Status
+    :scale: 100%
+    :target: https://fda.readthedocs.io/en/latest/?badge=latest

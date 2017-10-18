@@ -6,7 +6,7 @@ fda
 fda: Functional Data Analysis in Python
 
 Functional Data Analysis is the field of Statistics tahat analyses data that
-come in the shape of functions. To know more about fda have a look at fda_ or read [RS07]_.
+come in the shape of functions. To know more about fda have a look at fda_ or read [RS05]_.
 
 This package offers classes, methods and functions to give support to fda
 in Python. The idea is to give a wide range of utils to work with functional data
@@ -38,14 +38,14 @@ The documentation can be found in https://fda.readthedocs.io/en/latest/?badge=la
 References
 ==========
 
-.. [RS07] Ramsay, J., Silverman, B. W. (2005). *Functional Data Analysis*. Springler.
+.. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data Analysis*. Springler.
 
 .. _fda: http://www.functionaldata.org/
 
-.. |build-status| image:: https://api.travis-ci.org/vnmabus/dcor.svg?branch=master
+.. |build-status| image:: https://travis-ci.com/mcarbajo/fda.svg?token=sxksvzoiyGvN6vbRvCqt&branch=develop
     :alt: build status
     :scale: 100%
-    :target: https://travis-ci.org/vnmabus/dcor
+    :target: https://travis-ci.com/mcarbajo/fda
 
 .. |docs| image:: https://readthedocs.org/projects/fda/badge/?version=latest
     :alt: Documentation Status

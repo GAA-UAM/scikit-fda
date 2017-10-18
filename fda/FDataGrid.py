@@ -15,11 +15,12 @@ __status__ = "Development"
 
 
 class FDataGrid:
-    """Class for representing functional data as a set of curves discretised in a list of points.
+    """ Class for representing functional data as a set of curves discretised in a grid of points.
 
     Attributes:
-        data_matrix (numpy.ndarray): an array containing the values of the function at the points of discretisation.
-        argvals (list or list of lists): a list containing the points of discretisation where values have been recorded
+        data_matrix (numpy.ndarray): a matrix where each row contains the values of a functional datum evaluated at the
+         points of discretisation.
+        argvals (numpy.ndarray): an array containing the points of discretisation where values have been recorded.
             or a lists of list with each of the list containing the points of dicretisation for each axis.
         argvals_range (tuple or list): contains the edges of the interval in which the functional data is considered
             to exist.

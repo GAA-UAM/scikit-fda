@@ -6,11 +6,6 @@ from fda import math_basic
 from fda import kernel_smoothers
 from fda import kernels
 import scipy.stats.mstats
-import pickle
-import matplotlib.pyplot as plt
-
-PHONEME_DATA_PATH = os.path.join(os.path.dirname(__file__), '../data/phoneme_data.csv')
-PHONEME_ARGVALS_PATH = os.path.join(os.path.dirname(__file__), '../data/phoneme_argvals.csv')
 
 
 class TestFDataGrid(unittest.TestCase):

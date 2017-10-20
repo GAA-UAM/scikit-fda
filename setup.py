@@ -1,24 +1,17 @@
-from __future__ import print_function
 from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
 import sys
+import os
 
-import fda
 
+needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
+pytest_runner = ['pytest-runner'] if needs_pytest else []
 
-class PyTest(TestCommand):
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        import pytest
-        errcode = pytest.main(self.test_args)
-        sys.exit(errcode)
+with open(os.path.join(os.path.dirname(__file__),
+                       'VERSION'), 'r') as version_file:
+    version = version_file.read().strip()
 
 setup(name='fda',
-      version=fda.__version__,
+      version=version,
       description="",  # TODO
       long_description="",  # TODO
       url='https://fda.readthedocs.io',
@@ -35,14 +28,11 @@ setup(name='fda',
         'Intended Audience :: Science/Research',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Software Development :: Libraries :: Python Modules',
       ],
-      install_requires=['matplotlib'
-                        'numpy',
-                        'scipy',
-                        'setuptools'],
+      setup_requires=pytest_runner,
       tests_require=['pytest'],
       test_suite='tests',
       zip_safe=False)

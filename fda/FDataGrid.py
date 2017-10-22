@@ -29,6 +29,14 @@ class FDataGrid:
         names (list): list containing the names of the data set, x label, y
             label, z label and so on.
 
+    Examples:
+        The number of columns of data_matrix have to be the length of argvals.
+        >>> FDataGrid(numpy.array([1,2,4,5,8]), range(6))
+        Traceback (most recent call last):
+            ....
+        ValueError: Incorrect dimension in data_matrix and argvals arguments.
+
+
     """
     def __init__(self, data_matrix, argvals=None, argvals_range=None,
                  names=None):
@@ -49,6 +57,8 @@ class FDataGrid:
 
         """
         self.data_matrix = numpy.asarray(data_matrix)
+        if self.data_matrix.ndim == 1:
+            self.data_matrix = numpy.array([self.data_matrix])
         # TODO check dimensionality
 
         if argvals is None:
@@ -60,7 +70,7 @@ class FDataGrid:
 
         else:
             # Check that the dimension of the data matches the argvals list
-            self.argvals = argvals
+            self.argvals = numpy.asarray(argvals)
             if self.data_matrix.ndim == 1 \
                     or (self.data_matrix.ndim == 2
                         and len(self.argvals) != self.data_matrix.shape[1]) \
@@ -172,6 +182,25 @@ class FDataGrid:
         Args:
             order (int, optional): Order of the derivative. Defaults to one.
 
+        Examples:
+            First order derivative
+            >>> fdata = FDataGrid([1,2,4,5,8], range(5))
+            >>> fdata.derivative()
+            FDataGrid(
+                array([[ 1. ,  1.5,  1.5,  2. ,  3. ]])
+                ,argvals=array([0, 1, 2, 3, 4])
+                ,argvals_range=(0, 4)
+                ,names=['Data set', 'xlabel', 'ylabel'])
+
+            Second order derivative
+            >>> fdata = FDataGrid([1,2,4,5,8], range(5))
+            >>> fdata.derivative(2)
+            FDataGrid(
+                array([[ 0.5 ,  0.25,  0.25,  0.75,  1.  ]])
+                ,argvals=array([0, 1, 2, 3, 4])
+                ,argvals_range=(0, 4)
+                ,names=['Data set', 'xlabel', 'ylabel'])
+
         """
         if order < 1:
             raise ValueError("The order of a derivative has to be greater "
@@ -189,7 +218,7 @@ class FDataGrid:
             for i in range(self.nrow()):
                 arr = numpy.diff(data_matrix[i])/(argvals[1:] - argvals[:-1])
                 arr = numpy.append(arr, arr[-1])
-                arr[1:] += arr[:-1]
+                arr[1:-1] += arr[:-2]
                 arr[1:-1] /= 2
                 mdata.append(arr)
             data_matrix = numpy.array(mdata)
@@ -226,7 +255,7 @@ class FDataGrid:
         return FDataGrid(self.data_matrix * other.data_matrix, self.argvals,
                          self.argvals_range, self.names)
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         if not isinstance(other, FDataGrid):
             raise TypeError("Object type is not FDataGrid.")
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
@@ -247,6 +276,9 @@ class FDataGrid:
                  + '\ntime range:\t' + str(self.argvals_range)
 
     def __repr__(self):
-        return "FDataGrid(" \
-               + ", ".join([key + ' = ' + value.__repr__() for key, value in
-                             self.__dict__.items()]) + ")"
+        return "FDataGrid(\n    " \
+               + self.data_matrix.__repr__() \
+               + "\n    ,argvals=" + self.argvals.__repr__() \
+               + "\n    ,argvals_range=" + self.argvals_range.__repr__() \
+               + "\n    ,names=" + self.names.__repr__() \
+               + ")"

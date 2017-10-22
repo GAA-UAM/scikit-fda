@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """Kernel smoother functions
 
-This module includes the most commonly used kernel smoother methods for FDA. So far only non parametric methods are
-implemented because we are only relaying on a discrete representation of functional data.
+This module includes the most commonly used kernel smoother methods for FDA.
+ So far only non parametric methods are implemented because we are only
+ relaying on a discrete representation of functional data.
 
 Todo:
     * llr (Local linear regression)
@@ -56,15 +57,18 @@ def llr(argvals, h, kernel=kernels.normal, w=None, cv=False):
 def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
     """ K-nearest neighbour kernel smoother.
 
-    Provides an smoothing matrix S for the discretisation points in argvals by the k nearest neighbours estimator.
+    Provides an smoothing matrix S for the discretisation points in argvals by
+     the k nearest neighbours estimator.
 
     Args:
         argvals (ndarray): Vector of discretisation points.
-        k (int, optional): Number of nearest neighbours. By default it takes the 5% closest points.
-        kernel (function, optional): kernel function. By default a uniform kernel to perform a 'usual' k nearest
-            neighbours estimation.
+        k (int, optional): Number of nearest neighbours. By default it takes
+            the 5% closest points.
+        kernel (function, optional): kernel function. By default a uniform
+            kernel to perform a 'usual' k nearest neighbours estimation.
         w (ndarray, optional): Case weights matrix.
-        cv (bool, optional): Flag for cross-validation methods. Defaults to False.
+        cv (bool, optional): Flag for cross-validation methods.
+            Defaults to False.
 
     Returns:
         ndarray: Smoothing matrix.
@@ -86,23 +90,29 @@ def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
                [ 0.        ,  0.        ,  0.        ,  0.5       ,  0.5       ]])
 
     """
-    tt = numpy.abs(numpy.subtract.outer(argvals, argvals))  # Distances matrix of points in argvals
+    # Distances matrix of points in argvals
+    tt = numpy.abs(numpy.subtract.outer(argvals, argvals))
 
     if k is None:
-        k = numpy.floor(numpy.percentile(range(1, len(argvals)), 5))  # k default value
+        k = numpy.floor(numpy.percentile(range(1, len(argvals)), 5))
     elif k <= 0:
         raise ValueError('h must be greater than 0')
     if cv:
         numpy.fill_diagonal(tt, math.inf)
 
-    tol = 1*10**-19  # tolerance to avoid points landing outside the kernel window due to computation error
+    # Tolerance to avoid points landing outside the kernel window due to
+    # computation error
+    tol = 1*10**-19
 
-    # For each row in the distances matrix, it calculates the furthest point within the k nearest neighbours
-    vec = numpy.percentile(tt, k/len(argvals)*100, axis=0, interpolation='lower') + tol
+    # For each row in the distances matrix, it calculates the furthest point
+    # within the k nearest neighbours
+    vec = numpy.percentile(tt, k/len(argvals)*100, axis=0,
+                           interpolation='lower') + tol
 
     rr = kernel((tt.T/vec).T)
-    """ Applies the kernel to the result of dividing each row by the result of the previous operation, all the
-    discretisation points corresponding to the knn are below 1 and the rest above 1 so the kernel returns values
+    """ Applies the kernel to the result of dividing each row by the result 
+    of the previous operation, all the discretisation points corresponding 
+    to the knn are below 1 and the rest above 1 so the kernel returns values
     distinct to 0 only for the knn."""
 
     if w is not None:

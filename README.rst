@@ -27,7 +27,7 @@ Under construction.
 Requirements
 ------------
 
-fda is available in Python 3.7 or above, in all operating systems. To be reviewed.
+fda is available in Python 3.5 or above, in all operating systems.
 
 .. todo:: test for other python versions
 

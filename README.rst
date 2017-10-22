@@ -42,7 +42,7 @@ References
 
 .. _fda: http://www.functionaldata.org/
 
-.. |build-status| image:: https://travis-ci.com/mcarbajo/fda.svg?token=sxksvzoiyGvN6vbRvCqt&branch=develop
+.. |build-status| image:: https://travis-ci.org/mcarbajo/fda.svg
     :alt: build status
     :scale: 100%
     :target: https://travis-ci.com/mcarbajo/fda

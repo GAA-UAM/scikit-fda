@@ -36,7 +36,6 @@ class FDataGrid:
             ....
         ValueError: Incorrect dimension in data_matrix and argvals arguments.
 
-
     """
     def __init__(self, data_matrix, argvals=None, argvals_range=None,
                  names=None):
@@ -47,8 +46,8 @@ class FDataGrid:
                 points of discretisation.
             argvals (array_like, optional): an array containing the points of
                 discretisation where values have been recorded or a list of
-                    lists with each of the list containing the points of
-                    dicretisation for each axis.
+                lists with each of the list containing the points of
+                dicretisation for each axis.
             argvals_range (tuple or list, optional): contains the edges of
                 the interval in which the functional data is considered to
                 exist.
@@ -71,11 +70,11 @@ class FDataGrid:
         else:
             # Check that the dimension of the data matches the argvals list
             self.argvals = numpy.asarray(argvals)
-            if self.data_matrix.ndim == 1 \
+            if (self.data_matrix.ndim == 1
                     or (self.data_matrix.ndim == 2
-                        and len(self.argvals) != self.data_matrix.shape[1]) \
+                        and len(self.argvals) != self.data_matrix.shape[1])
                     or (self.data_matrix.ndim > 2
-                        and self.data_matrix.ndim != len(self.argvals) + 1):
+                        and self.data_matrix.ndim != len(self.argvals) + 1)):
                 raise ValueError("Incorrect dimension in data_matrix and "
                                  "argvals arguments.")
 
@@ -92,8 +91,8 @@ class FDataGrid:
             if len(self.argvals_range) != 2:
                 raise ValueError("Incorrect value of argvals_range. It should"
                                  " have two elements.")
-            if self.argvals_range[0] > self.argvals[0] \
-                    or self.argvals_range[-1] < self.argvals[-1]:
+            if (self.argvals_range[0] > self.argvals[0]
+                    or self.argvals_range[-1] < self.argvals[-1]):
                 raise ValueError("Timestamps must be within the time range.")
 
         self.names = names
@@ -120,12 +119,16 @@ class FDataGrid:
                          self.argvals.round(decimals),
                          self.argvals_range, self.names)
 
+    @property
     def ndim(self):
-        """ Number of dimensions of the data
+        """ Number of dimensions of the data.
 
+        Returns:
+            int: Number of dimensions of the data.
         """
         return self.data_matrix.ndim
 
+    @property
     def nrow(self):
         """ Number of rows of the data_matrix. Also the number of samples.
 
@@ -135,6 +138,7 @@ class FDataGrid:
         """
         return self.data_matrix.shape[0]
 
+    @property
     def ncol(self):
         """ Number of columns of the data_matrix. Also the number of points
         of discretisation.
@@ -145,6 +149,7 @@ class FDataGrid:
         """
         return self.data_matrix.shape[1]
 
+    @property
     def shape(self):
         """ Dimensions (aka shape) of the data_matrix.
 
@@ -161,8 +166,7 @@ class FDataGrid:
 
         Its calculated using lagged differences. If we call :math:`D` the
         data_matrix, :math:`D^1` the derivative of order 1 and :math:`T` the
-        vector
-        contaning the points of discretisation; :math:`D^1` is
+        vector contaning the points of discretisation; :math:`D^1` is
         calculated as it follows:
 
         .. math::
@@ -205,7 +209,7 @@ class FDataGrid:
         if order < 1:
             raise ValueError("The order of a derivative has to be greater "
                              "or equal than 1.")
-        if self.ndim() > 2:
+        if self.ndim > 2:
             raise NotImplementedError("Not implemented for 2 or more"
                                       " dimensional data.")
         if numpy.isnan(self.data_matrix).any():
@@ -213,9 +217,9 @@ class FDataGrid:
                              "elements.")
         data_matrix = self.data_matrix
         argvals = self.argvals
-        for k in range(order):
+        for _ in range(order):
             mdata = []
-            for i in range(self.nrow()):
+            for i in range(self.nrow):
                 arr = numpy.diff(data_matrix[i])/(argvals[1:] - argvals[:-1])
                 arr = numpy.append(arr, arr[-1])
                 arr[1:-1] += arr[:-2]
@@ -271,14 +275,18 @@ class FDataGrid:
                                *args, **kwargs)
 
     def __str__(self):
-        return 'Data set:\t' + str(self.data_matrix) \
-                 + '\nargvals:\t' + str(self.argvals) \
-                 + '\ntime range:\t' + str(self.argvals_range)
+        return ('Data set:\t' + str(self.data_matrix)
+                + '\nargvals:\t' + str(self.argvals)
+                + '\ntime range:\t' + str(self.argvals_range))
 
     def __repr__(self):
-        return "FDataGrid(\n    " \
-               + self.data_matrix.__repr__() \
-               + "\n    ,argvals=" + self.argvals.__repr__() \
-               + "\n    ,argvals_range=" + self.argvals_range.__repr__() \
-               + "\n    ,names=" + self.names.__repr__() \
-               + ")"
+        return ("FDataGrid(\n    "
+                + self.data_matrix.__repr__()
+                + "\n    ,argvals=" + self.argvals.__repr__()
+                + "\n    ,argvals_range=" + self.argvals_range.__repr__()
+                + "\n    ,names=" + self.names.__repr__()
+                + ")")
+
+    def __getitem__(self, key):
+        return FDataGrid(self.data_matrix[key], self.argvals,
+                         self.argvals_range, self.names)

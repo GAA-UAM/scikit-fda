@@ -6,8 +6,8 @@ This module includes the most commonly used kernel smoother methods for FDA.
  relaying on a discrete representation of functional data.
 
 Todo:
-    * llr (Local linear regression)
     * Document nw
+    * Closed-form for KNN
     * Decide whether to include module level examples
 
 """
@@ -38,7 +38,53 @@ def nw(argvals, h=None, kernel=kernels.normal, w=None, cv=False):
     return (k.T/rs).T
 
 
-def llr(argvals, h, kernel=kernels.normal, w=None, cv=False):
+def local_linear_regression(argvals, h, kernel=kernels.normal, w=None,
+                           cv=False):
+    """Local linear regression smoothing method.
+
+    Provides an smoothing matrix :math:`\hat{H}` for the discretisation
+    points in argvals by the local linear regression estimator. The smoothed
+    values :math:`\hat{Y}` can be calculated as :math:`\hat{
+    Y} = \hat{H}Y` where :math:`Y` is the vector of observations at the points
+    of discretisation :math:`(x_1, x_2, ..., x_n)`.
+
+    .. math::
+        \\hat{H}_{i,j} = \\frac{b_i(x_j)}{\\sum_{k=1}^{n}b_k(x_j)}
+
+    .. math::
+        b_i(x) = K(\\frac{x_i - x}{h}) S_{n,2}(x) - (x_i - x)S_{n,1}(x)
+
+    .. math::
+        S_{n,k} = \\sum_{i=1}^{n}K(\\frac{x_i-x}{h})(x_i-x)^k
+
+    Args:
+        argvals (ndarray): Vector of discretisation points.
+        h (float, optional): Window width of the kernel.
+        kernel (function, optional): kernel function. By default a normal
+            kernel.
+        w (ndarray, optional): Case weights matrix.
+        cv (bool, optional): Flag for cross-validation methods.
+            Defaults to False.
+
+    Examples:
+        >>> local_linear_regression(numpy.array([1,2,4,5,7]), 3.5).round(3)
+        array([[ 0.614,  0.429,  0.077, -0.03 , -0.09 ],
+               [ 0.381,  0.595,  0.168, -0.   , -0.143],
+               [-0.104,  0.112,  0.697,  0.398, -0.104],
+               [-0.147, -0.036,  0.392,  0.639,  0.152],
+               [-0.095, -0.079,  0.117,  0.308,  0.75 ]])
+        >>> local_linear_regression(numpy.array([1,2,4,5,7]), 2).round(3)
+        array([[ 0.714,  0.386, -0.037, -0.053, -0.01 ],
+               [ 0.352,  0.724,  0.045, -0.081, -0.04 ],
+               [-0.078,  0.052,  0.74 ,  0.364, -0.078],
+               [-0.07 , -0.067,  0.36 ,  0.716,  0.061],
+               [-0.012, -0.032, -0.025,  0.154,  0.915]])
+
+
+    Returns:
+        ndarray: Smoothing matrix.
+
+    """
     tt = numpy.abs(numpy.subtract.outer(argvals, argvals))
     if cv:
         numpy.fill_diagonal(tt, math.inf)
@@ -58,7 +104,7 @@ def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
     """ K-nearest neighbour kernel smoother.
 
     Provides an smoothing matrix S for the discretisation points in argvals by
-     the k nearest neighbours estimator.
+    the k nearest neighbours estimator.
 
     Args:
         argvals (ndarray): Vector of discretisation points.

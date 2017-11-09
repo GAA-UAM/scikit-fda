@@ -29,7 +29,7 @@ def cosine(u):
         return 0
 
 
-def epan(u):
+def epanechnikov(u):
     if isinstance(u, numpy.ndarray):
         res = numpy.zeros(u.shape)
         res[abs(u) <= 1] = 0.75*(1-u[abs(u) <= 1]**2)
@@ -40,7 +40,7 @@ def epan(u):
         return 0
 
 
-def tri(u):
+def tri_weight(u):
     if isinstance(u, numpy.ndarray):
         res = numpy.zeros(u.shape)
         res[abs(u) <= 1] = 35/32*(1-u[abs(u) <= 1]**2)**3

@@ -6,9 +6,7 @@ This module includes the most commonly used kernel smoother methods for FDA.
  relaying on a discrete representation of functional data.
 
 Todo:
-    * Document nw
     * Closed-form for KNN
-    * Decide whether to include module level examples
 
 """
 from fda import kernels
@@ -24,13 +22,55 @@ __status__ = "Development"
 
 
 def nw(argvals, h=None, kernel=kernels.normal, w=None, cv=False):
-    tt = numpy.abs(numpy.subtract.outer(argvals, argvals))
+    """Nadaraya-Watson smoothing method.
+
+        Provides an smoothing matrix :math:`\\hat{H}` for the discretisation
+        points in argvals by the Nadaraya-Watson estimator. The smoothed
+        values :math:`\\hat{Y}` can be calculated as :math:`\\hat{
+        Y} = \\hat{H}Y` where :math:`Y` is the vector of observations at the
+        points of discretisation :math:`(x_1, x_2, ..., x_n)`.
+
+        .. math::
+            \\hat{H}_{i,j} = \\frac{K(\\frac{x_i-x_j}{h})}{\\sum_{k=1}^{n}K(
+            \\frac{x_1-x_k}{h})}
+
+        where :math:`K(\\cdot)` is a kernel function and :math:`h` the kernel
+        window width.
+
+        Args:
+            argvals (ndarray): Vector of discretisation points.
+            h (float, optional): Window width of the kernel.
+            kernel (function, optional): kernel function. By default a normal
+                kernel.
+            w (ndarray, optional): Case weights matrix.
+            cv (bool, optional): Flag for cross-validation methods.
+                Defaults to False.
+
+        Examples:
+            >>> nw(numpy.array([1,2,4,5,7]), 3.5).round(3)
+            array([[ 0.294,  0.282,  0.204,  0.153,  0.068],
+                   [ 0.249,  0.259,  0.22 ,  0.179,  0.093],
+                   [ 0.165,  0.202,  0.238,  0.229,  0.165],
+                   [ 0.129,  0.172,  0.239,  0.249,  0.211],
+                   [ 0.073,  0.115,  0.221,  0.271,  0.319]])
+            >>> nw(numpy.array([1,2,4,5,7]), 2).round(3)
+            array([[ 0.425,  0.375,  0.138,  0.058,  0.005],
+                   [ 0.309,  0.35 ,  0.212,  0.114,  0.015],
+                   [ 0.103,  0.193,  0.319,  0.281,  0.103],
+                   [ 0.046,  0.11 ,  0.299,  0.339,  0.206],
+                   [ 0.006,  0.022,  0.163,  0.305,  0.503]])
+
+        Returns:
+            ndarray: Smoothing matrix :math:`\\hat{H}`.
+
+        """
+    delta_x = numpy.abs(numpy.subtract.outer(argvals, argvals))
     if h is None:
-        h = numpy.percentile(tt, 15)
+        h = numpy.percentile(delta_x, 15)
     if cv:
-        numpy.fill_diagonal(tt, math.inf)
-    tt = tt/h
-    k = kernel(tt)
+        numpy.fill_diagonal(delta_x, math.inf)
+    delta_x = delta_x/h
+    k = kernel(delta_x)
     if w is not None:
         k = k*w
     rs = numpy.sum(k, 1)
@@ -39,13 +79,13 @@ def nw(argvals, h=None, kernel=kernels.normal, w=None, cv=False):
 
 
 def local_linear_regression(argvals, h, kernel=kernels.normal, w=None,
-                           cv=False):
+                            cv=False):
     """Local linear regression smoothing method.
 
-    Provides an smoothing matrix :math:`\hat{H}` for the discretisation
+    Provides an smoothing matrix :math:`\\hat{H}` for the discretisation
     points in argvals by the local linear regression estimator. The smoothed
-    values :math:`\hat{Y}` can be calculated as :math:`\hat{
-    Y} = \hat{H}Y` where :math:`Y` is the vector of observations at the points
+    values :math:`\\hat{Y}` can be calculated as :math:`\\hat{
+    Y} = \\hat{H}Y` where :math:`Y` is the vector of observations at the points
     of discretisation :math:`(x_1, x_2, ..., x_n)`.
 
     .. math::
@@ -56,6 +96,9 @@ def local_linear_regression(argvals, h, kernel=kernels.normal, w=None,
 
     .. math::
         S_{n,k} = \\sum_{i=1}^{n}K(\\frac{x_i-x}{h})(x_i-x)^k
+
+    where :math:`K(\\cdot)` is a kernel function and :math:`h` the kernel
+    window width.
 
     Args:
         argvals (ndarray): Vector of discretisation points.
@@ -82,22 +125,22 @@ def local_linear_regression(argvals, h, kernel=kernels.normal, w=None,
 
 
     Returns:
-        ndarray: Smoothing matrix.
+        ndarray: Smoothing matrix :math:`\\hat{H}`.
 
     """
-    tt = numpy.abs(numpy.subtract.outer(argvals, argvals))
+    delta_x = numpy.abs(numpy.subtract.outer(argvals, argvals))  # x_i - x_j
     if cv:
-        numpy.fill_diagonal(tt, math.inf)
-    k = kernel(tt/h)  # k[i,j] = K((tt[i] - tt[j])/h)
-    s1 = numpy.sum(k*tt, 1)
-    s2 = numpy.sum(k*tt**2, 1)
-    b = (k*(s2 - tt*s1)).T
+        numpy.fill_diagonal(delta_x, math.inf)
+    k = kernel(delta_x/h)  # K(x_i - x/ h)
+    s1 = numpy.sum(k*delta_x, 1)  # S_n_1
+    s2 = numpy.sum(k*delta_x**2, 1)  # S_n_2
+    b = (k*(s2 - delta_x*s1)).T  # b_i(x_j)
     if cv:
         numpy.fill_diagonal(b, 0)
     if w is not None:
         b = b*w
-    rs = numpy.sum(b, 1)
-    return (b.T/rs).T
+    rs = numpy.sum(b, 1)  # sum_{k=1}^{n}b_k(x_j)
+    return (b.T/rs).T  # \\hat{H}
 
 
 def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
@@ -128,23 +171,24 @@ def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
                [ 0. ,  0. ,  0. ,  0.5,  0.5]])
 
         In case there are two points at the same distance it will take both.
-        >>> knn(numpy.array([1,2,3,5,7]), 2)
-        array([[ 0.5       ,  0.5       ,  0.        ,  0.        ,  0.        ],
-               [ 0.33333333,  0.33333333,  0.33333333,  0.        ,  0.        ],
-               [ 0.        ,  0.5       ,  0.5       ,  0.        ,  0.        ],
-               [ 0.        ,  0.        ,  0.33333333,  0.33333333,  0.33333333],
-               [ 0.        ,  0.        ,  0.        ,  0.5       ,  0.5       ]])
+        >>> knn(numpy.array([1,2,3,5,7]), 2).round(3)
+        array([[ 0.5  ,  0.5  ,  0.   ,  0.   ,  0.   ],
+               [ 0.333,  0.333,  0.333,  0.   ,  0.   ],
+               [ 0.   ,  0.5  ,  0.5  ,  0.   ,  0.   ],
+               [ 0.   ,  0.   ,  0.333,  0.333,  0.333],
+               [ 0.   ,  0.   ,  0.   ,  0.5  ,  0.5  ]])
+
 
     """
     # Distances matrix of points in argvals
-    tt = numpy.abs(numpy.subtract.outer(argvals, argvals))
+    delta_x = numpy.abs(numpy.subtract.outer(argvals, argvals))
 
     if k is None:
         k = numpy.floor(numpy.percentile(range(1, len(argvals)), 5))
     elif k <= 0:
         raise ValueError('h must be greater than 0')
     if cv:
-        numpy.fill_diagonal(tt, math.inf)
+        numpy.fill_diagonal(delta_x, math.inf)
 
     # Tolerance to avoid points landing outside the kernel window due to
     # computation error
@@ -152,10 +196,10 @@ def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
 
     # For each row in the distances matrix, it calculates the furthest point
     # within the k nearest neighbours
-    vec = numpy.percentile(tt, k/len(argvals)*100, axis=0,
+    vec = numpy.percentile(delta_x, k/len(argvals)*100, axis=0,
                            interpolation='lower') + tol
 
-    rr = kernel((tt.T/vec).T)
+    rr = kernel((delta_x.T/vec).T)
     """ Applies the kernel to the result of dividing each row by the result 
     of the previous operation, all the discretisation points corresponding 
     to the knn are below 1 and the rest above 1 so the kernel returns values

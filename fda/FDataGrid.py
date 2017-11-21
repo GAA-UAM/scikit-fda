@@ -20,79 +20,82 @@ class FDataGrid:
         data_matrix (numpy.ndarray): a matrix where each row contains the
             values of a functional datum evaluated at the
             points of discretisation.
-        argvals (numpy.ndarray): an array containing the points of
+        sample_points (numpy.ndarray): an array containing the points of
             discretisation where values have been recorded or a list of lists
             with each of the list containing the points of dicretisation for
             each axis.
-        argvals_range (tuple or list): contains the edges of the interval in
-            which the functional data is considered to exist.
+        sample_range (tuple or list): contains the edges of the interval
+            in which the functional data is considered to exist.
         names (list): list containing the names of the data set, x label, y
             label, z label and so on.
 
     Examples:
-        The number of columns of data_matrix have to be the length of argvals.
+        The number of columns of data_matrix have to be the length of 
+        sample_points.
         >>> FDataGrid(numpy.array([1,2,4,5,8]), range(6))
         Traceback (most recent call last):
             ....
-        ValueError: Incorrect dimension in data_matrix and argvals arguments.
+        ValueError: Incorrect dimension in data_matrix and sample_points.
 
     """
-    def __init__(self, data_matrix, argvals=None, argvals_range=None,
-                 names=None):
+    def __init__(self, data_matrix, sample_points=None, 
+                 sample_range=None, names=None):
         """
         Args:
             data_matrix (array_like): a matrix where each row contains the
                 values of a functional datum evaluated at the
                 points of discretisation.
-            argvals (array_like, optional): an array containing the points of
-                discretisation where values have been recorded or a list of
-                lists with each of the list containing the points of
+            sample_points (array_like, optional): an array containing the 
+            points of discretisation where values have been recorded or a list 
+            of lists with each of the list containing the points of
                 dicretisation for each axis.
-            argvals_range (tuple or list, optional): contains the edges of
-                the interval in which the functional data is considered to
+            sample_range (tuple or list, optional): contains the edges 
+                of the interval in which the functional data is considered to
                 exist.
             names (list): list containing the names of the data set, x label, y
                 label, z label and so on.
 
         """
-        self.data_matrix = numpy.asarray(data_matrix)
-        if self.data_matrix.ndim == 1:
-            self.data_matrix = numpy.array([self.data_matrix])
+        self.data_matrix = numpy.atleast_2d(data_matrix)
         # TODO check dimensionality
 
-        if argvals is None:
+        if sample_points is None:
             if self.data_matrix.ndim > 2:
-                self.argvals = [numpy.linspace(0, 1, self.data_matrix.shape[i])
-                                for i in range(1, self.data_matrix.ndim)]
+                self.sample_points = [numpy.linspace(0, 1,
+                                      self.data_matrix.shape[i]) for i
+                                      in range(1, self.data_matrix.ndim)]
             else:
-                self.argvals = numpy.linspace(0, 1, self.data_matrix.shape[1])
+                self.sample_points = numpy.linspace(0, 1, 
+                                                    self.data_matrix.shape[1])
 
         else:
-            # Check that the dimension of the data matches the argvals list
-            self.argvals = numpy.asarray(argvals)
-            if (self.data_matrix.ndim == 1
-                    or (self.data_matrix.ndim == 2
-                        and len(self.argvals) != self.data_matrix.shape[1])
-                    or (self.data_matrix.ndim > 2
-                        and self.data_matrix.ndim != len(self.argvals) + 1)):
+            # Check that the dimension of the data matches the sample_points 
+            # list
+            self.sample_points = numpy.asarray(sample_points)
+            if ((self.data_matrix.ndim == 2
+                    and len(self.sample_points) != self.data_matrix.shape[1])
+                or (self.data_matrix.ndim > 2
+                    and self.data_matrix.ndim != len(self.sample_points) + 1)):
                 raise ValueError("Incorrect dimension in data_matrix and "
-                                 "argvals arguments.")
+                                 "sample_points.")
 
-        if argvals_range is None:
+        if sample_range is None:
             if self.data_matrix.ndim == 2:
-                self.argvals_range = (self.argvals[0], self.argvals[-1])
+                self.sample_range = (self.sample_points[0], 
+                                     self.sample_points[-1])
             else:
-                self.argvals_range = [(self.argvals[i][0], self.argvals[i][-1])
-                                      for i in range(len(self.argvals))]
-            # Default value for argvals_range is a list of tuples with the
-                # first and last element of each list ofthe argvals
+                self.sample_range = [(self.sample_points[i][0],
+                                     self.sample_points[i][-1])
+                                     for i in range(len(self.sample_points))]
+            # Default value for sample_range is a list of tuples with
+            # the first and last element of each list ofthe sample_points.
         else:
-            self.argvals_range = argvals_range
-            if len(self.argvals_range) != 2:
-                raise ValueError("Incorrect value of argvals_range. It should"
-                                 " have two elements.")
-            if (self.argvals_range[0] > self.argvals[0]
-                    or self.argvals_range[-1] < self.argvals[-1]):
+            self.sample_range = sample_range
+            if len(self.sample_range) != 2:
+                raise ValueError("Incorrect value of sample_range. It "
+                                 "should have two elements.")
+            if (self.sample_range[0] > self.sample_points[0]
+                    or self.sample_range[-1] < self.sample_points[-1]):
                 raise ValueError("Timestamps must be within the time range.")
 
         self.names = names
@@ -111,29 +114,48 @@ class FDataGrid:
 
         Returns:
             :obj:FDataGrid: Returns a FDataGrid object where all elements
-            in its data_matrix and argvals are rounded .The real and
+            in its data_matrix and sample_points are rounded .The real and
             imaginary parts of complex numbers are rounded separately.
 
         """
         return FDataGrid(self.data_matrix.round(decimals),
-                         self.argvals.round(decimals),
-                         self.argvals_range, self.names)
+                         self.sample_points.round(decimals),
+                         self.sample_range, self.names)
+
+    @property
+    def ndim_domain(self):
+        """ Number of dimensions of the domain.
+
+        Returns:
+            int: Number of dimensions of the domain.
+        """
+        return self.sample_points.ndim
+
+    @property
+    def ndim_image(self):
+        """ Number of dimensions of the domain.
+
+        Returns:
+            int: Number of dimensions of the domain.
+        """
+        return self.data_matrix.ndim[(0,) * (1 + self.ndim_domain)]
 
     @property
     def ndim(self):
-        """ Number of dimensions of the data.
+        """ Number of dimensions of the data matrix.
 
         Returns:
-            int: Number of dimensions of the data.
+            int: Number of dimensions of the data matrix.
         """
         return self.data_matrix.ndim
 
     @property
-    def nrow(self):
+    def n_samples(self):
         """ Number of rows of the data_matrix. Also the number of samples.
 
         Returns:
-            int: Number of rows of the data_matrix.
+            int: Number of samples of the FDataGrid object. Also the number of 
+                rows of the data_matrix.
 
         """
         return self.data_matrix.shape[0]
@@ -192,8 +214,8 @@ class FDataGrid:
             >>> fdata.derivative()
             FDataGrid(
                 array([[ 1. ,  1.5,  1.5,  2. ,  3. ]])
-                ,argvals=array([0, 1, 2, 3, 4])
-                ,argvals_range=(0, 4)
+                ,sample_points=array([0, 1, 2, 3, 4])
+                ,sample_range=(0, 4)
                 ,names=['Data set', 'xlabel', 'ylabel'])
 
             Second order derivative
@@ -201,8 +223,8 @@ class FDataGrid:
             >>> fdata.derivative(2)
             FDataGrid(
                 array([[ 0.5 ,  0.25,  0.25,  0.75,  1.  ]])
-                ,argvals=array([0, 1, 2, 3, 4])
-                ,argvals_range=(0, 4)
+                ,sample_points=array([0, 1, 2, 3, 4])
+                ,sample_range=(0, 4)
                 ,names=['Data set', 'xlabel', 'ylabel'])
 
         """
@@ -216,77 +238,94 @@ class FDataGrid:
             raise ValueError("The FDataGrid object cannot contain nan "
                              "elements.")
         data_matrix = self.data_matrix
-        argvals = self.argvals
+        sample_points = self.sample_points
         for _ in range(order):
             mdata = []
-            for i in range(self.nrow):
-                arr = numpy.diff(data_matrix[i])/(argvals[1:] - argvals[:-1])
+            for i in range(self.n_samples):
+                arr = numpy.diff(data_matrix[i])/(sample_points[1:] 
+                                                  - sample_points[:-1])
                 arr = numpy.append(arr, arr[-1])
                 arr[1:-1] += arr[:-2]
                 arr[1:-1] /= 2
                 mdata.append(arr)
             data_matrix = numpy.array(mdata)
 
-        return FDataGrid(data_matrix, argvals, self.argvals_range)
+        return FDataGrid(data_matrix, sample_points, self.sample_range)
 
     def __add__(self, other):
         if not isinstance(other, FDataGrid):
             raise TypeError("Object type is not FDataGrid.")
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
-        if self.argvals != other.argvals:
-            raise ValueError("Error in argvals")
-        return FDataGrid(self.data_matrix + other.data_matrix, self.argvals,
-                         self.argvals_range, self.names)
+        if self.sample_points != other.sample_points:
+            raise ValueError("Error in sample_points")
+        return FDataGrid(self.data_matrix + other.data_matrix,
+                         self.sample_points, self.sample_range,
+                         self.names)
 
     def __sub__(self, other):
         if not isinstance(other, FDataGrid):
             raise TypeError("Object type is not FDataGrid.")
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
-        if self.argvals != other.argvals:
-            raise ValueError("Error in argvals")
-        return FDataGrid(self.data_matrix - other.data_matrix, self.argvals,
-                         self.argvals_range, self.names)
+        if self.sample_points != other.sample_points:
+            raise ValueError("Error in sample_points")
+        return FDataGrid(self.data_matrix - other.data_matrix,
+                         self.sample_points, self.sample_range, 
+                         self.names)
 
     def __mul__(self, other):
         if not isinstance(other, FDataGrid):
             raise TypeError("Object type is not FDataGrid.")
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
-        if self.argvals != other.argvals:
-            raise ValueError("Error in argvals")
-        return FDataGrid(self.data_matrix * other.data_matrix, self.argvals,
-                         self.argvals_range, self.names)
+        if self.sample_points != other.sample_points:
+            raise ValueError("Error in sample_points")
+        return FDataGrid(self.data_matrix * other.data_matrix, 
+                         self.sample_points, self.sample_range, 
+                         self.names)
 
     def __truediv__(self, other):
         if not isinstance(other, FDataGrid):
             raise TypeError("Object type is not FDataGrid.")
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
-        if self.argvals != other.argvals:
-            raise ValueError("Error in argvals")
-        return FDataGrid(self.data_matrix / other.data_matrix, self.argvals,
-                         self.argvals_range, self.names)
+        if self.sample_points != other.sample_points:
+            raise ValueError("Error in sample_points")
+        return FDataGrid(self.data_matrix / other.data_matrix,
+                         self.sample_points, self.sample_range, 
+                         self.names)
 
     def plot(self, *args, **kwargs):
-        # TODO handle names
-        matplotlib.pyplot.plot(self.argvals, numpy.transpose(self.data_matrix),
-                               *args, **kwargs)
+        _plot = matplotlib.pyplot.plot(self.sample_points,
+                                       numpy.transpose(self.data_matrix),
+                                       *args, **kwargs)
+        ax = matplotlib.pyplot.gca()
+        ax.set_title(self.names[0])
+        ax.set_xlabel(self.names[1])
+        ax.set_ylabel(self.names[2])
+        return _plot
 
     def __str__(self):
+        """ Return str(self). """
         return ('Data set:\t' + str(self.data_matrix)
-                + '\nargvals:\t' + str(self.argvals)
-                + '\ntime range:\t' + str(self.argvals_range))
+                + '\nsample_points:\t' + str(self.sample_points)
+                + '\ntime range:\t' + str(self.sample_range))
 
     def __repr__(self):
+        """ Return repr(self). """
         return ("FDataGrid(\n    "
                 + self.data_matrix.__repr__()
-                + "\n    ,argvals=" + self.argvals.__repr__()
-                + "\n    ,argvals_range=" + self.argvals_range.__repr__()
+                + "\n    ,sample_points=" + self.sample_points.__repr__()
+                + "\n    ,sample_range=" + self.sample_range.__repr__()
                 + "\n    ,names=" + self.names.__repr__()
                 + ")")
 
     def __getitem__(self, key):
-        return FDataGrid(self.data_matrix[key], self.argvals,
-                         self.argvals_range, self.names)
+        """ Return self[key]. """
+        if isinstance(key, tuple) and len(key) > 1:
+            return FDataGrid(self.data_matrix[key],
+                             self.sample_points[key[1:1+self.ndim_domain]],
+                             self.sample_range, self.names)
+        return FDataGrid(self.data_matrix[key], self.sample_points,
+                         self.sample_range, self.names)

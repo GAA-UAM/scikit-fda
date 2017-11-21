@@ -7,11 +7,7 @@ import numpy
 
 
 __author__ = "Miguel Carbajo Berrocal"
-__license__ = "GPL3"
-__version__ = ""
-__maintainer__ = ""
-__email__ = ""
-__status__ = "Development"
+__email__ = "miguel.carbajo@estudiante.uam.es"
 
 
 def normal(u):

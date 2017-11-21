@@ -15,16 +15,16 @@ __status__ = "Development"
 
 
 def mean(fdatagrid):
-    return FDataGrid([numpy.mean(fdatagrid.data_matrix, 0)], fdatagrid.argvals, fdatagrid.argvals_range,
+    return FDataGrid([numpy.mean(fdatagrid.data_matrix, 0)], fdatagrid.sample_points, fdatagrid.sample_range,
                      fdatagrid.names)
 
 
 def var(fdatagrid):
-    return FDataGrid([numpy.var(fdatagrid.data_matrix, 0)], fdatagrid.argvals, fdatagrid.argvals_range, fdatagrid.names)
+    return FDataGrid([numpy.var(fdatagrid.data_matrix, 0)], fdatagrid.sample_points, fdatagrid.sample_range, fdatagrid.names)
 
 
 def gmean(fdatagrid):
-    return FDataGrid([scipy.stats.mstats.gmean(fdatagrid.data_matrix, 0)], fdatagrid.argvals, fdatagrid.argvals_range,
+    return FDataGrid([scipy.stats.mstats.gmean(fdatagrid.data_matrix, 0)], fdatagrid.sample_points, fdatagrid.sample_range,
                      fdatagrid.names)
 
 
@@ -33,33 +33,33 @@ def cov(fdatagrid):
 
 
 def sqrt(fdatagrid):
-    return FDataGrid(numpy.sqrt(fdatagrid.data_matrix), fdatagrid.argvals, fdatagrid.argvals_range, fdatagrid.names)
+    return FDataGrid(numpy.sqrt(fdatagrid.data_matrix), fdatagrid.sample_points, fdatagrid.sample_range, fdatagrid.names)
 
 
 def absolute(fdatagrid):
-    return FDataGrid(numpy.absolute(fdatagrid.data_matrix), fdatagrid.argvals, fdatagrid.argvals_range, fdatagrid.names)
+    return FDataGrid(numpy.absolute(fdatagrid.data_matrix), fdatagrid.sample_points, fdatagrid.sample_range, fdatagrid.names)
 
 
 def around(fdatagrid, decimals=0):
-    return FDataGrid(numpy.around(fdatagrid.data_matrix, decimals), fdatagrid.argvals, fdatagrid.argvals_range,
+    return FDataGrid(numpy.around(fdatagrid.data_matrix, decimals), fdatagrid.sample_points, fdatagrid.sample_range,
                      fdatagrid.names)
 
 
 def exp(fdatagrid):
-    return FDataGrid(numpy.exp(fdatagrid.data_matrix), fdatagrid.argvals, fdatagrid.argvals_range, fdatagrid.names)
+    return FDataGrid(numpy.exp(fdatagrid.data_matrix), fdatagrid.sample_points, fdatagrid.sample_range, fdatagrid.names)
 
 
 def log(fdatagrid):
-    return FDataGrid(numpy.log(fdatagrid.data_matrix), fdatagrid.argvals, fdatagrid.argvals_range, fdatagrid.names)
+    return FDataGrid(numpy.log(fdatagrid.data_matrix), fdatagrid.sample_points, fdatagrid.sample_range, fdatagrid.names)
 
 
 def log10(fdatagrid):
-    return FDataGrid(numpy.log10(fdatagrid.data_matrix), fdatagrid.argvals, fdatagrid.argvals_range, fdatagrid.names)
+    return FDataGrid(numpy.log10(fdatagrid.data_matrix), fdatagrid.sample_points, fdatagrid.sample_range, fdatagrid.names)
 
 
 def log2(fdatagrid):
-    return FDataGrid(numpy.log2(fdatagrid.data_matrix), fdatagrid.argvals, fdatagrid.argvals_range, fdatagrid.names)
+    return FDataGrid(numpy.log2(fdatagrid.data_matrix), fdatagrid.sample_points, fdatagrid.sample_range, fdatagrid.names)
 
 
 def cumsum(fdatagrid):
-    return FDataGrid(numpy.cumsum(fdatagrid.data_matrix), fdatagrid.argvals, fdatagrid.argvals_range, fdatagrid.names)
+    return FDataGrid(numpy.cumsum(fdatagrid.data_matrix), fdatagrid.sample_points, fdatagrid.sample_range, fdatagrid.names)

@@ -254,7 +254,7 @@ class FDataGrid:
 
     def __add__(self, other):
         if not isinstance(other, FDataGrid):
-            raise TypeError("Object type is not FDataGrid.")
+            raise NotImplementedError("Object type is not FDataGrid.")
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
         if self.sample_points != other.sample_points:
@@ -265,7 +265,7 @@ class FDataGrid:
 
     def __sub__(self, other):
         if not isinstance(other, FDataGrid):
-            raise TypeError("Object type is not FDataGrid.")
+            raise NotImplementedError("Object type is not FDataGrid.")
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
         if self.sample_points != other.sample_points:
@@ -276,7 +276,7 @@ class FDataGrid:
 
     def __mul__(self, other):
         if not isinstance(other, FDataGrid):
-            raise TypeError("Object type is not FDataGrid.")
+            raise NotImplementedError("Object type is not FDataGrid.")
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
         if self.sample_points != other.sample_points:
@@ -287,7 +287,7 @@ class FDataGrid:
 
     def __truediv__(self, other):
         if not isinstance(other, FDataGrid):
-            raise TypeError("Object type is not FDataGrid.")
+            raise NotImplementedError("Object type is not FDataGrid.")
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
         if self.sample_points != other.sample_points:

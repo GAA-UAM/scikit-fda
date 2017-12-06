@@ -254,44 +254,53 @@ class FDataGrid:
 
     def __add__(self, other):
         if not isinstance(other, FDataGrid):
-            raise NotImplementedError("Object type is not FDataGrid.")
+            raise NotImplemented
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
-        if self.sample_points != other.sample_points:
-            raise ValueError("Error in sample_points")
+        if not numpy.array_equal(self.sample_points,
+                                 other.sample_points):
+            raise ValueError(
+                "Sample points for both objects must be equal")
         return FDataGrid(self.data_matrix + other.data_matrix,
                          self.sample_points, self.sample_range,
                          self.names)
 
     def __sub__(self, other):
         if not isinstance(other, FDataGrid):
-            raise NotImplementedError("Object type is not FDataGrid.")
+            raise NotImplemented
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
-        if self.sample_points != other.sample_points:
-            raise ValueError("Error in sample_points")
+            # Checks
+        if not numpy.array_equal(self.sample_points,
+                                 other.sample_points):
+            raise ValueError(
+                "Sample points for both objects must be equal")
         return FDataGrid(self.data_matrix - other.data_matrix,
                          self.sample_points, self.sample_range, 
                          self.names)
 
     def __mul__(self, other):
         if not isinstance(other, FDataGrid):
-            raise NotImplementedError("Object type is not FDataGrid.")
+            raise NotImplemented
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
-        if self.sample_points != other.sample_points:
-            raise ValueError("Error in sample_points")
+        if not numpy.array_equal(self.sample_points,
+                                 other.sample_points):
+            raise ValueError(
+                "Sample points for both objects must be equal")
         return FDataGrid(self.data_matrix * other.data_matrix, 
                          self.sample_points, self.sample_range, 
                          self.names)
 
     def __truediv__(self, other):
         if not isinstance(other, FDataGrid):
-            raise NotImplementedError("Object type is not FDataGrid.")
+            raise NotImplemented
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
-        if self.sample_points != other.sample_points:
-            raise ValueError("Error in sample_points")
+        if not numpy.array_equal(self.sample_points,
+                                 other.sample_points):
+            raise ValueError(
+                "Sample points for both objects must be equal")
         return FDataGrid(self.data_matrix / other.data_matrix,
                          self.sample_points, self.sample_range, 
                          self.names)

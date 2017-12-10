@@ -45,7 +45,7 @@ References
 .. |build-status| image:: https://travis-ci.org/mcarbajo/fda.svg
     :alt: build status
     :scale: 100%
-    :target: https://travis-ci.com/mcarbajo/fda
+    :target: https://travis-ci.org/mcarbajo/fda
 
 .. |docs| image:: https://readthedocs.org/projects/fda/badge/?version=latest
     :alt: Documentation Status

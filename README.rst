@@ -50,4 +50,4 @@ References
 .. |docs| image:: https://readthedocs.org/projects/fda/badge/?version=latest
     :alt: Documentation Status
     :scale: 100%
-    :target: https://fda.readthedocs.io/en/latest/?badge=latest
+    :target: https://fda.readthedocs.io/en/latest/

@@ -167,6 +167,7 @@ def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
                [ 0. ,  0. ,  0. ,  0.5,  0.5]])
 
         In case there are two points at the same distance it will take both.
+
         >>> knn(numpy.array([1,2,3,5,7]), 2).round(3)
         array([[ 0.5  ,  0.5  ,  0.   ,  0.   ,  0.   ],
                [ 0.333,  0.333,  0.333,  0.   ,  0.   ],

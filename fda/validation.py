@@ -52,7 +52,7 @@ def gcv(fdatagrid, s_matrix, penalisation_function=None):
 
     .. math::
         GCV(\\nu)=\\Xi(\\nu,n)\\frac{1}{n} \\sum_i \\left(y_i - \\hat{
-        y}_i^\\nu}\\right)^2
+        y}_i^\\nu\\right)^2
 
     Where :math:`\\hat{y}_i^{\\nu}` is the adjusted :math:`y_i` and
     :math:`\\Xi` is a penalisation function. By default the penalisation
@@ -116,6 +116,7 @@ def minimise(fdatagrid, parameters,
     Examples:
         Creates a FDataGrid object of the function :math:`y=x^2` and peforms
         smoothing by means of the k-nearest neighbours method.
+
         >>> x = numpy.linspace(-2, 2, 5)
         >>> fd = fda.FDataGrid(x ** 2, x)
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn)
@@ -139,7 +140,8 @@ def minimise(fdatagrid, parameters,
             ,names=['Data set', 'xlabel', 'ylabel'])
 
         Other validation methods can be used such as cross-validation or
-        general corss validation using other penalisation functions.
+        general cross validation using other penalisation functions.
+
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                cv_method=cv)
         >>> numpy.array(res['scores']).round(2)

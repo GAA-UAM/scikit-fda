@@ -32,6 +32,7 @@ class FDataGrid:
     Examples:
         The number of columns of data_matrix have to be the length of 
         sample_points.
+
         >>> FDataGrid(numpy.array([1,2,4,5,8]), range(6))
         Traceback (most recent call last):
             ....
@@ -210,6 +211,7 @@ class FDataGrid:
 
         Examples:
             First order derivative
+
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative()
             FDataGrid(
@@ -219,6 +221,7 @@ class FDataGrid:
                 ,names=['Data set - 1 derivative', 'xlabel', 'ylabel'])
 
             Second order derivative
+
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative(2)
             FDataGrid(

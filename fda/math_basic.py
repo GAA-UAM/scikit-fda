@@ -240,6 +240,7 @@ def inner_product(fdatagrid, fdatagrid2):
         The inner product of the :math:'f(x) = x` and the constant
         :math:`y=1` defined over the interval [0,1] is the area of the
         triangle delimited by the the lines y = 0, x = 1 and y = x; 0.5.
+
         >>> x = numpy.linspace(0,1,1001)
         >>> fd1 = FDataGrid(x,x)
         >>> fd2 = FDataGrid(numpy.ones(len(x)),x)
@@ -247,6 +248,7 @@ def inner_product(fdatagrid, fdatagrid2):
         array([[ 0.5]])
 
         If the FDataGrid object contains more than one sample
+
         >>> fd1 = FDataGrid([x, numpy.ones(len(x))], x)
         >>> fd2 = FDataGrid([numpy.ones(len(x)), x] ,x)
         >>> inner_product(fd1, fd2).round(2)
@@ -298,12 +300,14 @@ def norm_lp(fdatagrid, p=2):
     Examples:
         Calculates the norm of a FDataGrid containing the functions y = 1
         and y = x defined in the interval [0,1].
+
         >>> x = numpy.linspace(0,1,1001)
         >>> fd = FDataGrid([numpy.ones(len(x)), x] ,x)
         >>> norm_lp(fd).round(2)
         array([ 1.  ,  0.58])
 
         The lp norm is only defined if p >= 1.
+
         >>> norm_lp(fd, p = 0.5)
         Traceback (most recent call last):
             ....
@@ -352,6 +356,7 @@ def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
         interval [0, 1] and another ones containing data of the functions y
         = 0 and y = x/2. The result then is an array 2x2 with the computed
         l2 distance between every pair of functions.
+
         >>> x = numpy.linspace(0, 1, 1001)
         >>> fd = FDataGrid([numpy.ones(len(x)), x], x)
         >>> fd2 =  FDataGrid([numpy.zeros(len(x)), x/2 + 0.5], x)
@@ -362,6 +367,7 @@ def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
 
         If the functional data are defined over a different set of points of
         discretisation the functions returns an exception.
+
         >>> x = numpy.linspace(0, 2, 1001)
         >>> fd2 =  FDataGrid([numpy.zeros(len(x)), x/2 + 0.5], x)
         >>> metric(fd, fd2)

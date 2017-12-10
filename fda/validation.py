@@ -84,7 +84,7 @@ def gcv(fdatagrid, s_matrix, penalisation_function=None):
 
 def minimise(fdatagrid, parameters,
              smoothing_method=kernel_smoothers.nw, cv_method=gcv,
-             w=None, **kwargs):
+             penalisation_function=None, **kwargs):
     """ Performs the smoothing of a FDataGrid object choosing the best
     parameter of a given list using a cross validation scoring method.
 
@@ -97,8 +97,8 @@ def minimise(fdatagrid, parameters,
         cv_method (Function): Function that takes a matrix,
             a smoothing matrix, and optionally a weights matrix and
             calculates a cross validation score.
-        w (numpy.darray): weights matrix.
-
+        penalisation_function(Fuction): if gcv is selected as cv_method a
+            penalisation function can be specified through this parameter.
 
     Returns:
         dict: A dictionary containing the following:
@@ -113,17 +113,72 @@ def minimise(fdatagrid, parameters,
                     parameter.
                 'fdatagrid': (FDataGrid) Smoothed FDataGrid object.
             }
+    Examples:
+        Creates a FDataGrid object of the function :math:`y=x^2` and peforms
+        smoothing by means of the k-nearest neighbours method.
+        >>> x = numpy.linspace(-2, 2, 5)
+        >>> fd = fda.FDataGrid(x ** 2, x)
+        >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn)
+        >>> numpy.array(res['scores']).round(2)
+        array([ 11.67,  12.37])
+        >>> round(res['best_score'], 2)
+        11.67
+        >>> res['best_parameter']
+        2
+        >>> res['hat_matrix'].round(2)
+        array([[ 0.5 ,  0.5 ,  0.  ,  0.  ,  0.  ],
+               [ 0.33,  0.33,  0.33,  0.  ,  0.  ],
+               [ 0.  ,  0.33,  0.33,  0.33,  0.  ],
+               [ 0.  ,  0.  ,  0.33,  0.33,  0.33],
+               [ 0.  ,  0.  ,  0.  ,  0.5 ,  0.5 ]])
+        >>> res['fdatagrid'].round(2)
+        FDataGrid(
+            array([[ 2.5 ,  1.67,  0.67,  1.67,  2.5 ]])
+            ,sample_points=array([-2., -1.,  0.,  1.,  2.])
+            ,sample_range=(-2.0, 2.0)
+            ,names=['Data set', 'xlabel', 'ylabel'])
+
+        Other validation methods can be used such as cross-validation or
+        general corss validation using other penalisation functions.
+        >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
+        ...                cv_method=cv)
+        >>> numpy.array(res['scores']).round(2)
+        array([ 4.2,  5.5])
+        >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
+        ...                penalisation_function=aic)
+        >>> numpy.array(res['scores']).round(2)
+        array([  9.35,  10.71])
+        >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
+        ...                penalisation_function=fpe)
+        >>> numpy.array(res['scores']).round(2)
+        array([  9.8,  11. ])
+        >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
+        ...                penalisation_function=shibata)
+        >>> numpy.array(res['scores']).round(2)
+        array([ 7.56,  9.17])
+        >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
+        ...                penalisation_function=rice)
+        >>> numpy.array(res['scores']).round(2)
+        array([ 21. ,  16.5])
 
     """
     scores = []
     # Calculates the scores for each parameter.
-    for h in parameters:
-        s = smoothing_method(fdatagrid.sample_points, h, **kwargs)
-        scores.append(cv_method(fdatagrid, s, w))
+    if penalisation_function is not None:
+        for h in parameters:
+            s = smoothing_method(fdatagrid.sample_points, h, **kwargs)
+            scores.append(
+                cv_method(fdatagrid, s,
+                          penalisation_function=penalisation_function))
+    else:
+        for h in parameters:
+            s = smoothing_method(fdatagrid.sample_points, h, **kwargs)
+            scores.append(
+                cv_method(fdatagrid, s))
     # gets the best parameter.
-    h = parameters[numpy.argmin(scores)]
+    h = parameters[int(numpy.argmin(scores))]
     s = smoothing_method(fdatagrid.sample_points, h, **kwargs)
-    fdatagrid_adjusted = fda.FDataGrid(numpy.dot(fdatagrid.data_matrix, s),
+    fdatagrid_adjusted = fda.FDataGrid(numpy.dot(fdatagrid.data_matrix, s.T),
                                        fdatagrid.sample_points,
                                        fdatagrid.sample_range,
                                        fdatagrid.names)
@@ -198,4 +253,3 @@ def rice(s_matrix):
          float: Penalisation given by the Rice's bandwidth selector.
     """
     return (1 - 2 * s_matrix.diagonal().mean())**-1
-

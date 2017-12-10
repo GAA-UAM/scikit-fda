@@ -216,7 +216,7 @@ class FDataGrid:
                 array([[ 1. ,  1.5,  1.5,  2. ,  3. ]])
                 ,sample_points=array([0, 1, 2, 3, 4])
                 ,sample_range=(0, 4)
-                ,names=['Data set', 'xlabel', 'ylabel'])
+                ,names=['Data set - 1 derivative', 'xlabel', 'ylabel'])
 
             Second order derivative
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
@@ -225,7 +225,7 @@ class FDataGrid:
                 array([[ 0.5 ,  0.25,  0.25,  0.75,  1.  ]])
                 ,sample_points=array([0, 1, 2, 3, 4])
                 ,sample_range=(0, 4)
-                ,names=['Data set', 'xlabel', 'ylabel'])
+                ,names=['Data set - 2 derivative', 'xlabel', 'ylabel'])
 
         """
         if order < 1:
@@ -250,7 +250,11 @@ class FDataGrid:
                 mdata.append(arr)
             data_matrix = numpy.array(mdata)
 
-        return FDataGrid(data_matrix, sample_points, self.sample_range)
+        names = [self.names[0] + ' - {} derivative'.format(order)]
+        names += self.names[1:]
+
+        return FDataGrid(data_matrix, sample_points, self.sample_range,
+                         names)
 
     def __add__(self, other):
         if not isinstance(other, FDataGrid):

@@ -47,7 +47,7 @@ References
     :scale: 100%
     :target: https://travis-ci.org/mcarbajo/fda
 
-.. |docs| image:: http://fda.readthedocs.io/en/latest/?badge=latest
+.. |docs| image:: https://fda.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
     :scale: 100%
     :target: https://fda.readthedocs.io/en/latest/

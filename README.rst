@@ -33,7 +33,7 @@ fda is available in Python 3.5 or above, in all operating systems.
 
 Documentation
 =============
-The documentation can be found in https://fda.readthedocs.io/en/latest/?badge=latest
+The documentation can be found in https://fda.readthedocs.io/en/latest/
 
 References
 ==========
@@ -47,7 +47,7 @@ References
     :scale: 100%
     :target: https://travis-ci.org/mcarbajo/fda
 
-.. |docs| image:: https://readthedocs.org/projects/fda/badge/?version=latest
+.. |docs| image:: http://fda.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
     :scale: 100%
     :target: https://fda.readthedocs.io/en/latest/

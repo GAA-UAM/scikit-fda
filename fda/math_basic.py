@@ -46,7 +46,7 @@ def var(fdatagrid):
 
     """
     return FDataGrid([numpy.var(fdatagrid.data_matrix, 0)],
-                     fdatagrid.sample_points,  fdatagrid.sample_range,
+                     fdatagrid.sample_points, fdatagrid.sample_range,
                      fdatagrid.names)
 
 
@@ -94,7 +94,7 @@ def sqrt(fdatagrid):
 
     """
     return FDataGrid(numpy.sqrt(fdatagrid.data_matrix),
-                     fdatagrid.sample_points,  fdatagrid.sample_range,
+                     fdatagrid.sample_points, fdatagrid.sample_range,
                      fdatagrid.names)
 
 
@@ -145,7 +145,7 @@ def exp(fdatagrid):
 
     """
     return FDataGrid(numpy.exp(fdatagrid.data_matrix),
-                     fdatagrid.sample_points,  fdatagrid.sample_range,
+                     fdatagrid.sample_points, fdatagrid.sample_range,
                      fdatagrid.names)
 
 
@@ -321,7 +321,7 @@ def norm_lp(fdatagrid, p=2):
     # Computes the norm, approximating the integral with Simpson's rule.
     return scipy.integrate.simps(numpy.abs(fdatagrid.data_matrix) ** p,
                                  x=fdatagrid.sample_points
-                                 ) ** (1/p)
+                                 ) ** (1 / p)
 
 
 def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
@@ -388,3 +388,23 @@ def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
             _matrix[i, j] = norm(fdatagrid[i] - fdatagrid2[j], **kwargs)
     # Computes the metric between x and y as norm(x -y).
     return _matrix
+
+
+def fpca(fdatagrid, n=2, normalise=True):
+    """ Functional Principal Components Analysis.
+
+    Performs Principal Components Analysis to reduce dimensionality and
+    obtain the principal modes of variation for a functional data object.
+
+    """
+    fdatagrid = fdatagrid - mean(fdatagrid)  # centers the data
+    # singular value decomposition
+    u, s, v = numpy.linalg.svd(fdatagrid.data_matrix)
+    principal_directions = v.T  # obtain the eigenvectors matrix
+    eigenvalues = (numpy.diag(s) ** 2) / (fdatagrid.n_samples - 1)
+    scores = u @ s  # functional principal scores
+
+    if normalise:
+        # TODO normalise
+        pass
+    return scores, principal_directions, eigenvalues

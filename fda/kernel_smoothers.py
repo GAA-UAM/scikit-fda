@@ -9,9 +9,12 @@ Todo:
     * Closed-form for KNN
 
 """
-from fda import kernels
-import numpy
 import math
+
+import numpy
+
+from fda import kernels
+
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -65,13 +68,13 @@ def nw(argvals, h=None, kernel=kernels.normal, w=None, cv=False):
         h = numpy.percentile(delta_x, 15)
     if cv:
         numpy.fill_diagonal(delta_x, math.inf)
-    delta_x = delta_x/h
+    delta_x = delta_x / h
     k = kernel(delta_x)
     if w is not None:
-        k = k*w
+        k = k * w
     rs = numpy.sum(k, 1)
     rs[rs == 0] = 1
-    return (k.T/rs).T
+    return (k.T / rs).T
 
 
 def local_linear_regression(argvals, h, kernel=kernels.normal, w=None,
@@ -127,16 +130,16 @@ def local_linear_regression(argvals, h, kernel=kernels.normal, w=None,
     delta_x = numpy.abs(numpy.subtract.outer(argvals, argvals))  # x_i - x_j
     if cv:
         numpy.fill_diagonal(delta_x, math.inf)
-    k = kernel(delta_x/h)  # K(x_i - x/ h)
-    s1 = numpy.sum(k*delta_x, 1)  # S_n_1
-    s2 = numpy.sum(k*delta_x**2, 1)  # S_n_2
-    b = (k*(s2 - delta_x*s1)).T  # b_i(x_j)
+    k = kernel(delta_x / h)  # K(x_i - x/ h)
+    s1 = numpy.sum(k * delta_x, 1)  # S_n_1
+    s2 = numpy.sum(k * delta_x ** 2, 1)  # S_n_2
+    b = (k * (s2 - delta_x * s1)).T  # b_i(x_j)
     if cv:
         numpy.fill_diagonal(b, 0)
     if w is not None:
-        b = b*w
+        b = b * w
     rs = numpy.sum(b, 1)  # sum_{k=1}^{n}b_k(x_j)
-    return (b.T/rs).T  # \\hat{H}
+    return (b.T / rs).T  # \\hat{H}
 
 
 def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
@@ -189,21 +192,21 @@ def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
 
     # Tolerance to avoid points landing outside the kernel window due to
     # computation error
-    tol = 1*10**-19
+    tol = 1 * 10 ** -19
 
     # For each row in the distances matrix, it calculates the furthest point
     # within the k nearest neighbours
-    vec = numpy.percentile(delta_x, k/len(argvals)*100, axis=0,
+    vec = numpy.percentile(delta_x, k / len(argvals) * 100, axis=0,
                            interpolation='lower') + tol
 
-    rr = kernel((delta_x.T/vec).T)
-    """ Applies the kernel to the result of dividing each row by the result 
-    of the previous operation, all the discretisation points corresponding 
-    to the knn are below 1 and the rest above 1 so the kernel returns values
-    distinct to 0 only for the knn."""
+    rr = kernel((delta_x.T / vec).T)
+    # Applies the kernel to the result of dividing each row by the result
+    # of the previous operation, all the discretisation points corresponding
+    # to the knn are below 1 and the rest above 1 so the kernel returns values
+    # distinct to 0 only for the knn.
 
     if w is not None:
-        rr = (rr.T*w).T
+        rr = (rr.T * w).T
 
     # normalise every row
     rs = numpy.sum(rr, 1)

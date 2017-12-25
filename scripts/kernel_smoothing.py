@@ -66,10 +66,10 @@ if __name__ == '__main__':
     # Plots the smoothed curves corresponding to the 11th element of the data
     #  set (this is a random choice) for the three different smoothing methods.
     plt.figure(3)
-    fd[11].plot()
-    knn['fdatagrid'][11].plot()
-    llr['fdatagrid'][11].plot()
-    nw['fdatagrid'][11].plot()
+    fd[10].plot()
+    knn['fdatagrid'][10].plot()
+    llr['fdatagrid'][10].plot()
+    nw['fdatagrid'][10].plot()
     ax = plt.gca()
     ax.legend(['original data', 'k-nearest neighbours',
                'local linear regression',

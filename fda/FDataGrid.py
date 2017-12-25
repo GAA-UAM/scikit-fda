@@ -1,7 +1,8 @@
-"""This module defines a class for representing functional data as a series of
+"""Discretised functional data module.
+
+This module defines a class for representing functional data as a series of
 lists of values, each representing the observation of a function measured in a
 list of discretisation points.
-
 """
 
 import numpy
@@ -13,7 +14,9 @@ __email__ = "miguel.carbajo@estudiante.uam.es"
 
 
 class FDataGrid:
-    """ Class for representing functional data as a set of curves discretised
+    """ Represents discretised functional data.
+
+    Class for representing functional data as a set of curves discretised
     in a grid of points.
 
     Attributes:
@@ -245,8 +248,8 @@ class FDataGrid:
         for _ in range(order):
             mdata = []
             for i in range(self.n_samples):
-                arr = numpy.diff(data_matrix[i])/(sample_points[1:] 
-                                                  - sample_points[:-1])
+                arr = numpy.diff(data_matrix[i]) / (sample_points[1:]
+                                                    - sample_points[:-1])
                 arr = numpy.append(arr, arr[-1])
                 arr[1:-1] += arr[:-2]
                 arr[1:-1] /= 2
@@ -261,7 +264,7 @@ class FDataGrid:
 
     def __add__(self, other):
         if not isinstance(other, FDataGrid):
-            raise NotImplemented
+            return NotImplemented
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
         if not numpy.array_equal(self.sample_points,
@@ -274,7 +277,7 @@ class FDataGrid:
 
     def __sub__(self, other):
         if not isinstance(other, FDataGrid):
-            raise NotImplemented
+            return NotImplemented
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
             # Checks
@@ -288,7 +291,7 @@ class FDataGrid:
 
     def __mul__(self, other):
         if not isinstance(other, FDataGrid):
-            raise NotImplemented
+            return NotImplemented
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
         if not numpy.array_equal(self.sample_points,
@@ -301,7 +304,7 @@ class FDataGrid:
 
     def __truediv__(self, other):
         if not isinstance(other, FDataGrid):
-            raise NotImplemented
+            return NotImplemented
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
         if not numpy.array_equal(self.sample_points,
@@ -341,7 +344,7 @@ class FDataGrid:
         """ Return self[key]. """
         if isinstance(key, tuple) and len(key) > 1:
             return FDataGrid(self.data_matrix[key],
-                             self.sample_points[key[1:1+self.ndim_domain]],
+                             self.sample_points[key[1:1 + self.ndim_domain]],
                              self.sample_range, self.names)
         return FDataGrid(self.data_matrix[key], self.sample_points,
                          self.sample_range, self.names)

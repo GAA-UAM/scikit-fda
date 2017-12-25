@@ -11,6 +11,7 @@ fda\.FDataGrid module
     :members:
     :undoc-members:
     :show-inheritance:
+    :noindex:
 
 fda\.kernel\_smoothers module
 -----------------------------

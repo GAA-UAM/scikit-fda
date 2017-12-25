@@ -1,9 +1,11 @@
 """This module defines methods for the validation of the smoothing.
 
 """
+import numpy
+
 import fda
 from fda import kernel_smoothers
-import numpy
+
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -40,7 +42,7 @@ def cv(fdatagrid, s_matrix):
     """
     y = fdatagrid.data_matrix
     y_est = numpy.dot(s_matrix, y.T).T
-    return numpy.mean(((y - y_est)/(1 - s_matrix.diagonal()))**2)
+    return numpy.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
 
 
 def gcv(fdatagrid, s_matrix, penalisation_function=None):
@@ -76,10 +78,10 @@ def gcv(fdatagrid, s_matrix, penalisation_function=None):
     y = fdatagrid.data_matrix
     y_est = numpy.dot(s_matrix, y.T).T
     if penalisation_function is not None:
-        return (numpy.mean(((y - y_est)/(1 - s_matrix.diagonal()))**2)
+        return (numpy.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
                 * penalisation_function(s_matrix))
     return (numpy.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
-            * (1 - s_matrix.diagonal().mean())**-2)
+            * (1 - s_matrix.diagonal().mean()) ** -2)
 
 
 def minimise(fdatagrid, parameters,
@@ -106,12 +108,17 @@ def minimise(fdatagrid, parameters,
             {
                 'scores': (list of double) List of the scores for each
                     parameter.
+
                 'best_score': (double) Minimum score.
+
                 'best_parameter': (double) Parameter that produces the
                     lesser score.
+
                 'hat_matrix': (numpy.darray) Hat matrix built with the best
                     parameter.
+
                 'fdatagrid': (FDataGrid) Smoothed FDataGrid object.
+
             }
     Examples:
         Creates a FDataGrid object of the function :math:`y=x^2` and peforms
@@ -254,4 +261,4 @@ def rice(s_matrix):
     Returns:
          float: Penalisation given by the Rice's bandwidth selector.
     """
-    return (1 - 2 * s_matrix.diagonal().mean())**-1
+    return (1 - 2 * s_matrix.diagonal().mean()) ** -1

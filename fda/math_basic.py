@@ -115,7 +115,7 @@ def absolute(fdatagrid):
                      fdatagrid.names)
 
 
-def around(fdatagrid, decimals=0):
+def round(fdatagrid, decimals=0):
     """ Rounds all elements of the object.
 
     Args:
@@ -390,13 +390,24 @@ def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
     return _matrix
 
 
-def fpca(fdatagrid, n=2, normalise=True):
-    """ Functional Principal Components Analysis.
+def fpca(fdatagrid, n=2):
+    """Functional Principal Components Analysis.
 
-    Performs Principal Components Analysis to reduce dimensionality and
-    obtain the principal modes of variation for a functional data object.
+    Performs Functional Principal Components Analysis to reduce
+    dimensionality and obtain the principal modes of variation for a
+    functional data object.
+
+    It uses SVD numpy implementation to compute PCA.
+
+    Args:
+        fdatagrid (FDataGrid): functional data object.
+        n (int, optional): Number of principal components. Defaults to 2.
+
+    Returns:
+        TODO
 
     """
+    # TODO decide how to return all the information.
     fdatagrid = fdatagrid - mean(fdatagrid)  # centers the data
     # singular value decomposition
     u, s, v = numpy.linalg.svd(fdatagrid.data_matrix)
@@ -404,7 +415,4 @@ def fpca(fdatagrid, n=2, normalise=True):
     eigenvalues = (numpy.diag(s) ** 2) / (fdatagrid.n_samples - 1)
     scores = u @ s  # functional principal scores
 
-    if normalise:
-        # TODO normalise
-        pass
     return scores, principal_directions, eigenvalues

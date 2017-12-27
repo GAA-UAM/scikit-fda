@@ -14,7 +14,7 @@ __email__ = "miguel.carbajo@estudiante.uam.es"
 
 
 class FDataGrid:
-    """ Represents discretised functional data.
+    """Represents discretised functional data.
 
     Class for representing functional data as a set of curves discretised
     in a grid of points.
@@ -315,10 +315,21 @@ class FDataGrid:
                          self.sample_points, self.sample_range, 
                          self.names)
 
-    def plot(self, *args, **kwargs):
+    def plot(self, **kwargs):
         _plot = matplotlib.pyplot.plot(self.sample_points,
                                        numpy.transpose(self.data_matrix),
-                                       *args, **kwargs)
+                                       **kwargs)
+        ax = matplotlib.pyplot.gca()
+        ax.set_title(self.names[0])
+        ax.set_xlabel(self.names[1])
+        ax.set_ylabel(self.names[2])
+        return _plot
+
+    def scatter(self, **kwargs):
+        for i in range(self.n_samples):
+            _plot = matplotlib.pyplot.scatter(self.sample_points,
+                                              self.data_matrix[i],
+                                              **kwargs)
         ax = matplotlib.pyplot.gca()
         ax.set_title(self.names[0])
         ax.set_xlabel(self.names[1])

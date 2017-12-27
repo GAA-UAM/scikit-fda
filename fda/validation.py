@@ -154,19 +154,19 @@ def minimise(fdatagrid, parameters,
         >>> numpy.array(res['scores']).round(2)
         array([ 4.2,  5.5])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
-        ...                penalisation_function=aic)
+        ...                penalisation_function=cv_aic)
         >>> numpy.array(res['scores']).round(2)
         array([  9.35,  10.71])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
-        ...                penalisation_function=fpe)
+        ...                penalisation_function=cv_fpe)
         >>> numpy.array(res['scores']).round(2)
         array([  9.8,  11. ])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
-        ...                penalisation_function=shibata)
+        ...                penalisation_function=cv_shibata)
         >>> numpy.array(res['scores']).round(2)
         array([ 7.56,  9.17])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
-        ...                penalisation_function=rice)
+        ...                penalisation_function=cv_rice)
         >>> numpy.array(res['scores']).round(2)
         array([ 21. ,  16.5])
 
@@ -199,7 +199,7 @@ def minimise(fdatagrid, parameters,
             }
 
 
-def aic(s_matrix):
+def cv_aic(s_matrix):
     """ Akaike's information criterion for cross validation.
 
     .. math::
@@ -215,7 +215,7 @@ def aic(s_matrix):
     return numpy.exp(2 * s_matrix.diagonal().mean())
 
 
-def fpe(s_matrix):
+def cv_fpe(s_matrix):
     """ Finite prediction error for cross validation.
 
     .. math::
@@ -232,7 +232,7 @@ def fpe(s_matrix):
     return (1 + s_matrix.diagonal().mean())/(1 - s_matrix.diagonal().mean())
 
 
-def shibata(s_matrix):
+def cv_shibata(s_matrix):
     """ Shibata's model selector for cross validation.
 
     .. math::
@@ -248,7 +248,7 @@ def shibata(s_matrix):
     return 1 + 2 * s_matrix.diagonal().mean()
 
 
-def rice(s_matrix):
+def cv_rice(s_matrix):
     """ Rice's bandwidth selector for cross validation.
 
     .. math::

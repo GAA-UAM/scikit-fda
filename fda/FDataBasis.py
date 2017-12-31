@@ -1,5 +1,5 @@
-"""This module defines a basis class for later represeting functional data
-objects.
+"""This module defines functional data object in a functional basis
+representation and the corresponding basis class.
 
 """
 
@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 import numpy
 import matplotlib.pyplot
 import scipy.interpolate
+import scipy.linalg
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -289,3 +290,103 @@ class BSpline(Basis):
             c[i] = 0
 
         return mat
+
+
+class FDataBasis:
+
+    def __init__(self, basis, coefficients):
+        """
+
+        Args:
+            basis:
+            coefficients:
+        """
+        coefficients = numpy.atleast_2d(coefficients)
+        if coefficients.shape[1] != basis.nbasis:
+            raise ValueError("The length or number of columns of coefficients "
+                             "has to be the same equal to the number of "
+                             "elements of the basis.")
+        self.basis = basis
+        self.coefficients = coefficients
+
+    @property
+    def nsamples(self):
+        return self.coefficients.shape[0]
+
+    @property
+    def nbasis(self):
+        return self.basis.nbasis
+
+    @property
+    def def_range(self):
+        return self.basis.def_range
+
+    def evaluate(self, eval_points):
+
+        # each column is the values of one element of the basis
+        basis_values = self.basis.evaluate(eval_points).T
+
+        res_matrix = numpy.empty((self.nsamples, len(eval_points)))
+
+        for i in range(self.nsamples):
+            _matrix = basis_values * self.coefficients[i]
+            res_matrix[i] = _matrix.sum(axis=1)
+
+        return res_matrix
+
+    def plot(self, **kwargs):
+        npoints = max(501, 10 * self.nbasis)
+        # List of points where the basis are evaluated
+        eval_points = numpy.linspace(self.def_range[0], self.def_range[1],
+                                     npoints)
+        # Basis evaluated in the previous list of points
+        mat = self.evaluate(eval_points)
+        # Plot
+        return matplotlib.pyplot.plot(eval_points, mat.T, **kwargs)
+
+
+def data_tof_data_basis(data_matrix, sample_points, basis, method='cholesky'):
+
+    # n is the samples
+    # m is the observations
+    # k is the number of elements of the basis
+
+    # Each sample in a column (m x n)
+    data_matrix = data_matrix.T
+
+    # Each basis in a column
+    basis_values = basis.evaluate(sample_points).T
+
+    # We need to solve the equation
+    # basis_values(B) @ C = data_matrix(D)
+
+    if method == 'cholesky':
+        # Resolves the equation
+        # B.T @ B @ C = B.T @ D
+        # by means of the cholesky decomposition
+        left_matrix = basis_values.T @ basis_values
+        right_matrix = basis_values.T @ data_matrix
+        coefficients = scipy.linalg.cho_solve(scipy.linalg.cho_factor(
+            left_matrix, lower=True), right_matrix)
+
+        # The ith column is the coefficients of the ith basis for each sample
+        coefficients = coefficients.T
+
+    elif method == 'qr':
+        # Resolves the equation
+        # B.T @ B @ C = B.T @ D
+        # by means of the QR decomposition
+
+        # B = Q @ R
+        q, r = scipy.linalg.qr(basis_values)
+        right_matrix = q.T @ data_matrix
+
+        # R @ C = Q.T @ D
+        coefficients = numpy.linalg.solve(r, right_matrix)
+        # The ith column is the coefficients of the ith basis for each sample
+        coefficients = coefficients.T
+
+    else:
+        raise ValueError("Unknown method.")
+
+    return FDataBasis(basis, coefficients)

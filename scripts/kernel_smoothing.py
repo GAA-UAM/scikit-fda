@@ -31,7 +31,6 @@ if __name__ == '__main__':
     # Plots the first five samples of the data set.
     plt.figure(1)
     fd[0:5].plot()
-    plt.show()
 
     # Calculates general cross validation scores for different values of the
     #  parameters given to the different smoothing methods.
@@ -61,8 +60,6 @@ if __name__ == '__main__':
                'Nadaraya-Watson'],
               title='Smoothing method')
 
-    plt.show()
-
     # Plots the smoothed curves corresponding to the 11th element of the data
     #  set (this is a random choice) for the three different smoothing methods.
     plt.figure(3)
@@ -75,10 +72,34 @@ if __name__ == '__main__':
                'local linear regression',
                'Nadaraya-Watson'],
               title='Smoothing method')
-    plt.show()
 
     # Plots the same 5 samples from the beginning using the Nadaraya-Watson
     # kernel smoother with the best choice of parameter.
     plt.figure(4)
     nw['fdatagrid'][0:5].plot()
+
+    # Undersmoothing and oversmoothing
+    fd_us = fda.FDataGrid(ks.nw(fd.sample_points, h=2) @ fd.data_matrix[10],
+                          fd.sample_points, fd.sample_range, fd.names)
+    fd_os = fda.FDataGrid(ks.nw(fd.sample_points, h=15) @ fd.data_matrix[10],
+                          fd.sample_points, fd.sample_range, fd.names)
+
+    # Not smoothed
+    plt.figure(5)
+    fd[10].plot()
+
+    # Smoothed
+    plt.figure(6)
+    fd[10].scatter(s=0.5)
+    nw['fdatagrid'][10].plot(c='g')
+
+    # Under-smoothed
+    plt.figure(7)
+    fd[10].scatter(s=0.5)
+    fd_us.plot(c='sandybrown')
+
+    # Over-smoothed
+    plt.figure(8)
+    fd[10].scatter(s=0.5)
+    fd_os.plot(c='r')
     plt.show()

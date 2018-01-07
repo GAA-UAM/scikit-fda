@@ -15,7 +15,7 @@ __email__ = "miguel.carbajo@estudiante.uam.es"
 
 
 class Basis(ABC):
-    """Defines a functional basis.
+    """Defines the structure of a functional basis.
 
     Attributes:
         def_range (tuple): a tuple of length 2 containing the initial and end
@@ -104,6 +104,11 @@ class Basis(ABC):
         # Plot
         return matplotlib.pyplot.plot(eval_points, mat.T, **kwargs)
 
+    @abstractmethod
+    def __repr__(self):
+        return (f"{self.__class__.__name__}(def_range={self.def_range}, "
+                f"nbasis={self.nbasis})")
+
 
 class Monomial(Basis):
     """Monomial basis.
@@ -111,6 +116,11 @@ class Monomial(Basis):
     Basis formed by powers of the argument :math:`t`:
     .. math::
         1, t, t^2, t^3...
+
+    Attributes:
+        def_range (tuple): a tuple of length 2 containing the initial and end
+            values of the interval over which the basis can be evaluated.
+        nbasis (int): number of functions in the basis.
 
     Examples:
         Defines a monomial base over the interval :math:`[0, 5]` consisting
@@ -160,6 +170,9 @@ class Monomial(Basis):
 
         return mat
 
+    def __repr__(self):
+        return super().__repr__()
+
 
 class BSpline(Basis):
     r"""BSpline basis.
@@ -176,6 +189,13 @@ class BSpline(Basis):
     interval where the basis is defined is usually necessary to have these
     values at the ends as knots several times. This class handles this so that
     knots don't have to be duplicated.
+
+    Attributes:
+        def_range (tuple): A tuple of length 2 containing the initial and end
+            values of the interval over which the basis can be evaluated.
+        nbasis (int): Number of functions in the basis.
+        order (int): Order of the splines. One greather than their degree.
+        knots (list): List of knots of the spline functions.
 
     Examples:
         Constructs specifying number of basis and order.
@@ -212,7 +232,7 @@ class BSpline(Basis):
             nbasis (int, optional): Number of splines that form the basis.
             order (int, optional): Order of the splines. One greater that
                 their degree. Defaults to 4 which mean cubic splines.
-            knots (list): List of knots of the splines. If def_range is
+            knots (array_like): List of knots of the splines. If def_range is
                 specified the first and last elements of the knots have to
                 match with it.
         """
@@ -291,15 +311,50 @@ class BSpline(Basis):
 
         return mat
 
+    def __repr__(self):
+        return (f"{self.__class__.__name__}(def_range={self.def_range}, "
+                f"nbasis={self.nbasis}, "
+                f"order={self.order}, "
+                f"knots={self.knots})")
+
 
 class FDataBasis:
+    r"""Basis representation of functional data.
+
+    Class representation for functional data in the form of a set of basis
+    functions multplied by a set of coefficients.
+
+    .. math::
+        f(x) = \sum_{k=1}{n}c_k\phi_k
+
+    Where n is the number of basis functions, :math:`c = (c_1, c_2, ...,
+    c_n)` the vector of coefficients and  :math:`\phi = (\phi_1, \phi_2,
+    ..., \phi_n)` the functional basis.
+
+    Attributes:
+        basis (:obj:`Basis`): Functional basis.
+        coefficients (numpy.darray): List or matrix of coefficients. Has to
+            have the same length or number of columns as the number of basis
+            function in the basis. If a matrix, each row contains the
+            coefficients that multiplied by the basis functions produce each
+            functional datum.
+
+    Examples:
+        >>> basis = Monomial(nbasis=4)
+        >>> coefficients = [1, 1, 3, .5]
+        >>> FDataBasis(basis, coefficients)
+        FDataBasis(basis=Monomial(...), coefficients=[[ 1.   1.   3.   0.5]])
+
+    """
 
     def __init__(self, basis, coefficients):
-        """
+        """Constructor of FDataBasis.
 
         Args:
-            basis:
-            coefficients:
+            basis (:obj:`Basis`): Functional basis.
+            coefficients (array_like): List or matrix of coefficients. Has to
+                have the same length or number of columns as the number of
+                basis function in the basis.
         """
         coefficients = numpy.atleast_2d(coefficients)
         if coefficients.shape[1] != basis.nbasis:
@@ -311,18 +366,31 @@ class FDataBasis:
 
     @property
     def nsamples(self):
+        """Number of samples"""
         return self.coefficients.shape[0]
 
     @property
     def nbasis(self):
+        """Number of basis"""
         return self.basis.nbasis
 
     @property
     def def_range(self):
+        """Definition range"""
         return self.basis.def_range
 
     def evaluate(self, eval_points):
+        """Evaluates the functions in the object at a list of values.
 
+        Args:
+            eval_points (array_like): List of points where the functions are
+                evaluated.
+
+        Returns:
+            (numpy.darray): Matrix whose rows are the values of the each
+            function at the values specified in eval_points.
+
+        """
         # each column is the values of one element of the basis
         basis_values = self.basis.evaluate(eval_points).T
 
@@ -335,6 +403,16 @@ class FDataBasis:
         return res_matrix
 
     def plot(self, **kwargs):
+        """Plots the FDataBasis object.
+
+        Args:
+            **kwargs: keyword arguments to be passed to the
+                matplotlib.pyplot.plot function.
+
+        Returns:
+            List of lines that were added to the plot.
+
+        """
         npoints = max(501, 10 * self.nbasis)
         # List of points where the basis are evaluated
         eval_points = numpy.linspace(self.def_range[0], self.def_range[1],
@@ -344,15 +422,40 @@ class FDataBasis:
         # Plot
         return matplotlib.pyplot.plot(eval_points, mat.T, **kwargs)
 
+    def __repr__(self):
+        return (f"FDataBasis(basis={self.basis}, coefficients="
+                f"{self.coefficients})")
 
-def data_tof_data_basis(data_matrix, sample_points, basis, method='cholesky'):
+
+def datatofbasis(data_matrix, sample_points, basis, method='cholesky'):
+    """Raw data to functional form.
+
+    Takes functional data in a discrete form and makes an approximates it to
+    the closest function that can be generated by the basis.
+
+    Args:
+        data_matrix (array_like): List of matrix containing the
+            observations. If a matrix each row represents a single
+            functional datum and the columns the different observations.
+        sample_points (array_like): Values of the domain where the previous
+            data were taken.
+        basis: (:obj:`Basis`): Basis used.
+        method (str): Algorithm used for calculating the coefficients using the
+            least squares method. The values admitted are 'cholesky' and
+            'qr' for Cholesky and QR factorisation methods respectively.
+
+    Returns:
+        :obj:`FDataBasis`: Represention of the data in a functional form as
+            product of coefficients by basis functions.
+
+    """
 
     # n is the samples
     # m is the observations
     # k is the number of elements of the basis
 
     # Each sample in a column (m x n)
-    data_matrix = data_matrix.T
+    data_matrix = numpy.atleast_2d(data_matrix).T
 
     # Each basis in a column
     basis_values = basis.evaluate(sample_points).T
@@ -360,6 +463,7 @@ def data_tof_data_basis(data_matrix, sample_points, basis, method='cholesky'):
     # We need to solve the equation
     # basis_values(B) @ C = data_matrix(D)
 
+    method = method.lower()
     if method == 'cholesky':
         # Resolves the equation
         # B.T @ B @ C = B.T @ D

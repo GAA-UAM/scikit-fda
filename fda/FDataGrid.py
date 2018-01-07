@@ -316,6 +316,16 @@ class FDataGrid:
                          self.names)
 
     def plot(self, **kwargs):
+        """Plots the FDatGrid object.
+
+        Args:
+            **kwargs: keyword arguments to be passed to the
+                matplotlib.pyplot.plot function.
+
+        Returns:
+            List of lines that were added to the plot.
+
+        """
         _plot = matplotlib.pyplot.plot(self.sample_points,
                                        numpy.transpose(self.data_matrix),
                                        **kwargs)
@@ -326,6 +336,16 @@ class FDataGrid:
         return _plot
 
     def scatter(self, **kwargs):
+        """Scatter plot of the FDatGrid object.
+
+        Args:
+            **kwargs: keyword arguments to be passed to the
+                matplotlib.pyplot.scatter function.
+
+        Returns:
+            :obj:`matplotlib.collections.PathCollection`
+
+        """
         for i in range(self.n_samples):
             _plot = matplotlib.pyplot.scatter(self.sample_points,
                                               self.data_matrix[i],

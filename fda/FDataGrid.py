@@ -77,7 +77,7 @@ class FDataGrid:
         else:
             # Check that the dimension of the data matches the sample_points
             # list
-            self.sample_points = numpy.asarray(sample_points)
+            self.sample_points = numpy.atleast_1d(sample_points)
             if ((self.data_matrix.ndim == 2
                     and len(self.sample_points) != self.data_matrix.shape[1])
                 or (self.data_matrix.ndim > 2

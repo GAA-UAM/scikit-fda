@@ -5,8 +5,10 @@ lists of values, each representing the observation of a function measured in a
 list of discretisation points.
 """
 
-import numpy
+import numbers
+
 import matplotlib.pyplot
+import numpy
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -42,7 +44,7 @@ class FDataGrid:
         ValueError: Incorrect dimension in data_matrix and sample_points.
 
     """
-    def __init__(self, data_matrix, sample_points=None, 
+    def __init__(self, data_matrix, sample_points=None,
                  sample_range=None, names=None):
         """
         Args:
@@ -69,11 +71,11 @@ class FDataGrid:
                                       self.data_matrix.shape[i]) for i
                                       in range(1, self.data_matrix.ndim)]
             else:
-                self.sample_points = numpy.linspace(0, 1, 
+                self.sample_points = numpy.linspace(0, 1,
                                                     self.data_matrix.shape[1])
 
         else:
-            # Check that the dimension of the data matches the sample_points 
+            # Check that the dimension of the data matches the sample_points
             # list
             self.sample_points = numpy.asarray(sample_points)
             if ((self.data_matrix.ndim == 2
@@ -85,7 +87,7 @@ class FDataGrid:
 
         if sample_range is None:
             if self.data_matrix.ndim == 2:
-                self.sample_range = (self.sample_points[0], 
+                self.sample_range = (self.sample_points[0],
                                      self.sample_points[-1])
             else:
                 self.sample_range = [(self.sample_points[i][0],
@@ -262,57 +264,64 @@ class FDataGrid:
         return FDataGrid(data_matrix, sample_points, self.sample_range,
                          names)
 
-    def __add__(self, other):
-        if not isinstance(other, FDataGrid):
-            return NotImplemented
+    def __check_same_dimensions(self, other):
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
         if not numpy.array_equal(self.sample_points,
                                  other.sample_points):
             raise ValueError(
                 "Sample points for both objects must be equal")
-        return FDataGrid(self.data_matrix + other.data_matrix,
+
+    def __add__(self, other):
+        if isinstance(other, (numpy.ndarray, numbers.Number)):
+            data_matrix = other
+        elif isinstance(other, FDataGrid):
+            self.__check_same_dimensions(other)
+            data_matrix = other.data_matrix
+        else:
+            return NotImplemented
+
+        return FDataGrid(self.data_matrix + data_matrix,
                          self.sample_points, self.sample_range,
                          self.names)
 
     def __sub__(self, other):
-        if not isinstance(other, FDataGrid):
+        if isinstance(other, (numpy.ndarray, numbers.Number)):
+            data_matrix = other
+        elif isinstance(other, FDataGrid):
+            self.__check_same_dimensions(other)
+            data_matrix = other.data_matrix
+        else:
             return NotImplemented
-        if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
-            raise ValueError("Error in columns dimensions")
-            # Checks
-        if not numpy.array_equal(self.sample_points,
-                                 other.sample_points):
-            raise ValueError(
-                "Sample points for both objects must be equal")
-        return FDataGrid(self.data_matrix - other.data_matrix,
-                         self.sample_points, self.sample_range, 
+
+        return FDataGrid(self.data_matrix - data_matrix,
+                         self.sample_points, self.sample_range,
                          self.names)
 
     def __mul__(self, other):
-        if not isinstance(other, FDataGrid):
+        if isinstance(other, (numpy.ndarray, numbers.Number)):
+            data_matrix = other
+        elif isinstance(other, FDataGrid):
+            self.__check_same_dimensions(other)
+            data_matrix = other.data_matrix
+        else:
             return NotImplemented
-        if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
-            raise ValueError("Error in columns dimensions")
-        if not numpy.array_equal(self.sample_points,
-                                 other.sample_points):
-            raise ValueError(
-                "Sample points for both objects must be equal")
-        return FDataGrid(self.data_matrix * other.data_matrix, 
-                         self.sample_points, self.sample_range, 
+
+        return FDataGrid(self.data_matrix * data_matrix,
+                         self.sample_points, self.sample_range,
                          self.names)
 
     def __truediv__(self, other):
-        if not isinstance(other, FDataGrid):
+        if isinstance(other, (numpy.ndarray, numbers.Number)):
+            data_matrix = other
+        elif isinstance(other, FDataGrid):
+            self.__check_same_dimensions(other)
+            data_matrix = other.data_matrix
+        else:
             return NotImplemented
-        if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
-            raise ValueError("Error in columns dimensions")
-        if not numpy.array_equal(self.sample_points,
-                                 other.sample_points):
-            raise ValueError(
-                "Sample points for both objects must be equal")
-        return FDataGrid(self.data_matrix / other.data_matrix,
-                         self.sample_points, self.sample_range, 
+
+        return FDataGrid(self.data_matrix / data_matrix,
+                         self.sample_points, self.sample_range,
                          self.names)
 
     def plot(self, **kwargs):

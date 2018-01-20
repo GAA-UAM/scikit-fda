@@ -31,8 +31,10 @@ class FDataGrid:
             each axis.
         sample_range (tuple or list): contains the edges of the interval
             in which the functional data is considered to exist.
-        names (list): list containing the names of the data set, x label, y
-            label, z label and so on.
+        dataset_label (str): name of the dataset.
+        axes_labels (list): list containing the labels of the different
+            axis. The first element is the x label, the second the y label
+            and so on.
 
     Examples:
         The number of columns of data_matrix have to be the length of 
@@ -45,7 +47,8 @@ class FDataGrid:
 
     """
     def __init__(self, data_matrix, sample_points=None,
-                 sample_range=None, names=None):
+                 sample_range=None, dataset_label='Data set',
+                 axes_labels=None):
         """
         Args:
             data_matrix (array_like): a matrix where each row contains the
@@ -58,8 +61,10 @@ class FDataGrid:
             sample_range (tuple or list, optional): contains the edges 
                 of the interval in which the functional data is considered to
                 exist.
-            names (list): list containing the names of the data set, x label, y
-                label, z label and so on.
+            dataset_label (str, optional): name of the dataset.
+            axes_labels (list, optional): list containing the labels of the
+                different axes. The first element is the x label, the second
+                the y label and so on.
 
         """
         self.data_matrix = numpy.atleast_2d(data_matrix)
@@ -104,9 +109,8 @@ class FDataGrid:
                     or self.sample_range[-1] < self.sample_points[-1]):
                 raise ValueError("Timestamps must be within the time range.")
 
-        self.names = names
-        if self.names is None:
-            self.names = ['Data set', 'xlabel', 'ylabel']
+        self.dataset_label = dataset_label
+        self.axes_labels = axes_labels
 
         return
 
@@ -126,7 +130,8 @@ class FDataGrid:
         """
         return FDataGrid(self.data_matrix.round(decimals),
                          self.sample_points.round(decimals),
-                         self.sample_range, self.names)
+                         self.sample_range, self.dataset_label,
+                         self.axes_labels)
 
     @property
     def ndim_domain(self):
@@ -135,7 +140,9 @@ class FDataGrid:
         Returns:
             int: Number of dimensions of the domain.
         """
-        return self.sample_points.ndim
+        if self.sample_points.ndim == 1:
+            return 1
+        return self.sample_points.shape[0]
 
     @property
     def ndim_image(self):
@@ -156,7 +163,7 @@ class FDataGrid:
         return self.data_matrix.ndim
 
     @property
-    def n_samples(self):
+    def nsamples(self):
         """ Number of rows of the data_matrix. Also the number of samples.
 
         Returns:
@@ -223,7 +230,8 @@ class FDataGrid:
                 array([[ 1. ,  1.5,  1.5,  2. ,  3. ]])
                 ,sample_points=array([0, 1, 2, 3, 4])
                 ,sample_range=(0, 4)
-                ,names=['Data set - 1 derivative', 'xlabel', 'ylabel'])
+                ,dataset_label='Data set - 1 derivative'
+                ,...)
 
             Second order derivative
 
@@ -233,7 +241,8 @@ class FDataGrid:
                 array([[ 0.5 ,  0.25,  0.25,  0.75,  1.  ]])
                 ,sample_points=array([0, 1, 2, 3, 4])
                 ,sample_range=(0, 4)
-                ,names=['Data set - 2 derivative', 'xlabel', 'ylabel'])
+                ,dataset_label='Data set - 2 derivative'
+                ,...)
 
         """
         if order < 1:
@@ -249,7 +258,7 @@ class FDataGrid:
         sample_points = self.sample_points
         for _ in range(order):
             mdata = []
-            for i in range(self.n_samples):
+            for i in range(self.nsamples):
                 arr = numpy.diff(data_matrix[i]) / (sample_points[1:]
                                                     - sample_points[:-1])
                 arr = numpy.append(arr, arr[-1])
@@ -258,11 +267,10 @@ class FDataGrid:
                 mdata.append(arr)
             data_matrix = numpy.array(mdata)
 
-        names = [self.names[0] + ' - {} derivative'.format(order)]
-        names += self.names[1:]
+        dataset_label = f"{self.dataset_label} - {order} derivative"
 
         return FDataGrid(data_matrix, sample_points, self.sample_range,
-                         names)
+                         dataset_label, self.axes_labels)
 
     def __check_same_dimensions(self, other):
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
@@ -283,7 +291,7 @@ class FDataGrid:
 
         return FDataGrid(self.data_matrix + data_matrix,
                          self.sample_points, self.sample_range,
-                         self.names)
+                         self.dataset_label, self.axes_labels)
 
     def __sub__(self, other):
         if isinstance(other, (numpy.ndarray, numbers.Number)):
@@ -296,7 +304,7 @@ class FDataGrid:
 
         return FDataGrid(self.data_matrix - data_matrix,
                          self.sample_points, self.sample_range,
-                         self.names)
+                         self.dataset_label, self.axes_labels)
 
     def __mul__(self, other):
         if isinstance(other, (numpy.ndarray, numbers.Number)):
@@ -309,7 +317,7 @@ class FDataGrid:
 
         return FDataGrid(self.data_matrix * data_matrix,
                          self.sample_points, self.sample_range,
-                         self.names)
+                         self.dataset_label, self.axes_labels)
 
     def __truediv__(self, other):
         if isinstance(other, (numpy.ndarray, numbers.Number)):
@@ -322,12 +330,74 @@ class FDataGrid:
 
         return FDataGrid(self.data_matrix / data_matrix,
                          self.sample_points, self.sample_range,
-                         self.names)
+                         self.dataset_label, self.axes_labels)
 
-    def plot(self, **kwargs):
+    def concatenate(self, other):
+        """Joins samples from a similar FDataGrid object.
+
+        Joins samples from another FDataGrid object if it has the same
+        dimensions and sampling points.
+
+        Args:
+            other (:obj:`FDataGrid`): another FDataGrid object.
+
+        Returns:
+            :obj:`FDataGrid`: FDataGrid object with the samples from the two
+            original objects.
+
+        Examples:
+            >>> fd = FDataGrid([1,2,4,5,8], range(5))
+            >>> fd_2 = FDataGrid([3,4,7,9,2], range(5))
+            >>> fd.concatenate(fd_2)
+            FDataGrid(
+                array([[1, 2, 4, 5, 8],
+                   [3, 4, 7, 9, 2]])
+                ,sample_points=array([0, 1, 2, 3, 4])
+                ...
+
+        """
+        # Checks
+        self.__check_same_dimensions(other)
+        return FDataGrid(numpy.concatenate((self.data_matrix,
+                                            other.data_matrix), axis=0),
+                         self.sample_points,
+                         self.sample_range,
+                         self.dataset_label,
+                         self.axes_labels)
+
+    def _set_labels(self, ax):
+        """Sets labels if any.
+
+        Args:
+            ax (axes object): axes object that implements set_title,
+                set_xlable and set_ylabel or title, xlabel and ylable.
+            """
+        if self.dataset_label is not None:
+            try:
+                ax.set_title(self.dataset_label)
+            except AttributeError:
+                try:
+                    ax.title(self.dataset_label)
+                except AttributeError:
+                    pass
+
+        if self.axes_labels is not None:
+            try:
+                ax.set_xlabel(self.axes_labels[0])
+                ax.set_ylabel(self.axes_labels[1])
+            except AttributeError:
+                try:
+                    ax.xlabel(self.axes_labels[0])
+                    ax.ylabel(self.axes_labels[1])
+                except AttributeError:
+                    pass
+
+    def plot(self, ax=None, **kwargs):
         """Plots the FDatGrid object.
 
         Args:
+            ax (axis object, optional): axis over with the graphs are plotted.
+                Defaults to matplotlib current axis.
             **kwargs: keyword arguments to be passed to the
                 matplotlib.pyplot.plot function.
 
@@ -335,19 +405,21 @@ class FDataGrid:
             List of lines that were added to the plot.
 
         """
-        _plot = matplotlib.pyplot.plot(self.sample_points,
-                                       numpy.transpose(self.data_matrix),
-                                       **kwargs)
-        ax = matplotlib.pyplot.gca()
-        ax.set_title(self.names[0])
-        ax.set_xlabel(self.names[1])
-        ax.set_ylabel(self.names[2])
+        if ax is None:
+            ax = matplotlib.pyplot.gca()
+        _plot = ax.plot(self.sample_points,
+                        numpy.transpose(self.data_matrix),
+                        **kwargs)
+        self._set_labels(ax)
+
         return _plot
 
-    def scatter(self, **kwargs):
+    def scatter(self, ax=None, **kwargs):
         """Scatter plot of the FDatGrid object.
 
         Args:
+            ax (axis object, optional): axis over with the graphs are plotted.
+                Defaults to matplotlib current axis.
             **kwargs: keyword arguments to be passed to the
                 matplotlib.pyplot.scatter function.
 
@@ -355,14 +427,14 @@ class FDataGrid:
             :obj:`matplotlib.collections.PathCollection`
 
         """
-        for i in range(self.n_samples):
-            _plot = matplotlib.pyplot.scatter(self.sample_points,
-                                              self.data_matrix[i],
-                                              **kwargs)
-        ax = matplotlib.pyplot.gca()
-        ax.set_title(self.names[0])
-        ax.set_xlabel(self.names[1])
-        ax.set_ylabel(self.names[2])
+        if ax is None:
+            ax = matplotlib.pyplot.gca()
+        _plot = None
+        for i in range(self.nsamples):
+            _plot = ax.scatter(self.sample_points,
+                               self.data_matrix[i],
+                               **kwargs)
+        self._set_labels(ax)
         return _plot
 
     def __str__(self):
@@ -373,18 +445,21 @@ class FDataGrid:
 
     def __repr__(self):
         """ Return repr(self). """
-        return ("FDataGrid(\n    "
-                + self.data_matrix.__repr__()
-                + "\n    ,sample_points=" + self.sample_points.__repr__()
-                + "\n    ,sample_range=" + self.sample_range.__repr__()
-                + "\n    ,names=" + self.names.__repr__()
-                + ")")
+        return (f"FDataGrid("
+                + f"\n    {repr(self.data_matrix)}"
+                + f"\n    ,sample_points={repr(self.sample_points)}"
+                + f"\n    ,sample_range={repr(self.sample_range)}"
+                + f"\n    ,dataset_label={repr(self.dataset_label)}"
+                + f"\n    ,axes_labels={repr(self.axes_labels)}"
+                + f")")
 
     def __getitem__(self, key):
         """ Return self[key]. """
         if isinstance(key, tuple) and len(key) > 1:
             return FDataGrid(self.data_matrix[key],
                              self.sample_points[key[1:1 + self.ndim_domain]],
-                             self.sample_range, self.names)
+                             self.sample_range, self.dataset_label,
+                             self.axes_labels)
         return FDataGrid(self.data_matrix[key], self.sample_points,
-                         self.sample_range, self.names)
+                         self.sample_range, self.dataset_label,
+                         self.axes_labels)

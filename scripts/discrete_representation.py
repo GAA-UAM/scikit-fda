@@ -2,7 +2,6 @@ import os
 import numpy as np
 import matplotlib.pylab as plt
 
-import fda
 from fda import FDataGrid
 
 
@@ -30,14 +29,13 @@ if __name__ == '__main__':
 
     # Builds a FDataGrid object using the loaded information.
     fd = FDataGrid(data, sample_points,
-                   names=['Spectrometric curves', 'Wavelength (mm)',
-                          'Absorbances'])
+                   dataset_label='Spectrometric curves',
+                   axes_labels=['Wavelength (mm)', 'Absorbances'])
 
     fd = fd[:5]
     # Plots the first 5 samples in a scatter plot.
     plt.figure()
     fd.scatter(s=0.5)
-    plt.show()
 
     # Plots the first 5 samples in a line plot.
     plt.figure()

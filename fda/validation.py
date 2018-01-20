@@ -144,7 +144,7 @@ def minimise(fdatagrid, parameters,
             array([[ 2.5 ,  1.67,  0.67,  1.67,  2.5 ]])
             ,sample_points=array([-2., -1.,  0.,  1.,  2.])
             ,sample_range=(-2.0, 2.0)
-            ,names=['Data set', 'xlabel', 'ylabel'])
+            ,...)
 
         Other validation methods can be used such as cross-validation or
         general cross validation using other penalisation functions.
@@ -154,19 +154,19 @@ def minimise(fdatagrid, parameters,
         >>> numpy.array(res['scores']).round(2)
         array([ 4.2,  5.5])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
-        ...                penalisation_function=cv_aic)
+        ...                penalisation_function=aic)
         >>> numpy.array(res['scores']).round(2)
         array([  9.35,  10.71])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
-        ...                penalisation_function=cv_fpe)
+        ...                penalisation_function=fpe)
         >>> numpy.array(res['scores']).round(2)
         array([  9.8,  11. ])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
-        ...                penalisation_function=cv_shibata)
+        ...                penalisation_function=shibata)
         >>> numpy.array(res['scores']).round(2)
         array([ 7.56,  9.17])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
-        ...                penalisation_function=cv_rice)
+        ...                penalisation_function=rice)
         >>> numpy.array(res['scores']).round(2)
         array([ 21. ,  16.5])
 
@@ -190,7 +190,8 @@ def minimise(fdatagrid, parameters,
     fdatagrid_adjusted = fda.FDataGrid(numpy.dot(fdatagrid.data_matrix, s.T),
                                        fdatagrid.sample_points,
                                        fdatagrid.sample_range,
-                                       fdatagrid.names)
+                                       fdatagrid.dataset_label,
+                                       fdatagrid.axes_labels)
     return {'scores': scores,
             'best_score': numpy.min(scores),
             'best_parameter': h,
@@ -199,7 +200,7 @@ def minimise(fdatagrid, parameters,
             }
 
 
-def cv_aic(s_matrix):
+def aic(s_matrix):
     """ Akaike's information criterion for cross validation.
 
     .. math::
@@ -215,7 +216,7 @@ def cv_aic(s_matrix):
     return numpy.exp(2 * s_matrix.diagonal().mean())
 
 
-def cv_fpe(s_matrix):
+def fpe(s_matrix):
     """ Finite prediction error for cross validation.
 
     .. math::
@@ -232,7 +233,7 @@ def cv_fpe(s_matrix):
     return (1 + s_matrix.diagonal().mean())/(1 - s_matrix.diagonal().mean())
 
 
-def cv_shibata(s_matrix):
+def shibata(s_matrix):
     """ Shibata's model selector for cross validation.
 
     .. math::
@@ -248,7 +249,7 @@ def cv_shibata(s_matrix):
     return 1 + 2 * s_matrix.diagonal().mean()
 
 
-def cv_rice(s_matrix):
+def rice(s_matrix):
     """ Rice's bandwidth selector for cross validation.
 
     .. math::

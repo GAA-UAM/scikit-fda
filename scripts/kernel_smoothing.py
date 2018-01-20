@@ -25,8 +25,8 @@ if __name__ == '__main__':
                          delimiter=',',
                          skip_header=1)
     fd = fda.FDataGrid(data, list(range(data.shape[1])),
-                       names=['Phoneme learn', 'frequencies',
-                              'log-periodograms'])
+                       dataset_label='Phoneme learn',
+                       axes_labels=['frequencies', 'log-periodograms'])
 
     # Plots the first five samples of the data set.
     plt.figure(1)
@@ -80,9 +80,11 @@ if __name__ == '__main__':
 
     # Undersmoothing and oversmoothing
     fd_us = fda.FDataGrid(ks.nw(fd.sample_points, h=2) @ fd.data_matrix[10],
-                          fd.sample_points, fd.sample_range, fd.names)
+                          fd.sample_points, fd.sample_range, fd.dataset_label,
+                          fd.axes_labels)
     fd_os = fda.FDataGrid(ks.nw(fd.sample_points, h=15) @ fd.data_matrix[10],
-                          fd.sample_points, fd.sample_range, fd.names)
+                          fd.sample_points, fd.sample_range, fd.dataset_label,
+                          fd.axes_labels)
 
     # Not smoothed
     plt.figure(5)

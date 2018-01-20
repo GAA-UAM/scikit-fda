@@ -30,7 +30,7 @@ def mean(fdatagrid):
     """
     return FDataGrid([numpy.mean(fdatagrid.data_matrix, 0)],
                      fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.names)
+                     fdatagrid.dataset_label, fdatagrid.axes_labels)
 
 
 def var(fdatagrid):
@@ -42,12 +42,12 @@ def var(fdatagrid):
 
     Returns:
         FDataGrid: A FDataGrid object with just one sample representing the
-        mean of all the samples in the original FDataGrid object.
+        variance of all the samples in the original FDataGrid object.
 
     """
     return FDataGrid([numpy.var(fdatagrid.data_matrix, 0)],
                      fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.names)
+                     fdatagrid.dataset_label, fdatagrid.axes_labels)
 
 
 def gmean(fdatagrid):
@@ -64,7 +64,7 @@ def gmean(fdatagrid):
     """
     return FDataGrid([scipy.stats.mstats.gmean(fdatagrid.data_matrix, 0)],
                      fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.names)
+                     fdatagrid.dataset_label, fdatagrid.axes_labels)
 
 
 def cov(fdatagrid):
@@ -95,7 +95,7 @@ def sqrt(fdatagrid):
     """
     return FDataGrid(numpy.sqrt(fdatagrid.data_matrix),
                      fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.names)
+                     fdatagrid.dataset_label, fdatagrid.axes_labels)
 
 
 def absolute(fdatagrid):
@@ -112,7 +112,7 @@ def absolute(fdatagrid):
     """
     return FDataGrid(numpy.absolute(fdatagrid.data_matrix),
                      fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.names)
+                     fdatagrid.dataset_label, fdatagrid.axes_labels)
 
 
 def round(fdatagrid, decimals=0):
@@ -129,7 +129,7 @@ def round(fdatagrid, decimals=0):
     """
     return FDataGrid(numpy.around(fdatagrid.data_matrix, decimals),
                      fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.names)
+                     fdatagrid.dataset_label, fdatagrid.axes_labels)
 
 
 def exp(fdatagrid):
@@ -146,7 +146,7 @@ def exp(fdatagrid):
     """
     return FDataGrid(numpy.exp(fdatagrid.data_matrix),
                      fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.names)
+                     fdatagrid.dataset_label, fdatagrid.axes_labels)
 
 
 def log(fdatagrid):
@@ -162,7 +162,7 @@ def log(fdatagrid):
     """
     return FDataGrid(numpy.log(fdatagrid.data_matrix),
                      fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.names)
+                     fdatagrid.dataset_label, fdatagrid.axes_labels)
 
 
 def log10(fdatagrid):
@@ -179,7 +179,7 @@ def log10(fdatagrid):
     """
     return FDataGrid(numpy.log10(fdatagrid.data_matrix),
                      fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.names)
+                     fdatagrid.dataset_label, fdatagrid.axes_labels)
 
 
 def log2(fdatagrid):
@@ -196,7 +196,7 @@ def log2(fdatagrid):
     """
     return FDataGrid(numpy.log2(fdatagrid.data_matrix),
                      fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.names)
+                     fdatagrid.dataset_label, fdatagrid.axes_labels)
 
 
 def cumsum(fdatagrid):
@@ -212,7 +212,7 @@ def cumsum(fdatagrid):
     """
     return FDataGrid(numpy.cumsum(fdatagrid.data_matrix, axis=0),
                      fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.names)
+                     fdatagrid.dataset_label, fdatagrid.axes_labels)
 
 
 def inner_product(fdatagrid, fdatagrid2):
@@ -262,10 +262,10 @@ def inner_product(fdatagrid, fdatagrid2):
         raise ValueError("Sample points for both objects must be equal")
 
     # Creates an empty matrix with the desired size to store the results.
-    _matrix = numpy.empty([fdatagrid.n_samples, fdatagrid2.n_samples])
+    _matrix = numpy.empty([fdatagrid.nsamples, fdatagrid2.nsamples])
     # Iterates over the different samples of both objects.
-    for i in range(fdatagrid.n_samples):
-        for j in range(fdatagrid2.n_samples):
+    for i in range(fdatagrid.nsamples):
+        for j in range(fdatagrid2.nsamples):
             # Calculates the inner product using Simpson's rule.
             _matrix[i, j] = (scipy.integrate.simps(fdatagrid.data_matrix[i] *
                                                    fdatagrid2.data_matrix[j],
@@ -381,10 +381,10 @@ def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
                              fdatagrid2.sample_points):
         raise ValueError("Sample points for both objects must be equal")
         # Creates an empty matrix with the desired size to store the results.
-    _matrix = numpy.empty([fdatagrid.n_samples, fdatagrid2.n_samples])
+    _matrix = numpy.empty([fdatagrid.nsamples, fdatagrid2.nsamples])
     # Iterates over the different samples of both objects.
-    for i in range(fdatagrid.n_samples):
-        for j in range(fdatagrid2.n_samples):
+    for i in range(fdatagrid.nsamples):
+        for j in range(fdatagrid2.nsamples):
             _matrix[i, j] = norm(fdatagrid[i] - fdatagrid2[j], **kwargs)
     # Computes the metric between x and y as norm(x -y).
     return _matrix
@@ -412,7 +412,7 @@ def fpca(fdatagrid, n=2):
     # singular value decomposition
     u, s, v = numpy.linalg.svd(fdatagrid.data_matrix)
     principal_directions = v.T  # obtain the eigenvectors matrix
-    eigenvalues = (numpy.diag(s) ** 2) / (fdatagrid.n_samples - 1)
+    eigenvalues = (numpy.diag(s) ** 2) / (fdatagrid.nsamples - 1)
     scores = u @ s  # functional principal scores
 
     return scores, principal_directions, eigenvalues

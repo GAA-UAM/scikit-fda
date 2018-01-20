@@ -38,23 +38,21 @@ if __name__ == '__main__':
 
     # Builds a FDataGrid object using the loaded information.
     fd = FDataGrid(data, sample_points,
-                   names=['Spectrometric curves', 'Wavelength (mm)',
-                          'Absorbances'])
+                   dataset_label='Spectrometric curves',
+                   axes_labels=['Wavelength (mm)', 'Absorbances'])
 
     # Plots in red samples containing less than 20% of fat and in blue the
     # rest.
     plt.figure()
     fd[y[:, 0] < 20].plot(c='r', linewidth=0.5)
     fd[np.logical_not(y[:, 0] < 20)].plot(c='b', linewidth=0.5, alpha=0.7)
-    plt.show()
 
     # Plots the mean of each group.
     plt.figure()
     fda.mean(fd[y[:, 0] < 20]).plot(c='r', linewidth=0.5)
     fda.mean(fd[np.logical_not(y[:, 0] < 20)]).plot(c='b', linewidth=0.5,
                                                     alpha=0.7)
-    fd.names[0] = fd.names[0] + ' - means'
-    plt.show()
+    fd.dataset_label = fd.dataset_label + ' - means'
 
     # Plots the derivative of all samples and uses the same color code as
     # above.

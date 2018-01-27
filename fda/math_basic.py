@@ -16,21 +16,23 @@ __email__ = ""
 __status__ = "Development"
 
 
-def mean(fdatagrid):
-    """ Computes the mean of all the samples in a FDataGrid object.
+def mean(fdata):
+    """ Computes the mean of all the samples in a FData object.
+
+    Computes the mean of all the samples in a FDataGrid or FDataBasis object.
 
     Args:
-        fdatagrid (FDataGrid): Object containing all the samples whose mean
+        fdata(FDataGrid or FDataBasis): Object containing all the samples
+        whose mean
             is wanted.
 
     Returns:
-        FDataGrid: A FDataGrid object with just one sample representing the
-        mean of all the samples in the original FDataGrid object.
+        FDataGrid or FDataBasis: A FDataGrid or FDataBasis object with just
+        one sample representing the mean of all the samples in the original
+        object.
 
     """
-    return FDataGrid([numpy.mean(fdatagrid.data_matrix, 0)],
-                     fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.dataset_label, fdatagrid.axes_labels)
+    return fdata.mean()
 
 
 def var(fdatagrid):
@@ -79,7 +81,10 @@ def cov(fdatagrid):
         numpy.darray: Matrix of covariances.
 
     """
-    return numpy.cov(fdatagrid.data_matrix)
+    return FDataGrid(numpy.cov(fdatagrid.data_matrix),
+                     [fdatagrid.sample_points[0], fdatagrid.sample_points[0]],
+                     [fdatagrid.sample_range[0], fdatagrid.sample_range[0]],
+                     fdatagrid.dataset_label + ' - covariance')
 
 
 def sqrt(fdatagrid):
@@ -256,6 +261,10 @@ def inner_product(fdatagrid, fdatagrid2):
                [ 1.  ,  0.5 ]])
 
     """
+    if fdatagrid.ndim_domain != 1:
+        raise NotImplementedError("This method only works when the dimension "
+                                  "of the domain of the FDatagrid object is "
+                                  "one.")
     # Checks
     if not numpy.array_equal(fdatagrid.sample_points,
                              fdatagrid2.sample_points):
@@ -269,7 +278,8 @@ def inner_product(fdatagrid, fdatagrid2):
             # Calculates the inner product using Simpson's rule.
             _matrix[i, j] = (scipy.integrate.simps(fdatagrid.data_matrix[i] *
                                                    fdatagrid2.data_matrix[j],
-                                                   x=fdatagrid.sample_points))
+                                                   x=fdatagrid.sample_points[0]
+                                                   ))
     return _matrix
 
 

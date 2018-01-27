@@ -142,8 +142,8 @@ def minimise(fdatagrid, parameters,
         >>> res['fdatagrid'].round(2)
         FDataGrid(
             array([[ 2.5 ,  1.67,  0.67,  1.67,  2.5 ]])
-            ,sample_points=array([-2., -1.,  0.,  1.,  2.])
-            ,sample_range=(-2.0, 2.0)
+            ,sample_points=array([[-2., -1.,  0.,  1.,  2.]])
+            ,sample_range=array([[-2.,  2.]])
             ,...)
 
         Other validation methods can be used such as cross-validation or
@@ -171,22 +171,28 @@ def minimise(fdatagrid, parameters,
         array([ 21. ,  16.5])
 
     """
+    if fdatagrid.ndim_domain != 1:
+        raise NotImplementedError("This method only works when the dimension "
+                                  "of the domain of the FDatagrid object is "
+                                  "one.")
+    # Reduce one dimension the sample points.
+    sample_points = fdatagrid.sample_points[0]
     scores = []
     # Calculates the scores for each parameter.
     if penalisation_function is not None:
         for h in parameters:
-            s = smoothing_method(fdatagrid.sample_points, h, **kwargs)
+            s = smoothing_method(sample_points, h, **kwargs)
             scores.append(
                 cv_method(fdatagrid, s,
                           penalisation_function=penalisation_function))
     else:
         for h in parameters:
-            s = smoothing_method(fdatagrid.sample_points, h, **kwargs)
+            s = smoothing_method(sample_points, h, **kwargs)
             scores.append(
                 cv_method(fdatagrid, s))
     # gets the best parameter.
     h = parameters[int(numpy.argmin(scores))]
-    s = smoothing_method(fdatagrid.sample_points, h, **kwargs)
+    s = smoothing_method(sample_points, h, **kwargs)
     fdatagrid_adjusted = fda.FDataGrid(numpy.dot(fdatagrid.data_matrix, s.T),
                                        fdatagrid.sample_points,
                                        fdatagrid.sample_range,

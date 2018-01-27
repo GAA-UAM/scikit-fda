@@ -17,9 +17,9 @@ class TestFDataGrid(unittest.TestCase):
         numpy.testing.assert_array_equal(
             fd.data_matrix,
             numpy.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]]))
-        self.assertSequenceEqual(fd.sample_range, (0, 1))
+        numpy.testing.assert_array_equal(fd.sample_range, [(0, 1)])
         numpy.testing.assert_array_equal(
-            fd.sample_points, numpy.array([0., 0.25, 0.5, 0.75, 1.]))
+            fd.sample_points, numpy.array([[0., 0.25, 0.5, 0.75, 1.]]))
 
     def test_mean(self):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
@@ -27,10 +27,10 @@ class TestFDataGrid(unittest.TestCase):
         numpy.testing.assert_array_equal(
             mean.data_matrix[0],
             numpy.array([1.5, 2.5, 3.5, 4.5, 5.5]))
-        self.assertSequenceEqual(fd.sample_range, (0, 1))
+        numpy.testing.assert_array_equal(fd.sample_range, [(0, 1)])
         numpy.testing.assert_array_equal(
             fd.sample_points,
-            numpy.array([0., 0.25, 0.5, 0.75, 1.]))
+            numpy.array([[0., 0.25, 0.5, 0.75, 1.]]))
 
     def test_gmean(self):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
@@ -39,10 +39,10 @@ class TestFDataGrid(unittest.TestCase):
             mean.data_matrix[0],
             scipy.stats.mstats.gmean(
                 numpy.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])))
-        self.assertSequenceEqual(fd.sample_range, (0, 1))
+        numpy.testing.assert_array_equal(fd.sample_range, [(0, 1)])
         numpy.testing.assert_array_equal(
             fd.sample_points,
-            numpy.array([0., 0.25, 0.5, 0.75, 1.]))
+            numpy.array([[0., 0.25, 0.5, 0.75, 1.]]))
 
     def test_slice(self):
         t = 10
@@ -53,7 +53,7 @@ class TestFDataGrid(unittest.TestCase):
             numpy.array([[1]]))
         numpy.testing.assert_array_equal(
             fd.sample_points,
-            numpy.array([0]))
+            numpy.array([[0]]))
 
 
 if __name__ == '__main__':

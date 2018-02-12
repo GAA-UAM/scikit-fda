@@ -645,10 +645,12 @@ class FDataBasis:
 
         return res_matrix
 
-    def plot(self, derivative=0, **kwargs):
+    def plot(self, ax=None, derivative=0, **kwargs):
         """Plots the FDataBasis object or its derivatives.
 
         Args:
+            ax (axis object, optional): axis over with the graphs are plotted.
+                Defaults to matplotlib current axis.
             derivative (int, optional): Order of the derivative. Defaults to 0.
             **kwargs: keyword arguments to be passed to the
                 matplotlib.pyplot.plot function.
@@ -657,6 +659,8 @@ class FDataBasis:
             List of lines that were added to the plot.
 
         """
+        if ax is None:
+            ax = matplotlib.pyplot.gca()
         npoints = max(501, 10 * self.nbasis)
         # List of points where the basis are evaluated
         eval_points = numpy.linspace(self.domain_range[0],
@@ -665,7 +669,7 @@ class FDataBasis:
         # Basis evaluated in the previous list of points
         mat = self.evaluate(eval_points, derivative)
         # Plot
-        return matplotlib.pyplot.plot(eval_points, mat.T, **kwargs)
+        return ax.plot(eval_points, mat.T, **kwargs)
 
     def mean(self):
         """ Computes the mean of all the samples in a FDataBasis object.

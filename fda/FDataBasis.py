@@ -46,30 +46,35 @@ class Basis(ABC):
         super().__init__()
 
     @abstractmethod
-    def _compute_matrix(self, eval_points):
-        """Computes the basis at a list of values.
+    def _compute_matrix(self, eval_points, derivative=0):
+        """Computes the basis or its derivatives given a list of values.
 
         Args:
             eval_points (array_like): List of points where the basis is
                 evaluated.
+            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (:obj:`numpy.darray`): Matrix whose rows are the values of the each
-            basis at the values specified in eval_points.
+            basis function or its derivatives at the values specified in
+            eval_points.
 
         """
         pass
 
-    def evaluate(self, eval_points):
-        """Evaluates the basis at a list of values.
+    def evaluate(self, eval_points, derivative=0):
+        """Evaluates the basis function system or its derivatives at a list of
+        given values.
 
         Args:
             eval_points (array_like): List of points where the basis is
                 evaluated.
+            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
-            basis at the values specified in eval_points.
+            basis function or its derivatives at the values specified in
+            eval_points.
 
         """
         eval_points = numpy.asarray(eval_points)
@@ -77,15 +82,15 @@ class Basis(ABC):
             raise ValueError("The list of points where the function is "
                              "evaluated can not contain nan values.")
 
-        # TODO include evaluation at derivatives
-        return self._compute_matrix(eval_points)
+        return self._compute_matrix(eval_points, derivative)
 
-    def plot(self, ax=None, **kwargs):
-        """Plots the basis object.
+    def plot(self, ax=None, derivative=0, **kwargs):
+        """Plots the basis object or its derivatives.
 
         Args:
             ax (axis object, optional): axis over with the graphs are plotted.
                 Defaults to matplotlib current axis.
+            derivative (int, optional): Order of the derivative. Defaults to 0.
             **kwargs: keyword arguments to be [RS05]_passed to the
                 matplotlib.pyplot.plot function.
 
@@ -102,7 +107,7 @@ class Basis(ABC):
                                      self.domain_range[1],
                                      npoints)
         # Basis evaluated in the previous list of points
-        mat = self.evaluate(eval_points)
+        mat = self.evaluate(eval_points, derivative)
         # Plot
         return ax.plot(eval_points, mat.T, **kwargs)
 
@@ -138,9 +143,20 @@ class Monomial(Basis):
                [ 0.,  1.,  2.],
                [ 0.,  1.,  4.]])
 
+        And also evaluates its derivatives
+
+        >>> bs_mon.evaluate([0, 1, 2], derivative=1)
+        array([[ 0.,  0.,  0.],
+               [ 1.,  1.,  1.],
+               [ 0.,  2.,  4.]])
+        >>> bs_mon.evaluate([0, 1, 2], derivative=2)
+        array([[ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 2.,  2.,  2.]])
+
     """
-    def _compute_matrix(self, eval_points):
-        """Computes the basis at a list of values.
+    def _compute_matrix(self, eval_points, derivative=0):
+        """Computes the basis or its derivatives given a list of values.
 
         For each of the basis computes its value for each of the points in
         the list passed as argument to the method.
@@ -148,18 +164,28 @@ class Monomial(Basis):
         Args:
             eval_points (array_like): List of points where the basis is
                 evaluated.
+            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            basis at the values specified in eval_points.
+            (:obj:`numpy.darray`): Matrix whose rows are the values of the each
+            basis function or its derivatives at the values specified in
+            eval_points.
 
         """
         # Initialise empty matrix
-        mat = numpy.empty((self.nbasis, len(eval_points)))
+        mat = numpy.zeros((self.nbasis, len(eval_points)))
         
-        # For each basis computes its value for each evaluation point
-        for i in range(self.nbasis):
-            mat[i] = eval_points ** i
+        # For each basis computes its value for each evaluation
+        if derivative == 0:
+            for i in range(self.nbasis):
+                mat[i] = eval_points ** i
+        else:
+            for i in range(self.nbasis):
+                if derivative <= i:
+                    factor = i
+                    for j in range(2, derivative + 1):
+                        factor *= (i - j + 1)
+                    mat[i] = factor * eval_points ** (i - derivative)
 
         return mat
 
@@ -214,6 +240,13 @@ class BSpline(Basis):
                [ 0.  ,  0.5 ,  0.  ],
                [ 0.  ,  0.25,  1.  ]])
 
+        And evaluates first derivative
+
+        >>> bss.evaluate([0, 0.5, 1], derivative=1)
+        array([[-2., -1.,  0.],
+               [ 2.,  0., -2.],
+               [ 0.,  1.,  2.]])
+
     References:
         .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
             Analysis*. Springler. 50-51.
@@ -266,8 +299,8 @@ class BSpline(Basis):
         self.knots = knots
         super().__init__(domain_range, nbasis)
 
-    def _compute_matrix(self, eval_points):
-        """Computes the basis at a list of values.
+    def _compute_matrix(self, eval_points, derivative=0):
+        """Computes the basis or its derivatives given a list of values.
 
         It uses the scipy implementation of BSplines to compute the values
         for each element of the basis.
@@ -275,14 +308,24 @@ class BSpline(Basis):
         Args:
             eval_points (array_like): List of points where the basis is
                 evaluated.
+            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            basis at the values specified in eval_points.
+            (:obj:`numpy.darray`): Matrix whose rows are the values of the each
+            basis function or its derivatives at the values specified in
+            eval_points.
+
+        Implementation details: In order to allow a discontinuous behaviour at
+        the boundaries of the domain it is necessary to placing m knots at the
+        boundaries [RS05]_. This is automatically done so that the user only
+        has to specify a single knot at the boundaries.
+
+        References:
+            .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
+                Analysis*. Springler. 50-51.
 
         """
-        # Because of how bsplines are defined is necessary to duplicate the
-        # values at the ends of the knots as many times as the order.
+        # Places m knots at the boundaries
         knots = numpy.array([self.knots[0]] * (self.order - 1) + self.knots
                             + [self.knots[-1]] * (self.order - 1))
         # c is used the select which spline the function splev below computes
@@ -298,7 +341,8 @@ class BSpline(Basis):
             c[i] = 1
             # compute the spline
             mat[i] = scipy.interpolate.splev(eval_points, (knots, c,
-                                                           self.order - 1))
+                                                           self.order - 1),
+                                             der=derivative)
             c[i] = 0
 
         return mat
@@ -345,24 +389,39 @@ class Fourier(Basis):
                [ 1.41,  0.31, -1.28,  0.89],
                [ 0.  , -1.38, -0.61,  1.1 ]])
 
+        And evaluate second derivative
+
+        >>> fb.evaluate([0, numpy.pi / 4, numpy.pi / 2, numpy.pi],
+        ...             derivative = 2).round(2)
+        array([[  0.  ,   0.  ,   0.  ,   0.  ],
+               [-55.83, -12.32,  50.4 , -35.16],
+               [ -0.  ,  54.46,  24.02, -43.37]])
+
+
+
     """
     def __init__(self, domain_range=(0, 1), nbasis=3, period=1):
 
         self.period = period
         super().__init__(domain_range, nbasis)
 
-    def _compute_matrix(self, eval_points):
-        """Computes the basis at a list of values.
+    def _compute_matrix(self, eval_points, derivative=0):
+        """Computes the basis or its derivatives given a list of values.
 
         Args:
             eval_points (array_like): List of points where the basis is
                 evaluated.
+            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            basis at the values specified in eval_points.
+            (:obj:`numpy.darray`): Matrix whose rows are the values of the each
+            basis function or its derivatives at the values specified in
+            eval_points.
 
         """
+        if derivative < 0:
+            raise ValueError("derivative only takes non-negative values.")
+
         omega = 2 * numpy.pi / self.period
         omega_t = omega * eval_points
         nbasis = self.nbasis if self.nbasis % 2 != 0 else self.nbasis + 1
@@ -370,22 +429,46 @@ class Fourier(Basis):
         # Initialise empty matrix
         mat = numpy.empty((self.nbasis, len(eval_points)))
 
-        # First base function is a constant
-        # The division by numpy.sqrt(2) is so that it has the same norm as the
-        # sine and cosine: sqrt(period / 2)
-        mat[0] = numpy.ones(len(eval_points)) / numpy.sqrt(2)
-        if nbasis > 1:
-            # 2*pi*n*x / period
-            args = numpy.outer(range(1, nbasis // 2 + 1), omega_t)
-            index = range(2, nbasis, 2)
-            # even indexes are sine functions
-            mat[index] = numpy.sin(args)
-            index = range(1 , nbasis - 1, 2)
-            # odd indexes are cosine functions
-            mat[index] = numpy.cos(args)
+        if derivative == 0:
+            # First base function is a constant
+            # The division by numpy.sqrt(2) is so that it has the same norm as the
+            # sine and cosine: sqrt(period / 2)
+            mat[0] = numpy.ones(len(eval_points)) / numpy.sqrt(2)
+            if nbasis > 1:
+                # 2*pi*n*x / period
+                args = numpy.outer(range(1, nbasis // 2 + 1), omega_t)
+                index = range(2, nbasis, 2)
+                # even indexes are sine functions
+                mat[index] = numpy.sin(args)
+                index = range(1 , nbasis - 1, 2)
+                # odd indexes are cosine functions
+                mat[index] = numpy.cos(args)
+        # evaluates the derivatives
+        else:
+            # First base function is a constant, so its derivative is 0.
+            mat[0] = numpy.zeros(len(eval_points))
+            if nbasis > 1:
+                # (2*pi*n / period) ^ n_derivative
+                factor = numpy.outer(
+                    (-1) ** (derivative // 2)
+                    * (numpy.array(range(1, nbasis // 2 + 1)) * omega)
+                    ** derivative,
+                    numpy.ones(len(eval_points)))
+                # 2*pi*n*x / period
+                args = numpy.outer(range(1, nbasis // 2 + 1), omega_t)
+                # even indexes
+                index_e = range(2, nbasis, 2)
+                # odd indexes
+                index_o = range(1, nbasis - 1, 2)
+                if derivative % 2 == 0:
+                    mat[index_e] = factor * numpy.sin(args)
+                    mat[index_o] = factor * numpy.cos(args)
+                else:
+                    mat[index_e] = factor * numpy.cos(args)
+                    mat[index_o] = -factor * numpy.sin(args)
 
+        # normalise
         mat = mat / numpy.sqrt(self.period / 2)
-
         return mat
 
     def __repr__(self):
@@ -538,12 +621,13 @@ class FDataBasis:
         """Definition range"""
         return self.basis.domain_range
 
-    def evaluate(self, eval_points):
-        """Evaluates the functions in the object at a list of values.
+    def evaluate(self, eval_points, derivative=0):
+        """Evaluates the object or its derivatives at a list of values.
 
         Args:
             eval_points (array_like): List of points where the functions are
                 evaluated.
+            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
@@ -551,7 +635,7 @@ class FDataBasis:
 
         """
         # each column is the values of one element of the basis
-        basis_values = self.basis.evaluate(eval_points).T
+        basis_values = self.basis.evaluate(eval_points, derivative).T
 
         res_matrix = numpy.empty((self.nsamples, len(eval_points)))
 
@@ -561,10 +645,11 @@ class FDataBasis:
 
         return res_matrix
 
-    def plot(self, **kwargs):
-        """Plots the FDataBasis object.
+    def plot(self, derivative=0, **kwargs):
+        """Plots the FDataBasis object or its derivatives.
 
         Args:
+            derivative (int, optional): Order of the derivative. Defaults to 0.
             **kwargs: keyword arguments to be passed to the
                 matplotlib.pyplot.plot function.
 
@@ -578,7 +663,7 @@ class FDataBasis:
                                      self.domain_range[1],
                                      npoints)
         # Basis evaluated in the previous list of points
-        mat = self.evaluate(eval_points)
+        mat = self.evaluate(eval_points, derivative)
         # Plot
         return matplotlib.pyplot.plot(eval_points, mat.T, **kwargs)
 

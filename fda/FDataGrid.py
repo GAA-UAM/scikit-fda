@@ -15,6 +15,30 @@ __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
 
+def _list_of_arrays(original_array):
+    """Convert to a list of arrays.
+
+    If the original list is one-dimensional (e.g. [1, 2, 3]), return list to
+    array (in this case [array([1, 2, 3])]).
+
+    If the original list is two-dimensional (e.g. [[1, 2, 3], [4, 5]]), return
+    a list containing other one-dimensional arrays (in this case
+    [array([1, 2, 3]), array([4, 5, 6])]).
+
+    In any other case the behaviour is unespecified.
+
+    """
+    new_array = numpy.array([numpy.asarray(i) for i in
+                             numpy.atleast_1d(original_array)])
+
+    # Special case: Only one array, expand dimension
+    if len(new_array.shape) == 1 and not any(isinstance(s, numpy.ndarray)
+                                             for s in new_array):
+        new_array = numpy.atleast_2d(new_array)
+
+    return list(new_array)
+
+
 class FDataGrid:
     """Represents discretised functional data.
 
@@ -45,16 +69,16 @@ class FDataGrid:
         FDataGrid(
             array([[1, 2],
                    [2, 3]])
-            ,sample_points=array([[2, 4]])
+            ,sample_points=[array([2, 4])]
             ...)
 
-        The number of columns of data_matrix have to be the length of 
+        The number of columns of data_matrix have to be the length of
         sample_points.
 
         >>> FDataGrid(numpy.array([1,2,4,5,8]), range(6))
         Traceback (most recent call last):
             ....
-        ValueError: Incorrect dimension in data_matrix and sample_points.
+        ValueError: Incorrect dimension in data_matrix and sample_points...
 
 
 
@@ -88,8 +112,8 @@ class FDataGrid:
             data_matrix (array_like): a matrix where each row contains the
                 values of a functional datum evaluated at the
                 points of discretisation.
-            sample_points (array_like, optional): an array containing the 
-            points of discretisation where values have been recorded or a list 
+            sample_points (array_like, optional): an array containing the
+            points of discretisation where values have been recorded or a list
             of lists with each of the list containing the points of
                 dicretisation for each axis.
             sample_range (tuple or list of tuples, optional): contains the
@@ -106,21 +130,26 @@ class FDataGrid:
         self.data_matrix = numpy.atleast_2d(data_matrix)
 
         if sample_points is None:
-            self.sample_points = numpy.array(
+            self.sample_points = _list_of_arrays(
                 [numpy.linspace(0, 1, self.data_matrix.shape[i]) for i in
                  range(1, self.data_matrix.ndim)])
 
         else:
             # Check that the dimension of the data matches the sample_points
             # list
-            self.sample_points = numpy.atleast_2d([numpy.asarray(i) for i in
-                                                   numpy.atleast_1d(
-                                                       sample_points)])
+
+            self.sample_points = _list_of_arrays(sample_points)
+
+            data_shape = self.data_matrix.shape[1: 1 + self.ndim_domain]
+            sample_points_shape = [len(i) for i in self.sample_points]
+
             if not numpy.array_equal(
-                    self.data_matrix.shape[1: 1 + self.ndim_domain],
-                    [len(i) for i in self.sample_points]):
-                raise ValueError("Incorrect dimension in data_matrix and "
-                                 f"sample_points.")
+                    data_shape,
+                    sample_points_shape):
+                raise ValueError(f"Incorrect dimension in data_matrix and "
+                                 f"sample_points. "
+                                 f"Data has shape {data_shape} and sample "
+                                 f"points have shape {sample_points_shape}")
 
         if sample_range is None:
                 self.sample_range = numpy.array(
@@ -136,9 +165,9 @@ class FDataGrid:
                     or self.sample_range.shape[0] != self.ndim_domain):
                 raise ValueError("Incorrect shape of sample_range.")
             for i in range(self.ndim_domain):
-                if (self.sample_range[i, 0] > self.sample_points[i, 0]
-                        or self.sample_range[i, -1] < self.sample_points[i,
-                                                                         -1]):
+                if (self.sample_range[i, 0] > self.sample_points[i][0]
+                        or self.sample_range[i, -1] < self.sample_points[i]
+                        [-1]):
                     raise ValueError("Sample points must be within the sample "
                                      "range.")
 
@@ -157,12 +186,12 @@ class FDataGrid:
 
         Returns:
             :obj:FDataGrid: Returns a FDataGrid object where all elements
-            in its data_matrix and sample_points are rounded .The real and
+            in its data_matrix are rounded .The real and
             imaginary parts of complex numbers are rounded separately.
 
         """
         return FDataGrid(self.data_matrix.round(decimals),
-                         self.sample_points.round(decimals),
+                         self.sample_points,
                          self.sample_range, self.dataset_label,
                          self.axes_labels)
 
@@ -173,7 +202,7 @@ class FDataGrid:
         Returns:
             int: Number of dimensions of the domain.
         """
-        return self.sample_points.shape[0]
+        return len(self.sample_points)
 
     @property
     def ndim_image(self):
@@ -205,7 +234,7 @@ class FDataGrid:
         """ Number of rows of the data_matrix. Also the number of samples.
 
         Returns:
-            int: Number of samples of the FDataGrid object. Also the number of 
+            int: Number of samples of the FDataGrid object. Also the number of
                 rows of the data_matrix.
 
         """
@@ -266,7 +295,7 @@ class FDataGrid:
             >>> fdata.derivative()
             FDataGrid(
                 array([[ 1. ,  1.5,  1.5,  2. ,  3. ]])
-                ,sample_points=array([[0, 1, 2, 3, 4]])
+                ,sample_points=[array([0, 1, 2, 3, 4])]
                 ,sample_range=array([[0, 4]])
                 ,dataset_label='Data set - 1 derivative'
                 ,...)
@@ -277,7 +306,7 @@ class FDataGrid:
             >>> fdata.derivative(2)
             FDataGrid(
                 array([[ 0.5 ,  0.25,  0.25,  0.75,  1.  ]])
-                ,sample_points=array([[0, 1, 2, 3, 4]])
+                ,sample_points=[array([0, 1, 2, 3, 4])]
                 ,sample_range=array([[0, 4]])
                 ,dataset_label='Data set - 2 derivative'
                 ,...)
@@ -324,7 +353,7 @@ class FDataGrid:
                 "Sample points for both objects must be equal")
 
     def mean(self):
-        return FDataGrid([self.data_matrix.mean(axis=0)],
+        return FDataGrid(self.data_matrix.mean(axis=0, keepdims=True),
                          self.sample_points, self.sample_range,
                          self.dataset_label, self.axes_labels)
 
@@ -400,7 +429,7 @@ class FDataGrid:
             FDataGrid(
                 array([[1, 2, 4, 5, 8],
                        [3, 4, 7, 9, 2]])
-                ,sample_points=array([[0, 1, 2, 3, 4]])
+                ,sample_points=[array([0, 1, 2, 3, 4])]
                 ...
 
         """
@@ -418,7 +447,7 @@ class FDataGrid:
 
         Args:
             ax (axes object): axes object that implements set_title,
-                set_xlable and set_ylabel or title, xlabel and ylable.
+                set_xlable and set_ylabel or title, xlabel and ylabel.
             """
         if self.dataset_label is not None:
             try:
@@ -456,6 +485,9 @@ class FDataGrid:
         if self.ndim_domain != 1:
             raise NotImplementedError("Plot only supported for functional "
                                       "data with a domain dimension of 1.")
+        if self.ndim_image != 1:
+            raise NotImplementedError("Plot only supported for functional "
+                                      "data with a image dimension of 1.")
         if ax is None:
             ax = matplotlib.pyplot.gca()
         _plot = ax.plot(self.sample_points[0],
@@ -481,6 +513,10 @@ class FDataGrid:
         if self.ndim_domain != 1:
             raise NotImplementedError("Scatter only supported for functional "
                                       "data with a domain dimension of 1.")
+
+        if self.ndim_image != 1:
+            raise NotImplementedError("Scatter only supported for functional "
+                                      "data with a image dimension of 1.")
         if ax is None:
             ax = matplotlib.pyplot.gca()
         _plot = None
@@ -509,11 +545,18 @@ class FDataGrid:
 
     def __getitem__(self, key):
         """ Return self[key]. """
-        if isinstance(key, tuple) and len(key) > 1:
+        if isinstance(key, tuple):
+            # If there are not values for every dimension, the remaining ones
+            # are kept
+            key += tuple(slice(None) for i in
+                         range(self.ndim_domain + 1 - len(key)))
+
+            sample_points = [self.sample_points[i][subkey]
+                             for i, subkey in enumerate(
+                                 key[1:1 + self.ndim_domain])]
+
             return FDataGrid(self.data_matrix[key],
-                             [self.sample_points[i, subkey]
-                              for i, subkey in enumerate(
-                                 key[1:1 + self.ndim_domain])],
+                             sample_points,
                              self.sample_range, self.dataset_label,
                              self.axes_labels)
         return FDataGrid(self.data_matrix[key], self.sample_points,

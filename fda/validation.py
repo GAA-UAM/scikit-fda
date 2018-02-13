@@ -3,8 +3,8 @@
 """
 import numpy
 
-import fda
 from fda import kernel_smoothers
+import fda
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -142,7 +142,7 @@ def minimise(fdatagrid, parameters,
         >>> res['fdatagrid'].round(2)
         FDataGrid(
             array([[ 2.5 ,  1.67,  0.67,  1.67,  2.5 ]])
-            ,sample_points=array([[-2., -1.,  0.,  1.,  2.]])
+            ,sample_points=[array([-2., -1.,  0.,  1.,  2.])]
             ,sample_range=array([[-2.,  2.]])
             ,...)
 
@@ -236,7 +236,7 @@ def fpe(s_matrix):
     Returns:
          float: Penalisation given by the finite prediction error.
     """
-    return (1 + s_matrix.diagonal().mean())/(1 - s_matrix.diagonal().mean())
+    return (1 + s_matrix.diagonal().mean()) / (1 - s_matrix.diagonal().mean())
 
 
 def shibata(s_matrix):

@@ -2,7 +2,7 @@
 in this package.
 
 """
-from fda.FDataGrid import FDataGrid
+from fda.grid import FDataGrid
 import numpy
 import scipy.stats.mstats
 import scipy.integrate
@@ -75,7 +75,7 @@ def cov(fdatagrid):
 
     Args:
         fdatagrid (FDataGrid): Object containing different samples of a
-        functional variable.
+            functional variable.
 
     Returns:
         numpy.darray: Matrix of covariances.
@@ -132,9 +132,7 @@ def round(fdatagrid, decimals=0):
         FDataGrid: Object whose elements are rounded.
 
     """
-    return FDataGrid(numpy.around(fdatagrid.data_matrix, decimals),
-                     fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.dataset_label, fdatagrid.axes_labels)
+    return fdatagrid.round(decimals)
 
 
 def exp(fdatagrid):
@@ -348,13 +346,13 @@ def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
     Args:
         fdatagrid (FDataGrid): First FDataGrid object.
         fdatagrid2 (FDataGrid): Second FDataGrid object.
-        norm (Function, optional): Norm function used in the definition of
-            the distance.
-        **kwargs (dict, optional): parameters dictionary to be passed to the
-            norm function.
+        norm (:obj:`Function`, optional): Norm function used in the definition
+            of the distance.
+        **kwargs (:obj:`dict`, optional): parameters dictionary to be passed
+            to the norm function.
 
     Returns:
-        numpy.darray: Matrix with as many rows as samples in the first
+        :obj:`numpy.darray`: Matrix with as many rows as samples in the first
         object and as many columns as samples in the second one. Each
         element (i, j) of the matrix is the distance between the ith sample
         of the first object and the jth sample of the second one.

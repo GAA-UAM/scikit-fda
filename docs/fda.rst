@@ -4,14 +4,21 @@ fda package
 Submodules
 ----------
 
-fda\.FDataGrid module
----------------------
+fda\.basis module
+-----------------
 
-.. automodule:: fda.FDataGrid
+.. automodule:: fda.basis
     :members:
     :undoc-members:
     :show-inheritance:
-    :noindex:
+
+fda\.grid module
+----------------
+
+.. automodule:: fda.grid
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 fda\.kernel\_smoothers module
 -----------------------------

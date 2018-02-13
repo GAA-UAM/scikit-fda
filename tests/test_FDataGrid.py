@@ -1,5 +1,5 @@
 import unittest
-from fda.FDataGrid import FDataGrid
+from fda.grid import FDataGrid
 import numpy
 import os
 from fda import math_basic

@@ -21,19 +21,20 @@ __email__ = "miguel.carbajo@estudiante.uam.es"
 
 
 def nw(argvals, h=None, kernel=kernels.normal, w=None, cv=False):
-    """Nadaraya-Watson smoothing method.
+    r"""Nadaraya-Watson smoothing method.
 
-        Provides an smoothing matrix :math:`\\hat{H}` for the discretisation
+        Provides an smoothing matrix :math:`\hat{H}` for the discretisation
         points in argvals by the Nadaraya-Watson estimator. The smoothed
-        values :math:`\\hat{Y}` can be calculated as :math:`\\hat{
-        Y} = \\hat{H}Y` where :math:`Y` is the vector of observations at the
+        values :math:`\hat{Y}` can be calculated as :math:`\hat{
+        Y} = \hat{H}Y` where :math:`Y` is the vector of observations at the
         points of discretisation :math:`(x_1, x_2, ..., x_n)`.
 
         .. math::
-            \\hat{H}_{i,j} = \\frac{K(\\frac{x_i-x_j}{h})}{\\sum_{k=1}^{n}K(
-            \\frac{x_1-x_k}{h})}
+            \hat{H}_{i,j} = \frac{K\left(\frac{x_i-x_j}{h}\right)}{\sum_{k=1}^{
+            n}K\left(
+            \frac{x_1-x_k}{h}\right)}
 
-        where :math:`K(\\cdot)` is a kernel function and :math:`h` the kernel
+        where :math:`K(\cdot)` is a kernel function and :math:`h` the kernel
         window width.
 
         Args:
@@ -60,7 +61,7 @@ def nw(argvals, h=None, kernel=kernels.normal, w=None, cv=False):
                    [ 0.006,  0.022,  0.163,  0.305,  0.503]])
 
         Returns:
-            ndarray: Smoothing matrix :math:`\\hat{H}`.
+            ndarray: Smoothing matrix :math:`\hat{H}`.
 
         """
     delta_x = numpy.abs(numpy.subtract.outer(argvals, argvals))
@@ -79,24 +80,25 @@ def nw(argvals, h=None, kernel=kernels.normal, w=None, cv=False):
 
 def local_linear_regression(argvals, h, kernel=kernels.normal, w=None,
                             cv=False):
-    """Local linear regression smoothing method.
+    r"""Local linear regression smoothing method.
 
-    Provides an smoothing matrix :math:`\\hat{H}` for the discretisation
+    Provides an smoothing matrix :math:`\hat{H}` for the discretisation
     points in argvals by the local linear regression estimator. The smoothed
-    values :math:`\\hat{Y}` can be calculated as :math:`\\hat{
-    Y} = \\hat{H}Y` where :math:`Y` is the vector of observations at the points
+    values :math:`\hat{Y}` can be calculated as :math:`\hat{
+    Y} = \hat{H}Y` where :math:`Y` is the vector of observations at the points
     of discretisation :math:`(x_1, x_2, ..., x_n)`.
 
     .. math::
-        \\hat{H}_{i,j} = \\frac{b_i(x_j)}{\\sum_{k=1}^{n}b_k(x_j)}
+        \hat{H}_{i,j} = \frac{b_i(x_j)}{\sum_{k=1}^{n}b_k(x_j)}
 
     .. math::
-        b_i(x) = K(\\frac{x_i - x}{h}) S_{n,2}(x) - (x_i - x)S_{n,1}(x)
+        b_i(x) = K\left(\frac{x_i - x}{h}\right) S_{n,2}(x) - (x_i - x)S_{n,
+        1}(x)
 
     .. math::
-        S_{n,k} = \\sum_{i=1}^{n}K(\\frac{x_i-x}{h})(x_i-x)^k
+        S_{n,k} = \sum_{i=1}^{n}K\left(\frac{x_i-x}{h}\right)(x_i-x)^k
 
-    where :math:`K(\\cdot)` is a kernel function and :math:`h` the kernel
+    where :math:`K(\cdot)` is a kernel function and :math:`h` the kernel
     window width.
 
     Args:
@@ -124,7 +126,7 @@ def local_linear_regression(argvals, h, kernel=kernels.normal, w=None,
 
 
     Returns:
-        ndarray: Smoothing matrix :math:`\\hat{H}`.
+        ndarray: Smoothing matrix :math:`\hat{H}`.
 
     """
     delta_x = numpy.abs(numpy.subtract.outer(argvals, argvals))  # x_i - x_j

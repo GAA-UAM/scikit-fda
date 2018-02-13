@@ -364,15 +364,14 @@ class Fourier(Basis):
         \phi_0(t) = \frac{1}{\sqrt{2}}
 
     .. math::
-        \phi_{2n -1}(t) = sin(\frac{2 \pi n}{T} t)
+        \phi_{2n -1}(t) = sin\left(\frac{2 \pi n}{T} t\right)
 
     .. math::
-        \phi_{2n}(t) = cos(\frac{2 \pi n}{T} t)
+        \phi_{2n}(t) = cos\left(\frac{2 \pi n}{T} t\right)
 
 
     Actually this basis functions are not orthogonal but not orthonormal. To
-    achive this they are divided by its norm: :math:`\sqrt\left(\frac{T}{2}
-    \right)`.
+    achive this they are divided by its norm: :math:`\sqrt{\frac{T}{2}}`.
 
     Attributes:
         domain_range (tuple): A tuple of length 2 containing the initial and

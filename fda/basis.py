@@ -10,6 +10,8 @@ import matplotlib.pyplot
 import scipy.interpolate
 import scipy.linalg
 
+from . import grid
+
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
@@ -427,11 +429,10 @@ class Fourier(Basis):
 
         # Initialise empty matrix
         mat = numpy.empty((self.nbasis, len(eval_points)))
-
         if derivative == 0:
             # First base function is a constant
-            # The division by numpy.sqrt(2) is so that it has the same norm as the
-            # sine and cosine: sqrt(period / 2)
+            # The division by numpy.sqrt(2) is so that it has the same norm as
+            # the sine and cosine: sqrt(period / 2)
             mat[0] = numpy.ones(len(eval_points)) / numpy.sqrt(2)
             if nbasis > 1:
                 # 2*pi*n*x / period
@@ -686,6 +687,64 @@ class FDataBasis:
 
         """
         return FDataBasis(self.basis, numpy.mean(self.coefficients, axis=0))
+
+    def gmean(self, eval_points=None):
+        """Computes the geometric mean of the functional data object.
+
+        A numerical approach its used. The object its transformed into its
+        discrete representation and then the geometric mean is computed and
+        then the object is taken back to the basis representation.
+
+        Args:
+            eval_points (array_like, optional): Set of points where the
+                functions are evaluated to obtain the discrete
+                representation of the object. If none are passed it calls
+                numpy.linspace with bounds equal to the ones defined in
+                self.domain_range and the number of points the maximum
+                between 501 and 10 times the number of basis.
+
+        Returns:
+            FDataBasis: Geometric mean of the original object.
+        """
+        return self.to_grid(eval_points).gmean().to_basis(self.basis)
+
+
+    def to_grid(self, eval_points=None):
+        """Returns the discrete representation of the object.
+
+        Args:
+            eval_points (array_like, optional): Set of points where the
+                functions are evaluated. If none are passed it calls
+                numpy.linspace with bounds equal to the ones defined in
+                self.domain_range and the number of points the maximum
+                between 501 and 10 times the number of basis.
+
+        Returns:
+              FDataGrid: Discrete representation of the functional data
+              object.
+
+        Examples:
+            >>> fd = FDataBasis(coefficients=[[1, 1, 1], [1, 0, 1]],
+            ...                 basis=Monomial((0,5), nbasis=3))
+            >>> fd.to_grid([0, 1, 2])
+            FDataGrid(
+                array([[ 1.,  3.,  7.],
+                       [ 1.,  2.,  5.]])
+                ,sample_points=[array([0, 1, 2])]
+                ,sample_range=array([[0, 5]])
+                ,dataset_label='Data set'
+                ,axes_labels=None)
+
+        """
+        if eval_points is None:
+            npoints = max(501, 10 * self.nbasis)
+            numpy.linspace(self.domain_range[0],
+                           self.domain_range[1],
+                           npoints)
+
+        return grid.FDataGrid(self.evaluate(eval_points),
+                              sample_points=eval_points,
+                              sample_range=self.domain_range)
 
     def __repr__(self):
         return (f"FDataBasis(basis={self.basis}, coefficients="

@@ -64,9 +64,7 @@ def gmean(fdatagrid):
         geometric mean of all the samples in the original FDataGrid object.
 
     """
-    return FDataGrid([scipy.stats.mstats.gmean(fdatagrid.data_matrix, 0)],
-                     fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.dataset_label, fdatagrid.axes_labels)
+    return fdatagrid.gmean()
 
 
 def cov(fdatagrid):

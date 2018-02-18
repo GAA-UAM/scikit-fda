@@ -9,6 +9,9 @@ import numbers
 
 import matplotlib.pyplot
 import numpy
+import scipy
+
+from . import basis as fdbasis
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -354,6 +357,19 @@ class FDataGrid:
                          self.sample_points, self.sample_range,
                          self.dataset_label, self.axes_labels)
 
+    def gmean(self):
+        """ Computes the geometric mean of all samples in the FDataGrid object.
+
+            Returns:
+                FDataGrid: A FDataGrid object with just one sample representing
+                the geometric mean of all the samples in the original
+                FDataGrid object.
+
+            """
+        return FDataGrid([scipy.stats.mstats.gmean(self.data_matrix, 0)],
+                         self.sample_points, self.sample_range,
+                         self.dataset_label, self.axes_labels)
+
     def __add__(self, other):
         if isinstance(other, (numpy.ndarray, numbers.Number)):
             data_matrix = other
@@ -523,6 +539,42 @@ class FDataGrid:
                                **kwargs)
         self._set_labels(ax)
         return _plot
+
+    def to_basis(self, basis, **kwargs):
+        """Returns the basis representation of the object.
+
+        Args:
+            basis(Basis): basis object in which the functional data are
+                going to be represented.
+            **kwargs: keyword arguments to be passed to
+                FDataBasis.from_data().
+
+        Returns:
+            FDataBasis: Basis representation of the funtional data
+            object.
+
+        Examples:
+            >>> import numpy as np
+            >>> import fda
+            >>> t = np.linspace(0, 1, 5)
+            >>> x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
+            >>> x
+            array([ 1.,  1., -1., -1.,  1.])
+
+            >>> fd = FDataGrid(x, t)
+            >>> basis = fda.basis.Fourier((0, 1), nbasis=3)
+            >>> fd_b = fd.to_basis(basis)
+            >>> fd_b.coefficients.round(2)
+            array([[ 0.  ,  0.71,  0.71]])
+
+        """
+        if self.ndim_domain > 1:
+            raise NotImplementedError("Only support 1 dimension on the "
+                                      "domain.")
+        return fdbasis.FDataBasis.from_data(self.data_matrix,
+                                            self.sample_points[0],
+                                            basis,
+                                            **kwargs)
 
     def __str__(self):
         """ Return str(self). """

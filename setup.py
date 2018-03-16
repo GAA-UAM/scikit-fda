@@ -33,6 +33,6 @@ setup(name='fda',
         'Topic :: Software Development :: Libraries :: Python Modules',
       ],
       setup_requires=pytest_runner,
-      tests_require=['pytest'],
+      tests_require=['pytest','numpy>=1.14'],
       test_suite='tests',
       zip_safe=False)

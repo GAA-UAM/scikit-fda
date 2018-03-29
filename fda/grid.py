@@ -292,7 +292,7 @@ class FDataGrid:
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative()
             FDataGrid(
-                array([[ 1. ,  1.5,  1.5,  2. ,  3. ]])
+                array([[1. , 1.5, 1.5, 2. , 3. ]])
                 ,sample_points=[array([0, 1, 2, 3, 4])]
                 ,sample_range=array([[0, 4]])
                 ,dataset_label='Data set - 1 derivative'
@@ -303,7 +303,7 @@ class FDataGrid:
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative(2)
             FDataGrid(
-                array([[ 0.5 ,  0.25,  0.25,  0.75,  1.  ]])
+                array([[0.5 , 0.25, 0.25, 0.75, 1.  ]])
                 ,sample_points=[array([0, 1, 2, 3, 4])]
                 ,sample_range=array([[0, 4]])
                 ,dataset_label='Data set - 2 derivative'
@@ -563,7 +563,7 @@ class FDataGrid:
             >>> basis = fda.basis.Fourier((0, 1), nbasis=3)
             >>> fd_b = fd.to_basis(basis)
             >>> fd_b.coefficients.round(2)
-            array([[ 0.  ,  0.71,  0.71]])
+            array([[0.  , 0.71, 0.71]])
 
         """
         if self.ndim_domain > 1:

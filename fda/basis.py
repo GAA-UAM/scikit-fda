@@ -169,20 +169,20 @@ class Monomial(Basis):
         values.
 
         >>> bs_mon.evaluate([0, 1, 2])
-        array([[ 1.,  1.,  1.],
-               [ 0.,  1.,  2.],
-               [ 0.,  1.,  4.]])
+        array([[1., 1., 1.],
+               [0., 1., 2.],
+               [0., 1., 4.]])
 
         And also evaluates its derivatives
 
         >>> bs_mon.evaluate([0, 1, 2], derivative=1)
-        array([[ 0.,  0.,  0.],
-               [ 1.,  1.,  1.],
-               [ 0.,  2.,  4.]])
+        array([[0., 0., 0.],
+               [1., 1., 1.],
+               [0., 2., 4.]])
         >>> bs_mon.evaluate([0, 1, 2], derivative=2)
-        array([[ 0.,  0.,  0.],
-               [ 0.,  0.,  0.],
-               [ 2.,  2.,  2.]])
+        array([[0., 0., 0.],
+               [0., 0., 0.],
+               [2., 2., 2.]])
 
     """
     def _compute_matrix(self, eval_points, derivative=0):
@@ -266,9 +266,9 @@ class BSpline(Basis):
 
         >>> bss = BSpline(nbasis=3, order=3)
         >>> bss.evaluate([0, 0.5, 1])
-        array([[ 1.  ,  0.25,  0.  ],
-               [ 0.  ,  0.5 ,  0.  ],
-               [ 0.  ,  0.25,  1.  ]])
+        array([[1.  , 0.25, 0.  ],
+               [0.  , 0.5 , 0.  ],
+               [0.  , 0.25, 1.  ]])
 
         And evaluates first derivative
 
@@ -526,7 +526,7 @@ class FDataBasis:
         >>> basis = Monomial(nbasis=4)
         >>> coefficients = [1, 1, 3, .5]
         >>> FDataBasis(basis, coefficients)
-        FDataBasis(basis=Monomial(...), coefficients=[[ 1.   1.   3.   0.5]])
+        FDataBasis(basis=Monomial(...), coefficients=[[1.  1.  3.  0.5]])
 
     """
 
@@ -581,7 +581,7 @@ class FDataBasis:
             >>> basis = Fourier((0, 1), nbasis=3)
             >>> fd = FDataBasis.from_data(x, t, basis)
             >>> fd.coefficients.round(2)
-            array([[ 0.  ,  0.71,  0.71]])
+            array([[0.  , 0.71, 0.71]])
 
         """
 
@@ -734,7 +734,7 @@ class FDataBasis:
             >>> basis = Monomial(nbasis=4)
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
             >>> FDataBasis(basis, coefficients).mean()
-            FDataBasis(basis=..., coefficients=[[ 1.   1.   3.   0.5]])
+            FDataBasis(basis=..., coefficients=[[1.  1.  3.  0.5]])
 
         """
         return FDataBasis(self.basis, numpy.mean(self.coefficients, axis=0))
@@ -779,8 +779,8 @@ class FDataBasis:
             ...                 basis=Monomial((0,5), nbasis=3))
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
-                array([[ 1.,  3.,  7.],
-                       [ 1.,  2.,  5.]])
+                array([[1., 3., 7.],
+                       [1., 2., 5.]])
                 ,sample_points=[array([0, 1, 2])]
                 ,sample_range=array([[0, 5]])
                 ,dataset_label='Data set'

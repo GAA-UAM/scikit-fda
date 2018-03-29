@@ -563,7 +563,7 @@ class FDataGrid:
             >>> basis = fda.basis.Fourier((0, 1), nbasis=3)
             >>> fd_b = fd.to_basis(basis)
             >>> fd_b.coefficients.round(2)
-            array([[ 0.  ,  0.71,  0.71]])
+            array([[0.  , 0.71, 0.71]])
 
         """
         if self.ndim_domain > 1:

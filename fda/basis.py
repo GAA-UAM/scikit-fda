@@ -682,7 +682,7 @@ class FDataBasis:
 
         # If no weight matrix is given all the weights are one
         if not weight_matrix:
-            weight_matrix = numpy.ones((basis_values.shape[0], basis_values.shape[0]))
+            weight_matrix = numpy.identity(basis_values.shape[0])
 
         # We need to solve the equation
         # (phi' W phi + lambda * R) C = phi' W Y

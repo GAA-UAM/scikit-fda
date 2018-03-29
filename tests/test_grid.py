@@ -1,10 +1,7 @@
 import unittest
 from fda.grid import FDataGrid
 import numpy
-import os
 from fda import math_basic
-from fda import kernel_smoothers
-from fda import kernels
 import scipy.stats.mstats
 
 

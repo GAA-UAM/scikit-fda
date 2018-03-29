@@ -146,10 +146,8 @@ class FDataGrid:
             if not numpy.array_equal(
                     data_shape,
                     sample_points_shape):
-                raise ValueError(f"Incorrect dimension in data_matrix and "
-                                 f"sample_points. "
-                                 f"Data has shape {data_shape} and sample "
-                                 f"points have shape {sample_points_shape}")
+                raise ValueError("Incorrect dimension in data_matrix and sample_points. Data has shape {} and sample "
+                                 "points have shape {}".format(data_shape, sample_points_shape))
 
         if sample_range is None:
                 self.sample_range = numpy.array(
@@ -339,7 +337,7 @@ class FDataGrid:
                 mdata.append(arr)
             data_matrix = numpy.array(mdata)
 
-        dataset_label = f"{self.dataset_label} - {order} derivative"
+        dataset_label = "{} - {} derivative".format(self.dataset_label, order)
 
         return FDataGrid(data_matrix, sample_points, self.sample_range,
                          dataset_label, self.axes_labels)
@@ -584,13 +582,15 @@ class FDataGrid:
 
     def __repr__(self):
         """ Return repr(self). """
-        return (f"FDataGrid("
-                + f"\n{repr(self.data_matrix)}"
-                + f"\n,sample_points={repr(self.sample_points)}"
-                + f"\n,sample_range={repr(self.sample_range)}"
-                + f"\n,dataset_label={repr(self.dataset_label)}"
-                + f"\n,axes_labels={repr(self.axes_labels)}"
-                + f")").replace('\n', '\n    ')
+        return ("FDataGrid({}, "
+                "sample_points={}, "
+                "sample_range={}, "
+                "dataset_label={}, "
+                "axes_labels={})".format(repr(self.data_matrix),
+                                         repr(self.sample_points),
+                                         repr(self.sample_range),
+                                         repr(self.dataset_label),
+                                         repr(self.axes_labels)))
 
     def __getitem__(self, key):
         """ Return self[key]. """

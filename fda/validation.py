@@ -141,10 +141,10 @@ def minimise(fdatagrid, parameters,
                [0.  , 0.  , 0.  , 0.5 , 0.5 ]])
         >>> res['fdatagrid'].round(2)
         FDataGrid(
-            array([[2.5 , 1.67, 0.67, 1.67, 2.5 ]])
-            ,sample_points=[array([-2., -1.,  0.,  1.,  2.])]
-            ,sample_range=array([[-2.,  2.]])
-            ,...)
+            array([[2.5 , 1.67, 0.67, 1.67, 2.5 ]]),
+            sample_points=[array([-2., -1.,  0.,  1.,  2.])],
+            sample_range=array([[-2.,  2.]]),
+            ...)
 
         Other validation methods can be used such as cross-validation or
         general cross validation using other penalisation functions.

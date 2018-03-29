@@ -220,6 +220,40 @@ class Monomial(Basis):
         return mat
 
     def penalty(self, differential_operator, integration_domain=None):
+        r""" Returns a penalty matrix given a differential operator.
+
+        A differential operator can be either a integer (indicating the order of the derivative) or an iterable
+        indicating coefficients of derivatives (which can be functions). For instance 2 means that the differential
+        operator is :math:`f''(x)` and the tuple (1, 0, numpy.sin), :math:`1 + sin(x)D^{2}`.
+
+        The penalty matrix is defined as [RS05-5-6-2]_:
+
+        .. math::
+            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
+
+        where :math:`phi_i(s) i=1, 2, ..., n` are the basis functions and :math:`L` is a differential operator.
+
+        Args:
+            differential_operator (int or list or tuple): Integer o list of coefficients representing a differential
+                operator.
+            integration_domain (tuple or list of int): object containing the limits of integration.
+
+        Returns:
+            numpy.array: Penalty matrix.
+
+        Examples:
+
+            >>> Monomial(nbasis=4).penalty(2)
+            array([[ 0.,  0.,  0.,  0.],
+                   [ 0.,  0.,  0.,  0.],
+                   [ 0.,  0.,  4.,  6.],
+                   [ 0.,  0.,  6., 12.]])
+
+        References:
+            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the roughness penalty. In *Functional Data
+                Analysis* (pp. 106-107). Springler.
+
+        """
         if not isinstance(differential_operator, int):
             raise NotImplementedError("Method not implemented for not int differential operators.")
 
@@ -420,6 +454,10 @@ class BSpline(Basis):
 
         return mat
 
+    def penalty(self, differential_operator):
+        # TODO implemet
+        raise NotImplementedError()
+
     def __repr__(self):
         return ("{}(domain_range={}, nbasis={}, order={}, knots={})".format(
             self.__class__.__name__, self.domain_range, self.nbasis, self.order, self.knots))
@@ -539,6 +577,10 @@ class Fourier(Basis):
         # normalise
         mat = mat / numpy.sqrt(self.period / 2)
         return mat
+
+    def penalty(self, differential_operator):
+        # TODO implement
+        raise NotImplementedError()
 
     def __repr__(self):
         return ("{}(domain_range={}, nbasis={}, period={})".format(
@@ -823,11 +865,11 @@ class FDataBasis:
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
                 array([[1., 3., 7.],
-                       [1., 2., 5.]])
-                ,sample_points=[array([0, 1, 2])]
-                ,sample_range=array([[0, 5]])
-                ,dataset_label='Data set'
-                ,axes_labels=None)
+                       [1., 2., 5.]]),
+                sample_points=[array([0, 1, 2])],
+                sample_range=array([[0, 5]]),
+                dataset_label='Data set',
+                axes_labels=None)
 
         """
         if eval_points is None:

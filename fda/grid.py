@@ -71,8 +71,8 @@ class FDataGrid:
         >>> FDataGrid(data_matrix, sample_points)
         FDataGrid(
             array([[1, 2],
-                   [2, 3]])
-            ,sample_points=[array([2, 4])]
+                   [2, 3]]),
+            sample_points=[array([2, 4])],
             ...)
 
         The number of columns of data_matrix have to be the length of
@@ -292,22 +292,22 @@ class FDataGrid:
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative()
             FDataGrid(
-                array([[1. , 1.5, 1.5, 2. , 3. ]])
-                ,sample_points=[array([0, 1, 2, 3, 4])]
-                ,sample_range=array([[0, 4]])
-                ,dataset_label='Data set - 1 derivative'
-                ,...)
+                array([[1. , 1.5, 1.5, 2. , 3. ]]),
+                sample_points=[array([0, 1, 2, 3, 4])],
+                sample_range=array([[0, 4]]),
+                dataset_label='Data set - 1 derivative',
+                ...)
 
             Second order derivative
 
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative(2)
             FDataGrid(
-                array([[0.5 , 0.25, 0.25, 0.75, 1.  ]])
-                ,sample_points=[array([0, 1, 2, 3, 4])]
-                ,sample_range=array([[0, 4]])
-                ,dataset_label='Data set - 2 derivative'
-                ,...)
+                array([[0.5 , 0.25, 0.25, 0.75, 1.  ]]),
+                sample_points=[array([0, 1, 2, 3, 4])],
+                sample_range=array([[0, 4]]),
+                dataset_label='Data set - 2 derivative',
+                ...)
 
         """
         if self.ndim_domain != 1:
@@ -439,8 +439,8 @@ class FDataGrid:
             >>> fd.concatenate(fd_2)
             FDataGrid(
                 array([[1, 2, 4, 5, 8],
-                       [3, 4, 7, 9, 2]])
-                ,sample_points=[array([0, 1, 2, 3, 4])]
+                       [3, 4, 7, 9, 2]]),
+                sample_points=[array([0, 1, 2, 3, 4])],
                 ...
 
         """
@@ -563,7 +563,7 @@ class FDataGrid:
             >>> basis = fda.basis.Fourier((0, 1), nbasis=3)
             >>> fd_b = fd.to_basis(basis)
             >>> fd_b.coefficients.round(2)
-            array([[0.  , 0.71, 0.71]])
+            array([[ 0.  ,  0.71,  0.71]])
 
         """
         if self.ndim_domain > 1:
@@ -576,21 +576,22 @@ class FDataGrid:
 
     def __str__(self):
         """ Return str(self). """
-        return ('Data set:\t' + str(self.data_matrix)
-                + '\nsample_points:\t' + str(self.sample_points)
-                + '\ntime range:\t' + str(self.sample_range))
+        return ('Data set:    ' + str(self.data_matrix)
+                + '\nsample_points:    ' + str(self.sample_points)
+                + '\ntime range:    ' + str(self.sample_range))
 
     def __repr__(self):
         """ Return repr(self). """
-        return ("FDataGrid({}, "
-                "sample_points={}, "
-                "sample_range={}, "
-                "dataset_label={}, "
-                "axes_labels={})".format(repr(self.data_matrix),
-                                         repr(self.sample_points),
-                                         repr(self.sample_range),
-                                         repr(self.dataset_label),
-                                         repr(self.axes_labels)))
+        return ("FDataGrid("
+                "\n{},"
+                "\nsample_points={},"
+                "\nsample_range={},"
+                "\ndataset_label={},"
+                "\naxes_labels={})".format(repr(self.data_matrix),
+                                           repr(self.sample_points),
+                                           repr(self.sample_range),
+                                           repr(self.dataset_label),
+                                           repr(self.axes_labels))).replace('\n', '\n    ')
 
     def __getitem__(self, key):
         """ Return self[key]. """

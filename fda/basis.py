@@ -219,6 +219,49 @@ class Monomial(Basis):
 
         return mat
 
+    def penalty(self, differential_operator, integration_domain=None):
+        if not isinstance(differential_operator, int):
+            raise NotImplementedError("Method not implemented for not int differential operators.")
+
+        if not integration_domain:
+            integration_domain = self.domain_range
+
+        # initialize penalty matrix as all zeros
+        penalty_matrix = numpy.zeros((self.nbasis, self.nbasis))
+        # iterate over the cartesion product of the basis system with itself
+        for ibasis in range(self.nbasis):
+            # notice that the index ibasis it is also the exponent of the monomial
+            # ifac is the factor resulting of derivating the monomial as many times as indicates de differential
+            # operator
+            if differential_operator > 0:
+                ifac = ibasis
+                for k in range(2, differential_operator + 1):
+                    ifac *= ibasis - k + 1
+            else:
+                ifac = 1
+
+            for jbasis in range(self.nbasis):
+                # notice that the index jbasis it is also the exponent of the monomial
+                # jfac is the factor resulting of derivating the monomial as many times as indicates de differential
+                # operator
+                if differential_operator > 0:
+                    jfac = jbasis
+                    for k in range(2, differential_operator + 1):
+                        jfac *= jbasis - k + 1
+                else:
+                    jfac = 1
+
+                # if any of the two monomial has lower degree than the order of the derivative indicated by the
+                # differential operator that factor equals 0, so no calculation are needed
+                if ibasis >= differential_operator and jbasis >= differential_operator:
+                    # TODO understand method of calculating integral
+                    ipow = ibasis + jbasis - 2 * differential_operator + 1
+                    penalty_matrix[ibasis, jbasis] = ((integration_domain[1] ** ipow - integration_domain[0] ** ipow)
+                                                      * ifac * jfac / ipow)
+                    penalty_matrix[jbasis, ibasis] = penalty_matrix[ibasis, jbasis]
+
+        return penalty_matrix
+
 
 class BSpline(Basis):
     r"""BSpline basis.

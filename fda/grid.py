@@ -10,6 +10,7 @@ import numbers
 import matplotlib.pyplot
 import numpy
 import scipy
+import scipy.stats.mstats
 
 from . import basis as fdbasis
 
@@ -146,8 +147,10 @@ class FDataGrid:
             if not numpy.array_equal(
                     data_shape,
                     sample_points_shape):
-                raise ValueError("Incorrect dimension in data_matrix and sample_points. Data has shape {} and sample "
-                                 "points have shape {}".format(data_shape, sample_points_shape))
+                raise ValueError("Incorrect dimension in data_matrix and "
+                                 "sample_points. Data has shape {} and sample "
+                                 "points have shape {}"
+                                 .format(data_shape, sample_points_shape))
 
         if sample_range is None:
                 self.sample_range = numpy.array(
@@ -587,19 +590,19 @@ class FDataGrid:
                 "\nsample_points={},"
                 "\nsample_range={},"
                 "\ndataset_label={},"
-                "\naxes_labels={})".format(repr(self.data_matrix),
-                                           repr(self.sample_points),
-                                           repr(self.sample_range),
-                                           repr(self.dataset_label),
-                                           repr(self.axes_labels))).replace('\n', '\n    ')
+                "\naxes_labels={})"
+                .format(repr(self.data_matrix),
+                        repr(self.sample_points),
+                        repr(self.sample_range),
+                        repr(self.dataset_label),
+                        repr(self.axes_labels))).replace('\n', '\n    ')
 
     def __getitem__(self, key):
         """ Return self[key]. """
         if isinstance(key, tuple):
             # If there are not values for every dimension, the remaining ones
             # are kept
-            key += tuple(slice(None) for i in
-                         range(self.ndim_domain + 1 - len(key)))
+            key += (slice(None),) * (self.ndim_domain + 1 - len(key))
 
             sample_points = [self.sample_points[i][subkey]
                              for i, subkey in enumerate(

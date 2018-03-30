@@ -117,33 +117,38 @@ class Basis(ABC):
     def penalty(self, differential_operator):
         r""" Returns a penalty matrix given a differential operator.
 
-        A differential operator can be either a integer (indicating the order of the derivative) or an iterable
-        indicating coefficients of derivatives (which can be functions). For instance 2 means that the differential
-        operator is :math:`f''(x)` and the tuple (1, 0, numpy.sin), :math:`1 + sin(x)D^{2}`.
-
         The penalty matrix is defined as [RS05-5-6-2]_:
 
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
 
-        where :math:`phi_i(s) i=1, 2, ..., n` are the basis functions and :math:`L` is a differential operator.
+        where :math:`phi_i(s) i=1, 2, ..., n` are the basis functions and
+        :math:`L` is a differential operator.
 
         Args:
-            differential_operator (int or list or tuple): Integer o list of coefficients representing a differential
-                operator.
+            differential_operator (int or list or tuple): Integer o list of
+                coefficients representing a differential operator. A
+                differential operator can be either a integer (indicating the
+                order of the derivative) or an iterable indicating
+                coefficients of derivatives (which can be functions). For
+                instance 2 means that the differential operator is
+                :math:`f''(x)` and the tuple (1, 0, numpy.sin), :math:`1
+                + sin(x)D^{2}`.
 
         Returns:
             numpy.array: Penalty matrix.
 
         References:
-            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the roughness penalty. In *Functional Data
-                Analysis* (pp. 106-107). Springler.
+            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
+            roughness penalty. In *Functional Data Analysis* (pp. 106-107).
+            Springler.
 
         """
         pass
 
     def __repr__(self):
-        return "{}(domain_range={}, nbasis={})".format(self.__class__.__name__, self.domain_range, self.nbasis)
+        return "{}(domain_range={}, nbasis={})".format(
+            self.__class__.__name__, self.domain_range, self.nbasis)
 
 
 class Monomial(Basis):
@@ -222,21 +227,24 @@ class Monomial(Basis):
     def penalty(self, differential_operator, integration_domain=None):
         r""" Returns a penalty matrix given a differential operator.
 
-        A differential operator can be either a integer (indicating the order of the derivative) or an iterable
-        indicating coefficients of derivatives (which can be functions). For instance 2 means that the differential
-        operator is :math:`f''(x)` and the tuple (1, 0, numpy.sin), :math:`1 + sin(x)D^{2}`.
-
         The penalty matrix is defined as [RS05-5-6-2]_:
-
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
 
-        where :math:`phi_i(s) i=1, 2, ..., n` are the basis functions and :math:`L` is a differential operator.
+        where :math:`phi_i(s) i=1, 2, ..., n` are the basis functions and
+        :math:`L` is a differential operator.
 
         Args:
-            differential_operator (int or list or tuple): Integer o list of coefficients representing a differential
-                operator.
-            integration_domain (tuple or list of int): object containing the limits of integration.
+            differential_operator (int or list or tuple): Integer o list of
+                coefficients representing a differential operator. A
+                differential operator can be either a integer (indicating the
+                order of the derivative) or an iterable indicating
+                coefficients of derivatives (which can be functions). For
+                instance 2 means that the differential operator is
+                :math:`f''(x)` and the tuple (1, 0, numpy.sin), :math:`1
+                + sin(x)D^{2}`.
+            integration_domain (tuple or list of int): object containing the
+                limits of integration.
 
         Returns:
             numpy.array: Penalty matrix.
@@ -250,12 +258,14 @@ class Monomial(Basis):
                    [ 0.,  0.,  6., 12.]])
 
         References:
-            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the roughness penalty. In *Functional Data
-                Analysis* (pp. 106-107). Springler.
+            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
+            roughness penalty. In *Functional Data Analysis* (pp. 106-107).
+            Springler.
 
         """
         if not isinstance(differential_operator, int):
-            raise NotImplementedError("Method not implemented for not int differential operators.")
+            raise NotImplementedError("Method not implemented for not int "
+                                      "differential operators.")
 
         if not integration_domain:
             integration_domain = self.domain_range
@@ -264,9 +274,10 @@ class Monomial(Basis):
         penalty_matrix = numpy.zeros((self.nbasis, self.nbasis))
         # iterate over the cartesion product of the basis system with itself
         for ibasis in range(self.nbasis):
-            # notice that the index ibasis it is also the exponent of the monomial
-            # ifac is the factor resulting of derivating the monomial as many times as indicates de differential
-            # operator
+            # notice that the index ibasis it is also the exponent of the
+            # monomial
+            # ifac is the factor resulting of derivating the monomial as many
+            # times as indicates de differential operator
             if differential_operator > 0:
                 ifac = ibasis
                 for k in range(2, differential_operator + 1):
@@ -275,9 +286,10 @@ class Monomial(Basis):
                 ifac = 1
 
             for jbasis in range(self.nbasis):
-                # notice that the index jbasis it is also the exponent of the monomial
-                # jfac is the factor resulting of derivating the monomial as many times as indicates de differential
-                # operator
+                # notice that the index jbasis it is also the exponent of the
+                # monomial
+                # jfac is the factor resulting of derivating the monomial as
+                # many times as indicates de differential operator
                 if differential_operator > 0:
                     jfac = jbasis
                     for k in range(2, differential_operator + 1):
@@ -285,14 +297,19 @@ class Monomial(Basis):
                 else:
                     jfac = 1
 
-                # if any of the two monomial has lower degree than the order of the derivative indicated by the
-                # differential operator that factor equals 0, so no calculation are needed
-                if ibasis >= differential_operator and jbasis >= differential_operator:
+                # if any of the two monomial has lower degree than the order of
+                # the derivative indicated by the differential operator that
+                # factor equals 0, so no calculation are needed
+                if (ibasis >= differential_operator
+                        and jbasis >= differential_operator):
                     # TODO understand method of calculating integral
                     ipow = ibasis + jbasis - 2 * differential_operator + 1
-                    penalty_matrix[ibasis, jbasis] = ((integration_domain[1] ** ipow - integration_domain[0] ** ipow)
-                                                      * ifac * jfac / ipow)
-                    penalty_matrix[jbasis, ibasis] = penalty_matrix[ibasis, jbasis]
+                    penalty_matrix[ibasis, jbasis] = (
+                            (integration_domain[1] ** ipow
+                             - integration_domain[0] ** ipow)
+                            * ifac * jfac / ipow)
+                    penalty_matrix[jbasis, ibasis] = penalty_matrix[ibasis,
+                                                                    jbasis]
 
         return penalty_matrix
 
@@ -460,7 +477,8 @@ class BSpline(Basis):
 
     def __repr__(self):
         return ("{}(domain_range={}, nbasis={}, order={}, knots={})".format(
-            self.__class__.__name__, self.domain_range, self.nbasis, self.order, self.knots))
+            self.__class__.__name__, self.domain_range, self.nbasis, self.order,
+            self.knots))
 
 
 class Fourier(Basis):
@@ -547,7 +565,7 @@ class Fourier(Basis):
                 index = range(2, nbasis, 2)
                 # even indexes are sine functions
                 mat[index] = numpy.sin(args)
-                index = range(1 , nbasis - 1, 2)
+                index = range(1, nbasis - 1, 2)
                 # odd indexes are cosine functions
                 mat[index] = numpy.cos(args)
         # evaluates the derivatives
@@ -584,7 +602,9 @@ class Fourier(Basis):
 
     def __repr__(self):
         return ("{}(domain_range={}, nbasis={}, period={})".format(
-            self.__class__.__name__, self.domain_range, self.nbasis, self.period))
+            self.__class__.__name__, self.domain_range, self.nbasis,
+            self.period))
+
 
 class FDataBasis:
     r"""Basis representation of functional data.
@@ -633,20 +653,53 @@ class FDataBasis:
         self.coefficients = coefficients
 
     @classmethod
-    def from_data(cls, data_matrix, sample_points, basis, method='cholesky', smoothing_factor=0, weight_matrix=None,
-                  differential_operator=None, penalty_matrix=None):
-        """Raw data to a smooth functional form.
+    def from_data(cls, data_matrix, sample_points, basis, weight_matrix=None,
+                  smoothing_factor=0, differential_operator=2,
+                  penalty_matrix=None, method='cholesky'):
+        r"""Raw data to a smooth functional form.
 
         Takes functional data in a discrete form and makes an approximates it
-        to the closest function that can be generated by the basis.
+        to the closest function that can be generated by the basis.a
+
+        The fit is made so as to reduce the penalized sum of squared errors
+        [RS05-5-2-5]_:
+        .. math::
+            PENSSE(c) = (y - \Phi c)' W (y - \Phi c) + \lambda c'Rc
+
+        where :math:`y` is the vector or matrix of observations, :math:`\Phi`
+        the matrix whose columns are the basis functions evaluated at the
+        sampling points, :math:`c` the coefficient vector or matrix to be
+        estimated, :math:`\lambda` a smoothing factor and :math:`c'Rc` the
+        matrix representation of the roughness penalty :math:`\int \left[ L(
+        x(s)) \right] ^2 ds` where :math:`L` is a linear differential operator.
+
+        Each element of :math:`R` has the following close form:
+        .. math::
+            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
 
         Args:
-            data_matrix (array_like): List of matrix containing the
+            data_matrix (array_like): List or matrix containing the
                 observations. If a matrix each row represents a single
                 functional datum and the columns the different observations.
             sample_points (array_like): Values of the domain where the previous
                 data were taken.
             basis: (Basis): Basis used.
+            weight_matrix (array_like, optional): Matrix to weight the
+                observations. Defaults to the identity matrix.
+            smoothing_factor (int or float, optional): Smoothing factor. Trying
+                with several factors in a logarythm scale is suggested. If 0
+                no smoothing is performed. Defaults to 0.
+            differential_operator (int or list or tuple, optional): Integer or
+                list of coefficients representing a differential operator. A
+                differential operator can be either a integer (indicating the
+                order of the derivative) or an iterable indicating
+                coefficients of derivatives (which can be functions). For
+                instance 2 means that the differential operator is
+                :math:`f''(x)` and the tuple (1, 0, numpy.sin), :math:`1
+                + sin(x)D^{2}`. Defaults to 2, meaning the second derivative.
+            penalty_matrix (array_like, optional): Penalty matrix. If
+                supplied the differential operator is not used and instead
+                the matrix supplied by this argument is used.
             method (str): Algorithm used for calculating the coefficients using
                 the least squares method. The values admitted are 'cholesky'
                 and 'qr' for Cholesky and QR factorisation methods
@@ -667,6 +720,11 @@ class FDataBasis:
             >>> fd = FDataBasis.from_data(x, t, basis)
             >>> fd.coefficients.round(2)
             array([[0.  , 0.71, 0.71]])
+
+        References:
+            .. [RS05-5-2-5] Ramsay, J., Silverman, B. W. (2005). How spline
+            smooths are computed. In *Functional Data Analysis* (pp. 86-87).
+            Springler.
 
         """
 
@@ -714,7 +772,9 @@ class FDataBasis:
 
             elif method == 'qr':
                 if smoothing_factor > 0 or weight_matrix:
-                    raise NotImplementedError('QR method not implemented for rougness penalty or weight matrices')
+                    raise NotImplementedError('QR method not implemented for '
+                                              'rougness penalty or weight '
+                                              'matrices')
                 # Resolves the equation
                 # B.T @ B @ C = B.T @ D
                 # by means of the QR decomposition
@@ -733,11 +793,13 @@ class FDataBasis:
                 raise ValueError("Unknown method.")
 
         elif data_matrix.shape[0] == basis.nbasis:
-            # If the number of basis equals the number of points and no smoothing is required
+            # If the number of basis equals the number of points and no
+            # smoothing is required
             coefficients = numpy.linalg.solve(basis_values, data_matrix)
 
         else:  # data_matrix.shape[0] < basis.nbasis
-            raise ValueError("The number of basis functions ({}) exceed the number of points to be smoothed ({})."
+            raise ValueError("The number of basis functions ({}) exceed the "
+                             "number of points to be smoothed ({})."
                              .format(basis.nbasis, data_matrix.shape[0]))
 
         return cls(basis, coefficients)
@@ -844,7 +906,6 @@ class FDataBasis:
         """
         return self.to_grid(eval_points).gmean().to_basis(self.basis)
 
-
     def to_grid(self, eval_points=None):
         """Returns the discrete representation of the object.
 
@@ -883,7 +944,8 @@ class FDataBasis:
                               sample_range=self.domain_range)
 
     def __repr__(self):
-        return "{}(basis={}, coefficients={})".format(self.__class__.__name__, self.basis, self.coefficients)
+        return "{}(basis={}, coefficients={})".format(
+            self.__class__.__name__, self.basis, self.coefficients)
 
     def __call__(self, eval_points):
         """Evaluates the functions in the object at a list of values.

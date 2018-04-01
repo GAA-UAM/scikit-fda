@@ -9,11 +9,29 @@ import numpy
 import matplotlib.pyplot
 import scipy.interpolate
 import scipy.linalg
+from numpy import polyder, polyint, polymul, polyval
+from scipy.interpolate import PPoly
+from scipy.special import binom
 
 from . import grid
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
+
+
+# aux functions
+def _polypow(p, n=2):
+    if n > 2:
+        return polymul(p, _polypow(p, n - 1))
+    if n == 2:
+        return polymul(p, p)
+    elif n == 1:
+        return p
+    elif n == 0:
+        return [1]
+    else:
+        raise ValueError("n must be greater than 0.")
+
 
 
 class Basis(ABC):
@@ -122,7 +140,7 @@ class Basis(ABC):
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
 
-        where :math:`phi_i(s) i=1, 2, ..., n` are the basis functions and
+        where :math:`\phi_i(s) i=1, 2, ..., n` are the basis functions and
         :math:`L` is a differential operator.
 
         Args:
@@ -140,8 +158,8 @@ class Basis(ABC):
 
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
-            roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-            Springler.
+               roughness penalty. In *Functional Data Analysis* (pp. 106-107).
+               Springler.
 
         """
         pass
@@ -231,7 +249,7 @@ class Monomial(Basis):
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
 
-        where :math:`phi_i(s) i=1, 2, ..., n` are the basis functions and
+        where :math:`\phi_i(s) i=1, 2, ..., n` are the basis functions and
         :math:`L` is a differential operator.
 
         Args:
@@ -259,12 +277,12 @@ class Monomial(Basis):
 
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
-            roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-            Springler.
+                roughness penalty. In *Functional Data Analysis* (pp. 106-107).
+                Springler.
 
         """
         if not isinstance(differential_operator, int):
-            raise NotImplementedError("Method not implemented for not int "
+            raise NotImplementedError("Method not implemented for not integer "
                                       "differential operators.")
 
         if not integration_domain:
@@ -276,7 +294,7 @@ class Monomial(Basis):
         for ibasis in range(self.nbasis):
             # notice that the index ibasis it is also the exponent of the
             # monomial
-            # ifac is the factor resulting of derivating the monomial as many
+            # ifac is the factor resulting of deriving the monomial as many
             # times as indicates de differential operator
             if differential_operator > 0:
                 ifac = ibasis
@@ -288,7 +306,7 @@ class Monomial(Basis):
             for jbasis in range(self.nbasis):
                 # notice that the index jbasis it is also the exponent of the
                 # monomial
-                # jfac is the factor resulting of derivating the monomial as
+                # jfac is the factor resulting of deriving the monomial as
                 # many times as indicates de differential operator
                 if differential_operator > 0:
                     jfac = jbasis
@@ -302,8 +320,11 @@ class Monomial(Basis):
                 # factor equals 0, so no calculation are needed
                 if (ibasis >= differential_operator
                         and jbasis >= differential_operator):
-                    # TODO understand method of calculating integral
+                    # Calculates exactly the result of the integral
+                    # Exponent after applying the differential operator and
+                    # integrating
                     ipow = ibasis + jbasis - 2 * differential_operator + 1
+                    # coefficient after integrating
                     penalty_matrix[ibasis, jbasis] = (
                             (integration_domain[1] ** ipow
                              - integration_domain[0] ** ipow)
@@ -420,7 +441,7 @@ class BSpline(Basis):
                              "plus the number of knots minus 2.")
 
         self.order = order
-        self.knots = knots
+        self.knots = list(knots)
         super().__init__(domain_range, nbasis)
 
     def _compute_matrix(self, eval_points, derivative=0):
@@ -430,7 +451,7 @@ class BSpline(Basis):
         for each element of the basis.
 
         Args:
-            eval_points (array_like): List of points where the basis is
+            eval_points (array_like): List of points where the basis system is
                 evaluated.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
@@ -472,8 +493,146 @@ class BSpline(Basis):
         return mat
 
     def penalty(self, differential_operator):
-        # TODO implemet
-        raise NotImplementedError()
+        r"""Returns a penalty matrix given a differential operator.
+
+        The penalty matrix is defined as [RS05-5-6-2]_:
+
+        .. math::
+            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
+
+        where :math:`\phi_i(s) i=1, 2, ..., n` are the basis functions and
+        :math:`L` is a differential operator.
+
+        Args:
+            differential_operator (int or list or tuple): Integer o list of
+                coefficients representing a differential operator. A
+                differential operator can be either a integer (indicating the
+                order of the derivative) or an iterable indicating
+                coefficients of derivatives (which can be functions). For
+                instance 2 means that the differential operator is
+                :math:`f''(x)` and the tuple (1, 0, numpy.sin), :math:`1
+                + sin(x)D^{2}`.
+
+        Returns:
+            numpy.array: Penalty matrix.
+
+        References:
+            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
+                roughness penalty. In *Functional Data Analysis* (pp. 106-107).
+                Springler.
+
+        """
+        if isinstance(differential_operator, int):
+            if differential_operator >= self.order:
+                raise ValueError("Penalty matrix cannot be evaluated for "
+                                 "derivative of order {} for B-splines of "
+                                 "order {}".format(differential_operator,
+                                                   self.order))
+            if differential_operator == self.order - 1:
+                # The derivative of the bsplines are constant in the intervals
+                # defined between knots
+                knots = numpy.array(self.knots)
+                mid_inter = (knots[1:] + knots[:-1]) / 2
+                constants = self.evaluate(mid_inter,
+                                          derivative=differential_operator).T
+                knots_intervals = numpy.diff(self.knots)
+                # Integration of product of constants
+                return constants.T @ numpy.diag(knots_intervals) @ constants
+
+            if numpy.all(numpy.diff(self.knots) != 0):
+                # Compute exactly using the piecewise polynomial
+                # representation of splines
+
+                # Places m knots at the boundaries
+                knots = numpy.array(
+                    [self.knots[0]] * (self.order - 1) + self.knots
+                    + [self.knots[-1]] * (self.order - 1))
+                # c is used the select which spline the function
+                # PPoly.from_spline below computes
+                c = numpy.zeros(len(knots))
+
+                # Initialise empty list to store the piecewise polynomials
+                ppoly_lst = []
+
+                no_0_intervals = numpy.where(numpy.diff(knots) > 0)[0]
+
+                # For each basis gets its piecewise polynomial representation
+                for i in range(self.nbasis):
+                    # write a 1 in c in the position of the spline
+                    # transformed in each iteration
+                    c[i] = 1
+                    # gets the piecewise polynomial representation and gets
+                    # only the positions for no zero length intervals
+                    # This polynomial are defined relatively to the knots
+                    # meaning that the column i corresponds to the ith knot.
+                    # Let the ith not be a
+                    # Then f(x) = pp(x - a)
+                    pp = (PPoly.from_spline((knots, c, self.order - 1))
+                              .c[:, no_0_intervals])
+                    # We need the actual coefficients of f, not pp. So we
+                    # just recursively calculate the new coefficients
+                    coeffs = pp.copy()
+                    for j in range(self.order - 1):
+                        coeffs[j+1:] += ((binom(self.order - j - 1,
+                                        range(1, self.order - j)) *
+                               numpy.vstack(((-a) **
+                                             numpy.array(range(1,
+                                                 self.order - j)) for a in
+                                             self.knots[:-1]))
+                               ).T * pp[j])
+                    ppoly_lst.append(coeffs)
+                    c[i] = 0
+
+                # Now for each pair of basis computes the inner product after
+                # applying the linear differential operator
+                penalty_matrix = numpy.zeros((self.nbasis, self.nbasis))
+                for interval in range(len(no_0_intervals)):
+                    for i in range(self.nbasis):
+                        poly_i = numpy.trim_zeros(ppoly_lst[i][:,
+                                                  interval], 'f')
+                        if len(poly_i) <= differential_operator:
+                            # if the order of the polynomial is lesser or
+                            # equal to the derivative the result of the
+                            # integral will be 0
+                            continue
+                        # indefinite integral
+                        integral = polyint(_polypow(polyder(
+                            poly_i, differential_operator), 2))
+                        # definite integral
+                        penalty_matrix[i, i] += numpy.diff(polyval(
+                            integral, self.knots[interval: interval + 2]))[0]
+
+                        for j in range(i + 1, self.nbasis):
+                            poly_j = numpy.trim_zeros(ppoly_lst[j][:,
+                                                      interval], 'f')
+                            if len(poly_j) <= differential_operator:
+                                # if the order of the polynomial is lesser
+                                # or equal to the derivative the result of
+                                # the integral will be 0
+                                continue
+                                # indefinite integral
+                            integral = polyint(
+                                polymul(polyder(poly_i, differential_operator),
+                                        polyder(poly_j, differential_operator)))
+                            # definite integral
+                            penalty_matrix[i, j] += numpy.diff(polyval(
+                               integral,  self.knots[interval: interval + 2])
+                            )[0]
+                            penalty_matrix[j, i] = penalty_matrix[i, j]
+                return penalty_matrix
+        else:
+            # if the order of the derivative is greater or equal to the order
+            # of the bspline minus 1
+            if len(differential_operator) >= self.order:
+                raise ValueError("Penalty matrix cannot be evaluated for "
+                                 "derivative of order {} for B-splines of "
+                                 "order {}"
+                                 .format(len(differential_operator) - 1,
+                                         self.order))
+
+        # compute using the inner product
+        raise NotImplementedError("Not implemented for not integer "
+                                  "differential operators or duplicate knots.")
 
     def __repr__(self):
         return ("{}(domain_range={}, nbasis={}, order={}, knots={})".format(
@@ -485,7 +644,9 @@ class Fourier(Basis):
     r"""Fourier basis.
 
     Defines a functional basis for representing functions on a fourier
-    series expansion of period :math:`T`.
+    series expansion of period :math:`T`. The number of basis is always odd.
+    If instantiated with an even number of basis, they will be incremented
+    automatically by one.
 
     .. math::
         \phi_0(t) = \frac{1}{\sqrt{2}}
@@ -496,9 +657,8 @@ class Fourier(Basis):
     .. math::
         \phi_{2n}(t) = cos\left(\frac{2 \pi n}{T} t\right)
 
-
     Actually this basis functions are not orthogonal but not orthonormal. To
-    achive this they are divided by its norm: :math:`\sqrt{\frac{T}{2}}`.
+    achieve this they are divided by its norm: :math:`\sqrt{\frac{T}{2}}`.
 
     Attributes:
         domain_range (tuple): A tuple of length 2 containing the initial and
@@ -527,8 +687,9 @@ class Fourier(Basis):
 
     """
     def __init__(self, domain_range=(0, 1), nbasis=3, period=1):
-
         self.period = period
+        # If number of basis is even, add 1
+        nbasis += 1 - nbasis % 2
         super().__init__(domain_range, nbasis)
 
     def _compute_matrix(self, eval_points, derivative=0):
@@ -597,8 +758,60 @@ class Fourier(Basis):
         return mat
 
     def penalty(self, differential_operator):
-        # TODO implement
-        raise NotImplementedError()
+        r"""Returns a penalty matrix given a differential operator.
+
+        The penalty matrix is defined as [RS05-5-6-2]_:
+
+        .. math::
+            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
+
+        where :math:`\phi_i(s) i=1, 2, ..., n` are the basis functions and
+        :math:`L` is a differential operator.
+
+        Args:
+            differential_operator (int or list or tuple): Integer o list of
+                coefficients representing a differential operator. A
+                differential operator can be either a integer (indicating the
+                order of the derivative) or an iterable indicating
+                coefficients of derivatives (which can be functions). For
+                instance 2 means that the differential operator is
+                :math:`f''(x)` and the tuple (1, 0, numpy.sin), :math:`1
+                + sin(x)D^{2}`.
+
+        Returns:
+            numpy.array: Penalty matrix.
+
+        References:
+            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
+                roughness penalty. In *Functional Data Analysis* (pp. 106-107).
+                Springler.
+
+        """
+        if isinstance(differential_operator, int):
+            omega = 2 * numpy.pi / self.period
+            # the derivatives of the functions of the basis are also orthogonal
+            # so only the diagonal is different from 0.
+            penalty_matrix = numpy.zeros(self.nbasis)
+            if differential_operator == 0:
+                penalty_matrix[0] = 1
+            else:
+                # the derivative of a constant is 0
+                # the first basis function is a constant
+                penalty_matrix[0] = 0
+            index_even = numpy.array(range(2, self.nbasis, 2))
+            exponents = index_even / 2
+            # factor resulting of deriving the basis function the times
+            # indcated in the differential_operator
+            factor = (exponents * omega) ** (2 * differential_operator)
+            # the norm of the basis functions is 1 so only the result of the
+            # integral is just the factor
+            penalty_matrix[index_even - 1] = factor
+            penalty_matrix[index_even] = factor
+            return numpy.diag(penalty_matrix)
+        else:
+            # TODO implement using inner product
+            raise NotImplementedError("Not implemented for not integer "
+                                      "differential operators.")
 
     def __repr__(self):
         return ("{}(domain_range={}, nbasis={}, period={})".format(

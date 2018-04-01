@@ -936,8 +936,8 @@ class FDataBasis:
 
         References:
             .. [RS05-5-2-5] Ramsay, J., Silverman, B. W. (2005). How spline
-            smooths are computed. In *Functional Data Analysis* (pp. 86-87).
-            Springler.
+                smooths are computed. In *Functional Data Analysis* (pp. 86-87).
+                Springler.
 
         """
 

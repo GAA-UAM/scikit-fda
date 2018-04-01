@@ -1,8 +1,6 @@
 import unittest
-from fda.basis import FDataBasis, Monomial
+from fda.basis import FDataBasis, Monomial, BSpline, Fourier
 import numpy as np
-from fda import math_basic
-import scipy.stats.mstats
 
 
 class TestBasis(unittest.TestCase):
@@ -20,7 +18,37 @@ class TestBasis(unittest.TestCase):
                                   smoothing_factor=1)
         # These results where extracted from the R package fda
         np.testing.assert_array_equal(
-            fd.coefficients.round(2), np.array([[ 0.61, -0.88,  0.06,  0.02]]))
+            fd.coefficients.round(2), np.array([[0.61, -0.88, 0.06, 0.02]]))
+
+    def test_bspline_penalty(self):
+        basis = BSpline(nbasis=5)
+        np.testing.assert_array_equal(
+            basis.penalty(basis.order - 1),
+            np.array([[1152., -2016., 1152., -288., 0.],
+                      [-2016., 3600., -2304., 1008., -288.],
+                      [1152., -2304., 2304., -2304., 1152.],
+                      [-288., 1008., -2304., 3600., -2016.],
+                      [0., -288., 1152., -2016., 1152.]]))
+
+    def test_fourier_penalty(self):
+        basis = Fourier(nbasis=5)
+        np.testing.assert_array_equal(
+            basis.penalty(2).round(2),
+            np.array([[0., 0., 0., 0., 0.],
+                      [0., 1558.55, 0., 0., 0.],
+                      [0., 0., 1558.55, 0., 0.],
+                      [0., 0., 0., 24936.73, 0.],
+                      [0., 0., 0., 0., 24936.73]]))
+
+    def test_bspline_penaltY(self):
+        basis = BSpline(nbasis=5)
+        np.testing.assert_array_equal(
+            basis.penalty(2).round(2),
+            np.array([[96., -132., 24., 12., 0.],
+                      [-132., 192., -48., -24., 12.],
+                      [24., -48., 48., -48., 24.],
+                      [12., -24., -48., 192., -132.],
+                      [0., 12., 24., -132., 96.]]))
 
 
 if __name__ == '__main__':

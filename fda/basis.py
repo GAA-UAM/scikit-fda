@@ -140,8 +140,8 @@ class Basis(ABC):
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
 
-        where :math:`\phi_i(s) i=1, 2, ..., n` are the basis functions and
-        :math:`L` is a differential operator.
+        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
+        functions and :math:`L` is a differential operator.
 
         Args:
             differential_operator (int or list or tuple): Integer o list of

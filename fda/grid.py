@@ -51,8 +51,8 @@ class FDataGrid:
 
     Attributes:
         data_matrix (numpy.ndarray): a matrix where each entry of the first
-        axis contains the values of a functional datum evaluated at the
-        points of discretisation.
+            axis contains the values of a functional datum evaluated at the
+            points of discretisation.
         sample_points (numpy.ndarray): 2 dimension matrix where each row
             contains the points of dicretisation for each axis of data_matrix.
         sample_range (numpy.ndarray): 2 dimension matrix where each row

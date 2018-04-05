@@ -2,10 +2,11 @@
 in this package.
 
 """
-from fda.grid import FDataGrid
 import numpy
-import scipy.stats.mstats
 import scipy.integrate
+import scipy.stats.mstats
+
+from fda.grid import FDataGrid
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -79,10 +80,11 @@ def cov(fdatagrid):
         numpy.darray: Matrix of covariances.
 
     """
-    return FDataGrid(numpy.cov(fdatagrid.data_matrix),
-                     [fdatagrid.sample_points[0], fdatagrid.sample_points[0]],
-                     [fdatagrid.sample_range[0], fdatagrid.sample_range[0]],
-                     fdatagrid.dataset_label + ' - covariance')
+    return FDataGrid(
+        numpy.cov(fdatagrid.data_matrix, rowvar=False)[numpy.newaxis, ...],
+        [fdatagrid.sample_points[0], fdatagrid.sample_points[0]],
+        [fdatagrid.sample_range[0], fdatagrid.sample_range[0]],
+        fdatagrid.dataset_label + ' - covariance')
 
 
 def sqrt(fdatagrid):

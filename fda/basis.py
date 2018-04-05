@@ -5,12 +5,13 @@ representation and the corresponding basis class.
 
 from abc import ABC, abstractmethod
 
-import numpy
 import matplotlib.pyplot
+import numpy
 import scipy.interpolate
 import scipy.linalg
 
 from . import grid
+
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -176,7 +177,7 @@ class Monomial(Basis):
         """
         # Initialise empty matrix
         mat = numpy.zeros((self.nbasis, len(eval_points)))
-        
+
         # For each basis computes its value for each evaluation
         if derivative == 0:
             for i in range(self.nbasis):

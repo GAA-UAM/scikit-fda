@@ -9,6 +9,7 @@ import numpy
 import matplotlib.pyplot
 import scipy.interpolate
 import scipy.linalg
+import scipy.integrate
 from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
 from scipy.special import binom
@@ -31,7 +32,6 @@ def _polypow(p, n=2):
         return [1]
     else:
         raise ValueError("n must be greater than 0.")
-
 
 
 class Basis(ABC):
@@ -131,9 +131,44 @@ class Basis(ABC):
         # Plot
         return ax.plot(eval_points, mat.T, **kwargs)
 
+    def _evaluate_single_basis_coefficients(self, coefficients, basis_index, x,
+                                            cache):
+        if x not in cache:
+            res = numpy.zeros(self.nbasis)
+            for i, k in enumerate(coefficients):
+                if callable(k):
+                    res += k(x) * self._compute_matrix([x], i)[:, 0]
+                else:
+                    res += k * self._compute_matrix([x], i)[:, 0]
+            cache[x] = res
+        return cache[x][basis_index]
+
+    def _numerical_penalty(self, coefficients):
+        penalty_matrix = numpy.zeros((self.nbasis, self.nbasis))
+        cache = {}
+        for i in range(self.nbasis):
+            penalty_matrix[i, i] = scipy.integrate.quad(
+                lambda x: (self._evaluate_single_basis_coefficients(
+                    coefficients, i, x, cache) ** 2),
+                self.domain_range[0], self.domain_range[1]
+            )[0]
+            for j in range(i + 1, self.nbasis):
+                penalty_matrix[i, j] = scipy.integrate.quad(
+                    lambda x: (self._evaluate_single_basis_coefficients(
+                        coefficients, i, x, cache)
+                               * self._evaluate_single_basis_coefficients(
+                                coefficients, j, x, cache)),
+                    self.domain_range[0], self.domain_range[1]
+                )[0]
+                penalty_matrix[j, i] = penalty_matrix[i, j]
+        return penalty_matrix
+
     @abstractmethod
-    def penalty(self, differential_operator):
+    def penalty(self, derivative_degree=None, coefficients=None):
         r""" Returns a penalty matrix given a differential operator.
+
+        The differential operator can be either a derivative of a certain
+        degree or a more complex operator.
 
         The penalty matrix is defined as [RS05-5-6-2]_:
 
@@ -144,14 +179,14 @@ class Basis(ABC):
         functions and :math:`L` is a differential operator.
 
         Args:
-            differential_operator (int or list or tuple): Integer o list of
-                coefficients representing a differential operator. A
-                differential operator can be either a integer (indicating the
-                order of the derivative) or an iterable indicating
+            derivative_degree (int): Integer indicating the order of the
+                derivative or . For instance 2 means that the differential
+                operator is :math:`f''(x)`.
+            coefficients (list): List of coefficients representing a
+                differential operator. An iterable indicating
                 coefficients of derivatives (which can be functions). For
-                instance 2 means that the differential operator is
-                :math:`f''(x)` and the tuple (1, 0, numpy.sin), :math:`1
-                + sin(x)D^{2}`.
+                instance the tuple (1, 0, numpy.sin) means :math:`1
+                + sin(x)D^{2}`. Only used if derivative degree is None.
 
         Returns:
             numpy.array: Penalty matrix.
@@ -208,6 +243,7 @@ class Monomial(Basis):
                [2., 2., 2.]])
 
     """
+
     def _compute_matrix(self, eval_points, derivative=0):
         """Computes the basis or its derivatives given a list of values.
 
@@ -227,7 +263,7 @@ class Monomial(Basis):
         """
         # Initialise empty matrix
         mat = numpy.zeros((self.nbasis, len(eval_points)))
-        
+
         # For each basis computes its value for each evaluation
         if derivative == 0:
             for i in range(self.nbasis):
@@ -242,27 +278,30 @@ class Monomial(Basis):
 
         return mat
 
-    def penalty(self, differential_operator, integration_domain=None):
+    def penalty(self, derivative_degree=None, coefficients=None):
         r""" Returns a penalty matrix given a differential operator.
 
+        The differential operator can be either a derivative of a certain
+        degree or a more complex operator.
+
         The penalty matrix is defined as [RS05-5-6-2]_:
+
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
 
-        where :math:`\phi_i(s) i=1, 2, ..., n` are the basis functions and
-        :math:`L` is a differential operator.
+        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
+        functions and :math:`L` is a differential operator.
 
         Args:
-            differential_operator (int or list or tuple): Integer o list of
-                coefficients representing a differential operator. A
-                differential operator can be either a integer (indicating the
-                order of the derivative) or an iterable indicating
+            derivative_degree (int): Integer indicating the order of the
+                derivative or . For instance 2 means that the differential
+                operator is :math:`f''(x)`.
+            coefficients (list): List of coefficients representing a
+                differential operator. An iterable indicating
                 coefficients of derivatives (which can be functions). For
-                instance 2 means that the differential operator is
-                :math:`f''(x)` and the tuple (1, 0, numpy.sin), :math:`1
-                + sin(x)D^{2}`.
-            integration_domain (tuple or list of int): object containing the
-                limits of integration.
+                instance the tuple (1, 0, numpy.sin) means :math:`1
+                + sin(x)D^{2}`. Only used if derivative degree is None.
+
 
         Returns:
             numpy.array: Penalty matrix.
@@ -281,12 +320,10 @@ class Monomial(Basis):
                 Springler.
 
         """
-        if not isinstance(differential_operator, int):
-            raise NotImplementedError("Method not implemented for not integer "
-                                      "differential operators.")
+        if derivative_degree is None:
+            return self._numerical_penalty(coefficients)
 
-        if not integration_domain:
-            integration_domain = self.domain_range
+        integration_domain = self.domain_range
 
         # initialize penalty matrix as all zeros
         penalty_matrix = numpy.zeros((self.nbasis, self.nbasis))
@@ -296,9 +333,9 @@ class Monomial(Basis):
             # monomial
             # ifac is the factor resulting of deriving the monomial as many
             # times as indicates de differential operator
-            if differential_operator > 0:
+            if derivative_degree > 0:
                 ifac = ibasis
-                for k in range(2, differential_operator + 1):
+                for k in range(2, derivative_degree + 1):
                     ifac *= ibasis - k + 1
             else:
                 ifac = 1
@@ -308,9 +345,9 @@ class Monomial(Basis):
                 # monomial
                 # jfac is the factor resulting of deriving the monomial as
                 # many times as indicates de differential operator
-                if differential_operator > 0:
+                if derivative_degree > 0:
                     jfac = jbasis
-                    for k in range(2, differential_operator + 1):
+                    for k in range(2, derivative_degree + 1):
                         jfac *= jbasis - k + 1
                 else:
                     jfac = 1
@@ -318,12 +355,12 @@ class Monomial(Basis):
                 # if any of the two monomial has lower degree than the order of
                 # the derivative indicated by the differential operator that
                 # factor equals 0, so no calculation are needed
-                if (ibasis >= differential_operator
-                        and jbasis >= differential_operator):
+                if (ibasis >= derivative_degree
+                        and jbasis >= derivative_degree):
                     # Calculates exactly the result of the integral
                     # Exponent after applying the differential operator and
                     # integrating
-                    ipow = ibasis + jbasis - 2 * differential_operator + 1
+                    ipow = ibasis + jbasis - 2 * derivative_degree + 1
                     # coefficient after integrating
                     penalty_matrix[ibasis, jbasis] = (
                             (integration_domain[1] ** ipow
@@ -397,6 +434,7 @@ class BSpline(Basis):
             Analysis*. Springler. 50-51.
 
     """
+
     def __init__(self, domain_range=None, nbasis=None, order=4, knots=None):
         """BSpline basis constructor.
 
@@ -492,26 +530,29 @@ class BSpline(Basis):
 
         return mat
 
-    def penalty(self, differential_operator):
-        r"""Returns a penalty matrix given a differential operator.
+    def penalty(self, derivative_degree=None, coefficients=None):
+        r""" Returns a penalty matrix given a differential operator.
+
+        The differential operator can be either a derivative of a certain
+        degree or a more complex operator.
 
         The penalty matrix is defined as [RS05-5-6-2]_:
 
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
 
-        where :math:`\phi_i(s) i=1, 2, ..., n` are the basis functions and
-        :math:`L` is a differential operator.
+        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
+        functions and :math:`L` is a differential operator.
 
         Args:
-            differential_operator (int or list or tuple): Integer o list of
-                coefficients representing a differential operator. A
-                differential operator can be either a integer (indicating the
-                order of the derivative) or an iterable indicating
+            derivative_degree (int): Integer indicating the order of the
+                derivative or . For instance 2 means that the differential
+                operator is :math:`f''(x)`.
+            coefficients (list): List of coefficients representing a
+                differential operator. An iterable indicating
                 coefficients of derivatives (which can be functions). For
-                instance 2 means that the differential operator is
-                :math:`f''(x)` and the tuple (1, 0, numpy.sin), :math:`1
-                + sin(x)D^{2}`.
+                instance the tuple (1, 0, numpy.sin) means :math:`1
+                + sin(x)D^{2}`. Only used if derivative degree is None.
 
         Returns:
             numpy.array: Penalty matrix.
@@ -522,19 +563,19 @@ class BSpline(Basis):
                 Springler.
 
         """
-        if isinstance(differential_operator, int):
-            if differential_operator >= self.order:
+        if derivative_degree is not None:
+            if derivative_degree >= self.order:
                 raise ValueError("Penalty matrix cannot be evaluated for "
                                  "derivative of order {} for B-splines of "
-                                 "order {}".format(differential_operator,
+                                 "order {}".format(derivative_degree,
                                                    self.order))
-            if differential_operator == self.order - 1:
+            if derivative_degree == self.order - 1:
                 # The derivative of the bsplines are constant in the intervals
                 # defined between knots
                 knots = numpy.array(self.knots)
                 mid_inter = (knots[1:] + knots[:-1]) / 2
                 constants = self.evaluate(mid_inter,
-                                          derivative=differential_operator).T
+                                          derivative=derivative_degree).T
                 knots_intervals = numpy.diff(self.knots)
                 # Integration of product of constants
                 return constants.T @ numpy.diag(knots_intervals) @ constants
@@ -568,18 +609,18 @@ class BSpline(Basis):
                     # Let the ith not be a
                     # Then f(x) = pp(x - a)
                     pp = (PPoly.from_spline((knots, c, self.order - 1))
-                              .c[:, no_0_intervals])
+                          .c[:, no_0_intervals])
                     # We need the actual coefficients of f, not pp. So we
                     # just recursively calculate the new coefficients
                     coeffs = pp.copy()
                     for j in range(self.order - 1):
-                        coeffs[j+1:] += ((binom(self.order - j - 1,
-                                        range(1, self.order - j)) *
-                               numpy.vstack(((-a) **
-                                             numpy.array(range(1,
-                                                 self.order - j)) for a in
-                                             self.knots[:-1]))
-                               ).T * pp[j])
+                        coeffs[j + 1:] += (
+                                (binom(self.order - j - 1,
+                                       range(1, self.order - j))
+                                 * numpy.vstack(((-a) ** numpy.array(
+                                            range(1, self.order - j)) for a in
+                                                 self.knots[:-1]))
+                                 ).T * pp[j])
                     ppoly_lst.append(coeffs)
                     c[i] = 0
 
@@ -590,14 +631,14 @@ class BSpline(Basis):
                     for i in range(self.nbasis):
                         poly_i = numpy.trim_zeros(ppoly_lst[i][:,
                                                   interval], 'f')
-                        if len(poly_i) <= differential_operator:
+                        if len(poly_i) <= derivative_degree:
                             # if the order of the polynomial is lesser or
                             # equal to the derivative the result of the
                             # integral will be 0
                             continue
                         # indefinite integral
                         integral = polyint(_polypow(polyder(
-                            poly_i, differential_operator), 2))
+                            poly_i, derivative_degree), 2))
                         # definite integral
                         penalty_matrix[i, i] += numpy.diff(polyval(
                             integral, self.knots[interval: interval + 2]))[0]
@@ -605,34 +646,33 @@ class BSpline(Basis):
                         for j in range(i + 1, self.nbasis):
                             poly_j = numpy.trim_zeros(ppoly_lst[j][:,
                                                       interval], 'f')
-                            if len(poly_j) <= differential_operator:
+                            if len(poly_j) <= derivative_degree:
                                 # if the order of the polynomial is lesser
                                 # or equal to the derivative the result of
                                 # the integral will be 0
                                 continue
                                 # indefinite integral
                             integral = polyint(
-                                polymul(polyder(poly_i, differential_operator),
-                                        polyder(poly_j, differential_operator)))
+                                polymul(polyder(poly_i, derivative_degree),
+                                        polyder(poly_j, derivative_degree)))
                             # definite integral
                             penalty_matrix[i, j] += numpy.diff(polyval(
-                               integral,  self.knots[interval: interval + 2])
+                                integral, self.knots[interval: interval + 2])
                             )[0]
                             penalty_matrix[j, i] = penalty_matrix[i, j]
                 return penalty_matrix
         else:
             # if the order of the derivative is greater or equal to the order
             # of the bspline minus 1
-            if len(differential_operator) >= self.order:
+            if len(coefficients) >= self.order:
                 raise ValueError("Penalty matrix cannot be evaluated for "
                                  "derivative of order {} for B-splines of "
                                  "order {}"
-                                 .format(len(differential_operator) - 1,
+                                 .format(len(coefficients) - 1,
                                          self.order))
 
         # compute using the inner product
-        raise NotImplementedError("Not implemented for not integer "
-                                  "differential operators or duplicate knots.")
+        return self._numerical_penalty(coefficients)
 
     def __repr__(self):
         return ("{}(domain_range={}, nbasis={}, order={}, knots={})".format(
@@ -686,6 +726,7 @@ class Fourier(Basis):
 
 
     """
+
     def __init__(self, domain_range=(0, 1), nbasis=3, period=1):
         self.period = period
         # If number of basis is even, add 1
@@ -757,26 +798,29 @@ class Fourier(Basis):
         mat = mat / numpy.sqrt(self.period / 2)
         return mat
 
-    def penalty(self, differential_operator):
-        r"""Returns a penalty matrix given a differential operator.
+    def penalty(self, derivative_degree=None, coefficients=None):
+        r""" Returns a penalty matrix given a differential operator.
+
+        The differential operator can be either a derivative of a certain
+        degree or a more complex operator.
 
         The penalty matrix is defined as [RS05-5-6-2]_:
 
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
 
-        where :math:`\phi_i(s) i=1, 2, ..., n` are the basis functions and
-        :math:`L` is a differential operator.
+        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
+        functions and :math:`L` is a differential operator.
 
         Args:
-            differential_operator (int or list or tuple): Integer o list of
-                coefficients representing a differential operator. A
-                differential operator can be either a integer (indicating the
-                order of the derivative) or an iterable indicating
+            derivative_degree (int): Integer indicating the order of the
+                derivative or . For instance 2 means that the differential
+                operator is :math:`f''(x)`.
+            coefficients (list): List of coefficients representing a
+                differential operator. An iterable indicating
                 coefficients of derivatives (which can be functions). For
-                instance 2 means that the differential operator is
-                :math:`f''(x)` and the tuple (1, 0, numpy.sin), :math:`1
-                + sin(x)D^{2}`.
+                instance the tuple (1, 0, numpy.sin) means :math:`1
+                + sin(x)D^{2}`. Only used if derivative degree is None.
 
         Returns:
             numpy.array: Penalty matrix.
@@ -787,12 +831,12 @@ class Fourier(Basis):
                 Springler.
 
         """
-        if isinstance(differential_operator, int):
+        if isinstance(derivative_degree, int):
             omega = 2 * numpy.pi / self.period
             # the derivatives of the functions of the basis are also orthogonal
             # so only the diagonal is different from 0.
             penalty_matrix = numpy.zeros(self.nbasis)
-            if differential_operator == 0:
+            if derivative_degree == 0:
                 penalty_matrix[0] = 1
             else:
                 # the derivative of a constant is 0
@@ -801,17 +845,16 @@ class Fourier(Basis):
             index_even = numpy.array(range(2, self.nbasis, 2))
             exponents = index_even / 2
             # factor resulting of deriving the basis function the times
-            # indcated in the differential_operator
-            factor = (exponents * omega) ** (2 * differential_operator)
+            # indcated in the derivative_degree
+            factor = (exponents * omega) ** (2 * derivative_degree)
             # the norm of the basis functions is 1 so only the result of the
             # integral is just the factor
             penalty_matrix[index_even - 1] = factor
             penalty_matrix[index_even] = factor
             return numpy.diag(penalty_matrix)
         else:
-            # TODO implement using inner product
-            raise NotImplementedError("Not implemented for not integer "
-                                      "differential operators.")
+            # implement using inner product
+            return self._numerical_penalty(coefficients)
 
     def __repr__(self):
         return ("{}(domain_range={}, nbasis={}, period={})".format(
@@ -867,7 +910,7 @@ class FDataBasis:
 
     @classmethod
     def from_data(cls, data_matrix, sample_points, basis, weight_matrix=None,
-                  smoothing_factor=0, differential_operator=2,
+                  smoothness_parameter=0, differential_operator=2,
                   penalty_matrix=None, method='cholesky'):
         r"""Raw data to a smooth functional form.
 
@@ -882,7 +925,7 @@ class FDataBasis:
         where :math:`y` is the vector or matrix of observations, :math:`\Phi`
         the matrix whose columns are the basis functions evaluated at the
         sampling points, :math:`c` the coefficient vector or matrix to be
-        estimated, :math:`\lambda` a smoothing factor and :math:`c'Rc` the
+        estimated, :math:`\lambda` a smoothness paramerter and :math:`c'Rc` the
         matrix representation of the roughness penalty :math:`\int \left[ L(
         x(s)) \right] ^2 ds` where :math:`L` is a linear differential operator.
 
@@ -899,9 +942,9 @@ class FDataBasis:
             basis: (Basis): Basis used.
             weight_matrix (array_like, optional): Matrix to weight the
                 observations. Defaults to the identity matrix.
-            smoothing_factor (int or float, optional): Smoothing factor. Trying
-                with several factors in a logarythm scale is suggested. If 0
-                no smoothing is performed. Defaults to 0.
+            smoothness_parameter (int or float, optional): Smoothness parameter.
+                Trying with several factors in a logarythm scale is suggested.
+                If 0 no smoothing is performed. Defaults to 0.
             differential_operator (int or list or tuple, optional): Integer or
                 list of coefficients representing a differential operator. A
                 differential operator can be either a integer (indicating the
@@ -960,21 +1003,21 @@ class FDataBasis:
         # where:
         #  phi is the basis_values
         #  W is the weight matrix
-        #  lambda the smoothing factor
+        #  lambda the smoothness parameter
         #  C the coefficient matrix (the unknown)
         #  Y is the data_matrix
 
-        if data_matrix.shape[0] > basis.nbasis or smoothing_factor > 0:
+        if data_matrix.shape[0] > basis.nbasis or smoothness_parameter > 0:
             method = method.lower()
             if method == 'cholesky':
                 right_matrix = basis_values.T @ weight_matrix @ data_matrix
                 left_matrix = basis_values.T @ weight_matrix @ basis_values
 
                 # Adds the roughness penalty to the equation
-                if smoothing_factor > 0:
+                if smoothness_parameter > 0:
                     if not penalty_matrix:
                         penalty_matrix = basis.penalty(differential_operator)
-                    left_matrix += smoothing_factor * penalty_matrix
+                    left_matrix += smoothness_parameter * penalty_matrix
 
                 coefficients = scipy.linalg.cho_solve(scipy.linalg.cho_factor(
                     left_matrix, lower=True), right_matrix)
@@ -984,7 +1027,7 @@ class FDataBasis:
                 coefficients = coefficients.T
 
             elif method == 'qr':
-                if smoothing_factor > 0 or weight_matrix:
+                if smoothness_parameter > 0 or weight_matrix:
                     raise NotImplementedError('QR method not implemented for '
                                               'rougness penalty or weight '
                                               'matrices')

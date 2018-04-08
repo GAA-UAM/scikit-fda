@@ -15,7 +15,7 @@ class TestBasis(unittest.TestCase):
         basis = Monomial(nbasis=4)
         fd = FDataBasis.from_data(x, t, basis,
                                   differential_operator=2,
-                                  smoothing_factor=1)
+                                  smoothness_parameter=1)
         # These results where extracted from the R package fda
         np.testing.assert_array_equal(
             fd.coefficients.round(2), np.array([[0.61, -0.88, 0.06, 0.02]]))
@@ -40,10 +40,20 @@ class TestBasis(unittest.TestCase):
                       [0., 0., 0., 24936.73, 0.],
                       [0., 0., 0., 0., 24936.73]]))
 
-    def test_bspline_penaltY(self):
+    def test_bspline_penalty(self):
         basis = BSpline(nbasis=5)
         np.testing.assert_array_equal(
             basis.penalty(2).round(2),
+            np.array([[96., -132., 24., 12., 0.],
+                      [-132., 192., -48., -24., 12.],
+                      [24., -48., 48., -48., 24.],
+                      [12., -24., -48., 192., -132.],
+                      [0., 12., 24., -132., 96.]]))
+
+    def test_bspline_penalty_numerical(self):
+        basis = BSpline(nbasis=5)
+        np.testing.assert_array_equal(
+            basis.penalty(coefficients=[0, 0, 1]).round(2),
             np.array([[96., -132., 24., 12., 0.],
                       [-132., 192., -48., -24., 12.],
                       [24., -48., 48., -48., 24.],

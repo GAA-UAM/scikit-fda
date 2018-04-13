@@ -133,6 +133,30 @@ class Basis(ABC):
 
     def _evaluate_single_basis_coefficients(self, coefficients, basis_index, x,
                                             cache):
+        """Evaluates a differential operator over one of the basis.
+
+        Computes the result of evaluating a the result of applying a
+        differential operator over one of the basis functions. It also admits a
+        "cache" dictionary to store the results for the other basis not
+        returned because they are evaluated by the function and may be needed
+        later.
+
+        Args:
+            coefficients (list): List of coefficients representing a
+                differential operator. An iterable indicating
+                coefficients of derivatives (which can be functions). For
+                instance the tuple (1, 0, numpy.sin) means :math:`1
+                + sin(x)D^{2}`.
+            basis_index (int): index in self.basis of the basis that is
+                evaluated.
+            x (number): Point of evaluation.
+            cache (dict): Dictionary with the values of previous evaluation
+                for all the basis function and where the results of the
+                evalaution are stored. This is done because later evaluation
+                of the same differential operator and same x may be needed
+                for other of the basis functions.
+
+        """
         if x not in cache:
             res = numpy.zeros(self.nbasis)
             for i, k in enumerate(coefficients):
@@ -144,6 +168,17 @@ class Basis(ABC):
         return cache[x][basis_index]
 
     def _numerical_penalty(self, coefficients):
+        """Returns a penalty matrix using a numerical approach.
+
+        See :func:`~basis.Basis.penalty`.
+
+        Args:
+            coefficients (list): List of coefficients representing a
+                differential operator. An iterable indicating
+                coefficients of derivatives (which can be functions). For
+                instance the tuple (1, 0, numpy.sin) means :math:`1
+                + sin(x)D^{2}`.
+        """
         penalty_matrix = numpy.zeros((self.nbasis, self.nbasis))
         cache = {}
         for i in range(self.nbasis):
@@ -910,8 +945,9 @@ class FDataBasis:
 
     @classmethod
     def from_data(cls, data_matrix, sample_points, basis, weight_matrix=None,
-                  smoothness_parameter=0, differential_operator=2,
-                  penalty_matrix=None, method='cholesky'):
+                  smoothness_parameter=0, penalty_degree=None,
+                  penalty_coefficients=None, penalty_matrix=None,
+                  method='cholesky'):
         r"""Raw data to a smooth functional form.
 
         Takes functional data in a discrete form and makes an approximates it
@@ -945,14 +981,17 @@ class FDataBasis:
             smoothness_parameter (int or float, optional): Smoothness parameter.
                 Trying with several factors in a logarythm scale is suggested.
                 If 0 no smoothing is performed. Defaults to 0.
-            differential_operator (int or list or tuple, optional): Integer or
-                list of coefficients representing a differential operator. A
-                differential operator can be either a integer (indicating the
-                order of the derivative) or an iterable indicating
-                coefficients of derivatives (which can be functions). For
+            penalty_degree (int): Integer indicating the order of the
+                derivative used in the computing of the penalty matrix. For
                 instance 2 means that the differential operator is
-                :math:`f''(x)` and the tuple (1, 0, numpy.sin), :math:`1
-                + sin(x)D^{2}`. Defaults to 2, meaning the second derivative.
+                :math:`f''(x)`. If neither penalty_degree nor
+                penalty_coefficients are supplied, this defaults to 2.
+            penalty_coefficients (list): List of coefficients representing the
+                differential operator used in the computing of the penalty
+                matrix. An iterable indicating coefficients of derivatives (
+                which can be functions). For instance the tuple (1, 0,
+                numpy.sin) means :math:`1 + sin(x)D^{2}`. Only used if
+                penalty_degree and penalty_matrix are None.
             penalty_matrix (array_like, optional): Penalty matrix. If
                 supplied the differential operator is not used and instead
                 the matrix supplied by this argument is used.
@@ -983,6 +1022,8 @@ class FDataBasis:
                 Springler.
 
         """
+        if penalty_degree is None and penalty_coefficients is None:
+            penalty_degree = 2
 
         # n is the samples
         # m is the observations
@@ -1016,7 +1057,8 @@ class FDataBasis:
                 # Adds the roughness penalty to the equation
                 if smoothness_parameter > 0:
                     if not penalty_matrix:
-                        penalty_matrix = basis.penalty(differential_operator)
+                        penalty_matrix = basis.penalty(penalty_degree,
+                                                       penalty_coefficients)
                     left_matrix += smoothness_parameter * penalty_matrix
 
                 coefficients = scipy.linalg.cho_solve(scipy.linalg.cho_factor(

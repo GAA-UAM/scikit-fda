@@ -14,13 +14,13 @@ class TestBasis(unittest.TestCase):
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = Monomial(nbasis=4)
         fd = FDataBasis.from_data(x, t, basis,
-                                  differential_operator=2,
+                                  penalty_degree=2,
                                   smoothness_parameter=1)
         # These results where extracted from the R package fda
         np.testing.assert_array_equal(
             fd.coefficients.round(2), np.array([[0.61, -0.88, 0.06, 0.02]]))
 
-    def test_bspline_penalty(self):
+    def test_bspline_penalty_special_case(self):
         basis = BSpline(nbasis=5)
         np.testing.assert_array_equal(
             basis.penalty(basis.order - 1),

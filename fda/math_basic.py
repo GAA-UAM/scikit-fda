@@ -410,10 +410,9 @@ def fpca(fdatagrid, n=2):
         n (int, optional): Number of principal components. Defaults to 2.
 
     Returns:
-        TODO
+        tuple: (scores, principal directions, eigenvalues)
 
     """
-    # TODO decide how to return all the information.
     fdatagrid = fdatagrid - mean(fdatagrid)  # centers the data
     # singular value decomposition
     u, s, v = numpy.linalg.svd(fdatagrid.data_matrix)

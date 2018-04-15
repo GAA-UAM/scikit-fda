@@ -6,6 +6,7 @@ representation and the corresponding basis class.
 from abc import ABC, abstractmethod
 
 import numpy
+import numpy.linalg
 import matplotlib.pyplot
 import scipy.interpolate
 import scipy.linalg
@@ -79,6 +80,19 @@ class Basis(ABC):
             basis function or its derivatives at the values specified in
             eval_points.
 
+        """
+        pass
+
+    @abstractmethod
+    def ndegenerated(self, penalty_degree):
+        """Number of 0 or very close to 0 eigenvalues of the penalty matrix."
+
+        Args:
+            penalty_degree (int): Degree of the derivative used in the
+                calculation of the penalty matrix.
+
+        Returns:
+             int: number of close to 0 eigenvalues.
         """
         pass
 
@@ -278,6 +292,18 @@ class Monomial(Basis):
                [2., 2., 2.]])
 
     """
+
+    def ndegenerated(self, penalty_degree):
+        """Number of 0 or very close to 0 eigenvalues of the penalty matrix."
+
+        Args:
+            penalty_degree (int): Degree of the derivative used in the
+                calculation of the penalty matrix.
+
+        Returns:
+             int: number of close to 0 eigenvalues.
+        """
+        return penalty_degree
 
     def _compute_matrix(self, eval_points, derivative=0):
         """Computes the basis or its derivatives given a list of values.
@@ -516,6 +542,18 @@ class BSpline(Basis):
         self.order = order
         self.knots = list(knots)
         super().__init__(domain_range, nbasis)
+
+    def ndegenerated(self, penalty_degree):
+        """Number of 0 or very close to 0 eigenvalues of the penalty matrix."
+
+        Args:
+            penalty_degree (int): Degree of the derivative used in the
+                calculation of the penalty matrix.
+
+        Returns:
+             int: number of close to 0 eigenvalues.
+        """
+        return penalty_degree
 
     def _compute_matrix(self, eval_points, derivative=0):
         """Computes the basis or its derivatives given a list of values.
@@ -833,6 +871,18 @@ class Fourier(Basis):
         mat = mat / numpy.sqrt(self.period / 2)
         return mat
 
+    def ndegenerated(self, penalty_degree):
+        """Number of 0 or very close to 0 eigenvalues of the penalty matrix."
+
+        Args:
+            penalty_degree (int): Degree of the derivative used in the
+                calculation of the penalty matrix.
+
+        Returns:
+             int: number of close to 0 eigenvalues.
+        """
+        return 0 if penalty_degree == 0 else 1
+
     def penalty(self, derivative_degree=None, coefficients=None):
         r""" Returns a penalty matrix given a differential operator.
 
@@ -961,13 +1011,24 @@ class FDataBasis:
         where :math:`y` is the vector or matrix of observations, :math:`\Phi`
         the matrix whose columns are the basis functions evaluated at the
         sampling points, :math:`c` the coefficient vector or matrix to be
-        estimated, :math:`\lambda` a smoothness paramerter and :math:`c'Rc` the
+        estimated, :math:`\lambda` a smoothness parameter and :math:`c'Rc` the
         matrix representation of the roughness penalty :math:`\int \left[ L(
         x(s)) \right] ^2 ds` where :math:`L` is a linear differential operator.
 
         Each element of :math:`R` has the following close form:
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
+
+        By deriving the first formula we obtain the closed formed of the
+        estimated coefficients matrix:
+        .. math::
+            \hat(c) = \left( |Phi' W \Phi + \lambda R \right)^{-1} \Phi' W y
+
+        The solution of this matrix equation is done using the cholesky
+        method for the resolution of a LS problem. If this method throughs a
+        rounding error warning you may want to use the QR factorisation that
+        is more numerically stable despite being more expensive to compute.
+        [RS05-5-2-7]_
 
         Args:
             data_matrix (array_like): List or matrix containing the
@@ -1021,7 +1082,15 @@ class FDataBasis:
                 smooths are computed. In *Functional Data Analysis* (pp. 86-87).
                 Springler.
 
+            .. [RS05-5-2-7] Ramsay, J., Silverman, B. W. (2005). HSpline
+                smoothing as an augmented least squares problem. In *Functional
+                Data Analysis* (pp. 86-87). Springler.
+
+
+
+
         """
+        # TODO add an option to return fit summaries: yhat, sse, gcv...
         if penalty_degree is None and penalty_coefficients is None:
             penalty_degree = 2
 
@@ -1069,16 +1138,50 @@ class FDataBasis:
                 coefficients = coefficients.T
 
             elif method == 'qr':
-                if smoothness_parameter > 0 or weight_matrix:
-                    raise NotImplementedError('QR method not implemented for '
-                                              'rougness penalty or weight '
-                                              'matrices')
+                if weight_matrix is not None:
+                    # Decompose W in U'U and calculate UW and Uy
+                    upper = scipy.linalg.cholesky(weight_matrix)
+                    basis_values = upper @ basis_values
+                    data_matrix = upper @ data_matrix
+
+                if smoothness_parameter > 0:
+                    # In this case instead of resolving the original equation
+                    # we expand the system to include the penalty matrix so that
+                    # the rounding error is reduced
+                    if not penalty_matrix:
+                        penalty_matrix = basis.penalty(penalty_degree,
+                                                       penalty_coefficients)
+
+                    w, v = numpy.linalg.eigh(penalty_matrix)
+                    # Reduction of the penalty matrix taking away 0 or almost
+                    # zeros eigenvalues
+                    ndegenerated = basis.ndegenerated(penalty_degree)
+                    if ndegenerated:
+                        index = ndegenerated - 1
+                    else:
+                        index = None
+                    w = w[:index:-1]
+                    v = v[:, :index:-1]
+
+                    penalty_matrix = v @ numpy.diag(numpy.sqrt(w))
+                    # Augment the basis matrix with the square root of the
+                    # penalty matrix
+                    basis_values = numpy.concatenate([
+                         basis_values,
+                         numpy.sqrt(smoothness_parameter) * penalty_matrix.T],
+                         axis=0)
+                    # Augment data matrix by n - ndegenerated zeros
+                    data_matrix = numpy.pad(data_matrix,
+                                             ((0, len(v) - ndegenerated),
+                                              (0, 0)),
+                                             mode='constant')
+
                 # Resolves the equation
                 # B.T @ B @ C = B.T @ D
                 # by means of the QR decomposition
 
                 # B = Q @ R
-                q, r = scipy.linalg.qr(basis_values)
+                q, r = numpy.linalg.qr(basis_values)
                 right_matrix = q.T @ data_matrix
 
                 # R @ C = Q.T @ D

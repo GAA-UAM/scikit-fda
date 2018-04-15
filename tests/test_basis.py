@@ -7,6 +7,28 @@ class TestBasis(unittest.TestCase):
 
     # def setUp(self): could be defined for set up before any test
 
+    def test_from_data_cholesky(self):
+        t = np.linspace(0, 1, 5)
+        x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
+        basis = BSpline((0, 1), nbasis=5)
+        np.testing.assert_array_equal(
+            FDataBasis.from_data(x, t, basis, smoothness_parameter=10,
+                                 penalty_degree=2, method='cholesky'
+                                 ).coefficients.round(2),
+            np.array([[0.60, 0.47, 0.20, -0.07, -0.20]])
+        )
+
+    def test_from_data_qr(self):
+        t = np.linspace(0, 1, 5)
+        x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
+        basis = BSpline((0, 1), nbasis=5)
+        np.testing.assert_array_equal(
+            FDataBasis.from_data(x, t, basis, smoothness_parameter=10,
+                                 penalty_degree=2, method='qr'
+                                 ).coefficients.round(2),
+            np.array([[0.60, 0.47, 0.20, -0.07, -0.20]])
+        )
+
     def test_monomial_smoothing(self):
         # It does not have much sense to apply smoothing in this basic case
         # where the fit is very good but its just for testing purposes

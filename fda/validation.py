@@ -128,23 +128,23 @@ def minimise(fdatagrid, parameters,
         >>> fd = fda.FDataGrid(x ** 2, x)
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn)
         >>> numpy.array(res['scores']).round(2)
-        array([ 11.67,  12.37])
+        array([11.67, 12.37])
         >>> round(res['best_score'], 2)
         11.67
         >>> res['best_parameter']
         2
         >>> res['hat_matrix'].round(2)
-        array([[ 0.5 ,  0.5 ,  0.  ,  0.  ,  0.  ],
-               [ 0.33,  0.33,  0.33,  0.  ,  0.  ],
-               [ 0.  ,  0.33,  0.33,  0.33,  0.  ],
-               [ 0.  ,  0.  ,  0.33,  0.33,  0.33],
-               [ 0.  ,  0.  ,  0.  ,  0.5 ,  0.5 ]])
+        array([[0.5 , 0.5 , 0.  , 0.  , 0.  ],
+               [0.33, 0.33, 0.33, 0.  , 0.  ],
+               [0.  , 0.33, 0.33, 0.33, 0.  ],
+               [0.  , 0.  , 0.33, 0.33, 0.33],
+               [0.  , 0.  , 0.  , 0.5 , 0.5 ]])
         >>> res['fdatagrid'].round(2)
         FDataGrid(
-            array([[ 2.5 ,  1.67,  0.67,  1.67,  2.5 ]])
-            ,sample_points=[array([-2., -1.,  0.,  1.,  2.])]
-            ,sample_range=array([[-2.,  2.]])
-            ,...)
+            array([[2.5 , 1.67, 0.67, 1.67, 2.5 ]]),
+            sample_points=[array([-2., -1.,  0.,  1.,  2.])],
+            sample_range=array([[-2.,  2.]]),
+            ...)
 
         Other validation methods can be used such as cross-validation or
         general cross validation using other penalisation functions.
@@ -152,23 +152,23 @@ def minimise(fdatagrid, parameters,
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                cv_method=cv)
         >>> numpy.array(res['scores']).round(2)
-        array([ 4.2,  5.5])
+        array([4.2, 5.5])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                penalisation_function=aic)
         >>> numpy.array(res['scores']).round(2)
-        array([  9.35,  10.71])
+        array([ 9.35, 10.71])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                penalisation_function=fpe)
         >>> numpy.array(res['scores']).round(2)
-        array([  9.8,  11. ])
+        array([ 9.8, 11. ])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                penalisation_function=shibata)
         >>> numpy.array(res['scores']).round(2)
-        array([ 7.56,  9.17])
+        array([7.56, 9.17])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                penalisation_function=rice)
         >>> numpy.array(res['scores']).round(2)
-        array([ 21. ,  16.5])
+        array([21. , 16.5])
 
     """
     if fdatagrid.ndim_domain != 1:

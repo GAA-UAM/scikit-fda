@@ -10,6 +10,7 @@ import numbers
 import matplotlib.pyplot
 import numpy
 import scipy
+import scipy.stats.mstats
 
 from . import basis as fdbasis
 
@@ -50,8 +51,8 @@ class FDataGrid:
 
     Attributes:
         data_matrix (numpy.ndarray): a matrix where each entry of the first
-        axis contains the values of a functional datum evaluated at the
-        points of discretisation.
+            axis contains the values of a functional datum evaluated at the
+            points of discretisation.
         sample_points (numpy.ndarray): 2 dimension matrix where each row
             contains the points of dicretisation for each axis of data_matrix.
         sample_range (numpy.ndarray): 2 dimension matrix where each row
@@ -71,8 +72,8 @@ class FDataGrid:
         >>> FDataGrid(data_matrix, sample_points)
         FDataGrid(
             array([[1, 2],
-                   [2, 3]])
-            ,sample_points=[array([2, 4])]
+                   [2, 3]]),
+            sample_points=[array([2, 4])],
             ...)
 
         The number of columns of data_matrix have to be the length of
@@ -146,10 +147,10 @@ class FDataGrid:
             if not numpy.array_equal(
                     data_shape,
                     sample_points_shape):
-                raise ValueError(f"Incorrect dimension in data_matrix and "
-                                 f"sample_points. "
-                                 f"Data has shape {data_shape} and sample "
-                                 f"points have shape {sample_points_shape}")
+                raise ValueError("Incorrect dimension in data_matrix and "
+                                 "sample_points. Data has shape {} and sample "
+                                 "points have shape {}"
+                                 .format(data_shape, sample_points_shape))
 
         if sample_range is None:
                 self.sample_range = numpy.array(
@@ -298,22 +299,22 @@ class FDataGrid:
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative()
             FDataGrid(
-                array([[ 1. ,  1.5,  1.5,  2. ,  3. ]])
-                ,sample_points=[array([0, 1, 2, 3, 4])]
-                ,sample_range=array([[0, 4]])
-                ,dataset_label='Data set - 1 derivative'
-                ,...)
+                array([[1. , 1.5, 1.5, 2. , 3. ]]),
+                sample_points=[array([0, 1, 2, 3, 4])],
+                sample_range=array([[0, 4]]),
+                dataset_label='Data set - 1 derivative',
+                ...)
 
             Second order derivative
 
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative(2)
             FDataGrid(
-                array([[ 0.5 ,  0.25,  0.25,  0.75,  1.  ]])
-                ,sample_points=[array([0, 1, 2, 3, 4])]
-                ,sample_range=array([[0, 4]])
-                ,dataset_label='Data set - 2 derivative'
-                ,...)
+                array([[0.5 , 0.25, 0.25, 0.75, 1.  ]]),
+                sample_points=[array([0, 1, 2, 3, 4])],
+                sample_range=array([[0, 4]]),
+                dataset_label='Data set - 2 derivative',
+                ...)
 
         """
         if self.ndim_domain != 1:
@@ -344,7 +345,7 @@ class FDataGrid:
                 mdata.append(arr)
             data_matrix = numpy.array(mdata)
 
-        dataset_label = f"{self.dataset_label} - {order} derivative"
+        dataset_label = "{} - {} derivative".format(self.dataset_label, order)
 
         return FDataGrid(data_matrix, sample_points, self.sample_range,
                          dataset_label, self.axes_labels)
@@ -446,8 +447,8 @@ class FDataGrid:
             >>> fd.concatenate(fd_2)
             FDataGrid(
                 array([[1, 2, 4, 5, 8],
-                       [3, 4, 7, 9, 2]])
-                ,sample_points=[array([0, 1, 2, 3, 4])]
+                       [3, 4, 7, 9, 2]]),
+                sample_points=[array([0, 1, 2, 3, 4])],
                 ...
 
         """
@@ -570,7 +571,7 @@ class FDataGrid:
             >>> basis = fda.basis.Fourier((0, 1), nbasis=3)
             >>> fd_b = fd.to_basis(basis)
             >>> fd_b.coefficients.round(2)
-            array([[ 0.  ,  0.71,  0.71]])
+            array([[0.  , 0.71, 0.71]])
 
         """
         if self.ndim_domain > 1:
@@ -583,27 +584,30 @@ class FDataGrid:
 
     def __str__(self):
         """ Return str(self). """
-        return ('Data set:\t' + str(self.data_matrix)
-                + '\nsample_points:\t' + str(self.sample_points)
-                + '\ntime range:\t' + str(self.sample_range))
+        return ('Data set:    ' + str(self.data_matrix)
+                + '\nsample_points:    ' + str(self.sample_points)
+                + '\ntime range:    ' + str(self.sample_range))
 
     def __repr__(self):
         """ Return repr(self). """
-        return (f"FDataGrid("
-                + f"\n{repr(self.data_matrix)}"
-                + f"\n,sample_points={repr(self.sample_points)}"
-                + f"\n,sample_range={repr(self.sample_range)}"
-                + f"\n,dataset_label={repr(self.dataset_label)}"
-                + f"\n,axes_labels={repr(self.axes_labels)}"
-                + f")").replace('\n', '\n    ')
+        return ("FDataGrid("
+                "\n{},"
+                "\nsample_points={},"
+                "\nsample_range={},"
+                "\ndataset_label={},"
+                "\naxes_labels={})"
+                .format(repr(self.data_matrix),
+                        repr(self.sample_points),
+                        repr(self.sample_range),
+                        repr(self.dataset_label),
+                        repr(self.axes_labels))).replace('\n', '\n    ')
 
     def __getitem__(self, key):
         """ Return self[key]. """
         if isinstance(key, tuple):
             # If there are not values for every dimension, the remaining ones
             # are kept
-            key += tuple(slice(None) for i in
-                         range(self.ndim_domain + 1 - len(key)))
+            key += (slice(None),) * (self.ndim_domain + 1 - len(key))
 
             sample_points = [self.sample_points[i][subkey]
                              for i, subkey in enumerate(

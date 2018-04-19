@@ -40,7 +40,7 @@ def cv(fdatagrid, s_matrix):
         float: Cross validation score.
 
     """
-    y = fdatagrid.data_matrix
+    y = fdatagrid.data_matrix[..., 0]
     y_est = numpy.dot(s_matrix, y.T).T
     return numpy.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
 
@@ -75,7 +75,7 @@ def gcv(fdatagrid, s_matrix, penalisation_function=None):
     Returns:
         float: Cross validation score.
     """
-    y = fdatagrid.data_matrix
+    y = fdatagrid.data_matrix[..., 0]
     y_est = numpy.dot(s_matrix, y.T).T
     if penalisation_function is not None:
         return (numpy.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
@@ -141,7 +141,11 @@ def minimise(fdatagrid, parameters,
                [0.  , 0.  , 0.  , 0.5 , 0.5 ]])
         >>> res['fdatagrid'].round(2)
         FDataGrid(
-            array([[2.5 , 1.67, 0.67, 1.67, 2.5 ]]),
+            array([[[2.5 ],
+                    [1.67],
+                    [0.67],
+                    [1.67],
+                    [2.5 ]]]),
             sample_points=[array([-2., -1.,  0.,  1.,  2.])],
             sample_range=array([[-2.,  2.]]),
             ...)
@@ -175,6 +179,10 @@ def minimise(fdatagrid, parameters,
         raise NotImplementedError("This method only works when the dimension "
                                   "of the domain of the FDatagrid object is "
                                   "one.")
+    if fdatagrid.ndim_image != 1:
+        raise NotImplementedError("This method only works when the dimension "
+                                  "of the image of the FDatagrid object is "
+                                  "one.")
     # Reduce one dimension the sample points.
     sample_points = fdatagrid.sample_points[0]
     scores = []
@@ -193,11 +201,12 @@ def minimise(fdatagrid, parameters,
     # gets the best parameter.
     h = parameters[int(numpy.argmin(scores))]
     s = smoothing_method(sample_points, h, **kwargs)
-    fdatagrid_adjusted = fda.FDataGrid(numpy.dot(fdatagrid.data_matrix, s.T),
-                                       fdatagrid.sample_points,
-                                       fdatagrid.sample_range,
-                                       fdatagrid.dataset_label,
-                                       fdatagrid.axes_labels)
+    fdatagrid_adjusted = fda.FDataGrid(
+        numpy.dot(fdatagrid.data_matrix[..., 0], s.T),
+        fdatagrid.sample_points,
+        fdatagrid.sample_range,
+        fdatagrid.dataset_label,
+        fdatagrid.axes_labels)
     return {'scores': scores,
             'best_score': numpy.min(scores),
             'best_parameter': h,

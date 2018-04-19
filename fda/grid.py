@@ -71,8 +71,11 @@ class FDataGrid:
         >>> sample_points = [2, 4]
         >>> FDataGrid(data_matrix, sample_points)
         FDataGrid(
-            array([[1, 2],
-                   [2, 3]]),
+            array([[[1],
+                    [2]],
+        <BLANKLINE>
+                   [[2],
+                    [3]]]),
             sample_points=[array([2, 4])],
             ...)
 
@@ -299,7 +302,11 @@ class FDataGrid:
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative()
             FDataGrid(
-                array([[1. , 1.5, 1.5, 2. , 3. ]]),
+                array([[[1. ],
+                        [1.5],
+                        [1.5],
+                        [2. ],
+                        [3. ]]]),
                 sample_points=[array([0, 1, 2, 3, 4])],
                 sample_range=array([[0, 4]]),
                 dataset_label='Data set - 1 derivative',
@@ -310,7 +317,11 @@ class FDataGrid:
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative(2)
             FDataGrid(
-                array([[0.5 , 0.25, 0.25, 0.75, 1.  ]]),
+                array([[[0.5 ],
+                        [0.25],
+                        [0.25],
+                        [0.75],
+                        [1.  ]]]),
                 sample_points=[array([0, 1, 2, 3, 4])],
                 sample_range=array([[0, 4]]),
                 dataset_label='Data set - 2 derivative',
@@ -331,12 +342,12 @@ class FDataGrid:
         if numpy.isnan(self.data_matrix).any():
             raise ValueError("The FDataGrid object cannot contain nan "
                              "elements.")
-        data_matrix = self.data_matrix
+        data_matrix = self.data_matrix[..., 0]
         sample_points = self.sample_points[0]
         for _ in range(order):
             mdata = []
             for i in range(self.nsamples):
-                arr = (numpy.diff(data_matrix[i, ..., 0]) /
+                arr = (numpy.diff(data_matrix[i]) /
                        (sample_points[1:]
                         - sample_points[:-1]))
                 arr = numpy.append(arr, arr[-1])
@@ -446,8 +457,17 @@ class FDataGrid:
             >>> fd_2 = FDataGrid([3,4,7,9,2], range(5))
             >>> fd.concatenate(fd_2)
             FDataGrid(
-                array([[1, 2, 4, 5, 8],
-                       [3, 4, 7, 9, 2]]),
+                array([[[1],
+                        [2],
+                        [4],
+                        [5],
+                        [8]],
+            <BLANKLINE>
+                       [[3],
+                        [4],
+                        [7],
+                        [9],
+                        [2]]]),
                 sample_points=[array([0, 1, 2, 3, 4])],
                 ...
 
@@ -577,7 +597,10 @@ class FDataGrid:
         if self.ndim_domain > 1:
             raise NotImplementedError("Only support 1 dimension on the "
                                       "domain.")
-        return fdbasis.FDataBasis.from_data(self.data_matrix,
+        elif self.ndim_image > 1:
+            raise NotImplementedError("Only support 1 dimension on the "
+                                      "image.")
+        return fdbasis.FDataBasis.from_data(self.data_matrix[..., 0],
                                             self.sample_points[0],
                                             basis,
                                             **kwargs)
@@ -617,6 +640,6 @@ class FDataGrid:
                              sample_points,
                              self.sample_range, self.dataset_label,
                              self.axes_labels)
-        return FDataGrid(self.data_matrix[key], self.sample_points,
+        return FDataGrid(self.data_matrix[key:key + 1], self.sample_points,
                          self.sample_range, self.dataset_label,
                          self.axes_labels)

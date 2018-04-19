@@ -171,6 +171,10 @@ class FDataGrid:
                     raise ValueError("Sample points must be within the sample "
                                      "range.")
 
+        # Adjust the data matrix if the dimension of the image is one
+        if len(self.data_matrix.shape) == 1 + self.ndim_domain:
+            self.data_matrix = self.data_matrix[..., numpy.newaxis]
+
         self.dataset_label = dataset_label
         self.axes_labels = axes_labels
 
@@ -320,7 +324,7 @@ class FDataGrid:
         if order < 1:
             raise ValueError("The order of a derivative has to be greater "
                              "or equal than 1.")
-        if self.ndim > 2:
+        if self.ndim_domain > 1 or self.ndim_image > 1:
             raise NotImplementedError("Not implemented for 2 or more"
                                       " dimensional data.")
         if numpy.isnan(self.data_matrix).any():
@@ -331,8 +335,9 @@ class FDataGrid:
         for _ in range(order):
             mdata = []
             for i in range(self.nsamples):
-                arr = numpy.diff(data_matrix[i]) / (sample_points[1:]
-                                                    - sample_points[:-1])
+                arr = (numpy.diff(data_matrix[i, ..., 0]) /
+                       (sample_points[1:]
+                        - sample_points[:-1]))
                 arr = numpy.append(arr, arr[-1])
                 arr[1:-1] += arr[:-2]
                 arr[1:-1] /= 2

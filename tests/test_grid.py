@@ -1,8 +1,10 @@
 import unittest
-from fda.grid import FDataGrid
+
 import numpy
-from fda import math_basic
 import scipy.stats.mstats
+
+from fda import math_basic
+from fda.grid import FDataGrid
 
 
 class TestFDataGrid(unittest.TestCase):
@@ -12,7 +14,7 @@ class TestFDataGrid(unittest.TestCase):
     def test_init(self):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
         numpy.testing.assert_array_equal(
-            fd.data_matrix,
+            fd.data_matrix[..., 0],
             numpy.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]]))
         numpy.testing.assert_array_equal(fd.sample_range, [(0, 1)])
         numpy.testing.assert_array_equal(
@@ -22,7 +24,7 @@ class TestFDataGrid(unittest.TestCase):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
         mean = math_basic.mean(fd)
         numpy.testing.assert_array_equal(
-            mean.data_matrix[0],
+            mean.data_matrix[0, ..., 0],
             numpy.array([1.5, 2.5, 3.5, 4.5, 5.5]))
         numpy.testing.assert_array_equal(fd.sample_range, [(0, 1)])
         numpy.testing.assert_array_equal(
@@ -33,7 +35,7 @@ class TestFDataGrid(unittest.TestCase):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
         mean = math_basic.gmean(fd)
         numpy.testing.assert_array_equal(
-            mean.data_matrix[0],
+            mean.data_matrix[0, ..., 0],
             scipy.stats.mstats.gmean(
                 numpy.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])))
         numpy.testing.assert_array_equal(fd.sample_range, [(0, 1)])
@@ -46,7 +48,7 @@ class TestFDataGrid(unittest.TestCase):
         fd = FDataGrid(data_matrix=numpy.ones(t))
         fd = fd[:, 0]
         numpy.testing.assert_array_equal(
-            fd.data_matrix,
+            fd.data_matrix[..., 0],
             numpy.array([[1]]))
         numpy.testing.assert_array_equal(
             fd.sample_points,

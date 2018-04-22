@@ -2,10 +2,11 @@
 in this package.
 
 """
-from fda.grid import FDataGrid
 import numpy
-import scipy.stats.mstats
 import scipy.integrate
+import scipy.stats.mstats
+
+from fda.grid import FDataGrid
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -79,10 +80,11 @@ def cov(fdatagrid):
         numpy.darray: Matrix of covariances.
 
     """
-    return FDataGrid(numpy.cov(fdatagrid.data_matrix),
-                     [fdatagrid.sample_points[0], fdatagrid.sample_points[0]],
-                     [fdatagrid.sample_range[0], fdatagrid.sample_range[0]],
-                     fdatagrid.dataset_label + ' - covariance')
+    return FDataGrid(
+        numpy.cov(fdatagrid.data_matrix, rowvar=False)[numpy.newaxis, ...],
+        [fdatagrid.sample_points[0], fdatagrid.sample_points[0]],
+        [fdatagrid.sample_range[0], fdatagrid.sample_range[0]],
+        fdatagrid.dataset_label + ' - covariance')
 
 
 def sqrt(fdatagrid):
@@ -267,16 +269,17 @@ def inner_product(fdatagrid, fdatagrid2):
         raise ValueError("Sample points for both objects must be equal")
 
     # Creates an empty matrix with the desired size to store the results.
-    _matrix = numpy.empty([fdatagrid.nsamples, fdatagrid2.nsamples])
+    matrix = numpy.empty([fdatagrid.nsamples, fdatagrid2.nsamples])
     # Iterates over the different samples of both objects.
     for i in range(fdatagrid.nsamples):
         for j in range(fdatagrid2.nsamples):
             # Calculates the inner product using Simpson's rule.
-            _matrix[i, j] = (scipy.integrate.simps(fdatagrid.data_matrix[i] *
-                                                   fdatagrid2.data_matrix[j],
-                                                   x=fdatagrid.sample_points[0]
-                                                   ))
-    return _matrix
+            matrix[i, j] = (scipy.integrate.simps(
+                fdatagrid.data_matrix[i, ..., 0] *
+                fdatagrid2.data_matrix[j, ..., 0],
+                x=fdatagrid.sample_points[0]
+                ))
+    return matrix
 
 
 def norm_lp(fdatagrid, p=2):
@@ -324,8 +327,12 @@ def norm_lp(fdatagrid, p=2):
     if p < 1:
         raise ValueError("p must be equal or greater than 1.")
 
+    if fdatagrid.ndim_image > 1:
+        raise ValueError("Not implemented for image with "
+                         "dimension greater than 1")
+
     # Computes the norm, approximating the integral with Simpson's rule.
-    return scipy.integrate.simps(numpy.abs(fdatagrid.data_matrix) ** p,
+    return scipy.integrate.simps(numpy.abs(fdatagrid.data_matrix[..., 0]) ** p,
                                  x=fdatagrid.sample_points
                                  ) ** (1 / p)
 
@@ -387,13 +394,13 @@ def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
                              fdatagrid2.sample_points):
         raise ValueError("Sample points for both objects must be equal")
         # Creates an empty matrix with the desired size to store the results.
-    _matrix = numpy.empty([fdatagrid.nsamples, fdatagrid2.nsamples])
+    matrix = numpy.empty([fdatagrid.nsamples, fdatagrid2.nsamples])
     # Iterates over the different samples of both objects.
     for i in range(fdatagrid.nsamples):
         for j in range(fdatagrid2.nsamples):
-            _matrix[i, j] = norm(fdatagrid[i] - fdatagrid2[j], **kwargs)
+            matrix[i, j] = norm(fdatagrid[i] - fdatagrid2[j], **kwargs)
     # Computes the metric between x and y as norm(x -y).
-    return _matrix
+    return matrix
 
 
 def fpca(fdatagrid, n=2):

@@ -5,17 +5,17 @@ representation and the corresponding basis class.
 
 from abc import ABC, abstractmethod
 
-import numpy
-import numpy.linalg
 import matplotlib.pyplot
+from numpy import polyder, polyint, polymul, polyval
+import numpy
+import scipy.integrate
+from scipy.interpolate import PPoly
 import scipy.interpolate
 import scipy.linalg
-import scipy.integrate
-from numpy import polyder, polyint, polymul, polyval
-from scipy.interpolate import PPoly
 from scipy.special import binom
 
 from . import grid
+
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -1326,8 +1326,13 @@ class FDataBasis:
             ...                 basis=Monomial((0,5), nbasis=3))
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
-                array([[1., 3., 7.],
-                       [1., 2., 5.]]),
+                array([[[1.],
+                        [3.],
+                        [7.]],
+            <BLANKLINE>
+                       [[1.],
+                        [2.],
+                        [5.]]]),
                 sample_points=[array([0, 1, 2])],
                 sample_range=array([[0, 5]]),
                 dataset_label='Data set',

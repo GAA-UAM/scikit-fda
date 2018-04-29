@@ -176,7 +176,7 @@ class FDataGrid:
                                      "range.")
 
         # Adjust the data matrix if the dimension of the image is one
-        if len(self.data_matrix.shape) == 1 + self.ndim_domain:
+        if self.data_matrix.ndim == 1 + self.ndim_domain:
             self.data_matrix = self.data_matrix[..., numpy.newaxis]
 
         self.dataset_label = dataset_label
@@ -530,7 +530,8 @@ class FDataGrid:
         if ax is None:
             ax = matplotlib.pyplot.gca()
         _plot = ax.plot(self.sample_points[0],
-                        numpy.transpose(self.data_matrix),
+                        numpy.transpose(numpy.squeeze(self.data_matrix,
+                                                      axis=2)),
                         **kwargs)
         self._set_labels(ax)
 
@@ -640,6 +641,7 @@ class FDataGrid:
                              sample_points,
                              self.sample_range, self.dataset_label,
                              self.axes_labels)
-        return FDataGrid(self.data_matrix[key:key + 1], self.sample_points,
+        return FDataGrid(numpy.squeeze(self.data_matrix[key], axis=-1),
+                         self.sample_points,
                          self.sample_range, self.dataset_label,
                          self.axes_labels)

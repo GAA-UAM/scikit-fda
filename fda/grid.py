@@ -641,7 +641,13 @@ class FDataGrid:
                              sample_points,
                              self.sample_range, self.dataset_label,
                              self.axes_labels)
-        return FDataGrid(numpy.squeeze(self.data_matrix[key], axis=-1),
-                         self.sample_points,
-                         self.sample_range, self.dataset_label,
-                         self.axes_labels)
+        if isinstance(key, slice):
+            return FDataGrid(self.data_matrix[key],
+                             self.sample_points,
+                             self.sample_range, self.dataset_label,
+                             self.axes_labels)
+        else:
+            return FDataGrid(self.data_matrix[key:key + 1],
+                             self.sample_points,
+                             self.sample_range, self.dataset_label,
+                             self.axes_labels)

@@ -235,7 +235,7 @@ def fpe(s_matrix):
     """ Finite prediction error for cross validation.
 
     .. math::
-        $$ \\Xi(\\nu,n) = \\frac{1 + \\frac{tr(\\hat{H}^\\nu)}{n}}{1 -
+        \\Xi(\\nu,n) = \\frac{1 + \\frac{tr(\\hat{H}^\\nu)}{n}}{1 -
         \\frac{tr(\\hat{H}^\\nu)}{n}}
 
     Args:

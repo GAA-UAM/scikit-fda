@@ -1307,6 +1307,47 @@ class FDataBasis:
         """
         return self.to_grid(eval_points).gmean().to_basis(self.basis)
 
+    def var(self, eval_points=None):
+        """Computes the variance of the functional data object.
+
+        A numerical approach its used. The object its transformed into its
+        discrete representation and then the variance is computed and
+        then the object is taken back to the basis representation.
+
+        Args:
+            eval_points (array_like, optional): Set of points where the
+                functions are evaluated to obtain the discrete
+                representation of the object. If none are passed it calls
+                numpy.linspace with bounds equal to the ones defined in
+                self.domain_range and the number of points the maximum
+                between 501 and 10 times the number of basis.
+
+        Returns:
+            FDataBasis: Variance of the original object.
+
+        """
+        return self.to_grid(eval_points).var().to_basis(self.basis)
+
+    def cov(self, eval_points=None):
+        """Computes the covariance of the functional data object.
+
+        A numerical approach its used. The object its transformed into its
+        discrete representation and then the covariance matrix is computed.
+
+        Args:
+            eval_points (array_like, optional): Set of points where the
+                functions are evaluated to obtain the discrete
+                representation of the object. If none are passed it calls
+                numpy.linspace with bounds equal to the ones defined in
+                self.domain_range and the number of points the maximum
+                between 501 and 10 times the number of basis.
+
+        Returns:
+            numpy.darray: Matrix of covariances.
+
+        """
+        return self.to_grid(eval_points).var()
+
     def to_grid(self, eval_points=None):
         """Returns the discrete representation of the object.
 

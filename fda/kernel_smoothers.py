@@ -150,6 +150,11 @@ def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
     Provides an smoothing matrix S for the discretisation points in argvals by
     the k nearest neighbours estimator.
 
+    Usually used with the uniform kernel, it takes the average of the closest k
+    points to a given point.
+
+
+
     Args:
         argvals (ndarray): Vector of discretisation points.
         k (int, optional): Number of nearest neighbours. By default it takes

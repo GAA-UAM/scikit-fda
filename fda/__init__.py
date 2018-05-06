@@ -1,7 +1,7 @@
 import errno as _errno
 from fda.basis import FDataBasis
 from fda.grid import FDataGrid
-from fda.math_basic import mean, var, gmean, log, log2, log10, exp, sqrt, \
+from fda.math import mean, var, gmean, log, log2, log10, exp, sqrt, \
     cumsum, metric, norm_lp, inner_product, cov
 import os as _os
 

@@ -84,7 +84,7 @@ class Basis(ABC):
         pass
 
     @abstractmethod
-    def ndegenerated(self, penalty_degree):
+    def _ndegenerated(self, penalty_degree):
         """Number of 0 or very close to 0 eigenvalues of the penalty matrix."
 
         Args:
@@ -293,7 +293,7 @@ class Monomial(Basis):
 
     """
 
-    def ndegenerated(self, penalty_degree):
+    def _ndegenerated(self, penalty_degree):
         """Number of 0 or very close to 0 eigenvalues of the penalty matrix."
 
         Args:
@@ -543,7 +543,7 @@ class BSpline(Basis):
         self.knots = list(knots)
         super().__init__(domain_range, nbasis)
 
-    def ndegenerated(self, penalty_degree):
+    def _ndegenerated(self, penalty_degree):
         """Number of 0 or very close to 0 eigenvalues of the penalty matrix."
 
         Args:
@@ -871,7 +871,7 @@ class Fourier(Basis):
         mat = mat / numpy.sqrt(self.period / 2)
         return mat
 
-    def ndegenerated(self, penalty_degree):
+    def _ndegenerated(self, penalty_degree):
         """Number of 0 or very close to 0 eigenvalues of the penalty matrix."
 
         Args:
@@ -1155,7 +1155,7 @@ class FDataBasis:
                     w, v = numpy.linalg.eigh(penalty_matrix)
                     # Reduction of the penalty matrix taking away 0 or almost
                     # zeros eigenvalues
-                    ndegenerated = basis.ndegenerated(penalty_degree)
+                    ndegenerated = basis._ndegenerated(penalty_degree)
                     if ndegenerated:
                         index = ndegenerated - 1
                     else:

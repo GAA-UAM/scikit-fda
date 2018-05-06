@@ -48,9 +48,7 @@ def var(fdatagrid):
         variance of all the samples in the original FDataGrid object.
 
     """
-    return FDataGrid([numpy.var(fdatagrid.data_matrix, 0)],
-                     fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.dataset_label, fdatagrid.axes_labels)
+    return fdatagrid.var()
 
 
 def gmean(fdatagrid):
@@ -80,11 +78,7 @@ def cov(fdatagrid):
         numpy.darray: Matrix of covariances.
 
     """
-    return FDataGrid(
-        numpy.cov(fdatagrid.data_matrix, rowvar=False)[numpy.newaxis, ...],
-        [fdatagrid.sample_points[0], fdatagrid.sample_points[0]],
-        [fdatagrid.sample_range[0], fdatagrid.sample_range[0]],
-        fdatagrid.dataset_label + ' - covariance')
+    return fdatagrid.cov()
 
 
 def sqrt(fdatagrid):

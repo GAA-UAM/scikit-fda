@@ -374,6 +374,32 @@ class FDataGrid:
                          self.sample_points, self.sample_range,
                          self.dataset_label, self.axes_labels)
 
+    def var(self):
+        """ Computes the variance of a set of samples in a FDataGrid object.
+
+        Returns:
+            FDataGrid: A FDataGrid object with just one sample representing the
+            variance of all the samples in the original FDataGrid object.
+
+        """
+        return FDataGrid([numpy.var(self.data_matrix, 0)],
+                         self.sample_points, self.sample_range,
+                         self.dataset_label, self.axes_labels)
+
+    def cov(self):
+        """ Calculates the covariance matrix representing the covariance of the
+        functional samples at the observation points.
+
+        Returns:
+            numpy.darray: Matrix of covariances.
+
+        """
+        return FDataGrid(
+            numpy.cov(self.data_matrix, rowvar=False)[numpy.newaxis, ...],
+            [self.sample_points[0], self.sample_points[0]],
+            [self.sample_range[0], self.sample_range[0]],
+            self.dataset_label + ' - covariance')
+
     def gmean(self):
         """ Computes the geometric mean of all samples in the FDataGrid object.
 

@@ -70,7 +70,7 @@ class Basis(ABC):
 
     @abstractmethod
     def _compute_matrix(self, eval_points, derivative=0):
-        """Computes the basis or its derivatives given a list of values.
+        """Compute the basis or its derivatives given a list of values.
 
         Args:
             eval_points (array_like): List of points where the basis is
@@ -87,7 +87,7 @@ class Basis(ABC):
 
     @abstractmethod
     def _ndegenerated(self, penalty_degree):
-        """Number of 0 or very close to 0 eigenvalues of the penalty matrix.
+        """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
 
         Args:
             penalty_degree (int): Degree of the derivative used in the
@@ -100,7 +100,7 @@ class Basis(ABC):
         pass
 
     def evaluate(self, eval_points, derivative=0):
-        """Evaluates Basis objects and its derivatives.
+        """Evaluate Basis objects and its derivatives.
 
         Evaluates the basis function system or its derivatives at a list of
         given values.
@@ -124,7 +124,7 @@ class Basis(ABC):
         return self._compute_matrix(eval_points, derivative)
 
     def plot(self, ax=None, derivative=0, **kwargs):
-        """Plots the basis object or its derivatives.
+        """Plot the basis object or its derivatives.
 
         Args:
             ax (axis object, optional): axis over with the graphs are plotted.
@@ -152,7 +152,7 @@ class Basis(ABC):
 
     def _evaluate_single_basis_coefficients(self, coefficients, basis_index, x,
                                             cache):
-        """Evaluates a differential operator over one of the basis.
+        """Evaluate a differential operator over one of the basis.
 
         Computes the result of evaluating a the result of applying a
         differential operator over one of the basis functions. It also admits a
@@ -187,7 +187,7 @@ class Basis(ABC):
         return cache[x][basis_index]
 
     def _numerical_penalty(self, coefficients):
-        """Returns a penalty matrix using a numerical approach.
+        """Return a penalty matrix using a numerical approach.
 
         See :func:`~basis.Basis.penalty`.
 
@@ -219,7 +219,7 @@ class Basis(ABC):
 
     @abstractmethod
     def penalty(self, derivative_degree=None, coefficients=None):
-        r"""Returns a penalty matrix given a differential operator.
+        r"""Return a penalty matrix given a differential operator.
 
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
@@ -300,7 +300,7 @@ class Monomial(Basis):
     """
 
     def _ndegenerated(self, penalty_degree):
-        """Number of 0 or very close to 0 eigenvalues of the penalty matrix."
+        """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
 
         Args:
             penalty_degree (int): Degree of the derivative used in the
@@ -313,7 +313,7 @@ class Monomial(Basis):
         return penalty_degree
 
     def _compute_matrix(self, eval_points, derivative=0):
-        """Computes the basis or its derivatives given a list of values.
+        """Compute the basis or its derivatives given a list of values.
 
         For each of the basis computes its value for each of the points in
         the list passed as argument to the method.
@@ -347,7 +347,7 @@ class Monomial(Basis):
         return mat
 
     def penalty(self, derivative_degree=None, coefficients=None):
-        r"""Returns a penalty matrix given a differential operator.
+        r"""Return a penalty matrix given a differential operator.
 
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
@@ -551,7 +551,7 @@ class BSpline(Basis):
         super().__init__(domain_range, nbasis)
 
     def _ndegenerated(self, penalty_degree):
-        """Number of 0 or very close to 0 eigenvalues of the penalty matrix."
+        """Return number of 0 or nearly to 0 eigenvalues of the penalty matrix.
 
         Args:
             penalty_degree (int): Degree of the derivative used in the
@@ -564,7 +564,7 @@ class BSpline(Basis):
         return penalty_degree
 
     def _compute_matrix(self, eval_points, derivative=0):
-        """Computes the basis or its derivatives given a list of values.
+        """Compute the basis or its derivatives given a list of values.
 
         It uses the scipy implementation of BSplines to compute the values
         for each element of the basis.
@@ -612,7 +612,7 @@ class BSpline(Basis):
         return mat
 
     def penalty(self, derivative_degree=None, coefficients=None):
-        r"""Returns a penalty matrix given a differential operator.
+        r"""Return a penalty matrix given a differential operator.
 
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
@@ -810,7 +810,7 @@ class Fourier(Basis):
     """
 
     def __init__(self, domain_range=(0, 1), nbasis=3, period=1):
-        """Constructor of a Fourier object.
+        """Construct a Fourier object.
 
         It forces the object to have an odd number of basis. If nbasis is
         even, it is incremented by one.
@@ -829,7 +829,7 @@ class Fourier(Basis):
         super().__init__(domain_range, nbasis)
 
     def _compute_matrix(self, eval_points, derivative=0):
-        """Computes the basis or its derivatives given a list of values.
+        """Compute the basis or its derivatives given a list of values.
 
         Args:
             eval_points (array_like): List of points where the basis is
@@ -894,7 +894,7 @@ class Fourier(Basis):
         return mat
 
     def _ndegenerated(self, penalty_degree):
-        """Number of 0 or very close to 0 eigenvalues of the penalty matrix."
+        """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
 
         Args:
             penalty_degree (int): Degree of the derivative used in the
@@ -907,7 +907,7 @@ class Fourier(Basis):
         return 0 if penalty_degree == 0 else 1
 
     def penalty(self, derivative_degree=None, coefficients=None):
-        r"""Returns a penalty matrix given a differential operator.
+        r"""Return a penalty matrix given a differential operator.
 
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
@@ -1001,7 +1001,7 @@ class FDataBasis:
     """
 
     def __init__(self, basis, coefficients):
-        """Constructor of FDataBasis.
+        """Construct a FDataBasis object.
 
         Args:
             basis (:obj:`Basis`): Basis function system.
@@ -1022,7 +1022,7 @@ class FDataBasis:
                   smoothness_parameter=0, penalty_degree=None,
                   penalty_coefficients=None, penalty_matrix=None,
                   method='cholesky'):
-        r"""Raw data to a smooth functional form.
+        r"""Transform raw data to a smooth functional form.
 
         Takes functional data in a discrete form and makes an approximates it
         to the closest function that can be generated by the basis.a
@@ -1231,21 +1231,21 @@ class FDataBasis:
 
     @property
     def nsamples(self):
-        """Number of samples"""
+        """Return number of samples."""
         return self.coefficients.shape[0]
 
     @property
     def nbasis(self):
-        """Number of basis"""
+        """Return number of basis."""
         return self.basis.nbasis
 
     @property
     def domain_range(self):
-        """Definition range"""
+        """Definition range."""
         return self.basis.domain_range
 
     def evaluate(self, eval_points, derivative=0):
-        """Evaluates the object or its derivatives at a list of values.
+        """Evaluate the object or its derivatives at a list of values.
 
         Args:
             eval_points (array_like): List of points where the functions are
@@ -1269,7 +1269,7 @@ class FDataBasis:
         return res_matrix
 
     def plot(self, ax=None, derivative=0, **kwargs):
-        """Plots the FDataBasis object or its derivatives.
+        """Plot the FDataBasis object or its derivatives.
 
         Args:
             ax (axis object, optional): axis over with the graphs are plotted.
@@ -1295,7 +1295,7 @@ class FDataBasis:
         return ax.plot(eval_points, mat.T, **kwargs)
 
     def mean(self):
-        """Computes the mean of all the samples in a FDataBasis object.
+        """Compute the mean of all the samples in a FDataBasis object.
 
         Returns:
             :obj:`FDataBasis`: A FDataBais object with just one sample
@@ -1312,7 +1312,7 @@ class FDataBasis:
         return FDataBasis(self.basis, numpy.mean(self.coefficients, axis=0))
 
     def gmean(self, eval_points=None):
-        """Computes the geometric mean of the functional data object.
+        """Compute the geometric mean of the functional data object.
 
         A numerical approach its used. The object its transformed into its
         discrete representation and then the geometric mean is computed and
@@ -1333,7 +1333,7 @@ class FDataBasis:
         return self.to_grid(eval_points).gmean().to_basis(self.basis)
 
     def var(self, eval_points=None):
-        """Computes the variance of the functional data object.
+        """Compute the variance of the functional data object.
 
         A numerical approach its used. The object its transformed into its
         discrete representation and then the variance is computed and
@@ -1354,7 +1354,7 @@ class FDataBasis:
         return self.to_grid(eval_points).var().to_basis(self.basis)
 
     def cov(self, eval_points=None):
-        """Computes the covariance of the functional data object.
+        """Compute the covariance of the functional data object.
 
         A numerical approach its used. The object its transformed into its
         discrete representation and then the covariance matrix is computed.
@@ -1374,7 +1374,7 @@ class FDataBasis:
         return self.to_grid(eval_points).var()
 
     def to_grid(self, eval_points=None):
-        """Returns the discrete representation of the object.
+        """Return the discrete representation of the object.
 
         Args:
             eval_points (array_like, optional): Set of points where the
@@ -1421,7 +1421,7 @@ class FDataBasis:
             self.__class__.__name__, self.basis, self.coefficients)
 
     def __call__(self, eval_points):
-        """Evaluates the functions in the object at a list of values.
+        """Evaluate the functions in the object at a list of values.
 
         Args:
             eval_points (array_like): List of points where the functions are

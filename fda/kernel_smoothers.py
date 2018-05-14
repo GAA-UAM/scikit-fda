@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Kernel smoother functions
+"""Kernel smoother functions.
 
 This module includes the most commonly used kernel smoother methods for FDA.
  So far only non parametric methods are implemented because we are only

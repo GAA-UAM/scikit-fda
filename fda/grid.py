@@ -45,7 +45,7 @@ def _list_of_arrays(original_array):
 
 
 class FDataGrid:
-    r"""Represents discretised functional data.
+    r"""Represent discretised functional data.
 
     Class for representing functional data as a set of curves discretised
     in a grid of points.
@@ -113,7 +113,7 @@ class FDataGrid:
     def __init__(self, data_matrix, sample_points=None,
                  sample_range=None, dataset_label='Data set',
                  axes_labels=None):
-        """Constructor of FDataGrid.
+        """Construct a FDataGrid object.
 
         Args:
             data_matrix (array_like): a matrix where each row contains the
@@ -208,7 +208,7 @@ class FDataGrid:
 
     @property
     def ndim_domain(self):
-        """Number of dimensions of the domain.
+        """Return number of dimensions of the domain.
 
         Returns:
             int: Number of dimensions of the domain.
@@ -218,7 +218,7 @@ class FDataGrid:
 
     @property
     def ndim_image(self):
-        """Number of dimensions of the image
+        """Return number of dimensions of the image.
 
         Returns:
             int: Number of dimensions of the image.
@@ -235,7 +235,7 @@ class FDataGrid:
 
     @property
     def ndim(self):
-        """Number of dimensions of the data matrix.
+        """Return number of dimensions of the data matrix.
 
         Returns:
             int: Number of dimensions of the data matrix.
@@ -245,7 +245,7 @@ class FDataGrid:
 
     @property
     def nsamples(self):
-        """Number of rows of the data_matrix. Also the number of samples.
+        """Return number of rows of the data_matrix. Also the number of samples.
 
         Returns:
             int: Number of samples of the FDataGrid object. Also the number of
@@ -256,7 +256,7 @@ class FDataGrid:
 
     @property
     def ncol(self):
-        """Number of columns of the data_matrix.
+        """Return number of columns of the data_matrix.
 
         Also the number of points of discretisation.
 
@@ -279,7 +279,7 @@ class FDataGrid:
         return self.data_matrix.shape
 
     def derivative(self, order=1):
-        r"""Derivative of a FDataGrid object.
+        r"""Differentiate a FDataGrid object.
 
         Its calculated using lagged differences. If we call :math:`D` the
         data_matrix, :math:`D^1` the derivative of order 1 and :math:`T` the
@@ -377,12 +377,19 @@ class FDataGrid:
                 "Sample points for both objects must be equal")
 
     def mean(self):
+        """Compute the mean of all the samples.
+
+        Returns:
+            FDataGrid : A FDataGrid object with just one sample representing
+            the mean of all the samples in the original object.
+
+        """
         return FDataGrid(self.data_matrix.mean(axis=0, keepdims=True),
                          self.sample_points, self.sample_range,
                          self.dataset_label, self.axes_labels)
 
     def var(self):
-        """Computes the variance of a set of samples in a FDataGrid object.
+        """Compute the variance of a set of samples in a FDataGrid object.
 
         Returns:
             FDataGrid: A FDataGrid object with just one sample representing the
@@ -394,7 +401,7 @@ class FDataGrid:
                          self.dataset_label, self.axes_labels)
 
     def cov(self):
-        """Computes the covariance.
+        """Compute the covariance.
         
         Calculates the covariance matrix representing the covariance of the
         functional samples at the observation points.
@@ -410,7 +417,7 @@ class FDataGrid:
             self.dataset_label + ' - covariance')
 
     def gmean(self):
-        """Computes the geometric mean of all samples in the FDataGrid object.
+        """Compute the geometric mean of all samples in the FDataGrid object.
 
         Returns:
             FDataGrid: A FDataGrid object with just one sample representing
@@ -495,7 +502,7 @@ class FDataGrid:
                          self.dataset_label, self.axes_labels)
 
     def concatenate(self, other):
-        """Joins samples from a similar FDataGrid object.
+        """Join samples from a similar FDataGrid object.
 
         Joins samples from another FDataGrid object if it has the same
         dimensions and sampling points.
@@ -537,7 +544,7 @@ class FDataGrid:
                          self.axes_labels)
 
     def _set_labels(self, ax):
-        """Sets labels if any.
+        """Set labels if any.
 
         Args:
             ax (axes object): axes object that implements set_title,
@@ -565,7 +572,7 @@ class FDataGrid:
                     pass
 
     def plot(self, ax=None, **kwargs):
-        """Plots the FDatGrid object.
+        """Plot the FDatGrid object.
 
         Args:
             ax (axis object, optional): axis over with the graphs are plotted.
@@ -624,7 +631,7 @@ class FDataGrid:
         return _plot
 
     def to_basis(self, basis, **kwargs):
-        """Returns the basis representation of the object.
+        """Return the basis representation of the object.
 
         Args:
             basis(Basis): basis object in which the functional data are

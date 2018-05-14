@@ -20,7 +20,7 @@ __status__ = "Development"
 
 
 def mean(fdata):
-    """Computes the mean of all the samples in a FData object.
+    """Compute the mean of all the samples in a FData object.
 
     Computes the mean of all the samples in a FDataGrid or FDataBasis object.
 
@@ -39,7 +39,7 @@ def mean(fdata):
 
 
 def var(fdatagrid):
-    """Computes the variance of a set of samples in a FDataGrid object.
+    """Compute the variance of a set of samples in a FDataGrid object.
 
     Args:
         fdatagrid (FDataGrid): Object containing all the set of samples
@@ -54,7 +54,7 @@ def var(fdatagrid):
 
 
 def gmean(fdatagrid):
-    """Computes the geometric mean of all the samples in a FDataGrid object.
+    """Compute the geometric mean of all the samples in a FDataGrid object.
 
     Args:
         fdatagrid (FDataGrid): Object containing all the samples whose
@@ -69,7 +69,7 @@ def gmean(fdatagrid):
 
 
 def cov(fdatagrid):
-    """Computes the covariance.
+    """Compute the covariance.
 
     Calculates the covariance matrix representing the covariance of the
     functional samples at the observation points.
@@ -86,7 +86,7 @@ def cov(fdatagrid):
 
 
 def sqrt(fdatagrid):
-    """Performs a element wise square root operation.
+    """Perform a element wise square root operation.
 
     Args:
         fdatagrid (FDataGrid): Object to whose elements the square root
@@ -102,7 +102,7 @@ def sqrt(fdatagrid):
 
 
 def absolute(fdatagrid):
-    """Gets the absolute value of all elements in the FDataGrid object.
+    """Get the absolute value of all elements in the FDataGrid object.
 
     Args:
         fdatagrid (FDataGrid): Object from whose elements the absolute value
@@ -119,7 +119,7 @@ def absolute(fdatagrid):
 
 
 def round(fdatagrid, decimals=0):
-    """Rounds all elements of the object.
+    """Round all elements of the object.
 
     Args:
         fdatagrid (FDataGrid): Object to whose elements are going to be
@@ -134,7 +134,7 @@ def round(fdatagrid, decimals=0):
 
 
 def exp(fdatagrid):
-    """Performs a element wise exponential operation.
+    """Perform a element wise exponential operation.
 
     Args:
         fdatagrid (FDataGrid): Object to whose elements the exponential
@@ -151,7 +151,7 @@ def exp(fdatagrid):
 
 
 def log(fdatagrid):
-    """Performs a element wise logarithm operation.
+    """Perform a element wise logarithm operation.
 
     Args:
         fdatagrid (FDataGrid): Object to whose elements the logarithm
@@ -167,7 +167,7 @@ def log(fdatagrid):
 
 
 def log10(fdatagrid):
-    """Performs a element wise base 10 logarithm operation.
+    """Perform an element wise base 10 logarithm operation.
 
     Args:
         fdatagrid (FDataGrid): Object to whose elements the base 10 logarithm
@@ -184,7 +184,7 @@ def log10(fdatagrid):
 
 
 def log2(fdatagrid):
-    """Performs a element wise binary logarithm operation.
+    """Perform an element wise binary logarithm operation.
 
     Args:
         fdatagrid (FDataGrid): Object to whose elements the binary logarithm
@@ -201,7 +201,7 @@ def log2(fdatagrid):
 
 
 def cumsum(fdatagrid):
-    """Returns the cumulative sum of the samples.
+    """Return the cumulative sum of the samples.
 
     Args:
         fdatagrid (FDataGrid): Object over whose samples the cumulative sum is
@@ -217,7 +217,7 @@ def cumsum(fdatagrid):
 
 
 def inner_product(fdatagrid, fdatagrid2):
-    r"""Inner product for FDataGrid.
+    r"""Return inner product for FDataGrid.
 
     Calculates the inner product amongst all the samples in two
     FDataGrid objects.
@@ -283,7 +283,7 @@ def inner_product(fdatagrid, fdatagrid2):
 
 
 def norm_lp(fdatagrid, p=2):
-    r"""Calculates the norm of all the samples in a FDataGrid object.
+    r"""Calculate the norm of all the samples in a FDataGrid object.
 
     For each sample sample f the lp norm is defined as:
 
@@ -338,7 +338,7 @@ def norm_lp(fdatagrid, p=2):
 
 
 def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
-    r"""Distance for FDataGrid obejcts.
+    r"""Return distance for FDataGrid obejcts.
 
     Calculates the distance between all possible pairs of one sample of
     the first FDataGrid object and one of the second one.
@@ -406,7 +406,7 @@ def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
 
 
 def fpca(fdatagrid, n=2):
-    """Functional Principal Components Analysis.
+    """Compute Functional Principal Components Analysis.
 
     Performs Functional Principal Components Analysis to reduce
     dimensionality and obtain the principal modes of variation for a

@@ -9,7 +9,7 @@ __email__ = "miguel.carbajo@estudiante.uam.es"
 
 
 def normal(u):
-    r"""Normal kernel.
+    r"""Evaluate a normal kernel.
 
     .. math::
         K(x) = \frac{1}{\sqrt{2\pi}}e^{-\frac{x^2}{2}}

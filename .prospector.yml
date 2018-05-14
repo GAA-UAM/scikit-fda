@@ -1,0 +1,17 @@
+doc-warnings: yes
+autodetect: yes
+max-line-length: 70
+requirements:
+    - requirements.txt
+pylint:
+    run: false
+pyflakes:
+    run: false
+pep8:
+    full: true
+pep257:
+    disable:
+      - D203
+      - D213
+      - D406
+      - D407

@@ -1,4 +1,4 @@
-"""This module defines the most commonly used kernels."""
+"""Defines the most commonly used kernels."""
 import math
 from scipy import stats
 import numpy
@@ -70,7 +70,7 @@ def tri_weight(u):
         0 & \mbox{elsewhere}
         \end{cases}
 
-"""
+    """
     if isinstance(u, numpy.ndarray):
         res = numpy.zeros(u.shape)
         res[abs(u) <= 1] = 35 / 32 * (1 - u[abs(u) <= 1] ** 2) ** 3

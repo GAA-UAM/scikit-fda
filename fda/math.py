@@ -1,5 +1,7 @@
-"""This module defines the basic mathematic operations for classes defined
-in this package.
+"""Basic mathematical functionalities of the package.
+
+Defines the basic mathematical operations for classes defined in this
+package. FDataBasis and FDataGrid.
 
 """
 import numpy
@@ -18,7 +20,7 @@ __status__ = "Development"
 
 
 def mean(fdata):
-    """ Computes the mean of all the samples in a FData object.
+    """Computes the mean of all the samples in a FData object.
 
     Computes the mean of all the samples in a FDataGrid or FDataBasis object.
 
@@ -37,7 +39,7 @@ def mean(fdata):
 
 
 def var(fdatagrid):
-    """ Computes the variance of a set of samples in a FDataGrid object.
+    """Computes the variance of a set of samples in a FDataGrid object.
 
     Args:
         fdatagrid (FDataGrid): Object containing all the set of samples
@@ -52,7 +54,7 @@ def var(fdatagrid):
 
 
 def gmean(fdatagrid):
-    """ Computes the geometric mean of all the samples in a FDataGrid object.
+    """Computes the geometric mean of all the samples in a FDataGrid object.
 
     Args:
         fdatagrid (FDataGrid): Object containing all the samples whose
@@ -67,7 +69,9 @@ def gmean(fdatagrid):
 
 
 def cov(fdatagrid):
-    """ Calculates the covariance matrix representing the covariance of the
+    """Computes the covariance.
+
+    Calculates the covariance matrix representing the covariance of the
     functional samples at the observation points.
 
     Args:
@@ -82,7 +86,7 @@ def cov(fdatagrid):
 
 
 def sqrt(fdatagrid):
-    """ Performs a element wise square root operation.
+    """Performs a element wise square root operation.
 
     Args:
         fdatagrid (FDataGrid): Object to whose elements the square root
@@ -98,7 +102,7 @@ def sqrt(fdatagrid):
 
 
 def absolute(fdatagrid):
-    """ Gets the absolute value of all elements in the FDataGrid object.
+    """Gets the absolute value of all elements in the FDataGrid object.
 
     Args:
         fdatagrid (FDataGrid): Object from whose elements the absolute value
@@ -115,7 +119,7 @@ def absolute(fdatagrid):
 
 
 def round(fdatagrid, decimals=0):
-    """ Rounds all elements of the object.
+    """Rounds all elements of the object.
 
     Args:
         fdatagrid (FDataGrid): Object to whose elements are going to be
@@ -130,7 +134,7 @@ def round(fdatagrid, decimals=0):
 
 
 def exp(fdatagrid):
-    """ Performs a element wise exponential operation.
+    """Performs a element wise exponential operation.
 
     Args:
         fdatagrid (FDataGrid): Object to whose elements the exponential
@@ -147,7 +151,7 @@ def exp(fdatagrid):
 
 
 def log(fdatagrid):
-    """ Performs a element wise logarithm operation.
+    """Performs a element wise logarithm operation.
 
     Args:
         fdatagrid (FDataGrid): Object to whose elements the logarithm
@@ -163,7 +167,7 @@ def log(fdatagrid):
 
 
 def log10(fdatagrid):
-    """ Performs a element wise base 10 logarithm operation.
+    """Performs a element wise base 10 logarithm operation.
 
     Args:
         fdatagrid (FDataGrid): Object to whose elements the base 10 logarithm
@@ -180,7 +184,7 @@ def log10(fdatagrid):
 
 
 def log2(fdatagrid):
-    """ Performs a element wise binary logarithm operation.
+    """Performs a element wise binary logarithm operation.
 
     Args:
         fdatagrid (FDataGrid): Object to whose elements the binary logarithm
@@ -197,7 +201,7 @@ def log2(fdatagrid):
 
 
 def cumsum(fdatagrid):
-    """ Returns the cumulative sum of the samples.
+    """Returns the cumulative sum of the samples.
 
     Args:
         fdatagrid (FDataGrid): Object over whose samples the cumulative sum is
@@ -213,13 +217,15 @@ def cumsum(fdatagrid):
 
 
 def inner_product(fdatagrid, fdatagrid2):
-    """ Calculates the inner product amongst all the samples in two
+    r"""Inner product for FDataGrid.
+
+    Calculates the inner product amongst all the samples in two
     FDataGrid objects.
 
     For each pair of samples f and g the inner product is defined as:
 
     .. math::
-        <f, g> = \\int_a^bf(x)g(x)dx
+        <f, g> = \int_a^bf(x)g(x)dx
 
     The integral is approximated using Simpson's rule.
 
@@ -277,13 +283,13 @@ def inner_product(fdatagrid, fdatagrid2):
 
 
 def norm_lp(fdatagrid, p=2):
-    """ Calculates the norm of all the samples in a FDataGrid object.
+    r"""Calculates the norm of all the samples in a FDataGrid object.
 
     For each sample sample f the lp norm is defined as:
 
     .. math::
-        \\lVert f \\rVert = \\left( \\int_D \\lvert f \\rvert^p dx \\right)^{
-        \\frac{1}{p}}
+        \lVert f \rVert = \left( \int_D \lvert f \rvert^p dx \right)^{
+        \frac{1}{p}}
 
     Where D is the domain over which the functions are defined.
 
@@ -332,13 +338,15 @@ def norm_lp(fdatagrid, p=2):
 
 
 def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
-    """ Calculates the distance between all possible pairs of one sample of
+    r"""Distance for FDataGrid obejcts.
+
+    Calculates the distance between all possible pairs of one sample of
     the first FDataGrid object and one of the second one.
 
     For each pair of samples f and g the distance between them is defined as:
 
     .. math::
-        d(f, g) = d(f, g) = \\lVert f - g \\rVert
+        d(f, g) = d(f, g) = \lVert f - g \rVert
 
     The norm is specified as a parameter but defaults to the l2 norm.
 

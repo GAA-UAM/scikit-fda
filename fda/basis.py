@@ -1,5 +1,7 @@
-"""This module defines functional data object in a basis function system
-representation and the corresponding basis class.
+"""Module for functional data manipulation in a basis system.
+
+Defines functional data object in a basis function system representation and
+the corresponding basis classes.
 
 """
 
@@ -14,7 +16,7 @@ import scipy.interpolate
 import scipy.linalg
 from scipy.special import binom
 
-from . import grid
+from fda import grid
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -85,7 +87,7 @@ class Basis(ABC):
 
     @abstractmethod
     def _ndegenerated(self, penalty_degree):
-        """Number of 0 or very close to 0 eigenvalues of the penalty matrix."
+        """Number of 0 or very close to 0 eigenvalues of the penalty matrix.
 
         Args:
             penalty_degree (int): Degree of the derivative used in the
@@ -93,11 +95,14 @@ class Basis(ABC):
 
         Returns:
              int: number of close to 0 eigenvalues.
+
         """
         pass
 
     def evaluate(self, eval_points, derivative=0):
-        """Evaluates the basis function system or its derivatives at a list of
+        """Evaluates Basis objects and its derivatives.
+
+        Evaluates the basis function system or its derivatives at a list of
         given values.
 
         Args:
@@ -214,7 +219,7 @@ class Basis(ABC):
 
     @abstractmethod
     def penalty(self, derivative_degree=None, coefficients=None):
-        r""" Returns a penalty matrix given a differential operator.
+        r"""Returns a penalty matrix given a differential operator.
 
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
@@ -249,6 +254,7 @@ class Basis(ABC):
         pass
 
     def __repr__(self):
+        """Representation of a Basis object."""
         return "{}(domain_range={}, nbasis={})".format(
             self.__class__.__name__, self.domain_range, self.nbasis)
 
@@ -302,6 +308,7 @@ class Monomial(Basis):
 
         Returns:
              int: number of close to 0 eigenvalues.
+
         """
         return penalty_degree
 
@@ -340,7 +347,7 @@ class Monomial(Basis):
         return mat
 
     def penalty(self, derivative_degree=None, coefficients=None):
-        r""" Returns a penalty matrix given a differential operator.
+        r"""Returns a penalty matrix given a differential operator.
 
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
@@ -368,7 +375,6 @@ class Monomial(Basis):
             numpy.array: Penalty matrix.
 
         Examples:
-
             >>> Monomial(nbasis=4).penalty(2)
             array([[ 0.,  0.,  0.,  0.],
                    [ 0.,  0.,  0.,  0.],
@@ -497,7 +503,7 @@ class BSpline(Basis):
     """
 
     def __init__(self, domain_range=None, nbasis=None, order=4, knots=None):
-        """BSpline basis constructor.
+        """Bspline basis constructor.
 
         Args:
             domain_range (tuple, optional): Definition of the interval where
@@ -510,6 +516,7 @@ class BSpline(Basis):
             knots (array_like): List of knots of the splines. If domain_range
                 is specified the first and last elements of the knots have to
                 match with it.
+
         """
         # Knots default to equally space points in the domain_range
         if knots is None:
@@ -552,6 +559,7 @@ class BSpline(Basis):
 
         Returns:
              int: number of close to 0 eigenvalues.
+
         """
         return penalty_degree
 
@@ -604,7 +612,7 @@ class BSpline(Basis):
         return mat
 
     def penalty(self, derivative_degree=None, coefficients=None):
-        r""" Returns a penalty matrix given a differential operator.
+        r"""Returns a penalty matrix given a differential operator.
 
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
@@ -748,6 +756,7 @@ class BSpline(Basis):
         return self._numerical_penalty(coefficients)
 
     def __repr__(self):
+        """Representation of a BSpline basis."""
         return ("{}(domain_range={}, nbasis={}, order={}, knots={})".format(
             self.__class__.__name__, self.domain_range, self.nbasis, self.order,
             self.knots))
@@ -801,6 +810,19 @@ class Fourier(Basis):
     """
 
     def __init__(self, domain_range=(0, 1), nbasis=3, period=1):
+        """Constructor of a Fourier object.
+
+        It forces the object to have an odd number of basis. If nbasis is
+        even, it is incremented by one.
+
+        Args:
+            domain_range (tuple): Tuple defining the domain over which the
+            function is defined.
+            nbasis (int): Number of basis functions.
+            period (int or float): Period of the trigonometric functions that
+                define the basis.
+
+        """
         self.period = period
         # If number of basis is even, add 1
         nbasis += 1 - nbasis % 2
@@ -880,11 +902,12 @@ class Fourier(Basis):
 
         Returns:
              int: number of close to 0 eigenvalues.
+
         """
         return 0 if penalty_degree == 0 else 1
 
     def penalty(self, derivative_degree=None, coefficients=None):
-        r""" Returns a penalty matrix given a differential operator.
+        r"""Returns a penalty matrix given a differential operator.
 
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
@@ -942,6 +965,7 @@ class Fourier(Basis):
             return self._numerical_penalty(coefficients)
 
     def __repr__(self):
+        """Representation of a Fourier basis."""
         return ("{}(domain_range={}, nbasis={}, period={})".format(
             self.__class__.__name__, self.domain_range, self.nbasis,
             self.period))
@@ -1271,7 +1295,7 @@ class FDataBasis:
         return ax.plot(eval_points, mat.T, **kwargs)
 
     def mean(self):
-        """ Computes the mean of all the samples in a FDataBasis object.
+        """Computes the mean of all the samples in a FDataBasis object.
 
         Returns:
             :obj:`FDataBasis`: A FDataBais object with just one sample
@@ -1304,6 +1328,7 @@ class FDataBasis:
 
         Returns:
             FDataBasis: Geometric mean of the original object.
+
         """
         return self.to_grid(eval_points).gmean().to_basis(self.basis)
 
@@ -1391,6 +1416,7 @@ class FDataBasis:
                               sample_range=self.domain_range)
 
     def __repr__(self):
+        """Representation of FDataBasis object."""
         return "{}(basis={}, coefficients={})".format(
             self.__class__.__name__, self.basis, self.coefficients)
 

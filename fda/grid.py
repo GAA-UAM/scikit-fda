@@ -3,6 +3,7 @@
 This module defines a class for representing functional data as a series of
 lists of values, each representing the observation of a function measured in a
 list of discretisation points.
+
 """
 
 import numbers
@@ -44,7 +45,7 @@ def _list_of_arrays(original_array):
 
 
 class FDataGrid:
-    """Represents discretised functional data.
+    r"""Represents discretised functional data.
 
     Class for representing functional data as a set of curves discretised
     in a grid of points.
@@ -108,10 +109,12 @@ class FDataGrid:
         (2, 1)
 
     """
+
     def __init__(self, data_matrix, sample_points=None,
                  sample_range=None, dataset_label='Data set',
                  axes_labels=None):
-        """
+        """Constructor of FDataGrid.
+
         Args:
             data_matrix (array_like): a matrix where each row contains the
                 values of a functional datum evaluated at the
@@ -185,7 +188,7 @@ class FDataGrid:
         return
 
     def round(self, decimals=0):
-        """ Evenly round to the given number of decimals.
+        """Evenly round to the given number of decimals.
 
         Args:
             decimals (int, optional): Number of decimal places to round to.
@@ -205,19 +208,21 @@ class FDataGrid:
 
     @property
     def ndim_domain(self):
-        """ Number of dimensions of the domain.
+        """Number of dimensions of the domain.
 
         Returns:
             int: Number of dimensions of the domain.
+
         """
         return len(self.sample_points)
 
     @property
     def ndim_image(self):
-        """ Number of dimensions of the image
+        """Number of dimensions of the image
 
         Returns:
             int: Number of dimensions of the image.
+
         """
         try:
             # The dimension of the image is the length of the array that can
@@ -230,16 +235,17 @@ class FDataGrid:
 
     @property
     def ndim(self):
-        """ Number of dimensions of the data matrix.
+        """Number of dimensions of the data matrix.
 
         Returns:
             int: Number of dimensions of the data matrix.
+
         """
         return self.data_matrix.ndim
 
     @property
     def nsamples(self):
-        """ Number of rows of the data_matrix. Also the number of samples.
+        """Number of rows of the data_matrix. Also the number of samples.
 
         Returns:
             int: Number of samples of the FDataGrid object. Also the number of
@@ -250,8 +256,9 @@ class FDataGrid:
 
     @property
     def ncol(self):
-        """ Number of columns of the data_matrix. Also the number of points
-        of discretisation.
+        """Number of columns of the data_matrix.
+
+        Also the number of points of discretisation.
 
         Returns:
             int: Number of columns of the data_matrix.
@@ -261,7 +268,7 @@ class FDataGrid:
 
     @property
     def shape(self):
-        """ Dimensions (aka shape) of the data_matrix.
+        """Dimensions (aka shape) of the data_matrix.
 
         Returns:
             list of int: List containing the length of the matrix on each of
@@ -272,7 +279,7 @@ class FDataGrid:
         return self.data_matrix.shape
 
     def derivative(self, order=1):
-        """ Derivative of a FDataGrid object.
+        r"""Derivative of a FDataGrid object.
 
         Its calculated using lagged differences. If we call :math:`D` the
         data_matrix, :math:`D^1` the derivative of order 1 and :math:`T` the
@@ -281,13 +288,13 @@ class FDataGrid:
 
         .. math::
 
-            D^{1}_{ij} = \\begin{cases}
-            \\frac{D_{i1} - D_{i2}}{ T_{1} - T_{2}}  & \\mbox{if } j = 1 \\\\
-            \\frac{D_{i(m-1)} - D_{im}}{ T_{m-1} - T_m}  & \\mbox{if }
-                j = m \\\\
-            \\frac{D_{i(j-1)} - D_{i(j+1)}}{ T_{j-1} - T_{j+1}} & \\mbox{if }
+            D^{1}_{ij} = \begin{cases}
+            \frac{D_{i1} - D_{i2}}{ T_{1} - T_{2}}  & \mbox{if } j = 1 \\
+            \frac{D_{i(m-1)} - D_{im}}{ T_{m-1} - T_m}  & \mbox{if }
+                j = m \\
+            \frac{D_{i(j-1)} - D_{i(j+1)}}{ T_{j-1} - T_{j+1}} & \mbox{if }
             1 < j < m
-            \\end{cases}
+            \end{cases}
 
         Where m is the number of columns of the matrix :math:`D`.
 
@@ -375,7 +382,7 @@ class FDataGrid:
                          self.dataset_label, self.axes_labels)
 
     def var(self):
-        """ Computes the variance of a set of samples in a FDataGrid object.
+        """Computes the variance of a set of samples in a FDataGrid object.
 
         Returns:
             FDataGrid: A FDataGrid object with just one sample representing the
@@ -387,7 +394,9 @@ class FDataGrid:
                          self.dataset_label, self.axes_labels)
 
     def cov(self):
-        """ Calculates the covariance matrix representing the covariance of the
+        """Computes the covariance.
+        
+        Calculates the covariance matrix representing the covariance of the
         functional samples at the observation points.
 
         Returns:
@@ -401,19 +410,24 @@ class FDataGrid:
             self.dataset_label + ' - covariance')
 
     def gmean(self):
-        """ Computes the geometric mean of all samples in the FDataGrid object.
+        """Computes the geometric mean of all samples in the FDataGrid object.
 
-            Returns:
-                FDataGrid: A FDataGrid object with just one sample representing
-                the geometric mean of all the samples in the original
-                FDataGrid object.
+        Returns:
+            FDataGrid: A FDataGrid object with just one sample representing
+            the geometric mean of all the samples in the original
+            FDataGrid object.
 
-            """
+        """
         return FDataGrid([scipy.stats.mstats.gmean(self.data_matrix, 0)],
                          self.sample_points, self.sample_range,
                          self.dataset_label, self.axes_labels)
 
     def __add__(self, other):
+        """Addition for FDataGrid object.
+
+        It supports other FDataGrid objects, numpy.ndarray and numbers.
+
+        """
         if isinstance(other, (numpy.ndarray, numbers.Number)):
             data_matrix = other
         elif isinstance(other, FDataGrid):
@@ -427,6 +441,11 @@ class FDataGrid:
                          self.dataset_label, self.axes_labels)
 
     def __sub__(self, other):
+        """Subtraction for FDataGrid object.
+
+        It supports other FDataGrid objects, numpy.ndarray and numbers.
+
+        """
         if isinstance(other, (numpy.ndarray, numbers.Number)):
             data_matrix = other
         elif isinstance(other, FDataGrid):
@@ -440,6 +459,11 @@ class FDataGrid:
                          self.dataset_label, self.axes_labels)
 
     def __mul__(self, other):
+        """Multiplication for FDataGrid object.
+
+        It supports other FDataGrid objects, numpy.ndarray and numbers.
+
+        """
         if isinstance(other, (numpy.ndarray, numbers.Number)):
             data_matrix = other
         elif isinstance(other, FDataGrid):
@@ -453,6 +477,11 @@ class FDataGrid:
                          self.dataset_label, self.axes_labels)
 
     def __truediv__(self, other):
+        """Division for FDataGrid object.
+
+        It supports other FDataGrid objects, numpy.ndarray and numbers.
+
+        """
         if isinstance(other, (numpy.ndarray, numbers.Number)):
             data_matrix = other
         elif isinstance(other, FDataGrid):
@@ -513,7 +542,8 @@ class FDataGrid:
         Args:
             ax (axes object): axes object that implements set_title,
                 set_xlable and set_ylabel or title, xlabel and ylabel.
-            """
+
+        """
         if self.dataset_label is not None:
             try:
                 ax.set_title(self.dataset_label)
@@ -633,13 +663,13 @@ class FDataGrid:
                                             **kwargs)
 
     def __str__(self):
-        """ Return str(self). """
+        """Return str(self)."""
         return ('Data set:    ' + str(self.data_matrix)
                 + '\nsample_points:    ' + str(self.sample_points)
                 + '\ntime range:    ' + str(self.sample_range))
 
     def __repr__(self):
-        """ Return repr(self). """
+        """Return repr(self)."""
         return ("FDataGrid("
                 "\n{},"
                 "\nsample_points={},"
@@ -653,7 +683,7 @@ class FDataGrid:
                         repr(self.axes_labels))).replace('\n', '\n    ')
 
     def __getitem__(self, key):
-        """ Return self[key]. """
+        """Return self[key]."""
         if isinstance(key, tuple):
             # If there are not values for every dimension, the remaining ones
             # are kept

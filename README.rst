@@ -42,10 +42,10 @@ References
 
 .. _fda: http://www.functionaldata.org/
 
-.. |build-status| image:: https://travis-ci.org/mcarbajo/fda.svg
+.. |build-status| image:: https://travis-ci.org/GAA-UAM/fda.svg
     :alt: build status
     :scale: 100%
-    :target: https://travis-ci.org/mcarbajo/fda
+    :target: https://travis-ci.org/GAA-UAM/fda
 
 .. |docs| image:: https://readthedocs.org/projects/fda/badge/?version=latest
     :alt: Documentation Status

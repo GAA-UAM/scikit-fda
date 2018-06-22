@@ -5,7 +5,7 @@ fda
 
 fda: Functional Data Analysis in Python
 
-Functional Data Analysis is the field of Statistics tahat analyses data that
+Functional Data Analysis is the field of Statistics that analyses data that
 come in the shape of functions. To know more about fda have a look at fda_ or read [RS05]_.
 
 This package offers classes, methods and functions to give support to fda

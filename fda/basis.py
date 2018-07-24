@@ -1270,6 +1270,157 @@ class FDataBasis:
 
         return res_matrix
 
+    def _evaluate_shifted(self, eval_points, delta, derivative=0):
+        """Evaluate the object or its derivatives at a list of values.
+
+        This method has to evaluate the basis values once per sample and
+        eval_point instead of reuse the same evaluation for all the samples
+        as the evaluate method.
+
+        Args:
+            eval_points (array_like): List of points where the functions are
+                evaluated.
+            delta (array_like): List of shifts for each function
+            derivative (int, optional): Order of the derivative. Defaults to 0.
+
+        Returns:
+            (numpy.darray): Matrix whose rows are the values of the each
+            function at the values specified in eval_points.
+
+        """
+
+        # Not necessary if the arguments are already ndarrays
+        eval_points = numpy.asarray(eval_points)
+        delta = numpy.asarray(delta)
+
+        if delta.shape[0] != self.nsamples:
+            raise ValueError("deltas vector length ({}) has to match with the "
+                             "number of samples ({})."
+                             .format(delta.shape[0], self.nsamples))
+
+        res_matrix = numpy.empty((self.nsamples, eval_points.shape[0]))
+
+        for i in range(self.nsamples):
+
+            # each column contains the values of one element of the basis
+            # evaluated in the shifted time delta[i]
+            basis_values = self.basis.evaluate(eval_points + delta[i],
+                                               derivative).T
+
+            _matrix = basis_values * self.coefficients[i]
+            res_matrix[i] = _matrix.sum(axis=1)
+
+        return res_matrix
+
+    def shift_registration(self, maxiter=3, tol=1e-2, alpha=1, initial=None,
+                           maxshift=None, periodic=None, nfine=None):
+        r"""Perform a shift registration of the curves
+
+        TODO: See convergence criterions.
+              Non-periodic basis and data
+              Description and examples
+              Tests
+              See method to convert data without qr
+              Add periodic attribute to basis?
+
+        Description:
+            TODO
+
+        Args:
+            maxiter (int, optional):
+            tol (float, optional):
+            alpha (int or float, optional):
+            initial (array_like, optional):
+            maxshift (float, optional):
+            periodic (bool, optional):
+            nfine (int, optional):
+
+        Returns:
+            :obj:`FDataBasis`: A FDataBasis object with the samples registered.
+
+        Examples:
+            TODO
+
+        References:
+            .. [RS05-7-2] Ramsay, J., Silverman, B. W. (2005). Shift
+                registration. In *Functional Data Analysis* (pp. 129-132).
+                Springler.
+
+            .. [RS05-7-9-1] Ramsay, J., Silverman, B. W. (2005). Shift
+            registration by the Newton-Raphson algorithm. In *Functional Data
+            Analysis* (pp. 142-144). Springler.
+
+        """
+
+        if periodic == False:
+            raise NotImplemented("Shift aligment for not periodic data not "
+                                 "implemented yet")
+
+        if initial == None:
+            initial = numpy.zeros(self.nsamples)
+
+        elif len(initial) != self.nsamples:
+            raise ValueError("the initial shift ({}) must have the same length"
+                             "than the number of samples ({})"
+                             .format(len(initial), self.nsamples))
+
+        if not nfine:
+            nfine = max(self.nbasis*10+1, 201)  # Used in R version
+
+        # Fine equispaced mesh to evaluate the samples
+        tfine = numpy.linspace(self.basis.domain_range[0],
+                               self.basis.domain_range[1],
+                               nfine)
+
+        # Compute the derivate of originals curves in the mesh points
+        D1x = self.evaluate(tfine, 1)
+
+        # Second term of the second derivate estimation of REGSSE. The
+        # first term has been dropped to improve convergence (see references)
+        d2_regsse = scipy.integrate.trapz(numpy.square(D1x), tfine, axis=1)
+
+        max_diff = tol + 1
+        i = 0
+        delta = numpy.asarray(initial)
+        last_delta = numpy.zeros(self.nsamples)
+
+        while max_diff > tol and i < maxiter:
+
+            x = self._evaluate_shifted(tfine, delta)
+            mean = numpy.mean(x, axis=0)
+
+            # Calculate x - mean without allocate other ndarray
+            numpy.subtract(x, mean, x)
+
+            # Real REGSSE derivates are multiplied by 2, but the division
+            # simplifies it
+            d1_regsse = scipy.integrate.trapz(numpy.multiply(x, D1x),
+                                              tfine, axis=1)
+
+            # Equivalent to delta = delta - alpha * d1_regsse / d2_regsse
+            # Without allocate others ndarrays
+            numpy.divide(d1_regsse, d2_regsse, d1_regsse)
+            numpy.multiply(d1_regsse, alpha, d1_regsse)
+            numpy.subtract(delta, d1_regsse, delta)
+
+            if maxshift:
+                numpy.minimum(delta, maxshift, delta)
+                numpy.maximum(delta, -1 * maxshift, delta)
+
+            # Update convergence criterions
+            i += 1
+            max_diff = numpy.max(
+                numpy.abs(
+                    numpy.subtract(delta, last_delta, last_delta), last_delta))
+
+            numpy.copyto(last_delta, delta)
+
+
+        # Computes the curves with the final shift
+        x = self._evaluate_shifted(tfine, delta)
+
+        return FDataBasis.from_data(x, tfine, self.basis, method='qr')
+
     def plot(self, ax=None, derivative=0, **kwargs):
         """Plot the FDataBasis object or its derivatives.
 

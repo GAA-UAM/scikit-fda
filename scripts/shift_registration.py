@@ -5,91 +5,129 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from fda.basis import FDataBasis, Fourier
+from fda.grid import FDataGrid
+
+# Data parameters
+nsamples = 15  # Number of samples
+nfine = 100  # Number of points per sample
+phase_sd = .6  # Standard deviation of phase variation
+amp_sd = .05  # Standard deviation of amplitude variation
+error_sd = .2  # Standard deviation of gaussian noise
+period = 1  # Period of the sine used to generate the data
+nbasis = 11  # Number of fourier basis elements
+
+# Plot options
+width = .8  # Width of the samples curves
+samples_color = 'teal'
+mean_color = 'black'
+curve_color = 'maroon'
+ylim = (-1.75, 1.75)
+xlim = (0, 1)
+iterations = 5  # Number of iterations in the step-by-step figure
 
 
-nsamples = 15 # Number of samples
-nfine = 100 # Number of points per sample
-nbasis = 11 # Number of fourier basis elements
-phase_sd = .6 # Standard deviation of phase variation
-error_sd = .2 # Standard deviation of gaussian noise
-period = 1 # Period of the sine used to generate the data
-iterations = 3 # Number of iterations in the step-by-step figure
+def noise_sin(t, nsamples, period=1, phase_sd=0, amp_sd=0, error_sd=0):
+    """Sine noisy function
 
+    Generates several samples of the function
 
-def noise_sin(t, period=1., phase_sd=1., error_sd=1.):
+    ..math::
+        x_i(t) = a_i \sin(\frac{2 \pi t}{period} + \delta_i) + \epsilon(t)
 
-    phase_variation = np.outer(np.ones(t.shape[0]),
-                         np.random.normal(0, phase_sd, t.shape[1]))
+    evaluated at the samples points. :math: `a_i, \delta_{i}` and :math:
+    `\epsilon(t_{ij})` are normaly distributed.
 
-    error = np.random.normal(0, error_sd, t.shape)
+    Args:
+        t (ndarray): Array of times
+        nsamples (float): Number of samples
+        period (float): Period of the sine function
+        phase_sd (float): Standard deviation of the phase variation
+        amp_sd (float): Standard deviation of the amplitude variation
+        error_sd (float): Standard deviation of the error of the samples
 
-    return np.sin(2*np.pi*t/period + phase_variation) + error
+    Returns:
+        ndarray: Matrix with the samples evaluated. Each row is a sample and
+        each column is a discrete time.
+    """
+
+    phase_variation = np.outer(np.random.normal(0, phase_sd,  nsamples),
+                               np.ones(len(t)))
+
+    error = np.random.normal(0, error_sd, (nsamples, len(t)))
+
+    amp = np.diag(np.random.normal(1, amp_sd, nsamples))
+
+    return amp @ np.sin(2*np.pi*t/period + phase_variation) + error
 
 
 if __name__ == '__main__':
 
+    # Seaborn style
+    plt.style.use('seaborn')
+
     # Fixing random state for reproducibility
-    np.random.seed(19587801)
+    np.random.seed(98765)
 
     # Matrix with times where each sample will be evaluated
-    t = np.linspace(0,1,nfine)
-    tsamples = np.outer(t,np.ones(nsamples))
+    t = np.linspace(xlim[0], xlim[1], nfine)
 
     # Noisy sine data, with amplitude variation and gaussian error
-    data = noise_sin(tsamples,period=period, phase_sd=phase_sd, error_sd=error_sd)
+    data = noise_sin(t, nsamples, period, phase_sd, amp_sd, error_sd)
+    fdgrid = FDataGrid(data, t, xlim, 'Raw Data')
+    # Real sine function
+    sine = np.sin(2*np.pi*t/period)
 
     # Plot the samples
-    plt.figure(1)
-    plt.title('Raw data')
-    plt.plot(t, data,c='b', linewidth=0.8)
-    plt.plot(t,np.sin(2*np.pi*t/period),c='r',linestyle='dashed') # Original curve
+    plt.figure()
+    plt.ylim(ylim)
+    plt.xlim(xlim)
+    l1 = fdgrid.plot(label='samples', c=samples_color, linewidth=width)
+    l2 = plt.plot(t, sine, label='sine', c=curve_color, linestyle='dashed')
+    l3 = fdgrid.mean().plot(label='mean', c=mean_color)
+    plt.legend(handles=[l1[0], l3[0], l2[0]], loc=1)
 
     # Curves smoothed with the matrix penalty method
-    basis = FDataBasis.from_data(data.T, t, Fourier(nbasis=nbasis))
-    plt.figure(2)
-    plt.title('Unregistered curves')
-    basis.plot(c='b', linewidth=0.8)
-    #plt.plot(t,np.sin(2*np.pi*t/period),c='r',linestyle='dashed')
+    # Curves smoothed with the matrix penalty method
+    fd = fdgrid.to_basis(Fourier(xlim, nbasis, period))
+    unregmean = fd.mean()  # Mean of unregistered curves
 
-    # Mean of unregistered curves
-    unregmean = basis.mean()
-    plt.figure(3)
-    plt.title('Unregistered mean')
-    unregmean.plot(c='b')
-    plt.plot(t,np.sin(2*np.pi*t/period),c='r',linestyle='dashed')
+    # Plots the smoothed curves
+    plt.figure()
+    plt.title('Unregistered curves')
+    plt.ylim(ylim)
+    plt.xlim(xlim)
+    l1 = fd.plot(label='samples', c=samples_color, linewidth=width)
+    l2 = plt.plot(t, sine, label='sine', c=curve_color, linestyle='dashed')
+    l3 = unregmean.plot(label='mean', c=mean_color)
+    plt.legend(handles=[l1[0], l3[0], l2[0]], loc=1)
 
     # Shift registered curves
-    registered_basis = basis.shift_registration()
-    plt.figure(4)
-    plt.title('Shift registered curves')
-    registered_basis.plot(c='b', linewidth=0.8)
-    #plt.plot(t,np.sin(2*np.pi*t/period),c='r',linestyle='dashed')
+    regbasis = fd.shift_registration()
+    regmean = regbasis.mean()  # Registered mean
 
-    # Registered mean
-    regmean = registered_basis.mean()
-    plt.figure(5)
-    plt.title('Registered mean')
-    regmean.plot(c='b')
-    plt.plot(t,np.sin(2*np.pi*t/period),c='r',linestyle='dashed')
+    # Plots the registered curves
+    plt.figure()
+    plt.title('Registered curves')
+    plt.ylim(ylim)
+    plt.xlim(xlim)
+    l1 = regbasis.plot(label='samples', c=samples_color,
+                       linewidth=width)
+    l2 = plt.plot(t, sine, label='sine', c=curve_color, linestyle='dashed')
+    l3 = regmean.plot(label='mean', c=mean_color)
+    plt.legend(handles=[l1[0], l3[0], l2[0]], loc=1)
 
+    # Plots the process step by step
+    f, axarr = plt.subplots(iterations+1, 1, sharex=True, sharey=True)
+    axarr[0].title.set_text('Step by step registration')
+    plt.xlim(xlim)
 
-    f, axarr = plt.subplots(iterations+1, 2, sharex='col', sharey='row')
+    fd.plot(ax=axarr[0], c=samples_color, linewidth=width)
+    axarr[0].set_ylabel('Unregistered')
 
-    basis.plot(ax=axarr[0][0], c='b', linewidth=0.8)
-    axarr[0][1].plot(t,np.sin(2*np.pi*t/period),c='r',linestyle='dashed')
-    basis.mean().plot(ax=axarr[0][1], c='b')
-
-
-    axarr[0][0].set_title('Registered curves')
-    axarr[0][1].set_title('Mean curves')
-    axarr[0][0].set_ylabel('Unregistered')
-
-    for i in range(1,iterations+1):
-        partial_registered_basis = basis.shift_registration(maxiter=i)
-        partial_registered_basis.plot(ax=axarr[i][0], c='b', linewidth=0.8)
-        axarr[i][1].plot(t,np.sin(2*np.pi*t/period),c='r',linestyle='dashed')
-        partial_registered_basis.mean().plot(ax=axarr[i][1], c='b')
-
-        axarr[i][0].set_ylabel('%d iterations' % i)
+    for i in range(1, iterations+1):
+        # tol=0 to realize all the iterations
+        regfd = fd.shift_registration(maxiter=i, tol=0.)
+        regfd.plot(ax=axarr[i], c=samples_color, linewidth=width)
+        axarr[i].set_ylabel('%d iteration%s' % (i, '' if i == 1 else 's'))
 
     plt.show()

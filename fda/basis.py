@@ -1398,7 +1398,7 @@ class FDataBasis:
 
         return res_matrix
 
-    def shift_registration(self, maxiter=3, tol=1e-2, periodic="default",
+    def shift_registration(self, maxiter=5, tol=1e-2, periodic="default",
                            alpha=1, initial=None, tfine=None,
                            shifts_array=False, **kwargs):
         r"""Perform a shift registration of the curves.
@@ -1417,7 +1417,7 @@ class FDataBasis:
 
         Args:
             maxiter (int, optional): Maximun number of iterations.
-                Default sets to 3.
+                Defaults to 5.
             tol (float, optional): Tolerance allowable. The process will stop if
                 :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
                 Default sets to 1e-2.
@@ -1573,6 +1573,74 @@ class FDataBasis:
             (self.domain_range[0] - a, self.domain_range[1] - b))
 
         return FDataBasis.from_data(x, tfine, rescaled_basis, **kwargs)
+
+
+    def landmark_shift(self, landmarks, location='minimize', periodic='default',
+                       tfine=None, shifts_array=False, **kwargs ):
+        r"""
+
+        """
+
+        if len(landmarks) != self.nsamples:
+            raise ValueError("landmark list ({}) must have the same length "
+                             "than the number of samples ({})"
+                             .format(len(landmarks), self.nsamples))
+
+        landmarks = numpy.asarray(landmarks)
+
+        if location == 'minimize':
+            p = (numpy.max(landmarks) + numpy.min(landmarks)) / 2.
+        elif location == 'mean':
+            p = numpy.mean(landmarks)
+        elif location == 'median':
+            p = numpy.median(landmarks)
+        elif location == 'middle':
+            p = (self.domain_range[1] + self.domain_range[0]) / 2.
+        else:
+            try:
+                p = float(location)
+            except:
+                raise ValueError("Invalid location, must be 'minimize', 'mean',"
+                                 " 'median','middle' or a number")
+
+        if periodic == "default":
+            # Periodic BSplines could be a good idea
+            periodic = True if isinstance(self.basis, Fourier) else False
+
+        # The periodic extrapolation is not needed in Fourier basis
+        if not periodic or isinstance(self.basis, Fourier):
+            p_ext = False
+        else:
+            p_ext = True
+
+        shifts = landmarks - p
+
+        if shifts_array:
+            return shifts
+
+        if not periodic:
+            # Calculates the new limits
+            a = min(numpy.min(shifts), 0)
+            b = max(numpy.max(shifts), 0)
+
+            # New interval
+            domain = (self.basis.domain_range[0] - a,
+                      self.basis.domain_range[1] - b)
+        else:
+            domain = self.basis.domain_range
+
+
+        # Fine equispaced mesh to evaluate the samples
+        if tfine == None:
+            nfine = max(self.nbasis*10+1, 201)  # Used in R version
+            tfine = numpy.linspace(domain[0], domain[1], nfine)
+
+        x = self._evaluate_shifted(tfine, shifts, periodic_extrapolation=p_ext)
+
+        rescaled_basis = self.basis.rescale(domain)
+
+        return FDataBasis.from_data(x, tfine, rescaled_basis, **kwargs)
+
 
     def plot(self, ax=None, derivative=0, **kwargs):
         """Plot the FDataBasis object or its derivatives.

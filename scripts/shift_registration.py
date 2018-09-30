@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from fda.basis import FDataBasis, Fourier
 from fda.grid import FDataGrid
 
+
 # Data parameters
 nsamples = 15  # Number of samples
 nfine = 100  # Number of points per sample

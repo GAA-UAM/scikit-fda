@@ -17,6 +17,7 @@ import scipy.linalg
 from scipy.special import binom
 
 from fda import grid
+from fda.registration import shift_registration
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -65,6 +66,7 @@ class Basis(ABC):
         self.domain_range = domain_range
         self.nbasis = nbasis
         self._drop_index_lst = []
+        self.default_extrapolation = "slice"
 
         super().__init__()
 
@@ -874,6 +876,8 @@ class Fourier(Basis):
         nbasis += 1 - nbasis % 2
         super().__init__(domain_range, nbasis)
 
+        self.default_extrapolation = "basis"
+
     def _compute_matrix(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
 
@@ -1086,6 +1090,7 @@ class FDataBasis:
                              "elements of the basis.")
         self.basis = basis
         self.coefficients = coefficients
+        self.default_extrapolation = basis.default_extrapolation
 
     @classmethod
     def from_data(cls, data_matrix, sample_points, basis, weight_matrix=None,
@@ -1338,8 +1343,8 @@ class FDataBasis:
 
         return res_matrix
 
-    def _evaluate_shifted(self, eval_points, delta, derivative=0,
-                          periodic_extrapolation=False):
+    def evaluate_shifted(self, eval_points, delta, derivative=0,
+                          ext=False):
         """Evaluate the object or its derivatives at a list of values.
 
         This method has to evaluate the basis values once per sample and
@@ -1351,11 +1356,11 @@ class FDataBasis:
                 evaluated.
             delta (array_like): List of shifts for each function
             derivative (int, optional): Order of the derivative. Defaults to 0.
-            periodic_extrapolation (bool, optional): If true extrapolates the
+            ext (bool, optional): If true extrapolates the
                 times assuming that the functions are periodic in the
                 domain_range. Useful for periodic data modeled with non
                 periodic basis. Else the evaluation of points outside the domain
-                is not defined.
+                is not defined, except for periodic basis as Fourier:
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
             function at the values specified in eval_points.
@@ -1385,7 +1390,7 @@ class FDataBasis:
             # evaluated in the shifted time delta[i]
             numpy.add(eval_points, delta[i], shifted_points)
 
-            if periodic_extrapolation:
+            if ext:
                 numpy.subtract(
                     shifted_points, self.domain_range[0], shifted_points)
                 numpy.mod(shifted_points, domain_length, shifted_points)
@@ -1398,8 +1403,73 @@ class FDataBasis:
 
         return res_matrix
 
-    def shift_registration(self, maxiter=5, tol=1e-2, periodic="default",
-                           alpha=1, initial=None, tfine=None,
+    def shift(self, shifts, ext="default", tfine=[], **kwargs):
+        r"""
+
+        """
+
+        if not len(tfine): # Grid to discretize the function
+            nfine = max(self.nbasis*10+1, 201)
+            tfine = numpy.linspace(self.basis.domain_range[0],
+                                   self.basis.domain_range[1],
+                                   nfine)
+        else:
+            tfine = numpy.asarray(tfine)
+
+        if numpy.isscalar(shifts): # Special case, al curves have the same shift
+
+            _basis = self.basis.rescale((self.basis.domain_range[0] + shifts,
+                                        self.basis.domain_range[1] + shifts))
+
+            return FDataBasis.from_data(self.evaluate(tfine), tfine + shifts,
+                                        _basis, **kwargs)
+
+        elif len(shifts) != self.nsamples:
+            raise ValueError("shifts vector ({}) must have the same length "
+                             "than the number of samples ({})"
+                             .format(len(shifts), self.nsamples))
+
+        if ext == "default" or ext == 0:
+            ext = self.default_extrapolation
+
+        if ext == "basis" or ext == 1:
+            periodic = True
+            periodic_ext = False
+
+        elif ext == "periodic" or  ext == 2:
+            periodic_ext = True
+            periodic = True
+
+        elif ext == "slice" or ext == 3:
+            periodic = False
+            periodic_ext = False
+
+        else:
+            raise ValueError("Incorrect value of ext, should be 'default', 'basis'"\
+                             ", 'periodic' or 'slice'.")
+
+        if not periodic:
+            a = self.domain_range[0] - min(numpy.min(shifts), 0)
+            b = self.domain_range[1] - max(numpy.max(shifts), 0)
+            domain = (a, b)
+            tfine = tfine [numpy.logical_and(tfine >= a, tfine <= b)]
+        else:
+            domain = self.domain_range
+
+
+        # Matrix of shifted values
+        _data_matrix = self.evaluate_shifted(tfine, shifts, ext = periodic_ext)
+        _basis = self.basis.rescale(domain)
+
+
+        return FDataBasis.from_data(_data_matrix, tfine, _basis, **kwargs)
+
+
+
+
+
+    def shift_registration(self, maxiter=5, tol=1e-2, ext="default",
+                           alpha=1, initial=[], tfine=[],
                            shifts_array=False, **kwargs):
         r"""Perform a shift registration of the curves.
 
@@ -1466,113 +1536,11 @@ class FDataBasis:
                 Data Analysis* (pp. 142-144). Springer.
         """
 
-        # Initial estimation of the shifts
-        if initial == None:
-            delta = numpy.zeros(self.nsamples)
 
-        elif len(initial) != self.nsamples:
-            raise ValueError("the initial shift ({}) must have the same length "
-                             "than the number of samples ({})"
-                             .format(len(initial), self.nsamples))
-        else:
-            delta = numpy.asarray(initial)
+        return shift_registration(self, maxiter, tol, ext, alpha, initial,
+                                  tfine, shifts_array, **kwargs)
 
-        # Fine equispaced mesh to evaluate the samples
-        if tfine == None:
-            nfine = max(self.nbasis*10+1, 201)  # Used in R version
-            tfine = numpy.linspace(self.basis.domain_range[0],
-                                   self.basis.domain_range[1],
-                                   nfine)
-        else:
-            nfine = len(tfine)
-            tfine = numpy.asarray(tfine)
 
-        if periodic == "default":
-            # Periodic BSplines could be a good idea
-            periodic = True if isinstance(self.basis, Fourier) else False
-
-        # The periodic extrapolation is not needed in Fourier basis
-        if not periodic or isinstance(self.basis, Fourier):
-            periodic_ext = False
-        else:
-            periodic_ext = True
-
-        # Auxiliar arrays to avoid multiple memory allocations
-        delta_aux = numpy.empty(self.nsamples)
-        tfine_aux = numpy.empty(nfine)
-
-        # Computes the derivate of originals curves in the mesh points
-        D1x = self.evaluate(tfine, 1)
-
-        # Second term of the second derivate estimation of REGSSE. The
-        # first term has been dropped to improve convergence (see references)
-        d2_regsse = scipy.integrate.trapz(numpy.square(D1x), tfine, axis=1)
-
-        max_diff = tol + 1
-        iter = 0
-        a = 0
-        b = 0
-
-        # Saves the array in all the interval if it will be adjusted to slice
-        if not periodic:
-            D1x_tmp = D1x
-            tfine_tmp = tfine
-            tfine_aux_tmp = tfine_aux
-            domain = numpy.empty(nfine, dtype=numpy.dtype(bool))
-
-        # Newton-Rhapson iteration
-        while max_diff > tol and iter < maxiter:
-
-            # Updates the limits for non periodic functions ignoring the ends
-            if not periodic:
-                # Calculates the new limits
-                a = min(numpy.min(delta), 0)
-                b = max(numpy.max(delta), 0)
-
-                # The new interval is (domain[0] - a, domain[1] - b)
-                numpy.logical_and(tfine_tmp >= self.basis.domain_range[0] - a,
-                                  tfine_tmp <= self.basis.domain_range[1] - b,
-                                  out=domain)
-                tfine = tfine_tmp[domain]
-                tfine_aux = tfine_aux_tmp[domain]
-                D1x = D1x_tmp[:, domain]
-                # Reescale the second derivate could be other approach
-                # d2_regsse =
-                # d2_regsse_original * ( 1 + (a - b) / (domain[1] - domain[0]))
-                d2_regsse = scipy.integrate.trapz(numpy.square(D1x), tfine,
-                                                  axis=1)
-
-            # Computes the new values shifted
-            x = self._evaluate_shifted(tfine, delta,
-                                       periodic_extrapolation=periodic_ext)
-            x.mean(axis=0, out=tfine_aux)
-
-            # Calculates x - mean
-            numpy.subtract(x, tfine_aux, out=x)
-
-            # REGSSE derivates are multiplied by 2
-            d1_regsse = scipy.integrate.trapz(numpy.multiply(x, D1x, out=x),
-                                              tfine, axis=1)
-            # Updates the shifts by the Newton-Rhapson iteration
-            # delta = delta - alpha * d1_regsse / d2_regsse
-            numpy.divide(d1_regsse, d2_regsse, out=delta_aux)
-            numpy.multiply(delta_aux, alpha, out=delta_aux)
-            numpy.subtract(delta, delta_aux, out=delta)
-
-            # Updates convergence criterions
-            max_diff = numpy.abs(delta_aux, out=delta_aux).max()
-            iter += 1
-
-        # If shifts_array is True returns the delta array
-        if shifts_array:
-            return delta
-
-        # Computes the values with the final shift to construct the FDataBasis
-        x = self._evaluate_shifted(tfine, delta)
-        rescaled_basis = self.basis.rescale(
-            (self.domain_range[0] - a, self.domain_range[1] - b))
-
-        return FDataBasis.from_data(x, tfine, rescaled_basis, **kwargs)
 
 
     def landmark_shift(self, landmarks, location='minimize', periodic='default',
@@ -1601,7 +1569,7 @@ class FDataBasis:
                 p = float(location)
             except:
                 raise ValueError("Invalid location, must be 'minimize', 'mean',"
-                                 " 'median','middle' or a number")
+                                 " 'median','middle' or a number in the domain")
 
         if periodic == "default":
             # Periodic BSplines could be a good idea
@@ -1635,7 +1603,7 @@ class FDataBasis:
             nfine = max(self.nbasis*10+1, 201)  # Used in R version
             tfine = numpy.linspace(domain[0], domain[1], nfine)
 
-        x = self._evaluate_shifted(tfine, shifts, periodic_extrapolation=p_ext)
+        x = self.evaluate_shifted(tfine, shifts, ext=p_ext)
 
         rescaled_basis = self.basis.rescale(domain)
 

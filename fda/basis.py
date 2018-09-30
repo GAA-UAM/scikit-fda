@@ -1090,7 +1090,6 @@ class FDataBasis:
                              "elements of the basis.")
         self.basis = basis
         self.coefficients = coefficients
-        self.default_extrapolation = basis.default_extrapolation
 
     @classmethod
     def from_data(cls, data_matrix, sample_points, basis, weight_matrix=None,
@@ -1318,6 +1317,11 @@ class FDataBasis:
     def domain_range(self):
         """Definition range."""
         return self.basis.domain_range
+
+    @property
+    def default_extrapolation(self):
+        """Return default type of extrapolation."""
+        return  self.basis.default_extrapolation
 
     def evaluate(self, eval_points, derivative=0):
         """Evaluate the object or its derivatives at a list of values.

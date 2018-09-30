@@ -1543,7 +1543,7 @@ class FDataBasis:
 
 
     def landmark_shift(self, landmarks, location='minimize', ext='default',
-                       tfine=None, shifts_array=False, **kwargs):
+                       tfine=[], shifts_array=False, **kwargs):
         r"""
 
         """

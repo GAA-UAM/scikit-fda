@@ -233,4 +233,4 @@ def landmark_shift(fd, landmarks, location='minimize', ext='default',
     if shifts_array:
         return shifts
 
-    return fd.shift(delta, ext = ext, tfine=tfine, **kwargs)
+    return fd.shift(shifts, ext = ext, tfine=tfine, **kwargs)

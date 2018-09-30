@@ -8,33 +8,38 @@ functional data and related routines, in basis form as well in discretized form.
 import numpy
 import scipy.integrate
 
+
 def _check_extrapolation(fd, ext):
     # Check how to extrapolate
     # By default uses the value of the fd object
     if ext == "default" or ext == 0:
         ext = fd.default_extrapolation
 
-    if ext == "basis" or ext == 1:
-        periodic = True
-        periodic_ext = False
+    if ext == "extrapolation" or ext == 1:
+        periodic = 1
+        extrapolation = False
 
-    elif ext == "periodic" or  ext == 2:
-        periodic_ext = True
+    elif ext == "periodic" or ext == 2:
+        extrapolation = 2
         periodic = True
 
-    elif ext == "slice" or ext == 3:
+    elif ext == "const" or ext == 3:
+        extrapolation = 3
+        periodic = True
+
+    elif ext == "slice" or ext == 4:
+        extrapolation = 1
         periodic = False
-        periodic_ext = False
 
     else:
-        raise ValueError("Incorrect value of ext, should be 'default', 'basis'"\
+        raise ValueError("Incorrect value of ext, should be 'default', 'basis'"
                          ", 'periodic' or 'slice'.")
 
-    return periodic, periodic_ext
+    return periodic, extrapolation
 
-def shift_registration(fd, maxiter=5, tol=1e-2, ext="default",
-                       alpha=1, initial=[], tfine=[],
-                       shifts_array=False, **kwargs):
+
+def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
+                       initial=[], tfine=[], shifts_array=False, **kwargs):
     r"""Perform a shift registration of the curves.
 
         Realizes a registration of the curves, using shift aligment, as is
@@ -51,21 +56,22 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default",
         in each iteration, as is described in detail in [RS05-7-9-1]_.
 
     Args:
+        fd (:obj:`FDataBasis` or :obj:`FDataGrid`): Functional data object.
         maxiter (int, optional): Maximun number of iterations.
             Defaults to 5.
         tol (float, optional): Tolerance allowable. The process will stop if
             :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
             Default sets to 1e-2.
-        periodic (bool, optional): If is True the functions are considered
-            periodical, if the basis of the functions is periodic it is used
-            its own period, as in the case of :meth:`Fourier` basis, else
-            are considerated periodic in the domain range, as in the
-            periodic :meth:`BSplines` case. In general, it is not
-            recommended this option for non periodic basis.
-            If it is False the domain range of the functions are restricted
-            to allow evaluated all the functions with their shifts.
-            If 'default' are passed it is choosen according to the basis,
-            being True for periodic basis and False in other cases.
+        ext (str or int, optional): Controls the extrapolation mode for elements
+            not in the domain range.
+
+            * If ext=0 or 'default' uses the default method defined in the fd
+              object.
+            * If ext=1 or 'extrapolation' uses the extrapolated values.
+            * If ext=2 or 'periodic' extends the domain range periodically.
+            * If ext=3 or 'const' uses the boundary value.
+            * If ext=4 or 'slice' avoids extrapolation restricting the domain.
+            The default value is 'default'.
         alpha (int or float, optional): Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see [RS05-7-9-1]_.
             Defaults to 1.
@@ -73,15 +79,14 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default",
             Default uses a list of zeros for the initial shifts.
         tfine (array_like, optional): Set of points where the
             functions are evaluated to obtain the discrete
-            representation of the object to integrate. If none are passed
-            it calls numpy.linspace with bounds equal to the ones defined in
-            fd.domain_range and the number of points the maximum
+            representation of the object to integrate. If an empty list is
+            passed it calls numpy.linspace with bounds equal to the ones defined
+            in fd.domain_range and the number of points the maximum
             between 201 and 10 times the number of basis plus 1.
         shifts_array (bool, optional): If True returns an array with the
             shifts instead of a :obj:`FDataBasis` with the registered
             curves. Default sets to False.
-        **kwargs: Keyword arguments to be passed to the :meth:`from_data`
-            function.
+        **kwargs: Keyword arguments to be passed to :meth:`from_data`.
 
     Returns:
         :obj:`FDataBasis` or :obj:`ndarray`: A :obj:`FDataBasis` object with
@@ -122,9 +127,8 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default",
         nfine = len(tfine)
         tfine = numpy.asarray(tfine)
 
-
     # Check how to extrapolate based on the argument ext
-    periodic, periodic_ext = _check_extrapolation(fd, ext)
+    periodic, extrapolation = _check_extrapolation(fd, ext)
 
     # Auxiliar arrays to avoid multiple memory allocations
     delta_aux = numpy.empty(fd.nsamples)
@@ -156,7 +160,6 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default",
             a = min(numpy.min(delta), 0)
             b = max(numpy.max(delta), 0)
 
-
             # The new interval is (domain[0] - a, domain[1] - b)
             numpy.logical_and(tfine_tmp >= fd.basis.domain_range[0] - a,
                               tfine_tmp <= fd.basis.domain_range[1] - b,
@@ -171,14 +174,12 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default",
                                               axis=1)
 
         # Computes the new values shifted
-        x = fd.evaluate_shifted(tfine, delta,
-                                   ext=periodic_ext)
+        x = fd.evaluate_shifted(tfine, delta, ext=extrapolation)
         x.mean(axis=0, out=tfine_aux)
 
         # Calculates x - mean
         numpy.subtract(x, tfine_aux, out=x)
 
-        # REGSSE derivates are multiplied by 2
         d1_regsse = scipy.integrate.trapz(numpy.multiply(x, D1x, out=x),
                                           tfine, axis=1)
         # Updates the shifts by the Newton-Rhapson iteration
@@ -196,13 +197,50 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default",
         return delta
 
     # Computes the values with the final shift to construct the FDataBasis
-    return fd.shift(delta, ext = ext, tfine=tfine, **kwargs)
+    return fd.shift(delta, ext=ext, tfine=tfine, **kwargs)
 
 
 def landmark_shift(fd, landmarks, location='minimize', ext='default',
-                   tfine=[], shifts_array=False, **kwargs ):
-    r"""
+                   tfine=[], shifts_array=False, **kwargs):
+    r"""Perform a shift registration of the curves to align the landmarks at
+        the same mark time.
 
+        Args:
+            fd (:obj:`FDataBasis` or :obj:`FDataGrid`): Functional data object.
+            landmarks (array_like): List with the landmarks of the samples.
+            location (str or numeric): Defines the time where the landmarks will
+                be alligned. The possible values are:
+
+                * location='minimize': Minimizes the max shift, aligning the
+                  landmarks at :math:`\frac{1}{2}(max(\text{landmarks})+
+                  min(\text{landmarks}))`.
+                * location='mean': Aligns the landmarks at the mean.
+                * location='median': Aligns the landmarks at the median.
+                * location='middle': Aligns the landmarks at the middle of
+                  the domain range.
+                * If a number is passed it is used to align the landmarks.
+                The default value is minimize.
+            ext (str or int, optional): Controls the extrapolation mode for elements
+                not in the domain range.
+
+                * If ext=0 or 'default' uses the default method defined in the fd
+                  object.
+                * If ext=1 or 'extrapolation' uses the extrapolated values.
+                * If ext=2 or 'periodic' extends the domain range periodically.
+                * If ext=3 or 'const' uses the boundary value.
+                * If ext=4 or 'slice' avoids extrapolation restricting the
+                  domain.
+                The default value is 'default'.
+            tfine (array_like, optional): Set of points where the
+                functions are evaluated to obtain the discrete
+                representation of the object to integrate. If an empty list is
+                passed it calls numpy.linspace with bounds equal to the ones defined
+                in fd.domain_range and the number of points the maximum
+                between 201 and 10 times the number of basis plus 1.
+            shifts_array (bool, optional): If True returns an array with the
+                shifts instead of a :obj:`FDataBasis` with the registered
+                curves. Default sets to False.
+            **kwargs: Keyword arguments to be passed to :meth:`from_data`.
     """
 
     if len(landmarks) != fd.nsamples:
@@ -233,4 +271,4 @@ def landmark_shift(fd, landmarks, location='minimize', ext='default',
     if shifts_array:
         return shifts
 
-    return fd.shift(shifts, ext = ext, tfine=tfine, **kwargs)
+    return fd.shift(shifts, ext=ext, tfine=tfine, **kwargs)

@@ -8,7 +8,7 @@ functional data and related routines, in basis form as well in discretized form.
 import numpy
 import scipy.integrate
 
-def _get_extrapolations(fd, ext):
+def _check_extrapolation(fd, ext):
     # Check how to extrapolate
     # By default uses the value of the fd object
     if ext == "default" or ext == 0:
@@ -124,7 +124,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default",
 
 
     # Check how to extrapolate based on the argument ext
-    periodic, periodic_ext = _get_extrapolations(fd, ext)
+    periodic, periodic_ext = _check_extrapolation(fd, ext)
 
     # Auxiliar arrays to avoid multiple memory allocations
     delta_aux = numpy.empty(fd.nsamples)

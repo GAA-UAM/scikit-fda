@@ -197,3 +197,40 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default",
 
     # Computes the values with the final shift to construct the FDataBasis
     return fd.shift(delta, ext = ext, tfine=tfine, **kwargs)
+
+
+def landmark_shift(fd, landmarks, location='minimize', ext='default',
+                   tfine=[], shifts_array=False, **kwargs ):
+    r"""
+
+    """
+
+    if len(landmarks) != fd.nsamples:
+        raise ValueError("landmark list ({}) must have the same length "
+                         "than the number of samples ({})"
+                         .format(len(landmarks), fd.nsamples))
+
+    landmarks = numpy.asarray(landmarks)
+
+    # Parses location
+    if location == 'minimize':
+        p = (numpy.max(landmarks) + numpy.min(landmarks)) / 2.
+    elif location == 'mean':
+        p = numpy.mean(landmarks)
+    elif location == 'median':
+        p = numpy.median(landmarks)
+    elif location == 'middle':
+        p = (fd.domain_range[1] + fd.domain_range[0]) / 2.
+    else:
+        try:
+            p = float(location)
+        except:
+            raise ValueError("Invalid location, must be 'minimize', 'mean',"
+                             " 'median','middle' or a number in the domain")
+
+    shifts = landmarks - p
+
+    if shifts_array:
+        return shifts
+
+    return fd.shift(delta, ext = ext, tfine=tfine, **kwargs)

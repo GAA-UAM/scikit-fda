@@ -17,7 +17,7 @@ import scipy.linalg
 from scipy.special import binom
 
 from fda import grid
-from fda.registration import shift_registration
+import fda.registration
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -1377,7 +1377,6 @@ class FDataBasis:
 
         """
 
-        # Not necessary if the arguments are already ndarrays
         eval_points = numpy.asarray(eval_points)
         delta = numpy.asarray(delta)
 
@@ -1471,9 +1470,6 @@ class FDataBasis:
         return FDataBasis.from_data(_data_matrix, tfine, _basis, **kwargs)
 
 
-
-
-
     def shift_registration(self, maxiter=5, tol=1e-2, ext="default",
                            alpha=1, initial=[], tfine=[],
                            shifts_array=False, **kwargs):
@@ -1543,77 +1539,19 @@ class FDataBasis:
         """
 
 
-        return shift_registration(self, maxiter, tol, ext, alpha, initial,
-                                  tfine, shifts_array, **kwargs)
+        return fda.registration.shift_registration(self, maxiter, tol, ext,
+                                                   alpha, initial, tfine,
+                                                   shifts_array, **kwargs)
 
 
-
-
-    def landmark_shift(self, landmarks, location='minimize', periodic='default',
-                       tfine=None, shifts_array=False, **kwargs ):
+    def landmark_shift(self, landmarks, location='minimize', ext='default',
+                       tfine=None, shifts_array=False, **kwargs):
         r"""
 
         """
 
-        if len(landmarks) != self.nsamples:
-            raise ValueError("landmark list ({}) must have the same length "
-                             "than the number of samples ({})"
-                             .format(len(landmarks), self.nsamples))
-
-        landmarks = numpy.asarray(landmarks)
-
-        if location == 'minimize':
-            p = (numpy.max(landmarks) + numpy.min(landmarks)) / 2.
-        elif location == 'mean':
-            p = numpy.mean(landmarks)
-        elif location == 'median':
-            p = numpy.median(landmarks)
-        elif location == 'middle':
-            p = (self.domain_range[1] + self.domain_range[0]) / 2.
-        else:
-            try:
-                p = float(location)
-            except:
-                raise ValueError("Invalid location, must be 'minimize', 'mean',"
-                                 " 'median','middle' or a number in the domain")
-
-        if periodic == "default":
-            # Periodic BSplines could be a good idea
-            periodic = True if isinstance(self.basis, Fourier) else False
-
-        # The periodic extrapolation is not needed in Fourier basis
-        if not periodic or isinstance(self.basis, Fourier):
-            p_ext = False
-        else:
-            p_ext = True
-
-        shifts = landmarks - p
-
-        if shifts_array:
-            return shifts
-
-        if not periodic:
-            # Calculates the new limits
-            a = min(numpy.min(shifts), 0)
-            b = max(numpy.max(shifts), 0)
-
-            # New interval
-            domain = (self.basis.domain_range[0] - a,
-                      self.basis.domain_range[1] - b)
-        else:
-            domain = self.basis.domain_range
-
-
-        # Fine equispaced mesh to evaluate the samples
-        if tfine == None:
-            nfine = max(self.nbasis*10+1, 201)  # Used in R version
-            tfine = numpy.linspace(domain[0], domain[1], nfine)
-
-        x = self.evaluate_shifted(tfine, shifts, ext=p_ext)
-
-        rescaled_basis = self.basis.rescale(domain)
-
-        return FDataBasis.from_data(x, tfine, rescaled_basis, **kwargs)
+        return fda.registration.landmark_shift(self, landmarks, location, ext,
+                                               tfine, shifts_array, **kwargs)
 
 
     def plot(self, ax=None, derivative=0, **kwargs):

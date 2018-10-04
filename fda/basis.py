@@ -18,6 +18,7 @@ from scipy.special import binom
 
 from fda import grid
 import fda.registration
+from fda.registration import ExtrapolationType
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -35,35 +36,6 @@ def _polypow(p, n=2):
         return [1]
     else:
         raise ValueError("n must be greater than 0.")
-
-
-def _check_extrapolation(fd, ext):
-    # Check how to extrapolate
-    # By default uses the value of the fd object
-    if ext == "default" or ext == 0:
-        ext = fd.default_extrapolation
-
-    if ext == "extrapolation" or ext == 1:
-        extrapolation = 1
-        periodic = True
-
-    elif ext == "periodic" or ext == 2:
-        extrapolation = 2
-        periodic = True
-
-    elif ext == "const" or ext == 3:
-        extrapolation = 3
-        periodic = True
-
-    elif ext == "slice" or ext == 4:
-        extrapolation = 1
-        periodic = False
-
-    else:
-        raise ValueError("Incorrect value of ext, should be 'default', 'basis'"
-                         ", 'periodic', 'const' or 'slice'.")
-
-    return periodic, extrapolation
 
 
 class Basis(ABC):
@@ -94,7 +66,7 @@ class Basis(ABC):
         self.domain_range = domain_range
         self.nbasis = nbasis
         self._drop_index_lst = []
-        self.default_extrapolation = "slice"
+        self.default_extrapolation = ExtrapolationType.slice
 
         super().__init__()
 
@@ -904,7 +876,7 @@ class Fourier(Basis):
         nbasis += 1 - nbasis % 2
         super().__init__(domain_range, nbasis)
 
-        self.default_extrapolation = "extrapolation"
+        self.default_extrapolation = ExtrapolationType.extrapolation
 
     def _compute_matrix(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
@@ -1378,8 +1350,7 @@ class FDataBasis:
 
         return res_matrix
 
-    def evaluate_shifted(self, eval_points, delta, derivative=0,
-                          ext="default"):
+    def evaluate_shifted(self, eval_points, delta, derivative=0, ext="default"):
         """Evaluate the object or its derivatives at a list of values with a
         shift for each sample.
 
@@ -1426,8 +1397,7 @@ class FDataBasis:
         res_matrix = numpy.empty((self.nsamples, eval_points.shape[0]))
         shifted_points = numpy.empty(len(eval_points))
         domain_length = self.domain_range[1] - self.domain_range[0]
-
-        periodic, extrapolation = _check_extrapolation(self, ext)
+        extrapolation = ExtrapolationType.parse(ext, self)
 
         for i in range(self.nsamples):
 
@@ -1436,17 +1406,16 @@ class FDataBasis:
             numpy.add(eval_points, delta[i], shifted_points)
 
             # Case periodic extrapolation
-            if extrapolation == 2:
+            if extrapolation == ExtrapolationType.periodic:
                 numpy.subtract(
                     shifted_points, self.domain_range[0], shifted_points)
                 numpy.mod(shifted_points, domain_length, shifted_points)
                 numpy.add(shifted_points, self.domain_range[0], shifted_points)
+
             # Case boundary value
-            elif extrapolation == 3:
+            elif extrapolation == ExtrapolationType.const:
                 shifted_points[shifted_points <= self.domain_range[0]] = self.domain_range[0]
                 shifted_points[shifted_points >= self.domain_range[1]] = self.domain_range[1]
-
-
 
             basis_values = self.basis.evaluate(shifted_points, derivative).T
 
@@ -1505,9 +1474,10 @@ class FDataBasis:
                              "than the number of samples ({})"
                              .format(len(shifts), self.nsamples))
 
-        periodic, extrapolation = _check_extrapolation(self, ext)
 
-        if not periodic:
+        extrapolation = ExtrapolationType.parse(ext, self)
+
+        if extrapolation == ExtrapolationType.slice:
             a = self.domain_range[0] - min(numpy.min(shifts), 0)
             b = self.domain_range[1] - max(numpy.max(shifts), 0)
             domain = (a, b)
@@ -1516,7 +1486,7 @@ class FDataBasis:
             domain = self.domain_range
 
         # Matrix of shifted values
-        _data_matrix = self.evaluate_shifted(tfine, shifts, ext=extrapolation)
+        _data_matrix = self.evaluate_shifted(tfine, shifts, ext=extrapolation.value)
         _basis = self.basis.rescale(domain)
 
         return FDataBasis.from_data(_data_matrix, tfine, _basis, **kwargs)

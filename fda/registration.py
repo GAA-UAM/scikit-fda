@@ -4,38 +4,60 @@ This module contains the methods to perform the registration of
 functional data and related routines, in basis form as well in discretized form.
 
 """
+import enum
 
 import numpy
 import scipy.integrate
 
 
-def _check_extrapolation(fd, ext):
-    # Check how to extrapolate
-    # By default uses the value of the fd object
-    if ext == "default" or ext == 0:
-        ext = fd.default_extrapolation
+class ExtrapolationType(enum.Enum):
+    r"""Enum with extrapolation types.
 
-    if ext == "extrapolation" or ext == 1:
-        periodic = 1
-        extrapolation = False
+        Defines the extrapolation mode for elements outside the domain range.
 
-    elif ext == "periodic" or ext == 2:
-        extrapolation = 2
-        periodic = True
+        * default: uses the default method defined in the object to extrapolate.
+        * extrapolation: uses the extrapolated values directly.
+        * periodic: extends the domain range periodically.
+        * const: uses the boundary value.
+        * slice: avoids extrapolation restricting the domain.
+    """
+    default = 0
+    extrapolation = 1
+    periodic = 2
+    const = 3
+    slice = 4
 
-    elif ext == "const" or ext == 3:
-        extrapolation = 3
-        periodic = True
+    @classmethod
+    def parse(cls, arg, fd=None):
+        r"""Parse an ExtrapolationType from string, int or ExtrapolationType.
 
-    elif ext == "slice" or ext == 4:
-        extrapolation = 1
-        periodic = False
+            Args:
+                arg (str, int or ExtrapolationType): Argument to parse. Can
+                    be the number of the extrapolation type or an string with
+                    the name.
+                fd (:obj:`FDataBasis`, optional): Functional data object with
+                    a default extrapolation type defined.
+            Return:
+                :obj:`ExtrapolationType`: corresponding type parsed.
+        """
 
-    else:
-        raise ValueError("Incorrect value of ext, should be 'default', 'basis'"
-                         ", 'periodic' or 'slice'.")
+        if isinstance(arg, ExtrapolationType): arg = arg.value
+        elif isinstance(arg, str): arg = arg.lower()
 
-    return periodic, extrapolation
+        for ext in ExtrapolationType:
+
+            if arg == ext.value or arg == ext.name:
+
+                if ext.value == ExtrapolationType.default.value:
+
+                    if not fd:
+                        raise ValueError('Default value is no provided')
+                    else:
+                        return ExtrapolationType(fd.default_extrapolation.value)
+
+                return ExtrapolationType(ext.value)
+
+        raise ValueError('{} is not a valid extrapolation type'.format(arg))
 
 
 def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
@@ -62,8 +84,8 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
         tol (float, optional): Tolerance allowable. The process will stop if
             :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
             Default sets to 1e-2.
-        ext (str or int, optional): Controls the extrapolation mode for elements
-            not in the domain range.
+        ext (str,int or ExtrapolationType, optional): Controls the extrapolation
+            mode for elements outside the domain range.
 
             * If ext=0 or 'default' uses the default method defined in the fd
               object.
@@ -127,8 +149,8 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
         nfine = len(tfine)
         tfine = numpy.asarray(tfine)
 
-    # Check how to extrapolate based on the argument ext
-    periodic, extrapolation = _check_extrapolation(fd, ext)
+
+    extrapolation = ExtrapolationType.parse(ext, fd)
 
     # Auxiliar arrays to avoid multiple memory allocations
     delta_aux = numpy.empty(fd.nsamples)
@@ -144,8 +166,8 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
     max_diff = tol + 1
     iter = 0
 
-    # Saves the array in all the interval if it will be adjusted to slice
-    if not periodic:
+    # Auxiliar array if the domain will be restricted
+    if extrapolation == ExtrapolationType.slice:
         D1x_tmp = D1x
         tfine_tmp = tfine
         tfine_aux_tmp = tfine_aux
@@ -155,26 +177,24 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
     while max_diff > tol and iter < maxiter:
 
         # Updates the limits for non periodic functions ignoring the ends
-        if not periodic:
+        if extrapolation == ExtrapolationType.slice:
             # Calculates the new limits
-            a = min(numpy.min(delta), 0)
-            b = max(numpy.max(delta), 0)
+            a = fd.basis.domain_range[0] - min(numpy.min(delta), 0)
+            b = fd.basis.domain_range[1] - max(numpy.max(delta), 0)
 
-            # The new interval is (domain[0] - a, domain[1] - b)
-            numpy.logical_and(tfine_tmp >= fd.basis.domain_range[0] - a,
-                              tfine_tmp <= fd.basis.domain_range[1] - b,
-                              out=domain)
+            # New interval is (a,b)
+            numpy.logical_and(tfine_tmp >= a, tfine_tmp <= b, out=domain)
             tfine = tfine_tmp[domain]
             tfine_aux = tfine_aux_tmp[domain]
             D1x = D1x_tmp[:, domain]
             # Reescale the second derivate could be other approach
             # d2_regsse =
-            # d2_regsse_original * ( 1 + (a - b) / (domain[1] - domain[0]))
+            #     d2_regsse_original * ( 1 + (a - b) / (domain[1] - domain[0]))
             d2_regsse = scipy.integrate.trapz(numpy.square(D1x), tfine,
                                               axis=1)
 
         # Computes the new values shifted
-        x = fd.evaluate_shifted(tfine, delta, ext=extrapolation)
+        x = fd.evaluate_shifted(tfine, delta, ext=extrapolation.value)
         x.mean(axis=0, out=tfine_aux)
 
         # Calculates x - mean
@@ -193,8 +213,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
         iter += 1
 
     # If shifts_array is True returns the delta array
-    if shifts_array:
-        return delta
+    if shifts_array: return delta
 
     # Computes the values with the final shift to construct the FDataBasis
     return fd.shift(delta, ext=ext, tfine=tfine, **kwargs)
@@ -208,8 +227,8 @@ def landmark_shift(fd, landmarks, location='minimize', ext='default',
         Args:
             fd (:obj:`FDataBasis` or :obj:`FDataGrid`): Functional data object.
             landmarks (array_like): List with the landmarks of the samples.
-            location (str or numeric): Defines the time where the landmarks will
-                be alligned. The possible values are:
+            location (str,numeric or ExtrapolationType): Defines the time where
+                the landmarks will be alligned. The possible values are:
 
                 * location='minimize': Minimizes the max shift, aligning the
                   landmarks at :math:`\frac{1}{2}(max(\text{landmarks})+

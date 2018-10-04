@@ -48,14 +48,14 @@ class ExtrapolationType(enum.Enum):
 
             if arg == ext.value or arg == ext.name:
 
-                if ext.value == ExtrapolationType.default.value:
+                if ext is ExtrapolationType.default:
 
                     if not fd:
                         raise ValueError('Default value is no provided')
                     else:
-                        return ExtrapolationType(fd.default_extrapolation.value)
+                        return fd.default_extrapolation
 
-                return ExtrapolationType(ext.value)
+                return ext
 
         raise ValueError('{} is not a valid extrapolation type'.format(arg))
 
@@ -167,7 +167,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
     iter = 0
 
     # Auxiliar array if the domain will be restricted
-    if extrapolation == ExtrapolationType.slice:
+    if extrapolation is ExtrapolationType.slice:
         D1x_tmp = D1x
         tfine_tmp = tfine
         tfine_aux_tmp = tfine_aux
@@ -177,7 +177,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
     while max_diff > tol and iter < maxiter:
 
         # Updates the limits for non periodic functions ignoring the ends
-        if extrapolation == ExtrapolationType.slice:
+        if extrapolation is ExtrapolationType.slice:
             # Calculates the new limits
             a = fd.basis.domain_range[0] - min(numpy.min(delta), 0)
             b = fd.basis.domain_range[1] - max(numpy.max(delta), 0)
@@ -194,7 +194,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
                                               axis=1)
 
         # Computes the new values shifted
-        x = fd.evaluate_shifted(tfine, delta, ext=extrapolation.value)
+        x = fd.evaluate_shifted(tfine, delta, ext=extrapolation)
         x.mean(axis=0, out=tfine_aux)
 
         # Calculates x - mean

@@ -1406,14 +1406,14 @@ class FDataBasis:
             numpy.add(eval_points, delta[i], shifted_points)
 
             # Case periodic extrapolation
-            if extrapolation == ExtrapolationType.periodic:
+            if extrapolation is ExtrapolationType.periodic:
                 numpy.subtract(
                     shifted_points, self.domain_range[0], shifted_points)
                 numpy.mod(shifted_points, domain_length, shifted_points)
                 numpy.add(shifted_points, self.domain_range[0], shifted_points)
 
             # Case boundary value
-            elif extrapolation == ExtrapolationType.const:
+            elif extrapolation is ExtrapolationType.const:
                 shifted_points[shifted_points <= self.domain_range[0]] = self.domain_range[0]
                 shifted_points[shifted_points >= self.domain_range[1]] = self.domain_range[1]
 
@@ -1477,7 +1477,7 @@ class FDataBasis:
 
         extrapolation = ExtrapolationType.parse(ext, self)
 
-        if extrapolation == ExtrapolationType.slice:
+        if extrapolation is ExtrapolationType.slice:
             a = self.domain_range[0] - min(numpy.min(shifts), 0)
             b = self.domain_range[1] - max(numpy.max(shifts), 0)
             domain = (a, b)
@@ -1486,7 +1486,7 @@ class FDataBasis:
             domain = self.domain_range
 
         # Matrix of shifted values
-        _data_matrix = self.evaluate_shifted(tfine, shifts, ext=extrapolation.value)
+        _data_matrix = self.evaluate_shifted(tfine, shifts, ext=extrapolation)
         _basis = self.basis.rescale(domain)
 
         return FDataBasis.from_data(_data_matrix, tfine, _basis, **kwargs)

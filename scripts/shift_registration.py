@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 from fda.basis import FDataBasis, Fourier
 from fda.grid import FDataGrid
+from fda.registration import shift_registration
 
 
 # Data parameters
@@ -103,7 +104,7 @@ if __name__ == '__main__':
     plt.legend(handles=[l1[0], l3[0], l2[0]], loc=1)
 
     # Shift registered curves
-    regbasis = fd.shift_registration()
+    regbasis = shift_registration(fd)
     regmean = regbasis.mean()  # Registered mean
 
     # Plots the registered curves
@@ -127,7 +128,7 @@ if __name__ == '__main__':
 
     for i in range(1, iterations+1):
         # tol=0 to realize all the iterations
-        regfd = fd.shift_registration(maxiter=i, tol=0.)
+        regfd = shift_registration(fd, maxiter=i, tol=0.)
         regfd.plot(ax=axarr[i], c=samples_color, linewidth=width)
         axarr[i].set_ylabel('%d iteration%s' % (i, '' if i == 1 else 's'))
 

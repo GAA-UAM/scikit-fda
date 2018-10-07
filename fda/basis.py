@@ -1343,10 +1343,11 @@ class FDataBasis:
         basis_values = self.basis.evaluate(eval_points, derivative).T
 
         res_matrix = numpy.empty((self.nsamples, len(eval_points)))
+        _matrix = numpy.empty((len(eval_points),self.nbasis))
 
         for i in range(self.nsamples):
-            _matrix = basis_values * self.coefficients[i]
-            res_matrix[i] = _matrix.sum(axis=1)
+            numpy.multiply(basis_values,self.coefficients[i], out=_matrix)
+            numpy.sum(_matrix, axis=1, out=res_matrix[i])
 
         return res_matrix
 
@@ -1384,10 +1385,6 @@ class FDataBasis:
             (numpy.darray): Matrix whose rows are the values of the each
             function at the values specified in eval_points with the
             corresponding shift.
-
-        Todo:
-            See how to initialize the _matrix variable and use it as output
-            of the matrix product in all the iterations.
         """
 
         eval_points = numpy.asarray(eval_points)
@@ -1398,14 +1395,14 @@ class FDataBasis:
                              "number of samples ({})."
                              .format(delta.shape[0], self.nsamples))
 
+        extrapolation = Extrapolation(ext)
+        if extrapolation is Extrapolation.default:
+            extrapolation = self.default_extrapolation
+
         res_matrix = numpy.empty((self.nsamples, eval_points.shape[0]))
         shifted_points = numpy.empty(len(eval_points))
         domain_length = self.domain_range[1] - self.domain_range[0]
-
-        extrapolation = Extrapolation(ext)
-
-        if extrapolation is Extrapolation.default:
-            extrapolation = self.default_extrapolation
+        _matrix = numpy.empty((len(eval_points),self.nbasis))
 
         for i in range(self.nsamples):
 
@@ -1427,8 +1424,8 @@ class FDataBasis:
 
             basis_values = self.basis.evaluate(shifted_points, derivative).T
 
-            _matrix = basis_values * self.coefficients[i]
-            res_matrix[i] = _matrix.sum(axis=1)
+            numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
+            numpy.sum(_matrix, axis=1, out=res_matrix[i])
 
         return res_matrix
 

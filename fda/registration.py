@@ -21,44 +21,11 @@ class ExtrapolationType(enum.Enum):
         * const: uses the boundary value.
         * slice: avoids extrapolation restricting the domain.
     """
-    default = 0
-    extrapolation = 1
-    periodic = 2
-    const = 3
-    slice = 4
-
-    @classmethod
-    def parse(cls, arg, fd=None):
-        r"""Parse an ExtrapolationType from string, int or ExtrapolationType.
-
-            Args:
-                arg (str, int or ExtrapolationType): Argument to parse. Can
-                    be the number of the extrapolation type or an string with
-                    the name.
-                fd (:obj:`FDataBasis`, optional): Functional data object with
-                    a default extrapolation type defined.
-            Return:
-                :obj:`ExtrapolationType`: corresponding type parsed.
-        """
-
-        if isinstance(arg, ExtrapolationType): arg = arg.value
-        elif isinstance(arg, str): arg = arg.lower()
-
-        for ext in ExtrapolationType:
-
-            if arg == ext.value or arg == ext.name:
-
-                if ext is ExtrapolationType.default:
-
-                    if not fd:
-                        raise ValueError('Default value is no provided')
-                    else:
-                        return fd.default_extrapolation
-
-                return ext
-
-        raise ValueError('{} is not a valid extrapolation type'.format(arg))
-
+    default = "default"
+    extrapolation = "extrapolation"
+    periodic = "periodic"
+    const = "const"
+    slice = "slice"
 
 def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
                        initial=[], tfine=[], shifts_array=False, **kwargs):
@@ -84,16 +51,19 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
         tol (float, optional): Tolerance allowable. The process will stop if
             :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
             Default sets to 1e-2.
-        ext (str,int or ExtrapolationType, optional): Controls the extrapolation
+        ext (str or ExtrapolationType, optional): Controls the extrapolation
             mode for elements outside the domain range.
 
-            * If ext=0 or 'default' uses the default method defined in the fd
-              object.
-            * If ext=1 or 'extrapolation' uses the extrapolated values.
-            * If ext=2 or 'periodic' extends the domain range periodically.
-            * If ext=3 or 'const' uses the boundary value.
-            * If ext=4 or 'slice' avoids extrapolation restricting the domain.
-            The default value is 'default'.
+            * If ext='default' or ExtrapolationType.default default
+                method defined in the fd object is used.
+            * If ext='extrapolation' or ExtrapolationType.extrapolation uses
+                the extrapolated values by the basis.
+            * If ext='periodic' or ExtrapolationType.periodic extends the
+                domain range periodically.
+            * If ext='const' or ExtrapolationType.const uses the boundary
+                value
+            * If ext='slice' or ExtrapolationType.slice avoids extrapolation
+                restricting the domain.
         alpha (int or float, optional): Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see [RS05-7-9-1]_.
             Defaults to 1.
@@ -150,7 +120,10 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
         tfine = numpy.asarray(tfine)
 
 
-    extrapolation = ExtrapolationType.parse(ext, fd)
+    extrapolation = ExtrapolationType(ext)
+
+    if extrapolation is ExtrapolationType.default:
+        extrapolation = fd.default_extrapolation
 
     # Auxiliar arrays to avoid multiple memory allocations
     delta_aux = numpy.empty(fd.nsamples)

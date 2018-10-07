@@ -1365,15 +1365,19 @@ class FDataBasis:
             delta (array_like or numeric): List of shifts for each function or
                 an scalar.
             derivative (int, optional): Order of the derivative. Defaults to 0.
-            ext (str or int, optional): Controls the extrapolation mode for
-                elements outside the domain range.
+            ext (str or ExtrapolationType, optional): Controls the extrapolation
+                mode for elements outside the domain range.
 
-                * If ext=0 or 'default' uses the default method defined in the
-                  fd object.
-                * If ext=1 or 'extrapolation' uses the extrapolated values.
-                * If ext=2 or 'periodic' extends the domain range periodically.
-                * If ext=3 or 'const' uses the boundary value.
-                The default value is 'default'.
+                * If ext='default' or ExtrapolationType.default default
+                    method defined in the fd object is used.
+                * If ext='extrapolation' or ExtrapolationType.extrapolation uses
+                    the extrapolated values by the basis.
+                * If ext='periodic' or ExtrapolationType.periodic extends the
+                    domain range periodically.
+                * If ext='const' or ExtrapolationType.const uses the boundary
+                    value
+                * If ext='slice' or ExtrapolationType.slice avoids extrapolation
+                    restricting the domain.
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
             function at the values specified in eval_points with the
@@ -1395,7 +1399,11 @@ class FDataBasis:
         res_matrix = numpy.empty((self.nsamples, eval_points.shape[0]))
         shifted_points = numpy.empty(len(eval_points))
         domain_length = self.domain_range[1] - self.domain_range[0]
-        extrapolation = ExtrapolationType.parse(ext, self)
+
+        extrapolation = ExtrapolationType(ext)
+
+        if extrapolation is ExtrapolationType.default:
+            extrapolation = self.default_extrapolation
 
         for i in range(self.nsamples):
 
@@ -1429,26 +1437,29 @@ class FDataBasis:
             shifts (array_like or numeric): List with the the shift
                 corresponding for each sample or numeric with the shift to apply
                 to all samples.
-            ext (str or int, optional): Controls the extrapolation mode for
-                elements outside the domain range.
-                * If ext=0 or 'default' uses the default method defined in the
-                  basis.
-                * If ext=1 or 'extrapolation' uses the extrapolated values.
-                * If ext=2 or 'periodic' extends the domain range periodically.
-                * If ext=3 or 'const' uses the boundary value.
-                * If ext=4 or 'slice' avoids extrapolation restricting the
-                domain.
-                The default value is 'default'.
+            ext (str or ExtrapolationType, optional): Controls the extrapolation
+                mode for elements outside the domain range.
+
+                * If ext='default' or ExtrapolationType.default default
+                    method defined in the fd object is used.
+                * If ext='extrapolation' or ExtrapolationType.extrapolation uses
+                    the extrapolated values by the basis.
+                * If ext='periodic' or ExtrapolationType.periodic extends the
+                    domain range periodically.
+                * If ext='const' or ExtrapolationType.const uses the boundary
+                    value
+                * If ext='slice' or ExtrapolationType.slice avoids extrapolation
+                    restricting the domain.
             tfine (array_like, optional): Set of points where the
                 functions are evaluated to obtain the discrete
                 representation of the object to integrate. If an empty list is
-                passed it calls numpy.linspace with bounds equal to the ones defined
-                in fd.domain_range and the number of points the maximum
+                passed it calls numpy.linspace with bounds equal to the ones
+                defined in fd.domain_range and the number of points the maximum
                 between 201 and 10 times the number of basis plus 1.
             **kwargs: Keyword arguments to be passed to :meth:`from_data`.
 
         Returns:
-            :obj:`FDataBasis` with the curves :math:`f_i(t + \delta_i)`.
+            :obj:`FDataBasis` with the registered functional data.
         """
 
         if not len(tfine):  # Grid to discretize the function
@@ -1473,7 +1484,10 @@ class FDataBasis:
                              .format(len(shifts), self.nsamples))
 
 
-        extrapolation = ExtrapolationType.parse(ext, self)
+        extrapolation = ExtrapolationType(ext)
+
+        if extrapolation is ExtrapolationType.default:
+            extrapolation = self.default_extrapolation
 
         if extrapolation is ExtrapolationType.slice:
             a = self.domain_range[0] - min(numpy.min(shifts), 0)

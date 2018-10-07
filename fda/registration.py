@@ -179,8 +179,8 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
         # Updates the limits for non periodic functions ignoring the ends
         if extrapolation is ExtrapolationType.slice:
             # Calculates the new limits
-            a = fd.basis.domain_range[0] - min(numpy.min(delta), 0)
-            b = fd.basis.domain_range[1] - max(numpy.max(delta), 0)
+            a = fd.domain_range[0] - min(numpy.min(delta), 0)
+            b = fd.domain_range[1] - max(numpy.max(delta), 0)
 
             # New interval is (a,b)
             numpy.logical_and(tfine_tmp >= a, tfine_tmp <= b, out=domain)
@@ -219,7 +219,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
     return fd.shift(delta, ext=ext, tfine=tfine, **kwargs)
 
 
-def landmark_shift(fd, landmarks, location='minimize', ext='default',
+def landmark_shift(fd, landmarks, location=None, ext='default',
                    tfine=[], shifts_array=False, **kwargs):
     r"""Perform a shift registration of the curves to align the landmarks at
         the same mark time.
@@ -227,28 +227,28 @@ def landmark_shift(fd, landmarks, location='minimize', ext='default',
         Args:
             fd (:obj:`FDataBasis` or :obj:`FDataGrid`): Functional data object.
             landmarks (array_like): List with the landmarks of the samples.
-            location (str,numeric or ExtrapolationType): Defines the time where
-                the landmarks will be alligned. The possible values are:
+            location (numeric or callable, optional): Defines where
+                the landmarks will be alligned. If a numeric value is passed the
+                landmarks will be alligned to it. In case of a callable is
+                passed the location will be the result of the the call, the
+                function should be accept as an unique parameter a numpy array
+                with the list of landmarks.
+                By default it will be used as location :math:`\frac{1}{2}(max(
+                \text{landmarks})+ min(\text{landmarks}))` wich minimizes the
+                max shift.
+            ext (str or ExtrapolationType, optional): Controls the extrapolation
+                mode for elements outside the domain range.
 
-                * location='minimize': Minimizes the max shift, aligning the
-                  landmarks at :math:`\frac{1}{2}(max(\text{landmarks})+
-                  min(\text{landmarks}))`.
-                * location='mean': Aligns the landmarks at the mean.
-                * location='median': Aligns the landmarks at the median.
-                * location='middle': Aligns the landmarks at the middle of
-                  the domain range.
-                * If a number is passed it is used to align the landmarks.
-                The default value is minimize.
-            ext (str or int, optional): Controls the extrapolation mode for elements
-                not in the domain range.
-
-                * If ext=0 or 'default' uses the default method defined in the fd
-                  object.
-                * If ext=1 or 'extrapolation' uses the extrapolated values.
-                * If ext=2 or 'periodic' extends the domain range periodically.
-                * If ext=3 or 'const' uses the boundary value.
-                * If ext=4 or 'slice' avoids extrapolation restricting the
-                  domain.
+                * If ext='default' or ExtrapolationType.default default
+                    method defined in the fd object is used.
+                * If ext='extrapolation' or ExtrapolationType.extrapolation uses
+                    the extrapolated values by the basis.
+                * If ext='periodic' or ExtrapolationType.periodic extends the
+                    domain range periodically.
+                * If ext='const' or ExtrapolationType.const uses the boundary
+                    value
+                * If ext='slice' or ExtrapolationType.slice avoids extrapolation
+                    restricting the domain.
                 The default value is 'default'.
             tfine (array_like, optional): Set of points where the
                 functions are evaluated to obtain the discrete
@@ -270,20 +270,16 @@ def landmark_shift(fd, landmarks, location='minimize', ext='default',
     landmarks = numpy.asarray(landmarks)
 
     # Parses location
-    if location == 'minimize':
+    if location is None:
         p = (numpy.max(landmarks) + numpy.min(landmarks)) / 2.
-    elif location == 'mean':
-        p = numpy.mean(landmarks)
-    elif location == 'median':
-        p = numpy.median(landmarks)
-    elif location == 'middle':
-        p = (fd.domain_range[1] + fd.domain_range[0]) / 2.
+    elif callable(location):
+        p = location(landmarks)
     else:
         try:
             p = float(location)
         except:
-            raise ValueError("Invalid location, must be 'minimize', 'mean',"
-                             " 'median','middle' or a number in the domain")
+            raise ValueError("Invalid location, must be None, a callable or a "
+                             "number in the domain")
 
     shifts = landmarks - p
 

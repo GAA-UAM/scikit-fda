@@ -10,7 +10,7 @@ import numpy
 import scipy.integrate
 
 
-class ExtrapolationType(enum.Enum):
+class Extrapolation(enum.Enum):
     r"""Enum with extrapolation types.
 
         Defines the extrapolation mode for elements outside the domain range.
@@ -28,7 +28,7 @@ class ExtrapolationType(enum.Enum):
     slice = "slice"
 
 def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
-                       initial=[], tfine=[], shifts_array=False, **kwargs):
+                       initial=None, tfine=None, shifts_array=False, **kwargs):
     r"""Perform a shift registration of the curves.
 
         Realizes a registration of the curves, using shift aligment, as is
@@ -51,18 +51,18 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
         tol (float, optional): Tolerance allowable. The process will stop if
             :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
             Default sets to 1e-2.
-        ext (str or ExtrapolationType, optional): Controls the extrapolation
+        ext (str or Extrapolation, optional): Controls the extrapolation
             mode for elements outside the domain range.
 
-            * If ext='default' or ExtrapolationType.default default
+            * If ext='default' or Extrapolation.default default
                 method defined in the fd object is used.
-            * If ext='extrapolation' or ExtrapolationType.extrapolation uses
+            * If ext='extrapolation' or Extrapolation.extrapolation uses
                 the extrapolated values by the basis.
-            * If ext='periodic' or ExtrapolationType.periodic extends the
+            * If ext='periodic' or Extrapolation.periodic extends the
                 domain range periodically.
-            * If ext='const' or ExtrapolationType.const uses the boundary
+            * If ext='const' or Extrapolation.const uses the boundary
                 value
-            * If ext='slice' or ExtrapolationType.slice avoids extrapolation
+            * If ext='slice' or Extrapolation.slice avoids extrapolation
                 restricting the domain.
         alpha (int or float, optional): Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see [RS05-7-9-1]_.
@@ -99,7 +99,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
     """
 
     # Initial estimation of the shifts
-    if not len(initial):
+    if initial is None:
         delta = numpy.zeros(fd.nsamples)
 
     elif len(initial) != fd.nsamples:
@@ -110,7 +110,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
         delta = numpy.asarray(initial)
 
     # Fine equispaced mesh to evaluate the samples
-    if not len(tfine):
+    if tfine is None:
         nfine = max(fd.nbasis*10+1, 201)
         tfine = numpy.linspace(fd.basis.domain_range[0],
                                fd.basis.domain_range[1],
@@ -120,9 +120,9 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
         tfine = numpy.asarray(tfine)
 
 
-    extrapolation = ExtrapolationType(ext)
+    extrapolation = Extrapolation(ext)
 
-    if extrapolation is ExtrapolationType.default:
+    if extrapolation is Extrapolation.default:
         extrapolation = fd.default_extrapolation
 
     # Auxiliar arrays to avoid multiple memory allocations
@@ -140,7 +140,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
     iter = 0
 
     # Auxiliar array if the domain will be restricted
-    if extrapolation is ExtrapolationType.slice:
+    if extrapolation is Extrapolation.slice:
         D1x_tmp = D1x
         tfine_tmp = tfine
         tfine_aux_tmp = tfine_aux
@@ -150,7 +150,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
     while max_diff > tol and iter < maxiter:
 
         # Updates the limits for non periodic functions ignoring the ends
-        if extrapolation is ExtrapolationType.slice:
+        if extrapolation is Extrapolation.slice:
             # Calculates the new limits
             a = fd.domain_range[0] - min(numpy.min(delta), 0)
             b = fd.domain_range[1] - max(numpy.max(delta), 0)
@@ -192,8 +192,8 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
     return fd.shift(delta, ext=ext, tfine=tfine, **kwargs)
 
 
-def landmark_shift(fd, landmarks, location=None, ext='default',
-                   tfine=[], shifts_array=False, **kwargs):
+def landmark_shift(fd, landmarks, location=None, ext='default', tfine=None,
+                   shifts_array=False, **kwargs):
     r"""Perform a shift registration of the curves to align the landmarks at
         the same mark time.
 
@@ -209,18 +209,18 @@ def landmark_shift(fd, landmarks, location=None, ext='default',
                 By default it will be used as location :math:`\frac{1}{2}(max(
                 \text{landmarks})+ min(\text{landmarks}))` wich minimizes the
                 max shift.
-            ext (str or ExtrapolationType, optional): Controls the extrapolation
+            ext (str or Extrapolation, optional): Controls the extrapolation
                 mode for elements outside the domain range.
 
-                * If ext='default' or ExtrapolationType.default default
+                * If ext='default' or Extrapolation.default default
                     method defined in the fd object is used.
-                * If ext='extrapolation' or ExtrapolationType.extrapolation uses
+                * If ext='extrapolation' or Extrapolation.extrapolation uses
                     the extrapolated values by the basis.
-                * If ext='periodic' or ExtrapolationType.periodic extends the
+                * If ext='periodic' or Extrapolation.periodic extends the
                     domain range periodically.
-                * If ext='const' or ExtrapolationType.const uses the boundary
+                * If ext='const' or Extrapolation.const uses the boundary
                     value
-                * If ext='slice' or ExtrapolationType.slice avoids extrapolation
+                * If ext='slice' or Extrapolation.slice avoids extrapolation
                     restricting the domain.
                 The default value is 'default'.
             tfine (array_like, optional): Set of points where the

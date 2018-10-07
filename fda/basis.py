@@ -962,7 +962,7 @@ class Fourier(Basis):
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
 
-        The penalty matrix is defined as [RS05-5-6-2]:
+        The penalty matrix is defined as [RS05-5-6-2]_:
 
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds

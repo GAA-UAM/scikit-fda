@@ -27,6 +27,97 @@ class Extrapolation(enum.Enum):
     const = "const"
     slice = "slice"
 
+def mse_decomposition(fd, fdreg, h=None, tfine=None):
+    r"""Once the registration has taken place, this function computes two mean
+    squared error measures, one for amplitude variation, and the other for
+    phase variation. It also computes a squared multiple correlation index
+    of the amount of variation in the unregistered functions is due to phase.
+
+    Args:
+        fd (:obj:FDataBasis or :obj:FDataGrid): Unregistered functions
+        regfd (:obj:FDataBasis or :obj:FDataGrid): Registered functions
+        h (:obj:FDataBasis or :obj:FDataGrid, optional): Warping functions
+        tfine: (array_like, optional):
+
+    Returns:
+        float: mean square for amplitude variation
+        float: mean square for amplitude variation
+        float: squared correlation measure of prop. phase variation
+        float: constant C
+
+    Raise:
+        ValueError: If the curves do not have the same number of samples
+
+    References:
+        ..  [KR08-3] Kneip, Alois & Ramsay, James. (2008).  Quantifying
+            amplitude and phase variation. In *Combining Registration and
+            Fitting for Functional Models* (pp. 14-15). Journal of the American
+            Statistical Association.
+        ..  [RGS09-8-5] Ramsay J.O., Giles Hooker & Spencer Graves (2009). In
+            *Functional Data Analysis with R and Matlab* (p. 125). Springer.
+    """
+
+    if fd.nsamples != fdreg.nsamples:
+        raise ValueError("the registered and unregistered curves must have "
+                         "the same number of samples ({})!=({})"
+                         .format(fdreg.nsamples, fd.nsamples))
+
+    if h is not None and h.nsamples != fd.nsamples:
+        raise ValueError("the registered curves and the warping functions must "
+                         "have the same number of samples ({})!=({})"
+                         .format(fdreg.nsamples, h.nsamples))
+
+    # Creates the mesh to discretize the functions
+    if tfine is None:
+        nfine = max(fdreg.basis.nbasis * 10 + 1, 201)
+        tfine = numpy.linspace(fdreg.domain_range[0],
+                               fdreg.domain_range[1], nfine)
+    else:
+        nfine = len(tfine)
+        tfine = numpy.asarray(tfine)
+
+    x_fine = fd.evaluate(tfine) # Unregistered function
+    y_fine = fdreg.evaluate(tfine) # Registered function
+    mu_fine = x_fine.mean(axis=0) # Mean unregistered function
+    eta_fine = y_fine.mean(axis=0) # Mean registered function
+    mu_fine_sq = numpy.square(mu_fine)
+    eta_fine_sq = numpy.square(eta_fine)
+
+    # Total mean square error of the original funtions
+    mse_total = scipy.integrate.simps(numpy.mean(numpy.square(x_fine - mu_fine), axis=0),tfine)
+
+    cr = 1. # Constant related to the covariation between the deformation
+            # functions and y^2
+
+    # If the warping functions are not provided, are suppose to be independent
+    if h is not None:
+
+        dh_fine = h.evaluate(tfine, derivative=1) # Derivate of warping functions
+        dh_fine_mean = dh_fine.mean(axis=0)
+        dh_fine_center = dh_fine - dh_fine_mean
+
+        y_fine_sq = numpy.square(y_fine) # y^2
+        y_fine_sq_center = numpy.subtract(y_fine_sq, eta_fine_sq) # y^2 - E[y^2]
+
+        covariate = numpy.inner(dh_fine_center.T, y_fine_sq_center.T)
+        covariate = covariate.mean(axis=0)
+        cr += numpy.divide(scipy.integrate.simps(covariate, tfine),
+                           scipy.integrate.simps(eta_fine_sq, tfine))
+
+
+    # mse due to phase variation
+    mse_pha = scipy.integrate.simps(cr*eta_fine_sq - mu_fine_sq , tfine)
+
+    # mse due to amplitude variation
+    mse_amp = mse_total - mse_pha
+
+    # squared multiple correlation index
+    rsq = mse_pha / (mse_total)
+
+    return mse_amp, mse_pha, rsq, cr
+
+
+
 def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
                        initial=None, tfine=None, shifts_array=False, **kwargs):
     r"""Perform a shift registration of the curves.
@@ -163,8 +254,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
             # Reescale the second derivate could be other approach
             # d2_regsse =
             #     d2_regsse_original * ( 1 + (a - b) / (domain[1] - domain[0]))
-            d2_regsse = scipy.integrate.trapz(numpy.square(D1x), tfine,
-                                              axis=1)
+            d2_regsse = scipy.integrate.trapz(numpy.square(D1x), tfine, axis=1)
 
         # Computes the new values shifted
         x = fd.evaluate_shifted(tfine, delta, ext=extrapolation)

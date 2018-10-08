@@ -4,49 +4,91 @@ This module contains the methods to perform the registration of
 functional data and related routines, in basis form as well in discretized form.
 
 """
-import enum
+from enum import Enum
 
 import numpy
 import scipy.integrate
 
 
-class Extrapolation(enum.Enum):
-    r"""Enum with extrapolation types.
-
-        Defines the extrapolation mode for elements outside the domain range.
-
-        * default: uses the default method defined in the object to extrapolate.
-        * extrapolation: uses the extrapolated values directly.
-        * periodic: extends the domain range periodically.
-        * const: uses the boundary value.
-        * slice: avoids extrapolation restricting the domain.
+class Extrapolation(Enum):
+    r"""Enum with extrapolation types. Defines the extrapolation mode for
+        elements outside the domain range.
     """
-    default = "default"
-    extrapolation = "extrapolation"
-    periodic = "periodic"
-    const = "const"
-    slice = "slice"
+    default = "default" #:Uses the default method of the functional data object.
+    extrapolation = "extrapolation" #: The values are extrapolated by evaluate.
+    periodic = "periodic" #: Extends the domain range periodically.
+    const = "const" #: Uses the boundary value.
+    slice = "slice" #: Avoids extrapolation restricting the domain.
 
 def mse_decomposition(fd, fdreg, h=None, tfine=None):
-    r"""Once the registration has taken place, this function computes two mean
+    r"""Compute mean square error measures for amplitude and phase variation.
+
+    Once the registration has taken place, this function computes two mean
     squared error measures, one for amplitude variation, and the other for
     phase variation. It also computes a squared multiple correlation index
     of the amount of variation in the unregistered functions is due to phase.
 
+    Let :math:`x_i(t),y_i(t)` be the unregistered and registered functions
+    respectively. The total mean square error measure (see [RGS09-8-5]_) is
+    defined as
+
+
+    .. math::
+        \text{MSE}_{total}=
+        \frac{1}{N}\sum_{i=1}^{N}\int[x_i(t)-\overline x(t)]^2dt
+
+    We define the constant :math:`C_R` as
+
+    .. math::
+
+        C_R = 1 + \frac{\frac{1}{N}\sum_{i}^{N}\int [Dh_i(t)-\overline{Dh}(t)]
+        [ y_i^2(t)- \overline{y^2}(t) ]dt}
+        {\frac{1}{N} \sum_{i}^{N} \int y_i^2(t)dt}
+
+    Whose structure is related to the covariation between the deformation
+    functions :math:`Dh_i(t)` and the squared registered functions
+    :math:`y_i^2(t)`. When these two sets of functions are independents
+    :math:`C_R=1`, as in the case of shift registration.
+
+    The measures of amplitude and phase mean square error are
+
+    .. math::
+        \text{MSE}_{amp} =  C_R \frac{1}{N}
+        \sum_{i=1}^{N} \int \left [ y_i(t) - \overline{y}(t) \right ]^2 dt
+
+    .. math::
+        \text{MSE}_{phase}=
+        C_R \int \left [\overline{y}^2(t) - \overline{x}^2(t) \right]dt
+
+    It can be shown that
+
+    .. math::
+        \text{MSE}_{total} = \text{MSE}_{amp} + \text{MSE}_{phase}
+
+    The squared multiple correlation index of the proportion of the total
+    variation due to phase is defined as:
+
+    .. math::
+        R^2 = \frac{\text{MSE}_{phase}}{\text{MSE}_{total}}
+
+    See [KR08-3]_ for a detailed explanation.
+
+
     Args:
-        fd (:obj:FDataBasis or :obj:FDataGrid): Unregistered functions
-        regfd (:obj:FDataBasis or :obj:FDataGrid): Registered functions
-        h (:obj:FDataBasis or :obj:FDataGrid, optional): Warping functions
-        tfine: (array_like, optional):
+        fd (:obj:`FDataBasis` or :obj:`FDataGrid`): Unregistered functions.
+        regfd (:obj:`FDataBasis` or :obj:`FDataGrid`): Registered functions.
+        h (:obj:`FDataBasis` or :obj:`FDataGrid`, optional): Warping functions.
+        tfine: (array_like, optional): Set of points where the functions are
+            evaluated to obtain a discrete representation.
+
 
     Returns:
-        float: mean square for amplitude variation
-        float: mean square for amplitude variation
-        float: squared correlation measure of prop. phase variation
-        float: constant C
+        Tuple: Tuple with amplitude mean square error :math:`\text{MSE}_{amp}`,
+        phase mean square error :math:`\text{MSE}_{phase}`, squared correlation
+        index :math:`R^2` and constant :math:`C_R`.
 
-    Raise:
-        ValueError: If the curves do not have the same number of samples
+    Raises:
+        ValueError: If the curves do not have the same number of samples.
 
     References:
         ..  [KR08-3] Kneip, Alois & Ramsay, James. (2008).  Quantifying
@@ -54,7 +96,8 @@ def mse_decomposition(fd, fdreg, h=None, tfine=None):
             Fitting for Functional Models* (pp. 14-15). Journal of the American
             Statistical Association.
         ..  [RGS09-8-5] Ramsay J.O., Giles Hooker & Spencer Graves (2009). In
-            *Functional Data Analysis with R and Matlab* (p. 125). Springer.
+            *Functional Data Analysis with R and Matlab* (pp. 125-126).
+            Springer.
     """
 
     if fd.nsamples != fdreg.nsamples:
@@ -73,7 +116,6 @@ def mse_decomposition(fd, fdreg, h=None, tfine=None):
         tfine = numpy.linspace(fdreg.domain_range[0],
                                fdreg.domain_range[1], nfine)
     else:
-        nfine = len(tfine)
         tfine = numpy.asarray(tfine)
 
     x_fine = fd.evaluate(tfine) # Unregistered function
@@ -83,8 +125,10 @@ def mse_decomposition(fd, fdreg, h=None, tfine=None):
     mu_fine_sq = numpy.square(mu_fine)
     eta_fine_sq = numpy.square(eta_fine)
 
+
     # Total mean square error of the original funtions
-    mse_total = scipy.integrate.simps(numpy.mean(numpy.square(x_fine - mu_fine), axis=0),tfine)
+    mse_total = scipy.integrate.simps(
+        numpy.mean(numpy.square(x_fine - mu_fine), axis=0),tfine)
 
     cr = 1. # Constant related to the covariation between the deformation
             # functions and y^2
@@ -111,7 +155,7 @@ def mse_decomposition(fd, fdreg, h=None, tfine=None):
     # mse due to amplitude variation
     mse_amp = mse_total - mse_pha
 
-    # squared multiple correlation index
+    # squared correlation measure of proportion of phase variation
     rsq = mse_pha / (mse_total)
 
     return mse_amp, mse_pha, rsq, cr
@@ -162,7 +206,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
             Default uses a list of zeros for the initial shifts.
         tfine (array_like, optional): Set of points where the
             functions are evaluated to obtain the discrete
-            representation of the object to integrate. If an empty list is
+            representation of the object to integrate. If an None is
             passed it calls numpy.linspace with bounds equal to the ones defined
             in fd.domain_range and the number of points the maximum
             between 201 and 10 times the number of basis plus 1.

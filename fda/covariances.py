@@ -49,3 +49,12 @@ class Brownian():
         y = np.asarray(y) - self.origin
 
         return self.variance * (np.abs(x) + np.abs(y.T) - np.abs(x - y.T)) / 2
+
+    def _repr_latex_(self):
+        return (r"\[K(x, y) = \sigma^2 \frac{|x - \mathcal{O}| + "
+                r"|y - \mathcal{O}| - |x-y|}{2}\]"
+                "where:"
+                r"\begin{align*}"
+                fr"\qquad\sigma^2 &= {self.variance} \\"
+                fr"\mathcal{{O}} &= {self.origin} \\"
+                r"\end{align*}")

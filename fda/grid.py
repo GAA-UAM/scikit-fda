@@ -12,9 +12,9 @@ import matplotlib.pyplot
 import numpy
 import scipy
 import scipy.stats.mstats
+import scipy.interpolate
 
 from . import basis as fdbasis
-
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -42,6 +42,108 @@ def _list_of_arrays(original_array):
         new_array = numpy.atleast_2d(new_array)
 
     return list(new_array)
+
+
+class _GridInterpolator:
+
+    def __init__(self, sample_points, data_matrix, ndim_domain, ndim_image, k=1,
+                 s=0., monotone=False, squeeze=True):
+
+        self._ndim_image = ndim_image
+        self._ndim_domain = ndim_domain
+        self._nsamples = data_matrix.shape[0]
+        self._squeeze = squeeze
+        self._allow_derivates = True
+
+        if ndim_image == 1:
+            self._evaluate_spline = self._evaluate_spline_n_1
+        else:
+            self._evaluate_spline = self._evaluate_spline_n_m
+
+        if ndim_domain == 1:
+            self._splines = self._construct_spline_1_m(sample_points,
+                                                       data_matrix,
+                                                       k, s, monotone)
+
+
+        else:
+            raise NotImplementedError("Dimensions not supported")
+
+    def _construct_spline_1_m(self, sample_points, data_matrix, k, s, monotone):
+
+        if k > 5 or k < 0:
+            raise ValueError(f"Invalid degree of interpolation ({k}). Must be "
+                             f"an integer greater or equal than 0 and lower or "
+                             f"equal than 5.")
+
+        if monotone and s != 0:
+            raise ValueError("Smoothing interpolation is not suported with "
+                             "monotone interpolation")
+
+        if monotone and (k == 2 or k == 4):
+            raise ValueError(f"monotone interpolation of degree {k}"
+                             f"not supported.")
+
+        # Monotone interpolation of degree 1 is performed with linear spline
+        if monotone and k == 1: monotone = False
+
+        sample_points = sample_points[0]
+
+        if monotone:
+            constructor =  lambda data: scipy.interpolate.PchipInterpolator(sample_points, data)
+
+        else:
+            constructor = lambda data: scipy.interpolate.UnivariateSpline(sample_points, data, s=s, k=k)
+
+        return numpy.apply_along_axis(constructor, 1, data_matrix)
+
+    def _evaluate_spline_n_1(self, t, derivative):
+
+        # Aux funtion with an spline as argument
+        if self._allow_derivates:
+            dual = lambda spl: spl[0](t, derivative)
+        else:
+            dual = lambda spl: spl[0](t)
+
+        res =  numpy.apply_along_axis(dual, 1, self._splines)
+
+        if not self._squeeze:
+            res = res.reshape(self._nsamples, len(t), 1)
+
+        return res
+
+    def _evaluate_spline_n_m(self, t, derivative):
+
+        # Aux funtion with an array of splines as argument
+        #dual_m = lambda spl_m: spl(t, derivative))
+        dual_m = lambda spl_m: numpy.dstack(spl(t, derivative) for spl in spl_m).flatten()
+
+        res = numpy.apply_along_axis(dual_m, 1, self._splines)
+
+        res = res.reshape(self._nsamples, len(t), self._ndim_image)
+
+        return res
+
+    def evaluate(self, t, derivative=0):
+
+        if not self._allow_derivates and derivative != 0:
+            raise ValueError("derivates not suported.")
+
+        return self._evaluate_spline(t, derivative)
+
+    def integrate(self, integration):
+        pass
+
+    def antiderivative(self, order):
+        pass
+
+    def derivative(self, order):
+        pass
+
+    def __call__(self, t, derivative):
+        return self.evaluate(t, derivative)
+
+
 
 
 class FDataGrid:
@@ -112,7 +214,8 @@ class FDataGrid:
 
     def __init__(self, data_matrix, sample_points=None,
                  sample_range=None, dataset_label='Data set',
-                 axes_labels=None):
+                 axes_labels=None, interpolation_order=1,
+                 interpolation_smooth=0., monotone=False, squeeze=True):
         """Construct a FDataGrid object.
 
         Args:
@@ -184,6 +287,11 @@ class FDataGrid:
 
         self.dataset_label = dataset_label
         self.axes_labels = axes_labels
+        self._interpolator = None
+        self.interpolation_order = interpolation_order
+        self.interpolation_smooth = interpolation_smooth
+        self.monotone = monotone
+        self.squeeze = squeeze
 
         return
 
@@ -277,6 +385,31 @@ class FDataGrid:
 
         """
         return self.data_matrix.shape
+
+    @property
+    def interpolator(self):
+
+        if self._interpolator is None:
+            self._interpolator = _GridInterpolator(self.sample_points,
+                                                  self.data_matrix,
+                                                  self.ndim_domain,
+                                                  self.ndim_image,
+                                                  self.interpolation_order,
+                                                  self.interpolation_smooth,
+                                                  self.monotone, self.squeeze)
+
+
+        return self._interpolator
+
+
+    def evaluate(self, t, derivative=0):
+
+        return self.interpolator(t, derivative)
+
+    def __call__(self, t, derivative=0):
+        return self.evaluate(t, derivative)
+
+
 
     def derivative(self, order=1):
         r"""Differentiate a FDataGrid object.
@@ -402,7 +535,7 @@ class FDataGrid:
 
     def cov(self):
         """Compute the covariance.
-        
+
         Calculates the covariance matrix representing the covariance of the
         functional samples at the observation points.
 
@@ -714,4 +847,3 @@ class FDataGrid:
                              self.sample_points,
                              self.sample_range, self.dataset_label,
                              self.axes_labels)
-

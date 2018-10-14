@@ -64,7 +64,17 @@ class _GridInterpolator:
             self._splines = self._construct_spline_1_m(sample_points,
                                                        data_matrix,
                                                        k, s, monotone)
+        elif monotone:
+            raise ValueError("Monotone interpolation is only supporte with "
+                             "domain dimension equal to 1.")
 
+        elif ndim_domain == 2:
+            self._splines = self._construct_spline_2_m(sample_points,
+                                                       data_matrix, k, s)
+
+        elif s!=0:
+            raise ValueError("Smoothing interpolation is only supporte with "
+                             "domain dimension up to 2, s should be 0.")
 
         else:
             raise NotImplementedError("Dimensions not supported")
@@ -87,6 +97,13 @@ class _GridInterpolator:
         # Monotone interpolation of degree 1 is performed with linear spline
         if monotone and k == 1: monotone = False
 
+        if self._ndim_image == 1:
+            self._spline_evaluator = lambda t, der: lambda spl: spl[0](t, der)
+        else:
+            self._spline_evaluator = lambda t, der: lambda spl_m: numpy.dstack(spl(t, der) for spl in spl_m).flatten()
+
+        self._process_derivative = lambda d: d
+
         sample_points = sample_points[0]
 
         if monotone:
@@ -97,15 +114,52 @@ class _GridInterpolator:
 
         return numpy.apply_along_axis(constructor, 1, data_matrix)
 
+    def _construct_spline_2_m(self, sample_points, data_matrix, k, s):
+
+
+        if numpy.isscalar(k):
+            kx = ky = k
+        elif len(k) != 2:
+            raise ValueError("k should be numeric or a tuple of length 2.")
+        else:
+            kx = k[0]
+            ky = k[1]
+
+        if self._ndim_image == 1:
+            self._spline_evaluator = lambda t, der: lambda spl: spl[0](t[:,0],t[:,1], der[0], der[1], grid=False)
+        else:
+            self._spline_evaluator = lambda t, der: lambda spl_m: numpy.dstack(spl(t[:,0],t[:,1], der[0], der[1], grid=False) for spl in spl_m).flatten()
+
+        def proc_derivate(derivative):
+            if numpy.isscalar(derivative):
+                derivative = 2*[derivative]
+            elif len(derivative) != 2:
+                raise ValueError("derivative should be a numeric value "
+                                 "or a tuple of length 2.")
+
+            return derivative
+
+        self._process_derivative = proc_derivate
+
+        # Matrix of splines
+        spline = numpy.empty((self._nsamples, self._ndim_image), dtype=object)
+
+        for i in range(self._nsamples):
+            for j in range(self._ndim_image):
+                spline[i,j] = scipy.interpolate.RectBivariateSpline(
+                    sample_points[0],sample_points[1], data_matrix[i,:,:,j],
+                    kx=kx,ky=ky, s=s)
+
+        return spline
+
     def _evaluate_spline_n_1(self, t, derivative):
 
-        # Aux funtion with an spline as argument
-        if self._allow_derivates:
-            dual = lambda spl: spl[0](t, derivative)
-        else:
-            dual = lambda spl: spl[0](t)
+        t = numpy.asarray(t)
 
-        res =  numpy.apply_along_axis(dual, 1, self._splines)
+        derivative = self._process_derivative(derivative)
+
+        res =  numpy.apply_along_axis(self._spline_evaluator(t, derivative),
+                                      1, self._splines)
 
         if not self._squeeze:
             res = res.reshape(self._nsamples, len(t), 1)
@@ -114,20 +168,16 @@ class _GridInterpolator:
 
     def _evaluate_spline_n_m(self, t, derivative):
 
-        # Aux funtion with an array of splines as argument
-        #dual_m = lambda spl_m: spl(t, derivative))
-        dual_m = lambda spl_m: numpy.dstack(spl(t, derivative) for spl in spl_m).flatten()
+        t = numpy.asarray(t)
+        derivative = self._process_derivative(derivative)
+        res = numpy.apply_along_axis(self._spline_evaluator(t, derivative),
+                                     1, self._splines)
 
-        res = numpy.apply_along_axis(dual_m, 1, self._splines)
+        return res.reshape(self._nsamples, len(t), self._ndim_image)
 
-        res = res.reshape(self._nsamples, len(t), self._ndim_image)
 
-        return res
 
     def evaluate(self, t, derivative=0):
-
-        if not self._allow_derivates and derivative != 0:
-            raise ValueError("derivates not suported.")
 
         return self._evaluate_spline(t, derivative)
 

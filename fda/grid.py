@@ -53,12 +53,6 @@ class _GridInterpolator:
         self._ndim_domain = ndim_domain
         self._nsamples = data_matrix.shape[0]
         self._squeeze = squeeze
-        self._allow_derivates = True
-
-        if ndim_image == 1:
-            self._evaluate_spline = self._evaluate_spline_n_1
-        else:
-            self._evaluate_spline = self._evaluate_spline_n_m
 
         if ndim_domain == 1:
             self._splines = self._construct_spline_1_m(sample_points,
@@ -77,7 +71,8 @@ class _GridInterpolator:
                              "domain dimension up to 2, s should be 0.")
 
         else:
-            raise NotImplementedError("Dimensions not supported")
+            self._splines = self._construct_spline_n_m(sample_points,
+                                                       data_matrix, k)
 
     def _construct_spline_1_m(self, sample_points, data_matrix, k, s, monotone):
 
@@ -97,10 +92,8 @@ class _GridInterpolator:
         # Monotone interpolation of degree 1 is performed with linear spline
         if monotone and k == 1: monotone = False
 
-        if self._ndim_image == 1:
-            self._spline_evaluator = lambda t, der: lambda spl: spl[0](t, der)
-        else:
-            self._spline_evaluator = lambda t, der: lambda spl_m: numpy.dstack(spl(t, der) for spl in spl_m).flatten()
+        # Evaluator of splines called in evaluate
+        self._spline_evaluator = lambda spl, t, der: spl(t, der)
 
         self._process_derivative = lambda d: d
 
@@ -125,17 +118,17 @@ class _GridInterpolator:
             kx = k[0]
             ky = k[1]
 
-        if self._ndim_image == 1:
-            self._spline_evaluator = lambda t, der: lambda spl: spl[0](t[:,0],t[:,1], der[0], der[1], grid=False)
-        else:
-            self._spline_evaluator = lambda t, der: lambda spl_m: numpy.dstack(spl(t[:,0],t[:,1], der[0], der[1], grid=False) for spl in spl_m).flatten()
+        # Evaluator of splines called in evaluate
+        self._spline_evaluator = lambda spl, t, der: spl(t[:,0],t[:,1],
+                                                         dx=der[0], dy=der[1],
+                                                         grid=False)
 
         def proc_derivate(derivative):
             if numpy.isscalar(derivative):
                 derivative = 2*[derivative]
             elif len(derivative) != 2:
                 raise ValueError("derivative should be a numeric value "
-                                 "or a tuple of length 2.")
+                                 "or a tuple of length with (dx,dy).")
 
             return derivative
 
@@ -152,34 +145,84 @@ class _GridInterpolator:
 
         return spline
 
-    def _evaluate_spline_n_1(self, t, derivative):
+    def _construct_spline_n_m(self, sample_points, data_matrix, k):
+
+        # Parses method of interpolation
+        if k == 0:
+            method = 'nearest'
+        elif k == 1:
+            method = 'linear'
+        else:
+            raise ValueError("interpolation order should be 0 (nearest) or 1 "
+                             "(linear).")
+
+        # Method to process derrivative argument
+        def proc_derivate(derivative):
+            if derivative != 0:
+                raise ValueError("derivates not suported for functional data "
+                                 " with domain dimension greater than 2.")
+
+            return derivative
+
+        self._process_derivative = proc_derivate
+
+        # Evaluator of splines called in evaluate
+        self._spline_evaluator = lambda spl, t, derivative: spl(t)
+
+        spline = numpy.empty((self._nsamples, self._ndim_image), dtype=object)
+
+
+        for i in range(self._nsamples):
+            for j in range(self._ndim_image):
+                spline[i,j] = scipy.interpolate.RegularGridInterpolator(
+                    sample_points, data_matrix[i,...,j], method, False)
+
+        return spline
+
+    def evaluate(self, t, derivative=0, grid=False):
+
+        if grid:
+            return self.evaluate_grid(t, derivative)
 
         t = numpy.asarray(t)
-
         derivative = self._process_derivative(derivative)
 
-        res =  numpy.apply_along_axis(self._spline_evaluator(t, derivative),
-                                      1, self._splines)
+        if self._ndim_image == 1:
+            evaluator = lambda spl: self._spline_evaluator(spl[0], t, derivative)
 
-        if not self._squeeze:
-            res = res.reshape(self._nsamples, len(t), 1)
+        else:
+            evaluator = lambda spl_m: numpy.dstack(self._spline_evaluator(spl, t, derivative) for spl in spl_m).flatten()
+
+        res = numpy.apply_along_axis(evaluator, 1, self._splines)
+
+        if self._ndim_image != 1 or not self._squeeze:
+            res = res.reshape(self._nsamples, t.shape[0], self._ndim_image)
+
 
         return res
 
-    def _evaluate_spline_n_m(self, t, derivative):
+    def evaluate_grid(self, axes, derivative=0):
 
-        t = numpy.asarray(t)
-        derivative = self._process_derivative(derivative)
-        res = numpy.apply_along_axis(self._spline_evaluator(t, derivative),
-                                     1, self._splines)
+        axes = _list_of_arrays(axes)
+        lengths = [len(ax) for ax in axes]
 
-        return res.reshape(self._nsamples, len(t), self._ndim_image)
+        if len(axes) != self._ndim_domain:
+            raise ValueError(f"Length of axes should be {self._ndim_domain}")
+
+        t = numpy.meshgrid(*axes, indexing='ij')
+        t = numpy.array(t).reshape(self._ndim_domain, numpy.prod(lengths)).T
+
+        res = self.evaluate(t, derivative)
+
+
+        shape = [self._nsamples] + lengths
+        if self._ndim_image != 1 or not self._squeeze:
+            shape += [self._ndim_image]
+
+        return res.reshape(shape)
 
 
 
-    def evaluate(self, t, derivative=0):
-
-        return self._evaluate_spline(t, derivative)
 
     def integrate(self, integration):
         pass
@@ -190,8 +233,8 @@ class _GridInterpolator:
     def derivative(self, order):
         pass
 
-    def __call__(self, t, derivative):
-        return self.evaluate(t, derivative)
+    def __call__(self, t, derivative=0, grid=False):
+        return self.evaluate(t, derivative, grid)
 
 
 
@@ -451,13 +494,23 @@ class FDataGrid:
 
         return self._interpolator
 
+    def set_interpolation(self, interpolation_order=None,
+                          interpolation_smooth=None, monotone=None,
+                          squeeze=None):
 
-    def evaluate(self, t, derivative=0):
+        self.interpolation_order = self.interpolation_order if interpolation_order is None else interpolation_order
+        self.interpolation_smooth = self.interpolation_smooth if interpolation_smooth is None else interpolation_smooth
+        self.monotone = self.monotone if monotone is None else monotone
+        self.squeeze = self.squeeze if squeeze is None else squeeze
+        self._interpolator = None
 
-        return self.interpolator(t, derivative)
 
-    def __call__(self, t, derivative=0):
-        return self.evaluate(t, derivative)
+    def evaluate(self, t, derivative=0, grid=False):
+
+        return self.interpolator(t, derivative, grid)
+
+    def __call__(self, t, derivative=0, grid=False):
+        return self.evaluate(t, derivative, grid)
 
 
 

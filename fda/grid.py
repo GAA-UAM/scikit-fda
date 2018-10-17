@@ -209,7 +209,7 @@ class _GridInterpolator:
         if len(axes) != self._ndim_domain:
             raise ValueError(f"Length of axes should be {self._ndim_domain}")
 
-        t = numpy.meshgrid(*axes, indexing='ij')
+        t = numpy.meshgrid(*axes, indexing='ijg')
         t = numpy.array(t).reshape(self._ndim_domain, numpy.prod(lengths)).T
 
         res = self.evaluate(t, derivative)
@@ -225,13 +225,15 @@ class _GridInterpolator:
 
 
     def integrate(self, integration):
-        pass
+
+        raise NotImplemented
 
     def antiderivative(self, order):
-        pass
+        raise NotImplemented
 
     def derivative(self, order):
-        pass
+
+        raise NotImplemented
 
     def __call__(self, t, derivative=0, grid=False):
         return self.evaluate(t, derivative, grid)
@@ -498,10 +500,15 @@ class FDataGrid:
                           interpolation_smooth=None, monotone=None,
                           squeeze=None):
 
-        self.interpolation_order = self.interpolation_order if interpolation_order is None else interpolation_order
-        self.interpolation_smooth = self.interpolation_smooth if interpolation_smooth is None else interpolation_smooth
-        self.monotone = self.monotone if monotone is None else monotone
-        self.squeeze = self.squeeze if squeeze is None else squeeze
+        if interpolation_order is not None:
+            self.interpolation_order =  interpolation_order
+        if interpolation_smooth is not None:
+            self.interpolation_smooth = interpolation_smooth
+        if monotone is not None:
+            self.monotone = monotone
+        if squeeze is not None:
+            self.squeeze = squeeze
+
         self._interpolator = None
 
 

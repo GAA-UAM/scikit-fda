@@ -6,7 +6,7 @@ from ..grid import FDataGrid
 
 def make_gaussian_process(n_samples: int=100, n_features: int=100, *,
                           start: float=0., stop: float=1.,
-                          mean=0, covariance=None, noise_variance: float=0.,
+                          mean=0, cov=None, noise: float=0.,
                           random_state=None):
     """Generate Gaussian process trajectories.
 
@@ -18,10 +18,10 @@ def make_gaussian_process(n_samples: int=100, n_features: int=100, *,
             mean: The mean function of the process. Can be a callable accepting
                   a vector with the locations, or a vector with length
                   ``n_features``.
-            covariance: The covariance function of the process. Can be a
+            cov: The covariance function of the process. Can be a
                   callable accepting two vectors with the locations, or a
                   matrix with size ``n_features`` x ``n_features``.
-            noise_variance: The variance of gaussian noise added to each point.
+            noise: Standard deviation of Gaussian noise added to the data.
             random_state: Random state.
 
         Returns:
@@ -34,25 +34,25 @@ def make_gaussian_process(n_samples: int=100, n_features: int=100, *,
 
     x = np.linspace(start, stop, n_features)
 
-    if covariance is None:
-        covariance = covariances.Brownian()
+    if cov is None:
+        cov = covariances.Brownian()
 
-    cov = covariances._execute_covariance(covariance, x, x)
+    covariance = covariances._execute_covariance(cov, x, x)
 
     # To prevent numerical problems
-    cov += np.eye(n_features) * 1.0e-15
+    covariance += np.eye(n_features) * 1.0e-15
 
     mu = np.zeros(n_features)
     if callable(mean):
         mean = mean(x)
     mu += mean
 
-    y = random_state.multivariate_normal(mu, cov, n_samples)
+    y = random_state.multivariate_normal(mu, covariance, n_samples)
 
-    if noise_variance:
-        noise = np.random.normal(scale=np.sqrt(noise_variance),
-                                 size=(n_samples, n_features))
+    if noise:
+        noise_sample = np.random.normal(scale=noise,
+                                        size=(n_samples, n_features))
 
-        y += noise
+        y += noise_sample
 
     return FDataGrid(sample_points=x, data_matrix=y)

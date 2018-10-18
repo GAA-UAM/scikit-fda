@@ -14,8 +14,8 @@ def fdata_constructor(obj, attrs):
     return FDataGrid(data_matrix=obj["data"],
                      sample_points=obj["argvals"],
                      sample_range=obj["rangeval"],
-                     dataset_label=names['main'],
-                     axes_labels=[names['xlab'], names['ylab']])
+                     dataset_label=names['main'][0],
+                     axes_labels=[names['xlab'][0], names['ylab'][0]])
 
 
 def fetch_cran_dataset(dataset_name, package_name, *, converter=None,

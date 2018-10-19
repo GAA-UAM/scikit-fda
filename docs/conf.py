@@ -49,7 +49,9 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.todo',
               'sphinx.ext.viewcode',
               'sphinx.ext.napoleon',
-              'sphinx.ext.mathjax',]
+              'sphinx.ext.mathjax',
+              'sphinx_rtd_theme',
+              'sphinx_gallery.gen_gallery', ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -86,13 +88,12 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 
-
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -120,12 +121,10 @@ html_sidebars = {
     ]
 }
 
-
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'fdadoc'
-
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -155,7 +154,6 @@ latex_documents = [
      'Author', 'manual'),
 ]
 
-
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
@@ -164,7 +162,6 @@ man_pages = [
     (master_doc, 'fda', 'fda Documentation',
      [author], 1)
 ]
-
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -176,8 +173,6 @@ texinfo_documents = [
      author, 'fda', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-
 
 # -- Options for Epub output ----------------------------------------------
 
@@ -199,4 +194,10 @@ epub_copyright = copyright
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
 
+sphinx_gallery_conf = {
+     # path to your examples scripts
+     'examples_dirs': '../examples',
+     # path where to save gallery generated examples
+     'gallery_dirs': 'auto_examples',
+}
 

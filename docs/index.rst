@@ -11,7 +11,7 @@ Welcome to fda's documentation!
    :caption: Contents:
 
    fda
-
+   auto_examples/index
 
 Indices and tables
 ==================

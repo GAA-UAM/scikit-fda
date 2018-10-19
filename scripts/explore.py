@@ -1,18 +1,19 @@
-""" Script to reproduce the example in the Exploring Data section of the
+"""
+Exploring data
+==============
+
+Script to reproduce the example in the Exploring Data section of the
 end of degree project.
 
 Explores the Tecator data set by plotting the functional data and calculating
 means and derivatives.
-
 """
-
 import os
-import numpy as np
-import matplotlib.pylab as plt
 
-import fda
 from fda import FDataGrid
-
+import fda
+import matplotlib.pylab as plt
+import numpy as np
 
 if __name__ == '__main__':
 

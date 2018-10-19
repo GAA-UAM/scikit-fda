@@ -1,8 +1,8 @@
 """
-This is my example script
-=========================
+Discretized function representation
+===================================
 
-This example doesn't do much, it just makes a simple plot
+Shows how to make a discretized representation of a function.
 """
 
 import os
@@ -11,11 +11,13 @@ from fda import FDataGrid
 import matplotlib.pylab as plt
 import numpy as np
 
+###############################################################################
 # Tecator data is structured in 3 differents csv files. One containing
 # the data at the sample points. Other containing the sample points. And
-#  a last one containing information about the percentage of fat,
+# a last one containing information about the percentage of fat,
 # water and protein in each sample.
-_dir = os.path.dirname(__file__)
+
+_dir = os.getcwd()
 
 # Loads all 3 csv files.
 data = np.genfromtxt(os.path.join(_dir, '../data/tecator_data.csv'),
@@ -28,20 +30,26 @@ sample_points = np.genfromtxt(
     skip_header=1)
 
 y = np.genfromtxt(os.path.join(_dir, '../data/tecator_y.csv'),
-                  delimiter=',',
-                  skip_header=1)
+                  delimiter=',', skip_header=1)
 
+###############################################################################
 # Builds a FDataGrid object using the loaded information.
+
 fd = FDataGrid(data, sample_points,
                dataset_label='Spectrometric curves',
                axes_labels=['Wavelength (mm)', 'Absorbances'])
 
 fd = fd[:5]
+
+###############################################################################
 # Plots the first 5 samples in a scatter plot.
+
 plt.figure()
 fd.scatter(s=0.5)
 
+###############################################################################
 # Plots the first 5 samples in a line plot.
+
 plt.figure()
 fd.plot()
 plt.show()

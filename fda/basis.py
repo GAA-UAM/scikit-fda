@@ -18,7 +18,6 @@ from scipy.special import binom
 
 from fda import grid
 
-
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
@@ -431,7 +430,7 @@ class Monomial(Basis):
                     # coefficient after integrating
                     penalty_matrix[ibasis, jbasis] = (
                             (integration_domain[1] ** ipow
-                             - integration_domain[0] ** ipow)
+                             -integration_domain[0] ** ipow)
                             * ifac * jfac / ipow)
                     penalty_matrix[jbasis, ibasis] = penalty_matrix[ibasis,
                                                                     jbasis]
@@ -591,7 +590,7 @@ class BSpline(Basis):
         """
         # Places m knots at the boundaries
         knots = numpy.array([self.knots[0]] * (self.order - 1) + self.knots
-                            + [self.knots[-1]] * (self.order - 1))
+                            +[self.knots[-1]] * (self.order - 1))
         # c is used the select which spline the function splev below computes
         c = numpy.zeros(len(knots))
 
@@ -668,7 +667,7 @@ class BSpline(Basis):
                 # Places m knots at the boundaries
                 knots = numpy.array(
                     [self.knots[0]] * (self.order - 1) + self.knots
-                    + [self.knots[-1]] * (self.order - 1))
+                    +[self.knots[-1]] * (self.order - 1))
                 # c is used the select which spline the function
                 # PPoly.from_spline below computes
                 c = numpy.zeros(len(knots))
@@ -1030,6 +1029,7 @@ class FDataBasis:
         The fit is made so as to reduce the penalized sum of squared errors
         [RS05-5-2-5]_:
         .. math::
+        
             PENSSE(c) = (y - \Phi c)' W (y - \Phi c) + \lambda c'Rc
 
         where :math:`y` is the vector or matrix of observations, :math:`\Phi`
@@ -1041,11 +1041,13 @@ class FDataBasis:
 
         Each element of :math:`R` has the following close form:
         .. math::
+        
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
 
         By deriving the first formula we obtain the closed formed of the
         estimated coefficients matrix:
         .. math::
+        
             \hat(c) = \left( |Phi' W \Phi + \lambda R \right)^{-1} \Phi' W y
 
         The solution of this matrix equation is done using the cholesky

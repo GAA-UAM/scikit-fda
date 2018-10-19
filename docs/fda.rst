@@ -36,18 +36,10 @@ fda\.kernels module
     :undoc-members:
     :show-inheritance:
 
-fda\.math\_basic module
------------------------
+fda\.math module
+----------------
 
-.. automodule:: fda.math_basic
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-fda\.metrics module
--------------------
-
-.. automodule:: fda.metrics
+.. automodule:: fda.math
     :members:
     :undoc-members:
     :show-inheritance:

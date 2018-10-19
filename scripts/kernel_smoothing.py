@@ -1,20 +1,21 @@
-""" Script to reproduce the example in the Kernel Smoothing section of the
+"""
+Kernel Smoothing
+================
+
+Script to reproduce the example in the Kernel Smoothing section of the
 end of degree project.
 
 Uses different kernel smoothing methods over the phoneme data set and shows
 how cross validations scores vary over a range of different parameters used in
 the smoothing methods.
-
 """
-
 import os
-import numpy as np
-import matplotlib.pylab as plt
 
 import fda
-import fda.validation as val
 import fda.kernel_smoothers as ks
-
+import fda.validation as val
+import matplotlib.pylab as plt
+import numpy as np
 
 if __name__ == '__main__':
 

@@ -7,7 +7,8 @@ It includes the modules:
     - kernels: kernels for kernel smoothing.
     - kernel_smoothers: kernel smoothers for smoothing FDataGrid objects.
     - validation: cross validation methods for finding the parameter that
-    best smooths a FDataGrid object.
+      best smooths a FDataGrid object.
+      
 and the following classes:
     - FDataGrid: Discrete representation of functional data.
     - FDataBasis: Basis representation for functional data.
@@ -19,7 +20,6 @@ from fda.grid import FDataGrid
 from fda.math import mean, var, gmean, log, log2, log10, exp, sqrt, \
     cumsum, metric, norm_lp, inner_product, cov
 import os as _os
-
 
 try:
     with open(_os.path.join(_os.path.dirname(__file__),

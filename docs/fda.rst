@@ -52,6 +52,14 @@ fda\.metrics module
     :undoc-members:
     :show-inheritance:
 
+fda\.registration module
+-------------------
+
+.. automodule:: fda.registration
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 fda\.validation module
 ----------------------
 

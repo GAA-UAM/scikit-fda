@@ -144,19 +144,19 @@ def load_growth(return_X_y=False):
     females = data["hgtf"].T
     males = data["hgtm"].T
 
-    curves = FDataGrid(data_matrix=np.concatenate((females, males), axis=0),
+    curves = FDataGrid(data_matrix=np.concatenate((males, females), axis=0),
                        sample_points=ages,
                        dataset_label="Berkeley Growth Study",
                        axes_labels=["age", "height"])
 
-    sex = [0] * females.shape[0] + [1] * males.shape[0]
+    sex = np.array([0] * males.shape[0] + [1] * females.shape[0])
 
     if return_X_y:
         return curves, sex
     else:
         return {"data": curves,
                 "target": sex,
-                "target_names": ["female", "male"],
+                "target_names": ["male", "female"],
                 "target_feature_names": ["sex"],
                 "DESCR": DESCR}
 

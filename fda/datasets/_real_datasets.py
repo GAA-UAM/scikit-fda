@@ -73,7 +73,7 @@ _phoneme_descr = textwrap.dedent("""
     """)
 
 
-def load_phoneme(return_X_y=False):
+def fetch_phoneme(return_X_y=False):
     """Load the phoneme dataset.
 
     The data is obtained from the R package 'ElemStatLearn', which takes it
@@ -109,8 +109,8 @@ def load_phoneme(return_X_y=False):
                 "DESCR": DESCR}
 
 
-if hasattr(load_phoneme, "__doc__"):  # docstrings can be stripped off
-    load_phoneme.__doc__ += _phoneme_descr
+if hasattr(fetch_phoneme, "__doc__"):  # docstrings can be stripped off
+    fetch_phoneme.__doc__ += _phoneme_descr
 
 _growth_descr = textwrap.dedent("""
     The Berkeley Growth Study (Tuddenham and Snyder, 1954) recorded the
@@ -125,7 +125,7 @@ _growth_descr = textwrap.dedent("""
 """)
 
 
-def load_growth(return_X_y=False):
+def fetch_growth(return_X_y=False):
     """Load the Berkeley Growth Study dataset.
 
     The data is obtained from the R package 'fda', which takes it from the
@@ -161,8 +161,8 @@ def load_growth(return_X_y=False):
                 "DESCR": DESCR}
 
 
-if hasattr(load_growth, "__doc__"):  # docstrings can be stripped off
-    load_growth.__doc__ += _growth_descr
+if hasattr(fetch_growth, "__doc__"):  # docstrings can be stripped off
+    fetch_growth.__doc__ += _growth_descr
 
 _tecator_descr = textwrap.dedent("""
     This is the Tecator data set: The task is to predict the fat content of a
@@ -202,7 +202,7 @@ _tecator_descr = textwrap.dedent("""
 """)
 
 
-def load_tecator(return_X_y=False):
+def fetch_tecator(return_X_y=False):
     """Load the Tecator dataset.
 
     The data is obtained from the R package 'fda.usc', which takes it from
@@ -230,5 +230,5 @@ def load_tecator(return_X_y=False):
                 "DESCR": DESCR}
 
 
-if hasattr(load_tecator, "__doc__"):  # docstrings can be stripped off
-    load_tecator.__doc__ += _tecator_descr
+if hasattr(fetch_tecator, "__doc__"):  # docstrings can be stripped off
+    fetch_tecator.__doc__ += _tecator_descr

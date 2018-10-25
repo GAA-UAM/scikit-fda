@@ -54,8 +54,11 @@ _phoneme_descr = textwrap.dedent("""
     breakdown of the 4509 speech frames into phoneme frequencies is as
     follows:
 
-      aa   ao dcl   iy  sh
-     695 1022 757 1163 872
+    === ==== === ==== ===
+     aa   ao dcl   iy  sh
+    === ==== === ==== ===
+    695 1022 757 1163 872
+    === ==== === ==== ===
 
     From each speech frame, a log-periodogram was computed, which is one of
     several widely used methods for casting speech data in a form suitable
@@ -167,7 +170,7 @@ if hasattr(fetch_growth, "__doc__"):  # docstrings can be stripped off
 _tecator_descr = textwrap.dedent("""
     This is the Tecator data set: The task is to predict the fat content of a
     meat sample on the basis of its near infrared absorbance spectrum.
-    -------------------------------------------------------------------------
+
     1. Statement of permission from Tecator (the original data source)
 
     These data are recorded on a Tecator Infratec Food and Feed Analyzer

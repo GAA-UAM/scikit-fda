@@ -7,11 +7,15 @@ list of discretisation points.
 """
 
 import numbers
-
+import matplotlib.pyplot as plt
+import numpy as np
 import matplotlib.pyplot
 import numpy
 import scipy
 import scipy.stats.mstats
+import math
+import itertools
+from mpl_toolkits.mplot3d import Axes3D
 
 from . import basis as fdbasis
 
@@ -543,91 +547,144 @@ class FDataGrid:
                          self.dataset_label,
                          self.axes_labels)
 
-    def _set_labels(self, ax):
+    def _set_labels(self, fig):
         """Set labels if any.
 
         Args:
-            ax (axes object): axes object that implements set_title,
-                set_xlable and set_ylabel or title, xlabel and ylabel.
+            fig (figure object): figure object containing the axes that implement set_xlabel and set_ylabel,
+                                 and set_zlabel in case of a 3d projection.
 
         """
         if self.dataset_label is not None:
-            try:
-                ax.set_title(self.dataset_label)
-            except AttributeError:
-                try:
-                    ax.title(self.dataset_label)
-                except AttributeError:
-                    pass
+            fig.suptitle(self.dataset_label, fontsize="x-large")
 
         if self.axes_labels is not None:
-            try:
-                ax.set_xlabel(self.axes_labels[0])
-                ax.set_ylabel(self.axes_labels[1])
-            except AttributeError:
-                try:
-                    ax.xlabel(self.axes_labels[0])
-                    ax.ylabel(self.axes_labels[1])
-                except AttributeError:
-                    pass
+            ax = fig.get_axes()
+            if ax[0].name == '3d':
+                ax[0].set_xlabel(self.axes_labels[0])
+                ax[0].set_ylabel(self.axes_labels[1])
+                ax[0].set_zlabel(self.axes_labels[2])
+            else:
+                for i in range(self.ndim_image):
+                    ax[i].set_xlabel(self.axes_labels[0])
+                    ax[i].set_ylabel(self.axes_labels[i + 1])
 
-    def plot(self, ax=None, **kwargs):
+    def _set_figure_and_axes(self):
+        """Set the figure and its axes.
+
+        Returns:
+            fig (figure object): figure object initialiazed.
+            ax (axes object): axes of the initialized figure.
+
+        """
+        fig = plt.figure()
+        if self.ndim_domain == 1:
+            ncols = math.ceil(math.sqrt(self.ndim_image))
+            nrows = math.ceil(self.ndim_image / ncols)
+            for i in range(self.ndim_image):
+                fig.add_subplot(nrows, ncols, i + 1)
+            ax = fig.get_axes()
+        else:
+            ax = fig.gca(projection='3d')
+        return fig, ax
+
+    def _arrange_layout(self, fig):
+        """Arrange the layout of the figure.
+
+        Args:
+            fig (figure object): figure object to be arranged.
+
+        """
+        fig.tight_layout()
+        if self.dataset_label is not None and self.ndim_domain == 1:
+            st = fig.texts[0]
+            st.set_y(0.95)
+            fig.subplots_adjust(top=0.85)
+
+    def plot(self, fig=None, **kwargs):
         """Plot the FDatGrid object.
 
         Args:
-            ax (axis object, optional): axis over with the graphs are plotted.
-                Defaults to matplotlib current axis.
-            **kwargs: keyword arguments to be passed to the
-                matplotlib.pyplot.plot function.
+            fig (figure object, optional): figure over with the graphs are plotted.
+                                           If None, the figure is initialized.
+            **kwargs: if ndim_domain is 1, keyword arguments to be passed to the matplotlib.pyplot.plot function;
+                      if ndim_domain is 2, keyword arguments to be passed to the matplotlib.pyplot.plot_surface function.
 
         Returns:
-            List of lines that were added to the plot.
+            _plot : if ndim_domain is 1, list of lines that were added to the plot;
+                    if ndim_domain is 2, mpl_toolkits.mplot3d.art3d.Poly3DCollection.
 
         """
-        if self.ndim_domain != 1:
-            raise NotImplementedError("Plot only supported for functional "
-                                      "data with a domain dimension of 1.")
-        if self.ndim_image != 1:
-            raise NotImplementedError("Plot only supported for functional "
-                                      "data with a image dimension of 1.")
-        if ax is None:
-            ax = matplotlib.pyplot.gca()
-        _plot = ax.plot(self.sample_points[0],
-                        numpy.transpose(numpy.squeeze(self.data_matrix,
-                                                      axis=2)),
-                        **kwargs)
-        self._set_labels(ax)
+        if self.ndim_domain >= 2 and self.ndim_image > 1:
+            raise NotImplementedError("Plot only supported for functional data"
+                                      "modeled in at most 3 dimensions.")
+
+        if fig != None and len(fig.get_axes()) != self.ndim_image:
+            raise ValueError("Number of axes of the figure must be equal to"
+                             "the dimension of the image.")
+
+        if fig == None:
+            fig, ax = self._set_figure_and_axes()
+
+        if self.ndim_domain == 1:
+            _plot = []
+            for i in range(0, self.ndim_image):
+                _plot.append(ax[i].plot(self.sample_points[0], self.data_matrix[:, :, i].T, **kwargs))
+        else:
+            X = self.sample_points[0]
+            Y = self.sample_points[1]
+            X, Y = np.meshgrid(X, Y)
+            for i in range(self.nsamples):
+                _plot = ax.plot_surface(X, Y, np.squeeze(self.data_matrix[i]).T, **kwargs)
+
+        self._set_labels(fig)
+        self._arrange_layout(fig)
+        plt.show()
 
         return _plot
 
-    def scatter(self, ax=None, **kwargs):
+    def scatter(self, fig=None, **kwargs):
         """Scatter plot of the FDatGrid object.
 
         Args:
-            ax (axis object, optional): axis over with the graphs are plotted.
-                Defaults to matplotlib current axis.
-            **kwargs: keyword arguments to be passed to the
-                matplotlib.pyplot.scatter function.
+            fig (figure object, optional): figure over with the graphs are plotted.
+                                           If None, the figure is initialized.
+            **kwargs: keyword arguments to be passed to the matplotlib.pyplot.scatter function;
 
         Returns:
-            :obj:`matplotlib.collections.PathCollection`
+            _plot : if ndim_domain is 1, list of matplotlib.collections.PathCollection;
+                    if ndim_domain is 2, mpl_toolkits.mplot3d.art3d.Path3DCollection.
 
         """
-        if self.ndim_domain != 1:
-            raise NotImplementedError("Scatter only supported for functional "
-                                      "data with a domain dimension of 1.")
+        if self.ndim_domain >= 2 and self.ndim_image > 1:
+            raise NotImplementedError("Plot only supported for functional data"
+                                      "modeled in at most 3 dimensions.")
 
-        if self.ndim_image != 1:
-            raise NotImplementedError("Scatter only supported for functional "
-                                      "data with a image dimension of 1.")
-        if ax is None:
-            ax = matplotlib.pyplot.gca()
-        _plot = None
-        for i in range(self.nsamples):
-            _plot = ax.scatter(self.sample_points[0],
-                               self.data_matrix[i],
-                               **kwargs)
-        self._set_labels(ax)
+        if fig != None and len(fig.get_axes()) != self.ndim_image:
+            raise ValueError("Number of axes of the figure must be equal to"
+                             "the dimension of the image.")
+
+        if fig == None:
+            fig, ax = self._set_figure_and_axes()
+
+        if self.ndim_domain == 1:
+            _plot = []
+            color = [tuple(np.random.choice(range(256), size=3) / 255) for i in range(self.nsamples)]
+            color = list(itertools.chain.from_iterable(itertools.repeat(x, self.ncol) for x in color))
+            X = [self.sample_points[0]] * self.nsamples
+            for i in range(self.ndim_image):
+                _plot.append(ax[i].scatter(X, self.data_matrix[:, :, i], color=color, **kwargs))
+        else:
+            X = self.sample_points[0]
+            Y = self.sample_points[1]
+            X, Y = np.meshgrid(X, Y)
+            for i in range(self.nsamples):
+                _plot = ax.scatter(X, Y, self.data_matrix[i], **kwargs)
+
+        self._set_labels(fig)
+        self._arrange_layout(fig)
+        plt.show()
+
         return _plot
 
     def to_basis(self, basis, **kwargs):

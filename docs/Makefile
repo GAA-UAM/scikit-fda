@@ -18,6 +18,7 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
 	@echo "  html        to make standalone HTML files"
+	@echo "  html-noplot to make standalone HTML files without examples"
 	@echo "  dirhtml     to make HTML files named index.html in directories"
 	@echo "  singlehtml  to make a single large HTML file"
 	@echo "  pickle      to make pickle files"
@@ -49,10 +50,18 @@ help:
 .PHONY: clean
 clean:
 	rm -rf $(BUILDDIR)/*
+	rm -rf auto_examples
+	rm -rf autosummary
 
 .PHONY: html
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	@echo
+	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
+
+.PHONY: html-noplot
+html-noplot:
+	$(SPHINXBUILD) -D plot_gallery=0 -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 

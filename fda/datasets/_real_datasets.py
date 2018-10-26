@@ -1,6 +1,3 @@
-
-import textwrap
-
 import numpy as np
 import rdata
 import skdatasets
@@ -33,7 +30,12 @@ def fetch_cran_dataset(dataset_name, package_name, *, converter=None,
                                          converter=converter, **kwargs)
 
 
-_phoneme_descr = textwrap.dedent("""
+_param_descr = """
+    Args:
+        return_X_y: Return only the data and target as a tuple.
+"""
+
+_phoneme_descr = """
     These data arose from a collaboration between  Andreas Buja, Werner
     Stuetzle and Martin Maechler, and it is used as an illustration in the
     paper on Penalized Discriminant Analysis by Hastie, Buja and
@@ -73,11 +75,12 @@ _phoneme_descr = textwrap.dedent("""
     Hastie, Trevor; Buja, Andreas; Tibshirani, Robert. Penalized Discriminant
     Analysis. Ann. Statist. 23 (1995), no. 1, 73--102.
     doi:10.1214/aos/1176324456. https://projecteuclid.org/euclid.aos/1176324456
-    """)
+    """
 
 
-def fetch_phoneme(return_X_y=False):
-    """Load the phoneme dataset.
+def fetch_phoneme(return_X_y: bool=False):
+    """
+    Load the phoneme dataset.
 
     The data is obtained from the R package 'ElemStatLearn', which takes it
     from the dataset in `https://web.stanford.edu/~hastie/ElemStatLearn/`.
@@ -113,9 +116,9 @@ def fetch_phoneme(return_X_y=False):
 
 
 if hasattr(fetch_phoneme, "__doc__"):  # docstrings can be stripped off
-    fetch_phoneme.__doc__ += _phoneme_descr
+    fetch_phoneme.__doc__ += _phoneme_descr + _param_descr
 
-_growth_descr = textwrap.dedent("""
+_growth_descr = """
     The Berkeley Growth Study (Tuddenham and Snyder, 1954) recorded the
     heights of 54 girls and 39 boys between the ages of 1 and 18 years.
     Heights were measured at 31 ages for each child, and the standard
@@ -125,11 +128,12 @@ _growth_descr = textwrap.dedent("""
     Tuddenham, R. D., and Snyder, M. M. (1954) "Physical growth of California
     boys and girls from birth to age 18", University of California
     Publications in Child Development, 1, 183-364.
-""")
+"""
 
 
-def fetch_growth(return_X_y=False):
-    """Load the Berkeley Growth Study dataset.
+def fetch_growth(return_X_y: bool=False):
+    """
+    Load the Berkeley Growth Study dataset.
 
     The data is obtained from the R package 'fda', which takes it from the
     Berkeley Growth Study.
@@ -165,9 +169,9 @@ def fetch_growth(return_X_y=False):
 
 
 if hasattr(fetch_growth, "__doc__"):  # docstrings can be stripped off
-    fetch_growth.__doc__ += _growth_descr
+    fetch_growth.__doc__ += _growth_descr + _param_descr
 
-_tecator_descr = textwrap.dedent("""
+_tecator_descr = """
     This is the Tecator data set: The task is to predict the fat content of a
     meat sample on the basis of its near infrared absorbance spectrum.
 
@@ -202,11 +206,12 @@ _tecator_descr = textwrap.dedent("""
     are determined by analytic chemistry.
 
     There are 215 samples.
-""")
+"""
 
 
-def fetch_tecator(return_X_y=False):
-    """Load the Tecator dataset.
+def fetch_tecator(return_X_y: bool=False):
+    """
+    Load the Tecator dataset.
 
     The data is obtained from the R package 'fda.usc', which takes it from
     http://lib.stat.cmu.edu/datasets/tecator.
@@ -234,4 +239,4 @@ def fetch_tecator(return_X_y=False):
 
 
 if hasattr(fetch_tecator, "__doc__"):  # docstrings can be stripped off
-    fetch_tecator.__doc__ += _tecator_descr
+    fetch_tecator.__doc__ += _tecator_descr + _param_descr

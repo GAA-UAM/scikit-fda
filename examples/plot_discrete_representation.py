@@ -5,51 +5,40 @@ Discretized function representation
 Shows how to make a discretized representation of a function.
 """
 
-import os
+# Author: Carlos Ramos Carreño <vnmabus@gmail.com>
+# License: MIT
+
+# sphinx_gallery_thumbnail_number = 2
 
 from fda import FDataGrid
-import matplotlib.pylab as plt
 import numpy as np
 
 ###############################################################################
-# Tecator data is structured in 3 differents csv files. One containing
-# the data at the sample points. Other containing the sample points. And
-# a last one containing information about the percentage of fat,
-# water and protein in each sample.
+# We will construct a dataset containing several sinusoidal functions with
+# random displacements.
 
-_dir = os.getcwd()
+random_state = np.random.RandomState(0)
 
-# Loads all 3 csv files.
-data = np.genfromtxt(os.path.join(_dir, '../data/tecator_data.csv'),
-                     delimiter=',',
-                     skip_header=1)
-
-sample_points = np.genfromtxt(
-    os.path.join(_dir, '../data/tecator_sample_points.csv'),
-    delimiter=',',
-    skip_header=1)
-
-y = np.genfromtxt(os.path.join(_dir, '../data/tecator_y.csv'),
-                  delimiter=',', skip_header=1)
+sample_points = np.linspace(0, 1)
+data = np.array([np.sin((sample_points + random_state.randn())
+                        * 2 * np.pi) for _ in range(5)])
 
 ###############################################################################
-# Builds a FDataGrid object using the loaded information.
+# The FDataGrid class is used for datasets containing discretized functions
+# that are measured at the same points.
 
 fd = FDataGrid(data, sample_points,
-               dataset_label='Spectrometric curves',
-               axes_labels=['Wavelength (mm)', 'Absorbances'])
+               dataset_label='Sinusoidal curves',
+               axes_labels=['t', 'x(t)'])
 
 fd = fd[:5]
 
 ###############################################################################
-# Plots the first 5 samples in a scatter plot.
+# We can plot the measured values of each function in a scatter plot.
 
-plt.figure()
 fd.scatter(s=0.5)
 
 ###############################################################################
-# Plots the first 5 samples in a line plot.
+# We can also plot the interpolated functions.
 
-plt.figure()
 fd.plot()
-plt.show()

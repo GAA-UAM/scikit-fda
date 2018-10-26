@@ -8,6 +8,9 @@ parameters used in the smoothing methods. It also show examples of
 undersmoothing and oversmoothing.
 """
 
+# Author: Miguel Carbajo Berrocal
+# License: MIT
+
 import fda
 import fda.kernel_smoothers as ks
 import fda.validation as val

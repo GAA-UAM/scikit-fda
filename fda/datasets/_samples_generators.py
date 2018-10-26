@@ -25,8 +25,7 @@ def make_gaussian_process(n_samples: int=100, n_features: int=100, *,
             random_state: Random state.
 
         Returns:
-            :obj:FDataGrid: Returns a FDataGrid object comprising all the
-            trajectories.
+            :class:`FDataGrid` object comprising all the trajectories.
 
     """
 

@@ -10,8 +10,8 @@ Welcome to fda's documentation!
    :maxdepth: 4
    :caption: Contents:
 
-   fda
-
+   apilist
+   auto_examples/index
 
 Indices and tables
 ==================

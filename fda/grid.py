@@ -77,7 +77,7 @@ class _GridInterpolator:
 
     def _construct_spline_1_m(self, sample_points, data_matrix, k, s, monotone):
 
-        if k > 5 or k <= 0:
+        if k > 5 or k < 1:
             raise ValueError(f"Invalid degree of interpolation ({k}). Must be "
                              f"an integer greater than 0 and lower or "
                              f"equal than 5.")
@@ -231,7 +231,8 @@ class _GridInterpolator:
         t = numpy.meshgrid(*axes, indexing='ij')
         t = numpy.array(t).reshape(self._ndim_domain, numpy.prod(lengths)).T
 
-        res = self.evaluate(t, derivative)
+
+        res = self.evaluate_spline(t, derivative)
 
 
         shape = [self._nsamples] + lengths
@@ -272,13 +273,6 @@ class _GridInterpolator:
         t += numpy.asarray(delta).T
 
         return self.evaluate_composed(t, self._process_derivative(derivative))
-
-    def integrate(self, integration):
-
-        raise NotImplemented
-
-    def antiderivative(self, order):
-        raise NotImplemented
 
 
     def __call__(self, t, derivative=0, grid=False):

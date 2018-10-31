@@ -14,7 +14,7 @@ The following functions are used to retrieve specific functional datasets:
    fda.datasets.fetch_growth
    fda.datasets.fetch_phoneme
    fda.datasets.fetch_tecator
-   
+
 Those functions return a dictionary with at least a "data" field containing the
 instance data, and a "target" field containing the class labels or regression values,
 if any.
@@ -28,3 +28,4 @@ The following functions are used to make synthetic functional datasets:
    :toctree: autosummary
 
    fda.datasets.make_gaussian_process
+   fda.datasets.make_sinusoidal_process

@@ -16,9 +16,8 @@ import scipy.interpolate
 import scipy.linalg
 from scipy.special import binom
 
-from fda import grid
-import fda.registration
-from fda.registration import Extrapolation
+from . import grid
+from .registration import Extrapolation
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -58,8 +57,8 @@ class Basis(ABC):
         """
         # Some checks
         if domain_range[0] >= domain_range[1]:
-            raise ValueError("The interval {} is not well-defined.".format(
-                domain_range))
+            raise ValueError(f"The interval {domain_range} is not "
+                             f"well-defined.")
         if nbasis < 1:
             raise ValueError("The number of basis has to be strictly "
                              "possitive.")
@@ -265,19 +264,17 @@ class Basis(ABC):
                     original basis.
         """
 
-        if domain_range == None:
+        if domain_range is None:
             domain_range = self.domain_range
         elif domain_range[0] >= domain_range[1]:
-            raise ValueError("The interval {} is not well-defined.".format(
-                domain_range))
+            raise ValueError(f"The interval {domain_range} is not well-defined")
 
         return type(self)(domain_range, self.nbasis)
 
     def __repr__(self):
         """Representation of a Basis object."""
-        return "{}(domain_range={}, nbasis={})".format(
-            self.__class__.__name__, self.domain_range, self.nbasis)
-
+        return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
+                f"nbasis={self.nbasis})")
 
 class Monomial(Basis):
     """Monomial basis.
@@ -666,10 +663,9 @@ class BSpline(Basis):
         """
         if derivative_degree is not None:
             if derivative_degree >= self.order:
-                raise ValueError("Penalty matrix cannot be evaluated for "
-                                 "derivative of order {} for B-splines of "
-                                 "order {}".format(derivative_degree,
-                                                   self.order))
+                raise ValueError(f"Penalty matrix cannot be evaluated for "
+                                 f"derivative of order {derivative_degree} for "
+                                 f"B-splines of order {self.order}")
             if derivative_degree == self.order - 1:
                 # The derivative of the bsplines are constant in the intervals
                 # defined between knots
@@ -766,11 +762,9 @@ class BSpline(Basis):
             # if the order of the derivative is greater or equal to the order
             # of the bspline minus 1
             if len(coefficients) >= self.order:
-                raise ValueError("Penalty matrix cannot be evaluated for "
-                                 "derivative of order {} for B-splines of "
-                                 "order {}"
-                                 .format(len(coefficients) - 1,
-                                         self.order))
+                raise ValueError(f"Penalty matrix cannot be evaluated for "
+                                 f"derivative of order {len(coefficients) - 1} "
+                                 f"for B-splines of order {self.order}")
 
         # compute using the inner product
         return self._numerical_penalty(coefficients)
@@ -788,7 +782,7 @@ class BSpline(Basis):
 
         knots = numpy.array(self.knots, dtype=numpy.dtype('float'))
 
-        if domain_range != None:  # Rescales the knots
+        if domain_range is not None:  # Rescales the knots
             knots -= knots[0]
             knots *= ((domain_range[1] - domain_range[0]
                        ) / (self.knots[-1] - self.knots[0]))
@@ -805,9 +799,9 @@ class BSpline(Basis):
 
     def __repr__(self):
         """Representation of a BSpline basis."""
-        return ("{}(domain_range={}, nbasis={}, order={}, knots={})".format(
-            self.__class__.__name__, self.domain_range, self.nbasis, self.order,
-            self.knots))
+        return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
+                f"nbasis={self.nbasis}, order={self.order}, "
+                f"knots={self.knots})")
 
 
 class Fourier(Basis):
@@ -1040,9 +1034,8 @@ class Fourier(Basis):
 
     def __repr__(self):
         """Representation of a Fourier basis."""
-        return ("{}(domain_range={}, nbasis={}, period={})".format(
-            self.__class__.__name__, self.domain_range, self.nbasis,
-            self.period))
+        return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
+                f"nbasis={self.nbasis}, period={self.period})")
 
 
 class FDataBasis:
@@ -1104,7 +1097,7 @@ class FDataBasis:
         The fit is made so as to reduce the penalized sum of squared errors
         [RS05-5-2-5]_:
         .. math::
-        
+
             PENSSE(c) = (y - \Phi c)' W (y - \Phi c) + \lambda c'Rc
 
         where :math:`y` is the vector or matrix of observations, :math:`\Phi`
@@ -1116,13 +1109,13 @@ class FDataBasis:
 
         Each element of :math:`R` has the following close form:
         .. math::
-        
+
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
 
         By deriving the first formula we obtain the closed formed of the
         estimated coefficients matrix:
         .. math::
-        
+
             \hat(c) = \left( |Phi' W \Phi + \lambda R \right)^{-1} \Phi' W y
 
         The solution of this matrix equation is done using the cholesky
@@ -1300,9 +1293,10 @@ class FDataBasis:
             coefficients = numpy.linalg.solve(basis_values, data_matrix)
 
         else:  # data_matrix.shape[0] < basis.nbasis
-            raise ValueError("The number of basis functions ({}) exceed the "
-                             "number of points to be smoothed ({})."
-                             .format(basis.nbasis, data_matrix.shape[0]))
+            raise ValueError(f"The number of basis functions ({basis.nbasis}) "
+                             f"exceed the number of points to be smoothed "
+                             f"({data_matrix.shape[0]}).")
+
 
         return cls(basis, coefficients)
 
@@ -1391,9 +1385,9 @@ class FDataBasis:
         delta = numpy.asarray(delta)
 
         if delta.shape[0] != self.nsamples:
-            raise ValueError("deltas vector length ({}) has to match with the "
-                             "number of samples ({})."
-                             .format(delta.shape[0], self.nsamples))
+            raise ValueError(f"deltas vector length ({delta.shape[0]}) has to "
+                             f"be equal than the number of samples "
+                             f"({self.nsamples}).")
 
         extrapolation = Extrapolation(ext)
         if extrapolation is Extrapolation.default:
@@ -1478,9 +1472,9 @@ class FDataBasis:
                                         _basis, **kwargs)
 
         elif len(shifts) != self.nsamples:
-            raise ValueError("shifts vector ({}) must have the same length "
-                             "than the number of samples ({})"
-                             .format(len(shifts), self.nsamples))
+            raise ValueError(f"shifts vector ({len(shifts)}) must have the same"
+                             f" length than the number of samples "
+                             f"({self.nsamples})")
 
 
         extrapolation = Extrapolation(ext)
@@ -1651,8 +1645,8 @@ class FDataBasis:
 
     def __repr__(self):
         """Representation of FDataBasis object."""
-        return "{}(basis={}, coefficients={})".format(
-            self.__class__.__name__, self.basis, self.coefficients)
+        return (f"{self.__class__.__name__}(basis={self.basis}, "
+               f"coefficients={self.coefficients})")
 
     def __call__(self, eval_points):
         """Evaluate the functions in the object at a list of values.

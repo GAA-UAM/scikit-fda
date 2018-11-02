@@ -75,9 +75,9 @@ def mse_decomposition(fd, fdreg, h=None, tfine=None):
 
 
     Args:
-        fd (:obj:`FDataBasis` or :obj:`FDataGrid`): Unregistered functions.
-        regfd (:obj:`FDataBasis` or :obj:`FDataGrid`): Registered functions.
-        h (:obj:`FDataBasis` or :obj:`FDataGrid`, optional): Warping functions.
+        fd (:class:`FDataBasis` or :class:`FDataGrid`): Unregistered functions.
+        regfd (:class:`FDataBasis` or :class:`FDataGrid`): Registered functions.
+        h (:class:`FDataBasis` or :class:`FDataGrid`, optional): Warping functions.
         tfine: (array_like, optional): Set of points where the functions are
             evaluated to obtain a discrete representation.
 
@@ -101,14 +101,14 @@ def mse_decomposition(fd, fdreg, h=None, tfine=None):
     """
 
     if fd.nsamples != fdreg.nsamples:
-        raise ValueError("the registered and unregistered curves must have "
-                         "the same number of samples ({})!=({})"
-                         .format(fdreg.nsamples, fd.nsamples))
+        raise ValueError(f"the registered and unregistered curves must have "
+                         f"the same number of samples ({fdreg.nsamples})!="
+                         f"({fd.nsamples})")
 
     if h is not None and h.nsamples != fd.nsamples:
-        raise ValueError("the registered curves and the warping functions must "
-                         "have the same number of samples ({})!=({})"
-                         .format(fdreg.nsamples, h.nsamples))
+        raise ValueError(f"the registered curves and the warping functions must"
+                         f" have the same number of samples "
+                         f"({fdreg.nsamples})!=({h.nsamples})")
 
     # Creates the mesh to discretize the functions
     if tfine is None:
@@ -162,7 +162,7 @@ def mse_decomposition(fd, fdreg, h=None, tfine=None):
 
 
 
-def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
+def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", step_size=1,
                        initial=None, tfine=None, shifts_array=False, **kwargs):
     r"""Perform a shift registration of the curves.
 
@@ -180,7 +180,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
         in each iteration, as is described in detail in [RS05-7-9-1]_.
 
     Args:
-        fd (:obj:`FDataBasis` or :obj:`FDataGrid`): Functional data object.
+        fd (:class:`FDataBasis` or :class:`FDataGrid`): Functional data object.
         maxiter (int, optional): Maximun number of iterations.
             Defaults to 5.
         tol (float, optional): Tolerance allowable. The process will stop if
@@ -199,7 +199,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
                 value
             * If ext='slice' or Extrapolation.slice avoids extrapolation
                 restricting the domain.
-        alpha (int or float, optional): Parameter to adjust the rate of
+        step_size (int or float, optional): Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see [RS05-7-9-1]_.
             Defaults to 1.
         initial (array_like, optional): Initial estimation of shifts.
@@ -211,13 +211,13 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
             in fd.domain_range and the number of points the maximum
             between 201 and 10 times the number of basis plus 1.
         shifts_array (bool, optional): If True returns an array with the
-            shifts instead of a :obj:`FDataBasis` with the registered
+            shifts instead of a :class:`FDataBasis` with the registered
             curves. Default sets to False.
         **kwargs: Keyword arguments to be passed to :meth:`from_data`.
 
     Returns:
-        :obj:`FDataBasis` or :obj:`ndarray`: A :obj:`FDataBasis` object with
-        the curves registered or if shifts_array is True a :obj:`ndarray`
+        :class:`FDataBasis` or :class:`ndarray`: A :class:`FDataBasis` object with
+        the curves registered or if shifts_array is True a :class:`ndarray`
         with the shifts.
 
     Raises:
@@ -238,9 +238,9 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
         delta = numpy.zeros(fd.nsamples)
 
     elif len(initial) != fd.nsamples:
-        raise ValueError("the initial shift ({}) must have the same length "
-                         "than the number of samples ({})"
-                         .format(len(initial), fd.nsamples))
+        raise ValueError(f"the initial shift ({len(initial)}) must have the "
+                         f"same length than the number of samples "
+                         f"({fd.nsamples})")
     else:
         delta = numpy.asarray(initial)
 
@@ -310,9 +310,9 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
         d1_regsse = scipy.integrate.trapz(numpy.multiply(x, D1x, out=x),
                                           tfine, axis=1)
         # Updates the shifts by the Newton-Rhapson iteration
-        # delta = delta - alpha * d1_regsse / d2_regsse
+        # delta = delta - step_size * d1_regsse / d2_regsse
         numpy.divide(d1_regsse, d2_regsse, out=delta_aux)
-        numpy.multiply(delta_aux, alpha, out=delta_aux)
+        numpy.multiply(delta_aux, step_size, out=delta_aux)
         numpy.subtract(delta, delta_aux, out=delta)
 
         # Updates convergence criterions
@@ -320,7 +320,8 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", alpha=1,
         iter += 1
 
     # If shifts_array is True returns the delta array
-    if shifts_array: return delta
+    if shifts_array:
+        return delta
 
     # Computes the values with the final shift to construct the FDataBasis
     return fd.shift(delta, ext=ext, tfine=tfine, **kwargs)
@@ -332,7 +333,7 @@ def landmark_shift(fd, landmarks, location=None, ext='default', tfine=None,
         the same mark time.
 
         Args:
-            fd (:obj:`FDataBasis` or :obj:`FDataGrid`): Functional data object.
+            fd (:class:`FDataBasis` or :class:`FDataGrid`): Functional data object.
             landmarks (array_like): List with the landmarks of the samples.
             location (numeric or callable, optional): Defines where
                 the landmarks will be alligned. If a numeric value is passed the
@@ -364,15 +365,14 @@ def landmark_shift(fd, landmarks, location=None, ext='default', tfine=None,
                 in fd.domain_range and the number of points the maximum
                 between 201 and 10 times the number of basis plus 1.
             shifts_array (bool, optional): If True returns an array with the
-                shifts instead of a :obj:`FDataBasis` with the registered
+                shifts instead of a :class:`FDataBasis` with the registered
                 curves. Default sets to False.
             **kwargs: Keyword arguments to be passed to :meth:`from_data`.
     """
 
     if len(landmarks) != fd.nsamples:
-        raise ValueError("landmark list ({}) must have the same length "
-                         "than the number of samples ({})"
-                         .format(len(landmarks), fd.nsamples))
+        raise ValueError(f"landmark list ({len(landmarks)}) must have the same "
+                         f"length than the number of samples ({fd.nsamples})")
 
     landmarks = numpy.asarray(landmarks)
 

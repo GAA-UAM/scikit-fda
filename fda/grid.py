@@ -60,15 +60,15 @@ class _GridInterpolator:
                                                        data_matrix,
                                                        k, s, monotone)
         elif monotone:
-            raise ValueError("Monotone interpolation is only supporte with "
+            raise ValueError("Monotone interpolation is only supported with "
                              "domain dimension equal to 1.")
 
         elif ndim_domain == 2:
             self._splines = self._construct_spline_2_m(sample_points,
                                                        data_matrix, k, s)
 
-        elif s!=0:
-            raise ValueError("Smoothing interpolation is only supporte with "
+        elif s != 0:
+            raise ValueError("Smoothing interpolation is only supported with "
                              "domain dimension up to 2, s should be 0.")
 
         else:
@@ -83,7 +83,7 @@ class _GridInterpolator:
                              f"equal than 5.")
 
         if monotone and s != 0:
-            raise ValueError("Smoothing interpolation is not suported with "
+            raise ValueError("Smoothing interpolation is not supported with "
                              "monotone interpolation")
 
         if monotone and (k == 2 or k == 4):

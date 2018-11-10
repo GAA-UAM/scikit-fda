@@ -65,7 +65,7 @@ class Basis(ABC):
         self.domain_range = domain_range
         self.nbasis = nbasis
         self._drop_index_lst = []
-        self.default_extrapolation = Extrapolation.slice
+        self.extrapolation = Extrapolation.slice
 
         super().__init__()
 
@@ -870,7 +870,7 @@ class Fourier(Basis):
         nbasis += 1 - nbasis % 2
         super().__init__(domain_range, nbasis)
 
-        self.default_extrapolation = Extrapolation.extrapolation
+        self.extrapolation = Extrapolation.extrapolation
 
     def _compute_matrix(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
@@ -1316,9 +1316,9 @@ class FDataBasis:
         return self.basis.domain_range
 
     @property
-    def default_extrapolation(self):
+    def extrapolation(self):
         """Return default type of extrapolation."""
-        return  self.basis.default_extrapolation
+        return  self.basis.extrapolation
 
     def evaluate(self, eval_points, derivative=0):
         """Evaluate the object or its derivatives at a list of values.
@@ -1345,7 +1345,7 @@ class FDataBasis:
 
         return res_matrix
 
-    def evaluate_shifted(self, eval_points, delta, derivative=0, ext="default"):
+    def evaluate_shifted(self, eval_points, delta, derivative=0, ext=None):
         """Evaluate the object or its derivatives at a list of values with a
         shift for each sample.
 
@@ -1365,8 +1365,7 @@ class FDataBasis:
             ext (str or Extrapolation, optional): Controls the extrapolation
                 mode for elements outside the domain range.
 
-                * If ext='default' or Extrapolation.default default
-                    method defined in the fd object is used.
+                * If ext=None default method defined in the fd object is used.
                 * If ext='extrapolation' or Extrapolation.extrapolation uses
                     the extrapolated values by the basis.
                 * If ext='periodic' or Extrapolation.periodic extends the
@@ -1389,9 +1388,10 @@ class FDataBasis:
                              f"be equal than the number of samples "
                              f"({self.nsamples}).")
 
-        extrapolation = Extrapolation(ext)
-        if extrapolation is Extrapolation.default:
-            extrapolation = self.default_extrapolation
+        if ext is None:
+            extrapolation = self.extrapolation
+        else:
+            extrapolation = Extrapolation(ext)
 
         res_matrix = numpy.empty((self.nsamples, eval_points.shape[0]))
         shifted_points = numpy.empty(len(eval_points))
@@ -1423,7 +1423,7 @@ class FDataBasis:
 
         return res_matrix
 
-    def shift(self, shifts, ext="default", tfine=None, **kwargs):
+    def shift(self, shifts, ext=None, tfine=None, **kwargs):
         r"""Perform a shift of the curves.
 
         Args:
@@ -1433,8 +1433,7 @@ class FDataBasis:
             ext (str or Extrapolation, optional): Controls the extrapolation
                 mode for elements outside the domain range.
 
-                * If ext='default' or Extrapolation.default default
-                    method defined in the fd object is used.
+                * If ext=None method defined in the fd object is used.
                 * If ext='extrapolation' or Extrapolation.extrapolation uses
                     the extrapolated values by the basis.
                 * If ext='periodic' or Extrapolation.periodic extends the
@@ -1477,10 +1476,11 @@ class FDataBasis:
                              f"({self.nsamples})")
 
 
-        extrapolation = Extrapolation(ext)
+        if ext is None:
+            extrapolation = self.extrapolation
+        else:
+            extrapolation = Extrapolation(ext)
 
-        if extrapolation is Extrapolation.default:
-            extrapolation = self.default_extrapolation
 
         if extrapolation is Extrapolation.slice:
             a = self.domain_range[0] - min(numpy.min(shifts), 0)

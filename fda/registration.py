@@ -14,13 +14,12 @@ class Extrapolation(Enum):
     r"""Enum with extrapolation types. Defines the extrapolation mode for
         elements outside the domain range.
     """
-    default = "default" #:Uses the default method of the functional data object.
     extrapolation = "extrapolation" #: The values are extrapolated by evaluate.
     periodic = "periodic" #: Extends the domain range periodically.
     const = "const" #: Uses the boundary value.
     slice = "slice" #: Avoids extrapolation restricting the domain.
 
-def mse_decomposition(fd, fdreg, h=None, tfine=None):
+def mse_decomposition(original_fdata, registered_fdata, h=None, tfine=None):
     r"""Compute mean square error measures for amplitude and phase variation.
 
     Once the registration has taken place, this function computes two mean
@@ -75,7 +74,7 @@ def mse_decomposition(fd, fdreg, h=None, tfine=None):
 
 
     Args:
-        fd (:class:`FDataBasis` or :class:`FDataGrid`): Unregistered functions.
+        original_fdata (:class:`FDataBasis` or :class:`FDataGrid`): Unregistered functions.
         regfd (:class:`FDataBasis` or :class:`FDataGrid`): Registered functions.
         h (:class:`FDataBasis` or :class:`FDataGrid`, optional): Warping functions.
         tfine: (array_like, optional): Set of points where the functions are
@@ -100,26 +99,26 @@ def mse_decomposition(fd, fdreg, h=None, tfine=None):
             Springer.
     """
 
-    if fd.nsamples != fdreg.nsamples:
+    if original_fdata.nsamples != registered_fdata.nsamples:
         raise ValueError(f"the registered and unregistered curves must have "
-                         f"the same number of samples ({fdreg.nsamples})!="
-                         f"({fd.nsamples})")
+                         f"the same number of samples "
+                         f"({registered_fdata.nsamples})!= "
+                         f"({original_fdata.nsamples})")
 
-    if h is not None and h.nsamples != fd.nsamples:
+    if h is not None and h.nsamples != original_fdata.nsamples:
         raise ValueError(f"the registered curves and the warping functions must"
                          f" have the same number of samples "
-                         f"({fdreg.nsamples})!=({h.nsamples})")
+                         f"({registered_fdata.nsamples})!=({h.nsamples})")
 
     # Creates the mesh to discretize the functions
     if tfine is None:
-        nfine = max(fdreg.basis.nbasis * 10 + 1, 201)
-        tfine = numpy.linspace(fdreg.domain_range[0],
-                               fdreg.domain_range[1], nfine)
+        nfine = max(registered_fdata.basis.nbasis * 10 + 1, 201)
+        tfine = numpy.linspace(*registered_fdata.domain_range, nfine)
     else:
         tfine = numpy.asarray(tfine)
 
-    x_fine = fd.evaluate(tfine) # Unregistered function
-    y_fine = fdreg.evaluate(tfine) # Registered function
+    x_fine = original_fdata.evaluate(tfine) # Unregistered function
+    y_fine = registered_fdata.evaluate(tfine) # Registered function
     mu_fine = x_fine.mean(axis=0) # Mean unregistered function
     eta_fine = y_fine.mean(axis=0) # Mean registered function
     mu_fine_sq = numpy.square(mu_fine)
@@ -136,7 +135,7 @@ def mse_decomposition(fd, fdreg, h=None, tfine=None):
     # If the warping functions are not provided, are suppose to be independent
     if h is not None:
 
-        dh_fine = h.evaluate(tfine, derivative=1) # Derivate of warping functions
+        dh_fine = h.evaluate(tfine, derivative=1) # Derivates warping functions
         dh_fine_mean = dh_fine.mean(axis=0)
         dh_fine_center = dh_fine - dh_fine_mean
 
@@ -162,7 +161,7 @@ def mse_decomposition(fd, fdreg, h=None, tfine=None):
 
 
 
-def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", step_size=1,
+def shift_registration(fd, maxiter=5, tol=1e-2, ext=None, step_size=1,
                        initial=None, tfine=None, shifts_array=False, **kwargs):
     r"""Perform a shift registration of the curves.
 
@@ -189,8 +188,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", step_size=1,
         ext (str or Extrapolation, optional): Controls the extrapolation
             mode for elements outside the domain range.
 
-            * If ext='default' or Extrapolation.default default
-                method defined in the fd object is used.
+            * If ext=None default method defined in the fd object is used.
             * If ext='extrapolation' or Extrapolation.extrapolation uses
                 the extrapolated values by the basis.
             * If ext='periodic' or Extrapolation.periodic extends the
@@ -247,18 +245,15 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", step_size=1,
     # Fine equispaced mesh to evaluate the samples
     if tfine is None:
         nfine = max(fd.nbasis*10+1, 201)
-        tfine = numpy.linspace(fd.basis.domain_range[0],
-                               fd.basis.domain_range[1],
-                               nfine)
+        tfine = numpy.linspace(*fd.basis.domain_range, nfine)
     else:
         nfine = len(tfine)
         tfine = numpy.asarray(tfine)
 
-
-    extrapolation = Extrapolation(ext)
-
-    if extrapolation is Extrapolation.default:
-        extrapolation = fd.default_extrapolation
+    if ext is None:
+        extrapolation = fd.extrapolation
+    else:
+        extrapolation = Extrapolation(ext)
 
     # Auxiliar arrays to avoid multiple memory allocations
     delta_aux = numpy.empty(fd.nsamples)
@@ -327,7 +322,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext="default", step_size=1,
     return fd.shift(delta, ext=ext, tfine=tfine, **kwargs)
 
 
-def landmark_shift(fd, landmarks, location=None, ext='default', tfine=None,
+def landmark_shift(fd, landmarks, location=None, ext=None, tfine=None,
                    shifts_array=False, **kwargs):
     r"""Perform a shift registration of the curves to align the landmarks at
         the same mark time.
@@ -347,8 +342,7 @@ def landmark_shift(fd, landmarks, location=None, ext='default', tfine=None,
             ext (str or Extrapolation, optional): Controls the extrapolation
                 mode for elements outside the domain range.
 
-                * If ext='default' or Extrapolation.default default
-                    method defined in the fd object is used.
+                * If ext=None default method defined in the fd object is used.
                 * If ext='extrapolation' or Extrapolation.extrapolation uses
                     the extrapolated values by the basis.
                 * If ext='periodic' or Extrapolation.periodic extends the

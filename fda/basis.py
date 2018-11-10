@@ -252,10 +252,236 @@ class Basis(ABC):
         """
         pass
 
+    def __mul__(self, other):
+        """
+            Multiplication for FDataBasis object.
+        """
+
+        if self.domain_range == other.domain_range:
+            raise ValueError("Ranges are not equal.")
+
+        if isinstance(self, Constant) and isinstance(other, Constant):
+            return Constant(self.domain_range)
+
+        if isinstance(self, Constant):
+            return other
+
+        if isinstance(other, Constant):
+            return self
+
+        if isinstance(self, BSpline) and isinstance(other, BSpline):
+            uniqueknots = numpy.union1d(self.inknots, other.inknots)
+
+            multunique = numpy.zeros(len(uniqueknots), dtype=numpy.int32)
+            for i in range(len(uniqueknots)):
+                mult1 = numpy.count_nonzero(self.inknots == uniqueknots[i])
+                mult2 = numpy.count_nonzero(other.inknots == uniqueknots[i])
+                multunique[i] = max(mult1, mult2)
+
+            m2 = 0
+            allknots = numpy.zeros(numpy.sum(multunique))
+            for i in range(len(uniqueknots)):
+                m1 = m2
+                m2 = m2 + multunique[i]
+                allknots[m1:m2] = uniqueknots[i]
+
+            norder1 = self.nbasis - len(self.inknots)
+            norder2 = other.nbasis - len(other.inknots)
+            norder = min(norder1 + norder2 - 1, 20)
+
+            allbreaks = [self.domain_range[0]] + numpy.ndarray.tolist(allknots) + [self.domain_range[1]]
+            nbasis = len(allbreaks) + norder - 2
+            return BSpline(self.domain_range, nbasis, norder, allbreaks)
+
+        if isinstance(self, Fourier) and isinstance(other, Fourier) and self.period == other.period:
+            return Fourier(self.domain_range, self.nbasis + other.nbasis - 1, self.period)
+
+        if isinstance(self, BSpline) or isinstance(other, BSpline):
+            norder = 8
+            if isinstance(self, BSpline):
+                norder1 = self.nbasis - len(self.inknots)
+                norder = min(norder1 + 2, norder)
+
+            if isinstance(other, BSpline):
+                norder2 = other.nbasis - len(other.inknots)
+                norder = min(norder2 + 2, norder)
+
+        else:
+            norder = min(8, self.nbasis + other.nbasis)
+
+        nbasis = max(self.nbasis + other.nbasis, norder + 1)
+        return BSpline(self.domain_range, nbasis, norder)
+
     def __repr__(self):
         """Representation of a Basis object."""
         return "{}(domain_range={}, nbasis={})".format(
             self.__class__.__name__, self.domain_range, self.nbasis)
+
+
+class Constant(Basis):
+    """Constant basis.
+
+    Basis for constant functions
+
+    Attributes:
+        domain_range (tuple): a tuple of length 2 containing the initial and
+            end values of the interval over which the basis can be evaluated.
+
+    Examples:
+        Defines a contant base over the interval :math:`[0, 5]` consisting
+        on the constant function on :math:`[0, 5]`.
+
+        >>> bs_cons = Constant((0,5))
+
+    """
+
+    def __init__(self, domain_range=(0, 1)):
+        """Constant basis constructor.
+
+        Args:
+            domain_range (tuple): Tuple defining the domain over which the
+            function is defined.
+
+        """
+        super().__init__(domain_range, 1)
+
+    def _ndegenerated(self, penalty_degree):
+        """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
+
+        Args:
+            penalty_degree (int): Degree of the derivative used in the
+                calculation of the penalty matrix.
+
+        Returns:
+             int: number of close to 0 eigenvalues.
+
+        """
+        return penalty_degree
+
+    def _compute_matrix(self, eval_points, derivative=0):
+        """Compute the basis or its derivatives given a list of values.
+
+        For each of the basis computes its value for each of the points in
+        the list passed as argument to the method.
+
+        Args:
+            eval_points (array_like): List of points where the basis is
+                evaluated.
+            derivative (int, optional): Order of the derivative. Defaults to 0.
+
+        Returns:
+            (:obj:`numpy.darray`): Matrix whose rows are the values of the each
+            basis function or its derivatives at the values specified in
+            eval_points.
+
+        """
+        # Initialise empty matrix
+        mat = numpy.zeros((self.nbasis, len(eval_points)))
+
+        # For each basis computes its value for each evaluation
+        if derivative == 0:
+            for i in range(self.nbasis):
+                mat[i] = eval_points ** i
+        else:
+            for i in range(self.nbasis):
+                if derivative <= i:
+                    factor = i
+                    for j in range(2, derivative + 1):
+                        factor *= (i - j + 1)
+                    mat[i] = factor * eval_points ** (i - derivative)
+
+        return mat
+
+    def penalty(self, derivative_degree=None, coefficients=None):
+        r"""Return a penalty matrix given a differential operator.
+
+        The differential operator can be either a derivative of a certain
+        degree or a more complex operator.
+
+        The penalty matrix is defined as [RS05-5-6-2]_:
+
+        .. math::
+            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
+
+        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
+        functions and :math:`L` is a differential operator.
+
+        Args:
+            derivative_degree (int): Integer indicating the order of the
+                derivative or . For instance 2 means that the differential
+                operator is :math:`f''(x)`.
+            coefficients (list): List of coefficients representing a
+                differential operator. An iterable indicating
+                coefficients of derivatives (which can be functions). For
+                instance the tuple (1, 0, numpy.sin) means :math:`1
+                + sin(x)D^{2}`. Only used if derivative degree is None.
+
+
+        Returns:
+            numpy.array: Penalty matrix.
+
+        Examples:
+            >>> Constant().penalty(0)
+            array([[1.]])
+            >>> Constant().penalty(1)
+            array([[0.]])
+
+        References:
+            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
+                roughness penalty. In *Functional Data Analysis* (pp. 106-107).
+                Springler.
+
+        """
+        if derivative_degree is None:
+            return self._numerical_penalty(coefficients)
+
+        integration_domain = self.domain_range
+
+        # initialize penalty matrix as all zeros
+        penalty_matrix = numpy.zeros((self.nbasis, self.nbasis))
+        # iterate over the cartesion product of the basis system with itself
+        for ibasis in range(self.nbasis):
+            # notice that the index ibasis it is also the exponent of the
+            # monomial
+            # ifac is the factor resulting of deriving the monomial as many
+            # times as indicates de differential operator
+            if derivative_degree > 0:
+                ifac = ibasis
+                for k in range(2, derivative_degree + 1):
+                    ifac *= ibasis - k + 1
+            else:
+                ifac = 1
+
+            for jbasis in range(self.nbasis):
+                # notice that the index jbasis it is also the exponent of the
+                # monomial
+                # jfac is the factor resulting of deriving the monomial as
+                # many times as indicates de differential operator
+                if derivative_degree > 0:
+                    jfac = jbasis
+                    for k in range(2, derivative_degree + 1):
+                        jfac *= jbasis - k + 1
+                else:
+                    jfac = 1
+
+                # if any of the two monomial has lower degree than the order of
+                # the derivative indicated by the differential operator that
+                # factor equals 0, so no calculation are needed
+                if (ibasis >= derivative_degree
+                        and jbasis >= derivative_degree):
+                    # Calculates exactly the result of the integral
+                    # Exponent after applying the differential operator and
+                    # integrating
+                    ipow = ibasis + jbasis - 2 * derivative_degree + 1
+                    # coefficient after integrating
+                    penalty_matrix[ibasis, jbasis] = (
+                            (integration_domain[1] ** ipow
+                             - integration_domain[0] ** ipow)
+                            * ifac * jfac / ipow)
+                    penalty_matrix[jbasis, ibasis] = penalty_matrix[ibasis,
+                                                                    jbasis]
+
+        return penalty_matrix
 
 
 class Monomial(Basis):
@@ -760,6 +986,11 @@ class BSpline(Basis):
             self.__class__.__name__, self.domain_range, self.nbasis, self.order,
             self.knots))
 
+    @property
+    def inknots(self):
+        """Return number of basis."""
+        return self.knots[1:len(self.knots) - 1]
+
 
 class Fourier(Basis):
     r"""Fourier basis.
@@ -790,7 +1021,7 @@ class Fourier(Basis):
     Examples:
         Constructs specifying number of basis, definition interval and period.
 
-        >>> fb = Fourier([0, numpy.pi], nbasis=3, period=1)
+        >>> fb = Fourier((0, numpy.pi), nbasis=3, period=1)
         >>> fb.evaluate([0, numpy.pi / 4, numpy.pi / 2, numpy.pi]).round(2)
         array([[ 1.  ,  1.  ,  1.  ,  1.  ],
                [ 1.41,  0.31, -1.28,  0.89],

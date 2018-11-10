@@ -19,7 +19,8 @@ class Extrapolation(Enum):
     const = "const" #: Uses the boundary value.
     slice = "slice" #: Avoids extrapolation restricting the domain.
 
-def mse_decomposition(original_fdata, registered_fdata, h=None, tfine=None):
+def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
+                      tfine=None):
     r"""Compute mean square error measures for amplitude and phase variation.
 
     Once the registration has taken place, this function computes two mean
@@ -76,7 +77,7 @@ def mse_decomposition(original_fdata, registered_fdata, h=None, tfine=None):
     Args:
         original_fdata (:class:`FDataBasis` or :class:`FDataGrid`): Unregistered functions.
         regfd (:class:`FDataBasis` or :class:`FDataGrid`): Registered functions.
-        h (:class:`FDataBasis` or :class:`FDataGrid`, optional): Warping functions.
+        warping_function (:class:`FDataBasis` or :class:`FDataGrid`, optional): Warping functions.
         tfine: (array_like, optional): Set of points where the functions are
             evaluated to obtain a discrete representation.
 
@@ -105,10 +106,12 @@ def mse_decomposition(original_fdata, registered_fdata, h=None, tfine=None):
                          f"({registered_fdata.nsamples})!= "
                          f"({original_fdata.nsamples})")
 
-    if h is not None and h.nsamples != original_fdata.nsamples:
+    if warping_function is not None and (warping_function.nsamples
+                                         != original_fdata.nsamples):
         raise ValueError(f"the registered curves and the warping functions must"
                          f" have the same number of samples "
-                         f"({registered_fdata.nsamples})!=({h.nsamples})")
+                         f"({registered_fdata.nsamples})"
+                         f"!=({warping_function.nsamples})")
 
     # Creates the mesh to discretize the functions
     if tfine is None:
@@ -133,9 +136,9 @@ def mse_decomposition(original_fdata, registered_fdata, h=None, tfine=None):
             # functions and y^2
 
     # If the warping functions are not provided, are suppose to be independent
-    if h is not None:
-
-        dh_fine = h.evaluate(tfine, derivative=1) # Derivates warping functions
+    if warping_function is not None:
+        # Derivates warping functions
+        dh_fine = warping_function.evaluate(tfine, derivative=1)
         dh_fine_mean = dh_fine.mean(axis=0)
         dh_fine_center = dh_fine - dh_fine_mean
 
@@ -161,9 +164,10 @@ def mse_decomposition(original_fdata, registered_fdata, h=None, tfine=None):
 
 
 
-def shift_registration(fd, maxiter=5, tol=1e-2, ext=None, step_size=1,
-                       initial=None, tfine=None, shifts_array=False, **kwargs):
-    r"""Perform a shift registration of the curves.
+def shift_registration_deltas(fd, maxiter=5, tol=1e-2, extrapolation=None,
+                              step_size=1, initial=None, tfine=None, **kwargs):
+    r"""Perform a shift registration of the curves and return the corresponding
+        shifts of each function.
 
         Realizes a registration of the curves, using shift aligment, as is
         defined in [RS05-7-2]_. Calculates :math:`\delta_{i}` for each sample
@@ -185,17 +189,17 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext=None, step_size=1,
         tol (float, optional): Tolerance allowable. The process will stop if
             :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
             Default sets to 1e-2.
-        ext (str or Extrapolation, optional): Controls the extrapolation
+        extrapolation (str or Extrapolation, optional): Controls the extrapolation
             mode for elements outside the domain range.
 
-            * If ext=None default method defined in the fd object is used.
-            * If ext='extrapolation' or Extrapolation.extrapolation uses
+            * If extrapolation=None default method defined in the fd object is used.
+            * If extrapolation='extrapolation' or Extrapolation.extrapolation uses
                 the extrapolated values by the basis.
-            * If ext='periodic' or Extrapolation.periodic extends the
+            * If extrapolation='periodic' or Extrapolation.periodic extends the
                 domain range periodically.
-            * If ext='const' or Extrapolation.const uses the boundary
+            * If extrapolation='const' or Extrapolation.const uses the boundary
                 value
-            * If ext='slice' or Extrapolation.slice avoids extrapolation
+            * If extrapolation='slice' or Extrapolation.slice avoids extrapolation
                 restricting the domain.
         step_size (int or float, optional): Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see [RS05-7-9-1]_.
@@ -208,15 +212,10 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext=None, step_size=1,
             passed it calls numpy.linspace with bounds equal to the ones defined
             in fd.domain_range and the number of points the maximum
             between 201 and 10 times the number of basis plus 1.
-        shifts_array (bool, optional): If True returns an array with the
-            shifts instead of a :class:`FDataBasis` with the registered
-            curves. Default sets to False.
         **kwargs: Keyword arguments to be passed to :meth:`from_data`.
 
     Returns:
-        :class:`FDataBasis` or :class:`ndarray`: A :class:`FDataBasis` object with
-        the curves registered or if shifts_array is True a :class:`ndarray`
-        with the shifts.
+        :class:`ndarray`: a :class:`ndarray` with the shifts.
 
     Raises:
         ValueError: If the initial array has different length than the
@@ -250,10 +249,10 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext=None, step_size=1,
         nfine = len(tfine)
         tfine = numpy.asarray(tfine)
 
-    if ext is None:
+    if extrapolation is None:
         extrapolation = fd.extrapolation
     else:
-        extrapolation = Extrapolation(ext)
+        extrapolation = Extrapolation(extrapolation)
 
     # Auxiliar arrays to avoid multiple memory allocations
     delta_aux = numpy.empty(fd.nsamples)
@@ -296,7 +295,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext=None, step_size=1,
             d2_regsse = scipy.integrate.trapz(numpy.square(D1x), tfine, axis=1)
 
         # Computes the new values shifted
-        x = fd.evaluate_shifted(tfine, delta, ext=extrapolation)
+        x = fd.evaluate_shifted(tfine, delta, extrapolation=extrapolation)
         x.mean(axis=0, out=tfine_aux)
 
         # Calculates x - mean
@@ -314,18 +313,93 @@ def shift_registration(fd, maxiter=5, tol=1e-2, ext=None, step_size=1,
         max_diff = numpy.abs(delta_aux, out=delta_aux).max()
         iter += 1
 
-    # If shifts_array is True returns the delta array
-    if shifts_array:
-        return delta
+
+    return delta
+
+
+def shift_registration(fd, maxiter=5, tol=1e-2, extrapolation=None, step_size=1,
+                       initial=None, tfine=None, **kwargs):
+    r"""Perform a shift registration of the curves.
+
+        Realizes a registration of the curves, using shift aligment, as is
+        defined in [RS05-7-2]_. Calculates :math:`\delta_{i}` for each sample
+        such that :math:`x_i(t + \delta_{i})` minimizes the least squares
+        criterion:
+
+        .. math::
+            \text{REGSSE} = \sum_{i=1}^{N} \int_{\mathcal{T}}
+            [x_i(t + \delta_i) - \hat\mu(t)]^2 ds
+
+        Estimates the shift parameter :math:`\delta_i` iteratively by
+        using a modified Newton-Raphson algorithm, updating the mean
+        in each iteration, as is described in detail in [RS05-7-9-1]_.
+
+    Args:
+        fd (:class:`FDataBasis` or :class:`FDataGrid`): Functional data object.
+        maxiter (int, optional): Maximun number of iterations.
+            Defaults to 5.
+        tol (float, optional): Tolerance allowable. The process will stop if
+            :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
+            Default sets to 1e-2.
+        extrapolation (str or Extrapolation, optional): Controls the extrapolation
+            mode for elements outside the domain range.
+
+            * If extrapolation=None default method defined in the fd object is used.
+            * If extrapolation='extrapolation' or Extrapolation.extrapolation uses
+                the extrapolated values by the basis.
+            * If extrapolation='periodic' or Extrapolation.periodic extends the
+                domain range periodically.
+            * If extrapolation='const' or Extrapolation.const uses the boundary
+                value
+            * If extrapolation='slice' or Extrapolation.slice avoids extrapolation
+                restricting the domain.
+        step_size (int or float, optional): Parameter to adjust the rate of
+            convergence in the Newton-Raphson algorithm, see [RS05-7-9-1]_.
+            Defaults to 1.
+        initial (array_like, optional): Initial estimation of shifts.
+            Default uses a list of zeros for the initial shifts.
+        tfine (array_like, optional): Set of points where the
+            functions are evaluated to obtain the discrete
+            representation of the object to integrate. If an None is
+            passed it calls numpy.linspace with bounds equal to the ones defined
+            in fd.domain_range and the number of points the maximum
+            between 201 and 10 times the number of basis plus 1.
+        shifts_array (bool, optional): If True returns an array with the
+            shifts instead of a :class:`FDataBasis` with the registered
+            curves. Default sets to False.
+        **kwargs: Keyword arguments to be passed to :meth:`from_data`.
+
+    Returns:
+        :class:`FDataBasis` or :class:`ndarray`: A :class:`FDataBasis` object with
+        the curves registered or if shifts_array is True a :class:`ndarray`
+        with the shifts.
+
+    Raises:
+        ValueError: If the initial array has different length than the
+            number of samples.
+
+    References:
+        ..  [RS05-7-2] Ramsay, J., Silverman, B. W. (2005). Shift
+            registration. In *Functional Data Analysis* (pp. 129-132).
+            Springer.
+        ..  [RS05-7-9-1] Ramsay, J., Silverman, B. W. (2005). Shift
+            registration by the Newton-Raphson algorithm. In *Functional
+            Data Analysis* (pp. 142-144). Springer.
+    """
+
+    delta = shift_registration_deltas(fd, maxiter=maxiter, tol=tol,
+                                      extrapolation=extrapolation,
+                                      step_size=step_size, initial=initial,
+                                      tfine=tfine, **kwargs)
+
 
     # Computes the values with the final shift to construct the FDataBasis
-    return fd.shift(delta, ext=ext, tfine=tfine, **kwargs)
+    return fd.shift(delta, extrapolation=extrapolation, tfine=tfine, **kwargs)
 
 
-def landmark_shift(fd, landmarks, location=None, ext=None, tfine=None,
-                   shifts_array=False, **kwargs):
+def landmark_shift_deltas(fd, landmarks, location=None):
     r"""Perform a shift registration of the curves to align the landmarks at
-        the same mark time.
+        the same mark time. Returns the corresponding shifts.
 
         Args:
             fd (:class:`FDataBasis` or :class:`FDataGrid`): Functional data object.
@@ -339,29 +413,9 @@ def landmark_shift(fd, landmarks, location=None, ext=None, tfine=None,
                 By default it will be used as location :math:`\frac{1}{2}(max(
                 \text{landmarks})+ min(\text{landmarks}))` wich minimizes the
                 max shift.
-            ext (str or Extrapolation, optional): Controls the extrapolation
-                mode for elements outside the domain range.
 
-                * If ext=None default method defined in the fd object is used.
-                * If ext='extrapolation' or Extrapolation.extrapolation uses
-                    the extrapolated values by the basis.
-                * If ext='periodic' or Extrapolation.periodic extends the
-                    domain range periodically.
-                * If ext='const' or Extrapolation.const uses the boundary
-                    value
-                * If ext='slice' or Extrapolation.slice avoids extrapolation
-                    restricting the domain.
-                The default value is 'default'.
-            tfine (array_like, optional): Set of points where the
-                functions are evaluated to obtain the discrete
-                representation of the object to integrate. If an empty list is
-                passed it calls numpy.linspace with bounds equal to the ones defined
-                in fd.domain_range and the number of points the maximum
-                between 201 and 10 times the number of basis plus 1.
-            shifts_array (bool, optional): If True returns an array with the
-                shifts instead of a :class:`FDataBasis` with the registered
-                curves. Default sets to False.
-            **kwargs: Keyword arguments to be passed to :meth:`from_data`.
+        Returns:
+            :class: `ndarray`: Array containing the corresponding shifts.
     """
 
     if len(landmarks) != fd.nsamples:
@@ -384,7 +438,53 @@ def landmark_shift(fd, landmarks, location=None, ext=None, tfine=None,
 
     shifts = landmarks - p
 
-    if shifts_array:
-        return shifts
 
-    return fd.shift(shifts, ext=ext, tfine=tfine, **kwargs)
+    return shifts
+
+
+def landmark_shift(fd, landmarks, location=None, extrapolation=None, tfine=None,
+                   **kwargs):
+    r"""Perform a shift registration of the curves to align the landmarks at
+        the same mark time.
+
+        Args:
+            fd (:class:`FDataBasis` or :class:`FDataGrid`): Functional data object.
+            landmarks (array_like): List with the landmarks of the samples.
+            location (numeric or callable, optional): Defines where
+                the landmarks will be alligned. If a numeric value is passed the
+                landmarks will be alligned to it. In case of a callable is
+                passed the location will be the result of the the call, the
+                function should be accept as an unique parameter a numpy array
+                with the list of landmarks.
+                By default it will be used as location :math:`\frac{1}{2}(max(
+                \text{landmarks})+ min(\text{landmarks}))` wich minimizes the
+                max shift.
+            extrapolation (str or Extrapolation, optional): Controls the extrapolation
+                mode for elements outside the domain range.
+
+                * If extrapolation=None default method defined in the fd object is used.
+                * If extrapolation='extrapolation' or Extrapolation.extrapolation uses
+                    the extrapolated values by the basis.
+                * If extrapolation='periodic' or Extrapolation.periodic extends the
+                    domain range periodically.
+                * If extrapolation='const' or Extrapolation.const uses the boundary
+                    value
+                * If extrapolation='slice' or Extrapolation.slice avoids extrapolation
+                    restricting the domain.
+                The default value is 'default'.
+            tfine (array_like, optional): Set of points where the
+                functions are evaluated to obtain the discrete
+                representation of the object to integrate. If an empty list is
+                passed it calls numpy.linspace with bounds equal to the ones
+                defined in fd.domain_range and the number of points the maximum
+                between 201 and 10 times the number of basis plus 1.
+            shifts_array (bool, optional): If True returns an array with the
+                shifts instead of a :class:`FDataBasis` with the registered
+                curves. Default sets to False.
+            **kwargs: Keyword arguments to be passed to :meth:`from_data`.
+    """
+
+
+    shifts = landmark_shift_deltas(fd, landmarks, location=location)
+
+    return fd.shift(shifts, extrapolation=extrapolation, tfine=tfine, **kwargs)

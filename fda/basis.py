@@ -1345,7 +1345,7 @@ class FDataBasis:
 
         return res_matrix
 
-    def evaluate_shifted(self, eval_points, delta, derivative=0, ext=None):
+    def evaluate_shifted(self, eval_points, delta, derivative=0, extrapolation=None):
         """Evaluate the object or its derivatives at a list of values with a
         shift for each sample.
 
@@ -1362,18 +1362,19 @@ class FDataBasis:
             delta (array_like or numeric): List of shifts for each function or
                 an scalar.
             derivative (int, optional): Order of the derivative. Defaults to 0.
-            ext (str or Extrapolation, optional): Controls the extrapolation
+            extrapolation (str or Extrapolation, optional): Controls the extrapolation
                 mode for elements outside the domain range.
 
-                * If ext=None default method defined in the fd object is used.
-                * If ext='extrapolation' or Extrapolation.extrapolation uses
+                * If extrapolation=None default method defined in the fd object
+                    is used.
+                * If extrapolation='extrapolation' or Extrapolation.extrapolation uses
                     the extrapolated values by the basis.
-                * If ext='periodic' or Extrapolation.periodic extends the
-                    domain range periodically.
-                * If ext='const' or Extrapolation.const uses the boundary
-                    value
-                * If ext='slice' or Extrapolation.slice avoids extrapolation
-                    restricting the domain.
+                * If extrapolation='periodic' or Extrapolation.periodic extends
+                    the domain range periodically.
+                * If extrapolation='const' or Extrapolation.const uses the
+                    boundary value
+                * If extrapolation='slice' or Extrapolation.slice avoids
+                    extrapolation restricting the domain.
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
             function at the values specified in eval_points with the
@@ -1388,10 +1389,10 @@ class FDataBasis:
                              f"be equal than the number of samples "
                              f"({self.nsamples}).")
 
-        if ext is None:
+        if extrapolation is None:
             extrapolation = self.extrapolation
         else:
-            extrapolation = Extrapolation(ext)
+            extrapolation = Extrapolation(extrapolation)
 
         res_matrix = numpy.empty((self.nsamples, eval_points.shape[0]))
         shifted_points = numpy.empty(len(eval_points))
@@ -1423,24 +1424,24 @@ class FDataBasis:
 
         return res_matrix
 
-    def shift(self, shifts, ext=None, tfine=None, **kwargs):
+    def shift(self, shifts, extrapolation=None, tfine=None, **kwargs):
         r"""Perform a shift of the curves.
 
         Args:
             shifts (array_like or numeric): List with the the shift
                 corresponding for each sample or numeric with the shift to apply
                 to all samples.
-            ext (str or Extrapolation, optional): Controls the extrapolation
+            extrapolation (str or Extrapolation, optional): Controls the extrapolation
                 mode for elements outside the domain range.
 
-                * If ext=None method defined in the fd object is used.
-                * If ext='extrapolation' or Extrapolation.extrapolation uses
+                * If extrapolation=None method defined in the fd object is used.
+                * If extrapolation='extrapolation' or Extrapolation.extrapolation uses
                     the extrapolated values by the basis.
-                * If ext='periodic' or Extrapolation.periodic extends the
+                * If extrapolation='periodic' or Extrapolation.periodic extends the
                     domain range periodically.
-                * If ext='const' or Extrapolation.const uses the boundary
+                * If extrapolation='const' or Extrapolation.const uses the boundary
                     value
-                * If ext='slice' or Extrapolation.slice avoids extrapolation
+                * If extrapolation='slice' or Extrapolation.slice avoids extrapolation
                     restricting the domain.
             tfine (array_like, optional): Set of points where the
                 functions are evaluated to obtain the discrete
@@ -1476,10 +1477,10 @@ class FDataBasis:
                              f"({self.nsamples})")
 
 
-        if ext is None:
+        if extrapolation is None:
             extrapolation = self.extrapolation
         else:
-            extrapolation = Extrapolation(ext)
+            extrapolation = Extrapolation(extrapolation)
 
 
         if extrapolation is Extrapolation.slice:
@@ -1491,7 +1492,7 @@ class FDataBasis:
             domain = self.domain_range
 
         # Matrix of shifted values
-        _data_matrix = self.evaluate_shifted(tfine, shifts, ext=extrapolation)
+        _data_matrix = self.evaluate_shifted(tfine, shifts, extrapolation=extrapolation)
         _basis = self.basis.rescale(domain)
 
         return FDataBasis.from_data(_data_matrix, tfine, _basis, **kwargs)

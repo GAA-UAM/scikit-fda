@@ -11,31 +11,6 @@ import numpy
 from scipy.interpolate import (PchipInterpolator, UnivariateSpline,
                                RectBivariateSpline, RegularGridInterpolator)
 
-## TODO
-# Move this function to a common module to avoid repeat code
-def _list_of_arrays(original_array):
-    """Convert to a list of arrays.
-
-    If the original list is one-dimensional (e.g. [1, 2, 3]), return list to
-    array (in this case [array([1, 2, 3])]).
-
-    If the original list is two-dimensional (e.g. [[1, 2, 3], [4, 5]]), return
-    a list containing other one-dimensional arrays (in this case
-    [array([1, 2, 3]), array([4, 5, 6])]).
-
-    In any other case the behaviour is unespecified.
-
-    """
-    new_array = numpy.array([numpy.asarray(i) for i in
-                             numpy.atleast_1d(original_array)])
-
-    # Special case: Only one array, expand dimension
-    if len(new_array.shape) == 1 and not any(isinstance(s, numpy.ndarray)
-                                             for s in new_array):
-        new_array = numpy.atleast_2d(new_array)
-
-    return list(new_array)
-
 
 class GridInterpolator:
 
@@ -129,9 +104,18 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
             monotone = False
 
         # Evaluator of splines called in evaluate
-        self._spline_evaluator = lambda spl, t, der: spl(t, der)
 
-        self._process_derivative = lambda d: d
+        def _spline_evaluator_1_m(spl, t, der):
+
+            return spl(t, der)
+
+        def _process_derivative_1_m(derivative):
+
+            return derivative
+
+        self._spline_evaluator = _spline_evaluator_1_m
+
+        self._process_derivative = _process_derivative_1_m
 
         sample_points = sample_points[0]
 
@@ -160,12 +144,11 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
                              f"Must be an integer greater than 0 and lower or "
                              f"equal than 5.")
 
-        # Evaluator of splines called in evaluate
-        self._spline_evaluator = lambda spl, t, der: spl(t[:,0], t[:,1],
-                                                         dx=der[0], dy=der[1],
-                                                         grid=False)
+        def _spline_evaluator_2_m(spl, t, der):
 
-        def proc_derivate(derivative):
+            return spl(t[:,0], t[:,1], dx=der[0], dy=der[1], grid=False)
+
+        def _process_derivative_2_m(derivative):
             if numpy.isscalar(derivative):
                 derivative = 2*[derivative]
             elif len(derivative) != 2:
@@ -174,7 +157,9 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
 
             return derivative
 
-        self._process_derivative = proc_derivate
+        # Evaluator of splines called in evaluate
+        self._spline_evaluator = _spline_evaluator_2_m
+        self._process_derivative = _process_derivative_2_m
 
         # Matrix of splines
         spline = numpy.empty((self._nsamples, self._ndim_image), dtype=object)
@@ -184,7 +169,7 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
                 spline[i,j] = RectBivariateSpline(sample_points[0],
                                                   sample_points[1],
                                                   data_matrix[i,:,:,j],
-                                                  kx=kx,ky=ky, s=s)
+                                                  kx=kx, ky=ky, s=s)
 
         return spline
 
@@ -199,21 +184,24 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
             raise ValueError("interpolation order should be 0 (nearest) or 1 "
                              "(linear).")
 
-        # Method to process derrivative argument
-        def proc_derivate(derivative):
+        def _process_derivative_n_m(derivative):
             if derivative != 0:
                 raise ValueError("derivates not suported for functional data "
                                  " with domain dimension greater than 2.")
 
             return derivative
 
-        self._process_derivative = proc_derivate
+        def _spline_evaluator_n_m(spl, t, derivative):
+
+            return spl(t)
+
+        # Method to process derivative argument
+        self._process_derivative = _process_derivative_n_m
 
         # Evaluator of splines called in evaluate
-        self._spline_evaluator = lambda spl, t, derivative: spl(t)
+        self._spline_evaluator = _spline_evaluator_n_m
 
         spline = numpy.empty((self._nsamples, self._ndim_image), dtype=object)
-
 
         for i in range(self._nsamples):
             for j in range(self._ndim_image):
@@ -235,7 +223,6 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
 
         return self.evaluate_spline(t, derivative)
 
-
     def evaluate_spline(self, t, derivative=0):
 
         if self._ndim_image == 1:
@@ -252,12 +239,11 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
         if self._ndim_image != 1 or self._keepdims:
             res = res.reshape(self._nsamples, t.shape[0], self._ndim_image)
 
-
         return res
 
     def evaluate_grid(self, axes, derivative=0):
 
-        axes = _list_of_arrays(axes)
+        #axes = _list_of_arrays(axes)
         lengths = [len(ax) for ax in axes]
 
         if len(axes) != self._ndim_domain:
@@ -283,6 +269,7 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
 
         if self._ndim_image == 1 and not self._keepdims:
             shape = (self._nsamples, len(t[0]))
+
 
             evaluator = lambda t, spl: self._spline_evaluator(
                 spl[0], t, derivative)

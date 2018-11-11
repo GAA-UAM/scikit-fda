@@ -257,11 +257,8 @@ class Basis(ABC):
             Multiplication for FDataBasis object.
         """
 
-        if self.domain_range == other.domain_range:
+        if self.domain_range != other.domain_range:
             raise ValueError("Ranges are not equal.")
-
-        if isinstance(self, Constant) and isinstance(other, Constant):
-            return Constant(self.domain_range)
 
         if isinstance(self, Constant):
             return other
@@ -329,7 +326,7 @@ class Constant(Basis):
 
     Examples:
         Defines a contant base over the interval :math:`[0, 5]` consisting
-        on the constant function on :math:`[0, 5]`.
+        on the constant function 1 on :math:`[0, 5]`.
 
         >>> bs_cons = Constant((0,5))
 
@@ -375,22 +372,7 @@ class Constant(Basis):
             eval_points.
 
         """
-        # Initialise empty matrix
-        mat = numpy.zeros((self.nbasis, len(eval_points)))
-
-        # For each basis computes its value for each evaluation
-        if derivative == 0:
-            for i in range(self.nbasis):
-                mat[i] = eval_points ** i
-        else:
-            for i in range(self.nbasis):
-                if derivative <= i:
-                    factor = i
-                    for j in range(2, derivative + 1):
-                        factor *= (i - j + 1)
-                    mat[i] = factor * eval_points ** (i - derivative)
-
-        return mat
+        return numpy.ones((1, len(eval_points))) if derivative == 0 else numpy.zeros((1, len(eval_points)))
 
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
@@ -421,8 +403,8 @@ class Constant(Basis):
             numpy.array: Penalty matrix.
 
         Examples:
-            >>> Constant().penalty(0)
-            array([[1.]])
+            >>> Constant((0,5)).penalty(0)
+            array([[5]])
             >>> Constant().penalty(1)
             array([[0.]])
 
@@ -435,53 +417,8 @@ class Constant(Basis):
         if derivative_degree is None:
             return self._numerical_penalty(coefficients)
 
-        integration_domain = self.domain_range
-
-        # initialize penalty matrix as all zeros
-        penalty_matrix = numpy.zeros((self.nbasis, self.nbasis))
-        # iterate over the cartesion product of the basis system with itself
-        for ibasis in range(self.nbasis):
-            # notice that the index ibasis it is also the exponent of the
-            # monomial
-            # ifac is the factor resulting of deriving the monomial as many
-            # times as indicates de differential operator
-            if derivative_degree > 0:
-                ifac = ibasis
-                for k in range(2, derivative_degree + 1):
-                    ifac *= ibasis - k + 1
-            else:
-                ifac = 1
-
-            for jbasis in range(self.nbasis):
-                # notice that the index jbasis it is also the exponent of the
-                # monomial
-                # jfac is the factor resulting of deriving the monomial as
-                # many times as indicates de differential operator
-                if derivative_degree > 0:
-                    jfac = jbasis
-                    for k in range(2, derivative_degree + 1):
-                        jfac *= jbasis - k + 1
-                else:
-                    jfac = 1
-
-                # if any of the two monomial has lower degree than the order of
-                # the derivative indicated by the differential operator that
-                # factor equals 0, so no calculation are needed
-                if (ibasis >= derivative_degree
-                        and jbasis >= derivative_degree):
-                    # Calculates exactly the result of the integral
-                    # Exponent after applying the differential operator and
-                    # integrating
-                    ipow = ibasis + jbasis - 2 * derivative_degree + 1
-                    # coefficient after integrating
-                    penalty_matrix[ibasis, jbasis] = (
-                            (integration_domain[1] ** ipow
-                             - integration_domain[0] ** ipow)
-                            * ifac * jfac / ipow)
-                    penalty_matrix[jbasis, ibasis] = penalty_matrix[ibasis,
-                                                                    jbasis]
-
-        return penalty_matrix
+        return numpy.full((1, 1), (self.domain_range[1] - self.domain_range[0]))\
+            if derivative_degree == 0 else numpy.zeros((1, 1))
 
 
 class Monomial(Basis):

@@ -12,10 +12,10 @@ import matplotlib.pyplot
 import numpy
 import scipy
 import scipy.stats.mstats
-from scipy.interpolate import (PchipInterpolator, UnivariateSpline,
-                               RectBivariateSpline, RegularGridInterpolator)
+
 
 from . import basis as fdbasis
+from .grid_interpolation import GridSplineInterpolator
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -43,242 +43,6 @@ def _list_of_arrays(original_array):
         new_array = numpy.atleast_2d(new_array)
 
     return list(new_array)
-
-
-class _GridInterpolator:
-
-    def __init__(self, sample_points, data_matrix, ndim_domain, ndim_image, k=1,
-                 s=0., monotone=False, keepdims=False):
-
-        self._ndim_image = ndim_image
-        self._ndim_domain = ndim_domain
-        self._nsamples = data_matrix.shape[0]
-        self._keepdims = keepdims
-
-        if ndim_domain == 1:
-            self._splines = self._construct_spline_1_m(sample_points,
-                                                       data_matrix,
-                                                       k, s, monotone)
-        elif monotone:
-            raise ValueError("Monotone interpolation is only supported with "
-                             "domain dimension equal to 1.")
-
-        elif ndim_domain == 2:
-            self._splines = self._construct_spline_2_m(sample_points,
-                                                       data_matrix, k, s)
-
-        elif s != 0:
-            raise ValueError("Smoothing interpolation is only supported with "
-                             "domain dimension up to 2, s should be 0.")
-
-        else:
-            self._splines = self._construct_spline_n_m(sample_points,
-                                                       data_matrix, k)
-
-    def _construct_spline_1_m(self, sample_points, data_matrix, k, s, monotone):
-
-        if k > 5 or k < 1:
-            raise ValueError(f"Invalid degree of interpolation ({k}). Must be "
-                             f"an integer greater than 0 and lower or "
-                             f"equal than 5.")
-
-        if monotone and s != 0:
-            raise ValueError("Smoothing interpolation is not supported with "
-                             "monotone interpolation")
-
-        if monotone and (k == 2 or k == 4):
-            raise ValueError(f"monotone interpolation of degree {k}"
-                             f"not supported.")
-
-        # Monotone interpolation of degree 1 is performed with linear spline
-        if monotone and k == 1: monotone = False
-
-        # Evaluator of splines called in evaluate
-        self._spline_evaluator = lambda spl, t, der: spl(t, der)
-
-        self._process_derivative = lambda d: d
-
-        sample_points = sample_points[0]
-
-        if monotone:
-            constructor =  lambda data: PchipInterpolator(sample_points, data)
-
-        else:
-            constructor = lambda data: UnivariateSpline(sample_points, data,
-                                                        s=s, k=k)
-
-        return numpy.apply_along_axis(constructor, 1, data_matrix)
-
-    def _construct_spline_2_m(self, sample_points, data_matrix, k, s):
-
-
-        if numpy.isscalar(k):
-            kx = ky = k
-        elif len(k) != 2:
-            raise ValueError("k should be numeric or a tuple of length 2.")
-        else:
-            kx = k[0]
-            ky = k[1]
-
-        if kx > 5 or kx <= 0 or ky > 5 or ky <= 0:
-            raise ValueError(f"Invalid degree of interpolation ({kx},{ky}). "
-                             f"Must be an integer greater than 0 and lower or "
-                             f"equal than 5.")
-
-        # Evaluator of splines called in evaluate
-        self._spline_evaluator = lambda spl, t, der: spl(t[:,0], t[:,1],
-                                                         dx=der[0], dy=der[1],
-                                                         grid=False)
-
-        def proc_derivate(derivative):
-            if numpy.isscalar(derivative):
-                derivative = 2*[derivative]
-            elif len(derivative) != 2:
-                raise ValueError("derivative should be a numeric value "
-                                 "or a tuple of length 2 with (dx,dy).")
-
-            return derivative
-
-        self._process_derivative = proc_derivate
-
-        # Matrix of splines
-        spline = numpy.empty((self._nsamples, self._ndim_image), dtype=object)
-
-        for i in range(self._nsamples):
-            for j in range(self._ndim_image):
-                spline[i,j] = RectBivariateSpline(sample_points[0],
-                                                  sample_points[1],
-                                                  data_matrix[i,:,:,j],
-                                                  kx=kx,ky=ky, s=s)
-
-        return spline
-
-    def _construct_spline_n_m(self, sample_points, data_matrix, k):
-
-        # Parses method of interpolation
-        if k == 0:
-            method = 'nearest'
-        elif k == 1:
-            method = 'linear'
-        else:
-            raise ValueError("interpolation order should be 0 (nearest) or 1 "
-                             "(linear).")
-
-        # Method to process derrivative argument
-        def proc_derivate(derivative):
-            if derivative != 0:
-                raise ValueError("derivates not suported for functional data "
-                                 " with domain dimension greater than 2.")
-
-            return derivative
-
-        self._process_derivative = proc_derivate
-
-        # Evaluator of splines called in evaluate
-        self._spline_evaluator = lambda spl, t, derivative: spl(t)
-
-        spline = numpy.empty((self._nsamples, self._ndim_image), dtype=object)
-
-
-        for i in range(self._nsamples):
-            for j in range(self._ndim_image):
-                spline[i,j] = RegularGridInterpolator(
-                    sample_points, data_matrix[i,...,j], method, False)
-
-        return spline
-
-    def evaluate(self, t, derivative=0, grid=False):
-
-        derivative = self._process_derivative(derivative)
-        t = numpy.asarray(t)
-
-        if grid:
-            return self.evaluate_grid(t, derivative)
-
-        if self._ndim_image == 1 and len(t.shape) == 2 or len(t.shape) == 3:
-            return self.evaluate_composed(t, derivative)
-
-        return self.evaluate_spline(t, derivative)
-
-
-    def evaluate_spline(self, t, derivative=0):
-
-        if self._ndim_image == 1:
-            evaluator = lambda spl: self._spline_evaluator(spl[0], t,
-                                                           derivative)
-
-        else:
-            evaluator = lambda spl_m: numpy.dstack(
-                self._spline_evaluator(spl, t, derivative) for spl in spl_m
-                ).flatten()
-
-        res = numpy.apply_along_axis(evaluator, 1, self._splines)
-
-        if self._ndim_image != 1 or self._keepdims:
-            res = res.reshape(self._nsamples, t.shape[0], self._ndim_image)
-
-
-        return res
-
-    def evaluate_grid(self, axes, derivative=0):
-
-        axes = _list_of_arrays(axes)
-        lengths = [len(ax) for ax in axes]
-
-        if len(axes) != self._ndim_domain:
-            raise ValueError(f"Length of axes should be {self._ndim_domain}")
-
-        t = numpy.meshgrid(*axes, indexing='ij')
-        t = numpy.array(t).reshape(self._ndim_domain, numpy.prod(lengths)).T
-
-
-        res = self.evaluate_spline(t, derivative)
-
-
-        shape = [self._nsamples] + lengths
-        if self._ndim_image != 1 or self._keepdims:
-            shape += [self._ndim_image]
-
-        return res.reshape(shape)
-
-    def evaluate_composed(self, t, derivative=0):
-
-        if t.shape[0] != self._nsamples:
-            raise ValueError("t should be a list of length 'nsamples'.")
-
-        if self._ndim_image == 1 and not self._keepdims:
-            shape = (self._nsamples, len(t[0]))
-
-            evaluator = lambda t, spl: self._spline_evaluator(
-                spl[0], t, derivative)
-
-        else:
-            shape = (self._nsamples, len(t[0]), self._ndim_image)
-
-            evaluator = lambda t, spl_m: np.array(
-                [self._spline_evaluator(spl, t, derivative) for spl in spl_m])
-
-        res = numpy.empty(shape)
-
-        for i in range(self._nsamples):
-            res[i] = evaluator(t[i], self._splines[i])
-
-
-        return res
-
-    def evaluate_shifted(self, eval_points, delta, derivative=0):
-
-        t = numpy.outer(numpy.ones(self._nsamples), eval_points)
-
-        t += numpy.asarray(delta).T
-
-        return self.evaluate_composed(t, self._process_derivative(derivative))
-
-
-    def __call__(self, t, derivative=0, grid=False):
-        return self.evaluate(t, derivative, grid)
-
-
 
 
 class FDataGrid:
@@ -349,8 +113,7 @@ class FDataGrid:
 
     def __init__(self, data_matrix, sample_points=None,
                  sample_range=None, dataset_label='Data set',
-                 axes_labels=None, interpolation_order=1,
-                 smoothness_parameter=0., monotone=False, keepdims=False):
+                 axes_labels=None, interpolator=None, keepdims=False):
         """Construct a FDataGrid object.
 
         Args:
@@ -422,11 +185,9 @@ class FDataGrid:
 
         self.dataset_label = dataset_label
         self.axes_labels = axes_labels
-        self._interpolator = None
-        self.interpolation_order = interpolation_order
-        self.smoothness_parameter = smoothness_parameter
-        self.monotone = monotone
         self.keepdims = keepdims
+        self.interpolator = interpolator
+        self._interpolator_evaluator = None
 
         return
 
@@ -447,7 +208,7 @@ class FDataGrid:
         return FDataGrid(self.data_matrix.round(decimals),
                          self.sample_points,
                          self.sample_range, self.dataset_label,
-                         self.axes_labels)
+                         self.axes_labels, self.interpolator, self.keepdims)
 
     @property
     def ndim_domain(self):
@@ -522,39 +283,28 @@ class FDataGrid:
         return self.data_matrix.shape
 
     @property
-    def interpolator(self):
+    def _evaluator(self):
 
-        if self._interpolator is None:
-            self._interpolator = _GridInterpolator(self.sample_points,
-                                                  self.data_matrix,
-                                                  self.ndim_domain,
-                                                  self.ndim_image,
-                                                  self.interpolation_order,
-                                                  self.smoothness_parameter,
-                                                  self.monotone, self.keepdims)
+        if self._interpolator_evaluator is not None:
+            return self._interpolator_evaluator
+
+        if self.interpolator is None:
+            # By default a Linear Spline Interpolator is used
+            self.interpolator = GridSplineInterpolator()
+
+        self._interpolator_evaluator = self.interpolator._construct_interpolator(self)
+
+        return self._interpolator_evaluator
 
 
-        return self._interpolator
+    def set_interpolation(self, interpolator):
 
-    def set_interpolation(self, interpolation_order=None,
-                          smoothness_parameter=None, monotone=None,
-                          keepdims=None):
-
-        if interpolation_order is not None:
-            self.interpolation_order =  interpolation_order
-        if smoothness_parameter is not None:
-            self.smoothness_parameter = smoothness_parameter
-        if monotone is not None:
-            self.monotone = monotone
-        if keepdims is not None:
-            self.keepdims = keepdims
-
-        self._interpolator = None
+        self.interpolator = interpolator
 
 
     def evaluate(self, t, derivative=0, grid=False):
 
-        return self.interpolator(t, derivative, grid)
+        return self._evaluator(t, derivative, grid)
 
     def __call__(self, t, derivative=0, grid=False):
         return self.evaluate(t, derivative, grid)
@@ -649,7 +399,8 @@ class FDataGrid:
         dataset_label = "{} - {} derivative".format(self.dataset_label, order)
 
         return FDataGrid(data_matrix, sample_points, self.sample_range,
-                         dataset_label, self.axes_labels)
+                         dataset_label, self.axes_labels, self.interpolator,
+                         self.keepdims)
 
     def __check_same_dimensions(self, other):
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
@@ -681,7 +432,8 @@ class FDataGrid:
         """
         return FDataGrid([numpy.var(self.data_matrix, 0)],
                          self.sample_points, self.sample_range,
-                         self.dataset_label, self.axes_labels)
+                         self.dataset_label, self.axes_labels,
+                         self.interpolator, self.keepdims)
 
     def cov(self):
         """Compute the covariance.
@@ -697,7 +449,8 @@ class FDataGrid:
             numpy.cov(self.data_matrix, rowvar=False)[numpy.newaxis, ...],
             [self.sample_points[0], self.sample_points[0]],
             [self.sample_range[0], self.sample_range[0]],
-            self.dataset_label + ' - covariance')
+            self.dataset_label + ' - covariance', self.interpolator,
+            self.keepdims)
 
     def gmean(self):
         """Compute the geometric mean of all samples in the FDataGrid object.
@@ -710,7 +463,8 @@ class FDataGrid:
         """
         return FDataGrid([scipy.stats.mstats.gmean(self.data_matrix, 0)],
                          self.sample_points, self.sample_range,
-                         self.dataset_label, self.axes_labels)
+                         self.dataset_label, self.axes_labels,
+                         self.interpolator, self.keepdims)
 
     def __add__(self, other):
         """Addition for FDataGrid object.
@@ -728,7 +482,8 @@ class FDataGrid:
 
         return FDataGrid(self.data_matrix + data_matrix,
                          self.sample_points, self.sample_range,
-                         self.dataset_label, self.axes_labels)
+                         self.dataset_label, self.axes_labels,
+                         self.interpolator, self.keepdims)
 
     def __sub__(self, other):
         """Subtraction for FDataGrid object.
@@ -746,7 +501,8 @@ class FDataGrid:
 
         return FDataGrid(self.data_matrix - data_matrix,
                          self.sample_points, self.sample_range,
-                         self.dataset_label, self.axes_labels)
+                         self.dataset_label, self.axes_labels,
+                         self.interpolator, self.keepdims)
 
     def __mul__(self, other):
         """Multiplication for FDataGrid object.
@@ -764,7 +520,8 @@ class FDataGrid:
 
         return FDataGrid(self.data_matrix * data_matrix,
                          self.sample_points, self.sample_range,
-                         self.dataset_label, self.axes_labels)
+                         self.dataset_label, self.axes_labels,
+                         self.interpolator, self.keepdims)
 
     def __truediv__(self, other):
         """Division for FDataGrid object.
@@ -782,7 +539,8 @@ class FDataGrid:
 
         return FDataGrid(self.data_matrix / data_matrix,
                          self.sample_points, self.sample_range,
-                         self.dataset_label, self.axes_labels)
+                         self.dataset_label, self.axes_labels,
+                         self.interpolator, self.keepdims)
 
     def concatenate(self, other):
         """Join samples from a similar FDataGrid object.
@@ -824,7 +582,9 @@ class FDataGrid:
                          self.sample_points,
                          self.sample_range,
                          self.dataset_label,
-                         self.axes_labels)
+                         self.axes_labels,
+                         self.interpolator,
+                         self.keepdims)
 
     def _set_labels(self, ax):
         """Set labels if any.
@@ -986,14 +746,14 @@ class FDataGrid:
             return FDataGrid(self.data_matrix[key],
                              sample_points,
                              self.sample_range, self.dataset_label,
-                             self.axes_labels)
+                             self.axes_labels, self.interpolator, self.keepdims)
         if isinstance(key, int):
             return FDataGrid(self.data_matrix[key:key + 1],
                              self.sample_points,
                              self.sample_range, self.dataset_label,
-                             self.axes_labels)
+                             self.axes_labels, self.interpolator, self.keepdims)
         else:
             return FDataGrid(self.data_matrix[key],
                              self.sample_points,
                              self.sample_range, self.dataset_label,
-                             self.axes_labels)
+                             self.axes_labels, self.interpolator, self.keepdims)

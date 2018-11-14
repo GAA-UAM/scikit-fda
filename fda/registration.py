@@ -10,6 +10,7 @@ import numpy
 import scipy.integrate
 
 
+# TODO: Move extrapolation to their corresponding module
 class Extrapolation(Enum):
     r"""Enum with extrapolation types. Defines the extrapolation mode for
         elements outside the domain range.
@@ -17,7 +18,6 @@ class Extrapolation(Enum):
     extrapolation = "extrapolation" #: The values are extrapolated by evaluate.
     periodic = "periodic" #: Extends the domain range periodically.
     const = "const" #: Uses the boundary value.
-    slice = "slice" #: Avoids extrapolation restricting the domain.
 
 def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
                       *, discretization_points=None):
@@ -169,8 +169,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
 
 
-def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, extrapolation=None,
-                              step_size=1, initial=None,
+def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=None,
+                              extrapolation=None, step_size=1, initial=None,
                               discretization_points=None, **kwargs):
     r"""Perform a shift registration of the curves and return the corresponding
         shifts of each function.
@@ -195,19 +195,14 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, extrapolation=None,
         tol (float, optional): Tolerance allowable. The process will stop if
             :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
             Default sets to 1e-2.
+        restrict_domain (bool, optional): If True restricts the domain to
+            avoid evaluate points outside the domain. Defaults uses the
+            behavior defined in fd, restricting the domain for non-periodic
+            representations.
         extrapolation (str or Extrapolation, optional): Controls the
             extrapolation mode for elements outside the domain range.
-
-            * If extrapolation=None default method defined in the fd object is
-                used.
-            * If extrapolation='extrapolation' or Extrapolation.extrapolation
-                uses the extrapolated values by the basis.
-            * If extrapolation='periodic' or Extrapolation.periodic extends the
-                domain range periodically.
-            * If extrapolation='const' or Extrapolation.const uses the boundary
-                value
-            * If extrapolation='slice' or Extrapolation.slice avoids
-                extrapolation restricting the domain.
+            By default uses the method defined in fd. See extrapolation to
+            more information.
         step_size (int or float, optional): Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see [RS05-7-9-1]_.
             Defaults to 1.
@@ -261,6 +256,10 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, extrapolation=None,
     else:
         extrapolation = Extrapolation(extrapolation)
 
+    if restrict_domain is None:
+        restrict_domain = fd.basis._restrict_domain
+
+
     # Auxiliar arrays to avoid multiple memory allocations
     delta_aux = numpy.empty(fd.nsamples)
     tfine_aux = numpy.empty(nfine)
@@ -277,7 +276,7 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, extrapolation=None,
     iter = 0
 
     # Auxiliar array if the domain will be restricted
-    if extrapolation is Extrapolation.slice:
+    if restrict_domain:
         D1x_tmp = D1x
         tfine_tmp = discretization_points
         tfine_aux_tmp = tfine_aux
@@ -287,7 +286,7 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, extrapolation=None,
     while max_diff > tol and iter < maxiter:
 
         # Updates the limits for non periodic functions ignoring the ends
-        if extrapolation is Extrapolation.slice:
+        if restrict_domain:
             # Calculates the new limits
             a = fd.domain_range[0] - min(numpy.min(delta), 0)
             b = fd.domain_range[1] - max(numpy.max(delta), 0)
@@ -327,8 +326,9 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, extrapolation=None,
     return delta
 
 
-def shift_registration(fd, *, maxiter=5, tol=1e-2, extrapolation=None, step_size=1,
-                       initial=None, discretization_points=None, **kwargs):
+def shift_registration(fd, *, maxiter=5, tol=1e-2, restrict_domain=None,
+                       extrapolation=None, step_size=1, initial=None,
+                       discretization_points=None, **kwargs):
     r"""Perform a shift registration of the curves.
 
         Realizes a registration of the curves, using shift aligment, as is
@@ -345,24 +345,20 @@ def shift_registration(fd, *, maxiter=5, tol=1e-2, extrapolation=None, step_size
         in each iteration, as is described in detail in [RS05-7-9-1]_.
 
     Args:
-        fd (:class:`FDataBasis` or :class:`FDataGrid`): Functional data object.
+        fd (:class:`FData`): Functional data object.
         maxiter (int, optional): Maximun number of iterations.
             Defaults to 5.
         tol (float, optional): Tolerance allowable. The process will stop if
             :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
             Default sets to 1e-2.
-        extrapolation (str or Extrapolation, optional): Controls the extrapolation
-            mode for elements outside the domain range.
-
-            * If extrapolation=None default method defined in the fd object is used.
-            * If extrapolation='extrapolation' or Extrapolation.extrapolation uses
-                the extrapolated values by the basis.
-            * If extrapolation='periodic' or Extrapolation.periodic extends the
-                domain range periodically.
-            * If extrapolation='const' or Extrapolation.const uses the boundary
-                value
-            * If extrapolation='slice' or Extrapolation.slice avoids extrapolation
-                restricting the domain.
+        restrict_domain (bool, optional): If True restricts the domain to
+            avoid evaluate points outside the domain. Defaults uses the
+            behavior defined in fd, restricting the domain for non-periodic
+            representations.
+        extrapolation (str or Extrapolation, optional): Controls the
+            extrapolation mode for elements outside the domain range.
+            By default uses the method defined in fd. See extrapolation to
+            more information.
         step_size (int or float, optional): Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see [RS05-7-9-1]_.
             Defaults to 1.
@@ -374,14 +370,10 @@ def shift_registration(fd, *, maxiter=5, tol=1e-2, extrapolation=None, step_size
             passed it calls numpy.linspace with bounds equal to the ones defined
             in fd.domain_range and the number of points the maximum
             between 201 and 10 times the number of basis plus 1.
-        shifts_array (bool, optional): If True returns an array with the
-            shifts instead of a :class:`FDataBasis` with the registered
-            curves. Default sets to False.
         **kwargs: Keyword arguments to be passed to :meth:`from_data`.
 
     Returns:
-        :class:`FDataBasis` A :class:`FDataBasis` object with
-        the curves registered.
+        :class:`FData` A :class:`FData` object with the curves registered.
 
     Raises:
         ValueError: If the initial array has different length than the
@@ -397,6 +389,7 @@ def shift_registration(fd, *, maxiter=5, tol=1e-2, extrapolation=None, step_size
     """
 
     delta = shift_registration_deltas(fd, maxiter=maxiter, tol=tol,
+                                      restrict_domain=restrict_domain,
                                       extrapolation=extrapolation,
                                       step_size=step_size, initial=initial,
                                       discretization_points=discretization_points,
@@ -404,7 +397,8 @@ def shift_registration(fd, *, maxiter=5, tol=1e-2, extrapolation=None, step_size
 
 
     # Computes the values with the final shift to construct the FDataBasis
-    return fd.shift(delta, extrapolation=extrapolation,
+    return fd.shift(delta, restrict_domain=restrict_domain,
+                    extrapolation=extrapolation,
                     discretization_points=discretization_points, **kwargs)
 
 
@@ -413,7 +407,7 @@ def landmark_shift_deltas(fd, landmarks, location=None):
         the same mark time. Returns the corresponding shifts.
 
         Args:
-            fd (:class:`FDataBasis` or :class:`FDataGrid`): Functional data object.
+            fd (:class:`FData`): Functional data object.
             landmarks (array_like): List with the landmarks of the samples.
             location (numeric or callable, optional): Defines where
                 the landmarks will be alligned. If a numeric value is passed the
@@ -453,8 +447,8 @@ def landmark_shift_deltas(fd, landmarks, location=None):
     return shifts
 
 
-def landmark_shift(fd, landmarks, location=None, *, extrapolation=None,
-                   discretization_points=None, **kwargs):
+def landmark_shift(fd, landmarks, location=None, *, restrict_domain=None,
+                   extrapolation=None, discretization_points=None, **kwargs):
     r"""Perform a shift registration of the curves to align the landmarks at
         the same mark time.
 
@@ -470,35 +464,26 @@ def landmark_shift(fd, landmarks, location=None, *, extrapolation=None,
                 By default it will be used as location :math:`\frac{1}{2}(max(
                 \text{landmarks})+ min(\text{landmarks}))` wich minimizes the
                 max shift.
+            restrict_domain (bool, optional): If True restricts the domain to
+                avoid evaluate points outside the domain. Defaults uses the
+                behavior defined in fd, restricting the domain for non-periodic
+                representations.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range.
-
-                * If extrapolation=None default method defined in the fd object
-                    is used.
-                * If extrapolation='extrapolation' or
-                    Extrapolation.extrapolation uses the extrapolated values by
-                    the basis.
-                * If extrapolation='periodic' or Extrapolation.periodic extends
-                    the domain range periodically.
-                * If extrapolation='const' or Extrapolation.const uses the
-                    boundary value
-                * If extrapolation='slice' or Extrapolation.slice avoids
-                    extrapolation restricting the domain.
-                The default value is 'default'.
-            discretization_points (array_like, optional): Set of points where the
-                functions are evaluated to obtain the discrete
+                By default uses the method defined in fd. See extrapolation to
+                more information.
+            discretization_points (array_like, optional): Set of points where
+                the functions are evaluated to obtain the discrete
                 representation of the object to integrate. If an empty list is
                 passed it calls numpy.linspace with bounds equal to the ones
                 defined in fd.domain_range and the number of points the maximum
                 between 201 and 10 times the number of basis plus 1.
-            shifts_array (bool, optional): If True returns an array with the
-                shifts instead of a :class:`FDataBasis` with the registered
-                curves. Default sets to False.
             **kwargs: Keyword arguments to be passed to :meth:`from_data`.
     """
 
 
     shifts = landmark_shift_deltas(fd, landmarks, location=location)
 
-    return fd.shift(shifts, extrapolation=extrapolation,
+    return fd.shift(shifts, restrict_domain=restrict_domain,
+                    extrapolation=extrapolation,
                     discretization_points=discretization_points, **kwargs)

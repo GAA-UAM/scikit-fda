@@ -65,7 +65,8 @@ class Basis(ABC):
         self.domain_range = domain_range
         self.nbasis = nbasis
         self._drop_index_lst = []
-        self.extrapolation = Extrapolation.slice
+        self.extrapolation = Extrapolation.extrapolation
+        self._restrict_domain = True
 
         super().__init__()
 
@@ -871,6 +872,7 @@ class Fourier(Basis):
         super().__init__(domain_range, nbasis)
 
         self.extrapolation = Extrapolation.extrapolation
+        self._restrict_domain = False
 
     def _compute_matrix(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
@@ -1363,19 +1365,10 @@ class FDataBasis:
             delta (array_like or numeric): List of shifts for each function or
                 an scalar.
             derivative (int, optional): Order of the derivative. Defaults to 0.
-            extrapolation (str or Extrapolation, optional): Controls the extrapolation
-                mode for elements outside the domain range.
-
-                * If extrapolation=None default method defined in the fd object
-                    is used.
-                * If extrapolation='extrapolation' or Extrapolation.extrapolation uses
-                    the extrapolated values by the basis.
-                * If extrapolation='periodic' or Extrapolation.periodic extends
-                    the domain range periodically.
-                * If extrapolation='const' or Extrapolation.const uses the
-                    boundary value
-                * If extrapolation='slice' or Extrapolation.slice avoids
-                    extrapolation restricting the domain.
+            extrapolation (str or Extrapolation, optional): Controls the
+                extrapolation mode for elements outside the domain range.
+                By default uses the method defined in fd. See extrapolation to
+                more information.
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
             function at the values specified in eval_points with the
@@ -1425,26 +1418,22 @@ class FDataBasis:
 
         return res_matrix
 
-    def shift(self, shifts, extrapolation=None, discretization_points=None,
-              **kwargs):
+    def shift(self, shifts, *, restrict_domain=None, extrapolation=None,
+              discretization_points=None, **kwargs):
         r"""Perform a shift of the curves.
 
         Args:
             shifts (array_like or numeric): List with the the shift
                 corresponding for each sample or numeric with the shift to apply
                 to all samples.
-            extrapolation (str or Extrapolation, optional): Controls the extrapolation
-                mode for elements outside the domain range.
-
-                * If extrapolation=None method defined in the fd object is used.
-                * If extrapolation='extrapolation' or Extrapolation.extrapolation uses
-                    the extrapolated values by the basis.
-                * If extrapolation='periodic' or Extrapolation.periodic extends the
-                    domain range periodically.
-                * If extrapolation='const' or Extrapolation.const uses the boundary
-                    value
-                * If extrapolation='slice' or Extrapolation.slice avoids extrapolation
-                    restricting the domain.
+            restrict_domain (bool, optional): If True restricts the domain to
+                avoid evaluate points outside the domain. Defaults uses the
+                behavior defined in fd, restricting the domain for non-periodic
+                representations.
+            extrapolation (str or Extrapolation, optional): Controls the
+                extrapolation mode for elements outside the domain range.
+                By default uses the method defined in fd. See extrapolation to
+                more information.
             discretization_points (array_like, optional): Set of points where
                 the functions are evaluated to obtain the discrete
                 representation of the object to operate. If an empty list is
@@ -1484,8 +1473,10 @@ class FDataBasis:
         else:
             extrapolation = Extrapolation(extrapolation)
 
+        if restrict_domain is None:
+            restrict_domain = self.basis._restrict_domain
 
-        if extrapolation is Extrapolation.slice:
+        if restrict_domain:
             a = self.domain_range[0] - min(numpy.min(shifts), 0)
             b = self.domain_range[1] - max(numpy.max(shifts), 0)
             domain = (a, b)

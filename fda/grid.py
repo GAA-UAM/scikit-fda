@@ -186,7 +186,13 @@ class FDataGrid:
         self.dataset_label = dataset_label
         self.axes_labels = axes_labels
         self.keepdims = keepdims
-        self.interpolator = interpolator
+
+        if interpolator is None:
+            # Default is used a Linear Spline interpolator
+            self._interpolator = GridSplineInterpolator()
+        else:
+            self._interpolator = interpolator
+
         self._interpolator_evaluator = None
 
         return
@@ -283,32 +289,30 @@ class FDataGrid:
         return self.data_matrix.shape
 
     @property
+    def interpolator(self):
+        return self._interpolator
+
+    @interpolator.setter
+    def interpolator(self, new_interpolator):
+        self._interpolator = new_interpolator
+        self._interpolator_evaluator = None
+
+    @property
     def _evaluator(self):
 
-        if self._interpolator_evaluator is not None:
-            return self._interpolator_evaluator
-
-        if self.interpolator is None:
-            # By default a Linear Spline Interpolator is used
-            self.interpolator = GridSplineInterpolator()
-
-        self._interpolator_evaluator = self.interpolator._construct_interpolator(self)
+        if self._interpolator_evaluator is None:
+            self._interpolator_evaluator = self._interpolator._construct_interpolator(self)
 
         return self._interpolator_evaluator
 
 
-    def set_interpolation(self, interpolator):
-
-        self.interpolator = interpolator
-
-
     def evaluate(self, t, *, derivative=0, grid=False):
 
-        return self._evaluator(t, derivative, grid)
+        return self._evaluator(t, derivative=derivative, grid=grid)
 
     def __call__(self, t, *, derivative=0, grid=False):
-        return self.evaluate(t, derivative, grid)
 
+        return self.evaluate(t, derivative=derivative, grid=grid)
 
 
     def derivative(self, order=1):

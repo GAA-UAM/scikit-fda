@@ -1424,7 +1424,8 @@ class FDataBasis:
 
         return res_matrix
 
-    def shift(self, shifts, extrapolation=None, tfine=None, **kwargs):
+    def shift(self, shifts, extrapolation=None, discretization_points=None,
+              **kwargs):
         r"""Perform a shift of the curves.
 
         Args:
@@ -1443,9 +1444,9 @@ class FDataBasis:
                     value
                 * If extrapolation='slice' or Extrapolation.slice avoids extrapolation
                     restricting the domain.
-            tfine (array_like, optional): Set of points where the
-                functions are evaluated to obtain the discrete
-                representation of the object to integrate. If an empty list is
+            discretization_points (array_like, optional): Set of points where
+                the functions are evaluated to obtain the discrete
+                representation of the object to operate. If an empty list is
                 passed it calls numpy.linspace with bounds equal to the ones
                 defined in fd.domain_range and the number of points the maximum
                 between 201 and 10 times the number of basis plus 1.
@@ -1455,20 +1456,20 @@ class FDataBasis:
             :obj:`FDataBasis` with the registered functional data.
         """
 
-        if tfine is None:  # Grid to discretize the function
+        if discretization_points is None:  # Grid to discretize the function
             nfine = max(self.nbasis*10+1, 201)
-            tfine = numpy.linspace(self.basis.domain_range[0],
-                                   self.basis.domain_range[1],
-                                   nfine)
+            discretization_points = numpy.linspace(*self.basis.domain_range,
+                                                   nfine)
         else:
-            tfine = numpy.asarray(tfine)
+            discretization_points = numpy.asarray(discretization_points)
 
         if numpy.isscalar(shifts): # Special case, al curves have the same shift
 
             _basis = self.basis.rescale((self.basis.domain_range[0] + shifts,
                                          self.basis.domain_range[1] + shifts))
 
-            return FDataBasis.from_data(self.evaluate(tfine), tfine + shifts,
+            return FDataBasis.from_data(self.evaluate(discretization_points),
+                                        discretization_points + shifts,
                                         _basis, **kwargs)
 
         elif len(shifts) != self.nsamples:
@@ -1487,15 +1488,19 @@ class FDataBasis:
             a = self.domain_range[0] - min(numpy.min(shifts), 0)
             b = self.domain_range[1] - max(numpy.max(shifts), 0)
             domain = (a, b)
-            tfine = tfine[numpy.logical_and(tfine >= a, tfine <= b)]
+            discretization_points = discretization_points[
+                numpy.logical_and(discretization_points >= a,
+                                  discretization_points <= b)]
         else:
             domain = self.domain_range
 
         # Matrix of shifted values
-        _data_matrix = self.evaluate_shifted(tfine, shifts, extrapolation=extrapolation)
+        _data_matrix = self.evaluate_shifted(discretization_points, shifts,
+                                             extrapolation=extrapolation)
         _basis = self.basis.rescale(domain)
 
-        return FDataBasis.from_data(_data_matrix, tfine, _basis, **kwargs)
+        return FDataBasis.from_data(_data_matrix, discretization_points,
+                                    _basis, **kwargs)
 
     def plot(self, ax=None, derivative=0, **kwargs):
         """Plot the FDataBasis object or its derivatives.

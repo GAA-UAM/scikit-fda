@@ -20,7 +20,7 @@ class Extrapolation(Enum):
     slice = "slice" #: Avoids extrapolation restricting the domain.
 
 def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
-                      tfine=None):
+                      discretization_points=None):
     r"""Compute mean square error measures for amplitude and phase variation.
 
     Once the registration has taken place, this function computes two mean
@@ -75,11 +75,11 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
 
     Args:
-        original_fdata (:class:`FDataBasis` or :class:`FDataGrid`): Unregistered functions.
-        regfd (:class:`FDataBasis` or :class:`FDataGrid`): Registered functions.
-        warping_function (:class:`FDataBasis` or :class:`FDataGrid`, optional): Warping functions.
-        tfine: (array_like, optional): Set of points where the functions are
-            evaluated to obtain a discrete representation.
+        original_fdata (:class:`FData`): Unregistered functions.
+        regfd (:class:`FData`): Registered functions.
+        warping_function (:class:`FData`): Warping functions.
+        discretization_points: (array_like, optional): Set of points where the
+            functions are evaluated to obtain a discrete representation.
 
 
     Returns:
@@ -114,14 +114,15 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
                          f"!=({warping_function.nsamples})")
 
     # Creates the mesh to discretize the functions
-    if tfine is None:
+    if discretization_points is None:
         nfine = max(registered_fdata.basis.nbasis * 10 + 1, 201)
-        tfine = numpy.linspace(*registered_fdata.domain_range, nfine)
+        discretization_points = numpy.linspace(*registered_fdata.domain_range,
+                                               nfine)
     else:
-        tfine = numpy.asarray(tfine)
+        discretization_points = numpy.asarray(discretization_points)
 
-    x_fine = original_fdata.evaluate(tfine) # Unregistered function
-    y_fine = registered_fdata.evaluate(tfine) # Registered function
+    x_fine = original_fdata.evaluate(discretization_points) # Unregistered
+    y_fine = registered_fdata.evaluate(discretization_points) # Registered
     mu_fine = x_fine.mean(axis=0) # Mean unregistered function
     eta_fine = y_fine.mean(axis=0) # Mean registered function
     mu_fine_sq = numpy.square(mu_fine)
@@ -130,7 +131,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
     # Total mean square error of the original funtions
     mse_total = scipy.integrate.simps(
-        numpy.mean(numpy.square(x_fine - mu_fine), axis=0),tfine)
+        numpy.mean(numpy.square(x_fine - mu_fine), axis=0),
+        discretization_points)
 
     cr = 1. # Constant related to the covariation between the deformation
             # functions and y^2
@@ -138,7 +140,7 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
     # If the warping functions are not provided, are suppose to be independent
     if warping_function is not None:
         # Derivates warping functions
-        dh_fine = warping_function.evaluate(tfine, derivative=1)
+        dh_fine = warping_function.evaluate(discretization_points, derivative=1)
         dh_fine_mean = dh_fine.mean(axis=0)
         dh_fine_center = dh_fine - dh_fine_mean
 
@@ -147,12 +149,15 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
         covariate = numpy.inner(dh_fine_center.T, y_fine_sq_center.T)
         covariate = covariate.mean(axis=0)
-        cr += numpy.divide(scipy.integrate.simps(covariate, tfine),
-                           scipy.integrate.simps(eta_fine_sq, tfine))
+        cr += numpy.divide(scipy.integrate.simps(covariate,
+                                                 discretization_points),
+                           scipy.integrate.simps(eta_fine_sq,
+                                                 discretization_points))
 
 
     # mse due to phase variation
-    mse_pha = scipy.integrate.simps(cr*eta_fine_sq - mu_fine_sq , tfine)
+    mse_pha = scipy.integrate.simps(cr*eta_fine_sq - mu_fine_sq ,
+                                    discretization_points)
 
     # mse due to amplitude variation
     mse_amp = mse_total - mse_pha
@@ -165,7 +170,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
 
 def shift_registration_deltas(fd, maxiter=5, tol=1e-2, extrapolation=None,
-                              step_size=1, initial=None, tfine=None, **kwargs):
+                              step_size=1, initial=None,
+                              discretization_points=None, **kwargs):
     r"""Perform a shift registration of the curves and return the corresponding
         shifts of each function.
 
@@ -183,30 +189,31 @@ def shift_registration_deltas(fd, maxiter=5, tol=1e-2, extrapolation=None,
         in each iteration, as is described in detail in [RS05-7-9-1]_.
 
     Args:
-        fd (:class:`FDataBasis` or :class:`FDataGrid`): Functional data object.
+        fd (:class:`FData`): Functional data object.
         maxiter (int, optional): Maximun number of iterations.
             Defaults to 5.
         tol (float, optional): Tolerance allowable. The process will stop if
             :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
             Default sets to 1e-2.
-        extrapolation (str or Extrapolation, optional): Controls the extrapolation
-            mode for elements outside the domain range.
+        extrapolation (str or Extrapolation, optional): Controls the
+            extrapolation mode for elements outside the domain range.
 
-            * If extrapolation=None default method defined in the fd object is used.
-            * If extrapolation='extrapolation' or Extrapolation.extrapolation uses
-                the extrapolated values by the basis.
+            * If extrapolation=None default method defined in the fd object is
+                used.
+            * If extrapolation='extrapolation' or Extrapolation.extrapolation
+                uses the extrapolated values by the basis.
             * If extrapolation='periodic' or Extrapolation.periodic extends the
                 domain range periodically.
             * If extrapolation='const' or Extrapolation.const uses the boundary
                 value
-            * If extrapolation='slice' or Extrapolation.slice avoids extrapolation
-                restricting the domain.
+            * If extrapolation='slice' or Extrapolation.slice avoids
+                extrapolation restricting the domain.
         step_size (int or float, optional): Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see [RS05-7-9-1]_.
             Defaults to 1.
         initial (array_like, optional): Initial estimation of shifts.
             Default uses a list of zeros for the initial shifts.
-        tfine (array_like, optional): Set of points where the
+        discretization_points (array_like, optional): Set of points where the
             functions are evaluated to obtain the discrete
             representation of the object to integrate. If an None is
             passed it calls numpy.linspace with bounds equal to the ones defined
@@ -242,12 +249,12 @@ def shift_registration_deltas(fd, maxiter=5, tol=1e-2, extrapolation=None,
         delta = numpy.asarray(initial)
 
     # Fine equispaced mesh to evaluate the samples
-    if tfine is None:
+    if discretization_points is None:
         nfine = max(fd.nbasis*10+1, 201)
-        tfine = numpy.linspace(*fd.basis.domain_range, nfine)
+        discretization_points = numpy.linspace(*fd.basis.domain_range, nfine)
     else:
-        nfine = len(tfine)
-        tfine = numpy.asarray(tfine)
+        nfine = len(discretization_points)
+        discretization_points = numpy.asarray(discretization_points)
 
     if extrapolation is None:
         extrapolation = fd.extrapolation
@@ -259,11 +266,12 @@ def shift_registration_deltas(fd, maxiter=5, tol=1e-2, extrapolation=None,
     tfine_aux = numpy.empty(nfine)
 
     # Computes the derivate of originals curves in the mesh points
-    D1x = fd.evaluate(tfine, 1)
+    D1x = fd.evaluate(discretization_points, 1)
 
     # Second term of the second derivate estimation of REGSSE. The
     # first term has been dropped to improve convergence (see references)
-    d2_regsse = scipy.integrate.trapz(numpy.square(D1x), tfine, axis=1)
+    d2_regsse = scipy.integrate.trapz(numpy.square(D1x), discretization_points,
+                                      axis=1)
 
     max_diff = tol + 1
     iter = 0
@@ -271,7 +279,7 @@ def shift_registration_deltas(fd, maxiter=5, tol=1e-2, extrapolation=None,
     # Auxiliar array if the domain will be restricted
     if extrapolation is Extrapolation.slice:
         D1x_tmp = D1x
-        tfine_tmp = tfine
+        tfine_tmp = discretization_points
         tfine_aux_tmp = tfine_aux
         domain = numpy.empty(nfine, dtype=numpy.dtype(bool))
 
@@ -286,23 +294,25 @@ def shift_registration_deltas(fd, maxiter=5, tol=1e-2, extrapolation=None,
 
             # New interval is (a,b)
             numpy.logical_and(tfine_tmp >= a, tfine_tmp <= b, out=domain)
-            tfine = tfine_tmp[domain]
+            discretization_points = tfine_tmp[domain]
             tfine_aux = tfine_aux_tmp[domain]
             D1x = D1x_tmp[:, domain]
             # Reescale the second derivate could be other approach
             # d2_regsse =
             #     d2_regsse_original * ( 1 + (a - b) / (domain[1] - domain[0]))
-            d2_regsse = scipy.integrate.trapz(numpy.square(D1x), tfine, axis=1)
+            d2_regsse = scipy.integrate.trapz(numpy.square(D1x),
+                                              discretization_points, axis=1)
 
         # Computes the new values shifted
-        x = fd.evaluate_shifted(tfine, delta, extrapolation=extrapolation)
+        x = fd.evaluate_shifted(discretization_points, delta,
+                                extrapolation=extrapolation)
         x.mean(axis=0, out=tfine_aux)
 
         # Calculates x - mean
         numpy.subtract(x, tfine_aux, out=x)
 
         d1_regsse = scipy.integrate.trapz(numpy.multiply(x, D1x, out=x),
-                                          tfine, axis=1)
+                                          discretization_points, axis=1)
         # Updates the shifts by the Newton-Rhapson iteration
         # delta = delta - step_size * d1_regsse / d2_regsse
         numpy.divide(d1_regsse, d2_regsse, out=delta_aux)
@@ -318,7 +328,7 @@ def shift_registration_deltas(fd, maxiter=5, tol=1e-2, extrapolation=None,
 
 
 def shift_registration(fd, maxiter=5, tol=1e-2, extrapolation=None, step_size=1,
-                       initial=None, tfine=None, **kwargs):
+                       initial=None, discretization_points=None, **kwargs):
     r"""Perform a shift registration of the curves.
 
         Realizes a registration of the curves, using shift aligment, as is
@@ -358,7 +368,7 @@ def shift_registration(fd, maxiter=5, tol=1e-2, extrapolation=None, step_size=1,
             Defaults to 1.
         initial (array_like, optional): Initial estimation of shifts.
             Default uses a list of zeros for the initial shifts.
-        tfine (array_like, optional): Set of points where the
+        discretization_points (array_like, optional): Set of points where the
             functions are evaluated to obtain the discrete
             representation of the object to integrate. If an None is
             passed it calls numpy.linspace with bounds equal to the ones defined
@@ -370,9 +380,8 @@ def shift_registration(fd, maxiter=5, tol=1e-2, extrapolation=None, step_size=1,
         **kwargs: Keyword arguments to be passed to :meth:`from_data`.
 
     Returns:
-        :class:`FDataBasis` or :class:`ndarray`: A :class:`FDataBasis` object with
-        the curves registered or if shifts_array is True a :class:`ndarray`
-        with the shifts.
+        :class:`FDataBasis` A :class:`FDataBasis` object with
+        the curves registered.
 
     Raises:
         ValueError: If the initial array has different length than the
@@ -390,11 +399,13 @@ def shift_registration(fd, maxiter=5, tol=1e-2, extrapolation=None, step_size=1,
     delta = shift_registration_deltas(fd, maxiter=maxiter, tol=tol,
                                       extrapolation=extrapolation,
                                       step_size=step_size, initial=initial,
-                                      tfine=tfine, **kwargs)
+                                      discretization_points=discretization_points,
+                                       **kwargs)
 
 
     # Computes the values with the final shift to construct the FDataBasis
-    return fd.shift(delta, extrapolation=extrapolation, tfine=tfine, **kwargs)
+    return fd.shift(delta, extrapolation=extrapolation,
+                    discretization_points=discretization_points, **kwargs)
 
 
 def landmark_shift_deltas(fd, landmarks, location=None):
@@ -442,13 +453,13 @@ def landmark_shift_deltas(fd, landmarks, location=None):
     return shifts
 
 
-def landmark_shift(fd, landmarks, location=None, extrapolation=None, tfine=None,
-                   **kwargs):
+def landmark_shift(fd, landmarks, location=None, extrapolation=None,
+                   discretization_points=None, **kwargs):
     r"""Perform a shift registration of the curves to align the landmarks at
         the same mark time.
 
         Args:
-            fd (:class:`FDataBasis` or :class:`FDataGrid`): Functional data object.
+            fd (:class:`FData`): Functional data object.
             landmarks (array_like): List with the landmarks of the samples.
             location (numeric or callable, optional): Defines where
                 the landmarks will be alligned. If a numeric value is passed the
@@ -459,20 +470,22 @@ def landmark_shift(fd, landmarks, location=None, extrapolation=None, tfine=None,
                 By default it will be used as location :math:`\frac{1}{2}(max(
                 \text{landmarks})+ min(\text{landmarks}))` wich minimizes the
                 max shift.
-            extrapolation (str or Extrapolation, optional): Controls the extrapolation
-                mode for elements outside the domain range.
+            extrapolation (str or Extrapolation, optional): Controls the
+                extrapolation mode for elements outside the domain range.
 
-                * If extrapolation=None default method defined in the fd object is used.
-                * If extrapolation='extrapolation' or Extrapolation.extrapolation uses
-                    the extrapolated values by the basis.
-                * If extrapolation='periodic' or Extrapolation.periodic extends the
-                    domain range periodically.
-                * If extrapolation='const' or Extrapolation.const uses the boundary
-                    value
-                * If extrapolation='slice' or Extrapolation.slice avoids extrapolation
-                    restricting the domain.
+                * If extrapolation=None default method defined in the fd object
+                    is used.
+                * If extrapolation='extrapolation' or
+                    Extrapolation.extrapolation uses the extrapolated values by
+                    the basis.
+                * If extrapolation='periodic' or Extrapolation.periodic extends
+                    the domain range periodically.
+                * If extrapolation='const' or Extrapolation.const uses the
+                    boundary value
+                * If extrapolation='slice' or Extrapolation.slice avoids
+                    extrapolation restricting the domain.
                 The default value is 'default'.
-            tfine (array_like, optional): Set of points where the
+            discretization_points (array_like, optional): Set of points where the
                 functions are evaluated to obtain the discrete
                 representation of the object to integrate. If an empty list is
                 passed it calls numpy.linspace with bounds equal to the ones
@@ -487,4 +500,5 @@ def landmark_shift(fd, landmarks, location=None, extrapolation=None, tfine=None,
 
     shifts = landmark_shift_deltas(fd, landmarks, location=location)
 
-    return fd.shift(shifts, extrapolation=extrapolation, tfine=tfine, **kwargs)
+    return fd.shift(shifts, extrapolation=extrapolation,
+                    discretization_points=discretization_points, **kwargs)

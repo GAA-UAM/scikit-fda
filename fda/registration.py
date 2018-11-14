@@ -20,7 +20,7 @@ class Extrapolation(Enum):
     slice = "slice" #: Avoids extrapolation restricting the domain.
 
 def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
-                      discretization_points=None):
+                      *, discretization_points=None):
     r"""Compute mean square error measures for amplitude and phase variation.
 
     Once the registration has taken place, this function computes two mean
@@ -169,7 +169,7 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
 
 
-def shift_registration_deltas(fd, maxiter=5, tol=1e-2, extrapolation=None,
+def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, extrapolation=None,
                               step_size=1, initial=None,
                               discretization_points=None, **kwargs):
     r"""Perform a shift registration of the curves and return the corresponding
@@ -327,7 +327,7 @@ def shift_registration_deltas(fd, maxiter=5, tol=1e-2, extrapolation=None,
     return delta
 
 
-def shift_registration(fd, maxiter=5, tol=1e-2, extrapolation=None, step_size=1,
+def shift_registration(fd, *, maxiter=5, tol=1e-2, extrapolation=None, step_size=1,
                        initial=None, discretization_points=None, **kwargs):
     r"""Perform a shift registration of the curves.
 
@@ -453,7 +453,7 @@ def landmark_shift_deltas(fd, landmarks, location=None):
     return shifts
 
 
-def landmark_shift(fd, landmarks, location=None, extrapolation=None,
+def landmark_shift(fd, landmarks, location=None, *, extrapolation=None,
                    discretization_points=None, **kwargs):
     r"""Perform a shift registration of the curves to align the landmarks at
         the same mark time.

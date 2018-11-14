@@ -302,11 +302,11 @@ class FDataGrid:
         self.interpolator = interpolator
 
 
-    def evaluate(self, t, derivative=0, grid=False):
+    def evaluate(self, t, *, derivative=0, grid=False):
 
         return self._evaluator(t, derivative, grid)
 
-    def __call__(self, t, derivative=0, grid=False):
+    def __call__(self, t, *, derivative=0, grid=False):
         return self.evaluate(t, derivative, grid)
 
 

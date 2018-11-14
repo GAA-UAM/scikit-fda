@@ -1008,7 +1008,7 @@ class Fourier(Basis):
             # implement using inner product
             return self._numerical_penalty(coefficients)
 
-    def rescale(self, domain_range=None, rescale_period=False):
+    def rescale(self, domain_range=None, *, rescale_period=False):
         r"""Return a copy of the basis with a new domain range, with the
             corresponding values rescaled to the new bounds.
 
@@ -1337,15 +1337,16 @@ class FDataBasis:
         basis_values = self.basis.evaluate(eval_points, derivative).T
 
         res_matrix = numpy.empty((self.nsamples, len(eval_points)))
-        _matrix = numpy.empty((len(eval_points),self.nbasis))
+        _matrix = numpy.empty((len(eval_points), self.nbasis))
 
         for i in range(self.nsamples):
-            numpy.multiply(basis_values,self.coefficients[i], out=_matrix)
+            numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
             numpy.sum(_matrix, axis=1, out=res_matrix[i])
 
         return res_matrix
 
-    def evaluate_shifted(self, eval_points, delta, derivative=0, extrapolation=None):
+    def evaluate_shifted(self, eval_points, delta, *, derivative=0,
+                         extrapolation=None):
         """Evaluate the object or its derivatives at a list of values with a
         shift for each sample.
 

@@ -186,14 +186,8 @@ class FDataGrid:
         self.dataset_label = dataset_label
         self.axes_labels = axes_labels
         self.keepdims = keepdims
+        self.interpolator = interpolator
 
-        if interpolator is None:
-            # Default is used a Linear Spline interpolator
-            self._interpolator = GridSplineInterpolator()
-        else:
-            self._interpolator = interpolator
-
-        self._interpolator_evaluator = None
 
         return
 
@@ -294,6 +288,11 @@ class FDataGrid:
 
     @interpolator.setter
     def interpolator(self, new_interpolator):
+
+        if new_interpolator is None:
+            # Defaults uses a linear spline interpolator
+            new_interpolator = GridSplineInterpolator()
+
         self._interpolator = new_interpolator
         self._interpolator_evaluator = None
 

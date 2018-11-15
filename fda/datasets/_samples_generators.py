@@ -38,8 +38,8 @@ def make_gaussian_process(n_samples: int=100, n_features: int=100, *,
 
     covariance = covariances._execute_covariance(cov, x, x)
 
-    # To prevent numerical problems
-    covariance += np.eye(n_features) * 1.0e-15
+    if noise:
+        covariance += np.eye(n_features) * noise ** 2
 
     mu = np.zeros(n_features)
     if callable(mean):
@@ -47,11 +47,5 @@ def make_gaussian_process(n_samples: int=100, n_features: int=100, *,
     mu += mean
 
     y = random_state.multivariate_normal(mu, covariance, n_samples)
-
-    if noise:
-        noise_sample = np.random.normal(scale=noise,
-                                        size=(n_samples, n_features))
-
-        y += noise_sample
 
     return FDataGrid(sample_points=x, data_matrix=y)

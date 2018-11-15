@@ -169,7 +169,7 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
 
 
-def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=None,
+def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
                               extrapolation=None, step_size=1, initial=None,
                               discretization_points=None, **kwargs):
     r"""Perform a shift registration of the curves and return the corresponding
@@ -196,9 +196,8 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=None,
             :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
             Default sets to 1e-2.
         restrict_domain (bool, optional): If True restricts the domain to
-            avoid evaluate points outside the domain. Defaults uses the
-            behavior defined in fd, restricting the domain for non-periodic
-            representations.
+            avoid evaluate points outside the domain using extrapolation.
+            Defaults uses extrapolation.
         extrapolation (str or Extrapolation, optional): Controls the
             extrapolation mode for elements outside the domain range.
             By default uses the method defined in fd. See extrapolation to
@@ -255,10 +254,6 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=None,
         extrapolation = fd.extrapolation
     else:
         extrapolation = Extrapolation(extrapolation)
-
-    if restrict_domain is None:
-        restrict_domain = fd.basis._restrict_domain
-
 
     # Auxiliar arrays to avoid multiple memory allocations
     delta_aux = numpy.empty(fd.nsamples)
@@ -326,7 +321,7 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=None,
     return delta
 
 
-def shift_registration(fd, *, maxiter=5, tol=1e-2, restrict_domain=None,
+def shift_registration(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
                        extrapolation=None, step_size=1, initial=None,
                        discretization_points=None, **kwargs):
     r"""Perform a shift registration of the curves.
@@ -352,9 +347,8 @@ def shift_registration(fd, *, maxiter=5, tol=1e-2, restrict_domain=None,
             :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
             Default sets to 1e-2.
         restrict_domain (bool, optional): If True restricts the domain to
-            avoid evaluate points outside the domain. Defaults uses the
-            behavior defined in fd, restricting the domain for non-periodic
-            representations.
+            avoid evaluate points outside the domain using extrapolation.
+            Defaults uses extrapolation.
         extrapolation (str or Extrapolation, optional): Controls the
             extrapolation mode for elements outside the domain range.
             By default uses the method defined in fd. See extrapolation to
@@ -447,7 +441,7 @@ def landmark_shift_deltas(fd, landmarks, location=None):
     return shifts
 
 
-def landmark_shift(fd, landmarks, location=None, *, restrict_domain=None,
+def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
                    extrapolation=None, discretization_points=None, **kwargs):
     r"""Perform a shift registration of the curves to align the landmarks at
         the same mark time.
@@ -465,9 +459,8 @@ def landmark_shift(fd, landmarks, location=None, *, restrict_domain=None,
                 \text{landmarks})+ min(\text{landmarks}))` wich minimizes the
                 max shift.
             restrict_domain (bool, optional): If True restricts the domain to
-                avoid evaluate points outside the domain. Defaults uses the
-                behavior defined in fd, restricting the domain for non-periodic
-                representations.
+                avoid evaluate points outside the domain using extrapolation.
+                Defaults uses extrapolation.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range.
                 By default uses the method defined in fd. See extrapolation to

@@ -66,7 +66,6 @@ class Basis(ABC):
         self.nbasis = nbasis
         self._drop_index_lst = []
         self.extrapolation = Extrapolation.extrapolation
-        self._restrict_domain = True
 
         super().__init__()
 
@@ -872,7 +871,6 @@ class Fourier(Basis):
         super().__init__(domain_range, nbasis)
 
         self.extrapolation = Extrapolation.extrapolation
-        self._restrict_domain = False
 
     def _compute_matrix(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
@@ -1418,7 +1416,7 @@ class FDataBasis:
 
         return res_matrix
 
-    def shift(self, shifts, *, restrict_domain=None, extrapolation=None,
+    def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               discretization_points=None, **kwargs):
         r"""Perform a shift of the curves.
 
@@ -1427,9 +1425,8 @@ class FDataBasis:
                 corresponding for each sample or numeric with the shift to apply
                 to all samples.
             restrict_domain (bool, optional): If True restricts the domain to
-                avoid evaluate points outside the domain. Defaults uses the
-                behavior defined in fd, restricting the domain for non-periodic
-                representations.
+                avoid evaluate points outside the domain using extrapolation.
+                Defaults uses extrapolation.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range.
                 By default uses the method defined in fd. See extrapolation to
@@ -1472,9 +1469,6 @@ class FDataBasis:
             extrapolation = self.extrapolation
         else:
             extrapolation = Extrapolation(extrapolation)
-
-        if restrict_domain is None:
-            restrict_domain = self.basis._restrict_domain
 
         if restrict_domain:
             a = self.domain_range[0] - min(numpy.min(shifts), 0)

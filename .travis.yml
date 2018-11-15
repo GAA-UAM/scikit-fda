@@ -3,4 +3,3 @@ python:
     - "3.6"
 script:
     - "python setup.py test"
-

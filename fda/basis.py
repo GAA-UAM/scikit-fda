@@ -16,7 +16,8 @@ import scipy.interpolate
 import scipy.linalg
 from scipy.special import binom
 
-from fda import grid
+from . import grid
+from .registration import Extrapolation
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -56,14 +57,15 @@ class Basis(ABC):
         """
         # Some checks
         if domain_range[0] >= domain_range[1]:
-            raise ValueError("The interval {} is not well-defined.".format(
-                domain_range))
+            raise ValueError(f"The interval {domain_range} is not "
+                             f"well-defined.")
         if nbasis < 1:
             raise ValueError("The number of basis has to be strictly "
                              "possitive.")
         self.domain_range = domain_range
         self.nbasis = nbasis
         self._drop_index_lst = []
+        self.extrapolation = Extrapolation.extrapolation
 
         super().__init__()
 
@@ -252,11 +254,27 @@ class Basis(ABC):
         """
         pass
 
+    def rescale(self, domain_range=None):
+        r"""Return a copy of the basis with a new domain range, with the
+            corresponding values rescaled to the new bounds.
+
+            Args:
+                domain_range (tuple, optional): Definition of the interval where
+                    the basis defines a space. Defaults uses the same as the
+                    original basis.
+        """
+
+        if domain_range is None:
+            domain_range = self.domain_range
+        elif domain_range[0] >= domain_range[1]:
+            raise ValueError(f"The interval {domain_range} is not well-defined")
+
+        return type(self)(domain_range, self.nbasis)
+
     def __repr__(self):
         """Representation of a Basis object."""
-        return "{}(domain_range={}, nbasis={})".format(
-            self.__class__.__name__, self.domain_range, self.nbasis)
-
+        return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
+                f"nbasis={self.nbasis})")
 
 class Monomial(Basis):
     """Monomial basis.
@@ -645,10 +663,9 @@ class BSpline(Basis):
         """
         if derivative_degree is not None:
             if derivative_degree >= self.order:
-                raise ValueError("Penalty matrix cannot be evaluated for "
-                                 "derivative of order {} for B-splines of "
-                                 "order {}".format(derivative_degree,
-                                                   self.order))
+                raise ValueError(f"Penalty matrix cannot be evaluated for "
+                                 f"derivative of order {derivative_degree} for "
+                                 f"B-splines of order {self.order}")
             if derivative_degree == self.order - 1:
                 # The derivative of the bsplines are constant in the intervals
                 # defined between knots
@@ -745,20 +762,46 @@ class BSpline(Basis):
             # if the order of the derivative is greater or equal to the order
             # of the bspline minus 1
             if len(coefficients) >= self.order:
-                raise ValueError("Penalty matrix cannot be evaluated for "
-                                 "derivative of order {} for B-splines of "
-                                 "order {}"
-                                 .format(len(coefficients) - 1,
-                                         self.order))
+                raise ValueError(f"Penalty matrix cannot be evaluated for "
+                                 f"derivative of order {len(coefficients) - 1} "
+                                 f"for B-splines of order {self.order}")
 
         # compute using the inner product
         return self._numerical_penalty(coefficients)
 
+    def rescale(self, domain_range=None):
+        r"""Return a copy of the basis with a new domain range, with the
+            corresponding values rescaled to the new bounds.
+            The knots of the BSpline will be rescaled in the new interval.
+
+            Args:
+                domain_range (tuple, optional): Definition of the interval where
+                    the basis defines a space. Defaults uses the same as the
+                    original basis.
+        """
+
+        knots = numpy.array(self.knots, dtype=numpy.dtype('float'))
+
+        if domain_range is not None:  # Rescales the knots
+            knots -= knots[0]
+            knots *= ((domain_range[1] - domain_range[0]
+                       ) / (self.knots[-1] - self.knots[0]))
+            knots += domain_range[0]
+        else:
+            domain_range = self.domain_range
+
+        # Fix possible round error
+        knots[0] = domain_range[0]
+        knots[-1] = domain_range[1]
+
+        return BSpline(domain_range, self.nbasis, self.order, knots)
+
+
     def __repr__(self):
         """Representation of a BSpline basis."""
-        return ("{}(domain_range={}, nbasis={}, order={}, knots={})".format(
-            self.__class__.__name__, self.domain_range, self.nbasis, self.order,
-            self.knots))
+        return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
+                f"nbasis={self.nbasis}, order={self.order}, "
+                f"knots={self.knots})")
 
 
 class Fourier(Basis):
@@ -826,6 +869,8 @@ class Fourier(Basis):
         # If number of basis is even, add 1
         nbasis += 1 - nbasis % 2
         super().__init__(domain_range, nbasis)
+
+        self.extrapolation = Extrapolation.extrapolation
 
     def _compute_matrix(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
@@ -963,11 +1008,34 @@ class Fourier(Basis):
             # implement using inner product
             return self._numerical_penalty(coefficients)
 
+    def rescale(self, domain_range=None, *, rescale_period=False):
+        r"""Return a copy of the basis with a new domain range, with the
+            corresponding values rescaled to the new bounds.
+
+            Args:
+                domain_range (tuple, optional): Definition of the interval where
+                    the basis defines a space. Defaults uses the same as the
+                    original basis.
+                rescale_period (bool, optional): If true the period will be
+                    rescaled using the ratio between the lengths of the new
+                    and old interval. Defaults to False.
+        """
+
+        rescale_basis = super().rescale(domain_range)
+
+        if rescale_period == False:
+            rescale_basis.period = self.period
+        else:
+            rescale_basis.period = self.period * \
+                (rescale_basis.domain_range[1] - rescale_basis.domain_range[0]
+                 ) / (self.domain_range[1] - self.domain_range[0])
+
+        return rescale_basis
+
     def __repr__(self):
         """Representation of a Fourier basis."""
-        return ("{}(domain_range={}, nbasis={}, period={})".format(
-            self.__class__.__name__, self.domain_range, self.nbasis,
-            self.period))
+        return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
+                f"nbasis={self.nbasis}, period={self.period})")
 
 
 class FDataBasis:
@@ -1029,7 +1097,7 @@ class FDataBasis:
         The fit is made so as to reduce the penalized sum of squared errors
         [RS05-5-2-5]_:
         .. math::
-        
+
             PENSSE(c) = (y - \Phi c)' W (y - \Phi c) + \lambda c'Rc
 
         where :math:`y` is the vector or matrix of observations, :math:`\Phi`
@@ -1041,13 +1109,13 @@ class FDataBasis:
 
         Each element of :math:`R` has the following close form:
         .. math::
-        
+
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
 
         By deriving the first formula we obtain the closed formed of the
         estimated coefficients matrix:
         .. math::
-        
+
             \hat(c) = \left( |Phi' W \Phi + \lambda R \right)^{-1} \Phi' W y
 
         The solution of this matrix equation is done using the cholesky
@@ -1225,9 +1293,10 @@ class FDataBasis:
             coefficients = numpy.linalg.solve(basis_values, data_matrix)
 
         else:  # data_matrix.shape[0] < basis.nbasis
-            raise ValueError("The number of basis functions ({}) exceed the "
-                             "number of points to be smoothed ({})."
-                             .format(basis.nbasis, data_matrix.shape[0]))
+            raise ValueError(f"The number of basis functions ({basis.nbasis}) "
+                             f"exceed the number of points to be smoothed "
+                             f"({data_matrix.shape[0]}).")
+
 
         return cls(basis, coefficients)
 
@@ -1246,6 +1315,11 @@ class FDataBasis:
         """Definition range."""
         return self.basis.domain_range
 
+    @property
+    def extrapolation(self):
+        """Return default type of extrapolation."""
+        return  self.basis.extrapolation
+
     def evaluate(self, eval_points, derivative=0):
         """Evaluate the object or its derivatives at a list of values.
 
@@ -1263,12 +1337,156 @@ class FDataBasis:
         basis_values = self.basis.evaluate(eval_points, derivative).T
 
         res_matrix = numpy.empty((self.nsamples, len(eval_points)))
+        _matrix = numpy.empty((len(eval_points), self.nbasis))
 
         for i in range(self.nsamples):
-            _matrix = basis_values * self.coefficients[i]
-            res_matrix[i] = _matrix.sum(axis=1)
+            numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
+            numpy.sum(_matrix, axis=1, out=res_matrix[i])
 
         return res_matrix
+
+    def evaluate_shifted(self, eval_points, delta, *, derivative=0,
+                         extrapolation=None):
+        """Evaluate the object or its derivatives at a list of values with a
+        shift for each sample.
+
+        Returns a numpy array with the component (i,j) equal to :math:`f_i(t_j +
+        \delta_i)`.
+
+        This method has to evaluate the basis values once per sample and
+        eval_point instead of reuse the same evaluation for all the samples
+        as :meth:`evaluate`.
+
+        Args:
+            eval_points (array_like): List of points where the functions are
+                evaluated.
+            delta (array_like or numeric): List of shifts for each function or
+                an scalar.
+            derivative (int, optional): Order of the derivative. Defaults to 0.
+            extrapolation (str or Extrapolation, optional): Controls the
+                extrapolation mode for elements outside the domain range.
+                By default uses the method defined in fd. See extrapolation to
+                more information.
+        Returns:
+            (numpy.darray): Matrix whose rows are the values of the each
+            function at the values specified in eval_points with the
+            corresponding shift.
+        """
+
+        eval_points = numpy.asarray(eval_points)
+        delta = numpy.asarray(delta)
+
+        if delta.shape[0] != self.nsamples:
+            raise ValueError(f"deltas vector length ({delta.shape[0]}) has to "
+                             f"be equal than the number of samples "
+                             f"({self.nsamples}).")
+
+        if extrapolation is None:
+            extrapolation = self.extrapolation
+        else:
+            extrapolation = Extrapolation(extrapolation)
+
+        res_matrix = numpy.empty((self.nsamples, eval_points.shape[0]))
+        shifted_points = numpy.empty(len(eval_points))
+        domain_length = self.domain_range[1] - self.domain_range[0]
+        _matrix = numpy.empty((len(eval_points),self.nbasis))
+
+        for i in range(self.nsamples):
+
+            # each column contains the values of one element of the basis
+            # evaluated in the shifted time delta[i]
+            numpy.add(eval_points, delta[i], shifted_points)
+
+            # Case periodic extrapolation
+            if extrapolation is Extrapolation.periodic:
+                numpy.subtract(
+                    shifted_points, self.domain_range[0], shifted_points)
+                numpy.mod(shifted_points, domain_length, shifted_points)
+                numpy.add(shifted_points, self.domain_range[0], shifted_points)
+
+            # Case boundary value
+            elif extrapolation is Extrapolation.const:
+                shifted_points[shifted_points <= self.domain_range[0]] = self.domain_range[0]
+                shifted_points[shifted_points >= self.domain_range[1]] = self.domain_range[1]
+
+            basis_values = self.basis.evaluate(shifted_points, derivative).T
+
+            numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
+            numpy.sum(_matrix, axis=1, out=res_matrix[i])
+
+        return res_matrix
+
+    def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
+              discretization_points=None, **kwargs):
+        r"""Perform a shift of the curves.
+
+        Args:
+            shifts (array_like or numeric): List with the the shift
+                corresponding for each sample or numeric with the shift to apply
+                to all samples.
+            restrict_domain (bool, optional): If True restricts the domain to
+                avoid evaluate points outside the domain using extrapolation.
+                Defaults uses extrapolation.
+            extrapolation (str or Extrapolation, optional): Controls the
+                extrapolation mode for elements outside the domain range.
+                By default uses the method defined in fd. See extrapolation to
+                more information.
+            discretization_points (array_like, optional): Set of points where
+                the functions are evaluated to obtain the discrete
+                representation of the object to operate. If an empty list is
+                passed it calls numpy.linspace with bounds equal to the ones
+                defined in fd.domain_range and the number of points the maximum
+                between 201 and 10 times the number of basis plus 1.
+            **kwargs: Keyword arguments to be passed to :meth:`from_data`.
+
+        Returns:
+            :obj:`FDataBasis` with the registered functional data.
+        """
+
+        if discretization_points is None:  # Grid to discretize the function
+            nfine = max(self.nbasis*10+1, 201)
+            discretization_points = numpy.linspace(*self.basis.domain_range,
+                                                   nfine)
+        else:
+            discretization_points = numpy.asarray(discretization_points)
+
+        if numpy.isscalar(shifts): # Special case, al curves have the same shift
+
+            _basis = self.basis.rescale((self.basis.domain_range[0] + shifts,
+                                         self.basis.domain_range[1] + shifts))
+
+            return FDataBasis.from_data(self.evaluate(discretization_points),
+                                        discretization_points + shifts,
+                                        _basis, **kwargs)
+
+        elif len(shifts) != self.nsamples:
+            raise ValueError(f"shifts vector ({len(shifts)}) must have the same"
+                             f" length than the number of samples "
+                             f"({self.nsamples})")
+
+
+        if extrapolation is None:
+            extrapolation = self.extrapolation
+        else:
+            extrapolation = Extrapolation(extrapolation)
+
+        if restrict_domain:
+            a = self.domain_range[0] - min(numpy.min(shifts), 0)
+            b = self.domain_range[1] - max(numpy.max(shifts), 0)
+            domain = (a, b)
+            discretization_points = discretization_points[
+                numpy.logical_and(discretization_points >= a,
+                                  discretization_points <= b)]
+        else:
+            domain = self.domain_range
+
+        # Matrix of shifted values
+        _data_matrix = self.evaluate_shifted(discretization_points, shifts,
+                                             extrapolation=extrapolation)
+        _basis = self.basis.rescale(domain)
+
+        return FDataBasis.from_data(_data_matrix, discretization_points,
+                                    _basis, **kwargs)
 
     def plot(self, ax=None, derivative=0, **kwargs):
         """Plot the FDataBasis object or its derivatives.
@@ -1419,8 +1637,8 @@ class FDataBasis:
 
     def __repr__(self):
         """Representation of FDataBasis object."""
-        return "{}(basis={}, coefficients={})".format(
-            self.__class__.__name__, self.basis, self.coefficients)
+        return (f"{self.__class__.__name__}(basis={self.basis}, "
+               f"coefficients={self.coefficients})")
 
     def __call__(self, eval_points):
         """Evaluate the functions in the object at a list of values.

@@ -305,7 +305,7 @@ _medflies_descr = """
 """
 
 
-def fetch_medflies_classification(return_X_y: bool=False):
+def fetch_medflies(return_X_y: bool=False):
     """
     Load the Medflies dataset, where the flies are separated in two classes
     according to their longevity.
@@ -339,5 +339,5 @@ def fetch_medflies_classification(return_X_y: bool=False):
                 "DESCR": DESCR}
 
 
-if hasattr(fetch_medflies_classification, "__doc__"):  # docstrings can be stripped off
-    fetch_medflies_classification.__doc__ += _medflies_descr + _param_descr
+if hasattr(fetch_medflies, "__doc__"):  # docstrings can be stripped off
+    fetch_medflies.__doc__ += _medflies_descr + _param_descr

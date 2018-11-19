@@ -566,6 +566,9 @@ class Monomial(Basis):
 
     def __mul__(self, other):
         """Multiplication of a Monomial Basis with other Basis"""
+        if self.domain_range != other.domain_range:
+            raise ValueError("Ranges are not equal.")
+
         return NotImplemented
 
     def __rmul__(self, other):
@@ -896,7 +899,7 @@ class BSpline(Basis):
             self.knots))
 
     def __mul__(self, other):
-        """Multiplication two Bspline Basis"""
+        """Multiplication of two Bspline Basis"""
         if self.domain_range != other.domain_range:
             raise ValueError("Ranges are not equal.")
 

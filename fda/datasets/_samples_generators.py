@@ -88,16 +88,17 @@ def make_sinusoidal_process(n_samples: int=15, n_features: int=100, *,
 
     """
 
-    sklearn.utils.check_random_state(random_state)
+    random_state = sklearn.utils.check_random_state(random_state)
 
     t = np.linspace(start, stop, n_features)
 
-    alpha = np.diag(np.random.normal(amplitude_mean, amplitude_std, n_samples))
+    alpha = np.diag(random_state.normal(amplitude_mean, amplitude_std,
+                                        n_samples))
 
-    phi = np.outer(np.random.normal(phase_mean, phase_std,  n_samples),
+    phi = np.outer(random_state.normal(phase_mean, phase_std,  n_samples),
                    np.ones(n_features))
 
-    error = np.random.normal(0, error_std, (n_samples, n_features))
+    error = random_state.normal(0, error_std, (n_samples, n_features))
 
 
     y = alpha @ np.sin((2*np.pi/period)*t + phi) + error

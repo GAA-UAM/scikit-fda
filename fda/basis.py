@@ -252,62 +252,15 @@ class Basis(ABC):
         """
         pass
 
-    def __mul__(self, other):
-        """
-            Multiplication for FDataBasis object.
-        """
-
-        if self.domain_range != other.domain_range:
+    @staticmethod
+    def mul(one, other):
+        """Default multiplication for a pair of basis"""
+        if one.domain_range != other.domain_range:
             raise ValueError("Ranges are not equal.")
 
-        if isinstance(self, Constant):
-            return other
-
-        if isinstance(other, Constant):
-            return self
-
-        if isinstance(self, BSpline) and isinstance(other, BSpline):
-            uniqueknots = numpy.union1d(self.inknots, other.inknots)
-
-            multunique = numpy.zeros(len(uniqueknots), dtype=numpy.int32)
-            for i in range(len(uniqueknots)):
-                mult1 = numpy.count_nonzero(self.inknots == uniqueknots[i])
-                mult2 = numpy.count_nonzero(other.inknots == uniqueknots[i])
-                multunique[i] = max(mult1, mult2)
-
-            m2 = 0
-            allknots = numpy.zeros(numpy.sum(multunique))
-            for i in range(len(uniqueknots)):
-                m1 = m2
-                m2 = m2 + multunique[i]
-                allknots[m1:m2] = uniqueknots[i]
-
-            norder1 = self.nbasis - len(self.inknots)
-            norder2 = other.nbasis - len(other.inknots)
-            norder = min(norder1 + norder2 - 1, 20)
-
-            allbreaks = [self.domain_range[0]] + numpy.ndarray.tolist(allknots) + [self.domain_range[1]]
-            nbasis = len(allbreaks) + norder - 2
-            return BSpline(self.domain_range, nbasis, norder, allbreaks)
-
-        if isinstance(self, Fourier) and isinstance(other, Fourier) and self.period == other.period:
-            return Fourier(self.domain_range, self.nbasis + other.nbasis - 1, self.period)
-
-        if isinstance(self, BSpline) or isinstance(other, BSpline):
-            norder = 8
-            if isinstance(self, BSpline):
-                norder1 = self.nbasis - len(self.inknots)
-                norder = min(norder1 + 2, norder)
-
-            if isinstance(other, BSpline):
-                norder2 = other.nbasis - len(other.inknots)
-                norder = min(norder2 + 2, norder)
-
-        else:
-            norder = min(8, self.nbasis + other.nbasis)
-
-        nbasis = max(self.nbasis + other.nbasis, norder + 1)
-        return BSpline(self.domain_range, nbasis, norder)
+        norder = min(8, one.nbasis + other.nbasis)
+        nbasis = max(one.nbasis + other.nbasis, norder + 1)
+        return BSpline(one.domain_range, nbasis, norder)
 
     def __repr__(self):
         """Representation of a Basis object."""
@@ -417,8 +370,19 @@ class Constant(Basis):
         if derivative_degree is None:
             return self._numerical_penalty(coefficients)
 
-        return numpy.full((1, 1), (self.domain_range[1] - self.domain_range[0]))\
+        return numpy.full((1, 1), (self.domain_range[1] - self.domain_range[0])) \
             if derivative_degree == 0 else numpy.zeros((1, 1))
+
+    def __mul__(self, other):
+        """Multiplication of a Constant Basis with other Basis"""
+        if self.domain_range != other.domain_range:
+            raise ValueError("Ranges are not equal.")
+
+        return other
+
+    def __rmul__(self, other):
+        """Multiplication of a Constant Basis with other Basis"""
+        return other
 
 
 class Monomial(Basis):
@@ -593,12 +557,20 @@ class Monomial(Basis):
                     # coefficient after integrating
                     penalty_matrix[ibasis, jbasis] = (
                             (integration_domain[1] ** ipow
-                             -integration_domain[0] ** ipow)
+                             - integration_domain[0] ** ipow)
                             * ifac * jfac / ipow)
                     penalty_matrix[jbasis, ibasis] = penalty_matrix[ibasis,
                                                                     jbasis]
 
         return penalty_matrix
+
+    def __mul__(self, other):
+        """Multiplication of a Monomial Basis with other Basis"""
+        return NotImplemented
+
+    def __rmul__(self, other):
+        """Multiplication of a Monomial Basis with other Basis"""
+        return Basis.mul(self, other)
 
 
 class BSpline(Basis):
@@ -753,7 +725,7 @@ class BSpline(Basis):
         """
         # Places m knots at the boundaries
         knots = numpy.array([self.knots[0]] * (self.order - 1) + self.knots
-                            +[self.knots[-1]] * (self.order - 1))
+                            + [self.knots[-1]] * (self.order - 1))
         # c is used the select which spline the function splev below computes
         c = numpy.zeros(len(knots))
 
@@ -830,7 +802,7 @@ class BSpline(Basis):
                 # Places m knots at the boundaries
                 knots = numpy.array(
                     [self.knots[0]] * (self.order - 1) + self.knots
-                    +[self.knots[-1]] * (self.order - 1))
+                    + [self.knots[-1]] * (self.order - 1))
                 # c is used the select which spline the function
                 # PPoly.from_spline below computes
                 c = numpy.zeros(len(knots))
@@ -852,7 +824,7 @@ class BSpline(Basis):
                     # Let the ith not be a
                     # Then f(x) = pp(x - a)
                     pp = (PPoly.from_spline((knots, c, self.order - 1))
-                          .c[:, no_0_intervals])
+                              .c[:, no_0_intervals])
                     # We need the actual coefficients of f, not pp. So we
                     # just recursively calculate the new coefficients
                     coeffs = pp.copy()
@@ -922,6 +894,44 @@ class BSpline(Basis):
         return ("{}(domain_range={}, nbasis={}, order={}, knots={})".format(
             self.__class__.__name__, self.domain_range, self.nbasis, self.order,
             self.knots))
+
+    def __mul__(self, other):
+        """Multiplication two Bspline Basis"""
+        if self.domain_range != other.domain_range:
+            raise ValueError("Ranges are not equal.")
+
+        if isinstance(other, BSpline):
+            uniqueknots = numpy.union1d(self.inknots, other.inknots)
+
+            multunique = numpy.zeros(len(uniqueknots), dtype=numpy.int32)
+            for i in range(len(uniqueknots)):
+                mult1 = numpy.count_nonzero(self.inknots == uniqueknots[i])
+                mult2 = numpy.count_nonzero(other.inknots == uniqueknots[i])
+                multunique[i] = max(mult1, mult2)
+
+            m2 = 0
+            allknots = numpy.zeros(numpy.sum(multunique))
+            for i in range(len(uniqueknots)):
+                m1 = m2
+                m2 = m2 + multunique[i]
+                allknots[m1:m2] = uniqueknots[i]
+
+            norder1 = self.nbasis - len(self.inknots)
+            norder2 = other.nbasis - len(other.inknots)
+            norder = min(norder1 + norder2 - 1, 20)
+
+            allbreaks = [self.domain_range[0]] + numpy.ndarray.tolist(allknots) + [self.domain_range[1]]
+            nbasis = len(allbreaks) + norder - 2
+            return BSpline(self.domain_range, nbasis, norder, allbreaks)
+        else:
+            return NotImplemented
+
+    def __rmul__(self, other):
+        """Multiplication of a Bspline Basis with other basis"""
+
+        norder = min(self.nbasis - len(self.inknots) + 2, 8)
+        nbasis = max(self.nbasis + other.nbasis, norder + 1)
+        return BSpline(self.domain_range, nbasis, norder)
 
     @property
     def inknots(self):
@@ -1130,6 +1140,20 @@ class Fourier(Basis):
         else:
             # implement using inner product
             return self._numerical_penalty(coefficients)
+
+    def __mul__(self, other):
+        """Multiplication of two Fourier Basis"""
+        if self.domain_range != other.domain_range:
+            raise ValueError("Ranges are not equal.")
+
+        if isinstance(other, Fourier) and self.period == other.period:
+            return Fourier(self.domain_range, self.nbasis + other.nbasis - 1, self.period)
+        else:
+            return NotImplemented
+
+    def __rmul__(self, other):
+        """Multiplication of a Fourier Basis with other Basis"""
+        return Basis.mul(other, self)
 
     def __repr__(self):
         """Representation of a Fourier basis."""
@@ -1361,14 +1385,14 @@ class FDataBasis:
                     # Augment the basis matrix with the square root of the
                     # penalty matrix
                     basis_values = numpy.concatenate([
-                         basis_values,
-                         numpy.sqrt(smoothness_parameter) * penalty_matrix.T],
-                         axis=0)
+                        basis_values,
+                        numpy.sqrt(smoothness_parameter) * penalty_matrix.T],
+                        axis=0)
                     # Augment data matrix by n - ndegenerated zeros
                     data_matrix = numpy.pad(data_matrix,
-                                             ((0, len(v) - ndegenerated),
-                                              (0, 0)),
-                                             mode='constant')
+                                            ((0, len(v) - ndegenerated),
+                                             (0, 0)),
+                                            mode='constant')
 
                 # Resolves the equation
                 # B.T @ B @ C = B.T @ D

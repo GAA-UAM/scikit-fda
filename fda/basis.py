@@ -15,6 +15,7 @@ from scipy.interpolate import PPoly
 import scipy.interpolate
 import scipy.linalg
 from scipy.special import binom
+import copy
 
 from . import grid
 from .registration import Extrapolation
@@ -279,6 +280,10 @@ class Basis(ABC):
     def __eq__(self, other):
         """Equality of Basis"""
         return type(self) == type(other) and self.domain_range == other.domain_range and self.nbasis == other.nbasis
+
+    def __copy__(self):
+        """Basis copy"""
+        return type(self)(self.domain_range, self.nbasis)
 
 
 class Monomial(Basis):
@@ -811,6 +816,10 @@ class BSpline(Basis):
         """Equality of Basis"""
         return super().__eq__(other) and self.order == other.order and self.knots == other.knots
 
+    def __copy__(self):
+        """BSpline Basis copy"""
+        return BSpline(self.domain_range, self.nbasis, self.order, numpy.array(self.knots, dtype=numpy.dtype('float')))
+
 
 class Fourier(Basis):
     r"""Fourier basis.
@@ -1048,6 +1057,10 @@ class Fourier(Basis):
     def __eq__(self, other):
         """Equality of Basis"""
         return super().__eq__(other) and self.period == other.period
+
+    def __copy__(self):
+        """Fourier Basis copy"""
+        return Fourier(self.domain_range, self.nbasis, self.period)
 
 
 class FDataBasis:
@@ -1663,3 +1676,7 @@ class FDataBasis:
 
         """
         return self.evaluate(eval_points)
+
+    def __copy__(self):
+        """FDataBasis copy"""
+        return FDataBasis(copy.copy(self.basis), numpy.array(self.coefficients))

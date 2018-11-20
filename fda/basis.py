@@ -276,6 +276,11 @@ class Basis(ABC):
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
                 f"nbasis={self.nbasis})")
 
+    def __eq__(self, other):
+        """Equality of Basis"""
+        return type(self) == type(other) and self.domain_range == other.domain_range and self.nbasis == other.nbasis
+
+
 class Monomial(Basis):
     """Monomial basis.
 
@@ -448,7 +453,7 @@ class Monomial(Basis):
                     # coefficient after integrating
                     penalty_matrix[ibasis, jbasis] = (
                             (integration_domain[1] ** ipow
-                             -integration_domain[0] ** ipow)
+                             - integration_domain[0] ** ipow)
                             * ifac * jfac / ipow)
                     penalty_matrix[jbasis, ibasis] = penalty_matrix[ibasis,
                                                                     jbasis]
@@ -608,7 +613,7 @@ class BSpline(Basis):
         """
         # Places m knots at the boundaries
         knots = numpy.array([self.knots[0]] * (self.order - 1) + self.knots
-                            +[self.knots[-1]] * (self.order - 1))
+                            + [self.knots[-1]] * (self.order - 1))
         # c is used the select which spline the function splev below computes
         c = numpy.zeros(len(knots))
 
@@ -684,7 +689,7 @@ class BSpline(Basis):
                 # Places m knots at the boundaries
                 knots = numpy.array(
                     [self.knots[0]] * (self.order - 1) + self.knots
-                    +[self.knots[-1]] * (self.order - 1))
+                    + [self.knots[-1]] * (self.order - 1))
                 # c is used the select which spline the function
                 # PPoly.from_spline below computes
                 c = numpy.zeros(len(knots))
@@ -706,7 +711,7 @@ class BSpline(Basis):
                     # Let the ith not be a
                     # Then f(x) = pp(x - a)
                     pp = (PPoly.from_spline((knots, c, self.order - 1))
-                          .c[:, no_0_intervals])
+                              .c[:, no_0_intervals])
                     # We need the actual coefficients of f, not pp. So we
                     # just recursively calculate the new coefficients
                     coeffs = pp.copy()
@@ -796,12 +801,15 @@ class BSpline(Basis):
 
         return BSpline(domain_range, self.nbasis, self.order, knots)
 
-
     def __repr__(self):
         """Representation of a BSpline basis."""
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
                 f"nbasis={self.nbasis}, order={self.order}, "
                 f"knots={self.knots})")
+
+    def __eq__(self, other):
+        """Equality of Basis"""
+        return super().__eq__(other) and self.order == other.order and self.knots == other.knots
 
 
 class Fourier(Basis):
@@ -1027,8 +1035,8 @@ class Fourier(Basis):
             rescale_basis.period = self.period
         else:
             rescale_basis.period = self.period * \
-                (rescale_basis.domain_range[1] - rescale_basis.domain_range[0]
-                 ) / (self.domain_range[1] - self.domain_range[0])
+                                   (rescale_basis.domain_range[1] - rescale_basis.domain_range[0]
+                                    ) / (self.domain_range[1] - self.domain_range[0])
 
         return rescale_basis
 
@@ -1036,6 +1044,10 @@ class Fourier(Basis):
         """Representation of a Fourier basis."""
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
                 f"nbasis={self.nbasis}, period={self.period})")
+
+    def __eq__(self, other):
+        """Equality of Basis"""
+        return super().__eq__(other) and self.period == other.period
 
 
 class FDataBasis:
@@ -1261,14 +1273,14 @@ class FDataBasis:
                     # Augment the basis matrix with the square root of the
                     # penalty matrix
                     basis_values = numpy.concatenate([
-                         basis_values,
-                         numpy.sqrt(smoothness_parameter) * penalty_matrix.T],
-                         axis=0)
+                        basis_values,
+                        numpy.sqrt(smoothness_parameter) * penalty_matrix.T],
+                        axis=0)
                     # Augment data matrix by n - ndegenerated zeros
                     data_matrix = numpy.pad(data_matrix,
-                                             ((0, len(v) - ndegenerated),
-                                              (0, 0)),
-                                             mode='constant')
+                                            ((0, len(v) - ndegenerated),
+                                             (0, 0)),
+                                            mode='constant')
 
                 # Resolves the equation
                 # B.T @ B @ C = B.T @ D
@@ -1297,7 +1309,6 @@ class FDataBasis:
                              f"exceed the number of points to be smoothed "
                              f"({data_matrix.shape[0]}).")
 
-
         return cls(basis, coefficients)
 
     @property
@@ -1318,7 +1329,7 @@ class FDataBasis:
     @property
     def extrapolation(self):
         """Return default type of extrapolation."""
-        return  self.basis.extrapolation
+        return self.basis.extrapolation
 
     def evaluate(self, eval_points, derivative=0):
         """Evaluate the object or its derivatives at a list of values.
@@ -1389,7 +1400,7 @@ class FDataBasis:
         res_matrix = numpy.empty((self.nsamples, eval_points.shape[0]))
         shifted_points = numpy.empty(len(eval_points))
         domain_length = self.domain_range[1] - self.domain_range[0]
-        _matrix = numpy.empty((len(eval_points),self.nbasis))
+        _matrix = numpy.empty((len(eval_points), self.nbasis))
 
         for i in range(self.nsamples):
 
@@ -1444,13 +1455,13 @@ class FDataBasis:
         """
 
         if discretization_points is None:  # Grid to discretize the function
-            nfine = max(self.nbasis*10+1, 201)
+            nfine = max(self.nbasis * 10 + 1, 201)
             discretization_points = numpy.linspace(*self.basis.domain_range,
                                                    nfine)
         else:
             discretization_points = numpy.asarray(discretization_points)
 
-        if numpy.isscalar(shifts): # Special case, al curves have the same shift
+        if numpy.isscalar(shifts):  # Special case, al curves have the same shift
 
             _basis = self.basis.rescale((self.basis.domain_range[0] + shifts,
                                          self.basis.domain_range[1] + shifts))
@@ -1463,7 +1474,6 @@ class FDataBasis:
             raise ValueError(f"shifts vector ({len(shifts)}) must have the same"
                              f" length than the number of samples "
                              f"({self.nsamples})")
-
 
         if extrapolation is None:
             extrapolation = self.extrapolation
@@ -1638,7 +1648,7 @@ class FDataBasis:
     def __repr__(self):
         """Representation of FDataBasis object."""
         return (f"{self.__class__.__name__}(basis={self.basis}, "
-               f"coefficients={self.coefficients})")
+                f"coefficients={self.coefficients})")
 
     def __call__(self, eval_points):
         """Evaluate the functions in the object at a list of values.

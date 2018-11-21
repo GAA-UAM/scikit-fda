@@ -16,33 +16,10 @@ import scipy.stats.mstats
 
 from . import basis as fdbasis
 from .grid_interpolation import GridSplineInterpolator
+from .fdata import _list_of_arrays
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
-
-
-def _list_of_arrays(original_array):
-    """Convert to a list of arrays.
-
-    If the original list is one-dimensional (e.g. [1, 2, 3]), return list to
-    array (in this case [array([1, 2, 3])]).
-
-    If the original list is two-dimensional (e.g. [[1, 2, 3], [4, 5]]), return
-    a list containing other one-dimensional arrays (in this case
-    [array([1, 2, 3]), array([4, 5, 6])]).
-
-    In any other case the behaviour is unespecified.
-
-    """
-    new_array = numpy.array([numpy.asarray(i) for i in
-                             numpy.atleast_1d(original_array)])
-
-    # Special case: Only one array, expand dimension
-    if len(new_array.shape) == 1 and not any(isinstance(s, numpy.ndarray)
-                                             for s in new_array):
-        new_array = numpy.atleast_2d(new_array)
-
-    return list(new_array)
 
 
 class FDataGrid:

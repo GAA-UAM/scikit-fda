@@ -18,7 +18,8 @@ from scipy.special import binom
 import copy
 
 from . import grid
-from .registration import Extrapolation
+from .fdata import Extrapolation # This import will not be neccesary with the
+                                # Extrapolation finished in fdata
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"

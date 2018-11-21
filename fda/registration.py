@@ -4,20 +4,10 @@ This module contains the methods to perform the registration of
 functional data and related routines, in basis form as well in discretized form.
 
 """
-from enum import Enum
 
 import numpy
 import scipy.integrate
 
-
-# TODO: Move extrapolation to their corresponding module
-class Extrapolation(Enum):
-    r"""Enum with extrapolation types. Defines the extrapolation mode for
-        elements outside the domain range.
-    """
-    extrapolation = "extrapolation" #: The values are extrapolated by evaluate.
-    periodic = "periodic" #: Extends the domain range periodically.
-    const = "const" #: Uses the boundary value.
 
 def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
                       *, discretization_points=None):
@@ -250,10 +240,6 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
         nfine = len(discretization_points)
         discretization_points = numpy.asarray(discretization_points)
 
-    if extrapolation is None:
-        extrapolation = fd.extrapolation
-    else:
-        extrapolation = Extrapolation(extrapolation)
 
     # Auxiliar arrays to avoid multiple memory allocations
     delta_aux = numpy.empty(fd.nsamples)

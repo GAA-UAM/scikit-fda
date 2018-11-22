@@ -548,6 +548,7 @@ class FDataGrid:
                          self.axes_labels)
 
     def _set_labels(self, fig):
+        # TODO: check in init the length of the labels
         """Set labels if any.
 
         Args:
@@ -561,9 +562,10 @@ class FDataGrid:
         if self.axes_labels is not None:
             ax = fig.get_axes()
             if ax[0].name == '3d':
-                ax[0].set_xlabel(self.axes_labels[0])
-                ax[0].set_ylabel(self.axes_labels[1])
-                ax[0].set_zlabel(self.axes_labels[2])
+                for i in range(self.ndim_image):
+                    ax[i].set_xlabel(self.axes_labels[0])
+                    ax[i].set_ylabel(self.axes_labels[1])
+                    ax[i].set_zlabel(self.axes_labels[i + 2])
             else:
                 for i in range(self.ndim_image):
                     ax[i].set_xlabel(self.axes_labels[0])
@@ -578,14 +580,19 @@ class FDataGrid:
 
         """
         fig = plt.figure()
+
         if self.ndim_domain == 1:
-            ncols = math.ceil(math.sqrt(self.ndim_image))
-            nrows = math.ceil(self.ndim_image / ncols)
-            for i in range(self.ndim_image):
-                fig.add_subplot(nrows, ncols, i + 1)
-            ax = fig.get_axes()
+            projection = None
         else:
-            ax = fig.gca(projection='3d')
+            projection = '3d'
+
+        ncols = math.ceil(math.sqrt(self.ndim_image))
+        nrows = math.ceil(self.ndim_image / ncols)
+        for i in range(self.ndim_image):
+            fig.add_subplot(nrows, ncols, i + 1, projection=projection)
+
+        ax = fig.get_axes()
+
         return fig, ax
 
     def _arrange_layout(self, fig):
@@ -596,7 +603,7 @@ class FDataGrid:
 
         """
         fig.tight_layout()
-        if self.dataset_label is not None and self.ndim_domain == 1:
+        if self.dataset_label is not None:
             st = fig.texts[0]
             st.set_y(0.95)
             fig.subplots_adjust(top=0.85)
@@ -612,10 +619,10 @@ class FDataGrid:
 
         Returns:
             _plot : if ndim_domain is 1, list of lines that were added to the plot;
-                    if ndim_domain is 2, mpl_toolkits.mplot3d.art3d.Poly3DCollection.
+                    if ndim_domain is 2, list of mpl_toolkits.mplot3d.art3d.Poly3DCollection.
 
         """
-        if self.ndim_domain >= 2 and self.ndim_image > 1:
+        if self.ndim_domain > 2:
             raise NotImplementedError("Plot only supported for functional data"
                                       "modeled in at most 3 dimensions.")
 
@@ -624,18 +631,19 @@ class FDataGrid:
                              "the dimension of the image.")
 
         if fig == None:
-            fig, ax = self._set_figure_and_axes()
+            fig, ax = self.set_figure_and_axes()
 
+        _plot = []
         if self.ndim_domain == 1:
-            _plot = []
-            for i in range(0, self.ndim_image):
+            for i in range(self.ndim_image):
                 _plot.append(ax[i].plot(self.sample_points[0], self.data_matrix[:, :, i].T, **kwargs))
         else:
             X = self.sample_points[0]
             Y = self.sample_points[1]
             X, Y = np.meshgrid(X, Y)
-            for i in range(self.nsamples):
-                _plot = ax.plot_surface(X, Y, np.squeeze(self.data_matrix[i]).T, **kwargs)
+            for i in range(self.ndim_image):
+                for j in range(self.nsamples):
+                    _plot.append(ax[i].plot_surface(X, Y, np.squeeze(self.data_matrix[j, :, :, i]).T, **kwargs))
 
         self._set_labels(fig)
         self._arrange_layout(fig)
@@ -643,6 +651,8 @@ class FDataGrid:
 
         return _plot
 
+    from mpl_toolkits.mplot3d import Axes3D
+    import itertools
     def scatter(self, fig=None, **kwargs):
         """Scatter plot of the FDatGrid object.
 
@@ -653,10 +663,10 @@ class FDataGrid:
 
         Returns:
             _plot : if ndim_domain is 1, list of matplotlib.collections.PathCollection;
-                    if ndim_domain is 2, mpl_toolkits.mplot3d.art3d.Path3DCollection.
+                    if ndim_domain is 2, list of mpl_toolkits.mplot3d.art3d.Path3DCollection.
 
         """
-        if self.ndim_domain >= 2 and self.ndim_image > 1:
+        if self.ndim_domain > 2:
             raise NotImplementedError("Plot only supported for functional data"
                                       "modeled in at most 3 dimensions.")
 
@@ -667,19 +677,18 @@ class FDataGrid:
         if fig == None:
             fig, ax = self._set_figure_and_axes()
 
+        _plot = []
         if self.ndim_domain == 1:
-            _plot = []
-            color = [tuple(np.random.choice(range(256), size=3) / 255) for i in range(self.nsamples)]
-            color = list(itertools.chain.from_iterable(itertools.repeat(x, self.ncol) for x in color))
-            X = [self.sample_points[0]] * self.nsamples
             for i in range(self.ndim_image):
-                _plot.append(ax[i].scatter(X, self.data_matrix[:, :, i], color=color, **kwargs))
+                for j in range(self.nsamples):
+                    _plot.append(ax[i].scatter(self.sample_points[0], self.data_matrix[j, :, i].T, **kwargs))
         else:
             X = self.sample_points[0]
             Y = self.sample_points[1]
             X, Y = np.meshgrid(X, Y)
-            for i in range(self.nsamples):
-                _plot = ax.scatter(X, Y, self.data_matrix[i], **kwargs)
+            for i in range(self.ndim_image):
+                for j in range(self.nsamples):
+                    _plot.append(ax[i].scatter(X, Y, self.data_matrix[j, :, :, i].T, **kwargs))
 
         self._set_labels(fig)
         self._arrange_layout(fig)

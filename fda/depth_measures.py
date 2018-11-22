@@ -86,14 +86,16 @@ def modified_band_depth(fdgrid):
 
     if fdgrid.ndim_domain == 1:
         axis = 1
+        npoints_sample = fdgrid.ncol
     else:
         axis = (1, 2)
+        npoints_sample = len(fdgrid.sample_points[0]) * len(fdgrid.sample_points[1])
 
     ranks = rank_samples(fdgrid)
     nsamples_above = fdgrid.nsamples - ranks
     nsamples_below = ranks - 1
     match = nsamples_above * nsamples_below
-    proportion = match.sum(axis=axis) / fdgrid.ncol
+    proportion = match.sum(axis=axis) / npoints_sample
     nchoose2 = math.factorial(fdgrid.nsamples) / (2 * math.factorial(fdgrid.nsamples - 2))
     depth = (proportion + fdgrid.nsamples - 1) / nchoose2
 

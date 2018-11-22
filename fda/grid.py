@@ -631,7 +631,7 @@ class FDataGrid:
                              "the dimension of the image.")
 
         if fig == None:
-            fig, ax = self.set_figure_and_axes()
+            fig, ax = self._set_figure_and_axes()
 
         _plot = []
         if self.ndim_domain == 1:
@@ -651,8 +651,6 @@ class FDataGrid:
 
         return _plot
 
-    from mpl_toolkits.mplot3d import Axes3D
-    import itertools
     def scatter(self, fig=None, **kwargs):
         """Scatter plot of the FDatGrid object.
 
@@ -668,7 +666,7 @@ class FDataGrid:
         """
         if self.ndim_domain > 2:
             raise NotImplementedError("Plot only supported for functional data"
-                                      "modeled in at most 3 dimensions.")
+                                      " modeled in at most 3 dimensions.")
 
         if fig != None and len(fig.get_axes()) != self.ndim_image:
             raise ValueError("Number of axes of the figure must be equal to"

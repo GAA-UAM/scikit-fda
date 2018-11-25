@@ -272,6 +272,10 @@ class Basis(ABC):
 
         return type(self)(domain_range, self.nbasis)
 
+    def copy(self):
+        """Basis copy"""
+        return copy.deepcopy(self)
+
     def __repr__(self):
         """Representation of a Basis object."""
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
@@ -280,10 +284,6 @@ class Basis(ABC):
     def __eq__(self, other):
         """Equality of Basis"""
         return type(self) == type(other) and self.domain_range == other.domain_range and self.nbasis == other.nbasis
-
-    def __copy__(self):
-        """Basis copy"""
-        return type(self)(self.domain_range, self.nbasis)
 
 
 class Monomial(Basis):
@@ -816,10 +816,6 @@ class BSpline(Basis):
         """Equality of Basis"""
         return super().__eq__(other) and self.order == other.order and self.knots == other.knots
 
-    def __copy__(self):
-        """BSpline Basis copy"""
-        return BSpline(self.domain_range, self.nbasis, self.order, numpy.array(self.knots, dtype=numpy.dtype('float')))
-
 
 class Fourier(Basis):
     r"""Fourier basis.
@@ -1057,10 +1053,6 @@ class Fourier(Basis):
     def __eq__(self, other):
         """Equality of Basis"""
         return super().__eq__(other) and self.period == other.period
-
-    def __copy__(self):
-        """Fourier Basis copy"""
-        return Fourier(self.domain_range, self.nbasis, self.period)
 
 
 class FDataBasis:
@@ -1658,6 +1650,10 @@ class FDataBasis:
                               sample_points=eval_points,
                               sample_range=self.domain_range)
 
+    def copy(self):
+        """FDataBasis copy"""
+        return copy.deepcopy(self)
+
     def __repr__(self):
         """Representation of FDataBasis object."""
         return (f"{self.__class__.__name__}(basis={self.basis}, "
@@ -1676,7 +1672,3 @@ class FDataBasis:
 
         """
         return self.evaluate(eval_points)
-
-    def __copy__(self):
-        """FDataBasis copy"""
-        return FDataBasis(copy.copy(self.basis), numpy.array(self.coefficients))

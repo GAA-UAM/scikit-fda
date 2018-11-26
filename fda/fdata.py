@@ -6,6 +6,7 @@ objects of the package and contains some commons methods.
 
 from abc import ABC, abstractmethod
 from enum import Enum
+import numbers
 
 import numpy
 
@@ -56,44 +57,12 @@ class FData(ABC):
         axes_labels (list): list containing the labels of the different
             axis. The first element is the x label, the second the y label
             and so on.
-        keepdims (bool): Default value of argument keepdims in :meth:`evaluate".
+        keepdims (bool): Default value of argument keepdims in
+            :func:`evaluate".
 
     """
 
-    def __init__(self, nsamples, ndim_domain=1, ndim_image=1,
-                 extrapolation=None, dataset_label=None, axes_labels=None,
-                 keepdims=False):
-        """Constructor of FData object. This is an abstract class, see
-        :class:`FDataBasis` or :class:`FDataGrid`.
-
-        Args:
-            nsamples (int): Number of samples.
-            ndim_domain (int): Dimension of the domain.
-            ndim_image (int): Dimension of the image.
-            extrapolation (str or Extrapolation, optional): Default
-                extrapolation method in :meth:`evaluate`. Controls the
-                extrapolation mode for elements outside the domain range.
-            dataset_label (str, optional): name of the dataset.
-            axes_labels (list, optional): list containing the labels of the
-                different axes. The first element is the x label, the second
-                the y label and so on.
-            keepdims (bool, optional): Defines the default value of keepdims in
-                :meth:`evaluate. When the dimension of the image is 1, if is
-                False, evaluate returns an array nsamples x number of points
-                evaluated else returns an array of shape nsamples x number of
-                points evaluated x 1.
-
-
-        """
-        self._nsamples = nsamples
-        self._ndim_domain = ndim_domain
-        self._ndim_image = ndim_image
-
-        self.dataset_label = dataset_label
-        self.axes_labels = axes_labels
-        self.extrapolation = extrapolation
-        self.keepdims = keepdims
-
+    @abstractmethod
     @property
     def nsamples(self):
         """Return the number of samples.
@@ -103,8 +72,9 @@ class FData(ABC):
                 rows of the data_matrix.
 
         """
-        return self._nsamples
+        pass
 
+    @abstractmethod
     @property
     def ndim_domain(self):
         """Return number of dimensions of the domain.
@@ -113,8 +83,9 @@ class FData(ABC):
             int: Number of dimensions of the domain.
 
         """
-        return self._ndim_domain
+        pass
 
+    @abstractmethod
     @property
     def ndim_image(self):
         """Return number of dimensions of the image.
@@ -123,7 +94,7 @@ class FData(ABC):
             int: Number of dimensions of the image.
 
         """
-        return self._ndim_image
+        pass
 
     @abstractmethod
     def evaluate(self, eval_points, *, derivative=0, extrapolation=None,
@@ -207,7 +178,15 @@ class FData(ABC):
 
     def _extrapolate_time(self, eval_points, extrapolation=None,
                           in_place=False):
-        """Modifies the eval_points during the evaluation to apply extrapolation
+        """Modifies the eval_points during the evaluation to apply
+        extrapolation.
+
+            Args:
+                eval_points (array_like): Points to apply extrapolation.
+                extrapolation (str or Extrapolation): Type of extrapolation to
+                    apply. See :class:`Extrapolation`.
+                in_place (bool, optional): Select if modificate in place the
+                    eval_points or return a copy. Default to false.
 
             Returns:
                 (numpy.ndarray): Arrays with the corresponding eval_points
@@ -400,14 +379,22 @@ class FData(ABC):
         pass
 
     @abstractmethod
-    def to_grid(self, eval_points=None): # Could be a good idea add this method to
-                                         # grid to resample in other eval_points
+    def to_grid(self, eval_points=None):
+        """Return the discrete representation of the object.
+
+        Args:
+            eval_points (array_like, optional): Set of points where the
+                functions are evaluated.
+
+        Returns:
+              FDataGrid: Discrete representation of the functional data
+              object.
+        """
+
         pass
 
     @abstractmethod
     def to_basis(self, basis, eval_points=None, **kwargs):
-                                         # Could be a good idea add this method
-                                         # to basis to change their basis
         """Return the basis representation of the object.
 
         Args:
@@ -424,10 +411,8 @@ class FData(ABC):
         pass
 
     @abstractmethod
-    def concatenate(self, other): # Implemented in Grid but not in Basis
-                                  # Maybe could be interesting concatenate along
-                                  # image dimension too
-        """Join samples from a similar FDataGrid object.
+    def concatenate(self, other):
+        """Join samples from a similar FData object.
 
         Joins samples from another FData object if it has the same
         dimensions and has compatible representations.

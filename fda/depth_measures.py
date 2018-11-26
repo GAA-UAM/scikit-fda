@@ -3,10 +3,9 @@
 This module includes different methods to order functional data,
 from the center (larger values) outwards(smaller ones)."""
 
-import math
 import numpy as np
 from scipy.stats import rankdata
-from fda.grid import FDataGrid
+from .grid import FDataGrid
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
@@ -27,13 +26,11 @@ def rank_samples(fdgrid):
         for i in range(fdgrid.ndim_image):
             for j in range(fdgrid.ncol):
                 ranks[:, j, i] = rankdata(fdgrid.data_matrix[:, j, i], method='max')
-    #             ranks[:, :, i] = fdgrid.data_matrix[:, :, i].argsort(axis= 0).argsort(axis= 0) + 1
     else:
         for i in range(fdgrid.ndim_image):
             for j in range(len(fdgrid.sample_points[1])):
                 for k in range(len(fdgrid.sample_points[0])):
                     ranks[:, k, j, i] = rankdata(fdgrid.data_matrix[:, k, j, i], method='max')
-    #                     ranks[:, :, :,  i]= fdgrid.data_matrix[:, :, :, i].argsort(axis=0).argsort(axis = 0) + 1
 
     return ranks
 
@@ -62,7 +59,8 @@ def band_depth(fdgrid):
     ranks = rank_samples(fdgrid)
     nsamples_above = fdgrid.nsamples - np.amax(ranks, axis=axis)
     nsamples_below = np.amin(ranks, axis=axis) - 1
-    nchoose2 = math.factorial(fdgrid.nsamples) / (2 * math.factorial(fdgrid.nsamples - 2))
+    n = fdgrid.nsamples
+    nchoose2 = n(n-1)/2
     depth = (nsamples_below * nsamples_above + fdgrid.nsamples - 1) / nchoose2
 
     return depth
@@ -96,7 +94,8 @@ def modified_band_depth(fdgrid):
     nsamples_below = ranks - 1
     match = nsamples_above * nsamples_below
     proportion = match.sum(axis=axis) / npoints_sample
-    nchoose2 = math.factorial(fdgrid.nsamples) / (2 * math.factorial(fdgrid.nsamples - 2))
+    n = fdgrid.nsamples
+    nchoose2 = n(n - 1) / 2
     depth = (proportion + fdgrid.nsamples - 1) / nchoose2
 
     return depth

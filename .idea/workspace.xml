@@ -2,6 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="cbd72304-1f78-4afa-9497-f76f3206ba3f" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/fda/graphics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/fda/depth_measures.py" beforeDir="false" afterPath="$PROJECT_DIR$/fda/depth_measures.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/fda/grid.py" beforeDir="false" afterPath="$PROJECT_DIR$/fda/grid.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -14,46 +17,62 @@
     <session id="-943320365">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
+          <entry key="project.closed" value="1" />
           <entry key="project.open.time.2" value="1" />
           <entry key="project.open.time.32" value="1" />
-          <entry key="project.opened" value="2" />
+          <entry key="project.open.time.33" value="1" />
+          <entry key="project.open.time.36" value="1" />
+          <entry key="project.opened" value="4" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
           <entry key="gitignore" value="1" />
-          <entry key="py" value="6" />
+          <entry key="py" value="7" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
           <entry key="PLAIN_TEXT" value="1" />
-          <entry key="Python" value="6" />
+          <entry key="Python" value="7" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
+          <entry key="dummy" value="19" />
           <entry key="gitignore" value="8" />
-          <entry key="py" value="589" />
+          <entry key="py" value="827" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="PLAIN_TEXT" value="8" />
-          <entry key="Python" value="589" />
+          <entry key="PLAIN_TEXT" value="27" />
+          <entry key="Python" value="827" />
         </counts>
       </usages-collector>
     </session>
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/fda/grid.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-612">
-              <caret line="631" lean-forward="true" selection-start-line="631" selection-end-line="631" />
+            <state relative-caret-position="29">
+              <caret line="67" column="19" lean-forward="true" selection-start-line="67" selection-start-column="7" selection-end-line="67" selection-end-column="19" />
               <folding>
                 <element signature="e#232#246#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/fda/graphics.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="2295">
+              <caret line="153" column="50" lean-forward="true" selection-start-line="153" selection-start-column="50" selection-end-line="153" selection-end-column="50" />
+              <folding>
+                <element signature="e#0#39#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -71,13 +90,13 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/fda/depth_measures.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-230">
-              <caret line="96" column="43" lean-forward="true" selection-start-line="96" selection-start-column="43" selection-end-line="96" selection-end-column="43" />
+            <state relative-caret-position="-1859">
+              <caret line="7" column="27" selection-start-line="7" selection-start-column="27" selection-end-line="7" selection-end-column="27" />
               <folding>
-                <element signature="e#151#162#0" expanded="true" />
+                <element signature="e#164#182#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -85,15 +104,13 @@
       </file>
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/fda/kernel_smoothers.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1842" />
-          </provider>
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tests/test_grid.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-222">
+            <state>
               <folding>
                 <element signature="e#0#15#0" expanded="true" />
               </folding>
@@ -104,7 +121,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/.gitignore">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="373">
+            <state relative-caret-position="1545">
               <caret line="103" column="10" selection-start-line="103" selection-start-column="10" selection-end-line="103" selection-end-column="10" />
             </state>
           </provider>
@@ -112,9 +129,7 @@
       </file>
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/fda/validation.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1035" />
-          </provider>
+          <provider selected="true" editor-type-id="text-editor" />
         </entry>
       </file>
     </leaf>
@@ -126,6 +141,18 @@
       </list>
     </option>
   </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>sample_points</find>
+      <find>matplotlib</find>
+      <find>math</find>
+      <find>itert</find>
+      <find>self</find>
+    </findStrings>
+    <replaceStrings>
+      <replace>fdgrid</replace>
+    </replaceStrings>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -133,8 +160,11 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/.gitignore" />
+        <option value="$PROJECT_DIR$/fda/fdboxplot.py" />
+        <option value="$PROJECT_DIR$/fda/fdplot.py" />
         <option value="$PROJECT_DIR$/fda/depth_measures.py" />
         <option value="$PROJECT_DIR$/fda/grid.py" />
+        <option value="$PROJECT_DIR$/fda/graphics.py" />
       </list>
     </option>
   </component>
@@ -149,6 +179,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -175,7 +206,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -216,10 +246,10 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="64" y="-11" width="1303" height="780" extended-state="6" />
+    <frame x="65" y="-4" width="1301" height="772" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.16015936" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.16494024" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -230,7 +260,7 @@
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32919255" />
       <window_info anchor="bottom" id="Version Control" order="7" show_stripe_button="false" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="8" visible="true" weight="0.47981367" />
+      <window_info anchor="bottom" id="Terminal" order="8" visible="true" weight="0.11024845" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
       <window_info anchor="bottom" id="Python Console" order="10" weight="0.32919255" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -244,10 +274,27 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/fda/validation.py">
+    <entry file="file://$PROJECT_DIR$/fda/kernel_smoothers.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/test_grid.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1035" />
+        <state>
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
       </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1545">
+          <caret line="103" column="10" selection-start-line="103" selection-start-column="10" selection-end-line="103" selection-end-column="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/fda/validation.py">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/fda/kernels.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -259,43 +306,32 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/.gitignore">
+    <entry file="file://$PROJECT_DIR$/fda/grid.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="373">
-          <caret line="103" column="10" selection-start-line="103" selection-start-column="10" selection-end-line="103" selection-end-column="10" />
+        <state relative-caret-position="29">
+          <caret line="67" column="19" lean-forward="true" selection-start-line="67" selection-start-column="7" selection-end-line="67" selection-end-column="19" />
+          <folding>
+            <element signature="e#232#246#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/fda/kernel_smoothers.py">
+    <entry file="file://$PROJECT_DIR$/fda/graphics.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1842" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tests/test_grid.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-222">
+        <state relative-caret-position="2295">
+          <caret line="153" column="50" lean-forward="true" selection-start-line="153" selection-start-column="50" selection-end-line="153" selection-end-column="50" />
           <folding>
-            <element signature="e#0#15#0" expanded="true" />
+            <element signature="e#0#39#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/fda/depth_measures.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-230">
-          <caret line="96" column="43" lean-forward="true" selection-start-line="96" selection-start-column="43" selection-end-line="96" selection-end-column="43" />
+        <state relative-caret-position="-1859">
+          <caret line="7" column="27" selection-start-line="7" selection-start-column="27" selection-end-line="7" selection-end-column="27" />
           <folding>
-            <element signature="e#151#162#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/fda/grid.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-612">
-          <caret line="631" lean-forward="true" selection-start-line="631" selection-end-line="631" />
-          <folding>
-            <element signature="e#232#246#0" expanded="true" />
+            <element signature="e#164#182#0" expanded="true" />
           </folding>
         </state>
       </provider>

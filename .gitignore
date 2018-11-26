@@ -101,5 +101,4 @@ ENV/
 .mypy_cache/
 
 #IDE metadata
-**.idea/**
-
+.idea

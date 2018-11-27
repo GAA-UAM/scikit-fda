@@ -15,6 +15,7 @@ from scipy.interpolate import PPoly
 import scipy.interpolate
 import scipy.linalg
 from scipy.special import binom
+import copy
 
 from . import grid
 from .registration import Extrapolation
@@ -270,6 +271,10 @@ class Basis(ABC):
             raise ValueError(f"The interval {domain_range} is not well-defined")
 
         return type(self)(domain_range, self.nbasis)
+
+    def copy(self):
+        """Basis copy"""
+        return copy.deepcopy(self)
 
     def __repr__(self):
         """Representation of a Basis object."""
@@ -1646,6 +1651,10 @@ class FDataBasis:
         return grid.FDataGrid(self.evaluate(eval_points),
                               sample_points=eval_points,
                               sample_range=self.domain_range)
+
+    def copy(self):
+        """FDataBasis copy"""
+        return copy.deepcopy(self)
 
     def __repr__(self):
         """Representation of FDataBasis object."""

@@ -11,69 +11,6 @@ __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
 
-def set_labels(fdgrid, fig):
-    # TODO: check in init the length of the labels
-    """Set labels if any.
-
-    Args:
-        fig (figure object): figure object containing the axes that implement set_xlabel and set_ylabel,
-                             and set_zlabel in case of a 3d projection.
-
-    """
-    if fdgrid.dataset_label is not None:
-        fig.suptitle(fdgrid.dataset_label, fontsize="x-large")
-
-    if fdgrid.axes_labels is not None:
-        ax = fig.get_axes()
-        if ax[0].name == '3d':
-            for i in range(fdgrid.ndim_image):
-                ax[i].set_xlabel(fdgrid.axes_labels[0])
-                ax[i].set_ylabel(fdgrid.axes_labels[1])
-                ax[i].set_zlabel(fdgrid.axes_labels[i + 2])
-        else:
-            for i in range(fdgrid.ndim_image):
-                ax[i].set_xlabel(fdgrid.axes_labels[0])
-                ax[i].set_ylabel(fdgrid.axes_labels[i + 1])
-
-
-def set_figure_and_axes(fdgrid):
-    """Set the figure and its axes.
-
-    Returns:
-        fig (figure object): figure object initialiazed.
-        ax (axes object): axes of the initialized figure.
-
-    """
-    fig = plt.figure()
-
-    if fdgrid.ndim_domain == 1:
-        projection = None
-    else:
-        projection = '3d'
-
-    ncols = math.ceil(math.sqrt(fdgrid.ndim_image))
-    nrows = math.ceil(fdgrid.ndim_image / ncols)
-    for i in range(fdgrid.ndim_image):
-        fig.add_subplot(nrows, ncols, i + 1, projection=projection)
-
-    ax = fig.get_axes()
-
-    return fig, ax
-
-
-def arrange_layout(fdgrid, fig):
-    """Arrange the layout of the figure.
-
-    Args:
-        fig (figure object): figure object to be arranged.
-
-    """
-    fig.tight_layout()
-    if fdgrid.dataset_label is not None:
-        st = fig.texts[0]
-        st.set_y(0.95)
-        fig.subplots_adjust(top=0.85)
-
 def fdboxplot(fdgrid, fig=None, method=modified_band_depth, prob=[0.5], fullout=False, factor=1.5, barcol="blue",
               colormap=plt.cm.get_cmap('RdPu'), outliercol="red"):
     """Implementation of the functional boxplot.
@@ -112,7 +49,7 @@ def fdboxplot(fdgrid, fig=None, method=modified_band_depth, prob=[0.5], fullout=
     if not isinstance(colormap, matplotlib.colors.LinearSegmentedColormap):
         raise ValueError("colormap must be of type matplotlib.colors.LinearSegmentedColormap")
 
-        # Obtaining the necessary colors of the colormap.
+    # Obtaining the necessary colors of the colormap.
     tones = np.linspace(0.1, 1.0, len(prob) + 1, endpoint=False)[1:]
     color = colormap(tones)
 
@@ -125,7 +62,7 @@ def fdboxplot(fdgrid, fig=None, method=modified_band_depth, prob=[0.5], fullout=
     indices_descencing_depth = (-depth).argsort(axis=0)
 
     if fig == None:
-        fig, ax = set_figure_and_axes(fdgrid)
+        fig, ax = fdgrid.set_figure_and_axes()
 
     _plot = []
 
@@ -171,8 +108,8 @@ def fdboxplot(fdgrid, fig=None, method=modified_band_depth, prob=[0.5], fullout=
         _plot.append(ax[m].plot(fdgrid.sample_points[0], fdgrid.data_matrix[indices_descencing_depth[0, m], :, m].T, color="black",
                    zorder=5))
 
-        set_labels(fdgrid, fig)
-        arrange_layout(fdgrid, fig)
+        fdgrid.set_labels(fig)
+        fdgrid.arrange_layout(fig)
 
         return _plot
 
@@ -204,7 +141,7 @@ def surface_boxplot(fdgrid, fig=None, method=modified_band_depth, factor=1.5, bo
     indices_descencing_depth = (-depth).argsort(axis=0)
 
     if fig == None:
-        fig, ax = set_figure_and_axes(fdgrid)
+        fig, ax = fdgrid.set_figure_and_axes()
 
     x = fdgrid.sample_points[0]
     lx = len(x)
@@ -267,6 +204,6 @@ def surface_boxplot(fdgrid, fig=None, method=modified_band_depth, factor=1.5, bo
                                 [oulying_min_envelope[x_index, y_index], min_samples_used[x_index, y_index]],
                                 color=boxcol))
 
-    set_labels(fdgrid, fig)
-    arrange_layout(fdgrid, fig)
+    fdgrid.set_labels(fig)
+    fdgrid.arrange_layout(fig)
     return _plot

@@ -864,7 +864,7 @@ class Fourier(Basis):
 
     """
 
-    def __init__(self, domain_range=(0, 1), nbasis=3, period=1):
+    def __init__(self, domain_range=(0, 1), nbasis=3, period=None):
         """Construct a Fourier object.
 
         It forces the object to have an odd number of basis. If nbasis is
@@ -878,6 +878,8 @@ class Fourier(Basis):
                 define the basis.
 
         """
+        if period is None:
+            period = domain_range[1] - domain_range[0]
         self.period = period
         # If number of basis is even, add 1
         nbasis += 1 - nbasis % 2

@@ -16,7 +16,7 @@ import scipy.stats.mstats
 
 from . import basis as fdbasis
 from .grid_interpolation import GridSplineInterpolator
-from .fdata import _list_of_arrays
+from .functional_data import _list_of_arrays
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"

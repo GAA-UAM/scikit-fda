@@ -18,8 +18,7 @@ from scipy.special import binom
 import copy
 
 from . import grid
-from .fdata import Extrapolation # This import will not be neccesary with the
-                                # Extrapolation finished in fdata
+from .functional_data import Extrapolation, FData
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -1325,6 +1324,20 @@ class FDataBasis:
         return self.coefficients.shape[0]
 
     @property
+    def ndim_domain(self):
+        """Return number of dimensions of the domain."""
+
+        # Only domain dimension equal to 1 is supported
+        return 1
+
+    @property
+    def ndim_image(self):
+        """Return number of dimensions of the image."""
+
+        # Only image dimension equal to 1 is supported
+        return 1
+
+    @property
     def nbasis(self):
         """Return number of basis."""
         return self.basis.nbasis
@@ -1506,6 +1519,16 @@ class FDataBasis:
         return FDataBasis.from_data(_data_matrix, discretization_points,
                                     _basis, **kwargs)
 
+
+    def derivative(self, order=1):
+        r"""Differentiate a FDataBasis object.
+
+
+        Args:
+            order (int, optional): Order of the derivative. Defaults to one.
+        """
+        raise NotImplementedError
+
     def plot(self, ax=None, derivative=0, **kwargs):
         """Plot the FDataBasis object or its derivatives.
 
@@ -1611,6 +1634,24 @@ class FDataBasis:
         """
         return self.to_grid(eval_points).var()
 
+    def round(self, decimals=0):
+        """Evenly round to the given number of decimals.
+
+        Args:
+            decimals (int, optional): Number of decimal places to round to.
+                If decimals is negative, it specifies the number of
+                positions to the left of the decimal point. Defaults to 0.
+
+        Returns:
+            :obj:FDataBasis: Returns a FDataBasis object where all its
+            coefficients are rounded .The real and imaginary parts of complex
+            numbers are rounded separately.
+
+        """
+        raise NotImplementedError
+
+
+
     def to_grid(self, eval_points=None):
         """Return the discrete representation of the object.
 
@@ -1653,6 +1694,22 @@ class FDataBasis:
                               sample_points=eval_points,
                               sample_range=self.domain_range)
 
+    def to_basis(self, basis, eval_points=None, **kwargs):
+        """Return the basis representation of the object.
+
+        Args:
+            basis(Basis): basis object in which the functional data are
+                going to be represented.
+            **kwargs: keyword arguments to be passed to
+                FDataBasis.from_data().
+
+        Returns:
+            FDataBasis: Basis representation of the funtional data
+            object.
+        """
+
+        return self.to_grid(eval_points=eval_points).to_basis(basis, **kwargs)
+
     def copy(self):
         """FDataBasis copy"""
         return copy.deepcopy(self)
@@ -1662,16 +1719,66 @@ class FDataBasis:
         return (f"{self.__class__.__name__}(basis={self.basis}, "
                 f"coefficients={self.coefficients})")
 
-    def __call__(self, eval_points):
-        """Evaluate the functions in the object at a list of values.
+    def __str__(self): # Implemented in Grid but not in Basis
+        """Return str(self)."""
+
+        raise NotImplementedError
+
+    def concatenate(self, other):
+        """Join samples from a similar FData object.
+
+        Joins samples from another FData object if it has the same
+        dimensions and has compatible representations.
 
         Args:
-            eval_points (array_like): List of points where the functions are
-                evaluated.
+            other (:class:`FData`): another FData object.
 
         Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            function at the values specified in eval_points.
-
+            :class:`FData`: FData object with the samples from the two
+            original objects.
         """
-        return self.evaluate(eval_points)
+
+        raise NotImplementedError
+
+
+    def __getitem__(self, key): # Implemented in Grid but not in Basis
+        """Return self[key]."""
+
+        raise NotImplementedError
+
+    def __add__(self, other):
+        """Addition for FData object."""
+
+        raise NotImplementedError
+
+    def __radd__(self, other):
+        """Addition for FData object."""
+
+        raise NotImplementedError
+
+
+    def __sub__(self, other):
+        """Subtraction for FData object."""
+
+        raise NotImplementedError
+
+    def __rsub__(self, other):
+        """Right subtraction for FData object."""
+
+        raise NotImplementedError
+
+    def __mul__(self, other):
+        """Multiplication for FData object."""
+
+        raise NotImplementedError
+
+    def __rmul__(self, other):
+        """Multiplication for FData object."""
+
+        raise NotImplementedError
+
+
+    def __truediv__(self, other):
+        """Division for FData object."""
+
+        raise NotImplementedError

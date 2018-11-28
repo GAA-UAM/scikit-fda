@@ -62,8 +62,8 @@ class FData(ABC):
 
     """
 
-    @abstractmethod
     @property
+    @abstractmethod
     def nsamples(self):
         """Return the number of samples.
 
@@ -74,8 +74,8 @@ class FData(ABC):
         """
         pass
 
-    @abstractmethod
     @property
+    @abstractmethod
     def ndim_domain(self):
         """Return number of dimensions of the domain.
 
@@ -85,8 +85,8 @@ class FData(ABC):
         """
         pass
 
-    @abstractmethod
     @property
+    @abstractmethod
     def ndim_image(self):
         """Return number of dimensions of the image.
 
@@ -306,11 +306,7 @@ class FData(ABC):
 
 
     @abstractmethod
-    def copy(self, **kwargs): #Could be a good idea as a new method
-        pass
-
-    @abstractmethod
-    def __copy__(self): #Could be a good idea as a new method
+    def copy(self, **kwargs):
         pass
 
     @abstractmethod
@@ -361,8 +357,7 @@ class FData(ABC):
         pass
 
     @abstractmethod
-    def round(self, decimals=0): # Implemented in grid, maybe could have sense
-                                 # in basis too
+    def round(self, decimals=0):
         """Evenly round to the given number of decimals.
 
         Args:
@@ -434,18 +429,17 @@ class FData(ABC):
         pass
 
     @abstractmethod
-    def __str__(self): # Implemented in Grid but not in Basis
+    def __str__(self):
         """Return str(self)."""
 
         pass
 
     @abstractmethod
-    def __getitem__(self, key): # Implemented in Grid but not in Basis
+    def __getitem__(self, key):
         """Return self[key]."""
 
         pass
 
-    # Python Operators
     @abstractmethod
     def __add__(self, other):
         """Addition for FData object."""

@@ -96,6 +96,15 @@ class FData(ABC):
         """
         pass
 
+    def ndim_codomain(self):
+        """Return number of dimensions of the image.
+
+        Returns:
+            int: Number of dimensions of the image.
+
+        """
+        return self.ndim_image
+
     @property
     @abstractmethod
     def extrapolation(self):

@@ -18,7 +18,7 @@ from scipy.special import binom
 import copy
 
 from . import grid
-from .functional_data import Extrapolation, FData
+from .functional_data import Extrapolation, FData, _list_of_arrays
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -37,6 +37,13 @@ def _polypow(p, n=2):
     else:
         raise ValueError("n must be greater than 0.")
 
+def _check_domain(domain_range):
+
+    for domain in domain_range:
+        if len(domain) != 2 or domain[0] >= domain[1]:
+            raise ValueError(f"The interval {domain} is not "
+                             f"well-defined.")
+
 
 class Basis(ABC):
     """Defines the structure of a basis function system.
@@ -48,25 +55,28 @@ class Basis(ABC):
 
     """
 
-    def __init__(self, domain_range=(0, 1), nbasis=1):
+    def __init__(self, domain_range=(0,1), nbasis=1):
         """Basis constructor.
 
         Args:
-            domain_range (tuple, optional): Definition of the interval where
-                the basis defines a space. Defaults to (0,1).
+            domain_range (tuple or list of tuples, optional): Definition of the
+                interval where the basis defines a space. Defaults to (0,1).
             nbasis: Number of functions that form the basis. Defaults to 1.
         """
+
+        # TODO: Allow multiple dimensions
+        domain_range = _list_of_arrays(domain_range)
+
         # Some checks
-        if domain_range[0] >= domain_range[1]:
-            raise ValueError(f"The interval {domain_range} is not "
-                             f"well-defined.")
+        _check_domain(domain_range)
+
         if nbasis < 1:
             raise ValueError("The number of basis has to be strictly "
                              "possitive.")
+
         self.domain_range = domain_range
         self.nbasis = nbasis
         self._drop_index_lst = []
-        self.extrapolation = Extrapolation.extrapolation
 
         super().__init__()
 
@@ -139,16 +149,19 @@ class Basis(ABC):
             List of lines that were added to the plot.
 
         """
+
+        if self.ndim_domain > 1 or self.ndim_image > 1:
+            raise NotImplementedError
+
         if ax is None:
             ax = matplotlib.pyplot.gca()
         # Number of points where the basis are evaluated
         npoints = max(501, 10 * self.nbasis)
         # List of points where the basis are evaluated
-        eval_points = numpy.linspace(self.domain_range[0],
-                                     self.domain_range[1],
-                                     npoints)
+        eval_points = numpy.linspace(*self.domain_range[0], npoints)
+
         # Basis evaluated in the previous list of points
-        mat = self.evaluate(eval_points, derivative)
+        mat = self.evaluate(eval_points, derivative=derivative, keepdims=False)
         # Plot
         return ax.plot(eval_points, mat.T, **kwargs)
 
@@ -200,13 +213,19 @@ class Basis(ABC):
                 instance the tuple (1, 0, numpy.sin) means :math:`1
                 + sin(x)D^{2}`.
         """
+
+        if self.ndim_domain > 1 or self.ndim_image > 1:
+            raise NotImplementedError
+
+        # Range of first dimension
+        domain_range = self.domain_range[0]
         penalty_matrix = numpy.zeros((self.nbasis, self.nbasis))
         cache = {}
         for i in range(self.nbasis):
             penalty_matrix[i, i] = scipy.integrate.quad(
                 lambda x: (self._evaluate_single_basis_coefficients(
                     coefficients, i, x, cache) ** 2),
-                self.domain_range[0], self.domain_range[1]
+                domain_range[0], domain_range[1]
             )[0]
             for j in range(i + 1, self.nbasis):
                 penalty_matrix[i, j] = scipy.integrate.quad(
@@ -214,7 +233,7 @@ class Basis(ABC):
                         coefficients, i, x, cache)
                                * self._evaluate_single_basis_coefficients(
                                 coefficients, j, x, cache)),
-                    self.domain_range[0], self.domain_range[1]
+                    domain_range[0], domain_range[1]
                 )[0]
                 penalty_matrix[j, i] = penalty_matrix[i, j]
         return penalty_matrix
@@ -267,8 +286,6 @@ class Basis(ABC):
 
         if domain_range is None:
             domain_range = self.domain_range
-        elif domain_range[0] >= domain_range[1]:
-            raise ValueError(f"The interval {domain_range} is not well-defined")
 
         return type(self)(domain_range, self.nbasis)
 
@@ -414,10 +431,14 @@ class Monomial(Basis):
                 Springler.
 
         """
+
+        if self.ndim_domain > 1 or self.ndim_image > 1:
+            raise NotImplementedError
+
         if derivative_degree is None:
             return self._numerical_penalty(coefficients)
 
-        integration_domain = self.domain_range
+        integration_domain = self.domain_range[0]
 
         # initialize penalty matrix as all zeros
         penalty_matrix = numpy.zeros((self.nbasis, self.nbasis))
@@ -552,8 +573,7 @@ class BSpline(Basis):
                                  "number of basis.")
             if domain_range is None:
                 domain_range = (0, 1)
-            knots = list(numpy.linspace(domain_range[0], domain_range[1],
-                                        nbasis - order + 2))
+            knots = list(numpy.linspace(*domain_range, nbasis - order + 2))
         else:
             knots = list(knots)
             knots.sort()
@@ -682,7 +702,8 @@ class BSpline(Basis):
                 knots = numpy.array(self.knots)
                 mid_inter = (knots[1:] + knots[:-1]) / 2
                 constants = self.evaluate(mid_inter,
-                                          derivative=derivative_degree).T
+                                          derivative=derivative_degree,
+                                          keepdims=False).T
                 knots_intervals = numpy.diff(self.knots)
                 # Integration of product of constants
                 return constants.T @ numpy.diag(knots_intervals) @ constants
@@ -797,12 +818,16 @@ class BSpline(Basis):
             knots *= ((domain_range[1] - domain_range[0]
                        ) / (self.knots[-1] - self.knots[0]))
             knots += domain_range[0]
-        else:
-            domain_range = self.domain_range
 
-        # Fix possible round error
-        knots[0] = domain_range[0]
-        knots[-1] = domain_range[1]
+            # Fix possible round error
+            knots[0] = domain_range[0]
+            knots[-1] = domain_range[1]
+
+        else:
+            # TODO: Allow multiple dimensions
+            domain_range = self.domain_range[0]
+
+
 
         return BSpline(domain_range, self.nbasis, self.order, knots)
 
@@ -884,8 +909,6 @@ class Fourier(Basis):
         # If number of basis is even, add 1
         nbasis += 1 - nbasis % 2
         super().__init__(domain_range, nbasis)
-
-        self.extrapolation = Extrapolation.extrapolation
 
     def _compute_matrix(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
@@ -1041,9 +1064,12 @@ class Fourier(Basis):
         if rescale_period == False:
             rescale_basis.period = self.period
         else:
+            domain_rescaled = rescale_basis.domain_range[0]
+            domain = self.domain_range[0]
+
             rescale_basis.period = self.period * \
-                                   (rescale_basis.domain_range[1] - rescale_basis.domain_range[0]
-                                    ) / (self.domain_range[1] - self.domain_range[0])
+                                   (domain_rescaled[1] - domain_rescaled[0]
+                                    ) / (domain[1] - domain[0])
 
         return rescale_basis
 
@@ -1057,7 +1083,7 @@ class Fourier(Basis):
         return super().__eq__(other) and self.period == other.period
 
 
-class FDataBasis:
+class FDataBasis(FData):
     r"""Basis representation of functional data.
 
     Class representation for functional data in the form of a set of basis
@@ -1086,7 +1112,8 @@ class FDataBasis:
 
     """
 
-    def __init__(self, basis, coefficients):
+    def __init__(self, basis, coefficients, *, dataset_label=None,
+                 axes_labels=None, extrapolation=None, keepdims=False):
         """Construct a FDataBasis object.
 
         Args:
@@ -1102,6 +1129,12 @@ class FDataBasis:
                              "elements of the basis.")
         self.basis = basis
         self.coefficients = coefficients
+
+        self.dataset_label = dataset_label
+        self.axes_labels = axes_labels
+
+        self._extrapolation = extrapolation
+        self.keepdims = keepdims
 
     @classmethod
     def from_data(cls, data_matrix, sample_points, basis, weight_matrix=None,
@@ -1350,50 +1383,113 @@ class FDataBasis:
     @property
     def extrapolation(self):
         """Return default type of extrapolation."""
-        return self.basis.extrapolation
 
-    def evaluate(self, eval_points, derivative=0):
-        """Evaluate the object or its derivatives at a list of values.
+        return self._extrapolation
+
+    @extrapolation.setter
+    def extrapolation(self, value):
+        """Sets the type of extrapolation, by default the default of the
+        basis."""
+
+        if value is None:
+            self._extrapolation = None
+        else:
+            self._extrapolation = Extrapolation(value)
+
+
+    def evaluate(self, eval_points, *, derivative=0, extrapolation=None,
+                 grid=False, keepdims=None):
+        """"Evaluate the object or its derivatives at a list of values.
 
         Args:
             eval_points (array_like): List of points where the functions are
-                evaluated.
+                evaluated. If a matrix of shape nsample x eval_points is given
+                each sample is evaluated at the values in the corresponding row
+                in eval_points.
             derivative (int, optional): Order of the derivative. Defaults to 0.
+            extrapolation (str or Extrapolation, optional): Controls the
+                extrapolation mode for elements outside the domain range. By
+                default it is used the mode defined during the instance of the
+                object.
+            grid (bool, optional): Whether to evaluate the results on a grid
+                spanned by the input arrays, or at points specified by the input
+                arrays. If true the eval_points should be a list of size
+                ndim_domain with the corresponding times for each axis. The
+                return matrix has shape nsamples x len(t1) x len(t2) x ... x
+                len(t_ndim_domain) x ndim_image. If the domain dimension is 1
+                the parameter has no efect. Defaults to False.
+            keepdims (bool, optional): If the image dimension is equal to 1 and
+                keepdims is True the return matrix has shape
+                nsamples x eval_points x 1 else nsamples x eval_points.
+                By default is used the value given during the instance of the
+                object.
 
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
             function at the values specified in eval_points.
 
         """
+
+        eval_points = numpy.asarray(eval_points)
+
+
+        # Case grid, in this case wont affect the result, but the eval_points
+        # could be in a list
+        if grid == True:
+            eval_points = _list_of_arrays(eval_points)
+
+            if len(eval_points) != self.ndim_domain:
+                raise ValueError("Number of axis of grid have to be equal to "
+                                 "the domain dimension")
+            eval_points = eval_points[0]
+
+        # Case evaluate composed
+        elif len(eval_points.shape) == 2 and eval_points.shape[0] == self.nsamples:
+            return self._evaluate_composed(eval_points, derivative=derivative,
+                                           extrapolation=extrapolation,
+                                           keepdims=keepdims)
+
+
+        # Uses default value of keepdims
+        if keepdims is None:
+            keepdims = self.keepdims
+
+        # Extrapolation of time
+        eval_points = self._extrapolate_time(eval_points, extrapolation)
+
         # each column is the values of one element of the basis
         basis_values = self.basis.evaluate(eval_points, derivative).T
 
         res_matrix = numpy.empty((self.nsamples, len(eval_points)))
         _matrix = numpy.empty((len(eval_points), self.nbasis))
 
+
         for i in range(self.nsamples):
             numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
             numpy.sum(_matrix, axis=1, out=res_matrix[i])
 
+        # Same behaviour as grid
+        if keepdims:
+            res_matrix = res_matrix.reshape((len(eval_points), self.nbasis),1)
+
         return res_matrix
 
-    def evaluate_shifted(self, eval_points, delta, *, derivative=0,
-                         extrapolation=None):
+
+    def _evaluate_composed(self, eval_points, *, derivative=0,
+                           extrapolation=None, keepdims=None):
+
         """Evaluate the object or its derivatives at a list of values with a
-        shift for each sample.
+        different time for each sample.
 
         Returns a numpy array with the component (i,j) equal to :math:`f_i(t_j +
         \delta_i)`.
 
-        This method has to evaluate the basis values once per sample and
-        eval_point instead of reuse the same evaluation for all the samples
-        as :meth:`evaluate`.
+        This method has to evaluate the basis values once per sample
+        instead of reuse the same evaluation for all the samples
+        as :func:`evaluate`.
 
         Args:
-            eval_points (array_like): List of points where the functions are
-                evaluated.
-            delta (array_like or numeric): List of shifts for each function or
-                an scalar.
+            eval_points (numpy.ndarray): Matrix of size `nsamples`x n_points
             derivative (int, optional): Order of the derivative. Defaults to 0.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range.
@@ -1405,46 +1501,38 @@ class FDataBasis:
             corresponding shift.
         """
 
-        eval_points = numpy.asarray(eval_points)
-        delta = numpy.asarray(delta)
 
-        if delta.shape[0] != self.nsamples:
-            raise ValueError(f"deltas vector length ({delta.shape[0]}) has to "
-                             f"be equal than the number of samples "
-                             f"({self.nsamples}).")
+        eval_points = numpy.array(eval_points)
 
-        if extrapolation is None:
-            extrapolation = self.extrapolation
-        else:
-            extrapolation = Extrapolation(extrapolation)
+        if keepdims is None:
+            keepdims = self.keepdims
 
-        res_matrix = numpy.empty((self.nsamples, eval_points.shape[0]))
-        shifted_points = numpy.empty(len(eval_points))
-        domain_length = self.domain_range[1] - self.domain_range[0]
-        _matrix = numpy.empty((len(eval_points), self.nbasis))
+        if self.ndim_domain != 1 or self.ndim_image != 1:
+            raise NotImplementedError("Only supported for unidimensional basis")
+
+        if eval_points.shape[0] != self.nsamples:
+            raise ValueError(f"sample_point matrix length "
+                             f"({eval_points.shape[0]}) has to be equal than "
+                             f"the number of samples ({self.nsamples}).")
+
+        res_matrix = numpy.empty((self.nsamples, eval_points.shape[1]))
+        _matrix = numpy.empty((eval_points.shape[1], self.nbasis))
+
+        # Extrapolation of the time
+
+        eval_points = self._extrapolate_time(eval_points,
+                                             extrapolation=extrapolation,
+                                             in_place=True)
+
 
         for i in range(self.nsamples):
-
-            # each column contains the values of one element of the basis
-            # evaluated in the shifted time delta[i]
-            numpy.add(eval_points, delta[i], shifted_points)
-
-            # Case periodic extrapolation
-            if extrapolation is Extrapolation.periodic:
-                numpy.subtract(
-                    shifted_points, self.domain_range[0], shifted_points)
-                numpy.mod(shifted_points, domain_length, shifted_points)
-                numpy.add(shifted_points, self.domain_range[0], shifted_points)
-
-            # Case boundary value
-            elif extrapolation is Extrapolation.const:
-                shifted_points[shifted_points <= self.domain_range[0]] = self.domain_range[0]
-                shifted_points[shifted_points >= self.domain_range[1]] = self.domain_range[1]
-
-            basis_values = self.basis.evaluate(shifted_points, derivative).T
-
+            basis_values = self.basis.evaluate(eval_points[i], derivative).T
             numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
             numpy.sum(_matrix, axis=1, out=res_matrix[i])
+
+        if keepdims and self.ndim_image == 1:
+            res_matrix = res_matrix.reshape((self.nsamples,
+                                              eval_points.shape[1], 1))
 
         return res_matrix
 
@@ -1472,22 +1560,27 @@ class FDataBasis:
             **kwargs: Keyword arguments to be passed to :meth:`from_data`.
 
         Returns:
-            :obj:`FDataBasis` with the registered functional data.
+            :obj:`FDataBasis` with the shifted data.
         """
+
+        if self.ndim_image > 1 or self.ndim_domain > 1:
+            raise ValueError
+
+        domain_range = self.domain_range[0]
 
         if discretization_points is None:  # Grid to discretize the function
             nfine = max(self.nbasis * 10 + 1, 201)
-            discretization_points = numpy.linspace(*self.basis.domain_range,
-                                                   nfine)
+            discretization_points = numpy.linspace(*domain_range, nfine)
         else:
             discretization_points = numpy.asarray(discretization_points)
 
-        if numpy.isscalar(shifts):  # Special case, al curves have the same shift
+        if numpy.isscalar(shifts):  # Special case, all curves with same shift
 
-            _basis = self.basis.rescale((self.basis.domain_range[0] + shifts,
-                                         self.basis.domain_range[1] + shifts))
+            _basis = self.basis.rescale((domain_range[0] + shifts,
+                                         domain_range[1] + shifts))
 
-            return FDataBasis.from_data(self.evaluate(discretization_points),
+            return FDataBasis.from_data(self.evaluate(discretization_points,
+                                                      keepdims=False),
                                         discretization_points + shifts,
                                         _basis, **kwargs)
 
@@ -1496,24 +1589,28 @@ class FDataBasis:
                              f" length than the number of samples "
                              f"({self.nsamples})")
 
-        if extrapolation is None:
-            extrapolation = self.extrapolation
-        else:
-            extrapolation = Extrapolation(extrapolation)
-
         if restrict_domain:
-            a = self.domain_range[0] - min(numpy.min(shifts), 0)
-            b = self.domain_range[1] - max(numpy.max(shifts), 0)
+            a = domain_range[0] - min(numpy.min(shifts), 0)
+            b = domain_range[1] - max(numpy.max(shifts), 0)
             domain = (a, b)
             discretization_points = discretization_points[
                 numpy.logical_and(discretization_points >= a,
                                   discretization_points <= b)]
         else:
-            domain = self.domain_range
+            domain = domain_range
+
+
+        points_shifted = numpy.outer(numpy.ones(self.nsamples),
+                                     discretization_points)
+
+
+        points_shifted += numpy.atleast_2d(shifts).T
 
         # Matrix of shifted values
-        _data_matrix = self.evaluate_shifted(discretization_points, shifts,
-                                             extrapolation=extrapolation)
+        _data_matrix = self.evaluate(points_shifted,
+                                     extrapolation=extrapolation,
+                                     keepdims=False)
+
         _basis = self.basis.rescale(domain)
 
         return FDataBasis.from_data(_data_matrix, discretization_points,
@@ -1543,15 +1640,17 @@ class FDataBasis:
             List of lines that were added to the plot.
 
         """
+
+        if self.ndim_image > 1 or self.ndim_domain > 1:
+            raise NotImplementedError
+
         if ax is None:
             ax = matplotlib.pyplot.gca()
         npoints = max(501, 10 * self.nbasis)
         # List of points where the basis are evaluated
-        eval_points = numpy.linspace(self.domain_range[0],
-                                     self.domain_range[1],
-                                     npoints)
+        eval_points = numpy.linspace(*self.domain_range[0], npoints)
         # Basis evaluated in the previous list of points
-        mat = self.evaluate(eval_points, derivative)
+        mat = self.evaluate(eval_points, derivative=derivative, keepdims=False)
         # Plot
         return ax.plot(eval_points, mat.T, **kwargs)
 
@@ -1684,13 +1783,15 @@ class FDataBasis:
                 axes_labels=None)
 
         """
+
+        if self.ndim_image > 1 or self.ndim_domain > 1:
+            raise NotImplementedError
+
         if eval_points is None:
             npoints = max(501, 10 * self.nbasis)
-            numpy.linspace(self.domain_range[0],
-                           self.domain_range[1],
-                           npoints)
+            numpy.linspace(*self.domain_range[0], npoints)
 
-        return grid.FDataGrid(self.evaluate(eval_points),
+        return grid.FDataGrid(self.evaluate(eval_points, keepdims=False),
                               sample_points=eval_points,
                               sample_range=self.domain_range)
 

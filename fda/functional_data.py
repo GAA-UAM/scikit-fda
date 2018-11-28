@@ -14,7 +14,7 @@ class Extrapolation(Enum):
     r"""Enum with extrapolation types. Defines the extrapolation mode for
         elements outside the domain range.
     """
-    extrapolation = "extrapolation" #: The values are extrapolated by evaluate.
+
     periodic = "periodic" #: Extends the domain range periodically.
     const = "const" #: Uses the boundary value.
     exception = "exception" #: Raise an exception
@@ -96,6 +96,27 @@ class FData(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def extrapolation(self):
+        """Return the default type of extrapolation of the object
+
+        Returns:
+            Extrapolation: Type of extrapolation
+
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def domain_range(self):
+        """Return the domain range of the object
+
+        Returns:
+            List of tuples with the ranges for each domain dimension.
+        """
+        pass
+
     @abstractmethod
     def evaluate(self, eval_points, *, derivative=0, extrapolation=None,
                  grid=False, keepdims=None):
@@ -128,13 +149,6 @@ class FData(ABC):
             (numpy.darray): Matrix whose rows are the values of the each
             function at the values specified in eval_points.
 
-        """
-        pass
-
-    @abstractmethod
-    def _evaluate_shifted(eval_points, delta, derivative=0, extrapolation=None):
-        """Evaluate the object or its derivatives at a list of values with a
-        shift for each sample. Internal method used in registration.
         """
         pass
 
@@ -182,7 +196,7 @@ class FData(ABC):
         extrapolation.
 
             Args:
-                eval_points (array_like): Points to apply extrapolation.
+                eval_points (ndarray): List or matrix to apply extrapolation.
                 extrapolation (str or Extrapolation): Type of extrapolation to
                     apply. See :class:`Extrapolation`.
                 in_place (bool, optional): Select if modificate in place the
@@ -198,24 +212,30 @@ class FData(ABC):
         else:
             extrapolation = Extrapolation(extrapolation)
 
+        # Do nothing
+        if extrapolation is None:
+            return eval_points
+
+        domain_range = self.domain_range[0]
+
         # Creates a copy of the object or uses the given array
         out = eval_points if not in_place else eval_points.copy()
 
         if extrapolation is Extrapolation.periodic:
 
-            numpy.subtract(out, self.domain_range[0], out)
-            numpy.mod(out, domain_length, out)
-            numpy.add(out, self.domain_range[0], out)
+            numpy.subtract(out, domain_range[0], out)
+            numpy.mod(out, domain_range[1] - domain_range[0], out)
+            numpy.add(out, domain_range[0], out)
 
         # Case boundary value
         elif extrapolation is Extrapolation.const:
-            out[out <= self.domain_range[0]] = self.domain_range[0]
-            out[out >= self.domain_range[1]] = self.domain_range[1]
+            out[out <= domain_range[0]] = domain_range[0]
+            out[out >= domain_range[1]] = domain_range[1]
 
         # Case raise exception
         elif extrapolation is Extrapolation.exception:
-            if (numpy.any(out < self.domain_range[0]) or
-                numpy.any(out > self.domain_range[1])):
+            if (numpy.any(out < domain_range[0]) or
+                numpy.any(out > domain_range[1])):
 
                 raise ValueError("Attempt to evaluate a value outside the "
                                  "domain range.")
@@ -223,7 +243,7 @@ class FData(ABC):
         return out
 
     @abstractmethod
-    def derivative(self, order=1): # Implemented in Grid but not in Basis
+    def derivative(self, order=1):
         r"""Differentiate a FDataGrid object.
 
 
@@ -232,7 +252,7 @@ class FData(ABC):
         """
         pass
 
-    @abstractmethod # Maybe could be a possible idea overload the shift operator >> and <<
+    @abstractmethod
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               discretization_points=None, **kwargs):
         """Perform a shift of the curves.
@@ -276,7 +296,7 @@ class FData(ABC):
         """
         pass
 
-    def _set_labels(self, ax): # Now in grid, but here could have more sense
+    def _set_labels(self, ax):
         """Set labels if any.
 
         Args:

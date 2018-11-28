@@ -214,9 +214,6 @@ class Basis(ABC):
                 + sin(x)D^{2}`.
         """
 
-        if self.ndim_domain > 1 or self.ndim_image > 1:
-            raise NotImplementedError
-
         # Range of first dimension
         domain_range = self.domain_range[0]
         penalty_matrix = numpy.zeros((self.nbasis, self.nbasis))
@@ -432,8 +429,6 @@ class Monomial(Basis):
 
         """
 
-        if self.ndim_domain > 1 or self.ndim_image > 1:
-            raise NotImplementedError
 
         if derivative_degree is None:
             return self._numerical_penalty(coefficients)
@@ -702,8 +697,7 @@ class BSpline(Basis):
                 knots = numpy.array(self.knots)
                 mid_inter = (knots[1:] + knots[:-1]) / 2
                 constants = self.evaluate(mid_inter,
-                                          derivative=derivative_degree,
-                                          keepdims=False).T
+                                          derivative=derivative_degree).T
                 knots_intervals = numpy.diff(self.knots)
                 # Integration of product of constants
                 return constants.T @ numpy.diag(knots_intervals) @ constants

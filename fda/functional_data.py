@@ -162,7 +162,7 @@ class FData(ABC):
         pass
 
     def __call__(self, eval_points, *, derivative=0, extrapolation=None,
-                 grid=False, keepdims=False):
+                 grid=False, keepdims=None):
         """Evaluate the object or its derivatives at a list of values or a grid.
         This method is a wrapper of :meth:`evaluate`.
 

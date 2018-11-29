@@ -561,6 +561,15 @@ class BSpline(Basis):
                 match with it.
 
         """
+
+        if domain_range is not None:
+            domain_range = _list_of_arrays(domain_range)
+
+            if len(domain_range) != 1:
+                raise ValueError("Domain range should be unidimensional.")
+
+            domain_range = domain_range[0]
+
         # Knots default to equally space points in the domain_range
         if knots is None:
             if nbasis is None:
@@ -578,6 +587,11 @@ class BSpline(Basis):
             nbasis = len(knots) + order - 2
             if domain_range is None:
                 domain_range = (knots[0], knots[-1])
+
+        if (nbasis - order + 2) < 2:
+            raise ValueError(f"The number of basis ({nbasis}) minus the order "
+                             f"of the bspline ({order}) should be greater than "
+                             f"3.")
 
         if domain_range[0] != knots[0] or domain_range[1] != knots[-1]:
             raise ValueError("The ends of the knots must be the same as "
@@ -897,6 +911,14 @@ class Fourier(Basis):
                 define the basis.
 
         """
+
+        domain_range = _list_of_arrays(domain_range)
+
+        if len(domain_range) != 1:
+            raise ValueError("Domain range should be unidimensional.")
+            
+        domain_range = domain_range[0]
+
         if period is None:
             period = domain_range[1] - domain_range[0]
         self.period = period
@@ -1424,8 +1446,14 @@ class FDataBasis(FData):
 
         """
 
+        if numpy.isscalar(eval_points):
+            eval_points = [eval_points]
+
         eval_points = numpy.asarray(eval_points)
 
+        # Uses default value of keepdims
+        if keepdims is None:
+            keepdims = self.keepdims
 
         # Case grid, in this case wont affect the result, but the eval_points
         # could be in a list
@@ -1444,10 +1472,6 @@ class FDataBasis(FData):
                                            keepdims=keepdims)
 
 
-        # Uses default value of keepdims
-        if keepdims is None:
-            keepdims = self.keepdims
-
         # Extrapolation of time
         eval_points = self._extrapolate_time(eval_points, extrapolation)
 
@@ -1464,7 +1488,7 @@ class FDataBasis(FData):
 
         # Same behaviour as grid
         if keepdims:
-            res_matrix = res_matrix.reshape((len(eval_points), self.nbasis),1)
+            res_matrix = res_matrix.reshape((self.nsamples, len(eval_points),1))
 
         return res_matrix
 

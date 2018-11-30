@@ -149,7 +149,7 @@ def minimise(fdatagrid, parameters,
                     [1.67],
                     [2.5 ]]]),
             sample_points=[array([-2., -1.,  0.,  1.,  2.])],
-            sample_range=array([[-2.,  2.]]),
+            domain_range=array([[-2.,  2.]]),
             ...)
 
         Other validation methods can be used such as cross-validation or
@@ -206,7 +206,7 @@ def minimise(fdatagrid, parameters,
     fdatagrid_adjusted = fda.FDataGrid(
         numpy.dot(fdatagrid.data_matrix[..., 0], s.T),
         fdatagrid.sample_points,
-        fdatagrid.sample_range,
+        fdatagrid.domain_range,
         fdatagrid.dataset_label,
         fdatagrid.axes_labels)
     return {'scores': scores,

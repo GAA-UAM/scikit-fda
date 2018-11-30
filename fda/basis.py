@@ -916,7 +916,7 @@ class Fourier(Basis):
 
         if len(domain_range) != 1:
             raise ValueError("Domain range should be unidimensional.")
-            
+
         domain_range = domain_range[0]
 
         if period is None:
@@ -1796,7 +1796,7 @@ class FDataBasis(FData):
                         [2.],
                         [5.]]]),
                 sample_points=[array([0, 1, 2])],
-                sample_range=array([[0, 5]]),
+                domain_range=array([[0, 5]]),
                 dataset_label='Data set',
                 axes_labels=None)
 
@@ -1811,7 +1811,7 @@ class FDataBasis(FData):
 
         return grid.FDataGrid(self.evaluate(eval_points, keepdims=False),
                               sample_points=eval_points,
-                              sample_range=self.domain_range)
+                              domain_range=self.domain_range)
 
     def to_basis(self, basis, eval_points=None, **kwargs):
         """Return the basis representation of the object.

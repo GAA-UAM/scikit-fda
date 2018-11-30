@@ -89,7 +89,7 @@ class FDataGrid(FData):
     """
 
     def __init__(self, data_matrix, sample_points=None,
-                 domain_range=None, dataset_label="Dataset",
+                 domain_range=None, dataset_label="Data set",
                  axes_labels=None, extrapolation=None,
                  interpolator=None, keepdims=False):
 

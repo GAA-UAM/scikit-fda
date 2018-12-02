@@ -252,8 +252,16 @@ class Basis(ABC):
         """
         pass
 
+    @abstractmethod
+    def basis_of_product(self, other):
+        pass
+
+    @abstractmethod
+    def rbasis_of_product(self, other):
+        pass
+
     @staticmethod
-    def mul(one, other):
+    def default_basis_of_product(one, other):
         """Default multiplication for a pair of basis"""
         if one.domain_range != other.domain_range:
             raise ValueError("Ranges are not equal.")
@@ -373,16 +381,16 @@ class Constant(Basis):
         return numpy.full((1, 1), (self.domain_range[1] - self.domain_range[0])) \
             if derivative_degree == 0 else numpy.zeros((1, 1))
 
-    def __mul__(self, other):
+    def basis_of_product(self, other):
         """Multiplication of a Constant Basis with other Basis"""
         if self.domain_range != other.domain_range:
             raise ValueError("Ranges are not equal.")
 
-        return other
+        return other.copy()
 
-    def __rmul__(self, other):
+    def rbasis_of_product(self, other):
         """Multiplication of a Constant Basis with other Basis"""
-        return other
+        return other.copy()
 
 
 class Monomial(Basis):
@@ -564,16 +572,16 @@ class Monomial(Basis):
 
         return penalty_matrix
 
-    def __mul__(self, other):
+    def basis_of_product(self, other):
         """Multiplication of a Monomial Basis with other Basis"""
         if self.domain_range != other.domain_range:
             raise ValueError("Ranges are not equal.")
 
-        return NotImplemented
+        return other.rbasis_of_product(self)
 
-    def __rmul__(self, other):
+    def rbasis_of_product(self, other):
         """Multiplication of a Monomial Basis with other Basis"""
-        return Basis.mul(self, other)
+        return Basis.default_basis_of_product(self, other)
 
 
 class BSpline(Basis):
@@ -898,7 +906,7 @@ class BSpline(Basis):
             self.__class__.__name__, self.domain_range, self.nbasis, self.order,
             self.knots))
 
-    def __mul__(self, other):
+    def basis_of_product(self, other):
         """Multiplication of two Bspline Basis"""
         if self.domain_range != other.domain_range:
             raise ValueError("Ranges are not equal.")
@@ -927,9 +935,11 @@ class BSpline(Basis):
             nbasis = len(allbreaks) + norder - 2
             return BSpline(self.domain_range, nbasis, norder, allbreaks)
         else:
-            return NotImplemented
+            norder = min(self.nbasis - len(self.inknots) + 2, 8)
+            nbasis = max(self.nbasis + other.nbasis, norder + 1)
+            return BSpline(self.domain_range, nbasis, norder)
 
-    def __rmul__(self, other):
+    def rbasis_of_product(self, other):
         """Multiplication of a Bspline Basis with other basis"""
 
         norder = min(self.nbasis - len(self.inknots) + 2, 8)
@@ -1144,7 +1154,7 @@ class Fourier(Basis):
             # implement using inner product
             return self._numerical_penalty(coefficients)
 
-    def __mul__(self, other):
+    def basis_of_product(self, other):
         """Multiplication of two Fourier Basis"""
         if self.domain_range != other.domain_range:
             raise ValueError("Ranges are not equal.")
@@ -1152,11 +1162,11 @@ class Fourier(Basis):
         if isinstance(other, Fourier) and self.period == other.period:
             return Fourier(self.domain_range, self.nbasis + other.nbasis - 1, self.period)
         else:
-            return NotImplemented
+            return Basis.default_basis_of_product(other, self)
 
-    def __rmul__(self, other):
+    def rbasis_of_product(self, other):
         """Multiplication of a Fourier Basis with other Basis"""
-        return Basis.mul(other, self)
+        return Basis.default_basis_of_product(other, self)
 
     def __repr__(self):
         """Representation of a Fourier basis."""

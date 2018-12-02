@@ -1156,7 +1156,7 @@ class FDataBasis(FData):
     def from_data(cls, data_matrix, sample_points, basis, weight_matrix=None,
                   smoothness_parameter=0, penalty_degree=None,
                   penalty_coefficients=None, penalty_matrix=None,
-                  method='cholesky'):
+                  method='cholesky', keepdims=False):
         r"""Transform raw data to a smooth functional form.
 
         Takes functional data in a discrete form and makes an approximates it
@@ -1365,7 +1365,7 @@ class FDataBasis(FData):
                              f"exceed the number of points to be smoothed "
                              f"({data_matrix.shape[0]}).")
 
-        return cls(basis, coefficients)
+        return cls(basis, coefficients, keepdims=keepdims)
 
     @property
     def nsamples(self):
@@ -1687,7 +1687,7 @@ class FDataBasis(FData):
             FDataBasis(basis=..., coefficients=[[1.  1.  3.  0.5]])
 
         """
-        return FDataBasis(self.basis, numpy.mean(self.coefficients, axis=0))
+        return self.copy(coefficients=numpy.mean(self.coefficients, axis=0))
 
     def gmean(self, eval_points=None):
         """Compute the geometric mean of the functional data object.
@@ -1749,7 +1749,7 @@ class FDataBasis(FData):
             numpy.darray: Matrix of covariances.
 
         """
-        return self.to_grid(eval_points).var()
+        return self.to_grid(eval_points).cov()
 
     def round(self, decimals=0):
         """Evenly round to the given number of decimals.
@@ -1797,8 +1797,7 @@ class FDataBasis(FData):
                         [5.]]]),
                 sample_points=[array([0, 1, 2])],
                 domain_range=array([[0, 5]]),
-                dataset_label='Data set',
-                axes_labels=None)
+                ...)
 
         """
 
@@ -1807,11 +1806,13 @@ class FDataBasis(FData):
 
         if eval_points is None:
             npoints = max(501, 10 * self.nbasis)
-            numpy.linspace(*self.domain_range[0], npoints)
+            eval_points = numpy.linspace(*self.domain_range[0], npoints)
+
 
         return grid.FDataGrid(self.evaluate(eval_points, keepdims=False),
                               sample_points=eval_points,
-                              domain_range=self.domain_range)
+                              domain_range=self.domain_range,
+                              keepdims=self.keepdims)
 
     def to_basis(self, basis, eval_points=None, **kwargs):
         """Return the basis representation of the object.
@@ -1829,60 +1830,99 @@ class FDataBasis(FData):
 
         return self.to_grid(eval_points=eval_points).to_basis(basis, **kwargs)
 
-    def copy(self):
+    def copy(self, *, basis=None, coefficients=None, dataset_label=None,
+             axes_labels=None, extrapolation=None, keepdims=None):
         """FDataBasis copy"""
-        return copy.deepcopy(self)
+
+        if basis is None:
+            basis = copy.deepcopy(self.basis)
+
+        if coefficients is None:
+            coefficients = self.coefficients
+
+        if dataset_label is None:
+            dataset_label = copy.deepcopy(dataset_label)
+
+        if axes_labels is None:
+            axes_labels = copy.deepcopy(axes_labels)
+
+        if extrapolation is None:
+            extrapolation = self.extrapolation
+
+        if keepdims is None:
+            keepdims = self.keepdims
+
+        return FDataBasis(basis, coefficients, dataset_label=dataset_label,
+                          axes_labels=axes_labels, extrapolation=extrapolation,
+                          keepdims=keepdims)
 
     def __repr__(self):
         """Representation of FDataBasis object."""
-        return (f"{self.__class__.__name__}(basis={self.basis}, "
-                f"coefficients={self.coefficients})")
+        return (f"{self.__class__.__name__}("
+                f"\nbasis={self.basis},"
+                f"\ncoefficients={self.coefficients})"
+                f"\ndataset_label={self.dataset_label})"
+                f"\naxes_labels={self.axes_labels})"
+                f"\nextrapolation={self.extrapolation})"
+                f"\nkeepdims={self.keepdims})").replace('\n', '\n    ')
 
-    def __str__(self): # Implemented in Grid but not in Basis
+    def __str__(self):
         """Return str(self)."""
 
-        raise NotImplementedError
+        return (f"{self.__class__.__name__}("
+                f"\nbasis={self.basis},"
+                f"\ncoefficients={self.coefficients})").replace('\n', '\n    ')
 
     def concatenate(self, other):
-        """Join samples from a similar FData object.
+        """Join samples from a similar FDataBasis object.
 
-        Joins samples from another FData object if it has the same
-        dimensions and has compatible representations.
+        Joins samples from another FDataBasis object if they have the same
+        basis.
 
         Args:
-            other (:class:`FData`): another FData object.
+            other (:class:`FDataBasis`): another FDataBasis object.
 
         Returns:
-            :class:`FData`: FData object with the samples from the two
+            :class:`FDataBasis`: FData object with the samples from the two
             original objects.
         """
 
-        raise NotImplementedError
+        if other.basis != self.basis:
+            raise ValueError("The objects should have the same basis.")
 
 
-    def __getitem__(self, key): # Implemented in Grid but not in Basis
+        return self.copy(coefficients=numpy.concatenate((self.coefficients,
+                                                         other.coefficients),
+                                                        axis=0))
+
+
+    def __getitem__(self, key):
         """Return self[key]."""
 
-        raise NotImplementedError
+        if isinstance(key, int):
+            return self.copy(coefficients=self.coefficients[key:key + 1])
+
+        else:
+            return self.copy(coefficients=self.coefficients[key])
 
     def __add__(self, other):
-        """Addition for FData object."""
+        """Addition for FDataBasis object."""
 
         raise NotImplementedError
 
     def __radd__(self, other):
-        """Addition for FData object."""
+        """Addition for FDataBasis object."""
 
-        raise NotImplementedError
+        return self.__add__(other)
 
 
     def __sub__(self, other):
-        """Subtraction for FData object."""
+        """Subtraction for FDataBasis object."""
 
         raise NotImplementedError
 
     def __rsub__(self, other):
-        """Right subtraction for FData object."""
+        """Right subtraction for FDataBasis object."""
 
         raise NotImplementedError
 
@@ -1894,7 +1934,7 @@ class FDataBasis(FData):
     def __rmul__(self, other):
         """Multiplication for FData object."""
 
-        raise NotImplementedError
+        return __mul__(other)
 
 
     def __truediv__(self, other):

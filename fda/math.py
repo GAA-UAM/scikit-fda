@@ -96,9 +96,7 @@ def sqrt(fdatagrid):
         FDataGrid: Object whose elements are the square roots of the original.
 
     """
-    return FDataGrid(numpy.sqrt(fdatagrid.data_matrix),
-                     fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.dataset_label, fdatagrid.axes_labels)
+    return fdatagrid.copy(data_matrix=numpy.sqrt(fdatagrid.data_matrix))
 
 
 def absolute(fdatagrid):
@@ -113,9 +111,7 @@ def absolute(fdatagrid):
             original.
 
     """
-    return FDataGrid(numpy.absolute(fdatagrid.data_matrix),
-                     fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.dataset_label, fdatagrid.axes_labels)
+    return fdatagrid.copy(data_matrix=numpy.absolute(fdatagrid.data_matrix))
 
 
 def round(fdatagrid, decimals=0):
@@ -145,9 +141,7 @@ def exp(fdatagrid):
             the elements of the original.
 
     """
-    return FDataGrid(numpy.exp(fdatagrid.data_matrix),
-                     fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.dataset_label, fdatagrid.axes_labels)
+    return fdatagrid.copy(data_matrix=numpy.exp(fdatagrid.data_matrix))
 
 
 def log(fdatagrid):
@@ -161,9 +155,7 @@ def log(fdatagrid):
         FDataGrid: Object whose elements are the logarithm of the original.
 
     """
-    return FDataGrid(numpy.log(fdatagrid.data_matrix),
-                     fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.dataset_label, fdatagrid.axes_labels)
+    return fdatagrid.copy(data_matrix=numpy.log(fdatagrid.data_matrix))
 
 
 def log10(fdatagrid):
@@ -178,9 +170,7 @@ def log10(fdatagrid):
             original.
 
     """
-    return FDataGrid(numpy.log10(fdatagrid.data_matrix),
-                     fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.dataset_label, fdatagrid.axes_labels)
+    return fdatagrid.copy(data_matrix=numpy.log10(fdatagrid.data_matrix))
 
 
 def log2(fdatagrid):
@@ -195,9 +185,7 @@ def log2(fdatagrid):
             original.
 
     """
-    return FDataGrid(numpy.log2(fdatagrid.data_matrix),
-                     fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.dataset_label, fdatagrid.axes_labels)
+    return fdatagrid.copy(data_matrix=numpy.log2(fdatagrid.data_matrix))
 
 
 def cumsum(fdatagrid):
@@ -211,9 +199,8 @@ def cumsum(fdatagrid):
         FDataGrid: Object with the sample wise cumulative sum.
 
     """
-    return FDataGrid(numpy.cumsum(fdatagrid.data_matrix, axis=0),
-                     fdatagrid.sample_points, fdatagrid.sample_range,
-                     fdatagrid.dataset_label, fdatagrid.axes_labels)
+    return fdatagrid.copy(data_matrix=numpy.cumsum(fdatagrid.data_matrix,
+                                                   axis=0))
 
 
 def inner_product(fdatagrid, fdatagrid2):

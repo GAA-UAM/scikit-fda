@@ -7,11 +7,12 @@ list of discretisation points.
 """
 
 import numbers
-
+import copy
 import matplotlib.pyplot
 import numpy
 import scipy
 import scipy.stats.mstats
+
 
 
 from . import basis as fdbasis
@@ -41,6 +42,14 @@ class FDataGrid(FData):
         axes_labels (list): list containing the labels of the different
             axis. The first element is the x label, the second the y label
             and so on.
+        extrapolation (str or Extrapolation): defines the default type of
+            extrapolation. By default None, which does not apply any type of
+            extrapolation. See `Extrapolation` for detailled information of the
+            types of extrapolation.
+        interpolator (GridInterpolator): Defines the type of interpolation
+            applied in `evaluate`.
+        keepdims (bool):
+
 
     Examples:
         Representation of a functional data object with 2 samples
@@ -56,6 +65,7 @@ class FDataGrid(FData):
                    [[2],
                     [3]]]),
             sample_points=[array([2, 4])],
+            domain_range=array([[2, 4]]),
             ...)
 
         The number of columns of data_matrix have to be the length of
@@ -89,7 +99,7 @@ class FDataGrid(FData):
     """
 
     def __init__(self, data_matrix, sample_points=None,
-                 domain_range=None, dataset_label="Data set",
+                 domain_range=None, dataset_label=None,
                  axes_labels=None, extrapolation=None,
                  interpolator=None, keepdims=False):
 
@@ -130,15 +140,11 @@ class FDataGrid(FData):
             data_shape = self.data_matrix.shape[1: 1 + self.ndim_domain]
             sample_points_shape = [len(i) for i in self.sample_points]
 
-            if not numpy.array_equal(
-                    data_shape,
-                    sample_points_shape):
+            if not numpy.array_equal(data_shape, sample_points_shape):
                 raise ValueError("Incorrect dimension in data_matrix and "
                                  "sample_points. Data has shape {} and sample "
                                  "points have shape {}"
                                  .format(data_shape, sample_points_shape))
-
-
 
 
         self._sample_range = numpy.array(
@@ -190,11 +196,7 @@ class FDataGrid(FData):
             imaginary parts of complex numbers are rounded separately.
 
         """
-        return FDataGrid(self.data_matrix.round(decimals),
-                         self.sample_points,
-                         self.domain_range, self.dataset_label,
-                         self.axes_labels, self.extrapolation,
-                         self.interpolator, self.keepdims)
+        return self.copy(data_matrix=self.data_matrix.round(decimals))
 
     @property
     def ndim_domain(self):
@@ -263,7 +265,6 @@ class FDataGrid(FData):
 
             Do not have to be equal to the domain_range.
         """
-
         return self._sample_range
 
     @property
@@ -273,10 +274,7 @@ class FDataGrid(FData):
 
             Do not have to be equal to the sample_range.
         """
-
         return self._domain_range
-
-
 
     @property
     def shape(self):
@@ -292,13 +290,13 @@ class FDataGrid(FData):
 
     @property
     def interpolator(self):
+        """Defines the type of interpolation applied in `evaluate`."""
         return self._interpolator
 
     @interpolator.setter
     def interpolator(self, new_interpolator):
-
+        """Sets the interpolator of the FDataGrid."""
         if new_interpolator is None:
-            # Defaults uses a linear spline interpolator
             new_interpolator = GridSplineInterpolator()
 
         self._interpolator = new_interpolator
@@ -306,10 +304,14 @@ class FDataGrid(FData):
 
     @property
     def extrapolation(self):
+        """Returns the type of extrapolation defined by default in the object.
+        This extrapolation is used in `evaluate` by default.
+        """
         return self._extrapolation
 
     @extrapolation.setter
     def extrapolation(self, value):
+        """Sets the extrapolation of the FDataGrid."""
 
         if value is None:
             self._extrapolation = None
@@ -317,9 +319,9 @@ class FDataGrid(FData):
             self._extrapolation = Extrapolation(value)
 
 
-
     @property
     def _evaluator(self):
+        """Return the evaluator constructed by the interpolator."""
 
         if self._interpolator_evaluator is None:
             self._interpolator_evaluator = self._interpolator._construct_interpolator(self)
@@ -327,14 +329,42 @@ class FDataGrid(FData):
         return self._interpolator_evaluator
 
 
-    def evaluate(self, t, *, derivative=0, grid=False):
+    def evaluate(self, eval_points, *, derivative=0, extrapolation=None,
+                 grid=False, keepdims=None):
+        """"Evaluate the object or its derivatives at a list of values.
 
-        return self._evaluator(t, derivative=derivative, grid=grid)
+        Args:
+            eval_points (array_like): List of points where the functions are
+                evaluated. If a matrix of shape nsample x eval_points is given
+                each sample is evaluated at the values in the corresponding row
+                in eval_points.
+            derivative (int, optional): Order of the derivative. Defaults to 0.
+            extrapolation (str or Extrapolation, optional): Controls the
+                extrapolation mode for elements outside the domain range. By
+                default it is used the mode defined during the instance of the
+                object.
+            grid (bool, optional): Whether to evaluate the results on a grid
+                spanned by the input arrays, or at points specified by the input
+                arrays. If true the eval_points should be a list of size
+                ndim_domain with the corresponding times for each axis. The
+                return matrix has shape nsamples x len(t1) x len(t2) x ... x
+                len(t_ndim_domain) x ndim_image. If the domain dimension is 1
+                the parameter has no efect. Defaults to False.
+            keepdims (bool, optional): If the image dimension is equal to 1 and
+                keepdims is True the return matrix has shape
+                nsamples x eval_points x 1 else nsamples x eval_points.
+                By default it is used the value given during the instance of the
+                object.
 
-    def __call__(self, t, *, derivative=0, grid=False):
+        Returns:
+            (numpy.darray): Matrix whose rows are the values of the each
+            function at the values specified in eval_points.
 
-        return self.evaluate(t, derivative=derivative, grid=grid)
+        """
 
+        return self._evaluator(eval_points, derivative=derivative,
+                               extrapolation=extrapolation, grid=grid,
+                               keepdims=keepdims)
 
     def derivative(self, order=1):
         r"""Differentiate a FDataGrid object.
@@ -374,7 +404,6 @@ class FDataGrid(FData):
                         [3. ]]]),
                 sample_points=[array([0, 1, 2, 3, 4])],
                 domain_range=array([[0, 4]]),
-                dataset_label='Data set - 1 derivative',
                 ...)
 
             Second order derivative
@@ -389,7 +418,6 @@ class FDataGrid(FData):
                         [1.  ]]]),
                 sample_points=[array([0, 1, 2, 3, 4])],
                 domain_range=array([[0, 4]]),
-                dataset_label='Data set - 2 derivative',
                 ...)
 
         """
@@ -421,19 +449,20 @@ class FDataGrid(FData):
                 mdata.append(arr)
             data_matrix = numpy.array(mdata)
 
-        dataset_label = "{} - {} derivative".format(self.dataset_label, order)
+        if self.dataset_label:
+            dataset_label = "{} - {} derivative".format(self.dataset_label,
+                                                        order)
+        else:
+            dataset_label = None
 
-        return FDataGrid(data_matrix, sample_points, self.domain_range,
-                         dataset_label, self.axes_labels, self.extrapolation,
-                         self.interpolator, self.keepdims)
+        return self.copy(data_matrix=data_matrix, sample_points=sample_points,
+                         dataset_label=dataset_label)
 
     def __check_same_dimensions(self, other):
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
             raise ValueError("Error in columns dimensions")
-        if not numpy.array_equal(self.sample_points,
-                                 other.sample_points):
-            raise ValueError(
-                "Sample points for both objects must be equal")
+        if not numpy.array_equal(self.sample_points, other.sample_points):
+            raise ValueError("Sample points for both objects must be equal")
 
     def mean(self):
         """Compute the mean of all the samples.
@@ -443,10 +472,8 @@ class FDataGrid(FData):
             the mean of all the samples in the original object.
 
         """
-        return FDataGrid(self.data_matrix.mean(axis=0, keepdims=True),
-                         self.sample_points, self.domain_range,
-                         self.dataset_label, self.axes_labels,
-                         self.extrapolation, self.interpolator, self.keepdims)
+        return self.copy(data_matrix=self.data_matrix.mean(axis=0,
+                                                           keepdims=True))
 
     def var(self):
         """Compute the variance of a set of samples in a FDataGrid object.
@@ -456,10 +483,7 @@ class FDataGrid(FData):
             variance of all the samples in the original FDataGrid object.
 
         """
-        return FDataGrid([numpy.var(self.data_matrix, 0)],
-                         self.sample_points, self.domain_range,
-                         self.dataset_label, self.axes_labels,
-                         self.extrapolation, self.interpolator, self.keepdims)
+        return self.copy(data_matrix=[numpy.var(self.data_matrix, 0)])
 
     def cov(self):
         """Compute the covariance.
@@ -471,12 +495,19 @@ class FDataGrid(FData):
             numpy.darray: Matrix of covariances.
 
         """
-        return FDataGrid(
-            numpy.cov(self.data_matrix, rowvar=False)[numpy.newaxis, ...],
-            [self.sample_points[0], self.sample_points[0]],
-            [self.domain_range[0], self.domain_range[0]],
-            self.dataset_label + ' - covariance', self.extrapolation,
-            self.interpolator, self.keepdims)
+
+        if self.dataset_label is not None:
+            dataset_label = self.dataset_label + ' - covariance'
+        else:
+            dataset_label = None
+
+        return self.copy(data_matrix=numpy.cov(self.data_matrix,
+                                               rowvar=False)[numpy.newaxis, ...],
+                         sample_points=[self.sample_points[0],
+                                        self.sample_points[0]],
+                         domain_range=[self.domain_range[0],
+                                       self.domain_range[0]],
+                         dataset_label=dataset_label)
 
     def gmean(self):
         """Compute the geometric mean of all samples in the FDataGrid object.
@@ -487,10 +518,8 @@ class FDataGrid(FData):
             FDataGrid object.
 
         """
-        return FDataGrid([scipy.stats.mstats.gmean(self.data_matrix, 0)],
-                         self.sample_points, self.domain_range,
-                         self.dataset_label, self.axes_labels,
-                         self.extrapolation, self.interpolator, self.keepdims)
+        return self.copy(data_matrix=
+                         [scipy.stats.mstats.gmean(self.data_matrix, 0)])
 
     def __add__(self, other):
         """Addition for FDataGrid object.
@@ -506,10 +535,7 @@ class FDataGrid(FData):
         else:
             return NotImplemented
 
-        return FDataGrid(self.data_matrix + data_matrix,
-                         self.sample_points, self.domain_range,
-                         self.dataset_label, self.axes_labels,
-                         self.extrapolation, self.interpolator, self.keepdims)
+        return self.copy(data_matrix=self.data_matrix + data_matrix)
 
     def __radd__(self, other):
         """Addition for FDataGrid object.
@@ -534,10 +560,7 @@ class FDataGrid(FData):
         else:
             return NotImplemented
 
-        return FDataGrid(self.data_matrix - data_matrix,
-                         self.sample_points, self.domain_range,
-                         self.dataset_label, self.axes_labels,
-                         self.extrapolation, self.interpolator, self.keepdims)
+        return self.copy(data_matrix=self.data_matrix - data_matrix)
 
     def __rsub__(self, other):
         """Right Subtraction for FDataGrid object.
@@ -553,10 +576,7 @@ class FDataGrid(FData):
         else:
             return NotImplemented
 
-        return FDataGrid(data_matrix - self.data_matrix,
-                         self.sample_points, self.domain_range,
-                         self.dataset_label, self.axes_labels,
-                         self.extrapolation, self.interpolator, self.keepdims)
+        return self.copy(data_matrix=data_matrix - self.data_matrix)
 
     def __mul__(self, other):
         """Multiplication for FDataGrid object.
@@ -572,10 +592,7 @@ class FDataGrid(FData):
         else:
             return NotImplemented
 
-        return FDataGrid(self.data_matrix * data_matrix,
-                         self.sample_points, self.domain_range,
-                         self.dataset_label, self.axes_labels,
-                         self.extrapolation, self.interpolator, self.keepdims)
+        return self.copy(data_matrix=self.data_matrix * data_matrix)
 
     def __rmul__(self, other):
         """Multiplication for FDataGrid object.
@@ -583,18 +600,7 @@ class FDataGrid(FData):
         It supports other FDataGrid objects, numpy.ndarray and numbers.
 
         """
-        if isinstance(other, (numpy.ndarray, numbers.Number)):
-            data_matrix = other
-        elif isinstance(other, FDataGrid):
-            self.__check_same_dimensions(other)
-            data_matrix = other.data_matrix
-        else:
-            return NotImplemented
-
-        return FDataGrid(data_matrix * self.data_matrix,
-                         self.sample_points, self.domain_range,
-                         self.dataset_label, self.axes_labels,
-                         self.extrapolation, self.interpolator, self.keepdims)
+        return self.__mul__(other)
 
     def __truediv__(self, other):
         """Division for FDataGrid object.
@@ -610,10 +616,7 @@ class FDataGrid(FData):
         else:
             return NotImplemented
 
-        return FDataGrid(self.data_matrix / data_matrix,
-                         self.sample_points, self.domain_range,
-                         self.dataset_label, self.axes_labels,
-                         self.extrapolation, self.interpolator, self.keepdims)
+        return self.copy(data_matrix=self.data_matrix / data_matrix)
 
     def concatenate(self, other):
         """Join samples from a similar FDataGrid object.
@@ -645,20 +648,16 @@ class FDataGrid(FData):
                         [9],
                         [2]]]),
                 sample_points=[array([0, 1, 2, 3, 4])],
-                ...
+                domain_range=array([[0, 4]]),
+                ...)
 
         """
         # Checks
         self.__check_same_dimensions(other)
-        return FDataGrid(numpy.concatenate((self.data_matrix,
-                                            other.data_matrix), axis=0),
-                         self.sample_points,
-                         self.domain_range,
-                         self.dataset_label,
-                         self.axes_labels,
-                         self.extrapolation,
-                         self.interpolator,
-                         self.keepdims)
+
+        return self.copy(data_matrix=numpy.concatenate((self.data_matrix,
+                                                        other.data_matrix),
+                                                       axis=0))
 
     def _set_labels(self, ax):
         """Set labels if any.
@@ -784,22 +783,102 @@ class FDataGrid(FData):
         return fdbasis.FDataBasis.from_data(self.data_matrix[..., 0],
                                             self.sample_points[0],
                                             basis,
+                                            keepdims=self.keepdims,
                                             **kwargs)
 
-    def to_grid(self, eval_points=None):
-        """Return a grid representation of the object
+    def to_grid(self, sample_points=None):
+        """Return the discrete representation of the object.
+
+        Args:
+            sample_points (array_like, optional):  2 dimension matrix where each
+            row contains the points of dicretisation for each axis of
+            data_matrix.
+
+        Returns:
+              FDataGrid: Discrete representation of the functional data
+              object.
 
         """
-        raise NotImplementedError
+        if sample_points is None:
+            sample_points = self.sample_points
 
-    def copy(self):
+        return self.copy(data_matrix=self.evaluate(sample_points, grid=True),
+                         sample_points=sample_points)
 
-        raise NotImplementedError
+
+
+    def copy(self, *, data_matrix=None, sample_points=None,
+                 domain_range=None, dataset_label=None,
+                 axes_labels=None, extrapolation=None,
+                 interpolator=None, keepdims=None):
+        """Returns a copy of the FDataGrid.
+
+        If an argument is provided the corresponding attribute in the new copy
+        is updated.
+
+        """
+
+        if data_matrix is None:
+            # The data matrix won't be writeable
+            data_matrix = self.data_matrix
+
+        if sample_points is None:
+            # Sample points won`t be writeable
+            sample_points = self.sample_points
+
+        if domain_range is None:
+            domain_range = copy.deepcopy(self.domain_range)
+
+        if dataset_label is None:
+            dataset_label = copy.deepcopy(self.dataset_label)
+
+        if axes_labels is None:
+            axes_labels = copy.deepcopy(self.axes_labels)
+
+        if extrapolation is None:
+            extrapolation = self.extrapolation
+
+        if interpolator is None:
+            interpolator = self.interpolator
+
+        if keepdims is None:
+            keepdims = self.keepdims
+
+        return FDataGrid(data_matrix, sample_points=sample_points,
+                     domain_range=domain_range, dataset_label=dataset_label,
+                     axes_labels=axes_labels, extrapolation=extrapolation,
+                     interpolator=interpolator, keepdims=keepdims)
+
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               discretization_points=None, **kwargs):
+        """Perform a shift of the curves.
+
+        Args:
+            shifts (array_like or numeric): List with the the shift
+                corresponding for each sample or numeric with the shift to apply
+                to all samples.
+            restrict_domain (bool, optional): If True restricts the domain to
+                avoid evaluate points outside the domain using extrapolation.
+                Defaults uses extrapolation.
+            extrapolation (str or Extrapolation, optional): Controls the
+                extrapolation mode for elements outside the domain range.
+                By default uses the method defined in fd. See extrapolation to
+                more information.
+            discretization_points (array_like, optional): Set of points where
+                the functions are evaluated to obtain the discrete
+                representation of the object to operate. If an empty list is
+                passed it calls numpy.linspace with bounds equal to the ones
+                defined in fd.domain_range and the number of points the maximum
+                between 201 and 10 times the number of basis plus 1.
+            **kwargs: Keyword arguments to be passed to :meth:`from_data`.
+
+        Returns:
+            :class:`FDataGrid` with the shifted data.
+        """
 
         raise NotImplementedError
+
 
     def __str__(self):
         """Return str(self)."""
@@ -809,17 +888,15 @@ class FDataGrid(FData):
 
     def __repr__(self):
         """Return repr(self)."""
-        return ("FDataGrid("
-                "\n{},"
-                "\nsample_points={},"
-                "\ndomain_range={},"
-                "\ndataset_label={},"
-                "\naxes_labels={})"
-                .format(repr(self.data_matrix),
-                        repr(self.sample_points),
-                        repr(self.domain_range),
-                        repr(self.dataset_label),
-                        repr(self.axes_labels))).replace('\n', '\n    ')
+        return (f"FDataGrid("
+                f"\n{repr(self.data_matrix)},"
+                f"\nsample_points={repr(self.sample_points)},"
+                f"\ndomain_range={repr(self.domain_range)},"
+                f"\ndataset_label={repr(self.dataset_label)},"
+                f"\naxes_labels={repr(self.axes_labels)},"
+                f"\nextrapolation={repr(self.extrapolation)},"
+                f"\ninterpolator={repr(self.interpolator)},"
+                f"\nkeepdims={repr(self.keepdims)})").replace('\n', '\n    ')
 
     def __getitem__(self, key):
         """Return self[key]."""
@@ -832,20 +909,11 @@ class FDataGrid(FData):
                              for i, subkey in enumerate(
                                  key[1:1 + self.ndim_domain])]
 
-            return FDataGrid(self.data_matrix[key],
-                             sample_points,
-                             self.domain_range, self.dataset_label,
-                             self.axes_labels, self.extrapolation,
-                             self.interpolator, self.keepdims)
+            return self.copy(data_matrix=self.data_matrix[key],
+                             sample_points=sample_points)
+
         if isinstance(key, int):
-            return FDataGrid(self.data_matrix[key:key + 1],
-                             self.sample_points,
-                             self.domain_range, self.dataset_label,
-                             self.axes_labels, self.extrapolation,
-                             self.interpolator, self.keepdims)
+            return self.copy(data_matrix=self.data_matrix[key:key + 1])
+
         else:
-            return FDataGrid(self.data_matrix[key],
-                             self.sample_points,
-                             self.domain_range, self.dataset_label,
-                             self.axes_labels, self.extrapolation,
-                             self.interpolator, self.keepdims)
+            return self.copy(data_matrix=self.data_matrix[key])

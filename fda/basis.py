@@ -1125,7 +1125,7 @@ class FDataBasis(FData):
         >>> coefficients = [1, 1, 3, .5]
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
-            basis=Monomial(...),
+            basis=Monomial(domain_range=[array([0, 1])], nbasis=4),,
             coefficients=[[1.  1.  3.  0.5]]
             ...)
 
@@ -1688,7 +1688,7 @@ class FDataBasis(FData):
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
             >>> FDataBasis(basis, coefficients).mean()
             FDataBasis(
-                basis=...,
+                basis=Monomial(domain_range=[array([0, 1])], nbasis=4),
                 coefficients=[[1.  1.  3.  0.5]]
                 ...)
 

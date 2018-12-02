@@ -1124,7 +1124,10 @@ class FDataBasis(FData):
         >>> basis = Monomial(nbasis=4)
         >>> coefficients = [1, 1, 3, .5]
         >>> FDataBasis(basis, coefficients)
-        FDataBasis(basis=Monomial(...), coefficients=[[1.  1.  3.  0.5]])
+        FDataBasis(
+            basis=Monomial(...),
+            coefficients=[[1.  1.  3.  0.5]]
+            ...)
 
     """
 
@@ -1684,7 +1687,10 @@ class FDataBasis(FData):
             >>> basis = Monomial(nbasis=4)
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
             >>> FDataBasis(basis, coefficients).mean()
-            FDataBasis(basis=..., coefficients=[[1.  1.  3.  0.5]])
+            FDataBasis(
+                basis=...,
+                coefficients=[[1.  1.  3.  0.5]]
+                ...)
 
         """
         return self.copy(coefficients=numpy.mean(self.coefficients, axis=0))

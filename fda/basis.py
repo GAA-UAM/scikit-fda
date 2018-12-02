@@ -1125,8 +1125,8 @@ class FDataBasis(FData):
         >>> coefficients = [1, 1, 3, .5]
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
-            basis=Monomial(domain_range=[array([0, 1])], nbasis=4),,
-            coefficients=[[1.  1.  3.  0.5]]
+            basis=Monomial(domain_range=[array([0, 1])], nbasis=4),
+            coefficients=[[1.  1.  3.  0.5]],
             ...)
 
     """
@@ -1689,7 +1689,7 @@ class FDataBasis(FData):
             >>> FDataBasis(basis, coefficients).mean()
             FDataBasis(
                 basis=Monomial(domain_range=[array([0, 1])], nbasis=4),
-                coefficients=[[1.  1.  3.  0.5]]
+                coefficients=[[1.  1.  3.  0.5]],
                 ...)
 
         """
@@ -1866,10 +1866,10 @@ class FDataBasis(FData):
         """Representation of FDataBasis object."""
         return (f"{self.__class__.__name__}("
                 f"\nbasis={self.basis},"
-                f"\ncoefficients={self.coefficients})"
-                f"\ndataset_label={self.dataset_label})"
-                f"\naxes_labels={self.axes_labels})"
-                f"\nextrapolation={self.extrapolation})"
+                f"\ncoefficients={self.coefficients},"
+                f"\ndataset_label={self.dataset_label},"
+                f"\naxes_labels={self.axes_labels},"
+                f"\nextrapolation={self.extrapolation},"
                 f"\nkeepdims={self.keepdims})").replace('\n', '\n    ')
 
     def __str__(self):

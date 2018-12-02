@@ -13,8 +13,9 @@ import numpy
 import scipy
 import scipy.stats.mstats
 
-from . import basis as fdbasis
 
+from . import basis as fdbasis
+from .grid_interpolation import GridSplineInterpolator
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -112,7 +113,7 @@ class FDataGrid:
 
     def __init__(self, data_matrix, sample_points=None,
                  sample_range=None, dataset_label='Data set',
-                 axes_labels=None):
+                 axes_labels=None, interpolator=None, keepdims=False):
         """Construct a FDataGrid object.
 
         Args:
@@ -184,6 +185,9 @@ class FDataGrid:
 
         self.dataset_label = dataset_label
         self.axes_labels = axes_labels
+        self.keepdims = keepdims
+        self.interpolator = interpolator
+
 
         return
 
@@ -204,7 +208,7 @@ class FDataGrid:
         return FDataGrid(self.data_matrix.round(decimals),
                          self.sample_points,
                          self.sample_range, self.dataset_label,
-                         self.axes_labels)
+                         self.axes_labels, self.interpolator, self.keepdims)
 
     @property
     def ndim_domain(self):
@@ -277,6 +281,38 @@ class FDataGrid:
 
         """
         return self.data_matrix.shape
+
+    @property
+    def interpolator(self):
+        return self._interpolator
+
+    @interpolator.setter
+    def interpolator(self, new_interpolator):
+
+        if new_interpolator is None:
+            # Defaults uses a linear spline interpolator
+            new_interpolator = GridSplineInterpolator()
+
+        self._interpolator = new_interpolator
+        self._interpolator_evaluator = None
+
+    @property
+    def _evaluator(self):
+
+        if self._interpolator_evaluator is None:
+            self._interpolator_evaluator = self._interpolator._construct_interpolator(self)
+
+        return self._interpolator_evaluator
+
+
+    def evaluate(self, t, *, derivative=0, grid=False):
+
+        return self._evaluator(t, derivative=derivative, grid=grid)
+
+    def __call__(self, t, *, derivative=0, grid=False):
+
+        return self.evaluate(t, derivative=derivative, grid=grid)
+
 
     def derivative(self, order=1):
         r"""Differentiate a FDataGrid object.
@@ -366,7 +402,8 @@ class FDataGrid:
         dataset_label = "{} - {} derivative".format(self.dataset_label, order)
 
         return FDataGrid(data_matrix, sample_points, self.sample_range,
-                         dataset_label, self.axes_labels)
+                         dataset_label, self.axes_labels, self.interpolator,
+                         self.keepdims)
 
     def __check_same_dimensions(self, other):
         if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
@@ -398,11 +435,12 @@ class FDataGrid:
         """
         return FDataGrid([numpy.var(self.data_matrix, 0)],
                          self.sample_points, self.sample_range,
-                         self.dataset_label, self.axes_labels)
+                         self.dataset_label, self.axes_labels,
+                         self.interpolator, self.keepdims)
 
     def cov(self):
         """Compute the covariance.
-        
+
         Calculates the covariance matrix representing the covariance of the
         functional samples at the observation points.
 
@@ -414,7 +452,8 @@ class FDataGrid:
             numpy.cov(self.data_matrix, rowvar=False)[numpy.newaxis, ...],
             [self.sample_points[0], self.sample_points[0]],
             [self.sample_range[0], self.sample_range[0]],
-            self.dataset_label + ' - covariance')
+            self.dataset_label + ' - covariance', self.interpolator,
+            self.keepdims)
 
     def gmean(self):
         """Compute the geometric mean of all samples in the FDataGrid object.
@@ -427,7 +466,8 @@ class FDataGrid:
         """
         return FDataGrid([scipy.stats.mstats.gmean(self.data_matrix, 0)],
                          self.sample_points, self.sample_range,
-                         self.dataset_label, self.axes_labels)
+                         self.dataset_label, self.axes_labels,
+                         self.interpolator, self.keepdims)
 
     def __add__(self, other):
         """Addition for FDataGrid object.
@@ -445,7 +485,8 @@ class FDataGrid:
 
         return FDataGrid(self.data_matrix + data_matrix,
                          self.sample_points, self.sample_range,
-                         self.dataset_label, self.axes_labels)
+                         self.dataset_label, self.axes_labels,
+                         self.interpolator, self.keepdims)
 
     def __sub__(self, other):
         """Subtraction for FDataGrid object.
@@ -463,7 +504,8 @@ class FDataGrid:
 
         return FDataGrid(self.data_matrix - data_matrix,
                          self.sample_points, self.sample_range,
-                         self.dataset_label, self.axes_labels)
+                         self.dataset_label, self.axes_labels,
+                         self.interpolator, self.keepdims)
 
     def __mul__(self, other):
         """Multiplication for FDataGrid object.
@@ -481,7 +523,8 @@ class FDataGrid:
 
         return FDataGrid(self.data_matrix * data_matrix,
                          self.sample_points, self.sample_range,
-                         self.dataset_label, self.axes_labels)
+                         self.dataset_label, self.axes_labels,
+                         self.interpolator, self.keepdims)
 
     def __truediv__(self, other):
         """Division for FDataGrid object.
@@ -499,7 +542,8 @@ class FDataGrid:
 
         return FDataGrid(self.data_matrix / data_matrix,
                          self.sample_points, self.sample_range,
-                         self.dataset_label, self.axes_labels)
+                         self.dataset_label, self.axes_labels,
+                         self.interpolator, self.keepdims)
 
     def concatenate(self, other):
         """Join samples from a similar FDataGrid object.
@@ -541,7 +585,9 @@ class FDataGrid:
                          self.sample_points,
                          self.sample_range,
                          self.dataset_label,
-                         self.axes_labels)
+                         self.axes_labels,
+                         self.interpolator,
+                         self.keepdims)
 
     def _set_labels(self, ax):
         """Set labels if any.
@@ -703,15 +749,14 @@ class FDataGrid:
             return FDataGrid(self.data_matrix[key],
                              sample_points,
                              self.sample_range, self.dataset_label,
-                             self.axes_labels)
+                             self.axes_labels, self.interpolator, self.keepdims)
         if isinstance(key, int):
             return FDataGrid(self.data_matrix[key:key + 1],
                              self.sample_points,
                              self.sample_range, self.dataset_label,
-                             self.axes_labels)
+                             self.axes_labels, self.interpolator, self.keepdims)
         else:
             return FDataGrid(self.data_matrix[key],
                              self.sample_points,
                              self.sample_range, self.dataset_label,
-                             self.axes_labels)
-
+                             self.axes_labels, self.interpolator, self.keepdims)

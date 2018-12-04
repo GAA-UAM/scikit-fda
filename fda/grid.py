@@ -547,31 +547,7 @@ class FDataGrid:
                          self.dataset_label,
                          self.axes_labels)
 
-    def set_labels(fdgrid, fig):
-        # TODO: check in init the length of the labels
-        """Set labels if any.
-
-        Args:
-            fig (figure object): figure object containing the axes that implement set_xlabel and set_ylabel,
-                                 and set_zlabel in case of a 3d projection.
-
-        """
-        if fdgrid.dataset_label is not None:
-            fig.suptitle(fdgrid.dataset_label, fontsize="x-large")
-
-        if fdgrid.axes_labels is not None:
-            ax = fig.get_axes()
-            if ax[0].name == '3d':
-                for i in range(fdgrid.ndim_image):
-                    ax[i].set_xlabel(fdgrid.axes_labels[0])
-                    ax[i].set_ylabel(fdgrid.axes_labels[1])
-                    ax[i].set_zlabel(fdgrid.axes_labels[i + 2])
-            else:
-                for i in range(fdgrid.ndim_image):
-                    ax[i].set_xlabel(fdgrid.axes_labels[0])
-                    ax[i].set_ylabel(fdgrid.axes_labels[i + 1])
-
-    def set_figure_and_axes(fdgrid):
+    def set_figure_and_axes(self):
         """Set the figure and its axes.
 
         Returns:
@@ -581,21 +557,45 @@ class FDataGrid:
         """
         fig = plt.figure()
 
-        if fdgrid.ndim_domain == 1:
+        if self.ndim_domain == 1:
             projection = None
         else:
             projection = '3d'
 
-        ncols = math.ceil(math.sqrt(fdgrid.ndim_image))
-        nrows = math.ceil(fdgrid.ndim_image / ncols)
-        for i in range(fdgrid.ndim_image):
+        ncols = math.ceil(math.sqrt(self.ndim_image))
+        nrows = math.ceil(self.ndim_image / ncols)
+        for i in range(self.ndim_image):
             fig.add_subplot(nrows, ncols, i + 1, projection=projection)
 
         ax = fig.get_axes()
 
         return fig, ax
 
-    def arrange_layout(fdgrid, fig):
+    def set_labels(self, fig):
+        # TODO: check in init the length of the labels
+        """Set labels if any.
+
+        Args:
+            fig (figure object): figure object containing the axes that implement set_xlabel and set_ylabel,
+                                 and set_zlabel in case of a 3d projection.
+
+        """
+        if self.dataset_label is not None:
+            fig.suptitle(self.dataset_label, fontsize="x-large")
+
+        if self.axes_labels is not None:
+            ax = fig.get_axes()
+            if ax[0].name == '3d':
+                for i in range(self.ndim_image):
+                    ax[i].set_xlabel(self.axes_labels[0])
+                    ax[i].set_ylabel(self.axes_labels[1])
+                    ax[i].set_zlabel(self.axes_labels[i + 2])
+            else:
+                for i in range(self.ndim_image):
+                    ax[i].set_xlabel(self.axes_labels[0])
+                    ax[i].set_ylabel(self.axes_labels[i + 1])
+
+    def arrange_layout(self, fig):
         """Arrange the layout of the figure.
 
         Args:
@@ -603,7 +603,7 @@ class FDataGrid:
 
         """
         fig.tight_layout()
-        if fdgrid.dataset_label is not None:
+        if self.dataset_label is not None:
             st = fig.texts[0]
             st.set_y(0.95)
             fig.subplots_adjust(top=0.85)
@@ -634,6 +634,7 @@ class FDataGrid:
             fig, ax = self.set_figure_and_axes()
 
         _plot = []
+
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):
                 _plot.append(ax[i].plot(self.sample_points[0], self.data_matrix[:, :, i].T, **kwargs))
@@ -676,6 +677,7 @@ class FDataGrid:
             fig, ax = self.set_figure_and_axes()
 
         _plot = []
+
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):
                 for j in range(self.nsamples):

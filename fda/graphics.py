@@ -67,7 +67,9 @@ def fdboxplot(fdgrid, fig=None, method=modified_band_depth, prob=[0.5], fullout=
     _plot = []
 
     for m in range(fdgrid.ndim_image):
+
         for i in range(len(prob)):
+
             indices_samples = indices_descencing_depth[:, m][:math.ceil(fdgrid.nsamples * prob[i])]
             samples_used = fdgrid.data_matrix[indices_samples, :, m]
             max_samples_used = np.amax(samples_used, axis=0)
@@ -100,7 +102,7 @@ def fdboxplot(fdgrid, fig=None, method=modified_band_depth, prob=[0.5], fullout=
                     if (outliers_above.sum() > 0 or outliers_below.sum() > 0):
                         _plot.append(ax[m].plot(fdgrid.sample_points[0], fdgrid.data_matrix[j, :, m], color=outliercol,
                                    linestyle='--', zorder=1))
-            # central regions
+                # central regions
                 _plot.append(ax[m].fill_between(fdgrid.sample_points[0], max_samples_used.flatten(),
                                min_samples_used.flatten(), facecolor=color[i], zorder=var_zorder))
 
@@ -206,4 +208,5 @@ def surface_boxplot(fdgrid, fig=None, method=modified_band_depth, factor=1.5, bo
 
     fdgrid.set_labels(fig)
     fdgrid.arrange_layout(fig)
+
     return _plot

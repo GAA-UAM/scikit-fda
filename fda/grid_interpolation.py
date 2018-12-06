@@ -46,9 +46,25 @@ class GridSplineInterpolator(GridInterpolator):
     def __init__(self, interpolation_order=1, smoothness_parameter=0.,
                  monotone=False):
 
-        self.interpolation_order = interpolation_order
-        self.smoothness_parameter = smoothness_parameter
-        self.monotone = monotone
+        self._interpolation_order = interpolation_order
+        self._smoothness_parameter = smoothness_parameter
+        self._monotone = monotone
+
+    @property
+    def interpolation_order(self):
+        "Returns the interpolation order"
+        return self._interpolation_order
+
+    @property
+    def smoothness_parameter(self):
+        "Returns the smoothness parameter"
+        return self._smoothness_parameter
+
+    @property
+    def monotone(self):
+        "Returns flag to perform monotone interpolation"
+        return self._monotone
+
 
     def _construct_interpolator(self, fdatagrid):
 
@@ -60,6 +76,12 @@ class GridSplineInterpolator(GridInterpolator):
                                                 self.smoothness_parameter,
                                                 self.monotone,
                                                 fdatagrid.keepdims)
+
+    def __repr__(self):
+        return (f"{type(self).__name__}("
+                f"interpolation_order={self.interpolation_order}, "
+                f"smoothness_parameter={self.smoothness_parameter}, "
+                f"monotone={self.monotone})")
 
 
 class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):

@@ -544,7 +544,7 @@ class FDataGrid(FData):
 
         """
 
-        return self.__radd__(other)
+        return self.__add__(other)
 
     def __sub__(self, other):
         """Subtraction for FDataGrid object.
@@ -617,6 +617,23 @@ class FDataGrid(FData):
             return NotImplemented
 
         return self.copy(data_matrix=self.data_matrix / data_matrix)
+
+    def __rtruediv__(self, other):
+        """Division for FDataGrid object.
+
+        It supports other FDataGrid objects, numpy.ndarray and numbers.
+
+        """
+        if isinstance(other, (numpy.ndarray, numbers.Number)):
+            data_matrix = other
+        elif isinstance(other, FDataGrid):
+            self.__check_same_dimensions(other)
+            data_matrix = other.data_matrix
+        else:
+            return NotImplemented
+
+        return self.copy(data_matrix=data_matrix / self.data_matrix)
+
 
     def concatenate(self, other):
         """Join samples from a similar FDataGrid object.
@@ -830,10 +847,10 @@ class FDataGrid(FData):
             domain_range = copy.deepcopy(self.domain_range)
 
         if dataset_label is None:
-            dataset_label = copy.deepcopy(self.dataset_label)
+            dataset_label = copy.copy(self.dataset_label)
 
         if axes_labels is None:
-            axes_labels = copy.deepcopy(self.axes_labels)
+            axes_labels = copy.copy(self.axes_labels)
 
         if extrapolation is None:
             extrapolation = self.extrapolation
@@ -855,7 +872,7 @@ class FDataGrid(FData):
         """Perform a shift of the curves.
 
         Args:
-            shifts (array_like or numeric): List with the the shift
+            shifts (array_like or numeric): List with the shifts
                 corresponding for each sample or numeric with the shift to apply
                 to all samples.
             restrict_domain (bool, optional): If True restricts the domain to

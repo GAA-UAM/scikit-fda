@@ -1645,6 +1645,7 @@ class FDataBasis(FData):
         Args:
             order (int, optional): Order of the derivative. Defaults to one.
         """
+
         raise NotImplementedError
 
     def plot(self, ax=None, derivative=0, **kwargs):
@@ -1756,23 +1757,6 @@ class FDataBasis(FData):
 
         """
         return self.to_grid(eval_points).cov()
-
-    def round(self, decimals=0):
-        """Evenly round to the given number of decimals.
-
-        Args:
-            decimals (int, optional): Number of decimal places to round to.
-                If decimals is negative, it specifies the number of
-                positions to the left of the decimal point. Defaults to 0.
-
-        Returns:
-            :obj:FDataBasis: Returns a FDataBasis object where all its
-            coefficients are rounded .The real and imaginary parts of complex
-            numbers are rounded separately.
-
-        """
-        raise NotImplementedError
-
 
 
     def to_grid(self, eval_points=None):
@@ -1889,7 +1873,7 @@ class FDataBasis(FData):
             other (:class:`FDataBasis`): another FDataBasis object.
 
         Returns:
-            :class:`FDataBasis`: FData object with the samples from the two
+            :class:`FDataBasis`: FDataBasis object with the samples from the two
             original objects.
         """
 
@@ -1933,17 +1917,22 @@ class FDataBasis(FData):
         raise NotImplementedError
 
     def __mul__(self, other):
-        """Multiplication for FData object."""
+        """Multiplication for FDataBasis object."""
 
         raise NotImplementedError
 
     def __rmul__(self, other):
-        """Multiplication for FData object."""
+        """Multiplication for FDataBasis object."""
 
-        return __mul__(other)
+        return self.__mul__(other)
 
 
     def __truediv__(self, other):
-        """Division for FData object."""
+        """Division for FDataBasis object."""
+
+        raise NotImplementedError
+
+    def __rtruediv__(self, other):
+        """Right division for FDataBasis object."""
 
         raise NotImplementedError

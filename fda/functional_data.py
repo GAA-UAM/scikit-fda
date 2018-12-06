@@ -68,8 +68,7 @@ class FData(ABC):
         """Return the number of samples.
 
         Returns:
-            int: Number of samples of the FDataGrid object. Also the number of
-                rows of the data_matrix.
+            int: Number of samples of the FData object.
 
         """
         pass
@@ -97,10 +96,10 @@ class FData(ABC):
         pass
 
     def ndim_codomain(self):
-        """Return number of dimensions of the image.
+        """Return number of dimensions of the codomain.
 
         Returns:
-            int: Number of dimensions of the image.
+            int: Number of dimensions of the codomain.
 
         """
         return self.ndim_image
@@ -253,7 +252,7 @@ class FData(ABC):
 
     @abstractmethod
     def derivative(self, order=1):
-        r"""Differentiate a FDataGrid object.
+        r"""Differentiate a FData object.
 
 
         Args:
@@ -285,7 +284,7 @@ class FData(ABC):
                 between 201 and 10 times the number of basis plus 1.
 
         Returns:
-            :obj:`FDataBasis` with the registered functional data.
+            :class:`FData` with the shifted functional data.
         """
         pass
 
@@ -350,59 +349,6 @@ class FData(ABC):
         pass
 
     @abstractmethod
-    def gmean(self):
-        """Compute the geometric mean of all samples in the FDataGrid object.
-
-        Returns:
-            FData: A FData object with just one sample representing
-            the geometric mean of all the samples in the original
-            FData object.
-
-        """
-        pass
-
-    @abstractmethod
-    def var(self):
-        """Compute the variance of a set of samples in a FDataGrid object.
-
-        Returns:
-            FDataGrid: A FDataGrid object with just one sample representing the
-            variance of all the samples in the original FDataGrid object.
-
-        """
-        pass
-
-    @abstractmethod
-    def cov(self):
-        """Compute the covariance.
-
-        Calculates the covariance matrix representing the covariance of the
-        functional samples at the observation points.
-
-        Returns:
-            numpy.darray: Matrix of covariances.
-
-        """
-        pass
-
-    @abstractmethod
-    def round(self, decimals=0):
-        """Evenly round to the given number of decimals.
-
-        Args:
-            decimals (int, optional): Number of decimal places to round to.
-                If decimals is negative, it specifies the number of
-                positions to the left of the decimal point. Defaults to 0.
-
-        Returns:
-            :obj:FData: Returns a FData object where all elements
-            in its data_matrix are rounded .The real and
-            imaginary parts of complex numbers are rounded separately.
-
-        """
-        pass
-
-    @abstractmethod
     def to_grid(self, eval_points=None):
         """Return the discrete representation of the object.
 
@@ -452,18 +398,6 @@ class FData(ABC):
         pass
 
     @abstractmethod
-    def __repr__(self):
-        """Return repr(self)."""
-
-        pass
-
-    @abstractmethod
-    def __str__(self):
-        """Return str(self)."""
-
-        pass
-
-    @abstractmethod
     def __getitem__(self, key):
         """Return self[key]."""
 
@@ -508,5 +442,11 @@ class FData(ABC):
     @abstractmethod
     def __truediv__(self, other):
         """Division for FData object."""
+
+        pass
+
+    @abstractmethod
+    def __rtruediv__(self, other):
+        """Right division for FData object."""
 
         pass

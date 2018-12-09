@@ -18,7 +18,9 @@ from scipy.special import binom
 import copy
 
 from . import grid
-from .functional_data import Extrapolation, FData, _list_of_arrays
+
+from .functional_data import FData, _list_of_arrays
+from .extrapolation import _extrapolation_index, _parse_extrapolation
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -41,8 +43,7 @@ def _check_domain(domain_range):
 
     for domain in domain_range:
         if len(domain) != 2 or domain[0] >= domain[1]:
-            raise ValueError(f"The interval {domain} is not "
-                             f"well-defined.")
+            raise ValueError(f"The interval {domain} is not well-defined.")
 
 
 class Basis(ABC):
@@ -1152,8 +1153,9 @@ class FDataBasis(FData):
         self.dataset_label = dataset_label
         self.axes_labels = axes_labels
 
-        self._extrapolation = extrapolation
+        self.extrapolation = extrapolation
         self.keepdims = keepdims
+
 
     @classmethod
     def from_data(cls, data_matrix, sample_points, basis, weight_matrix=None,
@@ -1407,13 +1409,10 @@ class FDataBasis(FData):
 
     @extrapolation.setter
     def extrapolation(self, value):
-        """Sets the type of extrapolation, by default the default of the
-        basis."""
+        """Sets the type of extrapolation."""
 
-        if value is None:
-            self._extrapolation = None
-        else:
-            self._extrapolation = Extrapolation(value)
+        self._extrapolation = _parse_extrapolation(value)
+
 
 
     def evaluate(self, eval_points, *, derivative=0, extrapolation=None,
@@ -1422,9 +1421,9 @@ class FDataBasis(FData):
 
         Args:
             eval_points (array_like): List of points where the functions are
-                evaluated. If a matrix of shape nsample x eval_points is given
-                each sample is evaluated at the values in the corresponding row
-                in eval_points.
+                evaluated. If a matrix of shape `nsamples` x eval_points is
+                given each sample is evaluated at the values in the
+                corresponding row.
             derivative (int, optional): Order of the derivative. Defaults to 0.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range. By
@@ -1452,11 +1451,15 @@ class FDataBasis(FData):
         if numpy.isscalar(eval_points):
             eval_points = [eval_points]
 
-        eval_points = numpy.asarray(eval_points)
+        eval_points = numpy.array(eval_points, dtype=numpy.float)
 
         # Uses default value of keepdims
         if keepdims is None:
             keepdims = self.keepdims
+
+        # Parses extrapolation
+        extrapolation = _parse_extrapolation(extrapolation, self)
+
 
         # Case grid, in this case wont affect the result, but the eval_points
         # could be in a list
@@ -1475,23 +1478,66 @@ class FDataBasis(FData):
                                            keepdims=keepdims)
 
 
-        # Extrapolation of time
-        eval_points = self._extrapolate_time(eval_points, extrapolation)
-
-        # each column is the values of one element of the basis
-        basis_values = self.basis.evaluate(eval_points, derivative).T
 
         res_matrix = numpy.empty((self.nsamples, len(eval_points)))
-        _matrix = numpy.empty((len(eval_points), self.nbasis))
 
 
-        for i in range(self.nsamples):
-            numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
-            numpy.sum(_matrix, axis=1, out=res_matrix[i])
+        if extrapolation is not None:
 
-        # Same behaviour as grid
-        if keepdims:
-            res_matrix = res_matrix.reshape((self.nsamples, len(eval_points),1))
+            # Coordinates with shape (nsamples x n_evalpoints x ndim_image)
+            eval_points_coord = eval_points.reshape((len(eval_points),
+                                                     self.ndim_domain))
+
+            # Boolean index of points where the extrapolation should be applied
+            index_ext = _extrapolation_index(eval_points_coord,
+                                             self.domain_range)
+
+            # Flag to apply extrapolation
+            extrapolate = index_ext.any()
+
+        else:
+            extrapolate = False
+
+        if extrapolate:
+
+            # Points evaluated without extrapolation
+            index = ~index_ext
+
+            # Array with points evaluated without extrapolation
+            eval_points_aux = eval_points[index]
+
+            # each column is the values of one element of the basis
+            basis_values = self.basis.evaluate(eval_points_aux, derivative).T
+            _matrix = numpy.empty((numpy.sum(index), self.nbasis))
+
+
+            # Evaluation of points without extrapolation
+            for i in range(self.nsamples):
+
+                numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
+                res_matrix[i, index] = numpy.sum(_matrix, axis=1)
+
+            # Evaluation given by the extrapolation
+            res_matrix[:, index_ext] = extrapolation(self,
+                                                    eval_points_coord[index_ext, ...],
+                                                    derivative = derivative,
+                                                    keepdims=False)
+
+        else:
+
+            # each column is the values of one element of the basis
+            basis_values = self.basis.evaluate(eval_points, derivative).T
+            _matrix = numpy.empty((len(eval_points), self.nbasis))
+
+
+            for i in range(self.nsamples):
+                numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
+                numpy.sum(_matrix, axis=1, out=res_matrix[i])
+
+            # Same behaviour as grid
+            if keepdims:
+                res_matrix = res_matrix.reshape((self.nsamples,
+                                                 len(eval_points), 1))
 
         return res_matrix
 
@@ -1522,14 +1568,9 @@ class FDataBasis(FData):
             corresponding shift.
         """
 
-
-        eval_points = numpy.array(eval_points)
-
+        # If keepdims is None takes the default value of FDataBasis
         if keepdims is None:
             keepdims = self.keepdims
-
-        if self.ndim_domain != 1 or self.ndim_image != 1:
-            raise NotImplementedError("Only supported for unidimensional basis")
 
         if eval_points.shape[0] != self.nsamples:
             raise ValueError(f"sample_point matrix length "
@@ -1537,21 +1578,64 @@ class FDataBasis(FData):
                              f"the number of samples ({self.nsamples}).")
 
         res_matrix = numpy.empty((self.nsamples, eval_points.shape[1]))
-        _matrix = numpy.empty((eval_points.shape[1], self.nbasis))
-
-        # Extrapolation of the time
-
-        eval_points = self._extrapolate_time(eval_points,
-                                             extrapolation=extrapolation,
-                                             in_place=True)
 
 
-        for i in range(self.nsamples):
-            basis_values = self.basis.evaluate(eval_points[i], derivative).T
-            numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
-            numpy.sum(_matrix, axis=1, out=res_matrix[i])
+        # Applies extrapolation in points outside the domain range
+        if extrapolation is not None:
 
-        if keepdims and self.ndim_image == 1:
+            # Coordinates with shape (nsamples x n_evalpoints x ndim_image)
+            eval_points_coord = eval_points.reshape((eval_points.shape[0],
+                                                     eval_points.shape[1],
+                                                     self.ndim_domain))
+
+            # Boolean index of points where the extrapolation should be applied
+            index_ext = _extrapolation_index(eval_points_coord, self.domain_range)
+            index_ext = numpy.logical_or.reduce(index_ext, axis=0)
+
+            # Flag to apply extrapolation
+            extrapolate = index_ext.any()
+
+        else:
+
+            extrapolate = False
+
+
+        if extrapolate: # Case extraolation applied
+
+            # Points evaluated without extrapolation
+            index = ~index_ext
+
+            # Matrix with the points evaluated without extrapolation
+            eval_points_aux = eval_points[:, index]
+
+
+            _matrix = numpy.empty((numpy.sum(index), self.nbasis))
+
+
+            # Evaluation of points without extrapolation
+            for i in range(self.nsamples):
+                basis_values = self.basis.evaluate(eval_points_aux[i],
+                                                   derivative).T
+                numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
+                res_matrix[i, index] = numpy.sum(_matrix, axis=1)
+
+            # Evaluation given by the extrapolation
+            res_matrix[:, index_ext] = extrapolation(self,
+                                                     eval_points_coord[:, index_ext, ...],
+                                                     derivative = derivative,
+                                                     keepdims=False)
+
+        else: # Case without extrapolation
+
+            _matrix = numpy.empty((eval_points.shape[1], self.nbasis))
+
+            for i in range(self.nsamples):
+                basis_values = self.basis.evaluate(eval_points[i], derivative).T
+                numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
+                numpy.sum(_matrix, axis=1, out=res_matrix[i])
+
+        # Case keepdims
+        if keepdims:
             res_matrix = res_matrix.reshape((self.nsamples,
                                               eval_points.shape[1], 1))
 
@@ -1674,7 +1758,11 @@ class FDataBasis(FData):
         # Basis evaluated in the previous list of points
         mat = self.evaluate(eval_points, derivative=derivative, keepdims=False)
         # Plot
-        return ax.plot(eval_points, mat.T, **kwargs)
+        _plot = ax.plot(eval_points, mat.T, **kwargs)
+
+        self._set_labels(ax)
+
+        return _plot
 
     def mean(self):
         """Compute the mean of all the samples in a FDataBasis object.

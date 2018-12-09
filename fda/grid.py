@@ -17,7 +17,9 @@ import scipy.stats.mstats
 
 from . import basis as fdbasis
 from .grid_interpolation import GridSplineInterpolator
-from .functional_data import _list_of_arrays, FData, Extrapolation
+from .functional_data import _list_of_arrays, FData
+from .extrapolation import _parse_extrapolation
+
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -313,10 +315,7 @@ class FDataGrid(FData):
     def extrapolation(self, value):
         """Sets the extrapolation of the FDataGrid."""
 
-        if value is None:
-            self._extrapolation = None
-        else:
-            self._extrapolation = Extrapolation(value)
+        self._extrapolation = _parse_extrapolation(value)
 
 
     @property
@@ -361,6 +360,9 @@ class FDataGrid(FData):
             function at the values specified in eval_points.
 
         """
+
+        # Parses the extrapolation to get an Extrapolator or a callable
+        extrapolation = _parse_extrapolation(extrapolation, self)
 
         return self._evaluator(eval_points, derivative=derivative,
                                extrapolation=extrapolation, grid=grid,

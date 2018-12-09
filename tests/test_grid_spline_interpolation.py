@@ -385,12 +385,9 @@ class TestEvaluationSpline1_n(unittest.TestCase):
 
 
         # Evaluate (x**2, (9-x)**2) in (1,8)
-        np.testing.assert_array_almost_equal(f([[1],[4]]),
-                                      np.array([[[1.000000e+00, 3.877540e-02],
-                                                 [1.600000e+01, 5.814921e-01]],
-                                                [[6.400000e+01, 6.126005e-01],
-                                                 [2.500000e+01, 8.246750e-01]]])
-                                      )
+        np.testing.assert_array_almost_equal(f([[1],[4]])[0], f(1)[0])
+        np.testing.assert_array_almost_equal(f([[1],[4]])[1], f(4)[1])
+
 
     def test_evaluation_keepdims(self):
         """Test keepdims"""

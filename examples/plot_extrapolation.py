@@ -13,7 +13,7 @@ Shows the usage of the different types of extrapolation.
 import fda
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import axes3d
+import mpl_toolkits.mplot3d
 
 
 ###############################################################################
@@ -23,14 +23,21 @@ from mpl_toolkits.mplot3d import axes3d
 # :class:`FDataBasis <fda.basis.FDataBasis>` or a
 # :class:`FDataGrid <fda.grid.FDataGrid>`.
 #
-# Objects have a predefined extrapolation which is applied in :func:´evaluate´
-# if the argument `extrapolation` is not specified. This default value
-# could be specified when a :class:`FData` object is created or changing the
-# attribute `extrapolation` of the object.
+# The :class:`FDataBasis <fda.functional_data.FData>` objects have a
+# predefined extrapolation which is applied in ´evaluate´
+# if the argument `extrapolation` is not supplied. This default value
+# could be specified when the object is created or changing the
+# attribute `extrapolation`.
 #
+# The extrapolation could be specified by a string with the name of one of the
+# methods in the enum
+# :class:´ExtrapolationType <fda.extrapolation.ExtrapolationType>´, with a value
+# of this enum or with an object
+# :class:´Extrapolator <fda.extrapolation.Extrapolator>´, which may be a
+# method implemented in the package or a custom extrapolator.
 #
 # To show how it works we will create a dataset with two unidimensional curves
-# defined in (0,1), and we will represent using a grid and different types of
+# defined in (0,1), and we will represent it using a grid and different types of
 # basis.
 #
 
@@ -60,14 +67,14 @@ ax[0][1].set_xticks([])
 
 ###############################################################################
 #
-# If the extrapolation if not specified when a list of points if evaluated and
-# and the default extrapolation of the objects has not been specified it is used
+# If the extrapolation is not specified when a list of points is evaluated and
+# the default extrapolation of the objects has not been specified it is used
 # the type `"none"`, which will evaluate the points outside the domain without
 # any kind of control.
 #
 # For this reason the behavior outside the domain will change depending on the
 # representation, obtaining a periodic behavior in the case of the Fourier
-# basis and polynomial behaviors in the rest of the examples.
+# basis and polynomial behaviors in the rest of the cases.
 #
 
 t = np.linspace(-0.2,1.2, 100)
@@ -141,9 +148,10 @@ plt.title("Boundary extrapolation")
 
 ###############################################################################
 #
-# The :class:`FillExtrapolation` will fill the points extrapolated with the
-# same value. The case of filling with zeros could be specified with the string
-# zeros, which is equivalent to `extrapolation=FillExtrapolation(0)`.
+# The :class:´FillExtrapolation <fda.extrapolation.FillExtrapolation>´ will fill
+# the points extrapolated with the same value. The case of filling with zeros
+# could be specified with the string `"zeros"`, which is equivalent to
+# `extrapolation=FillExtrapolation(0)`.
 #
 # The string "nan" is equivalent to `FillExtrapolation(np.nan)`.
 #
@@ -158,7 +166,7 @@ plt.gca().set_prop_cycle(None) # Reset color cycle
 
 fdgrid.plot() # Plot dataset
 
-plt.title("Fill extrapolation")
+plt.title("Fill extrapolation with zeros")
 
 ###############################################################################
 #
@@ -174,8 +182,8 @@ except ValueError as e:
 
 ###############################################################################
 #
-# All the extrapolators will work for multidimensional objects.
-# In the following example it is shown a periodic extension of a 2d-surface
+# All the extrapolators shown will work with multidimensional objects.
+# In the following example it is shown a periodic extension of a 2d-surface.
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')

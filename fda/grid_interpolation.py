@@ -4,29 +4,26 @@ Module to interpolate FDataGrid
 
 """
 
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 
 import numbers
 import numpy
 
 from .functional_data import _list_of_arrays
+from .extrapolation import _extrapolation_index
 
 from scipy.interpolate import (PchipInterpolator, UnivariateSpline,
                                RectBivariateSpline, RegularGridInterpolator)
 
 
-class GridInterpolator:
-
-    __metaclass__ = ABCMeta
+class GridInterpolator(ABC):
 
     @abstractmethod
     def _construct_interpolator(self, fdatagrid):
         pass
 
 
-class _GridInterpolatorEvaluator:
-
-    __metaclass__ = ABCMeta
+class _GridInterpolatorEvaluator(ABC):
 
     @abstractmethod
     def evaluate(self, eval_points, derivative=0, extrapolation=None,
@@ -68,14 +65,10 @@ class GridSplineInterpolator(GridInterpolator):
 
     def _construct_interpolator(self, fdatagrid):
 
-        return _GridSplineInterpolatorEvaluator(fdatagrid.sample_points,
-                                                fdatagrid.data_matrix,
-                                                fdatagrid.ndim_domain,
-                                                fdatagrid.ndim_image,
+        return _GridSplineInterpolatorEvaluator(fdatagrid,
                                                 self.interpolation_order,
                                                 self.smoothness_parameter,
-                                                self.monotone,
-                                                fdatagrid.keepdims)
+                                                self.monotone)
 
     def __repr__(self):
         return (f"{type(self).__name__}("
@@ -86,15 +79,19 @@ class GridSplineInterpolator(GridInterpolator):
 
 class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
 
-    def __init__(self, sample_points, data_matrix, ndim_domain, ndim_image, k=1,
-                 s=0., monotone=False, keepdims=False):
+    def __init__(self, fdatagrid, k=1, s=0., monotone=False):
 
-        self._ndim_image = ndim_image
-        self._ndim_domain = ndim_domain
-        self._nsamples = data_matrix.shape[0]
-        self._keepdims = keepdims
+        sample_points = fdatagrid.sample_points
+        data_matrix = fdatagrid.data_matrix
 
-        if ndim_domain == 1:
+        self._fdatagrid = fdatagrid
+        self._ndim_image = fdatagrid.ndim_image
+        self._ndim_domain = fdatagrid.ndim_domain
+        self._nsamples = fdatagrid.nsamples
+        self._keepdims = fdatagrid.keepdims
+        self._domain_range = fdatagrid.domain_range
+
+        if self._ndim_domain == 1:
             self._splines = self._construct_spline_1_m(sample_points,
                                                        data_matrix,
                                                        k, s, monotone)
@@ -102,7 +99,7 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
             raise ValueError("Monotone interpolation is only supported with "
                              "domain dimension equal to 1.")
 
-        elif ndim_domain == 2:
+        elif self._ndim_domain == 2:
             self._splines = self._construct_spline_2_m(sample_points,
                                                        data_matrix, k, s)
 
@@ -244,23 +241,20 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
     def evaluate(self, eval_points, derivative=0, extrapolation=None,
                  grid=False, keepdims=None):
 
-        if extrapolation is not None:
-            NotImplementedError("Extrapolation to do implemented.")
-
         derivative = self._process_derivative(derivative)
 
         # Case evaluation of a numeric value
         if isinstance(eval_points, numbers.Number):
             eval_points = [eval_points]
 
-        eval_points = numpy.asarray(eval_points)
+        eval_points = numpy.array(eval_points, dtype=numpy.float)
 
         if grid:
             return self.evaluate_grid(eval_points, derivative,
                                       extrapolation=extrapolation,
                                       keepdims=keepdims)
 
-        if ((self._ndim_image == 1 and len(eval_points.shape) == 2) or
+        if ((self._ndim_domain == 1 and len(eval_points.shape) == 2) or
             len(eval_points.shape) == 3):
 
             return self.evaluate_composed(eval_points, derivative,
@@ -271,36 +265,67 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
                                     extrapolation=extrapolation,
                                     keepdims=keepdims)
 
-    def evaluate_spline(self, t, derivative=0, extrapolation=None,
-                        keepdims=None):
+    def evaluate_spline(self, t, derivative=0, extrapolation=None, keepdims=None):
 
         if extrapolation is not None:
-            raise NotImplementedError("Extrapolation to do implemented.")
+            # Coordinates with shape (n_evalpoints x ndim_image)
+            eval_points_coord = t.reshape((len(t), self._ndim_domain))
 
-        if self._ndim_image == 1:
-            evaluator = lambda spl: self._spline_evaluator(spl[0], t,
-                                                           derivative)
+
+            # Boolean index of points where the extrapolation should be applied
+            index_ext = _extrapolation_index(eval_points_coord, self._domain_range)
+
+            # Flag to apply extrapolation
+            extrapolate = index_ext.any()
 
         else:
+            extrapolate = False
+
+
+        if extrapolate: # Index of points with extrapolation
+            index = ~ index_ext
+            t_eval = t[index]
+
+        else: # Else all points will be evaluated
+            t_eval = t
+
+        # Constructs the evaluator for t_eval
+        if self._ndim_image == 1:
+            evaluator = lambda spl: self._spline_evaluator(spl[0], t_eval,
+                                                           derivative)
+        else:
             evaluator = lambda spl_m: numpy.dstack(
-                self._spline_evaluator(spl, t, derivative) for spl in spl_m
+                self._spline_evaluator(spl, t_eval, derivative) for spl in spl_m
                 ).flatten()
 
-        res = numpy.apply_along_axis(evaluator, 1, self._splines)
+        # Points evaluated inside the domain
+        res_eval = numpy.apply_along_axis(evaluator, 1, self._splines)
+        res_eval = res_eval.reshape(self._nsamples, t_eval.shape[0], self._ndim_image)
+
+        if extrapolate: # Points evaluated with extrapolation
+
+            res_ext = extrapolation(self._fdatagrid,
+                                    eval_points_coord[index_ext, ...],
+                                    derivative = derivative,
+                                    keepdims=True)
+
+            res = numpy.empty((self._nsamples, t.shape[0], self._ndim_image))
+            res[:,index_ext,:] = res_ext
+            res[:, index,:] = res_eval
+
+        else:
+            res = res_eval
 
         if keepdims is None:
             keepdims = self._keepdims
 
-        if self._ndim_image != 1 or keepdims:
-            res = res.reshape(self._nsamples, t.shape[0], self._ndim_image)
+        if self._ndim_image == 1 and not keepdims:
+            res = res.reshape(self._nsamples, t.shape[0])
 
         return res
 
     def evaluate_grid(self, axes, derivative=0, extrapolation=None,
                       keepdims=None):
-
-        if extrapolation is not None:
-            raise NotImplementedError("Extrapolation to do implemented.")
 
         axes = _list_of_arrays(axes)
         lengths = [len(ax) for ax in axes]
@@ -312,7 +337,8 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
         t = numpy.array(t).reshape(self._ndim_domain, numpy.prod(lengths)).T
 
 
-        res = self.evaluate_spline(t, derivative)
+        res = self.evaluate_spline(t, derivative, extrapolation=extrapolation,
+                                   keepdims=keepdims)
 
 
         shape = [self._nsamples] + lengths
@@ -328,29 +354,80 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
     def evaluate_composed(self, t, derivative=0, extrapolation=None,
                           keepdims=None):
 
-        if extrapolation is not None:
-            raise NotImplementedError("Extrapolation to do implemented.")
 
         if t.shape[0] != self._nsamples:
-            raise ValueError("t should be a list of length 'nsamples'.")
+            raise ValueError(f"First dimension of eval_points should have the "
+                             f"same length than 'nsamples' ({t.shape[0]}) !="
+                             f"({self._nsamples}).")
+
+        # Applies extrapolation in points outside the domain range
+        if extrapolation is not None:
+
+            # Coordinates with shape (nsamples x n_evalpoints x ndim_image)
+            eval_points_coord = t.reshape((t.shape[0], t.shape[1], self._ndim_domain))
+
+            # Boolean index of points where the extrapolation should be applied
+            index_ext = _extrapolation_index(eval_points_coord, self._domain_range)
+            index_ext = numpy.logical_or.reduce(index_ext, axis=0)
+
+            # Flag to apply extrapolation
+            extrapolate = index_ext.any()
+
+        else:
+            extrapolate = False
+
+        if extrapolate: # Index of points without extrapolation
+
+            index = ~ index_ext
+
+            if t.ndim == 3:
+                t_eval = t[:, index, :]
+            else:
+                t_eval = t[:, index]
+
+        else: # Else all points will be evaluated
+            t_eval = t
+
 
         if self._ndim_image == 1:
-            shape = (self._nsamples, t.shape[1])
+            shape = (self._nsamples, t_eval.shape[1])
 
 
             evaluator = lambda t, spl: self._spline_evaluator(
                 spl[0], t, derivative)
 
         else:
-            shape = (self._nsamples, t.shape[1], self._ndim_image)
+            shape = (self._nsamples, t_eval.shape[1], self._ndim_image)
 
             evaluator = lambda t, spl_m: numpy.array(
-                [self._spline_evaluator(spl, t, derivative) for spl in spl_m])
+                [self._spline_evaluator(spl, t, derivative) for spl in spl_m]).T
 
-        res = numpy.empty(shape)
+        res_eval = numpy.empty(shape)
 
+        # Evaluation of points without extrapolation
         for i in range(self._nsamples):
-            res[i] = evaluator(t[i], self._splines[i])
+
+            res_eval[i] = evaluator(t_eval[i], self._splines[i])
+
+        if extrapolate:
+
+            res_ext = extrapolation(self._fdatagrid,
+                                    eval_points_coord[:, index_ext, ...],
+                                    derivative = derivative,
+                                    keepdims=False)
+
+            if self._ndim_image == 1:
+                res = numpy.empty((self._nsamples, t.shape[1]))
+
+                res[:, index] = res_eval
+                res[:, index_ext] = res_ext
+            else:
+                res = numpy.empty((self._nsamples, t.shape[1], self._ndim_image))
+                res[:, index, :] = res_eval
+                res[:, index_ext, :] = res_ext
+
+        else:
+            res = res_eval
 
         if keepdims is None:
             keepdims = self._keepdims
@@ -360,11 +437,3 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
 
 
         return res
-
-    def evaluate_shifted(self, eval_points, delta, derivative=0):
-
-        t = numpy.outer(numpy.ones(self._nsamples), eval_points)
-
-        t += numpy.asarray(delta).T
-
-        return self.evaluate_composed(t, self._process_derivative(derivative))

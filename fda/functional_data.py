@@ -198,58 +198,6 @@ class FData(ABC):
                              extrapolation=extrapolation, grid=grid,
                              keepdims=keepdims)
 
-    def _extrapolate_time(self, eval_points, extrapolation=None,
-                          in_place=False):
-        """Modifies the eval_points during the evaluation to apply
-        extrapolation.
-
-            Args:
-                eval_points (ndarray): List or matrix to apply extrapolation.
-                extrapolation (str or Extrapolation): Type of extrapolation to
-                    apply. See :class:`Extrapolation`.
-                in_place (bool, optional): Select if modificate in place the
-                    eval_points or return a copy. Default to false.
-
-            Returns:
-                (numpy.ndarray): Arrays with the corresponding eval_points
-                modificated.
-        """
-
-        if extrapolation is None:
-            extrapolation = self.extrapolation
-        else:
-            extrapolation = Extrapolation(extrapolation)
-
-        # Do nothing
-        if extrapolation is None:
-            return eval_points
-
-        domain_range = self.domain_range[0]
-
-        # Creates a copy of the object or uses the given array
-        out = eval_points if not in_place else eval_points.copy()
-
-        if extrapolation is Extrapolation.periodic:
-
-            numpy.subtract(out, domain_range[0], out)
-            numpy.mod(out, domain_range[1] - domain_range[0], out)
-            numpy.add(out, domain_range[0], out)
-
-        # Case boundary value
-        elif extrapolation is Extrapolation.const:
-            out[out <= domain_range[0]] = domain_range[0]
-            out[out >= domain_range[1]] = domain_range[1]
-
-        # Case raise exception
-        elif extrapolation is Extrapolation.exception:
-            if (numpy.any(out < domain_range[0]) or
-                numpy.any(out > domain_range[1])):
-
-                raise ValueError("Attempt to evaluate a value outside the "
-                                 "domain range.")
-
-        return out
-
     @abstractmethod
     def derivative(self, order=1):
         r"""Differentiate a FData object.

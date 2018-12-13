@@ -5,17 +5,17 @@ the corresponding basis classes.
 
 """
 
+import copy
 from abc import ABC, abstractmethod
 
 import matplotlib.pyplot
-from numpy import polyder, polyint, polymul, polyval
 import numpy
 import scipy.integrate
-from scipy.interpolate import PPoly
 import scipy.interpolate
 import scipy.linalg
+from numpy import polyder, polyint, polymul, polyval
+from scipy.interpolate import PPoly
 from scipy.special import binom
-import copy
 
 from . import grid
 from .registration import Extrapolation
@@ -275,6 +275,12 @@ class Basis(ABC):
     def copy(self):
         """Basis copy"""
         return copy.deepcopy(self)
+
+    def toFdataBasis(self):
+        return FDataBasis(self.copy(), numpy.identity(self.nbasis))
+
+    def inprod(self, other):
+        return self.toFdataBasis().inprod(other)
 
     def __repr__(self):
         """Representation of a Basis object."""
@@ -1655,6 +1661,8 @@ class FDataBasis:
     def copy(self):
         """FDataBasis copy"""
         return copy.deepcopy(self)
+
+    def inprod(self, other):
 
     def __repr__(self):
         """Representation of FDataBasis object."""

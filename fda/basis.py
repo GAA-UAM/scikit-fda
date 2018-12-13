@@ -1664,6 +1664,15 @@ class FDataBasis:
 
     def inprod(self, other):
 
+        if isinstance(other, Basis):
+            other = other.toFdataBasis()
+        inprodmat = numpy.zeros((self.nsamples, other.nsamples))
+        for i in range(0, self.nsamples):
+            for j in range(0, other.nsamples):
+                inprodmat[i, j] = scipy.integrate.quad(lambda x: self[i].evaluate([x]) * other[j].evaluate([x]), 0, 1)
+
+        return inprodmat
+
     def __getitem__(self, given):
         """Slicing of FDataBasis object."""
         return FDataBasis(self.basis.copy(), self.coefficients[given])
@@ -1686,3 +1695,13 @@ class FDataBasis:
 
         """
         return self.evaluate(eval_points)
+
+fourierbasis = Monomial(nbasis=5)
+bsplinebasis = BSpline(nbasis=5, order=4)
+fourierfd = FDataBasis(fourierbasis, [1, 2, 3, 4, 5])
+bsplinefd = FDataBasis(bsplinebasis, [1, 2, 3, 4, 5])
+bsplinefd = FDataBasis(bsplinebasis, numpy.array(range(1, 21)).reshape((4, 5)))
+
+a = fourierfd.inprod(bsplinefd)
+
+print(a)

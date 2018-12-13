@@ -1664,6 +1664,10 @@ class FDataBasis:
 
     def inprod(self, other):
 
+    def __getitem__(self, given):
+        """Slicing of FDataBasis object."""
+        return FDataBasis(self.basis.copy(), self.coefficients[given])
+
     def __repr__(self):
         """Representation of FDataBasis object."""
         return (f"{self.__class__.__name__}(basis={self.basis}, "

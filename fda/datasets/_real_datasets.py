@@ -43,21 +43,59 @@ def functional_constructor(obj, attrs):
                       axes_labels=[args_label[0], values_label[0]]), target)
 
 
-def fetch_cran_dataset(dataset_name, package_name, *, converter=None,
-                       **kwargs):
-    import skdatasets
+def fetch_cran(name, package_name, *, converter=None,
+               **kwargs):
     """
     Fetch a dataset from CRAN.
 
+    Args:
+        name: Dataset name.
+        package_name: Name of the R package containing the dataset.
+
     """
+    import skdatasets
+
     if converter is None:
         converter = rdata.conversion.SimpleConverter({
             **rdata.conversion.DEFAULT_CLASS_MAP,
             "fdata": fdata_constructor,
             "functional": functional_constructor})
 
-    return skdatasets.cran.fetch_dataset(dataset_name, package_name,
+    return skdatasets.cran.fetch_dataset(name, package_name,
                                          converter=converter, **kwargs)
+
+
+def fetch_ucr(name, **kwargs):
+    """
+    Fetch a dataset from the UCR.
+
+    Args:
+        name: Dataset name.
+
+    Note:
+        Functional multivariate datasets are not yet supported.
+
+    References:
+        Dau, Hoang Anh, Anthony Bagnall, Kaveh Kamgar, Chin-Chia Michael Yeh,
+        Yan Zhu, Shaghayegh Gharghabi, Chotirat Ann Ratanamahatana, and
+        Eamonn Keogh. «The UCR Time Series Archive».
+        arXiv:1810.07758 [cs, stat], 17 de octubre de 2018.
+        http://arxiv.org/abs/1810.07758.
+
+
+    """
+    import skdatasets
+
+    dataset = skdatasets.ucr.fetch(name, **kwargs)
+
+    dataset['data'] = FDataGrid(dataset['data'])
+    del dataset['feature_names']
+
+    data_test = dataset.get('data_test', None)
+    if data_test is not None:
+        dataset['data_test'] = FDataGrid(data_test)
+
+    return dataset
 
 
 _param_descr = """
@@ -102,9 +140,11 @@ _phoneme_descr = """
     variable, and a column labelled "speaker" identifying the
     diffferent speakers.
 
-    Hastie, Trevor; Buja, Andreas; Tibshirani, Robert. Penalized Discriminant
-    Analysis. Ann. Statist. 23 (1995), no. 1, 73--102.
-    doi:10.1214/aos/1176324456. https://projecteuclid.org/euclid.aos/1176324456
+    References:
+        Hastie, Trevor; Buja, Andreas; Tibshirani, Robert. Penalized
+        Discriminant Analysis. Ann. Statist. 23 (1995), no. 1, 73--102.
+        doi:10.1214/aos/1176324456.
+        https://projecteuclid.org/euclid.aos/1176324456
     """
 
 
@@ -118,7 +158,7 @@ def fetch_phoneme(return_X_y: bool=False):
     """
     DESCR = _phoneme_descr
 
-    raw_dataset = fetch_cran_dataset(
+    raw_dataset = fetch_cran(
         "phoneme", "ElemStatLearn",
         version="0.1-7.1")
 
@@ -155,9 +195,11 @@ _growth_descr = """
     error of these measurements was about 3mm, tending to be larger in
     early childhood and lower in later years.
 
-    Tuddenham, R. D., and Snyder, M. M. (1954) "Physical growth of California
-    boys and girls from birth to age 18", University of California
-    Publications in Child Development, 1, 183-364.
+    References:
+        Tuddenham, R. D., and Snyder, M. M. (1954) "Physical growth of
+        California boys and girls from birth to age 18",
+        University of California Publications in Child Development,
+        1, 183-364.
 """
 
 
@@ -171,7 +213,7 @@ def fetch_growth(return_X_y: bool=False):
     """
     DESCR = _growth_descr
 
-    raw_dataset = fetch_cran_dataset(
+    raw_dataset = fetch_cran(
         "growth", "fda",
         version="2.4.7")
 
@@ -249,7 +291,7 @@ def fetch_tecator(return_X_y: bool=False):
     """
     DESCR = _tecator_descr
 
-    raw_dataset = fetch_cran_dataset(
+    raw_dataset = fetch_cran(
         "tecator", "fda.usc",
         version="1.3.0")
 
@@ -289,19 +331,23 @@ _medflies_descr = """
     developed and discussed in  Chiou, Müller and Wang (2003)
     and Chiou et al. (2003).
 
-    Carey, J.R., Liedo, P., Müller, H.G., Wang, J.L., Chiou, J.M. (1998).
+    References:
+        Carey, J.R., Liedo, P., Müller, H.G., Wang, J.L., Chiou, J.M. (1998).
         Relationship of age patterns of fecundity to mortality, longevity,
         and lifetime reproduction in a large cohort of Mediterranean fruit
         fly females. J. of Gerontology --Biological Sciences 53, 245-251.
-    Chiou, J.M., Müller, H.G., Wang, J.L. (2003). Functional quasi-likelihood
-        regression models with smooth random effects. J. Royal Statist. Soc.
-        B65, 405-423. (PDF)
-    Chiou, J.M., Müller, H.G., Wang, J.L., Carey, J.R. (2003). A functional
-        multiplicative effects model for longitudinal data, with application to
-        reproductive histories of female medflies. Statistica Sinica 13,
-        1119-1133. (PDF)
-    Chiou, J.M., Müller, H.G., Wang, J.L. (2004).Functional response models.
-        Statistica Sinica 14,675-693. (PDF)
+
+        Chiou, J.M., Müller, H.G., Wang, J.L. (2003). Functional
+        quasi-likelihood regression models with smooth random effects.
+        J. Royal Statist. Soc. B65, 405-423. (PDF)
+
+        Chiou, J.M., Müller, H.G., Wang, J.L., Carey, J.R. (2003). A functional
+        multiplicative effects model for longitudinal data, with
+        application to reproductive histories of female medflies.
+        Statistica Sinica 13, 1119-1133. (PDF)
+
+        Chiou, J.M., Müller, H.G., Wang, J.L. (2004).Functional response
+        models. Statistica Sinica 14,675-693. (PDF)
 """
 
 
@@ -316,7 +362,7 @@ def fetch_medflies(return_X_y: bool=False):
     """
     DESCR = _medflies_descr
 
-    raw_dataset = fetch_cran_dataset(
+    raw_dataset = fetch_cran(
         "medflies", "ddalpha",
         version="1.3.4")
 

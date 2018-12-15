@@ -276,11 +276,13 @@ class Basis(ABC):
         """Basis copy"""
         return copy.deepcopy(self)
 
-    def toFdataBasis(self):
+    def tofdatabasis(self):
         return FDataBasis(self.copy(), numpy.identity(self.nbasis))
 
     def inprod(self, other):
-        return self.toFdataBasis().inprod(other)
+        if isinstance(other, FDataBasis):
+            return other.inprod(self)
+        return self.tofdatabasis().inprod(other)
 
     def __repr__(self):
         """Representation of a Basis object."""
@@ -1663,15 +1665,15 @@ class FDataBasis:
         return copy.deepcopy(self)
 
     def inprod(self, other):
-
+        if self.domain_range != other.domain_range:
+            raise ValueError("Both Objects should have the same domain_range")
         if isinstance(other, Basis):
             other = other.toFdataBasis()
-        inprodmat = numpy.zeros((self.nsamples, other.nsamples))
-        for i in range(0, self.nsamples):
-            for j in range(0, other.nsamples):
-                inprodmat[i, j] = scipy.integrate.quad(lambda x: self[i].evaluate([x]) * other[j].evaluate([x]), 0, 1)
-
-        return inprodmat
+        inprodmat = [
+            scipy.integrate.quad(lambda x: self[i].evaluate([x]) * other[j].evaluate([x]), self.domain_range[0],
+                                 self.domain_range[1])[0] for j in range(0, other.nsamples) for i in
+                                 range(0, self.nsamples)]
+        return numpy.array(inprodmat).reshape((self.nsamples, other.nsamples))
 
     def __getitem__(self, given):
         """Slicing of FDataBasis object."""

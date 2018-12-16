@@ -14,10 +14,23 @@ The following functions are used to retrieve specific functional datasets:
    fda.datasets.fetch_growth
    fda.datasets.fetch_phoneme
    fda.datasets.fetch_tecator
+   fda.datasets.fetch_medflies
 
 Those functions return a dictionary with at least a "data" field containing the
 instance data, and a "target" field containing the class labels or regression values,
 if any.
+
+In addition datasets can be downloaded from CRAN and the UCR:
+
+.. autosummary::
+   :toctree: autosummary
+
+   fda.datasets.fetch_cran
+   fda.datasets.fetch_ucr
+   
+Datasets from CRAN are not in a standardized format. Datasets from the UCR are in the same
+format as the specific datasets, but often have an explicit test set, accessible as "data_test"
+and "target_test".
 
 Making synthetic datasets
 -------------------------

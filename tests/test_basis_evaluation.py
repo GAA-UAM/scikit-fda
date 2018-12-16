@@ -98,22 +98,20 @@ class TestBasisEvaluationFourier(unittest.TestCase):
         res_test = f(t)
 
         # Test same result than evaluation standart
-        np.testing.assert_array_equal(f([1]), f([[1], [1]]))
-        np.testing.assert_array_equal(f(t), f(np.vstack((t, t))))
+        np.testing.assert_array_almost_equal(f([1]), f([[1], [1]],
+                                                aligned_evaluation=False))
+        np.testing.assert_array_almost_equal(f(t), f(np.vstack((t, t)),
+                                              aligned_evaluation=False))
 
         # Different evaluation times
         t_multiple = [[0, 0.5], [0.2, 0.7]]
-        np.testing.assert_array_equal(f(t_multiple[0])[0], f(t_multiple)[0])
-        np.testing.assert_array_equal(f(t_multiple[1])[1], f(t_multiple)[1])
+        np.testing.assert_array_almost_equal(f(t_multiple[0])[0],
+                                      f(t_multiple,
+                                        aligned_evaluation=False)[0])
+        np.testing.assert_array_almost_equal(f(t_multiple[1])[1],
+                                      f(t_multiple,
+                                        aligned_evaluation=False)[1])
 
-        # Different evaluation times
-        t_multiple_arr = np.array([[0, 0.5], [0.2, 0.7]])
-
-        np.testing.assert_array_equal(f(t_multiple_arr[0])[0],
-                                      f(t_multiple_arr)[0])
-
-        np.testing.assert_array_equal(f(t_multiple_arr[1])[1],
-                                      f(t_multiple_arr)[1])
 
     def test_evaluation_keepdims_fourier(self):
         """Test behaviour of keepdims """
@@ -166,16 +164,23 @@ class TestBasisEvaluationFourier(unittest.TestCase):
         res_keepdims = res.reshape((2, 3, 1))
 
         # Case default behaviour keepdims=False
-        np.testing.assert_array_equal(f(t).round(3), res)
-        np.testing.assert_array_equal(f(t, keepdims=False).round(3), res)
-        np.testing.assert_array_equal(f(t, keepdims=True).round(3),
+        np.testing.assert_array_equal(f(t, aligned_evaluation=False).round(3),
+                                      res)
+        np.testing.assert_array_equal(f(t, aligned_evaluation=False,
+                                        keepdims=False).round(3), res)
+        np.testing.assert_array_equal(f(t, aligned_evaluation=False,
+                                        keepdims=True).round(3),
                                       res_keepdims)
 
         # Case default behaviour keepdims=True
-        np.testing.assert_array_equal(f_keepdims(t).round(3), res_keepdims)
-        np.testing.assert_array_equal(f_keepdims(t, keepdims=False).round(3),
+        np.testing.assert_array_equal(f_keepdims(t, aligned_evaluation=False
+                                                 ).round(3),
+                                      res_keepdims)
+        np.testing.assert_array_equal(f_keepdims(t, aligned_evaluation=False,
+                                                 keepdims=False).round(3),
                                       res)
-        np.testing.assert_array_equal(f_keepdims(t, keepdims=True).round(3),
+        np.testing.assert_array_equal(f_keepdims(t, aligned_evaluation=False,
+                                                 keepdims=True).round(3),
                                       res_keepdims)
 
     def test_evaluation_grid_keepdims_fourier(self):
@@ -331,22 +336,20 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
         res_test = f(t)
 
         # Test same result than evaluation standart
-        np.testing.assert_array_equal(f([1]), f([[1], [1]]))
-        np.testing.assert_array_equal(f(t), f(np.vstack((t, t))))
+        np.testing.assert_array_equal(f([1]), f([[1], [1]],
+                                                aligned_evaluation=False))
+        np.testing.assert_array_equal(f(t), f(np.vstack((t, t)),
+                                              aligned_evaluation=False))
 
         # Different evaluation times
         t_multiple = [[0, 0.5], [0.2, 0.7]]
-        np.testing.assert_array_equal(f(t_multiple[0])[0], f(t_multiple)[0])
-        np.testing.assert_array_equal(f(t_multiple[1])[1], f(t_multiple)[1])
+        np.testing.assert_array_equal(f(t_multiple[0])[0],
+                                      f(t_multiple,
+                                        aligned_evaluation=False)[0])
+        np.testing.assert_array_equal(f(t_multiple[1])[1],
+                                      f(t_multiple,
+                                        aligned_evaluation=False)[1])
 
-        # Different evaluation times
-        t_multiple_arr = np.array([[0, 0.5], [0.2, 0.7]])
-
-        np.testing.assert_array_equal(f(t_multiple_arr[0])[0],
-                                      f(t_multiple_arr)[0])
-
-        np.testing.assert_array_equal(f(t_multiple_arr[1])[1],
-                                      f(t_multiple_arr)[1])
 
     def test_evaluation_keepdims_bspline(self):
         """Test behaviour of keepdims """
@@ -399,16 +402,25 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
         res_keepdims = res.reshape((2, 3, 1))
 
         # Case default behaviour keepdims=False
-        np.testing.assert_array_equal(f(t).round(3), res)
-        np.testing.assert_array_equal(f(t, keepdims=False).round(3), res)
-        np.testing.assert_array_equal(f(t, keepdims=True).round(3),
+        np.testing.assert_array_equal(f(t, aligned_evaluation=False).round(3),
+                                      res)
+        np.testing.assert_array_equal(f(t, aligned_evaluation=False,
+                                        keepdims=False).round(3),
+                                      res)
+        np.testing.assert_array_equal(f(t, aligned_evaluation=False,
+                                        keepdims=True).round(3),
                                       res_keepdims)
 
         # Case default behaviour keepdims=True
-        np.testing.assert_array_equal(f_keepdims(t).round(3), res_keepdims)
-        np.testing.assert_array_equal(f_keepdims(t, keepdims=False).round(3),
+        np.testing.assert_array_equal(f_keepdims(t,
+                                                 aligned_evaluation=False
+                                                 ).round(3),
+                                      res_keepdims)
+        np.testing.assert_array_equal(f_keepdims(t, aligned_evaluation=False,
+                                                 keepdims=False).round(3),
                                       res)
-        np.testing.assert_array_equal(f_keepdims(t, keepdims=True).round(3),
+        np.testing.assert_array_equal(f_keepdims(t, aligned_evaluation=False,
+                                                 keepdims=True).round(3),
                                       res_keepdims)
 
     def test_evaluation_grid_keepdims_bspline(self):
@@ -568,22 +580,21 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
         res_test = f(t)
 
         # Test same result than evaluation standart
-        np.testing.assert_array_equal(f([1]), f([[1], [1]]))
-        np.testing.assert_array_equal(f(t), f(np.vstack((t, t))))
+        np.testing.assert_array_equal(f([1]), f([[1], [1]],
+                                                aligned_evaluation=False))
+        np.testing.assert_array_equal(f(t), f(np.vstack((t, t)),
+                                              aligned_evaluation=False))
 
         # Different evaluation times
         t_multiple = [[0, 0.5], [0.2, 0.7]]
-        np.testing.assert_array_equal(f(t_multiple[0])[0], f(t_multiple)[0])
-        np.testing.assert_array_equal(f(t_multiple[1])[1], f(t_multiple)[1])
+        np.testing.assert_array_equal(f(t_multiple[0])[0],
+                                      f(t_multiple,
+                                        aligned_evaluation=False)[0])
+        np.testing.assert_array_equal(f(t_multiple[1])[1],
+                                      f(t_multiple,
+                                        aligned_evaluation=False)[1])
 
-        # Different evaluation times
-        t_multiple_arr = np.array([[0, 0.5], [0.2, 0.7]])
 
-        np.testing.assert_array_equal(f(t_multiple_arr[0])[0],
-                                      f(t_multiple_arr)[0])
-
-        np.testing.assert_array_equal(f(t_multiple_arr[1])[1],
-                                      f(t_multiple_arr)[1])
 
     def test_evaluation_keepdims_monomial(self):
         """Test behaviour of keepdims """
@@ -634,16 +645,23 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
         res_keepdims = res.reshape((2, 3, 1))
 
         # Case default behaviour keepdims=False
-        np.testing.assert_array_equal(f(t).round(3), res)
-        np.testing.assert_array_equal(f(t, keepdims=False).round(3), res)
-        np.testing.assert_array_equal(f(t, keepdims=True).round(3),
+        np.testing.assert_array_equal(f(t, aligned_evaluation=False).round(3),
+                                      res)
+        np.testing.assert_array_equal(f(t, aligned_evaluation=False,
+                                        keepdims=False).round(3), res)
+        np.testing.assert_array_equal(f(t, aligned_evaluation=False,
+                                        keepdims=True).round(3),
                                       res_keepdims)
 
         # Case default behaviour keepdims=True
-        np.testing.assert_array_equal(f_keepdims(t).round(3), res_keepdims)
-        np.testing.assert_array_equal(f_keepdims(t, keepdims=False).round(3),
+        np.testing.assert_array_equal(f_keepdims(t, aligned_evaluation=False
+                                                 ).round(3),
+                                      res_keepdims)
+        np.testing.assert_array_equal(f_keepdims(t, aligned_evaluation=False,
+                                                 keepdims=False).round(3),
                                       res)
-        np.testing.assert_array_equal(f_keepdims(t, keepdims=True).round(3),
+        np.testing.assert_array_equal(f_keepdims(t, aligned_evaluation=False,
+                                                 keepdims=True).round(3),
                                       res_keepdims)
 
     def test_evaluation_grid_keepdims_monomial(self):

@@ -20,7 +20,6 @@ import copy
 from . import grid
 
 from .functional_data import FData, _list_of_arrays
-from .extrapolation import _extrapolation_index, _parse_extrapolation
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -1411,12 +1410,14 @@ class FDataBasis(FData):
     def extrapolation(self, value):
         """Sets the type of extrapolation."""
 
-        self._extrapolation = _parse_extrapolation(value)
+        if value is None:
+            self._extrapolation = None
+        else:
+            self._extrapolation = self._parse_extrapolation(value)
 
 
 
-    def evaluate(self, eval_points, *, derivative=0, extrapolation=None,
-                 grid=False, keepdims=None):
+    def _evaluate(self, eval_points, *, derivative=0):
         """"Evaluate the object or its derivatives at a list of values.
 
         Args:
@@ -1425,125 +1426,25 @@ class FDataBasis(FData):
                 given each sample is evaluated at the values in the
                 corresponding row.
             derivative (int, optional): Order of the derivative. Defaults to 0.
-            extrapolation (str or Extrapolation, optional): Controls the
-                extrapolation mode for elements outside the domain range. By
-                default it is used the mode defined during the instance of the
-                object.
-            grid (bool, optional): Whether to evaluate the results on a grid
-                spanned by the input arrays, or at points specified by the input
-                arrays. If true the eval_points should be a list of size
-                ndim_domain with the corresponding times for each axis. The
-                return matrix has shape nsamples x len(t1) x len(t2) x ... x
-                len(t_ndim_domain) x ndim_image. If the domain dimension is 1
-                the parameter has no efect. Defaults to False.
-            keepdims (bool, optional): If the image dimension is equal to 1 and
-                keepdims is True the return matrix has shape
-                nsamples x eval_points x 1 else nsamples x eval_points.
-                By default is used the value given during the instance of the
-                object.
+
 
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
             function at the values specified in eval_points.
 
         """
+        # Only suported 1D objects
+        eval_points = eval_points[:, 0]
 
-        if numpy.isscalar(eval_points):
-            eval_points = [eval_points]
+        # each row contains the values of one element of the basis
+        basis_values = self.basis.evaluate(eval_points, derivative)
 
-        eval_points = numpy.array(eval_points, dtype=numpy.float)
+        res = numpy.tensordot(self.coefficients, basis_values, axes=(1,0))
 
-        # Uses default value of keepdims
-        if keepdims is None:
-            keepdims = self.keepdims
-
-        # Parses extrapolation
-        extrapolation = _parse_extrapolation(extrapolation, self)
+        return res.reshape((self.nsamples, len(eval_points), 1))
 
 
-        # Case grid, in this case wont affect the result, but the eval_points
-        # could be in a list
-        if grid == True:
-            eval_points = _list_of_arrays(eval_points)
-
-            if len(eval_points) != self.ndim_domain:
-                raise ValueError("Number of axis of grid have to be equal to "
-                                 "the domain dimension")
-            eval_points = eval_points[0]
-
-        # Case evaluate composed
-        elif len(eval_points.shape) == 2 and eval_points.shape[0] == self.nsamples:
-            return self._evaluate_composed(eval_points, derivative=derivative,
-                                           extrapolation=extrapolation,
-                                           keepdims=keepdims)
-
-
-
-        res_matrix = numpy.empty((self.nsamples, len(eval_points)))
-
-
-        if extrapolation is not None:
-
-            # Coordinates with shape (nsamples x n_evalpoints x ndim_image)
-            eval_points_coord = eval_points.reshape((len(eval_points),
-                                                     self.ndim_domain))
-
-            # Boolean index of points where the extrapolation should be applied
-            index_ext = _extrapolation_index(eval_points_coord,
-                                             self.domain_range)
-
-            # Flag to apply extrapolation
-            extrapolate = index_ext.any()
-
-        else:
-            extrapolate = False
-
-        if extrapolate:
-
-            # Points evaluated without extrapolation
-            index = ~index_ext
-
-            # Array with points evaluated without extrapolation
-            eval_points_aux = eval_points[index]
-
-            # each column is the values of one element of the basis
-            basis_values = self.basis.evaluate(eval_points_aux, derivative).T
-            _matrix = numpy.empty((numpy.sum(index), self.nbasis))
-
-
-            # Evaluation of points without extrapolation
-            for i in range(self.nsamples):
-
-                numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
-                res_matrix[i, index] = numpy.sum(_matrix, axis=1)
-
-            # Evaluation given by the extrapolation
-            res_matrix[:, index_ext] = extrapolation(self,
-                                                    eval_points_coord[index_ext, ...],
-                                                    derivative = derivative,
-                                                    keepdims=False)
-
-        else:
-
-            # each column is the values of one element of the basis
-            basis_values = self.basis.evaluate(eval_points, derivative).T
-            _matrix = numpy.empty((len(eval_points), self.nbasis))
-
-
-            for i in range(self.nsamples):
-                numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
-                numpy.sum(_matrix, axis=1, out=res_matrix[i])
-
-            # Same behaviour as grid
-            if keepdims:
-                res_matrix = res_matrix.reshape((self.nsamples,
-                                                 len(eval_points), 1))
-
-        return res_matrix
-
-
-    def _evaluate_composed(self, eval_points, *, derivative=0,
-                           extrapolation=None, keepdims=None):
+    def _evaluate_composed(self, eval_points, *, derivative=0):
 
         """Evaluate the object or its derivatives at a list of values with a
         different time for each sample.
@@ -1568,78 +1469,20 @@ class FDataBasis(FData):
             corresponding shift.
         """
 
-        # If keepdims is None takes the default value of FDataBasis
-        if keepdims is None:
-            keepdims = self.keepdims
-
-        if eval_points.shape[0] != self.nsamples:
-            raise ValueError(f"sample_point matrix length "
-                             f"({eval_points.shape[0]}) has to be equal than "
-                             f"the number of samples ({self.nsamples}).")
+        eval_points = eval_points[..., 0]
 
         res_matrix = numpy.empty((self.nsamples, eval_points.shape[1]))
 
+        _matrix = numpy.empty((eval_points.shape[1], self.nbasis))
 
-        # Applies extrapolation in points outside the domain range
-        if extrapolation is not None:
+        for i in range(self.nsamples):
+            basis_values = self.basis.evaluate(eval_points[i], derivative).T
 
-            # Coordinates with shape (nsamples x n_evalpoints x ndim_image)
-            eval_points_coord = eval_points.reshape((eval_points.shape[0],
-                                                     eval_points.shape[1],
-                                                     self.ndim_domain))
-
-            # Boolean index of points where the extrapolation should be applied
-            index_ext = _extrapolation_index(eval_points_coord, self.domain_range)
-            index_ext = numpy.logical_or.reduce(index_ext, axis=0)
-
-            # Flag to apply extrapolation
-            extrapolate = index_ext.any()
-
-        else:
-
-            extrapolate = False
+            numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
+            numpy.sum(_matrix, axis=1, out=res_matrix[i])
 
 
-        if extrapolate: # Case extraolation applied
-
-            # Points evaluated without extrapolation
-            index = ~index_ext
-
-            # Matrix with the points evaluated without extrapolation
-            eval_points_aux = eval_points[:, index]
-
-
-            _matrix = numpy.empty((numpy.sum(index), self.nbasis))
-
-
-            # Evaluation of points without extrapolation
-            for i in range(self.nsamples):
-                basis_values = self.basis.evaluate(eval_points_aux[i],
-                                                   derivative).T
-                numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
-                res_matrix[i, index] = numpy.sum(_matrix, axis=1)
-
-            # Evaluation given by the extrapolation
-            res_matrix[:, index_ext] = extrapolation(self,
-                                                     eval_points_coord[:, index_ext, ...],
-                                                     derivative = derivative,
-                                                     keepdims=False)
-
-        else: # Case without extrapolation
-
-            _matrix = numpy.empty((eval_points.shape[1], self.nbasis))
-
-            for i in range(self.nsamples):
-                basis_values = self.basis.evaluate(eval_points[i], derivative).T
-                numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
-                numpy.sum(_matrix, axis=1, out=res_matrix[i])
-
-        # Case keepdims
-        if keepdims:
-            res_matrix = res_matrix.reshape((self.nsamples,
-                                              eval_points.shape[1], 1))
-
-        return res_matrix
+        return res_matrix.reshape((self.nsamples, eval_points.shape[1], 1))
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               discretization_points=None, **kwargs):

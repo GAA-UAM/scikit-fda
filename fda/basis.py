@@ -280,8 +280,6 @@ class Basis(ABC):
         return FDataBasis(self.copy(), numpy.identity(self.nbasis))
 
     def inprod(self, other):
-        if isinstance(other, FDataBasis):
-            return other.inprod(self)
         return self.tofdatabasis().inprod(other)
 
     def __repr__(self):
@@ -1668,7 +1666,7 @@ class FDataBasis:
         if self.domain_range != other.domain_range:
             raise ValueError("Both Objects should have the same domain_range")
         if isinstance(other, Basis):
-            other = other.toFdataBasis()
+            other = other.tofdatabasis()
         inprodmat = [
             scipy.integrate.quad(lambda x: self[i].evaluate([x]) * other[j].evaluate([x]), self.domain_range[0],
                                  self.domain_range[1])[0] for j in range(0, other.nsamples) for i in
@@ -1697,13 +1695,3 @@ class FDataBasis:
 
         """
         return self.evaluate(eval_points)
-
-fourierbasis = Monomial(nbasis=5)
-bsplinebasis = BSpline(nbasis=5, order=4)
-fourierfd = FDataBasis(fourierbasis, [1, 2, 3, 4, 5])
-bsplinefd = FDataBasis(bsplinebasis, [1, 2, 3, 4, 5])
-bsplinefd = FDataBasis(bsplinebasis, numpy.array(range(1, 21)).reshape((4, 5)))
-
-a = fourierfd.inprod(bsplinefd)
-
-print(a)

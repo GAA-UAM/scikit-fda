@@ -5,19 +5,11 @@ objects of the package and contains some commons methods.
 """
 
 from abc import ABC, abstractmethod
-from enum import Enum
-import numbers
 
 import numpy
 
-class Extrapolation(Enum):
-    r"""Enum with extrapolation types. Defines the extrapolation mode for
-        elements outside the domain range.
-    """
+from .extrapolation import extrapolation_methods
 
-    periodic = "periodic" #: Extends the domain range periodically.
-    const = "const" #: Uses the boundary value.
-    exception = "exception" #: Raise an exception
 
 def _list_of_arrays(original_array):
     """Convert to a list of arrays.
@@ -125,9 +117,185 @@ class FData(ABC):
         """
         pass
 
+    def _reshape_eval_points(self, eval_points, evaluation_aligned):
+        """Convert and reshape the eval_points to ndarray with the corresponding
+        shape.
+
+        Args:
+            eval_points (array_like): Evaluation points to be reshaped.
+            evaluation_aligned (bool): Boolean flag. True if all the samples
+                will be evaluated at the same evaluation_points.
+
+        Returns:
+            (np.ndarray): Numpy array with the eval_points, if
+            evaluation_aligned is True with shape `number of evaluation points`
+            x `ndim_domain`. If the points are not aligned the shape of the
+            points will be `nsamples` x `number of evaluation points`
+            x `ndim_domain`.
+        """
+
+        # Case evaluation of a scalar value, i.e., f(0)
+        if numpy.isscalar(eval_points):
+            eval_points = [eval_points]
+
+        # Creates a copy of the eval points, and convert to np.array
+        eval_points = numpy.array(eval_points)
+
+        if evaluation_aligned: # Samples evaluated at same eval points
+
+            eval_points = eval_points.reshape((eval_points.shape[0],
+                                               self.ndim_domain))
+
+        else: # Different eval_points for each sample
+
+            if eval_points.ndim < 2 or eval_points.shape[0] != self.nsamples:
+
+                raise ValueError(f"eval_points should be a list "
+                                 f"of length {self.nsamples} with the "
+                                 f"evaluation points for each sample.")
+
+            eval_points = eval_points.reshape((eval_points.shape[0],
+                                               eval_points.shape[1],
+                                               self.ndim_domain))
+
+        return eval_points
+
+    def _extrapolation_index(self, eval_points):
+        """Checks the points that need to be extrapolated.
+
+        Args:
+            eval_points (numpy.ndarray): Array with shape `n_eval_points` x
+                `ndim_domain` with the evaluation points, or shape ´nsamples´ x
+                `n_eval_points` x `ndim_domain` with different evaluation points
+                for each sample.
+
+        Returns:
+
+            (numpy.ndarray): Array with boolean index. The positions with True
+                in the index are outside the domain range and extrapolation
+                should be applied.
+
+        """
+
+        index = numpy.zeros(eval_points.shape[:-1], dtype=numpy.bool)
+
+        # Checks bounds in each domain dimension
+        for i, bounds in enumerate(self.domain_range):
+            numpy.logical_or(index, eval_points[..., i] < bounds[0], out=index)
+            numpy.logical_or(index, eval_points[..., i] > bounds[1], out=index)
+
+        return index
+
+
+
+
+    def _evaluate_grid(self, axes, *, derivative=0, extrapolation=None,
+                       aligned_evaluation=True, keepdims=None):
+
+        if not aligned_evaluation:
+            raise NotImplementedError("Evaluation in different times of a "
+                                      "grid unsupported.")
+
+        axes = _list_of_arrays(axes)
+        lengths = [len(ax) for ax in axes]
+
+        if len(axes) != self.ndim_domain:
+            raise ValueError(f"Length of axes should be {self.ndim_domain}.")
+
+
+        eval_points = numpy.meshgrid(*axes, indexing='ij')
+        eval_points = numpy.array(eval_points).reshape(self.ndim_domain,
+                                                       numpy.prod(lengths)).T
+
+
+        res = self.evaluate(eval_points, derivative=derivative,
+                            extrapolation=extrapolation, keepdims=keepdims)
+
+
+        shape = [self.nsamples] + lengths
+
+        if keepdims is None:
+            keepdims = self.keepdims
+
+        if self.ndim_image != 1 or keepdims:
+            shape += [self.ndim_image]
+
+        return res.reshape(shape)
+
+
+    def _join_evaluation(self, index, index_ext, index_ev, res_extrapolation,
+                         res_evaluation):
+        """Join the points evaluated using evaluation and by the direct
+        evaluation.
+
+        Args:
+            index (ndarray): Boolean index with the points extrapolated.
+            res_extrapolation (ndarray): Result of the extrapolation.
+            res_evaluation (ndarray): Result of the evaluation.
+
+        Returns:
+            (ndarray): Matrix with the points evaluated with shape
+            `nsamples` x `number of points evaluated` x `ndim_image`.
+        """
+
+        res = numpy.empty((self.nsamples, index.shape[-1], self.ndim_image))
+
+        # Case aligned evaluation
+        if index.ndim == 1:
+            res[:, index_ev, :] = res_evaluation
+            res[:, index_ext, :] = res_extrapolation
+
+        else:
+
+            res[:, index_ev] = res_evaluation
+            res[index] = res_extrapolation[index[:, index_ext]]
+
+
+        return res
+
+    def _parse_extrapolation(self, extrapolation):
+        """Parse the argument `extrapolation` in 'evaluate'.
+
+        Args:
+            extrapolation (:class:´Extrapolator´, str or Callable): Argument
+                extrapolation to be parsed.
+            fdata (:class:´FData´): Object with the default extrapolation.
+
+        Returns:
+            (:class:´Extrapolator´ or Callable): Extrapolation method.
+
+        """
+        if extrapolation is None:
+            return self.extrapolation
+
+        elif callable(extrapolation):
+            return extrapolation
+
+        elif isinstance(extrapolation, str):
+            return extrapolation_methods[extrapolation.lower()]
+
+        else:
+            raise ValueError("Invalid extrapolation method.")
+
     @abstractmethod
+    def _evaluate(self, eval_points, *, derivative=0):
+        """
+
+        """
+
+        pass
+
+    @abstractmethod
+    def _evaluate_composed(self, eval_points, *, derivative=0):
+        """
+
+        """
+
+        pass
+
+
     def evaluate(self, eval_points, *, derivative=0, extrapolation=None,
-                 grid=False, keepdims=None):
+                 grid=False, aligned_evaluation=True, keepdims=None):
         """Evaluate the object or its derivatives at a list of values or a grid.
 
         Args:
@@ -158,10 +326,80 @@ class FData(ABC):
             function at the values specified in eval_points.
 
         """
-        pass
+
+        # Gets the function to perform extrapolation or None
+        extrapolation = self._parse_extrapolation(extrapolation)
+
+        if grid: # Evaluation of a grid performed in auxiliar function
+            return self._evaluate_grid(eval_points, derivative=derivative,
+                                       extrapolation=extrapolation,
+                                       aligned_evaluation=aligned_evaluation,
+                                       keepdims=keepdims)
+
+        # Convert to array ann check dimensions of eval points
+        eval_points = self._reshape_eval_points(eval_points, aligned_evaluation)
+
+        # Check if extrapolation should be applied
+        if extrapolation is not None:
+            index = self._extrapolation_index(eval_points)
+            extrapolate = index.any()
+
+        else:
+            extrapolate = False
+
+        if not extrapolate: # Direct evaluation
+
+            if aligned_evaluation:
+                res = self._evaluate(eval_points, derivative=derivative)
+            else:
+                res = self._evaluate_composed(eval_points,
+                                              derivative=derivative)
+
+        else:
+            # Partition of eval points
+            if aligned_evaluation:
+
+                index_ext = index
+                index_ev = ~index
+
+                eval_points_extrapolation = eval_points[index_ext]
+                eval_points_evaluation = eval_points[index_ev]
+
+                # Direct evaluation
+                res_evaluation = self._evaluate(eval_points_evaluation,
+                                                derivative=derivative)
+
+            else:
+                index_ext = numpy.logical_or.reduce(index, axis=0)
+                eval_points_extrapolation = eval_points[:, index_ext]
+
+                index_ev = numpy.logical_or.reduce(~index, axis=0)
+                eval_points_evaluation = eval_points[:, index_ev]
+
+                # Direct evaluation
+                res_evaluation = self._evaluate_composed(eval_points_evaluation,
+                                                         derivative=derivative)
+
+            # Evaluation using extrapolation
+            res_extrapolation = extrapolation(self, eval_points_extrapolation,
+                                              derivative=derivative)
+
+            res = self._join_evaluation(index, index_ext, index_ev,
+                                        res_extrapolation, res_evaluation)
+
+        # If not provided gets default value of keepdims
+        if keepdims is None:
+            keepdims = self.keepdims
+
+        # Delete last axis if not keepdims and
+        if self.ndim_image == 1 and not keepdims:
+            res = res.reshape(res.shape[:-1])
+
+        return res
+
 
     def __call__(self, eval_points, *, derivative=0, extrapolation=None,
-                 grid=False, keepdims=None):
+                 grid=False, aligned_evaluation=True, keepdims=None):
         """Evaluate the object or its derivatives at a list of values or a grid.
         This method is a wrapper of :meth:`evaluate`.
 
@@ -196,11 +434,12 @@ class FData(ABC):
 
         return self.evaluate(eval_points, derivative=derivative,
                              extrapolation=extrapolation, grid=grid,
+                             aligned_evaluation=aligned_evaluation,
                              keepdims=keepdims)
 
     @abstractmethod
     def derivative(self, order=1):
-        r"""Differentiate a FData object.
+        """Differentiate a FData object.
 
 
         Args:

@@ -15,7 +15,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d
 
-
 ###############################################################################
 #
 # The extrapolation defines how to evaluate points that are
@@ -64,6 +63,7 @@ fd_bspline.plot(ax[1][1])
 # Disable xticks of first row
 ax[0][0].set_xticks([])
 ax[0][1].set_xticks([])
+
 
 ###############################################################################
 #
@@ -153,8 +153,7 @@ plt.title("Boundary extrapolation")
 # could be specified with the string `"zeros"`, which is equivalent to
 # `extrapolation=FillExtrapolation(0)`.
 #
-# The string "nan" is equivalent to `FillExtrapolation(np.nan)`.
-#
+
 
 plt.figure()
 
@@ -166,7 +165,15 @@ plt.gca().set_prop_cycle(None) # Reset color cycle
 
 fdgrid.plot() # Plot dataset
 
-plt.title("Fill extrapolation with zeros")
+plt.title("Fill with zeros")
+
+###############################################################################
+#
+# The string "nan" is equivalent to `FillExtrapolation(np.nan)`.
+#
+
+values = fdgrid([-1, 0, 0.5, 1, 2], extrapolation="nan")
+print(values)
 
 ###############################################################################
 #
@@ -183,21 +190,21 @@ except ValueError as e:
 ###############################################################################
 #
 # All the extrapolators shown will work with multidimensional objects.
-# In the following example it is shown a periodic extension of a 2d-surface.
+# In the following example it is constructed a 2d-surface and it is extended
+# using periodic extrapolation.
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
 # Make data.
-t = np.arange(-2.5, 2.5, 0.25)
+t = np.arange(-2.5, 2.75, 0.25)
 X, Y = np.meshgrid(t, t)
-RSQ = X**2 + Y**2
-Z = 0.1 * np.sqrt(np.exp(-RSQ))
+Z = np.exp(-0.5 * (X**2 + Y**2))
 
 # Creation of FDataGrid
 fd_surface = fda.FDataGrid([Z], (t, t))
 
-t = np.arange(-7, 7, 0.4)
+t = np.arange(-7, 7.5, 0.5)
 
 # Evaluation with periodic extrapolation
 values =  fd_surface((t,t), grid=True, extrapolation="periodic")
@@ -207,4 +214,27 @@ T, S = np.meshgrid(t, t)
 ax.plot_wireframe(T, S, values[0], alpha=.3, color="C0")
 ax.plot_surface(X, Y, Z, color="C0")
 
-plt.show()
+###############################################################################
+#
+# The previous extension can be compared with the extrapolation using the values
+# of the bounds.
+
+
+values =  fd_surface((t,t), grid=True, extrapolation="bounds")
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_wireframe(T, S, values[0], alpha=.3, color="C0")
+ax.plot_surface(X, Y, Z, color="C0")
+
+###############################################################################
+#
+# Or filling the surface with zeros outside the domain.
+
+
+values =  fd_surface((t,t), grid=True, extrapolation="zeros")
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_wireframe(T, S, values[0], alpha=.3, color="C0")
+ax.plot_surface(X, Y, Z, color="C0")

@@ -18,7 +18,6 @@ import scipy.stats.mstats
 from . import basis as fdbasis
 from .grid_interpolation import GridSplineInterpolator
 from .functional_data import _list_of_arrays, FData
-from .extrapolation import _parse_extrapolation
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -315,7 +314,10 @@ class FDataGrid(FData):
     def extrapolation(self, value):
         """Sets the extrapolation of the FDataGrid."""
 
-        self._extrapolation = _parse_extrapolation(value)
+        if value is None:
+            self._extrapolation = None
+        else:
+            self._extrapolation = self._parse_extrapolation(value)
 
 
     @property
@@ -328,8 +330,7 @@ class FDataGrid(FData):
         return self._interpolator_evaluator
 
 
-    def evaluate(self, eval_points, *, derivative=0, extrapolation=None,
-                 grid=False, keepdims=None):
+    def _evaluate(self, eval_points, *, derivative=0):
         """"Evaluate the object or its derivatives at a list of values.
 
         Args:
@@ -338,22 +339,6 @@ class FDataGrid(FData):
                 each sample is evaluated at the values in the corresponding row
                 in eval_points.
             derivative (int, optional): Order of the derivative. Defaults to 0.
-            extrapolation (str or Extrapolation, optional): Controls the
-                extrapolation mode for elements outside the domain range. By
-                default it is used the mode defined during the instance of the
-                object.
-            grid (bool, optional): Whether to evaluate the results on a grid
-                spanned by the input arrays, or at points specified by the input
-                arrays. If true the eval_points should be a list of size
-                ndim_domain with the corresponding times for each axis. The
-                return matrix has shape nsamples x len(t1) x len(t2) x ... x
-                len(t_ndim_domain) x ndim_image. If the domain dimension is 1
-                the parameter has no efect. Defaults to False.
-            keepdims (bool, optional): If the image dimension is equal to 1 and
-                keepdims is True the return matrix has shape
-                nsamples x eval_points x 1 else nsamples x eval_points.
-                By default it is used the value given during the instance of the
-                object.
 
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
@@ -361,12 +346,26 @@ class FDataGrid(FData):
 
         """
 
-        # Parses the extrapolation to get an Extrapolator or a callable
-        extrapolation = _parse_extrapolation(extrapolation, self)
+        return self._evaluator.evaluate(eval_points, derivative=derivative)
 
-        return self._evaluator(eval_points, derivative=derivative,
-                               extrapolation=extrapolation, grid=grid,
-                               keepdims=keepdims)
+    def _evaluate_composed(self, eval_points, *, derivative=0):
+        """"Evaluate the object or its derivatives at a list of values.
+
+        Args:
+            eval_points (array_like): List of points where the functions are
+                evaluated. If a matrix of shape nsample x eval_points is given
+                each sample is evaluated at the values in the corresponding row
+                in eval_points.
+            derivative (int, optional): Order of the derivative. Defaults to 0.
+
+        Returns:
+            (numpy.darray): Matrix whose rows are the values of the each
+            function at the values specified in eval_points.
+
+        """
+
+        return self._evaluator.evaluate_composed(eval_points,
+                                                 derivative=derivative)
 
     def derivative(self, order=1):
         r"""Differentiate a FDataGrid object.

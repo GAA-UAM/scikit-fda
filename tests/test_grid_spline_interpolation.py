@@ -80,16 +80,17 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10))
 
         # Evaluate (x**2, (9-x)**2) in (1,8)
-        np.testing.assert_array_equal(f([[1],[8]]),np.array([[1.], [1.]]))
+        np.testing.assert_array_equal(f([[1],[8]], aligned_evaluation=False),
+                                      np.array([[1.], [1.]]))
 
         t = np.linspace(4,6,4)
-        np.testing.assert_array_equal(f([t,9-t]).round(2),
+        np.testing.assert_array_equal(f([t,9-t], aligned_evaluation=False).round(2),
                                       np.array([[16.  , 22.  , 28.67, 36.  ],
                                                 [16.  , 22.  , 28.67, 36.  ]]))
 
         # Same length than nsample
         t = np.linspace(4,6,2)
-        np.testing.assert_array_equal(f([t,9-t]).round(2),
+        np.testing.assert_array_equal(f([t,9-t], aligned_evaluation=False).round(2),
                                       np.array([[16.  , 36.], [16.  , 36.]]))
 
     def test_evaluation_linear_keepdims(self):
@@ -147,13 +148,18 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         res_keepdims = res.reshape((2,3,1))
 
         # Test combinations of keepdims with list
-        np.testing.assert_array_equal(f(t), res)
-        np.testing.assert_array_equal(f(t, keepdims=False), res)
-        np.testing.assert_array_equal(f(t, keepdims=True), res_keepdims)
+        np.testing.assert_array_equal(f(t, aligned_evaluation=False), res)
+        np.testing.assert_array_equal(f(t, aligned_evaluation=False,
+                                        keepdims=False), res)
+        np.testing.assert_array_equal(f(t, aligned_evaluation=False,
+                                        keepdims=True), res_keepdims)
 
-        np.testing.assert_array_equal(fk(t), res_keepdims)
-        np.testing.assert_array_equal(fk(t, keepdims=False), res)
-        np.testing.assert_array_equal(fk(t, keepdims=True), res_keepdims)
+        np.testing.assert_array_equal(fk(t, aligned_evaluation=False),
+                                      res_keepdims)
+        np.testing.assert_array_equal(fk(t, aligned_evaluation=False,
+                                         keepdims=False), res)
+        np.testing.assert_array_equal(fk(t, aligned_evaluation=False,
+                                         keepdims=True), res_keepdims)
 
     def test_evaluation_grid_linear_keepdims(self):
         """Test grid evaluation with keepdims"""
@@ -246,17 +252,17 @@ class TestEvaluationSpline1_1(unittest.TestCase):
 
 
         # Evaluate (x**2, (9-x)**2) in (1,8)
-        np.testing.assert_array_equal(f([[1],[8]]).round(3)
+        np.testing.assert_array_equal(f([[1],[8]], aligned_evaluation=False).round(3)
                                       ,np.array([[1.], [1.]]))
 
         t = np.linspace(4,6,4)
-        np.testing.assert_array_equal(f([t,9-t]).round(2),
+        np.testing.assert_array_equal(f([t,9-t], aligned_evaluation=False).round(2),
                                       np.array([[16.  , 21.78, 28.44, 36.  ],
                                                 [16.  , 21.78, 28.44, 36.  ]]))
 
         # Same length than nsample
         t = np.linspace(4,6,2)
-        np.testing.assert_array_equal(f([t,9-t]).round(3),
+        np.testing.assert_array_equal(f([t,9-t], aligned_evaluation=False).round(3),
                                       np.array([[16.  , 36.], [16.  , 36.]]))
 
     def test_evaluation_nodes(self):
@@ -385,8 +391,12 @@ class TestEvaluationSpline1_n(unittest.TestCase):
 
 
         # Evaluate (x**2, (9-x)**2) in (1,8)
-        np.testing.assert_array_almost_equal(f([[1],[4]])[0], f(1)[0])
-        np.testing.assert_array_almost_equal(f([[1],[4]])[1], f(4)[1])
+        np.testing.assert_array_almost_equal(f([[1],[4]],
+                                               aligned_evaluation=False)[0],
+                                             f(1)[0])
+        np.testing.assert_array_almost_equal(f([[1],[4]],
+                                               aligned_evaluation=False)[1],
+                                             f(4)[1])
 
 
     def test_evaluation_keepdims(self):

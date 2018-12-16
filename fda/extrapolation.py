@@ -13,7 +13,8 @@ class Extrapolator(ABC):
 
     Extrapolators defines how to evaluate points outside the domain of a
     :class:´FData´. They are called internally by `evaluate`. Custom
-    extrapolators could be done with a subclass of `Extrapolator`.
+    extrapolators could be done subclassing `Extrapolator` or with a compatible
+    callable.
 
     """
 

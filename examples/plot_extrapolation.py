@@ -28,12 +28,9 @@ import mpl_toolkits.mplot3d
 # could be specified when the object is created or changing the
 # attribute `extrapolation`.
 #
-# The extrapolation could be specified by a string with the name of one of the
-# methods in the enum
-# :class:´ExtrapolationType <fda.extrapolation.ExtrapolationType>´, with a value
-# of this enum or with an object
-# :class:´Extrapolator <fda.extrapolation.Extrapolator>´, which may be a
-# method implemented in the package or a custom extrapolator.
+# The extrapolation could be specified by a string with the short name of an
+# extrapolator, with an
+# :class:´Extrapolator <fda.extrapolation.Extrapolator>´ or with a callable.
 #
 # To show how it works we will create a dataset with two unidimensional curves
 # defined in (0,1), and we will represent it using a grid and different types of
@@ -118,7 +115,9 @@ fd_bspline.plot(ax[1][1])
 plt.figure()
 
 # Evaluation of the grid
+# Extrapolation supplied in the evaluation
 values = fdgrid(t, extrapolation="periodic")
+
 plt.plot(t, values.T, linestyle='--')
 
 plt.gca().set_prop_cycle(None) # Reset color cycle
@@ -136,8 +135,11 @@ plt.title("Periodic extrapolation")
 
 plt.figure()
 
+# Other way to call the extrapolation, changing the default value
+fdgrid.extrapolation = "bounds"
+
 # Evaluation of the grid
-values = fdgrid(t, extrapolation="bounds")
+values = fdgrid(t)
 plt.plot(t, values.T, linestyle='--')
 
 plt.gca().set_prop_cycle(None) # Reset color cycle

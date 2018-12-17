@@ -304,7 +304,9 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
 
         # Computes the new values shifted
         x = fd.evaluate(discretization_points_rep + numpy.atleast_2d(delta).T,
-                        extrapolation=extrapolation, keepdims=False)
+                        aligned_evaluation=False,
+                        extrapolation=extrapolation,
+                        keepdims=False)
 
         x.mean(axis=0, out=tfine_aux)
 

@@ -1556,6 +1556,7 @@ class FDataBasis(FData):
 
         # Matrix of shifted values
         _data_matrix = self.evaluate(points_shifted,
+                                     aligned_evaluation=False,
                                      extrapolation=extrapolation,
                                      keepdims=False)
 

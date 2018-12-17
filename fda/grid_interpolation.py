@@ -143,11 +143,15 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
         sample_points = sample_points[0]
 
         if monotone:
-            constructor =  lambda data: PchipInterpolator(sample_points, data)
+            def constructor(data):
+                """Constructs an unidimensional cubic monotone interpolator"""
+                return PchipInterpolator(sample_points, data)
 
         else:
-            constructor = lambda data: UnivariateSpline(sample_points, data,
-                                                        s=s, k=k)
+
+            def constructor(data):
+                """Constructs an unidimensional interpolator"""
+                return UnivariateSpline(sample_points, data, s=s, k=k)
 
         return numpy.apply_along_axis(constructor, 1, data_matrix)
 
@@ -241,12 +245,15 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
 
         # Constructs the evaluator for t_eval
         if self._ndim_image == 1:
-            evaluator = lambda spl: self._spline_evaluator(spl[0], eval_points,
-                                                           derivative)
+            def evaluator(spl):
+                """Evaluator of object with image dimension equal to 1."""
+                return self._spline_evaluator(spl[0], eval_points, derivative)
         else:
-            evaluator = lambda spl_m: numpy.dstack(
-                self._spline_evaluator(spl, eval_points, derivative)
-                                       for spl in spl_m).flatten()
+            def evaluator(spl_m):
+                """Evaluator of multimensional object"""
+                return numpy.dstack(
+                    self._spline_evaluator(spl, eval_points, derivative)
+                    for spl in spl_m).flatten()
 
         # Points evaluated inside the domain
         res = numpy.apply_along_axis(evaluator, 1, self._splines)
@@ -265,12 +272,15 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
 
 
         if self._ndim_image == 1:
-            evaluator = lambda t, spl: self._spline_evaluator(
-                spl[0], t, derivative)
+            def evaluator(t, spl):
+                """Evaluator of sample with image dimension equal to 1"""
+                return self._spline_evaluator(spl[0], t, derivative)
 
         else:
-            evaluator = lambda t, spl_m: numpy.array(
-                [self._spline_evaluator(spl, t, derivative) for spl in spl_m]).T
+            def evaluator(t, spl_m):
+                """Evaluator of multidimensional sample"""
+                return numpy.array([self._spline_evaluator(spl, t, derivative)
+                                    for spl in spl_m]).T
 
 
         for i in range(self._nsamples):

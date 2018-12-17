@@ -223,13 +223,17 @@ class FData(ABC):
         return res.reshape(shape)
 
 
-    def _join_evaluation(self, index, index_ext, index_ev, res_extrapolation,
-                         res_evaluation):
+    def _join_evaluation(self, index_matrix, index_ext, index_ev,
+                         res_extrapolation, res_evaluation):
         """Join the points evaluated using evaluation and by the direct
         evaluation.
 
         Args:
             index (ndarray): Boolean index with the points extrapolated.
+            index_ext (ndarray): Boolean index with the columns that contains
+                points extrapolated.
+            index_ev (ndarray): Boolean index with the columns that contains
+                points evaluated.
             res_extrapolation (ndarray): Result of the extrapolation.
             res_evaluation (ndarray): Result of the evaluation.
 
@@ -238,17 +242,18 @@ class FData(ABC):
             `nsamples` x `number of points evaluated` x `ndim_image`.
         """
 
-        res = numpy.empty((self.nsamples, index.shape[-1], self.ndim_image))
+        res = numpy.empty((self.nsamples, index_matrix.shape[-1],
+                           self.ndim_image))
 
         # Case aligned evaluation
-        if index.ndim == 1:
+        if index_matrix.ndim == 1:
             res[:, index_ev, :] = res_evaluation
             res[:, index_ext, :] = res_extrapolation
 
         else:
 
             res[:, index_ev] = res_evaluation
-            res[index] = res_extrapolation[index[:, index_ext]]
+            res[index_matrix] = res_extrapolation[index_matrix[:, index_ext]]
 
 
         return res
@@ -341,8 +346,8 @@ class FData(ABC):
 
         # Check if extrapolation should be applied
         if extrapolation is not None:
-            index = self._extrapolation_index(eval_points)
-            extrapolate = index.any()
+            index_matrix = self._extrapolation_index(eval_points)
+            extrapolate = index_matrix.any()
 
         else:
             extrapolate = False
@@ -359,8 +364,8 @@ class FData(ABC):
             # Partition of eval points
             if aligned_evaluation:
 
-                index_ext = index
-                index_ev = ~index
+                index_ext = index_matrix
+                index_ev = ~index_matrix
 
                 eval_points_extrapolation = eval_points[index_ext]
                 eval_points_evaluation = eval_points[index_ev]
@@ -370,10 +375,10 @@ class FData(ABC):
                                                 derivative=derivative)
 
             else:
-                index_ext = numpy.logical_or.reduce(index, axis=0)
+                index_ext = numpy.logical_or.reduce(index_matrix, axis=0)
                 eval_points_extrapolation = eval_points[:, index_ext]
 
-                index_ev = numpy.logical_or.reduce(~index, axis=0)
+                index_ev = numpy.logical_or.reduce(~index_matrix, axis=0)
                 eval_points_evaluation = eval_points[:, index_ev]
 
                 # Direct evaluation
@@ -384,7 +389,7 @@ class FData(ABC):
             res_extrapolation = extrapolation(self, eval_points_extrapolation,
                                               derivative=derivative)
 
-            res = self._join_evaluation(index, index_ext, index_ev,
+            res = self._join_evaluation(index_matrix, index_ext, index_ev,
                                         res_extrapolation, res_evaluation)
 
         # If not provided gets default value of keepdims

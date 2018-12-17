@@ -5,17 +5,17 @@ the corresponding basis classes.
 
 """
 
+import copy
 from abc import ABC, abstractmethod
 
 import matplotlib.pyplot
-from numpy import polyder, polyint, polymul, polyval
 import numpy
 import scipy.integrate
-from scipy.interpolate import PPoly
 import scipy.interpolate
 import scipy.linalg
+from numpy import polyder, polyint, polymul, polyval
+from scipy.interpolate import PPoly
 from scipy.special import binom
-import copy
 
 from . import grid
 from .registration import Extrapolation
@@ -605,6 +605,9 @@ class Monomial(Basis):
         if self.domain_range != other.domain_range:
             raise ValueError("Ranges are not equal.")
 
+        if isinstance(other, Monomial):
+            return Monomial(self.domain_range, self.nbasis + other.nbasis)
+
         return other.rbasis_of_product(self)
 
     def rbasis_of_product(self, other):
@@ -967,6 +970,9 @@ class BSpline(Basis):
         if self.domain_range != other.domain_range:
             raise ValueError("Ranges are not equal.")
 
+        if isinstance(other, Constant):
+            return other.rbasis_of_product(self)
+
         if isinstance(other, BSpline):
             uniqueknots = numpy.union1d(self.inknots, other.inknots)
 
@@ -1222,7 +1228,7 @@ class Fourier(Basis):
         if isinstance(other, Fourier) and self.period == other.period:
             return Fourier(self.domain_range, self.nbasis + other.nbasis - 1, self.period)
         else:
-            return Basis.default_basis_of_product(other, self)
+            return other.rbasis_of_product(self)
 
     def rbasis_of_product(self, other):
         """Multiplication of a Fourier Basis with other Basis"""
@@ -1879,3 +1885,4 @@ class FDataBasis:
 
         """
         return self.evaluate(eval_points)
+

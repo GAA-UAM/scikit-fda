@@ -276,11 +276,11 @@ class Basis(ABC):
         """Basis copy"""
         return copy.deepcopy(self)
 
-    def tofdatabasis(self):
+    def to_basis(self):
         return FDataBasis(self.copy(), numpy.identity(self.nbasis))
 
     def inprod(self, other):
-        return self.tofdatabasis().inprod(other)
+        return self.to_basis().inprod(other)
 
     def __repr__(self):
         """Representation of a Basis object."""
@@ -1666,7 +1666,7 @@ class FDataBasis:
         if self.domain_range != other.domain_range:
             raise ValueError("Both Objects should have the same domain_range")
         if isinstance(other, Basis):
-            other = other.tofdatabasis()
+            other = other.to_basis()
         inprodmat = [
             scipy.integrate.quad(lambda x: self[i].evaluate([x]) * other[j].evaluate([x]), self.domain_range[0],
                                  self.domain_range[1])[0] for j in range(0, other.nsamples) for i in

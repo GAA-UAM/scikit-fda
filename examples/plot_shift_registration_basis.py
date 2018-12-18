@@ -1,6 +1,6 @@
 """
 Shift Registration of basis
-==============
+===========================
 
 Shows the use of shift registration applied to a sinusoidal
 process represented in a Fourier basis.
@@ -8,6 +8,8 @@ process represented in a Fourier basis.
 
 # Author: Pablo Marcos Manchón
 # License: MIT
+
+# sphinx_gallery_thumbnail_number = 3
 
 import fda
 import matplotlib.pyplot as plt

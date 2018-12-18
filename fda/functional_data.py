@@ -229,7 +229,7 @@ class FData(ABC):
         evaluation.
 
         Args:
-            index (ndarray): Boolean index with the points extrapolated.
+            index_matrix (ndarray): Boolean index with the points extrapolated.
             index_ext (ndarray): Boolean index with the columns that contains
                 points extrapolated.
             index_ev (ndarray): Boolean index with the columns that contains

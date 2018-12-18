@@ -4,33 +4,34 @@ Module to interpolate FDataGrid
 
 """
 
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 
+import numbers
 import numpy
+
 
 from scipy.interpolate import (PchipInterpolator, UnivariateSpline,
                                RectBivariateSpline, RegularGridInterpolator)
 
+from .functional_data import _list_of_arrays
 
-class GridInterpolator:
 
-    __metaclass__ = ABCMeta
+class GridInterpolator(ABC):
 
     @abstractmethod
     def _construct_interpolator(self, fdatagrid):
         pass
 
 
-class _GridInterpolatorEvaluator:
-
-    __metaclass__ = ABCMeta
+class _GridInterpolatorEvaluator(ABC):
 
     @abstractmethod
-    def evaluate(self, t, derivative=0, grid=False):
+    def evaluate(self, eval_points, *, derivative=0):
         pass
 
-    def __call__(self, t, derivative=0, grid=False):
-        return self.evaluate(t, derivative=derivative, grid=grid)
+    @abstractmethod
+    def evaluate_composed(self, eval_points, *, derivative=0):
+        pass
 
 
 class GridSplineInterpolator(GridInterpolator):
@@ -38,33 +39,55 @@ class GridSplineInterpolator(GridInterpolator):
     def __init__(self, interpolation_order=1, smoothness_parameter=0.,
                  monotone=False):
 
-        self.interpolation_order = interpolation_order
-        self.smoothness_parameter = smoothness_parameter
-        self.monotone = monotone
+        self._interpolation_order = interpolation_order
+        self._smoothness_parameter = smoothness_parameter
+        self._monotone = monotone
+
+    @property
+    def interpolation_order(self):
+        "Returns the interpolation order"
+        return self._interpolation_order
+
+    @property
+    def smoothness_parameter(self):
+        "Returns the smoothness parameter"
+        return self._smoothness_parameter
+
+    @property
+    def monotone(self):
+        "Returns flag to perform monotone interpolation"
+        return self._monotone
+
 
     def _construct_interpolator(self, fdatagrid):
 
-        return _GridSplineInterpolatorEvaluator(fdatagrid.sample_points,
-                                                fdatagrid.data_matrix,
-                                                fdatagrid.ndim_domain,
-                                                fdatagrid.ndim_image,
+        return _GridSplineInterpolatorEvaluator(fdatagrid,
                                                 self.interpolation_order,
                                                 self.smoothness_parameter,
-                                                self.monotone,
-                                                fdatagrid.keepdims)
+                                                self.monotone)
+
+    def __repr__(self):
+        return (f"{type(self).__name__}("
+                f"interpolation_order={self.interpolation_order}, "
+                f"smoothness_parameter={self.smoothness_parameter}, "
+                f"monotone={self.monotone})")
 
 
 class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
 
-    def __init__(self, sample_points, data_matrix, ndim_domain, ndim_image, k=1,
-                 s=0., monotone=False, keepdims=False):
+    def __init__(self, fdatagrid, k=1, s=0., monotone=False):
 
-        self._ndim_image = ndim_image
-        self._ndim_domain = ndim_domain
-        self._nsamples = data_matrix.shape[0]
-        self._keepdims = keepdims
+        sample_points = fdatagrid.sample_points
+        data_matrix = fdatagrid.data_matrix
 
-        if ndim_domain == 1:
+        self._fdatagrid = fdatagrid
+        self._ndim_image = fdatagrid.ndim_image
+        self._ndim_domain = fdatagrid.ndim_domain
+        self._nsamples = fdatagrid.nsamples
+        self._keepdims = fdatagrid.keepdims
+        self._domain_range = fdatagrid.domain_range
+
+        if self._ndim_domain == 1:
             self._splines = self._construct_spline_1_m(sample_points,
                                                        data_matrix,
                                                        k, s, monotone)
@@ -72,7 +95,7 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
             raise ValueError("Monotone interpolation is only supported with "
                              "domain dimension equal to 1.")
 
-        elif ndim_domain == 2:
+        elif self._ndim_domain == 2:
             self._splines = self._construct_spline_2_m(sample_points,
                                                        data_matrix, k, s)
 
@@ -120,11 +143,15 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
         sample_points = sample_points[0]
 
         if monotone:
-            constructor =  lambda data: PchipInterpolator(sample_points, data)
+            def constructor(data):
+                """Constructs an unidimensional cubic monotone interpolator"""
+                return PchipInterpolator(sample_points, data)
 
         else:
-            constructor = lambda data: UnivariateSpline(sample_points, data,
-                                                        s=s, k=k)
+
+            def constructor(data):
+                """Constructs an unidimensional interpolator"""
+                return UnivariateSpline(sample_points, data, s=s, k=k)
 
         return numpy.apply_along_axis(constructor, 1, data_matrix)
 
@@ -210,88 +237,54 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
 
         return spline
 
-    def evaluate(self, t, derivative=0, grid=False):
+
+    def evaluate(self, eval_points, *, derivative=0):
 
         derivative = self._process_derivative(derivative)
-        t = numpy.asarray(t)
 
-        if grid:
-            return self.evaluate_grid(t, derivative)
 
-        if self._ndim_image == 1 and len(t.shape) == 2 or len(t.shape) == 3:
-            return self.evaluate_composed(t, derivative)
-
-        return self.evaluate_spline(t, derivative)
-
-    def evaluate_spline(self, t, derivative=0):
-
+        # Constructs the evaluator for t_eval
         if self._ndim_image == 1:
-            evaluator = lambda spl: self._spline_evaluator(spl[0], t,
-                                                           derivative)
-
+            def evaluator(spl):
+                """Evaluator of object with image dimension equal to 1."""
+                return self._spline_evaluator(spl[0], eval_points, derivative)
         else:
-            evaluator = lambda spl_m: numpy.dstack(
-                self._spline_evaluator(spl, t, derivative) for spl in spl_m
-                ).flatten()
+            def evaluator(spl_m):
+                """Evaluator of multimensional object"""
+                return numpy.dstack(
+                    self._spline_evaluator(spl, eval_points, derivative)
+                    for spl in spl_m).flatten()
 
+        # Points evaluated inside the domain
         res = numpy.apply_along_axis(evaluator, 1, self._splines)
+        res = res.reshape(self._nsamples, eval_points.shape[0],
+                          self._ndim_image)
 
-        if self._ndim_image != 1 or self._keepdims:
-            res = res.reshape(self._nsamples, t.shape[0], self._ndim_image)
 
         return res
 
-    def evaluate_grid(self, axes, derivative=0):
 
-        #axes = _list_of_arrays(axes)
-        lengths = [len(ax) for ax in axes]
-
-        if len(axes) != self._ndim_domain:
-            raise ValueError(f"Length of axes should be {self._ndim_domain}")
-
-        t = numpy.meshgrid(*axes, indexing='ij')
-        t = numpy.array(t).reshape(self._ndim_domain, numpy.prod(lengths)).T
+    def evaluate_composed(self, eval_points, *, derivative=0):
 
 
-        res = self.evaluate_spline(t, derivative)
-
-
-        shape = [self._nsamples] + lengths
-        if self._ndim_image != 1 or self._keepdims:
-            shape += [self._ndim_image]
-
-        return res.reshape(shape)
-
-    def evaluate_composed(self, t, derivative=0):
-
-        if t.shape[0] != self._nsamples:
-            raise ValueError("t should be a list of length 'nsamples'.")
-
-        if self._ndim_image == 1 and not self._keepdims:
-            shape = (self._nsamples, len(t[0]))
-
-
-            evaluator = lambda t, spl: self._spline_evaluator(
-                spl[0], t, derivative)
-
-        else:
-            shape = (self._nsamples, len(t[0]), self._ndim_image)
-
-            evaluator = lambda t, spl_m: np.array(
-                [self._spline_evaluator(spl, t, derivative) for spl in spl_m])
-
+        shape = (self._nsamples, eval_points.shape[1], self._ndim_image)
         res = numpy.empty(shape)
 
+
+        if self._ndim_image == 1:
+            def evaluator(t, spl):
+                """Evaluator of sample with image dimension equal to 1"""
+                return self._spline_evaluator(spl[0], t, derivative)
+
+        else:
+            def evaluator(t, spl_m):
+                """Evaluator of multidimensional sample"""
+                return numpy.array([self._spline_evaluator(spl, t, derivative)
+                                    for spl in spl_m]).T
+
+
         for i in range(self._nsamples):
-            res[i] = evaluator(t[i], self._splines[i])
+            res[i] = evaluator(eval_points[i], self._splines[i])
 
 
         return res
-
-    def evaluate_shifted(self, eval_points, delta, derivative=0):
-
-        t = numpy.outer(numpy.ones(self._nsamples), eval_points)
-
-        t += numpy.asarray(delta).T
-
-        return self.evaluate_composed(t, self._process_derivative(derivative))

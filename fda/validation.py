@@ -2,7 +2,6 @@
 import numpy
 
 from fda import kernel_smoothers
-import fda
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -203,12 +202,9 @@ def minimise(fdatagrid, parameters,
     # gets the best parameter.
     h = parameters[int(numpy.argmin(scores))]
     s = smoothing_method(sample_points, h, **kwargs)
-    fdatagrid_adjusted = fda.FDataGrid(
-        numpy.dot(fdatagrid.data_matrix[..., 0], s.T),
-        fdatagrid.sample_points,
-        fdatagrid.domain_range,
-        fdatagrid.dataset_label,
-        fdatagrid.axes_labels)
+    fdatagrid_adjusted = fdatagrid.copy(
+        data_matrix=numpy.dot(fdatagrid.data_matrix[..., 0], s.T))
+
     return {'scores': scores,
             'best_score': numpy.min(scores),
             'best_parameter': h,

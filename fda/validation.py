@@ -2,6 +2,7 @@
 import numpy
 
 from fda import kernel_smoothers
+import fda
 
 
 __author__ = "Miguel Carbajo Berrocal"

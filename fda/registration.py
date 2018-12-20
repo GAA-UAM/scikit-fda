@@ -4,20 +4,10 @@ This module contains the methods to perform the registration of
 functional data and related routines, in basis form as well in discretized form.
 
 """
-from enum import Enum
 
 import numpy
 import scipy.integrate
 
-
-# TODO: Move extrapolation to their corresponding module
-class Extrapolation(Enum):
-    r"""Enum with extrapolation types. Defines the extrapolation mode for
-        elements outside the domain range.
-    """
-    extrapolation = "extrapolation" #: The values are extrapolated by evaluate.
-    periodic = "periodic" #: Extends the domain range periodically.
-    const = "const" #: Uses the boundary value.
 
 def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
                       *, discretization_points=None):
@@ -100,6 +90,9 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
             Springer.
     """
 
+    if registered_fdata.ndim_domain != 1 or original_fdata.ndim_image != 1:
+        raise NotImplementedError
+
     if original_fdata.nsamples != registered_fdata.nsamples:
         raise ValueError(f"the registered and unregistered curves must have "
                          f"the same number of samples "
@@ -116,13 +109,13 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
     # Creates the mesh to discretize the functions
     if discretization_points is None:
         nfine = max(registered_fdata.basis.nbasis * 10 + 1, 201)
-        discretization_points = numpy.linspace(*registered_fdata.domain_range,
-                                               nfine)
+        domain_range = registered_fdata.domain_range[0]
+        discretization_points = numpy.linspace(*domain_range, nfine)
     else:
         discretization_points = numpy.asarray(discretization_points)
 
-    x_fine = original_fdata.evaluate(discretization_points) # Unregistered
-    y_fine = registered_fdata.evaluate(discretization_points) # Registered
+    x_fine = original_fdata.evaluate(discretization_points, keepdims=False)
+    y_fine = registered_fdata.evaluate(discretization_points, keepdims=False)
     mu_fine = x_fine.mean(axis=0) # Mean unregistered function
     eta_fine = y_fine.mean(axis=0) # Mean registered function
     mu_fine_sq = numpy.square(mu_fine)
@@ -140,7 +133,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
     # If the warping functions are not provided, are suppose to be independent
     if warping_function is not None:
         # Derivates warping functions
-        dh_fine = warping_function.evaluate(discretization_points, derivative=1)
+        dh_fine = warping_function.evaluate(discretization_points, derivative=1,
+                                            keepdims=False)
         dh_fine_mean = dh_fine.mean(axis=0)
         dh_fine_center = dh_fine - dh_fine_mean
 
@@ -188,6 +182,9 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
         using a modified Newton-Raphson algorithm, updating the mean
         in each iteration, as is described in detail in [RS05-7-9-1]_.
 
+        Method only implemented for Funtional objects with domain and image
+        dimension equal to 1.
+
     Args:
         fd (:class:`FData`): Functional data object.
         maxiter (int, optional): Maximun number of iterations.
@@ -232,6 +229,12 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
     """
 
     # Initial estimation of the shifts
+
+    if fd.ndim_image > 1 or fd.ndim_domain > 1:
+        raise NotImplementedError("Method for unidimensional data.")
+
+    domain_range = fd.domain_range[0]
+
     if initial is None:
         delta = numpy.zeros(fd.nsamples)
 
@@ -245,22 +248,18 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
     # Fine equispaced mesh to evaluate the samples
     if discretization_points is None:
         nfine = max(fd.nbasis*10+1, 201)
-        discretization_points = numpy.linspace(*fd.basis.domain_range, nfine)
+        discretization_points = numpy.linspace(*domain_range, nfine)
     else:
         nfine = len(discretization_points)
         discretization_points = numpy.asarray(discretization_points)
 
-    if extrapolation is None:
-        extrapolation = fd.extrapolation
-    else:
-        extrapolation = Extrapolation(extrapolation)
 
     # Auxiliar arrays to avoid multiple memory allocations
     delta_aux = numpy.empty(fd.nsamples)
     tfine_aux = numpy.empty(nfine)
 
     # Computes the derivate of originals curves in the mesh points
-    D1x = fd.evaluate(discretization_points, 1)
+    D1x = fd.evaluate(discretization_points, derivative=1, keepdims=False)
 
     # Second term of the second derivate estimation of REGSSE. The
     # first term has been dropped to improve convergence (see references)
@@ -277,14 +276,18 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
         tfine_aux_tmp = tfine_aux
         domain = numpy.empty(nfine, dtype=numpy.dtype(bool))
 
+    ones = numpy.ones(fd.nsamples)
+    discretization_points_rep =  numpy.outer(ones, discretization_points)
+
+
     # Newton-Rhapson iteration
     while max_diff > tol and iter < maxiter:
 
         # Updates the limits for non periodic functions ignoring the ends
         if restrict_domain:
             # Calculates the new limits
-            a = fd.domain_range[0] - min(numpy.min(delta), 0)
-            b = fd.domain_range[1] - max(numpy.max(delta), 0)
+            a = domain_range[0] - min(numpy.min(delta), 0)
+            b = domain_range[1] - max(numpy.max(delta), 0)
 
             # New interval is (a,b)
             numpy.logical_and(tfine_tmp >= a, tfine_tmp <= b, out=domain)
@@ -296,10 +299,15 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
             #     d2_regsse_original * ( 1 + (a - b) / (domain[1] - domain[0]))
             d2_regsse = scipy.integrate.trapz(numpy.square(D1x),
                                               discretization_points, axis=1)
+            discretization_points_rep =  numpy.outer(ones, discretization_points)
+
 
         # Computes the new values shifted
-        x = fd.evaluate_shifted(discretization_points, delta,
-                                extrapolation=extrapolation)
+        x = fd.evaluate(discretization_points_rep + numpy.atleast_2d(delta).T,
+                        aligned_evaluation=False,
+                        extrapolation=extrapolation,
+                        keepdims=False)
+
         x.mean(axis=0, out=tfine_aux)
 
         # Calculates x - mean

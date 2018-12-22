@@ -18,7 +18,6 @@ from scipy.interpolate import PPoly
 from scipy.special import binom
 
 from . import grid
-
 from .functional_data import FData, _list_of_arrays
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -38,11 +37,15 @@ def _polypow(p, n=2):
     else:
         raise ValueError("n must be greater than 0.")
 
-def _check_domain(domain_range):
 
+def _check_domain(domain_range):
     for domain in domain_range:
         if len(domain) != 2 or domain[0] >= domain[1]:
             raise ValueError(f"The interval {domain} is not well-defined.")
+
+
+def _same_domain(one_domain_range, other_domain_range):
+    return numpy.array_equal(one_domain_range, other_domain_range)
 
 
 class Basis(ABC):
@@ -282,7 +285,7 @@ class Basis(ABC):
     @staticmethod
     def default_basis_of_product(one, other):
         """Default multiplication for a pair of basis"""
-        if one.domain_range != other.domain_range:
+        if not _same_domain(one.domain_range, other.domain_range):
             raise ValueError("Ranges are not equal.")
 
         norder = min(8, one.nbasis + other.nbasis)
@@ -315,7 +318,7 @@ class Basis(ABC):
 
     def __eq__(self, other):
         """Equality of Basis"""
-        return type(self) == type(other) and self.domain_range == other.domain_range and self.nbasis == other.nbasis
+        return type(self) == type(other) and _same_domain(self.domain_range, other.domain_range) and self.nbasis == other.nbasis
 
 
 class Constant(Basis):
@@ -425,7 +428,7 @@ class Constant(Basis):
 
     def basis_of_product(self, other):
         """Multiplication of a Constant Basis with other Basis"""
-        if self.domain_range != other.domain_range:
+        if not _same_domain(self.domain_range, other.domain_range):
             raise ValueError("Ranges are not equal.")
 
         return other.copy()
@@ -618,7 +621,7 @@ class Monomial(Basis):
 
     def basis_of_product(self, other):
         """Multiplication of a Monomial Basis with other Basis"""
-        if self.domain_range != other.domain_range:
+        if not _same_domain(self.domain_range, other.domain_range):
             raise ValueError("Ranges are not equal.")
 
         if isinstance(other, Monomial):
@@ -1000,7 +1003,7 @@ class BSpline(Basis):
 
     def basis_of_product(self, other):
         """Multiplication of two Bspline Basis"""
-        if self.domain_range != other.domain_range:
+        if not _same_domain(self.domain_range, other.domain_range):
             raise ValueError("Ranges are not equal.")
 
         if isinstance(other, Constant):
@@ -1026,7 +1029,7 @@ class BSpline(Basis):
             norder2 = other.nbasis - len(other.inknots)
             norder = min(norder1 + norder2 - 1, 20)
 
-            allbreaks = [self.domain_range[0]] + numpy.ndarray.tolist(allknots) + [self.domain_range[1]]
+            allbreaks = [self.domain_range[0][0]] + numpy.ndarray.tolist(allknots) + [self.domain_range[0][1]]
             nbasis = len(allbreaks) + norder - 2
             return BSpline(self.domain_range, nbasis, norder, allbreaks)
         else:
@@ -1261,7 +1264,7 @@ class Fourier(Basis):
 
     def basis_of_product(self, other):
         """Multiplication of two Fourier Basis"""
-        if self.domain_range != other.domain_range:
+        if not _same_domain(self.domain_range, other.domain_range):
             raise ValueError("Ranges are not equal.")
 
         if isinstance(other, Fourier) and self.period == other.period:

@@ -87,7 +87,6 @@ class TestBasis(unittest.TestCase):
     def test_basis_basis_inprod(self):
         monomial = Monomial(nbasis=5)
         bspline = BSpline(nbasis=5, order=4)
-        np.transpose(bspline.inprod(monomial))
         np.testing.assert_array_equal(
             bspline.inprod(monomial).round(3),
             np.array([[0.125, 0.25, 0.25, 0.25, 0.125],

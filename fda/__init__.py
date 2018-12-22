@@ -20,7 +20,7 @@ from fda.math import mean, var, gmean, log, log2, log10, exp, sqrt, \
     cumsum, metric, norm_lp, inner_product, cov
 import os as _os
 
-from . import datasets, covariances
+from . import datasets, covariances, registration, extrapolation
 
 try:
     with open(_os.path.join(_os.path.dirname(__file__),

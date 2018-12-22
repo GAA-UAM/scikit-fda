@@ -9,7 +9,7 @@ def fdata_constructor(obj, attrs):
 
     return FDataGrid(data_matrix=obj["data"],
                      sample_points=obj["argvals"],
-                     sample_range=obj["rangeval"],
+                     domain_range=obj["rangeval"],
                      dataset_label=names['main'][0],
                      axes_labels=[names['xlab'][0], names['ylab'][0]])
 
@@ -38,7 +38,7 @@ def functional_constructor(obj, attrs):
 
     return (FDataGrid(data_matrix=data_matrix,
                       sample_points=sample_points,
-                      sample_range=(args_init, args_end),
+                      domain_range=(args_init, args_end),
                       dataset_label=name[0],
                       axes_labels=[args_label[0], values_label[0]]), target)
 

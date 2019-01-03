@@ -3,7 +3,11 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+from sklearn.covariance import MinCovDet
+from scipy.stats import variation
+from scipy import stats
 import math
+
 from .depth_measures import *
 from .grid import FDataGrid
 
@@ -96,14 +100,16 @@ def fdboxplot(fdgrid, fig=None, method=modified_band_depth, prob=[0.5], fullout=
                 _plot.append(ax[m].plot([x, x], [oulying_min_envelope[index], min_samples_used[index]], color=barcol, zorder=4))
 
                 # outliers
+                outliers = np.zeros(fdgrid.nsamples)
                 for j in list(range(fdgrid.nsamples)):
                     outliers_above = (oulying_max_envelope < fdgrid.data_matrix[j, :, m])
                     outliers_below = (oulying_min_envelope > fdgrid.data_matrix[j, :, m])
                     if (outliers_above.sum() > 0 or outliers_below.sum() > 0):
+                        outliers[j] = 1
                         _plot.append(ax[m].plot(fdgrid.sample_points[0], fdgrid.data_matrix[j, :, m], color=outliercol,
                                    linestyle='--', zorder=1))
-                # central regions
-                _plot.append(ax[m].fill_between(fdgrid.sample_points[0], max_samples_used.flatten(),
+            # central regions
+            _plot.append(ax[m].fill_between(fdgrid.sample_points[0], max_samples_used.flatten(),
                                min_samples_used.flatten(), facecolor=color[i], zorder=var_zorder))
 
         # mean sample
@@ -113,7 +119,7 @@ def fdboxplot(fdgrid, fig=None, method=modified_band_depth, prob=[0.5], fullout=
         fdgrid.set_labels(fig)
         fdgrid.arrange_layout(fig)
 
-        return _plot
+        return _plot, outliers
 
 def surface_boxplot(fdgrid, fig=None, method=modified_band_depth, factor=1.5, boxcol="black", outcol="grey"):
     """Implementation of the surface boxplot.
@@ -210,3 +216,78 @@ def surface_boxplot(fdgrid, fig=None, method=modified_band_depth, factor=1.5, bo
     fdgrid.arrange_layout(fig)
 
     return _plot
+
+
+def MS_plot(fdgrid, depth_method, dim_weights=None, pointwise_weights=None, ax=None):
+
+    if fdgrid.ndim_image > 1:
+        raise NotImplementedError("Only support 1 dimension on the image.")
+
+    # The depths of the samples are calculated giving them an ordering.
+    outlyingness = directional_outlyingness(fdgrid, depth_method, dim_weights, pointwise_weights)
+    mean_dir_outl, variation_dir_outl = outlyingness[1], outlyingness[2]
+    X = np.array(list(zip(mean_dir_outl, variation_dir_outl)))
+    cov = MinCovDet(store_precision=True).fit(X)
+    rbd_2 = cov.mahalanobis(X)
+    s_jj = np.diag(cov.covariance_)
+    c = np.mean(s_jj)
+    m = 2 / np.square(variation(s_jj))
+    p = fdgrid.ndim_image
+    dfn = p + 1
+    dfd = m - p
+    q = 0.993
+    cutoff_value = stats.f.ppf(q, dfn, dfd, loc=0, scale=1)
+    scaling = c * (m - p) / m / (p + 1)
+    outliers = (scaling * rbd_2 > cutoff_value)
+    outliers = outliers.astype(str)
+    outliers[np.where(outliers == 'True')] = 'red'
+    outliers[np.where(outliers == 'False')] = 'blue'
+
+    if ax is None:
+        ax = matplotlib.pyplot.gca()
+    ax.scatter(mean_dir_outl, variation_dir_outl, color=outliers)
+    ax.set_xlabel('MO')
+    ax.set_ylabel('VO')
+    ax.set_title('MS-Plot')
+
+    return X
+
+
+def clustering(fdgrid, ax=None, num_clusters=2):
+    if fdgrid.ndim_image > 1 and fdgrid.ndim_domain:
+        raise NotImplementedError("Only support 1 dimension on the image and on the domain.")
+
+    if num_clusters < 2 or num_clusters > 10:
+        raise ValueError("The number of clusters must be between 2 and 10, both included.")
+
+    repetitions = 0
+    distances_to_centers = np.empty((fdgrid.nsamples, num_clusters))
+    centers = np.empty((num_clusters, len(fdgrid.sample_points[0])))
+    centers_aux = np.empty((num_clusters, len(fdgrid.sample_points[0])))
+
+    for i in range(num_clusters):
+        centers[i] = fdgrid.data_matrix[math.floor(i * fdgrid.nsamples / num_clusters)].flatten()
+
+    while not np.array_equal(centers, centers_aux) and repetitions < 100:
+        centers_aux = centers
+        for i in range(fdgrid.nsamples):
+            for j in range(num_clusters):
+                distances_to_centers[i, j] = scipy.spatial.distance.euclidean(fdgrid.data_matrix[i], centers[j])
+        clustering = np.argmin(distances_to_centers, axis=1)
+        for i in range(num_clusters):
+            indices = np.where(clustering == i)
+            centers[i] = np.average(fdgrid.data_matrix[indices, :, :].flatten()
+                                    .reshape((len(indices[0]), len(fdgrid.sample_points[0]))), axis=0)
+        repetitions += 1
+
+    colors_samples = np.empty(fdgrid.nsamples).astype(str)
+    for i in range(num_clusters):
+        colors_samples[np.where(clustering == i)] = "C{}".format(i)
+
+    if ax is None:
+        ax = matplotlib.pyplot.gca()
+
+    for i in range(fdgrid.nsamples):
+        ax.plot(fdgrid.sample_points[0], fdgrid.data_matrix[i, :, 0].T, color=colors_samples[i])
+
+    return clustering

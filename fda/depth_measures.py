@@ -57,11 +57,12 @@ def band_depth(fdgrid):
     else:
         axis = (1, 2)
 
+    n = fdgrid.nsamples
+    nchoose2 = n * (n - 1) / 2
+
     ranks = rank_samples(fdgrid)
     nsamples_above = fdgrid.nsamples - np.amax(ranks, axis=axis)
     nsamples_below = np.amin(ranks, axis = axis) - 1
-    n = fdgrid.nsamples
-    nchoose2 = n * (n - 1) / 2
     depth = (nsamples_below * nsamples_above + fdgrid.nsamples - 1) / nchoose2
 
     return depth
@@ -145,11 +146,11 @@ def FM_depth(fdgrid, pointwise = False):
     The depth of a sample is the result of adding the previously computed depth for each of its points.
 
     Args:
-      fdgrid (FDataGrid): Object over whose samples the FM depth is going to be calculated.
-      pointwise (boolean): Indicates if the pointwise depth is also returned.
+    fdgrid (FDataGrid): Object over whose samples the FM depth is going to be calculated.
+    pointwise (boolean): Indicates if the pointwise depth is also returned.
 
     Returns:
-      numpy.darray: Array containing the FM depth of the samples.
+    numpy.darray: Array containing the FM depth of the samples.
 
     """
     if fdgrid.ndim_domain > 2:
@@ -184,6 +185,27 @@ def FM_depth(fdgrid, pointwise = False):
 
 
 def directional_outlyingness(fdgrid, depth_method, dim_weights = None, pointwise_weights = None):
+    """Calculates the directional outlyingness of the samples in the data set, which is decomposed into two parts:
+    magnitude outlyingness and shape outlyingness.
+
+    Each column is considered as the samples of an aleatory variable. The univariate depth of each of the samples of each column is
+    calculated as follows:
+
+    .. math::
+    $$D(x) = 1 - \left\lvert \frac{1}{2}- F(x)\right\rvert$$
+
+    Where F stands for the marginal univariate distribution function of each column.
+
+    The depth of a sample is the result of adding the previously computed depth for each of its points.
+
+    Args:
+    fdgrid (FDataGrid): Object over whose samples the FM depth is going to be calculated.
+    pointwise (boolean): Indicates if the pointwise depth is also returned.
+
+    Returns:
+    numpy.darray: Array containing the FM depth of the samples.
+
+    """
 
     if fdgrid.ndim_domain > 1:
         raise NotImplementedError("Only support 1 dimension on the domain.")

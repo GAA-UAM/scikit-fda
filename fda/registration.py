@@ -4,13 +4,13 @@ This module contains the methods to perform the registration of
 functional data and related routines, in basis form as well in discretized form.
 
 """
-
+import fda
 import numpy
 import scipy.integrate
 
 
 def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
-                      *, discretization_points=None):
+                      *, eval_points=None):
     r"""Compute mean square error measures for amplitude and phase variation.
 
     Once the registration has taken place, this function computes two mean
@@ -68,7 +68,7 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
         original_fdata (:class:`FData`): Unregistered functions.
         regfd (:class:`FData`): Registered functions.
         warping_function (:class:`FData`): Warping functions.
-        discretization_points: (array_like, optional): Set of points where the
+        eval_points: (array_like, optional): Set of points where the
             functions are evaluated to obtain a discrete representation.
 
 
@@ -90,7 +90,7 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
             Springer.
     """
 
-    if registered_fdata.ndim_domain != 1 or original_fdata.ndim_image != 1:
+    if registered_fdata.ndim_domain != 1 or registered_fdata.ndim_image != 1:
         raise NotImplementedError
 
     if original_fdata.nsamples != registered_fdata.nsamples:
@@ -107,15 +107,15 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
                          f"!=({warping_function.nsamples})")
 
     # Creates the mesh to discretize the functions
-    if discretization_points is None:
+    if eval_points is None:
         nfine = max(registered_fdata.basis.nbasis * 10 + 1, 201)
         domain_range = registered_fdata.domain_range[0]
-        discretization_points = numpy.linspace(*domain_range, nfine)
+        eval_points = numpy.linspace(*domain_range, nfine)
     else:
-        discretization_points = numpy.asarray(discretization_points)
+        eval_points = numpy.asarray(eval_points)
 
-    x_fine = original_fdata.evaluate(discretization_points, keepdims=False)
-    y_fine = registered_fdata.evaluate(discretization_points, keepdims=False)
+    x_fine = original_fdata.evaluate(eval_points, keepdims=False)
+    y_fine = registered_fdata.evaluate(eval_points, keepdims=False)
     mu_fine = x_fine.mean(axis=0) # Mean unregistered function
     eta_fine = y_fine.mean(axis=0) # Mean registered function
     mu_fine_sq = numpy.square(mu_fine)
@@ -125,7 +125,7 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
     # Total mean square error of the original funtions
     mse_total = scipy.integrate.simps(
         numpy.mean(numpy.square(x_fine - mu_fine), axis=0),
-        discretization_points)
+        eval_points)
 
     cr = 1. # Constant related to the covariation between the deformation
             # functions and y^2
@@ -133,7 +133,7 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
     # If the warping functions are not provided, are suppose to be independent
     if warping_function is not None:
         # Derivates warping functions
-        dh_fine = warping_function.evaluate(discretization_points, derivative=1,
+        dh_fine = warping_function.evaluate(eval_points, derivative=1,
                                             keepdims=False)
         dh_fine_mean = dh_fine.mean(axis=0)
         dh_fine_center = dh_fine - dh_fine_mean
@@ -144,14 +144,14 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
         covariate = numpy.inner(dh_fine_center.T, y_fine_sq_center.T)
         covariate = covariate.mean(axis=0)
         cr += numpy.divide(scipy.integrate.simps(covariate,
-                                                 discretization_points),
+                                                 eval_points),
                            scipy.integrate.simps(eta_fine_sq,
-                                                 discretization_points))
+                                                 eval_points))
 
 
     # mse due to phase variation
     mse_pha = scipy.integrate.simps(cr*eta_fine_sq - mu_fine_sq ,
-                                    discretization_points)
+                                    eval_points)
 
     # mse due to amplitude variation
     mse_amp = mse_total - mse_pha
@@ -165,7 +165,7 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
 def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
                               extrapolation=None, step_size=1, initial=None,
-                              discretization_points=None, **kwargs):
+                              eval_points=None, **kwargs):
     r"""Perform a shift registration of the curves and return the corresponding
         shifts of each function.
 
@@ -204,7 +204,7 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
             Defaults to 1.
         initial (array_like, optional): Initial estimation of shifts.
             Default uses a list of zeros for the initial shifts.
-        discretization_points (array_like, optional): Set of points where the
+        eval_points (array_like, optional): Set of points where the
             functions are evaluated to obtain the discrete
             representation of the object to integrate. If an None is
             passed it calls numpy.linspace with bounds equal to the ones defined
@@ -246,24 +246,29 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
         delta = numpy.asarray(initial)
 
     # Fine equispaced mesh to evaluate the samples
-    if discretization_points is None:
-        nfine = max(fd.nbasis*10+1, 201)
-        discretization_points = numpy.linspace(*domain_range, nfine)
-    else:
-        nfine = len(discretization_points)
-        discretization_points = numpy.asarray(discretization_points)
+    if eval_points is None:
 
+        try:
+            eval_points = fd.sample_points[0]
+            nfine = len(eval_points)
+        except AttributeError:
+            nfine = max(fd.nbasis*10+1, 201)
+            eval_points = numpy.linspace(*domain_range, nfine)
+
+    else:
+        nfine = len(eval_points)
+        eval_points = numpy.asarray(eval_points)
 
     # Auxiliar arrays to avoid multiple memory allocations
     delta_aux = numpy.empty(fd.nsamples)
     tfine_aux = numpy.empty(nfine)
 
     # Computes the derivate of originals curves in the mesh points
-    D1x = fd.evaluate(discretization_points, derivative=1, keepdims=False)
+    D1x = fd.evaluate(eval_points, derivative=1, keepdims=False)
 
     # Second term of the second derivate estimation of REGSSE. The
     # first term has been dropped to improve convergence (see references)
-    d2_regsse = scipy.integrate.trapz(numpy.square(D1x), discretization_points,
+    d2_regsse = scipy.integrate.trapz(numpy.square(D1x), eval_points,
                                       axis=1)
 
     max_diff = tol + 1
@@ -272,12 +277,12 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
     # Auxiliar array if the domain will be restricted
     if restrict_domain:
         D1x_tmp = D1x
-        tfine_tmp = discretization_points
+        tfine_tmp = eval_points
         tfine_aux_tmp = tfine_aux
         domain = numpy.empty(nfine, dtype=numpy.dtype(bool))
 
     ones = numpy.ones(fd.nsamples)
-    discretization_points_rep =  numpy.outer(ones, discretization_points)
+    eval_points_rep =  numpy.outer(ones, eval_points)
 
 
     # Newton-Rhapson iteration
@@ -291,19 +296,19 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
 
             # New interval is (a,b)
             numpy.logical_and(tfine_tmp >= a, tfine_tmp <= b, out=domain)
-            discretization_points = tfine_tmp[domain]
+            eval_points = tfine_tmp[domain]
             tfine_aux = tfine_aux_tmp[domain]
             D1x = D1x_tmp[:, domain]
             # Reescale the second derivate could be other approach
             # d2_regsse =
             #     d2_regsse_original * ( 1 + (a - b) / (domain[1] - domain[0]))
             d2_regsse = scipy.integrate.trapz(numpy.square(D1x),
-                                              discretization_points, axis=1)
-            discretization_points_rep =  numpy.outer(ones, discretization_points)
+                                              eval_points, axis=1)
+            eval_points_rep =  numpy.outer(ones, eval_points)
 
 
         # Computes the new values shifted
-        x = fd.evaluate(discretization_points_rep + numpy.atleast_2d(delta).T,
+        x = fd.evaluate(eval_points_rep + numpy.atleast_2d(delta).T,
                         aligned_evaluation=False,
                         extrapolation=extrapolation,
                         keepdims=False)
@@ -314,7 +319,7 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
         numpy.subtract(x, tfine_aux, out=x)
 
         d1_regsse = scipy.integrate.trapz(numpy.multiply(x, D1x, out=x),
-                                          discretization_points, axis=1)
+                                          eval_points, axis=1)
         # Updates the shifts by the Newton-Rhapson iteration
         # delta = delta - step_size * d1_regsse / d2_regsse
         numpy.divide(d1_regsse, d2_regsse, out=delta_aux)
@@ -331,7 +336,7 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
 
 def shift_registration(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
                        extrapolation=None, step_size=1, initial=None,
-                       discretization_points=None, **kwargs):
+                       eval_points=None, **kwargs):
     r"""Perform a shift registration of the curves.
 
         Realizes a registration of the curves, using shift aligment, as is
@@ -366,7 +371,7 @@ def shift_registration(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
             Defaults to 1.
         initial (array_like, optional): Initial estimation of shifts.
             Default uses a list of zeros for the initial shifts.
-        discretization_points (array_like, optional): Set of points where the
+        eval_points (array_like, optional): Set of points where the
             functions are evaluated to obtain the discrete
             representation of the object to integrate. If an None is
             passed it calls numpy.linspace with bounds equal to the ones defined
@@ -394,14 +399,14 @@ def shift_registration(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
                                       restrict_domain=restrict_domain,
                                       extrapolation=extrapolation,
                                       step_size=step_size, initial=initial,
-                                      discretization_points=discretization_points,
+                                      eval_points=eval_points,
                                        **kwargs)
 
 
     # Computes the values with the final shift to construct the FDataBasis
     return fd.shift(delta, restrict_domain=restrict_domain,
                     extrapolation=extrapolation,
-                    discretization_points=discretization_points, **kwargs)
+                    eval_points=eval_points, **kwargs)
 
 
 def landmark_shift_deltas(fd, landmarks, location=None):
@@ -429,16 +434,16 @@ def landmark_shift_deltas(fd, landmarks, location=None):
         raise ValueError(f"landmark list ({len(landmarks)}) must have the same "
                          f"length than the number of samples ({fd.nsamples})")
 
-    landmarks = numpy.asarray(landmarks)
+    landmarks = numpy.atleast_1d(landmarks)
 
     # Parses location
     if location is None:
-        p = (numpy.max(landmarks) + numpy.min(landmarks)) / 2.
+        p = (numpy.max(landmarks, axis=0) + numpy.min(landmarks, axis=0)) / 2.
     elif callable(location):
         p = location(landmarks)
     else:
         try:
-            p = float(location)
+            p = numpy.atleast_1d(location)
         except:
             raise ValueError("Invalid location, must be None, a callable or a "
                              "number in the domain")
@@ -450,7 +455,7 @@ def landmark_shift_deltas(fd, landmarks, location=None):
 
 
 def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
-                   extrapolation=None, discretization_points=None, **kwargs):
+                   extrapolation=None, eval_points=None, **kwargs):
     r"""Perform a shift registration of the curves to align the landmarks at
         the same mark time.
 
@@ -473,13 +478,13 @@ def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
                 extrapolation mode for elements outside the domain range.
                 By default uses the method defined in fd. See extrapolation to
                 more information.
-            discretization_points (array_like, optional): Set of points where
+            eval_points (array_like, optional): Set of points where
                 the functions are evaluated to obtain the discrete
                 representation of the object to integrate. If an empty list is
                 passed it calls numpy.linspace with bounds equal to the ones
                 defined in fd.domain_range and the number of points the maximum
                 between 201 and 10 times the number of basis plus 1.
-            **kwargs: Keyword arguments to be passed to :meth:`from_data`.
+            **kwargs: Keyword arguments to be passed to :func:`from_data`.
     """
 
 
@@ -487,4 +492,90 @@ def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
 
     return fd.shift(shifts, restrict_domain=restrict_domain,
                     extrapolation=extrapolation,
-                    discretization_points=discretization_points, **kwargs)
+                    eval_points=eval_points, **kwargs)
+
+def landmark_registration_warping(fd, landmarks, *, location=None,
+                                  eval_points=None):
+    """Perform landmark registration of the curves to align given landmarks at
+        the same marks times.
+
+        Args:
+            fd (:class:`FData`): Functional data object.
+            landmarks (array_like): List containing landmarks for each samples.
+            location (array_like, optional): Defines where
+                the landmarks will be alligned. By default it will be used as
+                location the mean of the landmarks.
+            eval_points (array_like, optional): Set of points where
+                the functions are evaluated to obtain a discrete
+                representation of the object.
+
+        Returns:
+            :class:`FDataGrid`: FDataGrid with the warpings function needed to
+            register the functional data object.
+    """
+
+    if fd.ndim_domain > 1:
+        raise NotImplementedError("Method only implemented for objects with"
+                                  "domain dimension up to 1.")
+
+    if len(landmarks) != fd.nsamples:
+        raise ValueError("The number of list of landmarks should be equal to ")
+
+    landmarks = numpy.asarray(landmarks).reshape((fd.nsamples, -1))
+
+    n_landmarks = landmarks.shape[-1]
+
+    data_matrix = numpy.empty((fd.nsamples, n_landmarks + 2))
+
+    data_matrix[:,0] = fd.domain_range[0][0]
+    data_matrix[:,-1] = fd.domain_range[0][1]
+
+    data_matrix[:,1:-1] = landmarks
+
+    if location is None:
+        sample_points = numpy.mean(data_matrix, axis=0)
+
+    elif n_landmarks != len(location):
+
+        raise ValueError(f"Number of landmark locations should be equal than "
+                         f"the number of landmarks ({len(location)}) != "
+                         f"({n_landmarks})")
+    else:
+        sample_points = numpy.empty(n_landmarks + 2)
+        sample_points[0] = fd.domain_range[0][0]
+        sample_points[-1] = fd.domain_range[0][1]
+        sample_points[1:-1] = location
+
+
+    interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3,
+                                                   monotone=True)
+
+    warping = fda.FDataGrid(data_matrix=data_matrix,
+                            sample_points=sample_points,
+                            interpolator=interpolator,
+                            extrapolation='bounds')
+
+    return warping
+
+def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
+    """Perform landmark registration of the curves to align given landmarks at
+        the same marks times.
+
+        Args:
+            fd (:class:`FData`): Functional data object.
+            landmarks (array_like): List containing landmarks for each samples.
+            location (array_like, optional): Defines where
+                the landmarks will be alligned. By default it will be used as
+                location the mean of the landmarks.
+            eval_points (array_like, optional): Set of points where
+                the functions are evaluated to obtain a discrete
+                representation of the object.
+
+        Returns:
+            :class:`FData`: FData with the functional data object registered.
+    """
+
+    warping = landmark_registration_warping(fd, landmarks, location=location,
+                                            eval_points=eval_points)
+
+    return fd.compose(warping)

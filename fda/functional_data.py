@@ -34,8 +34,20 @@ def _list_of_arrays(original_array):
 
     return list(new_array)
 
-# This class could exteds in a future the numpy class to work with their
-# functions.
+def _coordinate_list(axes):
+    """
+
+
+
+    """
+
+    grid =  numpy.vstack(map(numpy.ravel, numpy.meshgrid(*axes, indexing='ij'))).T
+
+    return grid
+
+
+
+
 
 class FData(ABC):
     """Defines the structure of a functional data object.
@@ -192,25 +204,46 @@ class FData(ABC):
     def _evaluate_grid(self, axes, *, derivative=0, extrapolation=None,
                        aligned_evaluation=True, keepdims=None):
 
-        if not aligned_evaluation:
-            raise NotImplementedError("Evaluation in different times of a "
-                                      "grid unsupported.")
-
         axes = _list_of_arrays(axes)
-        lengths = [len(ax) for ax in axes]
 
-        if len(axes) != self.ndim_domain:
-            raise ValueError(f"Length of axes should be {self.ndim_domain}.")
+        if aligned_evaluation:
 
+            lengths = [len(ax) for ax in axes]
 
-        eval_points = numpy.meshgrid(*axes, indexing='ij')
-        eval_points = numpy.array(eval_points).reshape(self.ndim_domain,
-                                                       numpy.prod(lengths)).T
+            if len(axes) != self.ndim_domain:
+                raise ValueError(f"Length of axes should be {self.ndim_domain}")
 
+            eval_points = _coordinate_list(axes)
 
-        res = self.evaluate(eval_points, derivative=derivative,
-                            extrapolation=extrapolation, keepdims=keepdims)
+            res = self.evaluate(eval_points, derivative=derivative,
+                                extrapolation=extrapolation, keepdims=True)
 
+        elif self.ndim_domain == 1:
+
+            eval_points = [ax.squeeze(0) for ax in axes]
+
+            return self.evaluate(eval_points, derivative=derivative,
+                                 extrapolation=extrapolation, keepdims=keepdims,
+                                 aligned_evaluation=False)
+        else:
+
+            if len(axes) != self.nsamples:
+                raise ValueError("Should be provided a list of axis per sample")
+            elif len(axes[0]) != self.ndim_domain:
+                raise ValueError(f"Incorrect length of axes. "
+                                 f"({self.ndim_domain}) != {len(axes[0])}")
+
+            lengths = [len(ax) for ax in axes[0]]
+            eval_points = numpy.empty((self.nsamples,
+                                       numpy.prod(lengths),
+                                       self.ndim_domain))
+
+            for i in range(self.nsamples):
+                eval_points[i] = _coordinate_list(axes[i])
+
+            res = self.evaluate(eval_points, derivative=derivative,
+                                extrapolation=extrapolation,
+                                keepdims=True, aligned_evaluation=False)
 
         shape = [self.nsamples] + lengths
 
@@ -220,6 +253,7 @@ class FData(ABC):
         if self.ndim_image != 1 or keepdims:
             shape += [self.ndim_image]
 
+        # Roll the list of result in a list
         return res.reshape(shape)
 
 
@@ -587,6 +621,20 @@ class FData(ABC):
             original objects.
         """
 
+        pass
+
+    @abstractmethod
+    def compose(self, fd, *, eval_points=None, **kwargs):
+        """Composition of functions.
+
+        Performs the composition of functions.
+
+        Args:
+            fd (:class:`FData`): FData object to make the composition. Should
+                have the same number of samples and image dimension equal to
+                the domain dimension of the object composed.
+            eval_points (array_like): Points to perform the evaluation.
+        """
         pass
 
     @abstractmethod

@@ -869,7 +869,7 @@ class FDataGrid(FData):
 
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
-              discretization_points=None, **kwargs):
+              eval_points=None):
         """Perform a shift of the curves.
 
         Args:
@@ -883,20 +883,120 @@ class FDataGrid(FData):
                 extrapolation mode for elements outside the domain range.
                 By default uses the method defined in fd. See extrapolation to
                 more information.
-            discretization_points (array_like, optional): Set of points where
+            eval_points (array_like, optional): Set of points where
                 the functions are evaluated to obtain the discrete
-                representation of the object to operate. If an empty list is
-                passed it calls numpy.linspace with bounds equal to the ones
-                defined in fd.domain_range and the number of points the maximum
-                between 201 and 10 times the number of basis plus 1.
-            **kwargs: Keyword arguments to be passed to :meth:`from_data`.
+                representation of the object to operate. If an empty list the
+                current sample_points are used to unificate the domain of the
+                shifted data.
 
         Returns:
             :class:`FDataGrid` with the shifted data.
         """
 
-        raise NotImplementedError
 
+        if numpy.isscalar(shifts):
+            shifts = [shifts]
+
+        shifts = numpy.array(shifts)
+
+        # Case unidimensional treated as the multidimensional
+        if self.ndim_domain == 1 and shifts.ndim == 1 and shifts.shape[0] != 1:
+            shifts = shifts[:, numpy.newaxis]
+
+        # Case same shift for all the curves
+        if shifts.shape[0] == self.ndim_domain and shifts.ndim ==1:
+
+            # Column vector with shapes
+            shifts = numpy.atleast_2d(shifts).T
+
+            sample_points = self.sample_points + shifts
+            domain_range = self.domain_range + shifts
+
+            return self.copy(sample_points=sample_points,
+                             domain_range=domain_range)
+
+
+        if shifts.shape[0] != self.nsamples:
+            raise ValueError(f"shifts vector ({shifts.shape[0]}) must have the "
+                             f"same length than the number of samples "
+                             f"({self.nsamples})")
+
+        if eval_points is None:
+            eval_points = self.sample_points
+
+
+
+        if restrict_domain:
+            domain = numpy.asarray(self.domain_range)
+            a = domain[:,0] - numpy.atleast_1d(numpy.min(numpy.min(shifts, axis=1), 0))
+            b = domain[:,1] - numpy.atleast_1d(numpy.max(numpy.max(shifts, axis=1), 0))
+
+            domain = numpy.vstack((a,b)).T
+
+            eval_points = [eval_points[i][
+                numpy.logical_and(eval_points[i] >= domain[i,0],
+                                  eval_points[i] <= domain[i,1])]
+                           for i in range(self.ndim_domain)]
+
+        else:
+            domain = self.domain_range
+
+        eval_points = numpy.asarray(eval_points)
+
+
+        eval_points_repeat = numpy.repeat(eval_points[numpy.newaxis, :],
+                                       self.nsamples, axis=0)
+
+        # Solve problem with cartesian and matrix indexing
+        if self.ndim_domain > 1:
+            shifts[:,:2] = numpy.flip(shifts[:,:2], axis=1)
+
+        shifts = numpy.repeat(shifts[..., numpy.newaxis],
+                              eval_points.shape[1], axis=2)
+
+        eval_points_shifted = eval_points_repeat + shifts
+
+
+        grid = True if self.ndim_domain > 1 else False
+
+        data_matrix = self.evaluate(eval_points_shifted,
+                                    extrapolation=extrapolation,
+                                    aligned_evaluation=False,
+                                    grid=True)
+
+
+        return self.copy(data_matrix=data_matrix, sample_points=eval_points,
+                         domain_range=domain)
+
+    def compose(self, fd, *, eval_points=None):
+        """Composition of functions.
+
+        Performs the composition of functions.
+
+        Args:
+            fd (:class:`FData`): FData object to make the composition. Should
+                have the same number of samples and image dimension equal to 1.
+            eval_points (array_like): Points to perform the evaluation.
+        """
+
+        if self.ndim_domain != fd.ndim_image:
+            raise ValueError(f"Dimension of codomain of first function do not "
+                             f"match with the domain of the second function "
+                             f"({self.ndim_domain})!=({fd.ndim_image}).")
+
+        if self.ndim_domain != 1:
+            raise NotImplementedError("Only implemented for unidimensional "
+                                      "objects.")
+
+        if eval_points is None:
+            eval_points = self.sample_points[0]
+
+        eval_points_transformation = fd(eval_points, keepdims=False)
+        data_matrix = self(eval_points_transformation,
+                           aligned_evaluation=False)
+
+        return self.copy(data_matrix=data_matrix,
+                         sample_points=eval_points)
 
     def __str__(self):
         """Return str(self)."""

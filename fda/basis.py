@@ -1485,7 +1485,7 @@ class FDataBasis(FData):
         return res_matrix.reshape((self.nsamples, eval_points.shape[1], 1))
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
-              discretization_points=None, **kwargs):
+              eval_points=None, **kwargs):
         r"""Perform a shift of the curves.
 
         Args:
@@ -1499,7 +1499,7 @@ class FDataBasis(FData):
                 extrapolation mode for elements outside the domain range.
                 By default uses the method defined in fd. See extrapolation to
                 more information.
-            discretization_points (array_like, optional): Set of points where
+            eval_points (array_like, optional): Set of points where
                 the functions are evaluated to obtain the discrete
                 representation of the object to operate. If an empty list is
                 passed it calls numpy.linspace with bounds equal to the ones
@@ -1516,20 +1516,20 @@ class FDataBasis(FData):
 
         domain_range = self.domain_range[0]
 
-        if discretization_points is None:  # Grid to discretize the function
+        if eval_points is None:  # Grid to discretize the function
             nfine = max(self.nbasis * 10 + 1, 201)
-            discretization_points = numpy.linspace(*domain_range, nfine)
+            eval_points = numpy.linspace(*domain_range, nfine)
         else:
-            discretization_points = numpy.asarray(discretization_points)
+            eval_points = numpy.asarray(eval_points)
 
         if numpy.isscalar(shifts):  # Special case, all curves with same shift
 
             _basis = self.basis.rescale((domain_range[0] + shifts,
                                          domain_range[1] + shifts))
 
-            return FDataBasis.from_data(self.evaluate(discretization_points,
+            return FDataBasis.from_data(self.evaluate(eval_points,
                                                       keepdims=False),
-                                        discretization_points + shifts,
+                                        eval_points + shifts,
                                         _basis, **kwargs)
 
         elif len(shifts) != self.nsamples:
@@ -1541,15 +1541,15 @@ class FDataBasis(FData):
             a = domain_range[0] - min(numpy.min(shifts), 0)
             b = domain_range[1] - max(numpy.max(shifts), 0)
             domain = (a, b)
-            discretization_points = discretization_points[
-                numpy.logical_and(discretization_points >= a,
-                                  discretization_points <= b)]
+            eval_points = eval_points[
+                numpy.logical_and(eval_points >= a,
+                                  eval_points <= b)]
         else:
             domain = domain_range
 
 
         points_shifted = numpy.outer(numpy.ones(self.nsamples),
-                                     discretization_points)
+                                     eval_points)
 
 
         points_shifted += numpy.atleast_2d(shifts).T
@@ -1562,7 +1562,7 @@ class FDataBasis(FData):
 
         _basis = self.basis.rescale(domain)
 
-        return FDataBasis.from_data(_data_matrix, discretization_points,
+        return FDataBasis.from_data(_data_matrix, eval_points,
                                     _basis, **kwargs)
 
 
@@ -1816,6 +1816,38 @@ class FDataBasis(FData):
         return self.copy(coefficients=numpy.concatenate((self.coefficients,
                                                          other.coefficients),
                                                         axis=0))
+
+    def compose(self, fd, *, eval_points=None, **kwargs):
+        """Composition of functions.
+
+        Performs the composition of functions.
+
+        Args:
+            fd (:class:`FData`): FData object to make the composition. Should
+                have the same number of samples and image dimension equal to 1.
+            eval_points (array_like): Points to perform the evaluation.
+             **kwargs: Named arguments to be passed to :func:`from_data`.
+        """
+
+        if self.ndim_domain != fd.ndim_image:
+            raise ValueError(f"Dimension of codomain of first function do not "
+                             f"match with the domain of the second function "
+                             f"({self.ndim_domain})!=({fd.ndim_image}).")
+
+        if eval_points is None:
+
+            npoints = max(501, 10 * self.nbasis)
+            # List of points where the basis are evaluated
+            eval_points = numpy.linspace(*self.domain_range[0], npoints)
+
+        eval_points_transformation = fd(eval_points, keepdims=False)
+        data_matrix = self(eval_points_transformation,
+                           aligned_evaluation=False)
+
+        return FDataBasis.from_data(data_matrix, eval_points,
+                                    self.basis.copy(), **kwargs)
+
+
 
 
     def __getitem__(self, key):

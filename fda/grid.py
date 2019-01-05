@@ -8,13 +8,10 @@ list of discretisation points.
 
 import numbers
 import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib.pyplot
 import numpy
 import scipy
 import scipy.stats.mstats
 import math
-import itertools
 from mpl_toolkits.mplot3d import Axes3D
 
 from . import basis as fdbasis
@@ -65,8 +62,7 @@ class FDataGrid:
             is considered to exist for each one of the axies.
         dataset_label (str): name of the dataset.
         axes_labels (list): list containing the labels of the different
-            axis. The first element is the x label, the second the y label
-            and so on.
+            axis.
 
     Examples:
         Representation of a functional data object with 2 samples
@@ -124,18 +120,19 @@ class FDataGrid:
                 values of a functional datum evaluated at the
                 points of discretisation.
             sample_points (array_like, optional): an array containing the
-            points of discretisation where values have been recorded or a list
-            of lists with each of the list containing the points of
+                points of discretisation where values have been recorded or a list
+                of lists with each of the list containing the points of
                 dicretisation for each axis.
             sample_range (tuple or list of tuples, optional): contains the
                 edges of the interval in which the functional data is
                 considered to exist (if the argument has 2 dimensions each
                 row is interpreted as the limits of one of the dimension of
-                the domain.
+                the domain).
             dataset_label (str, optional): name of the dataset.
             axes_labels (list, optional): list containing the labels of the
-                different axes. The first element is the x label, the second
-                the y label and so on.
+                different axes. The length of the list must be equal to the sum of the
+                number of dimensions of the domain plus the number of dimensions
+                of the image.
 
         """
         self.data_matrix = numpy.atleast_2d(data_matrix)
@@ -186,6 +183,10 @@ class FDataGrid:
         if self.data_matrix.ndim == 1 + self.ndim_domain:
             self.data_matrix = self.data_matrix[..., numpy.newaxis]
 
+        if axes_labels is not None and len(axes_labels) != (self.ndim_domain + self.ndim_image):
+            raise ValueError("There must be a label for each of the"  
+                              "dimensions of the domain and the image.")
+
         self.dataset_label = dataset_label
         self.axes_labels = axes_labels
 
@@ -200,7 +201,7 @@ class FDataGrid:
                 positions to the left of the decimal point. Defaults to 0.
 
         Returns:
-            :obj:FDataGrid: Returns a FDataGrid object where all elements
+            obj:FDataGrid: Returns a FDataGrid object where all elements
             in its data_matrix are rounded .The real and
             imaginary parts of complex numbers are rounded separately.
 
@@ -285,7 +286,7 @@ class FDataGrid:
     def derivative(self, order=1):
         r"""Differentiate a FDataGrid object.
 
-        Its calculated using lagged differences. If we call :math:`D` the
+        It is calculated using lagged differences. If we call :math:`D` the
         data_matrix, :math:`D^1` the derivative of order 1 and :math:`T` the
         vector contaning the points of discretisation; :math:`D^1` is
         calculated as it follows:
@@ -548,7 +549,7 @@ class FDataGrid:
                          self.axes_labels)
 
     def set_figure_and_axes(self):
-        """Set the figure and its axes.
+        """Set figure and its axes.
 
         Returns:
             fig (figure object): figure object initialiazed.
@@ -572,7 +573,6 @@ class FDataGrid:
         return fig, ax
 
     def set_labels(self, fig):
-        # TODO: check in init the length of the labels
         """Set labels if any.
 
         Args:
@@ -641,10 +641,10 @@ class FDataGrid:
         else:
             X = self.sample_points[0]
             Y = self.sample_points[1]
-            X, Y = np.meshgrid(X, Y)
+            X, Y = numpy.meshgrid(X, Y)
             for i in range(self.ndim_image):
                 for j in range(self.nsamples):
-                    _plot.append(ax[i].plot_surface(X, Y, np.squeeze(self.data_matrix[j, :, :, i]).T, **kwargs))
+                    _plot.append(ax[i].plot_surface(X, Y, numpy.squeeze(self.data_matrix[j, :, :, i]).T, **kwargs))
 
         self.set_labels(fig)
         self.arrange_layout(fig)
@@ -685,7 +685,7 @@ class FDataGrid:
         else:
             X = self.sample_points[0]
             Y = self.sample_points[1]
-            X, Y = np.meshgrid(X, Y)
+            X, Y = numpy.meshgrid(X, Y)
             for i in range(self.ndim_image):
                 for j in range(self.nsamples):
                     _plot.append(ax[i].scatter(X, Y, self.data_matrix[j, :, :, i].T, **kwargs))

@@ -43,3 +43,4 @@ The following functions are used to make synthetic functional datasets:
    fda.datasets.make_gaussian_process
    fda.datasets.make_sinusoidal_process
    fda.datasets.make_multimodal_samples
+   fda.datasets.make_multimodal_landmarks

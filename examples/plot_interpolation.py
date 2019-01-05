@@ -199,6 +199,12 @@ scatter_3d(fd, ax)
 # In the following figure it is shown the result of the cubic interpolation
 # applied to the surface.
 #
+# The degree of the interpolator polynomial does not have to coincide in both
+# directions, for example, cubic interpolation in the first
+# component and quadratic in the second one could be defined  using a tuple with
+# the values (3,2).
+#
+
 
 fd.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3)
 

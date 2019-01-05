@@ -9,3 +9,5 @@ Modules
    :caption: Modules:
 
    modules/datasets
+   modules/extrapolation
+   modules/registration

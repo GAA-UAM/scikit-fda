@@ -187,9 +187,9 @@ def make_multimodal_samples(n_samples: int=15, n_modes: int=1,
         ndim_domain: Number of dimensions of the domain.
         ndim_image: Number of dimensions of the image
         start: Starting point of the samples. In multidimensional objects the
-            starting point of the axis.
+            starting point of each axis.
         stop: Ending point of the samples. In multidimensional objects the
-            ending point of the axis.
+            ending point of each axis.
         std: Standard deviation of the variation of the modes location.
         mode_std: Standard deviation :math:`\\sigma` of each mode.
         noise: Standard deviation of Gaussian noise added to the data.

@@ -5,7 +5,7 @@ from the center (larger values) outwards(smaller ones)."""
 
 import numpy as np
 from scipy.stats import rankdata
-from numpy import linalg as LA
+from numpy import linalg as la
 from .grid import FDataGrid
 
 __author__ = "Amanda Hernando Bernabé"
@@ -23,6 +23,7 @@ def rank_samples(fdatagrid):
 
     Examples:
         Univariate setting:
+
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2], [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5], [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
@@ -57,6 +58,7 @@ def rank_samples(fdatagrid):
                 [1.]]])
 
         Multivariate Setting:
+
         >>> data_matrix = [[[[1, 3], [2, 6]], [[23, 54], [43, 76]], [[2, 45], [12, 65]]],
         ...                [[[21, 34], [8, 16]], [[67, 43], [32, 21]], [[10, 24], [3, 12]]]]
         >>> sample_points = [[2, 4, 6], [3, 6]]
@@ -110,6 +112,7 @@ def band_depth(fdatagrid):
 
     Examples:
         Univariate setting:
+
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2], [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5], [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
@@ -121,6 +124,7 @@ def band_depth(fdatagrid):
                [0.5       ]])
 
         Multivariate Setting:
+
         >>> data_matrix = [[[[1, 3], [2, 6]], [[23, 54], [43, 76]], [[2, 45], [12, 65]]],
         ...                [[[21, 34], [8, 16]], [[67, 43], [32, 21]], [[10, 24], [3, 12]]],
         ...                [[[4, 6], [4, 10]], [[45, 48], [38, 56]], [[8, 36], [10, 28]]]]
@@ -163,11 +167,14 @@ def modified_band_depth(fdatagrid, pointwise = False):
     
     Returns:
         depth (numpy.darray): Array containing the modified band depth of the samples.
+
+    Returns:
         depth_pointwise (numpy.darray, optional): Array containing the modified band depth of
-            the samples at each point of discretisation. Only returned if pointwise equals to True.
+        the samples at each point of discretisation. Only returned if pointwise equals to True.
 
     Examples:
         Univariate setting specifying pointwise:
+
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2], [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5], [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
@@ -205,6 +212,7 @@ def modified_band_depth(fdatagrid, pointwise = False):
                 [0.5       ]]]))
 
         Multivariate Setting without specifying pointwise:
+
         >>> data_matrix = [[[[1, 3], [2, 6]], [[23, 54], [43, 76]], [[2, 45], [12, 65]]],
         ...                [[[21, 34], [8, 16]], [[67, 43], [32, 21]], [[10, 24], [3, 12]]],
         ...                [[[4, 6], [4, 10]], [[45, 48], [38, 56]], [[34, 78], [10, 28]]]]
@@ -267,12 +275,12 @@ def Fraiman_Muniz_depth(fdatagrid, pointwise = False):
     r"""Implementation of Fraiman and Muniz (FM) Depth for functional data.
 
     Each column is considered as the samples of an aleatory variable. The univariate depth of each of the samples of each column is
-	calculated as follows:
+    calculated as follows:
 
     .. math::
-        $$D(x) = 1 - \left\lvert \frac{1}{2}- F(x)\right\rvert$$
+        D(x) = 1 - \left\lvert \frac{1}{2}- F(x)\right\rvert
 
-    Where F stands for the marginal univariate distribution function of each column.
+    Where :math:`F` stands for the marginal univariate distribution function of each column.
 
     The depth of a sample is the result of adding the previously computed depth for each of its points.
 
@@ -282,11 +290,14 @@ def Fraiman_Muniz_depth(fdatagrid, pointwise = False):
 
     Returns:
         depth (numpy.darray): Array containing the FM depth of the samples.
+
+    Returns:
         depth_pointwise (numpy.darray, optional): Array containing the modified band depth of
-            the samples at each point of discretisation. Only returned if pointwise equals to True.
+        the samples at each point of discretisation. Only returned if pointwise equals to True.
 
     Examples:
         Univariate setting specifying pointwise:
+
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2], [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5], [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
@@ -324,6 +335,7 @@ def Fraiman_Muniz_depth(fdatagrid, pointwise = False):
                 [0.75]]]))
 
         Multivariate Setting without specifying pointwise:
+
         >>> data_matrix = [[[[1, 3], [2, 6]], [[23, 54], [43, 76]], [[2, 45], [12, 65]]],
         ...                [[[21, 34], [8, 16]], [[67, 43], [32, 21]], [[10, 24], [3, 12]]],
         ...                [[[4, 6], [4, 10]], [[45, 48], [38, 56]], [[34, 78], [10, 28]]]]
@@ -367,63 +379,60 @@ def Fraiman_Muniz_depth(fdatagrid, pointwise = False):
 
 
 def directional_outlyingness(fdatagrid,  depth_method = modified_band_depth, dim_weights = None, pointwise_weights = None):
-    """Calculates both the mean and the variation of the  directional outlyingness of the samples in the data set.
+    r"""Calculates both the mean and the variation of the  directional outlyingness of the samples in the data set.
+
     The first one describes the relative position (including both distance and direction) of the samples on average to
-    the center curve and its norm can be regarded as the magnitude outlyingness. The second one measures the change of
-    the directional outlyingness in terms of both norm and direction across the whole design interval and can be
+    the center curve and its norm can be regarded as the magnitude outlyingness.
+
+    The second one measures the change of the directional outlyingness in terms of both norm and direction across the whole design interval and can be
     regarded as the shape outlyingness.
 
     Firstly, the directional outlyingness is calculated as follows:
-    O(X(t) , F X(t) ) = o(X(t) , F X(t) ) · v(t) = 1 / d(X(t) , F X(t) ) − 1 · v(t)
-    where X is a stochastic process with probability distribution F, d a depth function and v(t) = { X(t) − Z(t) } /∥ X(t) − Z(t) ∥
-    is the spatial sign of { X(t) − Z(t) } , Z(t) denotes the unique median and ∥ · ∥ denotes the L 2 norm.
+
+    .. math::
+        \mathbf{O}\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right) = \left\{\frac{1}{d\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right)} - 1\right\} \cdot \mathbf{v}(t)
+
+    where :math:`\mathbf{X}` is a stochastic process with probability distribution :math:`F`, :math:`d` a depth function and
+    :math:`\mathbf{v}(t) = \left\{\mathbf{X}(t) - \mathbf{Z}(t)\right\} / \lVert \mathbf{X}(t) - \mathbf{Z}(t) \rVert`
+    is the spatial sign of :math:`\left\{\mathbf{X}(t) - \mathbf{Z}(t)\right\}`, :math:`\mathbf{Z}(t)` denotes the median and ∥ · ∥ denotes the :math:`L_2` norm.
 
     From the above formula, we define the mean directional outlyingness as:
-        MO(X , F X ) = ∫ O(X(t) , F X(t) ) w (t)dt ;
+
+    .. math::
+        \mathbf{MO}\left(\mathbf{X} , F_{\mathbf{X}}\right) = \int_I  \mathbf{O}\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right) \cdot w(t) dt ;
+
     and the variation of the directional outlyingness as:
-        VO(X , F X ) = ∫ ∥ O(X(t) , F X(t) ) − MO(X , F X ) ∥ 2 w (t)dt .
-    where w(t) a weight function defined on the domain of X, I.
+
+    .. math::
+        VO\left(\mathbf{X} , F_{\mathbf{X}}\right) = \int_I  \lVert\mathbf{O}\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right)-\mathbf{MO}\left(\mathbf{X} , F_{\mathbf{X}}\right)  \rVert \cdot w(t) dt
+
+    where :math:`w(t)` a weight function defined on the domain of :math:`\mathbf{X}`, :math:`I`.
 
     Then, the total functional outlyingness can be computed using these values:
-        FO(X , F X ) = ∥ MO(X , F X ) ∥ 2 + VO(X , F X ) .
 
-
-    . If we call :math:`D` the
-    data_matrix, :math:`D^1` the derivative of order 1 and :math:`T` the
-    vector contaning the points of discretisation; :math:`D^1` is
-    calculated as it follows:
-
-        .. math::
-
-            D^{1}_{ij} = \begin{cases}
-            \frac{D_{i1} - D_{i2}}{ T_{1} - T_{2}}  & \mbox{if } j = 1 \\
-            \frac{D_{i(m-1)} - D_{im}}{ T_{m-1} - T_m}  & \mbox{if }
-                j = m \\
-            \frac{D_{i(j-1)} - D_{i(j+1)}}{ T_{j-1} - T_{j+1}} & \mbox{if }
-            1 < j < m
-            \end{cases}
-
-        Where m is the number of columns of the matrix :math:`D`.
-
-        Order > 1 derivatives are calculated by using derivative recursively.
+    .. math::
+        FO\left(\mathbf{X} , F_{\mathbf{X}}\right) = \lVert \mathbf{MO}\left(\mathbf{X} , F_{\mathbf{X}}\right)\rVert^2 +  VO\left(\mathbf{X} , F_{\mathbf{X}}\right) .
 
     Args:
         fdatagrid (FDataGrid): Object containing the samples to be ordered according to
             the directional outlyingness.
         depth_method (depth function, optional): Method used to order the data (Fraiman_Muniz_depth,
-        band_depth, modified_band_depth). Defaults to modified_band_depth.
-    	dim_weights (array_like, optional): an array containing the weights of each of
-    	    the dimensions of the image. Defaults to the same weight for each of the
-    	    dimensions: 1/ndim_image.
+            band_depth, modified_band_depth). Defaults to modified_band_depth.
+        dim_weights (array_like, optional): an array containing the weights of each of
+            the dimensions of the image. Defaults to the same weight for each of the
+            dimensions: 1/ndim_image.
         pointwise_weights (array_like, optional): an array containing the weights of each
             point of discretisation where values have been recorded. Defaults to the same
             weight for each of the points: 1/len(interval).
 
     Returns:
-        mean_dir_outl (array_like): List containing the values of the magnitude
-            outlyingness for each of the samples.
-        variation_dir_outl (array_like): List containing the values of the shape
-            outlyingness for each of the samples.
+        (tuple): tuple containing:
+
+            mean_dir_outl (array_like): List containing the values of the magnitude
+                outlyingness for each of the samples.
+            variation_dir_outl (array_like): List containing the values of the shape
+                outlyingness for each of the samples.
+
     """
 
     if fdatagrid.ndim_domain > 1:
@@ -452,7 +461,7 @@ def directional_outlyingness(fdatagrid,  depth_method = modified_band_depth, dim
     median_index = np.argmax(sample_depth)
     median = fdatagrid.data_matrix[median_index]
     v = fdatagrid.data_matrix - median
-    v_norm = LA.norm(v, axis=-1, keepdims=True)
+    v_norm = la.norm(v, axis=-1, keepdims=True)
     #To avoid ZeroDivisionError, the zeros are substituted by ones.
     v_norm[np.where(v_norm == 0)] = 1
     v_unitary = v / v_norm
@@ -471,7 +480,7 @@ def directional_outlyingness(fdatagrid,  depth_method = modified_band_depth, dim
 
     # Calcuation variation directinal outlyingness
     mean_dir_outl_pointwise = np.repeat(mean_dir_outl, fdatagrid.ncol, axis=0).reshape(fdatagrid.shape)
-    norm = np.square(LA.norm(dir_outlyingness - mean_dir_outl_pointwise, axis=-1))
+    norm = np.square(la.norm(dir_outlyingness - mean_dir_outl_pointwise, axis=-1))
     weighted_norm = norm * pointwise_weights
     variation_dir_outl = weighted_norm.sum(axis=1)
 

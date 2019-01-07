@@ -6,8 +6,9 @@ It includes the modules:
     - math: Mean, variance, covariance, logarithms, square roots, distances...
     - kernels: kernels for kernel smoothing.
     - kernel_smoothers: kernel smoothers for smoothing FDataGrid objects.
-    - validation: cross validation methods for finding the parameter that
-    best smooths a FDataGrid object.
+    - validation: cross validation methods for finding the parameter that best smooths a FDataGrid object.
+    - depth_measures: depth methods to order he samples of FDataGrid objects.
+    - graphics: methods to visualize FDataGrid objects.
 and the following classes:
     - FDataGrid: Discrete representation of functional data.
     - FDataBasis: Basis representation for functional data.

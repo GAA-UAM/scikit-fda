@@ -60,6 +60,22 @@ fda\.validation module
     :undoc-members:
     :show-inheritance:
 
+fda\.depth_measures module
+--------------------------
+
+.. automodule:: fda.depth_measures
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+fda\.graphics module
+--------------------
+
+.. automodule:: fda.graphics
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------

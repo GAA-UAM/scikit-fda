@@ -5,20 +5,19 @@ the corresponding basis classes.
 
 """
 
+import copy
 from abc import ABC, abstractmethod
 
 import matplotlib.pyplot
-from numpy import polyder, polyint, polymul, polyval
 import numpy
 import scipy.integrate
-from scipy.interpolate import PPoly
 import scipy.interpolate
 import scipy.linalg
+from numpy import polyder, polyint, polymul, polyval
+from scipy.interpolate import PPoly
 from scipy.special import binom
-import copy
 
 from . import grid
-
 from .functional_data import FData, _list_of_arrays
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -38,11 +37,15 @@ def _polypow(p, n=2):
     else:
         raise ValueError("n must be greater than 0.")
 
-def _check_domain(domain_range):
 
+def _check_domain(domain_range):
     for domain in domain_range:
         if len(domain) != 2 or domain[0] >= domain[1]:
             raise ValueError(f"The interval {domain} is not well-defined.")
+
+
+def _same_domain(one_domain_range, other_domain_range):
+    return numpy.array_equal(one_domain_range, other_domain_range)
 
 
 class Basis(ABC):
@@ -55,7 +58,7 @@ class Basis(ABC):
 
     """
 
-    def __init__(self, domain_range=(0,1), nbasis=1):
+    def __init__(self, domain_range=(0, 1), nbasis=1):
         """Basis constructor.
 
         Args:
@@ -290,6 +293,12 @@ class Basis(ABC):
         """Basis copy"""
         return copy.deepcopy(self)
 
+    def to_basis(self):
+        return FDataBasis(self.copy(), numpy.identity(self.nbasis))
+
+    def inprod(self, other):
+        return self.to_basis().inprod(other)
+
     def __repr__(self):
         """Representation of a Basis object."""
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
@@ -428,7 +437,6 @@ class Monomial(Basis):
                 Springler.
 
         """
-
 
         if derivative_degree is None:
             return self._numerical_penalty(coefficients)
@@ -835,8 +843,6 @@ class BSpline(Basis):
             # TODO: Allow multiple dimensions
             domain_range = self.domain_range[0]
 
-
-
         return BSpline(domain_range, self.nbasis, self.order, knots)
 
     def __repr__(self):
@@ -1155,7 +1161,6 @@ class FDataBasis(FData):
         self.extrapolation = extrapolation
         self.keepdims = keepdims
 
-
     @classmethod
     def from_data(cls, data_matrix, sample_points, basis, weight_matrix=None,
                   smoothness_parameter=0, penalty_degree=None,
@@ -1415,8 +1420,6 @@ class FDataBasis(FData):
         else:
             self._extrapolation = self._parse_extrapolation(value)
 
-
-
     def _evaluate(self, eval_points, *, derivative=0):
         """"Evaluate the object or its derivatives at a list of values.
 
@@ -1433,16 +1436,15 @@ class FDataBasis(FData):
             function at the values specified in eval_points.
 
         """
-        # Only suported 1D objects
+        #  Only suported 1D objects
         eval_points = eval_points[:, 0]
 
         # each row contains the values of one element of the basis
         basis_values = self.basis.evaluate(eval_points, derivative)
 
-        res = numpy.tensordot(self.coefficients, basis_values, axes=(1,0))
+        res = numpy.tensordot(self.coefficients, basis_values, axes=(1, 0))
 
         return res.reshape((self.nsamples, len(eval_points), 1))
-
 
     def _evaluate_composed(self, eval_points, *, derivative=0):
 
@@ -1480,7 +1482,6 @@ class FDataBasis(FData):
 
             numpy.multiply(basis_values, self.coefficients[i], out=_matrix)
             numpy.sum(_matrix, axis=1, out=res_matrix[i])
-
 
         return res_matrix.reshape((self.nsamples, eval_points.shape[1], 1))
 
@@ -1547,10 +1548,8 @@ class FDataBasis(FData):
         else:
             domain = domain_range
 
-
         points_shifted = numpy.outer(numpy.ones(self.nsamples),
                                      discretization_points)
-
 
         points_shifted += numpy.atleast_2d(shifts).T
 
@@ -1564,7 +1563,6 @@ class FDataBasis(FData):
 
         return FDataBasis.from_data(_data_matrix, discretization_points,
                                     _basis, **kwargs)
-
 
     def derivative(self, order=1):
         r"""Differentiate a FDataBasis object.
@@ -1690,7 +1688,6 @@ class FDataBasis(FData):
         """
         return self.to_grid(eval_points).cov()
 
-
     def to_grid(self, eval_points=None):
         """Return the discrete representation of the object.
 
@@ -1729,7 +1726,6 @@ class FDataBasis(FData):
         if eval_points is None:
             npoints = max(501, 10 * self.nbasis)
             eval_points = numpy.linspace(*self.domain_range[0], npoints)
-
 
         return grid.FDataGrid(self.evaluate(eval_points, keepdims=False),
                               sample_points=eval_points,
@@ -1778,6 +1774,19 @@ class FDataBasis(FData):
                           axes_labels=axes_labels, extrapolation=extrapolation,
                           keepdims=keepdims)
 
+    def inprod(self, other):
+        if not _same_domain(self.domain_range, other.domain_range):
+            raise ValueError("Both Objects should have the same domain_range")
+        if isinstance(other, Basis):
+            other = other.to_basis()
+
+        inprodmat = [
+            scipy.integrate.quad(lambda x: self[i].evaluate([x]) * other[j].evaluate([x]),
+                                 self.domain_range[0][0], self.domain_range[0][1])[0]
+            for j in range(0, other.nsamples)
+            for i in range(0, self.nsamples)]
+        return numpy.array(inprodmat).reshape((self.nsamples, other.nsamples))
+
     def __repr__(self):
         """Representation of FDataBasis object."""
         return (f"{self.__class__.__name__}("
@@ -1812,11 +1821,9 @@ class FDataBasis(FData):
         if other.basis != self.basis:
             raise ValueError("The objects should have the same basis.")
 
-
         return self.copy(coefficients=numpy.concatenate((self.coefficients,
                                                          other.coefficients),
                                                         axis=0))
-
 
     def __getitem__(self, key):
         """Return self[key]."""
@@ -1837,7 +1844,6 @@ class FDataBasis(FData):
 
         return self.__add__(other)
 
-
     def __sub__(self, other):
         """Subtraction for FDataBasis object."""
 
@@ -1857,7 +1863,6 @@ class FDataBasis(FData):
         """Multiplication for FDataBasis object."""
 
         return self.__mul__(other)
-
 
     def __truediv__(self, other):
         """Division for FDataBasis object."""

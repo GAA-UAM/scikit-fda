@@ -1780,17 +1780,12 @@ class FDataBasis(FData):
         if isinstance(other, Basis):
             other = other.to_basis()
 
-        # TODO adapt to multiple domain ranges
         inprodmat = [
             scipy.integrate.quad(lambda x: self[i].evaluate([x]) * other[j].evaluate([x]),
                                  self.domain_range[0][0], self.domain_range[0][1])[0]
             for j in range(0, other.nsamples)
             for i in range(0, self.nsamples)]
         return numpy.array(inprodmat).reshape((self.nsamples, other.nsamples))
-
-    def __getitem__(self, given):
-        """Slicing of FDataBasis object."""
-        return FDataBasis(self.basis.copy(), self.coefficients[given])
 
     def __repr__(self):
         """Representation of FDataBasis object."""

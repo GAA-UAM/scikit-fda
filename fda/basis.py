@@ -429,8 +429,8 @@ class Constant(Basis):
         if derivative_degree is None:
             return self._numerical_penalty(coefficients)
 
-        return numpy.full((1, 1), (self.domain_range[0][1] - self.domain_range[0][0])) \
-            if derivative_degree == 0 else numpy.zeros((1, 1))
+        return (numpy.full((1, 1), (self.domain_range[0][1] - self.domain_range[0][0]))
+                if derivative_degree == 0 else numpy.zeros((1, 1)))
 
     def basis_of_product(self, other):
         """Multiplication of a Constant Basis with other Basis"""

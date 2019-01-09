@@ -429,7 +429,7 @@ class Constant(Basis):
         if derivative_degree is None:
             return self._numerical_penalty(coefficients)
 
-        return (numpy.full((1, 1), (self.domain_range[0][1] - selfdomain_range[0][0]))
+        return (numpy.full((1, 1), (self.domain_range[0][1] - self.domain_range[0][0]))
                 if derivative_degree == 0 else numpy.zeros((1, 1)))
 
     def basis_of_product(self, other):
@@ -1680,7 +1680,7 @@ class FDataBasis(FData):
             (numpy.darray): Matrix whose rows are the values of the each
             function at the values specified in eval_points with the
             corresponding shift.
-        """
+g        """
 
         eval_points = eval_points[..., 0]
 

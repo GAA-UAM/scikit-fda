@@ -1680,7 +1680,7 @@ class FDataBasis(FData):
             (numpy.darray): Matrix whose rows are the values of the each
             function at the values specified in eval_points with the
             corresponding shift.
-g        """
+        """
 
         eval_points = eval_points[..., 0]
 

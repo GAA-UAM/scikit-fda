@@ -48,6 +48,10 @@ def _same_domain(one_domain_range, other_domain_range):
     return numpy.array_equal(one_domain_range, other_domain_range)
 
 
+def _lenght_domain(domain_range):
+    return domain_range[0][1] - domain_range[0][0]
+
+
 class Basis(ABC):
     """Defines the structure of a basis function system.
 
@@ -429,8 +433,7 @@ class Constant(Basis):
         if derivative_degree is None:
             return self._numerical_penalty(coefficients)
 
-        return numpy.full((1, 1), (self.domain_range[0][1] - self.domain_range[0][0])) \
-            if derivative_degree == 0 else numpy.zeros((1, 1))
+        return numpy.full((1, 1), _lenght_domain(self.domain_range)) if derivative_degree == 0 else numpy.zeros((1, 1))
 
     def basis_of_product(self, other):
         """Multiplication of a Constant Basis with other Basis"""

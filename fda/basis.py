@@ -274,6 +274,24 @@ class Basis(ABC):
         """
         pass
 
+    @abstractmethod
+    def basis_of_product(self, other):
+        pass
+
+    @abstractmethod
+    def rbasis_of_product(self, other):
+        pass
+
+    @staticmethod
+    def default_basis_of_product(one, other):
+        """Default multiplication for a pair of basis"""
+        if not _same_domain(one.domain_range, other.domain_range):
+            raise ValueError("Ranges are not equal.")
+
+        norder = min(8, one.nbasis + other.nbasis)
+        nbasis = max(one.nbasis + other.nbasis, norder + 1)
+        return BSpline(one.domain_range, nbasis, norder)
+
     def rescale(self, domain_range=None):
         r"""Return a copy of the basis with a new domain range, with the
             corresponding values rescaled to the new bounds.
@@ -306,7 +324,124 @@ class Basis(ABC):
 
     def __eq__(self, other):
         """Equality of Basis"""
-        return type(self) == type(other) and self.domain_range == other.domain_range and self.nbasis == other.nbasis
+        return type(self) == type(other) and _same_domain(self.domain_range, other.domain_range) and self.nbasis == other.nbasis
+
+
+class Constant(Basis):
+    """Constant basis.
+
+    Basis for constant functions
+
+    Attributes:
+        domain_range (tuple): a tuple of length 2 containing the initial and
+            end values of the interval over which the basis can be evaluated.
+
+    Examples:
+        Defines a contant base over the interval :math:`[0, 5]` consisting
+        on the constant function 1 on :math:`[0, 5]`.
+
+        >>> bs_cons = Constant((0,5))
+
+    """
+
+    def __init__(self, domain_range=(0, 1)):
+        """Constant basis constructor.
+
+        Args:
+            domain_range (tuple): Tuple defining the domain over which the
+            function is defined.
+
+        """
+        super().__init__(domain_range, 1)
+
+    def _ndegenerated(self, penalty_degree):
+        """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
+
+        Args:
+            penalty_degree (int): Degree of the derivative used in the
+                calculation of the penalty matrix.
+
+        Returns:
+             int: number of close to 0 eigenvalues.
+
+        """
+        return penalty_degree
+
+    def _compute_matrix(self, eval_points, derivative=0):
+        """Compute the basis or its derivatives given a list of values.
+
+        For each of the basis computes its value for each of the points in
+        the list passed as argument to the method.
+
+        Args:
+            eval_points (array_like): List of points where the basis is
+                evaluated.
+            derivative (int, optional): Order of the derivative. Defaults to 0.
+
+        Returns:
+            (:obj:`numpy.darray`): Matrix whose rows are the values of the each
+            basis function or its derivatives at the values specified in
+            eval_points.
+
+        """
+        return numpy.ones((1, len(eval_points))) if derivative == 0 else numpy.zeros((1, len(eval_points)))
+
+    def penalty(self, derivative_degree=None, coefficients=None):
+        r"""Return a penalty matrix given a differential operator.
+
+        The differential operator can be either a derivative of a certain
+        degree or a more complex operator.
+
+        The penalty matrix is defined as [RS05-5-6-2]_:
+
+        .. math::
+            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
+
+        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
+        functions and :math:`L` is a differential operator.
+
+        Args:
+            derivative_degree (int): Integer indicating the order of the
+                derivative or . For instance 2 means that the differential
+                operator is :math:`f''(x)`.
+            coefficients (list): List of coefficients representing a
+                differential operator. An iterable indicating
+                coefficients of derivatives (which can be functions). For
+                instance the tuple (1, 0, numpy.sin) means :math:`1
+                + sin(x)D^{2}`. Only used if derivative degree is None.
+
+
+        Returns:
+            numpy.array: Penalty matrix.
+
+        Examples:
+            >>> Constant((0,5)).penalty(0)
+            array([[5]])
+            >>> Constant().penalty(1)
+            array([[0.]])
+
+        References:
+            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
+                roughness penalty. In *Functional Data Analysis* (pp. 106-107).
+                Springler.
+
+        """
+        if derivative_degree is None:
+            return self._numerical_penalty(coefficients)
+
+        return numpy.full((1, 1), (self.domain_range[0][1] - self.domain_range[0][0])) \
+            if derivative_degree == 0 else numpy.zeros((1, 1))
+
+    def basis_of_product(self, other):
+        """Multiplication of a Constant Basis with other Basis"""
+        if not _same_domain(self.domain_range, other.domain_range):
+            raise ValueError("Ranges are not equal.")
+
+        return other.copy()
+
+    def rbasis_of_product(self, other):
+        """Multiplication of a Constant Basis with other Basis"""
+        return other.copy()
 
 
 class Monomial(Basis):
@@ -488,6 +623,20 @@ class Monomial(Basis):
                                                                     jbasis]
 
         return penalty_matrix
+
+    def basis_of_product(self, other):
+        """Multiplication of a Monomial Basis with other Basis"""
+        if not _same_domain(self.domain_range, other.domain_range):
+            raise ValueError("Ranges are not equal.")
+
+        if isinstance(other, Monomial):
+            return Monomial(self.domain_range, self.nbasis + other.nbasis)
+
+        return other.rbasis_of_product(self)
+
+    def rbasis_of_product(self, other):
+        """Multiplication of a Monomial Basis with other Basis"""
+        return Basis.default_basis_of_product(self, other)
 
 
 class BSpline(Basis):
@@ -855,6 +1004,54 @@ class BSpline(Basis):
         """Equality of Basis"""
         return super().__eq__(other) and self.order == other.order and self.knots == other.knots
 
+    def basis_of_product(self, other):
+        """Multiplication of two Bspline Basis"""
+        if not _same_domain(self.domain_range, other.domain_range):
+            raise ValueError("Ranges are not equal.")
+
+        if isinstance(other, Constant):
+            return other.rbasis_of_product(self)
+
+        if isinstance(other, BSpline):
+            uniqueknots = numpy.union1d(self.inknots, other.inknots)
+
+            multunique = numpy.zeros(len(uniqueknots), dtype=numpy.int32)
+            for i in range(len(uniqueknots)):
+                mult1 = numpy.count_nonzero(self.inknots == uniqueknots[i])
+                mult2 = numpy.count_nonzero(other.inknots == uniqueknots[i])
+                multunique[i] = max(mult1, mult2)
+
+            m2 = 0
+            allknots = numpy.zeros(numpy.sum(multunique))
+            for i in range(len(uniqueknots)):
+                m1 = m2
+                m2 = m2 + multunique[i]
+                allknots[m1:m2] = uniqueknots[i]
+
+            norder1 = self.nbasis - len(self.inknots)
+            norder2 = other.nbasis - len(other.inknots)
+            norder = min(norder1 + norder2 - 1, 20)
+
+            allbreaks = [self.domain_range[0][0]] + numpy.ndarray.tolist(allknots) + [self.domain_range[0][1]]
+            nbasis = len(allbreaks) + norder - 2
+            return BSpline(self.domain_range, nbasis, norder, allbreaks)
+        else:
+            norder = min(self.nbasis - len(self.inknots) + 2, 8)
+            nbasis = max(self.nbasis + other.nbasis, norder + 1)
+            return BSpline(self.domain_range, nbasis, norder)
+
+    def rbasis_of_product(self, other):
+        """Multiplication of a Bspline Basis with other basis"""
+
+        norder = min(self.nbasis - len(self.inknots) + 2, 8)
+        nbasis = max(self.nbasis + other.nbasis, norder + 1)
+        return BSpline(self.domain_range, nbasis, norder)
+
+    @property
+    def inknots(self):
+        """Return number of basis."""
+        return self.knots[1:len(self.knots) - 1]
+
 
 class Fourier(Basis):
     r"""Fourier basis.
@@ -885,7 +1082,7 @@ class Fourier(Basis):
     Examples:
         Constructs specifying number of basis, definition interval and period.
 
-        >>> fb = Fourier([0, numpy.pi], nbasis=3, period=1)
+        >>> fb = Fourier((0, numpy.pi), nbasis=3, period=1)
         >>> fb.evaluate([0, numpy.pi / 4, numpy.pi / 2, numpy.pi]).round(2)
         array([[ 1.  ,  1.  ,  1.  ,  1.  ],
                [ 1.41,  0.31, -1.28,  0.89],
@@ -1067,6 +1264,20 @@ class Fourier(Basis):
         else:
             # implement using inner product
             return self._numerical_penalty(coefficients)
+
+    def basis_of_product(self, other):
+        """Multiplication of two Fourier Basis"""
+        if not _same_domain(self.domain_range, other.domain_range):
+            raise ValueError("Ranges are not equal.")
+
+        if isinstance(other, Fourier) and self.period == other.period:
+            return Fourier(self.domain_range, self.nbasis + other.nbasis - 1, self.period)
+        else:
+            return other.rbasis_of_product(self)
+
+    def rbasis_of_product(self, other):
+        """Multiplication of a Fourier Basis with other Basis"""
+        return Basis.default_basis_of_product(other, self)
 
     def rescale(self, domain_range=None, *, rescale_period=False):
         r"""Return a copy of the basis with a new domain range, with the

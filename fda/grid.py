@@ -984,19 +984,47 @@ class FDataGrid(FData):
                              f"match with the domain of the second function "
                              f"({self.ndim_domain})!=({fd.ndim_image}).")
 
-        if self.ndim_domain != 1:
-            raise NotImplementedError("Only implemented for unidimensional "
-                                      "objects.")
 
-        if eval_points is None:
-            eval_points = self.sample_points[0]
+        if fd.ndim_domain == 1:
+            if eval_points is None:
+                try:
+                    eval_points = fd.sample_points[0]
+                except:
+                    eval_points = numpy.linspace(*fd.domain_range[0], 201)
 
-        eval_points_transformation = fd(eval_points, keepdims=False)
-        data_matrix = self(eval_points_transformation,
-                           aligned_evaluation=False)
+            eval_points_transformation = fd(eval_points, keepdims=False)
+            data_matrix = self(eval_points_transformation,
+                               aligned_evaluation=False)
+        else:
+            if eval_points is None:
+                eval_points = fd.sample_points
+
+            grid_transformation = fd(eval_points, grid=True, keepdims=True)
+
+            lengths = [len(ax) for ax in eval_points]
+
+            eval_points_transformation =  numpy.empty((self.nsamples,
+                                                       numpy.prod(lengths),
+                                                       self.ndim_domain))
+
+
+            for i in range(self.nsamples):
+                eval_points_transformation[i] = numpy.array(
+                    list(map(numpy.ravel, grid_transformation[i].T))
+                    ).T
+
+            data_flatten = self(eval_points_transformation,
+                               aligned_evaluation=False)
+
+            data_matrix = data_flatten.reshape((self.nsamples, *lengths,
+                                                self.ndim_image))
+
 
         return self.copy(data_matrix=data_matrix,
-                         sample_points=eval_points)
+                         sample_points=eval_points,
+                         domain_range=fd.domain_range)
+
+
 
     def __str__(self):
         """Return str(self)."""

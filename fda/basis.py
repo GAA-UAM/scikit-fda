@@ -1820,7 +1820,8 @@ class FDataBasis(FData):
     def compose(self, fd, *, eval_points=None, **kwargs):
         """Composition of functions.
 
-        Performs the composition of functions.
+        Performs the composition of functions. The basis is discretized to
+        compute the composition.
 
         Args:
             fd (:class:`FData`): FData object to make the composition. Should
@@ -1829,26 +1830,16 @@ class FDataBasis(FData):
              **kwargs: Named arguments to be passed to :func:`from_data`.
         """
 
-        if self.ndim_domain != fd.ndim_image:
-            raise ValueError(f"Dimension of codomain of first function do not "
-                             f"match with the domain of the second function "
-                             f"({self.ndim_domain})!=({fd.ndim_image}).")
+        grid = self.to_grid().compose(fd, eval_points=eval_points)
 
-        if eval_points is None:
+        if fd.ndim_domain == 1:
+            basis = self.basis.rescale(fd.domain_range[0])
+            composition = grid.to_basis(basis, **kwargs)
+        else:
+            # Cant be convertered to basis due to the dimensions
+            composition = grid
 
-            npoints = max(501, 10 * self.nbasis)
-            # List of points where the basis are evaluated
-            eval_points = numpy.linspace(*self.domain_range[0], npoints)
-
-        eval_points_transformation = fd(eval_points, keepdims=False)
-        data_matrix = self(eval_points_transformation,
-                           aligned_evaluation=False)
-
-        return FDataBasis.from_data(data_matrix, eval_points,
-                                    self.basis.copy(), **kwargs)
-
-
-
+        return composition
 
     def __getitem__(self, key):
         """Return self[key]."""

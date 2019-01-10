@@ -46,7 +46,7 @@ def _list_of_arrays(original_array):
 
 
 class FDataGrid:
-    """Represent discretised functional data.
+    r"""Represent discretised functional data.
 
     Class for representing functional data as a set of curves discretised
     in a grid of points.
@@ -101,7 +101,7 @@ class FDataGrid:
         (1, 2)
 
         Representation of a functional data object with 2 samples
-        representing a function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}`.
+
         >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
         >>> sample_points = [[2, 4], [3,6]]
         >>> fd = FDataGrid(data_matrix, sample_points)
@@ -201,7 +201,7 @@ class FDataGrid:
                 positions to the left of the decimal point. Defaults to 0.
 
         Returns:
-            obj:FDataGrid: Returns a FDataGrid object where all elements
+            :obj:FDataGrid: Returns a FDataGrid object where all elements
             in its data_matrix are rounded .The real and
             imaginary parts of complex numbers are rounded separately.
 
@@ -619,7 +619,7 @@ class FDataGrid:
 
         Returns:
             _plot : if ndim_domain is 1, list of lines that were added to the plot;
-                    if ndim_domain is 2, list of mpl_toolkits.mplot3d.art3d.Poly3DCollection.
+            if ndim_domain is 2, list of mpl_toolkits.mplot3d.art3d.Poly3DCollection.
 
         """
         if self.ndim_domain > 2:
@@ -662,7 +662,7 @@ class FDataGrid:
 
         Returns:
             _plot : if ndim_domain is 1, list of matplotlib.collections.PathCollection;
-                    if ndim_domain is 2, list of mpl_toolkits.mplot3d.art3d.Path3DCollection.
+            if ndim_domain is 2, list of mpl_toolkits.mplot3d.art3d.Path3DCollection.
 
         """
         if self.ndim_domain > 2:
@@ -753,7 +753,7 @@ class FDataGrid:
                         repr(self.sample_points),
                         repr(self.sample_range),
                         repr(self.dataset_label),
-                        repr(self.axes_labels))).replace('\n', '\n    ')
+                        repr(self.axes_labels))).replace('\n', '\n      ')
 
     def __getitem__(self, key):
         """Return self[key]."""

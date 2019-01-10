@@ -41,7 +41,9 @@ def _coordinate_list(axes):
 
     """
 
-    grid =  numpy.vstack(map(numpy.ravel, numpy.meshgrid(*axes, indexing='ij'))).T
+    grid =  numpy.vstack(list(map(numpy.ravel,
+                              numpy.meshgrid(*axes, indexing='ij')))
+                         ).T
 
     return grid
 

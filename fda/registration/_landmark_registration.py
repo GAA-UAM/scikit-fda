@@ -153,15 +153,15 @@ def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
                     extrapolation=extrapolation,
                     eval_points=eval_points, **kwargs)
 
+
 def landmark_registration_warping(fd, landmarks, *, location=None,
                                   eval_points=None):
-    """Calculate the transformation used in the landmark registration.
+    """Calculate the transformation used in landmark registration.
 
         Let :math:`t_{ij}` the time where the sample :math:`i` has the feature
         :math:`j` and :math:`t^*_j` the new time for the feature. The warping
         function will transform the new time in the old time, i.e.,
         :math:`h_i(t^*_j)=t_{ij}`.
-
         The registered samples can be obtained as :math:`x^*_i(t)=x_i(h_i(t))`.
 
         See [RS05-7-3-1]_ for a detailed explanation.
@@ -175,7 +175,6 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
         eval_points (array_like, optional): Set of points where
             the functions are evaluated to obtain a discrete
             representation of the object.
-
     Returns:
         :class:`FDataGrid`: FDataGrid with the warpings function needed to
         register the functional data object.
@@ -256,7 +255,14 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
                         interpolator=interpolator,
                         extrapolation='bounds')
 
-    return warping
+    try:
+        warping_points = fd.sample_points
+    except AttributeError:
+        warping_points = [numpy.linspace(*domain, 201)
+                          for domain in fd.domain_range]
+
+    return warping.to_grid(warping_points)
+
 
 def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
     """Perform landmark registration of the curves.
@@ -276,7 +282,9 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
             location the mean of the landmarks.
         eval_points (array_like, optional): Set of points where
             the functions are evaluated to obtain a discrete
-            representation of the object.
+            representation of the object. In case of objects with
+            multidimensional domain a list axis with points of evaluation
+            for each dimension.
 
     Returns:
         :class:`FData`: FData with the functional data object registered.

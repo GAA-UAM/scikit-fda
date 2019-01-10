@@ -106,7 +106,7 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
         >>> fd_registered = fd.compose(warping)
 
         >>> mse_decomposition(fd, fd_registered, warping)
-        mse_decomposition(mse_amp=-0.009646062145276343, mse_pha=0.11576952407723254, ...)
+        mse_decomposition(mse_amp=-0.009645152752396371, mse_pha=0.11576861468435257, ...)
 
     """
 

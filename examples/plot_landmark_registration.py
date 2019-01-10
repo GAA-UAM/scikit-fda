@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+
 #TODO: Delete auxiliar plot function after merge the graphics branch
 def plot_aux(fd):
     """Temporal function. Plots using the interpolation"""
@@ -87,9 +88,13 @@ warping = fda.registration.landmark_registration_warping(fd, landmarks,
                                                          location=[-0.5, 0.5])
 
 plt.figure()
-warping.scatter()
+
 
 plot_aux(warping)
+
+# Plot landmarks
+for i in range(fd.nsamples):
+    plt.scatter([-0.5, 0.5], landmarks[i])
 
 ###############################################################################
 #
@@ -116,6 +121,7 @@ fd_registered = fda.registration.landmark_registration(fd, landmarks)
 fd_registered.plot()
 
 plt.scatter(np.mean(landmarks, axis=0), [1, 1])
+
 
 plt.show()
 

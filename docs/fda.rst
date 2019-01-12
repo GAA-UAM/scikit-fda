@@ -68,13 +68,22 @@ fda\.depth_measures module
     :undoc-members:
     :show-inheritance:
 
-fda\.graphics module
---------------------
+fda\.boxplot module
+-------------------
 
-.. automodule:: fda.graphics
+.. automodule:: fda.boxplot
     :members:
     :undoc-members:
     :show-inheritance:
+
+fda\.magnitude_shape_plot module
+--------------------------------
+
+.. automodule:: fda.magnitude_shape_plot
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 
 Module contents

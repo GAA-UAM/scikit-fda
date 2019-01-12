@@ -101,7 +101,7 @@ class FDataGrid:
         (1, 2)
 
         Representation of a functional data object with 2 samples
-
+        representing a function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}`.
         >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
         >>> sample_points = [[2, 4], [3,6]]
         >>> fd = FDataGrid(data_matrix, sample_points)
@@ -753,7 +753,7 @@ class FDataGrid:
                         repr(self.sample_points),
                         repr(self.sample_range),
                         repr(self.dataset_label),
-                        repr(self.axes_labels))).replace('\n', '\n      ')
+                        repr(self.axes_labels))).replace('\n', '\n    ')
 
     def __getitem__(self, key):
         """Return self[key]."""

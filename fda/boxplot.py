@@ -236,7 +236,7 @@ class FDataBoxplotInfo:
         envelopes_col (matplotlib.colors): Color of the envelopes. In the case of the surface boxplot,
             it is only the color of the outlying envelope.
         median_col(matplotlib.colors): Color of the median.
-        outliers_col(matplotlib.colors): Color of the outliers.
+        outliers_col(matplotlib.colors, optional): Color of the outliers.
 
     Examples:
         Function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.

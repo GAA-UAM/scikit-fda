@@ -19,30 +19,19 @@ class TestBoxplot(unittest.TestCase):
         fdataBoxplotInfo = fdboxplot(fd, prob=[0.75, 0.5, 0.25])
         np.testing.assert_array_equal(fdataBoxplotInfo.median, np.array([[2., 3., 4., 5.],
                                                                          [0.3, 0.4, 0.5, 0.6]]))
-        np.testing.assert_array_equal(fdataBoxplotInfo.central_env, np.array([[[2., 3., 4., 5.],
-                                                                               [1., 2., 3., 4.]],
-
+        np.testing.assert_array_equal(fdataBoxplotInfo.central_env, np.array([[[2., 3., 4., 5.], [1., 2., 3., 4.]],
                                                                               [[0.5, 0.6, 0.7, 0.7],
                                                                                [0.3, 0.4, 0.5, 0.6]]]))
-        np.testing.assert_array_equal(fdataBoxplotInfo.outlying_env, np.array([[[3., 4., 5., 6.],
-                                                                                [1., 2., 3., 4.]],
+        np.testing.assert_array_equal(fdataBoxplotInfo.outlying_env, np.array([[[3., 4., 5., 6.], [1., 2., 3., 4.]],
                                                                                [[0.5, 0.6, 0.7, 0.7],
                                                                                 [0.2, 0.3, 0.4, 0.5]]]))
-        np.testing.assert_array_equal(fdataBoxplotInfo.central_regions, np.array([[[3., 4., 5., 6.],
-                                                                                   [1., 2., 3., 4.]],
-
-                                                                                  [[2., 3., 4., 5.],
-                                                                                   [1., 2., 3., 4.]],
-
-                                                                                  [[2., 3., 4., 5.],
-                                                                                   [2., 3., 4., 5.]],
-
+        np.testing.assert_array_equal(fdataBoxplotInfo.central_regions, np.array([[[3., 4., 5., 6.], [1., 2., 3., 4.]],
+                                                                                  [[2., 3., 4., 5.], [1., 2., 3., 4.]],
+                                                                                  [[2., 3., 4., 5.], [2., 3., 4., 5.]],
                                                                                   [[0.5, 0.6, 0.7, 0.7],
                                                                                    [0.2, 0.3, 0.4, 0.5]],
-
                                                                                   [[0.5, 0.6, 0.7, 0.7],
                                                                                    [0.3, 0.4, 0.5, 0.6]],
-
                                                                                   [[0.3, 0.4, 0.5, 0.6],
                                                                                    [0.3, 0.4, 0.5, 0.6]]]))
         np.testing.assert_array_equal(fdataBoxplotInfo.outliers, np.array([[0., 0., 0.],
@@ -70,33 +59,16 @@ class TestBoxplot(unittest.TestCase):
         sample_points = [[2, 4], [3, 6, 8]]
         fd = FDataGrid(data_matrix, sample_points)
         fdataBoxplotInfo = surface_boxplot(fd, method=band_depth)
-        np.testing.assert_array_equal(fdataBoxplotInfo.median, np.array([[[1., 0.3, 1.],
-                                                                          [2., 0.4, 2.]],
-
-                                                                         [[4., 1.5, 3.],
-                                                                          [8., 2., 9.]]]))
-        np.testing.assert_array_equal(fdataBoxplotInfo.central_env, np.array([[[[2., 0.5, 2.],
-                                                                                [3., 0.6, 3.]],
-
-                                                                               [[1., 0.3, 1.],
-                                                                                [2., 0.4, 2.]]],
-
-                                                                              [[[10., 3., 10.],
-                                                                                [12., 3., 15.]],
-
-                                                                               [[4., 1.5, 3.],
-                                                                                [8., 2., 9.]]]]))
-        np.testing.assert_array_equal(fdataBoxplotInfo.outlying_env, np.array([[[[3.5, 0.8, 2.],
-                                                                                 [4.5, 0.6, 4.5]],
-
-                                                                                [[1., 0.3, 1.],
-                                                                                 [2., 0.3, 2.]]],
-
-                                                                               [[[10., 3., 10.],
-                                                                                 [18., 4.5, 15.]],
-
-                                                                                [[4., 1.5, 3.],
-                                                                                 [8., 2., 1.]]]]))
+        np.testing.assert_array_equal(fdataBoxplotInfo.median, np.array([[[1., 0.3, 1.], [2., 0.4, 2.]],
+                                                                         [[4., 1.5, 3.], [8., 2., 9.]]]))
+        np.testing.assert_array_equal(fdataBoxplotInfo.central_env, np.array([[[[2., 0.5, 2.], [3., 0.6, 3.]],
+                                                                               [[1., 0.3, 1.], [2., 0.4, 2.]]],
+                                                                              [[[10., 3., 10.], [12., 3., 15.]],
+                                                                               [[4., 1.5, 3.], [8., 2., 9.]]]]))
+        np.testing.assert_array_equal(fdataBoxplotInfo.outlying_env, np.array([[[[3.5, 0.8, 2.], [4.5, 0.6, 4.5]],
+                                                                                [[1., 0.3, 1.], [2., 0.3, 2.]]],
+                                                                               [[[10., 3., 10.], [18., 4.5, 15.]],
+                                                                                [[4., 1.5, 3.], [8., 2., 1.]]]]))
         np.testing.assert_array_equal(fdataBoxplotInfo.central_regions, np.array([]))
         np.testing.assert_array_equal(fdataBoxplotInfo.outliers, np.array([]))
 

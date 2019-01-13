@@ -126,7 +126,10 @@ def directional_outlyingness(fdatagrid,  depth_method = modified_band_depth, dim
 
     return mean_dir_outl, variation_dir_outl
 
-def magnitude_shape_plot(fdatagrid, ax=None, depth_method=modified_band_depth, dim_weights=None, pointwise_weights=None):
+def magnitude_shape_plot(fdatagrid, ax=None, depth_method=modified_band_depth, dim_weights=None,
+                         pointwise_weights=None, alpha = 0.993, color = 'blue' , outliercol = 'red',
+                         xlabel = 'MO', ylabel='VO', title='MS-Plot'):
+
     r"""Implementation of the magnitude-shape plot which is based on the
     calculation of the directional outlyingness of each of the samples and
     serves as a visualization tool for the centrality of curves. Furthermore,
@@ -139,8 +142,11 @@ def magnitude_shape_plot(fdatagrid, ax=None, depth_method=modified_band_depth, d
     Considering :math:`\mathbf{Y} = \left(\mathbf{MO}^T, VO\right)^T`, the outlier detection method
     is implemented as described below.
 
-    First, the square robust Mahalanobis distance of :math:`\mathbf{Y}`, :math:`RMD^2\left( \mathbf{Y}\right)`,
-    is calculated with the minimum covariance determinant (MCD) estimators for shape and location of the data.
+    First, the square robust Mahalanobis distance of :math:`\mathbf{Y}` is calculated with the minimum
+    covariance determinant (MCD) estimators for shape and location of the data:
+    :math:`RMD^2\left( \mathbf{Y}, \mathbf{\tilde{Y}}_J\right)`, where :math:`J` denotes the group
+    of :math:`h \left(h < fdatagrid.nsamples\right)` samples that minimizes the determinant and
+    :math:`\mathbf{\tilde{Y}}_J = h^{-1}\sum_{i\in{J}}\mathbf{Y}_i`.
 
     Then, the tail of this distance distribution is approximated as follows:
 
@@ -148,7 +154,7 @@ def magnitude_shape_plot(fdatagrid, ax=None, depth_method=modified_band_depth, d
         \frac{c\left(m − p\right)}{m\left(p + 1\right)}RMD^2\left( \mathbf{Y}\right)\sim F_{p+1, m-p}
 
     where :math:`c` and :math:`m` are parameters determining the degrees of freedom of the :math:`F`-distribution
-    and the scaling factor, respectively.
+    and the scaling factor.
 
     .. math::
         c = E \left[s_{jj}\right]
@@ -173,10 +179,22 @@ def magnitude_shape_plot(fdatagrid, ax=None, depth_method=modified_band_depth, d
             the dimensions of the image.
         pointwise_weights (array_like, optional): an array containing the weights of each
             point of discretisation where values have been recorded.
+        alpha(int, optional): Denotes the quantile to choose the cutoff value for detecting outliers
+            Defaults to 0.993,  which is used in the classical boxplot.
+        color (matplotlib.colors, optional): color of the points plotted. Defaults to 'blue'.
+        outliercol (matplotlib.colors, optional): color of the outlier points plotted. Defaults to 'red'.
+        xlabel (string, optional): Label of the x-axis. Defaults to 'MO', mean of the  directional outlyingness.
+        ylabel (string, optional): Label of the y-axis. Defaults to 'VO', variation of the  directional outlyingness.
+        title (string, optional): Title of the plot. defaults to 'MS-Plot'.
+
 
     Returns:
-        points(numpy.ndarray): 2-dimensional matrix where each row
-            contains the points plotted in the graph.
+        (tuple): tuple containing:
+
+            points(numpy.ndarray): 2-dimensional matrix where each row
+                contains the points plotted in the graph.
+            outliers (1-D array: (fdatagrid.nsamples,)): Contains outliercol or color to denote if a point is
+                an outlier or not, respecively.
 
     """
     if fdatagrid.ndim_image > 1:
@@ -186,27 +204,33 @@ def magnitude_shape_plot(fdatagrid, ax=None, depth_method=modified_band_depth, d
     mean_dir_outl, variation_dir_outl = directional_outlyingness(fdatagrid, depth_method, dim_weights, pointwise_weights)
     points = np.array(list(zip(mean_dir_outl, variation_dir_outl)))
 
+    #The square mahalanobis distances of the samples are calulated using MCD.
     cov = MinCovDet(store_precision=True).fit(points)
-    rbd_2 = cov.mahalanobis(points)
+    rmd_2 = cov.mahalanobis(points)
+
+    #Calculation of the degrees of freedom of the F-distribution (approximation of the tail of the distance distribution).
     s_jj = np.diag(cov.covariance_)
     c = np.mean(s_jj)
     m = 2 / np.square(variation(s_jj))
     p = fdatagrid.ndim_image
     dfn = p + 1
     dfd = m - p
-    q = 0.993
-    cutoff_value = f.ppf(q, dfn, dfd, loc=0, scale=1)
-    scaling = c * (m - p) / m / (p + 1)
-    outliers = (scaling * rbd_2 > cutoff_value)
+
+    #Calculation of the cutoff value and scaling factor to identify outliers.
+    cutoff_value = f.ppf(alpha, dfn, dfd, loc=0, scale=1)
+    scaling = c * dfd / m / dfn
+    outliers = (scaling * rmd_2 > cutoff_value)
+
+    #Plotting the data
     outliers = outliers.astype(str)
-    outliers[np.where(outliers == 'True')] = 'red'
-    outliers[np.where(outliers == 'False')] = 'blue'
+    outliers[np.where(outliers == 'True')] = outliercol
+    outliers[np.where(outliers == 'False')] = color
 
     if ax is None:
         ax = matplotlib.pyplot.gca()
     ax.scatter(mean_dir_outl, variation_dir_outl, color=outliers)
-    ax.set_xlabel('MO')
-    ax.set_ylabel('VO')
-    ax.set_title('MS-Plot')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
 
-    return points
+    return points, outliers

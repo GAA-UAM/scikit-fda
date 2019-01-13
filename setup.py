@@ -1,7 +1,7 @@
-from setuptools import setup, find_packages
-import sys
 import os
+import sys
 
+from setuptools import setup, find_packages
 
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
 pytest_runner = ['pytest-runner'] if needs_pytest else []
@@ -32,7 +32,9 @@ setup(name='fda',
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Software Development :: Libraries :: Python Modules',
       ],
+      install_requires=['numpy', 'scikit-learn',
+                        'scikit-datasets[cran]>=0.1.24', 'rdata'],
       setup_requires=pytest_runner,
-      tests_require=['pytest','numpy>=1.14'],
+      tests_require=['pytest', 'numpy>=1.14'],
       test_suite='tests',
       zip_safe=False)

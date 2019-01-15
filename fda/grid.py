@@ -1063,3 +1063,37 @@ class FDataGrid(FData):
 
         else:
             return self.copy(data_matrix=self.data_matrix[key])
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+
+        for i in inputs:
+            if isinstance(i, FDataGrid) and not numpy.all(i.sample_points ==
+                                                          self.sample_points):
+                return NotImplemented
+
+        new_inputs = [i.data_matrix if isinstance(i, FDataGrid)
+                      else i for i in inputs]
+
+        outputs = kwargs.pop('out', None)
+        if outputs:
+            new_outputs = [o.data_matrix if isinstance(o, FDataGrid)
+                           else o for o in outputs]
+            kwargs['out'] = tuple(new_outputs)
+        else:
+            new_outputs = (None,) * ufunc.nout
+
+        results = getattr(ufunc, method)(*new_inputs, **kwargs)
+        if results is NotImplemented:
+            return NotImplemented
+
+        if ufunc.nout == 1:
+            results = (results,)
+
+        results = tuple((result
+                         if output is None else output)
+                        for result, output in zip(results, new_outputs))
+
+        results = [self.copy(data_matrix=r) for r in results]
+
+        return results[0] if len(results) == 1 else results
+

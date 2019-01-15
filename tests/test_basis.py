@@ -1,5 +1,7 @@
 import unittest
-from fda.basis import FDataBasis, Monomial, BSpline, Fourier
+
+from fda.basis import Basis, FDataBasis, Constant, Monomial, BSpline, Fourier
+
 import numpy as np
 
 
@@ -81,6 +83,99 @@ class TestBasis(unittest.TestCase):
                       [24., -48., 48., -48., 24.],
                       [12., -24., -48., 192., -132.],
                       [0., 12., 24., -132., 96.]]))
+
+    def test_basis_product_generic(self):
+        monomial = Monomial(nbasis=5)
+        fourier = Fourier(nbasis=3)
+        prod = BSpline(nbasis=9, order=8)
+        self.assertEqual(Basis.default_basis_of_product(monomial, fourier), prod)
+
+    def test_basis_constant_product(self):
+        constant = Constant()
+        monomial = Monomial()
+        fourier = Fourier()
+        bspline = BSpline(nbasis=5, order=3)
+        self.assertEqual(constant.basis_of_product(monomial), monomial)
+        self.assertEqual(constant.basis_of_product(fourier), fourier)
+        self.assertEqual(constant.basis_of_product(bspline), bspline)
+        self.assertEqual(monomial.basis_of_product(constant), monomial)
+        self.assertEqual(fourier.basis_of_product(constant), fourier)
+        self.assertEqual(bspline.basis_of_product(constant), bspline)
+
+    def test_basis_fourier_product(self):
+        # Test when periods are the same
+        fourier = Fourier(nbasis=5)
+        fourier2 = Fourier(nbasis=3)
+        prod = Fourier(nbasis=7)
+        self.assertEqual(fourier.basis_of_product(fourier2), prod)
+
+        # Test when periods are different
+        fourier2 = Fourier(nbasis=3, period=2)
+        prod = BSpline(nbasis=9, order=8)
+        self.assertEqual(fourier.basis_of_product(fourier2), prod)
+
+    def test_basis_monomial_product(self):
+        monomial = Monomial(nbasis=5)
+        monomial2 = Monomial(nbasis=3)
+        prod = Monomial(nbasis=8)
+        self.assertEqual(monomial.basis_of_product(monomial2), prod)
+
+    def test_basis_bspline_product(self):
+        bspline = BSpline(nbasis=6, order=4)
+        bspline2 = BSpline(domain_range=(0, 1), nbasis=6, order=4, knots=[0, 0.3, 1 / 3, 1])
+        prod = BSpline(domain_range=(0,1), nbasis=10, order=7, knots=[0, 0.3, 1/3, 2/3,1])
+        self.assertEqual(bspline.basis_of_product(bspline2), prod)
+
+    def test_basis_basis_inprod(self):
+        monomial = Monomial(nbasis=5)
+        bspline = BSpline(nbasis=5, order=4)
+        np.testing.assert_array_equal(
+            bspline.inprod(monomial).round(3),
+            np.array([[0.125, 0.25, 0.25, 0.25, 0.125],
+                      [0.012, 0.075, 0.125, 0.175, 0.113],
+                      [0.002, 0.029, 0.071, 0.129, 0.102],
+                      [0., 0.013, 0.044, 0.099, 0.093],
+                      [0., 0.007, 0.029, 0.078, 0.086]])
+        )
+
+    def test_basis_fdatabasis_inprod(self):
+        monomial = Monomial(nbasis=3)
+        bspline = BSpline(nbasis=5, order=3)
+        bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
+
+        np.testing.assert_array_equal(
+            bsplinefd.inprod(monomial).round(3),
+            np.array([[2., 7., 12.],
+                      [1.296, 3.796, 6.296],
+                      [0.963, 2.63, 4.296]])
+        )
+
+    def test_fdatabasis_fdatabasis_inprod(self):
+        monomial = Monomial(nbasis=4)
+        monomialfd = FDataBasis(monomial, [[5, 4, 1, 0],
+                                           [4, 2, 1, 0],
+                                           [4, 1, 6, 4],
+                                           [4, 5, 0, 1],
+                                           [5, 6, 2, 0]])
+        bspline = BSpline(nbasis=5, order=3)
+        bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
+
+        np.testing.assert_array_equal(
+            bsplinefd.inprod(monomialfd).round(3),
+            np.array([[16.148, 52.815, 89.481, 11.556, 38.222],
+                      [64.889, 18.147, 55.647, 93.147, 15.25],
+                      [49., 82.75, 19.704, 63.037, 106.37]])
+        )
+
+    def test_comutativity_inprod(self):
+        monomial = Monomial(nbasis=3)
+        bspline = BSpline(nbasis=5, order=3)
+        bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
+
+        np.testing.assert_array_equal(
+            bsplinefd.inprod(monomial).round(3),
+            np.transpose(monomial.inprod(bsplinefd).round(3))
+        )
 
 
 if __name__ == '__main__':

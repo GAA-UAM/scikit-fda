@@ -965,7 +965,7 @@ class FDataGrid(FData):
                          if output is None else output)
                         for result, output in zip(results, new_outputs))
 
-        results = [FDataGrid(data_matrix=r, sample_points=self.sample_points) for r in results]
+        results = [self.copy(data_matrix=r) for r in results]
 
         return results[0] if len(results) == 1 else results
 

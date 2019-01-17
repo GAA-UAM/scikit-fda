@@ -107,7 +107,7 @@ def make_sinusoidal_process(n_samples: int=15, n_features: int=100, *,
     return FDataGrid(sample_points=t, data_matrix=y)
 
 
-def make_multimodal_landmarks(n_samples: int=15, n_modes: int=1,
+def make_multimodal_landmarks(n_samples: int=15, *, n_modes: int=1,
                               ndim_domain: int=1, ndim_image: int = 1,
                               start: float=-1, stop: float=1, std: float=.05,
                               random_state=None):
@@ -156,8 +156,8 @@ def make_multimodal_landmarks(n_samples: int=15, n_modes: int=1,
 
 
 
-def make_multimodal_samples(n_samples: int=15, n_modes: int=1,
-                            n_features: int=100, *, ndim_domain: int=1,
+def make_multimodal_samples(n_samples: int=15, *, n_modes: int=1,
+                            points_per_dim: int=100, ndim_domain: int=1,
                             ndim_image: int=1, start: float=-1, stop: float=1.,
                             std: float=.05, mode_std: float=.02,
                             noise: float=.0, modes_location=None,
@@ -181,9 +181,11 @@ def make_multimodal_samples(n_samples: int=15, n_modes: int=1,
     Args:
         n_samples: Total number of samples.
         n_modes: Number of modes of each sample.
-        n_features: Points per sample. If the object is multidimensional it is
-            evaluated in a grid with ceil(n_features**1/(ndim_domain)) points
-            per axis.
+        points_per_dim: Points per sample. If the object is multidimensional
+            indicates the number of points for each dimension in the domain.
+            The sample will have :math:
+            `\\text{points_per_dim}^\\text{ndim_domain}` points of
+            discretization.
         ndim_domain: Number of dimensions of the domain.
         ndim_image: Number of dimensions of the image
         start: Starting point of the samples. In multidimensional objects the
@@ -202,7 +204,6 @@ def make_multimodal_samples(n_samples: int=15, n_modes: int=1,
 
     random_state = sklearn.utils.check_random_state(random_state)
 
-    n_points_axis = int(np.ceil(n_features**(1/ndim_domain)))
 
     if modes_location is None:
 
@@ -222,7 +223,7 @@ def make_multimodal_samples(n_samples: int=15, n_modes: int=1,
             raise ValueError(f"Incorrect modes_location shape"
                              f"({location.shape}) != {shape}")
 
-    axis = np.linspace(start, stop, n_points_axis)
+    axis = np.linspace(start, stop, points_per_dim)
 
     if ndim_domain == 1:
         sample_points = axis
@@ -238,7 +239,7 @@ def make_multimodal_samples(n_samples: int=15, n_modes: int=1,
             evaluation_grid[..., i] = meshgrid[i]
 
     # Data matrix of the grid
-    shape = (n_samples,) + ndim_domain * (n_points_axis,) + (ndim_image,)
+    shape = (n_samples,) + ndim_domain * (points_per_dim,) + (ndim_image,)
     data_matrix = np.zeros(shape)
 
     # Covariance matrix of the samples

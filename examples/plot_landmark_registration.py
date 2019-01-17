@@ -98,7 +98,7 @@ for i in range(fd.nsamples):
 
 ###############################################################################
 #
-# Once we have the warping functions the registered curves can be obtained using
+# Once we have the warping functions, the registered curves can be obtained using
 # function composition. Let :math:`x_i` a curve, we can obtain the
 # corresponding registered curve as :math:`x^*_i(t) = x_i(h_i(t))`.
 

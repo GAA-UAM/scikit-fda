@@ -121,7 +121,7 @@ plt.legend(handles=[l1[-1], l2[-1]])
 # going to create a datset with surfaces, in a similar way to the previous case.
 #
 
-fd = fda.datasets.make_multimodal_samples(n_samples=3, n_features=1000,
+fd = fda.datasets.make_multimodal_samples(n_samples=3, points_per_dim=30,
                                           ndim_domain=2, random_state=1)
 
 plot_3d(fd)

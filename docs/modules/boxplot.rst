@@ -19,6 +19,13 @@ If the dimension of the domain is 2, this one.
 
    fda.boxplot.surface_boxplot
 
-Both functions return a :class:`FDataBoxplotInfo <fda.boxplot.FDataBoxplotInfo>`
-object from which the plot can be retrieved.
+Both functions return a FDataBoxplotInfo object from which the plot can be retrieved.
+
+.. autosummary::
+   :toctree: autosummary
+
+   fda.boxplot.FDataBoxplotInfo
+
+
+
 

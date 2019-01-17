@@ -6,6 +6,8 @@ Functions to order functional data.
 Each sample of the dataset is assigned a number between 0 and 1.
 Larger values correspond to more centered samples and smaller ones to those samples more outward.
 
+.. _depth-measures:
+
 .. autosummary::
    :toctree: autosummary
 

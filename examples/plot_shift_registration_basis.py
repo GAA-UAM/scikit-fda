@@ -76,3 +76,18 @@ sine = fda.datasets.make_sinusoidal_process(n_samples=1, phase_std=0,
 sine.plot(linestyle='dashed')
 
 plt.legend(['original mean', 'registered mean','sine'])
+
+###############################################################################
+# The values of the shifts :math:`\delta_i` may be relevant for further
+# analysis, as they may be considered as nuisance or random effects.
+#
+
+deltas = fda.registration.shift_registration_deltas(fd_basis)
+print(deltas)
+
+###############################################################################
+# The aligned functions can be obtained from the :math:`\delta_i` list
+# using the `shift` method.
+#
+
+fd_basis.shift(deltas).plot()

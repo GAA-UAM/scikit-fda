@@ -252,8 +252,8 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
             def evaluator(spl_m):
                 """Evaluator of multimensional object"""
                 return numpy.dstack(
-                    self._spline_evaluator(spl, eval_points, derivative)
-                    for spl in spl_m).flatten()
+                    [self._spline_evaluator(spl, eval_points, derivative)
+                         for spl in spl_m]).flatten()
 
         # Points evaluated inside the domain
         res = numpy.apply_along_axis(evaluator, 1, self._splines)
@@ -270,11 +270,17 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
         shape = (self._nsamples, eval_points.shape[1], self._ndim_image)
         res = numpy.empty(shape)
 
+        derivative = self._process_derivative(derivative)
+
 
         if self._ndim_image == 1:
             def evaluator(t, spl):
                 """Evaluator of sample with image dimension equal to 1"""
                 return self._spline_evaluator(spl[0], t, derivative)
+
+            for i in range(self._nsamples):
+                res[i] = evaluator(eval_points[i], self._splines[i]).reshape(
+                    (eval_points.shape[1], self._ndim_image))
 
         else:
             def evaluator(t, spl_m):
@@ -282,9 +288,8 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
                 return numpy.array([self._spline_evaluator(spl, t, derivative)
                                     for spl in spl_m]).T
 
-
-        for i in range(self._nsamples):
-            res[i] = evaluator(eval_points[i], self._splines[i])
+            for i in range(self._nsamples):
+                res[i] = evaluator(eval_points[i], self._splines[i])
 
 
         return res

@@ -9,19 +9,29 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 class Extrapolator(ABC):
-    """Defines the structure of a extrapolator.
+    """Defines the structure of an extrapolator.
 
-    Extrapolators defines how to evaluate points outside the domain of a
-    :class:´FData´. They are called internally by `evaluate`. Custom
+    An extrapolator defines how to evaluate points outside the domain of a
+    functional object. They are called internally by :func:`evaluate`. Custom
     extrapolators could be done subclassing `Extrapolator` or with a compatible
     callable.
 
+    The callable should accept 3 arguments, a :class:`FData` instance, a numpy
+    array with the evaluation points to be extrapolated and optionally the order
+    of derivation.
+
+    The shape of the array with the evaluation points received by the
+    extrapolator may be `n_eval_points` x `ndim_image`, case in wich the samples
+    would be evaluated at the same time or `nsamples` x `n_eval_points`
+    x `ndim_image` with different evaluation points per sample.
+
+    The extrapolator should return a matrix with points extrapolation in a
+    matrix with shape `n_samples` x `n_eval_points`x `ndim_image`.
     """
 
     @abstractmethod
     def __call__(self, fdata, eval_points, *, derivative=0):
-        """
-        Evaluate points outside the domain range.
+        """Evaluate points outside the domain range.
 
         Args:
             fdata (:class:´FData´): Object where the evaluation is taken place.
@@ -41,11 +51,31 @@ class Extrapolator(ABC):
 
 
 class PeriodicExtrapolation(Extrapolator):
-    """Extends the domain range periodically."""
+    """Extends the domain range periodically.
+
+    Examples:
+
+        >>> from fda.datasets import make_sinusoidal_process
+        >>> from fda.extrapolation import PeriodicExtrapolation
+        >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
+
+        We can set the default type of extrapolation
+
+        >>> fd.extrapolation = PeriodicExtrapolation()
+        >>> fd([-.5, 0, 1.5]).round(3)
+        array([[-0.724,  0.976, -0.724],
+               [-1.086,  0.759, -1.086]])
+
+        This extrapolator is equivalent to the string `"periodic"`
+
+        >>> fd.extrapolation = 'periodic'
+        >>> fd([-.5, 0, 1.5]).round(3)
+        array([[-0.724,  0.976, -0.724],
+               [-1.086,  0.759, -1.086]])
+    """
 
     def __call__(self, fdata, eval_points, *, derivative=0):
-        """
-        Evaluate points outside the domain range.
+        """Evaluate points outside the domain range.
 
         Args:
             fdata (:class:´FData´): Object where the evaluation is taken place.
@@ -77,11 +107,31 @@ class PeriodicExtrapolation(Extrapolator):
 
 
 class BoundaryExtrapolation(Extrapolator):
-    """Extends the domain range using the boundary values."""
+    """Extends the domain range using the boundary values.
+
+    Examples:
+
+        >>> from fda.datasets import make_sinusoidal_process
+        >>> from fda.extrapolation import BoundaryExtrapolation
+        >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
+
+        We can set the default type of extrapolation
+
+        >>> fd.extrapolation = BoundaryExtrapolation()
+        >>> fd([-.5, 0, 1.5]).round(3)
+        array([[0.976, 0.976, 0.797],
+               [0.759, 0.759, 1.125]])
+
+        This extrapolator is equivalent to the string `"bounds"`.
+
+        >>> fd.extrapolation = 'bounds'
+        >>> fd([-.5, 0, 1.5]).round(3)
+        array([[0.976, 0.976, 0.797],
+               [0.759, 0.759, 1.125]])
+    """
 
     def __call__(self, fdata, eval_points, *, derivative=0):
-        """
-        Evaluate points outside the domain range.
+        """Evaluate points outside the domain range.
 
         Args:
             fdata (:class:´FData´): Object where the evaluation is taken place.
@@ -115,11 +165,36 @@ class BoundaryExtrapolation(Extrapolator):
 
 
 class ExceptionExtrapolation(Extrapolator):
-    """Raise and exception if a point is evaluated outside the domain range."""
+    """Raise and exception if a point is evaluated outside the domain range.
+
+    Examples:
+
+        >>> from fda.datasets import make_sinusoidal_process
+        >>> from fda.extrapolation import ExceptionExtrapolation
+        >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
+
+        We can set the default type of extrapolation
+
+        >>> fd.extrapolation = ExceptionExtrapolation()
+        >>> try:
+        ...     fd([-.5, 0, 1.5]).round(3)
+        ... except ValueError as e:
+        ...     print(e)
+        Attempt to evaluate 2 points outside the domain range.
+
+        This extrapolator is equivalent to the string `"exception"`.
+
+        >>> fd.extrapolation = 'exception'
+        >>> try:
+        ...     fd([-.5, 0, 1.5]).round(3)
+        ... except ValueError as e:
+        ...     print(e)
+        Attempt to evaluate 2 points outside the domain range.
+
+    """
 
     def __call__(self, fdata, eval_points, *, derivative=0):
-        """
-        Evaluate points outside the domain range.
+        """Evaluate points outside the domain range.
 
         Args:
             fdata (:class:´FData´): Object where the evaluation is taken place.
@@ -139,7 +214,29 @@ class ExceptionExtrapolation(Extrapolator):
                          f"domain range.")
 
 class FillExtrapolation(Extrapolator):
-    """The values outside the domain range will be filled with a fixed value."""
+    """Values outside the domain range will be filled with a fixed value.
+
+    Examples:
+
+        >>> from fda.datasets import make_sinusoidal_process
+        >>> from fda.extrapolation import FillExtrapolation
+        >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
+
+        We can set the default type of extrapolation
+
+        >>> fd.extrapolation = FillExtrapolation(0)
+        >>> fd([-.5, 0, 1.5]).round(3)
+        array([[0.   , 0.976, 0.   ],
+               [0.   , 0.759, 0.   ]])
+
+        The previous extrapolator is equivalent to the string `"zeros"`.
+        In the same way FillExtrapolation(np.nan) is equivalent to `"nan"`.
+
+        >>> fd.extrapolation = "nan"
+        >>> fd([-.5, 0, 1.5]).round(3)
+        array([[  nan, 0.976,   nan],
+               [  nan, 0.759,   nan]])
+    """
 
     def __init__(self, fill_value):
 

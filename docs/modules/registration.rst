@@ -3,7 +3,7 @@ Registration
 
 
 We see often that variation in functional observations involves phase and
-amplitude variation, which may hinder further analysis, that problem is treated
+amplitude variation, which may hinder further analysis. That problem is treated
 during the registration process. This module contains procedures for the
 registration of the data.
 

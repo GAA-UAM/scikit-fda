@@ -252,8 +252,8 @@ class _GridSplineInterpolatorEvaluator(_GridInterpolatorEvaluator):
             def evaluator(spl_m):
                 """Evaluator of multimensional object"""
                 return numpy.dstack(
-                    list(self._spline_evaluator(spl, eval_points, derivative)
-                         for spl in spl_m)).flatten()
+                    [self._spline_evaluator(spl, eval_points, derivative)
+                         for spl in spl_m]).flatten()
 
         # Points evaluated inside the domain
         res = numpy.apply_along_axis(evaluator, 1, self._splines)

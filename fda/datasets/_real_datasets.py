@@ -387,3 +387,56 @@ def fetch_medflies(return_X_y: bool=False):
 
 if hasattr(fetch_medflies, "__doc__"):  # docstrings can be stripped off
     fetch_medflies.__doc__ += _medflies_descr + _param_descr
+
+
+
+_weather_descr = """
+    Daily temperature and precipitation at 35 different locations in Canada averaged 
+    over 1960 to 1994.
+    
+    References:
+        Ramsay, James O., and Silverman, Bernard W. (2006), Functional Data Analysis, 
+        2nd ed. , Springer, New York.
+        
+        Ramsay, James O., and Silverman, Bernard W. (2002), Applied Functional Data Analysis, 
+        Springer, New York
+"""
+
+
+def fetch_weather(return_X_y: bool=False):
+    """
+    Load the Canadian Weather dataset.
+
+    The data is obtained from the R package 'fda' from CRAN.
+
+    """
+    DESCR = _weather_descr
+
+    raw_dataset = fetch_cran(
+        "CanadianWeather", "fda",
+        version="2.4.7")
+
+    data = raw_dataset["CanadianWeather"]
+
+    weather_daily = np.asarray(data["dailyAv"])
+
+    temp_prec_daily = np.transpose(weather_daily[:, :, 0:2], axes=(1, 0, 2))
+
+    curves = FDataGrid(data_matrix=temp_prec_daily,
+                       sample_points = range(1, 366),
+                       dataset_label="Canadian Temperatures",
+                       axes_labels=["day", "temperature (ºC)", "precipitation (mm.)"])
+
+    target = data["region"]
+
+    if return_X_y:
+        return curves, target
+    else:
+        return {"data": curves,
+                "target": target,
+                "target_names": np.unique(target),
+                "target_feature_names": ["region"],
+                "DESCR": DESCR}
+
+if hasattr(fetch_weather, "__doc__"):  # docstrings can be stripped off
+    fetch_weather.__doc__ += _weather_descr + _param_descr

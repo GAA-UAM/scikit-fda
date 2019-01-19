@@ -1,11 +1,11 @@
 """
-Magnitude-Shape Plot
+Functional Boxplot
 ====================
 
-Shows the use of the MS-Plot applied to the Canadian Weather dataset.
+Shows the use of the functional boxplot.
 """
 
-# Author: Amanda Hernando Bernabé
+# Author: Amanda Hernando Bernabé <amanda.hernando@estudiante.uam.es>
 # License: MIT
 
 # sphinx_gallery_thumbnail_number = 2

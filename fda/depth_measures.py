@@ -11,7 +11,7 @@ __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
 
-def rank_samples(fdatagrid):
+def _rank_samples(fdatagrid):
     """Ranks the he samples in the FDataGrid at each point of discretisation.
 
     Args:
@@ -27,7 +27,7 @@ def rank_samples(fdatagrid):
         ...                [-1, -1, -0.5, 1, 1, 0.5], [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> rank_samples(fd)
+        >>> _rank_samples(fd)
         array([[[4.],
                 [4.],
                 [4.],
@@ -62,7 +62,7 @@ def rank_samples(fdatagrid):
         ...                [[[21, 34], [8, 16]], [[67, 43], [32, 21]], [[10, 24], [3, 12]]]]
         >>> sample_points = [[2, 4, 6], [3, 6]]
         >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> rank_samples(fd)
+        >>> _rank_samples(fd)
         array([[[[1., 1.],
                  [1., 1.]],
         <BLANKLINE>
@@ -97,17 +97,23 @@ def rank_samples(fdatagrid):
     return ranks
 
 
-def band_depth(fdatagrid):
+def band_depth(fdatagrid, pointwise = False):
     """Implementation of Band Depth for functional data.
 
     The band depth of each sample is obtained by computing the fraction of the bands determined by two sample
-    curves containing the whole graph of the first one.
+    curves containing the whole graph of the first one. In the case the fdatagrid domain dimension is 2, instead
+    of curves, surfaces determine the bands.
 
     Args:
         fdatagrid (FDataGrid): Object over whose samples the band depth is going to be calculated.
+        pointwise (boolean, optional): Indicates if the pointwise depth is also returned. Defaults to False.
 
     Returns:
-        numpy.darray: Array containing the band depth of the samples.
+        depth (numpy.darray): Array containing the band depth of the samples.
+
+    Returns:
+        depth_pointwise (numpy.darray, optional): Array containing the band depth of
+        the samples at each point of discretisation. Only returned if pointwise equals to True.
 
     Examples:
         Univariate setting:
@@ -146,19 +152,24 @@ def band_depth(fdatagrid):
     n = fdatagrid.nsamples
     nchoose2 = n * (n - 1) / 2
 
-    ranks = rank_samples(fdatagrid)
+    ranks = _rank_samples(fdatagrid)
     nsamples_above = fdatagrid.nsamples - np.amax(ranks, axis=axis)
     nsamples_below = np.amin(ranks, axis = axis) - 1
     depth = (nsamples_below * nsamples_above + fdatagrid.nsamples - 1) / nchoose2
 
-    return depth
+    if pointwise:
+        _, depth_pointwise = modified_band_depth(fdatagrid, pointwise)
+        return depth,  depth_pointwise
+    else:
+        return depth
 
 
 def modified_band_depth(fdatagrid, pointwise = False):
     """Implementation of Modified Band Depth for functional data.
 
     The band depth of each sample is obtained by computing the fraction of time its graph is contained
-    in the bands determined by two sample curves.
+    in the bands determined by two sample curves. In the case the fdatagrid domain dimension is 2, instead
+    of curves, surfaces determine the bands.
 
     Args:
         fdatagrid (FDataGrid): Object over whose samples the modified band depth is going to be calculated.
@@ -236,7 +247,7 @@ def modified_band_depth(fdatagrid, pointwise = False):
     n = fdatagrid.nsamples
     nchoose2 = n * (n - 1) / 2
     
-    ranks = rank_samples(fdatagrid)
+    ranks = _rank_samples(fdatagrid)
     nsamples_above = fdatagrid.nsamples - ranks
     nsamples_below = ranks - 1
     match = nsamples_above * nsamples_below
@@ -249,7 +260,7 @@ def modified_band_depth(fdatagrid, pointwise = False):
     else:
         return depth
 
-def cumulative_distribution(column):
+def _cumulative_distribution(column):
     """Calculates the cumulative distribution function of the values passed to the function and evaluates it at each point.
 
     Args:
@@ -259,7 +270,7 @@ def cumulative_distribution(column):
         numpy.darray: Array containing the evaluation at each point of the distribution function.
 
     Examples:
-        >>> cumulative_distribution(np.array([1, 4, 5, 1, 2, 2, 4, 1, 1, 3]))
+        >>> _cumulative_distribution(np.array([1, 4, 5, 1, 2, 2, 4, 1, 1, 3]))
         array([0.4, 0.9, 1. , 0.4, 0.6, 0.6, 0.9, 0.4, 0.4, 0.7])
 
     """
@@ -362,13 +373,13 @@ def Fraiman_Muniz_depth(fdatagrid, pointwise = False):
         for i in range(fdatagrid.ndim_image):
             for j in range(fdatagrid.ncol):
                 column = fdatagrid.data_matrix[:, j, i]
-                univariate_depth[:, j, i] = 1 - np.abs(0.5 - cumulative_distribution(column))
+                univariate_depth[:, j, i] = 1 - np.abs(0.5 - _cumulative_distribution(column))
     else:
         for i in range(fdatagrid.ndim_image):
             for j in range(len(fdatagrid.sample_points[1])):
                 for k in range(len(fdatagrid.sample_points[0])):
                     column = fdatagrid.data_matrix[:, k, j, i]
-                    univariate_depth[:, k, j, i] = 1 - np.abs(0.5 - cumulative_distribution(column))
+                    univariate_depth[:, k, j, i] = 1 - np.abs(0.5 - _cumulative_distribution(column))
     
                     
     if pointwise:

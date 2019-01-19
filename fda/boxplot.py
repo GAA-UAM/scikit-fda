@@ -19,22 +19,32 @@ def fdboxplot(fdatagrid, fig=None, method=modified_band_depth, prob=[0.5], fullo
               colormap=plt.cm.get_cmap('RdPu'), outliercol="red", mediancol="black"):
     """Implementation of the functional boxplot.
 
+    It is an informative exploratory tool for visualizing functional data, as well as
+    its generalization, the enhanced functional boxplot. Only supports 1 dimensional
+    domain functional data.
+
+    Based on the center outward ordering induced by a :ref:`depth measure <depth-measures>`
+    for functional data, the descriptive statistics of a functional boxplot are: the
+    envelope of the 50% central region, the median curve,and the maximum non-outlying envelope.
+    In addition, outliers can be detected in a functional boxplot by the 1.5 times the 50%
+    central region empirical rule, analogous to the rule for classical boxplots.
+
     Args:
         fdatagrid (FDataGrid): Object to be visualized.
         fig (figure object, optional): figure where the graphs are plotted.
             Defaults to matplotlib.pyplot.figure.
-        method (depth function, optional): Method used to order the data (Fraiman_Muniz_depth, band_depth, modified_band_depth).
-            Defaults to modified_band_depth.
+        method (:ref:`depth measure <depth-measures>`, optional): Method used to order the data.
+            Defaults to :func:`modified band depth <fda.depth_measures.modified_band_depth>`.
         prob (list of float, optional): List with float numbers (in the range from 1 to 0) that indicate which central regions to
-            represent. Defaults to [0.5] which represents the 0.5 central region.
-        fullout (boolean): If true, the entire curve of the outlier samples is shown.
+            represent. Defaults to [0.5] which represents the 50% central region.
+        fullout (boolean): If true, the entire curve of the outlier samples is shown. Defaulsts to False.
         factor (double): Number used to calculate the outlying envelope.
         colormap (matplotlib.colors.LinearSegmentedColormap): Colormap from which the colors to represent the central regions are selected.
         outliercol (string): Color of the outliers.
         barcol (string): Color of the envelopes and vertical lines.
 
     Returns:
-        FDataBoxplotInfo object: _plot
+        :class:`FDataBoxplotInfo <fda.boxplot.FDataBoxplotInfo>` object: _plot
 
     """
     if fdatagrid.ndim_domain > 1:
@@ -127,21 +137,33 @@ def fdboxplot(fdatagrid, fig=None, method=modified_band_depth, prob=[0.5], fullo
     return _plot
 
 
-def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5, boxcol="black", outcol="grey"):
+def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5,
+                    colormap=plt.cm.get_cmap('Greys'), boxcol= 1.0, outcol=0.7):
     """Implementation of the surface boxplot.
+
+    Analogously to the functional boxplot, it is an informative exploratory tool for visualizing
+    functional data with domain dimension 2. Nevertheless, it does not implement the enhanced
+    surface boxplot.
+
+    Based on the center outward ordering induced by a :ref:`depth measure <depth-measures>`
+    for functional data, it represents the envelope of the 50% central region, the median curve,
+    and the maximum non-outlying envelope.
 
     Args:
         fdatagrid (FDataGrid): Object to be visualized.
-        fig (figure object, optional): aigure where the graphs are plotted.
-            Defaults to matplotlib.pyplot.figure.
-        method (depth function, optional): Method used to order the data (Fraiman_Muniz_depth, band_depth, modified_band_depth).
-            Defaults to modified_band_depth.
+        fig (matplotlib.pyplot.figure, optional): figure where the graphs are plotted.
+        method (:ref:`depth measure <depth-measures>`, optional): Method used to order the data.
+            Defaults to :func:`modified band depth <fda.depth_measures.modified_band_depth>`.
         factor (double): Number used to calculate the outlying envelope.
-        boxcol (string): Color of the box: mean, central envelopes and vertical lines.
-        outboxcol (string): Color of the outlying envelopes.
+        colormap(matplotlib.pyplot.LinearSegmentedColormap, optional): Colormap from which the
+            colors of the plot are extracted. Defaults to 'Greys'.
+        boxcol (float, optional): Tone of the colormap the box: mean, central envelopes and vertical lines.
+            Defaults to 0.7.
+        outboxcol (float, optional): Tone of the colormap to plot the outlying envelopes.
+            Defaults to 1.0.
 
     Returns:
-        FDataBoxplotInfo object: _plot
+        :class:`FDataBoxplotInfo <fda.boxplot.FDataBoxplotInfo>` object: _plot
 
     """
     if fdatagrid.ndim_domain != 2:
@@ -162,7 +184,8 @@ def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5,
     ly = len(y)
     X, Y = np.meshgrid(x, y)
 
-    _plot = FDataBoxplotInfo(fdatagrid, central_regions_col=[boxcol], envelopes_col=outcol, median_col=boxcol)
+    _plot = FDataBoxplotInfo(fdatagrid, central_regions_col=[colormap(boxcol)],
+                             envelopes_col=colormap(outcol), median_col=colormap(boxcol))
 
     for m in range(fdatagrid.ndim_image):
 
@@ -173,16 +196,16 @@ def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5,
 
         # mean sample
         ax[m].plot_wireframe(X, Y, np.squeeze(fdatagrid.data_matrix[indices_descencing_depth[0, m], :, :, m]).T,
-                             rstride=ly, cstride=lx, color=boxcol)
+                             rstride=ly, cstride=lx, color=colormap(boxcol))
         ax[m].plot_surface(X, Y, np.squeeze(fdatagrid.data_matrix[indices_descencing_depth[0, m], :, :, m]).T,
-                           color=boxcol, alpha=0.8)
+                           color=colormap(boxcol), alpha=0.8)
         _plot.add_median([fdatagrid.data_matrix[indices_descencing_depth[0, m], :, :, m]])
 
         # central envelope
-        ax[m].plot_surface(X, Y, np.squeeze(max_samples_used).T, color=boxcol, alpha=0.5)
-        ax[m].plot_wireframe(X, Y, np.squeeze(max_samples_used).T, rstride=ly, cstride=lx, color=boxcol)
-        ax[m].plot_surface(X, Y, np.squeeze(min_samples_used).T, color=boxcol, alpha=0.5)
-        ax[m].plot_wireframe(X, Y, np.squeeze(min_samples_used).T, rstride=ly, cstride=lx, color=boxcol)
+        ax[m].plot_surface(X, Y, np.squeeze(max_samples_used).T, color=colormap(boxcol), alpha=0.5)
+        ax[m].plot_wireframe(X, Y, np.squeeze(max_samples_used).T, rstride=ly, cstride=lx, color=colormap(boxcol))
+        ax[m].plot_surface(X, Y, np.squeeze(min_samples_used).T, color=colormap(boxcol), alpha=0.5)
+        ax[m].plot_wireframe(X, Y, np.squeeze(min_samples_used).T, rstride=ly, cstride=lx, color=colormap(boxcol))
         _plot.add_central_env([[max_samples_used, min_samples_used]])
 
         # box vertical lines
@@ -191,7 +214,7 @@ def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5,
             y_corner = y[indices[1]]
             ax[m].plot([x_corner, x_corner], [y_corner, y_corner], [min_samples_used[indices[0], indices[1]],
                                                                     max_samples_used[indices[0], indices[1]]],
-                       color=boxcol)
+                       color=colormap(boxcol))
 
         # outlying envelope
         max_value = np.amax(fdatagrid.data_matrix[:, :, :, m], axis=0)
@@ -199,10 +222,10 @@ def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5,
         iqr = np.absolute(max_samples_used - min_samples_used)
         oulying_max_envelope = np.minimum(max_samples_used + iqr * factor, max_value)
         oulying_min_envelope = np.maximum(min_samples_used - iqr * factor, min_value)
-        ax[m].plot_surface(X, Y, np.squeeze(oulying_max_envelope).T, color=outcol, alpha=0.3)
-        ax[m].plot_wireframe(X, Y, np.squeeze(oulying_max_envelope).T, rstride=ly, cstride=lx, color=outcol)
-        ax[m].plot_surface(X, Y, np.squeeze(oulying_min_envelope).T, color=outcol, alpha=0.3)
-        ax[m].plot_wireframe(X, Y, np.squeeze(oulying_min_envelope).T, rstride=ly, cstride=lx, color=outcol)
+        ax[m].plot_surface(X, Y, np.squeeze(oulying_max_envelope).T, color=colormap(outcol), alpha=0.3)
+        ax[m].plot_wireframe(X, Y, np.squeeze(oulying_max_envelope).T, rstride=ly, cstride=lx, color=colormap(outcol))
+        ax[m].plot_surface(X, Y, np.squeeze(oulying_min_envelope).T, color=colormap(outcol), alpha=0.3)
+        ax[m].plot_wireframe(X, Y, np.squeeze(oulying_min_envelope).T, rstride=ly, cstride=lx, color=colormap(outcol))
         _plot.add_outlying_env([[oulying_max_envelope, oulying_min_envelope]])
 
         # vertical lines from central to outlying envelope
@@ -212,10 +235,10 @@ def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5,
         y_central = y[y_index]
         ax[m].plot([x_central, x_central], [y_central, y_central],
                    [oulying_max_envelope[x_index, y_index], max_samples_used[x_index, y_index]],
-                   color=boxcol)
+                   color=colormap(boxcol))
         ax[m].plot([x_central, x_central], [y_central, y_central],
                    [oulying_min_envelope[x_index, y_index], min_samples_used[x_index, y_index]],
-                   color=boxcol)
+                   color=colormap(boxcol))
 
     fdatagrid.set_labels(fig)
     fdatagrid.arrange_layout(fig)
@@ -223,20 +246,14 @@ def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5,
     return _plot
 
 class FDataBoxplotInfo:
-    r"""Class containing the data of the functional boxplot or surface boxplot of a FDataGrid object,
+    r"""Data of the functional boxplot.
+
+    Class containing the data of the functional boxplot or surface boxplot of a FDataGrid object,
     depending on the dimensions of the domain, 1 or 2 respectively.
 
     Class returned by the functions fdboxplot and surface_boxplot which contains the median, central and outlying
     envelopes. In the first case, it also includes the possibility of other central regions (apart from the 50% one,
     which is equivalent to the central envelope) and the outliers.
-
-    Attributes:
-        fdatagrid (FDataGrid obj): Object whose information about the boxplot is contained in the class.
-        central_regions_col (1-D array): Array containing the colors of the central regions.
-        envelopes_col (matplotlib.colors): Color of the envelopes. In the case of the surface boxplot,
-            it is only the color of the outlying envelope.
-        median_col(matplotlib.colors): Color of the median.
-        outliers_col(matplotlib.colors, optional): Color of the outliers.
 
     Examples:
         Function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
@@ -339,7 +356,7 @@ class FDataBoxplotInfo:
             self.median = np.append(self.median, np.asarray(median), axis=0)
 
     def add_central_env(self, central_env):
-        """Adds the median of the boxplot to the FDataBoxplotInfo object.
+        """Adds the central envelope of the boxplot to the FDataBoxplotInfo object.
 
         Attributes:
             central_env(numpy.ndarray): Values of the central_env  of the FDataBoxplotInfo object.
@@ -353,7 +370,7 @@ class FDataBoxplotInfo:
             self.central_env = np.append(self.central_env, np.asarray(central_env), axis=0)
 
     def add_outlying_env(self, outlying_env):
-        """Adds the median of the boxplot to the FDataBoxplotInfo object.
+        """Adds the outlying envelope of the boxplot to the FDataBoxplotInfo object.
 
         Attributes:
             central_env(numpy.ndarray): Values of the outlying_env of the FDataBoxplotInfo object.
@@ -367,7 +384,7 @@ class FDataBoxplotInfo:
             self.outlying_env = np.append(self.outlying_env, np.asarray(outlying_env), axis=0)
 
     def add_central_region(self, central_region):
-        """Adds the median of the boxplot to the FDataBoxplotInfo object.
+        """Adds the central region(s) of the boxplot to the FDataBoxplotInfo object.
 
         Attributes:
             central_region(numpy.ndarray): Values of the central_region of the FDataBoxplotInfo object.
@@ -512,8 +529,8 @@ class FDataBoxplotInfo:
 
         return self
 
-    def visualize(self):
-        """Visualization of the FDataBoxplotInfo. It calls internally to _visualize_fdboxplot or to
+    def plot(self):
+        """Plot of the FDataBoxplotInfo. It calls internally to _visualize_fdboxplot or to
         _visualize_surface_boxplot depending on the dimension of the domain, 1 or 2 respectively. """
 
         if self.fdatagrid.ndim_domain > 2:

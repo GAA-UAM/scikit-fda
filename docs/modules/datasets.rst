@@ -15,6 +15,7 @@ The following functions are used to retrieve specific functional datasets:
    fda.datasets.fetch_phoneme
    fda.datasets.fetch_tecator
    fda.datasets.fetch_medflies
+   fda.datasets.fetch_weather
 
 Those functions return a dictionary with at least a "data" field containing the
 instance data, and a "target" field containing the class labels or regression values,

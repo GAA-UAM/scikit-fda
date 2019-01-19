@@ -834,6 +834,7 @@ class FDataGrid(FData):
 
         return _plot
 
+
     def to_basis(self, basis, **kwargs):
         """Return the basis representation of the object.
 

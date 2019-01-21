@@ -738,6 +738,8 @@ class BSpline(Basis):
         else:
             knots = list(knots)
             knots.sort()
+            if domain_range is None:
+                domain_range = (knots[0], knots[-1])
 
         # nbasis default to number of knots + order of the splines - 2
         if nbasis is None:

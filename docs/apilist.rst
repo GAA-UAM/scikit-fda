@@ -12,3 +12,6 @@ Modules
    modules/depth_measures
    modules/boxplot
    modules/magnitude_shape_plot
+   modules/extrapolation
+   modules/registration
+

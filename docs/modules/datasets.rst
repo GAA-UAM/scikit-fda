@@ -29,7 +29,7 @@ In addition datasets can be downloaded from CRAN and the UCR:
 
    fda.datasets.fetch_cran
    fda.datasets.fetch_ucr
-   
+
 Datasets from CRAN are not in a standardized format. Datasets from the UCR are in the same
 format as the specific datasets, but often have an explicit test set, accessible as "data_test"
 and "target_test".
@@ -44,3 +44,5 @@ The following functions are used to make synthetic functional datasets:
 
    fda.datasets.make_gaussian_process
    fda.datasets.make_sinusoidal_process
+   fda.datasets.make_multimodal_samples
+   fda.datasets.make_multimodal_landmarks

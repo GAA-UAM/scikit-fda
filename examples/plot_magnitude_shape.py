@@ -95,7 +95,7 @@ plt.title(fd_temperatures.dataset_label)
 # outliers but in the MS-Plot, they appear further left from the central points. This behaviour
 # can be modified specifying the parameter alpha.
 #
-# Now we use the :ref:`Fraiman and Muniz depth measure <fda.depth_measures.Fraiman_Muniz_depth>`
+# Now we use the :func:`Fraiman and Muniz depth measure <fda.depth_measures.Fraiman_Muniz_depth>`
 # in the MS-Plot.
 
 plt.figure()

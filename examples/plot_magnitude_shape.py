@@ -117,6 +117,14 @@ colors_groups = colormap(outliers)
 plt.figure()
 plt.scatter(points[:, 0], points[:, 1], c=colors_groups)
 
+plt.xlabel(fd_temperatures.axes_labels[0])
+plt.ylabel(fd_temperatures.axes_labels[1])
+plt.title(fd_temperatures.dataset_label)
+
 plt.figure()
 for i in range(fd_temperatures.nsamples):
     plt.plot(fd_temperatures.sample_points[0], fd_temperatures.data_matrix[i], c=colors_groups[i])
+
+plt.xlabel(fd_temperatures.axes_labels[0])
+plt.ylabel(fd_temperatures.axes_labels[1])
+plt.title(fd_temperatures.dataset_label)

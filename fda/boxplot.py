@@ -15,8 +15,8 @@ __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
 
-def fdboxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, prob=[0.5], fullout=False, factor=1.5, barcol="blue",
-              colormap=plt.cm.get_cmap('RdPu'), outliercol="red", mediancol="black"):
+def fdboxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, prob=[0.5], fullout=False, factor=1.5,
+              colormap=plt.cm.get_cmap('RdPu'), barcol="blue", outliercol="red", mediancol="black"):
     """Implementation of the functional boxplot.
 
     It is an informative exploratory tool for visualizing functional data, as well as
@@ -31,8 +31,9 @@ def fdboxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, prob=[
 
     Args:
         fdatagrid (FDataGrid): Object to be visualized.
-        fig (figure object, optional): figure where the graphs are plotted.
-            Defaults to matplotlib.pyplot.figure.
+        fig (figure object, optional): figure over with the graphs are plotted in case ax is not specified.
+            If None and ax is also None, the figure is initialized.
+        ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
         method (:ref:`depth measure <depth-measures>`, optional): Method used to order the data.
             Defaults to :func:`modified band depth <fda.depth_measures.modified_band_depth>`.
         prob (list of float, optional): List with float numbers (in the range from 1 to 0) that indicate which central regions to
@@ -40,8 +41,9 @@ def fdboxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, prob=[
         fullout (boolean): If true, the entire curve of the outlier samples is shown. Defaulsts to False.
         factor (double): Number used to calculate the outlying envelope.
         colormap (matplotlib.colors.LinearSegmentedColormap): Colormap from which the colors to represent the central regions are selected.
-        outliercol (string): Color of the outliers.
         barcol (string): Color of the envelopes and vertical lines.
+        outliercol (string): Color of the outliers.
+        mediancol (string): Color of the median.
 
     Returns:
         :class:`FDataBoxplotInfo <fda.boxplot.FDataBoxplotInfo>` object: _plot
@@ -142,13 +144,11 @@ def fdboxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, prob=[
         _plot.add_median([fdatagrid.data_matrix[indices_descencing_depth[0, m], :, m].T])
 
     fdatagrid.set_labels(fig, ax)
-    if fig is not None:
-        fdatagrid.arrange_layout(fig)
 
     return _plot
 
 
-def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5,
+def surface_boxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, factor=1.5,
                     colormap=plt.cm.get_cmap('Greys'), boxcol= 1.0, outcol=0.7):
     """Implementation of the surface boxplot.
 
@@ -162,7 +162,9 @@ def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5,
 
     Args:
         fdatagrid (FDataGrid): Object to be visualized.
-        fig (matplotlib.pyplot.figure, optional): figure where the graphs are plotted.
+        fig (figure object, optional): figure over with the graphs are plotted in case ax is not specified.
+            If None and ax is also None, the figure is initialized.
+        ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
         method (:ref:`depth measure <depth-measures>`, optional): Method used to order the data.
             Defaults to :func:`modified band depth <fda.depth_measures.modified_band_depth>`.
         factor (double): Number used to calculate the outlying envelope.
@@ -177,6 +179,16 @@ def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5,
         :class:`FDataBoxplotInfo <fda.boxplot.FDataBoxplotInfo>` object: _plot
 
     """
+    if fig is not None and ax is not None:
+        raise ValueError("fig and axes parameters cannot be passed as arguments at the same time.")
+
+    if fig != None and len(fig.get_axes()) != fdatagrid.ndim_image:
+        raise ValueError("Number of axes of the figure must be equal to"
+                         "the dimension of the image.")
+
+    if ax is not None and len(ax) != fdatagrid.ndim_image:
+        raise ValueError("Number of axes must be equal to the dimension of the image.")
+
     if fdatagrid.ndim_domain != 2:
         raise ValueError("Function only supports FDataGrid with domain dimension 2.")
 
@@ -186,7 +198,7 @@ def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5,
     depth = method(fdatagrid)
     indices_descencing_depth = (-depth).argsort(axis=0)
 
-    if fig == None:
+    if fig == None and ax == None:
         fig, ax = fdatagrid.set_figure_and_axes()
 
     x = fdatagrid.sample_points[0]
@@ -252,8 +264,6 @@ def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5,
                    color=colormap(boxcol))
 
     fdatagrid.set_labels(fig, ax)
-    if fig is not None:
-        fdatagrid.arrange_layout(fig)
 
     return _plot
 
@@ -469,7 +479,6 @@ class FDataBoxplotInfo:
             ax[m].plot(sample_points, self.median[m], color=self.median_col)
 
         self.fdatagrid.set_labels(fig = fig)
-        self.fdatagrid.arrange_layout(fig)
 
         return self
 
@@ -541,7 +550,6 @@ class FDataBoxplotInfo:
                        color=self.central_regions_col[0])
 
         self.fdatagrid.set_labels(fig = fig)
-        self.fdatagrid.arrange_layout(fig)
 
         return self
 

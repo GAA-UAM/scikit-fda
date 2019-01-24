@@ -35,7 +35,9 @@ n_samples = 10
 n_features = 10
 
 fd1 = make_sinusoidal_process(n_samples = n_samples, n_features=n_features)
+fd1.dataset_label = "Sinusoidal process"
 fd2 = make_gaussian_process(n_samples = n_samples, n_features=n_features)
+fd2.dataset_label = "Brownian process"
 
 ##################################################################################
 # After, those values generated for one dimension on the domain are propagated along
@@ -55,7 +57,8 @@ cube_2 = np.empty((n_samples, n_features, n_features, 2))
 cube_2[:, :, :, 0] = cube1
 cube_2[:, :, :, 1] = cube2
 
-fd_2 = FDataGrid(data_matrix=cube_2, sample_points=np.tile(fd1.sample_points, (2,1)))
+fd_2 = FDataGrid(data_matrix=cube_2, sample_points=np.tile(fd1.sample_points, (2,1)),
+                 dataset_label = "Sinusoidal and Brownian processes")
 
 plt.figure()
 fd_2.plot()
@@ -76,7 +79,7 @@ fd2.plot(ax=[ax[1]])
 ##################################################################################
 # To terminate the example, the call to the target function of the example is made,
 # showing the surface boxplot which corresponds to our FDataGrid representing a
-# function :math:` f : \mathbb{R}^2\longmapsto\mathbb{R}^2` with a sinusoidal process in the
+# function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}^2` with a sinusoidal process in the
 # first dimension of the image and a gaussian one in the second one.
 
 plt.figure()

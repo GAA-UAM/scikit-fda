@@ -705,6 +705,12 @@ class FDataGrid(FData):
         for i in range(self.ndim_image):
             fig.add_subplot(nrows, ncols, i + 1, projection=projection)
 
+        if ncols > 1 and self.axes_labels is not None:
+            plt.subplots_adjust(wspace=0.4)
+
+        if nrows > 1 and self.axes_labels is not None:
+            plt.subplots_adjust(hspace=0.4)
+
         ax = fig.get_axes()
 
         return fig, ax
@@ -717,14 +723,12 @@ class FDataGrid(FData):
                                  and set_zlabel in case of a 3d projection.
 
         """
-
         if fig is not None:
             if self.dataset_label is not None:
-                fig.suptitle(self.dataset_label, fontsize="x-large")
+                fig.suptitle(self.dataset_label)
             ax = fig.get_axes()
-        elif self.dataset_label is not None:
-            for axis in ax:
-                axis.set_title(self.dataset_label)
+        elif self.dataset_label is not None and len(ax) == 1:
+            ax[0].set_title(self.dataset_label)
 
 
         if self.axes_labels is not None:
@@ -738,31 +742,19 @@ class FDataGrid(FData):
                     ax[i].set_xlabel(self.axes_labels[0])
                     ax[i].set_ylabel(self.axes_labels[i + 1])
 
-    def arrange_layout(self, fig):
-        """Arrange the layout of the figure.
-
-        Args:
-            fig (figure object): figure object to be arranged.
-
-        """
-        fig.tight_layout()
-        if self.dataset_label is not None:
-            st = fig.texts[0]
-            st.set_y(0.95)
-            fig.subplots_adjust(top=0.85)
-
     def plot(self, fig=None, ax = None, **kwargs):
         """Plot the FDatGrid object.
 
         Args:
-            fig (figure object, optional): figure over with the graphs are plotted.
-                                           If None, the figure is initialized.
+            fig (figure object, optional): figure over with the graphs are plotted in case ax is not specified.
+                If None and ax is also None, the figure is initialized.
+            ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
             **kwargs: if ndim_domain is 1, keyword arguments to be passed to the matplotlib.pyplot.plot function;
-                      if ndim_domain is 2, keyword arguments to be passed to the matplotlib.pyplot.plot_surface function.
+                if ndim_domain is 2, keyword arguments to be passed to the matplotlib.pyplot.plot_surface function.
 
         Returns:
-            _plot : if ndim_domain is 1, list of lines that were added to the plot;
-            if ndim_domain is 2, list of mpl_toolkits.mplot3d.art3d.Poly3DCollection.
+            fig (figure object): figure object in which the graphs are plotted in case ax is None.
+            ax (axes object): axes in which the graphs are plotted.
 
         """
         if self.ndim_domain > 2:
@@ -793,9 +785,6 @@ class FDataGrid(FData):
                     ax[i].plot_surface(X, Y, numpy.squeeze(self.data_matrix[j, :, :, i]).T, **kwargs)
 
         self.set_labels(fig, ax)
-        if fig is not None:
-            self.arrange_layout(fig)
-        plt.show()
 
         return fig, ax
 
@@ -803,13 +792,14 @@ class FDataGrid(FData):
         """Scatter plot of the FDatGrid object.
 
         Args:
-            fig (figure object, optional): figure over with the graphs are plotted.
-                                           If None, the figure is initialized.
+            fig (figure object, optional): figure over with the graphs are plotted in case ax is not specified.
+                If None and ax is also None, the figure is initialized.
+            ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
             **kwargs: keyword arguments to be passed to the matplotlib.pyplot.scatter function;
 
         Returns:
-            _plot : if ndim_domain is 1, list of matplotlib.collections.PathCollection;
-            if ndim_domain is 2, list of mpl_toolkits.mplot3d.art3d.Path3DCollection.
+            fig (figure object): figure object in which the graphs are plotted in case ax is None.
+            ax (axes object): axes in which the graphs are plotted.
 
         """
         if self.ndim_domain > 2:
@@ -843,9 +833,6 @@ class FDataGrid(FData):
                     ax[i].scatter(X, Y, self.data_matrix[j, :, :, i].T, **kwargs)
 
         self.set_labels(fig, ax)
-        if fig is not None:
-            self.arrange_layout(fig)
-        plt.show()
 
         return fig, ax
 

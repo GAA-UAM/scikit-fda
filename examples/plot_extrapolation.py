@@ -52,7 +52,7 @@ fd_bspline.dataset_label = "BSpline Basis"
 
 # Plot of diferent representations
 fig, ax = plt.subplots(2,2)
-fdgrid.plot(ax[0][0])
+fdgrid.plot(ax = [ax[0][0]])
 fd_fourier.plot(ax[0][1])
 fd_monomial.plot(ax[1][0])
 fd_bspline.plot(ax[1][1])
@@ -96,7 +96,7 @@ ax[0][1].set_xticks([])
 
 
 # Plot objects in the domain range
-fdgrid.plot(ax[0][0])
+fdgrid.plot(ax = [ax[0][0]])
 fd_fourier.plot(ax[0][1])
 fd_monomial.plot(ax[1][0])
 fd_bspline.plot(ax[1][1])

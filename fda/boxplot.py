@@ -15,7 +15,7 @@ __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
 
-def fdboxplot(fdatagrid, fig=None, method=modified_band_depth, prob=[0.5], fullout=False, factor=1.5, barcol="blue",
+def fdboxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, prob=[0.5], fullout=False, factor=1.5, barcol="blue",
               colormap=plt.cm.get_cmap('RdPu'), outliercol="red", mediancol="black"):
     """Implementation of the functional boxplot.
 
@@ -62,6 +62,16 @@ def fdboxplot(fdatagrid, fig=None, method=modified_band_depth, prob=[0.5], fullo
     if not isinstance(colormap, matplotlib.colors.LinearSegmentedColormap):
         raise ValueError("colormap must be of type matplotlib.colors.LinearSegmentedColormap")
 
+    if fig is not None and ax is not None:
+        raise ValueError("fig and axes parameters cannot be passed as arguments at the same time.")
+
+    if fig != None and len(fig.get_axes()) != fdatagrid.ndim_image:
+        raise ValueError("Number of axes of the figure must be equal to"
+                         "the dimension of the image.")
+
+    if ax is not None and len(ax) != fdatagrid.ndim_image:
+        raise ValueError("Number of axes must be equal to the dimension of the image.")
+
     # Obtaining the necessary colors of the colormap.
     tones = np.linspace(0.1, 1.0, len(prob) + 1, endpoint=False)[1:]
     color = colormap(tones)
@@ -74,7 +84,7 @@ def fdboxplot(fdatagrid, fig=None, method=modified_band_depth, prob=[0.5], fullo
     depth = method(fdatagrid)
     indices_descencing_depth = (-depth).argsort(axis=0)
 
-    if fig == None:
+    if fig == None and ax == None:
         fig, ax = fdatagrid.set_figure_and_axes()
 
     _plot = FDataBoxplotInfo(fdatagrid, color, barcol, mediancol, outliercol)
@@ -131,8 +141,9 @@ def fdboxplot(fdatagrid, fig=None, method=modified_band_depth, prob=[0.5], fullo
                    zorder=5)
         _plot.add_median([fdatagrid.data_matrix[indices_descencing_depth[0, m], :, m].T])
 
-    fdatagrid.set_labels(fig)
-    fdatagrid.arrange_layout(fig)
+    fdatagrid.set_labels(fig, ax)
+    if fig is not None:
+        fdatagrid.arrange_layout(fig)
 
     return _plot
 
@@ -240,8 +251,9 @@ def surface_boxplot(fdatagrid, fig=None, method=modified_band_depth, factor=1.5,
                    [oulying_min_envelope[x_index, y_index], min_samples_used[x_index, y_index]],
                    color=colormap(boxcol))
 
-    fdatagrid.set_labels(fig)
-    fdatagrid.arrange_layout(fig)
+    fdatagrid.set_labels(fig, ax)
+    if fig is not None:
+        fdatagrid.arrange_layout(fig)
 
     return _plot
 
@@ -258,10 +270,12 @@ class FDataBoxplotInfo:
     Examples:
         Function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
 
+        >>> import matplotlib.pyplot as plt
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2], [0.5, 0.5, 1, 2, 1.5, 1], [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points, dataset_label="dataset", axes_labels=["x_label", "y_label"])
+        >>> plt.figure() # doctest: +IGNORE_RESULT
         >>> fdboxplot(fd)
         FDataBoxplotInfo(
               median=array([[0.5, 0.5, 1. , 2. , 1.5, 1. ]]),
@@ -275,11 +289,13 @@ class FDataBoxplotInfo:
 
         Function :math:`f : \mathbb{R^2}\longmapsto\mathbb{R^2}`.
 
+        >>> import matplotlib.pyplot as plt
         >>> data_matrix = [[[[1, 4], [0.3, 1.5], [1, 3]], [[2, 8], [0.4, 2], [2, 9]]],
         ...                [[[2, 10], [0.5, 3], [2, 10]], [[3, 12], [0.6, 3], [3, 15]]]]
         >>> sample_points = [[2, 4], [3, 6, 8]]
         >>> fd = FDataGrid(data_matrix, sample_points, dataset_label= "dataset",
         ...                axes_labels=["x1_label", "x2_label", "y1_label", "y2_label"])
+        >>> plt.figure() # doctest: +IGNORE_RESULT
         >>> surface_boxplot(fd)
         FDataBoxplotInfo(
               median=array([[[1. , 0.3, 1. ],
@@ -314,7 +330,7 @@ class FDataBoxplotInfo:
               central_regions=[],
               outliers=[])
 
-    """
+    """.replace('+IGNORE_RESULT', '+ELLIPSIS\n<...>')
 
     def __init__(self, fdatagrid, central_regions_col, envelopes_col,
                  median_col, outliers_col=None):
@@ -452,7 +468,7 @@ class FDataBoxplotInfo:
             # median
             ax[m].plot(sample_points, self.median[m], color=self.median_col)
 
-        self.fdatagrid.set_labels(fig)
+        self.fdatagrid.set_labels(fig = fig)
         self.fdatagrid.arrange_layout(fig)
 
         return self
@@ -524,7 +540,7 @@ class FDataBoxplotInfo:
                        [self.outlying_env[m, 0, x_index, y_index], self.central_env[m, 0, x_index, y_index]],
                        color=self.central_regions_col[0])
 
-        self.fdatagrid.set_labels(fig)
+        self.fdatagrid.set_labels(fig = fig)
         self.fdatagrid.arrange_layout(fig)
 
         return self

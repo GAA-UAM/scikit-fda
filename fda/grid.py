@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 
 import copy
 import matplotlib.pyplot
-
 import numpy
 import scipy
 import scipy.stats.mstats
@@ -694,7 +693,7 @@ class FDataGrid(FData):
             ax (axes object): axes of the initialized figure.
 
         """
-        fig = plt.figure()
+        fig = plt.gcf()
 
         if self.ndim_domain == 1:
             projection = None
@@ -710,7 +709,7 @@ class FDataGrid(FData):
 
         return fig, ax
 
-    def set_labels(self, fig):
+    def set_labels(self, fig = None, ax = None):
         """Set labels if any.
 
         Args:
@@ -718,11 +717,17 @@ class FDataGrid(FData):
                                  and set_zlabel in case of a 3d projection.
 
         """
-        if self.dataset_label is not None:
-            fig.suptitle(self.dataset_label, fontsize="x-large")
+
+        if fig is not None:
+            if self.dataset_label is not None:
+                fig.suptitle(self.dataset_label, fontsize="x-large")
+            ax = fig.get_axes()
+        elif self.dataset_label is not None:
+            for axis in ax:
+                axis.set_title(self.dataset_label)
+
 
         if self.axes_labels is not None:
-            ax = fig.get_axes()
             if ax[0].name == '3d':
                 for i in range(self.ndim_image):
                     ax[i].set_xlabel(self.axes_labels[0])
@@ -746,7 +751,7 @@ class FDataGrid(FData):
             st.set_y(0.95)
             fig.subplots_adjust(top=0.85)
 
-    def plot(self, fig=None, **kwargs):
+    def plot(self, fig=None, ax = None, **kwargs):
         """Plot the FDatGrid object.
 
         Args:
@@ -763,34 +768,38 @@ class FDataGrid(FData):
         if self.ndim_domain > 2:
             raise NotImplementedError("Plot only supported for functional data"
                                       "modeled in at most 3 dimensions.")
+        if fig is not None and ax is not None:
+            raise ValueError("fig and axes parameters cannot be passed as arguments at the same time.")
 
         if fig != None and len(fig.get_axes()) != self.ndim_image:
             raise ValueError("Number of axes of the figure must be equal to"
                              "the dimension of the image.")
 
-        if fig == None:
-            fig, ax = self.set_figure_and_axes()
+        if ax is not None and len(ax)!= self.ndim_image:
+            raise ValueError("Number of axes must be equal to the dimension of the image.")
 
-        _plot = []
+        if fig == None and ax == None:
+            fig, ax = self.set_figure_and_axes()
 
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):
-                _plot.append(ax[i].plot(self.sample_points[0], self.data_matrix[:, :, i].T, **kwargs))
+                ax[i].plot(self.sample_points[0], self.data_matrix[:, :, i].T, **kwargs)
         else:
             X = self.sample_points[0]
             Y = self.sample_points[1]
             X, Y = numpy.meshgrid(X, Y)
             for i in range(self.ndim_image):
                 for j in range(self.nsamples):
-                    _plot.append(ax[i].plot_surface(X, Y, numpy.squeeze(self.data_matrix[j, :, :, i]).T, **kwargs))
+                    ax[i].plot_surface(X, Y, numpy.squeeze(self.data_matrix[j, :, :, i]).T, **kwargs)
 
-        self.set_labels(fig)
-        self.arrange_layout(fig)
+        self.set_labels(fig, ax)
+        if fig is not None:
+            self.arrange_layout(fig)
         plt.show()
 
-        return _plot
+        return fig, ax
 
-    def scatter(self, fig=None, **kwargs):
+    def scatter(self, fig=None, ax = None, **kwargs):
         """Scatter plot of the FDatGrid object.
 
         Args:
@@ -805,13 +814,18 @@ class FDataGrid(FData):
         """
         if self.ndim_domain > 2:
             raise NotImplementedError("Plot only supported for functional data"
-                                      " modeled in at most 3 dimensions.")
+                                      "modeled in at most 3 dimensions.")
+        if fig is not None and ax is not None:
+            raise ValueError("fig and axes parameters cannot be passed as arguments at the same time.")
 
         if fig != None and len(fig.get_axes()) != self.ndim_image:
             raise ValueError("Number of axes of the figure must be equal to"
                              "the dimension of the image.")
 
-        if fig == None:
+        if ax is not None and len(ax)!= self.ndim_image:
+            raise ValueError("Number of axes must be equal to the dimension of the image.")
+
+        if fig == None and ax == None:
             fig, ax = self.set_figure_and_axes()
 
         _plot = []
@@ -819,20 +833,21 @@ class FDataGrid(FData):
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):
                 for j in range(self.nsamples):
-                    _plot.append(ax[i].scatter(self.sample_points[0], self.data_matrix[j, :, i].T, **kwargs))
+                    ax[i].scatter(self.sample_points[0], self.data_matrix[j, :, i].T, **kwargs)
         else:
             X = self.sample_points[0]
             Y = self.sample_points[1]
             X, Y = numpy.meshgrid(X, Y)
             for i in range(self.ndim_image):
                 for j in range(self.nsamples):
-                    _plot.append(ax[i].scatter(X, Y, self.data_matrix[j, :, :, i].T, **kwargs))
+                    ax[i].scatter(X, Y, self.data_matrix[j, :, :, i].T, **kwargs)
 
-        self.set_labels(fig)
-        self.arrange_layout(fig)
+        self.set_labels(fig, ax)
+        if fig is not None:
+            self.arrange_layout(fig)
         plt.show()
 
-        return _plot
+        return fig, ax
 
 
     def to_basis(self, basis, **kwargs):

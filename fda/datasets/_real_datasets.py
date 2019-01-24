@@ -440,3 +440,63 @@ def fetch_weather(return_X_y: bool=False):
 
 if hasattr(fetch_weather, "__doc__"):  # docstrings can be stripped off
     fetch_weather.__doc__ += _weather_descr + _param_descr
+
+_aemet_descr = """
+    Series of daily summaries of 73 spanish weather stations selected for the period 1980-2009.  The
+    dataset contains geographic information of each station and the average for the period 1980-2009
+    of daily temperature, daily precipitation and daily wind speed.
+    Meteorological State Agency of Spain (AEMET), http://www.aemet.es/. Government of Spain.
+
+    Authors:
+        Manuel Febrero Bande, Manuel Oviedo de la Fuente <manuel.oviedo@usc.es>
+        
+    Source:
+        The data were obtained from the FTP of AEMET in 2009.
+"""
+
+
+def fetch_aemet(return_X_y: bool = False):
+    """
+    Load the Spanish Weather dataset.
+
+    The data is obtained from the R package 'fda.usc' from CRAN.
+
+    """
+    DESCR = _aemet_descr
+
+    raw_dataset = fetch_cran(
+        "aemet", "fda.usc",
+        version="1.3.0")
+
+    data = raw_dataset["aemet"]
+
+    fd_temp = data["temp"]
+    fd_logprec = data["logprec"]
+    fd_wind = data["wind.speed"]
+
+    regions = np.unique(data['df']['province'])
+    climate_regions = ["OCEANIC", "OCEANIC", "CONTINENTAL", "MEDITERRANEAN", "ARID", "OCEANIC", "CONTINENTAL",
+                       "MEDITERRANEAN", "MEDITERRANEAN", "CONTINENTAL", "MEDITERRANEAN", "OCEANIC", "MEDITERRANEAN",
+                       "CONTINENTAL", "MEDITERRANEAN", "CONTINENTAL", "MEDITERRANEAN", "MEDITERRANEAN", "CONTINENTAL",
+                       "OCEANIC", "CONTINENTAL", "CONTINENTAL", "CANARY", "CONTINENTAL", "CONTINENTAL", "MEDITERRANEAN",
+                       "MEDITERRANEAN", "ARID", "CONTINENTAL", "OCEANIC", "OCEANIC", "CONTINENTAL",
+                       "CANARY", "MEDITERRANEAN", "CONTINENTAL", "MEDITERRANEAN", "MEDITERRANEAN",
+                       "CONTINENTAL", "OCEANIC", "CONTINENTAL", "CONTINENTAL"]
+    climate_region_dict = dict(zip(regions, climate_regions))
+    climate_data = np.copy(data['df']['province'])
+    for k, v in climate_region_dict.items():
+        climate_data[climate_data == k] = v
+    climate_data[data['df']['altitude'] > 1500] = "MOUNTAIN"
+
+    if return_X_y:
+        return fd_temp, fd_logprec, fd_wind, climate_data
+    else:
+        return {"data": (fd_temp, fd_logprec, fd_wind),
+                "target": climate_data,
+                "target_names": np.unique(climate_data),
+                "target_feature_names": ["climate"],
+                "DESCR": DESCR}
+
+
+if hasattr(fetch_aemet, "__doc__"):  # docstrings can be stripped off
+    fetch_aemet.__doc__ += _aemet_descr + _param_descr

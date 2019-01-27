@@ -10,6 +10,7 @@ It includes the modules:
     best smooths a FDataGrid object.
     - depth_measures: depth methods to order he samples of FDataGrid objects.
 and the following classes:
+    - magnitude-shape plot: visualization tool.
     - FDataGrid: Discrete representation of functional data.
     - FDataBasis: Basis representation for functional data.
 

@@ -10,6 +10,7 @@ Modules
 
    modules/datasets
    modules/depth_measures
+   modules/magnitude_shape_plot
    modules/extrapolation
    modules/registration
 

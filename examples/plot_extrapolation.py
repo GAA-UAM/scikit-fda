@@ -1,6 +1,7 @@
 """
 Extrapolation
 =============
+
 Shows the usage of the different types of extrapolation.
 """
 

@@ -1,7 +1,6 @@
 """
 Extrapolation
 =============
-
 Shows the usage of the different types of extrapolation.
 """
 
@@ -52,7 +51,7 @@ fd_bspline.dataset_label = "BSpline Basis"
 
 # Plot of diferent representations
 fig, ax = plt.subplots(2,2)
-fdgrid.plot(ax[0][0])
+fdgrid.plot(ax = [ax[0][0]])
 fd_fourier.plot(ax[0][1])
 fd_monomial.plot(ax[1][0])
 fd_bspline.plot(ax[1][1])
@@ -96,7 +95,7 @@ ax[0][1].set_xticks([])
 
 
 # Plot objects in the domain range
-fdgrid.plot(ax[0][0])
+fdgrid.plot(ax = [ax[0][0]])
 fd_fourier.plot(ax[0][1])
 fd_monomial.plot(ax[1][0])
 fd_bspline.plot(ax[1][1])
@@ -114,8 +113,8 @@ fd_bspline.plot(ax[1][1])
 
 plt.figure()
 
-# Evaluation of the grid
-# Extrapolation supplied in the evaluation
+# Evaluation of the grid
+# Extrapolation supplied in the evaluation
 values = fdgrid(t, extrapolation="periodic")
 
 plt.plot(t, values.T, linestyle='--')
@@ -138,7 +137,7 @@ plt.figure()
 # Other way to call the extrapolation, changing the default value
 fdgrid.extrapolation = "bounds"
 
-# Evaluation of the grid
+# Evaluation of the grid
 values = fdgrid(t)
 plt.plot(t, values.T, linestyle='--')
 
@@ -159,7 +158,7 @@ plt.title("Boundary extrapolation")
 
 plt.figure()
 
-# Evaluation of the grid filling with zeros
+# Evaluation of the grid filling with zeros
 values = fdgrid(t, extrapolation="zeros")
 plt.plot(t, values.T, linestyle='--')
 

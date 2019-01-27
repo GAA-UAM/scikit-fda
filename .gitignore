@@ -1,3 +1,31 @@
+
+Skip to content
+
+    Pull requests
+    Issues
+    Marketplace
+    Explore
+
+    @amandaher
+
+4
+1
+
+    2
+
+GAA-UAM/fda
+Code
+Issues 8
+Pull requests 1
+Projects 1
+Wiki
+Insights
+fda/.gitignore
+15bf60a 14 days ago
+ahernando arreglar conflictos
+@mcarbajo
+@manso92
+105 lines (83 sloc) 1.17 KB
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -24,6 +52,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.pytest_cache/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -100,5 +129,21 @@ ENV/
 # mypy
 .mypy_cache/
 
-#IDE Files
+#IDE metadata
 .idea/
+
+    © 2019 GitHub, Inc.
+    Terms
+    Privacy
+    Security
+    Status
+    Help
+
+    Contact GitHub
+    Pricing
+    API
+    Training
+    Blog
+    About
+
+Press h to open a hovercard with more details.

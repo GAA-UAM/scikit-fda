@@ -763,15 +763,18 @@ class FDataGrid(FData):
         if fig is not None and ax is not None:
             raise ValueError("fig and axes parameters cannot be passed as arguments at the same time.")
 
-        if fig != None and len(fig.get_axes()) != self.ndim_image:
+        if fig is not None and len(fig.get_axes()) != self.ndim_image:
             raise ValueError("Number of axes of the figure must be equal to"
                              "the dimension of the image.")
 
         if ax is not None and len(ax)!= self.ndim_image:
             raise ValueError("Number of axes must be equal to the dimension of the image.")
 
-        if fig == None and ax == None:
+        if fig is None and ax is None:
             fig, ax = self.set_figure_and_axes()
+
+        if fig is not None:
+            ax = fig.get_axes()
 
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):
@@ -808,17 +811,18 @@ class FDataGrid(FData):
         if fig is not None and ax is not None:
             raise ValueError("fig and axes parameters cannot be passed as arguments at the same time.")
 
-        if fig != None and len(fig.get_axes()) != self.ndim_image:
+        if fig is not None and len(fig.get_axes()) != self.ndim_image:
             raise ValueError("Number of axes of the figure must be equal to"
                              "the dimension of the image.")
 
         if ax is not None and len(ax)!= self.ndim_image:
             raise ValueError("Number of axes must be equal to the dimension of the image.")
 
-        if fig == None and ax == None:
+        if fig is None and ax is None:
             fig, ax = self.set_figure_and_axes()
 
-        _plot = []
+        if fig is not None:
+            ax = fig.get_axes()
 
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):

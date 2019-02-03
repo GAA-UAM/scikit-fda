@@ -1,67 +1,150 @@
-"""Graphics Module to visualize FDataGrid."""
+"""Clustering Module."""
 
-import matplotlib
-import matplotlib.pyplot as plt
-from sklearn.covariance import MinCovDet
-from scipy.stats import variation
-from scipy import stats
 import scipy
 import math
-
-
-from .grid import FDataGrid
+import numpy as np
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
-from fda.depth_measures import *
-import matplotlib
-import matplotlib.pyplot as plt
-from sklearn.covariance import MinCovDet
-from scipy.stats import variation
-from scipy import stats
-import scipy
-import math
+def clustering_1Dimage(fdatagrid, num_dim, n_clusters=2, init=None, max_iter=100, metric='euclidean', *args, **kwargs):
+    data_matrix = np.copy(fdatagrid.data_matrix[:, :, num_dim])
 
+    if fdatagrid.nsamples < 2:
+        raise ValueError("The number of observations must be greater than 1.")
 
+    if n_clusters < 2:
+        raise ValueError("The number of clusters must be greater than 1.")
 
+    if init is not None and init.shape != (n_clusters, fdatagrid.ncol):
+        raise ValueError("The init ndarray should be of shape (n_clusters, n_features) and gives the initial centers.")
 
-def clustering(fdatagrid, ax=None, num_clusters=2):
-    if fdatagrid.ndim_image > 1 and fdatagrid.ndim_domain:
-        raise NotImplementedError("Only support 1 dimension on the image and on the domain.")
+    possible_metrics = ["braycurtis", "canberra", "chebyshev", "cityblock", "correlation", "cosine", "dice",
+                        "euclidean", "hamming", "jaccard", "jensenshannon", "kulsinski", "mahalanobis",
+                        "matching", "minkowski", "rogerstanimoto", "russellrao", "seuclidean", "sokalmichener",
+                        "sokalsneath", "sqeuclidean", "wminkowski", "yule"]
 
-    if num_clusters < 2 or num_clusters > 10:
-        raise ValueError("The number of clusters must be between 2 and 10, both included.")
+    if metric not in possible_metrics:
+        raise ValueError("Metric must be one of the specified in the documentation.")
 
     repetitions = 0
-    distances_to_centers = np.empty((fdatagrid.nsamples, num_clusters))
-    centers = np.empty((num_clusters, len(fdatagrid.sample_points[0])))
-    centers_aux = np.empty((num_clusters, len(fdatagrid.sample_points[0])))
+    distances_to_centers = np.empty((fdatagrid.nsamples, n_clusters))
+    centers = np.empty((n_clusters, fdatagrid.ncol))
+    centers_old = np.empty((n_clusters, fdatagrid.ncol))
 
-    for i in range(num_clusters):
-        centers[i] = fdatagrid.data_matrix[math.floor(i * fdatagrid.nsamples / num_clusters)].flatten()
+    if init is not None:
+        centers = init
+    else:
+        # Method for initialization: choose k observations (rows) at random from data for the initial centroids.
+        for i in range(n_clusters):
+            centers[i] = data_matrix[math.floor(i * fdatagrid.nsamples / n_clusters)].flatten()
 
-    while not np.array_equal(centers, centers_aux) and repetitions < 100:
-        centers_aux = centers
-        for i in range(fdatagrid.nsamples):
-            for j in range(num_clusters):
-                #pairwise distance
-                distances_to_centers[i, j] = scipy.spatial.distance.euclidean(fdatagrid.data_matrix[i], centers[j])
+    while not np.array_equal(centers, centers_old) and repetitions < max_iter:
+        centers_old = np.copy(centers)
+        distances_to_centers = scipy.spatial.distance.cdist(data_matrix, centers, *args, **kwargs)
         clustering_values = np.argmin(distances_to_centers, axis=1)
-        for i in range(num_clusters):
+        for i in range(n_clusters):
             indices = np.where(clustering_values == i)
-            centers[i] = np.average(fdatagrid.data_matrix[indices, :, :].flatten()
-                                    .reshape((len(indices[0]), len(fdatagrid.sample_points[0]))), axis=0)
+            centers[i] = np.average(data_matrix[indices, :], axis=1)
         repetitions += 1
 
-    colors_samples = np.empty(fdatagrid.nsamples).astype(str)
-    for i in range(num_clusters):
-        colors_samples[np.where(clustering_values == i)] = "C{}".format(i)
+    return clustering_values, centers
 
-    if ax is None:
-        ax = matplotlib.pyplot.gca()
 
-    for i in range(fdatagrid.nsamples):
-        ax.plot(fdatagrid.sample_points[0], fdatagrid.data_matrix[i, :, 0].T, color=colors_samples[i])
+def clustering(fdatagrid, n_clusters=2, init=None, max_iter=100, metric='euclidean', *args, **kwargs):
+    if fdatagrid.ndim_domain > 1:
+        raise NotImplementedError("Only support 1 dimension on the domain.")
 
-    return clustering_values
+    clustering_values = np.empty((fdatagrid.nsamples, fdatagrid.ndim_image))
+    centers = np.empty((fdatagrid.ndim_image, n_clusters, fdatagrid.ncol))
+    for i in range(fdatagrid.ndim_image):
+        clustering_values[:, i], centers[i, :, :] = clustering_1Dimage(fdatagrid, num_dim=i,
+                                                                       n_clusters=n_clusters, init=init,
+                                                                       max_iter=max_iter, metric=metric, *args,
+                                                                       **kwargs)
+
+    return clustering_values, centers
+
+def fuzzy_clustering_1Dimage(fdatagrid, num_dim, n_clusters, fuzzifier, centers, max_iter, norm_matrix):
+    data_matrix = np.copy(fdatagrid.data_matrix[:, :, num_dim])
+    repetitions = 0
+    centers_old = np.empty((n_clusters, fdatagrid.ncol))
+    U = np.empty((n_clusters, fdatagrid.nsamples))
+
+    # Method for initialization: choose k observations (rows) at random from data for the initial centroids.
+    if centers is None:
+        centers = np.empty((n_clusters, fdatagrid.ncol))
+        quotient, reminder = divmod(fdatagrid.nsamples, n_clusters)
+        cluster = np.concatenate((np.tile(np.arange(n_clusters), quotient), np.arange(reminder)))
+        for i in range(n_clusters):
+            centers[i] = np.average(data_matrix[cluster == i], axis=0)
+
+    if norm_matrix is None:
+        norm_matrix = np.eye(fdatagrid.ncol)
+
+    while not np.array_equal(centers, centers_old) and repetitions < max_iter:
+        centers_old = np.copy(centers)
+        for i in range(fdatagrid.nsamples):
+            comparison = (data_matrix[i] == centers).all(-1)
+            if comparison.sum() == 1:
+                U[np.where(comparison == True), i] = 1
+                U[np.where(comparison == False), i] = 0
+            else:
+                diff = data_matrix[i] - centers
+                distances_to_centers = np.power(np.diag(np.dot(np.dot(diff, norm_matrix), diff.T)),
+                                                2 / (fuzzifier - 1))
+                for j in range(n_clusters):
+                    U[j, i] = 1 / np.sum(distances_to_centers[j] / distances_to_centers)
+        U = np.power(U, fuzzifier)
+        for i in range(n_clusters):
+            centers[i] = np.sum((U[i] * data_matrix.T).T, axis=0) / np.sum(U[i])
+        repetitions += 1
+
+    return U, centers
+
+
+def fuzzy_clustering(fdatagrid, n_clusters=2, init=None, fuzzifier=2, max_iter=100, norm_matrix=None):
+    if fdatagrid.ndim_domain > 1:
+        raise NotImplementedError("Only support 1 dimension on the domain.")
+
+    if fdatagrid.nsamples < 2:
+        raise ValueError("The number of observations must be greater than 1.")
+
+    if n_clusters < 2:
+        raise ValueError("The number of clusters must be greater than 1.")
+
+    if fuzzifier < 1:
+        raise ValueError("The fuzzifier parameter must be greater than 0.")
+
+    if max_iter < 1:
+        raise ValueError("The number of iterations must be greater than 0.")
+
+    if init is not None and init.shape != (fdatagrid.ndim_image, n_clusters, fdatagrid.ncol):
+        raise ValueError("The init ndarray should be of shape (ndim_image, n_clusters, n_features) "
+                         "and gives the initial centers.")
+    else:
+        init = np.array([None] * fdatagrid.ndim_image)
+
+    if norm_matrix is not None and norm_matrix.shape != (fdatagrid.ndim_image, fdatagrid.ncol, fdatagrid.ncol):
+        raise ValueError("The norm_matrix should be of shape (ndim_image, n_features, n_features).")
+    elif norm_matrix is not None:
+        for i in range(fdatagrid.ndim_image):
+            if not np.all(np.linalg.eigvals(norm_matrix[i]) > 0):
+                raise ValueError("The norm_matrix should be positive definite.")
+            if not np.array_equal(norm_matrix[i], norm_matrix[i].T):
+                raise ValueError("The norm_matrix should be symmetric.")
+    else:
+        norm_matrix = np.array([None] * fdatagrid.ndim_image)
+
+    membership_values = np.empty((fdatagrid.nsamples, fdatagrid.ndim_image, n_clusters))
+    centers = np.empty((fdatagrid.ndim_image, n_clusters, fdatagrid.ncol))
+    for i in range(fdatagrid.ndim_image):
+        U, centers[i, :, :] = fuzzy_clustering_1Dimage(fdatagrid, num_dim=i, n_clusters=n_clusters,
+                                                       fuzzifier=fuzzifier, centers=init[i],
+                                                       max_iter=max_iter, norm_matrix=norm_matrix[i])
+        membership_values[:, i, :] = U.T
+
+    return membership_values, centers
+
+
+

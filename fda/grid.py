@@ -723,7 +723,7 @@ class FDataGrid(FData):
 
         return fig, ax
 
-    def set_labels(self, fig = None, ax = None):
+    def set_labels(self, fig=None, ax=None):
         """Set labels if any.
 
         Args:
@@ -750,7 +750,7 @@ class FDataGrid(FData):
                     ax[i].set_xlabel(self.axes_labels[0])
                     ax[i].set_ylabel(self.axes_labels[i + 1])
 
-    def plot(self, fig=None, ax = None, nrows = None, ncols = None, **kwargs):
+    def plot(self, fig=None, ax=None, nrows=None, ncols=None, **kwargs):
         """Plot the FDatGrid object.
 
         Args:
@@ -816,7 +816,7 @@ class FDataGrid(FData):
 
         return fig, ax
 
-    def scatter(self, fig=None, ax = None, nrows = None, ncols = None, **kwargs):
+    def scatter(self, fig=None, ax=None, nrows=None, ncols=None, **kwargs):
         """Scatter plot of the FDatGrid object.
 
         Args:

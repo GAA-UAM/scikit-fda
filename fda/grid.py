@@ -713,10 +713,10 @@ class FDataGrid(FData):
         for i in range(self.ndim_image):
             fig.add_subplot(nrows, ncols, i + 1, projection=projection)
 
-        if ncols > 1 and self.axes_labels is not None:
+        if ncols > 1 and self.axes_labels is not None and self.ndim_image > 1:
             plt.subplots_adjust(wspace=0.4)
 
-        if nrows > 1 and self.axes_labels is not None:
+        if nrows > 1 and self.axes_labels is not None and self.ndim_image > 1:
             plt.subplots_adjust(hspace=0.4)
 
         ax = fig.get_axes()

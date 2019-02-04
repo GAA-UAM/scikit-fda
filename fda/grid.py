@@ -685,8 +685,14 @@ class FDataGrid(FData):
                                                         other.data_matrix),
                                                        axis=0))
 
-    def set_figure_and_axes(self):
+    def set_figure_and_axes(self, nrows, ncols):
         """Set figure and its axes.
+
+        Args:
+            nrows(int, optiona): designates the number of rows of the figure to plot the different dimensions of the
+                image. Only specified if fig and ax are None. ncols must be also be customized in the same call.
+            ncols(int, optiona): designates the number of columns of the figure to plot the different dimensions of the
+                image. Only specified if fig and ax are None. nrows must be also be customized in the same call.
 
         Returns:
             fig (figure object): figure object initialiazed.
@@ -700,8 +706,10 @@ class FDataGrid(FData):
         else:
             projection = '3d'
 
-        ncols = math.ceil(math.sqrt(self.ndim_image))
-        nrows = math.ceil(self.ndim_image / ncols)
+        if ncols is None and nrows is None:
+            ncols = math.ceil(math.sqrt(self.ndim_image))
+            nrows = math.ceil(self.ndim_image / ncols)
+
         for i in range(self.ndim_image):
             fig.add_subplot(nrows, ncols, i + 1, projection=projection)
 
@@ -742,13 +750,17 @@ class FDataGrid(FData):
                     ax[i].set_xlabel(self.axes_labels[0])
                     ax[i].set_ylabel(self.axes_labels[i + 1])
 
-    def plot(self, fig=None, ax = None, **kwargs):
+    def plot(self, fig=None, ax = None, nrows = None, ncols = None, **kwargs):
         """Plot the FDatGrid object.
 
         Args:
             fig (figure object, optional): figure over with the graphs are plotted in case ax is not specified.
                 If None and ax is also None, the figure is initialized.
             ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
+            nrows(int, optiona): designates the number of rows of the figure to plot the different dimensions of the
+                image. Only specified if fig and ax are None. ncols must be also be customized in the same call.
+            ncols(int, optiona): designates the number of columns of the figure to plot the different dimensions of the
+                image. Only specified if fig and ax are None. nrows must be also be customized in the same call.
             **kwargs: if ndim_domain is 1, keyword arguments to be passed to the matplotlib.pyplot.plot function;
                 if ndim_domain is 2, keyword arguments to be passed to the matplotlib.pyplot.plot_surface function.
 
@@ -770,8 +782,21 @@ class FDataGrid(FData):
         if ax is not None and len(ax)!= self.ndim_image:
             raise ValueError("Number of axes must be equal to the dimension of the image.")
 
+        if ax is not None and fig is not None and (nrows is not None or ncols is not None):
+            raise ValueError("The number of columns and/or number of rows of the figure, "
+                             "in which each dimension of the image is plotted, can only "
+                             "be customized in case fig is None and ax is None.")
+
+        if (nrows is not None and ncols is None) or (nrows is None and ncols is not None):
+            raise ValueError("The number of columns and the number of rows must be specified"
+                             "simultaneously.")
+
+        if (nrows is not None and ncols is not None) and nrows*ncols < self.ndim_image:
+            raise ValueError("The number of columns and the number of rows specified is "
+                             "incorrect.")
+
         if fig is None and ax is None:
-            fig, ax = self.set_figure_and_axes()
+            fig, ax = self.set_figure_and_axes(nrows, ncols)
 
         if fig is not None:
             ax = fig.get_axes()
@@ -791,13 +816,17 @@ class FDataGrid(FData):
 
         return fig, ax
 
-    def scatter(self, fig=None, ax = None, **kwargs):
+    def scatter(self, fig=None, ax = None, nrows = None, ncols = None, **kwargs):
         """Scatter plot of the FDatGrid object.
 
         Args:
             fig (figure object, optional): figure over with the graphs are plotted in case ax is not specified.
                 If None and ax is also None, the figure is initialized.
             ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
+            nrows(int, optiona): designates the number of rows of the figure to plot the different dimensions of the
+                image. Only specified if fig and ax are None. ncols must be also be customized in the same call.
+            ncols(int, optiona): designates the number of columns of the figure to plot the different dimensions of the
+                image. Only specified if fig and ax are None. nrows must be also be customized in the same call.
             **kwargs: keyword arguments to be passed to the matplotlib.pyplot.scatter function;
 
         Returns:
@@ -818,8 +847,21 @@ class FDataGrid(FData):
         if ax is not None and len(ax)!= self.ndim_image:
             raise ValueError("Number of axes must be equal to the dimension of the image.")
 
+        if ax is not None and fig is not None and (nrows is not None or ncols is not None):
+            raise ValueError("The number of columns and/or number of rows of the figure, "
+                             "in which each dimension of the image is plotted, can only "
+                             "be customized in case fig is None and ax is None.")
+
+        if (nrows is not None and ncols is None) or (nrows is None and ncols is not None):
+            raise ValueError("The number of columns and the number of rows must be specified"
+                             "simultaneously.")
+
+        if (nrows is not None and ncols is not None) and nrows * ncols < self.ndim_image:
+            raise ValueError("The number of columns and the number of rows specified is "
+                             "incorrect.")
+
         if fig is None and ax is None:
-            fig, ax = self.set_figure_and_axes()
+            fig, ax = self.set_figure_and_axes(nrows, ncols)
 
         if fig is not None:
             ax = fig.get_axes()

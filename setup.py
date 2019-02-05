@@ -1,7 +1,12 @@
 import os
 import sys
 
+import numpy
+
 from setuptools import setup, find_packages
+from setuptools.extension import Extension
+from Cython.Distutils import build_ext
+from Cython.Build import cythonize
 
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
 pytest_runner = ['pytest-runner'] if needs_pytest else []
@@ -10,13 +15,38 @@ with open(os.path.join(os.path.dirname(__file__),
                        'VERSION'), 'r') as version_file:
     version = version_file.read().strip()
 
+deps_path = 'deps'
+fdasrsf_path = os.path.join(deps_path, 'fdasrsf')
+
+
+extensions = [
+    Extension(name='optimum_reparamN',
+              sources=[
+                  os.path.join(fdasrsf_path, 'optimum_reparamN.pyx'),
+                  os.path.join(fdasrsf_path, 'DynamicProgrammingQ2.c'),
+                  os.path.join(fdasrsf_path, 'dp_grid.c')
+              ],
+              include_dirs=[numpy.get_include()],
+              language='c',
+              ),
+    Extension(name='optimum_reparam_fN',
+              sources=[
+                  os.path.join(fdasrsf_path, 'optimum_reparam_fN.pyx'),
+                  os.path.join(fdasrsf_path, 'DP.c')
+              ],
+              include_dirs=[numpy.get_include()],
+              language='c',
+              ),
+]
+
 setup(name='fda',
       version=version,
-      description="",  # TODO
+      description='Functional Data Analysis Python package',
       long_description="",  # TODO
       url='https://fda.readthedocs.io',
       author='Miguel Carbajo Berrocal',
       author_email='miguel.carbajo@estudiante.uam.com',
+      ext_modules=cythonize(extensions),
       include_package_data=True,
       platforms=['any'],
       license='GPL3',

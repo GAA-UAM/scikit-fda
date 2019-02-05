@@ -5,6 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
+optimum_reparamN.c
+optimum_reparam_fN.c
 
 # Distribution / packaging
 .Python

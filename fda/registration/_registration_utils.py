@@ -47,7 +47,7 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
     .. math::
         \text{MSE}_{phase}=
-        C_R \int \left [\overline{y}^2(t) - \overline{x}^2(t) \right]dt
+        \int \left [C_R \overline{y}^2(t) - \overline{x}^2(t) \right]dt
 
     It can be shown that
 
@@ -104,9 +104,25 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
         >>> landmarks = landmarks.squeeze()
         >>> warping = landmark_registration_warping(fd, landmarks)
         >>> fd_registered = fd.compose(warping)
+        >>> mse_amp, mse_pha, rsq, cr = mse_decomposition(fd, fd_registered, warping)
 
-        >>> mse_decomposition(fd, fd_registered, warping)
-        mse_decomposition(mse_amp=-0.009645152752396371, mse_pha=0.11576861468435257, ...)
+        Mean square error produced by the amplitude variation.
+
+        >>> round(mse_amp, 6)
+        0.000987
+
+        In this example we can observe that the main part of the mean square
+        error is due to the phase variation.
+
+        >>> round(mse_pha, 6)
+        0.115769
+
+        Nearly 99% of the variation is due to phase.
+
+        >>> round(rsq, 6)
+        0.991549
+
+
 
     """
 
@@ -147,9 +163,9 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
 
     # Total mean square error of the original funtions
-    mse_total = scipy.integrate.simps(
-        numpy.mean(numpy.square(x_fine - mu_fine), axis=0),
-        eval_points)
+    #mse_total = scipy.integrate.simps(
+    #    numpy.mean(numpy.square(x_fine - mu_fine), axis=0),
+    #    eval_points)
 
     cr = 1. # Constant related to the covariation between the deformation
             # functions and y^2
@@ -178,7 +194,16 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
                                     eval_points)
 
     # mse due to amplitude variation
-    mse_amp = mse_total - mse_pha
+    #mse_amp = mse_total - mse_pha
+
+    y_fine_center = numpy.subtract(y_fine, eta_fine)
+    y_fine_center_sq = numpy.square(y_fine_center, out =y_fine_center)
+    y_fine_center_sq_mean = y_fine_center_sq.mean(axis=0)
+
+    mse_amp = scipy.integrate.simps(y_fine_center_sq_mean, eval_points)
+
+    # Total mean square error of the original funtions
+    mse_total = mse_pha + mse_amp
 
     # squared correlation measure of proportion of phase variation
     rsq = mse_pha / (mse_total)

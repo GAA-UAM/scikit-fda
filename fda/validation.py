@@ -143,11 +143,11 @@ def minimise(fdatagrid, parameters,
                [ 0.  , 0.  , 0.  , 0.5 , 0.5 ]])
         >>> res['fdatagrid'].round(2)
         FDataGrid(
-            array([[[2.5 ],
-                    [1.67],
-                    [0.67],
-                    [1.67],
-                    [2.5 ]]]),
+            array([[[ 2.5 ],
+                    [ 1.67],
+                    [ 0.67],
+                    [ 1.67],
+                    [ 2.5 ]]]),
             sample_points=[array([-2., -1.,  0.,  1.,  2.])],
             domain_range=array([[-2.,  2.]]),
             ...)

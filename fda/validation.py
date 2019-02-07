@@ -147,7 +147,7 @@ def minimise(fdatagrid, parameters,
                     [ 1.67],
                     [ 0.67],
                     [ 1.67],
-                    [ 2.5 ]]]),
+                    [ i2.5 ]]]),
             sample_points=[array([-2., -1.,  0.,  1.,  2.])],
             domain_range=array([[-2.,  2.]]),
             ...)
@@ -158,7 +158,7 @@ def minimise(fdatagrid, parameters,
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                cv_method=cv)
         >>> numpy.array(res['scores']).round(2)
-        array([4.2, 5.5])
+        array([ 4.2, 5.5])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                penalisation_function=aic)
         >>> numpy.array(res['scores']).round(2)
@@ -170,11 +170,11 @@ def minimise(fdatagrid, parameters,
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                penalisation_function=shibata)
         >>> numpy.array(res['scores']).round(2)
-        array([7.56, 9.17])
+        array([ 7.56, 9.17])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                penalisation_function=rice)
         >>> numpy.array(res['scores']).round(2)
-        array([21. , 16.5])
+        array([ 21. , 16.5])
 
     """
     if fdatagrid.ndim_domain != 1:

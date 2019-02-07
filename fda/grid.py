@@ -709,6 +709,10 @@ class FDataGrid(FData):
         if ncols is None and nrows is None:
             ncols = math.ceil(math.sqrt(self.ndim_image))
             nrows = math.ceil(self.ndim_image / ncols)
+        elif ncols is None and nrows is not None:
+            nrows = math.ceil(self.ndim_image / nrows)
+        elif ncols is not None and nrows is None:
+            nrows = math.ceil(self.ndim_image / ncols)
 
         for i in range(self.ndim_image):
             fig.add_subplot(nrows, ncols, i + 1, projection=projection)
@@ -750,7 +754,7 @@ class FDataGrid(FData):
                     ax[i].set_xlabel(self.axes_labels[0])
                     ax[i].set_ylabel(self.axes_labels[i + 1])
 
-    def _genereic_plotting_checks(self, fig=None, ax=None, nrows=None, ncols=None):
+    def _generic_plotting_checks(self, fig=None, ax=None, nrows=None, ncols=None):
         """Check the arguments passed to both :func:`plot <fda.grid.plot>` and :func:`scatter <fda.grid.scatter>`
          methods of the FDatGrid object.
 
@@ -782,14 +786,10 @@ class FDataGrid(FData):
         if ax is not None and len(ax)!= self.ndim_image:
             raise ValueError("Number of axes must be equal to the dimension of the image.")
 
-        if ax is not None and fig is not None and (nrows is not None or ncols is not None):
+        if (ax is not None or fig is not None) and (nrows is not None or ncols is not None):
             raise ValueError("The number of columns and/or number of rows of the figure, "
                              "in which each dimension of the image is plotted, can only "
                              "be customized in case fig is None and ax is None.")
-
-        if (nrows is not None and ncols is None) or (nrows is None and ncols is not None):
-            raise ValueError("The number of columns and the number of rows must be specified"
-                             "simultaneously.")
 
         if (nrows is not None and ncols is not None) and nrows*ncols < self.ndim_image:
             raise ValueError("The number of columns and the number of rows specified is "
@@ -822,7 +822,7 @@ class FDataGrid(FData):
             ax (axes object): axes in which the graphs are plotted.
 
         """
-        fig, ax = self._genereic_plotting_checks(fig, ax, nrows, ncols)
+        fig, ax = self._generic_plotting_checks(fig, ax, nrows, ncols)
 
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):
@@ -857,7 +857,7 @@ class FDataGrid(FData):
             ax (axes object): axes in which the graphs are plotted.
 
         """
-        fig, ax = self._genereic_plotting_checks(fig, ax, nrows, ncols)
+        fig, ax = self._generic_plotting_checks(fig, ax, nrows, ncols)
 
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):

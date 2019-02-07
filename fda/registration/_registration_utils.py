@@ -95,7 +95,6 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
         >>> from fda.datasets import make_multimodal_samples
         >>> from fda.registration import (landmark_registration_warping,
         ...                               mse_decomposition)
-        >>> print(numpy.__version__)
 
 
         We will create and register data.
@@ -109,21 +108,19 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
         Mean square error produced by the amplitude variation.
 
-        >>> round(mse_amp, 6)
-        0.000987
+        >>> f'{mse_amp:.6f}'
+        '0.000987'
 
         In this example we can observe that the main part of the mean square
         error is due to the phase variation.
 
-        >>> round(mse_pha, 6)
-        0.115769
+        >>> f'{mse_pha:.6f}'
+        '0.115769'
 
         Nearly 99% of the variation is due to phase.
 
-        >>> round(rsq, 6)
-        0.991549
-
-
+        >>> f'{rsq:.6f}'
+        '0.991549'
 
     """
 
@@ -191,14 +188,12 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
 
     # mse due to phase variation
-    mse_pha = scipy.integrate.simps(cr*eta_fine_sq - mu_fine_sq ,
-                                    eval_points)
+    mse_pha = scipy.integrate.simps(cr*eta_fine_sq - mu_fine_sq , eval_points)
 
     # mse due to amplitude variation
-    #mse_amp = mse_total - mse_pha
-
+    # mse_amp = mse_total - mse_pha
     y_fine_center = numpy.subtract(y_fine, eta_fine)
-    y_fine_center_sq = numpy.square(y_fine_center, out =y_fine_center)
+    y_fine_center_sq = numpy.square(y_fine_center, out=y_fine_center)
     y_fine_center_sq_mean = y_fine_center_sq.mean(axis=0)
 
     mse_amp = scipy.integrate.simps(y_fine_center_sq_mean, eval_points)

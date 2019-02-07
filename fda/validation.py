@@ -130,7 +130,7 @@ def minimise(fdatagrid, parameters,
         >>> fd = fda.FDataGrid(x ** 2, x)
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn)
         >>> numpy.array(res['scores']).round(2)
-        array([11.67, 12.37])
+        array([ 11.67, 12.37])
         >>> round(res['best_score'], 2)
         11.67
         >>> res['best_parameter']

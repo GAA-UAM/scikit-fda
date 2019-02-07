@@ -418,7 +418,7 @@ class Constant(Basis):
             >>> Constant((0,5)).penalty(0)
             array([[5]])
             >>> Constant().penalty(1)
-            array([[0.]])
+            array([[ 0.]])
 
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
@@ -467,20 +467,20 @@ class Monomial(Basis):
         values.
 
         >>> bs_mon.evaluate([0, 1, 2])
-        array([[1., 1., 1.],
-               [0., 1., 2.],
-               [0., 1., 4.]])
+        array([[ 1., 1., 1.],
+               [ 0., 1., 2.],
+               [ 0., 1., 4.]])
 
         And also evaluates its derivatives
 
         >>> bs_mon.evaluate([0, 1, 2], derivative=1)
-        array([[0., 0., 0.],
-               [1., 1., 1.],
-               [0., 2., 4.]])
+        array([[ 0., 0., 0.],
+               [ 1., 1., 1.],
+               [ 0., 2., 4.]])
         >>> bs_mon.evaluate([0, 1, 2], derivative=2)
-        array([[0., 0., 0.],
-               [0., 0., 0.],
-               [2., 2., 2.]])
+        array([[ 0., 0., 0.],
+               [ 0., 0., 0.],
+               [ 2., 2., 2.]])
 
     """
 
@@ -685,9 +685,9 @@ class BSpline(Basis):
 
         >>> bss = BSpline(nbasis=3, order=3)
         >>> bss.evaluate([0, 0.5, 1])
-        array([[1.  , 0.25, 0.  ],
-               [0.  , 0.5 , 0.  ],
-               [0.  , 0.25, 1.  ]])
+        array([[ 1.  , 0.25, 0.  ],
+               [ 0.  , 0.5 , 0.  ],
+               [ 0.  , 0.25, 1.  ]])
 
         And evaluates first derivative
 
@@ -1345,7 +1345,7 @@ class FDataBasis(FData):
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
             basis=Monomial(domain_range=[array([0, 1])], nbasis=4),
-            coefficients=[[1.  1.  3.  0.5]],
+            coefficients=[[ 1.  1.  3.  0.5]],
             ...)
 
     """
@@ -1459,7 +1459,7 @@ class FDataBasis(FData):
             >>> basis = Fourier((0, 1), nbasis=3)
             >>> fd = FDataBasis.from_data(x, t, basis)
             >>> fd.coefficients.round(2)
-            array([[0.  , 0.71, 0.71]])
+            array([[ 0.  , 0.71, 0.71]])
 
         References:
             .. [RS05-5-2-5] Ramsay, J., Silverman, B. W. (2005). How spline
@@ -1833,7 +1833,7 @@ class FDataBasis(FData):
             >>> FDataBasis(basis, coefficients).mean()
             FDataBasis(
                 basis=Monomial(domain_range=[array([0, 1])], nbasis=4),
-                coefficients=[[1.  1.  3.  0.5]],
+                coefficients=[[ 1.  1.  3.  0.5]],
                 ...)
 
         """
@@ -1920,13 +1920,13 @@ class FDataBasis(FData):
             ...                 basis=Monomial((0,5), nbasis=3))
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
-                array([[[1.],
-                        [3.],
-                        [7.]],
+                array([[[ 1.],
+                        [ 3.],
+                        [ 7.]],
             <BLANKLINE>
-                       [[1.],
-                        [2.],
-                        [5.]]]),
+                       [[ 1.],
+                        [ 2.],
+                        [ 5.]]]),
                 sample_points=[array([0, 1, 2])],
                 domain_range=array([[0, 5]]),
                 ...)

@@ -235,7 +235,7 @@ def inner_product(fdatagrid, fdatagrid2):
         >>> fd1 = FDataGrid(x,x)
         >>> fd2 = FDataGrid(numpy.ones(len(x)),x)
         >>> inner_product(fd1, fd2)
-        array([[0.5]])
+        array([[ 0.5]])
 
         If the FDataGrid object contains more than one sample
 
@@ -300,7 +300,7 @@ def norm_lp(fdatagrid, p=2):
         >>> x = numpy.linspace(0,1,1001)
         >>> fd = FDataGrid([numpy.ones(len(x)), x] ,x)
         >>> norm_lp(fd).round(2)
-        array([1.  , 0.58])
+        array([ 1.  , 0.58])
 
         The lp norm is only defined if p >= 1.
 
@@ -363,8 +363,8 @@ def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
         >>> fd = FDataGrid([numpy.ones(len(x)), x], x)
         >>> fd2 =  FDataGrid([numpy.zeros(len(x)), x/2 + 0.5], x)
         >>> metric(fd, fd2).round(2)
-        array([[1.  , 0.29],
-               [0.58, 0.29]])
+        array([[ 1.  , 0.29],
+               [ 0.58, 0.29]])
 
 
         If the functional data are defined over a different set of points of

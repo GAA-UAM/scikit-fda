@@ -3,45 +3,26 @@
 import scipy
 import math
 import numpy as np
+from .math import norm_lp
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
-def clustering_1Dimage(fdatagrid, num_dim, n_clusters=2, init=None, max_iter=100, metric='euclidean', *args, **kwargs):
+def _clustering_1Dimage(fdatagrid, num_dim, n_clusters, centers, max_iter, metric, *args, **kwargs):
+
     data_matrix = np.copy(fdatagrid.data_matrix[:, :, num_dim])
-
-    if fdatagrid.nsamples < 2:
-        raise ValueError("The number of observations must be greater than 1.")
-
-    if n_clusters < 2:
-        raise ValueError("The number of clusters must be greater than 1.")
-
-    if init is not None and init.shape != (n_clusters, fdatagrid.ncol):
-        raise ValueError("The init ndarray should be of shape (n_clusters, n_features) and gives the initial centers.")
-
-    possible_metrics = ["braycurtis", "canberra", "chebyshev", "cityblock", "correlation", "cosine", "dice",
-                        "euclidean", "hamming", "jaccard", "jensenshannon", "kulsinski", "mahalanobis",
-                        "matching", "minkowski", "rogerstanimoto", "russellrao", "seuclidean", "sokalmichener",
-                        "sokalsneath", "sqeuclidean", "wminkowski", "yule"]
-
-    if metric not in possible_metrics:
-        raise ValueError("Metric must be one of the specified in the documentation.")
-
     repetitions = 0
-    distances_to_centers = np.empty((fdatagrid.nsamples, n_clusters))
-    centers = np.empty((n_clusters, fdatagrid.ncol))
     centers_old = np.empty((n_clusters, fdatagrid.ncol))
 
-    if init is not None:
-        centers = init
-    else:
-        # Method for initialization: choose k observations (rows) at random from data for the initial centroids.
+    # Method for initialization: choose k observations (rows) at random from data for the initial centroids.
+    if centers is  None:
+        centers = np.empty((n_clusters, fdatagrid.ncol))
         for i in range(n_clusters):
             centers[i] = data_matrix[math.floor(i * fdatagrid.nsamples / n_clusters)].flatten()
 
     while not np.array_equal(centers, centers_old) and repetitions < max_iter:
         centers_old = np.copy(centers)
-        distances_to_centers = scipy.spatial.distance.cdist(data_matrix, centers, *args, **kwargs)
+        distances_to_centers = scipy.spatial.distance.cdist(data_matrix, centers, metric, *args, **kwargs)
         clustering_values = np.argmin(distances_to_centers, axis=1)
         for i in range(n_clusters):
             indices = np.where(clustering_values == i)
@@ -55,17 +36,41 @@ def clustering(fdatagrid, n_clusters=2, init=None, max_iter=100, metric='euclide
     if fdatagrid.ndim_domain > 1:
         raise NotImplementedError("Only support 1 dimension on the domain.")
 
+    if fdatagrid.nsamples < 2:
+        raise ValueError("The number of observations must be greater than 1.")
+
+    if n_clusters < 2:
+        raise ValueError("The number of clusters must be greater than 1.")
+
+    if max_iter < 1:
+        raise ValueError("The number of iterations must be greater than 0.")
+
+    if init is not None and init.shape != (fdatagrid.ndim_image, n_clusters, fdatagrid.ncol):
+        raise ValueError("The init ndarray should be of shape (ndim_image, n_clusters, n_features) "
+                         "and gives the initial centers.")
+    else:
+        init = np.array([None] * fdatagrid.ndim_image)
+
+    possible_metrics = ["braycurtis", "canberra", "chebyshev", "cityblock", "correlation", "cosine", "dice",
+                        "euclidean", "hamming", "jaccard", "jensenshannon", "kulsinski", "mahalanobis",
+                        "matching", "minkowski", "rogerstanimoto", "russellrao", "seuclidean", "sokalmichener",
+                        "sokalsneath", "sqeuclidean", "wminkowski", "yule"]
+
+    if metric not in possible_metrics:
+        raise ValueError("Metric must be one of the specified in the documentation.")
+
     clustering_values = np.empty((fdatagrid.nsamples, fdatagrid.ndim_image))
     centers = np.empty((fdatagrid.ndim_image, n_clusters, fdatagrid.ncol))
     for i in range(fdatagrid.ndim_image):
-        clustering_values[:, i], centers[i, :, :] = clustering_1Dimage(fdatagrid, num_dim=i,
-                                                                       n_clusters=n_clusters, init=init,
+        clustering_values[:, i], centers[i, :, :] = _clustering_1Dimage(fdatagrid, num_dim=i,
+                                                                       n_clusters=n_clusters, centers=init[i],
                                                                        max_iter=max_iter, metric=metric, *args,
                                                                        **kwargs)
 
     return clustering_values, centers
 
-def fuzzy_clustering_1Dimage(fdatagrid, num_dim, n_clusters, fuzzifier, centers, max_iter, norm_matrix):
+def _fuzzy_clustering_1Dimage(fdatagrid, num_dim, n_clusters, fuzzifier, centers, max_iter, norm_matrix):
+
     data_matrix = np.copy(fdatagrid.data_matrix[:, :, num_dim])
     repetitions = 0
     centers_old = np.empty((n_clusters, fdatagrid.ncol))
@@ -139,7 +144,7 @@ def fuzzy_clustering(fdatagrid, n_clusters=2, init=None, fuzzifier=2, max_iter=1
     membership_values = np.empty((fdatagrid.nsamples, fdatagrid.ndim_image, n_clusters))
     centers = np.empty((fdatagrid.ndim_image, n_clusters, fdatagrid.ncol))
     for i in range(fdatagrid.ndim_image):
-        U, centers[i, :, :] = fuzzy_clustering_1Dimage(fdatagrid, num_dim=i, n_clusters=n_clusters,
+        U, centers[i, :, :] = _fuzzy_clustering_1Dimage(fdatagrid, num_dim=i, n_clusters=n_clusters,
                                                        fuzzifier=fuzzifier, centers=init[i],
                                                        max_iter=max_iter, norm_matrix=norm_matrix[i])
         membership_values[:, i, :] = U.T

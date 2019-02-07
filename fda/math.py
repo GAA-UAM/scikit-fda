@@ -242,8 +242,8 @@ def inner_product(fdatagrid, fdatagrid2):
         >>> fd1 = FDataGrid([x, numpy.ones(len(x))], x)
         >>> fd2 = FDataGrid([numpy.ones(len(x)), x] ,x)
         >>> inner_product(fd1, fd2).round(2)
-        array([[0.5 , 0.33],
-               [1.  , 0.5 ]])
+        array([[ 0.5 , 0.33],
+               [ 1.  , 0.5 ]])
 
     """
     if fdatagrid.ndim_domain != 1:

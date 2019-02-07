@@ -412,11 +412,11 @@ class FDataGrid(FData):
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative(2)
             FDataGrid(
-                array([[[0.5 ],
-                        [0.25],
-                        [0.25],
-                        [0.75],
-                        [1.  ]]]),
+                array([[[ 0.5 ],
+                        [ 0.25],
+                        [ 0.25],
+                        [ 0.75],
+                        [ 1.  ]]]),
                 sample_points=[array([0, 1, 2, 3, 4])],
                 domain_range=array([[0, 4]]),
                 ...)

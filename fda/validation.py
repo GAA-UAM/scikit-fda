@@ -147,7 +147,7 @@ def minimise(fdatagrid, parameters,
                     [ 1.67],
                     [ 0.67],
                     [ 1.67],
-                    [ i2.5 ]]]),
+                    [ 2.5 ]]]),
             sample_points=[array([-2., -1.,  0.,  1.,  2.])],
             domain_range=array([[-2.,  2.]]),
             ...)

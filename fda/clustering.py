@@ -1,14 +1,79 @@
 """Clustering Module."""
 
-import scipy
 import math
 import numpy as np
-from .math import norm_lp
+from .grid import FDataGrid
+from .math import metric, norm_lp
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
-def _clustering_1Dimage(fdatagrid, num_dim, n_clusters, centers, max_iter, metric, *args, **kwargs):
+def _generic_clustering_checks(fdatagrid, n_clusters, init,  max_iter, fuzzifier = 2, n_dec = 3):
+    r"""Checks the arguments passed to both :func:`clustering <fda.clustering.clustering>` and
+    :func:`fuzzy clustering <fda.clustering.fuzzy_clustering>` functions.
+
+    Args:
+        fdatagrid (FDataGrid object): Object whose samples are classified into different groups.
+        n_clusters (int): Number of groups into which the samples are classified.
+        init (ndarray): Contains the initial centers of the different clusters the algorithm starts with or None.
+        max_iter (int): Maximum number of iterations of the clustering algorithm.
+        fuzzifier (int, optional): Scalar parameter used to specify the degree of fuzziness in the fuzzy algorithm.
+            Defaults to 2.
+        n_dec (int, optional): designates the number of decimals of the labels returned in the fuzzy algorithm.
+            Defaults to 3.
+
+    Returns:
+        init (ndarray): In case all checks have passed, the init parameter.
+    """
+
+    if fdatagrid.ndim_domain > 1:
+        raise NotImplementedError("Only support 1 dimension on the domain.")
+
+    if fdatagrid.nsamples < 2:
+        raise ValueError("The number of observations must be greater than 1.")
+
+    if n_clusters < 2:
+        raise ValueError("The number of clusters must be greater than 1.")
+
+    if init is not None and init.shape != (fdatagrid.ndim_image, n_clusters, fdatagrid.ncol):
+        raise ValueError("The init ndarray should be of shape (ndim_image, n_clusters, n_features) "
+                         "and gives the initial centers.")
+    else:
+        init = np.array([None] * fdatagrid.ndim_image)
+
+    if max_iter < 1:
+        raise ValueError("The number of iterations must be greater than 0.")
+
+    if fuzzifier < 2:
+        raise ValueError("The fuzzifier parameter must be greater than 1.")
+
+    if n_dec < 1 :
+        raise ValueError("The number of decimals should be greater than 0 in order to obatain a rational result.")
+
+    return init
+
+def _clustering_1Dimage(fdatagrid, num_dim, n_clusters, centers, max_iter, p):
+    r""" Implementation of the K-Means algorithm for each dimension on the image of the FDataGrid object.
+
+    Args:
+        fdatagrid (FDataGrid object): Object whose samples are clusered, classified into different groups.
+        num_dim (int): Scalar indicating the dimension on the image of the FdataGrid object the algorithm is
+            being applied..
+        n_clusters (int): Number of groups into which the samples are classified.
+        centers (ndarray): Contains the initial centers of the different clusters the algorithm starts with.
+            Defaults to None, ans the centers are initialized randomly.
+        max_iter (int): Maximum number of iterations of the clustering algorithm. Defaults to 100.
+        p (int): Identifies the p-norm used to calculate the distance between functions. Defaults to 2.
+
+    Returns:
+        (tuple): tuple containing:
+
+            clustering_values (numpy.ndarray: (nsamples,)): 1-dimensional array where each row
+            contains the cluster that observation belongs to.
+
+            centers (numpy.ndarray: (n_clusters, ncol)): Contains the centroids for each cluster.
+
+    """
 
     data_matrix = np.copy(fdatagrid.data_matrix[:, :, num_dim])
     repetitions = 0
@@ -22,7 +87,8 @@ def _clustering_1Dimage(fdatagrid, num_dim, n_clusters, centers, max_iter, metri
 
     while not np.array_equal(centers, centers_old) and repetitions < max_iter:
         centers_old = np.copy(centers)
-        distances_to_centers = scipy.spatial.distance.cdist(data_matrix, centers, metric, *args, **kwargs)
+        centers_fd = FDataGrid(centers, fdatagrid.sample_points)
+        distances_to_centers = metric(fdatagrid=fdatagrid, fdatagrid2=centers_fd, p=p)
         clustering_values = np.argmin(distances_to_centers, axis=1)
         for i in range(n_clusters):
             indices = np.where(clustering_values == i)
@@ -32,44 +98,99 @@ def _clustering_1Dimage(fdatagrid, num_dim, n_clusters, centers, max_iter, metri
     return clustering_values, centers
 
 
-def clustering(fdatagrid, n_clusters=2, init=None, max_iter=100, metric='euclidean', *args, **kwargs):
-    if fdatagrid.ndim_domain > 1:
-        raise NotImplementedError("Only support 1 dimension on the domain.")
+def clustering(fdatagrid, n_clusters=2, init=None, max_iter=100, p=2):
+    r"""Implementation of the K-Means algorithm for the FdataGrid object.
 
-    if fdatagrid.nsamples < 2:
-        raise ValueError("The number of observations must be greater than 1.")
+    Let :math:`\mathbf{X = \left\{ x_{1}, x_{2}, ..., x_{n}\right\}}` be a given dataset to be
+    analyzed, and :math:`\mathbf{V = \left\{ v_{1}, v_{2}, ..., v_{c}\right\}}` be the set of
+    centers of clusters in :math:`\mathbf{X}` dataset in :math:`m` dimensional space
+    :math:`\left(\mathbb{R}^m \right)`. Where :math:`n` is the number of objects, :math:`m` is the
+    number of features, and :math:`c` is the number of partitions or clusters.
 
-    if n_clusters < 2:
-        raise ValueError("The number of clusters must be greater than 1.")
+    KM iteratively computes cluster centroids in order to minimize the sum with respect to the specified
+    measure. KM algorithm aims at minimizing an objective function known as the squared error function given
+    as follows:
 
-    if max_iter < 1:
-        raise ValueError("The number of iterations must be greater than 0.")
+    .. math::
+        J_{KM}\left(\mathbf{X}; \mathbf{V}\right) = \sum_{i=1}^{c}\sum_{j=1}^{n}D_{ij}^2
 
-    if init is not None and init.shape != (fdatagrid.ndim_image, n_clusters, fdatagrid.ncol):
-        raise ValueError("The init ndarray should be of shape (ndim_image, n_clusters, n_features) "
-                         "and gives the initial centers.")
-    else:
-        init = np.array([None] * fdatagrid.ndim_image)
+    Where, :math:`D_{ij}^2` is the squared chosen distance measure which can be any p-norm:
+    :math:`D_{ij} = \lVert x_{ij} - v_{i} \rVert = \left( \int_I \lvert x_{ij} - v_{i}\rvert^p dx \right)^{ \frac{1}{p}}`,
+    being :math:`I` the domain where :math:`\mathbf{X}` is defined, :math:`1 \leqslant i \leqslant c`,
+    :math:`1 \leqslant j\leqslant n_{i}`. Where :math:`n_{i}` represents the number of data points in i-th cluster.
 
-    possible_metrics = ["braycurtis", "canberra", "chebyshev", "cityblock", "correlation", "cosine", "dice",
-                        "euclidean", "hamming", "jaccard", "jensenshannon", "kulsinski", "mahalanobis",
-                        "matching", "minkowski", "rogerstanimoto", "russellrao", "seuclidean", "sokalmichener",
-                        "sokalsneath", "sqeuclidean", "wminkowski", "yule"]
+    For :math:`c` clusters, KM is based on an iterative algorithm minimizing the sum of distances from each
+    observation to its cluster centroid. The observations are moved between clusters until the sum cannot be decreased
+    any more. KM algorithm involves the following steps:
 
-    if metric not in possible_metrics:
-        raise ValueError("Metric must be one of the specified in the documentation.")
+        1. Centroids of :math:`c` clusters are chosen from :math:`\mathbf{X}` randomly or are passed to the
+           function as a parameter.
 
+        2. Distances between data points and cluster centroids are calculated.
+
+        3. Each data point is assigned to the cluster whose centroid is closest to it.
+
+        4. Cluster centroids are updated by using the following formula:
+           :math:`\mathbf{v_{i}} ={\sum_{i=1}^{n_{i}}x_{ij}}/n_{i}` :math:`1 \leqslant i \leqslant c`.
+
+        5. Distances from the updated cluster centroids are recalculated.
+
+        6. If no data point is assigned to a new cluster the run of algorithm is stopped, otherwise the
+           steps from 3 to 5 are repeated for probable movements of data points between the clusters.
+
+    This algorithm is applied for each dimension on the image of the FDataGrid object.
+
+    Args:
+        fdatagrid (FDataGrid object): Object whose samples are clusered, classified into different groups.
+        n_clusters (int, optional): Number of groups into which the samples are classified. Defaults to 2.
+        init (ndarray, optional): Contains the initial centers of the different clusters the algorithm starts with.
+            Defaults to None, ans the centers are initialized randomly.
+        max_iter (int, optional): Maximum number of iterations of the clustering algorithm. Defaults to 100.
+        p (int, optional): Identifies the p-norm used to calculate the distance between functions. Defaults to 2.
+
+    Returns:
+        (tuple): tuple containing:
+
+            clustering_values (numpy.ndarray: (nsamples, ndim_image)): 2-dimensional matrix where each row
+            contains the cluster that observation belongs to.
+
+            centers (numpy.ndarray: (ndim_image, n_clusters, ncol)): Contains the centroids for each cluster.
+
+    """
+    init =  _generic_clustering_checks(fdatagrid, n_clusters, init,  max_iter)
     clustering_values = np.empty((fdatagrid.nsamples, fdatagrid.ndim_image))
     centers = np.empty((fdatagrid.ndim_image, n_clusters, fdatagrid.ncol))
     for i in range(fdatagrid.ndim_image):
         clustering_values[:, i], centers[i, :, :] = _clustering_1Dimage(fdatagrid, num_dim=i,
                                                                        n_clusters=n_clusters, centers=init[i],
-                                                                       max_iter=max_iter, metric=metric, *args,
-                                                                       **kwargs)
+                                                                       max_iter=max_iter, p=p)
 
     return clustering_values, centers
 
-def _fuzzy_clustering_1Dimage(fdatagrid, num_dim, n_clusters, fuzzifier, centers, max_iter, norm_matrix):
+def _fuzzy_clustering_1Dimage(fdatagrid, num_dim, n_clusters, fuzzifier, centers, max_iter, p, n_dec):
+    r""" Implementation of the Fuzzy C-Means algorithm for each dimension on the image of the FDataGrid object.
+
+    Args:
+        fdatagrid (FDataGrid object): Object whose samples are clusered, classified into different groups.
+        num_dim (int): Scalar indicating the dimension on the image of the FdataGrid object the algorithm is
+            being applied..
+        n_clusters (int): Number of groups into which the samples are classified.
+        fuzzifier (int): Scalar parameter used to specify the degree of fuzziness.
+        centers (ndarray): Contains the initial centers of the different clusters the algorithm starts with.
+            Defaults to None, ans the centers are initialized randomly.
+        max_iter (int): Maximum number of iterations of the clustering algorithm. Defaults to 100.
+        p (int): Identifies the p-norm used to calculate the distance between functions. Defaults to 2.
+        n_dec (int): designates the number of decimals of the labels returned.
+
+    Returns:
+        (tuple): tuple containing:
+
+            membership values (numpy.ndarray: (n_clusters, nsamples)): 2-dimensional matrix where each row
+            contains the membership value that observation has to each cluster.
+
+            centers (numpy.ndarray: (n_clusters, ncol)): Contains the centroids for each cluster.
+
+    """
 
     data_matrix = np.copy(fdatagrid.data_matrix[:, :, num_dim])
     repetitions = 0
@@ -84,9 +205,6 @@ def _fuzzy_clustering_1Dimage(fdatagrid, num_dim, n_clusters, fuzzifier, centers
         for i in range(n_clusters):
             centers[i] = np.average(data_matrix[cluster == i], axis=0)
 
-    if norm_matrix is None:
-        norm_matrix = np.eye(fdatagrid.ncol)
-
     while not np.array_equal(centers, centers_old) and repetitions < max_iter:
         centers_old = np.copy(centers)
         for i in range(fdatagrid.nsamples):
@@ -96,8 +214,8 @@ def _fuzzy_clustering_1Dimage(fdatagrid, num_dim, n_clusters, fuzzifier, centers
                 U[np.where(comparison == False), i] = 0
             else:
                 diff = data_matrix[i] - centers
-                distances_to_centers = np.power(np.diag(np.dot(np.dot(diff, norm_matrix), diff.T)),
-                                                2 / (fuzzifier - 1))
+                diff_fd = FDataGrid(diff, fdatagrid.sample_points)
+                distances_to_centers = np.power(norm_lp(diff_fd, p), 2 / (fuzzifier - 1))
                 for j in range(n_clusters):
                     U[j, i] = 1 / np.sum(distances_to_centers[j] / distances_to_centers)
         U = np.power(U, fuzzifier)
@@ -105,48 +223,86 @@ def _fuzzy_clustering_1Dimage(fdatagrid, num_dim, n_clusters, fuzzifier, centers
             centers[i] = np.sum((U[i] * data_matrix.T).T, axis=0) / np.sum(U[i])
         repetitions += 1
 
-    return U, centers
+    return np.round(np.power(U, 1/fuzzifier), n_dec), centers
 
 
-def fuzzy_clustering(fdatagrid, n_clusters=2, init=None, fuzzifier=2, max_iter=100, norm_matrix=None):
-    if fdatagrid.ndim_domain > 1:
-        raise NotImplementedError("Only support 1 dimension on the domain.")
+def fuzzy_clustering(fdatagrid, n_clusters=2, init=None, max_iter=100, fuzzifier=2,  n_dec = 3, p=2):
+    r""" Implementation of the Fuzzy C-Means algorithm for the FDataGrid object.
 
-    if fdatagrid.nsamples < 2:
-        raise ValueError("The number of observations must be greater than 1.")
+    Let :math:`\mathbf{X = \left\{ x_{1}, x_{2}, ..., x_{n}\right\}}` be a given dataset to be
+    analyzed, and :math:`\mathbf{V = \left\{ v_{1}, v_{2}, ..., v_{c}\right\}}` be the set of
+    centers of clusters in :math:`\mathbf{X}` dataset in :math:`m` dimensional space
+    :math:`\left(\mathbb{R}^m \right)`. Where :math:`n` is the number of objects, :math:`m` is the
+    number of features, and :math:`c` is the number of partitions or clusters.
 
-    if n_clusters < 2:
-        raise ValueError("The number of clusters must be greater than 1.")
+    FCM minimizes the following objective function:
 
-    if fuzzifier < 1:
-        raise ValueError("The fuzzifier parameter must be greater than 0.")
+    .. math::
+        J_{FCM}\left(\mathbf{X}; \mathbf{U, V}\right) = \sum_{i=1}^{c}\sum_{j=1}^{n}u_{ij}^{f}D_{ij}^2.
 
-    if max_iter < 1:
-        raise ValueError("The number of iterations must be greater than 0.")
+    This function differs from classical KM with the use of weighted squared errors instead of using squared
+    errors only. In the objective function, :math:`\mathbf{U}` is a fuzzy partition matrix that is computed from
+    dataset :math:`\mathbf{X}`: :math:`\mathbf{U} = [u_{ij}] \in M_{FCM}`.
 
-    if init is not None and init.shape != (fdatagrid.ndim_image, n_clusters, fdatagrid.ncol):
-        raise ValueError("The init ndarray should be of shape (ndim_image, n_clusters, n_features) "
-                         "and gives the initial centers.")
-    else:
-        init = np.array([None] * fdatagrid.ndim_image)
+    The fuzzy clustering of :math:`\mathbf{X}` is represented with :math:`\mathbf{U}` membership matrix. The element
+    :math:`u_{ij}` is the membership value of j-th object to i-th cluster. In this case, the i-th row of :math:`\mathbf{U}`
+    matrix is formed with membership values of :math:`n` objects to i-th cluster. :math:`\mathbf{V}` is a prototype vector
+    of cluster prototypes (centroids): :math:`\mathbf{V = \left\{ v_{1}, v_{2}, ..., v_{c}\right\}}`,
+    :math:`\mathbf{v_{i}}\in \mathbb{R}^m`.
 
-    if norm_matrix is not None and norm_matrix.shape != (fdatagrid.ndim_image, fdatagrid.ncol, fdatagrid.ncol):
-        raise ValueError("The norm_matrix should be of shape (ndim_image, n_features, n_features).")
-    elif norm_matrix is not None:
-        for i in range(fdatagrid.ndim_image):
-            if not np.all(np.linalg.eigvals(norm_matrix[i]) > 0):
-                raise ValueError("The norm_matrix should be positive definite.")
-            if not np.array_equal(norm_matrix[i], norm_matrix[i].T):
-                raise ValueError("The norm_matrix should be symmetric.")
-    else:
-        norm_matrix = np.array([None] * fdatagrid.ndim_image)
+    :math:`D_{ij}^2` is the squared chosen distance measure which can be any p-norm:
+    :math:`D_{ij} =\lVert x_{ij} - v_{i} \rVert = \left( \int_I \lvert x_{ij} - v_{i}\rvert^p dx \right)^{ \frac{1}{p}}`,
+    being :math:`I` the domain where :math:`\mathbf{X}` is defined, :math:`1 \leqslant i \leqslant c`,
+    :math:`1 \leqslant j\leqslant n_{i}`. Where :math:`n_{i}` represents the number of data points in i-th cluster.
 
+    FCM is an iterative process and stops when the number of iterations is reached to maximum, or when
+    the centroids of the clusters do not change. The steps involved in FCM are:
+
+        1. Centroids of :math:`c` clusters are chosen from :math:`\mathbf{X}` randomly or are passed to the
+           function as a parameter.
+
+        2. Membership values of data points to each cluster are calculated with:
+           :math:`u_{ij} = \left[ \sum_{k=1}^c\left( D_{ij}/D_{kj}\right)^\frac{2}{f-1} \right]^{-1}`.
+
+        3. Cluster centroids are updated by using the following formula:
+           :math:`\mathbf{v_{i}} =\frac{\sum_{j=1}^{n}u_{ij}^f x_{j}}{\sum_{j=1}^{n} u_{ij}^f}`,
+           :math:`1 \leqslant i \leqslant c`.
+
+        4. If no cluster centroid changes the run of algorithm is stopped, otherwise return
+           to step 2.
+
+    This algorithm is applied for each dimension on the image of the FDataGrid object.
+
+    Args:
+        fdatagrid (FDataGrid object): Object whose samples are clusered, classified into different groups.
+        num_dim (int): Scalar indicating the dimension on the image of the FdataGrid object the algorithm is
+            being applied..
+        n_clusters (int): Number of groups into which the samples are classified.
+        fuzzifier (int): Scalar parameter used to specify the degree of fuzziness.
+        centers (ndarray): Contains the initial centers of the different clusters the algorithm starts with.
+            Defaults to None, ans the centers are initialized randomly.
+        max_iter (int): Maximum number of iterations of the clustering algorithm. Defaults to 100.
+        p (int): Identifies the p-norm used to calculate the distance between functions. Defaults to 2.
+        n_dec (int): designates the number of decimals of the labels returned.
+
+    Returns:
+        (tuple): tuple containing:
+
+            membership values (numpy.ndarray: (n_clusters, nsamples)): 2-dimensional matrix where each row
+            contains the membership value that observation has to each cluster.
+
+            centers (numpy.ndarray: (n_clusters, ncol)): Contains the centroids for each cluster.
+
+    """
+
+
+    init = _generic_clustering_checks(fdatagrid, n_clusters, init, max_iter, fuzzifier, n_dec)
     membership_values = np.empty((fdatagrid.nsamples, fdatagrid.ndim_image, n_clusters))
     centers = np.empty((fdatagrid.ndim_image, n_clusters, fdatagrid.ncol))
     for i in range(fdatagrid.ndim_image):
         U, centers[i, :, :] = _fuzzy_clustering_1Dimage(fdatagrid, num_dim=i, n_clusters=n_clusters,
                                                        fuzzifier=fuzzifier, centers=init[i],
-                                                       max_iter=max_iter, norm_matrix=norm_matrix[i])
+                                                       max_iter=max_iter, p=p, n_dec=n_dec)
         membership_values[:, i, :] = U.T
 
     return membership_values, centers

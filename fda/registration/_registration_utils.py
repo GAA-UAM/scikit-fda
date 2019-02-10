@@ -6,6 +6,7 @@ import collections
 
 import numpy
 import scipy.integrate
+from scipy.interpolate import PchipInterpolator
 
 
 def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
@@ -208,3 +209,73 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
                                         'mse_amp mse_pha rsq cr')
 
     return mse_decomp(mse_amp, mse_pha, rsq, cr)
+
+
+def invert_warping(fdatagrid, *, eval_points=None):
+    """Compute the inverse of a diffeomorphism.
+
+    Let :math:`\gamma : [a,b] \\rightarrow [a,b]` be a function strictly
+    increasing, calculates the corresponding inverse
+    :math:`\gamma^{-1} : [a,b] \\rightarrow [a,b]` such that
+    :math:`\gamma^{-1} \circ \gamma = \gamma \circ \gamma^{-1} = \gamma_{id}`.
+
+    Uses a PCHIP interpolator to compute approximately the inverse.
+
+    Args:
+        fdatagrid (:class:`FDataGrid`): Functions to be inverted.
+        eval_points: (array_like, optional): Set of points where the
+            functions are interpolated to obtain the inverse, by default uses
+            the sample points of the fdatagrid.
+
+    Returns:
+        :class:`FDataGrid`: Inverse of the original functions.
+
+    Raises:
+        ValueError: If the functions are not strictly increasing or are
+            multidimensional.
+
+    Examples:
+
+        >>> import numpy as np
+        >>> from fda import FDataGrid
+        >>> from fda.registration import invert_warping
+
+        We will construct the warping :math:`\gamma : [0,1] \\rightarrow [0,1]`
+        wich maps t to t^3.
+
+        >>> t = np.linspace(0, 1)
+        >>> gamma = FDataGrid(t**3, t)
+        >>> gamma
+        FDataGrid(...)
+
+        We will compute the inverse.
+
+        >>> inverse = invert_warping(gamma)
+        >>> inverse
+        FDataGrid(...)
+
+        The result of the composition should be approximately the identity
+        function .
+
+        >>> identity = gamma.compose(inverse)
+        >>> identity([0, 0.25, 0.5, 0.75, 1]).round(3)
+        array([[ 0.  ,  0.25,  0.5 ,  0.75,  1.  ]])
+
+    """
+
+    if fdatagrid.ndim_image != 1 or fdatagrid.ndim_domain != 1:
+        raise ValueError("Multidimensional object not supported.")
+
+    if eval_points is None:
+        eval_points = fdatagrid.sample_points[0]
+
+    y = fdatagrid(eval_points, keepdims=False)
+
+
+    data_matrix = numpy.empty((fdatagrid.nsamples, len(eval_points)))
+
+    for i in range(fdatagrid.nsamples):
+        data_matrix[i] = PchipInterpolator(y[i], eval_points)(eval_points)
+
+
+    return fdatagrid.copy(data_matrix=data_matrix, sample_points=eval_points)

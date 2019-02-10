@@ -53,6 +53,18 @@ See the `Landmark Registration Example
    fda.registration.landmark_registration_warping
 
 
+Elastic Registration
+--------------------
+
+.. autosummary::
+   :toctree: autosummary
+
+   fda.registration.elastic_registration
+   fda.registration.elastic_registration_warping
+   fda.registration.to_srsf
+   fda.registration.from_srsf
+
+
 Amplitude and Phase Decomposition
 ---------------------------------
 
@@ -65,6 +77,14 @@ decomposition procedure developed by *Kneip and Ramsay (2008)*.
 
    fda.registration.mse_decomposition
 
+
+Utility functions
+-----------------
+
+.. autosummary::
+   :toctree: autosummary
+
+   fda.registration.invert_warping
 
 References
 ----------

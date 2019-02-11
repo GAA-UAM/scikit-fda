@@ -76,6 +76,7 @@ def _clustering_1Dimage(fdatagrid, num_dim, n_clusters, centers, max_iter, p):
     """
 
     data_matrix = np.copy(fdatagrid.data_matrix[:, :, num_dim])
+    fdatagrid_1dim = FDataGrid(data_matrix=data_matrix, sample_points=fdatagrid.sample_points[0])
     repetitions = 0
     centers_old = np.empty((n_clusters, fdatagrid.ncol))
 
@@ -88,7 +89,7 @@ def _clustering_1Dimage(fdatagrid, num_dim, n_clusters, centers, max_iter, p):
     while not np.array_equal(centers, centers_old) and repetitions < max_iter:
         centers_old = np.copy(centers)
         centers_fd = FDataGrid(centers, fdatagrid.sample_points)
-        distances_to_centers = metric(fdatagrid=fdatagrid, fdatagrid2=centers_fd, p=p)
+        distances_to_centers = metric(fdatagrid=fdatagrid_1dim, fdatagrid2=centers_fd, p=p)
         clustering_values = np.argmin(distances_to_centers, axis=1)
         for i in range(n_clusters):
             indices = np.where(clustering_values == i)

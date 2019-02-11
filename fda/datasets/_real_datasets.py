@@ -424,7 +424,7 @@ def fetch_weather(return_X_y: bool=False):
 
     curves = FDataGrid(data_matrix=temp_prec_daily,
                        sample_points = range(1, 366),
-                       dataset_label="Canadian Temperatures",
+                       dataset_label="Canadian Weather",
                        axes_labels=["day", "temperature (ºC)", "precipitation (mm.)"])
 
     target = data["region"]

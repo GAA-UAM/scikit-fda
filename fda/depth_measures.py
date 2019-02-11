@@ -282,7 +282,7 @@ def _cumulative_distribution(column):
     return count_cumulative[indexes].reshape(column.shape)
 
 
-def Fraiman_Muniz_depth(fdatagrid, pointwise=False):
+def fraiman_muniz_depth(fdatagrid, pointwise=False):
     r"""Implementation of Fraiman and Muniz (FM) Depth for functional data.
 
     Each column is considered as the samples of an aleatory variable. The univariate depth of each of the samples of each column is
@@ -313,7 +313,7 @@ def Fraiman_Muniz_depth(fdatagrid, pointwise=False):
         ...                [-1, -1, -0.5, 1, 1, 0.5], [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> Fraiman_Muniz_depth(fd, pointwise = True)
+        >>> fraiman_muniz_depth(fd, pointwise = True)
         (array([[0.5       ],
                [0.75      ],
                [0.91666667],
@@ -352,7 +352,7 @@ def Fraiman_Muniz_depth(fdatagrid, pointwise=False):
         ...                [[[4, 6], [4, 10]], [[45, 48], [38, 56]], [[34, 78], [10, 28]]]]
         >>> sample_points = [[2, 4, 6], [3, 6]]
         >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> Fraiman_Muniz_depth(fd)
+        >>> fraiman_muniz_depth(fd)
         array([[0.72222222, 0.66666667],
                [0.66666667, 0.72222222],
                [0.77777778, 0.77777778]])

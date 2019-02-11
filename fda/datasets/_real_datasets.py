@@ -421,17 +421,17 @@ def fetch_weather(return_X_y: bool = False):
 
     curves = FDataGrid(data_matrix=temp_prec_daily,
                        sample_points=range(1, 366),
-                       dataset_label="Canadian Temperatures",
+                       dataset_label="Canadian Weather",
                        axes_labels=["day", "temperature (ºC)", "precipitation (mm.)"])
 
-    target = data["region"]
+    target_names, target = np.unique(data["region"], return_inverse=True)
 
     if return_X_y:
         return curves, target
     else:
         return {"data": curves,
                 "target": target,
-                "target_names": np.unique(target),
+                "target_names": target_names,
                 "target_feature_names": ["region"],
                 "DESCR": DESCR}
 

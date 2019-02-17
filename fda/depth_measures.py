@@ -96,7 +96,7 @@ def band_depth(fdatagrid, pointwise=False):
 
     The band depth of each sample is obtained by computing the fraction of the bands determined by two sample
     curves containing the whole graph of the first one. In the case the fdatagrid domain dimension is 2, instead
-    of curves, surfaces determine the bands.
+    of curves, surfaces determine the bands. In larger dimensions, the hyperplanes of determine the bands.
 
     Args:
         fdatagrid (FDataGrid): Object over whose samples the band depth is going to be calculated.
@@ -156,7 +156,7 @@ def modified_band_depth(fdatagrid, pointwise=False):
 
     The band depth of each sample is obtained by computing the fraction of time its graph is contained
     in the bands determined by two sample curves. In the case the fdatagrid domain dimension is 2, instead
-    of curves, surfaces determine the bands.
+    of curves, surfaces determine the bands. In larger dimensions, the hyperplanes of determine the bands.
 
     Args:
         fdatagrid (FDataGrid): Object over whose samples the modified band depth is going to be calculated.

@@ -442,10 +442,91 @@ if hasattr(fetch_weather, "__doc__"):  # docstrings can be stripped off
     fetch_weather.__doc__ += _weather_descr + _param_descr
 
 _aemet_descr = """
-    Series of daily summaries of 73 spanish weather stations selected for the period 1980-2009.  The
-    dataset contains geographic information of each station and the average for the period 1980-2009
-    of daily temperature, daily precipitation and daily wind speed.
-    Meteorological State Agency of Spain (AEMET), http://www.aemet.es/. Government of Spain.
+    Series of daily summaries of 73 spanish weather stations selected for the period 1980-2009. The
+    dataset contains the average for the period 1980-2009 of daily temperature, daily precipitation and 
+    daily wind speed.
+    Below, the geographic information of each station is left.
+       
+    ======== ====== ================================= ======================== ===== ============ ============
+    nsample  ind    name                              province                 alt.  longitude    latitude
+    ======== ====== ================================= ======================== ===== ============ ============
+    0        1387   A CORUÑA 	                      A CORUÑA 	               58    -8.419444 	  43.367222
+    1        1387   A CORUÑA/ALVEDRO 	              A CORUÑA 	               98    -8.372222 	  43.306944
+    2        1428   SANTIAGO DE COMPOSTELA/LABACOLLA  A CORUÑA 	               370   -8.410833 	  42.887778
+    3        9091O  VITORIA/FORONDA                   ALAVA                    513   -2.733333 	  42.871944
+    4        8175   ALBACETE/LOS LLANOS               ALBACETE 	               704   -1.863056 	  38.952222
+    5        8025   ALICANTE 	                      ALICANTE 	               81    -0.494444 	  38.366667
+    6        8019   ALICANTE/EL ALTET 	              ALICANTE 	               43    -0.570833 	  38.282778
+    7        6325O  ALMERÍA/AEROPUERTO 	              ALMERIA 	               21    -2.356944 	  36.846389
+    8        1212   ASTURIAS/AVILÉS 	              ASTURIAS 	               127   -6.044167 	  43.566944
+    9        1249I  OVIEDO                            ASTURIAS 	               336   -5.872778 	  43.354444
+    10       4452   BADAJOZ/TALAVERA LA REAL 	      BADAJOZ 	               185   -6.829167 	  38.883333
+    11       B954   IBIZA/ES CODOLA                   BALEARES 	               6     1.384444 	  38.876389
+    12       B893   MENORCA/MAÓ                       BALEARES 	               91    4.215556     39.854722
+    13       B228   PALMA DE MALLORCA, CMT            BALEARES 	               3     2.626389     39.555556
+    14       B278   PALMA DE MALLORCA/SON SAN JUAN    BALEARES 	               8     2.736667     39.560833
+    15       200    BARCELONA (FABRA) 	              BARCELONA                412   2.125278     41.419444
+    16       76     BARCELONA/AEROPUERTO              BARCELONA                4     2.070000     41.292778
+    17       2331   BURGOS/VILLAFRÍA 	              BURGOS 	               890   -3.632500    42.356111
+    18       5960   JEREZ DE LA FRONTERA/AEROPUERTO   CADIZ 	               27    -6.055833    36.750556
+    19       6001   TARIFA                            CADIZ 	               32    -5.597500    36.015278
+    20       1109   SANTANDER/PARAYAS 	              CANTABRIA                5     -3.831389    43.429167
+    21       8500A  CASTELLÓN 	                      CASTELLON                35    -0.071389 	  39.950000
+    22       4121   CIUDAD REAL                       CIUDAD REAL              628   -3.919722    38.989444
+    23       5402   CÓRDOBA/AEROPUERTO 	              CORDOBA 	               90    -4.846111    37.844167
+    24       8096   CUENCA                            CUENCA 	               945   -2.138056    40.066667
+    25       367    GIRONA/COSTA BRAVA 	              GIRONA 	               143    2.763333    41.911667
+    26       5530   GRANADA/AEROPUERTO 	              GRANADA 	               567   -3.789444    37.189722
+    27       5514   GRANADA/BASE AÉREA 	              GRANADA 	               687   -3.631389    37.136944
+    28       3013   MOLINA DE ARAGÓN 	              GUADALAJARA              105   -1.885278    40.844444
+    29       1024   SAN SEBASTIÁN,IGUELDO             GUIPUZCOA                252   -2.039444    43.307500
+    30       1014   SAN SEBASTIÁN/FUENTERRABIA 	      GUIPUZCOA                4     -1.787222    43.360556
+    31       9898   HUESCA/PIRINEOS 	              HUESCA 	               541   -0.326389    42.083333
+    32       9170   LOGROÑO/AGONCILLO 	              LA RIOJA 	               353   -2.331111    42.452222
+    33       C249I  FUERTEVENTURA/AEROPUERTO 	      LAS PALMAS               25    -13.863056   28.444722
+    34       C029O  LANZAROTE/AEROPUERTO              LAS PALMAS               14    -13.600278   28.951944
+    35       C649I  LAS PALMAS DE GRAN CANARIA/GANDO  LAS PALMAS               24    -15.389444   27.922500
+    36       2661   LEÓN/VIRGEN DEL CAMINO            LEON                     916   -5.649444    42.588889
+    37       1549   PONFERRADA                        LEON                     534   -6.600000    42.563889
+    38       3191   COLMENAR VIEJO/FAMET              MADRID 	               1004  -3.764444    40.698611
+    39       3195   MADRID,RETIRO                     MADRID 	               667   -3.678056    40.411111
+    40       3129   MADRID/BARAJAS                    MADRID 	               609   -3.555556    40.466667
+    41       3196   MADRID/CUATRO VIENTOS             MADRID 	               687   -3.789167    40.377778
+    42       3200   MADRID/GETAFE                     MADRID 	               617   -3.722500    40.300000
+    43       3175   MADRID/TORREJÓN                   MADRID 	               611   -3.450278    40.483333
+    44       2462   NAVACERRADA,PUERTO                MADRID 	               1894  -4.010278    40.780556
+    45       6155A  MÁLAGA/AEROPUERTO                 MALAGA 	               7     -4.488056    36.666667
+    46       6000A  MELILLA 	                      MELILLA                  47    -2.955278    35.277778
+    47       7228   MURCIA/ALCANTARILLA               MURCIA 	               85    -1.229722    37.957778
+    48 	     7031   MURCIA/SAN JAVIER                 MURCIA                   4     -0.803333    37.788889
+    49 	     9263D  PAMPLONA/NOAIN                    NAVARRA                  459   -1.650000    42.776944
+    50 	     1690A  OURENSE 	                      OURENSE                  143   -7.860278    42.327778
+    51 	     1495   VIGO/PEINADOR                     PONTEVEDRA               261   -8.623889    42.239444
+    52 	     2870   SALAMANCA,OBS.                    SALAMANCA                775   -5.661389    40.956389
+    53 	     2867   SALAMANCA/MATACAN                 SALAMANCA                790   -5.498333    40.959444
+    54 	     C929I  HIERRO/AEROPUERTO                 SANTA CRUZ DE TENERIFE   32    -17.888889   27.818889
+    55 	     C430E  IZAÑA                             SANTA CRUZ DE TENERIFE   2371  -16.499444   28.308889
+    56 	     C139E  LA PALMA/AEROPUERTO               SANTA CRUZ DE TENERIFE   33    -17.755000   28.633056
+    57 	     C449C  STA.CRUZ DE TENERIFE              SANTA CRUZ DE TENERIFE   35    -16.255278   28.463056
+    58 	     C447A  TENERIFE/LOS RODEOS               SANTA CRUZ DE TENERIFE   632   -16.329444   28.477500
+    59       C429I  TENERIFE/SUR                      SANTA CRUZ DE TENERIFE   64    -16.560833   28.047500
+    60       5796   MORÓN DE LA FRONTERA              SEVILLA                  87    -5.615833    37.158333
+    61       5783   SEVILLA/SAN PABLO 	              SEVILLA 	               34    -5.879167    37.416667
+    62       2030   SORIA                             SORIA                    1082  -2.466667    41.766667
+    63       0016A  REUS/AEROPUERTO 	              TARRAGONA                71    1.178889     41.149722
+    64       9981A  TORTOSA 	                      TARRAGONA                44    0.491389     40.820556
+    65       8416   VALENCIA 	                      VALENCIA 	               11    -0.366389    39.480556
+    66       8414A  VALENCIA/AEROPUERTO               VALENCIA                 69    -0.473333    39.486667
+    67       2422   VALLADOLID 	                      VALLADOLID               735   -4.766667    41.650000
+    68       2539   VALLADOLID (VILLANUBLA) 	      VALLADOLID               846   -4.850000    41.700000
+    69       1082   BILBAO/AEROPUERTO 	              VIZCAYA                  42    -2.905833    43.298056
+    70       2614   ZAMORA                            ZAMORA                   656   -5.733611    41.516667
+    71       9390   DAROCA                            ZARAGOZA                 779   -1.410833    41.114722
+    72       9434   ZARAGOZA (AEROPUERTO)             ZARAGOZA                 247   -1.008056    41.661944
+    ======== ====== ================================= ======================== ===== ============ ============  
+    
+    For more information, visit: Meteorological State Agency of Spain (AEMET), http://www.aemet.es/. Government of 
+    Spain.
 
     Authors:
         Manuel Febrero Bande, Manuel Oviedo de la Fuente <manuel.oviedo@usc.es>
@@ -474,27 +555,10 @@ def fetch_aemet(return_X_y: bool = False):
     fd_logprec = data["logprec"]
     fd_wind = data["wind.speed"]
 
-    regions = np.unique(data['df']['province'])
-    climate_regions = ["OCEANIC", "OCEANIC", "CONTINENTAL", "MEDITERRANEAN", "ARID", "OCEANIC", "CONTINENTAL",
-                       "MEDITERRANEAN", "MEDITERRANEAN", "CONTINENTAL", "MEDITERRANEAN", "OCEANIC", "MEDITERRANEAN",
-                       "CONTINENTAL", "MEDITERRANEAN", "CONTINENTAL", "MEDITERRANEAN", "MEDITERRANEAN", "CONTINENTAL",
-                       "OCEANIC", "CONTINENTAL", "CONTINENTAL", "CANARY", "CONTINENTAL", "CONTINENTAL", "MEDITERRANEAN",
-                       "MEDITERRANEAN", "ARID", "CONTINENTAL", "OCEANIC", "OCEANIC", "CONTINENTAL",
-                       "CANARY", "MEDITERRANEAN", "CONTINENTAL", "MEDITERRANEAN", "MEDITERRANEAN",
-                       "CONTINENTAL", "OCEANIC", "CONTINENTAL", "CONTINENTAL"]
-    climate_region_dict = dict(zip(regions, climate_regions))
-    climate_data = np.copy(data['df']['province'])
-    for k, v in climate_region_dict.items():
-        climate_data[climate_data == k] = v
-    climate_data[data['df']['altitude'] > 1500] = "MOUNTAIN"
-
     if return_X_y:
-        return fd_temp, fd_logprec, fd_wind, climate_data
+        return fd_temp, fd_logprec, fd_wind
     else:
         return {"data": (fd_temp, fd_logprec, fd_wind),
-                "target": climate_data,
-                "target_names": np.unique(climate_data),
-                "target_feature_names": ["climate"],
                 "DESCR": DESCR}
 
 

@@ -147,7 +147,7 @@ _phoneme_descr = """
     """
 
 
-def fetch_phoneme(return_X_y: bool=False):
+def fetch_phoneme(return_X_y: bool = False):
     """
     Load the phoneme dataset.
 
@@ -202,7 +202,7 @@ _growth_descr = """
 """
 
 
-def fetch_growth(return_X_y: bool=False):
+def fetch_growth(return_X_y: bool = False):
     """
     Load the Berkeley Growth Study dataset.
 
@@ -280,7 +280,7 @@ _tecator_descr = """
 """
 
 
-def fetch_tecator(return_X_y: bool=False):
+def fetch_tecator(return_X_y: bool = False):
     """
     Load the Tecator dataset.
 
@@ -350,7 +350,7 @@ _medflies_descr = """
 """
 
 
-def fetch_medflies(return_X_y: bool=False):
+def fetch_medflies(return_X_y: bool = False):
     """
     Load the Medflies dataset, where the flies are separated in two classes
     according to their longevity.
@@ -400,7 +400,7 @@ _weather_descr = """
 """
 
 
-def fetch_weather(return_X_y: bool=False):
+def fetch_weather(return_X_y: bool = False):
     """
     Load the Canadian Weather dataset.
 
@@ -536,7 +536,7 @@ _aemet_descr = """
 """
 
 
-def fetch_aemet(return_X_y: bool=False):
+def fetch_aemet(return_X_y: bool = False):
     """
     Load the Spanish Weather dataset.
 

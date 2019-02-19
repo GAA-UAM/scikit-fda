@@ -113,7 +113,7 @@ fd_extrapolated = fda.registration.landmark_shift(fd, landmarks)
 plt.figure()
 l1 = fd_extrapolated.plot(linestyle='dashed', label='Extrapolated samples')
 l2 = fd_restricted.plot(label="Restricted samples")
-plt.legend(handles=[l1[-1], l2[-1]])
+#plt.legend(handles=[l1[-1], l2[-1]])
 
 ###############################################################################
 # The previous method is also applicable for multidimensional objects,

@@ -17,8 +17,8 @@ class TestBasisEvaluationFourier(unittest.TestCase):
 
         t = np.linspace(0, 1, 4)
 
-        res = np.array([[0.692,  0.439, -1.128,  0.692],
-                        [1.056, -0.255, -0.748,  1.056]])
+        res = np.array([0.905482867989282, 0.146814813180645, -1.04995054116993, 0.905482867989282, 0.302725561229459,
+                        0.774764356993855, -1.02414754822331, 0.302725561229459]).reshape((2, 4)).round(3)
 
         np.testing.assert_array_equal(f(t).round(3), res)
         np.testing.assert_array_equal(f.evaluate(t).round(3), res)
@@ -33,7 +33,7 @@ class TestBasisEvaluationFourier(unittest.TestCase):
         f = FDataBasis(fourier, coefficients)
 
         # Test different ways of call f with a point
-        res = np.array([[-0.69017042], [-1.02082148]]).round(4)
+        res = np.array([-0.903918107989282, -0.267163981229459]).reshape((2, 1)).round(4)
 
         np.testing.assert_array_equal(f([0.5]).round(4), res)
         np.testing.assert_array_equal(f((0.5,)).round(4), res)
@@ -54,10 +54,11 @@ class TestBasisEvaluationFourier(unittest.TestCase):
 
         t = np.linspace(0, 1, 4)
 
+        res = np.array([4.34138447771721, -7.09352774867064, 2.75214327095343, 4.34138447771721, 6.52573053999253,
+                        -4.81336320468984, -1.7123673353027, 6.52573053999253]).reshape((2, 4)).round(3)
+
         np.testing.assert_array_equal(
-            f(t, derivative=1).round(3),
-            np.array([[5.684, -6.602,  0.918,  5.684],
-                      [1.79,  -6.547,  4.756,  1.79]])
+            f(t, derivative=1).round(3), res
         )
 
     def test_evaluation_grid_fourier(self):
@@ -128,8 +129,8 @@ class TestBasisEvaluationFourier(unittest.TestCase):
 
         t = np.linspace(0, 1, 4)
 
-        res = np.array([[0.692,  0.439, -1.128,  0.692],
-                        [1.056, -0.255, -0.748,  1.056]])
+        res = np.array([0.905482867989282, 0.146814813180645, -1.04995054116993, 0.905482867989282, 0.302725561229459,
+                        0.774764356993855, -1.02414754822331, 0.302725561229459]).reshape((2, 4)).round(3)
 
         res_keepdims = res.reshape((2, 4, 1))
 
@@ -160,6 +161,9 @@ class TestBasisEvaluationFourier(unittest.TestCase):
 
         res = np.array([[0.69173518, -0.69017042, -1.08997978],
                         [0.60972512, -0.57416354,  1.02551401]]).round(3)
+
+        res = np.array([0.905482867989282, -0.903918107989282, -1.13726755517372, 1.09360302608278,
+                        -1.05804144608278, 0.85878105128844]).reshape((2, 3)).round(3)
 
         res_keepdims = res.reshape((2, 3, 1))
 
@@ -199,8 +203,8 @@ class TestBasisEvaluationFourier(unittest.TestCase):
 
         t = np.linspace(0, 1, 4)
 
-        res = np.array([[0.692,  0.439, -1.128,  0.692],
-                        [1.056, -0.255, -0.748,  1.056]])
+        res = np.array([0.905482867989282, 0.146814813180645, -1.04995054116993, 0.905482867989282, 0.302725561229459,
+                        0.774764356993855, -1.02414754822331, 0.302725561229459]).reshape((2, 4)).round(3)
 
         res_keepdims = res.reshape((2, 4, 1))
 
@@ -235,8 +239,7 @@ class TestBasisEvaluationFourier(unittest.TestCase):
 
             t = np.linspace(0, 1, 4)
 
-            res = np.array([[0.692,  0.439, -1.128,  0.692],
-                            [1.056, -0.255, -0.748,  1.056]])
+            res = np.array([0.905, 0.147, -1.05, 0.905, 0.303, 0.775, -1.024, 0.303]).reshape((2, 4))
 
             np.testing.assert_array_equal(f(t).round(3), res)
             np.testing.assert_array_equal(f.evaluate(t).round(3), res)

@@ -478,7 +478,7 @@ def fetch_aemet(return_X_y: bool = False):
         return fd_temp, fd_logprec, fd_wind
     else:
         return {"data": (fd_temp, fd_logprec, fd_wind),
-                "meta": np.asarray(data["df"])[:,np.array([0, 1,2, 3, 6, 7])],
+                "meta": np.asarray(data["df"])[:, np.array([0, 1, 2, 3, 6, 7])],
                 "meta_names": ["ind", "name", "province", "altitude", "longitude", "latitude"],
                 "meta_feature_names": ["location"],
                 "DESCR": DESCR}

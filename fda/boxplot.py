@@ -14,9 +14,44 @@ from .grid import FDataGrid
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
+def _generic_boxplot_checks(fdatagrid, fig, ax, method, nrows, ncols, colormap, factor):
+
+    if fig is not None and ax is not None:
+        raise ValueError("fig and axes parameters cannot be passed as arguments at the same time.")
+
+    if fig != None and len(fig.get_axes()) != fdatagrid.ndim_image:
+        raise ValueError("Number of axes of the figure must be equal to"
+                         "the dimension of the image.")
+
+    if ax is not None and len(ax) != fdatagrid.ndim_image:
+        raise ValueError("Number of axes must be equal to the dimension of the image.")
+
+    if (ax is not None or fig is not None) and (nrows is not None or ncols is not None):
+        raise ValueError("The number of columns and/or number of rows of the figure, "
+                         "in which each dimension of the image is plotted, can only "
+                         "be customized in case fig is None and ax is None.")
+
+    if (nrows is not None and ncols is not None) and nrows * ncols < self.ndim_image:
+        raise ValueError("The number of columns and the number of rows specified is "
+                         "incorrect.")
+
+    if ((method != fraiman_muniz_depth) & (method != band_depth) & (method != modified_band_depth)):
+        raise ValueError("Undefined function.")
+
+    if not isinstance(colormap, matplotlib.colors.LinearSegmentedColormap):
+        raise ValueError("colormap must be of type matplotlib.colors.LinearSegmentedColormap")
+
+    if factor < 0:
+        raise ValueError("The number used to calculate the outlying envelope must be positive.")
+
+    if fig == None and ax == None:
+        fig, ax = fdatagrid.set_figure_and_axes(nrows, ncols)
+
+    return fig, ax
+
 
 def fdboxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, prob=[0.5], fullout=False, factor=1.5,
-              colormap=plt.cm.get_cmap('RdPu'), barcol="blue", outliercol="red", mediancol="black"):
+              colormap=plt.cm.get_cmap('RdPu'), barcol="blue", outliercol="red", mediancol="black", nrows=None, ncols=None):
     """Implementation of the functional boxplot.
 
     It is an informative exploratory tool for visualizing functional data, as well as
@@ -44,35 +79,25 @@ def fdboxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, prob=[
         barcol (string): Color of the envelopes and vertical lines.
         outliercol (string): Color of the outliers.
         mediancol (string): Color of the median.
+        nrows(int, optional): designates the number of rows of the figure to plot the different dimensions of the
+            image. Only specified if fig and ax are None.
+        ncols(int, optional): designates the number of columns of the figure to plot the different dimensions of the
+            image. Only specified if fig and ax are None.
 
     Returns:
         :class:`FDataBoxplotInfo <fda.boxplot.FDataBoxplotInfo>` object: _plot
 
     """
-    if fdatagrid.ndim_domain > 1:
+    if fdatagrid.ndim_domain != 1:
         raise ValueError("Function only supports FDataGrid with domain dimension 1.")
 
-    if ((method != Fraiman_Muniz_depth) & (method != band_depth) & (method != modified_band_depth)):
-        raise ValueError("Undefined function.")
+    fig, ax = _generic_boxplot_checks(fdatagrid, fig, ax, method, nrows, ncols, colormap, factor)
 
     if sorted(prob, reverse=True) != prob:
         raise ValueError("Probabilities required to be in descending order.")
 
     if min(prob) < 0 or max(prob) > 1:
         raise ValueError("Probabilities must be between 0 and 1.")
-
-    if not isinstance(colormap, matplotlib.colors.LinearSegmentedColormap):
-        raise ValueError("colormap must be of type matplotlib.colors.LinearSegmentedColormap")
-
-    if fig is not None and ax is not None:
-        raise ValueError("fig and axes parameters cannot be passed as arguments at the same time.")
-
-    if fig != None and len(fig.get_axes()) != fdatagrid.ndim_image:
-        raise ValueError("Number of axes of the figure must be equal to"
-                         "the dimension of the image.")
-
-    if ax is not None and len(ax) != fdatagrid.ndim_image:
-        raise ValueError("Number of axes must be equal to the dimension of the image.")
 
     # Obtaining the necessary colors of the colormap.
     tones = np.linspace(0.1, 1.0, len(prob) + 1, endpoint=False)[1:]
@@ -86,10 +111,7 @@ def fdboxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, prob=[
     depth = method(fdatagrid)
     indices_descencing_depth = (-depth).argsort(axis=0)
 
-    if fig == None and ax == None:
-        fig, ax = fdatagrid.set_figure_and_axes()
-
-    _plot = FDataBoxplotInfo(fdatagrid, color, barcol, mediancol, outliercol)
+    _plot = FDataBoxplotInfo(fdatagrid, color, barcol, mediancol, outliercol, nrows, ncols)
 
     for m in range(fdatagrid.ndim_image):
 
@@ -149,7 +171,7 @@ def fdboxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, prob=[
 
 
 def surface_boxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, factor=1.5,
-                    colormap=plt.cm.get_cmap('Greys'), boxcol= 1.0, outcol=0.7):
+                    colormap=plt.cm.get_cmap('Greys'), boxcol= 1.0, outcol=0.7, nrows=None, ncols=None):
     """Implementation of the surface boxplot.
 
     Analogously to the functional boxplot, it is an informative exploratory tool for visualizing
@@ -174,32 +196,28 @@ def surface_boxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, 
             Defaults to 0.7.
         outboxcol (float, optional): Tone of the colormap to plot the outlying envelopes.
             Defaults to 1.0.
+        nrows(int, optional): designates the number of rows of the figure to plot the different dimensions of the
+            image. Only specified if fig and ax are None.
+        ncols(int, optional): designates the number of columns of the figure to plot the different dimensions of the
+            image. Only specified if fig and ax are None.
 
     Returns:
         :class:`FDataBoxplotInfo <fda.boxplot.FDataBoxplotInfo>` object: _plot
 
     """
-    if fig is not None and ax is not None:
-        raise ValueError("fig and axes parameters cannot be passed as arguments at the same time.")
-
-    if fig != None and len(fig.get_axes()) != fdatagrid.ndim_image:
-        raise ValueError("Number of axes of the figure must be equal to"
-                         "the dimension of the image.")
-
-    if ax is not None and len(ax) != fdatagrid.ndim_image:
-        raise ValueError("Number of axes must be equal to the dimension of the image.")
-
     if fdatagrid.ndim_domain != 2:
         raise ValueError("Function only supports FDataGrid with domain dimension 2.")
 
-    if ((method != Fraiman_Muniz_depth) & (method != band_depth) & (method != modified_band_depth)):
-        raise ValueError("Undefined function.")
+    fig, ax = _generic_boxplot_checks(fdatagrid, fig, ax, method, nrows, ncols, colormap, factor)
+
+    if boxcol < 0 or boxcol > 1:
+        raise ValueError("Argument boxcol must be a number between 0 and 1.")
+
+    if outcol < 0 or outcol > 1:
+        raise ValueError("Argument boxcol must be a number between 0 and 1.")
 
     depth = method(fdatagrid)
     indices_descencing_depth = (-depth).argsort(axis=0)
-
-    if fig == None and ax == None:
-        fig, ax = fdatagrid.set_figure_and_axes()
 
     x = fdatagrid.sample_points[0]
     lx = len(x)
@@ -208,7 +226,7 @@ def surface_boxplot(fdatagrid, fig=None, ax = None, method=modified_band_depth, 
     X, Y = np.meshgrid(x, y)
 
     _plot = FDataBoxplotInfo(fdatagrid, central_regions_col=[colormap(boxcol)],
-                             envelopes_col=colormap(outcol), median_col=colormap(boxcol))
+                             envelopes_col=colormap(outcol), median_col=colormap(boxcol), outliers_col=None,  nrows=nrows, ncols=ncols)
 
     for m in range(fdatagrid.ndim_image):
 
@@ -343,7 +361,7 @@ class FDataBoxplotInfo:
     """.replace('+IGNORE_RESULT', '+ELLIPSIS\n<...>')
 
     def __init__(self, fdatagrid, central_regions_col, envelopes_col,
-                 median_col, outliers_col=None):
+                 median_col, outliers_col, nrows, ncols):
         """Initializes the attributes of the FDataBoxplotInfo object.
 
         Attributes:
@@ -353,6 +371,10 @@ class FDataBoxplotInfo:
                 it is only the color of the outlying envelope.
             median_col(matplotlib.colors): Color of the median.
             outliers_col(matplotlib.colors, optional): Color of the outliers.
+            nrows(int, optional): designates the number of rows of the figure to plot the different dimensions of the
+                image.
+            ncols(int, optional): designates the number of columns of the figure to plot the different dimensions of the
+                image.
 
         """
         self.fdatagrid = fdatagrid
@@ -361,6 +383,8 @@ class FDataBoxplotInfo:
         self.envelopes_col = envelopes_col
         self.outliers_col = outliers_col
         self.median_col = median_col
+        self.nrows = nrows
+        self.ncols = ncols
         self.median = np.ndarray([])
         self.central_env = np.ndarray([])
         self.outlying_env = np.ndarray([])
@@ -449,7 +473,7 @@ class FDataBoxplotInfo:
                              "as dimensions of the image of fdatagrid multiplied by the number of"
                              "central regions at each axis.")
 
-        fig, ax = self.fdatagrid.set_figure_and_axes()
+        fig, ax = self.fdatagrid.set_figure_and_axes(self.nrows, self.ncols)
 
         for m in range(self.fdatagrid.ndim_image):
             for n in range(self.fdatagrid.nsamples):
@@ -505,7 +529,7 @@ class FDataBoxplotInfo:
                              "as dimensions of the image of fdatagrid"
                              " and each one must have nsample_points.")
 
-        fig, ax = self.fdatagrid.set_figure_and_axes()
+        fig, ax = self.fdatagrid.set_figure_and_axes(self.nrows, self.ncols)
 
         for m in range(self.fdatagrid.ndim_image):
             # median

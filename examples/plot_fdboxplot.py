@@ -13,7 +13,7 @@ Shows the use of the functional Boxplot applied to the Canadian Weather dataset.
 from fda import datasets
 from fda.grid import FDataGrid
 from fda.boxplot import fdboxplot
-from fda.depth_measures import band_depth, Fraiman_Muniz_depth
+from fda.depth_measures import band_depth, fraiman_muniz_depth
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -92,7 +92,7 @@ plt.title(fd_temperatures.dataset_label)
 ############################################################################################
 # The curves pointed as outliers are are those curves with significantly lower values to the
 # rest. This is the expected result due to the depth measure used, the :func:`modified band
-# depth <fda.boxplot.depth_measures.Fraiman_Muniz_depth>` which rank the samples according to
+# depth <fda.boxplot.depth_measures.fraiman_muniz_depth>` which rank the samples according to
 # their magnitude.
 #
 # We can retrieve the plot from the value returned by the method, a :func:`FDataBoxplotInfo
@@ -118,10 +118,10 @@ fdBoxploInfo = fdboxplot(fd_temperatures, method=band_depth, factor = 0.4)
 # which can include other central regions, apart from the central or 50% one.
 #
 # In the following call, the :func:`Fraiman and Muniz depth measure
-# <fda.boxplot.depth_measures.Fraiman_Muniz_depth>` is used and the 25% and 75% central regions
+# <fda.boxplot.depth_measures.fraiman_muniz_depth>` is used and the 25% and 75% central regions
 # are specified. Since the plot may be a little overloaded, only the part of the outlier curves
 # which falls out of the central regions is plotted (fullout parameter).
 
 plt.figure()
-fdBoxploInfo = fdboxplot(fd_temperatures,  method=Fraiman_Muniz_depth,
+fdBoxploInfo = fdboxplot(fd_temperatures,  method=fraiman_muniz_depth,
                          prob = [0.75, 0.5, 0.25], fullout = True)

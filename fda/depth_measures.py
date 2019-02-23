@@ -6,6 +6,8 @@ from the center (larger values) outwards(smaller ones)."""
 import numpy as np
 from scipy.stats import rankdata
 from .grid import FDataGrid
+import itertools
+from functools import reduce
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
@@ -83,17 +85,10 @@ def _rank_samples(fdatagrid):
                  [1., 1.]]]])
     """
     ranks = np.zeros(fdatagrid.shape)
-
-    if fdatagrid.ndim_domain == 1:
-        for i in range(fdatagrid.ndim_image):
-            for j in range(fdatagrid.ncol):
-                ranks[:, j, i] = rankdata(fdatagrid.data_matrix[:, j, i], method='max')
-    else:
-        for i in range(fdatagrid.ndim_image):
-            for j in range(len(fdatagrid.sample_points[1])):
-                for k in range(len(fdatagrid.sample_points[0])):
-                    ranks[:, k, j, i] = rankdata(fdatagrid.data_matrix[:, k, j, i], method='max')
-
+    ncols_dim_image = np.asarray([range(fdatagrid.shape[i]) for i in range(len(fdatagrid.shape) - 1, 0, -1)])
+    tuples = list(itertools.product(*ncols_dim_image))
+    for t in tuples:
+        ranks.T[t] = rankdata(fdatagrid.data_matrix.T[t], method='max')
     return ranks
 
 
@@ -102,7 +97,7 @@ def band_depth(fdatagrid, pointwise=False):
 
     The band depth of each sample is obtained by computing the fraction of the bands determined by two sample
     curves containing the whole graph of the first one. In the case the fdatagrid domain dimension is 2, instead
-    of curves, surfaces determine the bands.
+    of curves, surfaces determine the bands. In larger dimensions, the hyperplanes determine the bands.
 
     Args:
         fdatagrid (FDataGrid): Object over whose samples the band depth is going to be calculated.
@@ -141,18 +136,11 @@ def band_depth(fdatagrid, pointwise=False):
                [1.        , 1.        ]])
 
     """
-    if fdatagrid.ndim_domain > 2:
-        raise NotImplementedError("Only support 1 or 2 dimensions on the domain.")
-
-    if fdatagrid.ndim_domain == 1:
-        axis = 1
-    else:
-        axis = (1, 2)
-
     n = fdatagrid.nsamples
     nchoose2 = n * (n - 1) / 2
 
     ranks = _rank_samples(fdatagrid)
+    axis = tuple(range(1, fdatagrid.ndim_domain + 1))
     nsamples_above = fdatagrid.nsamples - np.amax(ranks, axis=axis)
     nsamples_below = np.amin(ranks, axis=axis) - 1
     depth = (nsamples_below * nsamples_above + fdatagrid.nsamples - 1) / nchoose2
@@ -169,7 +157,7 @@ def modified_band_depth(fdatagrid, pointwise=False):
 
     The band depth of each sample is obtained by computing the fraction of time its graph is contained
     in the bands determined by two sample curves. In the case the fdatagrid domain dimension is 2, instead
-    of curves, surfaces determine the bands.
+    of curves, surfaces determine the bands. In larger dimensions, the hyperplanes determine the bands.
 
     Args:
         fdatagrid (FDataGrid): Object over whose samples the modified band depth is going to be calculated.
@@ -234,16 +222,6 @@ def modified_band_depth(fdatagrid, pointwise=False):
                [0.94444444, 0.94444444]])
 
     """
-    if fdatagrid.ndim_domain > 2:
-        raise NotImplementedError("Only support 1 or 2 dimensions on the domain.")
-
-    if fdatagrid.ndim_domain == 1:
-        axis = 1
-        npoints_sample = fdatagrid.ncol
-    else:
-        axis = (1, 2)
-        npoints_sample = len(fdatagrid.sample_points[0]) * len(fdatagrid.sample_points[1])
-
     n = fdatagrid.nsamples
     nchoose2 = n * (n - 1) / 2
 
@@ -251,6 +229,8 @@ def modified_band_depth(fdatagrid, pointwise=False):
     nsamples_above = fdatagrid.nsamples - ranks
     nsamples_below = ranks - 1
     match = nsamples_above * nsamples_below
+    axis = tuple(range(1, fdatagrid.ndim_domain + 1))
+    npoints_sample = reduce(lambda x, y: x * len(y), fdatagrid.sample_points, 1)
     proportion = match.sum(axis=axis) / npoints_sample
     depth = (proportion + fdatagrid.nsamples - 1) / nchoose2
 
@@ -282,7 +262,7 @@ def _cumulative_distribution(column):
     return count_cumulative[indexes].reshape(column.shape)
 
 
-def Fraiman_Muniz_depth(fdatagrid, pointwise=False):
+def fraiman_muniz_depth(fdatagrid, pointwise=False):
     r"""Implementation of Fraiman and Muniz (FM) Depth for functional data.
 
     Each column is considered as the samples of an aleatory variable. The univariate depth of each of the samples of each column is
@@ -313,7 +293,7 @@ def Fraiman_Muniz_depth(fdatagrid, pointwise=False):
         ...                [-1, -1, -0.5, 1, 1, 0.5], [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> Fraiman_Muniz_depth(fd, pointwise = True)
+        >>> fraiman_muniz_depth(fd, pointwise = True)
         (array([[0.5       ],
                [0.75      ],
                [0.91666667],
@@ -352,35 +332,22 @@ def Fraiman_Muniz_depth(fdatagrid, pointwise=False):
         ...                [[[4, 6], [4, 10]], [[45, 48], [38, 56]], [[34, 78], [10, 28]]]]
         >>> sample_points = [[2, 4, 6], [3, 6]]
         >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> Fraiman_Muniz_depth(fd)
+        >>> fraiman_muniz_depth(fd)
         array([[0.72222222, 0.66666667],
                [0.66666667, 0.72222222],
                [0.77777778, 0.77777778]])
 
     """
-    if fdatagrid.ndim_domain > 2:
-        raise NotImplementedError("Only support 1 or 2 dimensions on the domain.")
-
-    if fdatagrid.ndim_domain == 1:
-        axis = 1
-        npoints_sample = fdatagrid.ncol
-    else:
-        axis = (1, 2)
-        npoints_sample = len(fdatagrid.sample_points[0]) * len(fdatagrid.sample_points[1])
-
     univariate_depth = np.zeros(fdatagrid.shape)
 
-    if fdatagrid.ndim_domain == 1:
-        for i in range(fdatagrid.ndim_image):
-            for j in range(fdatagrid.ncol):
-                column = fdatagrid.data_matrix[:, j, i]
-                univariate_depth[:, j, i] = 1 - np.abs(0.5 - _cumulative_distribution(column))
-    else:
-        for i in range(fdatagrid.ndim_image):
-            for j in range(len(fdatagrid.sample_points[1])):
-                for k in range(len(fdatagrid.sample_points[0])):
-                    column = fdatagrid.data_matrix[:, k, j, i]
-                    univariate_depth[:, k, j, i] = 1 - np.abs(0.5 - _cumulative_distribution(column))
+    ncols_dim_image = np.asarray([range(fdatagrid.shape[i]) for i in range(len(fdatagrid.shape) - 1, 0, -1)])
+    tuples = list(itertools.product(*ncols_dim_image))
+    for t in tuples:
+        column = fdatagrid.data_matrix.T[t]
+        univariate_depth.T[t] = 1 - np.abs(0.5 - _cumulative_distribution(column))
+
+    axis = tuple(range(1, fdatagrid.ndim_domain + 1))
+    npoints_sample = reduce(lambda x, y: x * len(y), fdatagrid.sample_points, 1)
 
     if pointwise:
         return np.sum(univariate_depth, axis=axis) / npoints_sample, univariate_depth

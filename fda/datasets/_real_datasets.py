@@ -417,21 +417,23 @@ def fetch_weather(return_X_y: bool = False):
 
     weather_daily = np.asarray(data["dailyAv"])
 
+    # Axes 0 and 1 must be transposed since in the downloaded dataset the data_matrix shape is
+    # (nfeatures, nsamples, ndim_image) while our data_matrix shape is (nsamples, nfeatures, ndim_image).
     temp_prec_daily = np.transpose(weather_daily[:, :, 0:2], axes=(1, 0, 2))
 
     curves = FDataGrid(data_matrix=temp_prec_daily,
                        sample_points=range(1, 366),
-                       dataset_label="Canadian Temperatures",
+                       dataset_label="Canadian Weather",
                        axes_labels=["day", "temperature (ºC)", "precipitation (mm.)"])
 
-    target = data["region"]
+    target_names, target = np.unique(data["region"], return_inverse=True)
 
     if return_X_y:
         return curves, target
     else:
         return {"data": curves,
                 "target": target,
-                "target_names": np.unique(target),
+                "target_names": target_names,
                 "target_feature_names": ["region"],
                 "DESCR": DESCR}
 
@@ -440,9 +442,9 @@ if hasattr(fetch_weather, "__doc__"):  # docstrings can be stripped off
     fetch_weather.__doc__ += _weather_descr + _param_descr
 
 _aemet_descr = """
-    Series of daily summaries of 73 spanish weather stations selected for the period 1980-2009.  The
-    dataset contains geographic information of each station and the average for the period 1980-2009
-    of daily temperature, daily precipitation and daily wind speed.
+    Series of daily summaries of 73 spanish weather stations selected for the period 1980-2009. The
+    dataset contains the geographic information of each station and the average for the period 
+    1980-2009 of daily temperature, daily precipitation and daily wind speed.
     Meteorological State Agency of Spain (AEMET), http://www.aemet.es/. Government of Spain.
 
     Authors:
@@ -472,27 +474,13 @@ def fetch_aemet(return_X_y: bool = False):
     fd_logprec = data["logprec"]
     fd_wind = data["wind.speed"]
 
-    regions = np.unique(data['df']['province'])
-    climate_regions = ["OCEANIC", "OCEANIC", "CONTINENTAL", "MEDITERRANEAN", "ARID", "OCEANIC", "CONTINENTAL",
-                       "MEDITERRANEAN", "MEDITERRANEAN", "CONTINENTAL", "MEDITERRANEAN", "OCEANIC", "MEDITERRANEAN",
-                       "CONTINENTAL", "MEDITERRANEAN", "CONTINENTAL", "MEDITERRANEAN", "MEDITERRANEAN", "CONTINENTAL",
-                       "OCEANIC", "CONTINENTAL", "CONTINENTAL", "CANARY", "CONTINENTAL", "CONTINENTAL", "MEDITERRANEAN",
-                       "MEDITERRANEAN", "ARID", "CONTINENTAL", "OCEANIC", "OCEANIC", "CONTINENTAL",
-                       "CANARY", "MEDITERRANEAN", "CONTINENTAL", "MEDITERRANEAN", "MEDITERRANEAN",
-                       "CONTINENTAL", "OCEANIC", "CONTINENTAL", "CONTINENTAL"]
-    climate_region_dict = dict(zip(regions, climate_regions))
-    climate_data = np.copy(data['df']['province'])
-    for k, v in climate_region_dict.items():
-        climate_data[climate_data == k] = v
-    climate_data[data['df']['altitude'] > 1500] = "MOUNTAIN"
-
     if return_X_y:
-        return fd_temp, fd_logprec, fd_wind, climate_data
+        return fd_temp, fd_logprec, fd_wind
     else:
         return {"data": (fd_temp, fd_logprec, fd_wind),
-                "target": climate_data,
-                "target_names": np.unique(climate_data),
-                "target_feature_names": ["climate"],
+                "meta": np.asarray(data["df"])[:, np.array([0, 1, 2, 3, 6, 7])],
+                "meta_names": ["ind", "name", "province", "altitude", "longitude", "latitude"],
+                "meta_feature_names": ["location"],
                 "DESCR": DESCR}
 
 

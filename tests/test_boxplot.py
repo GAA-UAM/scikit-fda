@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from fda.grid import FDataGrid
-from fda.depth_measures import band_depth, Fraiman_Muniz_depth
+from fda.depth_measures import band_depth, fraiman_muniz_depth
 from fda.boxplot import fdboxplot, surface_boxplot
 import matplotlib.pyplot as plt
 
@@ -44,7 +44,7 @@ class TestBoxplot(unittest.TestCase):
         sample_points = [0, 2, 4, 6, 8, 10]
         fd = FDataGrid(data_matrix, sample_points)
         plt.figure()
-        fdataBoxplotInfo = fdboxplot(fd, method=Fraiman_Muniz_depth)
+        fdataBoxplotInfo = fdboxplot(fd, method=fraiman_muniz_depth)
         np.testing.assert_array_equal(fdataBoxplotInfo.median, np.array([[-1., -1., -0.5, 1., 1., 0.5]]))
         np.testing.assert_array_equal(fdataBoxplotInfo.central_env, np.array([[[-0.5, -0.5, -0.5, 1., 1., 0.5],
                                                                                [-1., -1., -0.5, -1., -1., -1.]]]))

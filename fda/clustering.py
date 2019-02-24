@@ -4,6 +4,9 @@ import math
 import numpy as np
 from .grid import FDataGrid
 from .math import metric, norm_lp
+import matplotlib.pyplot as plt
+from mpldatacursor import datacursor
+import matplotlib.patches as mpatches
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
@@ -52,7 +55,7 @@ def _generic_clustering_checks(fdatagrid, n_clusters, init,  max_iter, fuzzifier
 
     return init
 
-def _clustering_1Dimage(fdatagrid, num_dim, n_clusters, centers, max_iter, p):
+def _clustering_1Dimage_implementation(fdatagrid, num_dim, n_clusters, centers, max_iter, p):
     r""" Implementation of the K-Means algorithm for each dimension on the image of the FDataGrid object.
 
     Args:
@@ -99,7 +102,7 @@ def _clustering_1Dimage(fdatagrid, num_dim, n_clusters, centers, max_iter, p):
     return clustering_values, centers
 
 
-def clustering(fdatagrid, n_clusters=2, init=None, max_iter=100, p=2):
+def clustering_implementation(fdatagrid, n_clusters=2, init=None, max_iter=100, p=2):
     r"""Implementation of the K-Means algorithm for the FdataGrid object.
 
     Let :math:`\mathbf{X = \left\{ x_{1}, x_{2}, ..., x_{n}\right\}}` be a given dataset to be
@@ -162,13 +165,14 @@ def clustering(fdatagrid, n_clusters=2, init=None, max_iter=100, p=2):
     clustering_values = np.empty((fdatagrid.nsamples, fdatagrid.ndim_image))
     centers = np.empty((fdatagrid.ndim_image, n_clusters, fdatagrid.ncol))
     for i in range(fdatagrid.ndim_image):
-        clustering_values[:, i], centers[i, :, :] = _clustering_1Dimage(fdatagrid, num_dim=i,
-                                                                       n_clusters=n_clusters, centers=init[i],
-                                                                       max_iter=max_iter, p=p)
+        clustering_values[:, i], centers[i, :, :] = _clustering_1Dimage_implementation(fdatagrid, num_dim=i,
+                                                                                       n_clusters=n_clusters,
+                                                                                       centers=init[i],
+                                                                                       max_iter=max_iter, p=p)
 
     return clustering_values, centers
 
-def _fuzzy_clustering_1Dimage(fdatagrid, num_dim, n_clusters, fuzzifier, centers, max_iter, p, n_dec):
+def _fuzzy_clustering_1Dimage_implementation(fdatagrid, num_dim, n_clusters, fuzzifier, centers, max_iter, p, n_dec):
     r""" Implementation of the Fuzzy C-Means algorithm for each dimension on the image of the FDataGrid object.
 
     Args:
@@ -227,7 +231,7 @@ def _fuzzy_clustering_1Dimage(fdatagrid, num_dim, n_clusters, fuzzifier, centers
     return np.round(np.power(U, 1/fuzzifier), n_dec), centers
 
 
-def fuzzy_clustering(fdatagrid, n_clusters=2, init=None, max_iter=100, fuzzifier=2,  n_dec = 3, p=2):
+def fuzzy_clustering_implementation(fdatagrid, n_clusters=2, init=None, max_iter=100, fuzzifier=2,  n_dec = 3, p=2):
     r""" Implementation of the Fuzzy C-Means algorithm for the FDataGrid object.
 
     Let :math:`\mathbf{X = \left\{ x_{1}, x_{2}, ..., x_{n}\right\}}` be a given dataset to be
@@ -301,12 +305,49 @@ def fuzzy_clustering(fdatagrid, n_clusters=2, init=None, max_iter=100, fuzzifier
     membership_values = np.empty((fdatagrid.nsamples, fdatagrid.ndim_image, n_clusters))
     centers = np.empty((fdatagrid.ndim_image, n_clusters, fdatagrid.ncol))
     for i in range(fdatagrid.ndim_image):
-        U, centers[i, :, :] = _fuzzy_clustering_1Dimage(fdatagrid, num_dim=i, n_clusters=n_clusters,
-                                                       fuzzifier=fuzzifier, centers=init[i],
-                                                       max_iter=max_iter, p=p, n_dec=n_dec)
+        U, centers[i, :, :] = _fuzzy_clustering_1Dimage_implementation(fdatagrid, num_dim=i,
+                                                                       n_clusters=n_clusters,
+                                                                       fuzzifier=fuzzifier,
+                                                                       centers=init[i],
+                                                                       max_iter=max_iter, p=p, n_dec=n_dec)
         membership_values[:, i, :] = U.T
 
     return membership_values, centers
+
+
+def plot_clusters_by_fuzzy_clustering(fd, n_clusters, labels, centers, cluster_colors, cluster_labels,
+                                      sample_labels, centers_color, centers_labels, xlabel=["Cluster"],
+                                      ylabel=["Membership grade"],
+                                      title=["Membership grades of the samples to each cluster"]):
+
+    labels_by_cluster = np.argmax(labels, axis=-1)
+    colors_by_cluster = cluster_colors[labels_by_cluster]
+
+
+    figs = []
+    for j in range(fd.ndim_image):
+        fig = plt.figure()
+
+        for i in range(fd.nsamples):
+            plt.plot(fd.sample_points[0], fd.data_matrix[i, :, j], c=colors_by_cluster[i, j], label=sample_labels[i])
+
+        patches = []
+        for i in range(n_clusters):
+            patches.append(mpatches.Patch(color=cluster_colors[i], label=cluster_labels[i]))
+            plt.plot(fd.sample_points[0], centers[j, i, :], c=centers_color[i], label=centers_labels[i])
+        plt.legend(handles=patches)
+
+        plt.xlabel(fd.axes_labels[0])
+        plt.ylabel(fd.axes_labels[j + 1])
+        plt.title(fd.dataset_label)
+        datacursor(formatter='{label}'.format)
+        figs.append(fig)
+
+    return figs
+
+
+
+
 
 
 

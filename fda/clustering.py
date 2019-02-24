@@ -7,6 +7,7 @@ from .math import metric, norm_lp
 import matplotlib.pyplot as plt
 from mpldatacursor import datacursor
 import matplotlib.patches as mpatches
+from matplotlib.ticker import MaxNLocator
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
@@ -55,7 +56,7 @@ def _generic_clustering_checks(fdatagrid, n_clusters, init,  max_iter, fuzzifier
 
     return init
 
-def _clustering_1Dimage_implementation(fdatagrid, num_dim, n_clusters, centers, max_iter, p):
+def _clustering_1Dimage(fdatagrid, num_dim, n_clusters, centers, max_iter, p):
     r""" Implementation of the K-Means algorithm for each dimension on the image of the FDataGrid object.
 
     Args:
@@ -102,7 +103,7 @@ def _clustering_1Dimage_implementation(fdatagrid, num_dim, n_clusters, centers, 
     return clustering_values, centers
 
 
-def clustering_implementation(fdatagrid, n_clusters=2, init=None, max_iter=100, p=2):
+def clustering(fdatagrid, n_clusters=2, init=None, max_iter=100, p=2):
     r"""Implementation of the K-Means algorithm for the FdataGrid object.
 
     Let :math:`\mathbf{X = \left\{ x_{1}, x_{2}, ..., x_{n}\right\}}` be a given dataset to be
@@ -165,14 +166,14 @@ def clustering_implementation(fdatagrid, n_clusters=2, init=None, max_iter=100, 
     clustering_values = np.empty((fdatagrid.nsamples, fdatagrid.ndim_image))
     centers = np.empty((fdatagrid.ndim_image, n_clusters, fdatagrid.ncol))
     for i in range(fdatagrid.ndim_image):
-        clustering_values[:, i], centers[i, :, :] = _clustering_1Dimage_implementation(fdatagrid, num_dim=i,
+        clustering_values[:, i], centers[i, :, :] = _clustering_1Dimage(fdatagrid, num_dim=i,
                                                                                        n_clusters=n_clusters,
                                                                                        centers=init[i],
                                                                                        max_iter=max_iter, p=p)
 
     return clustering_values, centers
 
-def _fuzzy_clustering_1Dimage_implementation(fdatagrid, num_dim, n_clusters, fuzzifier, centers, max_iter, p, n_dec):
+def _fuzzy_clustering_1Dimage(fdatagrid, num_dim, n_clusters, fuzzifier, centers, max_iter, p, n_dec):
     r""" Implementation of the Fuzzy C-Means algorithm for each dimension on the image of the FDataGrid object.
 
     Args:
@@ -231,7 +232,7 @@ def _fuzzy_clustering_1Dimage_implementation(fdatagrid, num_dim, n_clusters, fuz
     return np.round(np.power(U, 1/fuzzifier), n_dec), centers
 
 
-def fuzzy_clustering_implementation(fdatagrid, n_clusters=2, init=None, max_iter=100, fuzzifier=2,  n_dec = 3, p=2):
+def fuzzy_clustering(fdatagrid, n_clusters=2, init=None, max_iter=100, fuzzifier=2,  n_dec = 3, p=2):
     r""" Implementation of the Fuzzy C-Means algorithm for the FDataGrid object.
 
     Let :math:`\mathbf{X = \left\{ x_{1}, x_{2}, ..., x_{n}\right\}}` be a given dataset to be
@@ -305,7 +306,7 @@ def fuzzy_clustering_implementation(fdatagrid, n_clusters=2, init=None, max_iter
     membership_values = np.empty((fdatagrid.nsamples, fdatagrid.ndim_image, n_clusters))
     centers = np.empty((fdatagrid.ndim_image, n_clusters, fdatagrid.ncol))
     for i in range(fdatagrid.ndim_image):
-        U, centers[i, :, :] = _fuzzy_clustering_1Dimage_implementation(fdatagrid, num_dim=i,
+        U, centers[i, :, :] = _fuzzy_clustering_1Dimage(fdatagrid, num_dim=i,
                                                                        n_clusters=n_clusters,
                                                                        fuzzifier=fuzzifier,
                                                                        centers=init[i],
@@ -315,39 +316,210 @@ def fuzzy_clustering_implementation(fdatagrid, n_clusters=2, init=None, max_iter
     return membership_values, centers
 
 
-def plot_data_by_clusters(fd, n_clusters, labels, centers, cluster_colors, cluster_labels,
-                                      sample_labels, centers_color, centers_labels, xlabel=["Cluster"],
-                                      ylabel=["Membership grade"],
-                                      title=["Membership grades of the samples to each cluster"]):
+def plot_fuzzy_clustering(fdatagrid, n_clusters=2,  init=None, max_iter=100, fuzzifier=2,  n_dec = 3, p=2,
+                          fig=None, ax=None, nrows=None, ncols=None, sample_labels = None, cluster_colors = None,
+                          cluster_labels = None, center_colors= None, center_labels = None,
+                          colormap = plt.cm.get_cmap('rainbow')):
+
+    fig, ax = fdatagrid.generic_plotting_checks(fig, ax, nrows, ncols)
+
+    if sample_labels is not None and len(sample_labels) != fdatagrid.nsamples:
+        raise ValueError("sample_labels must contain a label for each sample.")
+
+    if cluster_colors is not None and len(cluster_colors) != n_clusters:
+        raise ValueError("cluster_colors must contain a color for each cluster.")
+
+    if cluster_labels is not None and len(cluster_labels) != n_clusters:
+        raise ValueError("cluster_labels must contain a label for each cluster.")
+
+    if center_colors is not None and len(center_colors) != n_clusters:
+        raise ValueError("center_colors must contain a color for each center.")
+
+    if center_labels is not None and len(center_labels) != n_clusters:
+        raise ValueError("centers_labels must contain a label for each center.")
+
+    labels, centers = fuzzy_clustering(fdatagrid, n_clusters=n_clusters,  init=init, max_iter=max_iter,
+                                       fuzzifier=fuzzifier, n_dec = n_dec, p=p)
+
+    if sample_labels is None:
+        sample_labels = ['$SAMPLE: {}$'.format(i) for i in range(fdatagrid.nsamples)]
+
+    if cluster_colors is None:
+        cluster_colors = colormap(np.arange(n_clusters) / (n_clusters - 1))
+
+    if cluster_labels is None:
+        cluster_labels = ['$CLUSTER: {}$'.format(i) for i in range(n_clusters)]
+
+    if center_colors is None:
+        center_colors = ["black"] * n_clusters
+
+    if center_labels is None:
+        center_labels = ['$CENTER: {}$'.format(i) for i in range(n_clusters)]
 
     labels_by_cluster = np.argmax(labels, axis=-1)
     colors_by_cluster = cluster_colors[labels_by_cluster]
 
+    patches = []
+    for i in range(n_clusters):
+        patches.append(mpatches.Patch(color=cluster_colors[i], label=cluster_labels[i]))
 
-    figs = []
-    for j in range(fd.ndim_image):
-        fig = plt.figure()
-
-        for i in range(fd.nsamples):
-            plt.plot(fd.sample_points[0], fd.data_matrix[i, :, j], c=colors_by_cluster[i, j], label=sample_labels[i])
-
-        patches = []
+    for j in range(fdatagrid.ndim_image):
+        for i in range(fdatagrid.nsamples):
+            ax[j].plot(fdatagrid.sample_points[0], fdatagrid.data_matrix[i, :, j], c=colors_by_cluster[i, j], label=sample_labels[i])
         for i in range(n_clusters):
-            patches.append(mpatches.Patch(color=cluster_colors[i], label=cluster_labels[i]))
-            plt.plot(fd.sample_points[0], centers[j, i, :], c=centers_color[i], label=centers_labels[i])
-        plt.legend(handles=patches)
-
-        plt.xlabel(fd.axes_labels[0])
-        plt.ylabel(fd.axes_labels[j + 1])
-        plt.title(fd.dataset_label)
+            ax[j].plot(fdatagrid.sample_points[0], centers[j, i, :], c=center_colors[i], label=center_labels[i])
+        ax[j].legend(handles=patches)
         datacursor(formatter='{label}'.format)
-        figs.append(fig)
 
-    return figs
+    fdatagrid.set_labels(fig, ax)
+
+    return fig, ax, labels, centers
 
 
+def plot_fuzzy_clustering_values(fdatagrid, n_clusters=2,  init=None, max_iter=100, fuzzifier=2,  n_dec = 3, p=2,
+                                 fig=None, ax=None, nrows=None, ncols=None, sample_colors=None, sample_labels=None,
+                                 cluster_labels = None, colormap = plt.cm.get_cmap('rainbow'), xlabels=None,
+                                 ylabels=None, titles=None):
+
+    fig, ax = fdatagrid.generic_plotting_checks(fig, ax, nrows, ncols)
+
+    if sample_colors is not None and len(sample_colors) != fdatagrid.nsamples:
+        raise ValueError("sample_colors must contain a color for each sample.")
+
+    if sample_labels is not None and len(sample_labels) != fdatagrid.nsamples:
+        raise ValueError("sample_labels must contain a label for each sample.")
+
+    if cluster_labels is not None and len(cluster_labels) != n_clusters:
+        raise ValueError("cluster_labels must contain a label for each cluster.")
+
+    if xlabels is not None and len(xlabels) != fdatagrid.ndim_image:
+        raise ValueError("xlabels must contain a label for each dimension on the domain.")
+
+    if ylabels is not None and len(ylabels) != fdatagrid.ndim_image:
+        raise ValueError("xlabels must contain a label for each dimension on the domain.")
+
+    if titles is not None and len(titles) != fdatagrid.ndim_image:
+        raise ValueError("titles must contain a title for each dimension on the domain.")
+
+    labels, _ = fuzzy_clustering(fdatagrid, n_clusters=n_clusters, init=init, max_iter=max_iter,
+                                 fuzzifier=fuzzifier, n_dec=n_dec, p=p)
+
+    if sample_colors is None:
+        cluster_colors = colormap(np.arange(n_clusters) / (n_clusters - 1))
+        labels_by_cluster = np.argmax(labels, axis=-1)
+        sample_colors = cluster_colors[labels_by_cluster]
+
+    if sample_labels is None:
+        sample_labels = ['$SAMPLE: {}$'.format(i) for i in range(fdatagrid.nsamples)]
+
+    if cluster_labels is None:
+        cluster_labels = ['${}$'.format(i) for i in range(n_clusters)]
+
+    if xlabels is None:
+        xlabels = ["Cluster"] * fdatagrid.ndim_image
+
+    if ylabels is None:
+        ylabels = ["Membership grade"] * fdatagrid.ndim_image
+
+    if titles is None:
+        titles = ["Membership grades of the samples to each cluster"] * fdatagrid.ndim_image
 
 
+    for j in range(fdatagrid.ndim_image):
+        ax[j].get_xaxis().set_major_locator(MaxNLocator(integer=True))
+        for i in range(fdatagrid.nsamples):
+            ax[j].plot(np.arange(n_clusters), labels[i, j, :], label=sample_labels[i], color=sample_colors[i, j])
+        ax[j].set_xticks(np.arange(n_clusters))
+        ax[j].set_xticklabels(cluster_labels)
+        ax[j].set_xlabel(xlabels[j])
+        ax[j].set_ylabel(ylabels[j])
+        ax[j].set_title(titles[j])
+        datacursor(formatter='{label}'.format)
+
+    return fig, ax, labels
+
+
+def plot_fuzzy_clustering_bars(fdatagrid, n_clusters=2,  init=None, max_iter=100, fuzzifier=2,  n_dec = 3, p=2,
+                               fig=None, ax=None, nrows=None, ncols=None, sort=-1, sample_labels=None, cluster_colors=None,
+                               cluster_labels=None, colormap = plt.cm.get_cmap('rainbow'), xlabels=None, ylabels=None,
+                               titles=None):
+
+    fig, ax = fdatagrid.generic_plotting_checks(fig, ax, nrows, ncols)
+
+    if sort < -1 or sort >= n_clusters:
+        raise ValueError("The sorting number must belong to the interval [-1, n_clusters)")
+
+    if sample_labels is not None and len(sample_labels) != fdatagrid.nsamples:
+        raise ValueError("sample_labels must contain a label for each sample.")
+
+    if cluster_colors is not None and len(cluster_colors) != n_clusters:
+        raise ValueError("cluster_colors must contain a color for each cluster.")
+
+    if cluster_labels is not None and len(cluster_labels) != n_clusters:
+        raise ValueError("cluster_labels must contain a label for each cluster.")
+
+    if xlabels is not None and len(xlabels) != fdatagrid.ndim_image:
+        raise ValueError("xlabels must contain a label for each dimension on the domain.")
+
+    if ylabels is not None and len(ylabels) != fdatagrid.ndim_image:
+        raise ValueError("xlabels must contain a label for each dimension on the domain.")
+
+    if titles is not None and len(titles) != fdatagrid.ndim_image:
+        raise ValueError("titles must contain a title for each dimension on the domain.")
+
+    labels, _ = fuzzy_clustering(fdatagrid, n_clusters=n_clusters, init=init, max_iter=max_iter,
+                                 fuzzifier=fuzzifier, n_dec=n_dec, p=p)
+    if sample_labels is None:
+        sample_labels = np.arange(fdatagrid.nsamples)
+
+    if cluster_colors is None:
+        cluster_colors = colormap(np.arange(n_clusters) / (n_clusters - 1))
+
+    if cluster_labels is None:
+        cluster_labels = ['$CLUSTER: {}$'.format(i) for i in range(n_clusters)]
+
+    if xlabels is None:
+        xlabels = ["Samples"] * fdatagrid.ndim_image
+
+    if ylabels is None:
+        ylabels = ["Membership grade"] * fdatagrid.ndim_image
+
+    if titles is None:
+        titles = ["Membership grades of the samples to each cluster"] * fdatagrid.ndim_image
+
+    patches = []
+    for i in range(n_clusters):
+        patches.append(mpatches.Patch(color=cluster_colors[i], label=cluster_labels[i]))
+
+    for j in range(fdatagrid.ndim_image):
+        if sort != -1:
+            sample_indices = np.argsort(-labels[:, j, sort])
+            sample_labels = np.copy(sample_labels[sample_indices])
+            labels_dim = np.copy(labels[sample_indices, j])
+
+            temp_labels = np.copy(labels_dim[:, 0])
+            labels_dim[:, 0] = labels_dim[:, sort]
+            labels_dim[:, sort] = temp_labels
+
+            temp_color = np.copy(cluster_colors[0])
+            cluster_colors[0] = cluster_colors[sort]
+            cluster_colors[sort] = temp_color
+        else:
+            labels_dim = np.squeeze(labels[:, j])
+
+        conc = np.zeros((fdatagrid.nsamples, 1))
+        labels_dim = np.concatenate((conc, labels_dim), axis=-1)
+        for i in range(n_clusters):
+            ax[j].bar(np.arange(fdatagrid.nsamples), labels_dim[:, i + 1], bottom=np.sum(labels_dim[:, :(i + 1)], axis=1),
+                      color=cluster_colors[i])
+        ax[j].set_xticks(np.arange(fdatagrid.nsamples))
+        ax[j].set_xticklabels(sample_labels)
+        ax[j].set_xlabel(xlabels[j])
+        ax[j].set_ylabel(ylabels[j])
+        ax[j].set_title(titles[j])
+        ax[j].legend(handles=patches)
+
+    return fig, ax, labels
 
 
 

@@ -754,7 +754,7 @@ class FDataGrid(FData):
                     ax[i].set_xlabel(self.axes_labels[0])
                     ax[i].set_ylabel(self.axes_labels[i + 1])
 
-    def _generic_plotting_checks(self, fig=None, ax=None, nrows=None, ncols=None):
+    def generic_plotting_checks(self, fig=None, ax=None, nrows=None, ncols=None):
         """Check the arguments passed to both :func:`plot <fda.grid.plot>` and :func:`scatter <fda.grid.scatter>`
          methods of the FDatGrid object.
 
@@ -822,7 +822,7 @@ class FDataGrid(FData):
             ax (axes object): axes in which the graphs are plotted.
 
         """
-        fig, ax = self._generic_plotting_checks(fig, ax, nrows, ncols)
+        fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
 
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):
@@ -857,7 +857,7 @@ class FDataGrid(FData):
             ax (axes object): axes in which the graphs are plotted.
 
         """
-        fig, ax = self._generic_plotting_checks(fig, ax, nrows, ncols)
+        fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
 
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):

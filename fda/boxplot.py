@@ -16,24 +16,7 @@ __email__ = "amanda.hernando@estudiante.uam.es"
 
 def _generic_boxplot_checks(fdatagrid, fig, ax, method, nrows, ncols, colormap, factor):
 
-    if fig is not None and ax is not None:
-        raise ValueError("fig and axes parameters cannot be passed as arguments at the same time.")
-
-    if fig != None and len(fig.get_axes()) != fdatagrid.ndim_image:
-        raise ValueError("Number of axes of the figure must be equal to"
-                         "the dimension of the image.")
-
-    if ax is not None and len(ax) != fdatagrid.ndim_image:
-        raise ValueError("Number of axes must be equal to the dimension of the image.")
-
-    if (ax is not None or fig is not None) and (nrows is not None or ncols is not None):
-        raise ValueError("The number of columns and/or number of rows of the figure, "
-                         "in which each dimension of the image is plotted, can only "
-                         "be customized in case fig is None and ax is None.")
-
-    if (nrows is not None and ncols is not None) and nrows * ncols < self.ndim_image:
-        raise ValueError("The number of columns and the number of rows specified is "
-                         "incorrect.")
+    fig, ax = fdatagrid.generic_plotting_checks(fig, ax, nrows, ncols)
 
     if ((method != fraiman_muniz_depth) & (method != band_depth) & (method != modified_band_depth)):
         raise ValueError("Undefined function.")
@@ -43,9 +26,6 @@ def _generic_boxplot_checks(fdatagrid, fig, ax, method, nrows, ncols, colormap, 
 
     if factor < 0:
         raise ValueError("The number used to calculate the outlying envelope must be positive.")
-
-    if fig == None and ax == None:
-        fig, ax = fdatagrid.set_figure_and_axes(nrows, ncols)
 
     return fig, ax
 

@@ -12,4 +12,5 @@ Modules
    modules/depth_measures
    modules/extrapolation
    modules/registration
+   modules/clustering
 

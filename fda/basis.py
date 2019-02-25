@@ -269,7 +269,7 @@ class Basis(ABC):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-               Springler.
+               Springer.
 
         """
         pass
@@ -423,7 +423,7 @@ class Constant(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
         if derivative_degree is None:
@@ -569,7 +569,7 @@ class Monomial(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
 
@@ -698,7 +698,7 @@ class BSpline(Basis):
 
     References:
         .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
-            Analysis*. Springler. 50-51.
+            Analysis*. Springer. 50-51.
 
     """
 
@@ -801,7 +801,7 @@ class BSpline(Basis):
 
         References:
             .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
-                Analysis*. Springler. 50-51.
+                Analysis*. Springer. 50-51.
 
         """
         # Places m knots at the boundaries
@@ -856,7 +856,7 @@ class BSpline(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
         if derivative_degree is not None:
@@ -1239,7 +1239,7 @@ class Fourier(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
         if isinstance(derivative_degree, int):
@@ -1464,11 +1464,11 @@ class FDataBasis(FData):
         References:
             .. [RS05-5-2-5] Ramsay, J., Silverman, B. W. (2005). How spline
                 smooths are computed. In *Functional Data Analysis* (pp. 86-87).
-                Springler.
+                Springer.
 
             .. [RS05-5-2-7] Ramsay, J., Silverman, B. W. (2005). HSpline
                 smoothing as an augmented least squares problem. In *Functional
-                Data Analysis* (pp. 86-87). Springler.
+                Data Analysis* (pp. 86-87). Springer.
 
 
 

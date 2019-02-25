@@ -17,7 +17,7 @@ class Lfd:
         order (int): the order of the operator. It's the n coefficient in the
                      equation above.
 
-        weights (list):  A FDataBasis objects list of length either nderiv
+        weights (list):  A FDataBasis objects list of length order + 1
 
     """
 
@@ -26,11 +26,11 @@ class Lfd:
            parameters. It both are provided, it will raise an error
 
         Args:
-            order (int, optional): the order of the operator. It's the n
-                  coefficient in the equation above.
+            order (int, optional): the order of the operator. It's the highest
+                    derivative order of the operator
 
             weights (list, optional): A FDataBasis objects list of length
-                     either nderiv
+                    order + 1 items
 
             domain_range (tuple or list of tuples, optional): Definition
                          of the interval where the weight functions are
@@ -70,7 +70,7 @@ class Lfd:
                 if all([_same_domain(weights[0].domain_range,
                                      x.domain_range) and x.nsamples == 1 for x
                         in weights]):
-                    self.order = len(weights)
+                    self.order = len(weights) - 1
                     self.weights = weights
                     self.domain_range = weights[0].domain_range
 
@@ -93,11 +93,6 @@ class Lfd:
                 f"\nnderiv={self.order},"
                 f"\nbwtlist=[{bwtliststr[:-1]}]"
                 f"\n)").replace('\n', '\n    ')
-
-    def __str__(self):
-        """Return str(self)."""
-
-        return self.__repr__()
 
     def __eq__(self, other):
         """Equality of Lfd objects"""

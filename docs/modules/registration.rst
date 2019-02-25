@@ -61,6 +61,12 @@ Elastic Registration
 
    fda.registration.elastic_registration
    fda.registration.elastic_registration_warping
+
+.. autosummary::
+  :toctree: autosummary
+
+   fda.registration.elastic_mean
+   fda.registration.warping_mean
    fda.registration.to_srsf
    fda.registration.from_srsf
 

@@ -38,7 +38,7 @@ The documentation can be found in https://fda.readthedocs.io/en/latest/
 References
 ==========
 
-.. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data Analysis*. Springler.
+.. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data Analysis*. Springer.
 
 .. _fda: http://www.functionaldata.org/
 

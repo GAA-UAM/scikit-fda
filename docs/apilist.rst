@@ -9,5 +9,7 @@ Modules
    :caption: Modules:
 
    modules/datasets
+   modules/depth_measures
    modules/extrapolation
    modules/registration
+

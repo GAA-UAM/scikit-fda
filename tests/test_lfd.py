@@ -45,9 +45,7 @@ class TestBasis(unittest.TestCase):
 
         lfd = Lfd(weights=fdlist)
 
-        a = str(lfd)
-
-        np.testing.assert_equal(lfd.order, 5, "Wrong deriv order of the linear operator")
+        np.testing.assert_equal(lfd.order, 4, "Wrong deriv order of the linear operator")
         np.testing.assert_equal(lfd.weights, fd.to_list(), "Wrong list of weight functions of the linear operator")
 
         contant = Constant((0, 2))

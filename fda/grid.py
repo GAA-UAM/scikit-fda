@@ -742,7 +742,6 @@ class FDataGrid(FData):
         elif self.dataset_label is not None and len(ax) == 1:
             ax[0].set_title(self.dataset_label)
 
-
         if self.axes_labels is not None:
             if ax[0].name == '3d':
                 for i in range(self.ndim_image):

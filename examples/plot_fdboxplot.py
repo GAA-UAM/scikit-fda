@@ -10,14 +10,17 @@ Shows the use of the functional Boxplot applied to the Canadian Weather dataset.
 
 # sphinx_gallery_thumbnail_number = 4
 
+
 from fda import datasets
 from fda.grid import FDataGrid
 from fda.boxplot import fdboxplot
 from fda.depth_measures import band_depth, fraiman_muniz_depth
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
 import matplotlib.patches as mpatches
+from cycler import cycler
+import matplotlib
+
 ##################################################################################
 # First, the Canadian Weather dataset is downloaded from the package 'fda' in CRAN.
 # It contains a FDataGrid with daily temperatures and precipitations, that is, it
@@ -32,30 +35,24 @@ fd_temperatures = FDataGrid(data_matrix=fd.data_matrix[:, :, 0], sample_points=f
 # The data is plotted to show the curves we are working with. They are divided according to the
 # target. In this case, it includes the different climates to which the weather stations belong to.
 
-regions = dataset["target"]
-indexer, uniques = pd.factorize(regions, sort=True)
+climates = dataset["target_names"]
+n_climates = len(climates)
 
-#Assigning the color to each of the samples.
+#Assigning the color to each of the samples according to the target.
 colormap = plt.cm.get_cmap('seismic')
-colors = colormap(indexer / (len(uniques) - 1))
+colors_by_climate = colormap(np.asarray(dataset["target"]) / (n_climates- 1))
+climate_colors = colormap(np.arange(n_climates) / (n_climates- 1))
 
-#Plotting the curves.
-plt.figure()
-for i in range(fd_temperatures.nsamples):
-    plt.plot(fd_temperatures.sample_points[0], fd_temperatures.data_matrix[i], c=colors[i])
-
-#Plotting the legend
-indices = range(len(uniques))
-d = dict(zip(uniques, indices))
+#Building the legend
 patches = []
-for label, index in d.items():
-    patches.append(mpatches.Patch(color=colormap(index / (len(uniques) - 1)), label=label))
-plt.legend(handles=patches)
+for i in range(n_climates):
+    patches.append(mpatches.Patch(color=climate_colors[i], label=climates[i]))
 
-#Naming axes
-plt.xlabel(fd_temperatures.axes_labels[0])
-plt.ylabel(fd_temperatures.axes_labels[1])
-plt.title(fd_temperatures.dataset_label)
+#Plotting the curves and the legend with the desired colors.
+matplotlib.rcParams['axes.prop_cycle'] = cycler(color=colors_by_climate)
+plt.figure()
+fig, ax = fd_temperatures.plot()
+ax[0].legend(handles=patches)
 
 ############################################################################################
 # We call the :func:`functional boxplot method <fda.boxplot.fdboxplot>` with the data.

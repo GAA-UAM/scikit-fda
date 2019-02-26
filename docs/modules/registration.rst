@@ -56,11 +56,23 @@ See the `Landmark Registration Example
 Elastic Registration
 --------------------
 
+The elastic registration is a novel approach to this problem that uses the
+properties of the Fisher-Rao metric to perform the alignment of the curves.
+In the examples of `pairwise alignment
+<../auto_examples/plot_pairwise_alignment.html>`_ and `elastic registration
+<../auto_examples/plot_elastic_registration.html>`_ is shown a brief
+introduction to this topic along the usage of the corresponding functions.
+
 .. autosummary::
    :toctree: autosummary
 
    fda.registration.elastic_registration
    fda.registration.elastic_registration_warping
+
+
+The module contains some routines related with the elastic registration, making
+a transformation of the sampling, computing different means or distances based
+on the elastic framework.
 
 .. autosummary::
   :toctree: autosummary
@@ -69,6 +81,7 @@ Elastic Registration
    fda.registration.warping_mean
    fda.registration.to_srsf
    fda.registration.from_srsf
+
 
 
 Amplitude and Phase Decomposition
@@ -87,10 +100,14 @@ decomposition procedure developed by *Kneip and Ramsay (2008)*.
 Utility functions
 -----------------
 
+There are some other method related with the registration problem in this
+module.
+
 .. autosummary::
    :toctree: autosummary
 
    fda.registration.invert_warping
+   fda.registration.normalize_warping
 
 References
 ----------
@@ -98,8 +115,14 @@ References
 * Ramsay, J., Silverman, B. W. (2005). Functional Data Analysis. Springer.
 
 * Kneip, Alois & Ramsay, James. (2008).  Quantifying amplitude and phase
-  variation. In *Combining Registration and Fitting for Functional Models*.
-  Journal of the American Statistical Association.
+  variation. Journal of the American Statistical Association.
 
 * Ramsay, J., Hooker, G. & Graves S. (2009). Functional Data Analysis with
   R and Matlab. Springer.
+
+* Srivastava, Anuj & Klassen, Eric P. (2016). Functional and shape data
+  analysis. Springer.
+
+* J. S. Marron, James O. Ramsay, Laura M. Sangalli and Anuj Srivastava (2015).
+  Functional Data Analysis of Amplitude and Phase Variation. Statistical Science
+  2015, Vol. 30, No. 4

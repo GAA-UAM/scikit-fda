@@ -6,13 +6,20 @@ import scipy.integrate
 
 from ..functional_data import FData
 from ..grid import FDataGrid, GridSplineInterpolator
-from ..math import metric
 from . import invert_warping
+from ._registration_utils import _normalize_scale
 
 import optimum_reparamN
 
-import matplotlib.pyplot as plt
 
+__author__ = "Pablo Marcos Manchón"
+__email__ = "pablo.marcosm@estudiante.uam.es"
+
+###############################################################################
+# Based on the original implementation of J. Derek Tucker in                  #
+# *fdasrsf_python* (https://github.com/jdtuck/fdasrsf_python)                 #
+# and *ElasticFDA.jl* (https://github.com/jdtuck/ElasticFDA.jl).              #
+###############################################################################
 
 
 def to_srsf(fdatagrid, eval_points=None):
@@ -122,7 +129,6 @@ def from_srsf(fdatagrid, initial=None, *, eval_points=None):
     elif eval_points is None:
         eval_points = fdatagrid.sample_points[0]
 
-
     q_data_matrix = fdatagrid(eval_points, keepdims=True)
 
     f_data_matrix = q_data_matrix * np.abs(q_data_matrix)
@@ -136,35 +142,13 @@ def from_srsf(fdatagrid, initial=None, *, eval_points=None):
         initial = np.atleast_1d(initial)
         initial = initial.reshape(fdatagrid.nsamples, 1, fdatagrid.ndim_image)
         initial = np.repeat(initial, len(eval_points), axis=1)
-        f_data_matrix +=  initial
-
+        f_data_matrix += initial
 
     return fdatagrid.copy(data_matrix=f_data_matrix, sample_points=eval_points)
 
 
-def _normalize_scale(t, a=0, b=1):
-    """Perfoms an afine translation to normalize an interval.
-
-    Args:
-        t (numpy.ndarray): Array of dim 1 or 2 with at least 2 values.
-        a (float): Starting point of the new interval. Defaults 0.
-        b (float): Stopping point of the new interval. Defaults 1.
-
-    Returns:
-        (numpy.ndarray): Array with the transformed interval.
-    """
-
-    t = t.T # Broadcast to normalize multiple arrays
-    t1 = t - t[0] # Translation to [0, t[-1] - t[0]]
-    t1 *= (b - a) / (t[-1] - t[0]) # Scale to [0, b-a]
-    t1 += a # Translation to [a, b]
-    t1[0] = a # Fix possible round errors
-    t1[-1] = b
-
-    return t1.T
-
 def _elastic_alignment_array(template_data, q_data, eval_points, lam):
-    """Wrapper between cython interface and python.
+    """Wrapper between the cython interface and python.
 
     Selects the corresponding routine depending on the dimensions of the arrays.
 
@@ -189,11 +173,11 @@ def _elastic_alignment_array(template_data, q_data, eval_points, lam):
     else:
         reparam = optimum_reparamN.coptimum_reparamN2
 
-
     return reparam(np.ascontiguousarray(template_data.T),
                    np.ascontiguousarray(eval_points),
                    np.ascontiguousarray(q_data.T),
                    lam).T
+
 
 def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
                                  eval_points=None, fdatagrid_srsf=None,
@@ -203,32 +187,44 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
     Let :math:`f` be a function of the functional data object wich will be
     aligned to the template :math:`g`. Calculates the warping wich minimises
     the Fisher-Rao distance between :math:`g` and the registered function
-    :math:`f^*(t)=f \\circ \\gamma^*`.
+    :math:`f^*(t)=f(\\gamma^*(t))=f \\circ \\gamma^*`.
 
     .. math::
         \\gamma^* = argmin_{\\gamma \\in \\Gamma} d_{\\lambda}(f \\circ
         \\gamma, g)
 
-    Where :math:`d_{\\lambda}` denotes the extended Fisher-Rao distance with a
-    penalisation term, used to control the amount of warping.
+    Where :math:`d_{\\lambda}` denotes the extended amplitude distance with a
+    penalty term, used to control the amount of warping.
 
     .. math::
         d_{\\lambda}^2(f \\circ \\gamma, g) = \| SRSF(f \\circ \\gamma)
-        \\sqrt{\\dot{\\gamma}} - SRSF(g)\|_{\\mathbb{L}^2}^2 + \|
-        \\sqrt{\\dot{\\gamma}} - 1 \|_{\\mathbb{L}^2}^2
+        \\sqrt{\\dot{\\gamma}} - SRSF(g)\|_{\\mathbb{L}^2}^2 + \\lambda
+        \\mathcal{R}(\\gamma)
+
+    In the implementation it is used as penalty term
+
+    .. math::
+        \\mathcal{R}(\\gamma) = \|\\sqrt{\\dot{\\gamma}}- 1 \|_{\\mathbb{L}^2}^2
+
+    Wich restrict the amount of elasticity employed in the alignment.
 
     The registered function :math:`f^*(t)` can be calculated using the
     composition :math:`f^*(t)=f(\\gamma^*(t))`.
 
     If the template is not specified it is used the Karcher mean of the set of
-    functions under the Fisher-Rao metric to perform the alignment. See
-    :func:`elastic_mean`.
+    functions under the Fisher-Rao metric to perform the alignment, wich is
+    the local minimum of the sum of squares of elastic distances.
+    See :func:`elastic_mean`.
 
-    See [SK16-4-1]_ for an extensive explanation.
+    In [SK16-4-3]_ are described extensively the algorithms employed and the SRSF
+    framework.
 
     Args:
         fdatagrid (:class:`FDataGrid`): Functional data object to be aligned.
-        template (:class:`FDataGrid` or callable, optional):
+        template (:class:`FDataGrid`, optional): Template to align the curves.
+            Can contain 1 sample to align all the curves to it or the same
+            number of samples than the fdatagrid. By default it is used the
+            elastic mean.
         lam (float, optional): Controls the amount of elasticity. Defaults to 0.
         eval_points (array_like, optional): Set of points where the
             functions are evaluated, by default uses the sample points of the
@@ -237,6 +233,7 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
             may be passed to avoid repeated calculation.
         template_srsf (:class:`FDataGrid`, optional): SRSF of the template,
             may be passed to avoid repeated calculation.
+        **kwargs: Named arguments to be passed to :func:`elastic_mean`.
 
     Returns:
         (:class:`FDataGrid`): Warping to align the given fdatagrid to the
@@ -247,7 +244,7 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
             are different.
 
     References:
-        ..  [SK16-4-1] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
+        ..  [SK16-4-3] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
             and shape data analysis. In *Functional Data and Elastic
             Registration* (pp. 73-122). Springer.
 
@@ -258,18 +255,16 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
 
         raise ValueError("Not supported multidimensional functional objects.")
 
-
     if template is None:
         template = elastic_mean(fdatagrid, lam=lam, eval_points=eval_points,
                                 **kwargs)
 
     elif ((template.nsamples != 1 and template.nsamples != fdatagrid.nsamples) or
-        template.ndim_domain != 1 or template.ndim_image != 1):
+          template.ndim_domain != 1 or template.ndim_image != 1):
 
         raise ValueError("The template should contain one sample to align all"
                          "the curves to the same function or the same number "
                          "of samples than the fdatagrid")
-
 
     # Construction of srsfs
     if fdatagrid_srsf is None:
@@ -285,7 +280,6 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
     q_data = fdatagrid_srsf(eval_points, keepdims=False).squeeze()
     template_data = template_srsf(eval_points, keepdims=False).squeeze()
 
-
     # Values of the warping
     gamma = _elastic_alignment_array(template_data, q_data,
                                      _normalize_scale(eval_points), lam)
@@ -298,39 +292,52 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
 
     return FDataGrid(gamma, eval_points, interpolator=interpolator)
 
+
 def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
-                        fdatagrid_srsf=None, template_srsf=None, **kwargs):
-    """Calculate the warping to align a FDatagrid using the SRSF framework.
+                         fdatagrid_srsf=None, template_srsf=None, **kwargs):
+    """Align a FDatagrid using the SRSF framework.
 
     Let :math:`f` be a function of the functional data object wich will be
     aligned to the template :math:`g`. Calculates the warping wich minimises
     the Fisher-Rao distance between :math:`g` and the registered function
-    :math:`f^*(t)=f \\circ \\gamma^*`.
+    :math:`f^*(t)=f(\\gamma^*(t))=f \\circ \\gamma^*`.
 
     .. math::
         \\gamma^* = argmin_{\\gamma \\in \\Gamma} d_{\\lambda}(f \\circ
         \\gamma, g)
 
     Where :math:`d_{\\lambda}` denotes the extended Fisher-Rao distance with a
-    penalisation term, used to control the amount of warping.
+    penalty term, used to control the amount of warping.
 
     .. math::
         d_{\\lambda}^2(f \\circ \\gamma, g) = \| SRSF(f \\circ \\gamma)
-        \\sqrt{\\dot{\\gamma}} - SRSF(g)\|_{\\mathbb{L}^2}^2 + \|
-        \\sqrt{\\dot{\\gamma}} - 1 \|_{\\mathbb{L}^2}^2
+        \\sqrt{\\dot{\\gamma}} - SRSF(g)\|_{\\mathbb{L}^2}^2 + \\lambda
+        \\mathcal{R}(\\gamma)
+
+    In the implementation it is used as penalty term
+
+    .. math::
+        \\mathcal{R}(\\gamma) = \|\\sqrt{\\dot{\\gamma}}- 1 \|_{\\mathbb{L}^2}^2
+
+    Wich restrict the amount of elasticity employed in the alignment.
 
     The registered function :math:`f^*(t)` can be calculated using the
     composition :math:`f^*(t)=f(\\gamma^*(t))`.
 
     If the template is not specified it is used the Karcher mean of the set of
-    functions under the Fisher-Rao metric to perform the alignment. See
-    :func:`elastic_mean`.
+    functions under the elastic metric to perform the alignment, wich is
+    the local minimum of the sum of squares of elastic distances.
+    See :func:`elastic_mean`.
 
-    See [SK16-4-2]_ for an extensive explanation.
+    In [SK16-4-2]_ are described extensively the algorithms employed and the SRSF
+    framework.
 
     Args:
         fdatagrid (:class:`FDataGrid`): Functional data object to be aligned.
-        template (:class:`FDataGrid` or callable, optional):
+        template (:class:`FDataGrid`, optional): Template to align the curves.
+            Can contain 1 sample to align all the curves to it or the same
+            number of samples than the fdatagrid. By default it is used the
+            elastic mean.
         lam (float, optional): Controls the amount of elasticity. Defaults to 0.
         eval_points (array_like, optional): Set of points where the
             functions are evaluated, by default uses the sample points of the
@@ -339,10 +346,11 @@ def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
             may be passed to avoid repeated calculation.
         template_srsf (:class:`FDataGrid`, optional): SRSF of the template,
             may be passed to avoid repeated calculation.
+        **kwargs: Named arguments to be passed to :func:`elastic_mean`.
 
     Returns:
-        (:class:`FDataGrid`): Warping to align the given fdatagrid to the
-        template.
+        (:class:`FDataGrid`): FDatagrid with the samples aligned to the
+            template.
 
     Raises:
         ValueError: If functions are multidimensional or the number of samples
@@ -356,7 +364,9 @@ def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
     """
 
     # Calculates corresponding set of warpings
-    warping = elastic_registration_warping(fdatagrid, template, lam=lam,
+    warping = elastic_registration_warping(fdatagrid,
+                                           template=template,
+                                           lam=lam,
                                            eval_points=eval_points,
                                            fdatagrid_srsf=fdatagrid_srsf,
                                            template_srsf=template_srsf,
@@ -365,31 +375,21 @@ def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
     return fdatagrid.compose(warping, eval_points=eval_points)
 
 
-def amplitude_distance(fdatagrid1, fdatagrid2):
-    pass
+def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
+                 return_shooting=False):
+    """Compute the karcher mean of a set of warpings.
 
-def phase_distance(fdatagrid1, fdatagrid2):
-    pass
-
-def warping_phase_distance(fdatagrid1, fdatagrid2):
-    pass
-
-
-def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1.,
-                 eval_points=None, return_shooting=False):
-    """Compute the karcher mean of a set of warpings under the fisher-rao metric.
-
-    Let :math:`\\gamma_i i=1...n` a set of warping functions
-    :math:`\\gamma_i:[a,b] \\rightarrow [a,b]` in :math:`\\Gamma`, monotone
-    increasing and with the restriction :math:`\\gamma_i(a)=a \, and
+    Let :math:`\\gamma_i i=1...n` be a set of warping functions
+    :math:`\\gamma_i:[a,b] \\rightarrow [a,b]` in :math:`\\Gamma`, i.e.,
+    monotone increasing and with the restriction :math:`\\gamma_i(a)=a \,
     \\gamma_i(b)=b`.
 
     The karcher mean :math:`\\bar \\gamma` is defined as the warping that
-    minimises locally the sum of squared distances, under the Fisher-Rao metric.
+    minimises locally the sum of Fisher-Rao squared distances.
     [SK16-8-3-2]_.
 
     .. math::
-        \\bar \\gamma = \\argmin_{\\gamma in \\Gamma} \\sum_{i=1}^{n}
+        \\bar \\gamma = argmin_{\\gamma \\in \\Gamma} \\sum_{i=1}^{n}
          d_{FR}^2(\\gamma, \\gamma_i)
 
     The computation is performed using the structure of Hilbert Sphere obtained
@@ -417,11 +417,9 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1.,
             and shape data analysis. In *Template: Center of the Mean Orbit*
             (pp. 274-277). Springer.
 
-        .. [S11-3-3] Srivastava, Anuj et. al. Registration of Functional Data
-        Using Fisher-Rao Metric (2011). In *Center of an Orbit* (pp. 9-10).
-        arXiv:1103.3817v2.
-
-
+        ..  [S11-3-3] Srivastava, Anuj et. al. Registration of Functional Data
+            Using Fisher-Rao Metric (2011). In *Center of an Orbit* (pp. 9-10).
+            arXiv:1103.3817v2.
     """
 
     if eval_points is None:
@@ -435,7 +433,6 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1.,
         warping = FDataGrid(_normalize_scale(warping.data_matrix[..., 0]),
                             sample_points=_normalize_scale(warping.sample_points[0]))
 
-
     psi = to_srsf(warping, eval_points=eval_points).data_matrix[..., 0].T
     mu = to_srsf(warping.mean(), eval_points=eval_points).data_matrix[0]
     dot_aux = np.empty(psi.shape)
@@ -443,7 +440,6 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1.,
     n_points = mu.shape[0]
 
     sine = np.empty((warping.nsamples, 1))
-
 
     for _ in range(iter):
         # Dot product
@@ -462,11 +458,9 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1.,
         sine[idx] = theta[idx] / np.sin(theta[idx])
         sine[~idx] = 0.
 
-
         # compute shooting vector
         cos_theta = np.repeat(np.cos(theta), n_points, axis=1)
-        shooting =  np.multiply(sine, (psi - np.multiply(cos_theta.T, mu)).T)
-
+        shooting = np.multiply(sine, (psi - np.multiply(cos_theta.T, mu)).T)
 
         # Mean of shooting vectors
         vmean = shooting.mean(axis=0, keepdims=True)
@@ -481,9 +475,8 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1.,
         vmean += np.sin(step_size * v_norm) / v_norm
         mu += vmean.T
 
-
     # Recover mean in original gamma space
-    warping_mean = scipy.integrate.cumtrapz(np.square(mu, out=mu)[:,0],
+    warping_mean = scipy.integrate.cumtrapz(np.square(mu, out=mu)[:, 0],
                                             x=eval_points, initial=0)
 
     # Affine traslation
@@ -494,7 +487,7 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1.,
     monotone_interpolator = GridSplineInterpolator(interpolation_order=3,
                                                    monotone=True)
 
-    mean = FDataGrid([warping_mean],sample_points=original_eval_points,
+    mean = FDataGrid([warping_mean], sample_points=original_eval_points,
                      interpolator=monotone_interpolator)
 
     # Shooting vectors are used in models based in the amplitude-phase
@@ -507,8 +500,26 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1.,
 
 def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
                  initial=None, eval_points=None, fdatagrid_srsf=None, **kwargs):
-    """Compute the karcher mean of a set of functional observations in the
-    amplitude space.
+    """Compute the karcher mean under the elastic metric.
+
+    Calculates the karcher mean of a set of functional samples in the amplitude
+    space :math:`\\mathcal{A}=\\mathcal{F}/\\Gamma`.
+
+    Let :math:`q_i` the corresponding SRSF of the observation :math:`f_i`.
+    The space :math:`\\mathcal{A}` is defined using the equivalence classes
+    :math:`[q_i]=\\{ q_i \\circ \\gamma | \\gamma \\in \\Gamma \\}`, where
+    :math:`\\Gamma` denotes the space of warping functions. The karcher mean
+    in this space is defined as
+
+    .. math::
+        [\\mu_q] = argmin_{[q] \\in \\mathcal{A}} \\sum_{i=1}^n
+        d_{\\lambda}^2([q],[q_i])
+
+    Once :math:`[\\mu_q]` is obtained it is selected the element of the
+    equivalence class which makes the mean of the warpings employed be the
+    identity.
+
+    See [SK16-8-3-1]_ and [S11-3]_.
 
     Args:
         fdatagrid (:class:`FDataGrid`): Set of functions to compute the mean.
@@ -517,7 +528,8 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
             used to select a central mean. Defaults True.
         iter (int): Maximun number of iterations. Defaults to 20.
         tol (float): Convergence criterion, the algorithm will stop if
-            :math:´\|mu^{(\\nu)} - mu^{(\\nu - 1)} \|_2 / \| mu^{(\\nu-1)} \|_2 < tol´.
+            :math:´\|mu^{(\\nu)} - mu^{(\\nu - 1)} \|_2 / \| mu^{(\\nu-1)} \|_2
+            < tol´.
         initial (float): Value of the mean at the starting point. By default
             takes the average of the initial points of the samples.
         eval_points (array_like): Points of discretization of the fdatagrid.
@@ -532,9 +544,16 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
         ValueError: If the object is multidimensional or the shape of the srsf
             do not match with the fdatagrid.
 
+    References:
+        ..  [SK16-8-3-1] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
+            and shape data analysis. In *Karcher Mean of Amplitudes*
+            (pp. 273-274). Springer.
+
+        .. [S11-3] Srivastava, Anuj et. al. Registration of Functional Data
+            Using Fisher-Rao Metric (2011). In *Karcher Mean and Function
+            Alignment* (pp. 7-10). arXiv:1103.3817v2.
 
     """
-
 
     if fdatagrid.ndim_domain != 1 or fdatagrid.ndim_image != 1:
         raise ValueError("Not supported multidimensional functional objects.")
@@ -546,12 +565,10 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
     elif fdatagrid_srsf is None:
         fdatagrid_srsf = to_srsf(fdatagrid, eval_points=eval_points)
 
-
     if eval_points is not None:
         eval_points = np.asarray(eval_points)
     else:
         eval_points = fdatagrid.sample_points[0]
-
 
     eval_points_normalized = _normalize_scale(eval_points)
     y_scale = eval_points[-1] - eval_points[0]
@@ -570,7 +587,6 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
     distances = scipy.integrate.simps(np.square(centered, out=centered),
                                       eval_points_normalized, axis=1)
 
-
     # Initialization of iteration
     mu = srsf[np.argmin(distances)]
     mu_aux = np.empty(mu.shape)
@@ -579,7 +595,8 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
     # Main iteration
     for _ in range(iter):
 
-        gammas = _elastic_alignment_array(mu, srsf, eval_points_normalized, lam)
+        gammas = _elastic_alignment_array(
+            mu, srsf, eval_points_normalized, lam)
         gammas = FDataGrid(gammas, sample_points=eval_points_normalized,
                            interpolator=interpolator)
 
@@ -601,22 +618,19 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
 
         mu = mu_1
 
-
     if initial is None:
-        initial = fdatagrid.data_matrix[:,0].mean()
-
+        initial = fdatagrid.data_matrix[:, 0].mean()
 
     # Karcher mean orbit in space L2/Gamma
     karcher_mean = from_srsf(fdatagrid.copy(data_matrix=[mu],
                                             sample_points=eval_points),
                              initial=initial)
 
-
     if center:
         # Gamma mean in Hilbert Sphere
         mean_normalized = warping_mean(gammas, return_shooting=False, **kwargs)
 
-        gamma_mean = FDataGrid(_normalize_scale(mean_normalized.data_matrix[...,0],
+        gamma_mean = FDataGrid(_normalize_scale(mean_normalized.data_matrix[..., 0],
                                                 a=eval_points[0],
                                                 b=eval_points[-1]),
                                sample_points=eval_points)

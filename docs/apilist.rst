@@ -11,3 +11,4 @@ Modules
    modules/datasets
    modules/extrapolation
    modules/registration
+   modules/metrics

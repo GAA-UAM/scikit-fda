@@ -29,14 +29,6 @@ extensions = [
               include_dirs=[numpy.get_include()],
               language='c',
               ),
-    Extension(name='optimum_reparam_fN',
-              sources=[
-                  os.path.join(fdasrsf_path, 'optimum_reparam_fN.pyx'),
-                  os.path.join(fdasrsf_path, 'DP.c')
-              ],
-              include_dirs=[numpy.get_include()],
-              language='c',
-              ),
 ]
 
 setup(name='fda',

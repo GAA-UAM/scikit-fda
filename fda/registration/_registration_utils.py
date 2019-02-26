@@ -8,6 +8,9 @@ import numpy
 import scipy.integrate
 from scipy.interpolate import PchipInterpolator
 
+__author__ = "Pablo Marcos Manchón"
+__email__ = "pablo.marcosm@estudiante.uam.es"
+
 
 def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
                       *, eval_points=None):
@@ -155,19 +158,18 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
     x_fine = original_fdata.evaluate(eval_points, keepdims=False)
     y_fine = registered_fdata.evaluate(eval_points, keepdims=False)
-    mu_fine = x_fine.mean(axis=0) # Mean unregistered function
-    eta_fine = y_fine.mean(axis=0) # Mean registered function
+    mu_fine = x_fine.mean(axis=0)  # Mean unregistered function
+    eta_fine = y_fine.mean(axis=0)  # Mean registered function
     mu_fine_sq = numpy.square(mu_fine)
     eta_fine_sq = numpy.square(eta_fine)
 
-
     # Total mean square error of the original funtions
-    #mse_total = scipy.integrate.simps(
+    # mse_total = scipy.integrate.simps(
     #    numpy.mean(numpy.square(x_fine - mu_fine), axis=0),
     #    eval_points)
 
-    cr = 1. # Constant related to the covariation between the deformation
-            # functions and y^2
+    cr = 1.  # Constant related to the covariation between the deformation
+    # functions and y^2
 
     # If the warping functions are not provided, are suppose to be independent
     if warping_function is not None:
@@ -177,8 +179,9 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
         dh_fine_mean = dh_fine.mean(axis=0)
         dh_fine_center = dh_fine - dh_fine_mean
 
-        y_fine_sq = numpy.square(y_fine) # y^2
-        y_fine_sq_center = numpy.subtract(y_fine_sq, eta_fine_sq) # y^2 - E[y^2]
+        y_fine_sq = numpy.square(y_fine)  # y^2
+        y_fine_sq_center = numpy.subtract(
+            y_fine_sq, eta_fine_sq)  # y^2 - E[y^2]
 
         covariate = numpy.inner(dh_fine_center.T, y_fine_sq_center.T)
         covariate = covariate.mean(axis=0)
@@ -187,9 +190,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
                            scipy.integrate.simps(eta_fine_sq,
                                                  eval_points))
 
-
     # mse due to phase variation
-    mse_pha = scipy.integrate.simps(cr*eta_fine_sq - mu_fine_sq , eval_points)
+    mse_pha = scipy.integrate.simps(cr*eta_fine_sq - mu_fine_sq, eval_points)
 
     # mse due to amplitude variation
     # mse_amp = mse_total - mse_pha
@@ -271,11 +273,55 @@ def invert_warping(fdatagrid, *, eval_points=None):
 
     y = fdatagrid(eval_points, keepdims=False)
 
-
     data_matrix = numpy.empty((fdatagrid.nsamples, len(eval_points)))
 
     for i in range(fdatagrid.nsamples):
         data_matrix[i] = PchipInterpolator(y[i], eval_points)(eval_points)
 
-
     return fdatagrid.copy(data_matrix=data_matrix, sample_points=eval_points)
+
+
+def _normalize_scale(t, a=0, b=1):
+    """Perfoms an afine translation to normalize an interval.
+
+    Args:
+        t (numpy.ndarray): Array of dim 1 or 2 with at least 2 values.
+        a (float): Starting point of the new interval. Defaults 0.
+        b (float): Stopping point of the new interval. Defaults 1.
+
+    Returns:
+        (numpy.ndarray): Array with the transformed interval.
+    """
+
+    t = t.T  # Broadcast to normalize multiple arrays
+    t1 = (t - t[0]).astype(float)  # Translation to [0, t[-1] - t[0]]
+    t1 *= (b - a) / (t[-1] - t[0])  # Scale to [0, b-a]
+    t1 += a  # Translation to [a, b]
+    t1[0] = a  # Fix possible round errors
+    t1[-1] = b
+
+    return t1.T
+
+
+def normalize_warping(warping, a=0, b=1):
+    """Rescale a warping to normalize their domain.
+
+    Given a set of warpings :math:`\\gamma_i:[a,b] \\rightarrow [a,b]` it is
+    used an affine traslation to change the domain of the transformation to
+    other domain, :math:`\\hat \\gamma_i:[\\hat a,\\hat b] \\rightarrow
+    [\\hat a, \\hat b]`.
+
+    Args:
+        warping (:class:`FDatagrid`): Set of warpings to rescale.
+        a (float, optional): Starting point of the new domain. Defaults 0.
+        b (float, optiona): Stopping point of the new domain. Defaults 1.
+
+    Return:
+        (:class:`FDatagrid`): FdataGrid with the warpings normalized.
+
+    """
+
+    data_matrix = _normalize_scale(warping.data_matrix[..., 0], a=a, b=b)
+    sample_points = _normalize_scale(warping.sample_points[0], a=a, b=b)
+
+    return warping.copy(data_matrix=data_matrix, sample_points=sample_points)

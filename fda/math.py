@@ -5,10 +5,10 @@ package. FDataBasis and FDataGrid.
 
 """
 import numpy
-import scipy.integrate
+
 import scipy.stats.mstats
 
-from fda.grid import FDataGrid
+from . import FDataGrid
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -266,129 +266,6 @@ def inner_product(fdatagrid, fdatagrid2):
                 fdatagrid2.data_matrix[j, ..., 0],
                 x=fdatagrid.sample_points[0]
                 ))
-    return matrix
-
-
-def norm_lp(fdatagrid, p=2):
-    r"""Calculate the norm of all the samples in a FDataGrid object.
-
-    For each sample sample f the lp norm is defined as:
-
-    .. math::
-        \lVert f \rVert = \left( \int_D \lvert f \rvert^p dx \right)^{
-        \frac{1}{p}}
-
-    Where D is the domain over which the functions are defined.
-
-    The integral is approximated using Simpson's rule.
-
-    Args:
-        fdatagrid (FDataGrid): FDataGrid object.
-        p (int, optional): p of the lp norm. Must be greater or equal
-            than 1. Defaults to 2.
-
-    Returns:
-        numpy.darray: Matrix with as many rows as samples in the first
-        object and as many columns as samples in the second one. Each
-        element (i, j) of the matrix is the inner product of the ith sample
-        of the first object and the jth sample of the second one.
-
-    Examples:
-        Calculates the norm of a FDataGrid containing the functions y = 1
-        and y = x defined in the interval [0,1].
-
-        >>> x = numpy.linspace(0,1,1001)
-        >>> fd = FDataGrid([numpy.ones(len(x)), x] ,x)
-        >>> norm_lp(fd).round(2)
-        array([ 1.  , 0.58])
-
-        The lp norm is only defined if p >= 1.
-
-        >>> norm_lp(fd, p = 0.5)
-        Traceback (most recent call last):
-            ....
-        ValueError: p must be equal or greater than 1.
-
-    """
-    # Checks that the lp normed is well defined
-    if p < 1:
-        raise ValueError("p must be equal or greater than 1.")
-
-    if fdatagrid.ndim_image > 1:
-        raise ValueError("Not implemented for image with "
-                         "dimension greater than 1")
-
-    # Computes the norm, approximating the integral with Simpson's rule.
-    return scipy.integrate.simps(numpy.abs(fdatagrid.data_matrix[..., 0]) ** p,
-                                 x=fdatagrid.sample_points
-                                 ) ** (1 / p)
-
-
-def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
-    r"""Return distance for FDataGrid obejcts.
-
-    Calculates the distance between all possible pairs of one sample of
-    the first FDataGrid object and one of the second one.
-
-    For each pair of samples f and g the distance between them is defined as:
-
-    .. math::
-        d(f, g) = d(f, g) = \lVert f - g \rVert
-
-    The norm is specified as a parameter but defaults to the l2 norm.
-
-    Args:
-        fdatagrid (FDataGrid): First FDataGrid object.
-        fdatagrid2 (FDataGrid): Second FDataGrid object.
-        norm (:obj:`Function`, optional): Norm function used in the definition
-            of the distance.
-        **kwargs (:obj:`dict`, optional): parameters dictionary to be passed
-            to the norm function.
-
-    Returns:
-        :obj:`numpy.darray`: Matrix with as many rows as samples in the first
-        object and as many columns as samples in the second one. Each
-        element (i, j) of the matrix is the distance between the ith sample
-        of the first object and the jth sample of the second one.
-
-
-    Examples:
-        Computes the distances between an object containing functional data
-        corresponding to the functions y = 1 and y = x defined over the
-        interval [0, 1] and another ones containing data of the functions y
-        = 0 and y = x/2. The result then is an array 2x2 with the computed
-        l2 distance between every pair of functions.
-
-        >>> x = numpy.linspace(0, 1, 1001)
-        >>> fd = FDataGrid([numpy.ones(len(x)), x], x)
-        >>> fd2 =  FDataGrid([numpy.zeros(len(x)), x/2 + 0.5], x)
-        >>> metric(fd, fd2).round(2)
-        array([[ 1.  , 0.29],
-               [ 0.58, 0.29]])
-
-
-        If the functional data are defined over a different set of points of
-        discretisation the functions returns an exception.
-
-        >>> x = numpy.linspace(0, 2, 1001)
-        >>> fd2 =  FDataGrid([numpy.zeros(len(x)), x/2 + 0.5], x)
-        >>> metric(fd, fd2)
-        Traceback (most recent call last):
-            ....
-        ValueError: Sample points for both objects must be equal
-
-    """
-    # Checks
-    if not numpy.array_equal(fdatagrid.sample_points,
-                             fdatagrid2.sample_points):
-        raise ValueError("Sample points for both objects must be equal")
-        # Creates an empty matrix with the desired size to store the results.
-    matrix = numpy.empty([fdatagrid.nsamples, fdatagrid2.nsamples])
-    # Iterates over the different samples of both objects.
-    for i in range(fdatagrid.nsamples):
-        for j in range(fdatagrid2.nsamples):
-            matrix[i, j] = norm(fdatagrid[i] - fdatagrid2[j], **kwargs)
-    # Computes the metric between x and y as norm(x -y).
     return matrix
 
 

@@ -65,24 +65,24 @@ def _rank_samples(fdatagrid):
         >>> sample_points = [[2, 4, 6], [3, 6]]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> _rank_samples(fd)
-        array([[[[1., 1.],
-                 [1., 1.]],
+        array([[[[ 1.,  1.],
+                 [ 1.,  1.]],
         <BLANKLINE>
-                [[1., 2.],
-                 [2., 2.]],
+                [[ 1.,  2.],
+                 [ 2.,  2.]],
         <BLANKLINE>
-                [[1., 2.],
-                 [2., 2.]]],
+                [[ 1.,  2.],
+                 [ 2.,  2.]]],
         <BLANKLINE>
         <BLANKLINE>
-               [[[2., 2.],
-                 [2., 2.]],
+               [[[ 2.,  2.],
+                 [ 2.,  2.]],
         <BLANKLINE>
-                [[2., 1.],
-                 [1., 1.]],
+                [[ 2.,  1.],
+                 [ 1.,  1.]],
         <BLANKLINE>
-                [[2., 1.],
-                 [1., 1.]]]])
+                [[ 2.,  1.],
+                 [ 1.,  1.]]]])
     """
     ranks = np.zeros(fdatagrid.shape)
     ncols_dim_image = np.asarray([range(fdatagrid.shape[i]) for i in range(len(fdatagrid.shape) - 1, 0, -1)])

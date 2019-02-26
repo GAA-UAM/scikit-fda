@@ -118,10 +118,10 @@ def band_depth(fdatagrid, pointwise=False):
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> band_depth(fd)
-        array([[0.5       ],
-               [0.83333333],
-               [0.5       ],
-               [0.5       ]])
+        array([[ 0.5       ],
+               [ 0.83333333],
+               [ 0.5       ],
+               [ 0.5       ]])
 
         Multivariate Setting:
 
@@ -131,9 +131,9 @@ def band_depth(fdatagrid, pointwise=False):
         >>> sample_points = [[2, 4, 6], [3, 6]]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> band_depth(fd)
-        array([[0.66666667, 0.66666667],
-               [0.66666667, 0.66666667],
-               [1.        , 1.        ]])
+        array([[ 0.66666667,  0.66666667],
+               [ 0.66666667,  0.66666667],
+               [ 1.        ,  1.        ]])
 
     """
     n = fdatagrid.nsamples
@@ -178,36 +178,36 @@ def modified_band_depth(fdatagrid, pointwise=False):
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> modified_band_depth(fd, pointwise = True)
-        (array([[0.5       ],
-               [0.83333333],
-               [0.72222222],
-               [0.66666667]]), array([[[0.5       ],
-                [0.5       ],
-                [0.5       ],
-                [0.5       ],
-                [0.5       ],
-                [0.5       ]],
+        (array([[ 0.5       ],
+               [ 0.83333333],
+               [ 0.72222222],
+               [ 0.66666667]]), array([[[ 0.5       ],
+                [ 0.5       ],
+                [ 0.5       ],
+                [ 0.5       ],
+                [ 0.5       ],
+                [ 0.5       ]],
         <BLANKLINE>
-               [[0.83333333],
-                [0.83333333],
-                [0.83333333],
-                [0.83333333],
-                [0.83333333],
-                [0.83333333]],
+               [[ 0.83333333],
+                [ 0.83333333],
+                [ 0.83333333],
+                [ 0.83333333],
+                [ 0.83333333],
+                [ 0.83333333]],
         <BLANKLINE>
-               [[0.5       ],
-                [0.5       ],
-                [0.83333333],
-                [0.83333333],
-                [0.83333333],
-                [0.83333333]],
+               [[ 0.5       ],
+                [ 0.5       ],
+                [ 0.83333333],
+                [ 0.83333333],
+                [ 0.83333333],
+                [ 0.83333333]],
         <BLANKLINE>
-               [[0.83333333],
-                [0.83333333],
-                [0.83333333],
-                [0.5       ],
-                [0.5       ],
-                [0.5       ]]]))
+               [[ 0.83333333],
+                [ 0.83333333],
+                [ 0.83333333],
+                [ 0.5       ],
+                [ 0.5       ],
+                [ 0.5       ]]]))
 
         Multivariate Setting without specifying pointwise:
 
@@ -217,9 +217,9 @@ def modified_band_depth(fdatagrid, pointwise=False):
         >>> sample_points = [[2, 4, 6], [3, 6]]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> modified_band_depth(fd)
-        array([[0.66666667, 0.72222222],
-               [0.72222222, 0.66666667],
-               [0.94444444, 0.94444444]])
+        array([[ 0.66666667,  0.72222222],
+               [ 0.72222222,  0.66666667],
+               [ 0.94444444,  0.94444444]])
 
     """
     n = fdatagrid.nsamples
@@ -294,36 +294,36 @@ def fraiman_muniz_depth(fdatagrid, pointwise=False):
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> fraiman_muniz_depth(fd, pointwise = True)
-        (array([[0.5       ],
-               [0.75      ],
-               [0.91666667],
-               [0.875     ]]), array([[[0.5 ],
-                [0.5 ],
-                [0.5 ],
-                [0.5 ],
-                [0.5 ],
-                [0.5 ]],
+        (array([[ 0.5       ],
+               [ 0.75      ],
+               [ 0.91666667],
+               [ 0.875     ]]), array([[[ 0.5 ],
+                [ 0.5 ],
+                [ 0.5 ],
+                [ 0.5 ],
+                [ 0.5 ],
+                [ 0.5 ]],
         <BLANKLINE>
-               [[0.75],
-                [0.75],
-                [0.75],
-                [0.75],
-                [0.75],
-                [0.75]],
+               [[ 0.75],
+                [ 0.75],
+                [ 0.75],
+                [ 0.75],
+                [ 0.75],
+                [ 0.75]],
         <BLANKLINE>
-               [[0.75],
-                [0.75],
-                [1.  ],
-                [1.  ],
-                [1.  ],
-                [1.  ]],
+               [[ 0.75],
+                [ 0.75],
+                [ 1.  ],
+                [ 1.  ],
+                [ 1.  ],
+                [ 1.  ]],
         <BLANKLINE>
-               [[1.  ],
-                [1.  ],
-                [1.  ],
-                [0.75],
-                [0.75],
-                [0.75]]]))
+               [[ 1.  ],
+                [ 1.  ],
+                [ 1.  ],
+                [ 0.75],
+                [ 0.75],
+                [ 0.75]]]))
 
         Multivariate Setting without specifying pointwise:
 
@@ -333,9 +333,9 @@ def fraiman_muniz_depth(fdatagrid, pointwise=False):
         >>> sample_points = [[2, 4, 6], [3, 6]]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> fraiman_muniz_depth(fd)
-        array([[0.72222222, 0.66666667],
-               [0.66666667, 0.72222222],
-               [0.77777778, 0.77777778]])
+        array([[ 0.72222222,  0.66666667],
+               [ 0.66666667,  0.72222222],
+               [ 0.77777778,  0.77777778]])
 
     """
     univariate_depth = np.zeros(fdatagrid.shape)

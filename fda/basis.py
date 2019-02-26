@@ -269,7 +269,7 @@ class Basis(ABC):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-               Springler.
+               Springer.
 
         """
         pass
@@ -423,7 +423,7 @@ class Constant(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
         if derivative_degree is None:
@@ -569,7 +569,7 @@ class Monomial(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
 
@@ -698,7 +698,7 @@ class BSpline(Basis):
 
     References:
         .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
-            Analysis*. Springler. 50-51.
+            Analysis*. Springer. 50-51.
 
     """
 
@@ -801,7 +801,7 @@ class BSpline(Basis):
 
         References:
             .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
-                Analysis*. Springler. 50-51.
+                Analysis*. Springer. 50-51.
 
         """
         # Places m knots at the boundaries
@@ -856,7 +856,7 @@ class BSpline(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
         if derivative_degree is not None:
@@ -1087,16 +1087,16 @@ class Fourier(Basis):
         >>> fb = Fourier((0, numpy.pi), nbasis=3, period=1)
         >>> fb.evaluate([0, numpy.pi / 4, numpy.pi / 2, numpy.pi]).round(2)
         array([[ 1.  ,  1.  ,  1.  ,  1.  ],
-               [ 1.41,  0.31, -1.28,  0.89],
-               [ 0.  , -1.38, -0.61,  1.1 ]])
+               [ 0.  , -1.38, -0.61,  1.1 ],
+               [ 1.41,  0.31, -1.28,  0.89]])
 
         And evaluate second derivative
 
         >>> fb.evaluate([0, numpy.pi / 4, numpy.pi / 2, numpy.pi],
         ...             derivative = 2).round(2)
         array([[  0.  ,   0.  ,   0.  ,   0.  ],
-               [-55.83, -12.32,  50.4 , -35.16],
-               [ -0.  ,  54.46,  24.02, -43.37]])
+               [ -0.  ,  54.46,  24.02, -43.37],
+               [-55.83, -12.32,  50.4 , -35.16]])
 
 
 
@@ -1162,11 +1162,11 @@ class Fourier(Basis):
             if nbasis > 1:
                 # 2*pi*n*x / period
                 args = numpy.outer(range(1, nbasis // 2 + 1), omega_t)
-                index = range(2, nbasis, 2)
-                # even indexes are sine functions
+                index = range(1, nbasis-1, 2)
+                # odd indexes are sine functions
                 mat[index] = numpy.sin(args)
-                index = range(1, nbasis - 1, 2)
-                # odd indexes are cosine functions
+                index = range(2, nbasis, 2)
+                # even indexes are cosine functions
                 mat[index] = numpy.cos(args)
         # evaluates the derivatives
         else:
@@ -1186,11 +1186,11 @@ class Fourier(Basis):
                 # odd indexes
                 index_o = range(1, nbasis - 1, 2)
                 if derivative % 2 == 0:
-                    mat[index_e] = factor * numpy.sin(args)
-                    mat[index_o] = factor * numpy.cos(args)
-                else:
+                    mat[index_o] = factor * numpy.sin(args)
                     mat[index_e] = factor * numpy.cos(args)
-                    mat[index_o] = -factor * numpy.sin(args)
+                else:
+                    mat[index_o] = factor * numpy.cos(args)
+                    mat[index_e] = -factor * numpy.sin(args)
 
         # normalise
         mat = mat / numpy.sqrt(self.period / 2)
@@ -1239,7 +1239,7 @@ class Fourier(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
         if isinstance(derivative_degree, int):
@@ -1464,11 +1464,11 @@ class FDataBasis(FData):
         References:
             .. [RS05-5-2-5] Ramsay, J., Silverman, B. W. (2005). How spline
                 smooths are computed. In *Functional Data Analysis* (pp. 86-87).
-                Springler.
+                Springer.
 
             .. [RS05-5-2-7] Ramsay, J., Silverman, B. W. (2005). HSpline
                 smoothing as an augmented least squares problem. In *Functional
-                Data Analysis* (pp. 86-87). Springler.
+                Data Analysis* (pp. 86-87). Springer.
 
 
 

@@ -36,10 +36,12 @@ def norm_lp(fdatagrid, p=2):
         Calculates the norm of a FDataGrid containing the functions y = 1
         and y = x defined in the interval [0,1].
 
+
+        >>> from fda import FDataGrid, norm_lp
         >>> x = numpy.linspace(0,1,1001)
         >>> fd = FDataGrid([numpy.ones(len(x)), x] ,x)
         >>> norm_lp(fd).round(2)
-        array([ 1.  , 0.58])
+        array([ 1.  ,  0.58])
 
         The lp norm is only defined if p >= 1.
 
@@ -98,12 +100,13 @@ def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
         = 0 and y = x/2. The result then is an array 2x2 with the computed
         l2 distance between every pair of functions.
 
+        >>> from fda import FDataGrid, metric
         >>> x = numpy.linspace(0, 1, 1001)
         >>> fd = FDataGrid([numpy.ones(len(x)), x], x)
         >>> fd2 =  FDataGrid([numpy.zeros(len(x)), x/2 + 0.5], x)
         >>> metric(fd, fd2).round(2)
-        array([[ 1.  , 0.29],
-               [ 0.58, 0.29]])
+        array([[ 1.  ,  0.29],
+               [ 0.58,  0.29]])
 
 
         If the functional data are defined over a different set of points of

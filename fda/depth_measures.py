@@ -30,33 +30,33 @@ def _rank_samples(fdatagrid):
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> _rank_samples(fd)
-        array([[[4.],
-                [4.],
-                [4.],
-                [4.],
-                [4.],
-                [4.]],
+        array([[[ 4.],
+                [ 4.],
+                [ 4.],
+                [ 4.],
+                [ 4.],
+                [ 4.]],
         <BLANKLINE>
-               [[3.],
-                [3.],
-                [3.],
-                [3.],
-                [3.],
-                [3.]],
+               [[ 3.],
+                [ 3.],
+                [ 3.],
+                [ 3.],
+                [ 3.],
+                [ 3.]],
         <BLANKLINE>
-               [[1.],
-                [1.],
-                [2.],
-                [2.],
-                [2.],
-                [2.]],
+               [[ 1.],
+                [ 1.],
+                [ 2.],
+                [ 2.],
+                [ 2.],
+                [ 2.]],
         <BLANKLINE>
-               [[2.],
-                [2.],
-                [2.],
-                [1.],
-                [1.],
-                [1.]]])
+               [[ 2.],
+                [ 2.],
+                [ 2.],
+                [ 1.],
+                [ 1.],
+                [ 1.]]])
 
         Multivariate Setting:
 
@@ -252,7 +252,7 @@ def _cumulative_distribution(column):
 
     Examples:
         >>> _cumulative_distribution(np.array([1, 4, 5, 1, 2, 2, 4, 1, 1, 3]))
-        array([0.4, 0.9, 1. , 0.4, 0.6, 0.6, 0.9, 0.4, 0.4, 0.7])
+        array([ 0.4,  0.9,  1. ,  0.4,  0.6,  0.6,  0.9,  0.4,  0.4,  0.7])
 
     """
     if len(column.shape) != 1:

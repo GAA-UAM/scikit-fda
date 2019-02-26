@@ -1961,6 +1961,10 @@ class FDataBasis(FData):
 
         return self.to_grid(eval_points=eval_points).to_basis(basis, **kwargs)
 
+    def to_list(self):
+        """Splits FDataBasis samples into a list"""
+        return [self[i] for i in range(self.nsamples)]
+
     def copy(self, *, basis=None, coefficients=None, dataset_label=None,
              axes_labels=None, extrapolation=None, keepdims=None):
         """FDataBasis copy"""
@@ -2017,6 +2021,11 @@ class FDataBasis(FData):
                 f"\nbasis={self.basis},"
                 f"\ncoefficients={self.coefficients})").replace('\n', '\n    ')
 
+    def __eq__(self, other):
+        """Equality of FDataBasis"""
+        # TODO check all other params
+        return self.basis == other.basis and numpy.all(self.coefficients == other.coefficients)
+
     def concatenate(self, other):
         """Join samples from a similar FDataBasis object.
 
@@ -2037,7 +2046,6 @@ class FDataBasis(FData):
         return self.copy(coefficients=numpy.concatenate((self.coefficients,
                                                          other.coefficients),
                                                         axis=0))
-
 
     def compose(self, fd, *, eval_points=None, **kwargs):
         """Composition of functions.
@@ -2062,7 +2070,6 @@ class FDataBasis(FData):
             composition = grid
 
         return composition
-
 
     def __getitem__(self, key):
         """Return self[key]."""

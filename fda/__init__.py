@@ -9,8 +9,8 @@ It includes the modules:
     - validation: cross validation methods for finding the parameter that
     best smooths a FDataGrid object.
     - depth_measures: depth methods to order he samples of FDataGrid objects.
-    - boxplt: informative exploratory tool for visualizing functional data.
-and the following classes:
+    - boxplot: informative exploratory tool for visualizing functional data.
+    and the following classes:
     - FDataGrid: Discrete representation of functional data.
     - FDataBasis: Basis representation for functional data.
     - FDataBoxplotInfo: Information needed to construct the boxplot.

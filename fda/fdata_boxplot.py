@@ -1,7 +1,7 @@
 """Functional Data Boxplot Module.
 
-This module contains the functions to construct the functional data boxplot.
-It also defines a class for representing the information returned by those functions.
+This module contains the classes to construct the functional data boxplot and
+visualize it.
 
 """
 import matplotlib

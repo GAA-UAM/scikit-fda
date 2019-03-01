@@ -3,7 +3,7 @@ import numpy as np
 
 from fda.grid import FDataGrid
 from fda.depth_measures import band_depth, fraiman_muniz_depth
-from fda.boxplot import Boxplot, SurfaceBoxplot
+from fda.fdata_boxplot import Boxplot, SurfaceBoxplot
 import matplotlib.pyplot as plt
 
 

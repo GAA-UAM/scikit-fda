@@ -1,6 +1,6 @@
 """
-Functional Boxplot
-====================
+Boxplot
+=======
 
 Shows the use of the functional Boxplot applied to the Canadian Weather dataset.
 """
@@ -18,7 +18,7 @@ import numpy as np
 import matplotlib.patches as mpatches
 from cycler import cycler
 import matplotlib
-from fda.boxplot import Boxplot
+from fda.fdata_boxplot import Boxplot
 
 ##################################################################################
 # First, the Canadian Weather dataset is downloaded from the package 'fda' in CRAN.
@@ -90,12 +90,6 @@ fd_temperatures.plot()
 # depth <fda.boxplot.depth_measures.fraiman_muniz_depth>` which rank the samples according to
 # their magnitude.
 #
-# The default representation of the :func:`functional boxplot object <fda.boxplot.Boxplot>`
-# is the image.
-
-fdBoxplot
-
-############################################################################################
 # The :func:`functional boxplot object <fda.boxplot.Boxplot>` admits any :ref:`depth measure
 # <depth-measures>` defined or customized by the user. Now the call is done with the
 # :func:`band depth measure <fda.boxplot.depth_measures.band_depth>` and the factor is reduced
@@ -123,4 +117,4 @@ fdBoxplot.plot()
 fdBoxplot = Boxplot(fd_temperatures,  method=fraiman_muniz_depth,
                          prob = [0.75, 0.5, 0.25])
 fdBoxplot.fullout = True
-fdBoxplot
+fdBoxplot.plot()

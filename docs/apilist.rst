@@ -10,7 +10,7 @@ Modules
 
    modules/datasets
    modules/depth_measures
-   modules/boxplot
+   modules/fdata_boxplot
    modules/extrapolation
    modules/registration
 

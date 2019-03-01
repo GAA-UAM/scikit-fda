@@ -14,7 +14,7 @@ for FDataGrid whose domain dimension is 2.
 import numpy as np
 import matplotlib.pyplot as plt
 from fda.grid import FDataGrid
-from fda.boxplot import SurfaceBoxplot, Boxplot
+from fda.fdata_boxplot import SurfaceBoxplot, Boxplot
 from fda.datasets import make_sinusoidal_process, make_gaussian_process
 
 ##################################################################################

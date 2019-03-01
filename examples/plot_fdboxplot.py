@@ -8,18 +8,17 @@ Shows the use of the functional Boxplot applied to the Canadian Weather dataset.
 # Author: Amanda Hernando Bernabé
 # License: MIT
 
-# sphinx_gallery_thumbnail_number = 4
-
+# sphinx_gallery_thumbnail_number = 2
 
 from fda import datasets
 from fda.grid import FDataGrid
-from fda.boxplot import fdboxplot
 from fda.depth_measures import band_depth, fraiman_muniz_depth
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.patches as mpatches
 from cycler import cycler
 import matplotlib
+from fda.boxplot import Boxplot
 
 ##################################################################################
 # First, the Canadian Weather dataset is downloaded from the package 'fda' in CRAN.
@@ -55,10 +54,13 @@ fig, ax = fd_temperatures.plot()
 ax[0].legend(handles=patches)
 
 ############################################################################################
-# We call the :func:`functional boxplot method <fda.boxplot.fdboxplot>` with the data.
+# We instantiate a :func:`functional boxplot object <fda.boxplot.Boxplot>` with the data,
+# and we call its :func:`plot function <fda.boxplot.Boxplot.plot>` to show the graph.
+
+fdBoxplot = Boxplot(fd_temperatures)
 
 plt.figure()
-fdBoxploInfo = fdboxplot(fd_temperatures)
+fdBoxplot.plot()
 
 ############################################################################################
 # We can observe in the boxplot the median in black, the central region (where the 50% of the
@@ -71,20 +73,16 @@ fdBoxploInfo = fdboxplot(fd_temperatures)
 color = 0.3
 outliercol = 0.7
 
-outliers = np.copy(fdBoxploInfo.outliers[0])
+outliers = np.copy(fdBoxplot.outliers[0])
 outliers[outliers == 0] = color
 outliers[outliers == 1] = outliercol
 
-colors = np.zeros((fd_temperatures.nsamples, 4))
-colors = colormap(outliers)
+colors_by_outliers = np.zeros((fd_temperatures.nsamples, 4))
+colors_by_outliers = colormap(outliers)
 
+matplotlib.rcParams['axes.prop_cycle'] = cycler(color=colors_by_outliers)
 plt.figure()
-for i in range(fd_temperatures.nsamples):
-    plt.plot(fd_temperatures.sample_points[0], fd_temperatures.data_matrix[i], c=colors[i])
-
-plt.xlabel(fd_temperatures.axes_labels[0])
-plt.ylabel(fd_temperatures.axes_labels[1])
-plt.title(fd_temperatures.dataset_label)
+fd_temperatures.plot()
 
 ############################################################################################
 # The curves pointed as outliers are are those curves with significantly lower values to the
@@ -92,33 +90,37 @@ plt.title(fd_temperatures.dataset_label)
 # depth <fda.boxplot.depth_measures.fraiman_muniz_depth>` which rank the samples according to
 # their magnitude.
 #
-# We can retrieve the plot from the value returned by the method, a :func:`FDataBoxplotInfo
-# object <fda.boxplot.FDataBoxplotInfo>`.
+# The default representation of the :func:`functional boxplot object <fda.boxplot.Boxplot>`
+# is the image.
 
-plt.figure()
-fdBoxploInfo.plot()
-
-############################################################################################
-# The :func:`functional boxplot method <fda.boxplot.fdboxplot>` admits any :ref:`depth measure
-# <depth-measures>` defined. Now the call is done with the :func:`band depth measure
-# <fda.boxplot.depth_measures.band_depth>` and the factor is reduced in order to designate
-# some samples as outliers (otherwise, with this measure and the default factor, none of the
-# curves are pointed out as outliers). We can see that the outliers detected belong to the
-# Pacific and Arctic climates which are less common to find in Canada. As a consequence, this
-# measure detects better shape outliers compared to the previous one.
-
-plt.figure()
-fdBoxploInfo = fdboxplot(fd_temperatures, method=band_depth, factor = 0.4)
+fdBoxplot
 
 ############################################################################################
-# Another functionality implemented in this method is the enhanced functional boxplot,
+# The :func:`functional boxplot object <fda.boxplot.Boxplot>` admits any :ref:`depth measure
+# <depth-measures>` defined or customized by the user. Now the call is done with the
+# :func:`band depth measure <fda.boxplot.depth_measures.band_depth>` and the factor is reduced
+# in order to designate some samples as outliers (otherwise, with this measure and the default
+# factor, none of the curves are pointed out as outliers). We can see that the outliers detected
+# belong to the Pacific and Arctic climates which are less common to find in Canada. As a
+# consequence, this measure detects better shape outliers compared to the previous one.
+
+
+fdBoxplot = Boxplot(fd_temperatures, method=band_depth, factor = 0.4)
+
+plt.figure()
+fdBoxplot.plot()
+
+############################################################################################
+# Another functionality implemented in this object is the enhanced functional boxplot,
 # which can include other central regions, apart from the central or 50% one.
 #
-# In the following call, the :func:`Fraiman and Muniz depth measure
+# In the following instantiation, the :func:`Fraiman and Muniz depth measure
 # <fda.boxplot.depth_measures.fraiman_muniz_depth>` is used and the 25% and 75% central regions
 # are specified. Since the plot may be a little overloaded, only the part of the outlier curves
 # which falls out of the central regions is plotted (fullout parameter).
 
-plt.figure()
-fdBoxploInfo = fdboxplot(fd_temperatures,  method=fraiman_muniz_depth,
-                         prob = [0.75, 0.5, 0.25], fullout = True)
+
+fdBoxplot = Boxplot(fd_temperatures,  method=fraiman_muniz_depth,
+                         prob = [0.75, 0.5, 0.25])
+fdBoxplot.fullout = True
+fdBoxplot

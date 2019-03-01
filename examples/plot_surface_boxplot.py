@@ -14,11 +14,11 @@ for FDataGrid whose domain dimension is 2.
 import numpy as np
 import matplotlib.pyplot as plt
 from fda.grid import FDataGrid
-from fda.boxplot import surface_boxplot, fdboxplot
+from fda.boxplot import SurfaceBoxplot, Boxplot
 from fda.datasets import make_sinusoidal_process, make_gaussian_process
 
 ##################################################################################
-# In order to call the :func:`surface_boxplot method <fda.boxplot.surface_boxplot>`
+# In order to instantiate a :func:`surface boxplot object <fda.boxplot.SurfaceBoxplot>`,
 # a functional data object with bidimensional domain must be generated. In this example,
 # a FDataGrid representing a function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}^2` is
 # constructed to show also the support of a multivariate dimensional image. The first
@@ -70,32 +70,31 @@ fd_2.plot()
 # three-dimensional data visualization as we can observe.
 #
 # For this reason, the profiles of the surfaces, which are contained in the first two
-# generated functional data objects, are plot below, to help to visualize the data.
+# generated functional data objects, are plotted below, to help to visualize the data.
 
 fig, ax = plt.subplots(1,2)
 fd1.plot(ax=[ax[0]])
 fd2.plot(ax=[ax[1]])
 
 ##################################################################################
-# To terminate the example, the call to the target function of the example is made,
+# To terminate the example, the instantiation of the SurfaceBoxplot object is made,
 # showing the surface boxplot which corresponds to our FDataGrid representing a
 # function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}^2` with a sinusoidal process in the
 # first dimension of the image and a gaussian one in the second one.
 
+surfaceBoxplot = SurfaceBoxplot(fd_2)
 plt.figure()
-fdBoxplotInfo = surface_boxplot(fd_2)
+surfaceBoxplot.plot()
 
 ##################################################################################
-# It returns a :func:`FDataBoxplotInfo object <fda.boxplot.FDataBoxplotInfo>` from
-# which the graph can be retrieved.
-#
+# The default representation of the object its the graph .
+
+surfaceBoxplot
+
+##################################################################################
 # The surface boxplot contains the median, the central envelope and the outlying envelope
 # plotted from darker to lighter colors, although they can be customized.
-
-plt.figure()
-fdBoxplotInfo.plot()
-
-##################################################################################
+#
 # Analogous to the procedure followed before of plotting the three-dimensional data
 # and their correponding profiles, we can obtain also the functional boxplot for
 # one-dimensional data with the :func:`fdboxplot function <fda.boxplot.fdboxplot>`
@@ -103,5 +102,7 @@ fdBoxplotInfo.plot()
 # boxplot is obtained.
 
 fig, ax = plt.subplots(1,2)
-fdboxplot(fd1, ax=[ax[0]])
-fdboxplot(fd2, ax=[ax[1]])
+boxplot1 = Boxplot(fd1)
+boxplot1.plot(ax=[ax[0]])
+boxplot2 = Boxplot(fd2)
+boxplot2.plot(ax=[ax[1]])

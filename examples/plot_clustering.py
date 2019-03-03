@@ -18,7 +18,6 @@ import matplotlib.patches as mpatches
 from cycler import cycler
 import matplotlib
 
-_repr_svg:_ BytesIO
 ##################################################################################
 # First, the Canadian Weather dataset is downloaded from the package 'fda' in CRAN.
 # It contains a FDataGrid with daily temperatures and precipitations, that is, it
@@ -27,8 +26,10 @@ _repr_svg:_ BytesIO
 
 dataset = datasets.fetch_weather()
 fd = dataset["data"]
-fd_temperatures = FDataGrid(data_matrix=fd.data_matrix[:, :, 0], sample_points=fd.sample_points,
-                            dataset_label=fd.dataset_label, axes_labels=fd.axes_labels[0:2])
+fd_temperatures = FDataGrid(data_matrix=fd.data_matrix[:, :, 0],
+                            sample_points=fd.sample_points,
+                            dataset_label=fd.dataset_label,
+                            axes_labels=fd.axes_labels[0:2])
 
 # The desired FDataGrid only contains 10 random samples, so that the example provides
 # clearer plots.
@@ -54,7 +55,7 @@ climates = dataset["target_names"][indices_target_groups]
 n_climates = len(climates)
 
 # Assigning the color to each of the samples.
-colormap = plt.cm.get_cmap('rainbow')
+colormap = plt.cm.get_cmap('tab20b')
 colors_by_climate = colormap(indexer / (n_climates - 1))
 climate_colors = colormap(np.arange(n_climates) / (n_climates - 1))
 
@@ -70,28 +71,28 @@ ax[0].legend(handles=patches)
 
 ############################################################################################
 # The number of clusters is set with the number of climates, in order to see the performance
-# of the clustering methods.
+# of the clustering methods and the seed is set to one in order to obatain always the same
+# result for the example.
 
 n_clusters = n_climates
+seed = 1
 
 ############################################################################################
-# If call the :func:`clustering method <fda.clustering.clustering>` with the data, a tuple
+# If call the :func:`K-Means method <fda.clustering.kmeans>` with the data, a tuple
 # with two arrays is returned. The first one contains the number of cluster each sample belongs
 # to and the second one, the centroids of each cluster.
 
-clustering_values, centers = clustering(fd, n_clusters)
-
+clustering_values, centers = kmeans(fd, n_clusters, seed=seed)
 print(clustering_values)
 print(centers)
 
 ############################################################################################
-# If call the :func:`fuzzy_clustering method <fda.clustering.fuzzy_clustering>` with the data,
+# If call the :func:`Fuzzy K-Means method <fda.clustering.fuzzy_kmeans>` with the data,
 # a tuple with two arrays is also returned. The first one contains ´n_clusters´ elements for
 # each sample and dimension. They denote the degree of membership of each sample to each cluster.
 # The second array contains the centroids of each cluster.
 
-clustering_values, centers = fuzzy_clustering(fd, n_clusters)
-
+clustering_values, centers = fuzzy_kmeans(fd, n_clusters, seed=seed)
 print(clustering_values)
 print(centers)
 
@@ -100,62 +101,63 @@ print(centers)
 # <fda.clustering.plot_clustering>` which also returns the above information plus a plot showing
 # to which cluster each sample belongs to.
 
-#Customization of cluster colors and labels in order to match the first image of raw data.
-cluster_colors = climate_colors[np.array([2, 0, 1])]
-cluster_labels = climates[np.array([2, 0, 1])]
+# Customization of cluster colors and labels in order to match the first image of raw data.
+cluster_colors = climate_colors[np.array([1, 2, 0])]
+cluster_labels = climates[np.array([1, 2, 0])]
 
 plt.figure()
-fig, ax, labels, centers = plot_clustering(fd, n_clusters, cluster_colors=cluster_colors,
+fig, ax, labels, centers = plot_clustering(fd, n_clusters, seed=seed,
+                                           cluster_colors=cluster_colors,
                                            cluster_labels=cluster_labels)
 
 ############################################################################################
-# In the above method, the :func:`fuzzy_clustering method <fda.clustering.fuzzy_clustering>`
+# In the above method, the :func:`Fuzzy K-Means method <fda.clustering.fuzzy_kmeans>`
 # can also be used. It assigns each sample to the cluster whose membership value is the
 # greatest.
 
-#Customization of cluster colors and labels in order to match the first image of raw data.
-cluster_colors_fuzzy = climate_colors[np.array([1, 2, 0])]
-cluster_labels_fuzzy = climates[np.array([1, 2, 0])]
-
 plt.figure()
-fig, ax, labels, centers = plot_clustering(fd, n_clusters, method=fuzzy_clustering,
-                                           cluster_colors=cluster_colors_fuzzy,
-                                           cluster_labels=cluster_labels_fuzzy)
+fig, ax, labels, centers = plot_clustering(fd, n_clusters, seed=seed,
+                                           method=fuzzy_kmeans,
+                                           cluster_colors=cluster_colors,
+                                           cluster_labels=cluster_labels)
 
 ############################################################################################
-# Another plot implemented to show the results of the the :func:`fuzzy_clustering method
-# <fda.clustering.fuzzy_clustering>` is the below one, which is similar to parallel coordinates.
+# Another plot implemented to show the results of the the :func:`Fuzzy K-Means method
+# <fda.clustering.fuzzy_kmeans>` is the below one, which is similar to parallel coordinates.
 # It is recommended to assign colors to each of the samples in order to identify them. In this
 # example, the colors are the ones of the first plot, dividing the samples by climate.
 
 plt.figure()
-fig, ax, labels = plot_fuzzy_clustering_values(fd, n_clusters, cluster_labels=cluster_labels_fuzzy,
-                                               sample_colors=colors_by_climate.reshape(fd.nsamples, fd.ndim_image, 4))
+fig, ax, labels = plot_fuzzy_kmeans_lines(fd, n_clusters, seed=seed,
+                                          cluster_labels=cluster_labels,
+                                          sample_colors=colors_by_climate.reshape(
+                                              fd.nsamples, fd.ndim_image, 4))
 
 ############################################################################################
-# Lastly, the func:`plot_fuzzy_clustering_bars <fda.clustering.plot_fuzzy_clustering_bars>`
+# Lastly, the func:`plot_fuzzy_kmeans_bars <fda.clustering.plot_fuzzy_kmeans_bars>`
 # method, returns a barplot. Each sample is designated with a bar which is filled proportionally
 # to the membership values with the color of each cluster.
 
 plt.figure()
-fig, ax, labels = plot_fuzzy_clustering_bars(fd, n_clusters, cluster_colors=cluster_colors_fuzzy,
-                                             cluster_labels=cluster_labels_fuzzy)
+fig, ax, labels = plot_fuzzy_kmeans_bars(fd, n_clusters, seed=seed,
+                                         cluster_colors=cluster_colors,
+                                         cluster_labels=cluster_labels)
 
 ############################################################################################
 # The possibility of sorting the bars according to a cluster is given specifying the number of
 # cluster, which belongs to the interval [0, n_clusters).
 
 plt.figure()
-fig, ax, labels = plot_fuzzy_clustering_bars(fd, n_clusters, sort=0,
-                                             cluster_colors=cluster_colors_fuzzy,
-                                             cluster_labels=cluster_labels_fuzzy)
+fig, ax, labels = plot_fuzzy_kmeans_bars(fd, n_clusters, seed=seed, sort=0,
+                                         cluster_colors=cluster_colors,
+                                         cluster_labels=cluster_labels)
 
 plt.figure()
-fig, ax, labels = plot_fuzzy_clustering_bars(fd, n_clusters, sort=1,
-                                             cluster_colors=cluster_colors_fuzzy,
-                                             cluster_labels=cluster_labels_fuzzy)
+fig, ax, labels = plot_fuzzy_kmeans_bars(fd, n_clusters, seed=seed, sort=1,
+                                         cluster_colors=cluster_colors,
+                                         cluster_labels=cluster_labels)
 
 plt.figure()
-fig, ax, labels = plot_fuzzy_clustering_bars(fd, n_clusters, sort=2,
-                                             cluster_colors=cluster_colors_fuzzy,
-                                             cluster_labels=cluster_labels_fuzzy)
+fig, ax, labels = plot_fuzzy_kmeans_bars(fd, n_clusters, seed=seed, sort=2,
+                                         cluster_colors=cluster_colors,
+                                         cluster_labels=cluster_labels)

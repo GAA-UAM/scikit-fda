@@ -9,6 +9,8 @@ It includes the modules:
     - validation: cross validation methods for finding the parameter that
     best smooths a FDataGrid object.
     - depth_measures: depth methods to order he samples of FDataGrid objects.
+    - clustering: K-Means and Fuzzy-KMeans algorithms implemented to cluster
+    data in the FDataGrid, along with plotting methods.
 and the following classes:
     - FDataGrid: Discrete representation of functional data.
     - FDataBasis: Basis representation for functional data.

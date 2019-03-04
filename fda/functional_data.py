@@ -557,14 +557,23 @@ class FData(ABC):
 
         # If it is not empty
         if len(axes) != 0:
-            current_geometry = (fig.axes[0]
-                                .get_subplotspec()
-                                .get_topmost_subplotspec()
-                                .get_gridspec().get_geometry())
+            # Gets geometry of current fig
+            geometry = (fig.axes[0]
+                        .get_subplotspec()
+                        .get_topmost_subplotspec()
+                        .get_gridspec().get_geometry())
+
+            # Check if the projection of the axes is the same
+            if projection == '3d':
+                same_projection = all(a.name == '3d' for a in axes)
+            else:
+                same_projection = all(a.name == 'rectilinear' for a in axes)
+
             # If compatible uses the same figure
-            if (current_geometry == (nrows, ncols) and
+            if (same_projection and geometry == (nrows, ncols) and
                 len(axes) == self.ndim_image):
                  return fig, axes
+
             else: # Create new figure if it is not compatible
                 fig = plt.figure()
 

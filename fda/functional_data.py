@@ -8,7 +8,9 @@ from abc import ABC, abstractmethod
 
 import numpy
 
+
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 import mpl_toolkits.mplot3d
 
 from .extrapolation import extrapolation_methods
@@ -653,22 +655,29 @@ class FData(ABC):
         if fig is not None:
             ax = fig.get_axes()
 
+        else:
+            fig = ax[0].get_figure()
+
         return fig, ax
 
-    def plot(self, fig=None, ax=None, *, derivative=0, nrows=None, ncols=None,
-             npoints=None, **kwargs):
+    def plot(self, chart=None, *, derivative=0, fig=None, ax=None, nrows=None,
+             ncols=None, npoints=None, **kwargs):
         """Plot the FDatGrid object.
 
         Args:
+            chart (figure object, axe or list of axes, optional): figure over
+                with the graphs are plotted or axis over where the graphs are
+                    plotted. If None and ax is also None, the figure is
+                    initialized.
+            derivative (int or tuple, optional): Order of derivative to be
+                plotted. In case of surfaces a tuple with the order of
+                derivation in each direction can be passed. See :func:`evaluate`
+                to obtain more information. Defaults 0.
             fig (figure object, optional): figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
             ax (list of axis objects, optional): axis over where the graphs are
                 plotted. If None, see param fig.
-            derivative (int or tuple, optional): Order of derivative to be
-                plotted. In case of surfaces a tuple with the order of
-                derivation in each direction can be passed. See :func:`evaluate`
-                to obtain more information. Defaults 0.
             nrows(int, optional): designates the number of rows of the figure to
                 plot the different dimensions of the image. Only specified if
                 fig and ax are None. ncols must be also be customized in the
@@ -690,11 +699,23 @@ class FData(ABC):
                 function.
 
         Returns:
-            fig (figure object): figure object in which the graphs are plotted
-                in case ax is None.
+            fig (figure object): figure object in which the graphs are plotted.
             ax (axes object): axes in which the graphs are plotted.
 
         """
+
+        # Parse chart argument
+        if chart is not None:
+            if fig is not None or ax is not None:
+                raise ValueError("fig, axes and chart parameters cannot "
+                                 "be passed as arguments at the same time.")
+            if isinstance(chart, plt.Figure):
+                fig = chart
+            elif isinstance(chart, Axes):
+                ax = [chart]
+            else:
+                ax = chart
+
         fig, ax = self._generic_plotting_checks(fig, ax, nrows, ncols)
 
         if self.ndim_domain == 1:

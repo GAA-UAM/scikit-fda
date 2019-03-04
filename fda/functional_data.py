@@ -538,7 +538,6 @@ class FData(ABC):
             ax (axes object): axes of the initialized figure.
 
         """
-        fig = plt.gcf()
 
         if self.ndim_domain == 1:
             projection = None
@@ -552,6 +551,23 @@ class FData(ABC):
             nrows = int(numpy.ceil(self.ndim_image / nrows))
         elif ncols is not None and nrows is None:
             nrows = int(numpy.ceil(self.ndim_image / ncols))
+
+        fig = plt.gcf()
+        axes = fig.get_axes()
+
+        # If it is not empty
+        if len(axes) != 0:
+            current_geometry = (fig.axes[0]
+                                .get_subplotspec()
+                                .get_topmost_subplotspec()
+                                .get_gridspec().get_geometry())
+            # If compatible uses the same figure
+            if (current_geometry == (nrows, ncols) and
+                len(axes) == self.ndim_image):
+                 return fig, axes
+            else: # Create new figure if it is not compatible
+                fig = plt.figure()
+
 
         for i in range(self.ndim_image):
             fig.add_subplot(nrows, ncols, i + 1, projection=projection)

@@ -52,7 +52,7 @@ fd_bspline.dataset_label = "BSpline Basis"
 
 # Plot of diferent representations
 fig, ax = plt.subplots(2,2)
-fdgrid.plot(ax=[ax[0][0]])
+fdgrid.plot(ax[0][0])
 fd_fourier.plot(ax[0][1])
 fd_monomial.plot(ax[1][0])
 fd_bspline.plot(ax[1][1])
@@ -60,6 +60,9 @@ fd_bspline.plot(ax[1][1])
 # Disable xticks of first row
 ax[0][0].set_xticks([])
 ax[0][1].set_xticks([])
+
+# Clear title for next plots
+fdgrid.dataset_label = ""
 
 
 ###############################################################################
@@ -96,7 +99,7 @@ ax[0][1].set_xticks([])
 
 
 # Plot objects in the domain range
-fdgrid.plot(ax=[ax[0][0]])
+fdgrid.plot(ax[0][0])
 fd_fourier.plot(ax[0][1])
 fd_monomial.plot(ax[1][0])
 fd_bspline.plot(ax[1][1])
@@ -113,6 +116,7 @@ fd_bspline.plot(ax[1][1])
 #
 
 plt.figure()
+fdgrid.dataset_label = "Periodic extrapolation"
 
 # Evaluation of the grid
 # Extrapolation supplied in the evaluation
@@ -124,8 +128,6 @@ plt.gca().set_prop_cycle(None) # Reset color cycle
 
 fdgrid.plot() # Plot dataset
 
-plt.title("Periodic extrapolation")
-
 
 ###############################################################################
 #
@@ -134,6 +136,7 @@ plt.title("Periodic extrapolation")
 #
 
 plt.figure()
+fdgrid.dataset_label = "Boundary extrapolation"
 
 # Other way to call the extrapolation, changing the default value
 fdgrid.extrapolation = "bounds"
@@ -146,7 +149,6 @@ plt.gca().set_prop_cycle(None) # Reset color cycle
 
 fdgrid.plot() # Plot dataset
 
-plt.title("Boundary extrapolation")
 
 ###############################################################################
 #
@@ -158,6 +160,7 @@ plt.title("Boundary extrapolation")
 
 
 plt.figure()
+fdgrid.dataset_label = "Fill with zeros"
 
 # Evaluation of the grid filling with zeros
 values = fdgrid(t, extrapolation="zeros")
@@ -167,7 +170,6 @@ plt.gca().set_prop_cycle(None) # Reset color cycle
 
 fdgrid.plot() # Plot dataset
 
-plt.title("Fill with zeros")
 
 ###############################################################################
 #

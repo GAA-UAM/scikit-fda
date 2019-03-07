@@ -153,9 +153,6 @@ class Basis(ABC):
 
         """
 
-        if self.ndim_domain > 1 or self.ndim_image > 1:
-            raise NotImplementedError
-
         if ax is None:
             ax = matplotlib.pyplot.gca()
         # Number of points where the basis are evaluated

@@ -51,19 +51,25 @@ class FDataBoxplot(ABC):
 
     @property
     def colormap(self):
-        pass
+        return self._colormap
 
     @colormap.setter
     def colormap(self, value):
-        pass
+        if not isinstance(value, matplotlib.colors.LinearSegmentedColormap):
+            raise ValueError(
+                "colormap must be of type matplotlib.colors.LinearSegmentedColormap")
+        self._colormap = value
 
     @abstractmethod
     def plot(self, fig=None, ax=None, nrows=None, ncols=None):
         pass
 
-    @abstractmethod
     def _repr_svg_(self):
-        pass
+        fig, _ = self.plot()
+        output = StringIO()
+        fig.savefig(output, format='svg')
+        plt.close(fig)
+        return output.getvalue()
 
 
 class Boxplot(FDataBoxplot):
@@ -96,8 +102,8 @@ class Boxplot(FDataBoxplot):
         barcol (string): Color of the envelopes and vertical lines.
         outliercol (string): Color of the ouliers.
         mediancol (string): Color of the median.
-        fullout (boolean): If true, the entire curve of the outlier samples
-            is shown. Defaults to False.
+        outliers_repr (boolean): If False (the default) then only the part
+            outside the box is plotted. If True, complete outling curves are plotted
 
     Example:
         Function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
@@ -203,10 +209,10 @@ class Boxplot(FDataBoxplot):
         self._fdatagrid = fdatagrid
         self._prob = prob
         self._colormap = plt.cm.get_cmap('RdPu')
-        self._barcol = "blue"
-        self._outliercol = "red"
-        self._mediancol = "black"
-        self._fullout = False
+        self.barcol = "blue"
+        self.outliercol = "red"
+        self.mediancol = "black"
+        self._outliers_repr = False
 
     @property
     def fdatagrid(self):
@@ -225,17 +231,6 @@ class Boxplot(FDataBoxplot):
         return self._outlying_envelope
 
     @property
-    def colormap(self):
-        return self._colormap
-
-    @colormap.setter
-    def colormap(self, value):
-        if not isinstance(value, matplotlib.colors.LinearSegmentedColormap):
-            raise ValueError(
-                "colormap must be of type matplotlib.colors.LinearSegmentedColormap")
-        self._colormap = value
-
-    @property
     def central_regions(self):
         return self._central_regions
 
@@ -244,38 +239,14 @@ class Boxplot(FDataBoxplot):
         return self._outliers
 
     @property
-    def barcol(self):
-        return self._barcol
+    def outliers_repr(self):
+        return self._outliers_repr
 
-    @barcol.setter
-    def barcol(self, color):
-        self._barcol = color
-
-    @property
-    def outliercol(self):
-        return self._outliercol
-
-    @outliercol.setter
-    def outliercol(self, color):
-        self._outliercol = color
-
-    @property
-    def mediancol(self):
-        return self._mediancol
-
-    @mediancol.setter
-    def mediancol(self, color):
-        self._mediancol = color
-
-    @property
-    def fullout(self):
-        return self._fullout
-
-    @fullout.setter
-    def fullout(self, boolean):
+    @outliers_repr.setter
+    def outliers_repr(self, boolean):
         if not isinstance(boolean, bool):
-            raise ValueError("fullout must be boolean type")
-        self._fullout = boolean
+            raise ValueError("outliers_repr must be boolean type")
+        self._outliers_repr = boolean
 
     def plot(self, fig=None, ax=None, nrows=None, ncols=None):
         """Visualization of the functional boxplot of the fdatagrid (ndim_domain=1).
@@ -304,10 +275,10 @@ class Boxplot(FDataBoxplot):
         tones = np.linspace(0.1, 1.0, len(self._prob) + 1, endpoint=False)[1:]
         color = self.colormap(tones)
 
-        if self.fullout:
-            var_zorder = 4
-        else:
+        if self.outliers_repr:
             var_zorder = 1
+        else:
+            var_zorder = 4
 
         for m in range(self.fdatagrid.ndim_image):
 
@@ -360,15 +331,6 @@ class Boxplot(FDataBoxplot):
         self.fdatagrid.set_labels(fig, ax)
 
         return fig, ax
-
-    def _repr_svg_(self):
-        plt.ioff()
-        fig, _ = self.plot()
-        output = StringIO()
-        fig.savefig(output, format='svg')
-        plt.close(fig)
-        plt.show()
-        return output.getvalue()
 
 
 class SurfaceBoxplot(FDataBoxplot):
@@ -484,17 +446,6 @@ class SurfaceBoxplot(FDataBoxplot):
     @property
     def outlying_envelope(self):
         return self._outlying_envelope
-
-    @property
-    def colormap(self):
-        return self._colormap
-
-    @colormap.setter
-    def colormap(self, value):
-        if not isinstance(value, matplotlib.colors.LinearSegmentedColormap):
-            raise ValueError(
-                "colormap must be of type matplotlib.colors.LinearSegmentedColormap")
-        self._colormap = value
 
     @property
     def boxcol(self):
@@ -617,11 +568,3 @@ class SurfaceBoxplot(FDataBoxplot):
 
         return fig, ax
 
-    def _repr_svg_(self):
-        plt.ioff()
-        fig, _ = self.plot()
-        output = StringIO()
-        fig.savefig(output, format='svg')
-        plt.close(fig)
-        plt.show()
-        return output.getvalue()

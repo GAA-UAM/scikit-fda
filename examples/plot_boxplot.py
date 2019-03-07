@@ -56,8 +56,13 @@ ax[0].legend(handles=patches)
 ############################################################################################
 # We instantiate a :func:`functional boxplot object <fda.boxplot.Boxplot>` with the data,
 # and we call its :func:`plot function <fda.boxplot.Boxplot.plot>` to show the graph.
+#
+# By default, only the part of the outlier curves which falls out of the central regions
+# is plotted. We want the entire curve to be shown, that is why the outliers_repr parameter is
+# set to True.
 
 fdBoxplot = Boxplot(fd_temperatures)
+fdBoxplot.outliers_repr = True
 
 plt.figure()
 fdBoxplot.plot()
@@ -100,9 +105,9 @@ fd_temperatures.plot()
 
 
 fdBoxplot = Boxplot(fd_temperatures, method=band_depth, factor = 0.4)
+fdBoxplot.outliers_repr = True
 
-plt.figure()
-fdBoxplot.plot()
+print(fdBoxplot)
 
 ############################################################################################
 # Another functionality implemented in this object is the enhanced functional boxplot,
@@ -110,11 +115,12 @@ fdBoxplot.plot()
 #
 # In the following instantiation, the :func:`Fraiman and Muniz depth measure
 # <fda.boxplot.depth_measures.fraiman_muniz_depth>` is used and the 25% and 75% central regions
-# are specified. Since the plot may be a little overloaded, only the part of the outlier curves
-# which falls out of the central regions is plotted (fullout parameter).
+# are specified.
+#
+# Note the default representation of the :func:`boxplot object <fda.boxplot.Boxplot>` which is
+# the image of the plot.
 
 
 fdBoxplot = Boxplot(fd_temperatures,  method=fraiman_muniz_depth,
                          prob = [0.75, 0.5, 0.25])
-fdBoxplot.fullout = True
-fdBoxplot.plot()
+fdBoxplot

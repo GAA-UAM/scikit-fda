@@ -58,11 +58,11 @@ ax[0].legend(handles=patches)
 # and we call its :func:`plot function <fda.boxplot.Boxplot.plot>` to show the graph.
 #
 # By default, only the part of the outlier curves which falls out of the central regions
-# is plotted. We want the entire curve to be shown, that is why the outliers_repr parameter is
+# is plotted. We want the entire curve to be shown, that is why the show_full_outliers parameter is
 # set to True.
 
 fdBoxplot = Boxplot(fd_temperatures)
-fdBoxplot.outliers_repr = True
+fdBoxplot.show_full_outliers = True
 
 plt.figure()
 fdBoxplot.plot()
@@ -103,11 +103,11 @@ fd_temperatures.plot()
 # belong to the Pacific and Arctic climates which are less common to find in Canada. As a
 # consequence, this measure detects better shape outliers compared to the previous one.
 
-
 fdBoxplot = Boxplot(fd_temperatures, method=band_depth, factor = 0.4)
-fdBoxplot.outliers_repr = True
+fdBoxplot.show_full_outliers = True
 
-print(fdBoxplot)
+plt.figure()
+fdBoxplot.plot()
 
 ############################################################################################
 # Another functionality implemented in this object is the enhanced functional boxplot,
@@ -116,11 +116,14 @@ print(fdBoxplot)
 # In the following instantiation, the :func:`Fraiman and Muniz depth measure
 # <fda.boxplot.depth_measures.fraiman_muniz_depth>` is used and the 25% and 75% central regions
 # are specified.
-#
-# Note the default representation of the :func:`boxplot object <fda.boxplot.Boxplot>` which is
-# the image of the plot.
-
 
 fdBoxplot = Boxplot(fd_temperatures,  method=fraiman_muniz_depth,
                          prob = [0.75, 0.5, 0.25])
-fdBoxplot
+plt.figure()
+fdBoxplot.plot()
+
+#############################################################################################
+# The above two lines could be replaced just by fdBoxplot since the default representation of
+# the :func:`boxplot object <fda.boxplot.Boxplot>` is the image of the plot. However, due to
+# generation of this notebook it does not show the image and that is why the plot method is
+# called.

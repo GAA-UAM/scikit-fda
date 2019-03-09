@@ -3,3 +3,4 @@ numpy
 scipy
 setuptools
 sklearn
+mpldatacursor

@@ -10,7 +10,7 @@ import math
 
 from .depth_measures import *
 from .grid import FDataGrid
-from io import StringIO
+from io import BytesIO
 from abc import ABC, abstractmethod
 
 __author__ = "Amanda Hernando Bernabé"
@@ -65,11 +65,13 @@ class FDataBoxplot(ABC):
         pass
 
     def _repr_svg_(self):
+        plt.figure()
         fig, _ = self.plot()
-        output = StringIO()
+        output = BytesIO()
         fig.savefig(output, format='svg')
+        data = output.getvalue()
         plt.close(fig)
-        return output.getvalue()
+        return data.decode('utf-8')
 
 
 class Boxplot(FDataBoxplot):
@@ -102,7 +104,7 @@ class Boxplot(FDataBoxplot):
         barcol (string): Color of the envelopes and vertical lines.
         outliercol (string): Color of the ouliers.
         mediancol (string): Color of the median.
-        outliers_repr (boolean): If False (the default) then only the part
+        show_full_outliers (boolean): If False (the default) then only the part
             outside the box is plotted. If True, complete outling curves are plotted
 
     Example:
@@ -212,7 +214,7 @@ class Boxplot(FDataBoxplot):
         self.barcol = "blue"
         self.outliercol = "red"
         self.mediancol = "black"
-        self._outliers_repr = False
+        self._show_full_outliers = False
 
     @property
     def fdatagrid(self):
@@ -239,14 +241,14 @@ class Boxplot(FDataBoxplot):
         return self._outliers
 
     @property
-    def outliers_repr(self):
-        return self._outliers_repr
+    def show_full_outliers(self):
+        return self._show_full_outliers
 
-    @outliers_repr.setter
-    def outliers_repr(self, boolean):
+    @show_full_outliers.setter
+    def show_full_outliers(self, boolean):
         if not isinstance(boolean, bool):
-            raise ValueError("outliers_repr must be boolean type")
-        self._outliers_repr = boolean
+            raise ValueError("show_full_outliers must be boolean type")
+        self._show_full_outliers = boolean
 
     def plot(self, fig=None, ax=None, nrows=None, ncols=None):
         """Visualization of the functional boxplot of the fdatagrid (ndim_domain=1).
@@ -275,7 +277,7 @@ class Boxplot(FDataBoxplot):
         tones = np.linspace(0.1, 1.0, len(self._prob) + 1, endpoint=False)[1:]
         color = self.colormap(tones)
 
-        if self.outliers_repr:
+        if self.show_full_outliers:
             var_zorder = 1
         else:
             var_zorder = 4

@@ -87,7 +87,7 @@ plt.figure()
 surfaceBoxplot.plot()
 
 ##################################################################################
-# The default representation of the object its the graph .
+# The default representation of the object its the graph.
 
 surfaceBoxplot
 

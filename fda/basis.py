@@ -307,6 +307,14 @@ class Basis(ABC):
 
         return type(self)(domain_range, self.nbasis)
 
+    def same_domain(self, other):
+        r"""Returns if two basis are defined on the same domain range.
+
+            Args:
+                other (Basis): Basis to check the domain range definition
+        """
+        return _same_domain(self.domain_range, other.domain_range)
+
     def copy(self):
         """Basis copy"""
         return copy.deepcopy(self)

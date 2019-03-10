@@ -32,6 +32,11 @@ class FDataBoxplot(ABC):
         if factor < 0:
             raise ValueError(
                 "The number used to calculate the outlying envelope must be positive.")
+        self._factor = factor
+
+    @property
+    def factor(self):
+        return self._factor
 
     @property
     def fdatagrid(self):
@@ -114,9 +119,53 @@ class Boxplot(FDataBoxplot):
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points, dataset_label="dataset", axes_labels=["x_label", "y_label"])
-        >>> Boxplot(fd) # doctest: +IGNORE_RESULT
+        >>> Boxplot(fd)
+        Boxplot(
+            FDataGrid=FDataGrid(
+                array([[[ 1. ],
+                        [ 1. ],
+                        [ 2. ],
+                        [ 3. ],
+                        [ 2.5],
+                        [ 2. ]],
+        <BLANKLINE>
+                       [[ 0.5],
+                        [ 0.5],
+                        [ 1. ],
+                        [ 2. ],
+                        [ 1.5],
+                        [ 1. ]],
+        <BLANKLINE>
+                       [[-1. ],
+                        [-1. ],
+                        [-0.5],
+                        [ 1. ],
+                        [ 1. ],
+                        [ 0.5]],
+        <BLANKLINE>
+                       [[-0.5],
+                        [-0.5],
+                        [-0.5],
+                        [-1. ],
+                        [-1. ],
+                        [-1. ]]]),
+                sample_points=[array([ 0,  2,  4,  6,  8, 10])],
+                domain_range=array([[ 0, 10]]),
+                dataset_label='dataset',
+                axes_labels=['x_label', 'y_label'],
+                extrapolation=None,
+                interpolator=GridSplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
+                keepdims=False),
+            median=array([[0.5, 0.5, 1. , 2. , 1.5, 1. ]]),
+            central envelope=array([[[ 0.5,  0.5,  1. ,  2. ,  1.5,  1. ],
+                    [-1. , -1. , -0.5,  1. ,  1. ,  0.5]]]),
+            outlying envelope=array([[[ 1.  ,  1.  ,  2.  ,  3.  ,  2.25,  1.75],
+                    [-1.  , -1.  , -0.5 , -0.5 ,  0.25, -0.25]]]),
+            central_regions=array([[[ 0.5,  0.5,  1. ,  2. ,  1.5,  1. ],
+                    [-1. , -1. , -0.5,  1. ,  1. ,  0.5]]]),
+            outliers=array([[1., 0., 0., 1.]]))
 
-    """.replace('+IGNORE_RESULT', '+ELLIPSIS\n<...>')
+    """
 
     def __init__(self, fdatagrid, method=modified_band_depth, prob=[0.5],
                  factor=1.5):
@@ -334,6 +383,16 @@ class Boxplot(FDataBoxplot):
 
         return fig, ax
 
+    def __repr__(self):
+        """Return repr(self)."""
+        return (f"Boxplot("
+                f"\nFDataGrid={repr(self.fdatagrid)},"
+                f"\nmedian={repr(self.median)},"
+                f"\ncentral envelope={repr(self.central_envelope)},"
+                f"\noutlying envelope={repr(self.outlying_envelope)},"
+                f"\ncentral_regions={repr(self.central_regions)},"
+                f"\noutliers={repr(self.outliers)})").replace('\n', '\n    ')
+
 
 class SurfaceBoxplot(FDataBoxplot):
     r"""Representation of the surface boxplot.
@@ -357,8 +416,8 @@ class SurfaceBoxplot(FDataBoxplot):
             contains the outlying envelope/s.
         colormap (matplotlib.colors.LinearSegmentedColormap): Colormap from
             which the colors to represent the central regions are selected.
-        boxcol (string): Color of the ouliers.
-        outcol (string): Color of the median.
+        boxcol (string): Color of the box, which includes median and central envelope.
+        outcol (string): Color of the outlying envelope.
 
     Example:
         Function :math:`f : \mathbb{R^2}\longmapsto\mathbb{R^2}`.
@@ -368,9 +427,65 @@ class SurfaceBoxplot(FDataBoxplot):
         >>> sample_points = [[2, 4], [3, 6, 8]]
         >>> fd = FDataGrid(data_matrix, sample_points, dataset_label= "dataset",
         ...                axes_labels=["x1_label", "x2_label", "y1_label", "y2_label"])
-        >>> SurfaceBoxplot(fd) # doctest: +IGNORE_RESULT
+        >>> SurfaceBoxplot(fd)
+        SurfaceBoxplot(
+            FDataGrid=FDataGrid(
+                array([[[[ 1. ,  4. ],
+                         [ 0.3,  1.5],
+                         [ 1. ,  3. ]],
+        <BLANKLINE>
+                        [[ 2. ,  8. ],
+                         [ 0.4,  2. ],
+                         [ 2. ,  9. ]]],
+        <BLANKLINE>
+        <BLANKLINE>
+                       [[[ 2. , 10. ],
+                         [ 0.5,  3. ],
+                         [ 2. , 10. ]],
+        <BLANKLINE>
+                        [[ 3. , 12. ],
+                         [ 0.6,  3. ],
+                         [ 3. , 15. ]]]]),
+                sample_points=[array([2, 4]), array([3, 6, 8])],
+                domain_range=array([[2, 4],
+                       [3, 8]]),
+                dataset_label='dataset',
+                axes_labels=['x1_label', 'x2_label', 'y1_label', 'y2_label'],
+                extrapolation=None,
+                interpolator=GridSplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
+                keepdims=False),
+            median=array([[[1. , 0.3, 1. ],
+                    [2. , 0.4, 2. ]],
+        <BLANKLINE>
+                   [[4. , 1.5, 3. ],
+                    [8. , 2. , 9. ]]]),
+            central envelope=array([[[[1. , 0.3, 1. ],
+                     [2. , 0.4, 2. ]],
+        <BLANKLINE>
+                    [[1. , 0.3, 1. ],
+                     [2. , 0.4, 2. ]]],
+        <BLANKLINE>
+        <BLANKLINE>
+                   [[[4. , 1.5, 3. ],
+                     [8. , 2. , 9. ]],
+        <BLANKLINE>
+                    [[4. , 1.5, 3. ],
+                     [8. , 2. , 9. ]]]]),
+            outlying envelope=array([[[[1. , 0.3, 1. ],
+                     [2. , 0.4, 2. ]],
+        <BLANKLINE>
+                    [[1. , 0.3, 1. ],
+                     [2. , 0.4, 2. ]]],
+        <BLANKLINE>
+        <BLANKLINE>
+                   [[[4. , 1.5, 3. ],
+                     [8. , 2. , 9. ]],
+        <BLANKLINE>
+                    [[4. , 1.5, 3. ],
+                     [8. , 2. , 9. ]]]]))
 
-    """.replace('+IGNORE_RESULT', '+ELLIPSIS\n<...>')
+
+    """
 
     def __init__(self, fdatagrid, method=modified_band_depth, factor=1.5):
         """Initialization of the functional boxplot.
@@ -569,4 +684,12 @@ class SurfaceBoxplot(FDataBoxplot):
         self.fdatagrid.set_labels(fig, ax)
 
         return fig, ax
+
+    def __repr__(self):
+        """Return repr(self)."""
+        return (f"SurfaceBoxplot("
+                f"\nFDataGrid={repr(self.fdatagrid)},"
+                f"\nmedian={repr(self.median)},"
+                f"\ncentral envelope={repr(self.central_envelope)},"
+                f"\noutlying envelope={repr(self.outlying_envelope)})").replace('\n', '\n    ')
 

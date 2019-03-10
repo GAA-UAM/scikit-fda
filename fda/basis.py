@@ -153,20 +153,7 @@ class Basis(ABC):
 
         """
 
-        if self.ndim_domain > 1 or self.ndim_image > 1:
-            raise NotImplementedError
-
-        if ax is None:
-            ax = matplotlib.pyplot.gca()
-        # Number of points where the basis are evaluated
-        npoints = max(501, 10 * self.nbasis)
-        # List of points where the basis are evaluated
-        eval_points = numpy.linspace(*self.domain_range[0], npoints)
-
-        # Basis evaluated in the previous list of points
-        mat = self.evaluate(eval_points, derivative=derivative, keepdims=False)
-        # Plot
-        return ax.plot(eval_points, mat.T, **kwargs)
+        self.to_basis().plot(self, ax, derivative, kwargs)
 
     def _evaluate_single_basis_coefficients(self, coefficients, basis_index, x,
                                             cache):

@@ -133,8 +133,8 @@ for lam, c in zip(lambdas, color):
     fda.registration.elastic_registration(f, g, lam=lam).plot(color=c)
 
 
-l1, = f.plot(color='C0', linewidth=2., label='$f$')
-l2, = g.plot(color='C1', linewidth=2., label='$g$')
+l1, *_ = f.plot(color='C0', linewidth=2., label='$f$')
+l2, *_ = g.plot(color='C1', linewidth=2., label='$g$')
 
 # Legend
 plt.legend(handles=[l1, l2])

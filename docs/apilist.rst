@@ -11,6 +11,7 @@ Modules
    modules/datasets
    modules/depth_measures
    modules/magnitude_shape_plot
+   modules/fdata_boxplot
    modules/extrapolation
    modules/registration
 

@@ -23,6 +23,7 @@ from .functional_data import FData, _list_of_arrays
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
+MIN_EVAL_SAMPLES = 201
 
 # aux functions
 def _polypow(p, n=2):
@@ -2016,7 +2017,8 @@ class FDataBasis(FData):
                 raise ValueError("The functions domains are different.")
 
             basisobj = self.basis.basis_of_product(other.basis)
-            neval = max(10 * max(self.nbasis, other.nbasis) + 1, 201)
+            neval = max(10 * max(self.nbasis, other.nbasis) + 1,
+                        MIN_EVAL_SAMPLES)
             (left, right) = self.domain_range[0]
             evalarg = numpy.linspace(left, right, neval)
 

@@ -77,15 +77,16 @@ fdgrid.dataset_label = ""
 # basis and polynomial behaviors in the rest of the cases.
 #
 
-t = np.linspace(-0.2,1.2, 100)
+domain_extended = (-0.2, 1.2)
 
 fig, ax = plt.subplots(2,2)
 
-# Plot extrapolated values
-ax[0][0].plot(t, fdgrid(t).T, linestyle='--')
-ax[0][1].plot(t, fd_fourier(t).T, linestyle='--')
-ax[1][0].plot(t, fd_monomial(t).T, linestyle='--')
-ax[1][1].plot(t, fd_bspline(t).T, linestyle='--')
+
+# Plot objects in the domain range extended
+fdgrid.plot(ax[0][0], domain_range=domain_extended, linestyle='--')
+fd_fourier.plot(ax[0][1],domain_range=domain_extended, linestyle='--')
+fd_monomial.plot(ax[1][0], domain_range=domain_extended, linestyle='--')
+fd_bspline.plot(ax[1][1], domain_range=domain_extended, linestyle='--')
 
 # Plot configuration
 for axes in fig.axes:
@@ -96,7 +97,6 @@ for axes in fig.axes:
 # Disable xticks of first row
 ax[0][0].set_xticks([])
 ax[0][1].set_xticks([])
-
 
 # Plot objects in the domain range
 fdgrid.plot(ax[0][0])
@@ -114,6 +114,7 @@ fd_bspline.plot(ax[1][1])
 # period does not have to coincide with the domain range, obtaining different
 # results applying or not extrapolation in case of not coinciding.
 #
+t = np.linspace(*domain_extended)
 
 plt.figure()
 fdgrid.dataset_label = "Periodic extrapolation"
@@ -163,8 +164,10 @@ plt.figure()
 fdgrid.dataset_label = "Fill with zeros"
 
 # Evaluation of the grid filling with zeros
-values = fdgrid(t, extrapolation="zeros")
-plt.plot(t, values.T, linestyle='--')
+fdgrid.extrapolation = "zeros"
+
+# Plot in domain extended
+fdgrid.plot(domain_range=domain_extended, linestyle='--')
 
 plt.gca().set_prop_cycle(None) # Reset color cycle
 

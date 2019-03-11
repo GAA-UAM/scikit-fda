@@ -619,7 +619,7 @@ class FData(ABC):
                     ax[i].set_xlabel(self.axes_labels[0])
                     ax[i].set_ylabel(self.axes_labels[i + 1])
 
-    def _generic_plotting_checks(self, fig=None, ax=None, nrows=None,
+    def generic_plotting_checks(self, fig=None, ax=None, nrows=None,
                                  ncols=None):
         """Check the arguments passed to both :func:`plot
         <fda.functional_data.plot>` and :func:`scatter <fda.grid.scatter>`
@@ -686,7 +686,7 @@ class FData(ABC):
         return fig, ax
 
     def plot(self, chart=None, *, derivative=0, fig=None, ax=None, nrows=None,
-             ncols=None, npoints=None, **kwargs):
+             ncols=None, npoints=None, domain_range=None, **kwargs):
         """Plot the FDatGrid object.
 
         Args:
@@ -718,6 +718,12 @@ class FData(ABC):
                 in unidimensional plots will be used 501 points; in surfaces
                 will be used 30 points per axis, wich makes a grid with 900
                 points.
+            domain_range (tuple or list of tuples, optional): Range where the
+                function will be plotted. In objects with unidimensional domain
+                the domain range should be a tuple with the bounds of the
+                interval; in the case of surfaces a list with 2 tuples with
+                the ranges for each dimension. Default uses the domain range
+                of the functional object.
             **kwargs: if ndim_domain is 1, keyword arguments to be passed to the
                 matplotlib.pyplot.plot function; if ndim_domain is 2, keyword
                 arguments to be passed to the matplotlib.pyplot.plot_surface
@@ -741,7 +747,12 @@ class FData(ABC):
             else:
                 ax = chart
 
-        fig, ax = self._generic_plotting_checks(fig, ax, nrows, ncols)
+        if domain_range is None:
+            domain_range = self.domain_range
+        else:
+            domain_range = _list_of_arrays(domain_range)
+
+        fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
 
         if self.ndim_domain == 1:
 
@@ -749,7 +760,7 @@ class FData(ABC):
                 npoints = 501
 
             # Evaluates the object in a linspace
-            eval_points = numpy.linspace(*self.domain_range[0], npoints)
+            eval_points = numpy.linspace(*domain_range[0], npoints)
             mat = self(eval_points, derivative=derivative, keepdims=True)
 
             for i in range(self.ndim_image):
@@ -766,8 +777,8 @@ class FData(ABC):
                                  "length 2.")
 
             # Axes where will be evaluated
-            x = numpy.linspace(*self.domain_range[0], npoints[0])
-            y = numpy.linspace(*self.domain_range[1], npoints[1])
+            x = numpy.linspace(*domain_range[0], npoints[0])
+            y = numpy.linspace(*domain_range[1], npoints[1])
 
             # Evaluation of the functional object
             Z =  self((x,y), derivative=derivative, grid=True, keepdims=True)

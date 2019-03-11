@@ -153,20 +153,7 @@ class Basis(ABC):
 
         """
 
-        if self.ndim_domain > 1 or self.ndim_image > 1:
-            raise NotImplementedError
-
-        if ax is None:
-            ax = matplotlib.pyplot.gca()
-        # Number of points where the basis are evaluated
-        npoints = max(501, 10 * self.nbasis)
-        # List of points where the basis are evaluated
-        eval_points = numpy.linspace(*self.domain_range[0], npoints)
-
-        # Basis evaluated in the previous list of points
-        mat = self.evaluate(eval_points, derivative=derivative, keepdims=False)
-        # Plot
-        return ax.plot(eval_points, mat.T, **kwargs)
+        self.to_basis().plot(self, ax, derivative, kwargs)
 
     def _evaluate_single_basis_coefficients(self, coefficients, basis_index, x,
                                             cache):
@@ -269,7 +256,7 @@ class Basis(ABC):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-               Springler.
+               Springer.
 
         """
         pass
@@ -306,6 +293,14 @@ class Basis(ABC):
             domain_range = self.domain_range
 
         return type(self)(domain_range, self.nbasis)
+
+    def same_domain(self, other):
+        r"""Returns if two basis are defined on the same domain range.
+
+            Args:
+                other (Basis): Basis to check the domain range definition
+        """
+        return _same_domain(self.domain_range, other.domain_range)
 
     def copy(self):
         """Basis copy"""
@@ -423,7 +418,7 @@ class Constant(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
         if derivative_degree is None:
@@ -569,7 +564,7 @@ class Monomial(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
 
@@ -698,7 +693,7 @@ class BSpline(Basis):
 
     References:
         .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
-            Analysis*. Springler. 50-51.
+            Analysis*. Springer. 50-51.
 
     """
 
@@ -801,7 +796,7 @@ class BSpline(Basis):
 
         References:
             .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
-                Analysis*. Springler. 50-51.
+                Analysis*. Springer. 50-51.
 
         """
         # Places m knots at the boundaries
@@ -856,7 +851,7 @@ class BSpline(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
         if derivative_degree is not None:
@@ -1239,7 +1234,7 @@ class Fourier(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
         if isinstance(derivative_degree, int):
@@ -1464,11 +1459,11 @@ class FDataBasis(FData):
         References:
             .. [RS05-5-2-5] Ramsay, J., Silverman, B. W. (2005). How spline
                 smooths are computed. In *Functional Data Analysis* (pp. 86-87).
-                Springler.
+                Springer.
 
             .. [RS05-5-2-7] Ramsay, J., Silverman, B. W. (2005). HSpline
                 smoothing as an augmented least squares problem. In *Functional
-                Data Analysis* (pp. 86-87). Springler.
+                Data Analysis* (pp. 86-87). Springer.
 
 
 
@@ -1961,6 +1956,10 @@ class FDataBasis(FData):
 
         return self.to_grid(eval_points=eval_points).to_basis(basis, **kwargs)
 
+    def to_list(self):
+        """Splits FDataBasis samples into a list"""
+        return [self[i] for i in range(self.nsamples)]
+
     def copy(self, *, basis=None, coefficients=None, dataset_label=None,
              axes_labels=None, extrapolation=None, keepdims=None):
         """FDataBasis copy"""
@@ -2017,6 +2016,11 @@ class FDataBasis(FData):
                 f"\nbasis={self.basis},"
                 f"\ncoefficients={self.coefficients})").replace('\n', '\n    ')
 
+    def __eq__(self, other):
+        """Equality of FDataBasis"""
+        # TODO check all other params
+        return self.basis == other.basis and numpy.all(self.coefficients == other.coefficients)
+
     def concatenate(self, other):
         """Join samples from a similar FDataBasis object.
 
@@ -2037,7 +2041,6 @@ class FDataBasis(FData):
         return self.copy(coefficients=numpy.concatenate((self.coefficients,
                                                          other.coefficients),
                                                         axis=0))
-
 
     def compose(self, fd, *, eval_points=None, **kwargs):
         """Composition of functions.
@@ -2062,7 +2065,6 @@ class FDataBasis(FData):
             composition = grid
 
         return composition
-
 
     def __getitem__(self, key):
         """Return self[key]."""

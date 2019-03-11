@@ -690,9 +690,9 @@ class FDataGrid(FData):
 
         Args:
             nrows(int, optional): designates the number of rows of the figure to plot the different dimensions of the
-                image. ncols must be also be customized in the same call.
+                image.
             ncols(int, optional): designates the number of columns of the figure to plot the different dimensions of the
-                image. nrows must be also be customized in the same call.
+                image.
 
         Returns:
             fig (figure object): figure object initialiazed.
@@ -742,7 +742,6 @@ class FDataGrid(FData):
         elif self.dataset_label is not None and len(ax) == 1:
             ax[0].set_title(self.dataset_label)
 
-
         if self.axes_labels is not None:
             if ax[0].name == '3d':
                 for i in range(self.ndim_image):
@@ -754,7 +753,7 @@ class FDataGrid(FData):
                     ax[i].set_xlabel(self.axes_labels[0])
                     ax[i].set_ylabel(self.axes_labels[i + 1])
 
-    def _generic_plotting_checks(self, fig=None, ax=None, nrows=None, ncols=None):
+    def generic_plotting_checks(self, fig=None, ax=None, nrows=None, ncols=None):
         """Check the arguments passed to both :func:`plot <fda.grid.plot>` and :func:`scatter <fda.grid.scatter>`
          methods of the FDatGrid object.
 
@@ -763,9 +762,9 @@ class FDataGrid(FData):
                 If None and ax is also None, the figure is initialized.
             ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
             nrows(int, optional): designates the number of rows of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. ncols must be also be customized in the same call.
+                image. Only specified if fig and ax are None.
             ncols(int, optional): designates the number of columns of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. nrows must be also be customized in the same call.
+                image. Only specified if fig and ax are None.
 
         Returns:
             fig (figure object): figure object in which the graphs are plotted in case ax is None.
@@ -811,9 +810,9 @@ class FDataGrid(FData):
                 If None and ax is also None, the figure is initialized.
             ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
             nrows(int, optional): designates the number of rows of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. ncols must be also be customized in the same call.
+                image. Only specified if fig and ax are None.
             ncols(int, optional): designates the number of columns of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. nrows must be also be customized in the same call.
+                image. Only specified if fig and ax are None.
             **kwargs: if ndim_domain is 1, keyword arguments to be passed to the matplotlib.pyplot.plot function;
                 if ndim_domain is 2, keyword arguments to be passed to the matplotlib.pyplot.plot_surface function.
 
@@ -822,7 +821,7 @@ class FDataGrid(FData):
             ax (axes object): axes in which the graphs are plotted.
 
         """
-        fig, ax = self._generic_plotting_checks(fig, ax, nrows, ncols)
+        fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
 
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):
@@ -847,9 +846,9 @@ class FDataGrid(FData):
                 If None and ax is also None, the figure is initialized.
             ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
             nrows(int, optional): designates the number of rows of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. ncols must be also be customized in the same call.
+                image. Only specified if fig and ax are None.
             ncols(int, optional): designates the number of columns of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. nrows must be also be customized in the same call.
+                image. Only specified if fig and ax are None.
             **kwargs: keyword arguments to be passed to the matplotlib.pyplot.scatter function;
 
         Returns:
@@ -857,7 +856,7 @@ class FDataGrid(FData):
             ax (axes object): axes in which the graphs are plotted.
 
         """
-        fig, ax = self._generic_plotting_checks(fig, ax, nrows, ncols)
+        fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
 
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):

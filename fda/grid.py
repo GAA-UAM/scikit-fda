@@ -686,7 +686,6 @@ class FDataGrid(FData):
                                                        axis=0))
 
 
-
     def scatter(self, fig=None, ax=None, nrows=None, ncols=None, **kwargs):
         """Scatter plot of the FDatGrid object.
 
@@ -695,9 +694,9 @@ class FDataGrid(FData):
                 If None and ax is also None, the figure is initialized.
             ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
             nrows(int, optional): designates the number of rows of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. ncols must be also be customized in the same call.
+                image. Only specified if fig and ax are None.
             ncols(int, optional): designates the number of columns of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. nrows must be also be customized in the same call.
+                image. Only specified if fig and ax are None.
             **kwargs: keyword arguments to be passed to the matplotlib.pyplot.scatter function;
 
         Returns:
@@ -705,7 +704,7 @@ class FDataGrid(FData):
             ax (axes object): axes in which the graphs are plotted.
 
         """
-        fig, ax = self._generic_plotting_checks(fig, ax, nrows, ncols)
+        fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
 
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):

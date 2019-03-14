@@ -8,7 +8,13 @@ from abc import ABC, abstractmethod
 
 import numpy
 
+
+import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+import mpl_toolkits.mplot3d
+
 from .extrapolation import extrapolation_methods
+
 
 
 def _list_of_arrays(original_array):
@@ -141,7 +147,7 @@ class FData(ABC):
                 will be evaluated at the same evaluation_points.
 
         Returns:
-            (np.ndarray): Numpy array with the eval_points, if
+            (numpy.ndarray): Numpy array with the eval_points, if
             evaluation_aligned is True with shape `number of evaluation points`
             x `ndim_domain`. If the points are not aligned the shape of the
             points will be `nsamples` x `number of evaluation points`
@@ -152,7 +158,7 @@ class FData(ABC):
         if numpy.isscalar(eval_points):
             eval_points = [eval_points]
 
-        # Creates a copy of the eval points, and convert to np.array
+        # Creates a copy of the eval points, and convert to numpy.array
         eval_points = numpy.array(eval_points)
 
         if evaluation_aligned: # Samples evaluated at same eval points
@@ -516,50 +522,274 @@ class FData(ABC):
         """
         pass
 
-    @abstractmethod
-    def plot(self, ax=None, derivative=0, **kwargs):
-        """Plot the FData object.
+    def set_figure_and_axes(self, nrows, ncols):
+        """Set figure and its axes.
 
         Args:
-            ax (axis object, optional): axis over with the graphs are plotted.
-                Defaults to matplotlib current axis.
-            **kwargs: keyword arguments to be passed to the
-                matplotlib.pyplot.plot function.
+            nrows(int, optional): designates the number of rows of the figure to
+                plot the different dimensions of the image. ncols must be also
+                be customized in the same call.
+            ncols(int, optional): designates the number of columns of the figure
+                to plot the different dimensions of the image. nrows must be
+                also be customized in the same call.
 
         Returns:
-            List of lines that were added to the plot.
+            fig (figure object): figure object initialiazed.
+            ax (axes object): axes of the initialized figure.
 
         """
-        pass
 
-    def _set_labels(self, ax):
+        if self.ndim_domain == 1:
+            projection = None
+        else:
+            projection = '3d'
+
+        if ncols is None and nrows is None:
+            ncols = int(numpy.ceil(numpy.sqrt(self.ndim_image)))
+            nrows = int(numpy.ceil(self.ndim_image / ncols))
+        elif ncols is None and nrows is not None:
+            nrows = int(numpy.ceil(self.ndim_image / nrows))
+        elif ncols is not None and nrows is None:
+            nrows = int(numpy.ceil(self.ndim_image / ncols))
+
+        fig = plt.gcf()
+        axes = fig.get_axes()
+
+        # If it is not empty
+        if len(axes) != 0:
+            # Gets geometry of current fig
+            geometry = (fig.axes[0]
+                        .get_subplotspec()
+                        .get_topmost_subplotspec()
+                        .get_gridspec().get_geometry())
+
+            # Check if the projection of the axes is the same
+            if projection == '3d':
+                same_projection = all(a.name == '3d' for a in axes)
+            else:
+                same_projection = all(a.name == 'rectilinear' for a in axes)
+
+            # If compatible uses the same figure
+            if (same_projection and geometry == (nrows, ncols) and
+                len(axes) == self.ndim_image):
+                 return fig, axes
+
+            else: # Create new figure if it is not compatible
+                fig = plt.figure()
+
+
+        for i in range(self.ndim_image):
+            fig.add_subplot(nrows, ncols, i + 1, projection=projection)
+
+        if ncols > 1 and self.axes_labels is not None and self.ndim_image > 1:
+            plt.subplots_adjust(wspace=0.4)
+
+        if nrows > 1 and self.axes_labels is not None and self.ndim_image > 1:
+            plt.subplots_adjust(hspace=0.4)
+
+        ax = fig.get_axes()
+
+        return fig, ax
+
+    def set_labels(self, fig=None, ax=None):
         """Set labels if any.
 
         Args:
-            ax (axes object): axes object that implements set_title,
-                set_xlable and set_ylabel or title, xlabel and ylabel.
+            fig (figure object): figure object containing the axes that
+                implement set_xlabel and set_ylabel, and set_zlabel in case
+                of a 3d projection.
 
         """
-        if self.dataset_label is not None:
-            try:
-                ax.set_title(self.dataset_label)
-            except AttributeError:
-                try:
-                    ax.title(self.dataset_label)
-                except AttributeError:
-                    pass
+        if fig is not None:
+            if self.dataset_label is not None:
+                fig.suptitle(self.dataset_label)
+            ax = fig.get_axes()
+        elif self.dataset_label is not None and len(ax) == 1:
+            ax[0].set_title(self.dataset_label)
+
 
         if self.axes_labels is not None:
-            try:
-                ax.set_xlabel(self.axes_labels[0])
-                ax.set_ylabel(self.axes_labels[1])
-            except AttributeError:
-                try:
-                    ax.xlabel(self.axes_labels[0])
-                    ax.ylabel(self.axes_labels[1])
-                except AttributeError:
-                    pass
+            if ax[0].name == '3d':
+                for i in range(self.ndim_image):
+                    ax[i].set_xlabel(self.axes_labels[0])
+                    ax[i].set_ylabel(self.axes_labels[1])
+                    ax[i].set_zlabel(self.axes_labels[i + 2])
+            else:
+                for i in range(self.ndim_image):
+                    ax[i].set_xlabel(self.axes_labels[0])
+                    ax[i].set_ylabel(self.axes_labels[i + 1])
 
+    def generic_plotting_checks(self, fig=None, ax=None, nrows=None,
+                                 ncols=None):
+        """Check the arguments passed to both :func:`plot
+        <fda.functional_data.plot>` and :func:`scatter <fda.grid.scatter>`
+         methods of the FDataGrid object.
+
+        Args:
+            fig (figure object, optional): figure over with the graphs are
+                plotted in case ax is not specified. If None and ax is also
+                None, the figure is initialized.
+            ax (list of axis objects, optional): axis over where the graphs are
+                plotted. If None, see param fig.
+            nrows(int, optional): designates the number of rows of the figure to
+                plot the different dimensions of the image. Only specified if
+                fig and ax are None. ncols must be also be customized in the
+                same call.
+            ncols(int, optional): designates the number of columns of the figure
+                to plot the different dimensions of the image. Only specified if
+                fig and ax are None. nrows must be also be customized in the
+                same call.
+
+        Returns:
+            fig (figure object): figure object in which the graphs are plotted
+                in case ax is None.
+            ax (axes object): axes in which the graphs are plotted.
+
+        """
+        if self.ndim_domain > 2:
+            raise NotImplementedError("Plot only supported for functional data"
+                                      "modeled in at most 3 dimensions.")
+
+        if fig is not None and ax is not None:
+            raise ValueError("fig and axes parameters cannot be passed as "
+                             "arguments at the same time.")
+
+        if fig is not None and len(fig.get_axes()) != self.ndim_image:
+            raise ValueError("Number of axes of the figure must be equal to"
+                             "the dimension of the image.")
+
+        if ax is not None and len(ax)!= self.ndim_image:
+            raise ValueError("Number of axes must be equal to the dimension of "
+                             "the image.")
+
+        if ((ax is not None or fig is not None) and
+            (nrows is not None or ncols is not None)):
+            raise ValueError("The number of columns and/or number of rows of "
+                             "the figure, in which each dimension of the image "
+                             "is plotted, can only be customized in case fig is"
+                             " None and ax is None.")
+
+        if ((nrows is not None and ncols is not None) and
+            nrows*ncols < self.ndim_image):
+            raise ValueError("The number of columns and the number of rows "
+                             "specified is incorrect.")
+
+        if fig is None and ax is None:
+            fig, ax = self.set_figure_and_axes(nrows, ncols)
+
+        elif fig is not None:
+            ax = fig.get_axes()
+
+        else:
+            fig = ax[0].get_figure()
+
+        return fig, ax
+
+    def plot(self, chart=None, *, derivative=0, fig=None, ax=None, nrows=None,
+             ncols=None, npoints=None, domain_range=None, **kwargs):
+        """Plot the FDatGrid object.
+
+        Args:
+            chart (figure object, axe or list of axes, optional): figure over
+                with the graphs are plotted or axis over where the graphs are
+                    plotted. If None and ax is also None, the figure is
+                    initialized.
+            derivative (int or tuple, optional): Order of derivative to be
+                plotted. In case of surfaces a tuple with the order of
+                derivation in each direction can be passed. See :func:`evaluate`
+                to obtain more information. Defaults 0.
+            fig (figure object, optional): figure over with the graphs are
+                plotted in case ax is not specified. If None and ax is also
+                None, the figure is initialized.
+            ax (list of axis objects, optional): axis over where the graphs are
+                plotted. If None, see param fig.
+            nrows(int, optional): designates the number of rows of the figure to
+                plot the different dimensions of the image. Only specified if
+                fig and ax are None.
+            ncols(int, optional): designates the number of columns of the figure
+                to plot the different dimensions of the image. Only specified if
+                fig and ax are None.
+            npoints (int or tuple, optional): Number of points to evaluate in
+                the plot. In case of surfaces a tuple of length 2 can be pased
+                with the number of points to plot in each axis, otherwise the
+                same number of points will be used in the two axes. By default
+                in unidimensional plots will be used 501 points; in surfaces
+                will be used 30 points per axis, wich makes a grid with 900
+                points.
+            domain_range (tuple or list of tuples, optional): Range where the
+                function will be plotted. In objects with unidimensional domain
+                the domain range should be a tuple with the bounds of the
+                interval; in the case of surfaces a list with 2 tuples with
+                the ranges for each dimension. Default uses the domain range
+                of the functional object.
+            **kwargs: if ndim_domain is 1, keyword arguments to be passed to the
+                matplotlib.pyplot.plot function; if ndim_domain is 2, keyword
+                arguments to be passed to the matplotlib.pyplot.plot_surface
+                function.
+
+        Returns:
+            fig (figure object): figure object in which the graphs are plotted.
+            ax (axes object): axes in which the graphs are plotted.
+
+        """
+
+        # Parse chart argument
+        if chart is not None:
+            if fig is not None or ax is not None:
+                raise ValueError("fig, axes and chart parameters cannot "
+                                 "be passed as arguments at the same time.")
+            if isinstance(chart, plt.Figure):
+                fig = chart
+            elif isinstance(chart, Axes):
+                ax = [chart]
+            else:
+                ax = chart
+
+        if domain_range is None:
+            domain_range = self.domain_range
+        else:
+            domain_range = _list_of_arrays(domain_range)
+
+        fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
+
+        if self.ndim_domain == 1:
+
+            if npoints is None:
+                npoints = 501
+
+            # Evaluates the object in a linspace
+            eval_points = numpy.linspace(*domain_range[0], npoints)
+            mat = self(eval_points, derivative=derivative, keepdims=True)
+
+            for i in range(self.ndim_image):
+                ax[i].plot(eval_points, mat[..., i].T, **kwargs)
+        else:
+
+            # Selects the number of points
+            if npoints is None:
+                npoints = (30, 30)
+            elif numpy.isscalar(npoints):
+                npoints = (npoints, npoints)
+            elif len(npoints) != 2:
+                raise ValueError("npoints should be a number or a tuple of "
+                                 "length 2.")
+
+            # Axes where will be evaluated
+            x = numpy.linspace(*domain_range[0], npoints[0])
+            y = numpy.linspace(*domain_range[1], npoints[1])
+
+            # Evaluation of the functional object
+            Z =  self((x,y), derivative=derivative, grid=True, keepdims=True)
+
+            X, Y = numpy.meshgrid(x, y, indexing='ij')
+
+            for i in range(self.ndim_image):
+                for j in range(self.nsamples):
+                    ax[i].plot_surface(X, Y, Z[j,...,i], **kwargs)
+
+        self.set_labels(fig, ax)
+
+        return fig, ax
 
     @abstractmethod
     def copy(self, **kwargs):

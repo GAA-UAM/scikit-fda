@@ -677,7 +677,7 @@ class FData(ABC):
         if fig is None and ax is None:
             fig, ax = self.set_figure_and_axes(nrows, ncols)
 
-        if fig is not None:
+        elif fig is not None:
             ax = fig.get_axes()
 
         else:
@@ -705,12 +705,10 @@ class FData(ABC):
                 plotted. If None, see param fig.
             nrows(int, optional): designates the number of rows of the figure to
                 plot the different dimensions of the image. Only specified if
-                fig and ax are None. ncols must be also be customized in the
-                same call.
+                fig and ax are None.
             ncols(int, optional): designates the number of columns of the figure
                 to plot the different dimensions of the image. Only specified if
-                fig and ax are None. nrows must be also be customized in the
-                same call.
+                fig and ax are None.
             npoints (int or tuple, optional): Number of points to evaluate in
                 the plot. In case of surfaces a tuple of length 2 can be pased
                 with the number of points to plot in each axis, otherwise the
@@ -792,35 +790,6 @@ class FData(ABC):
         self.set_labels(fig, ax)
 
         return fig, ax
-
-    def _set_labels(self, ax):
-        """Set labels if any.
-
-        Args:
-            ax (axes object): axes object that implements set_title,
-                set_xlable and set_ylabel or title, xlabel and ylabel.
-
-        """
-        if self.dataset_label is not None:
-            try:
-                ax.set_title(self.dataset_label)
-            except AttributeError:
-                try:
-                    ax.title(self.dataset_label)
-                except AttributeError:
-                    pass
-
-        if self.axes_labels is not None:
-            try:
-                ax.set_xlabel(self.axes_labels[0])
-                ax.set_ylabel(self.axes_labels[1])
-            except AttributeError:
-                try:
-                    ax.xlabel(self.axes_labels[0])
-                    ax.ylabel(self.axes_labels[1])
-                except AttributeError:
-                    pass
-
 
     @abstractmethod
     def copy(self, **kwargs):

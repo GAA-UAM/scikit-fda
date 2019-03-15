@@ -179,7 +179,7 @@ class FDataGrid(FData):
             self.data_matrix = self.data_matrix[..., numpy.newaxis]
 
         if axes_labels is not None and len(axes_labels) != (self.ndim_domain + self.ndim_image):
-            raise ValueError("There must be a label for each of the"  
+            raise ValueError("There must be a label for each of the"
                               "dimensions of the domain and the image.")
 
         self.dataset_label = dataset_label
@@ -1096,6 +1096,10 @@ class FDataGrid(FData):
                              f"match with the domain of the second function "
                              f"({self.ndim_domain})!=({fd.ndim_image}).")
 
+        # All composed with same function
+        if fd.nsamples == 1 and self.nsamples != 1:
+            fd = fd.copy(data_matrix=numpy.repeat(fd.data_matrix, self.nsamples,
+                                               axis=0))
 
         if fd.ndim_domain == 1:
             if eval_points is None:

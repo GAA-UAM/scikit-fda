@@ -1,4 +1,5 @@
-# cython: language_level=2
+# cython: language_level=3
+
 cimport cDPQ
 import numpy as np
 from numpy.linalg import norm
@@ -6,10 +7,12 @@ from numpy.linalg import norm
 cimport numpy as np
 from cpython cimport array
 
-def coptimum_reparamN(np.ndarray[double, ndim=1, mode="c"] mq, np.ndarray[double, ndim=1, mode="c"] time,
+def coptimum_reparamN(np.ndarray[double, ndim=1, mode="c"] mq,
+                      np.ndarray[double, ndim=1, mode="c"] time,
                       np.ndarray[double, ndim=2, mode="c"] q, lam1=0.0):
     """
-    cython interface calculates the warping to align a set of srfs q to a single srsf mq
+    cython interface calculates the warping to align a set of srfs q to a
+    single srsf mq.
 
     :param mq: vector of size N samples of first SRSF
     :param time: vector of size N describing the sample points
@@ -17,7 +20,8 @@ def coptimum_reparamN(np.ndarray[double, ndim=1, mode="c"] mq, np.ndarray[double
     :param lam1: controls the amount of elasticity (default = 0.0)
 
     :rtype numpy ndarray
-    :return gam: describing the warping functions used to align columns of q with mq
+    :return gam: describing the warping functions used to align columns of
+        q with mq
 
     """
     cdef int M, N, n1
@@ -39,8 +43,9 @@ def coptimum_reparamN(np.ndarray[double, ndim=1, mode="c"] mq, np.ndarray[double
         qi = q[:, k] / norm(q[:, k])
         qi = np.ascontiguousarray(qi)
 
-        cDPQ.DynamicProgrammingQ2(&mq[0], &time[0], &qi[0], &time[0], n1, M, M, &time[0], &time[0], M, M, &G[0],
-                                  &T[0], &size[0], lam)
+        cDPQ.DynamicProgrammingQ2(&mq[0], &time[0], &qi[0], &time[0], n1, M, M,
+                                  &time[0], &time[0], M, M, &G[0], &T[0],
+                                  &size[0], lam)
         sizes[k] = np.int32(size)
         Go[:, k] = G
         To[:, k] = T
@@ -51,10 +56,12 @@ def coptimum_reparamN(np.ndarray[double, ndim=1, mode="c"] mq, np.ndarray[double
 
     return gam
 
-def coptimum_reparamN2(np.ndarray[double, ndim=2, mode="c"] q1, np.ndarray[double, ndim=1, mode="c"] time,
+def coptimum_reparamN2(np.ndarray[double, ndim=2, mode="c"] q1,
+                       np.ndarray[double, ndim=1, mode="c"] time,
                        np.ndarray[double, ndim=2, mode="c"] q2, lam1=0.0):
     """
-    cython interface calculates the warping to align a set of srsfs q1 to another set of srsfs q2
+    cython interface calculates the warping to align a set of srsfs q1 to
+    another set of srsfs q2
 
     :param q1: numpy ndarray of shape (M,N) of M srsfs with N samples
     :param time: vector of size N describing the sample points
@@ -62,7 +69,8 @@ def coptimum_reparamN2(np.ndarray[double, ndim=2, mode="c"] q1, np.ndarray[doubl
     :param lam1: controls the amount of elasticity (default = 0.0)
 
     :rtype numpy ndarray
-    :return gam: describing the warping functions used to align columns of q with mq
+    :return gam: describing the warping functions used to align columns of
+        q with mq
 
     """
     cdef int M, N, n1
@@ -87,7 +95,8 @@ def coptimum_reparamN2(np.ndarray[double, ndim=2, mode="c"] q1, np.ndarray[doubl
         q1i = np.ascontiguousarray(q1i)
         q2i = np.ascontiguousarray(q2i)
 
-        cDPQ.DynamicProgrammingQ2(&q1i[0], &time[0], &q2i[0], &time[0], n1, M, M, &time[0], &time[0], M, M, &G[0],
+        cDPQ.DynamicProgrammingQ2(&q1i[0], &time[0], &q2i[0], &time[0], n1,
+                                  M, M, &time[0], &time[0], M, M, &G[0],
                                   &T[0], &size[0], lam)
         sizes[k] = np.int32(size)
         Go[:, k] = G
@@ -99,7 +108,8 @@ def coptimum_reparamN2(np.ndarray[double, ndim=2, mode="c"] q1, np.ndarray[doubl
 
     return gam
 
-def coptimum_reparam(np.ndarray[double, ndim=1, mode="c"] q1, np.ndarray[double, ndim=1, mode="c"] time,
+def coptimum_reparam(np.ndarray[double, ndim=1, mode="c"] q1,
+                     np.ndarray[double, ndim=1, mode="c"] time,
                      np.ndarray[double, ndim=1, mode="c"] q2, lam1=0.0):
     """
     cython interface for calculates the warping to align srsf q2 to q1
@@ -126,7 +136,8 @@ def coptimum_reparam(np.ndarray[double, ndim=1, mode="c"] q1, np.ndarray[double,
     sizes = np.zeros(1, dtype=np.int32)
     Go = np.zeros((M, 1))
     To = np.zeros((M, 1))
-    cDPQ.DynamicProgrammingQ2(&q1[0], &time[0], &q2[0], &time[0], n1, M, M, &time[0], &time[0], M, M, &G[0],
+    cDPQ.DynamicProgrammingQ2(&q1[0], &time[0], &q2[0], &time[0], n1, M, M,
+                              &time[0], &time[0], M, M, &G[0],
                               &T[0], &size[0], lam)
     sizes = np.int32(size)
     Go[:, 0] = G
@@ -136,10 +147,13 @@ def coptimum_reparam(np.ndarray[double, ndim=1, mode="c"] q1, np.ndarray[double,
 
     return gam
 
-def coptimum_reparamN2_pair(np.ndarray[double, ndim=2, mode="c"] q, np.ndarray[double, ndim=1, mode="c"] time,
-                            np.ndarray[double, ndim=2, mode="c"] q1, np.ndarray[double, ndim=2, mode="c"] q2, lam1=0.0):
+def coptimum_reparamN2_pair(np.ndarray[double, ndim=2, mode="c"] q,
+                            np.ndarray[double, ndim=1, mode="c"] time,
+                            np.ndarray[double, ndim=2, mode="c"] q1,
+                            np.ndarray[double, ndim=2, mode="c"] q2, lam1=0.0):
     """
-    cython interface for calculates the warping to align paired srsf q1 and q2 to q
+    cython interface for calculates the warping to align paired srsf q1
+    and q2 to q
 
     :param q: vector of size N samples of first SRSF
     :param time: vector of size N describing the sample points
@@ -173,7 +187,8 @@ def coptimum_reparamN2_pair(np.ndarray[double, ndim=2, mode="c"] q, np.ndarray[d
         q1i = np.ascontiguousarray(q1i)
         q2i = np.ascontiguousarray(q2i)
 
-        cDPQ.DynamicProgrammingQ2(&q1i[0], &time[0], &q2i[0], &time[0], n1, M, M, &time[0], &time[0], M, M, &G[0],
+        cDPQ.DynamicProgrammingQ2(&q1i[0], &time[0], &q2i[0], &time[0], n1, M,
+                                  M, &time[0], &time[0], M, M, &G[0],
                                   &T[0], &size[0], lam)
         sizes[k] = np.int32(size)
         Go[:, k] = G
@@ -185,7 +200,8 @@ def coptimum_reparamN2_pair(np.ndarray[double, ndim=2, mode="c"] q, np.ndarray[d
 
     return gam
 
-def coptimum_reparam_pair(np.ndarray[double, ndim=2, mode="c"] q1, np.ndarray[double, ndim=1, mode="c"] time,
+def coptimum_reparam_pair(np.ndarray[double, ndim=2, mode="c"] q1,
+                          np.ndarray[double, ndim=1, mode="c"] time,
                           np.ndarray[double, ndim=2, mode="c"] q2, lam1=0.0):
     """
     cython interface for calculates the warping to align paired srsf q2 to q1
@@ -217,7 +233,8 @@ def coptimum_reparam_pair(np.ndarray[double, ndim=2, mode="c"] q1, np.ndarray[do
 
     Go = np.zeros((M, 1))
     To = np.zeros((M, 1))
-    cDPQ.DynamicProgrammingQ2(&q1i[0], &time[0], &q2i[0], &time[0], N, M, M, &time[0], &time[0], M, M, &G[0],
+    cDPQ.DynamicProgrammingQ2(&q1i[0], &time[0], &q2i[0], &time[0], N, M,
+                              M, &time[0], &time[0], M, M, &G[0],
                               &T[0], &size[0], lam)
     sizes = np.int32(size)
     Go[:, 0] = G
@@ -227,8 +244,9 @@ def coptimum_reparam_pair(np.ndarray[double, ndim=2, mode="c"] q1, np.ndarray[do
 
     return gam
 
-def coptimum_reparam_curve(np.ndarray[double, ndim=2, mode="c"] q1, np.ndarray[double, ndim=1, mode="c"] time,
-                     np.ndarray[double, ndim=2, mode="c"] q2, lam1=0.0):
+def coptimum_reparam_curve(np.ndarray[double, ndim=2, mode="c"] q1,
+                           np.ndarray[double, ndim=1, mode="c"] time,
+                           np.ndarray[double, ndim=2, mode="c"] q2, lam1=0.0):
     """
     cython interface for calculates the warping to align srvf q2 to q1
 
@@ -260,7 +278,8 @@ def coptimum_reparam_curve(np.ndarray[double, ndim=2, mode="c"] q1, np.ndarray[d
     sizes = np.zeros(1, dtype=np.int32)
     Go = np.zeros((M, 1))
     To = np.zeros((M, 1))
-    cDPQ.DynamicProgrammingQ2(&q1i[0], &time[0], &q2i[0], &time[0], n1, M, M, &time[0], &time[0], M, M, &G[0],
+    cDPQ.DynamicProgrammingQ2(&q1i[0], &time[0], &q2i[0], &time[0], n1, M, M,
+                              &time[0], &time[0], M, M, &G[0],
                               &T[0], &size[0], lam)
     sizes = np.int32(size)
     Go[:, 0] = G

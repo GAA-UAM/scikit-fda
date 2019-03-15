@@ -56,14 +56,11 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.doctest' ]
 
 doctest_global_setup = '''
-try:
-    import fda
-    from fda import *
-    from fda.depth_measures import *
-    import numpy
-    numpy.set_printoptions(legacy='1.13')
-except:
-    pass
+import fda
+from fda import *
+from fda.depth_measures import *
+import numpy
+numpy.set_printoptions(legacy='1.13')
 '''
 
 # Add any paths that contain templates here, relative to this directory.

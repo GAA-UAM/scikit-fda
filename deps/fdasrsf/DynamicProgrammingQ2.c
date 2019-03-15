@@ -13,10 +13,10 @@ void DynamicProgrammingQ2(double* Q1, double* T1, double* Q2, double* T2,
     double* E; /* E[ntv1*j+i] = cost of best path to (tv1[i],tv2[j]) */
     int* P; /* P[ntv1*j+i] = predecessor of (tv1[i],tv2[j]) along best path */
 
-    idxv1 = malloc((n1v)*sizeof(int));
-    idxv2 = malloc((n2v)*sizeof(int));
-    E = malloc((n1v)*(n2v)*sizeof(double));
-    P = calloc((n1v)*(n2v),sizeof(int));
+    idxv1 = malloc((n1v) * sizeof(*idxv1));
+    idxv2 = malloc((n2v) * sizeof(*idxv2));
+    E = malloc((n1v) * (n2v) * sizeof(*E));
+    P = calloc((n1v) * (n2v), sizeof(*P));
 
     /* dp_costs() needs indexes for gridpoints precomputed */
     dp_all_indexes(T1, n1, tv1, n1v, idxv1);

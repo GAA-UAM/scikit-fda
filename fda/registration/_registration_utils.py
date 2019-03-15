@@ -324,4 +324,5 @@ def normalize_warping(warping, a=0, b=1):
     data_matrix = _normalize_scale(warping.data_matrix[..., 0], a=a, b=b)
     sample_points = _normalize_scale(warping.sample_points[0], a=a, b=b)
 
-    return warping.copy(data_matrix=data_matrix, sample_points=sample_points)
+    return warping.copy(data_matrix=data_matrix, sample_points=sample_points,
+                        domain_range=(a,b))

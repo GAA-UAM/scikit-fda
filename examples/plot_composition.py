@@ -17,33 +17,6 @@ import numpy as np
 from mpl_toolkits.mplot3d import axes3d
 
 
-#TODO: Delete auxiliar plot functions after merge the graphics branch
-def plot_aux(fd, derivative=0, ax=None, **kwargs):
-    """Temporal function. Plots using interpolation"""
-
-    if ax is None:
-        ax = plt.gca()
-
-    t = np.linspace(*fd.domain_range[0], 200)
-    plt.plot(t, fd(t, derivative=derivative).T, **kwargs)
-
-def plot_3d(fd, derivative=0):
-    """Temporal function. Plots a surface."""
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    t = np.linspace(*fd.domain_range[0], 30)
-    s = np.linspace(*fd.domain_range[1], 30)
-
-    X, Y = np.meshgrid(t, s, indexing='ij')
-
-    # Evaluation of the functional
-    Z =  fd((t,s), derivative=derivative, grid=True)
-
-    for i in range(fd.nsamples):
-        ax.plot_wireframe(X, Y, Z[i], color=f"C{i}", alpha=0.6)
-
-    return ax
 
 
 ###############################################################################
@@ -71,9 +44,12 @@ data_matrix = [Z.T]
 sample_points = [X[0,:], Y[:, 0]]
 
 g = fda.FDataGrid(data_matrix, sample_points)
+
+# Sets cubic interpolation
 g.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3)
 
-plot_3d(g)
+# Plots the surface
+g.plot()
 
 ###############################################################################
 # We will create a parametric curve :math:`f(t)=(10 \, \cos(t), 10 \, sin(t))`.
@@ -101,11 +77,14 @@ gof.plot()
 # :math:`(10 \, \cos(t), 10 \, sin(t), g \circ f (t))` and the surface.
 #
 
-ax = plot_3d(g)
+# Plots surface
+fig, ax = g.plot(alpha=.8)
 
+# Plots path along the surface
 path = f(t)[0]
-ax.plot(path[:,0], path[:,1], gof(t)[0], color="orange")
+ax[0].plot(path[:,0], path[:,1], gof(t)[0], color="orange")
 
+plt.show()
 ###############################################################################
 # [1] Function composition `https://en.wikipedia.org/wiki/Function_composition
 # <https://en.wikipedia.org/wiki/Function_composition>`_.

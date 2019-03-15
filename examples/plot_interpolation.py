@@ -12,54 +12,9 @@ FDataGrids.
 # sphinx_gallery_thumbnail_number = 3
 
 import fda
-import matplotlib.pyplot as plt
 import numpy as np
-
+import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
-
-
-#TODO: Delete auxiliar plot functions after merge the graphics branch
-def plot_aux(fd, derivative=0, ax=None, **kwargs):
-    """Temporal function. Plots using interpolation"""
-
-    if ax is None:
-        ax = plt.gca()
-
-    t = np.linspace(*fd.domain_range[0], 200)
-    plt.plot(t, fd(t, derivative=derivative).T, **kwargs)
-
-def plot_3d(fd, derivative=0):
-    """Temporal function. Plots a surface."""
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    t = np.linspace(*fd.domain_range[0], 30)
-    s = np.linspace(*fd.domain_range[1], 30)
-
-    X, Y = np.meshgrid(t, s, indexing='ij')
-
-    # Evaluation of the functional
-    Z =  fd((t,s), derivative=derivative, grid=True)
-
-    for i in range(fd.nsamples):
-        ax.plot_wireframe(X, Y, Z[i], color=f"C{i}", alpha=0.6)
-
-    return ax
-
-def scatter_3d(fd, ax=None):
-
-    if ax is None:
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-
-    t = fd.sample_points[0]
-    s = fd.sample_points[1]
-    X, Y = np.meshgrid(t, s, indexing='ij')
-
-    for i in range(fd.nsamples):
-        ax.scatter(X, Y, fd.data_matrix[i,...,0], color=f"C{i}")
-    return ax
-
 
 ###############################################################################
 # The :class:`FDataGrid` class is used for datasets containing discretized
@@ -96,7 +51,7 @@ fd.scatter()
 
 fd.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3)
 
-plot_aux(fd)
+fd.plot()
 fd.scatter()
 
 
@@ -112,13 +67,13 @@ fd_smooth = fda.datasets.make_sinusoidal_process(n_samples=1, n_features=30,
 # Cubic interpolator
 fd_smooth.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3)
 
-plot_aux(fd_smooth, label="Cubic")
+fd_smooth.plot(label="Cubic")
 
 # Smooth interpolation
 fd_smooth.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3,
                                                          smoothness_parameter=1.5)
 
-plot_aux(fd_smooth, label="Cubic smoothed")
+fd_smooth.plot(label="Cubic smoothed")
 
 fd_smooth.scatter()
 plt.legend()
@@ -136,7 +91,7 @@ fd = fd[1]
 
 for i in range(1, 4):
     fd.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=i)
-    plot_aux(fd, derivative=1, label=f"Degree {i}")
+    fd.plot(derivative=1, label=f"Degree {i}")
 
 plt.legend()
 
@@ -148,10 +103,10 @@ plt.legend()
 
 fd_derivative = fd.derivative()
 
-plot_aux(fd_derivative, label="Differentiation first")
+fd_derivative.plot(label="Differentiation first")
 fd_derivative.scatter()
 
-plot_aux(fd, derivative=1, label="Interpolation first")
+fd.plot(derivative=1, label="Interpolation first")
 
 plt.legend()
 
@@ -165,13 +120,13 @@ plt.legend()
 fd_monotone = fd.copy(data_matrix=np.sort(fd.data_matrix, axis=1))
 
 
-plot_aux(fd_monotone, linestyle='--', label="cubic")
+fd_monotone.plot(linestyle='--', label="cubic")
 
 
 
 fd_monotone.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3,
                                                            monotone=True)
-plot_aux(fd_monotone, label="PCHIP")
+fd_monotone.plot(label="PCHIP")
 
 fd_monotone.scatter(c='C1')
 plt.legend()
@@ -192,8 +147,8 @@ sample_points = [X[0,:], Y[:, 0]]
 
 fd = fda.FDataGrid(data_matrix, sample_points)
 
-ax = plot_3d(fd)
-scatter_3d(fd, ax)
+fig, ax = fd.plot()
+fd.scatter(ax=ax)
 
 ###############################################################################
 # In the following figure it is shown the result of the cubic interpolation
@@ -208,8 +163,8 @@ scatter_3d(fd, ax)
 
 fd.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3)
 
-ax = plot_3d(fd)
-scatter_3d(fd, ax)
+fig, ax = fd.plot()
+fd.scatter(ax=ax)
 
 plt.show()
 
@@ -220,7 +175,7 @@ plt.show()
 # derivative with respect to the second coordinate, :math:`\frac{\partial}
 # {\partial s}x(t,s)`.
 
-plot_3d(fd, derivative=(0, 1))
+fd.plot(derivative=(0, 1))
 
 plt.show()
 

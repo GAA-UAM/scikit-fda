@@ -59,6 +59,7 @@ doctest_global_setup = '''
 import fda
 from fda import *
 from fda.depth_measures import *
+from fda.fdata_boxplot import *
 import numpy
 numpy.set_printoptions(legacy='1.13')
 '''

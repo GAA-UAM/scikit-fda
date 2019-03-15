@@ -133,11 +133,11 @@ for lam, c in zip(lambdas, color):
     fda.registration.elastic_registration(f, g, lam=lam).plot(color=c)
 
 
-l1, *_ = f.plot(color='C0', linewidth=2., label='$f$')
-l2, *_ = g.plot(color='C1', linewidth=2., label='$g$')
+f.plot(color='C0', linewidth=2., label='$f$')
+g.plot(color='C1', linewidth=2., label='$g$')
 
 # Legend
-plt.legend(handles=[l1, l2])
+plt.legend()
 
 
 ###############################################################################
@@ -181,10 +181,10 @@ g = fda.datasets.make_multimodal_samples(n_samples=3, modes_location=location2,
 # Plot of the sets
 plt.figure()
 
-l1, *_ = fd.plot(color="C0", label="$f_i$")
-l2, *_ = g.plot(color="C1", label="$g_i$")
+fd.plot(color="C0", label="$f_i$")
+g.plot(color="C1", label="$g_i$")
 
-plt.legend(handles=[l1, l2])
+plt.legend()
 
 ###############################################################################
 # The following figure shows the result of the pairwise alignment of
@@ -198,12 +198,12 @@ plt.figure()
 fd_registered = fda.registration.elastic_registration(fd, g)
 
 # Plot of the curves
-l1, *_ = fd.plot(color="C0", label="$f_i$")
-l2, *_ = g.plot(color="C1", label="$g_i$")
-l3, *_ = fd_registered.plot(color="C0", linestyle="--", label="$f_i\\circ \\gamma_i$")
+fd.plot(color="C0", label="$f_i$")
+g.plot(color="C1", label="$g_i$")
+fd_registered.plot(color="C0", linestyle="--", label="$f_i\\circ \\gamma_i$")
 
 
-plt.legend(handles=[l1, l2, l3])
+plt.legend()
 
 plt.show()
 

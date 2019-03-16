@@ -312,7 +312,7 @@ class Basis(ABC):
         return FDataBasis(self.copy(), numpy.identity(self.nbasis))
 
     def inner_product(self, other):
-        return np.transpose(other.inner_product(self.to_basis()))
+        return numpy.transpose(other.inner_product(self.to_basis()))
 
     def __repr__(self):
         """Representation of a Basis object."""

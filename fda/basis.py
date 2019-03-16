@@ -24,6 +24,7 @@ from .lfd import Lfd
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
+MIN_EVAL_SAMPLES = 201
 
 # aux functions
 def _polypow(p, n=2):
@@ -1782,38 +1783,6 @@ class FDataBasis(FData):
         """
 
         raise NotImplementedError
-
-    def plot(self, ax=None, derivative=0, **kwargs):
-        """Plot the FDataBasis object or its derivatives.
-
-        Args:
-            ax (axis object, optional): axis over with the graphs are plotted.
-                Defaults to matplotlib current axis.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-            **kwargs: keyword arguments to be passed to the
-                matplotlib.pyplot.plot function.
-
-        Returns:
-            List of lines that were added to the plot.
-
-        """
-
-        if self.ndim_image > 1 or self.ndim_domain > 1:
-            raise NotImplementedError
-
-        if ax is None:
-            ax = matplotlib.pyplot.gca()
-        npoints = max(501, 10 * self.nbasis)
-        # List of points where the basis are evaluated
-        eval_points = numpy.linspace(*self.domain_range[0], npoints)
-        # Basis evaluated in the previous list of points
-        mat = self.evaluate(eval_points, derivative=derivative, keepdims=False)
-        # Plot
-        _plot = ax.plot(eval_points, mat.T, **kwargs)
-
-        self._set_labels(ax)
-
-        return _plot
 
     def mean(self):
         """Compute the mean of all the samples in a FDataBasis object.

@@ -19,6 +19,7 @@ from scipy.special import binom
 
 from . import grid
 from .functional_data import FData, _list_of_arrays
+from .lfd import Lfd
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -309,8 +310,8 @@ class Basis(ABC):
     def to_basis(self):
         return FDataBasis(self.copy(), numpy.identity(self.nbasis))
 
-    def inprod(self, other):
-        return self.to_basis().inprod(other)
+    def inner_product(self, other):
+        return np.transpose(other.inner_product(self.to_basis()))
 
     def __repr__(self):
         """Representation of a Basis object."""
@@ -1986,18 +1987,63 @@ class FDataBasis(FData):
                           axes_labels=axes_labels, extrapolation=extrapolation,
                           keepdims=keepdims)
 
-    def inprod(self, other):
+    def inner_product(self, other, lfd_self=None, lfd_other=None,
+                      weights=None):
+        r"""Return an inner product matrix given a FDataBasis object.
+
+        The inner product of two functions is defined as
+
+        .. math::
+            <x, y> = \int_a^b x(t)y(t) dt
+
+        When we talk abaout FDataBasis objects, they have many samples, so we
+        talk about inner product matrix instead. So, for two FDataBasis objects
+        we define the inner product matrix as
+
+        .. math::
+            a_{ij} = <x_i, y_i> = \int_a^b x_i(s) y_j(s) ds
+
+        where :math:`f_i(s), g_j(s)` are the :math:`i^{th} j^{th}` sample of
+        each object. The return matrix has a shape of :math:`IxJ` where I and
+        J are the number of samples of each object respectively.
+
+        Args:
+            other (FDataBasis, Basis): FDataBasis object containing the second
+                    object to make the inner product
+
+            lfd_self (Lfd): Lfd object for the first function evaluation
+
+            lfd_other (Lfd): Lfd object for the second function evaluation
+
+            weights(FDataBasis): a FDataBasis object with only one sample that
+                    defines the weight to calculate the inner product
+
+        Returns:
+            numpy.array: Inner Product matrix.
+
+        """
+
         if not _same_domain(self.domain_range, other.domain_range):
             raise ValueError("Both Objects should have the same domain_range")
         if isinstance(other, Basis):
             other = other.to_basis()
 
-        inprodmat = [
-            scipy.integrate.quad(lambda x: self[i].evaluate([x]) * other[j].evaluate([x]),
-                                 self.domain_range[0][0], self.domain_range[0][1])[0]
-            for j in range(0, other.nsamples)
-            for i in range(0, self.nsamples)]
-        return numpy.array(inprodmat).reshape((self.nsamples, other.nsamples))
+        # TODO this will be used when lfd evaluation is ready
+        lfd_self = Lfd(0) if (lfd_self is None) else lfd_self
+        lfd_other = Lfd(0) if (lfd_other is None) else lfd_other
+
+        if weights is not None:
+            other = other.times(weights)
+
+        matrix = numpy.empty((self.nsamples, other.nsamples))
+        (left, right) = self.domain_range[0]
+
+        for i in range(self.nsamples):
+            for j in range(other.nsamples):
+                fd = self[i].times(other[j])
+                matrix[i, j] = scipy.integrate.quad(
+                    lambda x: fd.evaluate([x])[0], left, right)[0]
+        return matrix
 
     def __repr__(self):
         """Representation of FDataBasis object."""

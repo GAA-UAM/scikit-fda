@@ -309,13 +309,13 @@ class Basis(ABC):
     def to_basis(self):
         return FDataBasis(self.copy(), numpy.identity(self.nbasis))
 
-    def _listtoR(self, knots):
+    def _list_to_R(self, knots):
         retstring = "c("
         for i in range(0, len(knots)):
             retstring = retstring + str(knots[i]) + ", "
         return retstring[0:len(retstring) - 2] + ")"
 
-    def _toR(self):
+    def _to_R(self):
         raise NotImplementedError
 
     def inprod(self, other):
@@ -447,7 +447,7 @@ class Constant(Basis):
         """Multiplication of a Constant Basis with other Basis"""
         return other.copy()
 
-    def _toR(self):
+    def _to_R(self):
         drange = self.domain_range[0]
         return "create.constant.basis(rangeval = c(" + str(drange[0]) + "," +\
                str(drange[1]) + "))"
@@ -647,7 +647,7 @@ class Monomial(Basis):
         """Multiplication of a Monomial Basis with other Basis"""
         return Basis.default_basis_of_product(self, other)
 
-    def _toR(self):
+    def _to_R(self):
         drange = self.domain_range[0]
         return "create.monomial.basis(rangeval = c(" + str(drange[0]) + "," +\
                str(drange[1]) + "), nbasis = " + str(self.nbasis) + ")"
@@ -1063,7 +1063,7 @@ class BSpline(Basis):
         nbasis = max(self.nbasis + other.nbasis, norder + 1)
         return BSpline(self.domain_range, nbasis, norder)
 
-    def _toR(self):
+    def _to_R(self):
         drange = self.domain_range[0]
         return ("create.bspline.basis(rangeval = c(" + str(drange[0]) + "," +
                 str(drange[1]) + "), nbasis = " + str(self.nbasis) +
@@ -1329,7 +1329,7 @@ class Fourier(Basis):
 
         return rescale_basis
 
-    def _toR(self):
+    def _to_R(self):
         drange = self.domain_range[0]
         return ("create.fourier.basis(rangeval = c(" + str(drange[0]) + "," +
                 str(drange[1]) + "), nbasis = " + str(self.nbasis) +
@@ -1999,12 +1999,12 @@ class FDataBasis(FData):
             for i in range(0, self.nsamples)]
         return numpy.array(inprodmat).reshape((self.nsamples, other.nsamples))
 
-    def _toR(self):
+    def _to_R(self):
         """Gives the code to build the object on fda package on R"""
         return ("fd(coef = " + self._arraytoR(self.coefficients, True) +
-                ", basisobj = " + self.basis._toR() + ")")
+                ", basisobj = " + self.basis._to_R() + ")")
 
-    def _arraytoR(self, coefficients, transpose=False):
+    def _array_to_R(self, coefficients, transpose=False):
         if len(coefficients.shape) == 1:
             coefficients = coefficients.reshape((1, coefficients.shape[0]))
 

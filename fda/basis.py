@@ -449,8 +449,8 @@ class Constant(Basis):
 
     def _toR(self):
         drange = self.domain_range[0]
-        return "create.constant.basis(c(" + str(drange[0]) + "," + str(
-            drange[1]) + "))"
+        return "create.constant.basis(rangeval = c(" + str(drange[0]) + "," +\
+               str(drange[1]) + "))"
 
 
 class Monomial(Basis):
@@ -649,8 +649,8 @@ class Monomial(Basis):
 
     def _toR(self):
         drange = self.domain_range[0]
-        return "create.monomial.basis(c(" + str(drange[0]) + "," + str(
-            drange[1]) + "), " + str(self.nbasis) + ")"
+        return "create.monomial.basis(rangeval = c(" + str(drange[0]) + "," +\
+               str(drange[1]) + "), nbasis = " + str(self.nbasis) + ")"
 
 
 class BSpline(Basis):
@@ -1065,9 +1065,10 @@ class BSpline(Basis):
 
     def _toR(self):
         drange = self.domain_range[0]
-        return "create.bspline.basis(c(" + str(drange[0]) + "," + str(
-            drange[1]) + "), " + str(self.nbasis) + ", " + str(
-            self.order) + ", " + self._listtoR(self.knots) + ")"
+        return ("create.bspline.basis(rangeval = c(" + str(drange[0]) + "," +
+                str(drange[1]) + "), nbasis = " + str(self.nbasis) +
+                ", norder = " + str(self.order) + ", breaks = " +
+                self._listtoR(self.knots) + ")")
 
     @property
     def inknots(self):
@@ -1330,9 +1331,9 @@ class Fourier(Basis):
 
     def _toR(self):
         drange = self.domain_range[0]
-        return ("create.fourier.basis(c(" + str(drange[0]) + "," +
-                str(drange[1]) + "), " + str(self.nbasis) + ", " +
-                str(self.period) + ")")
+        return ("create.fourier.basis(rangeval = c(" + str(drange[0]) + "," +
+                str(drange[1]) + "), nbasis = " + str(self.nbasis) +
+                ", period = " + str(self.period) + ")")
 
     def __repr__(self):
         """Representation of a Fourier basis."""
@@ -2000,8 +2001,8 @@ class FDataBasis(FData):
 
     def _toR(self):
         """Gives the code to build the object on fda package on R"""
-        return ("fd(" + self._arraytoR(self.coefficients, True) + "," +
-                self.basis._toR() + ")")
+        return ("fd(coef = " + self._arraytoR(self.coefficients, True) +
+                ", basisobj = " + self.basis._toR() + ")")
 
     def _arraytoR(self, coefficients, transpose=False):
         if len(coefficients.shape) == 1:

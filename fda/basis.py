@@ -1270,7 +1270,8 @@ class Fourier(Basis):
             raise ValueError("Ranges are not equal.")
 
         if isinstance(other, Fourier) and self.period == other.period:
-            return Fourier(self.domain_range, self.nbasis + other.nbasis - 1, self.period)
+            return Fourier(self.domain_range, self.nbasis + other.nbasis - 1,
+                           self.period)
         else:
             return other.rbasis_of_product(self)
 
@@ -2133,18 +2134,29 @@ class FDataBasis(FData):
 
         if isinstance(key, int):
             return self.copy(coefficients=self.coefficients[key:key + 1])
-
         else:
             return self.copy(coefficients=self.coefficients[key])
 
+    def add_samples(self):
+        if self.nsamples == 1:
+            return self
+        return self[0] + (self[1:].add_samples())
+
     def __add__(self, other):
         """Addition for FDataBasis object."""
+        if isinstance(other, FDataBasis):
+            if self.basis != other.basis:
+                raise NotImplementedError
+            else:
+                return FDataBasis(self.basis.copy(),
+                                  self.coefficients + other.coefficients)
 
-        raise NotImplementedError
+        coefs = self.coefficients.copy()
+        coefs[:, 0] = self.coefficients[:, 0] + numpy.array(other)
+        return FDataBasis(self.basis.copy(), coefs)
 
     def __radd__(self, other):
         """Addition for FDataBasis object."""
-
         return self.__add__(other)
 
     def __sub__(self, other):

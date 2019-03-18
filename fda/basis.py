@@ -2137,10 +2137,10 @@ class FDataBasis(FData):
         else:
             return self.copy(coefficients=self.coefficients[key])
 
-    def add_samples(self):
+    def plus_samples(self):
         if self.nsamples == 1:
             return self
-        return self[0] + (self[1:].add_samples())
+        return self[0] + (self[1:].plus_samples())
 
     def __add__(self, other):
         """Addition for FDataBasis object."""
@@ -2161,6 +2161,8 @@ class FDataBasis(FData):
 
     def __sub__(self, other):
         """Subtraction for FDataBasis object."""
+        if isinstance(other, list):
+            other = numpy.array(other)
         return self.__add__(-1 * other)
 
     def __rsub__(self, other):
@@ -2169,11 +2171,11 @@ class FDataBasis(FData):
 
     def __mul__(self, other):
         """Multiplication for FDataBasis object."""
-        if isinstance(other, list) or isinstance(other, FDataBasis):
+        if isinstance(other, FDataBasis):
             raise NotImplementedError
 
-        else:
-            self.copy(coefficients=other * self.coefficients)
+        mult = numpy.atleast_2d(other).reshape(-1, 1)
+        return self.copy(coefficients=self.coefficients * mult)
 
     def __rmul__(self, other):
         """Multiplication for FDataBasis object."""

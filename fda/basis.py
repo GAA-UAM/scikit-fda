@@ -310,6 +310,15 @@ class Basis(ABC):
     def to_basis(self):
         return FDataBasis(self.copy(), numpy.identity(self.nbasis))
 
+    def _list_to_R(self, knots):
+        retstring = "c("
+        for i in range(0, len(knots)):
+            retstring = retstring + str(knots[i]) + ", "
+        return retstring[0:len(retstring) - 2] + ")"
+
+    def _to_R(self):
+        raise NotImplementedError
+
     def inprod(self, other):
         return self.to_basis().inprod(other)
 
@@ -438,6 +447,11 @@ class Constant(Basis):
     def rbasis_of_product(self, other):
         """Multiplication of a Constant Basis with other Basis"""
         return other.copy()
+
+    def _to_R(self):
+        drange = self.domain_range[0]
+        return "create.constant.basis(rangeval = c(" + str(drange[0]) + "," +\
+               str(drange[1]) + "))"
 
 
 class Monomial(Basis):
@@ -633,6 +647,11 @@ class Monomial(Basis):
     def rbasis_of_product(self, other):
         """Multiplication of a Monomial Basis with other Basis"""
         return Basis.default_basis_of_product(self, other)
+
+    def _to_R(self):
+        drange = self.domain_range[0]
+        return "create.monomial.basis(rangeval = c(" + str(drange[0]) + "," +\
+               str(drange[1]) + "), nbasis = " + str(self.nbasis) + ")"
 
 
 class BSpline(Basis):
@@ -1045,6 +1064,13 @@ class BSpline(Basis):
         nbasis = max(self.nbasis + other.nbasis, norder + 1)
         return BSpline(self.domain_range, nbasis, norder)
 
+    def _to_R(self):
+        drange = self.domain_range[0]
+        return ("create.bspline.basis(rangeval = c(" + str(drange[0]) + "," +
+                str(drange[1]) + "), nbasis = " + str(self.nbasis) +
+                ", norder = " + str(self.order) + ", breaks = " +
+                self._listtoR(self.knots) + ")")
+
     @property
     def inknots(self):
         """Return number of basis."""
@@ -1303,6 +1329,12 @@ class Fourier(Basis):
                                     ) / (domain[1] - domain[0])
 
         return rescale_basis
+
+    def _to_R(self):
+        drange = self.domain_range[0]
+        return ("create.fourier.basis(rangeval = c(" + str(drange[0]) + "," +
+                str(drange[1]) + "), nbasis = " + str(self.nbasis) +
+                ", period = " + str(self.period) + ")")
 
     def __repr__(self):
         """Representation of a Fourier basis."""
@@ -2014,6 +2046,30 @@ class FDataBasis(FData):
             for j in range(0, other.nsamples)
             for i in range(0, self.nsamples)]
         return numpy.array(inprodmat).reshape((self.nsamples, other.nsamples))
+
+    def _to_R(self):
+        """Gives the code to build the object on fda package on R"""
+        return ("fd(coef = " + self._arraytoR(self.coefficients, True) +
+                ", basisobj = " + self.basis._to_R() + ")")
+
+    def _array_to_R(self, coefficients, transpose=False):
+        if len(coefficients.shape) == 1:
+            coefficients = coefficients.reshape((1, coefficients.shape[0]))
+
+        if len(coefficients.shape) > 2:
+            return NotImplementedError
+
+        if transpose is True:
+            coefficients = numpy.transpose(coefficients)
+
+        (rows, cols) = coefficients.shape
+        retstring = "matrix(c("
+        for j in range(cols):
+            for i in range(rows):
+                retstring = retstring + str(coefficients[i, j]) + ", "
+
+        return (retstring[0:len(retstring) - 2] + "), nrow = " + str(rows) +
+                ", ncol = " + str(cols) + ")")
 
     def __repr__(self):
         """Representation of FDataBasis object."""

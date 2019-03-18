@@ -23,6 +23,7 @@ from .functional_data import FData, _list_of_arrays
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
+MIN_EVAL_SAMPLES = 201
 
 # aux functions
 def _polypow(p, n=2):
@@ -1985,6 +1986,53 @@ class FDataBasis(FData):
         return FDataBasis(basis, coefficients, dataset_label=dataset_label,
                           axes_labels=axes_labels, extrapolation=extrapolation,
                           keepdims=keepdims)
+
+    def times(self, other):
+        """"Provides a numerical approximation of the multiplication between
+            an FDataObject to other object
+
+        Args:
+            other (int, list, FDataBasis): Object to multiply with the
+                                           FDataBasis object.
+                - int: Multiplies all samples with the value
+                - list: multiply each values with the samples respectively.
+                        Length should match with FDataBasis samples
+                - FDataBasis: if there is one sample it multiplies this with
+                              all the samples in the object. If not, it
+                              multiplies each sample respectively. Samples
+                              should match
+
+        Returns:
+            (FDataBasis): FDataBasis object containing the multiplication
+
+        """
+        if isinstance(other, FDataBasis):
+
+            if not _same_domain(self.domain_range, other.domain_range):
+                raise ValueError("The functions domains are different.")
+
+            basisobj = self.basis.basis_of_product(other.basis)
+            neval = max(10 * max(self.nbasis, other.nbasis) + 1,
+                        MIN_EVAL_SAMPLES)
+            (left, right) = self.domain_range[0]
+            evalarg = numpy.linspace(left, right, neval)
+
+            first = self.copy(coefficients=(numpy.repeat(self.coefficients,
+                            other.nsamples, axis=0) if self.nsamples == 1 and
+                            other.nsamples > 1 else self.coefficients.copy()))
+            second = other.copy(coefficients=(numpy.repeat(other.coefficients,
+                            self.nsamples, axis=0) if other.nsamples == 1 and
+                            self.nsamples > 1 else other.coefficients.copy()))
+
+            fdarray = first.evaluate(evalarg) * second.evaluate(evalarg)
+
+            return FDataBasis.from_data(fdarray, evalarg, basisobj)
+
+        if isinstance(other, int):
+            other = [other for _ in range(self.nsamples)]
+
+        coefs = numpy.transpose(numpy.atleast_2d(other))
+        return self.copy(coefficients=self.coefficients*coefs)
 
     def inprod(self, other):
         if not _same_domain(self.domain_range, other.domain_range):

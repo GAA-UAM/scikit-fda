@@ -4,7 +4,6 @@ from fda.basis import Basis, FDataBasis, Constant, Monomial, BSpline, Fourier
 
 import numpy as np
 
-
 class TestBasis(unittest.TestCase):
 
     # def setUp(self): could be defined for set up before any test
@@ -176,6 +175,41 @@ class TestBasis(unittest.TestCase):
             bsplinefd.inprod(monomial).round(3),
             np.transpose(monomial.inprod(bsplinefd).round(3))
         )
+
+    def test_fdatabasis_times_fdatabasis_fdatabasis(self):
+        monomial = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
+        bspline = FDataBasis(BSpline(nbasis=6, order=4), [1, 2, 4, 1, 0, 1])
+        times_fdar = monomial.times(bspline)
+
+        prod_basis = BSpline(nbasis=9, order=6, knots=[0, 0.25, 0.5, 0.75, 1])
+        prod_coefs = np.array([[0.9788352,  1.6289955,  2.7004969,  6.2678739,
+                      8.7636441,  4.0069960,  0.7126961,  2.8826708,
+                      6.0052311]])
+
+        self.assertEqual(prod_basis, times_fdar.basis)
+        np.testing.assert_array_almost_equal(prod_coefs, times_fdar.coefficients)
+
+    def test_fdatabasis_times_fdatabasis_list(self):
+        monomial = FDataBasis(Monomial(nbasis=3),
+                              [[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        result = monomial.times([3, 2, 1])
+
+        expec_basis = Monomial(nbasis=3)
+        expec_coefs = np.array([[3, 6, 9], [8, 10, 12], [7, 8, 9]])
+
+        self.assertEqual(expec_basis, result.basis)
+        np.testing.assert_array_almost_equal(expec_coefs, result.coefficients)
+
+    def test_fdatabasis_times_fdatabasis_int(self):
+        monomial = FDataBasis(Monomial(nbasis=3),
+                              [[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        result = monomial.times(3)
+
+        expec_basis = Monomial(nbasis=3)
+        expec_coefs = np.array([[3, 6, 9], [12, 15, 18], [21, 24, 27]])
+
+        self.assertEqual(expec_basis, result.basis)
+        np.testing.assert_array_almost_equal(expec_coefs, result.coefficients)
 
 
 if __name__ == '__main__':

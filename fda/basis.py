@@ -2161,25 +2161,22 @@ class FDataBasis(FData):
 
     def __sub__(self, other):
         """Subtraction for FDataBasis object."""
-        if isinstance(other, FDataBasis):
-            return (self.__add__(
-                other.copy(coefficients=(-1 * self.coefficients))))
-        else:
-            return self.__add__(-1 * other)
+        return self.__add__(-1 * other)
 
     def __rsub__(self, other):
         """Right subtraction for FDataBasis object."""
-        return ((self.copy(coefficients=(-1 * self.coefficients)))
-                .__add__(other))
+        return (-1 * self).__add__(other)
 
     def __mul__(self, other):
         """Multiplication for FDataBasis object."""
+        if isinstance(other, list) or isinstance(other, FDataBasis):
+            raise NotImplementedError
 
-        raise NotImplementedError
+        else:
+            self.copy(coefficients=other * self.coefficients)
 
     def __rmul__(self, other):
         """Multiplication for FDataBasis object."""
-
         return self.__mul__(other)
 
     def __truediv__(self, other):

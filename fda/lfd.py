@@ -1,6 +1,5 @@
 import numpy as np
 
-from fda.basis import FDataBasis, Constant, _same_domain
 
 __author__ = "Pablo Pérez Manso"
 __email__ = "92manso@gmail.com"
@@ -36,6 +35,8 @@ class Lfd:
                          of the interval where the weight functions are
                          defined. Defaults to (0,1).
         """
+
+        from fda.basis import FDataBasis, Constant, _same_domain
 
         if order is not None and weights is not None:
             raise ValueError("You have to provide the order or the weights, "

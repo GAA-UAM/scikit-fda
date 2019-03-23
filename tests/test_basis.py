@@ -268,10 +268,10 @@ class TestBasis(unittest.TestCase):
 
         np.testing.assert_equal(monomial1 * 2,
                                 FDataBasis(Monomial(nbasis=3),
-                                           [[2, 4, 6], [6, 8, 10]]))
+                                           [[2, 4, 6]]))
         np.testing.assert_equal(3 * monomial2,
                                 FDataBasis(Monomial(nbasis=3),
-                                           [[3, 6, 9], [18, 24, 30]]))
+                                           [[3, 6, 9], [9, 12, 15]]))
         np.testing.assert_equal(3 * monomial2,
                                 monomial2 * 3)
 

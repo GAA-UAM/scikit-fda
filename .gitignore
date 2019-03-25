@@ -5,8 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
-optimum_reparamN.c
-optimum_reparam_fN.c
+optimum_reparam.c
 
 # Distribution / packaging
 .Python
@@ -106,4 +105,3 @@ ENV/
 
 #IDE metadata
 .idea/
-

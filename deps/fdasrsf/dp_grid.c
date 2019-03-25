@@ -1,56 +1,57 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include "dp_nbhd.h"
+
 #include "dp_grid.h"
 
-#define INFTY 1e6
+#include <stdlib.h>
+#include <math.h>
+
+/* Original code developed by J. Derek Tucker in ElasticFDA.jl. The following
+* code is under the MIT license, a copy of the license it is included with it.
+*
+* 03/25/2019: Modified by Pablo Marcos <pablo.marcosm@estudiante.uam.es>.
+*/
+
+
 #define TOL 1e-6
 
-void dp_all_edge_weights(
-    double* Q1, double* T1, int nsamps1,
-    double* Q2, double* T2, int nsamps2,
-    int dim,
-    double* tv1, int* idxv1, int ntv1,
-    double* tv2, int* idxv2, int ntv2,
-    double* W, double lam)
+
+void dp_optimum_reparam(double* Q1, double* T1, double* Q2, double* T2,
+                        int m1, int n1, int n2, double* tv1, double* tv2,
+                        int n1v, int n2v, double* G, double* T, double* size,
+                        double lam1, int nbhd_dim)
 {
-    int sr, sc;  /* source row and column */
-    int tr, tc;  /* target row and column */
-    int l1, l2, l3;  /* for multidimensional array mapping */
-    int i;
+    int* idxv1;
+    int* idxv2;
+    double* E; /* E[ntv1*j+i] = cost of best path to (tv1[i],tv2[j]) */
+    int* P; /* P[ntv1*j+i] = predecessor of (tv1[i],tv2[j]) along best path */
+    int * dp_nbhd; /* Indexes for grid points */
+    int nbhd_count; /* Number of indexes */
 
-    for (i = 0; i < ntv1 * ntv2 * ntv1 * ntv2; W[i++] = INFTY);
+    idxv1 = malloc((n1v) * sizeof(*idxv1));
+    idxv2 = malloc((n2v) * sizeof(*idxv2));
+    E = malloc((n1v) * (n2v) * sizeof(*E));
+    P = calloc((n1v) * (n2v), sizeof(*P));
 
-    /* W is a ntv2 x ntv1 x ntv2 x ntv1 array.
-     * Weight of edge from (tv1[i],tv2[j]) to (tv1[k],tv2[l])
-     * (Cartesian coordinates) is in grid(j,i,l,k).
-     * Mapping:
-     *  (j,i,l,k) :--> j*ntv1*ntv2*ntv1 +
-     *                 i*ntv2*ntv1 +
-     *                 l*ntv1 +
-     *                 k
-     */
-    l1 = ntv1 * ntv2 * ntv1;
-    l2 = ntv2 * ntv1;
-    l3 = ntv1;
+    /* indexes for gridpoints */
+    dp_nbhd = dp_generate_nbhd(nbhd_dim, &nbhd_count);
 
-    for (tr = 1; tr < ntv2; ++tr) {
-        for (tc = 1; tc < ntv1; ++tc) {
-            for (i = 0; i < DP_NBHD_COUNT; ++i) {
-                sr = tr - dp_nbhd[i][0];
-                sc = tc - dp_nbhd[i][1];
 
-                if (sr < 0 || sc < 0) continue;
+    dp_all_indexes(T1, n1, tv1, n1v, idxv1);
+    dp_all_indexes(T2, n2, tv2, n2v, idxv2);
 
-                /* grid(sr,sc,tr,tc) */
-                W[sr * l1 + sc * l2 + tr * l3 + tc] =
-                    dp_edge_weight(Q1, T1, nsamps1, Q2, T2, nsamps2, dim,
-                                   tv1[sc], tv1[tc], tv2[sr], tv2[tr],
-                                   idxv1[sc], idxv2[sr], lam);
-            }
-        }
-    }
+    /* Compute cost of best path from (0,0) to every other grid point */
+    dp_costs(Q1, T1, n1, Q2, T2, n2,
+             m1, tv1, idxv1, n1v, tv2, idxv2, n2v, E, P, lam1,
+             nbhd_count, dp_nbhd);
+
+    /* Reconstruct best path from (0,0) to (1,1) */
+    *size = dp_build_gamma(P, tv1, n1v, tv2, n2v, G, T);
+
+    /* free allocated memory */
+    free(dp_nbhd);
+    free(idxv1);
+    free(idxv2);
+    free(E);
+    free(P);
 }
 
 
@@ -60,7 +61,7 @@ double dp_costs(
     int dim,
     double* tv1, int* idxv1, int ntv1,
     double* tv2, int* idxv2, int ntv2,
-    double* E, int* P, double lam)
+    double* E, int* P, double lam, int nbhd_count, int *dp_nbhd)
 {
     int sr, sc;  /* source row and column */
     int tr, tc;  /* target row and column */
@@ -68,16 +69,16 @@ double dp_costs(
     int i;
 
     E[0] = 0.0;
-    for (i = 1; i < ntv1; E[i++] = INFTY);
-    for (i = 1; i < ntv2; E[ntv1 * i++] = INFTY);
+    for (i = 1; i < ntv1; E[i++] = INFINITY);
+    for (i = 1; i < ntv2; E[ntv1 * i++] = INFINITY);
 
     for (tr = 1; tr < ntv2; ++tr) {
         for (tc = 1; tc < ntv1; ++tc) {
-            E[ntv1 * tr + tc] = INFTY;
+            E[ntv1 * tr + tc] = INFINITY;
 
-            for (i = 0; i < DP_NBHD_COUNT; ++i) {
-                sr = tr - dp_nbhd[i][0];
-                sc = tc - dp_nbhd[i][1];
+            for (i = 0; i < 2 * nbhd_count; i += 2) {
+                sr = tr - dp_nbhd[i];
+                sc = tc - dp_nbhd[i + 1];
 
                 if (sr < 0 || sc < 0) continue;
 
@@ -247,12 +248,117 @@ int dp_lookup(double* T, int n, double t)
 
 void dp_all_indexes(double* p, int np, double* tv, int ntv, int* idxv)
 {
-    int pi;
     int i;
+    int pi = 0;
 
-    pi = 0;
     for (i = 0; i < ntv; ++i) {
         while (pi < np - 2 && tv[i] >= p[pi + 1]) ++pi;
         idxv[i] = pi;
     }
+}
+
+
+int gcd(int a, int b) {
+    /* Greatest common divisor.
+    * Computes the greates common divisor between a and b using the euclids
+    * algorithm.
+    */
+
+    int temp;
+
+    /* Swap if b > a */
+    if(b > a) {
+        temp = a;
+        a = b;
+        b = temp;
+    }
+
+    /* Iterative Euclid's algorithm */
+    while (b != 0)
+    {
+        a %= b;
+        temp = a;
+        a = b;
+        b = temp;
+    }
+    return a;
+}
+
+int compute_nbhd_count_rec(int n, int *states) {
+    /* Computes the number of elements in the nbhd grid, wich is the number of
+    * elements in the set
+    *              {(i,j) : gcd(i,j)=1 & 1 <= i,j <= n }
+    *
+    * This number corresponds with the OEIS A018805 sequence and can be computed
+    * using the following formula:
+    *
+    *               a(n) = n^2 - Sum_{j=2..n} a(floor(n/j))
+    */
+    int an, j;
+
+    if (states[n] != -1) {
+        return states[n];
+    }
+
+    an = n * n;
+
+    for(j = 2; j <= n; j++) {
+        an -= compute_nbhd_count_rec(n / j, states);
+    }
+
+    states[n] = an;
+
+    return an;
+
+}
+
+int compute_nbhd_count(int n) {
+    /* Computes the number of elements in the nbhd grid, wich is the number of
+    * elements in the set
+    *              {(i,j) : gcd(i,j)=1 & 1 <= i,j <= n }
+    *
+    * This number corresponds with the OEIS A018805 sequence and can be computed
+    * using the following formula:
+    *
+    *               a(n) = n^2 - Sum_{j=2..n} a(floor(n/j))
+    */
+
+    int *states;
+    int an, i;
+
+    states = malloc((n + 1) * sizeof(*states));
+    for(i = 0; i < n + 1; states[i++] = -1);
+
+    an = compute_nbhd_count_rec(n, states);
+
+    free(states);
+
+    return an;
+}
+
+int *dp_generate_nbhd(int nbhd_dim, int *nbhd_count) {
+
+    int i, j, k = 0;
+    int *dp_nbhd;
+
+    *nbhd_count = compute_nbhd_count(nbhd_dim) ;
+
+    /* Allocate memory for the partition, using the exact amount of we can use
+    ~60% of memory that if we use nbhd_dim^2*/
+    dp_nbhd = malloc(2 * (*nbhd_count) * sizeof(*dp_nbhd));
+
+    /* dp_nbhd = malloc(2 * nbhd_dim * nbhd_dim * sizeof(*dp_nbhd)); */
+
+
+    for(i = 1; i <= nbhd_dim; i++) {
+        for(j = 1; j <= nbhd_dim; j++) {
+            /* If irreducible fraction add as a coordinate */
+            if (gcd(i, j) == 1) {
+                dp_nbhd[k++] = i;
+                dp_nbhd[k++] = j;
+            }
+        }
+    }
+
+    return dp_nbhd;
 }

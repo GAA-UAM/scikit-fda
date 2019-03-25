@@ -160,9 +160,8 @@ plt.plot(t,t,  color='C0', linestyle="--")
 # curve as template to align a set of samples to it or a set of
 # templates to make the alignemnt the two sets.
 #
-#
 # In the elastic registration example it is shown the alignment of multiple
-# curves to the same template is shown.
+# curves to the same template.
 #
 # We will build two sets with 3 curves each, :math:`\{f_i\}` and :math:`\{g_i\}`.
 #
@@ -182,9 +181,10 @@ g = fda.datasets.make_multimodal_samples(n_samples=3, modes_location=location2,
 plt.figure()
 
 fd.plot(color="C0", label="$f_i$")
-g.plot(color="C1", label="$g_i$")
+fig, ax = g.plot(color="C1", label="$g_i$")
 
-plt.legend()
+l = ax[0].get_lines()
+plt.legend(handles=[l[0], l[-1]])
 
 ###############################################################################
 # The following figure shows the result of the pairwise alignment of
@@ -198,12 +198,14 @@ plt.figure()
 fd_registered = fda.registration.elastic_registration(fd, g)
 
 # Plot of the curves
-fd.plot(color="C0", label="$f_i$")
+fig, ax = fd.plot(color="C0", label="$f_i$")
+l1 = ax[0].get_lines()[-1]
 g.plot(color="C1", label="$g_i$")
-fd_registered.plot(color="C0", linestyle="--", label="$f_i\\circ \\gamma_i$")
+l2 = ax[0].get_lines()[-1]
+fd_registered.plot(color="C0", linestyle="--", label="$f_i \\circ \\gamma_i$")
+l3 = ax[0].get_lines()[-1]
 
-
-plt.legend()
+plt.legend(handles=[l1, l2, l3])
 
 plt.show()
 

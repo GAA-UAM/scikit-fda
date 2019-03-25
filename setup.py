@@ -20,10 +20,9 @@ fdasrsf_path = os.path.join(deps_path, 'fdasrsf')
 
 
 extensions = [
-    Extension(name='optimum_reparamN',
+    Extension(name='optimum_reparam_extension',
               sources=[
-                  os.path.join(fdasrsf_path, 'optimum_reparamN.pyx'),
-                  os.path.join(fdasrsf_path, 'DynamicProgrammingQ2.c'),
+                  os.path.join(fdasrsf_path, 'optimum_reparam.pyx'),
                   os.path.join(fdasrsf_path, 'dp_grid.c')
               ],
               include_dirs=[numpy.get_include()],

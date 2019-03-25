@@ -9,7 +9,7 @@ from ..grid import FDataGrid, GridSplineInterpolator
 from . import invert_warping
 from ._registration_utils import _normalize_scale
 
-import optimum_reparamN
+import optimum_reparam_extension
 
 
 __author__ = "Pablo Marcos Manchón"
@@ -147,7 +147,7 @@ def from_srsf(fdatagrid, initial=None, *, eval_points=None):
     return fdatagrid.copy(data_matrix=f_data_matrix, sample_points=eval_points)
 
 
-def _elastic_alignment_array(template_data, q_data, eval_points, lam):
+def _elastic_alignment_array(template_data, q_data, eval_points, lam, grid_dim):
     """Wrapper between the cython interface and python.
 
     Selects the corresponding routine depending on the dimensions of the arrays.
@@ -157,6 +157,7 @@ def _elastic_alignment_array(template_data, q_data, eval_points, lam):
         q_data (numpy.ndarray): Array with the srsf of the curves to be aligned.
         eval_points (numpy.ndarray): Discretisation points of the functions.
         lam (float): Penalisation term.
+        grid_dim (int): Dimension of the grid used in the alignment algorithm.
 
     Return:
         (numpy.ndarray): Array with the same shape than q_data with the srsf of
@@ -165,23 +166,23 @@ def _elastic_alignment_array(template_data, q_data, eval_points, lam):
 
     # Select cython function
     if template_data.ndim == 1 and q_data.ndim == 1:
-        reparam = optimum_reparamN.coptimum_reparam
+        reparam = optimum_reparam_extension.coptimum_reparam
 
     elif template_data.ndim == 1:
-        reparam = optimum_reparamN.coptimum_reparamN
+        reparam = optimum_reparam_extension.coptimum_reparam_n
 
     else:
-        reparam = optimum_reparamN.coptimum_reparamN2
+        reparam = optimum_reparam_extension.coptimum_reparam_n2
 
     return reparam(np.ascontiguousarray(template_data.T),
                    np.ascontiguousarray(eval_points),
                    np.ascontiguousarray(q_data.T),
-                   lam).T
+                   lam, grid_dim).T
 
 
 def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
                                  eval_points=None, fdatagrid_srsf=None,
-                                 template_srsf=None, **kwargs):
+                                 template_srsf=None, grid_dim=7, **kwargs):
     """Calculate the warping to align a FDatagrid using the SRSF framework.
 
     Let :math:`f` be a function of the functional data object wich will be
@@ -233,6 +234,8 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
             may be passed to avoid repeated calculation.
         template_srsf (:class:`FDataGrid`, optional): SRSF of the template,
             may be passed to avoid repeated calculation.
+        grid_dim (int, optional): Dimension of the grid used in the alignment
+            algorithm. Defaults 7.
         **kwargs: Named arguments to be passed to :func:`elastic_mean`.
 
     Returns:
@@ -282,7 +285,8 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
 
     # Values of the warping
     gamma = _elastic_alignment_array(template_data, q_data,
-                                     _normalize_scale(eval_points), lam)
+                                     _normalize_scale(eval_points),
+                                     lam, grid_dim)
 
     # Normalize warping to original interval
     gamma = _normalize_scale(gamma, a=eval_points[0], b=eval_points[-1])
@@ -294,7 +298,8 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
 
 
 def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
-                         fdatagrid_srsf=None, template_srsf=None, **kwargs):
+                         fdatagrid_srsf=None, template_srsf=None, grid_dim=7,
+                         **kwargs):
     """Align a FDatagrid using the SRSF framework.
 
     Let :math:`f` be a function of the functional data object wich will be
@@ -346,6 +351,8 @@ def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
             may be passed to avoid repeated calculation.
         template_srsf (:class:`FDataGrid`, optional): SRSF of the template,
             may be passed to avoid repeated calculation.
+        grid_dim (int, optional): Dimension of the grid used in the alignment
+            algorithm. Defaults 7.
         **kwargs: Named arguments to be passed to :func:`elastic_mean`.
 
     Returns:
@@ -370,6 +377,7 @@ def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
                                            eval_points=eval_points,
                                            fdatagrid_srsf=fdatagrid_srsf,
                                            template_srsf=template_srsf,
+                                           grid_dim=grid_dim,
                                            **kwargs)
 
     return fdatagrid.compose(warping, eval_points=eval_points)

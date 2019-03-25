@@ -1,21 +1,14 @@
 #ifndef DP_GRID_H
 #define DP_GRID_H 1
 
+/* Original code developed by J. Derek Tucker in ElasticFDA.jl. The following
+* code is under the MIT license, a copy of the license it is included with it.
+*
+* 03/25/2019: Modified by Pablo Marcos <pablo.marcosm@estudiante.uam.es>.
+*/
+
 /**
- * Computes weights of all edges in the DP matching graph,
- * which is needed for the Floyd-Warshall all-pairs shortest-path
- * algorithm.
- *
- * The matrix of edge weights E must be allocated ahead of time by
- * the caller.  E is an ntv1 x ntv2 x ntv1 x ntv2 matrix.  If i and k
- * are column indices and j and l are row indices, then the weight of the
- * edge from gridpoint (tv1[i],tv2[j]) to gridpoint (tv1[k],tv2[l]) is
- * stored in E(j,i,l,k) when this function returns.
- * Mapping:
- *  (j,i,l,k) :--> j*ntv1*ntv2*ntv1 +
- *                 i*ntv2*ntv1 +
- *                 l*ntv1 +
- *                 k
+ * Computes cost of best path from (0,0) to all other gridpoints.
  *
  * \param Q1 values of the first SRVF
  * \param T1 changepoint parameters of the first SRVF
@@ -30,17 +23,18 @@
  * \param tv2 the Q2 (row) parameter values for the DP grid
  * \param idxv2 Q2 indexes for tv2, as computed by \c dp_all_indexes()
  * \param ntv2 the length of tv2
- * \param E [output] pointer to the edge weight matrix.  Must already be
- *          allocated, with size (ntv1*ntv2)^2.
+ * \param E [output] on return, E[ntv2*i+j] holds the cost of the best
+ *        path from (0,0) to (tv1[i],tv2[j]) in the grid.
+ * \param P [output] on return, P[ntv2*i+j] holds the predecessor of
+ *        (tv1[i],tv2[j]).  If predecessor is (tv1[k],tv2[l]), then
+ *        P[ntv2*i+j] = k*ntv2+l.
+ * \return E[ntv1*ntv2-1], the cost of the best path from (tv1[0],tv2[0])
+ *         to (tv1[ntv1-1],tv2[ntv2-1]).
  */
-void dp_all_edge_weights(
-    double* Q1, double* T1, int nsamps1,
-    double* Q2, double* T2, int nsamps2,
-    int dim,
-    double* tv1, int* idxv1, int ntv1,
-    double* tv2, int* idxv2, int ntv2,
-    double* W, double lam);
-
+void dp_optimum_reparam(double* Q1, double* T1, double* Q2, double* T2,
+                          int m1, int n1, int n2, double* tv1, double* tv2,
+                          int n1v, int n2v, double* G, double* T,
+                          double* size, double lam1, int nbhd_dim);
 /**
  * Computes cost of best path from (0,0) to all other gridpoints.
  *
@@ -71,7 +65,7 @@ double dp_costs(
     int dim,
     double* tv1, int* idxv1, int ntv1,
     double* tv2, int* idxv2, int ntv2,
-    double* E, int* P, double lam);
+    double* E, int* P, double lam, int nbhd_count, int *dp_nbhd);
 
 /**
  * Computes the weight of the edge from (a,c) to (b,d) in the DP grid.
@@ -149,5 +143,18 @@ int dp_lookup(double* T, int n, double t);
  * \param idxv [output] pre-allocated array of \a ntv ints to hold result
  */
 void dp_all_indexes(double* p, int np, double* tv, int ntv, int* idxv);
+
+/**
+ * Generates a list with the indexes of the grid to be explored. Used internally
+ * in the dp algorithm.
+ *
+ * The grid will be composed with the pairs (i, j), i,j < nbhd_dim and
+ * gcd(i, j) = 1.
+ *
+ * \param nbhd_dim dimension of the grid
+ * \param nbhd_count pointer where the number of indexes will be stored
+ * \return the list of indexes
+ */
+int *dp_generate_nbhd(int nbhd_dim, int *nbhd_count);
 
 #endif /* DP_GRID_H */

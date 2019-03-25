@@ -6,10 +6,11 @@ import matplotlib.pyplot as plt
 
 from fda import FDataGrid
 from fda.datasets import make_multimodal_samples
-from fda.metrics import metric
+from fda.metrics import (metric, fisher_rao_distance, amplitude_distance,
+                         phase_distance)
 from fda.registration import (elastic_registration, elastic_mean, to_srsf,
                               from_srsf, elastic_registration_warping,
-                              invert_warping)
+                              invert_warping, normalize_warping)
 
 
 class TestElasticRegistration(unittest.TestCase):
@@ -71,6 +72,13 @@ class TestElasticRegistration(unittest.TestCase):
 
         np.testing.assert_allclose(distances, 0, atol=12e-3)
 
+    def test_one_to_one_alignment(self):
+        """Test alignment to 1 sample to a template"""
+        register = elastic_registration(self.unimodal_samples[0], self.template)
+        distances = metric(self.template, register)
+
+        np.testing.assert_allclose(distances, 0, atol=12e-3)
+
 
     def test_set_alignment(self):
         """Test alignment 3 curves to set with 3 templates"""
@@ -91,6 +99,48 @@ class TestElasticRegistration(unittest.TestCase):
         distances = np.diag(metric(self.unimodal_samples, register))
 
         np.testing.assert_allclose(distances, 0, atol=12e-3)
+
+class TestElasticDistances(unittest.TestCase):
+    """Test elastic distances"""
+
+    def test_fisher_rao(self):
+        """Test fisher rao distance"""
+
+        t = np.linspace(0, 1, 100)
+        sample  = FDataGrid([t, 1-t], t)
+        f = np.square(sample)
+        g = np.power(sample, 0.5)
+
+        distance = [[0.62825868, 1.98009242], [1.98009242, 0.62825868]]
+        res = fisher_rao_distance(f, g)
+
+        np.testing.assert_almost_equal(res, distance, decimal=3)
+
+    def test_fisher_rao_invariance(self):
+        """Test invariance of fisher rao metric: d(f,g)= d(foh, goh)"""
+
+        t = np.linspace(0, np.pi)
+        id = FDataGrid([t], t)
+        cos = np.cos(id)
+        sin = np.sin(id)
+        gamma = normalize_warping(np.sqrt(id), a=0, b=np.pi)
+        gamma2 = normalize_warping(np.square(id), a=0, b=np.pi)
+
+        distance_original = fisher_rao_distance(cos, sin)
+
+        # Construction of 2 warpings
+        distance_warping = fisher_rao_distance(cos.compose(gamma),
+                                               sin.compose(gamma))
+        distance_warping2 = fisher_rao_distance(cos.compose(gamma2),
+                                               sin.compose(gamma2))
+
+        # The error ~0.001 due to the derivation
+        np.testing.assert_almost_equal(distance_original, distance_warping,
+                                       decimal=2)
+
+        np.testing.assert_almost_equal(distance_original, distance_warping2,
+                                       decimal=2)
+
 
 
 if __name__ == '__main__':

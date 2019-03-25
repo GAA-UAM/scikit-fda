@@ -277,29 +277,33 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
     eval_points_normalized = _normalize_scale(eval_points)
 
     # Normalization of scale to (0,1)
-    fdata1 = fdata1.copy(sample_points=_normalize_scale(fdata1.sample_points[0]))
+    fdata1 = fdata1.copy(sample_points=_normalize_scale(fdata1.sample_points[0]),
+                         domain_range=(0,1))
     fdata1_srsf = to_srsf(fdata1, eval_points=eval_points_normalized)
-    fdata2 = fdata2.copy(sample_points=_normalize_scale(fdata2.sample_points[0]))
+    fdata2 = fdata2.copy(sample_points=_normalize_scale(fdata2.sample_points[0]),
+                         domain_range=(0,1))
     fdata2_srsf = to_srsf(fdata2, eval_points=eval_points_normalized)
 
     # Iterate over the smallest FData
     for j in range(fdata2.nsamples):
 
         fdataj = fdata2[j]
+        fdataj_srsf = fdata2_srsf[j]
 
         warping_j = elastic_registration_warping(fdata1,
                                                  template=fdataj,
                                                  lam=lam,
                                                  eval_points=eval_points_normalized,
                                                  fdatagrid_srsf=fdata1_srsf,
-                                                 template_srsf=fdata2_srsf[j],
+                                                 template_srsf=fdataj_srsf,
                                                  **kwargs)
         f_register_j  = fdata1.compose(warping_j)
+        f_register_j_srsf = to_srsf(f_register_j, eval_points=eval_points_normalized)
 
-        # Distance without penalty term
-        matrix[:, j] = norm_lp(f_register_j - fdataj, p=2)
+        # Distance without penalty term (Fisher rao distance between registered)
+        matrix[:, j] = metric(fdataj_srsf, f_register_j_srsf)[0]
 
-
+        # Penalisation term
         if lam != 0.0:
             numpy.square(matrix[:, j], out=matrix[:, j])
 
@@ -315,6 +319,8 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
 
             numpy.sqrt(matrix[:, j], out=matrix[:, j])
 
+    if transpose:
+        matrix = matrix.T
 
     return matrix
 

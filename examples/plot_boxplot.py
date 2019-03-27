@@ -14,11 +14,8 @@ from fda import datasets
 from fda.grid import FDataGrid
 from fda.depth_measures import band_depth, fraiman_muniz_depth
 import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib.patches as mpatches
-from cycler import cycler
-import matplotlib
 from fda.fdata_boxplot import Boxplot
+import numpy
 
 ##################################################################################
 # First, the Canadian Weather dataset is downloaded from the package 'fda' in CRAN.
@@ -28,30 +25,24 @@ from fda.fdata_boxplot import Boxplot
 
 dataset = datasets.fetch_weather()
 fd = dataset["data"]
-fd_temperatures = FDataGrid(data_matrix=fd.data_matrix[:, :, 0], sample_points=fd.sample_points,
-                            dataset_label=fd.dataset_label, axes_labels=fd.axes_labels[0:2])
+fd_temperatures = FDataGrid(data_matrix=fd.data_matrix[:, :, 0],
+                            sample_points=fd.sample_points,
+                            dataset_label=fd.dataset_label,
+                            axes_labels=fd.axes_labels[0:2])
 ############################################################################################
 # The data is plotted to show the curves we are working with. They are divided according to the
 # target. In this case, it includes the different climates to which the weather stations belong to.
 
-climates = dataset["target_names"]
-n_climates = len(climates)
-
-#Assigning the color to each of the samples according to the target.
+# Each climate is assigned a color. Defaults to grey.
 colormap = plt.cm.get_cmap('seismic')
-colors_by_climate = colormap(np.asarray(dataset["target"]) / (n_climates- 1))
-climate_colors = colormap(np.arange(n_climates) / (n_climates- 1))
+label_names = dataset["target_names"]
+nlabels = len(label_names)
+label_colors = colormap( numpy.arange(nlabels) / (nlabels - 1))
 
-#Building the legend
-patches = []
-for i in range(n_climates):
-    patches.append(mpatches.Patch(color=climate_colors[i], label=climates[i]))
-
-#Plotting the curves and the legend with the desired colors.
-matplotlib.rcParams['axes.prop_cycle'] = cycler(color=colors_by_climate)
 plt.figure()
-fig, ax = fd_temperatures.plot()
-ax[0].legend(handles=patches)
+fd_temperatures.plot(sample_labels=dataset["target"], label_colors=label_colors,
+                     label_names=label_names)
+
 
 ############################################################################################
 # We instantiate a :func:`functional boxplot object <fda.boxplot.Boxplot>` with the data,
@@ -73,21 +64,15 @@ fdBoxplot.plot()
 # outliers detected, those samples with at least a point outside the outlying envelope, are
 # represented with a red dashed line. The colors can be customized.
 #
-# The outliers are shown below with respect to the other samples..
+# The outliers are shown below with respect to the other samples.
 
 color = 0.3
 outliercol = 0.7
 
-outliers = np.copy(fdBoxplot.outliers[0])
-outliers[outliers == 0] = color
-outliers[outliers == 1] = outliercol
-
-colors_by_outliers = np.zeros((fd_temperatures.nsamples, 4))
-colors_by_outliers = colormap(outliers)
-
-matplotlib.rcParams['axes.prop_cycle'] = cycler(color=colors_by_outliers)
 plt.figure()
-fd_temperatures.plot()
+fd_temperatures.plot(sample_labels=fdBoxplot.outliers[0].astype(int),
+                     label_colors=colormap([color, outliercol]),
+                     label_names=["nonoutliers", "outliers"])
 
 ############################################################################################
 # The curves pointed as outliers are are those curves with significantly lower values to the
@@ -118,7 +103,7 @@ fdBoxplot.plot()
 # are specified.
 
 fdBoxplot = Boxplot(fd_temperatures,  method=fraiman_muniz_depth,
-                         prob = [0.75, 0.5, 0.25])
+                    prob = [0.75, 0.5, 0.25])
 plt.figure()
 fdBoxplot.plot()
 

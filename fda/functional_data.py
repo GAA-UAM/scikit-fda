@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 
 import numpy
 
+import matplotlib.patches as mpatches
 
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
@@ -591,7 +592,7 @@ class FData(ABC):
 
         return fig, ax
 
-    def set_labels(self, fig=None, ax=None):
+    def set_labels(self, fig=None, ax=None, patches=None):
         """Set labels if any.
 
         Args:
@@ -604,8 +605,15 @@ class FData(ABC):
             if self.dataset_label is not None:
                 fig.suptitle(self.dataset_label)
             ax = fig.get_axes()
-        elif self.dataset_label is not None and len(ax) == 1:
-            ax[0].set_title(self.dataset_label)
+            if patches is not None and self.ndim_image > 1:
+                fig.legend(handles=patches)
+            elif patches is not None:
+                ax[0].legend(handles=patches)
+        elif len(ax) == 1:
+            if self.dataset_label is not None:
+                ax[0].set_title(self.dataset_label)
+            if patches is not None:
+                ax[0].legend(handles=patches)
 
 
         if self.axes_labels is not None:
@@ -686,7 +694,8 @@ class FData(ABC):
         return fig, ax
 
     def plot(self, chart=None, *, derivative=0, fig=None, ax=None, nrows=None,
-             ncols=None, npoints=None, domain_range=None, **kwargs):
+             ncols=None, npoints=None, domain_range=None, sample_labels=None,
+             label_colors=None, label_names=None, **kwargs):
         """Plot the FDatGrid object.
 
         Args:
@@ -752,6 +761,63 @@ class FData(ABC):
 
         fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
 
+        patches = None
+        next_color = False
+
+        if sample_labels is not None:
+
+            nlabels = numpy.max(sample_labels) + 1
+
+            if numpy.any((sample_labels < 0) | (sample_labels >= nlabels)) or \
+                    not numpy.all(numpy.isin(range(nlabels), sample_labels)):
+                raise ValueError("sample_labels must contain at least an "
+                                 "occurence of numbers between 0 and number "
+                                 "of distint sample labels.")
+
+            if label_colors is not None:
+                if len(label_colors) != nlabels:
+                    raise ValueError("There must be a color in label_colors "
+                                     "for each of the labels that appear in "
+                                     "sample_labels.")
+                sample_colors = label_colors[sample_labels]
+
+            else:
+                colormap = plt.cm.get_cmap('Greys')
+                sample_colors = colormap(sample_labels / (nlabels - 1))
+
+
+            if label_names is not None:
+                if len(label_names) != nlabels:
+                    raise ValueError("There must be a name in  label_names "
+                                     "for each of the labels that appear in "
+                                     "sample_labels.")
+
+                if label_colors is None:
+                    label_colors = colormap(
+                        numpy.arange(nlabels) / (nlabels - 1))
+
+                patches = []
+                for i in range(nlabels):
+                    patches.append(
+                        mpatches.Patch(color=label_colors[i],
+                                       label=label_names[i]))
+
+        else:
+
+            if 'color' in kwargs:
+                sample_colors = numpy.asarray(
+                    kwargs.get("color")).repeat(self.nsamples)
+                kwargs.pop('color')
+
+            elif 'c' in kwargs:
+                sample_colors = numpy.asarray(
+                    kwargs.get("c")).repeat(self.nsamples)
+                kwargs.pop('c')
+
+            else:
+                sample_colors = numpy.empty((self.nsamples,)).astype(str)
+                next_color = True
+
         if self.ndim_domain == 1:
 
             if npoints is None:
@@ -762,7 +828,12 @@ class FData(ABC):
             mat = self(eval_points, derivative=derivative, keepdims=True)
 
             for i in range(self.ndim_image):
-                ax[i].plot(eval_points, mat[..., i].T, **kwargs)
+                for j in range(self.nsamples):
+                    if sample_labels is None and next_color:
+                        sample_colors[j] = ax[i]._get_lines.get_next_color()
+                    ax[i].plot(eval_points, mat[j,..., i].T,
+                               c=sample_colors[j], **kwargs)
+
         else:
 
             # Selects the number of points
@@ -785,9 +856,12 @@ class FData(ABC):
 
             for i in range(self.ndim_image):
                 for j in range(self.nsamples):
-                    ax[i].plot_surface(X, Y, Z[j,...,i], **kwargs)
+                    if sample_labels is None and next_color:
+                        sample_colors[j] = ax[i]._get_lines.get_next_color()
+                    ax[i].plot_surface(X, Y, Z[j,...,i],
+                                       color=sample_colors[j], **kwargs)
 
-        self.set_labels(fig, ax)
+        self.set_labels(fig, ax, patches)
 
         return fig, ax
 

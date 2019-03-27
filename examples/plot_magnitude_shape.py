@@ -16,9 +16,6 @@ from fda.depth_measures import fraiman_muniz_depth
 from fda.magnitude_shape_plot import magnitude_shape_plot
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.patches as mpatches
-from cycler import cycler
-import matplotlib
 
 ##################################################################################
 # First, the Canadian Weather dataset is downloaded from the package 'fda' in CRAN.
@@ -34,25 +31,15 @@ fd_temperatures = FDataGrid(data_matrix=fd.data_matrix[:, :, 0], sample_points=f
 # The data is plotted to show the curves we are working with. They are divided according to the
 # target. In this case, it includes the different climates to which the weather stations belong to.
 
-climates = dataset["target_names"]
-n_climates = len(climates)
-# indexer, uniques = pd.factorize(regions, sort=True)
-
-#Assigning the color to each of the samples.
+# Each climate is assigned a color. Defaults to grey.
 colormap = plt.cm.get_cmap('seismic')
-colors_by_climate = colormap(np.asarray(dataset["target"]) / (n_climates- 1))
-climate_colors = colormap(np.arange(n_climates) / (n_climates- 1))
+label_names = dataset["target_names"]
+nlabels = len(label_names)
+label_colors = colormap( np.arange(nlabels) / (nlabels - 1))
 
-#Building the legend
-patches = []
-for i in range(n_climates):
-    patches.append(mpatches.Patch(color=climate_colors[i], label=climates[i]))
-
-#Plotting the curves.
-matplotlib.rcParams['axes.prop_cycle'] = cycler(color=colors_by_climate)
 plt.figure()
-fig, ax = fd_temperatures.plot()
-ax[0].legend(handles=patches)
+fd_temperatures.plot(sample_labels=dataset["target"], label_colors=label_colors,
+                     label_names=label_names)
 
 #############################################################################################
 # The MS-Plot is generated specifying the tones of the colors defined in the default colormap.
@@ -60,21 +47,20 @@ ax[0].legend(handles=patches)
 
 color = 0.3
 outliercol = 0.7
+
 plt.figure()
-points, outliers = magnitude_shape_plot(fd_temperatures, color = color, outliercol = outliercol)
+points, outliers = magnitude_shape_plot(fd_temperatures, color = color,
+                                        outliercol = outliercol)
 
 ############################################################################################
 # To show the utility of the plot, the curves are plotted according to the distinction
 # made by the MS-Plot (outliers or not) with the same colors.
 
-outliers[outliers == 0] = color
-outliers[outliers == 1] = outliercol
-
-colors = colormap(outliers)
-matplotlib.rcParams['axes.prop_cycle'] = cycler(color=colors)
+colormap = plt.cm.get_cmap('seismic')
 
 plt.figure()
-fd_temperatures.plot()
+fd_temperatures.plot(sample_labels=outliers.astype(int),
+                     label_colors=colormap([color, outliercol]))
 
 #######################################################################################
 # We can observe that most of the curves  pointed as outliers belong either to the Pacific or
@@ -99,16 +85,21 @@ points, outliers = magnitude_shape_plot(fd_temperatures, depth_method = fraiman_
 # to the Arctic climate, which has lower temperatures, and those on top (larger deviation in the
 # directional outlyingness) to the Pacific one, which has smoother curves.
 
+group1 = np.where(points[:, 0] < -0.6)
+group2 = np.where(points[:, 1] > 0.12)
 
-outliers[:] = color
-outliers[np.where(points[:, 0] < -0.6)] = outliercol
-outliers[np.where(points[:, 1] > 0.12)] = 0.9
-colors_groups = colormap(outliers)
+colors = np.copy(outliers)
+colors[:] = color
+colors[group1] = outliercol
+colors[group2] = 0.9
 
 plt.figure()
-plt.scatter(points[:, 0], points[:, 1], c=colors_groups)
-fd_temperatures.set_labels(fig)
+plt.scatter(points[:, 0], points[:, 1], c=colormap(colors))
 
-matplotlib.rcParams['axes.prop_cycle'] = cycler(color=colors_groups)
+labels = np.copy(outliers).astype(int)
+labels[group1] = 1
+labels[group2] = 2
+
 plt.figure()
-fd_temperatures.plot()
+fd_temperatures.plot(sample_labels=labels,
+                     label_colors=colormap([color, outliercol, 0.9]))

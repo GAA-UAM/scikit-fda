@@ -486,8 +486,8 @@ def warping_distance(warping1, warping2, *, eval_points=None):
     matrix = numpy.empty((n, m))
 
     # Normalization of warping to (0,1)x(0,1)
-    warping1 = normalize_warping(warping1)
-    warping2 = normalize_warping(warping2)
+    warping1 = normalize_warping(warping1, (0,1))
+    warping2 = normalize_warping(warping2, (0,1))
 
     warping1 = warping1.derivative()(eval_points_normalized, keepdims=False)
     warping2 = warping2.derivative()(eval_points_normalized, keepdims=False)

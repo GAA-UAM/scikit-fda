@@ -123,8 +123,8 @@ class TestElasticDistances(unittest.TestCase):
         id = FDataGrid([t], t)
         cos = np.cos(id)
         sin = np.sin(id)
-        gamma = normalize_warping(np.sqrt(id), a=0, b=np.pi)
-        gamma2 = normalize_warping(np.square(id), a=0, b=np.pi)
+        gamma = normalize_warping(np.sqrt(id), (0, np.pi))
+        gamma2 = normalize_warping(np.square(id), (0, np.pi))
 
         distance_original = fisher_rao_distance(cos, sin)
 

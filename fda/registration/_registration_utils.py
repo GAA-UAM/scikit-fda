@@ -303,7 +303,7 @@ def _normalize_scale(t, a=0, b=1):
     return t1.T
 
 
-def normalize_warping(warping, a=0, b=1):
+def normalize_warping(warping, domain_range=None):
     """Rescale a warping to normalize their domain.
 
     Given a set of warpings :math:`\\gamma_i:[a,b] \\rightarrow [a,b]` it is
@@ -313,16 +313,18 @@ def normalize_warping(warping, a=0, b=1):
 
     Args:
         warping (:class:`FDatagrid`): Set of warpings to rescale.
-        a (float, optional): Starting point of the new domain. Defaults 0.
-        b (float, optiona): Stopping point of the new domain. Defaults 1.
-
+        domain_range (tuple, optional): New domain range of the warping. By
+            default it is used the same domain range.
     Return:
-        (:class:`FDatagrid`): FdataGrid with the warpings normalized.
+        (:class:`FDataGrid`): FDataGrid with the warpings normalized.
 
     """
 
-    data_matrix = _normalize_scale(warping.data_matrix[..., 0], a=a, b=b)
-    sample_points = _normalize_scale(warping.sample_points[0], a=a, b=b)
+    if domain_range is None:
+        domain_range = warping.domain_range[0]
+
+    data_matrix = _normalize_scale(warping.data_matrix[..., 0], *domain_range)
+    sample_points = _normalize_scale(warping.sample_points[0], *domain_range)
 
     return warping.copy(data_matrix=data_matrix, sample_points=sample_points,
-                        domain_range=(a,b))
+                        domain_range=domain_range)

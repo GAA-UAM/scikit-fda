@@ -36,7 +36,7 @@ class TestWarping(unittest.TestCase):
     def test_standart_normalize_warpig(self):
         """Test normalization to (0, 1)"""
 
-        normalized = normalize_warping(self.polynomial)
+        normalized = normalize_warping(self.polynomial, (0, 1))
 
         # Test new domain range (0, 1)
         np.testing.assert_array_equal(normalized.domain_range, [(0, 1)])
@@ -50,9 +50,8 @@ class TestWarping(unittest.TestCase):
 
     def test_normalize_warpig(self):
         """Test normalization to (a, b)"""
-        a = -4
-        b = 3
-        normalized = normalize_warping(self.polynomial, a=a, b=b)
+        domain = (-4, 3)
+        normalized = normalize_warping(self.polynomial, domain)
 
         # Test new domain range (0, 1)
         np.testing.assert_array_equal(normalized.domain_range, [(a, b)])

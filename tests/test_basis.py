@@ -215,6 +215,16 @@ class TestBasis(unittest.TestCase):
         self.assertEqual(expec_basis, result.basis)
         np.testing.assert_array_almost_equal(expec_coefs, result.coefficients)
 
+    def test_fdatabasis_sum_samples(self):
+        monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
+        monomial2 = FDataBasis(Monomial(nbasis=3), [[1, 2, 3], [3, 4, 5], [10, 0 , 1]])
+
+        np.testing.assert_equal(monomial1.sum_samples().coefficients,
+                                [[1, 2, 3]])
+
+        np.testing.assert_equal(monomial2.sum_samples().coefficients,
+                                [[14, 6, 9]])
+
     def test_fdatabasis__add__(self):
         monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
         monomial2 = FDataBasis(Monomial(nbasis=3), [[1, 2, 3], [3, 4, 5]])

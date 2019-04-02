@@ -19,10 +19,12 @@ from scipy.special import binom
 
 from . import grid
 from .functional_data import FData, _list_of_arrays
+from .lfd import Lfd
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
+MIN_EVAL_SAMPLES = 201
 
 # aux functions
 def _polypow(p, n=2):
@@ -309,9 +311,18 @@ class Basis(ABC):
     def to_basis(self):
         return FDataBasis(self.copy(), numpy.identity(self.nbasis))
 
-    def inprod(self, other):
-        return self.to_basis().inprod(other)
+    def _list_to_R(self, knots):
+        retstring = "c("
+        for i in range(0, len(knots)):
+            retstring = retstring + str(knots[i]) + ", "
+        return retstring[0:len(retstring) - 2] + ")"
 
+    def _to_R(self):
+        raise NotImplementedError
+        
+    def inner_product(self, other):
+        return numpy.transpose(other.inner_product(self.to_basis()))
+    
     def __repr__(self):
         """Representation of a Basis object."""
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
@@ -437,6 +448,11 @@ class Constant(Basis):
     def rbasis_of_product(self, other):
         """Multiplication of a Constant Basis with other Basis"""
         return other.copy()
+
+    def _to_R(self):
+        drange = self.domain_range[0]
+        return "create.constant.basis(rangeval = c(" + str(drange[0]) + "," +\
+               str(drange[1]) + "))"
 
 
 class Monomial(Basis):
@@ -632,6 +648,11 @@ class Monomial(Basis):
     def rbasis_of_product(self, other):
         """Multiplication of a Monomial Basis with other Basis"""
         return Basis.default_basis_of_product(self, other)
+
+    def _to_R(self):
+        drange = self.domain_range[0]
+        return "create.monomial.basis(rangeval = c(" + str(drange[0]) + "," +\
+               str(drange[1]) + "), nbasis = " + str(self.nbasis) + ")"
 
 
 class BSpline(Basis):
@@ -1044,6 +1065,13 @@ class BSpline(Basis):
         nbasis = max(self.nbasis + other.nbasis, norder + 1)
         return BSpline(self.domain_range, nbasis, norder)
 
+    def _to_R(self):
+        drange = self.domain_range[0]
+        return ("create.bspline.basis(rangeval = c(" + str(drange[0]) + "," +
+                str(drange[1]) + "), nbasis = " + str(self.nbasis) +
+                ", norder = " + str(self.order) + ", breaks = " +
+                self._listtoR(self.knots) + ")")
+
     @property
     def inknots(self):
         """Return number of basis."""
@@ -1302,6 +1330,12 @@ class Fourier(Basis):
                                     ) / (domain[1] - domain[0])
 
         return rescale_basis
+
+    def _to_R(self):
+        drange = self.domain_range[0]
+        return ("create.fourier.basis(rangeval = c(" + str(drange[0]) + "," +
+                str(drange[1]) + "), nbasis = " + str(self.nbasis) +
+                ", period = " + str(self.period) + ")")
 
     def __repr__(self):
         """Representation of a Fourier basis."""
@@ -1954,18 +1988,134 @@ class FDataBasis(FData):
                           axes_labels=axes_labels, extrapolation=extrapolation,
                           keepdims=keepdims)
 
-    def inprod(self, other):
+    def times(self, other):
+        """"Provides a numerical approximation of the multiplication between
+            an FDataObject to other object
+
+        Args:
+            other (int, list, FDataBasis): Object to multiply with the
+                                           FDataBasis object.
+                - int: Multiplies all samples with the value
+                - list: multiply each values with the samples respectively.
+                        Length should match with FDataBasis samples
+                - FDataBasis: if there is one sample it multiplies this with
+                              all the samples in the object. If not, it
+                              multiplies each sample respectively. Samples
+                              should match
+
+        Returns:
+            (FDataBasis): FDataBasis object containing the multiplication
+
+        """
+        if isinstance(other, FDataBasis):
+
+            if not _same_domain(self.domain_range, other.domain_range):
+                raise ValueError("The functions domains are different.")
+
+            basisobj = self.basis.basis_of_product(other.basis)
+            neval = max(10 * max(self.nbasis, other.nbasis) + 1,
+                        MIN_EVAL_SAMPLES)
+            (left, right) = self.domain_range[0]
+            evalarg = numpy.linspace(left, right, neval)
+
+            first = self.copy(coefficients=(numpy.repeat(self.coefficients,
+                            other.nsamples, axis=0) if self.nsamples == 1 and
+                            other.nsamples > 1 else self.coefficients.copy()))
+            second = other.copy(coefficients=(numpy.repeat(other.coefficients,
+                            self.nsamples, axis=0) if other.nsamples == 1 and
+                            self.nsamples > 1 else other.coefficients.copy()))
+
+            fdarray = first.evaluate(evalarg) * second.evaluate(evalarg)
+
+            return FDataBasis.from_data(fdarray, evalarg, basisobj)
+
+        if isinstance(other, int):
+            other = [other for _ in range(self.nsamples)]
+
+        coefs = numpy.transpose(numpy.atleast_2d(other))
+        return self.copy(coefficients=self.coefficients*coefs)
+
+    def inner_product(self, other, lfd_self=None, lfd_other=None,
+                      weights=None):
+        r"""Return an inner product matrix given a FDataBasis object.
+
+        The inner product of two functions is defined as
+
+        .. math::
+            <x, y> = \int_a^b x(t)y(t) dt
+
+        When we talk abaout FDataBasis objects, they have many samples, so we
+        talk about inner product matrix instead. So, for two FDataBasis objects
+        we define the inner product matrix as
+
+        .. math::
+            a_{ij} = <x_i, y_i> = \int_a^b x_i(s) y_j(s) ds
+
+        where :math:`f_i(s), g_j(s)` are the :math:`i^{th} j^{th}` sample of
+        each object. The return matrix has a shape of :math:`IxJ` where I and
+        J are the number of samples of each object respectively.
+
+        Args:
+            other (FDataBasis, Basis): FDataBasis object containing the second
+                    object to make the inner product
+
+            lfd_self (Lfd): Lfd object for the first function evaluation
+
+            lfd_other (Lfd): Lfd object for the second function evaluation
+
+            weights(FDataBasis): a FDataBasis object with only one sample that
+                    defines the weight to calculate the inner product
+
+        Returns:
+            numpy.array: Inner Product matrix.
+
+        """
+
         if not _same_domain(self.domain_range, other.domain_range):
             raise ValueError("Both Objects should have the same domain_range")
         if isinstance(other, Basis):
             other = other.to_basis()
 
-        inprodmat = [
-            scipy.integrate.quad(lambda x: self[i].evaluate([x]) * other[j].evaluate([x]),
-                                 self.domain_range[0][0], self.domain_range[0][1])[0]
-            for j in range(0, other.nsamples)
-            for i in range(0, self.nsamples)]
-        return numpy.array(inprodmat).reshape((self.nsamples, other.nsamples))
+        # TODO this will be used when lfd evaluation is ready
+        lfd_self = Lfd(0) if (lfd_self is None) else lfd_self
+        lfd_other = Lfd(0) if (lfd_other is None) else lfd_other
+
+        if weights is not None:
+            other = other.times(weights)
+
+        matrix = numpy.empty((self.nsamples, other.nsamples))
+        (left, right) = self.domain_range[0]
+
+        for i in range(self.nsamples):
+            for j in range(other.nsamples):
+                fd = self[i].times(other[j])
+                matrix[i, j] = scipy.integrate.quad(
+                    lambda x: fd.evaluate([x])[0], left, right)[0]
+        return matrix
+
+    def _to_R(self):
+        """Gives the code to build the object on fda package on R"""
+        return ("fd(coef = " + self._arraytoR(self.coefficients, True) +
+                ", basisobj = " + self.basis._to_R() + ")")
+
+    def _array_to_R(self, coefficients, transpose=False):
+        if len(coefficients.shape) == 1:
+            coefficients = coefficients.reshape((1, coefficients.shape[0]))
+
+        if len(coefficients.shape) > 2:
+            return NotImplementedError
+
+        if transpose is True:
+            coefficients = numpy.transpose(coefficients)
+
+        (rows, cols) = coefficients.shape
+        retstring = "matrix(c("
+        for j in range(cols):
+            for i in range(rows):
+                retstring = retstring + str(coefficients[i, j]) + ", "
+
+        return (retstring[0:len(retstring) - 2] + "), nrow = " + str(rows) +
+                ", ncol = " + str(cols) + ")")
 
     def __repr__(self):
         """Representation of FDataBasis object."""

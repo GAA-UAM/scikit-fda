@@ -60,7 +60,9 @@ import fda
 from fda import *
 from fda.depth_measures import *
 from fda.fdata_boxplot import *
+from fda.metrics import *
 import numpy
+import numpy as np
 numpy.set_printoptions(legacy='1.13')
 '''
 

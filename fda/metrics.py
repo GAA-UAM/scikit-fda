@@ -2,10 +2,154 @@
 import scipy.integrate
 import numpy
 
+from .functional_data import FData
 from . import FDataGrid
 from .registration import (normalize_warping, _normalize_scale,
                            to_srsf, elastic_registration_warping)
 
+
+def _cast_to_grid(fdata1, fdata2, eval_points=None):
+    """Checks if the fdatas passed as argument are unidimensional and compatible
+    and converts them to FDatagrid to compute their distances.
+
+
+    Args:
+        fdata1: (:obj:`FData`): First functional object.
+        fdata2: (:obj:`FData`): Second functional object.
+
+    Returns:
+        tuple: Tuple with two :obj:`FDataGrid` with the same sample points.
+    """
+
+    # To allow use numpy arrays internally
+    if (not isinstance(fdata1, FData) and not isinstance(fdata2, FData)
+        and eval_points is not None):
+        fdata1 = FDataGrid([fdata1], sample_points=eval_points)
+        fdata2 = FDataGrid([fdata1], sample_points=eval_points)
+
+    # Checks dimension
+    elif (fdata1.ndim_image != 1 or fdata1.ndim_domain != 1 or
+        fdata2.ndim_image != 1 or fdata2.ndim_domain != 1):
+        raise ValueError("Objects should be unidimensional")
+
+    # Case different domain ranges
+    elif not numpy.array_equal(fdata1.domain_range, fdata2.domain_range):
+        raise ValueError("Domain ranges for both objects must be equal")
+
+    # Case new evaluation points specified
+    elif eval_points is not None:
+        if not numpy.array_equal(eval_points, fdata1.sample_points[0]):
+            fdata1 = fdata1.to_grid(eval_points)
+        if not numpy.array_equal(eval_points, fdata2.sample_points[0]):
+            fdata2 = fdata2.to_grid(eval_points)
+
+    elif not isinstance(fdata1, FDataGrid) and isinstance(fdata2, FDataGrid):
+        fdata1 = fdata1.to_grid(fdata2.eval_points)
+
+    elif not isinstance(fdata2, FDataGrid) and isinstance(fdata1, FDataGrid):
+        fdata2 = fdata2.to_grid(fdata1.eval_points)
+
+    elif not isinstance(fdata1, FDataGrid) and not isinstance(fdata2, FDataGrid):
+        fdata1 = fdata1.to_grid(eval_points)
+        fdata2 = fdata2.to_grid(eval_points)
+
+    elif not numpy.array_equal(fdata1.sample_points, fdata2.sample_points):
+        raise ValueError("Sample points for both objects must be equal or"
+                         "a new list evaluation points must be specified")
+
+    return fdata1, fdata2
+
+
+
+def distance_from_norm(norm, **kwargs):
+    r"""Returns the distance induced by a norm.
+
+    Given a norm :math:`\| \cdot \|: X \rightarrow \mathbb{R}`,
+    returns the distance :math:`d: X \times X \rightarrow \mathbb{R}` induced by
+    the norm:
+
+    .. math::
+        d(f,g) = \|f - g\|
+
+    Args:
+        norm (:obj:`Function`): Norm function `norm(fdata, **kwargs)`.
+        **kwargs (dict, optional): Named parameters to be passed to the norm
+            function.
+
+    Returns:
+        :obj:`Function`: Distance function `norm_distance(fdata1, fdata2)`.
+
+    Examples:
+        Computes the :math:`\mathbb{L}^2` distance between an object containing
+        functional data corresponding to the function :math:`y(x) = x` defined
+        over the interval [0, 1] and another one containing data of the function
+        :math:`y(x) = x/2`.
+
+        Firstly we create the functional data.
+
+        >>> x = numpy.linspace(0, 1, 1001)
+        >>> fd = FDataGrid([x], x)
+        >>> fd2 =  FDataGrid([x/2], x)
+
+        To construct the :math:`\mathbb{L}^2` distance it is used the
+        :math:`\mathbb{L}^2` norm wich it is used to compute the distance.
+
+        >>> l2_distance = distance_from_norm(norm_lp, p=2)
+        >>> d = l2_distance(fd, fd2)
+        >>> float('%.3f'% d)
+        0.289
+
+    """
+    def norm_distance(fdata1, fdata2):
+        # Substract operation checks if objects are compatible
+        return norm(fdata1 - fdata2, **kwargs)
+
+    norm_distance.__name__ = f"{norm.__name__}_distance"
+
+    return norm_distance
+
+def pairwise_distance(distance, **kwargs):
+    r"""Return pairwise distance for FDataGrid objects.
+
+    Given a distance returns the corresponding pairwise distance function.
+
+    The pairwise distance calculates the distance between all possible pairs of
+    one sample of the first FDataGrid object and one of the second one.
+
+    The matrix returned by the pairwise distance is a matrix with as many rows
+    as samples in the first object and as many columns as samples in the second
+    one. Each element (i, j) of the matrix is the distance between the ith
+    sample of the first object and the jth sample of the second one.
+
+    Args:
+        distance (:obj:`Function`): Distance functions between two functional
+            objects `distance(fdata1, fdata2, **kwargs)`.
+        **kwargs (:obj:`dict`, optional): parameters dictionary to be passed
+            to the distance function.
+
+    Returns:
+        :obj:`Function`: Pairwise distance function, wich accepts two functional
+        data objects and returns the pairwise distance matrix.
+    """
+    def pairwise(fdata1, fdata2):
+
+        # Checks
+        if not numpy.array_equal(fdata1.domain_range, fdata2.domain_range):
+            raise ValueError("Domain ranges for both objects must be equal")
+
+        # Creates an empty matrix with the desired size to store the results.
+        matrix = numpy.empty((fdata1.nsamples, fdata2.nsamples))
+
+        # Iterates over the different samples of both objects.
+        for i in range(fdata1.nsamples):
+            for j in range(fdata2.nsamples):
+                matrix[i, j] = distance(fdata1[i], fdata2[j], **kwargs)
+        # Computes the metric between all piars of x and y.
+        return matrix
+
+    pairwise.__name__ = f"pairwise_{distance.__name__}"
+
+    return pairwise
 
 
 def norm_lp(fdatagrid, p=2):
@@ -52,20 +196,25 @@ def norm_lp(fdatagrid, p=2):
     """
     # Checks that the lp normed is well defined
     if p < 1:
-        raise ValueError("p must be equal or greater than 1.")
+        raise ValueError(f"p must be equal or greater than 1 (p={p}).")
 
     if fdatagrid.ndim_image > 1:
         raise ValueError("Not implemented for image with "
                          "dimension greater than 1")
 
     # Computes the norm, approximating the integral with Simpson's rule.
-    return scipy.integrate.simps(numpy.abs(fdatagrid.data_matrix[..., 0]) ** p,
-                                 x=fdatagrid.sample_points
-                                 ) ** (1 / p)
+    res = scipy.integrate.simps(numpy.abs(fdatagrid.data_matrix[..., 0]) ** p,
+                                x=fdatagrid.sample_points
+                                ) ** (1 / p)
+
+    if len(res) == 1:
+        return res[0]
+
+    return res
 
 
-def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
-    r"""Return distance for FDataGrid obejcts.
+def lp_distance(fdata1, fdata2, p=2, *, eval_points=None):
+    r"""Lp distance for FDataGrid objects.
 
     Calculates the distance between all possible pairs of one sample of
     the first FDataGrid object and one of the second one.
@@ -77,21 +226,6 @@ def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
 
     The norm is specified as a parameter but defaults to the l2 norm.
 
-    Args:
-        fdatagrid (FDataGrid): First FDataGrid object.
-        fdatagrid2 (FDataGrid): Second FDataGrid object.
-        norm (:obj:`Function`, optional): Norm function used in the definition
-            of the distance.
-        **kwargs (:obj:`dict`, optional): parameters dictionary to be passed
-            to the norm function.
-
-    Returns:
-        :obj:`numpy.darray`: Matrix with as many rows as samples in the first
-        object and as many columns as samples in the second one. Each
-        element (i, j) of the matrix is the distance between the ith sample
-        of the first object and the jth sample of the second one.
-
-
     Examples:
         Computes the distances between an object containing functional data
         corresponding to the functions y = 1 and y = x defined over the
@@ -100,11 +234,10 @@ def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
         l2 distance between every pair of functions.
 
         >>> x = numpy.linspace(0, 1, 1001)
-        >>> fd = FDataGrid([numpy.ones(len(x)), x], x)
-        >>> fd2 =  FDataGrid([numpy.zeros(len(x)), x/2 + 0.5], x)
-        >>> metric(fd, fd2).round(2)
-        array([[ 1.  ,  0.29],
-               [ 0.58,  0.29]])
+        >>> fd = FDataGrid([numpy.ones(len(x))], x)
+        >>> fd2 =  FDataGrid([numpy.zeros(len(x))], x)
+        >>> lp_distance(fd, fd2).round(2)
+        1.0
 
 
         If the functional data are defined over a different set of points of
@@ -112,24 +245,18 @@ def metric(fdatagrid, fdatagrid2, norm=norm_lp, **kwargs):
 
         >>> x = numpy.linspace(0, 2, 1001)
         >>> fd2 =  FDataGrid([numpy.zeros(len(x)), x/2 + 0.5], x)
-        >>> metric(fd, fd2)
+        >>> lp_distance(fd, fd2)
         Traceback (most recent call last):
             ....
-        ValueError: Sample points for both objects must be equal
+        ValueError: Domain ranges for both objects must be equal
 
     """
     # Checks
-    if not numpy.array_equal(fdatagrid.sample_points,
-                             fdatagrid2.sample_points):
-        raise ValueError("Sample points for both objects must be equal")
-        # Creates an empty matrix with the desired size to store the results.
-    matrix = numpy.empty([fdatagrid.nsamples, fdatagrid2.nsamples])
-    # Iterates over the different samples of both objects.
-    for i in range(fdatagrid.nsamples):
-        for j in range(fdatagrid2.nsamples):
-            matrix[i, j] = norm(fdatagrid[i] - fdatagrid2[j], **kwargs)
-    # Computes the metric between x and y as norm(x -y).
-    return matrix
+
+    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points)
+
+    return norm_lp(fdata1 - fdata2, p=p)
+
 
 
 
@@ -158,10 +285,7 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None):
         eval_points (array_like, optional): Array with points of evaluation.
 
     Returns:
-        :obj:`numpy.darray`: Matrix with as many rows as samples in the first
-        object and as many columns as samples in the second one. Each
-        element (i, j) of the matrix is the distance between the ith sample
-        of the first object and the jth sample of the second one.
+        Fisher rao distance.
 
     Raises:
         ValueError: If the objects are not unidimensional.
@@ -172,31 +296,23 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None):
             Metric* (pp. 5-7). arXiv:1103.3817v2.
 
     """
-    if (fdata1.ndim_image != 1 or fdata1.ndim_domain != 1 or
-        fdata2.ndim_image != 1 or fdata2.ndim_domain != 1):
-        raise ValueError("Objects should be unidimensional")
 
+    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points)
 
-    if not isinstance(fdata1, FDataGrid):
-        fdata1 = fdata1.to_grid(eval_points=eval_points)
-
-    if not isinstance(fdata2, FDataGrid):
-        fdata2 = fdata2.to_grid(eval_points=eval_points)
-
-    if eval_points is None:
-        eval_points = fdata1.sample_points[0]
-
-    eval_points_normalized = _normalize_scale(eval_points)
+    # Both should have the same sample points
+    eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
-    fdata1 = fdata1.copy(sample_points=_normalize_scale(fdata1.sample_points[0]))
-    fdata1_srsf = to_srsf(fdata1, eval_points=eval_points_normalized)
+    fdata1 = fdata1.copy(sample_points=eval_points_normalized,
+                         domain_range=(0,1))
+    fdata2 = fdata2.copy(sample_points=eval_points_normalized,
+                         domain_range=(0,1))
 
-    fdata2 = fdata2.copy(sample_points=_normalize_scale(fdata2.sample_points[0]))
-    fdata2_srsf = to_srsf(fdata2, eval_points=eval_points_normalized)
+    fdata1_srsf = to_srsf(fdata1)
+    fdata2_srsf = to_srsf(fdata2)
 
     # Return the L2 distance of the SRSF
-    return metric(fdata1_srsf, fdata2_srsf, norm=norm_lp)
+    return lp_distance(fdata1_srsf, fdata2_srsf, p=2)
 
 def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
     """Compute the amplitude distance between two functional objects.
@@ -230,16 +346,13 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
     Args:
         fdata1 (FData): First FData object.
         fdata2 (FData): Second FData object.
-        lambda (float, optional): Penalty term to restric the elasticity.
+        lam (float, optional): Penalty term to restric the elasticity.
         eval_points (array_like, optional): Array with points of evaluation.
         **kwargs (dict): Name arguments to be passed to
             :func:`elastic_registration_warping`.
 
     Returns:
-        :obj:`numpy.darray`: Matrix with as many rows as samples in the first
-        object and as many columns as samples in the second one. Each
-        element (i, j) of the matrix is the distance between the ith sample
-        of the first object and the jth sample of the second one.
+        float: Elastic distance.
 
     Raises:
         ValueError: If the objects are not unidimensional.
@@ -250,79 +363,44 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
             (pp. 107-109). Springer.
     """
 
-    if (fdata1.ndim_image != 1 or fdata1.ndim_domain != 1 or
-        fdata2.ndim_image != 1 or fdata2.ndim_domain != 1):
-        raise ValueError("Objects should be unidimensional")
+    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points)
 
-    if not isinstance(fdata1, FDataGrid):
-        fdata1 = fdata1.to_grid(eval_points=eval_points)
+    # Both should have the same sample points
+    eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
 
-    if not isinstance(fdata2, FDataGrid):
-        fdata2 = fdata2.to_grid(eval_points=eval_points)
-
-    if eval_points is None:
-        eval_points = fdata1.sample_points[0]
-
-    # For optimization, fdata1 will be the object with more samples
-    if fdata1.nsamples < fdata2.nsamples:
-        fdata_aux = fdata1
-        fdata1 = fdata2
-        fdata2 = fdata_aux
-        transpose = True
-    else:
-        transpose = False
-
-    matrix = numpy.empty((fdata1.nsamples, fdata2.nsamples))
-
-    eval_points_normalized = _normalize_scale(eval_points)
-
-    # Normalization of scale to (0,1)
-    fdata1 = fdata1.copy(sample_points=_normalize_scale(fdata1.sample_points[0]),
+    # Calculate the corresponding srsf and normalize to (0,1)
+    fdata1 = fdata1.copy(sample_points=eval_points_normalized,
                          domain_range=(0,1))
-    fdata1_srsf = to_srsf(fdata1, eval_points=eval_points_normalized)
-    fdata2 = fdata2.copy(sample_points=_normalize_scale(fdata2.sample_points[0]),
+    fdata2 = fdata2.copy(sample_points=eval_points_normalized,
                          domain_range=(0,1))
-    fdata2_srsf = to_srsf(fdata2, eval_points=eval_points_normalized)
 
-    # Iterate over the smallest FData
-    for j in range(fdata2.nsamples):
+    fdata1_srsf = to_srsf(fdata1)
+    fdata2_srsf = to_srsf(fdata2)
 
-        fdataj = fdata2[j]
-        fdataj_srsf = fdata2_srsf[j]
+    warping = elastic_registration_warping(fdata1,
+                                             template=fdata2,
+                                             lam=lam,
+                                             eval_points=eval_points_normalized,
+                                             fdatagrid_srsf=fdata1_srsf,
+                                             template_srsf=fdata2_srsf,
+                                             **kwargs)
 
-        warping_j = elastic_registration_warping(fdata1,
-                                                 template=fdataj,
-                                                 lam=lam,
-                                                 eval_points=eval_points_normalized,
-                                                 fdatagrid_srsf=fdata1_srsf,
-                                                 template_srsf=fdataj_srsf,
-                                                 **kwargs)
-        f_register_j  = fdata1.compose(warping_j)
-        f_register_j_srsf = to_srsf(f_register_j, eval_points=eval_points_normalized)
+    fdata1_reg = fdata1.compose(warping)
 
-        # Distance without penalty term (Fisher rao distance between registered)
-        matrix[:, j] = metric(fdataj_srsf, f_register_j_srsf)[0]
+    distance = lp_distance(to_srsf(fdata1_reg), fdata2_srsf)
 
-        # Penalisation term
-        if lam != 0.0:
-            numpy.square(matrix[:, j], out=matrix[:, j])
+    if lam != 0.0:
+        # L2 norm || sqrt(Dh) - 1 ||^2
+        penalty = warping(eval_points_normalized, derivative=1,
+                          keepdims=False)[0]
+        penalty = numpy.sqrt(penalty, out=penalty)
+        penalty -= 1
+        penalty = numpy.square(penalty, out=penalty)
+        penalty = scipy.integrate.simps(penalty, x=eval_points_normalized)
 
-            # L2 norm || sqrt(Dh) - 1 ||^2
-            warps_values = warping_j(eval_points_normalized, derivative=1)
-            warps_values = numpy.sqrt(warps_values)
-            warps_values -= 1
-            warps_values = numpy.square(warps_values)
+        distance = numpy.sqrt(distance**2 + lam*penalty)
 
-
-            matrix[:, j] += lam*scipy.integrate.simps(warps_values,
-                                                  x=eval_points_normalized, axis=1)
-
-            numpy.sqrt(matrix[:, j], out=matrix[:, j])
-
-    if transpose:
-        matrix = matrix.T
-
-    return matrix
+    return distance
 
 def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
     """Compute the amplitude distance btween two functional objects.
@@ -351,10 +429,7 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
             :func:`elastic_registration_warping`.
 
     Returns:
-        :obj:`numpy.darray`: Matrix with as many rows as samples in the first
-        object and as many columns as samples in the second one. Each
-        element (i, j) of the matrix is the distance between the ith sample
-        of the first object and the jth sample of the second one.
+        float: Phase distance between the objects.
 
     Raises:
         ValueError: If the objects are not unidimensional.
@@ -367,64 +442,30 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
 
     """
 
-    if (fdata1.ndim_image != 1 or fdata1.ndim_domain != 1 or
-        fdata2.ndim_image != 1 or fdata2.ndim_domain != 1):
-        raise ValueError("Objects should be unidimensional")
+    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points)
 
-    if not isinstance(fdata1, FDataGrid):
-        fdata1 = fdata1.to_grid(eval_points=eval_points)
+    # Rescale in (0,1)
+    eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
 
-    if not isinstance(fdata2, FDataGrid):
-        fdata2 = fdata2.to_grid(eval_points=eval_points)
+    # Calculate the corresponding srsf and normalize to (0,1)
+    fdata1 = fdata1.copy(sample_points=eval_points_normalized,
+                         domain_range=(0,1))
+    fdata2 = fdata2.copy(sample_points=eval_points_normalized,
+                         domain_range=(0,1))
 
-    if eval_points is None:
-        eval_points = fdata1.sample_points[0]
+    warping = elastic_registration_warping(fdata1, template=fdata2,
+                                             lam=lam,
+                                             eval_points=eval_points_normalized,
+                                             **kwargs)
 
-    # For optimization, fdata1 will be the object with more samples
-    if fdata1.nsamples < fdata2.nsamples:
-        fdata_aux = fdata1
-        fdata1 = fdata2
-        fdata2 = fdata_aux
-        transpose = True
-    else:
-        transpose = False
+    derivative_warping = warping(eval_points_normalized, keepdims=False,
+                                 derivative=1)[0]
 
-    matrix = numpy.empty((fdata1.nsamples, fdata2.nsamples))
+    derivative_warping = numpy.sqrt(derivative_warping, out=derivative_warping)
 
-    eval_points_normalized = _normalize_scale(eval_points)
+    d = scipy.integrate.simps(derivative_warping, x=eval_points_normalized)
 
-    fdata1 = fdata1.copy(sample_points=_normalize_scale(fdata1.sample_points[0]))
-    fdata1_srsf = to_srsf(fdata1, eval_points=eval_points_normalized)
-
-    fdata2 = fdata2.copy(sample_points=_normalize_scale(fdata2.sample_points[0]))
-    fdata2_srsf = to_srsf(fdata2, eval_points=eval_points_normalized)
-
-    # Iterate over the smallest FData
-    for j in range(fdata2.nsamples):
-
-        fdataj = fdata2[j]
-        warping_j = elastic_registration_warping(fdata1,
-                                                 template=fdataj,
-                                                 lam=lam,
-                                                 eval_points=eval_points_normalized,
-                                                 fdatagrid_srsf=fdata1_srsf,
-                                                 template_srsf=fdata2_srsf[j])
-
-        derivative_warping_j = warping_j(eval_points_normalized, keepdims=False,
-                                         derivative=1)
-
-        d = scipy.integrate.simps(numpy.sqrt(derivative_warping_j),
-                                  x=eval_points_normalized, axis=1)
-
-        d[d > 1] = 1
-
-        matrix[:,j] = numpy.arccos(d)
-
-    # Undo the tranposition due to the swap of fdatas
-    if transpose:
-        matrix = matrix.T
-
-    return matrix
+    return numpy.arccos(d)
 
 
 def warping_distance(warping1, warping2, *, eval_points=None):
@@ -446,15 +487,12 @@ def warping_distance(warping1, warping2, *, eval_points=None):
     to change the domain.
 
     Args:
-        fdata1 (FData): First FData object.
-        fdata2 (FDataGrid): Second FData object.
+        fdata1 (:obj:`FData`): First warping.
+        fdata2 (:obj:`FData`): Second warping.
         eval_points (array_like, optional): Array with points of evaluation.
 
     Returns:
-        :obj:`numpy.darray`: Matrix with as many rows as samples in the first
-        object and as many columns as samples in the second one. Each
-        element (i, j) of the matrix is the distance between the ith sample
-        of the first object and the jth sample of the second one.
+        float: Distance between warpings:
 
     Raises:
         ValueError: If the objects are not unidimensional.
@@ -465,44 +503,22 @@ def warping_distance(warping1, warping2, *, eval_points=None):
             (pp. 113-117). Springer.
 
     """
-    if (warping1.ndim_image != 1 or warping1.ndim_domain != 1 or
-        warping2.ndim_image != 1 or warping2.ndim_domain != 1):
-        raise ValueError("Objects should be unidimensional")
 
-
-    if not isinstance(warping1, FDataGrid):
-        warping1 = warping1.to_grid(eval_points=eval_points)
-
-    if not isinstance(warping2, FDataGrid):
-        warping2 = warping2.to_grid(eval_points=eval_points)
-
-    if eval_points is None:
-        eval_points = warping1.sample_points[0]
-
-    eval_points_normalized = _normalize_scale(eval_points)
-
-    n = warping1.nsamples
-    m = warping2.nsamples
-    matrix = numpy.empty((n, m))
+    warping1, warping2 = _cast_to_grid(warping1, warping2,
+                                       eval_points=eval_points)
 
     # Normalization of warping to (0,1)x(0,1)
     warping1 = normalize_warping(warping1, (0,1))
     warping2 = normalize_warping(warping2, (0,1))
 
-    warping1 = warping1.derivative()(eval_points_normalized, keepdims=False)
-    warping2 = warping2.derivative()(eval_points_normalized, keepdims=False)
+    warping1_data = warping1.derivative().data_matrix[0, ..., 0]
+    warping2_data = warping2.derivative().data_matrix[0, ..., 0]
 
     # In this case the srsf is the sqrt(gamma')
-    srsf_warping1 = numpy.sqrt(warping1)
-    srsf_warping2 = numpy.sqrt(warping2).T
+    srsf_warping1 = numpy.sqrt(warping1_data, out=warping1_data)
+    srsf_warping2 = numpy.sqrt(warping2_data, out=warping2_data)
 
+    product = numpy.multiply(srsf_warping1, srsf_warping2, out=srsf_warping1)
+    d = scipy.integrate.simps(product, x=warping1.sample_points[0])
 
-    for i in range(n):
-
-        product_i = numpy.multiply(srsf_warping1[i][:,numpy.newaxis], srsf_warping2)
-        d = scipy.integrate.simps(product_i, x=eval_points_normalized, axis=0)
-
-        d[d>1]=1
-        matrix[i] = numpy.arccos(d)
-
-    return matrix
+    return numpy.arccos(d)

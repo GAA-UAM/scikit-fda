@@ -23,7 +23,7 @@ from fda.basis import FDataBasis
 from fda.grid import FDataGrid
 from fda.math import mean, var, gmean, log, log2, log10, exp, sqrt, \
     cumsum, inner_product, cov
-from fda.metrics import metric, norm_lp
+from fda.metrics import lp_distance, norm_lp
 import os as _os
 
 from . import datasets, covariances, registration, extrapolation

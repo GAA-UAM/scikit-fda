@@ -507,7 +507,8 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
 
 
 def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
-                 initial=None, eval_points=None, fdatagrid_srsf=None, **kwargs):
+                 initial=None, eval_points=None, fdatagrid_srsf=None,
+                 grid_dim=7, **kwargs):
     """Compute the karcher mean under the elastic metric.
 
     Calculates the karcher mean of a set of functional samples in the amplitude
@@ -543,6 +544,8 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
         eval_points (array_like): Points of discretization of the fdatagrid.
         fdatagrid_srsf (:class:`FDataGrid`): SRSF if the fdatagrid, if it is
             passed it is not computed in the algorithm.
+        grid_dim (int, optional): Dimension of the grid used in the alignment
+            algorithm. Defaults 7.
         ** kwargs : Named options to be pased to :func:`warping_mean`.
 
     Return:
@@ -604,7 +607,7 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
     for _ in range(iter):
 
         gammas = _elastic_alignment_array(
-            mu, srsf, eval_points_normalized, lam)
+            mu, srsf, eval_points_normalized, lam, grid_dim)
         gammas = FDataGrid(gammas, sample_points=eval_points_normalized,
                            interpolator=interpolator)
 

@@ -196,7 +196,7 @@ def norm_lp(fdatagrid, p=2):
     """
     # Checks that the lp normed is well defined
     if p < 1:
-        raise ValueError(f"p must be equal or greater than 1 (p={p}).")
+        raise ValueError(f"p must be equal or greater than 1.")
 
     if fdatagrid.ndim_image > 1:
         raise ValueError("Not implemented for image with "

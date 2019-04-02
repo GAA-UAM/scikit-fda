@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 
 from fda.grid import FDataGrid, GridSplineInterpolator
 from fda.datasets import make_multimodal_samples
-from fda.metrics import metric
 from fda.registration import normalize_warping, invert_warping
 
 

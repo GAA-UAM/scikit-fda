@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 from fda.grid import FDataGrid
-from fda.magnitude_shape_plot import _directional_outlyingness, magnitude_shape_plot
+from fda.magnitude_shape_plot import directional_outlyingness, magnitude_shape_plot
 from fda.datasets import fetch_weather
 
 
@@ -16,7 +16,7 @@ class TestMagnitudeShapePlot(unittest.TestCase):
                        [[3, 0.2], [4, 0.3], [5, 0.4], [6, 0.5]]]
         sample_points = [2, 4, 6, 8]
         fd = FDataGrid(data_matrix, sample_points)
-        mean_dir_outl, variation_dir_outl = _directional_outlyingness(fd)
+        mean_dir_outl, variation_dir_outl = directional_outlyingness(fd)
         np.testing.assert_allclose(mean_dir_outl,
                                    np.array([[0., 0.], [0.19683896, 0.03439261], [0.49937617, -0.02496881]]),
                                    rtol=1e-06)

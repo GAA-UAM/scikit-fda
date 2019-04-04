@@ -404,7 +404,7 @@ class FData(ABC):
                                               derivative=derivative)
 
         else:
-            # Partition of eval points
+            # Partition of eval points
             if aligned_evaluation:
 
                 index_ext = index_matrix
@@ -599,6 +599,11 @@ class FData(ABC):
             fig (figure object): figure object containing the axes that
                 implement set_xlabel and set_ylabel, and set_zlabel in case
                 of a 3d projection.
+            ax (list of axes): axes objects that implement set_xlabel and
+                set_ylabel, and set_zlabel in case of a 3d projection; used if
+                fig is None.
+            patches (list of mpatches.Patch); objects used to generate each
+                entry in the legend.
 
         """
         if fig is not None:
@@ -731,6 +736,17 @@ class FData(ABC):
                 interval; in the case of surfaces a list with 2 tuples with
                 the ranges for each dimension. Default uses the domain range
                 of the functional object.
+            sample_labels (list of int): contains integers from [0 to number of
+                labels) indicating to which group each sample belongs to. Then,
+                the samples with the same label are plotted in the same color.
+                If None, the default value, each sample is plotted in the color
+                assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+            label_colors (list of colors): colors in which groups are represented,
+                there must be one for each group. If None, each group is shown
+                with distict colors in the "Greys" colormap.
+            label_names (list of str): name of each of the groups which appear
+                in a legend, there must be one for each one. Defaults to None
+                and the legend is not shown.
             **kwargs: if ndim_domain is 1, keyword arguments to be passed to the
                 matplotlib.pyplot.plot function; if ndim_domain is 2, keyword
                 arguments to be passed to the matplotlib.pyplot.plot_surface

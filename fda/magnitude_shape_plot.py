@@ -19,42 +19,52 @@ __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
 
-def _directional_outlyingness(fdatagrid,  depth_method = modified_band_depth, dim_weights = None, pointwise_weights = None):
+def directional_outlyingness(fdatagrid,  depth_method = modified_band_depth,
+                              dim_weights = None, pointwise_weights = None):
     r"""Computes the directional outlyingness of the functional data.
 
-    Calculates both the mean and the variation of the  directional outlyingness of the samples in the data set.
+    Calculates both the mean and the variation of the  directional outlyingness
+    of the samples in the data set.
 
-    The first one describes the relative position (including both distance and direction) of the samples on average to
-    the center curve and its norm can be regarded as the magnitude outlyingness.
+    The first one describes the relative position (including both distance and
+    direction) of the samples on average to the center curve and its norm can be
+    regarded as the magnitude outlyingness.
 
-    The second one measures the change of the directional outlyingness in terms of both norm and direction across the whole design interval and can be
+    The second one measures the change of the directional outlyingness in terms
+    of both norm and direction across the whole design interval and can be
     regarded as the shape outlyingness.
 
     Firstly, the directional outlyingness is calculated as follows:
 
     .. math::
-        \mathbf{O}\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right) = \left\{\frac{1}{d\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right)} - 1\right\} \cdot \mathbf{v}(t)
+        \mathbf{O}\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right) =
+        \left\{\frac{1}{d\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right)} - 1\right\} \cdot \mathbf{v}(t)
 
-    where :math:`\mathbf{X}` is a stochastic process with probability distribution :math:`F`, :math:`d` a depth function and
-    :math:`\mathbf{v}(t) = \left\{\mathbf{X}(t) - \mathbf{Z}(t)\right\} / \lVert \mathbf{X}(t) - \mathbf{Z}(t) \rVert`
-    is the spatial sign of :math:`\left\{\mathbf{X}(t) - \mathbf{Z}(t)\right\}`, :math:`\mathbf{Z}(t)` denotes the median and ∥ · ∥ denotes the :math:`L_2` norm.
+    where :math:`\mathbf{X}` is a stochastic process with probability distribution
+    :math:`F`, :math:`d` a depth function and :math:`\mathbf{v}(t) = \left\{\mathbf{X}(t) -
+    \mathbf{Z}(t)\right\} / \lVert \mathbf{X}(t) - \mathbf{Z}(t) \rVert`
+    is the spatial sign of :math:`\left\{\mathbf{X}(t) - \mathbf{Z}(t)\right\}`,
+    :math:`\mathbf{Z}(t)` denotes the median and ∥ · ∥ denotes the :math:`L_2` norm.
 
     From the above formula, we define the mean directional outlyingness as:
 
     .. math::
-        \mathbf{MO}\left(\mathbf{X} , F_{\mathbf{X}}\right) = \int_I  \mathbf{O}\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right) \cdot w(t) dt ;
+        \mathbf{MO}\left(\mathbf{X} , F_{\mathbf{X}}\right) = \int_I
+        \mathbf{O}\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right) \cdot w(t) dt ;
 
     and the variation of the directional outlyingness as:
 
     .. math::
-        VO\left(\mathbf{X} , F_{\mathbf{X}}\right) = \int_I  \lVert\mathbf{O}\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right)-\mathbf{MO}\left(\mathbf{X} , F_{\mathbf{X}}\right)  \rVert \cdot w(t) dt
+        VO\left(\mathbf{X} , F_{\mathbf{X}}\right) = \int_I  \lVert\mathbf{O}\left(\mathbf{X}(t) ,
+        F_{\mathbf{X}(t)}\right)-\mathbf{MO}\left(\mathbf{X} , F_{\mathbf{X}}\right)  \rVert^2 \cdot w(t) dt
 
     where :math:`w(t)` a weight function defined on the domain of :math:`\mathbf{X}`, :math:`I`.
 
     Then, the total functional outlyingness can be computed using these values:
 
     .. math::
-        FO\left(\mathbf{X} , F_{\mathbf{X}}\right) = \lVert \mathbf{MO}\left(\mathbf{X} , F_{\mathbf{X}}\right)\rVert^2 +  VO\left(\mathbf{X} , F_{\mathbf{X}}\right) .
+        FO\left(\mathbf{X} , F_{\mathbf{X}}\right) = \lVert \mathbf{MO}\left(\mathbf{X} ,
+        F_{\mathbf{X}}\right)\rVert^2 +  VO\left(\mathbf{X} , F_{\mathbf{X}}\right) .
 
     Args:
         fdatagrid (FDataGrid): Object containing the samples to be ordered according to
@@ -71,11 +81,11 @@ def _directional_outlyingness(fdatagrid,  depth_method = modified_band_depth, di
     Returns:
         (tuple): tuple containing:
 
-            mean_dir_outl (array_like): List containing the values of the magnitude
-            outlyingness for each of the samples.
+            mean_dir_outl (numpy.array((fdatagrid.nsample, 2))): List containing
+            the values of the magnitude outlyingness for each of the samples.
 
-            variation_dir_outl (array_like): List containing the values of the shape
-            outlyingness for each of the samples.
+            variation_dir_outl (numpy.array((fdatagrid.nsample,))): List
+            containing the values of the shape outlyingness for each of the samples.
 
     Example:
 
@@ -83,7 +93,7 @@ def _directional_outlyingness(fdatagrid,  depth_method = modified_band_depth, di
         ...                [-1, -1, -0.5, 1, 1, 0.5], [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> _directional_outlyingness(fd)
+        >>> directional_outlyingness(fd)
         (array([[ 1.        ],
                [ 0.        ],
                [-0.46666667],
@@ -150,7 +160,7 @@ def magnitude_shape_plot(fdatagrid, ax=None, depth_method=modified_band_depth, d
     r"""Implementation of the magnitude-shape plot
 
     This plot which is based on the calculation of the
-    :func:`directional outlyingness <fda.magnitude_shape_plot._directional_outlyingness>`
+    :func:`directional outlyingness <fda.magnitude_shape_plot.directional_outlyingness>`
     of each of the samples and serves as a visualization tool for the centrality
     of curves. Furthermore, an outlier detection procedure is included.
 
@@ -235,7 +245,7 @@ def magnitude_shape_plot(fdatagrid, ax=None, depth_method=modified_band_depth, d
         raise NotImplementedError("Only support 1 dimension on the image.")
 
     # The depths of the samples are calculated giving them an ordering.
-    mean_dir_outl, variation_dir_outl = _directional_outlyingness(fdatagrid, depth_method, dim_weights, pointwise_weights)
+    mean_dir_outl, variation_dir_outl = directional_outlyingness(fdatagrid, depth_method, dim_weights, pointwise_weights)
     points = np.array(list(zip(mean_dir_outl, variation_dir_outl))).astype(float)
 
     #The square mahalanobis distances of the samples are calulated using MCD.

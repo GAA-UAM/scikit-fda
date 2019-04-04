@@ -12,7 +12,6 @@ It includes the modules:
     - magnitude-shape plot: visualization tool.
     - fdata_boxplot: informative exploratory tool for visualizing functional data.
 and the following classes:
-    and the following classes:
     - FDataGrid: Discrete representation of functional data.
     - FDataBasis: Basis representation for functional data.
     - Boxplot: Implements the functional boxplot for FDataGrid with domain dimension 1.

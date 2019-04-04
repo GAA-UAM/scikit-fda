@@ -9,7 +9,7 @@ although it remains for internal use since the next function already returns the
 .. autosummary::
    :toctree: autosummary
 
-   fda.magnitude_shape_plot._directional_outlyingness
+   fda.magnitude_shape_plot.directional_outlyingness
 
 
 Then, an outlier detection method is implemented and the plot is shown.

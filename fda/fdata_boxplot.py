@@ -316,8 +316,7 @@ class Boxplot(FDataBoxplot):
                 if fig and ax are None.
 
          Returns:
-            fig (figure object): figure object in which the graphs are plotted
-            in case ax is None.
+            fig (figure object): figure object in which the graphs are plotted.
             ax (axes object): axes in which the graphs are plotted.
 
         """
@@ -605,7 +604,7 @@ class SurfaceBoxplot(FDataBoxplot):
                  if fig and ax are None.
 
         Returns:
-             fig (figure object): figure object in which the graphs are plotted in case ax is None.
+             fig (figure object): figure object in which the graphs are plotted.
              ax (axes object): axes in which the graphs are plotted.
 
         """

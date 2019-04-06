@@ -13,7 +13,7 @@ Shows the use of the MS-Plot applied to the Canadian Weather dataset.
 from fda import datasets
 from fda.grid import FDataGrid
 from fda.depth_measures import fraiman_muniz_depth
-from fda.magnitude_shape_plot import magnitude_shape_plot
+from fda.magnitude_shape_plot import MagnitudeShapePlot
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -25,8 +25,10 @@ import numpy as np
 
 dataset = datasets.fetch_weather()
 fd = dataset["data"]
-fd_temperatures = FDataGrid(data_matrix=fd.data_matrix[:, :, 0], sample_points=fd.sample_points,
-                            dataset_label=fd.dataset_label, axes_labels=fd.axes_labels[0:2])
+fd_temperatures = FDataGrid(data_matrix=fd.data_matrix[:, :, 0],
+                            sample_points=fd.sample_points,
+                            dataset_label=fd.dataset_label,
+                            axes_labels=fd.axes_labels[0:2])
 ############################################################################################
 # The data is plotted to show the curves we are working with. They are divided according to the
 # target. In this case, it includes the different climates to which the weather stations belong to.
@@ -35,32 +37,38 @@ fd_temperatures = FDataGrid(data_matrix=fd.data_matrix[:, :, 0], sample_points=f
 colormap = plt.cm.get_cmap('seismic')
 label_names = dataset["target_names"]
 nlabels = len(label_names)
-label_colors = colormap( np.arange(nlabels) / (nlabels - 1))
+label_colors = colormap(np.arange(nlabels) / (nlabels - 1))
 
 plt.figure()
 fd_temperatures.plot(sample_labels=dataset["target"], label_colors=label_colors,
                      label_names=label_names)
 
 #############################################################################################
-# The MS-Plot is generated specifying the tones of the colors defined in the default colormap.
-# The function returns the points plotted and an array indicating which ones are outliers.
+# The MS-Plot is generated. In order to show the results, the
+# :func:`plot method <fda.magnitude_shape_plot.MagnitudeShapePlot.plot>` is used. Note that the
+# colors have been specified before to distinguish between outliers or not. In particular the tones
+# of the default colormap, (which is 'seismic' and can be customized), are assigned.
+
+msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures)
 
 color = 0.3
 outliercol = 0.7
 
 plt.figure()
-points, outliers = magnitude_shape_plot(fd_temperatures, color = color,
-                                        outliercol = outliercol)
+msplot.color = color
+msplot.outliercol = outliercol
+msplot.plot()
 
 ############################################################################################
 # To show the utility of the plot, the curves are plotted according to the distinction
 # made by the MS-Plot (outliers or not) with the same colors.
 
-colormap = plt.cm.get_cmap('seismic')
-
+print(msplot.colormap([color, outliercol]))
+print(msplot.outliers)
 plt.figure()
-fd_temperatures.plot(sample_labels=outliers.astype(int),
-                     label_colors=colormap([color, outliercol]))
+fd_temperatures.plot(sample_labels=msplot.outliers,
+                     label_colors=msplot.colormap([color, outliercol]),
+                     label_names = ['nonoutliers', 'outliers'])
 
 #######################################################################################
 # We can observe that most of the curves  pointed as outliers belong either to the Pacific or
@@ -75,9 +83,14 @@ fd_temperatures.plot(sample_labels=outliers.astype(int),
 # Now we use the :func:`Fraiman and Muniz depth measure <fda.depth_measures.fraiman_muniz_depth>`
 # in the MS-Plot.
 
+msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures,
+                            depth_method = fraiman_muniz_depth)
+
 plt.figure()
-points, outliers = magnitude_shape_plot(fd_temperatures, depth_method = fraiman_muniz_depth,
-                                        color = color, outliercol = outliercol)
+msplot.color = color
+msplot.outliercol = outliercol
+msplot.plot()
+
 #######################################################################################
 # We can observe that none of the samples are pointed as outliers. Nevertheless, if we group them
 # in three groups according to their position in the MS-Plot, the result is the expected one.
@@ -85,18 +98,21 @@ points, outliers = magnitude_shape_plot(fd_temperatures, depth_method = fraiman_
 # to the Arctic climate, which has lower temperatures, and those on top (larger deviation in the
 # directional outlyingness) to the Pacific one, which has smoother curves.
 
-group1 = np.where(points[:, 0] < -0.6)
-group2 = np.where(points[:, 1] > 0.12)
+group1 = np.where(msplot.points[:, 0] < -0.6)
+group2 = np.where(msplot.points[:, 1] > 0.12)
 
-colors = np.copy(outliers)
+colors = np.copy(msplot.outliers).astype(float)
 colors[:] = color
 colors[group1] = outliercol
 colors[group2] = 0.9
 
 plt.figure()
-plt.scatter(points[:, 0], points[:, 1], c=colormap(colors))
+plt.scatter(msplot.points[:, 0], msplot.points[:, 1], c=colormap(colors))
+plt.title("MS-Plot")
+plt.xlabel("magnitude outlyingness")
+plt.ylabel("shape outlyingness")
 
-labels = np.copy(outliers).astype(int)
+labels = np.copy(msplot.outliers)
 labels[group1] = 1
 labels[group2] = 2
 

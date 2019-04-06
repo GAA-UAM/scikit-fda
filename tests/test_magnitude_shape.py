@@ -2,7 +2,8 @@ import unittest
 
 import numpy as np
 from fda.grid import FDataGrid
-from fda.magnitude_shape_plot import directional_outlyingness, magnitude_shape_plot
+from fda.magnitude_shape_plot import directional_outlyingness, \
+    MagnitudeShapePlot
 from fda.datasets import fetch_weather
 
 
@@ -16,19 +17,41 @@ class TestMagnitudeShapePlot(unittest.TestCase):
                        [[3, 0.2], [4, 0.3], [5, 0.4], [6, 0.5]]]
         sample_points = [2, 4, 6, 8]
         fd = FDataGrid(data_matrix, sample_points)
-        mean_dir_outl, variation_dir_outl = directional_outlyingness(fd)
+        dir_outlyingness, mean_dir_outl, variation_dir_outl = directional_outlyingness(
+            fd)
+        np.testing.assert_allclose(dir_outlyingness,
+                                   np.array([[[0., 0.],
+                                              [0., 0.],
+                                              [0., 0.],
+                                              [0., 0.]],
+
+                                             [[0.19611614, 0.03922323],
+                                              [0.19611614, 0.03922323],
+                                              [0.19611614, 0.03922323],
+                                              [0.19900744, 0.01990074]],
+
+                                             [[0.49937617, -0.02496881],
+                                              [0.49937617, -0.02496881],
+                                              [0.49937617, -0.02496881],
+                                              [0.49937617, -0.02496881]]]),
+                                   rtol=1e-06)
         np.testing.assert_allclose(mean_dir_outl,
-                                   np.array([[0., 0.], [0.19683896, 0.03439261], [0.49937617, -0.02496881]]),
+                                   np.array(
+                                       [[0., 0.], [0.19683896, 0.03439261],
+                                        [0.49937617, -0.02496881]]),
                                    rtol=1e-06)
         np.testing.assert_allclose(variation_dir_outl,
-                                   np.array([0.00000000e+00, 7.15721232e-05, 4.81482486e-35]))
+                                   np.array([0.00000000e+00, 7.15721232e-05,
+                                             4.81482486e-35]))
 
     def test_magnitude_shape_plot(self):
         fd = fetch_weather()["data"]
-        fd_temperatures = FDataGrid(data_matrix=fd.data_matrix[:, :, 0], sample_points=fd.sample_points,
-                                    dataset_label=fd.dataset_label, axes_labels=fd.axes_labels[0:2])
-        points, outliers = magnitude_shape_plot(fd_temperatures)
-        np.testing.assert_allclose(points,
+        fd_temperatures = FDataGrid(data_matrix=fd.data_matrix[:, :, 0],
+                                    sample_points=fd.sample_points,
+                                    dataset_label=fd.dataset_label,
+                                    axes_labels=fd.axes_labels[0:2])
+        msplot = MagnitudeShapePlot(fd_temperatures)
+        np.testing.assert_allclose(msplot.points,
                                    np.array([[0.29605473, 3.1973174],
                                              [1.42918812, 0.77167217],
                                              [0.95067136, 2.52426754],
@@ -64,10 +87,13 @@ class TestMagnitudeShapePlot(unittest.TestCase):
                                              [-5.87192676, 5.37450281],
                                              [-5.45783514, 5.42086578],
                                              [-16.38192599, 1.00378603]]))
-        np.testing.assert_array_equal(outliers,
-                                      np.array([0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 1., 0., 0.,
-                                                0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 0., 1., 0., 0., 0., 0., 0.,
-                                                1.]))
+        np.testing.assert_array_equal(msplot.outliers,
+                                      np.array(
+                                          [0., 0., 0., 1., 0., 0., 0., 0., 0.,
+                                           0., 0., 1., 1., 1., 1., 0., 0.,
+                                           0., 0., 0., 0., 0., 0., 0., 1., 1.,
+                                           1., 0., 1., 0., 0., 0., 0., 0.,
+                                           1.]))
 
 
 if __name__ == '__main__':

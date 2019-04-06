@@ -17,6 +17,8 @@ and the following classes:
     - Boxplot: Implements the functional boxplot for FDataGrid with domain dimension 1.
     - SurfaceBoxplot: Implements the functional boxplot for FDataGrid with
     domain dimension 2.
+    - MagnitudeShapePlot: Implements the magnitude shape plot for FDataGrid
+    with domain dimension 1.
 
 """
 import errno as _errno

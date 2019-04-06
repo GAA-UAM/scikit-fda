@@ -63,8 +63,6 @@ msplot.plot()
 # To show the utility of the plot, the curves are plotted according to the distinction
 # made by the MS-Plot (outliers or not) with the same colors.
 
-print(msplot.colormap([color, outliercol]))
-print(msplot.outliers)
 plt.figure()
 fd_temperatures.plot(sample_labels=msplot.outliers,
                      label_colors=msplot.colormap([color, outliercol]),

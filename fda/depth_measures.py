@@ -283,7 +283,7 @@ def fraiman_muniz_depth(fdatagrid, pointwise=False):
         depth (numpy.darray): Array containing the FM depth of the samples.
 
     Returns:
-        depth_pointwise (numpy.darray, optional): Array containing the modified band depth of
+        depth_pointwise (numpy.darray, optional): Array containing the FM depth of
         the samples at each point of discretisation. Only returned if pointwise equals to True.
 
     Examples:

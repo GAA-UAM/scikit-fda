@@ -11,6 +11,7 @@ from sklearn.covariance import MinCovDet
 from scipy.stats import f, variation
 from numpy import linalg as la
 from io import BytesIO
+import scipy
 
 from .grid import FDataGrid
 from fda.depth_measures import *
@@ -24,15 +25,17 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
     r"""Computes the directional outlyingness of the functional data.
 
     Furthermore, it calculates both the mean and the variation of the
-    directional outlyingness of the samples in the data set.
+    directional outlyingness of the samples in the data set, which are also
+    returned.
 
-    The first one describes the relative position (including both distance and
-    direction) of the samples on average to the center curve and its norm can be
-    regarded as the magnitude outlyingness.
+    The first one, the mean directional outlyingness, describes the relative
+    position (including both distance and direction) of the samples on average
+    to the center curve; its norm can be regarded as the magnitude outlyingness.
 
-    The second one measures the change of the directional outlyingness in terms
-    of both norm and direction across the whole design interval and can be
-    regarded as the shape outlyingness.
+    The second one, the variation of the directional outlyingness, measures
+    the change of the directional outlyingness in terms of both norm and
+    direction across the whole design interval and can be regarded as the
+    shape outlyingness.
 
     Firstly, the directional outlyingness is calculated as follows:
 
@@ -123,10 +126,10 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
                 [-0.2],
                 [-1. ],
                 [-1. ],
-                [-1. ]]]), array([[ 1.        ],
+                [-1. ]]]), array([[ 1.66666667],
                [ 0.        ],
-               [-0.46666667],
-               [-0.6       ]]), array([1.23259516e-32, 0.00000000e+00, 1.42222222e-01, 1.60000000e-01]))
+               [-0.73333333],
+               [-1.        ]]), array([0.74074074, 0.        , 0.36740741, 0.53333333]))
 
     """
 
@@ -180,7 +183,8 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
     pointwise_weights_1 = np.tile(pointwise_weights,
                                   (fdatagrid.ndim_image, 1)).T
     weighted_dir_outlyingness = dir_outlyingness * pointwise_weights_1
-    mean_dir_outl = weighted_dir_outlyingness.sum(axis=1)
+    mean_dir_outl = scipy.integrate.simps(weighted_dir_outlyingness,
+                                          fdatagrid.sample_points[0], axis = 1)
 
     # Calcuation variation directinal outlyingness
     mean_dir_outl_pointwise = np.repeat(mean_dir_outl, fdatagrid.ncol,
@@ -188,7 +192,8 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
     norm = np.square(
         la.norm(dir_outlyingness - mean_dir_outl_pointwise, axis=-1))
     weighted_norm = norm * pointwise_weights
-    variation_dir_outl = weighted_norm.sum(axis=1)
+    variation_dir_outl = scipy.integrate.simps(weighted_norm,
+                                          fdatagrid.sample_points[0], axis=1)
 
     return dir_outlyingness, mean_dir_outl, variation_dir_outl
 
@@ -310,10 +315,10 @@ class MagnitudeShapePlot:
             dim_weights=None,
             pointwise_weights=None,
             alpha=0.993,
-            points=array([[ 1.00000000e+00,  1.23259516e-32],
-                   [ 0.00000000e+00,  0.00000000e+00],
-                   [-4.66666667e-01,  1.42222222e-01],
-                   [-6.00000000e-01,  1.60000000e-01]]),
+            points=array([[ 1.66666667,  0.74074074],
+                   [ 0.        ,  0.        ],
+                   [-0.73333333,  0.36740741],
+                   [-1.        ,  0.53333333]]),
             outliers=array([0, 0, 0, 0]),
             colormap=seismic,
             color=0.2,

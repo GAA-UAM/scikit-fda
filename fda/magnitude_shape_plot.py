@@ -200,9 +200,9 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
 class MagnitudeShapePlot:
     r"""Implementation of the magnitude-shape plot
 
-    This plot which is based on the calculation of the
+    This plot, which is based on the calculation of the
     :func:`directional outlyingness <fda.magnitude_shape_plot.directional_outlyingness>`
-    of each of the samples and serves as a visualization tool for the centrality
+    of each of the samples, serves as a visualization tool for the centrality
     of curves. Furthermore, an outlier detection procedure is included.
 
     The norm of the mean of the directional outlyingness (:math:`\lVert\mathbf{MO}\rVert`)
@@ -212,32 +212,45 @@ class MagnitudeShapePlot:
     Considering :math:`\mathbf{Y} = \left(\mathbf{MO}^T, VO\right)^T`, the outlier detection method
     is implemented as described below.
 
-    First, the square robust Mahalanobis distance of :math:`\mathbf{Y}` is calculated with the minimum
-    covariance determinant (MCD) estimators for shape and location of the data:
-    :math:`RMD^2\left( \mathbf{Y}, \mathbf{\tilde{Y}}_J\right)`, where :math:`J` denotes the group
-    of :math:`h \left(h < fdatagrid.nsamples\right)` samples that minimizes the determinant and
-    :math:`\mathbf{\tilde{Y}}_J = h^{-1}\sum_{i\in{J}}\mathbf{Y}_i`.
+    First, the square robust Mahalanobis distance is calculated based on a
+    sample of size :math:`h \leq fdatagrid.nsamples`:
+
+    .. math::
+        {RMD}^2\left( \mathbf{Y}, \mathbf{\tilde{Y}}^*_J\right) = \left(
+        \mathbf{Y} - \mathbf{\tilde{Y}}^*_J\right)^T  {\mathbf{S}^*_J}^{-1}
+        \left( \mathbf{Y} - \mathbf{\tilde{Y}}^*_J\right)
+
+    where :math:`J` denotes the group of :math:`h` samples that minimizes the
+    determinant of the corresponding covariance matrix, :math:`\mathbf{\tilde{Y}}^*_J
+    = h^{-1}\sum_{i\in{J}}\mathbf{Y}_i` and :math:`\mathbf{S}^*_J
+    = h^{-1}\sum_{i\in{J}}\left( \mathbf{Y}_i - \mathbf{\tilde{Y}}^*_J\right)
+    \left( \mathbf{Y}_i - \mathbf{\tilde{Y}}^*_J\right)^T`. The
+    sub-sample of size h controls the robustness of the method.
 
     Then, the tail of this distance distribution is approximated as follows:
 
     .. math::
-        \frac{c\left(m − p\right)}{m\left(p + 1\right)}RMD^2\left( \mathbf{Y}\right)\sim F_{p+1, m-p}
+        \frac{c\left(m − p\right)}{m\left(p + 1\right)}RMD^2\left(
+        \mathbf{Y}, \mathbf{\tilde{Y}}^*_J\right)\sim F_{p+1, m-p}
 
-    where :math:`c` and :math:`m` are parameters determining the degrees of freedom of the :math:`F`-distribution
+    where :math:`p` is the dmension of the image, and :math:`c` and :math:`m`
+    are parameters determining the degrees of freedom of the :math:`F`-distribution
     and the scaling factor.
 
     .. math::
-        c = E \left[s_{jj}\right]
+        c = E \left[s^*_{jj}\right]
 
-    where :math:`s_{jj}` are the diagonal elements of MCD and
+    where :math:`s^*_{jj}` are the diagonal elements of MCD and
 
     .. math::
         m = \frac{2}{CV^2}
 
     where :math:`CV` is the estimated coefficient of variation of the diagonal elements of the  MCD shape estimator.
 
-    Finally, we choose a cutoff value, C , as the α quantile of :math:`F_{p+1, m-p}`. We set :math:`\alpha = 0.993`,
-    which is used in the classical boxplot for detecting outliers under a normal distribution.
+    Finally, we choose a cutoff value to determine the outliers, C ,
+    as the α quantile of :math:`F_{p+1, m-p}`. We set :math:`\alpha = 0.993`,
+    which is used in the classical boxplot for detecting outliers under a normal
+    distribution.
 
     Attributes:
         fdatagrid (FDataGrid): Object to be visualized.

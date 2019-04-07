@@ -55,7 +55,22 @@ def _coordinate_list(axes):
     return grid
 
 
+def _parse_chart(chart, fig, ax):
+    """
 
+    """
+    if chart is not None:
+        if fig is not None or ax is not None:
+            raise ValueError("fig, axes and chart parameters cannot "
+                             "be passed as arguments at the same time.")
+        if isinstance(chart, plt.Figure):
+            fig = chart
+        elif isinstance(chart, Axes):
+            ax = [chart]
+        else:
+            ax = chart
+
+    return fig, ax
 
 
 class FData(ABC):
@@ -523,7 +538,8 @@ class FData(ABC):
         """
         pass
 
-    def set_figure_and_axes(self, nrows, ncols):
+    def set_figure_and_axes(self, nrows, ncols, ndim_domain=None,
+                            ndim_image=None):
         """Set figure and its axes.
 
         Args:
@@ -533,6 +549,8 @@ class FData(ABC):
             ncols(int, optional): designates the number of columns of the figure
                 to plot the different dimensions of the image. nrows must be
                 also be customized in the same call.
+            ndim_domain (int, optional): Domain of the axis.
+            ndim_image (int, optional): Image of the axis.
 
         Returns:
             fig (figure object): figure object initialiazed.
@@ -540,18 +558,24 @@ class FData(ABC):
 
         """
 
-        if self.ndim_domain == 1:
+        if ndim_domain is None:
+            ndim_domain = self.ndim_domain
+
+        if ndim_image is None:
+            ndim_image = self.ndim_image
+
+        if ndim_domain == 1:
             projection = None
         else:
             projection = '3d'
 
         if ncols is None and nrows is None:
-            ncols = int(numpy.ceil(numpy.sqrt(self.ndim_image)))
-            nrows = int(numpy.ceil(self.ndim_image / ncols))
+            ncols = int(numpy.ceil(numpy.sqrt(ndim_image)))
+            nrows = int(numpy.ceil(ndim_image / ncols))
         elif ncols is None and nrows is not None:
-            nrows = int(numpy.ceil(self.ndim_image / nrows))
+            nrows = int(numpy.ceil(ndim_image / nrows))
         elif ncols is not None and nrows is None:
-            nrows = int(numpy.ceil(self.ndim_image / ncols))
+            nrows = int(numpy.ceil(ndim_image / ncols))
 
         fig = plt.gcf()
         axes = fig.get_axes()
@@ -572,20 +596,20 @@ class FData(ABC):
 
             # If compatible uses the same figure
             if (same_projection and geometry == (nrows, ncols) and
-                len(axes) == self.ndim_image):
+                len(axes) == ndim_image):
                  return fig, axes
 
             else: # Create new figure if it is not compatible
                 fig = plt.figure()
 
 
-        for i in range(self.ndim_image):
+        for i in range(ndim_image):
             fig.add_subplot(nrows, ncols, i + 1, projection=projection)
 
-        if ncols > 1 and self.axes_labels is not None and self.ndim_image > 1:
+        if ncols > 1 and self.axes_labels is not None and ndim_image > 1:
             plt.subplots_adjust(wspace=0.4)
 
-        if nrows > 1 and self.axes_labels is not None and self.ndim_image > 1:
+        if nrows > 1 and self.axes_labels is not None and ndim_image > 1:
             plt.subplots_adjust(hspace=0.4)
 
         ax = fig.get_axes()
@@ -633,7 +657,7 @@ class FData(ABC):
                     ax[i].set_ylabel(self.axes_labels[i + 1])
 
     def generic_plotting_checks(self, fig=None, ax=None, nrows=None,
-                                 ncols=None):
+                                ncols=None, type="graph"):
         """Check the arguments passed to both :func:`plot
         <fda.functional_data.plot>` and :func:`scatter <fda.grid.scatter>`
          methods of the FDataGrid object.
@@ -652,6 +676,7 @@ class FData(ABC):
                 to plot the different dimensions of the image. Only specified if
                 fig and ax are None. nrows must be also be customized in the
                 same call.
+            type (string, optional): Type of plot to check.
 
         Returns:
             fig (figure object): figure object in which the graphs are plotted
@@ -662,16 +687,49 @@ class FData(ABC):
         if self.ndim_domain > 2:
             raise NotImplementedError("Plot only supported for functional data"
                                       "modeled in at most 3 dimensions.")
+        # Parses type of plot
+        if type == "graph":
+            ndim_image = self.ndim_image
+            ndim_domain = self.ndim_domain
+
+        elif type == "parametric":
+            if self.ndim_domain != 1:
+                raise ValueError("Parametric plot not valid for surfaces")
+
+            if self.ndim_image == 1:
+                type = "graph"
+                ndim_image = self.ndim_image
+                ndim_domain = self.ndim_domain
+            elif self.ndim_image == 2:
+                ndim_image = 1
+                ndim_domain = 1
+            elif self.ndim_image == 3:
+                ndim_image = 1
+                ndim_domain = 3
+            else:
+                raise ValueError("Parametric plot only valid for curves up to 3"
+                                 "dimensions")
+
+        elif type == "pairs":
+            if self.ndim_domain != 1:
+                raise ValueError("Pairs plot not valid for surfaces")
+            else:
+                ndim_domain = 1
+                ndim_image = self.ndim_image ** 2
+
+        else:
+            raise ValueError(f"Unknown type of plot {type}")
+
 
         if fig is not None and ax is not None:
             raise ValueError("fig and axes parameters cannot be passed as "
                              "arguments at the same time.")
 
-        if fig is not None and len(fig.get_axes()) != self.ndim_image:
+        if fig is not None and len(fig.get_axes()) != ndim_image:
             raise ValueError("Number of axes of the figure must be equal to"
                              "the dimension of the image.")
 
-        if ax is not None and len(ax)!= self.ndim_image:
+        if ax is not None and len(ax)!= ndim_image:
             raise ValueError("Number of axes must be equal to the dimension of "
                              "the image.")
 
@@ -683,12 +741,13 @@ class FData(ABC):
                              " None and ax is None.")
 
         if ((nrows is not None and ncols is not None) and
-            nrows*ncols < self.ndim_image):
+            nrows*ncols < ndim_image):
             raise ValueError("The number of columns and the number of rows "
                              "specified is incorrect.")
 
         if fig is None and ax is None:
-            fig, ax = self.set_figure_and_axes(nrows, ncols)
+            fig, ax = self.set_figure_and_axes(nrows, ncols, ndim_domain,
+                                               ndim_image)
 
         elif fig is not None:
             ax = fig.get_axes()
@@ -698,9 +757,9 @@ class FData(ABC):
 
         return fig, ax
 
-    def plot(self, chart=None, *, derivative=0, fig=None, ax=None, nrows=None,
-             ncols=None, npoints=None, domain_range=None, sample_labels=None,
-             label_colors=None, label_names=None, **kwargs):
+    def plot(self, chart=None, *, type="graph", derivative=0, fig=None, ax=None,
+             nrows=None, ncols=None, npoints=None, domain_range=None,
+             sample_labels=None, label_colors=None, label_names=None, **kwargs):
         """Plot the FDatGrid object.
 
         Args:
@@ -708,6 +767,10 @@ class FData(ABC):
                 with the graphs are plotted or axis over where the graphs are
                     plotted. If None and ax is also None, the figure is
                     initialized.
+            type (string, optional): Type of plot. Valids types are "graph", to
+                plot each image dimension against the temporal variable;
+                "parametric" to plot as a parametric curve and "pairs" to plot
+                all the pairs of dimensions.
             derivative (int or tuple, optional): Order of derivative to be
                 plotted. In case of surfaces a tuple with the order of
                 derivation in each direction can be passed. See :func:`evaluate`
@@ -741,9 +804,9 @@ class FData(ABC):
                 the samples with the same label are plotted in the same color.
                 If None, the default value, each sample is plotted in the color
                 assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-            label_colors (list of colors): colors in which groups are represented,
-                there must be one for each group. If None, each group is shown
-                with distict colors in the "Greys" colormap.
+            label_colors (list of colors): colors in which groups are
+                represented, there must be one for each group. If None, each
+                group is shown with distict colors in the "Greys" colormap.
             label_names (list of str): name of each of the groups which appear
                 in a legend, there must be one for each one. Defaults to None
                 and the legend is not shown.
@@ -759,24 +822,60 @@ class FData(ABC):
         """
 
         # Parse chart argument
-        if chart is not None:
-            if fig is not None or ax is not None:
-                raise ValueError("fig, axes and chart parameters cannot "
-                                 "be passed as arguments at the same time.")
-            if isinstance(chart, plt.Figure):
-                fig = chart
-            elif isinstance(chart, Axes):
-                ax = [chart]
-            else:
-                ax = chart
+        fig, ax = _parse_chart(chart, fig, ax)
 
         if domain_range is None:
             domain_range = self.domain_range
         else:
             domain_range = _list_of_arrays(domain_range)
 
-        fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
+        fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols, type=type)
 
+        ret = self._parse_colors(sample_labels, label_colors, label_names,
+                                 **kwargs)
+        sample_labels, sample_colors, next_color, patches, kwargs = ret
+
+
+        if type == "graph":
+            self._graph_plot(ax, derivative, npoints, domain_range,
+                             sample_labels, sample_colors, next_color, **kwargs)
+            self.set_labels(fig, ax, patches)
+
+        elif type == "parametric":
+            self._parametric_plot(ax, derivative, npoints, domain_range,
+                                  sample_labels, sample_colors, next_color,
+                                  **kwargs)
+        elif type == "pairs":
+            self._pairs_plot(ax, derivative, npoints, domain_range,
+                             sample_labels, sample_colors, next_color, **kwargs)
+
+        return fig, ax
+
+    def _parse_colors(self, sample_labels, label_colors, label_names, **kwargs):
+        """Plot internal function. Parses the label colors.
+
+        Args:
+        sample_labels (list of int): contains integers from [0 to number of
+            labels) indicating to which group each sample belongs to. Then,
+            the samples with the same label are plotted in the same color.
+            If None, the default value, each sample is plotted in the color
+            assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+        label_colors (list of colors): colors in which groups are represented,
+            there must be one for each group. If None, each group is shown
+            with distict colors in the "Greys" colormap.
+        label_names (list of str): name of each of the groups which appear
+            in a legend, there must be one for each one. Defaults to None
+            and the legend is not shown.
+        **kwargs: if ndim_domain is 1, keyword arguments to be passed to the
+            matplotlib.pyplot.plot function; if ndim_domain is 2, keyword
+            arguments to be passed to the matplotlib.pyplot.plot_surface
+            function.
+
+        Returns:
+        tuple: tuple with sample_labels, sample_colors, next_color, patches and
+            kwargs.
+
+        """
         patches = None
         next_color = False
 
@@ -834,6 +933,46 @@ class FData(ABC):
                 sample_colors = numpy.empty((self.nsamples,)).astype(str)
                 next_color = True
 
+        return sample_labels, sample_colors, next_color, patches, kwargs
+
+    def _graph_plot(self, ax, derivative, npoints, domain_range, sample_labels,
+                    sample_colors, next_color, **kwargs):
+        """Plot internal function. Makes a graph plot.
+
+        Args:
+            ax (list of axis objects): axis over where the graphs are plotted.
+            derivative (int or tuple): Order of derivative to be plotted. In
+                case of surfaces a tuple with the order of derivation in
+                each direction can be passed. See :func:`evaluate` to obtain
+                more information.
+            npoints (int or tuple): Number of points to evaluate in
+                the plot. In case of surfaces a tuple of length 2 can be pased
+                with the number of points to plot in each axis, otherwise the
+                same number of points will be used in the two axes. By default
+                in unidimensional plots will be used 501 points; in surfaces
+                will be used 30 points per axis, wich makes a grid with 900
+                points.
+            domain_range (tuple or list of tuples, optional): Range where the
+                function will be plotted. In objects with unidimensional domain
+                the domain range should be a tuple with the bounds of the
+                interval; in the case of surfaces a list with 2 tuples with
+                the ranges for each dimension. Default uses the domain range
+                of the functional object.
+            sample_labels (list of int): contains integers from [0 to number of
+                labels) indicating to which group each sample belongs to. Then,
+                the samples with the same label are plotted in the same color.
+                If None, the default value, each sample is plotted in the color
+                assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+            label_colors (list of colors): colors in which groups are
+                represented, there must be one for each group. If None, each
+                group is shown with distict colors in the "Greys" colormap.
+            next_color (boolean): Flag to indicate if list of colors.
+            **kwargs: if ndim_domain is 1, keyword arguments to be passed to the
+                matplotlib.pyplot.plot function; if ndim_domain is 2, keyword
+                arguments to be passed to the matplotlib.pyplot.plot_surface
+                function.
+
+        """
         if self.ndim_domain == 1:
 
             if npoints is None:
@@ -877,9 +1016,109 @@ class FData(ABC):
                     ax[i].plot_surface(X, Y, Z[j,...,i],
                                        color=sample_colors[j], **kwargs)
 
-        self.set_labels(fig, ax, patches)
+    def _parametric_plot(self, ax, derivative, npoints, domain_range,
+                         sample_labels, sample_colors, next_color, **kwargs):
+        """Plot internal function. Makes a parametric plot.
 
-        return fig, ax
+        Args:
+            ax (list of axis objects): axis over where the graphs are plotted.
+            derivative (int or tuple): Order of derivative to be plotted.
+            npoints (int or tuple): Number of points to evaluate in the plot.
+            domain_range (tuple or list of tuples, optional): Range where the
+                function will be plotted. In objects with unidimensional domain
+                the domain range should be a tuple with the bounds of the
+                interval.
+            sample_labels (list of int): contains integers from [0 to number of
+                labels) indicating to which group each sample belongs to. Then,
+                the samples with the same label are plotted in the same color.
+                If None, the default value, each sample is plotted in the color
+                assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+            label_colors (list of colors): colors in which groups are
+                represented, there must be one for each group. If None, each
+                group is shown with distict colors in the "Greys" colormap.
+            next_color (boolean): Flag to indicate if list of colors.
+            **kwargs: if ndim_domain is 1, keyword arguments to be passed to the
+                matplotlib.pyplot.plot function; if ndim_domain is 2, keyword
+                arguments to be passed to the matplotlib.pyplot.plot_surface
+                function.
+
+        """
+        if npoints is None:
+            npoints = 501
+
+        # Evaluates the object in a linspace
+        eval_points = numpy.linspace(*domain_range[0], npoints)
+        mat = self(eval_points, derivative=derivative, keepdims=True)
+
+        if self.ndim_image == 2:
+
+            for j in range(self.nsamples):
+                if sample_labels is None and next_color:
+                    sample_colors[j] = ax[0]._get_lines.get_next_color()
+                ax[0].plot(mat[j,..., 0], mat[j,..., 1], c=sample_colors[j],
+                           **kwargs)
+
+        if self.ndim_image == 3:
+
+            # Evaluates the object in a linspace
+            eval_points = numpy.linspace(*domain_range[0], npoints)
+            mat = self(eval_points, derivative=derivative, keepdims=True)
+
+            for j in range(self.nsamples):
+                if sample_labels is None and next_color:
+                    sample_colors[j] = ax[0]._get_lines.get_next_color()
+                ax[0].plot(mat[j,..., 0], mat[j,..., 1], mat[j,..., 2],
+                           c=sample_colors[j], **kwargs)
+
+    def _pairs_plot(self, ax, derivative, npoints, domain_range, sample_labels,
+                    sample_colors, next_color, **kwargs):
+        """Plot internal function. Makes a pairs plot.
+
+        Args:
+            ax (list of axis objects): axis over where the graphs are plotted.
+            derivative (int or tuple): Order of derivative to be plotted.
+            npoints (int or tuple): Number of points to evaluate in the plot.
+            domain_range (tuple or list of tuples, optional): Range where the
+                function will be plotted. In objects with unidimensional domain
+                the domain range should be a tuple with the bounds of the
+                interval.
+            sample_labels (list of int): contains integers from [0 to number of
+                labels) indicating to which group each sample belongs to. Then,
+                the samples with the same label are plotted in the same color.
+                If None, the default value, each sample is plotted in the color
+                assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+            label_colors (list of colors): colors in which groups are
+                represented, there must be one for each group. If None, each
+                group is shown with distict colors in the "Greys" colormap.
+            next_color (boolean): Flag to indicate if list of colors.
+            **kwargs: if ndim_domain is 1, keyword arguments to be passed to the
+                matplotlib.pyplot.plot function; if ndim_domain is 2, keyword
+                arguments to be passed to the matplotlib.pyplot.plot_surface
+                function.
+
+        """
+        if npoints is None:
+            npoints = 501
+
+        # Evaluates the object in a linspace
+        eval_points = numpy.linspace(*domain_range[0], npoints)
+        mat = self(eval_points, derivative=derivative, keepdims=True)
+
+        for i in range(self.ndim_image):
+            for j in range(self.ndim_image):
+                axis = ax[i*self.ndim_image + j]
+
+                for k in range(self.nsamples):
+                    if sample_labels is None and next_color:
+                        sample_colors[j] = axis._get_lines.get_next_color()
+
+                    if i == j:
+
+                        axis.plot(eval_points, mat[k,..., j],
+                                  c=sample_colors[k], **kwargs)
+                    else:
+                        axis.plot(mat[k,..., i], mat[k,..., j],
+                                  c=sample_colors[k], **kwargs)
 
     @abstractmethod
     def copy(self, **kwargs):

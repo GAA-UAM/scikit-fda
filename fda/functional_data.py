@@ -1110,7 +1110,7 @@ class FData(ABC):
 
                 for k in range(self.nsamples):
                     if sample_labels is None and next_color:
-                        sample_colors[j] = axis._get_lines.get_next_color()
+                        sample_colors[k] = axis._get_lines.get_next_color()
 
                     if i == j:
 

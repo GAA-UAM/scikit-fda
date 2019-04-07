@@ -81,7 +81,6 @@ class FDataGrid(FData):
         ValueError: Incorrect dimension in data_matrix and sample_points...
 
 
-
         FDataGrid support higher dimensional data both in the domain and image.
         Representation of a functional data object with 2 samples
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}^2`.
@@ -94,6 +93,7 @@ class FDataGrid(FData):
 
         Representation of a functional data object with 2 samples
         representing a function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}`.
+
         >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
         >>> sample_points = [[2, 4], [3,6]]
         >>> fd = FDataGrid(data_matrix, sample_points)

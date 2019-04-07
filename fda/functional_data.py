@@ -1012,3 +1012,14 @@ class FData(ABC):
         """Right division for FData object."""
 
         pass
+
+    def __iter__(self):
+        """Iterate over the samples"""
+        
+        for i in range(len(self)):
+            yield self[i]
+
+    def __len__(self):
+        """Returns the number of samples of the FData object."""
+
+        return self.nsamples

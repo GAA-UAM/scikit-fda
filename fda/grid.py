@@ -406,11 +406,11 @@ class FDataGrid(FData):
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative()
             FDataGrid(
-                array([[[1. ],
-                        [1.5],
-                        [1.5],
-                        [2. ],
-                        [3. ]]]),
+                array([[[ 1. ],
+                        [ 1.5],
+                        [ 1.5],
+                        [ 2. ],
+                        [ 3. ]]]),
                 sample_points=[array([0, 1, 2, 3, 4])],
                 domain_range=array([[0, 4]]),
                 ...)
@@ -420,11 +420,11 @@ class FDataGrid(FData):
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative(2)
             FDataGrid(
-                array([[[0.5 ],
-                        [0.25],
-                        [0.25],
-                        [0.75],
-                        [1.  ]]]),
+                array([[[ 0.5 ],
+                        [ 0.25],
+                        [ 0.25],
+                        [ 0.75],
+                        [ 1.  ]]]),
                 sample_points=[array([0, 1, 2, 3, 4])],
                 domain_range=array([[0, 4]]),
                 ...)
@@ -748,7 +748,7 @@ class FDataGrid(FData):
             >>> basis = fda.basis.Fourier((0, 1), nbasis=3)
             >>> fd_b = fd.to_basis(basis)
             >>> fd_b.coefficients.round(2)
-            array([[0.  , 0.71, 0.71]])
+            array([[ 0.  , 0.71, 0.71]])
 
         """
         if self.ndim_domain > 1:
@@ -943,6 +943,10 @@ class FDataGrid(FData):
                              f"match with the domain of the second function "
                              f"({self.ndim_domain})!=({fd.ndim_image}).")
 
+        # All composed with same function
+        if fd.nsamples == 1 and self.nsamples != 1:
+            fd = fd.copy(data_matrix=numpy.repeat(fd.data_matrix, self.nsamples,
+                                               axis=0))
 
         if fd.ndim_domain == 1:
             if eval_points is None:

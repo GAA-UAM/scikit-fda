@@ -10,4 +10,5 @@ API Reference
    modules/depth_measures
    modules/fdata_boxplot
    modules/extrapolation
+   modules/metrics
    modules/registration

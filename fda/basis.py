@@ -116,6 +116,10 @@ class Basis(ABC):
         """
         pass
 
+    def _derivative(self, coefs, order=1):
+        """ TODO comentario"""
+        raise NotImplementedError
+
     def evaluate(self, eval_points, derivative=0):
         """Evaluate Basis objects and its derivatives.
 
@@ -373,6 +377,9 @@ class Constant(Basis):
         """
         return penalty_degree
 
+    def _derivative(self, coefs, order=1):
+        return self.copy, coefs if order == 0 else numpy.zeros(coefs.shape)
+
     def _compute_matrix(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
 
@@ -541,6 +548,12 @@ class Monomial(Basis):
                     mat[i] = factor * eval_points ** (i - derivative)
 
         return mat
+
+    def _derivative(self, coefs, order=1):
+
+        coefficients = numpy.array([numpy.polyder(x[::-1], order)[::-1]
+                                    for x in coefs])
+        return Monomial(self.domain_range, self.nbasis - order), coefficients
 
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
@@ -1232,6 +1245,10 @@ class Fourier(Basis):
         """
         return 0 if penalty_degree == 0 else 1
 
+
+
+    def _derivative(self, coefs, order=1):
+        signs = numpy.array(((1 if (j * i + i // 2) % 2 == 0 else -1)
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
 
@@ -1814,7 +1831,9 @@ class FDataBasis(FData):
             order (int, optional): Order of the derivative. Defaults to one.
         """
 
-        raise NotImplementedError
+        (basis, coefficients) = self.basis._derivative(self.coefficients, order)
+
+        return FDataBasis(basis, coefficients)
 
     def mean(self):
         """Compute the mean of all the samples in a FDataBasis object.

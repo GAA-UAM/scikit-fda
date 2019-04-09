@@ -1,8 +1,12 @@
 import sklearn.utils
 import numpy as np
+import scipy.integrate
+
 from scipy.stats import multivariate_normal
 from .. import covariances
-from ..grid import FDataGrid
+from ..grid import FDataGrid, GridSplineInterpolator
+from ..registration import normalize_warping
+
 
 
 def make_gaussian_process(n_samples: int=100, n_features: int=100, *,
@@ -221,7 +225,7 @@ def make_multimodal_samples(n_samples: int=15, *, n_modes: int=1,
 
         shape = (n_samples, ndim_image, n_modes, ndim_domain)
         location = location.reshape(shape)
-        
+
 
     axis = np.linspace(start, stop, points_per_dim)
 
@@ -258,3 +262,74 @@ def make_multimodal_samples(n_samples: int=15, *, n_modes: int=1,
     data_matrix += random_state.normal(0, noise, size=data_matrix.shape)
 
     return FDataGrid(sample_points=sample_points, data_matrix=data_matrix)
+
+
+def make_random_warping(n_samples: int=15, n_features: int=100, *,
+                        start: float=0., stop: float=1., sigma: float=1.,
+                        shape_parameter: float=.5, n_random: int=4,
+                        random_state=None):
+    """Generate random warping functions.
+
+    This method needs som functions from the branch fda-srvf
+
+
+    Args:
+        n_samples: Total number of samples. Defaults 15.
+        n_features: The total number of trajectories. Defaults 100.
+        start: Starting point of the samples. Defaults 1.
+        stop: Ending point of the samples. Defaults 0.
+        sigma: Parameter to control the variance of the samples. Defaults 1.
+        shape_parameter: Parameter to control the shape of the warpings.
+            Should be a value in [0, 1]. Defaults 0.5.
+        n_random: Number of random sines and cosines to be sum to construct
+            the warpings.
+        random_state: Random state.
+
+    Returns:
+        :class:`FDataGrid` object comprising all the samples.
+
+    """
+    random_state = sklearn.utils.check_random_state(random_state)
+
+
+    freq = n_features * shape_parameter + 1
+
+    # Frequency
+    omega = 2 * np.pi / freq
+    sqrt2 = np.sqrt(2)
+    sqrt_sigma = np.sqrt(sigma)
+
+    # Originally it is compute in (0,1), then it is rescaled
+    time = np.outer(np.linspace(0, 1, n_features), np.ones(n_samples))
+
+    # Operates trasposed to broadcast dimensions
+    v = np.outer(np.ones(n_features),
+                 random_state.normal(scale=sqrt_sigma, size=n_samples))
+
+    for j in range(2,2+n_random):
+        alpha = random_state.normal(scale=sqrt_sigma, size=(2, n_samples))
+        alpha *= sqrt2
+        v += alpha[0] * np.cos(j*omega*time)
+        v += alpha[1] * np.sin(j*omega*time)
+
+    v -= v.mean(axis=0)
+
+    # Equivalent to RN norm (equispaced monitorization points)
+    v_norm = np.linalg.norm(v, axis=0)
+    v_norm /= np.sqrt(n_features)
+
+    # Exponential map of vectors
+    v *= np.sin(v_norm) / v_norm
+    v += np.cos(v_norm)
+    np.square(v, out=v)
+
+    # Creation of FDataGrid in the corresponding domain
+    data_matrix = scipy.integrate.cumtrapz(v, dx=1./n_features, initial=0,
+                                           axis=0)
+    warping = FDataGrid(data_matrix.T, sample_points=time[:,0])
+    warping = normalize_warping(warping, domain_range=(start, stop))
+    warping.interpolator = GridSplineInterpolator(interpolation_order=3,
+                                                  monotone=True)
+
+
+    return warping

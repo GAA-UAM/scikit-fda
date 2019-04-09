@@ -549,11 +549,10 @@ class Monomial(Basis):
 
         return mat
 
-    def _derivative(self, coefs, order=1):
-
-        coefficients = numpy.array([numpy.polyder(x[::-1], order)[::-1]
-                                    for x in coefs])
-        return Monomial(self.domain_range, self.nbasis - order), coefficients
+    def _derivative(self, coefficients, order=1):
+        return (Monomial(self.domain_range, self.nbasis - order),
+               numpy.array([numpy.polyder(x[::-1], order)[::-1]
+                                    for x in coefficients]))
 
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.

@@ -271,7 +271,6 @@ def make_random_warping(n_samples: int=15, n_features: int=100, *,
                         start: float=0., stop: float=1., sigma: float=1.,
                         shape_parameter: float=.5, n_random: int=4,
                         random_state=None):
-<<<<<<< HEAD
     r"""Generate random warping functions.
 
     Let :math:`v(t)` be a randomly generated function defined in :math:`[0,1]`
@@ -294,12 +293,6 @@ def make_random_warping(n_samples: int=15, n_features: int=100, *,
     The smoothing and shape of the warpings can be controlling changing
     :math:`K= \text{n_features} \cdot \text{shape_parameter} + 1`, :math:`N` and
     :math:`\sigma`.
-=======
-    """Generate random warping functions.
-
-    This method needs som functions from the branch fda-srvf
-
->>>>>>> e9429188591bff69fbdfaa2105743cc0c637d17d
 
     Args:
         n_samples: Total number of samples. Defaults 15.

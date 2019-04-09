@@ -133,7 +133,8 @@ class FData(ABC):
 
         """
         pass
-
+    
+    @property
     def ndim_codomain(self):
         """Return number of dimensions of the codomain.
 

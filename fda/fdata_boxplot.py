@@ -156,14 +156,14 @@ class Boxplot(FDataBoxplot):
                 extrapolation=None,
                 interpolator=GridSplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
                 keepdims=False),
-            median=array([[0.5, 0.5, 1. , 2. , 1.5, 1. ]]),
+            median=array([[ 0.5,  0.5,  1. ,  2. ,  1.5,  1. ]]),
             central envelope=array([[[ 0.5,  0.5,  1. ,  2. ,  1.5,  1. ],
                     [-1. , -1. , -0.5,  1. ,  1. ,  0.5]]]),
             outlying envelope=array([[[ 1.  ,  1.  ,  2.  ,  3.  ,  2.25,  1.75],
                     [-1.  , -1.  , -0.5 , -0.5 ,  0.25, -0.25]]]),
             central_regions=array([[[ 0.5,  0.5,  1. ,  2. ,  1.5,  1. ],
                     [-1. , -1. , -0.5,  1. ,  1. ,  0.5]]]),
-            outliers=array([[1., 0., 0., 1.]]))
+            outliers=array([[ 1.,  0.,  0.,  1.]]))
 
     """
 
@@ -430,22 +430,22 @@ class SurfaceBoxplot(FDataBoxplot):
         >>> SurfaceBoxplot(fd)
         SurfaceBoxplot(
             FDataGrid=FDataGrid(
-                array([[[[ 1. ,  4. ],
-                         [ 0.3,  1.5],
-                         [ 1. ,  3. ]],
+                array([[[[  1. ,   4. ],
+                         [  0.3,   1.5],
+                         [  1. ,   3. ]],
         <BLANKLINE>
-                        [[ 2. ,  8. ],
-                         [ 0.4,  2. ],
-                         [ 2. ,  9. ]]],
+                        [[  2. ,   8. ],
+                         [  0.4,   2. ],
+                         [  2. ,   9. ]]],
         <BLANKLINE>
         <BLANKLINE>
-                       [[[ 2. , 10. ],
-                         [ 0.5,  3. ],
-                         [ 2. , 10. ]],
+                       [[[  2. ,  10. ],
+                         [  0.5,   3. ],
+                         [  2. ,  10. ]],
         <BLANKLINE>
-                        [[ 3. , 12. ],
-                         [ 0.6,  3. ],
-                         [ 3. , 15. ]]]]),
+                        [[  3. ,  12. ],
+                         [  0.6,   3. ],
+                         [  3. ,  15. ]]]]),
                 sample_points=[array([2, 4]), array([3, 6, 8])],
                 domain_range=array([[2, 4],
                        [3, 8]]),
@@ -454,35 +454,35 @@ class SurfaceBoxplot(FDataBoxplot):
                 extrapolation=None,
                 interpolator=GridSplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
                 keepdims=False),
-            median=array([[[1. , 0.3, 1. ],
-                    [2. , 0.4, 2. ]],
+            median=array([[[ 1. ,  0.3,  1. ],
+                    [ 2. ,  0.4,  2. ]],
         <BLANKLINE>
-                   [[4. , 1.5, 3. ],
-                    [8. , 2. , 9. ]]]),
-            central envelope=array([[[[1. , 0.3, 1. ],
-                     [2. , 0.4, 2. ]],
+                   [[ 4. ,  1.5,  3. ],
+                    [ 8. ,  2. ,  9. ]]]),
+            central envelope=array([[[[ 1. ,  0.3,  1. ],
+                     [ 2. ,  0.4,  2. ]],
         <BLANKLINE>
-                    [[1. , 0.3, 1. ],
-                     [2. , 0.4, 2. ]]],
-        <BLANKLINE>
-        <BLANKLINE>
-                   [[[4. , 1.5, 3. ],
-                     [8. , 2. , 9. ]],
-        <BLANKLINE>
-                    [[4. , 1.5, 3. ],
-                     [8. , 2. , 9. ]]]]),
-            outlying envelope=array([[[[1. , 0.3, 1. ],
-                     [2. , 0.4, 2. ]],
-        <BLANKLINE>
-                    [[1. , 0.3, 1. ],
-                     [2. , 0.4, 2. ]]],
+                    [[ 1. ,  0.3,  1. ],
+                     [ 2. ,  0.4,  2. ]]],
         <BLANKLINE>
         <BLANKLINE>
-                   [[[4. , 1.5, 3. ],
-                     [8. , 2. , 9. ]],
+                   [[[ 4. ,  1.5,  3. ],
+                     [ 8. ,  2. ,  9. ]],
         <BLANKLINE>
-                    [[4. , 1.5, 3. ],
-                     [8. , 2. , 9. ]]]]))
+                    [[ 4. ,  1.5,  3. ],
+                     [ 8. ,  2. ,  9. ]]]]),
+            outlying envelope=array([[[[ 1. ,  0.3,  1. ],
+                     [ 2. ,  0.4,  2. ]],
+        <BLANKLINE>
+                    [[ 1. ,  0.3,  1. ],
+                     [ 2. ,  0.4,  2. ]]],
+        <BLANKLINE>
+        <BLANKLINE>
+                   [[[ 4. ,  1.5,  3. ],
+                     [ 8. ,  2. ,  9. ]],
+        <BLANKLINE>
+                    [[ 4. ,  1.5,  3. ],
+                     [ 8. ,  2. ,  9. ]]]]))
 
 
     """

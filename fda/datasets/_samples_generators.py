@@ -115,7 +115,10 @@ def make_multimodal_landmarks(n_samples: int=15, *, n_modes: int=1,
                               ndim_domain: int=1, ndim_image: int = 1,
                               start: float=-1, stop: float=1, std: float=.05,
                               random_state=None):
-    """Generate landmarks points used in :func:`make_multimodal_samples`.
+    """Generate landmarks points.
+
+    Used by :func:`make_multimodal_samples` to generate the location of the
+    landmarks.
 
     Generates a matrix containing the landmarks or locations of the modes of the
     samples generates by :func:`make_multimodal_samples`.
@@ -268,10 +271,28 @@ def make_random_warping(n_samples: int=15, n_features: int=100, *,
                         start: float=0., stop: float=1., sigma: float=1.,
                         shape_parameter: float=.5, n_random: int=4,
                         random_state=None):
-    """Generate random warping functions.
+    r"""Generate random warping functions.
 
-    This method needs som functions from the branch fda-srvf
+    Let :math:`v(t)` be a randomly generated function defined in :math:`[0,1]`
 
+    .. math::
+        v(t) = \sum_{j=0}^{N} a_j \sin(\frac{2 \pi j}{K}t) + b_j
+        \sin(\frac{2 \pi j}{K}t)
+
+    where :math:`a_j, b_j \sim N(0, \sigma)`.
+
+    The random warping it is constructed making an exponential map
+    to :math:`\Gamma`.
+
+    .. math::
+        \gamma(t) = \int_0^1 \left ( \frac{\sin(\|v\|)}{\|v\|} v(s) +
+        \cos(\|v\|) \right )^2 ds
+
+    An affine traslation it is used to define the warping in :math:`[a,b]`.
+
+    The smoothing and shape of the warpings can be controlling changing
+    :math:`K= \text{n_features} \cdot \text{shape_parameter} + 1`, :math:`N` and
+    :math:`\sigma`.
 
     Args:
         n_samples: Total number of samples. Defaults 15.

@@ -146,7 +146,7 @@ class Basis(ABC):
         Args:
             chart (figure object, axe or list of axes, optional): figure over
                 with the graphs are plotted or axis over where the graphs are
-                    plotted. 
+                    plotted.
             derivative (int or tuple, optional): Order of derivative to be
                 plotted. Defaults 0.
             **kwargs: keyword arguments to be passed to the fdata.plot function.
@@ -479,20 +479,20 @@ class Monomial(Basis):
         values.
 
         >>> bs_mon.evaluate([0, 1, 2])
-        array([[ 1., 1., 1.],
-               [ 0., 1., 2.],
-               [ 0., 1., 4.]])
+        array([[ 1.,  1.,  1.],
+               [ 0.,  1.,  2.],
+               [ 0.,  1.,  4.]])
 
         And also evaluates its derivatives
 
         >>> bs_mon.evaluate([0, 1, 2], derivative=1)
-        array([[ 0., 0., 0.],
-               [ 1., 1., 1.],
-               [ 0., 2., 4.]])
+        array([[ 0.,  0.,  0.],
+               [ 1.,  1.,  1.],
+               [ 0.,  2.,  4.]])
         >>> bs_mon.evaluate([0, 1, 2], derivative=2)
-        array([[ 0., 0., 0.],
-               [ 0., 0., 0.],
-               [ 2., 2., 2.]])
+        array([[ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 2.,  2.,  2.]])
 
     """
 
@@ -702,9 +702,9 @@ class BSpline(Basis):
 
         >>> bss = BSpline(nbasis=3, order=3)
         >>> bss.evaluate([0, 0.5, 1])
-        array([[ 1.  , 0.25, 0.  ],
-               [ 0.  , 0.5 , 0.  ],
-               [ 0.  , 0.25, 1.  ]])
+        array([[ 1.  ,  0.25,  0.  ],
+               [ 0.  ,  0.5 ,  0.  ],
+               [ 0.  ,  0.25,  1.  ]])
 
         And evaluates first derivative
 
@@ -1375,7 +1375,7 @@ class FDataBasis(FData):
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
             basis=Monomial(domain_range=[array([0, 1])], nbasis=4),
-            coefficients=[[ 1.  1.  3.  0.5]],
+            coefficients=[[ 1.   1.   3.   0.5]],
             ...)
 
     """

@@ -140,22 +140,23 @@ class Basis(ABC):
 
         return self._compute_matrix(eval_points, derivative)
 
-    def plot(self, ax=None, derivative=0, **kwargs):
+    def plot(self, chart=None, *, derivative=0, **kwargs):
         """Plot the basis object or its derivatives.
 
         Args:
-            ax (axis object, optional): axis over with the graphs are plotted.
-                Defaults to matplotlib current axis.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-            **kwargs: keyword arguments to be [RS05]_passed to the
-                matplotlib.pyplot.plot function.
+            chart (figure object, axe or list of axes, optional): figure over
+                with the graphs are plotted or axis over where the graphs are
+                    plotted. 
+            derivative (int or tuple, optional): Order of derivative to be
+                plotted. Defaults 0.
+            **kwargs: keyword arguments to be passed to the fdata.plot function.
 
         Returns:
-            List of lines that were added to the plot.
+            fig (figure object): figure object in which the graphs are plotted.
+            ax (axes object): axes in which the graphs are plotted.
 
         """
-
-        self.to_basis().plot(self, ax, derivative, kwargs)
+        self.to_basis().plot(chart=chart, derivative=derivative, **kwargs)
 
     def _evaluate_single_basis_coefficients(self, coefficients, basis_index, x,
                                             cache):
@@ -319,10 +320,10 @@ class Basis(ABC):
 
     def _to_R(self):
         raise NotImplementedError
-        
+
     def inner_product(self, other):
         return numpy.transpose(other.inner_product(self.to_basis()))
-    
+
     def __repr__(self):
         """Representation of a Basis object."""
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "

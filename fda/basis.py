@@ -929,9 +929,9 @@ class BSpline(Basis):
                         coeffs[j + 1:] += (
                                 (binom(self.order - j - 1,
                                        range(1, self.order - j))
-                                 * numpy.vstack(((-a) ** numpy.array(
+                                 * numpy.vstack([(-a) ** numpy.array(
                                             range(1, self.order - j)) for a in
-                                                 self.knots[:-1]))
+                                                 self.knots[:-1]])
                                  ).T * pp[j])
                     ppoly_lst.append(coeffs)
                     c[i] = 0

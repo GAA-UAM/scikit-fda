@@ -129,7 +129,7 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
                 [-1. ]]]), array([[ 1.66666667],
                [ 0.        ],
                [-0.73333333],
-               [-1.        ]]), array([0.74074074, 0.        , 0.36740741, 0.53333333]))
+               [-1.        ]]), array([ 0.74074074, 0.        , 0.36740741, 0.53333333]))
 
     """
 

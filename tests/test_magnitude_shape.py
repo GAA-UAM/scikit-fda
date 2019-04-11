@@ -86,11 +86,12 @@ class TestMagnitudeShapePlot(unittest.TestCase):
                                              [-5.87118328, 5.34300766],
                                              [-5.42854833, 5.1694065],
                                              [-16.34459211, 0.9397118]]))
-        np.testing.assert_array_equal(msplot.outliers,
-                                      np.array([0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-                                                0, 1, 1, 1, 1, 0, 1, 0, 0, 0,
-                                                0, 0, 0, 0, 1, 1, 1, 0, 1, 0,
-                                                0, 0, 0, 0, 1]))
+        np.testing.assert_array_almost_equal(msplot.outliers,
+                                             np.array(
+                                                 [0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+                                                  0, 1, 1, 1, 1, 0, 1, 0, 0, 0,
+                                                  0, 0, 0, 0, 1, 1, 1, 0, 1, 0,
+                                                  0, 0, 0, 0, 1]))
 
 
 if __name__ == '__main__':

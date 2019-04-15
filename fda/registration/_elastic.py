@@ -166,13 +166,13 @@ def _elastic_alignment_array(template_data, q_data, eval_points, lam, grid_dim):
 
     # Select cython function
     if template_data.ndim == 1 and q_data.ndim == 1:
-        reparam = optimum_reparam_extension.coptimum_reparam
+        reparam = optimum_reparam.coptimum_reparam
 
     elif template_data.ndim == 1:
-        reparam = optimum_reparam_extension.coptimum_reparam_n
+        reparam = optimum_reparam.coptimum_reparam_n
 
     else:
-        reparam = optimum_reparam_extension.coptimum_reparam_n2
+        reparam = optimum_reparam.coptimum_reparam_n2
 
     return reparam(np.ascontiguousarray(template_data.T),
                    np.ascontiguousarray(eval_points),

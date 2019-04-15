@@ -2,5 +2,6 @@ matplotlib
 numpy
 scipy
 setuptools
-sklearn
 mpldatacursor
+Cython
+sklearn

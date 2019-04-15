@@ -9,23 +9,26 @@ It includes the modules:
     - validation: cross validation methods for finding the parameter that
     best smooths a FDataGrid object.
     - depth_measures: depth methods to order he samples of FDataGrid objects.
+    - magnitude-shape plot: visualization tool.
     - fdata_boxplot: informative exploratory tool for visualizing functional data.
     - clustering: K-Means and Fuzzy-KMeans algorithms implemented to cluster
     data in the FDataGrid, along with plotting methods.
 and the following classes:
-    and the following classes:
     - FDataGrid: Discrete representation of functional data.
     - FDataBasis: Basis representation for functional data.
     - Boxplot: Implements the functional boxplot for FDataGrid with domain dimension 1.
     - SurfaceBoxplot: Implements the functional boxplot for FDataGrid with
     domain dimension 2.
+    - MagnitudeShapePlot: Implements the magnitude shape plot for FDataGrid
+    with domain dimension 1.
 
 """
 import errno as _errno
 from fda.basis import FDataBasis
 from fda.grid import FDataGrid
 from fda.math import mean, var, gmean, log, log2, log10, exp, sqrt, \
-    cumsum, metric, norm_lp, inner_product, cov
+    cumsum, inner_product, cov
+from fda.metrics import lp_distance, norm_lp
 import os as _os
 
 from . import datasets, covariances, registration, extrapolation

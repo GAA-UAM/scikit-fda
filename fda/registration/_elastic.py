@@ -9,7 +9,7 @@ from ..grid import FDataGrid, GridSplineInterpolator
 from . import invert_warping
 from ._registration_utils import _normalize_scale
 
-import optimum_reparam_extension
+import optimum_reparam
 
 
 __author__ = "Pablo Marcos Manchón"

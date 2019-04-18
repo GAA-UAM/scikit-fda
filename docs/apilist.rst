@@ -14,6 +14,3 @@ API Reference
    modules/metrics
    modules/registration
    modules/clustering
-
-=======
-

@@ -685,6 +685,7 @@ class FDataGrid(FData):
                                                         other.data_matrix),
                                                        axis=0))
 
+
     def scatter(self, fig=None, ax=None, nrows=None, ncols=None, **kwargs):
         """Scatter plot of the FDatGrid object.
 

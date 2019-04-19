@@ -21,6 +21,8 @@ and the following classes:
     domain dimension 2.
     - MagnitudeShapePlot: Implements the magnitude shape plot for FDataGrid
     with domain dimension 1.
+    -Kmeans: Implements the K-Means clustering algorithm.
+    -FuzzyKmeans: Implements the Fuzzy K-Means clustering algorithm.
 
 """
 import errno as _errno

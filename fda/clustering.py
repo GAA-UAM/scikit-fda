@@ -112,7 +112,7 @@ class ClusteringData(ABC):
             raise ValueError(
                 "The init ndarray should be of shape (ndim_image, n_clusters, n_features) "
                 "and gives the initial centers.")
-        else:
+        elif init is None:
             init = np.array([None] * fdatagrid.ndim_image)
 
         return fdatagrid, n_clusters, init
@@ -296,6 +296,11 @@ class ClusteringData(ABC):
         self.fdatagrid.set_labels(fig, ax)
         return fig, ax
 
+    @abstractmethod
+    def __repr__(self):
+        pass
+
+
 
 class KMeans(ClusteringData):
     r"""Representation and implementation of the K-Means algorithm
@@ -355,6 +360,68 @@ class KMeans(ClusteringData):
             contains the cluster that observation belongs to.
         centers (numpy.ndarray: (ndim_image, n_clusters, ncol)): Contains the centroids for each cluster.
 
+    Example:
+
+        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2], [0.5, 0.5, 1, 2, 1.5, 1],
+        ...                [-1, -1, -0.5, 1, 1, 0.5], [-0.5, -0.5, -0.5, -1, -1, -1]]
+        >>> sample_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> kmeans = KMeans()
+        >>> kmeans.fit(fd, init=np.array([[[0, 0, 0, 0, 0, 0],
+        ...                                [2, 1, -1, 0.5, 0, -0.5]]]))
+        >>> kmeans
+        KMeans(
+            FDataGrid=FDataGrid(
+                array([[[ 1. ],
+                        [ 1. ],
+                        [ 2. ],
+                        [ 3. ],
+                        [ 2.5],
+                        [ 2. ]],
+        <BLANKLINE>
+                       [[ 0.5],
+                        [ 0.5],
+                        [ 1. ],
+                        [ 2. ],
+                        [ 1.5],
+                        [ 1. ]],
+        <BLANKLINE>
+                       [[-1. ],
+                        [-1. ],
+                        [-0.5],
+                        [ 1. ],
+                        [ 1. ],
+                        [ 0.5]],
+        <BLANKLINE>
+                       [[-0.5],
+                        [-0.5],
+                        [-0.5],
+                        [-1. ],
+                        [-1. ],
+                        [-1. ]]]),
+                sample_points=[array([ 0,  2,  4,  6,  8, 10])],
+                domain_range=array([[ 0, 10]]),
+                dataset_label=None,
+                axes_labels=None,
+                extrapolation=None,
+                interpolator=GridSplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
+                keepdims=False),
+            n_clusters=2,
+            init=array([[[ 0. ,  0. ,  0. ,  0. ,  0. ,  0. ],
+                    [ 2. ,  1. , -1. ,  0.5,  0. , -0.5]]]),
+            max_iter=100,
+            random_state=0,
+            p=2,
+            n_iter=array([ 3.]),
+            clustering_values=array([[0],
+                   [0],
+                   [0],
+                   [1]]),
+            centers=array([[[ 0.16666667,  0.16666667,  0.83333333,  2.        ,
+                      1.66666667,  1.16666667],
+                    [-0.5       , -0.5       , -0.5       , -1.        ,
+                     -1.        , -1.        ]]]))
+
     """
 
     def __init__(self, max_iter=100, random_state=0, p=2):
@@ -376,7 +443,7 @@ class KMeans(ClusteringData):
     def clustering_values(self):
         return self._clustering_values
 
-    def _kmeans_1Dimage(self, num_dim, fdatagrid, n_clusters, centers):
+    def _kmeans_1Dimage(self, num_dim, fdatagrid, n_clusters, init):
         """ Implementation of the K-Means algorithm for each dimension on the
             image of the FDataGrid object.
 
@@ -386,7 +453,7 @@ class KMeans(ClusteringData):
             fdatagrid (FDataGrid object): Object whose samples are clusered,
                 classified into different groups.
             n_clusters (int): Number of groups into which the samples are classified.
-            centers (ndarray): Contains the initial centers of the different
+            init (ndarray): Contains the initial centers of the different
                 clusters the algorithm starts with. Defaults to None, and the
                 centers are initialized randomly.
 
@@ -394,14 +461,14 @@ class KMeans(ClusteringData):
             (tuple): tuple containing:
 
                 clustering_values (numpy.ndarray: (nsamples,)): 1-dimensional
-                    array where each row contains the cluster that observation
-                    belongs to.
+                array where each row contains the cluster that observation
+                   belongs to.
 
                 centers (numpy.ndarray: (n_clusters, ncol)): Contains the
-                    centroids for each cluster.
+                centroids for each cluster.
 
                 repetitions(int): number of iterations the algorithm was run
-                    for this dimension og the image.
+                for this dimension og the image.
 
         """
 
@@ -411,10 +478,13 @@ class KMeans(ClusteringData):
         repetitions = 0
         centers_old = np.empty((n_clusters, fdatagrid.ncol))
 
-        if centers is None:
+        if init is None:
             centers = super()._random_initialization_centers(data_matrix,
                                                              fdatagrid,
                                                              n_clusters)
+        else:
+            centers = np.copy(init)
+
 
         while not np.array_equal(centers,
                                  centers_old) and repetitions < self.max_iter:
@@ -426,7 +496,8 @@ class KMeans(ClusteringData):
             clustering_values = np.argmin(distances_to_centers, axis=1)
             for i in range(n_clusters):
                 indices = np.where(clustering_values == i)
-                centers[i] = np.average(data_matrix[indices, :], axis=1)
+                if indices[0].size != 0:
+                    centers[i] = np.average(data_matrix[indices, :], axis=1)
             repetitions += 1
 
         return clustering_values, centers, repetitions
@@ -454,7 +525,7 @@ class KMeans(ClusteringData):
         for i in range(fdatagrid.ndim_image):
             clustering_values[:, i], centers[i, :, :], n_iter[i] = \
                 self._kmeans_1Dimage(num_dim=i, fdatagrid=fdatagrid,
-                                     n_clusters=n_clusters, centers=init[i])
+                                     n_clusters=n_clusters, init=init[i])
 
         self._fdatagrid = fdatagrid
         self._n_clusters = n_clusters
@@ -468,7 +539,7 @@ class KMeans(ClusteringData):
              cluster_labels=None, center_colors=None, center_labels=None,
              colormap=plt.cm.get_cmap('rainbow')):
         """Plot of the FDataGrid samples by the clusters calculated with the
-        K-Means algorithm..
+        K-Means algorithm.
 
 
         Args:
@@ -512,6 +583,18 @@ class KMeans(ClusteringData):
                             center_colors=center_colors,
                             center_labels=center_labels, colormap=colormap)
 
+    def __repr__(self):
+        """Return repr(self)."""
+        return (f"KMeans("
+                f"\nFDataGrid={repr(self.fdatagrid)},"
+                f"\nn_clusters={repr(self.n_clusters)},"
+                f"\ninit={repr(self.init)},"
+                f"\nmax_iter={repr(self.max_iter)},"
+                f"\nrandom_state={repr(self.random_state)},"
+                f"\np={repr(self.p)},"
+                f"\nn_iter={repr(self.n_iter)},"
+                f"\nclustering_values={repr(self.clustering_values)},"
+                f"\ncenters={repr(self.centers)})").replace('\n', '\n    ')
 
 class FuzzyKMeans(ClusteringData):
     r""" Representation and implementation of the Fuzzy K-Means clustering
@@ -587,6 +670,66 @@ class FuzzyKMeans(ClusteringData):
         n_dec (int, optional): designates the number of decimals of the labels
             returned in the fuzzy algorithm. Defaults to 3.
 
+    Example:
+
+        >>> data_matrix = [[[1, 0.3], [2, 0.4], [3, 0.5], [4, 0.6]],
+        ...                [[2, 0.5], [3, 0.6], [4, 0.7], [5, 0.7]],
+        ...                [[3, 0.2], [4, 0.3], [5, 0.4], [6, 0.5]]]
+        >>> sample_points = [2, 4, 6, 8]
+        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> fuzzy_kmeans = FuzzyKMeans()
+        >>> fuzzy_kmeans.fit(fd, init=np.array([[[0, 0, 0, 0], [3, 5, 2, 4]],
+        ...                                    [[0, 0, 0, 0], [0, 1, 0, 1]]]))
+        >>> fuzzy_kmeans
+        FuzzyKMeans(
+            FDataGrid=FDataGrid(
+                array([[[ 1. ,  0.3],
+                        [ 2. ,  0.4],
+                        [ 3. ,  0.5],
+                        [ 4. ,  0.6]],
+        <BLANKLINE>
+                       [[ 2. ,  0.5],
+                        [ 3. ,  0.6],
+                        [ 4. ,  0.7],
+                        [ 5. ,  0.7]],
+        <BLANKLINE>
+                       [[ 3. ,  0.2],
+                        [ 4. ,  0.3],
+                        [ 5. ,  0.4],
+                        [ 6. ,  0.5]]]),
+                sample_points=[array([2, 4, 6, 8])],
+                domain_range=array([[2, 8]]),
+                dataset_label=None,
+                axes_labels=None,
+                extrapolation=None,
+                interpolator=GridSplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
+                keepdims=False),
+            n_clusters=2,
+            init=array([[[0, 0, 0, 0],
+                    [3, 5, 2, 4]],
+        <BLANKLINE>
+                   [[0, 0, 0, 0],
+                    [0, 1, 0, 1]]]),
+            max_iter=100,
+            random_state=0,
+            p=2,
+            n_iter=array([ 2.,  2.]),
+            membership_values=array([[[ 1. ,  0. ],
+                    [ 0.5,  0.5]],
+        <BLANKLINE>
+                   [[ 0. ,  1. ],
+                    [ 0.5,  0.5]],
+        <BLANKLINE>
+                   [[ 0.2,  0.8],
+                    [ 0.5,  0.5]]]),
+            centers=array([[[ 1.,  2.,  3.,  4.],
+                    [ 2.,  3.,  4.,  5.]],
+        <BLANKLINE>
+                   [[ 0.,  0.,  0.,  0.],
+                    [ 0.,  0.,  0.,  0.]]]),
+            fuzzifier=2,
+            n_dec=3)
+
     """
 
     def __init__(self, max_iter=100, random_state=0, p=2, fuzzifier=2,
@@ -631,7 +774,7 @@ class FuzzyKMeans(ClusteringData):
     def membership_values(self):
         return self._membership_values
 
-    def _fuzzy_kmeans_1Dimage(self, num_dim, fdatagrid, n_clusters, centers):
+    def _fuzzy_kmeans_1Dimage(self, num_dim, fdatagrid, n_clusters, init):
         """ Implementation of the Fuzzy C-Means algorithm for each dimension
         on the image of the FDataGrid object.
 
@@ -642,7 +785,7 @@ class FuzzyKMeans(ClusteringData):
                 the FdataGrid object the algorithm is being applied.
             n_clusters (int): Number of groups into which the samples are classified.
             fuzzifier (int): Scalar parameter used to specify the degree of fuzziness.
-            centers (ndarray): Contains the initial centers of the different
+            init (ndarray): Contains the initial centers of the different
                 clusters the algorithm starts with. Defaults to None, ans the
                 centers are initialized randomly.
             random_state (int): Seed to initialize the random state to choose
@@ -661,6 +804,9 @@ class FuzzyKMeans(ClusteringData):
                 centers (numpy.ndarray: (n_clusters, ncol)): Contains the centroids
                 for each cluster.
 
+                repetitions(int): number of iterations the algorithm was run
+                for this dimension og the image.
+
         """
 
         data_matrix = np.copy(fdatagrid.data_matrix[:, :, num_dim])
@@ -668,9 +814,11 @@ class FuzzyKMeans(ClusteringData):
         centers_old = np.empty((n_clusters, fdatagrid.ncol))
         U = np.empty((n_clusters, fdatagrid.nsamples))
 
-        if centers is None:
+        if init is None:
             centers = super()._random_initialization_centers(
                 data_matrix, fdatagrid, n_clusters)
+        else:
+            centers=np.copy(init)
 
         while not np.array_equal(centers, centers_old) and \
                 repetitions < self.max_iter:
@@ -710,7 +858,6 @@ class FuzzyKMeans(ClusteringData):
                 clusters the algorithm starts with. Defaults to None, and the
                 centers are initialized randomly.
         """
-
         fdatagrid, n_clusters, init = super()._generic_clustering_checks(
             fdatagrid, n_clusters, init)
 
@@ -722,7 +869,7 @@ class FuzzyKMeans(ClusteringData):
         for i in range(fdatagrid.ndim_image):
             U, centers[i, :, :], n_iter[i] = self._fuzzy_kmeans_1Dimage(
                 num_dim=i, fdatagrid=fdatagrid, n_clusters=n_clusters,
-                centers=init[i])
+                init=init[i])
             membership_values[:, i, :] = U.T
 
         self._fdatagrid = fdatagrid
@@ -1015,3 +1162,19 @@ class FuzzyKMeans(ClusteringData):
 
         fig.suptitle(title)
         return fig, ax
+
+
+    def __repr__(self):
+        """Return repr(self)."""
+        return (f"FuzzyKMeans("
+                f"\nFDataGrid={repr(self.fdatagrid)},"
+                f"\nn_clusters={repr(self.n_clusters)},"
+                f"\ninit={repr(self.init)},"
+                f"\nmax_iter={repr(self.max_iter)},"
+                f"\nrandom_state={repr(self.random_state)},"
+                f"\np={repr(self.p)},"
+                f"\nn_iter={repr(self.n_iter)},"
+                f"\nmembership_values={repr(self.membership_values)},"
+                f"\ncenters={repr(self.centers)},"
+                f"\nfuzzifier={repr(self.fuzzifier)},"
+                f"\nn_dec={repr(self.n_dec)})").replace('\n', '\n    ')

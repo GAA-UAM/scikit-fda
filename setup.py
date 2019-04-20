@@ -20,7 +20,7 @@ fdasrsf_path = os.path.join(deps_path, 'fdasrsf')
 
 
 extensions = [
-    Extension(name='optimum_reparam_extension',
+    Extension(name='optimum_reparam',
               sources=[
                   os.path.join(fdasrsf_path, 'optimum_reparam.pyx'),
                   os.path.join(fdasrsf_path, 'dp_grid.c')

@@ -140,22 +140,23 @@ class Basis(ABC):
 
         return self._compute_matrix(eval_points, derivative)
 
-    def plot(self, ax=None, derivative=0, **kwargs):
+    def plot(self, chart=None, *, derivative=0, **kwargs):
         """Plot the basis object or its derivatives.
 
         Args:
-            ax (axis object, optional): axis over with the graphs are plotted.
-                Defaults to matplotlib current axis.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-            **kwargs: keyword arguments to be [RS05]_passed to the
-                matplotlib.pyplot.plot function.
+            chart (figure object, axe or list of axes, optional): figure over
+                with the graphs are plotted or axis over where the graphs are
+                    plotted.
+            derivative (int or tuple, optional): Order of derivative to be
+                plotted. Defaults 0.
+            **kwargs: keyword arguments to be passed to the fdata.plot function.
 
         Returns:
-            List of lines that were added to the plot.
+            fig (figure object): figure object in which the graphs are plotted.
+            ax (axes object): axes in which the graphs are plotted.
 
         """
-
-        self.to_basis().plot(self, ax, derivative, kwargs)
+        self.to_basis().plot(chart=chart, derivative=derivative, **kwargs)
 
     def _evaluate_single_basis_coefficients(self, coefficients, basis_index, x,
                                             cache):
@@ -319,10 +320,10 @@ class Basis(ABC):
 
     def _to_R(self):
         raise NotImplementedError
-        
+
     def inner_product(self, other):
         return numpy.transpose(other.inner_product(self.to_basis()))
-    
+
     def __repr__(self):
         """Representation of a Basis object."""
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
@@ -478,20 +479,20 @@ class Monomial(Basis):
         values.
 
         >>> bs_mon.evaluate([0, 1, 2])
-        array([[ 1., 1., 1.],
-               [ 0., 1., 2.],
-               [ 0., 1., 4.]])
+        array([[ 1.,  1.,  1.],
+               [ 0.,  1.,  2.],
+               [ 0.,  1.,  4.]])
 
         And also evaluates its derivatives
 
         >>> bs_mon.evaluate([0, 1, 2], derivative=1)
-        array([[ 0., 0., 0.],
-               [ 1., 1., 1.],
-               [ 0., 2., 4.]])
+        array([[ 0.,  0.,  0.],
+               [ 1.,  1.,  1.],
+               [ 0.,  2.,  4.]])
         >>> bs_mon.evaluate([0, 1, 2], derivative=2)
-        array([[ 0., 0., 0.],
-               [ 0., 0., 0.],
-               [ 2., 2., 2.]])
+        array([[ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 2.,  2.,  2.]])
 
     """
 
@@ -701,9 +702,9 @@ class BSpline(Basis):
 
         >>> bss = BSpline(nbasis=3, order=3)
         >>> bss.evaluate([0, 0.5, 1])
-        array([[ 1.  , 0.25, 0.  ],
-               [ 0.  , 0.5 , 0.  ],
-               [ 0.  , 0.25, 1.  ]])
+        array([[ 1.  ,  0.25,  0.  ],
+               [ 0.  ,  0.5 ,  0.  ],
+               [ 0.  ,  0.25,  1.  ]])
 
         And evaluates first derivative
 
@@ -928,9 +929,9 @@ class BSpline(Basis):
                         coeffs[j + 1:] += (
                                 (binom(self.order - j - 1,
                                        range(1, self.order - j))
-                                 * numpy.vstack(((-a) ** numpy.array(
+                                 * numpy.vstack([(-a) ** numpy.array(
                                             range(1, self.order - j)) for a in
-                                                 self.knots[:-1]))
+                                                 self.knots[:-1]])
                                  ).T * pp[j])
                     ppoly_lst.append(coeffs)
                     c[i] = 0
@@ -1374,7 +1375,7 @@ class FDataBasis(FData):
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
             basis=Monomial(domain_range=[array([0, 1])], nbasis=4),
-            coefficients=[[ 1.  1.  3.  0.5]],
+            coefficients=[[ 1.   1.   3.   0.5]],
             ...)
 
     """

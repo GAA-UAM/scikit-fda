@@ -58,6 +58,7 @@ extensions = ['sphinx.ext.autodoc',
 doctest_global_setup = '''
 import fda
 from fda import *
+from fda.basis import *
 from fda.depth_measures import *
 from fda.fdata_boxplot import *
 from fda.metrics import *

@@ -1,4 +1,5 @@
-# cython: language_level=3
+#!python
+#cython: language_level=3
 
 
 # Original code developed by J. Derek Tucker.
@@ -52,7 +53,7 @@ def coptimum_reparam_n(np.ndarray[double, ndim=1, mode="c"] mq,
     sizes = np.zeros(N, dtype=np.int32)
     Go = np.zeros((M, N))
     To = np.zeros((M, N))
-    for k in xrange(0, N):
+    for k in range(0, N):
         qi = q[:, k] / norm(q[:, k])
         qi = np.ascontiguousarray(qi)
 
@@ -63,7 +64,7 @@ def coptimum_reparam_n(np.ndarray[double, ndim=1, mode="c"] mq,
         Go[:, k] = G
         To[:, k] = T
 
-    for k in xrange(0, N):
+    for k in range(0, N):
         gam0 = np.interp(time, To[0:sizes[k], k], Go[0:sizes[k], k])
         gam[:, k] = (gam0 - gam0[0]) / (gam0[-1] - gam0[0])
 
@@ -103,7 +104,7 @@ def coptimum_reparam_n2(np.ndarray[double, ndim=2, mode="c"] q1,
     sizes = np.zeros(N, dtype=np.int32)
     Go = np.zeros((M, N))
     To = np.zeros((M, N))
-    for k in xrange(0, N):
+    for k in range(0, N):
         q1i = q1[:, k] / norm(q1[:, k])
         q2i = q2[:, k] / norm(q2[:, k])
         q1i = np.ascontiguousarray(q1i)
@@ -116,7 +117,7 @@ def coptimum_reparam_n2(np.ndarray[double, ndim=2, mode="c"] q1,
         Go[:, k] = G
         To[:, k] = T
 
-    for k in xrange(0, N):
+    for k in range(0, N):
         gam0 = np.interp(time, To[0:sizes[k], k], Go[0:sizes[k], k])
         gam[:, k] = (gam0 - gam0[0]) / (gam0[-1] - gam0[0])
 

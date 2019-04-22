@@ -931,13 +931,11 @@ class FData(ABC):
         else:
 
             if 'color' in kwargs:
-                sample_colors = np.asarray(
-                    kwargs.get("color")).repeat(self.nsamples)
+                sample_colors = self.nsamples * [kwargs.get("color")]
                 kwargs.pop('color')
 
             elif 'c' in kwargs:
-                sample_colors = np.asarray(
-                    kwargs.get("c")).repeat(self.nsamples)
+                sample_colors = self.nsamples * [kwargs.get("color")]
                 kwargs.pop('c')
 
             else:

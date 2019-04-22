@@ -34,9 +34,11 @@ from fda.datasets import make_sinusoidal_process, make_gaussian_process
 n_samples = 10
 n_features = 10
 
-fd1 = make_sinusoidal_process(n_samples = n_samples, n_features=n_features)
+fd1 = make_sinusoidal_process(n_samples = n_samples, n_features=n_features,
+                              random_state=5)
 fd1.dataset_label = "Sinusoidal process"
-fd2 = make_gaussian_process(n_samples = n_samples, n_features=n_features)
+fd2 = make_gaussian_process(n_samples = n_samples, n_features=n_features,
+                              random_state=1)
 fd2.dataset_label = "Brownian process"
 
 ##################################################################################

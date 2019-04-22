@@ -12,7 +12,7 @@ class TestBasis(unittest.TestCase):
         t = np.linspace(0, 1, 5)
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = BSpline((0, 1), nbasis=5)
-        np.testing.assert_array_equal(
+        np.testing.assert_array_almost_equal(
             FDataBasis.from_data(x, t, basis, smoothness_parameter=10,
                                  penalty_degree=2, method='cholesky'
                                  ).coefficients.round(2),
@@ -23,7 +23,7 @@ class TestBasis(unittest.TestCase):
         t = np.linspace(0, 1, 5)
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = BSpline((0, 1), nbasis=5)
-        np.testing.assert_array_equal(
+        np.testing.assert_array_almost_equal(
             FDataBasis.from_data(x, t, basis, smoothness_parameter=10,
                                  penalty_degree=2, method='qr'
                                  ).coefficients.round(2),
@@ -40,12 +40,12 @@ class TestBasis(unittest.TestCase):
                                   penalty_degree=2,
                                   smoothness_parameter=1)
         # These results where extracted from the R package fda
-        np.testing.assert_array_equal(
+        np.testing.assert_array_almost_equal(
             fd.coefficients.round(2), np.array([[0.61, -0.88, 0.06, 0.02]]))
 
     def test_bspline_penalty_special_case(self):
         basis = BSpline(nbasis=5)
-        np.testing.assert_array_equal(
+        np.testing.assert_array_almost_equal(
             basis.penalty(basis.order - 1),
             np.array([[1152., -2016., 1152., -288., 0.],
                       [-2016., 3600., -2304., 1008., -288.],
@@ -55,7 +55,7 @@ class TestBasis(unittest.TestCase):
 
     def test_fourier_penalty(self):
         basis = Fourier(nbasis=5)
-        np.testing.assert_array_equal(
+        np.testing.assert_array_almost_equal(
             basis.penalty(2).round(2),
             np.array([[0., 0., 0., 0., 0.],
                       [0., 1558.55, 0., 0., 0.],
@@ -65,7 +65,7 @@ class TestBasis(unittest.TestCase):
 
     def test_bspline_penalty(self):
         basis = BSpline(nbasis=5)
-        np.testing.assert_array_equal(
+        np.testing.assert_array_almost_equal(
             basis.penalty(2).round(2),
             np.array([[96., -132., 24., 12., 0.],
                       [-132., 192., -48., -24., 12.],
@@ -75,7 +75,7 @@ class TestBasis(unittest.TestCase):
 
     def test_bspline_penalty_numerical(self):
         basis = BSpline(nbasis=5)
-        np.testing.assert_array_equal(
+        np.testing.assert_array_almost_equal(
             basis.penalty(coefficients=[0, 0, 1]).round(2),
             np.array([[96., -132., 24., 12., 0.],
                       [-132., 192., -48., -24., 12.],
@@ -128,7 +128,7 @@ class TestBasis(unittest.TestCase):
     def test_basis_basis_inprod(self):
         monomial = Monomial(nbasis=4)
         bspline = BSpline(nbasis=5, order=4)
-        np.testing.assert_array_equal(
+        np.testing.assert_array_almost_equal(
             monomial.inner_product(bspline).round(3),
             np.array(
                 [[0.12499983, 0.25000035, 0.24999965, 0.25000035, 0.12499983],
@@ -143,7 +143,7 @@ class TestBasis(unittest.TestCase):
         bspline = BSpline(nbasis=5, order=3)
         bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
 
-        np.testing.assert_array_equal(
+        np.testing.assert_array_almost_equal(
             monomial.inner_product(bsplinefd).round(3),
             np.array([[2., 7., 12.],
                       [1.29626206, 3.79626206, 6.29626206],
@@ -161,7 +161,7 @@ class TestBasis(unittest.TestCase):
         bspline = BSpline(nbasis=5, order=3)
         bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
 
-        np.testing.assert_array_equal(
+        np.testing.assert_array_almost_equal(
             monomialfd.inner_product(bsplinefd).round(3),
             np.array([[16.14797697, 52.81464364, 89.4813103],
                       [11.55565285, 38.22211951, 64.88878618],
@@ -175,7 +175,7 @@ class TestBasis(unittest.TestCase):
         bspline = BSpline(nbasis=5, order=3)
         bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
 
-        np.testing.assert_array_equal(
+        np.testing.assert_array_almost_equal(
             bsplinefd.inner_product(monomial).round(3),
             np.transpose(monomial.inner_product(bsplinefd).round(3))
         )

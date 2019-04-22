@@ -49,7 +49,7 @@ class TestMagnitudeShapePlot(unittest.TestCase):
                                     sample_points=fd.sample_points,
                                     dataset_label=fd.dataset_label,
                                     axes_labels=fd.axes_labels[0:2])
-        msplot = MagnitudeShapePlot(fd_temperatures)
+        msplot = MagnitudeShapePlot(fd_temperatures, random_state=0)
         np.testing.assert_allclose(msplot.points,
                                    np.array([[0.28216472, 3.15069249],
                                              [1.43406267, 0.77729052],

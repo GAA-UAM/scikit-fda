@@ -87,13 +87,27 @@ def fetch_ucr(name, **kwargs):
     import skdatasets
 
     dataset = skdatasets.ucr.fetch(name, **kwargs)
+    
+    def ucr_to_fdatagrid(data):
+        if data.dtype == np.object_:
+            data = np.array(data.tolist())
+            
+            # n_instances = data.shape[0]
+            # dim_output = data.shape[1]
+            # n_points = data.shape[2]
+            
+            data = np.transpose(data, axes=(0, 2, 1))
+            
+        sample_points = range(data.shape[1])
+            
+        return FDataGrid(data, sample_points=sample_points)   
 
-    dataset['data'] = FDataGrid(dataset['data'])
+    dataset['data'] = ucr_to_fdatagrid(dataset['data'])
     del dataset['feature_names']
 
     data_test = dataset.get('data_test', None)
     if data_test is not None:
-        dataset['data_test'] = FDataGrid(data_test)
+        dataset['data_test'] = ucr_to_fdatagrid(data_test)
 
     return dataset
 

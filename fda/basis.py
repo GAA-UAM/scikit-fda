@@ -19,10 +19,12 @@ from scipy.special import binom
 
 from . import grid
 from .functional_data import FData, _list_of_arrays
+from .lfd import Lfd
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
+MIN_EVAL_SAMPLES = 201
 
 # aux functions
 def _polypow(p, n=2):
@@ -138,35 +140,23 @@ class Basis(ABC):
 
         return self._compute_matrix(eval_points, derivative)
 
-    def plot(self, ax=None, derivative=0, **kwargs):
+    def plot(self, chart=None, *, derivative=0, **kwargs):
         """Plot the basis object or its derivatives.
 
         Args:
-            ax (axis object, optional): axis over with the graphs are plotted.
-                Defaults to matplotlib current axis.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-            **kwargs: keyword arguments to be [RS05]_passed to the
-                matplotlib.pyplot.plot function.
+            chart (figure object, axe or list of axes, optional): figure over
+                with the graphs are plotted or axis over where the graphs are
+                    plotted.
+            derivative (int or tuple, optional): Order of derivative to be
+                plotted. Defaults 0.
+            **kwargs: keyword arguments to be passed to the fdata.plot function.
 
         Returns:
-            List of lines that were added to the plot.
+            fig (figure object): figure object in which the graphs are plotted.
+            ax (axes object): axes in which the graphs are plotted.
 
         """
-
-        if self.ndim_domain > 1 or self.ndim_image > 1:
-            raise NotImplementedError
-
-        if ax is None:
-            ax = matplotlib.pyplot.gca()
-        # Number of points where the basis are evaluated
-        npoints = max(501, 10 * self.nbasis)
-        # List of points where the basis are evaluated
-        eval_points = numpy.linspace(*self.domain_range[0], npoints)
-
-        # Basis evaluated in the previous list of points
-        mat = self.evaluate(eval_points, derivative=derivative, keepdims=False)
-        # Plot
-        return ax.plot(eval_points, mat.T, **kwargs)
+        self.to_basis().plot(chart=chart, derivative=derivative, **kwargs)
 
     def _evaluate_single_basis_coefficients(self, coefficients, basis_index, x,
                                             cache):
@@ -269,7 +259,7 @@ class Basis(ABC):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-               Springler.
+               Springer.
 
         """
         pass
@@ -307,6 +297,14 @@ class Basis(ABC):
 
         return type(self)(domain_range, self.nbasis)
 
+    def same_domain(self, other):
+        r"""Returns if two basis are defined on the same domain range.
+
+            Args:
+                other (Basis): Basis to check the domain range definition
+        """
+        return _same_domain(self.domain_range, other.domain_range)
+
     def copy(self):
         """Basis copy"""
         return copy.deepcopy(self)
@@ -314,8 +312,17 @@ class Basis(ABC):
     def to_basis(self):
         return FDataBasis(self.copy(), numpy.identity(self.nbasis))
 
-    def inprod(self, other):
-        return self.to_basis().inprod(other)
+    def _list_to_R(self, knots):
+        retstring = "c("
+        for i in range(0, len(knots)):
+            retstring = retstring + str(knots[i]) + ", "
+        return retstring[0:len(retstring) - 2] + ")"
+
+    def _to_R(self):
+        raise NotImplementedError
+
+    def inner_product(self, other):
+        return numpy.transpose(other.inner_product(self.to_basis()))
 
     def __repr__(self):
         """Representation of a Basis object."""
@@ -418,12 +425,12 @@ class Constant(Basis):
             >>> Constant((0,5)).penalty(0)
             array([[5]])
             >>> Constant().penalty(1)
-            array([[0.]])
+            array([[ 0.]])
 
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
         if derivative_degree is None:
@@ -442,6 +449,11 @@ class Constant(Basis):
     def rbasis_of_product(self, other):
         """Multiplication of a Constant Basis with other Basis"""
         return other.copy()
+
+    def _to_R(self):
+        drange = self.domain_range[0]
+        return "create.constant.basis(rangeval = c(" + str(drange[0]) + "," +\
+               str(drange[1]) + "))"
 
 
 class Monomial(Basis):
@@ -467,20 +479,20 @@ class Monomial(Basis):
         values.
 
         >>> bs_mon.evaluate([0, 1, 2])
-        array([[1., 1., 1.],
-               [0., 1., 2.],
-               [0., 1., 4.]])
+        array([[ 1.,  1.,  1.],
+               [ 0.,  1.,  2.],
+               [ 0.,  1.,  4.]])
 
         And also evaluates its derivatives
 
         >>> bs_mon.evaluate([0, 1, 2], derivative=1)
-        array([[0., 0., 0.],
-               [1., 1., 1.],
-               [0., 2., 4.]])
+        array([[ 0.,  0.,  0.],
+               [ 1.,  1.,  1.],
+               [ 0.,  2.,  4.]])
         >>> bs_mon.evaluate([0, 1, 2], derivative=2)
-        array([[0., 0., 0.],
-               [0., 0., 0.],
-               [2., 2., 2.]])
+        array([[ 0.,  0.,  0.],
+               [ 0.,  0.,  0.],
+               [ 2.,  2.,  2.]])
 
     """
 
@@ -569,7 +581,7 @@ class Monomial(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
 
@@ -638,6 +650,11 @@ class Monomial(Basis):
         """Multiplication of a Monomial Basis with other Basis"""
         return Basis.default_basis_of_product(self, other)
 
+    def _to_R(self):
+        drange = self.domain_range[0]
+        return "create.monomial.basis(rangeval = c(" + str(drange[0]) + "," +\
+               str(drange[1]) + "), nbasis = " + str(self.nbasis) + ")"
+
 
 class BSpline(Basis):
     r"""BSpline basis.
@@ -685,9 +702,9 @@ class BSpline(Basis):
 
         >>> bss = BSpline(nbasis=3, order=3)
         >>> bss.evaluate([0, 0.5, 1])
-        array([[1.  , 0.25, 0.  ],
-               [0.  , 0.5 , 0.  ],
-               [0.  , 0.25, 1.  ]])
+        array([[ 1.  ,  0.25,  0.  ],
+               [ 0.  ,  0.5 ,  0.  ],
+               [ 0.  ,  0.25,  1.  ]])
 
         And evaluates first derivative
 
@@ -698,7 +715,7 @@ class BSpline(Basis):
 
     References:
         .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
-            Analysis*. Springler. 50-51.
+            Analysis*. Springer. 50-51.
 
     """
 
@@ -801,7 +818,7 @@ class BSpline(Basis):
 
         References:
             .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
-                Analysis*. Springler. 50-51.
+                Analysis*. Springer. 50-51.
 
         """
         # Places m knots at the boundaries
@@ -856,7 +873,7 @@ class BSpline(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
         if derivative_degree is not None:
@@ -912,9 +929,9 @@ class BSpline(Basis):
                         coeffs[j + 1:] += (
                                 (binom(self.order - j - 1,
                                        range(1, self.order - j))
-                                 * numpy.vstack(((-a) ** numpy.array(
+                                 * numpy.vstack([(-a) ** numpy.array(
                                             range(1, self.order - j)) for a in
-                                                 self.knots[:-1]))
+                                                 self.knots[:-1]])
                                  ).T * pp[j])
                     ppoly_lst.append(coeffs)
                     c[i] = 0
@@ -1049,6 +1066,13 @@ class BSpline(Basis):
         nbasis = max(self.nbasis + other.nbasis, norder + 1)
         return BSpline(self.domain_range, nbasis, norder)
 
+    def _to_R(self):
+        drange = self.domain_range[0]
+        return ("create.bspline.basis(rangeval = c(" + str(drange[0]) + "," +
+                str(drange[1]) + "), nbasis = " + str(self.nbasis) +
+                ", norder = " + str(self.order) + ", breaks = " +
+                self._listtoR(self.knots) + ")")
+
     @property
     def inknots(self):
         """Return number of basis."""
@@ -1087,16 +1111,16 @@ class Fourier(Basis):
         >>> fb = Fourier((0, numpy.pi), nbasis=3, period=1)
         >>> fb.evaluate([0, numpy.pi / 4, numpy.pi / 2, numpy.pi]).round(2)
         array([[ 1.  ,  1.  ,  1.  ,  1.  ],
-               [ 1.41,  0.31, -1.28,  0.89],
-               [ 0.  , -1.38, -0.61,  1.1 ]])
+               [ 0.  , -1.38, -0.61,  1.1 ],
+               [ 1.41,  0.31, -1.28,  0.89]])
 
         And evaluate second derivative
 
         >>> fb.evaluate([0, numpy.pi / 4, numpy.pi / 2, numpy.pi],
         ...             derivative = 2).round(2)
         array([[  0.  ,   0.  ,   0.  ,   0.  ],
-               [-55.83, -12.32,  50.4 , -35.16],
-               [ -0.  ,  54.46,  24.02, -43.37]])
+               [ -0.  ,  54.46,  24.02, -43.37],
+               [-55.83, -12.32,  50.4 , -35.16]])
 
 
 
@@ -1162,11 +1186,11 @@ class Fourier(Basis):
             if nbasis > 1:
                 # 2*pi*n*x / period
                 args = numpy.outer(range(1, nbasis // 2 + 1), omega_t)
-                index = range(2, nbasis, 2)
-                # even indexes are sine functions
+                index = range(1, nbasis-1, 2)
+                # odd indexes are sine functions
                 mat[index] = numpy.sin(args)
-                index = range(1, nbasis - 1, 2)
-                # odd indexes are cosine functions
+                index = range(2, nbasis, 2)
+                # even indexes are cosine functions
                 mat[index] = numpy.cos(args)
         # evaluates the derivatives
         else:
@@ -1186,11 +1210,11 @@ class Fourier(Basis):
                 # odd indexes
                 index_o = range(1, nbasis - 1, 2)
                 if derivative % 2 == 0:
-                    mat[index_e] = factor * numpy.sin(args)
-                    mat[index_o] = factor * numpy.cos(args)
-                else:
+                    mat[index_o] = factor * numpy.sin(args)
                     mat[index_e] = factor * numpy.cos(args)
-                    mat[index_o] = -factor * numpy.sin(args)
+                else:
+                    mat[index_o] = factor * numpy.cos(args)
+                    mat[index_e] = -factor * numpy.sin(args)
 
         # normalise
         mat = mat / numpy.sqrt(self.period / 2)
@@ -1239,7 +1263,7 @@ class Fourier(Basis):
         References:
             .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springler.
+                Springer.
 
         """
         if isinstance(derivative_degree, int):
@@ -1308,6 +1332,12 @@ class Fourier(Basis):
 
         return rescale_basis
 
+    def _to_R(self):
+        drange = self.domain_range[0]
+        return ("create.fourier.basis(rangeval = c(" + str(drange[0]) + "," +
+                str(drange[1]) + "), nbasis = " + str(self.nbasis) +
+                ", period = " + str(self.period) + ")")
+
     def __repr__(self):
         """Representation of a Fourier basis."""
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
@@ -1345,7 +1375,7 @@ class FDataBasis(FData):
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
             basis=Monomial(domain_range=[array([0, 1])], nbasis=4),
-            coefficients=[[1.  1.  3.  0.5]],
+            coefficients=[[ 1.   1.   3.   0.5]],
             ...)
 
     """
@@ -1459,16 +1489,16 @@ class FDataBasis(FData):
             >>> basis = Fourier((0, 1), nbasis=3)
             >>> fd = FDataBasis.from_data(x, t, basis)
             >>> fd.coefficients.round(2)
-            array([[0.  , 0.71, 0.71]])
+            array([[ 0.  , 0.71, 0.71]])
 
         References:
             .. [RS05-5-2-5] Ramsay, J., Silverman, B. W. (2005). How spline
                 smooths are computed. In *Functional Data Analysis* (pp. 86-87).
-                Springler.
+                Springer.
 
             .. [RS05-5-2-7] Ramsay, J., Silverman, B. W. (2005). HSpline
                 smoothing as an augmented least squares problem. In *Functional
-                Data Analysis* (pp. 86-87). Springler.
+                Data Analysis* (pp. 86-87). Springer.
 
 
 
@@ -1787,38 +1817,6 @@ class FDataBasis(FData):
 
         raise NotImplementedError
 
-    def plot(self, ax=None, derivative=0, **kwargs):
-        """Plot the FDataBasis object or its derivatives.
-
-        Args:
-            ax (axis object, optional): axis over with the graphs are plotted.
-                Defaults to matplotlib current axis.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-            **kwargs: keyword arguments to be passed to the
-                matplotlib.pyplot.plot function.
-
-        Returns:
-            List of lines that were added to the plot.
-
-        """
-
-        if self.ndim_image > 1 or self.ndim_domain > 1:
-            raise NotImplementedError
-
-        if ax is None:
-            ax = matplotlib.pyplot.gca()
-        npoints = max(501, 10 * self.nbasis)
-        # List of points where the basis are evaluated
-        eval_points = numpy.linspace(*self.domain_range[0], npoints)
-        # Basis evaluated in the previous list of points
-        mat = self.evaluate(eval_points, derivative=derivative, keepdims=False)
-        # Plot
-        _plot = ax.plot(eval_points, mat.T, **kwargs)
-
-        self._set_labels(ax)
-
-        return _plot
-
     def mean(self):
         """Compute the mean of all the samples in a FDataBasis object.
 
@@ -1833,7 +1831,7 @@ class FDataBasis(FData):
             >>> FDataBasis(basis, coefficients).mean()
             FDataBasis(
                 basis=Monomial(domain_range=[array([0, 1])], nbasis=4),
-                coefficients=[[1.  1.  3.  0.5]],
+                coefficients=[[ 1.  1.  3.  0.5]],
                 ...)
 
         """
@@ -1920,13 +1918,13 @@ class FDataBasis(FData):
             ...                 basis=Monomial((0,5), nbasis=3))
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
-                array([[[1.],
-                        [3.],
-                        [7.]],
+                array([[[ 1.],
+                        [ 3.],
+                        [ 7.]],
             <BLANKLINE>
-                       [[1.],
-                        [2.],
-                        [5.]]]),
+                       [[ 1.],
+                        [ 2.],
+                        [ 5.]]]),
                 sample_points=[array([0, 1, 2])],
                 domain_range=array([[0, 5]]),
                 ...)
@@ -1961,6 +1959,10 @@ class FDataBasis(FData):
 
         return self.to_grid(eval_points=eval_points).to_basis(basis, **kwargs)
 
+    def to_list(self):
+        """Splits FDataBasis samples into a list"""
+        return [self[i] for i in range(self.nsamples)]
+
     def copy(self, *, basis=None, coefficients=None, dataset_label=None,
              axes_labels=None, extrapolation=None, keepdims=None):
         """FDataBasis copy"""
@@ -1987,18 +1989,134 @@ class FDataBasis(FData):
                           axes_labels=axes_labels, extrapolation=extrapolation,
                           keepdims=keepdims)
 
-    def inprod(self, other):
+    def times(self, other):
+        """"Provides a numerical approximation of the multiplication between
+            an FDataObject to other object
+
+        Args:
+            other (int, list, FDataBasis): Object to multiply with the
+                                           FDataBasis object.
+                - int: Multiplies all samples with the value
+                - list: multiply each values with the samples respectively.
+                        Length should match with FDataBasis samples
+                - FDataBasis: if there is one sample it multiplies this with
+                              all the samples in the object. If not, it
+                              multiplies each sample respectively. Samples
+                              should match
+
+        Returns:
+            (FDataBasis): FDataBasis object containing the multiplication
+
+        """
+        if isinstance(other, FDataBasis):
+
+            if not _same_domain(self.domain_range, other.domain_range):
+                raise ValueError("The functions domains are different.")
+
+            basisobj = self.basis.basis_of_product(other.basis)
+            neval = max(10 * max(self.nbasis, other.nbasis) + 1,
+                        MIN_EVAL_SAMPLES)
+            (left, right) = self.domain_range[0]
+            evalarg = numpy.linspace(left, right, neval)
+
+            first = self.copy(coefficients=(numpy.repeat(self.coefficients,
+                            other.nsamples, axis=0) if self.nsamples == 1 and
+                            other.nsamples > 1 else self.coefficients.copy()))
+            second = other.copy(coefficients=(numpy.repeat(other.coefficients,
+                            self.nsamples, axis=0) if other.nsamples == 1 and
+                            self.nsamples > 1 else other.coefficients.copy()))
+
+            fdarray = first.evaluate(evalarg) * second.evaluate(evalarg)
+
+            return FDataBasis.from_data(fdarray, evalarg, basisobj)
+
+        if isinstance(other, int):
+            other = [other for _ in range(self.nsamples)]
+
+        coefs = numpy.transpose(numpy.atleast_2d(other))
+        return self.copy(coefficients=self.coefficients*coefs)
+
+    def inner_product(self, other, lfd_self=None, lfd_other=None,
+                      weights=None):
+        r"""Return an inner product matrix given a FDataBasis object.
+
+        The inner product of two functions is defined as
+
+        .. math::
+            <x, y> = \int_a^b x(t)y(t) dt
+
+        When we talk abaout FDataBasis objects, they have many samples, so we
+        talk about inner product matrix instead. So, for two FDataBasis objects
+        we define the inner product matrix as
+
+        .. math::
+            a_{ij} = <x_i, y_i> = \int_a^b x_i(s) y_j(s) ds
+
+        where :math:`f_i(s), g_j(s)` are the :math:`i^{th} j^{th}` sample of
+        each object. The return matrix has a shape of :math:`IxJ` where I and
+        J are the number of samples of each object respectively.
+
+        Args:
+            other (FDataBasis, Basis): FDataBasis object containing the second
+                    object to make the inner product
+
+            lfd_self (Lfd): Lfd object for the first function evaluation
+
+            lfd_other (Lfd): Lfd object for the second function evaluation
+
+            weights(FDataBasis): a FDataBasis object with only one sample that
+                    defines the weight to calculate the inner product
+
+        Returns:
+            numpy.array: Inner Product matrix.
+
+        """
+
         if not _same_domain(self.domain_range, other.domain_range):
             raise ValueError("Both Objects should have the same domain_range")
         if isinstance(other, Basis):
             other = other.to_basis()
 
-        inprodmat = [
-            scipy.integrate.quad(lambda x: self[i].evaluate([x]) * other[j].evaluate([x]),
-                                 self.domain_range[0][0], self.domain_range[0][1])[0]
-            for j in range(0, other.nsamples)
-            for i in range(0, self.nsamples)]
-        return numpy.array(inprodmat).reshape((self.nsamples, other.nsamples))
+        # TODO this will be used when lfd evaluation is ready
+        lfd_self = Lfd(0) if (lfd_self is None) else lfd_self
+        lfd_other = Lfd(0) if (lfd_other is None) else lfd_other
+
+        if weights is not None:
+            other = other.times(weights)
+
+        matrix = numpy.empty((self.nsamples, other.nsamples))
+        (left, right) = self.domain_range[0]
+
+        for i in range(self.nsamples):
+            for j in range(other.nsamples):
+                fd = self[i].times(other[j])
+                matrix[i, j] = scipy.integrate.quad(
+                    lambda x: fd.evaluate([x])[0], left, right)[0]
+        return matrix
+
+    def _to_R(self):
+        """Gives the code to build the object on fda package on R"""
+        return ("fd(coef = " + self._arraytoR(self.coefficients, True) +
+                ", basisobj = " + self.basis._to_R() + ")")
+
+    def _array_to_R(self, coefficients, transpose=False):
+        if len(coefficients.shape) == 1:
+            coefficients = coefficients.reshape((1, coefficients.shape[0]))
+
+        if len(coefficients.shape) > 2:
+            return NotImplementedError
+
+        if transpose is True:
+            coefficients = numpy.transpose(coefficients)
+
+        (rows, cols) = coefficients.shape
+        retstring = "matrix(c("
+        for j in range(cols):
+            for i in range(rows):
+                retstring = retstring + str(coefficients[i, j]) + ", "
+
+        return (retstring[0:len(retstring) - 2] + "), nrow = " + str(rows) +
+                ", ncol = " + str(cols) + ")")
 
     def __repr__(self):
         """Representation of FDataBasis object."""
@@ -2016,6 +2134,11 @@ class FDataBasis(FData):
         return (f"{self.__class__.__name__}("
                 f"\nbasis={self.basis},"
                 f"\ncoefficients={self.coefficients})").replace('\n', '\n    ')
+
+    def __eq__(self, other):
+        """Equality of FDataBasis"""
+        # TODO check all other params
+        return self.basis == other.basis and numpy.all(self.coefficients == other.coefficients)
 
     def concatenate(self, other):
         """Join samples from a similar FDataBasis object.
@@ -2037,7 +2160,6 @@ class FDataBasis(FData):
         return self.copy(coefficients=numpy.concatenate((self.coefficients,
                                                          other.coefficients),
                                                         axis=0))
-
 
     def compose(self, fd, *, eval_points=None, **kwargs):
         """Composition of functions.
@@ -2062,7 +2184,6 @@ class FDataBasis(FData):
             composition = grid
 
         return composition
-
 
     def __getitem__(self, key):
         """Return self[key]."""

@@ -13,15 +13,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-
-#TODO: Delete auxiliar plot function after merge the graphics branch
-def plot_aux(fd):
-    """Temporal function. Plots using the interpolation"""
-
-    t = np.linspace(*fd.domain_range[0], 200)
-    plt.plot(t, fd(t).T)
-
-
 ###############################################################################
 # The simplest curve alignment procedure is landmark registration. This
 # method only takes into account a discrete ammount of features of the curves
@@ -89,8 +80,8 @@ warping = fda.registration.landmark_registration_warping(fd, landmarks,
 
 plt.figure()
 
-
-plot_aux(warping)
+# Plots warping
+warping.plot()
 
 # Plot landmarks
 for i in range(fd.nsamples):

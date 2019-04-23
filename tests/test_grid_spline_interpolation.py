@@ -26,10 +26,11 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10))
 
         # Test interpolation in nodes
-        np.testing.assert_array_equal(f(np.arange(10)), self.data_matrix_1_1)
+        np.testing.assert_array_almost_equal(
+            f(np.arange(10)), self.data_matrix_1_1)
 
         # Test evaluation in a list of times
-        np.testing.assert_array_equal(f([0.5,1.5,2.5]),
+        np.testing.assert_array_almost_equal(f([0.5,1.5,2.5]),
                                       np.array([[ 0.5,  2.5,  6.5],
                                                 [72.5, 56.5, 42.5]]))
 
@@ -39,10 +40,10 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10))
 
         # Test a single point
-        np.testing.assert_array_equal(f(5.3).round(1),
+        np.testing.assert_array_almost_equal(f(5.3).round(1),
                                       np.array([[28.3], [13.9]]))
-        np.testing.assert_array_equal(f([3]), np.array([[9.], [36.]]))
-        np.testing.assert_array_equal(f((2,)), np.array([[4.], [49.]]))
+        np.testing.assert_array_almost_equal(f([3]), np.array([[9.], [36.]]))
+        np.testing.assert_array_almost_equal(f((2,)), np.array([[4.], [49.]]))
 
 
     def test_evaluation_linear_derivative(self):
@@ -50,7 +51,8 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10))
 
         # Derivate = [2*x, 2*(9-x)]
-        np.testing.assert_array_equal(f([0.5,1.5,2.5], derivative=1).round(3),
+        np.testing.assert_array_almost_equal(
+            f([0.5,1.5,2.5], derivative=1).round(3),
                                       np.array([[  1.,   3.,   5.],
                                                 [-17., -15., -13.]]))
 
@@ -60,17 +62,19 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10))
 
         # Test interpolation in nodes
-        np.testing.assert_array_equal(f(np.arange(10)), self.data_matrix_1_1)
+        np.testing.assert_array_almost_equal(f(np.arange(10)),
+                                             self.data_matrix_1_1)
 
         res = np.array([[ 0.5,  2.5,  6.5], [72.5, 56.5, 42.5]])
         t = [0.5,1.5,2.5]
 
         # Test evaluation in a list of times
-        np.testing.assert_array_equal(f(t, grid=True), res)
-        np.testing.assert_array_equal(f((t,), grid=True), res)
-        np.testing.assert_array_equal(f([t], grid=True), res)
+        np.testing.assert_array_almost_equal(f(t, grid=True), res)
+        np.testing.assert_array_almost_equal(f((t,), grid=True), res)
+        np.testing.assert_array_almost_equal(f([t], grid=True), res)
         # Single point with grid
-        np.testing.assert_array_equal(f(3, grid=True), np.array([[9.], [36.]]))
+        np.testing.assert_array_almost_equal(f(3, grid=True),
+                                             np.array([[9.], [36.]]))
 
         # Check erroneous axis
         with np.testing.assert_raises(ValueError): f((t,t), grid=True)
@@ -80,18 +84,21 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10))
 
         # Evaluate (x**2, (9-x)**2) in (1,8)
-        np.testing.assert_array_equal(f([[1],[8]], aligned_evaluation=False),
+        np.testing.assert_array_almost_equal(f([[1],[8]],
+                                               aligned_evaluation=False),
                                       np.array([[1.], [1.]]))
 
         t = np.linspace(4,6,4)
-        np.testing.assert_array_equal(f([t,9-t], aligned_evaluation=False).round(2),
-                                      np.array([[16.  , 22.  , 28.67, 36.  ],
-                                                [16.  , 22.  , 28.67, 36.  ]]))
+        np.testing.assert_array_almost_equal(
+            f([t,9-t], aligned_evaluation=False).round(2),
+            np.array([[16.  , 22.  , 28.67, 36.  ],
+                      [16.  , 22.  , 28.67, 36.  ]]))
 
         # Same length than nsample
         t = np.linspace(4,6,2)
-        np.testing.assert_array_equal(f([t,9-t], aligned_evaluation=False).round(2),
-                                      np.array([[16.  , 36.], [16.  , 36.]]))
+        np.testing.assert_array_almost_equal(
+            f([t,9-t], aligned_evaluation=False).round(2),
+            np.array([[16.  , 36.], [16.  , 36.]]))
 
     def test_evaluation_linear_keepdims(self):
         """Test parameter keepdims"""
@@ -110,26 +117,26 @@ class TestEvaluationSpline1_1(unittest.TestCase):
 
 
         # Test combinations of keepdims with list
-        np.testing.assert_array_equal(f(t), res)
-        np.testing.assert_array_equal(f(t, keepdims=False), res)
-        np.testing.assert_array_equal(f(t, keepdims=True), res_keepdims)
+        np.testing.assert_array_almost_equal(f(t), res)
+        np.testing.assert_array_almost_equal(f(t, keepdims=False), res)
+        np.testing.assert_array_almost_equal(f(t, keepdims=True), res_keepdims)
 
-        np.testing.assert_array_equal(fk(t), res_keepdims)
-        np.testing.assert_array_equal(fk(t, keepdims=False), res)
-        np.testing.assert_array_equal(fk(t, keepdims=True), res_keepdims)
+        np.testing.assert_array_almost_equal(fk(t), res_keepdims)
+        np.testing.assert_array_almost_equal(fk(t, keepdims=False), res)
+        np.testing.assert_array_almost_equal(fk(t, keepdims=True), res_keepdims)
 
         t2 = 4
         res2 = np.array([[16.], [25.]])
         res2_keepdims = res2.reshape(2,1,1)
 
         # Test combinations of keepdims with a single point
-        np.testing.assert_array_equal(f(t2), res2)
-        np.testing.assert_array_equal(f(t2, keepdims=False), res2)
-        np.testing.assert_array_equal(f(t2, keepdims=True), res2_keepdims)
+        np.testing.assert_array_almost_equal(f(t2), res2)
+        np.testing.assert_array_almost_equal(f(t2, keepdims=False), res2)
+        np.testing.assert_array_almost_equal(f(t2, keepdims=True), res2_keepdims)
 
-        np.testing.assert_array_equal(fk(t2), res2_keepdims)
-        np.testing.assert_array_equal(fk(t2, keepdims=False), res2)
-        np.testing.assert_array_equal(fk(t2, keepdims=True), res2_keepdims)
+        np.testing.assert_array_almost_equal(fk(t2), res2_keepdims)
+        np.testing.assert_array_almost_equal(fk(t2, keepdims=False), res2)
+        np.testing.assert_array_almost_equal(fk(t2, keepdims=True), res2_keepdims)
 
     def test_evaluation_composed_linear_keepdims(self):
         """Test parameter keepdims with composed evaluation"""
@@ -148,17 +155,17 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         res_keepdims = res.reshape((2,3,1))
 
         # Test combinations of keepdims with list
-        np.testing.assert_array_equal(f(t, aligned_evaluation=False), res)
-        np.testing.assert_array_equal(f(t, aligned_evaluation=False,
+        np.testing.assert_array_almost_equal(f(t, aligned_evaluation=False), res)
+        np.testing.assert_array_almost_equal(f(t, aligned_evaluation=False,
                                         keepdims=False), res)
-        np.testing.assert_array_equal(f(t, aligned_evaluation=False,
+        np.testing.assert_array_almost_equal(f(t, aligned_evaluation=False,
                                         keepdims=True), res_keepdims)
 
-        np.testing.assert_array_equal(fk(t, aligned_evaluation=False),
+        np.testing.assert_array_almost_equal(fk(t, aligned_evaluation=False),
                                       res_keepdims)
-        np.testing.assert_array_equal(fk(t, aligned_evaluation=False,
+        np.testing.assert_array_almost_equal(fk(t, aligned_evaluation=False,
                                          keepdims=False), res)
-        np.testing.assert_array_equal(fk(t, aligned_evaluation=False,
+        np.testing.assert_array_almost_equal(fk(t, aligned_evaluation=False,
                                          keepdims=True), res_keepdims)
 
     def test_evaluation_grid_linear_keepdims(self):
@@ -176,15 +183,15 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         res = np.array([[ 0.5,  2.5,  6.5], [72.5, 56.5, 42.5]])
         res_keepdims = res.reshape(2,3,1)
 
-        np.testing.assert_array_equal(f(t, grid=True), res)
-        np.testing.assert_array_equal(f((t,), grid=True, keepdims=True),
+        np.testing.assert_array_almost_equal(f(t, grid=True), res)
+        np.testing.assert_array_almost_equal(f((t,), grid=True, keepdims=True),
                                       res_keepdims)
-        np.testing.assert_array_equal(f([t], grid=True, keepdims=False), res)
+        np.testing.assert_array_almost_equal(f([t], grid=True, keepdims=False), res)
 
-        np.testing.assert_array_equal(fk(t, grid=True), res_keepdims)
-        np.testing.assert_array_equal(fk((t,), grid=True, keepdims=True),
+        np.testing.assert_array_almost_equal(fk(t, grid=True), res_keepdims)
+        np.testing.assert_array_almost_equal(fk((t,), grid=True, keepdims=True),
                                       res_keepdims)
-        np.testing.assert_array_equal(fk([t], grid=True, keepdims=False), res)
+        np.testing.assert_array_almost_equal(fk([t], grid=True, keepdims=False), res)
 
     def test_evaluation_cubic_simple(self):
         """Test basic usage of evaluation"""
@@ -193,11 +200,11 @@ class TestEvaluationSpline1_1(unittest.TestCase):
                       interpolator=GridSplineInterpolator(3))
 
         # Test interpolation in nodes
-        np.testing.assert_array_equal(f(np.arange(10)).round(1),
+        np.testing.assert_array_almost_equal(f(np.arange(10)).round(1),
                                       self.data_matrix_1_1)
 
         # Test evaluation in a list of times
-        np.testing.assert_array_equal(f([0.5,1.5,2.5]).round(2),
+        np.testing.assert_array_almost_equal(f([0.5,1.5,2.5]).round(2),
                                       np.array([[ 0.25,  2.25,  6.25],
                                                 [72.25, 56.25, 42.25]]))
 
@@ -208,11 +215,11 @@ class TestEvaluationSpline1_1(unittest.TestCase):
                       interpolator=GridSplineInterpolator(3))
 
         # Test a single point
-        np.testing.assert_array_equal(f(5.3).round(3), np.array([[28.09],
+        np.testing.assert_array_almost_equal(f(5.3).round(3), np.array([[28.09],
                                                                  [13.69]]))
 
-        np.testing.assert_array_equal(f([3]).round(3), np.array([[9.], [36.]]))
-        np.testing.assert_array_equal(f((2,)).round(3), np.array([[4.], [49.]]))
+        np.testing.assert_array_almost_equal(f([3]).round(3), np.array([[9.], [36.]]))
+        np.testing.assert_array_almost_equal(f((2,)).round(3), np.array([[4.], [49.]]))
 
 
     def test_evaluation_cubic_derivative(self):
@@ -221,7 +228,7 @@ class TestEvaluationSpline1_1(unittest.TestCase):
                       interpolator=GridSplineInterpolator(3))
 
         # Derivate = [2*x, 2*(9-x)]
-        np.testing.assert_array_equal(f([0.5,1.5,2.5], derivative=1).round(3),
+        np.testing.assert_array_almost_equal(f([0.5,1.5,2.5], derivative=1).round(3),
                                       np.array([[  1.,   3.,   5.],
                                                 [-17., -15., -13.]]))
 
@@ -236,11 +243,11 @@ class TestEvaluationSpline1_1(unittest.TestCase):
 
 
         # Test evaluation in a list of times
-        np.testing.assert_array_equal(f(t, grid=True).round(3), res)
-        np.testing.assert_array_equal(f((t,), grid=True).round(3), res)
-        np.testing.assert_array_equal(f([t], grid=True).round(3), res)
+        np.testing.assert_array_almost_equal(f(t, grid=True).round(3), res)
+        np.testing.assert_array_almost_equal(f((t,), grid=True).round(3), res)
+        np.testing.assert_array_almost_equal(f([t], grid=True).round(3), res)
         # Single point with grid
-        np.testing.assert_array_equal(f(3, grid=True), np.array([[9.], [36.]]))
+        np.testing.assert_array_almost_equal(f(3, grid=True), np.array([[9.], [36.]]))
 
         # Check erroneous axis
         with np.testing.assert_raises(ValueError): f((t,t), grid=True)
@@ -252,17 +259,17 @@ class TestEvaluationSpline1_1(unittest.TestCase):
 
 
         # Evaluate (x**2, (9-x)**2) in (1,8)
-        np.testing.assert_array_equal(f([[1],[8]], aligned_evaluation=False).round(3)
+        np.testing.assert_array_almost_equal(f([[1],[8]], aligned_evaluation=False).round(3)
                                       ,np.array([[1.], [1.]]))
 
         t = np.linspace(4,6,4)
-        np.testing.assert_array_equal(f([t,9-t], aligned_evaluation=False).round(2),
+        np.testing.assert_array_almost_equal(f([t,9-t], aligned_evaluation=False).round(2),
                                       np.array([[16.  , 21.78, 28.44, 36.  ],
                                                 [16.  , 21.78, 28.44, 36.  ]]))
 
         # Same length than nsample
         t = np.linspace(4,6,2)
-        np.testing.assert_array_equal(f([t,9-t], aligned_evaluation=False).round(3),
+        np.testing.assert_array_almost_equal(f([t,9-t], aligned_evaluation=False).round(3),
                                       np.array([[16.  , 36.], [16.  , 36.]]))
 
     def test_evaluation_nodes(self):
@@ -275,7 +282,7 @@ class TestEvaluationSpline1_1(unittest.TestCase):
                           interpolator=interpolator)
 
             # Test interpolation in nodes
-            np.testing.assert_array_equal(f(np.arange(10)).round(5),
+            np.testing.assert_array_almost_equal(f(np.arange(10)).round(5),
                                           self.data_matrix_1_1)
 
     def test_error_degree(self):
@@ -410,11 +417,11 @@ class TestEvaluationSpline1_n(unittest.TestCase):
 
         res = f(self.t)
         # Test interpolation in nodes
-        np.testing.assert_array_equal(f(self.t, keepdims=False), res)
-        np.testing.assert_array_equal(f(self.t, keepdims=True), res)
-        np.testing.assert_array_equal(fk(self.t), res)
-        np.testing.assert_array_equal(fk(self.t, keepdims=False), res)
-        np.testing.assert_array_equal(fk(self.t, keepdims=True), res)
+        np.testing.assert_array_almost_equal(f(self.t, keepdims=False), res)
+        np.testing.assert_array_almost_equal(f(self.t, keepdims=True), res)
+        np.testing.assert_array_almost_equal(fk(self.t), res)
+        np.testing.assert_array_almost_equal(fk(self.t, keepdims=False), res)
+        np.testing.assert_array_almost_equal(fk(self.t, keepdims=True), res)
 
 
     def test_evaluation_nodes(self):

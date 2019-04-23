@@ -81,7 +81,6 @@ class FDataGrid(FData):
         ValueError: Incorrect dimension in data_matrix and sample_points...
 
 
-
         FDataGrid support higher dimensional data both in the domain and image.
         Representation of a functional data object with 2 samples
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}^2`.
@@ -94,6 +93,7 @@ class FDataGrid(FData):
 
         Representation of a functional data object with 2 samples
         representing a function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}`.
+
         >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
         >>> sample_points = [[2, 4], [3,6]]
         >>> fd = FDataGrid(data_matrix, sample_points)
@@ -179,7 +179,7 @@ class FDataGrid(FData):
             self.data_matrix = self.data_matrix[..., numpy.newaxis]
 
         if axes_labels is not None and len(axes_labels) != (self.ndim_domain + self.ndim_image):
-            raise ValueError("There must be a label for each of the"  
+            raise ValueError("There must be a label for each of the"
                               "dimensions of the domain and the image.")
 
         self.dataset_label = dataset_label
@@ -406,11 +406,11 @@ class FDataGrid(FData):
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative()
             FDataGrid(
-                array([[[1. ],
-                        [1.5],
-                        [1.5],
-                        [2. ],
-                        [3. ]]]),
+                array([[[ 1. ],
+                        [ 1.5],
+                        [ 1.5],
+                        [ 2. ],
+                        [ 3. ]]]),
                 sample_points=[array([0, 1, 2, 3, 4])],
                 domain_range=array([[0, 4]]),
                 ...)
@@ -420,11 +420,11 @@ class FDataGrid(FData):
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative(2)
             FDataGrid(
-                array([[[0.5 ],
-                        [0.25],
-                        [0.25],
-                        [0.75],
-                        [1.  ]]]),
+                array([[[ 0.5 ],
+                        [ 0.25],
+                        [ 0.25],
+                        [ 0.75],
+                        [ 1.  ]]]),
                 sample_points=[array([0, 1, 2, 3, 4])],
                 domain_range=array([[0, 4]]),
                 ...)
@@ -685,159 +685,6 @@ class FDataGrid(FData):
                                                         other.data_matrix),
                                                        axis=0))
 
-    def set_figure_and_axes(self, nrows, ncols):
-        """Set figure and its axes.
-
-        Args:
-            nrows(int, optional): designates the number of rows of the figure to plot the different dimensions of the
-                image. ncols must be also be customized in the same call.
-            ncols(int, optional): designates the number of columns of the figure to plot the different dimensions of the
-                image. nrows must be also be customized in the same call.
-
-        Returns:
-            fig (figure object): figure object initialiazed.
-            ax (axes object): axes of the initialized figure.
-
-        """
-        fig = plt.gcf()
-
-        if self.ndim_domain == 1:
-            projection = None
-        else:
-            projection = '3d'
-
-        if ncols is None and nrows is None:
-            ncols = math.ceil(math.sqrt(self.ndim_image))
-            nrows = math.ceil(self.ndim_image / ncols)
-        elif ncols is None and nrows is not None:
-            nrows = math.ceil(self.ndim_image / nrows)
-        elif ncols is not None and nrows is None:
-            nrows = math.ceil(self.ndim_image / ncols)
-
-        for i in range(self.ndim_image):
-            fig.add_subplot(nrows, ncols, i + 1, projection=projection)
-
-        if ncols > 1 and self.axes_labels is not None and self.ndim_image > 1:
-            plt.subplots_adjust(wspace=0.4)
-
-        if nrows > 1 and self.axes_labels is not None and self.ndim_image > 1:
-            plt.subplots_adjust(hspace=0.4)
-
-        ax = fig.get_axes()
-
-        return fig, ax
-
-    def set_labels(self, fig=None, ax=None):
-        """Set labels if any.
-
-        Args:
-            fig (figure object): figure object containing the axes that implement set_xlabel and set_ylabel,
-                                 and set_zlabel in case of a 3d projection.
-
-        """
-        if fig is not None:
-            if self.dataset_label is not None:
-                fig.suptitle(self.dataset_label)
-            ax = fig.get_axes()
-        elif self.dataset_label is not None and len(ax) == 1:
-            ax[0].set_title(self.dataset_label)
-
-
-        if self.axes_labels is not None:
-            if ax[0].name == '3d':
-                for i in range(self.ndim_image):
-                    ax[i].set_xlabel(self.axes_labels[0])
-                    ax[i].set_ylabel(self.axes_labels[1])
-                    ax[i].set_zlabel(self.axes_labels[i + 2])
-            else:
-                for i in range(self.ndim_image):
-                    ax[i].set_xlabel(self.axes_labels[0])
-                    ax[i].set_ylabel(self.axes_labels[i + 1])
-
-    def _generic_plotting_checks(self, fig=None, ax=None, nrows=None, ncols=None):
-        """Check the arguments passed to both :func:`plot <fda.grid.plot>` and :func:`scatter <fda.grid.scatter>`
-         methods of the FDatGrid object.
-
-        Args:
-            fig (figure object, optional): figure over with the graphs are plotted in case ax is not specified.
-                If None and ax is also None, the figure is initialized.
-            ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
-            nrows(int, optional): designates the number of rows of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. ncols must be also be customized in the same call.
-            ncols(int, optional): designates the number of columns of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. nrows must be also be customized in the same call.
-
-        Returns:
-            fig (figure object): figure object in which the graphs are plotted in case ax is None.
-            ax (axes object): axes in which the graphs are plotted.
-
-        """
-        if self.ndim_domain > 2:
-            raise NotImplementedError("Plot only supported for functional data"
-                                      "modeled in at most 3 dimensions.")
-
-        if fig is not None and ax is not None:
-            raise ValueError("fig and axes parameters cannot be passed as arguments at the same time.")
-
-        if fig is not None and len(fig.get_axes()) != self.ndim_image:
-            raise ValueError("Number of axes of the figure must be equal to"
-                             "the dimension of the image.")
-
-        if ax is not None and len(ax)!= self.ndim_image:
-            raise ValueError("Number of axes must be equal to the dimension of the image.")
-
-        if (ax is not None or fig is not None) and (nrows is not None or ncols is not None):
-            raise ValueError("The number of columns and/or number of rows of the figure, "
-                             "in which each dimension of the image is plotted, can only "
-                             "be customized in case fig is None and ax is None.")
-
-        if (nrows is not None and ncols is not None) and nrows*ncols < self.ndim_image:
-            raise ValueError("The number of columns and the number of rows specified is "
-                             "incorrect.")
-
-        if fig is None and ax is None:
-            fig, ax = self.set_figure_and_axes(nrows, ncols)
-
-        if fig is not None:
-            ax = fig.get_axes()
-
-        return fig, ax
-
-    def plot(self, fig=None, ax=None, nrows=None, ncols=None, **kwargs):
-        """Plot the FDatGrid object.
-
-        Args:
-            fig (figure object, optional): figure over with the graphs are plotted in case ax is not specified.
-                If None and ax is also None, the figure is initialized.
-            ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
-            nrows(int, optional): designates the number of rows of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. ncols must be also be customized in the same call.
-            ncols(int, optional): designates the number of columns of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. nrows must be also be customized in the same call.
-            **kwargs: if ndim_domain is 1, keyword arguments to be passed to the matplotlib.pyplot.plot function;
-                if ndim_domain is 2, keyword arguments to be passed to the matplotlib.pyplot.plot_surface function.
-
-        Returns:
-            fig (figure object): figure object in which the graphs are plotted in case ax is None.
-            ax (axes object): axes in which the graphs are plotted.
-
-        """
-        fig, ax = self._generic_plotting_checks(fig, ax, nrows, ncols)
-
-        if self.ndim_domain == 1:
-            for i in range(self.ndim_image):
-                ax[i].plot(self.sample_points[0], self.data_matrix[:, :, i].T, **kwargs)
-        else:
-            X = self.sample_points[0]
-            Y = self.sample_points[1]
-            X, Y = numpy.meshgrid(X, Y)
-            for i in range(self.ndim_image):
-                for j in range(self.nsamples):
-                    ax[i].plot_surface(X, Y, numpy.squeeze(self.data_matrix[j, :, :, i]).T, **kwargs)
-
-        self.set_labels(fig, ax)
-
-        return fig, ax
 
     def scatter(self, fig=None, ax=None, nrows=None, ncols=None, **kwargs):
         """Scatter plot of the FDatGrid object.
@@ -847,9 +694,9 @@ class FDataGrid(FData):
                 If None and ax is also None, the figure is initialized.
             ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
             nrows(int, optional): designates the number of rows of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. ncols must be also be customized in the same call.
+                image. Only specified if fig and ax are None.
             ncols(int, optional): designates the number of columns of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None. nrows must be also be customized in the same call.
+                image. Only specified if fig and ax are None.
             **kwargs: keyword arguments to be passed to the matplotlib.pyplot.scatter function;
 
         Returns:
@@ -857,7 +704,7 @@ class FDataGrid(FData):
             ax (axes object): axes in which the graphs are plotted.
 
         """
-        fig, ax = self._generic_plotting_checks(fig, ax, nrows, ncols)
+        fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
 
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):
@@ -901,7 +748,7 @@ class FDataGrid(FData):
             >>> basis = fda.basis.Fourier((0, 1), nbasis=3)
             >>> fd_b = fd.to_basis(basis)
             >>> fd_b.coefficients.round(2)
-            array([[0.  , 0.71, 0.71]])
+            array([[ 0.  , 0.71, 0.71]])
 
         """
         if self.ndim_domain > 1:
@@ -1096,6 +943,10 @@ class FDataGrid(FData):
                              f"match with the domain of the second function "
                              f"({self.ndim_domain})!=({fd.ndim_image}).")
 
+        # All composed with same function
+        if fd.nsamples == 1 and self.nsamples != 1:
+            fd = fd.copy(data_matrix=numpy.repeat(fd.data_matrix, self.nsamples,
+                                               axis=0))
 
         if fd.ndim_domain == 1:
             if eval_points is None:
@@ -1208,4 +1059,3 @@ class FDataGrid(FData):
         results = [self.copy(data_matrix=r) for r in results]
 
         return results[0] if len(results) == 1 else results
-

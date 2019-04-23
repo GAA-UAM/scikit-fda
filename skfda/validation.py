@@ -1,8 +1,7 @@
 """Defines methods for the validation of the smoothing."""
 import numpy
 
-from fda import kernel_smoothers
-import fda
+from . import kernel_smoothers
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -126,8 +125,9 @@ def minimise(fdatagrid, parameters,
         Creates a FDataGrid object of the function :math:`y=x^2` and peforms
         smoothing by means of the k-nearest neighbours method.
 
+        >>> import skfda
         >>> x = numpy.linspace(-2, 2, 5)
-        >>> fd = fda.FDataGrid(x ** 2, x)
+        >>> fd = skfda.FDataGrid(x ** 2, x)
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn)
         >>> numpy.array(res['scores']).round(2)
         array([ 11.67, 12.37])

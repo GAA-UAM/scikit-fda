@@ -11,7 +11,7 @@ Shows the usage of the elastic registration to perform a pairwise alignment.
 # sphinx_gallery_thumbnail_number = 5
 
 
-import fda
+import skfda
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
 import numpy as np
@@ -40,7 +40,7 @@ import numpy as np
 #
 
 # Samples with modes in 1/3 and 2/3
-fd = fda.datasets.make_multimodal_samples(n_samples=2, modes_location=[1/3,2/3],
+fd = skfda.datasets.make_multimodal_samples(n_samples=2, modes_location=[1/3,2/3],
                                           random_state=1, start=0, mode_std=.01)
 
 fd.plot()
@@ -50,13 +50,13 @@ plt.legend(['$f$', '$g$'])
 # In this example :math:`g` will be used as template and :math:`f` will be
 # aligned to it. In the following figure it is shown the result of the
 # registration process, wich can be computed using :func:`elastic_registration
-# <fda.registration.elastic_registration>`.
+# <skfda.registration.elastic_registration>`.
 #
 
 f, g = fd[0], fd[1]
 
 # Aligns f to g
-fd_align = fda.registration.elastic_registration(f, g)
+fd_align = skfda.registration.elastic_registration(f, g)
 
 
 plt.figure()
@@ -71,11 +71,11 @@ plt.legend(['$f$', '$g$', '$f \\circ \\gamma $'])
 ###############################################################################
 # The non-linear transformation :math:`\gamma` applied to :math:`f` in
 # the alignment can be obtained using  :func:`elastic_registration_warping
-# <fda.registration.elastic_registration_warping>`.
+# <skfda.registration.elastic_registration_warping>`.
 #
 
 # Warping to align f to g
-warping = fda.registration.elastic_registration_warping(f, g)
+warping = skfda.registration.elastic_registration_warping(f, g)
 
 plt.figure()
 
@@ -96,7 +96,7 @@ plt.legend(['$\\gamma$', '$\\gamma_{id}$'])
 # function.
 #
 
-warping_inverse = fda.registration.invert_warping(warping)
+warping_inverse = skfda.registration.invert_warping(warping)
 
 
 plt.figure()
@@ -130,7 +130,7 @@ plt.figure()
 
 for lam, c in zip(lambdas, color):
     # Plots result of alignment
-    fda.registration.elastic_registration(f, g, lam=lam).plot(color=c)
+    skfda.registration.elastic_registration(f, g, lam=lam).plot(color=c)
 
 
 f.plot(color='C0', linewidth=2., label='$f$')
@@ -149,7 +149,7 @@ plt.legend()
 plt.figure()
 
 for lam, c in zip(lambdas, color):
-    fda.registration.elastic_registration_warping(f, g, lam=lam).plot(color=c)
+    skfda.registration.elastic_registration_warping(f, g, lam=lam).plot(color=c)
 
 # Plots identity
 plt.plot(t,t,  color='C0', linestyle="--")
@@ -170,11 +170,11 @@ plt.plot(t,t,  color='C0', linestyle="--")
 state = np.random.RandomState(0)
 
 location1 = state.normal(loc=-.3, scale=.1, size=3)
-fd = fda.datasets.make_multimodal_samples(n_samples=3, modes_location=location1,
+fd = skfda.datasets.make_multimodal_samples(n_samples=3, modes_location=location1,
                                           noise=.001 ,random_state=1)
 
 location2 = state.normal(loc=.3, scale=.1, size=3)
-g = fda.datasets.make_multimodal_samples(n_samples=3, modes_location=location2,
+g = skfda.datasets.make_multimodal_samples(n_samples=3, modes_location=location2,
                                            random_state=2)
 
 # Plot of the sets
@@ -195,7 +195,7 @@ plt.legend(handles=[l[0], l[-1]])
 plt.figure()
 
 # Registration of the sets
-fd_registered = fda.registration.elastic_registration(fd, g)
+fd_registered = skfda.registration.elastic_registration(fd, g)
 
 # Plot of the curves
 fig, ax = fd.plot(color="C0", label="$f_i$")

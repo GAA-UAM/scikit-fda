@@ -10,7 +10,7 @@ Shows how to make a discretized representation of a function.
 
 # sphinx_gallery_thumbnail_number = 2
 
-from fda import FDataGrid
+from skfda import FDataGrid
 import numpy as np
 
 ###############################################################################

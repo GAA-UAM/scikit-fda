@@ -20,7 +20,7 @@ and basic visualisation of a FDataGrid.
 .. autosummary::
    :toctree: autosummary
 
-   fda.grid.FDataGrid
+   skfda.grid.FDataGrid
 
 
 Functional data grids may be evaluated using interpolation, as it  is shown in
@@ -30,7 +30,7 @@ following class allows interpolation with different splines.
 .. autosummary::
    :toctree: autosummary
 
-   fda.grid.GridSplineInterpolator
+   skfda.grid.GridSplineInterpolator
 
 
 Basis representation
@@ -42,7 +42,7 @@ of elements of a basis function system.
 .. autosummary::
    :toctree: autosummary
 
-   fda.FDataBasis
+   skfda.FDataBasis
 
 
 The following classes are used to define different basis systems.
@@ -50,9 +50,9 @@ The following classes are used to define different basis systems.
 .. autosummary::
    :toctree: autosummary
 
-   fda.basis.BSpline
-   fda.basis.Fourier
-   fda.basis.Monomial
+   skfda.basis.BSpline
+   skfda.basis.Fourier
+   skfda.basis.Monomial
 
 Generic representation
 ----------------------
@@ -66,4 +66,4 @@ receive an element of this class as an argument.
 .. autosummary::
    :toctree: autosummary
 
-   fda.functional_data.FData
+   skfda.functional_data.FData

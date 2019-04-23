@@ -44,9 +44,9 @@ def landmark_shift_deltas(fd, landmarks, location=None):
 
     Examples:
 
-        >>> from fda.datasets import make_multimodal_landmarks
-        >>> from fda.datasets import make_multimodal_samples
-        >>> from fda.registration import landmark_shift_deltas
+        >>> from skfda.datasets import make_multimodal_landmarks
+        >>> from skfda.datasets import make_multimodal_samples
+        >>> from skfda.registration import landmark_shift_deltas
 
         We will create a data with landmarks as example
 
@@ -131,9 +131,9 @@ def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
 
     Examples:
 
-        >>> from fda.datasets import make_multimodal_landmarks
-        >>> from fda.datasets import make_multimodal_samples
-        >>> from fda.registration import landmark_shift
+        >>> from skfda.datasets import make_multimodal_landmarks
+        >>> from skfda.datasets import make_multimodal_samples
+        >>> from skfda.registration import landmark_shift
 
         We will create a data with landmarks as example
 
@@ -192,9 +192,9 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
 
     Examples:
 
-        >>> from fda.datasets import make_multimodal_landmarks
-        >>> from fda.datasets import make_multimodal_samples
-        >>> from fda.registration import landmark_registration_warping
+        >>> from skfda.datasets import make_multimodal_landmarks
+        >>> from skfda.datasets import make_multimodal_samples
+        >>> from skfda.registration import landmark_registration_warping
 
         We will create a data with landmarks as example
 
@@ -296,10 +296,10 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
 
     Examples:
 
-        >>> from fda.datasets import make_multimodal_landmarks
-        >>> from fda.datasets import make_multimodal_samples
-        >>> from fda.registration import landmark_registration
-        >>> from fda.basis import BSpline
+        >>> from skfda.datasets import make_multimodal_landmarks
+        >>> from skfda.datasets import make_multimodal_samples
+        >>> from skfda.registration import landmark_registration
+        >>> from skfda.basis import BSpline
 
         We will create a data with landmarks as example
 

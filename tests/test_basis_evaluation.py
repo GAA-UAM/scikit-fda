@@ -1,6 +1,6 @@
 
 import unittest
-from fda.basis import FDataBasis, Monomial, BSpline, Fourier
+from skfda.basis import FDataBasis, Monomial, BSpline, Fourier
 import numpy as np
 
 

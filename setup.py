@@ -30,7 +30,7 @@ extensions = [
               ),
 ]
 
-setup(name='fda',
+setup(name='scikit-fda',
       version=version,
       description='Functional Data Analysis Python package',
       long_description="",  # TODO

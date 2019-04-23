@@ -8,7 +8,7 @@ during the registration process. This module contains procedures for the
 registration of the data.
 
 Shift Registration
--------------------
+------------------
 
 Many of the issues involved in registration can be solved by considering
 the simplest case, a simple shift in the time scale. This often happens because
@@ -20,12 +20,12 @@ it is shown the basic usage of this methods applied to periodic data.
 .. autosummary::
    :toctree: autosummary
 
-   fda.registration.shift_registration
-   fda.registration.shift_registration_deltas
+   skfda.registration.shift_registration
+   skfda.registration.shift_registration_deltas
 
 
 Landmark Registration
-----------------------
+---------------------
 
 Landmark registration aligns features applying a transformation of the time that
 takes all the times of a given feature into a common value.
@@ -37,8 +37,8 @@ by performing a translation in the time scale. See the
 .. autosummary::
    :toctree: autosummary
 
-   fda.registration.landmark_shift
-   fda.registration.landmark_shift_deltas
+   skfda.registration.landmark_shift
+   skfda.registration.landmark_shift_deltas
 
 
 The general case of landmark registration may present multiple landmarks for
@@ -49,8 +49,8 @@ See the `Landmark Registration Example
 .. autosummary::
    :toctree: autosummary
 
-   fda.registration.landmark_registration
-   fda.registration.landmark_registration_warping
+   skfda.registration.landmark_registration
+   skfda.registration.landmark_registration_warping
 
 
 Elastic Registration
@@ -66,8 +66,8 @@ introduction to this topic along the usage of the corresponding functions.
 .. autosummary::
    :toctree: autosummary
 
-   fda.registration.elastic_registration
-   fda.registration.elastic_registration_warping
+   skfda.registration.elastic_registration
+   skfda.registration.elastic_registration_warping
 
 
 The module contains some routines related with the elastic registration, making
@@ -75,12 +75,12 @@ a transformation of the sampling, computing different means or distances based
 on the elastic framework.
 
 .. autosummary::
-  :toctree: autosummary
+   :toctree: autosummary
 
-   fda.registration.elastic_mean
-   fda.registration.warping_mean
-   fda.registration.to_srsf
-   fda.registration.from_srsf
+   skfda.registration.elastic_mean
+   skfda.registration.warping_mean
+   skfda.registration.to_srsf
+   skfda.registration.from_srsf
 
 
 
@@ -94,7 +94,7 @@ decomposition procedure developed by *Kneip and Ramsay (2008)*.
 .. autosummary::
    :toctree: autosummary
 
-   fda.registration.mse_decomposition
+   skfda.registration.mse_decomposition
 
 
 Utility functions
@@ -106,8 +106,8 @@ module.
 .. autosummary::
    :toctree: autosummary
 
-   fda.registration.invert_warping
-   fda.registration.normalize_warping
+   skfda.registration.invert_warping
+   skfda.registration.normalize_warping
 
 References
 ----------

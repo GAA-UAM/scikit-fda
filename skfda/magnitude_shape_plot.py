@@ -14,7 +14,7 @@ from io import BytesIO
 import scipy
 
 from .grid import FDataGrid
-from fda.depth_measures import *
+from .depth_measures import *
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"

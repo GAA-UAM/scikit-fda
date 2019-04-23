@@ -10,7 +10,7 @@ This example shows the composition of multidimensional FDataGrids.
 
 # sphinx_gallery_thumbnail_number = 3
 
-import fda
+import skfda
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -43,10 +43,10 @@ X, Y, Z = axes3d.get_test_data(1.2)
 data_matrix = [Z.T]
 sample_points = [X[0,:], Y[:, 0]]
 
-g = fda.FDataGrid(data_matrix, sample_points)
+g = skfda.FDataGrid(data_matrix, sample_points)
 
 # Sets cubic interpolation
-g.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3)
+g.interpolator = skfda.grid.GridSplineInterpolator(interpolation_order=3)
 
 # Plots the surface
 g.plot()
@@ -63,7 +63,7 @@ g.plot()
 t = np.linspace(0, 2*np.pi, 100)
 
 data_matrix = [10 * np.array([np.cos(t), np.sin(t)]).T]
-f = fda.FDataGrid(data_matrix, t)
+f = skfda.FDataGrid(data_matrix, t)
 
 # Composition of function
 gof = g.compose(f)

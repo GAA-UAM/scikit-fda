@@ -11,14 +11,14 @@ Shows the usage of the elastic registration to perform a groupwise alignment.
 # sphinx_gallery_thumbnail_number = 5
 
 
-import fda
+import skfda
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 ###############################################################################
 # In the example of pairwise alignment was shown the usage of
-# :func:`elastic_registration <fda.registration.elastic_registration>` to align
+# :func:`elastic_registration <skfda.registration.elastic_registration>` to align
 # a set of functional observations to a given template or a set of templates.
 #
 # In the groupwise alignment all the samples are aligned to the same templated,
@@ -31,12 +31,12 @@ import numpy as np
 #
 
 
-fd = fda.datasets.make_multimodal_samples(n_modes=2, stop=4, random_state=1)
+fd = skfda.datasets.make_multimodal_samples(n_modes=2, stop=4, random_state=1)
 fd.plot()
 
 ###############################################################################
 # The following figure shows the
-# :func:`elastic mean <fda.registration.elastic_mean>` of the dataset and the
+# :func:`elastic mean <skfda.registration.elastic_mean>` of the dataset and the
 # cross-sectional mean, which correspond to the karcher-mean under the
 # :math:`\mathbb{L}^2` distance.
 #
@@ -47,14 +47,14 @@ fd.plot()
 
 plt.figure()
 fd.mean().plot(label="L2 mean")
-fda.registration.elastic_mean(fd).plot(label="Elastic mean")
+skfda.registration.elastic_mean(fd).plot(label="Elastic mean")
 plt.legend()
 
 ###############################################################################
 # In this case, the alignment completely reduces the amplitude variability
 # between the samples, aligning the maximum points correctly.
 
-fd_align = fda.registration.elastic_registration(fd)
+fd_align = skfda.registration.elastic_registration(fd)
 
 plt.figure()
 fd_align.plot()
@@ -63,25 +63,25 @@ fd_align.plot()
 ###############################################################################
 # In general these type of alignments are not possible, in the following
 # figure it is shown how it works with a real dataset.
-# The :func:`berkeley growth dataset<fda.datasets.fetch_growth>`
+# The :func:`berkeley growth dataset<skfda.datasets.fetch_growth>`
 # contains the growth curves of a set childs, in this case will be used only the
 # males. The growth curves will be resampled using cubic interpolation and derived
 # to obtain the velocity curves.
 #
 
-growth = fda.datasets.fetch_growth()
+growth = skfda.datasets.fetch_growth()
 
 # Select only one sex
 fd = growth['data'][growth['target'] == 0]
 
 # Obtain velocity curves
-fd.interpolator = fda.grid.GridSplineInterpolator(3)
+fd.interpolator = skfda.grid.GridSplineInterpolator(3)
 fd = fd.to_grid(np.linspace(*fd.domain_range[0], 200)).derivative()
 fd = fd.to_grid(np.linspace(*fd.domain_range[0], 50))
 fd.plot()
 
 plt.figure()
-fd_align = fda.registration.elastic_registration(fd)
+fd_align = skfda.registration.elastic_registration(fd)
 fd_align.dataset_label += " - aligned"
 
 fd_align.plot()

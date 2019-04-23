@@ -4,9 +4,9 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from fda.grid import FDataGrid, GridSplineInterpolator
-from fda.datasets import make_multimodal_samples
-from fda.registration import normalize_warping, invert_warping
+from skfda.grid import FDataGrid, GridSplineInterpolator
+from skfda.datasets import make_multimodal_samples
+from skfda.registration import normalize_warping, invert_warping
 
 
 class TestWarping(unittest.TestCase):

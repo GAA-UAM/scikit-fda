@@ -2,8 +2,8 @@ import unittest
 
 import numpy as np
 
-from fda.basis import FDataBasis, Constant, Monomial
-from fda.lfd import Lfd
+from skfda.basis import FDataBasis, Constant, Monomial
+from skfda.lfd import Lfd
 
 
 class TestBasis(unittest.TestCase):

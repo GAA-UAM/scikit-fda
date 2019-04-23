@@ -22,11 +22,11 @@ and the following classes:
 
 """
 import errno as _errno
-from fda.basis import FDataBasis
-from fda.grid import FDataGrid
-from fda.math import mean, var, gmean, log, log2, log10, exp, sqrt, \
+from .basis import FDataBasis
+from .grid import FDataGrid
+from .math import mean, var, gmean, log, log2, log10, exp, sqrt, \
     cumsum, inner_product, cov
-from fda.metrics import lp_distance, norm_lp
+from .metrics import lp_distance, norm_lp
 import os as _os
 
 from . import datasets, covariances, registration, extrapolation

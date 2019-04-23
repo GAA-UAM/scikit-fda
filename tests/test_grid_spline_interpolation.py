@@ -1,7 +1,7 @@
 
 import unittest
-from fda.grid import FDataGrid
-from fda.grid_interpolation import GridSplineInterpolator
+from skfda.grid import FDataGrid
+from skfda.grid_interpolation import GridSplineInterpolator
 import numpy as np
 
 # TODO: Unitest for grids with domain dimension > 1

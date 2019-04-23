@@ -738,14 +738,14 @@ class FDataGrid(FData):
 
         Examples:
             >>> import numpy as np
-            >>> import fda
+            >>> import skfda
             >>> t = np.linspace(0, 1, 5)
             >>> x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
             >>> x
             array([ 1.,  1., -1., -1.,  1.])
 
             >>> fd = FDataGrid(x, t)
-            >>> basis = fda.basis.Fourier((0, 1), nbasis=3)
+            >>> basis = skfda.basis.Fourier((0, 1), nbasis=3)
             >>> fd_b = fd.to_basis(basis)
             >>> fd_b.coefficients.round(2)
             array([[ 0.  , 0.71, 0.71]])

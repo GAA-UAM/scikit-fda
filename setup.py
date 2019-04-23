@@ -5,8 +5,14 @@ import numpy
 
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
-from Cython.Distutils import build_ext
-from Cython.Build import cythonize
+
+have_cython = False
+try:
+    from Cython.Distutils import build_ext as _build_ext
+    have_cython = True
+except ImportError:
+    from distutils.command.build_ext import build_ext as _build_ext
+
 
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
 pytest_runner = ['pytest-runner'] if needs_pytest else []
@@ -15,20 +21,29 @@ with open(os.path.join(os.path.dirname(__file__),
                        'VERSION'), 'r') as version_file:
     version = version_file.read().strip()
 
+# Cython extensions
 deps_path = 'deps'
 fdasrsf_path = os.path.join(deps_path, 'fdasrsf')
 
+if have_cython:
+    fdasrsf_sources = [
+        os.path.join(fdasrsf_path, 'optimum_reparam.pyx'),
+        os.path.join(fdasrsf_path, 'dp_grid.c')
+    ]
+else:
+    fdasrsf_sources = [
+        os.path.join(fdasrsf_path, 'optimum_reparam.c'),
+        os.path.join(fdasrsf_path, 'dp_grid.c')
+    ]
 
-extensions = [
+ext_modules = [
     Extension(name='optimum_reparam',
-              sources=[
-                  os.path.join(fdasrsf_path, 'optimum_reparam.pyx'),
-                  os.path.join(fdasrsf_path, 'dp_grid.c')
-              ],
+              sources=fdasrsf_sources,
               include_dirs=[numpy.get_include()],
               language='c',
               ),
 ]
+
 
 setup(name='fda',
       version=version,
@@ -37,7 +52,8 @@ setup(name='fda',
       url='https://fda.readthedocs.io',
       author='Miguel Carbajo Berrocal',
       author_email='miguel.carbajo@estudiante.uam.com',
-      ext_modules=cythonize(extensions),
+      ext_modules=ext_modules,
+      cmdclass={'build_ext': _build_ext},
       include_package_data=True,
       platforms=['any'],
       license='GPL3',

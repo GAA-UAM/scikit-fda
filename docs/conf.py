@@ -55,6 +55,18 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.intersphinx',
               'sphinx.ext.doctest' ]
 
+doctest_global_setup = '''
+import fda
+from fda import *
+from fda.basis import *
+from fda.depth_measures import *
+from fda.fdata_boxplot import *
+from fda.metrics import *
+import numpy
+import numpy as np
+numpy.set_printoptions(legacy='1.13')
+'''
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 

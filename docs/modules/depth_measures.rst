@@ -11,9 +11,9 @@ Larger values correspond to more centered samples and smaller ones to those samp
 .. autosummary::
    :toctree: autosummary
 
-   fda.depth_measures.band_depth
-   fda.depth_measures.modified_band_depth
-   fda.depth_measures.fraiman_muniz_depth
+   skfda.depth_measures.band_depth
+   skfda.depth_measures.modified_band_depth
+   skfda.depth_measures.fraiman_muniz_depth
 
 The possibility of obtaining the ordering of each point of the sample (compared to the other samples)
 is given if a parameter is specified in the functions.

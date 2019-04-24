@@ -4,14 +4,14 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from fda import FDataGrid
-from fda.datasets import make_multimodal_samples
-from fda.metrics import (fisher_rao_distance, amplitude_distance,
-                         phase_distance, pairwise_distance, lp_distance,
-                         warping_distance)
-from fda.registration import (elastic_registration, elastic_mean, to_srsf,
-                              from_srsf, elastic_registration_warping,
-                              invert_warping, normalize_warping)
+from skfda import FDataGrid
+from skfda.datasets import make_multimodal_samples
+from skfda.metrics import (fisher_rao_distance, amplitude_distance,
+                           phase_distance, pairwise_distance, lp_distance,
+                           warping_distance)
+from skfda.registration import (elastic_registration, elastic_mean, to_srsf,
+                                from_srsf, elastic_registration_warping,
+                                invert_warping, normalize_warping)
 
 metric = pairwise_distance(lp_distance)
 pairwise_fisher_rao = pairwise_distance(fisher_rao_distance)

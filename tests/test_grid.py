@@ -3,8 +3,8 @@ import unittest
 import numpy
 import scipy.stats.mstats
 
-from fda import math
-from fda.grid import FDataGrid
+from skfda import math
+from skfda.grid import FDataGrid
 
 
 class TestFDataGrid(unittest.TestCase):

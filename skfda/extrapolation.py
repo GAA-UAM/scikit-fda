@@ -55,8 +55,8 @@ class PeriodicExtrapolation(Extrapolator):
 
     Examples:
 
-        >>> from fda.datasets import make_sinusoidal_process
-        >>> from fda.extrapolation import PeriodicExtrapolation
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> from skfda.extrapolation import PeriodicExtrapolation
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -111,8 +111,8 @@ class BoundaryExtrapolation(Extrapolator):
 
     Examples:
 
-        >>> from fda.datasets import make_sinusoidal_process
-        >>> from fda.extrapolation import BoundaryExtrapolation
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> from skfda.extrapolation import BoundaryExtrapolation
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -169,8 +169,8 @@ class ExceptionExtrapolation(Extrapolator):
 
     Examples:
 
-        >>> from fda.datasets import make_sinusoidal_process
-        >>> from fda.extrapolation import ExceptionExtrapolation
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> from skfda.extrapolation import ExceptionExtrapolation
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -218,8 +218,8 @@ class FillExtrapolation(Extrapolator):
 
     Examples:
 
-        >>> from fda.datasets import make_sinusoidal_process
-        >>> from fda.extrapolation import FillExtrapolation
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> from skfda.extrapolation import FillExtrapolation
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation

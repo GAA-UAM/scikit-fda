@@ -95,9 +95,9 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
     Examples:
 
-        >>> from fda.datasets import make_multimodal_landmarks
-        >>> from fda.datasets import make_multimodal_samples
-        >>> from fda.registration import (landmark_registration_warping,
+        >>> from skfda.datasets import make_multimodal_landmarks
+        >>> from skfda.datasets import make_multimodal_samples
+        >>> from skfda.registration import (landmark_registration_warping,
         ...                               mse_decomposition)
 
 
@@ -239,8 +239,8 @@ def invert_warping(fdatagrid, *, eval_points=None):
     Examples:
 
         >>> import numpy as np
-        >>> from fda import FDataGrid
-        >>> from fda.registration import invert_warping
+        >>> from skfda import FDataGrid
+        >>> from skfda.registration import invert_warping
 
         We will construct the warping :math:`\gamma : [0,1] \\rightarrow [0,1]`
         wich maps t to t^3.

@@ -11,7 +11,7 @@ FDataGrids.
 
 # sphinx_gallery_thumbnail_number = 3
 
-import fda
+import skfda
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
@@ -25,7 +25,7 @@ from mpl_toolkits.mplot3d import axes3d
 # discretization.
 #
 
-fd = fda.datasets.make_sinusoidal_process(n_samples=2, n_features=6,
+fd = skfda.datasets.make_sinusoidal_process(n_samples=2, n_features=6,
                                           random_state=1)
 fd.scatter()
 plt.legend(["Sample 1", "Sample 2"])
@@ -49,7 +49,7 @@ fd.scatter()
 # :class:`GridSplineInterpolator`. In the following example a cubic interpolator
 # is set.
 
-fd.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3)
+fd.interpolator = skfda.grid.GridSplineInterpolator(interpolation_order=3)
 
 fd.plot()
 fd.scatter()
@@ -61,16 +61,16 @@ fd.scatter()
 #
 
 # Sample with noise
-fd_smooth = fda.datasets.make_sinusoidal_process(n_samples=1, n_features=30,
+fd_smooth = skfda.datasets.make_sinusoidal_process(n_samples=1, n_features=30,
                                                  random_state=1, error_std=.3)
 
 # Cubic interpolator
-fd_smooth.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3)
+fd_smooth.interpolator = skfda.grid.GridSplineInterpolator(interpolation_order=3)
 
 fd_smooth.plot(label="Cubic")
 
 # Smooth interpolation
-fd_smooth.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3,
+fd_smooth.interpolator = skfda.grid.GridSplineInterpolator(interpolation_order=3,
                                                          smoothness_parameter=1.5)
 
 fd_smooth.plot(label="Cubic smoothed")
@@ -90,7 +90,7 @@ plt.legend()
 fd = fd[1]
 
 for i in range(1, 4):
-    fd.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=i)
+    fd.interpolator = skfda.grid.GridSplineInterpolator(interpolation_order=i)
     fd.plot(derivative=1, label=f"Degree {i}")
 
 plt.legend()
@@ -124,7 +124,7 @@ fd_monotone.plot(linestyle='--', label="cubic")
 
 
 
-fd_monotone.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3,
+fd_monotone.interpolator = skfda.grid.GridSplineInterpolator(interpolation_order=3,
                                                            monotone=True)
 fd_monotone.plot(label="PCHIP")
 
@@ -145,7 +145,7 @@ data_matrix = [Z.T]
 sample_points = [X[0,:], Y[:, 0]]
 
 
-fd = fda.FDataGrid(data_matrix, sample_points)
+fd = skfda.FDataGrid(data_matrix, sample_points)
 
 fig, ax = fd.plot()
 fd.scatter(ax=ax)
@@ -161,7 +161,7 @@ fd.scatter(ax=ax)
 #
 
 
-fd.interpolator = fda.grid.GridSplineInterpolator(interpolation_order=3)
+fd.interpolator = skfda.grid.GridSplineInterpolator(interpolation_order=3)
 
 fig, ax = fd.plot()
 fd.scatter(ax=ax)

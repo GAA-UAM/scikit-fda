@@ -1,10 +1,10 @@
 import unittest
 
 import numpy as np
-from fda.grid import FDataGrid
-from fda.magnitude_shape_plot import directional_outlyingness, \
-    MagnitudeShapePlot
-from fda.datasets import fetch_weather
+from skfda.grid import FDataGrid
+from skfda.magnitude_shape_plot import (directional_outlyingness,
+                                        MagnitudeShapePlot)
+from skfda.datasets import fetch_weather
 
 
 class TestMagnitudeShapePlot(unittest.TestCase):

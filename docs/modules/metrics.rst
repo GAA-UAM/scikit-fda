@@ -5,15 +5,15 @@ This module contains multiple functional distances and norms.
 
 
 Lp Spaces
-------------
+---------
 
 The following functions computes the norms and distances used in Lp spaces.
 
- .. autosummary::
+.. autosummary::
    :toctree: autosummary
 
-   fda.metrics.norm_lp
-   fda.metrics.lp_distance
+   skfda.metrics.norm_lp
+   skfda.metrics.lp_distance
 
 
 
@@ -23,13 +23,13 @@ Elastic distances
 The following functions implements multiple distances used in the elastic
 analysis and registration of functional data.
 
- .. autosummary::
+.. autosummary::
    :toctree: autosummary
 
-    fda.metrics.fisher_rao_distance
-    fda.metrics.amplitude_distance
-    fda.metrics.phase_distance
-    fda.metrics.warping_distance
+    skfda.metrics.fisher_rao_distance
+    skfda.metrics.amplitude_distance
+    skfda.metrics.phase_distance
+    skfda.metrics.warping_distance
 
 
 Utils
@@ -38,5 +38,5 @@ Utils
 .. autosummary::
    :toctree: autosummary
 
-   fda.metrics.distance_from_norm
-   fda.metrics.pairwise_distance
+   skfda.metrics.distance_from_norm
+   skfda.metrics.pairwise_distance

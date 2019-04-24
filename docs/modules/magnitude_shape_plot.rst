@@ -9,14 +9,14 @@ directional outlyingness of the samples, which is calculated in the below functi
 .. autosummary::
    :toctree: autosummary
 
-   fda.magnitude_shape_plot.directional_outlyingness
+   skfda.magnitude_shape_plot.directional_outlyingness
 
 Once the points assigned to each of the samples are obtained from the above
 function, an outlier detection method is implemented. The results can be shown
-calling the :func:`plot method <fda.magnitude_shape_plot.MagnitudeShapePlot.plot>`
+calling the :func:`plot method <skfda.magnitude_shape_plot.MagnitudeShapePlot.plot>`
 of the class.
 
 .. autosummary::
    :toctree: autosummary
 
-   fda.magnitude_shape_plot.MagnitudeShapePlot
+   skfda.magnitude_shape_plot.MagnitudeShapePlot

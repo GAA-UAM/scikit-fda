@@ -57,7 +57,7 @@ def _coordinate_list(axes):
 
     Examples:
 
-        >>> from fda.functional_data import _coordinate_list
+        >>> from skfda.functional_data import _coordinate_list
         >>> axes = [[0,1],[2,3]]
         >>> _coordinate_list(axes)
         array([[0, 2],

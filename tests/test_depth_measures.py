@@ -1,8 +1,8 @@
 import unittest
 import numpy as np
 
-from fda.grid import FDataGrid
-from fda.depth_measures import band_depth, modified_band_depth, fraiman_muniz_depth
+from skfda.grid import FDataGrid
+from skfda.depth_measures import band_depth, modified_band_depth, fraiman_muniz_depth
 
 
 class TestDepthMeasures(unittest.TestCase):

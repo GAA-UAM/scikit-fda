@@ -46,3 +46,4 @@ The following functions are used to make synthetic functional datasets:
    skfda.datasets.make_sinusoidal_process
    skfda.datasets.make_multimodal_samples
    skfda.datasets.make_multimodal_landmarks
+   skfda.datasets.make_random_warping

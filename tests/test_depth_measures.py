@@ -1,8 +1,8 @@
 import unittest
 import numpy as np
 
-from fda.grid import FDataGrid
-from fda.depth_measures import band_depth, modified_band_depth, fraiman_muniz_depth
+from skfda.grid import FDataGrid
+from skfda.depth_measures import band_depth, modified_band_depth, fraiman_muniz_depth
 
 
 class TestDepthMeasures(unittest.TestCase):
@@ -60,7 +60,7 @@ class TestDepthMeasures(unittest.TestCase):
                                                 [[[1., 1.], [1., 1.], [1., 1.]],
                                                  [[1., 1.], [1., 1.], [1., 1.]]]]))
 
-    def test_Fraiman_Muniz_band_depth_univariate(self):
+    def test_fraiman_muniz_band_depth_univariate(self):
         data_matrix = [[1, 1, 2, 3, 2.5, 2], [0.5, 0.5, 1, 2, 1.5, 1],
                        [-1, -1, -0.5, 1, 1, 0.5], [-0.5, -0.5, -0.5, -1, -1, -1]]
         sample_points = [0, 2, 4, 6, 8, 10]

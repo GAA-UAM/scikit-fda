@@ -7,6 +7,9 @@ import numpy
 
 from ..grid import FDataGrid, GridSplineInterpolator
 
+__author__ = "Pablo Marcos Manchón"
+__email__ = "pablo.marcosm@estudiante.uam.es"
+
 
 def landmark_shift_deltas(fd, landmarks, location=None):
     r"""Returns the corresponding shifts to align the landmarks of the curves.
@@ -41,9 +44,9 @@ def landmark_shift_deltas(fd, landmarks, location=None):
 
     Examples:
 
-        >>> from fda.datasets import make_multimodal_landmarks
-        >>> from fda.datasets import make_multimodal_samples
-        >>> from fda.registration import landmark_shift_deltas
+        >>> from skfda.datasets import make_multimodal_landmarks
+        >>> from skfda.datasets import make_multimodal_samples
+        >>> from skfda.registration import landmark_shift_deltas
 
         We will create a data with landmarks as example
 
@@ -83,7 +86,6 @@ def landmark_shift_deltas(fd, landmarks, location=None):
                              "number in the domain")
 
     shifts = landmarks - p
-
 
     return shifts
 
@@ -129,9 +131,9 @@ def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
 
     Examples:
 
-        >>> from fda.datasets import make_multimodal_landmarks
-        >>> from fda.datasets import make_multimodal_samples
-        >>> from fda.registration import landmark_shift
+        >>> from skfda.datasets import make_multimodal_landmarks
+        >>> from skfda.datasets import make_multimodal_samples
+        >>> from skfda.registration import landmark_shift
 
         We will create a data with landmarks as example
 
@@ -145,7 +147,6 @@ def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
         FDataGrid(...)
 
     """
-
 
     shifts = landmark_shift_deltas(fd, landmarks, location=location)
 
@@ -191,9 +192,9 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
 
     Examples:
 
-        >>> from fda.datasets import make_multimodal_landmarks
-        >>> from fda.datasets import make_multimodal_samples
-        >>> from fda.registration import landmark_registration_warping
+        >>> from skfda.datasets import make_multimodal_landmarks
+        >>> from skfda.datasets import make_multimodal_samples
+        >>> from skfda.registration import landmark_registration_warping
 
         We will create a data with landmarks as example
 
@@ -228,10 +229,10 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
 
     data_matrix = numpy.empty((fd.nsamples, n_landmarks + 2))
 
-    data_matrix[:,0] = fd.domain_range[0][0]
-    data_matrix[:,-1] = fd.domain_range[0][1]
+    data_matrix[:, 0] = fd.domain_range[0][0]
+    data_matrix[:, -1] = fd.domain_range[0][1]
 
-    data_matrix[:,1:-1] = landmarks
+    data_matrix[:, 1:-1] = landmarks
 
     if location is None:
         sample_points = numpy.mean(data_matrix, axis=0)
@@ -246,7 +247,6 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
         sample_points[0] = fd.domain_range[0][0]
         sample_points[-1] = fd.domain_range[0][1]
         sample_points[1:-1] = location
-
 
     interpolator = GridSplineInterpolator(interpolation_order=3, monotone=True)
 
@@ -296,10 +296,10 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
 
     Examples:
 
-        >>> from fda.datasets import make_multimodal_landmarks
-        >>> from fda.datasets import make_multimodal_samples
-        >>> from fda.registration import landmark_registration
-        >>> from fda.basis import BSpline
+        >>> from skfda.datasets import make_multimodal_landmarks
+        >>> from skfda.datasets import make_multimodal_samples
+        >>> from skfda.registration import landmark_registration
+        >>> from skfda.basis import BSpline
 
         We will create a data with landmarks as example
 

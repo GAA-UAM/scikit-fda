@@ -8,7 +8,7 @@ during the registration process. This module contains procedures for the
 registration of the data.
 
 Shift Registration
--------------------
+------------------
 
 Many of the issues involved in registration can be solved by considering
 the simplest case, a simple shift in the time scale. This often happens because
@@ -20,12 +20,12 @@ it is shown the basic usage of this methods applied to periodic data.
 .. autosummary::
    :toctree: autosummary
 
-   fda.registration.shift_registration
-   fda.registration.shift_registration_deltas
+   skfda.registration.shift_registration
+   skfda.registration.shift_registration_deltas
 
 
 Landmark Registration
-----------------------
+---------------------
 
 Landmark registration aligns features applying a transformation of the time that
 takes all the times of a given feature into a common value.
@@ -37,8 +37,8 @@ by performing a translation in the time scale. See the
 .. autosummary::
    :toctree: autosummary
 
-   fda.registration.landmark_shift
-   fda.registration.landmark_shift_deltas
+   skfda.registration.landmark_shift
+   skfda.registration.landmark_shift_deltas
 
 
 The general case of landmark registration may present multiple landmarks for
@@ -49,8 +49,39 @@ See the `Landmark Registration Example
 .. autosummary::
    :toctree: autosummary
 
-   fda.registration.landmark_registration
-   fda.registration.landmark_registration_warping
+   skfda.registration.landmark_registration
+   skfda.registration.landmark_registration_warping
+
+
+Elastic Registration
+--------------------
+
+The elastic registration is a novel approach to this problem that uses the
+properties of the Fisher-Rao metric to perform the alignment of the curves.
+In the examples of `pairwise alignment
+<../auto_examples/plot_pairwise_alignment.html>`_ and `elastic registration
+<../auto_examples/plot_elastic_registration.html>`_ is shown a brief
+introduction to this topic along the usage of the corresponding functions.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.registration.elastic_registration
+   skfda.registration.elastic_registration_warping
+
+
+The module contains some routines related with the elastic registration, making
+a transformation of the sampling, computing different means or distances based
+on the elastic framework.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.registration.elastic_mean
+   skfda.registration.warping_mean
+   skfda.registration.to_srsf
+   skfda.registration.from_srsf
+
 
 
 Amplitude and Phase Decomposition
@@ -63,8 +94,20 @@ decomposition procedure developed by *Kneip and Ramsay (2008)*.
 .. autosummary::
    :toctree: autosummary
 
-   fda.registration.mse_decomposition
+   skfda.registration.mse_decomposition
 
+
+Utility functions
+-----------------
+
+There are some other method related with the registration problem in this
+module.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.registration.invert_warping
+   skfda.registration.normalize_warping
 
 References
 ----------
@@ -72,8 +115,14 @@ References
 * Ramsay, J., Silverman, B. W. (2005). Functional Data Analysis. Springer.
 
 * Kneip, Alois & Ramsay, James. (2008).  Quantifying amplitude and phase
-  variation. In *Combining Registration and Fitting for Functional Models*.
-  Journal of the American Statistical Association.
+  variation. Journal of the American Statistical Association.
 
 * Ramsay, J., Hooker, G. & Graves S. (2009). Functional Data Analysis with
   R and Matlab. Springer.
+
+* Srivastava, Anuj & Klassen, Eric P. (2016). Functional and shape data
+  analysis. Springer.
+
+* J. S. Marron, James O. Ramsay, Laura M. Sangalli and Anuj Srivastava (2015).
+  Functional Data Analysis of Amplitude and Phase Variation. Statistical Science
+  2015, Vol. 30, No. 4

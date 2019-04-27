@@ -55,8 +55,8 @@ class PeriodicExtrapolation(Extrapolator):
 
     Examples:
 
-        >>> from fda.datasets import make_sinusoidal_process
-        >>> from fda.extrapolation import PeriodicExtrapolation
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> from skfda.extrapolation import PeriodicExtrapolation
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -111,23 +111,23 @@ class BoundaryExtrapolation(Extrapolator):
 
     Examples:
 
-        >>> from fda.datasets import make_sinusoidal_process
-        >>> from fda.extrapolation import BoundaryExtrapolation
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> from skfda.extrapolation import BoundaryExtrapolation
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
 
         >>> fd.extrapolation = BoundaryExtrapolation()
         >>> fd([-.5, 0, 1.5]).round(3)
-        array([[0.976, 0.976, 0.797],
-               [0.759, 0.759, 1.125]])
+        array([[ 0.976,  0.976,  0.797],
+               [ 0.759,  0.759,  1.125]])
 
         This extrapolator is equivalent to the string `"bounds"`.
 
         >>> fd.extrapolation = 'bounds'
         >>> fd([-.5, 0, 1.5]).round(3)
-        array([[0.976, 0.976, 0.797],
-               [0.759, 0.759, 1.125]])
+        array([[ 0.976,  0.976,  0.797],
+               [ 0.759,  0.759,  1.125]])
     """
 
     def __call__(self, fdata, eval_points, *, derivative=0):
@@ -169,8 +169,8 @@ class ExceptionExtrapolation(Extrapolator):
 
     Examples:
 
-        >>> from fda.datasets import make_sinusoidal_process
-        >>> from fda.extrapolation import ExceptionExtrapolation
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> from skfda.extrapolation import ExceptionExtrapolation
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -218,24 +218,24 @@ class FillExtrapolation(Extrapolator):
 
     Examples:
 
-        >>> from fda.datasets import make_sinusoidal_process
-        >>> from fda.extrapolation import FillExtrapolation
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> from skfda.extrapolation import FillExtrapolation
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
 
         >>> fd.extrapolation = FillExtrapolation(0)
         >>> fd([-.5, 0, 1.5]).round(3)
-        array([[0.   , 0.976, 0.   ],
-               [0.   , 0.759, 0.   ]])
+        array([[ 0.   ,  0.976,  0.   ],
+               [ 0.   ,  0.759,  0.   ]])
 
         The previous extrapolator is equivalent to the string `"zeros"`.
         In the same way FillExtrapolation(np.nan) is equivalent to `"nan"`.
 
         >>> fd.extrapolation = "nan"
         >>> fd([-.5, 0, 1.5]).round(3)
-        array([[  nan, 0.976,   nan],
-               [  nan, 0.759,   nan]])
+        array([[   nan,  0.976,    nan],
+               [   nan,  0.759,    nan]])
     """
 
     def __init__(self, fill_value):

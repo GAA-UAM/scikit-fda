@@ -7,6 +7,10 @@ functional data using shifts, in basis as well in discretized form.
 import numpy
 import scipy.integrate
 
+__author__ = "Pablo Marcos Manchón"
+__email__ = "pablo.marcosm@estudiante.uam.es"
+
+
 def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
                               extrapolation=None, step_size=1, initial=None,
                               eval_points=None):
@@ -62,9 +66,9 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
 
     Examples:
 
-        >>> from fda.datasets import make_sinusoidal_process
-        >>> from fda.basis import Fourier
-        >>> from fda.registration import shift_registration_deltas
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> from skfda.basis import Fourier
+        >>> from skfda.registration import shift_registration_deltas
         >>> fd = make_sinusoidal_process(n_samples=2, error_std=0, random_state=1)
 
         Registration of data in discretized form:
@@ -142,8 +146,7 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
         domain = numpy.empty(nfine, dtype=numpy.dtype(bool))
 
     ones = numpy.ones(fd.nsamples)
-    eval_points_rep =  numpy.outer(ones, eval_points)
-
+    eval_points_rep = numpy.outer(ones, eval_points)
 
     # Newton-Rhapson iteration
     while max_diff > tol and iter < maxiter:
@@ -164,8 +167,7 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
             #     d2_regsse_original * ( 1 + (a - b) / (domain[1] - domain[0]))
             d2_regsse = scipy.integrate.trapz(numpy.square(D1x),
                                               eval_points, axis=1)
-            eval_points_rep =  numpy.outer(ones, eval_points)
-
+            eval_points_rep = numpy.outer(ones, eval_points)
 
         # Computes the new values shifted
         x = fd.evaluate(eval_points_rep + numpy.atleast_2d(delta).T,
@@ -189,7 +191,6 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
         # Updates convergence criterions
         max_diff = numpy.abs(delta_aux, out=delta_aux).max()
         iter += 1
-
 
     return delta
 
@@ -247,9 +248,9 @@ def shift_registration(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
 
     Examples:
 
-        >>> from fda.datasets import make_sinusoidal_process
-        >>> from fda.basis import Fourier
-        >>> from fda.registration import shift_registration
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> from skfda.basis import Fourier
+        >>> from skfda.registration import shift_registration
         >>> fd = make_sinusoidal_process(n_samples=2, error_std=0, random_state=1)
 
         Registration of data in discretized form:
@@ -277,7 +278,6 @@ def shift_registration(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
                                       extrapolation=extrapolation,
                                       step_size=step_size, initial=initial,
                                       eval_points=eval_points)
-
 
     # Computes the values with the final shift to construct the FDataBasis
     return fd.shift(delta, restrict_domain=restrict_domain,

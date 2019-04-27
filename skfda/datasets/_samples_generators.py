@@ -218,10 +218,10 @@ def make_multimodal_samples(n_samples: int=15, *, n_modes: int=1,
 
     else:
         location = np.asarray(modes_location)
-        if location.shape != (n_samples, ndim_image, n_modes, ndim_domain):
-            shape = (n_samples, ndim_image, n_modes, ndim_domain)
-            raise ValueError(f"Incorrect modes_location shape"
-                             f"({location.shape}) != {shape}")
+
+        shape = (n_samples, ndim_image, n_modes, ndim_domain)
+        location = location.reshape(shape)
+        
 
     axis = np.linspace(start, stop, points_per_dim)
 

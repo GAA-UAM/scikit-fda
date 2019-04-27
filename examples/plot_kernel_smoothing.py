@@ -11,16 +11,16 @@ undersmoothing and oversmoothing.
 # Author: Miguel Carbajo Berrocal
 # License: MIT
 
-import fda
-import fda.kernel_smoothers as ks
-import fda.validation as val
+import skfda
+import skfda.kernel_smoothers as ks
+import skfda.validation as val
 import matplotlib.pylab as plt
 import numpy as np
 
 ###############################################################################
 #
 # For this example, we will use the
-# :func:`phoneme <fda.datasets.fetch_phoneme>` dataset. This dataset
+# :func:`phoneme <skfda.datasets.fetch_phoneme>` dataset. This dataset
 # contains the log-periodograms of several phoneme pronunciations. The phoneme
 # curves are very irregular and noisy, so we usually will want to smooth them
 # as a preprocessing step.
@@ -28,7 +28,7 @@ import numpy as np
 # As an example, we will smooth the first 300 curves only. In the following
 # plot, the first five curves are shown.
 
-dataset = fda.datasets.fetch_phoneme()
+dataset = skfda.datasets.fetch_phoneme()
 fd = dataset['data'][:300]
 
 fd[0:5].plot()
@@ -43,10 +43,10 @@ param_values = np.linspace(start=2, stop=25, num=24)
 llr = val.minimise(fd, param_values,
                    smoothing_method=ks.local_linear_regression)
 # Nadaraya-Watson kernel smoothing.
-nw = fda.validation.minimise(fd, param_values,
+nw = skfda.validation.minimise(fd, param_values,
                              smoothing_method=ks.nw)
 # K-nearest neighbours kernel smoothing.
-knn = fda.validation.minimise(fd, param_values,
+knn = skfda.validation.minimise(fd, param_values,
                               smoothing_method=ks.knn)
 
 plt.plot(param_values, knn['scores'])
@@ -98,11 +98,11 @@ nw['fdatagrid'][0:5].plot()
 # We can also appreciate the effects of undersmoothing and oversmoothing in
 # the following plots.
 
-fd_us = fda.FDataGrid(
+fd_us = skfda.FDataGrid(
     ks.nw(fd.sample_points, h=2).dot(fd.data_matrix[10, ..., 0]),
     fd.sample_points, fd.sample_range, fd.dataset_label,
     fd.axes_labels)
-fd_os = fda.FDataGrid(
+fd_os = skfda.FDataGrid(
     ks.nw(fd.sample_points, h=15).dot(fd.data_matrix[10, ..., 0]),
     fd.sample_points, fd.sample_range, fd.dataset_label,
     fd.axes_labels)

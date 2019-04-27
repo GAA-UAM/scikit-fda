@@ -2208,7 +2208,10 @@ class FDataBasis(FData):
                                   self.coefficients + other.coefficients)
 
         coefs = self.coefficients.copy()
-        coefs[:, 0] = self.coefficients[:, 0] + numpy.array(other)
+        try:
+            coefs[:, 0] = self.coefficients[:, 0] + numpy.array(other)
+        except:
+            return NotImplementedError
         return FDataBasis(self.basis.copy(), coefs)
 
     def __radd__(self, other):

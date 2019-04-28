@@ -273,7 +273,7 @@ def make_random_warping(n_samples: int=15, n_features: int=100, *,
 
      .. math::
         v(t) = \sum_{j=0}^{N} a_j \sin(\frac{2 \pi j}{K}t) + b_j
-        \sin(\frac{2 \pi j}{K}t)
+        \cos(\frac{2 \pi j}{K}t)
 
     where :math:`a_j, b_j \sim N(0, \sigma)`.
 

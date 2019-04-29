@@ -180,7 +180,8 @@ class TestWarping(unittest.TestCase):
 
         fd_reg = shift_registration(fd)
         deltas = shift_registration_deltas(fd)
-        np.testing.assert_equal(fd_reg, fd.shift(deltas))
+        np.testing.assert_array_almost_equal(fd_reg.data_matrix,
+                                             fd.shift(deltas).data_matrix)
 
 
 if __name__ == '__main__':

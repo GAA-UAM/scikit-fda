@@ -4,20 +4,25 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from skfda.grid import FDataGrid, GridSplineInterpolator
-from skfda.datasets import make_multimodal_samples
-from skfda.registration import normalize_warping, invert_warping
+from skfda import FDataGrid, SplineInterpolator
+from skfda.basis import Fourier
+from skfda.datasets import (make_multimodal_samples, make_multimodal_landmarks,
+                            make_sinusoidal_process)
+from skfda.registration import (normalize_warping, invert_warping,
+                                landmark_shift_deltas, landmark_shift,
+                                landmark_registration_warping,
+                                landmark_registration, mse_decomposition,
+                                shift_registration_deltas, shift_registration)
 
 
 class TestWarping(unittest.TestCase):
     """Test warpings functions"""
 
-
     def setUp(self):
         """Initialization of samples"""
 
         self.time = np.linspace(-1, 1, 50)
-        interpolator = GridSplineInterpolator(3, monotone=True)
+        interpolator = SplineInterpolator(3, monotone=True)
         self.polynomial = FDataGrid([self.time**3, self.time**5],
                                     self.time, interpolator=interpolator)
 
@@ -64,7 +69,118 @@ class TestWarping(unittest.TestCase):
 
         np.testing.assert_array_equal(normalized(b), [[b], [b]])
 
+    def test_landmark_shift_deltas(self):
 
+        fd = make_multimodal_samples(n_samples=3, random_state=1)
+        landmarks = make_multimodal_landmarks(n_samples=3, random_state=1)
+        landmarks = landmarks.squeeze()
+
+        shifts = landmark_shift_deltas(fd, landmarks).round(3)
+        np.testing.assert_almost_equal(shifts, [0.25, -0.25, -0.231])
+
+    def test_landmark_shift(self):
+
+        fd = make_multimodal_samples(n_samples=3, random_state=1)
+        landmarks = make_multimodal_landmarks(n_samples=3, random_state=1)
+        landmarks = landmarks.squeeze()
+
+        original_modes = fd(landmarks.reshape((3, 1, 1)),
+                            aligned_evaluation=False)
+        # Test default location
+        fd_registered = landmark_shift(fd, landmarks)
+        center = (landmarks.max() + landmarks.min())/2
+        reg_modes = fd_registered(center)
+
+        # Test callable location
+        np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
+
+        fd_registered = landmark_shift(fd, landmarks, location=np.mean)
+        center = np.mean(landmarks)
+        reg_modes = fd_registered(center)
+
+        np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
+
+        # Test integer location
+        fd_registered = landmark_shift(fd, landmarks, location=0)
+        center = np.mean(landmarks)
+        reg_modes = fd_registered(0)
+
+        np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
+
+        # Test array location
+        fd_registered = landmark_shift(fd, landmarks, location=[0, 0.1, 0.2])
+        reg_modes = fd_registered([[0], [.1], [.2]], aligned_evaluation=False)
+
+        np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
+
+    def test_landmark_registration_warping(self):
+        fd = make_multimodal_samples(n_samples=3, n_modes=2, random_state=9)
+        landmarks = make_multimodal_landmarks(n_samples=3, n_modes=2,
+                                              random_state=9)
+        landmarks = landmarks.squeeze()
+
+        # Default location
+        warping = landmark_registration_warping(fd, landmarks)
+        center = (landmarks.max(axis=0) + landmarks.min(axis=0)) / 2
+        np.testing.assert_almost_equal(warping(center), landmarks, decimal=1)
+
+        # Fixed location
+        center = [.3, .6]
+        warping = landmark_registration_warping(fd, landmarks, location=center)
+        np.testing.assert_almost_equal(warping(center), landmarks, decimal=3)
+
+    def test_landmark_registration(self):
+        fd = make_multimodal_samples(n_samples=3, n_modes=2, random_state=9)
+        landmarks = make_multimodal_landmarks(n_samples=3, n_modes=2,
+                                              random_state=9)
+        landmarks = landmarks.squeeze()
+
+        original_values = fd(landmarks.reshape(3, 2), aligned_evaluation=False)
+
+        # Default location
+        fd_reg = landmark_registration(fd, landmarks)
+        center = (landmarks.max(axis=0) + landmarks.min(axis=0)) / 2
+        np.testing.assert_almost_equal(fd_reg(center), original_values,
+                                       decimal=2)
+
+        # Fixed location
+        center = [.3, .6]
+        fd_reg = landmark_registration(fd, landmarks, location=center)
+        np.testing.assert_array_almost_equal(fd_reg(center), original_values,
+                                             decimal=2)
+
+    def test_mse_decomposition(self):
+        fd = make_multimodal_samples(n_samples=3, random_state=1)
+        landmarks = make_multimodal_landmarks(n_samples=3, random_state=1)
+        landmarks = landmarks.squeeze()
+        warping = landmark_registration_warping(fd, landmarks)
+        fd_registered = fd.compose(warping)
+        ret = mse_decomposition(fd, fd_registered, warping)
+
+        np.testing.assert_almost_equal(ret.mse_amp, 0.0009866997121476962)
+        np.testing.assert_almost_equal(ret.mse_pha, 0.11576861468435257)
+        np.testing.assert_almost_equal(ret.rsq, 0.9915489952877273)
+        np.testing.assert_almost_equal(ret.cr, 0.9999963424653829)
+
+    def test_shift_registration_deltas(self):
+
+        fd = make_sinusoidal_process(n_samples=2, error_std=0, random_state=1)
+
+        deltas = shift_registration_deltas(fd).round(3)
+        np.testing.assert_array_almost_equal(deltas, [-0.022,  0.03])
+
+        fd = fd.to_basis(Fourier())
+        deltas = shift_registration_deltas(fd).round(3)
+        np.testing.assert_array_almost_equal(deltas, [-0.022,  0.03])
+
+    def test_shift_registration(self):
+        """Test wrapper of shift_registration_deltas"""
+
+        fd = make_sinusoidal_process(n_samples=2, error_std=0, random_state=1)
+
+        fd_reg = shift_registration(fd)
+        deltas = shift_registration_deltas(fd)
+        np.testing.assert_equal(fd_reg, fd.shift(deltas))
 
 
 if __name__ == '__main__':

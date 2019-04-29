@@ -18,7 +18,8 @@ from scipy.interpolate import PPoly
 from scipy.special import binom
 
 from . import grid
-from .functional_data import FData, _list_of_arrays
+from . import FData
+from .core._utils import _list_of_arrays
 from .lfd import Lfd
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -1398,11 +1399,13 @@ class FDataBasis(FData):
         self.basis = basis
         self.coefficients = coefficients
 
-        self.dataset_label = dataset_label
-        self.axes_labels = axes_labels
+        #self.dataset_label = dataset_label
+        #self.axes_labels = axes_labels
+        #self.extrapolation = extrapolation
+        #self.keepdims = keepdims
 
-        self.extrapolation = extrapolation
-        self.keepdims = keepdims
+        super().__init__(extrapolation, dataset_label, axes_labels, keepdims)
+
 
     @classmethod
     def from_data(cls, data_matrix, sample_points, basis, weight_matrix=None,
@@ -1647,21 +1650,6 @@ class FDataBasis(FData):
     def domain_range(self):
         """Definition range."""
         return self.basis.domain_range
-
-    @property
-    def extrapolation(self):
-        """Return default type of extrapolation."""
-
-        return self._extrapolation
-
-    @extrapolation.setter
-    def extrapolation(self, value):
-        """Sets the type of extrapolation."""
-
-        if value is None:
-            self._extrapolation = None
-        else:
-            self._extrapolation = self._parse_extrapolation(value)
 
     def _evaluate(self, eval_points, *, derivative=0):
         """"Evaluate the object or its derivatives at a list of values.

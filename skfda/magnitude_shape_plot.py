@@ -129,7 +129,8 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
                 [-1. ]]]), array([[ 1.66666667],
                [ 0.        ],
                [-0.73333333],
-               [-1.        ]]), array([ 0.74074074, 0.        , 0.36740741, 0.53333333]))
+               [-1.        ]]), array([ 0.74074074,  0.        ,  0.36740741,  0.53333333]))
+
 
     """
 
@@ -322,7 +323,7 @@ class MagnitudeShapePlot:
                 dataset_label=None,
                 axes_labels=None,
                 extrapolation=None,
-                interpolator=GridSplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
+                interpolator=SplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
                 keepdims=False),
             depth_method=modified_band_depth,
             dim_weights=None,
@@ -544,4 +545,3 @@ class MagnitudeShapePlot:
         data = output.getvalue()
         plt.close(fig)
         return data.decode('utf-8')
-

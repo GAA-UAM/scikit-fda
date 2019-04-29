@@ -19,10 +19,10 @@ import math
 from mpl_toolkits.mplot3d import Axes3D
 
 
-
 from . import basis as fdbasis
-from .grid_interpolation import GridSplineInterpolator
-from .functional_data import _list_of_arrays, FData
+from . import SplineInterpolator
+from . import FData
+from .core._utils import _list_of_arrays
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -182,11 +182,10 @@ class FDataGrid(FData):
             raise ValueError("There must be a label for each of the"
                               "dimensions of the domain and the image.")
 
-        self.dataset_label = dataset_label
-        self.axes_labels = axes_labels
-        self.keepdims = keepdims
         self.interpolator = interpolator
-        self.extrapolation = extrapolation
+
+
+        super().__init__(extrapolation, dataset_label, axes_labels, keepdims)
 
 
         return
@@ -306,34 +305,17 @@ class FDataGrid(FData):
     def interpolator(self, new_interpolator):
         """Sets the interpolator of the FDataGrid."""
         if new_interpolator is None:
-            new_interpolator = GridSplineInterpolator()
+            new_interpolator = SplineInterpolator()
 
         self._interpolator = new_interpolator
         self._interpolator_evaluator = None
-
-    @property
-    def extrapolation(self):
-        """Returns the type of extrapolation defined by default in the object.
-        This extrapolation is used in `evaluate` by default.
-        """
-        return self._extrapolation
-
-    @extrapolation.setter
-    def extrapolation(self, value):
-        """Sets the extrapolation of the FDataGrid."""
-
-        if value is None:
-            self._extrapolation = None
-        else:
-            self._extrapolation = self._parse_extrapolation(value)
-
 
     @property
     def _evaluator(self):
         """Return the evaluator constructed by the interpolator."""
 
         if self._interpolator_evaluator is None:
-            self._interpolator_evaluator = self._interpolator._construct_interpolator(self)
+            self._interpolator_evaluator = self._interpolator.evaluator(self)
 
         return self._interpolator_evaluator
 

@@ -1,7 +1,7 @@
 
 import unittest
 from skfda.grid import FDataGrid
-from skfda.grid_interpolation import GridSplineInterpolator
+from skfda import SplineInterpolator
 import numpy as np
 
 # TODO: Unitest for grids with domain dimension > 1
@@ -197,7 +197,7 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         """Test basic usage of evaluation"""
 
         f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10),
-                      interpolator=GridSplineInterpolator(3))
+                      interpolator=SplineInterpolator(3))
 
         # Test interpolation in nodes
         np.testing.assert_array_almost_equal(f(np.arange(10)).round(1),
@@ -212,7 +212,7 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         """Test the evaluation of a single point"""
 
         f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10),
-                      interpolator=GridSplineInterpolator(3))
+                      interpolator=SplineInterpolator(3))
 
         # Test a single point
         np.testing.assert_array_almost_equal(f(5.3).round(3), np.array([[28.09],
@@ -225,7 +225,7 @@ class TestEvaluationSpline1_1(unittest.TestCase):
     def test_evaluation_cubic_derivative(self):
         """Test derivative"""
         f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10),
-                      interpolator=GridSplineInterpolator(3))
+                      interpolator=SplineInterpolator(3))
 
         # Derivate = [2*x, 2*(9-x)]
         np.testing.assert_array_almost_equal(f([0.5,1.5,2.5], derivative=1).round(3),
@@ -236,7 +236,7 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         """Test grid evaluation. With domain dimension = 1"""
 
         f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10),
-                      interpolator=GridSplineInterpolator(3))
+                      interpolator=SplineInterpolator(3))
 
         t = [0.5,1.5,2.5]
         res = np.array([[ 0.25,  2.25,  6.25], [72.25, 56.25, 42.25]])
@@ -255,7 +255,7 @@ class TestEvaluationSpline1_1(unittest.TestCase):
     def test_evaluation_cubic_composed(self):
 
         f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10),
-                      interpolator=GridSplineInterpolator(3))
+                      interpolator=SplineInterpolator(3))
 
 
         # Evaluate (x**2, (9-x)**2) in (1,8)
@@ -276,7 +276,7 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         """Test interpolation in nodes for all dimensions"""
 
         for degree in range(1,6):
-            interpolator = GridSplineInterpolator(degree)
+            interpolator = SplineInterpolator(degree)
 
             f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10),
                           interpolator=interpolator)
@@ -289,13 +289,13 @@ class TestEvaluationSpline1_1(unittest.TestCase):
 
 
         with np.testing.assert_raises(ValueError):
-            interpolator = GridSplineInterpolator(7)
+            interpolator = SplineInterpolator(7)
             f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10),
                           interpolator=interpolator)
             f(1)
 
         with np.testing.assert_raises(ValueError):
-            interpolator = GridSplineInterpolator(0)
+            interpolator = SplineInterpolator(0)
             f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10),
                           interpolator=interpolator)
             f(1)
@@ -320,7 +320,7 @@ class TestEvaluationSpline1_n(unittest.TestCase):
 
         self.data_matrix_1_n = np.dstack((data_1,data_2))
 
-        self.interpolator = GridSplineInterpolator(interpolation_order=2)
+        self.interpolator = SplineInterpolator(interpolation_order=2)
 
 
     def test_evaluation_simple(self):
@@ -373,7 +373,7 @@ class TestEvaluationSpline1_n(unittest.TestCase):
         """Test grid evaluation. With domain dimension = 1"""
 
         f = FDataGrid(self.data_matrix_1_n, sample_points=np.arange(10),
-                      interpolator=GridSplineInterpolator(2))
+                      interpolator=SplineInterpolator(2))
 
         t = [1.5,2.5,3.5]
         res = np.array([[[ 2.25      ,  0.08721158],
@@ -428,7 +428,7 @@ class TestEvaluationSpline1_n(unittest.TestCase):
         """Test interpolation in nodes for all dimensions"""
 
         for degree in range(1,6):
-            interpolator = GridSplineInterpolator(degree)
+            interpolator = SplineInterpolator(degree)
 
             f = FDataGrid(self.data_matrix_1_n, sample_points=np.arange(10),
                           interpolator=interpolator)

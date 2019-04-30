@@ -30,7 +30,7 @@ import mpl_toolkits.mplot3d
 #
 # The extrapolation could be specified by a string with the short name of an
 # extrapolator, with an
-# :class:´Extrapolator <skfda.extrapolation.Extrapolator>´ or with a callable.
+# :class:´Extrapolator <skfda.Extrapolator>´ or with a callable.
 #
 # To show how it works we will create a dataset with two unidimensional curves
 # defined in (0,1), and we will represent it using a grid and different types of
@@ -153,7 +153,7 @@ fdgrid.plot() # Plot dataset
 
 ###############################################################################
 #
-# The :class:´FillExtrapolation <skfda.extrapolation.FillExtrapolation>´ will fill
+# The :class:´FillExtrapolation <skfda.FillExtrapolation>´ will fill
 # the points extrapolated with the same value. The case of filling with zeros
 # could be specified with the string `"zeros"`, which is equivalent to
 # `extrapolation=FillExtrapolation(0)`.

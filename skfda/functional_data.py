@@ -14,75 +14,8 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import mpl_toolkits.mplot3d
 
-from .extrapolation import extrapolation_methods
-
-
-
-def _list_of_arrays(original_array):
-    """Convert to a list of arrays.
-
-    If the original list is one-dimensional (e.g. [1, 2, 3]), return list to
-    array (in this case [array([1, 2, 3])]).
-
-    If the original list is two-dimensional (e.g. [[1, 2, 3], [4, 5]]), return
-    a list containing other one-dimensional arrays (in this case
-    [array([1, 2, 3]), array([4, 5, 6])]).
-
-    In any other case the behaviour is unespecified.
-
-    """
-    new_array = np.array([np.asarray(i) for i in
-                             np.atleast_1d(original_array)])
-
-    # Special case: Only one array, expand dimension
-    if len(new_array.shape) == 1 and not any(isinstance(s, np.ndarray)
-                                             for s in new_array):
-        new_array = np.atleast_2d(new_array)
-
-    return list(new_array)
-
-def _coordinate_list(axes):
-    """Convert a list with axes in a list with coordinates.
-
-    Computes the cartesian product of the axes and returns a numpy array of
-    1 dimension with all the possible combinations, for an arbitrary number of
-    dimensions.
-
-    Args:
-        Axes (array_like): List with axes.
-
-    Return:
-        (np.ndarray): Numpy 2-D array with all the possible combinations.
-        The entry (i,j) represent the j-th coordinate of the i-th point.
-
-    Examples:
-
-        >>> from skfda.functional_data import _coordinate_list
-        >>> axes = [[0,1],[2,3]]
-        >>> _coordinate_list(axes)
-        array([[0, 2],
-               [0, 3],
-               [1, 2],
-               [1, 3]])
-
-        >>> axes = [[0,1],[2,3],[4]]
-        >>> _coordinate_list(axes)
-        array([[0, 2, 4],
-               [0, 3, 4],
-               [1, 2, 4],
-               [1, 3, 4]])
-
-        >>> axes = [[0,1]]
-        >>> _coordinate_list(axes)
-        array([[0],
-               [1]])
-
-    """
-    return np.vstack(list(map(np.ravel, np.meshgrid(*axes, indexing='ij')))).T
-
-
-
-
+from .core.extrapolation import _parse_extrapolation
+from .core._utils import _coordinate_list, _list_of_arrays
 
 class FData(ABC):
     """Defines the structure of a functional data object.
@@ -100,6 +33,13 @@ class FData(ABC):
             :func:`evaluate`.
 
     """
+
+    def __init__(self, extrapolation, dataset_label, axes_labels, keepdims):
+
+        self.extrapolation = extrapolation
+        self.dataset_label = dataset_label
+        self.axes_labels = axes_labels
+        self.keepdims = keepdims
 
     @property
     @abstractmethod
@@ -133,7 +73,7 @@ class FData(ABC):
 
         """
         pass
-    
+
     @property
     def ndim_codomain(self):
         """Return number of dimensions of the codomain.
@@ -145,15 +85,32 @@ class FData(ABC):
         return self.ndim_image
 
     @property
-    @abstractmethod
     def extrapolation(self):
-        """Return the default extrapolation method.
+        """Return default type of extrapolation."""
 
-        Returns:
-            Extrapolation: Extrapolation method.
+        return self._extrapolation
 
-        """
-        pass
+    @extrapolation.setter
+    def extrapolation(self, value):
+        """Sets the type of extrapolation."""
+
+        if value is None:
+            self._extrapolation = None
+        else:
+            self._extrapolation = _parse_extrapolation(value)
+
+        self._extrapolator_evaluator = None
+
+    @property
+    def extrapolator_evaluator(self):
+        """Return the evaluator constructed by the extrapolator."""
+        if self.extrapolation is None:
+            return None
+
+        elif self._extrapolator_evaluator is None:
+            self._extrapolator_evaluator = self._extrapolation.evaluator(self)
+
+        return self._extrapolator_evaluator
 
     @property
     @abstractmethod
@@ -188,7 +145,7 @@ class FData(ABC):
             eval_points = [eval_points]
 
         # Creates a copy of the eval points, and convert to np.array
-        eval_points = np.array(eval_points)
+        eval_points = np.array(eval_points, dtype=float)
 
         if evaluation_aligned: # Samples evaluated at same eval points
 
@@ -233,8 +190,6 @@ class FData(ABC):
             np.logical_or(index, eval_points[..., i] > bounds[1], out=index)
 
         return index
-
-
 
 
     def _evaluate_grid(self, axes, *, derivative=0, extrapolation=None,
@@ -376,32 +331,6 @@ class FData(ABC):
 
         return res
 
-    def _parse_extrapolation(self, extrapolation):
-        """Parse the argument `extrapolation` in :meth:`evaluate`.
-
-        If extrapolation is None returns the default extrapolator.
-
-        Args:
-            extrapolation (:class:´Extrapolator´, str or Callable): Argument
-                extrapolation to be parsed.
-            fdata (:class:´FData´): Object with the default extrapolation.
-
-        Returns:
-            (:class:´Extrapolator´ or Callable): Extrapolation method.
-
-        """
-        if extrapolation is None:
-            return self.extrapolation
-
-        elif callable(extrapolation):
-            return extrapolation
-
-        elif isinstance(extrapolation, str):
-            return extrapolation_methods[extrapolation.lower()]
-
-        else:
-            raise ValueError("Invalid extrapolation method.")
-
     @abstractmethod
     def _evaluate(self, eval_points, *, derivative=0):
         """Internal evaluation method, defines the evaluation of the FData.
@@ -483,8 +412,13 @@ class FData(ABC):
             function at the values specified in eval_points.
 
         """
-        # Gets the function to perform extrapolation or None
-        extrapolation = self._parse_extrapolation(extrapolation)
+        if extrapolation is None:
+            extrapolation = self.extrapolation
+            extrapolator_evaluator = self.extrapolator_evaluator
+        else:
+            # Gets the function to perform extrapolation or None
+            extrapolation = _parse_extrapolation(extrapolation)
+            extrapolator_evaluator  = None
 
         if grid: # Evaluation of a grid performed in auxiliar function
             return self._evaluate_grid(eval_points, derivative=derivative,
@@ -492,7 +426,7 @@ class FData(ABC):
                                        aligned_evaluation=aligned_evaluation,
                                        keepdims=keepdims)
 
-        # Convert to array ann check dimensions of eval points
+        # Convert to array and check dimensions of eval points
         eval_points = self._reshape_eval_points(eval_points, aligned_evaluation)
 
         # Check if extrapolation should be applied
@@ -512,6 +446,10 @@ class FData(ABC):
                                               derivative=derivative)
 
         else:
+            # Evaluation using extrapolation
+            if extrapolator_evaluator is None:
+                extrapolator_evaluator = extrapolation.evaluator(self)
+
             # Partition of eval points
             if aligned_evaluation:
 
@@ -524,6 +462,9 @@ class FData(ABC):
                 # Direct evaluation
                 res_evaluation = self._evaluate(eval_points_evaluation,
                                                 derivative=derivative)
+                res_extrapolation = extrapolator_evaluator.evaluate(
+                    eval_points_extrapolation,
+                    derivative=derivative)
 
             else:
                 index_ext = np.logical_or.reduce(index_matrix, axis=0)
@@ -536,9 +477,9 @@ class FData(ABC):
                 res_evaluation = self._evaluate_composed(eval_points_evaluation,
                                                          derivative=derivative)
 
-            # Evaluation using extrapolation
-            res_extrapolation = extrapolation(self, eval_points_extrapolation,
-                                              derivative=derivative)
+                res_extrapolation = extrapolator_evaluator.evaluate_composed(
+                    eval_points_extrapolation,
+                    derivative=derivative)
 
             res = self._join_evaluation(index_matrix, index_ext, index_ev,
                                         res_extrapolation, res_evaluation)
@@ -1137,7 +1078,7 @@ class FData(ABC):
 
     def __iter__(self):
         """Iterate over the samples"""
-        
+
         for i in range(self.nsamples):
             yield self[i]
 
@@ -1145,5 +1086,3 @@ class FData(ABC):
         """Returns the number of samples of the FData object."""
 
         return self.nsamples
-      
-

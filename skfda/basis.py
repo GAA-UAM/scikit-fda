@@ -2210,7 +2210,7 @@ class FDataBasis(FData):
         coefs = self.coefficients.copy()
         try:
             coefs[:, 0] = self.coefficients[:, 0] + numpy.array(other)
-        except:
+        except TypeError:
             return NotImplementedError
         return FDataBasis(self.basis.copy(), coefs)
 

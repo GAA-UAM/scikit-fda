@@ -46,10 +46,10 @@ fd.scatter()
 # the evaluation of the object.
 #
 # Polynomial spline interpolation could be performed using the interpolator
-# :class:`GridSplineInterpolator`. In the following example a cubic interpolator
+# :class:`SplineInterpolator`. In the following example a cubic interpolator
 # is set.
 
-fd.interpolator = skfda.grid.GridSplineInterpolator(interpolation_order=3)
+fd.interpolator = skfda.SplineInterpolator(interpolation_order=3)
 
 fd.plot()
 fd.scatter()
@@ -65,12 +65,12 @@ fd_smooth = skfda.datasets.make_sinusoidal_process(n_samples=1, n_features=30,
                                                  random_state=1, error_std=.3)
 
 # Cubic interpolator
-fd_smooth.interpolator = skfda.grid.GridSplineInterpolator(interpolation_order=3)
+fd_smooth.interpolator = skfda.SplineInterpolator(interpolation_order=3)
 
 fd_smooth.plot(label="Cubic")
 
 # Smooth interpolation
-fd_smooth.interpolator = skfda.grid.GridSplineInterpolator(interpolation_order=3,
+fd_smooth.interpolator = skfda.SplineInterpolator(interpolation_order=3,
                                                          smoothness_parameter=1.5)
 
 fd_smooth.plot(label="Cubic smoothed")
@@ -90,7 +90,7 @@ plt.legend()
 fd = fd[1]
 
 for i in range(1, 4):
-    fd.interpolator = skfda.grid.GridSplineInterpolator(interpolation_order=i)
+    fd.interpolator = skfda.SplineInterpolator(interpolation_order=i)
     fd.plot(derivative=1, label=f"Degree {i}")
 
 plt.legend()
@@ -124,7 +124,7 @@ fd_monotone.plot(linestyle='--', label="cubic")
 
 
 
-fd_monotone.interpolator = skfda.grid.GridSplineInterpolator(interpolation_order=3,
+fd_monotone.interpolator = skfda.SplineInterpolator(interpolation_order=3,
                                                            monotone=True)
 fd_monotone.plot(label="PCHIP")
 
@@ -161,7 +161,7 @@ fd.scatter(ax=ax)
 #
 
 
-fd.interpolator = skfda.grid.GridSplineInterpolator(interpolation_order=3)
+fd.interpolator = skfda.SplineInterpolator(interpolation_order=3)
 
 fig, ax = fd.plot()
 fd.scatter(ax=ax)
@@ -181,7 +181,7 @@ plt.show()
 
 ###############################################################################
 # The following table shows the interpolation methods available by the class
-# :class:`GridSplineInterpolator` depending on the domain dimension.
+# :class:`SplineInterpolator` depending on the domain dimension.
 #
 # +------------------+--------+----------------+----------+-------------+-------------+
 # | Domain dimension | Linear | Up to degree 5 | Monotone | Derivatives |  Smoothing  |

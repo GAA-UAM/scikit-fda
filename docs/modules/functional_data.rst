@@ -30,7 +30,7 @@ following class allows interpolation with different splines.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.grid.GridSplineInterpolator
+   skfda.SplineInterpolator
 
 
 Basis representation
@@ -61,7 +61,7 @@ Functional objects of the package are instances of FData, which
 contains the common attributes and methods used in all representations. This
 is an abstract class and cannot be instantiated directly, because it does not
 specify the representation of the data. Many of the package's functionalities
-receive an element of this class as an argument. 
+receive an element of this class as an argument.
 
 .. autosummary::
    :toctree: autosummary

@@ -5,7 +5,7 @@ import scipy.integrate
 
 
 from ..functional_data import FData
-from ..grid import FDataGrid, GridSplineInterpolator
+from .. import FDataGrid, SplineInterpolator
 from . import invert_warping
 from ._registration_utils import _normalize_scale
 
@@ -292,7 +292,7 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
     gamma = _normalize_scale(gamma, a=eval_points[0], b=eval_points[-1])
 
     # Interpolator
-    interpolator = GridSplineInterpolator(interpolation_order=3, monotone=True)
+    interpolator = SplineInterpolator(interpolation_order=3, monotone=True)
 
     return FDataGrid(gamma, eval_points, interpolator=interpolator)
 
@@ -492,8 +492,8 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
                                     a=original_eval_points[0],
                                     b=original_eval_points[-1])
 
-    monotone_interpolator = GridSplineInterpolator(interpolation_order=3,
-                                                   monotone=True)
+    monotone_interpolator = SplineInterpolator(interpolation_order=3,
+                                               monotone=True)
 
     mean = FDataGrid([warping_mean], sample_points=original_eval_points,
                      interpolator=monotone_interpolator)
@@ -584,7 +584,7 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
     eval_points_normalized = _normalize_scale(eval_points)
     y_scale = eval_points[-1] - eval_points[0]
 
-    interpolator = GridSplineInterpolator(interpolation_order=3, monotone=True)
+    interpolator = SplineInterpolator(interpolation_order=3, monotone=True)
 
     # Discretisation points
     fdatagrid_normalized = FDataGrid(fdatagrid(eval_points) / y_scale,

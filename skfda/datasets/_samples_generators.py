@@ -3,7 +3,7 @@ import numpy as np
 from scipy.stats import multivariate_normal
 import scipy.integrate
 from .. import covariances
-from ..grid import FDataGrid, GridSplineInterpolator
+from .. import FDataGrid, SplineInterpolator
 from ..registration import normalize_warping
 
 
@@ -350,8 +350,8 @@ def make_random_warping(n_samples: int=15, n_features: int=100, *,
                                            axis=0)
     warping = FDataGrid(data_matrix.T, sample_points=time[:,0])
     warping = normalize_warping(warping, domain_range=(start, stop))
-    warping.interpolator = GridSplineInterpolator(interpolation_order=3,
-                                                  monotone=True)
+    warping.interpolator = SplineInterpolator(interpolation_order=3,
+                                              monotone=True)
 
 
     return warping

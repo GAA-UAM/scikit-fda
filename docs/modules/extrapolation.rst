@@ -14,18 +14,19 @@ The following classes are used to define common methods of extrapolation.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.extrapolation.BoundaryExtrapolation
-   skfda.extrapolation.ExceptionExtrapolation
-   skfda.extrapolation.FillExtrapolation
-   skfda.extrapolation.PeriodicExtrapolation
+   skfda.BoundaryExtrapolation
+   skfda.ExceptionExtrapolation
+   skfda.FillExtrapolation
+   skfda.PeriodicExtrapolation
 
 Custom Extrapolation
 --------------------
 
-Custom extrapolators could be done subclassing :class:`Extrapolator
-<skfda.extrapolation.Extrapolator>` or with a compatible callable.
+Custom extrapolators could be done subclassing :class:`EvaluatorConstructor
+<skfda.EvaluatorConstructor>`.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.extrapolation.Extrapolator
+   skfda.EvaluatorConstructor
+   skfda.Evaluator

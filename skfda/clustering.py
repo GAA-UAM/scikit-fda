@@ -20,16 +20,14 @@ class ClusteringData(ABC):
     Class from which both :class:`K-Means <fda.clustering.KMeans>` and
     :class:`Fuzzy K-Means <fda.clustering.FuzzyKMeans>` classes inherit."""
 
-    def __init__(self, max_iter, random_state, p):
-        """Sets the arguments *max_iter* and *random_state* and *p*.
+    def __init__(self, max_iter, random_seed, p):
+        """Sets the arguments *max_iter* and *random_seed* and *p*.
 
         Args:
             max_iter (int): Maximum number of iterations of the clustering
                 algorithm.
-            random_state (int, RandomState instance or None): Defaults to 0.
-                Determines random number generation for centroid initialization.
-                Use an int to make the randomness deterministic. See Glossary.
-                https://scikit-learn.org/stable/glossary.html#term-random-state
+            random_seed (int): Seed to initialize the random state to choose
+                the initial centroids.
             p (int): Identifies the p-norm used to calculate the distance
                 between functions.
         """
@@ -38,7 +36,7 @@ class ClusteringData(ABC):
                 "The number of iterations must be greater than 0.")
 
         self._max_iter = max_iter
-        self._random_state = random_state
+        self._random_seed = random_seed
         self._p = p
 
     @property
@@ -58,8 +56,8 @@ class ClusteringData(ABC):
         return self._max_iter
 
     @property
-    def random_state(self):
-        return self._random_state
+    def random_seed(self):
+        return self._random_seed
 
     @property
     def p(self):
@@ -136,14 +134,15 @@ class ClusteringData(ABC):
             centers (ndarray): initial centers
         """
         comparison = True
-        random_state_aux = self.random_state
+        random_seed_aux = self.random_seed
         while comparison:
-            random.seed(a=random_state_aux)
-            indices = random.sample(range(fdatagrid.nsamples), n_clusters)
+            random_state = np.random.RandomState(random_seed_aux)
+            indices = random_state.choice(np.arange(fdatagrid.nsamples),
+                                          n_clusters, replace=False)
             centers = data_matrix[indices]
             unique_centers = np.unique(centers, axis=0)
             comparison = len(unique_centers) != n_clusters
-            random_state_aux += 1
+            random_seed_aux += 1
 
         return centers
 
@@ -351,7 +350,7 @@ class KMeans(ClusteringData):
         init (ndarray, optional): Contains the initial centers of the different clusters the algorithm starts with.
             Defaults to None, ans the centers are initialized randomly.
         max_iter (int, optional): Maximum number of iterations of the clustering algorithm. Defaults to 100.
-        random_state (int, optional): Seed to initialize the random state to choose the initial centroids.
+        random_seed (int, optional): Seed to initialize the random state to choose the initial centroids.
             Defaults to None.
         p (int, optional): Identifies the p-norm used to calculate the distance between functions. Defaults to 2.
         n_iter (numpy.array, (fdatagrid.ndim_image)): number of iterations the
@@ -410,7 +409,7 @@ class KMeans(ClusteringData):
             init=array([[[ 0. ,  0. ,  0. ,  0. ,  0. ,  0. ],
                     [ 2. ,  1. , -1. ,  0.5,  0. , -0.5]]]),
             max_iter=100,
-            random_state=0,
+            random_seed=0,
             p=2,
             n_iter=array([ 3.]),
             clustering_values=array([[0],
@@ -424,20 +423,19 @@ class KMeans(ClusteringData):
 
     """
 
-    def __init__(self, max_iter=100, random_state=0, p=2):
+    def __init__(self, max_iter=100, random_seed=0, p=2):
         """Initialization of the KMeans class.
 
         Args:
             max_iter (int): Maximum number of iterations of the clustering
                 algorithm.
-            random_state (int, RandomState instance or None): Defaults to 0.
-                Determines random number generation for centroid initialization.
-                Use an int to make the randomness deterministic. See Glossary.
-                https://scikit-learn.org/stable/glossary.html#term-random-state
+            random_seed (int): Defaults to 0. Determines random number generation
+                for centroid initialization. Use an int to make the randomness
+                deterministic.
             p (int): Identifies the p-norm used to calculate the distance
                 between functions.
         """
-        super().__init__(max_iter, random_state, p)
+        super().__init__(max_iter, random_seed, p)
 
     @property
     def clustering_values(self):
@@ -590,7 +588,7 @@ class KMeans(ClusteringData):
                 f"\nn_clusters={repr(self.n_clusters)},"
                 f"\ninit={repr(self.init)},"
                 f"\nmax_iter={repr(self.max_iter)},"
-                f"\nrandom_state={repr(self.random_state)},"
+                f"\nrandom_seed={repr(self.random_seed)},"
                 f"\np={repr(self.p)},"
                 f"\nn_iter={repr(self.n_iter)},"
                 f"\nclustering_values={repr(self.clustering_values)},"
@@ -654,8 +652,8 @@ class FuzzyKMeans(ClusteringData):
             are initialized randomly.
         max_iter (int, optional): Maximum number of iterations of the clustering
             algorithm. Defaults to 100.
-        random_state (int, optional): Seed to initialize the random state to choose
-            the initial centroids. Defaults to None.
+        random_seed (int, optional): Seed to initialize the random state to choose
+            the initial centroids. Defaults to 0.
         p (int, optional): Identifies the p-norm used to calculate the distance
             between functions. Defaults to 2.
         n_iter (numpy.array, (fdatagrid.ndim_image)): number of iterations the
@@ -711,7 +709,7 @@ class FuzzyKMeans(ClusteringData):
                    [[0, 0, 0, 0],
                     [0, 1, 0, 1]]]),
             max_iter=100,
-            random_state=0,
+            random_seed=0,
             p=2,
             n_iter=array([ 2.,  2.]),
             membership_values=array([[[ 1. ,  0. ],
@@ -732,17 +730,15 @@ class FuzzyKMeans(ClusteringData):
 
     """
 
-    def __init__(self, max_iter=100, random_state=0, p=2, fuzzifier=2,
+    def __init__(self, max_iter=100, random_seed=0, p=2, fuzzifier=2,
                  n_dec=3):
         """Initialization of the FuzzyKMeans class.
 
         Args:
             max_iter (int): Maximum number of iterations of the clustering
                 algorithm.
-            random_state (int, RandomState instance or None): Defaults to 0.
-                Determines random number generation for centroid initialization.
-                Use an int to make the randomness deterministic. See Glossary.
-                https://scikit-learn.org/stable/glossary.html#term-random-state
+            random_seed (int, optional): Seed to initialize the random state
+                to choose the initial centroids. Defaults to 0.
             p (int): Identifies the p-norm used to calculate the distance
                 between functions.
             fuzzifier (int, optional): Scalar parameter used to specify the
@@ -750,7 +746,7 @@ class FuzzyKMeans(ClusteringData):
             n_dec (int, optional): designates the number of decimals of the labels
                 returned in the fuzzy algorithm. Defaults to 3.
         """
-        super().__init__(max_iter, random_state, p)
+        super().__init__(max_iter, random_seed, p)
         if fuzzifier < 2:
             raise ValueError("The fuzzifier parameter must be greater than 1.")
 
@@ -788,7 +784,7 @@ class FuzzyKMeans(ClusteringData):
             init (ndarray): Contains the initial centers of the different
                 clusters the algorithm starts with. Defaults to None, ans the
                 centers are initialized randomly.
-            random_state (int): Seed to initialize the random state to choose
+            random_seed (int): Seed to initialize the random state to choose
                 the initial centroids.
             max_iter (int): Maximum number of iterations of the clustering algorithm.
             p (int): Identifies the p-norm used to calculate the distance between functions.
@@ -1171,7 +1167,7 @@ class FuzzyKMeans(ClusteringData):
                 f"\nn_clusters={repr(self.n_clusters)},"
                 f"\ninit={repr(self.init)},"
                 f"\nmax_iter={repr(self.max_iter)},"
-                f"\nrandom_state={repr(self.random_state)},"
+                f"\nrandom_seed={repr(self.random_seed)},"
                 f"\np={repr(self.p)},"
                 f"\nn_iter={repr(self.n_iter)},"
                 f"\nmembership_values={repr(self.membership_values)},"

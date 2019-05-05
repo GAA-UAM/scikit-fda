@@ -34,14 +34,14 @@ class TestClustering(unittest.TestCase):
         kmeans = KMeans()
         kmeans.fit(fd)
         np.testing.assert_array_equal(kmeans.clustering_values,
-                                      np.array([[0, 1],
-                                                [0, 0],
-                                                [1, 1]]))
+                                      np.array([[1, 0],
+                                                [1, 1],
+                                                [0, 0]]))
         np.testing.assert_allclose(kmeans.centers, np.array(
-            [[[1.5, 2.5, 3.5, 4.5],
-              [3., 4., 5., 6.]],
-             [[0.5, 0.6, 0.7, 0.7],
-              [0.25, 0.35, 0.45, 0.55]]]))
+            [[[3., 4., 5., 6.],
+              [1.5, 2.5, 3.5, 4.5]],
+             [[0.25, 0.35, 0.45, 0.55],
+              [0.5, 0.6, 0.7, 0.7]]]))
         np.testing.assert_array_equal(kmeans.n_iter, np.array([2., 2.]))
 
     def test_fuzzy_kmeans_univariate(self):
@@ -53,16 +53,16 @@ class TestClustering(unittest.TestCase):
         fuzzy_kmeans = FuzzyKMeans()
         fuzzy_kmeans.fit(fd)
         np.testing.assert_array_equal(fuzzy_kmeans.membership_values,
-                                      np.array([[[0.035, 0.965]],
-                                                [[0.06, 0.94]],
-                                                [[0.773, 0.227]],
-                                                [[0.951, 0.049]]]))
+                                      np.array([[[0.965, 0.035]],
+                                                [[0.94, 0.06]],
+                                                [[0.227, 0.773]],
+                                                [[0.049, 0.951]]]))
         np.testing.assert_allclose(fuzzy_kmeans.centers, np.array(
-            [[[-0.69458976, -0.69458976, -0.49444057, -0.19702289,
-               -0.19861085, -0.39836226],
-              [0.7065429, 0.7065429, 1.45512711, 2.46702433,
-               1.98146141, 1.48209637]]]))
-        np.testing.assert_array_equal(fuzzy_kmeans.n_iter, np.array([66.]))
+            [[[0.7065429, 0.7065429, 1.45512711, 2.46702433,
+               1.98146141, 1.48209637],
+              [-0.69458976, -0.69458976, -0.49444057, -0.19702289,
+               -0.19861085, -0.39836226]]]))
+        np.testing.assert_array_equal(fuzzy_kmeans.n_iter, np.array([67.]))
 
     def test_fuzzy_kmeans_multivariate(self):
         data_matrix = [[[1, 0.3], [2, 0.4], [3, 0.5], [4, 0.6]],

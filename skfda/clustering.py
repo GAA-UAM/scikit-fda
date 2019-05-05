@@ -141,8 +141,8 @@ class ClusteringData(ABC):
             random.seed(a=random_state_aux)
             indices = random.sample(range(fdatagrid.nsamples), n_clusters)
             centers = data_matrix[indices]
-            comparison = np.asarray([(centers[i] == centers).all()
-                                     for i in range(n_clusters)]).sum()
+            unique_centers = np.unique(centers, axis=0)
+            comparison = len(unique_centers) != n_clusters
             random_state_aux += 1
 
         return centers

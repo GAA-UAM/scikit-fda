@@ -79,17 +79,19 @@ class ClusteringData(ABC):
                 are classified into different groups.
             n_clusters (int): Number of groups into which the samples are
                 classified.
-            init (ndarray): Contains the initial centers of the different
-                clusters the algorithm starts with or None.
+            init (FDataGrid): Contains the initial centers of the different
+                clusters the algorithm starts with or None. Its data_marix must
+                be of the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
 
         Returns:
             fdatagrid (FDataGrid object): Object whose samples
                 are classified into different groups.
             n_clusters (int): Number of groups into which the samples are
                 classified.
-            init (ndarray): Contains the initial centers of the different
-                clusters the algorithm starts with. If None, default value,
-                the centers are generated randomly.
+            init (FDataGrid): Contains the initial centers of the different
+                clusters the algorithm starts with. Its data_marix must be of
+                the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
+                If None, default value, the centers are generated randomly.
         """
 
         if fdatagrid.ndim_domain > 1:
@@ -104,17 +106,11 @@ class ClusteringData(ABC):
             raise ValueError(
                 "The number of clusters must be greater than 1.")
 
-        # Adjust the init shape if the dimension of the image is one
-        if init is not None and len(init.shape) == 1 + fdatagrid.ndim_domain:
-            init = init[..., np.newaxis]
-
         if init is not None and init.shape != (n_clusters, fdatagrid.ncol,
                                                fdatagrid.ndim_image):
             raise ValueError(
-                "The init ndarray should be of shape (n_clusters, n_features, "
-                "ndim_image) and gives the initial centers.")
-        elif init is None:
-            init = np.array([None] * fdatagrid.ndim_image)
+                "The init FDataGrid data_matrix should be of shape (n_clusters, "
+                "n_features, ndim_image) and gives the initial centers.")
 
         return fdatagrid, n_clusters, init
 
@@ -349,8 +345,10 @@ class KMeans(ClusteringData):
     Args:
         fdatagrid (FDataGrid object): Object whose samples are clusered, classified into different groups.
         n_clusters (int, optional): Number of groups into which the samples are classified. Defaults to 2.
-        init (ndarray, optional): Contains the initial centers of the different clusters the algorithm starts with.
-            Defaults to None, ans the centers are initialized randomly.
+        init (FDataGrid, optional): Contains the initial centers of the different
+            clusters the algorithm starts with. Its data_marix must be of
+            the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
+            Defaults to None, and the centers are initialized randomly.
         max_iter (int, optional): Maximum number of iterations of the clustering algorithm. Defaults to 100.
         random_seed (int, optional): Seed to initialize the random state to choose the initial centroids.
             Defaults to None.
@@ -368,8 +366,9 @@ class KMeans(ClusteringData):
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> kmeans = KMeans()
-        >>> kmeans.fit(fd, init=np.array([[0, 0, 0, 0, 0, 0],
-        ...                               [2, 1, -1, 0.5, 0, -0.5]]))
+        >>> init= np.array([[0, 0, 0, 0, 0, 0], [2, 1, -1, 0.5, 0, -0.5]])
+        >>> init_fd = FDataGrid(init, sample_points)
+        >>> kmeans.fit(fd, init=init_fd)
         >>> kmeans
         KMeans(
             FDataGrid=FDataGrid(
@@ -408,19 +407,27 @@ class KMeans(ClusteringData):
                 interpolator=SplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
                 keepdims=False),
             n_clusters=2,
-            init=array([[[ 0. ],
-                    [ 0. ],
-                    [ 0. ],
-                    [ 0. ],
-                    [ 0. ],
-                    [ 0. ]],
+            init=FDataGrid(
+                array([[[ 0. ],
+                        [ 0. ],
+                        [ 0. ],
+                        [ 0. ],
+                        [ 0. ],
+                        [ 0. ]],
         <BLANKLINE>
-                   [[ 2. ],
-                    [ 1. ],
-                    [-1. ],
-                    [ 0.5],
-                    [ 0. ],
-                    [-0.5]]]),
+                       [[ 2. ],
+                        [ 1. ],
+                        [-1. ],
+                        [ 0.5],
+                        [ 0. ],
+                        [-0.5]]]),
+                sample_points=[array([ 0,  2,  4,  6,  8, 10])],
+                domain_range=array([[ 0, 10]]),
+                dataset_label=None,
+                axes_labels=None,
+                extrapolation=None,
+                interpolator=SplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
+                keepdims=False),
             max_iter=100,
             random_seed=0,
             p=2,
@@ -464,9 +471,10 @@ class KMeans(ClusteringData):
             fdatagrid (FDataGrid object): Object whose samples are clusered,
                 classified into different groups.
             n_clusters (int): Number of groups into which the samples are classified.
-            init (ndarray): Contains the initial centers of the different
-                clusters the algorithm starts with. Defaults to None, and the
-                centers are initialized randomly.
+            init (FDataGrid): Contains the initial centers of the different
+                clusters the algorithm starts with. Its data_marix must be of
+                the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
+                Defaults to None, and the centers are initialized randomly.
 
         Returns:
             (tuple): tuple containing:
@@ -483,20 +491,17 @@ class KMeans(ClusteringData):
 
         """
 
-        data_matrix = np.copy(fdatagrid.data_matrix[:, :, num_dim])
-        fdatagrid_1dim = FDataGrid(data_matrix=data_matrix,
-                                   sample_points=fdatagrid.sample_points[0])
+        data_matrix = fdatagrid.data_matrix[..., num_dim]
+        fdatagrid_1dim = fdatagrid.copy(data_matrix=data_matrix)
         repetitions = 0
         centers_old = np.zeros((n_clusters, fdatagrid.ncol))
 
-        if len(init.shape) != 0:
-            if np.count_nonzero(init) == 0:
-                centers_old = np.ones((n_clusters, fdatagrid.ncol))
-            centers = np.copy(init)
-        else:
+        if init is None:
             centers = super()._random_initialization_centers(data_matrix,
                                                              fdatagrid,
                                                              n_clusters)
+        else:
+            centers = np.copy(init.data_matrix[..., num_dim])
 
         while not np.array_equal(centers,
                                  centers_old) and repetitions < self.max_iter:
@@ -522,9 +527,10 @@ class KMeans(ClusteringData):
             fdatagrid (FDataGrid object): Object whose samples are clusered,
                 classified into different groups.
             n_clusters (int): Number of groups into which the samples are classified.
-            init (ndarray): Contains the initial centers of the different
-                clusters the algorithm starts with. Defaults to None, and the
-                centers are initialized randomly.
+            init (FDataGrid): Contains the initial centers of the different
+                clusters the algorithm starts with. Its data_marix must be of
+                the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
+                Defaults to None, and the centers are initialized randomly.
         """
         fdatagrid, n_clusters, init = super()._generic_clustering_checks(
             fdatagrid, n_clusters, init)
@@ -537,7 +543,7 @@ class KMeans(ClusteringData):
         for i in range(fdatagrid.ndim_image):
             clustering_values[:, i], centers[i, :, :], n_iter[i] = \
                 self._kmeans_1Dimage(num_dim=i, fdatagrid=fdatagrid,
-                                     n_clusters=n_clusters, init=init[..., i])
+                                     n_clusters=n_clusters, init=init)
 
         self._fdatagrid = fdatagrid
         self._n_clusters = n_clusters
@@ -662,9 +668,10 @@ class FuzzyKMeans(ClusteringData):
             classified into different groups.
         n_clusters (int, optional): Number of groups into which the samples are
             classified. Defaults to 2.
-        init (ndarray, optional): Contains the initial centers of the different
-            clusters the algorithm starts with. Defaults to None, ans the centers
-            are initialized randomly.
+        init (FDataGrid, optional): Contains the initial centers of the different
+            clusters the algorithm starts with. Its data_marix must be of
+            the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
+            Defaults to None, ans the centers are initialized randomly.
         max_iter (int, optional): Maximum number of iterations of the clustering
             algorithm. Defaults to 100.
         random_seed (int, optional): Seed to initialize the random state to choose
@@ -691,8 +698,10 @@ class FuzzyKMeans(ClusteringData):
         >>> sample_points = [2, 4, 6, 8]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> fuzzy_kmeans = FuzzyKMeans()
-        >>> fuzzy_kmeans.fit(fd, init=np.array([[[3, 0], [5, 0], [2, 0], [4, 0]],
-        ...                                     [[0, 0], [0, 1], [0, 0], [0, 1]]]))
+        >>> init=np.array([[[3, 0], [5, 0], [2, 0], [4, 0]],
+        ...                [[0, 0], [0, 1], [0, 0], [0, 1]]])
+        >>> init_fd = FDataGrid(init, sample_points)
+        >>> fuzzy_kmeans.fit(fd, init=init_fd)
         >>> fuzzy_kmeans
         FuzzyKMeans(
             FDataGrid=FDataGrid(
@@ -718,15 +727,23 @@ class FuzzyKMeans(ClusteringData):
                 interpolator=SplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
                 keepdims=False),
             n_clusters=2,
-            init=array([[[3, 0],
-                    [5, 0],
-                    [2, 0],
-                    [4, 0]],
+            init=FDataGrid(
+                array([[[3, 0],
+                        [5, 0],
+                        [2, 0],
+                        [4, 0]],
         <BLANKLINE>
-                   [[0, 0],
-                    [0, 1],
-                    [0, 0],
-                    [0, 1]]]),
+                       [[0, 0],
+                        [0, 1],
+                        [0, 0],
+                        [0, 1]]]),
+                sample_points=[array([2, 4, 6, 8])],
+                domain_range=array([[2, 8]]),
+                dataset_label=None,
+                axes_labels=None,
+                extrapolation=None,
+                interpolator=SplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
+                keepdims=False),
             max_iter=100,
             random_seed=0,
             p=2,
@@ -800,9 +817,10 @@ class FuzzyKMeans(ClusteringData):
                 the FdataGrid object the algorithm is being applied.
             n_clusters (int): Number of groups into which the samples are classified.
             fuzzifier (int): Scalar parameter used to specify the degree of fuzziness.
-            init (ndarray): Contains the initial centers of the different
-                clusters the algorithm starts with. Defaults to None, ans the
-                centers are initialized randomly.
+            init (FDataGrid): Contains the initial centers of the different
+                clusters the algorithm starts with. Its data_marix must be of
+                the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
+                Defaults to None, ans the centers are initialized randomly.
             random_seed (int): Seed to initialize the random state to choose
                 the initial centroids.
             max_iter (int): Maximum number of iterations of the clustering algorithm.
@@ -824,19 +842,18 @@ class FuzzyKMeans(ClusteringData):
 
         """
 
-        data_matrix = np.copy(fdatagrid.data_matrix[:, :, num_dim])
+        data_matrix = np.copy(fdatagrid.data_matrix[..., num_dim])
         repetitions = 0
         centers_old = np.zeros((n_clusters, fdatagrid.ncol))
         U = np.empty((n_clusters, fdatagrid.nsamples))
 
-        if len(init.shape) != 0:
-            if np.count_nonzero(init) == 0:
-                centers_old = np.ones((n_clusters, fdatagrid.ncol))
-            centers = np.copy(init)
-        else:
+        if init is None:
             centers = super()._random_initialization_centers(data_matrix,
                                                              fdatagrid,
                                                              n_clusters)
+        else:
+            centers = np.copy(init.data_matrix[..., num_dim])
+
 
         while not np.array_equal(centers, centers_old) and \
                 repetitions < self.max_iter:
@@ -872,9 +889,10 @@ class FuzzyKMeans(ClusteringData):
             fdatagrid (FDataGrid object): Object whose samples are clusered,
                 classified into different groups.
             n_clusters (int): Number of groups into which the samples are classified.
-            init (ndarray): Contains the initial centers of the different
-                clusters the algorithm starts with. Defaults to None, and the
-                centers are initialized randomly.
+            init (FDataGrid): Contains the initial centers of the different
+                clusters the algorithm starts with. Its data_marix must be of
+                the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
+                Defaults to None, and the centers are initialized randomly.
         """
         fdatagrid, n_clusters, init = super()._generic_clustering_checks(
             fdatagrid, n_clusters, init)
@@ -887,7 +905,7 @@ class FuzzyKMeans(ClusteringData):
         for i in range(fdatagrid.ndim_image):
             U, centers[i, :, :], n_iter[i] = self._fuzzy_kmeans_1Dimage(
                 num_dim=i, fdatagrid=fdatagrid, n_clusters=n_clusters,
-                init=init[..., i])
+                init=init)
             membership_values[:, i, :] = U.T
 
         self._fdatagrid = fdatagrid

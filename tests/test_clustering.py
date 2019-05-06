@@ -17,7 +17,8 @@ class TestClustering(unittest.TestCase):
         fd = FDataGrid(data_matrix, sample_points)
         kmeans = KMeans()
         init= np.array([[0, 0, 0, 0, 0, 0], [2, 1, -1, 0.5, 0, -0.5]])
-        kmeans.fit(fd, init=init)
+        init_fd = FDataGrid(init, sample_points)
+        kmeans.fit(fd, init=init_fd)
         np.testing.assert_array_equal(kmeans.clustering_values,
                                       np.array([[0], [0], [0], [1]]))
         np.testing.assert_array_almost_equal(kmeans.centers, np.array(
@@ -73,7 +74,8 @@ class TestClustering(unittest.TestCase):
         fuzzy_kmeans = FuzzyKMeans()
         init=np.array([[[3, 0], [5, 0], [2, 0], [4, 0]],
                        [[0, 0], [0, 1], [0, 0], [0, 1]]])
-        fuzzy_kmeans.fit(fd, init=init)
+        init_fd = FDataGrid(init, sample_points)
+        fuzzy_kmeans.fit(fd, init=init_fd)
         np.testing.assert_array_equal(fuzzy_kmeans.membership_values,
                                       np.array([[[0., 1.],
                                                  [0.5, 0.5]],

@@ -19,7 +19,7 @@ class ClusteringData(ABC):
     Class from which both :class:`K-Means <fda.clustering.KMeans>` and
     :class:`Fuzzy K-Means <fda.clustering.FuzzyKMeans>` classes inherit."""
 
-    def __init__(self, max_iter, random_seed, p):
+    def __init__(self, max_iter, random_seed):
         """Sets the arguments *max_iter* and *random_seed* and *p*.
 
         Args:
@@ -36,7 +36,6 @@ class ClusteringData(ABC):
 
         self._max_iter = max_iter
         self._random_seed = random_seed
-        self._p = p
 
     @property
     def fdatagrid(self):
@@ -57,10 +56,6 @@ class ClusteringData(ABC):
     @property
     def random_seed(self):
         return self._random_seed
-
-    @property
-    def p(self):
-        return self._p
 
     @property
     def centers(self):
@@ -146,7 +141,8 @@ class ClusteringData(ABC):
         return centers
 
     @abstractmethod
-    def fit(self, fdatagrid, n_clusters=2, init=None):
+    def fit(self, fdatagrid, n_clusters=2, init=None,
+            metric=pairwise_distance(lp_distance)):
         pass
 
     def _plot_clustering_checks(self, sample_colors, sample_labels,
@@ -430,7 +426,6 @@ class KMeans(ClusteringData):
                 keepdims=False),
             max_iter=100,
             random_seed=0,
-            p=2,
             n_iter=array([ 3.]),
             clustering_values=array([[0],
                    [0],
@@ -443,7 +438,7 @@ class KMeans(ClusteringData):
 
     """
 
-    def __init__(self, max_iter=100, random_seed=0, p=2):
+    def __init__(self, max_iter=100, random_seed=0):
         """Initialization of the KMeans class.
 
         Args:
@@ -455,13 +450,13 @@ class KMeans(ClusteringData):
             p (int): Identifies the p-norm used to calculate the distance
                 between functions.
         """
-        super().__init__(max_iter, random_seed, p)
+        super().__init__(max_iter, random_seed)
 
     @property
     def clustering_values(self):
         return self._clustering_values
 
-    def _kmeans_1Dimage(self, num_dim, fdatagrid, n_clusters, init):
+    def _kmeans_1Dimage(self, num_dim, fdatagrid, n_clusters, init, metric):
         """ Implementation of the K-Means algorithm for each dimension on the
             image of the FDataGrid object.
 
@@ -507,7 +502,6 @@ class KMeans(ClusteringData):
                                  centers_old) and repetitions < self.max_iter:
             centers_old = np.copy(centers)
             centers_fd = FDataGrid(centers, fdatagrid.sample_points)
-            metric = pairwise_distance(lp_distance, p=self.p)
             distances_to_centers = metric(fdata1=fdatagrid_1dim,
                                           fdata2=centers_fd)
             clustering_values = np.argmin(distances_to_centers, axis=1)
@@ -519,7 +513,7 @@ class KMeans(ClusteringData):
 
         return clustering_values, centers, repetitions
 
-    def fit(self, fdatagrid, n_clusters=2, init=None):
+    def fit(self, fdatagrid, n_clusters=2, init=None, metric=pairwise_distance(lp_distance)):
         """ Computes K-Means clustering calculating the *clustering_values*
         and *centers* arguments.
 
@@ -543,7 +537,8 @@ class KMeans(ClusteringData):
         for i in range(fdatagrid.ndim_image):
             clustering_values[:, i], centers[i, :, :], n_iter[i] = \
                 self._kmeans_1Dimage(num_dim=i, fdatagrid=fdatagrid,
-                                     n_clusters=n_clusters, init=init)
+                                     n_clusters=n_clusters, init=init,
+                                     metric=metric)
 
         self._fdatagrid = fdatagrid
         self._n_clusters = n_clusters
@@ -609,7 +604,7 @@ class KMeans(ClusteringData):
                 f"\ninit={repr(self.init)},"
                 f"\nmax_iter={repr(self.max_iter)},"
                 f"\nrandom_seed={repr(self.random_seed)},"
-                f"\np={repr(self.p)},"
+                # f"\np={repr(self.p)},"
                 f"\nn_iter={repr(self.n_iter)},"
                 f"\nclustering_values={repr(self.clustering_values)},"
                 f"\ncenters={repr(self.centers)})").replace('\n', '\n    ')
@@ -746,7 +741,6 @@ class FuzzyKMeans(ClusteringData):
                 keepdims=False),
             max_iter=100,
             random_seed=0,
-            p=2,
             n_iter=array([ 2.,  2.]),
             membership_values=array([[[ 0. ,  1. ],
                     [ 0.5,  0.5]],
@@ -766,8 +760,7 @@ class FuzzyKMeans(ClusteringData):
 
     """
 
-    def __init__(self, max_iter=100, random_seed=0, p=2, fuzzifier=2,
-                 n_dec=3):
+    def __init__(self, max_iter=100, random_seed=0, fuzzifier=2, n_dec=3):
         """Initialization of the FuzzyKMeans class.
 
         Args:
@@ -782,7 +775,7 @@ class FuzzyKMeans(ClusteringData):
             n_dec (int, optional): designates the number of decimals of the labels
                 returned in the fuzzy algorithm. Defaults to 3.
         """
-        super().__init__(max_iter, random_seed, p)
+        super().__init__(max_iter, random_seed)
         if fuzzifier < 2:
             raise ValueError("The fuzzifier parameter must be greater than 1.")
 
@@ -806,7 +799,7 @@ class FuzzyKMeans(ClusteringData):
     def membership_values(self):
         return self._membership_values
 
-    def _fuzzy_kmeans_1Dimage(self, num_dim, fdatagrid, n_clusters, init):
+    def _fuzzy_kmeans_1Dimage(self, num_dim, fdatagrid, n_clusters, init, metric):
         """ Implementation of the Fuzzy C-Means algorithm for each dimension
         on the image of the FDataGrid object.
 
@@ -864,13 +857,13 @@ class FuzzyKMeans(ClusteringData):
                     U[np.where(comparison == True), i] = 1
                     U[np.where(comparison == False), i] = 0
                 else:
-                    diff = data_matrix[i] - centers
-                    diff_fd = FDataGrid(diff, fdatagrid.sample_points)
-                    distances_to_centers = np.power(norm_lp(diff_fd, self.p),
-                                                    2 / (self.fuzzifier - 1))
+                    centers_fd = FDataGrid(centers, fdatagrid.sample_points)
+                    fd_single_sample = FDataGrid(data_matrix[i], fdatagrid.sample_points)
+                    distances_to_centers = metric(fdata1=fd_single_sample,
+                                                  fdata2=centers_fd)**(2 / (self.fuzzifier - 1))
                     for j in range(n_clusters):
                         U[j, i] = 1 / np.sum(
-                            distances_to_centers[j] / distances_to_centers)
+                            distances_to_centers[0,j] / distances_to_centers[0])
             U = np.power(U, self.fuzzifier)
 
             for i in range(n_clusters):
@@ -881,7 +874,7 @@ class FuzzyKMeans(ClusteringData):
         return np.round(np.power(U, 1 / self.fuzzifier), self.n_dec), centers, \
                repetitions
 
-    def fit(self, fdatagrid, n_clusters=2, init=None):
+    def fit(self, fdatagrid, n_clusters=2, init=None, metric=pairwise_distance(lp_distance)):
         """ Computes Fuzzy K-Means clustering calculating the *membership_values*
         and *centers* arguments.
 
@@ -905,7 +898,7 @@ class FuzzyKMeans(ClusteringData):
         for i in range(fdatagrid.ndim_image):
             U, centers[i, :, :], n_iter[i] = self._fuzzy_kmeans_1Dimage(
                 num_dim=i, fdatagrid=fdatagrid, n_clusters=n_clusters,
-                init=init)
+                init=init, metric=metric)
             membership_values[:, i, :] = U.T
 
         self._fdatagrid = fdatagrid
@@ -1207,7 +1200,7 @@ class FuzzyKMeans(ClusteringData):
                 f"\ninit={repr(self.init)},"
                 f"\nmax_iter={repr(self.max_iter)},"
                 f"\nrandom_seed={repr(self.random_seed)},"
-                f"\np={repr(self.p)},"
+                # f"\np={repr(self.p)},"
                 f"\nn_iter={repr(self.n_iter)},"
                 f"\nmembership_values={repr(self.membership_values)},"
                 f"\ncenters={repr(self.centers)},"

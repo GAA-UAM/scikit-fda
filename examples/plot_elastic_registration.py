@@ -18,7 +18,7 @@ import numpy as np
 
 ###############################################################################
 # In the example of pairwise alignment was shown the usage of
-# :func:`elastic_registration <skfda.registration.elastic_registration>` to align
+# :func:`elastic_registration <skfda.preprocessing.registration.elastic_registration>` to align
 # a set of functional observations to a given template or a set of templates.
 #
 # In the groupwise alignment all the samples are aligned to the same templated,
@@ -36,7 +36,7 @@ fd.plot()
 
 ###############################################################################
 # The following figure shows the
-# :func:`elastic mean <skfda.registration.elastic_mean>` of the dataset and the
+# :func:`elastic mean <skfda.preprocessing.registration.elastic_mean>` of the dataset and the
 # cross-sectional mean, which correspond to the karcher-mean under the
 # :math:`\mathbb{L}^2` distance.
 #
@@ -47,14 +47,14 @@ fd.plot()
 
 plt.figure()
 fd.mean().plot(label="L2 mean")
-skfda.registration.elastic_mean(fd).plot(label="Elastic mean")
+skfda.preprocessing.registration.elastic_mean(fd).plot(label="Elastic mean")
 plt.legend()
 
 ###############################################################################
 # In this case, the alignment completely reduces the amplitude variability
 # between the samples, aligning the maximum points correctly.
 
-fd_align = skfda.registration.elastic_registration(fd)
+fd_align = skfda.preprocessing.registration.elastic_registration(fd)
 
 plt.figure()
 fd_align.plot()
@@ -81,7 +81,7 @@ fd = fd.to_grid(np.linspace(*fd.domain_range[0], 50))
 fd.plot()
 
 plt.figure()
-fd_align = skfda.registration.elastic_registration(fd)
+fd_align = skfda.preprocessing.registration.elastic_registration(fd)
 fd_align.dataset_label += " - aligned"
 
 fd_align.plot()

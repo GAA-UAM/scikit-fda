@@ -12,4 +12,4 @@ API Reference
    modules/fdata_boxplot
    modules/extrapolation
    modules/metrics
-   modules/registration
+   modules/preprocessing

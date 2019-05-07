@@ -68,7 +68,7 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
 
         >>> from skfda.datasets import make_sinusoidal_process
         >>> from skfda.basis import Fourier
-        >>> from skfda.registration import shift_registration_deltas
+        >>> from skfda.preprocessing.registration import shift_registration_deltas
         >>> fd = make_sinusoidal_process(n_samples=2, error_std=0, random_state=1)
 
         Registration of data in discretized form:
@@ -250,7 +250,7 @@ def shift_registration(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
 
         >>> from skfda.datasets import make_sinusoidal_process
         >>> from skfda.basis import Fourier
-        >>> from skfda.registration import shift_registration
+        >>> from skfda.preprocessing.registration import shift_registration
         >>> fd = make_sinusoidal_process(n_samples=2, error_std=0, random_state=1)
 
         Registration of data in discretized form:

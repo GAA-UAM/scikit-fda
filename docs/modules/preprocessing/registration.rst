@@ -20,8 +20,8 @@ it is shown the basic usage of this methods applied to periodic data.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.registration.shift_registration
-   skfda.registration.shift_registration_deltas
+   skfda.preprocessing.registration.shift_registration
+   skfda.preprocessing.registration.shift_registration_deltas
 
 
 Landmark Registration
@@ -37,8 +37,8 @@ by performing a translation in the time scale. See the
 .. autosummary::
    :toctree: autosummary
 
-   skfda.registration.landmark_shift
-   skfda.registration.landmark_shift_deltas
+   skfda.preprocessing.registration.landmark_shift
+   skfda.preprocessing.registration.landmark_shift_deltas
 
 
 The general case of landmark registration may present multiple landmarks for
@@ -49,8 +49,8 @@ See the `Landmark Registration Example
 .. autosummary::
    :toctree: autosummary
 
-   skfda.registration.landmark_registration
-   skfda.registration.landmark_registration_warping
+   skfda.preprocessing.registration.landmark_registration
+   skfda.preprocessing.registration.landmark_registration_warping
 
 
 Elastic Registration
@@ -66,8 +66,8 @@ introduction to this topic along the usage of the corresponding functions.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.registration.elastic_registration
-   skfda.registration.elastic_registration_warping
+   skfda.preprocessing.registration.elastic_registration
+   skfda.preprocessing.registration.elastic_registration_warping
 
 
 The module contains some routines related with the elastic registration, making
@@ -77,10 +77,10 @@ on the elastic framework.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.registration.elastic_mean
-   skfda.registration.warping_mean
-   skfda.registration.to_srsf
-   skfda.registration.from_srsf
+   skfda.preprocessing.registration.elastic_mean
+   skfda.preprocessing.registration.warping_mean
+   skfda.preprocessing.registration.to_srsf
+   skfda.preprocessing.registration.from_srsf
 
 
 
@@ -94,7 +94,7 @@ decomposition procedure developed by *Kneip and Ramsay (2008)*.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.registration.mse_decomposition
+   skfda.preprocessing.registration.mse_decomposition
 
 
 Utility functions
@@ -106,8 +106,8 @@ module.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.registration.invert_warping
-   skfda.registration.normalize_warping
+   skfda.preprocessing.registration.invert_warping
+   skfda.preprocessing.registration.normalize_warping
 
 References
 ----------

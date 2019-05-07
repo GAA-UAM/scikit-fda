@@ -5,7 +5,7 @@ This module contains methods to perform the landmark registration.
 
 import numpy
 
-from .. import FDataGrid, SplineInterpolator
+from ... import FDataGrid, SplineInterpolator
 
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"
@@ -46,7 +46,7 @@ def landmark_shift_deltas(fd, landmarks, location=None):
 
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.registration import landmark_shift_deltas
+        >>> from skfda.preprocessing.registration import landmark_shift_deltas
 
         We will create a data with landmarks as example
 
@@ -133,7 +133,7 @@ def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
 
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.registration import landmark_shift
+        >>> from skfda.preprocessing.registration import landmark_shift
 
         We will create a data with landmarks as example
 
@@ -194,7 +194,7 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
 
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.registration import landmark_registration_warping
+        >>> from skfda.preprocessing.registration import landmark_registration_warping
 
         We will create a data with landmarks as example
 
@@ -298,7 +298,7 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
 
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.registration import landmark_registration
+        >>> from skfda.preprocessing.registration import landmark_registration
         >>> from skfda.basis import BSpline
 
         We will create a data with landmarks as example

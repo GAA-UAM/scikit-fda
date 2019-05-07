@@ -22,7 +22,7 @@ import numpy as np
 # in this case will be used to generate gaussian-like samples with a mode near
 # to 0.
 # Each sample will be shifted to align their modes to a reference point using
-# the function :func:`landmark_shift <skfda.registration.landmark_shift>`.
+# the function :func:`landmark_shift <skfda.preprocessing.registration.landmark_shift>`.
 #
 
 fd = skfda.datasets.make_multimodal_samples(random_state=1)
@@ -66,7 +66,7 @@ print(landmarks)
 # landmarks at 0.
 #
 
-fd_registered = skfda.registration.landmark_shift(fd, landmarks, location=0)
+fd_registered = skfda.preprocessing.registration.landmark_shift(fd, landmarks, location=0)
 
 plt.figure()
 fd_registered.plot()
@@ -82,11 +82,11 @@ plt.scatter(0, 1)
 #
 
 # Curves aligned restricting the domain
-fd_restricted = skfda.registration.landmark_shift(fd, landmarks,
+fd_restricted = skfda.preprocessing.registration.landmark_shift(fd, landmarks,
                                                 restrict_domain=True)
 
 # Curves aligned to default point without restrict domain
-fd_extrapolated = skfda.registration.landmark_shift(fd, landmarks)
+fd_extrapolated = skfda.preprocessing.registration.landmark_shift(fd, landmarks)
 
 
 plt.figure()
@@ -119,7 +119,7 @@ print(landmarks)
 # of displacement.
 #
 
-fd_registered = skfda.registration.landmark_shift(fd, landmarks)
+fd_registered = skfda.preprocessing.registration.landmark_shift(fd, landmarks)
 
 fd_registered.plot()
 

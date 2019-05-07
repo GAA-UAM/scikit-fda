@@ -8,7 +8,7 @@ from skfda import FDataGrid, SplineInterpolator
 from skfda.basis import Fourier
 from skfda.datasets import (make_multimodal_samples, make_multimodal_landmarks,
                             make_sinusoidal_process)
-from skfda.registration import (normalize_warping, invert_warping,
+from skfda.preprocessing.registration import (normalize_warping, invert_warping,
                                 landmark_shift_deltas, landmark_shift,
                                 landmark_registration_warping,
                                 landmark_registration, mse_decomposition,

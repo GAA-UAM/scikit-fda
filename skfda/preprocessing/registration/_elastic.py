@@ -4,8 +4,7 @@ import numpy as np
 import scipy.integrate
 
 
-from ..functional_data import FData
-from .. import FDataGrid, SplineInterpolator
+from ... import FDataGrid, SplineInterpolator
 from . import invert_warping
 from ._registration_utils import _normalize_scale
 

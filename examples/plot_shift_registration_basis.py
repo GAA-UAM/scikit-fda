@@ -43,11 +43,11 @@ fd_basis.plot()
 
 ###############################################################################
 # We will apply the
-# :func:`shift registration <skfda.registration.shift_registration>`,
+# :func:`shift registration <skfda.preprocessing.registration.shift_registration>`,
 # which is suitable due to the periodicity of the dataset and the small
 # amount of amplitude variation.
 
-fd_registered = skfda.registration.shift_registration(fd_basis)
+fd_registered = skfda.preprocessing.registration.shift_registration(fd_basis)
 
 ###############################################################################
 # We can observe how the sinusoidal pattern is easily distinguishable
@@ -82,7 +82,7 @@ plt.legend(['original mean', 'registered mean','sine'])
 # analysis, as they may be considered as nuisance or random effects.
 #
 
-deltas = skfda.registration.shift_registration_deltas(fd_basis)
+deltas = skfda.preprocessing.registration.shift_registration_deltas(fd_basis)
 print(deltas)
 
 ###############################################################################

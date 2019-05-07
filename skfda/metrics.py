@@ -4,8 +4,9 @@ import numpy
 
 from .functional_data import FData
 from . import FDataGrid
-from .registration import (normalize_warping, _normalize_scale,
-                           to_srsf, elastic_registration_warping)
+from .preprocessing.registration import (
+    normalize_warping, _normalize_scale, to_srsf,
+    elastic_registration_warping)
 
 
 def _cast_to_grid(fdata1, fdata2, eval_points=None):

@@ -8,7 +8,6 @@ API Reference
    modules/functional_data
    modules/datasets
    modules/depth_measures
-   modules/magnitude_shape_plot
    modules/exploratory
    modules/extrapolation
    modules/metrics

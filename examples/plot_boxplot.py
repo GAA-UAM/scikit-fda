@@ -14,7 +14,7 @@ from skfda import datasets
 from skfda.grid import FDataGrid
 from skfda.depth_measures import band_depth, fraiman_muniz_depth
 import matplotlib.pyplot as plt
-from skfda.fdata_boxplot import Boxplot
+from skfda.exploratory.visualization.boxplot import Boxplot
 import numpy
 
 ##################################################################################

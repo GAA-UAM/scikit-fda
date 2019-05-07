@@ -9,7 +9,7 @@ API Reference
    modules/datasets
    modules/depth_measures
    modules/magnitude_shape_plot
-   modules/fdata_boxplot
+   modules/exploratory
    modules/extrapolation
    modules/metrics
    modules/preprocessing

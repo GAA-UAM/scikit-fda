@@ -8,8 +8,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 import math
 
-from .depth_measures import *
-from .grid import FDataGrid
+import numpy as np
+
+from ...depth_measures import modified_band_depth
+from ...grid import FDataGrid
 from io import BytesIO
 from abc import ABC, abstractmethod
 

@@ -34,7 +34,7 @@ from .metrics import lp_distance, norm_lp
 
 import os as _os
 
-from . import datasets, covariances, preprocessing
+from . import datasets, covariances, preprocessing, exploratory
 
 try:
     with open(_os.path.join(_os.path.dirname(__file__),

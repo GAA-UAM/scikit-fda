@@ -10,7 +10,7 @@ The base abstract class from which the others inherit is FDataBoxplot.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.fdata_boxplot.FDataBoxplot
+   skfda.exploratory.visualization.boxplot.FDataBoxplot
 
 If the dimension of the domain is 1, the following class must be used.
 See `Boxplot Example <../auto_examples/plot_boxplot.html>`_ for detailed explanation.
@@ -18,7 +18,7 @@ See `Boxplot Example <../auto_examples/plot_boxplot.html>`_ for detailed explana
 .. autosummary::
    :toctree: autosummary
 
-   skfda.fdata_boxplot.Boxplot
+   skfda.exploratory.visualization.boxplot.Boxplot
 
 If the dimension of the domain is 2, this one. See `Surface Boxplot Example
 <../auto_examples/plot_surface_boxplot.html>`_ for detailed explanation.
@@ -26,7 +26,7 @@ If the dimension of the domain is 2, this one. See `Surface Boxplot Example
 .. autosummary::
    :toctree: autosummary
 
-   skfda.fdata_boxplot.SurfaceBoxplot
+   skfda.exploratory.visualization.boxplot.SurfaceBoxplot
 
 
 

@@ -5,16 +5,18 @@ First the directional outlingness is calculated and then, an outliers detection 
 
 """
 
+import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import scipy.integrate
 from sklearn.covariance import MinCovDet
 from scipy.stats import f, variation
 from numpy import linalg as la
 from io import BytesIO
 import scipy
 
-from .grid import FDataGrid
-from .depth_measures import *
+from ...grid import FDataGrid
+from ...depth_measures import modified_band_depth
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"

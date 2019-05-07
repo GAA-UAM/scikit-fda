@@ -2,8 +2,8 @@ import unittest
 
 import numpy as np
 from skfda.grid import FDataGrid
-from skfda.magnitude_shape_plot import (directional_outlyingness,
-                                        MagnitudeShapePlot)
+from skfda.exploratory.visualization.magnitude_shape_plot import (
+    directional_outlyingness, MagnitudeShapePlot)
 from skfda.datasets import fetch_weather
 
 

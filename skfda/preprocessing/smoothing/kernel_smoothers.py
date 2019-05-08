@@ -13,7 +13,7 @@ import math
 
 import numpy
 
-from . import kernels
+from ... import kernels
 
 
 __author__ = "Miguel Carbajo Berrocal"

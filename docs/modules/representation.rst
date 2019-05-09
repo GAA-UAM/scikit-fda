@@ -1,5 +1,5 @@
-Functional Data
-===============
+Representation of functional Data
+=================================
 
 Before beginning to use the functionalities of the package, it is necessary to
 represent the data in functional form, using one of the following classes,
@@ -20,7 +20,7 @@ and basic visualisation of a FDataGrid.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.grid.FDataGrid
+   skfda.representation.grid.FDataGrid
 
 
 Functional data grids may be evaluated using interpolation, as it  is shown in
@@ -30,7 +30,7 @@ following class allows interpolation with different splines.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.SplineInterpolator
+   skfda.representation.interpolation.SplineInterpolator
 
 
 Basis representation
@@ -42,7 +42,7 @@ of elements of a basis function system.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.FDataBasis
+   skfda.representation.basis.FDataBasis
 
 
 The following classes are used to define different basis systems.
@@ -50,9 +50,9 @@ The following classes are used to define different basis systems.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.basis.BSpline
-   skfda.basis.Fourier
-   skfda.basis.Monomial
+   skfda.representation.basis.BSpline
+   skfda.representation.basis.Fourier
+   skfda.representation.basis.Monomial
 
 Generic representation
 ----------------------
@@ -66,4 +66,14 @@ receive an element of this class as an argument.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.functional_data.FData
+   skfda.representation.FData
+   
+Extrapolation
+-------------
+All representations of functional data allow evaluation outside of the original
+interval using extrapolation methods.
+
+.. toctree::
+   :maxdepth: 4
+   
+   representation/extrapolation

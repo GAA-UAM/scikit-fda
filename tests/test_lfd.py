@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from skfda.basis import FDataBasis, Constant, Monomial
+from skfda.representation.basis import FDataBasis, Constant, Monomial
 from skfda.lfd import Lfd
 
 

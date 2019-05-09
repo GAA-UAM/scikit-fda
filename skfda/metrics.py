@@ -2,7 +2,7 @@
 import scipy.integrate
 import numpy
 
-from .functional_data import FData
+from . import FData
 from . import FDataGrid
 from .preprocessing.registration import (
     normalize_warping, _normalize_scale, to_srsf,

@@ -11,7 +11,7 @@ import math
 import numpy as np
 
 from ...depth_measures import modified_band_depth
-from ...grid import FDataGrid
+from ... import FDataGrid
 from io import BytesIO
 from abc import ABC, abstractmethod
 

@@ -15,7 +15,7 @@ from numpy import linalg as la
 from io import BytesIO
 import scipy
 
-from ...grid import FDataGrid
+from ... import FDataGrid
 from ...depth_measures import modified_band_depth
 
 __author__ = "Amanda Hernando Bernabé"

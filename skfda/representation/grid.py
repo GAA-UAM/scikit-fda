@@ -20,9 +20,9 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 from . import basis as fdbasis
-from . import SplineInterpolator
+from .interpolation import SplineInterpolator
 from . import FData
-from .core._utils import _list_of_arrays
+from ..core._utils import _list_of_arrays
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -727,7 +727,7 @@ class FDataGrid(FData):
             array([ 1.,  1., -1., -1.,  1.])
 
             >>> fd = FDataGrid(x, t)
-            >>> basis = skfda.basis.Fourier((0, 1), nbasis=3)
+            >>> basis = skfda.representation.basis.Fourier((0, 1), nbasis=3)
             >>> fd_b = fd.to_basis(basis)
             >>> fd_b.coefficients.round(2)
             array([[ 0.  , 0.71, 0.71]])

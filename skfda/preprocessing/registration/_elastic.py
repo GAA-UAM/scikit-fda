@@ -2,13 +2,12 @@
 
 import numpy as np
 import scipy.integrate
-
-
-from ... import FDataGrid, SplineInterpolator
+import optimum_reparam
 from . import invert_warping
 from ._registration_utils import _normalize_scale
 
-import optimum_reparam
+from ... import FDataGrid
+from...representation.interpolation import SplineInterpolator
 
 
 __author__ = "Pablo Marcos Manchón"

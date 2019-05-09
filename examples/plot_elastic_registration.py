@@ -75,7 +75,7 @@ growth = skfda.datasets.fetch_growth()
 fd = growth['data'][growth['target'] == 0]
 
 # Obtain velocity curves
-fd.interpolator = skfda.SplineInterpolator(3)
+fd.interpolator = skfda.representation.interpolation.SplineInterpolator(3)
 fd = fd.to_grid(np.linspace(*fd.domain_range[0], 200)).derivative()
 fd = fd.to_grid(np.linspace(*fd.domain_range[0], 50))
 fd.plot()

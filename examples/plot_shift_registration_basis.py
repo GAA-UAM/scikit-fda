@@ -35,7 +35,7 @@ fd.plot()
 #
 # Because of their sinusoidal nature we will use a Fourier basis.
 
-basis = skfda.basis.Fourier(nbasis=11)
+basis = skfda.representation.basis.Fourier(nbasis=11)
 fd_basis = fd.to_basis(basis)
 
 plt.figure()

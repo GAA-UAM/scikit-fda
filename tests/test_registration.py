@@ -4,15 +4,15 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from skfda import FDataGrid, SplineInterpolator
-from skfda.basis import Fourier
+from skfda import FDataGrid
+from skfda.representation.interpolation import SplineInterpolator
+from skfda.representation.basis import Fourier
 from skfda.datasets import (make_multimodal_samples, make_multimodal_landmarks,
                             make_sinusoidal_process)
-from skfda.preprocessing.registration import (normalize_warping, invert_warping,
-                                landmark_shift_deltas, landmark_shift,
-                                landmark_registration_warping,
-                                landmark_registration, mse_decomposition,
-                                shift_registration_deltas, shift_registration)
+from skfda.preprocessing.registration import (
+    normalize_warping, invert_warping, landmark_shift_deltas, landmark_shift,
+    landmark_registration_warping, landmark_registration, mse_decomposition,
+    shift_registration_deltas, shift_registration)
 
 
 class TestWarping(unittest.TestCase):

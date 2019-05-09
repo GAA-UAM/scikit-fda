@@ -4,10 +4,12 @@ import unittest
 
 import numpy as np
 
-from skfda import *
 from skfda.datasets import make_sinusoidal_process
-from skfda.basis import Fourier
+from skfda.representation.basis import Fourier
 from skfda import FDataGrid, FDataBasis
+from skfda.representation.extrapolation import (
+    PeriodicExtrapolation, BoundaryExtrapolation, ExceptionExtrapolation,
+    FillExtrapolation)
 
 
 class TestBasis(unittest.TestCase):

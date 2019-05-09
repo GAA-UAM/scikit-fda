@@ -11,7 +11,7 @@ Shows the use of the functional Boxplot applied to the Canadian Weather dataset.
 # sphinx_gallery_thumbnail_number = 2
 
 from skfda import datasets
-from skfda.grid import FDataGrid
+from skfda import FDataGrid
 from skfda.depth_measures import band_depth, fraiman_muniz_depth
 import matplotlib.pyplot as plt
 from skfda.exploratory.visualization.boxplot import Boxplot

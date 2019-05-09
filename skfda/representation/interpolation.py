@@ -10,8 +10,8 @@ import numpy as np
 from scipy.interpolate import (PchipInterpolator, UnivariateSpline,
                                RectBivariateSpline, RegularGridInterpolator)
 
-from ._utils import _list_of_arrays
-from ._evaluator import Evaluator, EvaluatorConstructor
+from ..core._utils import _list_of_arrays
+from .evaluator import Evaluator, EvaluatorConstructor
 
 
 class SplineInterpolator(EvaluatorConstructor):

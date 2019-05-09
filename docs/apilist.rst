@@ -5,10 +5,10 @@ API Reference
    :maxdepth: 4
    :caption: Modules:
 
-   modules/functional_data
+   modules/representation
+   modules/preprocessing
+   modules/exploratory
    modules/datasets
    modules/depth_measures
-   modules/exploratory
-   modules/extrapolation
    modules/metrics
-   modules/preprocessing
+   

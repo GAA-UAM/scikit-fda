@@ -14,8 +14,9 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import mpl_toolkits.mplot3d
 
-from .core.extrapolation import _parse_extrapolation
-from .core._utils import _coordinate_list, _list_of_arrays
+from skfda.representation.extrapolation import _parse_extrapolation
+from ..core._utils import _coordinate_list, _list_of_arrays
+
 
 class FData(ABC):
     """Defines the structure of a functional data object.

@@ -6,7 +6,7 @@ Defines methods to evaluate points outside the domain range.
 
 from abc import ABC, abstractmethod
 
-from ._evaluator import EvaluatorConstructor, Evaluator, GenericEvaluator
+from .evaluator import EvaluatorConstructor, Evaluator, GenericEvaluator
 
 import numpy as np
 
@@ -17,7 +17,7 @@ class PeriodicExtrapolation(EvaluatorConstructor):
     Examples:
 
         >>> from skfda.datasets import make_sinusoidal_process
-        >>> from skfda import PeriodicExtrapolation
+        >>> from skfda.representation.extrapolation import PeriodicExtrapolation
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -82,7 +82,7 @@ class BoundaryExtrapolation(EvaluatorConstructor):
     Examples:
 
         >>> from skfda.datasets import make_sinusoidal_process
-        >>> from skfda import BoundaryExtrapolation
+        >>> from skfda.representation.extrapolation import BoundaryExtrapolation
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -149,7 +149,7 @@ class ExceptionExtrapolation(EvaluatorConstructor):
     Examples:
 
         >>> from skfda.datasets import make_sinusoidal_process
-        >>> from skfda import ExceptionExtrapolation
+        >>> from skfda.representation.extrapolation import ExceptionExtrapolation
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -209,7 +209,7 @@ class FillExtrapolation(EvaluatorConstructor):
     Examples:
 
         >>> from skfda.datasets import make_sinusoidal_process
-        >>> from skfda import FillExtrapolation
+        >>> from skfda.representation.extrapolation import FillExtrapolation
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation

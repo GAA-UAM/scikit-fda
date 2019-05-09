@@ -4,7 +4,7 @@ import numpy
 import scipy.stats.mstats
 
 from skfda import math
-from skfda.grid import FDataGrid
+from skfda import FDataGrid
 
 
 class TestFDataGrid(unittest.TestCase):

@@ -5,7 +5,8 @@ This module contains methods to perform the landmark registration.
 
 import numpy
 
-from ... import FDataGrid, SplineInterpolator
+from ... import FDataGrid
+from ...representation.interpolation import SplineInterpolator
 
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"
@@ -299,7 +300,7 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
         >>> from skfda.preprocessing.registration import landmark_registration
-        >>> from skfda.basis import BSpline
+        >>> from skfda.representation.basis import BSpline
 
         We will create a data with landmarks as example
 

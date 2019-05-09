@@ -11,7 +11,7 @@ Shows the use of the MS-Plot applied to the Canadian Weather dataset.
 # sphinx_gallery_thumbnail_number = 2
 
 from skfda import datasets
-from skfda.grid import FDataGrid
+from skfda import FDataGrid
 from skfda.depth_measures import fraiman_muniz_depth
 from skfda.exploratory.visualization.magnitude_shape_plot import (
     MagnitudeShapePlot)

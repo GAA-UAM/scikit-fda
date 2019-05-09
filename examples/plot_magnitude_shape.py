@@ -12,7 +12,7 @@ Shows the use of the MS-Plot applied to the Canadian Weather dataset.
 
 from skfda import datasets
 from skfda import FDataGrid
-from skfda.depth_measures import fraiman_muniz_depth
+from skfda.exploratory.depth_measures import fraiman_muniz_depth
 from skfda.exploratory.visualization.magnitude_shape_plot import (
     MagnitudeShapePlot)
 import matplotlib.pyplot as plt
@@ -79,7 +79,7 @@ fd_temperatures.plot(sample_labels=msplot.outliers,
 # outliers but in the MS-Plot, they appear further left from the central points. This behaviour
 # can be modified specifying the parameter alpha.
 #
-# Now we use the :func:`Fraiman and Muniz depth measure <skfda.depth_measures.fraiman_muniz_depth>`
+# Now we use the :func:`Fraiman and Muniz depth measure <skfda.exploratory.depth_measures.fraiman_muniz_depth>`
 # in the MS-Plot.
 
 msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures,

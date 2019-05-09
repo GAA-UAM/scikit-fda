@@ -9,6 +9,5 @@ API Reference
    modules/preprocessing
    modules/exploratory
    modules/datasets
-   modules/depth_measures
    modules/metrics
    

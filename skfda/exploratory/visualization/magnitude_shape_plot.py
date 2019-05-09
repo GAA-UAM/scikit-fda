@@ -16,7 +16,7 @@ from io import BytesIO
 import scipy
 
 from ... import FDataGrid
-from ...depth_measures import modified_band_depth
+from skfda.exploratory.depth_measures import modified_band_depth
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"

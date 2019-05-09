@@ -5,7 +5,7 @@ from the center (larger values) outwards(smaller ones)."""
 
 import numpy as np
 from scipy.stats import rankdata
-from . import FDataGrid
+from .. import FDataGrid
 import itertools
 from functools import reduce
 

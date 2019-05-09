@@ -9,3 +9,4 @@ and visualize functional data.
    :caption: Modules:
    
    exploratory/visualization
+   exploratory/depth_measures

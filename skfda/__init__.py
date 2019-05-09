@@ -27,8 +27,8 @@ from .core import *
 from .representation import FData
 from .representation import FDataBasis
 from .representation import FDataGrid
-from .math import mean, var, gmean, log, log2, log10, exp, sqrt, \
-    cumsum, inner_product, cov
+from .math import log, log2, log10, exp, sqrt, \
+    cumsum, inner_product
 from .metrics import lp_distance, norm_lp
 
 

@@ -64,7 +64,7 @@ fd.plot(sample_labels=indexer, label_colors=climate_colors, label_names=climates
 # result for the example.
 
 n_clusters = n_climates
-seed = 1
+seed = 2
 
 ############################################################################################
 # First, the class :class:`K-Means <fda.clustering.KMeans>` is instantiated. Its
@@ -74,8 +74,8 @@ seed = 1
 
 kmeans = KMeans(n_clusters=n_clusters, random_seed=seed)
 kmeans.fit(fd)
-print(kmeans.clustering_values)
-print(kmeans.centers)
+print(kmeans.labels_)
+print(kmeans.cluster_centers_)
 
 ############################################################################################
 # To see the information in a graphic way, the :func:`plot method
@@ -99,8 +99,8 @@ kmeans.plot(cluster_colors=cluster_colors, cluster_labels=cluster_labels)
 
 fuzzy_kmeans = FuzzyKMeans(n_clusters=n_clusters, random_seed=seed)
 fuzzy_kmeans.fit(fd)
-print(fuzzy_kmeans.membership_values)
-print(fuzzy_kmeans.centers)
+print(fuzzy_kmeans.labels_)
+print(fuzzy_kmeans.cluster_centers_)
 
 ############################################################################################
 # To see the information in a graphic way, the :func:`plot method

@@ -34,7 +34,7 @@ class BaseKMeansData(BaseEstimator, ClusterMixin, TransformerMixin):
         self.n_clusters = n_clusters
         self.metric = metric
         self.max_iter = max_iter
-        self.tol=tol
+        self.tol = tol
         self.random_seed = random_seed
 
     def _generic_clustering_checks(self, fdatagrid, init):
@@ -72,8 +72,7 @@ class BaseKMeansData(BaseEstimator, ClusterMixin, TransformerMixin):
         if self.n_clusters < 2:
             raise ValueError(
                 "The number of clusters must be greater than 1.")
-        print("-----------------------")
-        print(init)
+
         if init is not None and init.shape != (self.n_clusters, fdatagrid.ncol,
                                                fdatagrid.ndim_image):
             raise ValueError(
@@ -177,8 +176,8 @@ class BaseKMeansData(BaseEstimator, ClusterMixin, TransformerMixin):
 
     @abstractmethod
     def plot(self, fig, ax, nrows, ncols, labels, sample_labels,
-             cluster_colors,
-             cluster_labels, center_colors, center_labels, colormap):
+             cluster_colors, cluster_labels, center_colors, center_labels,
+             colormap):
         """Plot of the FDataGrid samples by clusters.
 
         Once each sample is assigned a label, which are passed as argument to this
@@ -260,7 +259,7 @@ class BaseKMeansData(BaseEstimator, ClusterMixin, TransformerMixin):
                            label=sample_labels[i])
             for i in range(self.n_clusters):
                 ax[j].plot(self.fdatagrid.sample_points[0],
-                           self.centers[j, i, :],
+                           self.cluster_centers_[j, i, :],
                            c=center_colors[i], label=center_labels[i])
             ax[j].legend(handles=patches)
             datacursor(formatter='{label}'.format)
@@ -435,18 +434,19 @@ class KMeans(BaseKMeansData):
 
         clustering_values = np.empty((fdatagrid.nsamples,
                                       fdatagrid.ndim_image)).astype(int)
-        centers = np.empty((fdatagrid.ndim_image, self.n_clusters, fdatagrid.ncol))
+        centers = np.empty(
+            (fdatagrid.ndim_image, self.n_clusters, fdatagrid.ncol))
         n_iter = np.empty((fdatagrid.ndim_image))
 
         for i in range(fdatagrid.ndim_image):
             clustering_values[:, i], centers[i, :, :], n_iter[i] = \
                 self._kmeans_1Dimage(num_dim=i, fdatagrid=fdatagrid, init=init)
 
-        self.fdatagrid = fdatagrid #TODO: quitar
+        self.fdatagrid = fdatagrid  # TODO: quitar
         self.init = init
-        self.clustering_values = clustering_values
-        self.centers = centers
-        self.n_iter = n_iter
+        self.labels_ = clustering_values
+        self.cluster_centers_ = centers
+        self.n_iter_ = n_iter
 
     def plot(self, fig=None, ax=None, nrows=None, ncols=None,
              sample_labels=None, cluster_colors=None,
@@ -490,7 +490,7 @@ class KMeans(BaseKMeansData):
         """
 
         return super().plot(fig=fig, ax=ax, nrows=nrows, ncols=ncols,
-                            labels=self.clustering_values,
+                            labels=self.labels_,
                             sample_labels=sample_labels,
                             cluster_colors=cluster_colors,
                             cluster_labels=cluster_labels,
@@ -670,13 +670,15 @@ class FuzzyKMeans(BaseKMeansData):
                     U[np.where(comparison == False), i] = 0
                 else:
                     centers_fd = FDataGrid(centers, fdatagrid.sample_points)
-                    fd_single_sample = FDataGrid(data_matrix[i], fdatagrid.sample_points)
+                    fd_single_sample = FDataGrid(data_matrix[i],
+                                                 fdatagrid.sample_points)
                     distances_to_centers = self.metric(fdata1=fd_single_sample,
-                                                       fdata2=centers_fd)\
-                                           **(2 / (self.fuzzifier - 1))
+                                                       fdata2=centers_fd) \
+                                           ** (2 / (self.fuzzifier - 1))
                     for j in range(self.n_clusters):
                         U[j, i] = 1 / np.sum(
-                            distances_to_centers[0,j] / distances_to_centers[0])
+                            distances_to_centers[0, j] / distances_to_centers[
+                                0])
             U = np.power(U, self.fuzzifier)
 
             for i in range(self.n_clusters):
@@ -688,7 +690,7 @@ class FuzzyKMeans(BaseKMeansData):
                repetitions
 
     def fit(self, fdatagrid, init=None):
-        """ Computes Fuzzy K-Means clustering calculating the *membership_values*
+        """ Computes Fuzzy K-Means clustering calculating the *labels_*
         and *centers* arguments.
 
         Args:
@@ -713,7 +715,8 @@ class FuzzyKMeans(BaseKMeansData):
 
         membership_values = np.empty(
             (fdatagrid.nsamples, fdatagrid.ndim_image, self.n_clusters))
-        centers = np.empty((fdatagrid.ndim_image, self.n_clusters, fdatagrid.ncol))
+        centers = np.empty(
+            (fdatagrid.ndim_image, self.n_clusters, fdatagrid.ncol))
         n_iter = np.empty((fdatagrid.ndim_image))
 
         for i in range(fdatagrid.ndim_image):
@@ -723,9 +726,9 @@ class FuzzyKMeans(BaseKMeansData):
 
         self.fdatagrid = fdatagrid  # TODO: quitar
         self.init = init
-        self.membership_values = membership_values
-        self.centers = centers
-        self.n_iter = n_iter
+        self.labels_ = membership_values
+        self.cluster_centers_ = centers
+        self.n_iter_ = n_iter
 
     def plot(self, fig=None, ax=None, nrows=None, ncols=None,
              sample_labels=None, cluster_colors=None,
@@ -768,7 +771,7 @@ class FuzzyKMeans(BaseKMeansData):
         """
 
         return super().plot(fig=fig, ax=ax, nrows=nrows, ncols=ncols,
-                            labels=np.argmax(self.membership_values, axis=-1),
+                            labels=np.argmax(self.labels_, axis=-1),
                             sample_labels=sample_labels,
                             cluster_colors=cluster_colors,
                             cluster_labels=cluster_labels,
@@ -871,7 +874,7 @@ class FuzzyKMeans(BaseKMeansData):
         if sample_colors is None:
             cluster_colors = colormap(np.arange(self.n_clusters) /
                                       (self.n_clusters - 1))
-            labels_by_cluster = np.argmax(self.membership_values, axis=-1)
+            labels_by_cluster = np.argmax(self.labels_, axis=-1)
             sample_colors = cluster_colors[labels_by_cluster]
 
         if sample_labels is None:
@@ -885,7 +888,7 @@ class FuzzyKMeans(BaseKMeansData):
             ax[j].get_xaxis().set_major_locator(MaxNLocator(integer=True))
             for i in range(self.fdatagrid.nsamples):
                 ax[j].plot(np.arange(self.n_clusters),
-                           self.membership_values[i, j, :],
+                           self.labels_[i, j, :],
                            label=sample_labels[i], color=sample_colors[i, j])
             ax[j].set_xticks(np.arange(self.n_clusters))
             ax[j].set_xticklabels(cluster_labels)
@@ -981,9 +984,9 @@ class FuzzyKMeans(BaseKMeansData):
             cluster_colors_dim = np.copy(cluster_colors)
             if sort != -1:
                 sample_indices = np.argsort(
-                    -self.membership_values[:, j, sort])
+                    -self.labels_[:, j, sort])
                 sample_labels_dim = np.copy(sample_labels[sample_indices])
-                labels_dim = np.copy(self.membership_values[sample_indices, j])
+                labels_dim = np.copy(self.labels_[sample_indices, j])
 
                 temp_labels = np.copy(labels_dim[:, 0])
                 labels_dim[:, 0] = labels_dim[:, sort]
@@ -993,7 +996,7 @@ class FuzzyKMeans(BaseKMeansData):
                 cluster_colors_dim[0] = cluster_colors_dim[sort]
                 cluster_colors_dim[sort] = temp_color
             else:
-                labels_dim = np.squeeze(self.membership_values[:, j])
+                labels_dim = np.squeeze(self.labels_[:, j])
 
             conc = np.zeros((self.fdatagrid.nsamples, 1))
             labels_dim = np.concatenate((conc, labels_dim), axis=-1)

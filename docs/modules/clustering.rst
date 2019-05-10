@@ -35,4 +35,3 @@ parallel coordinates plot or a barplot respectively.
 
 See `Clustering Example <../auto_examples/plot_clustering.html>`_ for detailed
 explanation.
-

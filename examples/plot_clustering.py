@@ -72,8 +72,8 @@ seed = 1
 # resulting in the calculation of the clustering values, the number of cluster
 # each sample belongs to, and the centroids of each cluster.
 
-kmeans = KMeans(random_state=seed)
-kmeans.fit(fd, n_clusters)
+kmeans = KMeans(n_clusters=n_clusters, random_seed=seed)
+kmeans.fit(fd)
 print(kmeans.clustering_values)
 print(kmeans.centers)
 
@@ -97,8 +97,8 @@ kmeans.plot(cluster_colors=cluster_colors, cluster_labels=cluster_labels)
 # elements for each sample and dimension, denoting the degree of membership of
 # each sample to each cluster. Also, the centroids of each cluster are obtained.
 
-fuzzy_kmeans = FuzzyKMeans(random_state=seed)
-fuzzy_kmeans.fit(fd, n_clusters)
+fuzzy_kmeans = FuzzyKMeans(n_clusters=n_clusters, random_seed=seed)
+fuzzy_kmeans.fit(fd)
 print(fuzzy_kmeans.membership_values)
 print(fuzzy_kmeans.centers)
 

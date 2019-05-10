@@ -6,10 +6,7 @@ package. FDataBasis and FDataGrid.
 """
 import numpy
 import scipy.integrate
-from .exploratory.stats import mean
-
-
-from . import FDataGrid
+from ..exploratory.stats import mean
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -166,16 +163,17 @@ def inner_product(fdatagrid, fdatagrid2):
         :math:`y=1` defined over the interval [0,1] is the area of the
         triangle delimited by the the lines y = 0, x = 1 and y = x; 0.5.
 
+        >>> import skfda
         >>> x = numpy.linspace(0,1,1001)
-        >>> fd1 = FDataGrid(x,x)
-        >>> fd2 = FDataGrid(numpy.ones(len(x)),x)
+        >>> fd1 = skfda.FDataGrid(x,x)
+        >>> fd2 = skfda.FDataGrid(numpy.ones(len(x)),x)
         >>> inner_product(fd1, fd2)
         array([[ 0.5]])
 
         If the FDataGrid object contains more than one sample
 
-        >>> fd1 = FDataGrid([x, numpy.ones(len(x))], x)
-        >>> fd2 = FDataGrid([numpy.ones(len(x)), x] ,x)
+        >>> fd1 = skfda.FDataGrid([x, numpy.ones(len(x))], x)
+        >>> fd2 = skfda.FDataGrid([numpy.ones(len(x)), x] ,x)
         >>> inner_product(fd1, fd2).round(2)
         array([[ 0.5 , 0.33],
                [ 1.  , 0.5 ]])

@@ -9,5 +9,5 @@ API Reference
    modules/preprocessing
    modules/exploratory
    modules/datasets
-   modules/metrics
+   modules/math
    

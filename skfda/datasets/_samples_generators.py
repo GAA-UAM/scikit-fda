@@ -2,7 +2,7 @@ import sklearn.utils
 import numpy as np
 from scipy.stats import multivariate_normal
 import scipy.integrate
-from .. import covariances
+from ..math import covariances
 from .. import FDataGrid
 from ..representation.interpolation import SplineInterpolator
 from ..preprocessing.registration import normalize_warping

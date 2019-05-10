@@ -8,15 +8,9 @@ list of discretisation points.
 
 import numbers
 
-import matplotlib.pyplot as plt
-
 import copy
-import matplotlib.pyplot
 import numpy
-import scipy
 import scipy.stats.mstats
-import math
-from mpl_toolkits.mplot3d import Axes3D
 
 
 from . import basis as fdbasis

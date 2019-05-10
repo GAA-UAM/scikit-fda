@@ -27,14 +27,13 @@ from .core import *
 from .representation import FData
 from .representation import FDataBasis
 from .representation import FDataGrid
-from .math import log, log2, log10, exp, sqrt, \
-    cumsum, inner_product
-from .metrics import lp_distance, norm_lp
+from .math import log, log2, log10, exp, sqrt, cumsum, inner_product
+from .math.metrics import lp_distance, norm_lp
 
 
 import os as _os
 
-from . import representation, datasets, covariances, preprocessing, exploratory
+from . import representation, datasets, preprocessing, exploratory, math
 
 try:
     with open(_os.path.join(_os.path.dirname(__file__),

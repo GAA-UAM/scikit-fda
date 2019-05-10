@@ -2,9 +2,9 @@
 import scipy.integrate
 import numpy
 
-from . import FData
-from . import FDataGrid
-from .preprocessing.registration import (
+from ..representation import FData
+from ..representation import FDataGrid
+from ..preprocessing.registration import (
     normalize_warping, _normalize_scale, to_srsf,
     elastic_registration_warping)
 
@@ -22,7 +22,7 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None):
         tuple: Tuple with two :obj:`FDataGrid` with the same sample points.
     """
 
-    # To allow use numpy arrays internally
+    # To allow use numpy arrays internally
     if (not isinstance(fdata1, FData) and not isinstance(fdata2, FData)
         and eval_points is not None):
         fdata1 = FDataGrid([fdata1], sample_points=eval_points)
@@ -33,7 +33,7 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None):
         fdata2.ndim_image != 1 or fdata2.ndim_domain != 1):
         raise ValueError("Objects should be unidimensional")
 
-    # Case different domain ranges
+    # Case different domain ranges
     elif not numpy.array_equal(fdata1.domain_range, fdata2.domain_range):
         raise ValueError("Domain ranges for both objects must be equal")
 

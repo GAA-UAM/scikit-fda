@@ -5,7 +5,7 @@ __author__ = "Pablo Pérez Manso"
 __email__ = "92manso@gmail.com"
 
 
-class Lfd:
+class LinearDifferentialOperator:
     """Defines the structure of a linear differential operator function system
 
     .. math::
@@ -36,8 +36,8 @@ class Lfd:
                          defined. Defaults to (0,1).
         """
 
-        from skfda.representation.basis import (FDataBasis, Constant,
-                                                _same_domain)
+        from ..representation.basis import (FDataBasis, Constant,
+                                            _same_domain)
 
         if order is not None and weights is not None:
             raise ValueError("You have to provide the order or the weights, "

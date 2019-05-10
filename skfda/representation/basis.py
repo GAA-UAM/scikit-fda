@@ -20,7 +20,6 @@ from scipy.special import binom
 from . import grid
 from . import FData
 from ..core._utils import _list_of_arrays
-from ..lfd import Lfd
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -2048,9 +2047,9 @@ class FDataBasis(FData):
             other (FDataBasis, Basis): FDataBasis object containing the second
                     object to make the inner product
 
-            lfd_self (Lfd): Lfd object for the first function evaluation
+            lfd_self (Lfd): LinearDifferentialOperator object for the first function evaluation
 
-            lfd_other (Lfd): Lfd object for the second function evaluation
+            lfd_other (Lfd): LinearDifferentialOperator object for the second function evaluation
 
             weights(FDataBasis): a FDataBasis object with only one sample that
                     defines the weight to calculate the inner product
@@ -2059,6 +2058,7 @@ class FDataBasis(FData):
             numpy.array: Inner Product matrix.
 
         """
+        from ..math import LinearDifferentialOperator
 
         if not _same_domain(self.domain_range, other.domain_range):
             raise ValueError("Both Objects should have the same domain_range")
@@ -2066,8 +2066,10 @@ class FDataBasis(FData):
             other = other.to_basis()
 
         # TODO this will be used when lfd evaluation is ready
-        lfd_self = Lfd(0) if (lfd_self is None) else lfd_self
-        lfd_other = Lfd(0) if (lfd_other is None) else lfd_other
+        lfd_self = (LinearDifferentialOperator(0) if lfd_self is None
+                    else lfd_self)
+        lfd_other = (LinearDifferentialOperator(0) if (lfd_other is None)
+                     else lfd_other)
 
         if weights is not None:
             other = other.times(weights)

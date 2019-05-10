@@ -12,8 +12,8 @@ The following functions computes the norms and distances used in Lp spaces.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.metrics.norm_lp
-   skfda.metrics.lp_distance
+   skfda.math.metrics.norm_lp
+   skfda.math.metrics.lp_distance
 
 
 
@@ -26,10 +26,10 @@ analysis and registration of functional data.
 .. autosummary::
    :toctree: autosummary
 
-    skfda.metrics.fisher_rao_distance
-    skfda.metrics.amplitude_distance
-    skfda.metrics.phase_distance
-    skfda.metrics.warping_distance
+    skfda.math.metrics.fisher_rao_distance
+    skfda.math.metrics.amplitude_distance
+    skfda.math.metrics.phase_distance
+    skfda.math.metrics.warping_distance
 
 
 Utils
@@ -38,5 +38,5 @@ Utils
 .. autosummary::
    :toctree: autosummary
 
-   skfda.metrics.distance_from_norm
-   skfda.metrics.pairwise_distance
+   skfda.math.metrics.distance_from_norm
+   skfda.math.metrics.pairwise_distance

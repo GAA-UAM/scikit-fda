@@ -325,6 +325,42 @@ class Basis(ABC):
     def inner_product(self, other):
         return numpy.transpose(other.inner_product(self.to_basis()))
 
+    def add_same_basis(self, coefs1, coefs2):
+        return self.copy(), coefs1 + coefs2
+
+    def add_costant(self, coefs, other):
+        coefs = coefs.copy()
+        other = numpy.array(other)
+        try:
+            coefs[:, 0] = coefs[:, 0] + other
+        except TypeError:
+            raise NotImplementedError
+
+        return self.copy(), coefs
+
+    def sub_same_basis(self, coefs1, coefs2):
+        return self.copy(), coefs1 - coefs2
+
+    def sub_costant(self, coefs, other):
+        coefs = coefs.copy()
+        other = numpy.array(other)
+        try:
+            coefs[:, 0] = coefs[:, 0] - other
+        except TypeError:
+            raise NotImplementedError
+
+        return self.copy(), coefs
+
+    def mul_costant(self, coefs, other):
+        coefs = coefs.copy()
+        other = numpy.atleast_2d(other).reshape(-1, 1)
+        try:
+            coefs = coefs * other
+        except TypeError:
+            raise NotImplementedError
+
+        return self.copy(), coefs
+
     def __repr__(self):
         """Representation of a Basis object."""
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
@@ -2192,38 +2228,43 @@ class FDataBasis(FData):
             if self.basis != other.basis:
                 raise NotImplementedError
             else:
-                return FDataBasis(self.basis.copy(),
-                                  self.coefficients + other.coefficients)
+                basis, coefs = self.basis.add_same_basis(self.coefficients,
+                                                  other.coefficients)
+        else:
+            basis, coefs = self.basis.add_costant(self.coefficients, other)
 
-        coefs = self.coefficients.copy()
-        other = numpy.array(other)
-        try:
-            coefs[:, 0] = self.coefficients[:, 0] + other
-        except TypeError:
-            return NotImplementedError
-        return FDataBasis(self.basis.copy(), coefs)
+        return self.copy(basis=basis, coefficients=coefs)
 
     def __radd__(self, other):
         """Addition for FDataBasis object."""
+
         return self.__add__(other)
 
     def __sub__(self, other):
         """Subtraction for FDataBasis object."""
-        if isinstance(other, list):
-            other = numpy.array(other)
-        return self.__add__(-1 * other)
+        if isinstance(other, FDataBasis):
+            if self.basis != other.basis:
+                raise NotImplementedError
+            else:
+                basis, coefs = self.basis.sub_same_basis(self.coefficients,
+                                                  other.coefficients)
+        else:
+            basis, coefs = self.basis.sub_costant(self.coefficients, other)
+
+        return self.copy(basis=basis, coefficients=coefs)
 
     def __rsub__(self, other):
         """Right subtraction for FDataBasis object."""
-        return (-1 * self).__add__(other)
+        return (self * -1).__add__(other)
 
     def __mul__(self, other):
         """Multiplication for FDataBasis object."""
         if isinstance(other, FDataBasis):
             raise NotImplementedError
 
-        mult = numpy.atleast_2d(other).reshape(-1, 1)
-        return self.copy(coefficients=self.coefficients * mult)
+        basis, coefs = self.basis.mul_costant(self.coefficients, other)
+
+        return self.copy(basis=basis, coefficients=coefs)
 
     def __rmul__(self, other):
         """Multiplication for FDataBasis object."""

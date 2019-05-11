@@ -23,7 +23,6 @@ and the following classes:
 """
 import errno as _errno
 
-from .core import *
 from .representation import FData
 from .representation import FDataBasis
 from .representation import FDataGrid

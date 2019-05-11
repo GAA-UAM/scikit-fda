@@ -15,7 +15,7 @@ from matplotlib.axes import Axes
 import mpl_toolkits.mplot3d
 
 from skfda.representation.extrapolation import _parse_extrapolation
-from ..core._utils import _coordinate_list, _list_of_arrays
+from .._utils import _coordinate_list, _list_of_arrays
 
 
 class FData(ABC):

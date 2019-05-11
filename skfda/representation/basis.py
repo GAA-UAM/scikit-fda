@@ -19,7 +19,7 @@ from scipy.special import binom
 
 from . import grid
 from . import FData
-from ..core._utils import _list_of_arrays
+from .._utils import _list_of_arrays
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"

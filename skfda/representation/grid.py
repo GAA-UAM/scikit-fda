@@ -16,7 +16,7 @@ import scipy.stats.mstats
 from . import basis as fdbasis
 from .interpolation import SplineInterpolator
 from . import FData
-from ..core._utils import _list_of_arrays
+from .._utils import _list_of_arrays
 
 
 __author__ = "Miguel Carbajo Berrocal"

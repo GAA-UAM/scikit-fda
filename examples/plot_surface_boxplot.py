@@ -13,12 +13,12 @@ for FDataGrid whose domain dimension is 2.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from fda.grid import FDataGrid
-from fda.fdata_boxplot import SurfaceBoxplot, Boxplot
-from fda.datasets import make_sinusoidal_process, make_gaussian_process
+from skfda.grid import FDataGrid
+from skfda.fdata_boxplot import SurfaceBoxplot, Boxplot
+from skfda.datasets import make_sinusoidal_process, make_gaussian_process
 
 ##################################################################################
-# In order to instantiate a :func:`surface boxplot object <fda.boxplot.SurfaceBoxplot>`,
+# In order to instantiate a :func:`surface boxplot object <skfda.boxplot.SurfaceBoxplot>`,
 # a functional data object with bidimensional domain must be generated. In this example,
 # a FDataGrid representing a function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}^2` is
 # constructed to show also the support of a multivariate dimensional image. The first
@@ -27,16 +27,18 @@ from fda.datasets import make_sinusoidal_process, make_gaussian_process
 #
 # First, the values are generated for each dimension with a function
 # :math:`f : \mathbb{R}\longmapsto\mathbb{R}` implemented in the
-# :func:`make_sinusoidal_process method <fda.datasets.make_sinusoidal_process>` and in the
-# :func:`make_gaussian_process method <fda.datasets.make_gaussian_process>`, respectively.
+# :func:`make_sinusoidal_process method <skfda.datasets.make_sinusoidal_process>` and in the
+# :func:`make_gaussian_process method <skfda.datasets.make_gaussian_process>`, respectively.
 # Those functions return FDataGrid objects whose 'data_matrix' store the values needed.
 
 n_samples = 10
 n_features = 10
 
-fd1 = make_sinusoidal_process(n_samples = n_samples, n_features=n_features)
+fd1 = make_sinusoidal_process(n_samples = n_samples, n_features=n_features,
+                              random_state=5)
 fd1.dataset_label = "Sinusoidal process"
-fd2 = make_gaussian_process(n_samples = n_samples, n_features=n_features)
+fd2 = make_gaussian_process(n_samples = n_samples, n_features=n_features,
+                              random_state=1)
 fd2.dataset_label = "Brownian process"
 
 ##################################################################################
@@ -97,7 +99,7 @@ surfaceBoxplot
 #
 # Analogous to the procedure followed before of plotting the three-dimensional data
 # and their correponding profiles, we can obtain also the functional boxplot for
-# one-dimensional data with the :func:`fdboxplot function <fda.boxplot.fdboxplot>`
+# one-dimensional data with the :func:`fdboxplot function <skfda.boxplot.fdboxplot>`
 # passing as arguments the first two FdataGrid objects. The profile of the surface
 # boxplot is obtained.
 

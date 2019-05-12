@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from skfda import FDataGrid
-from skfda.exploratory.depth_measures import band_depth, modified_band_depth, fraiman_muniz_depth
+from skfda.exploratory.depth import band_depth, modified_band_depth, fraiman_muniz_depth
 
 
 class TestDepthMeasures(unittest.TestCase):

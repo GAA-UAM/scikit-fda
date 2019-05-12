@@ -12,7 +12,7 @@ Shows the use of the functional Boxplot applied to the Canadian Weather dataset.
 
 from skfda import datasets
 from skfda import FDataGrid
-from skfda.exploratory.depth_measures import band_depth, fraiman_muniz_depth
+from skfda.exploratory.depth import band_depth, fraiman_muniz_depth
 import matplotlib.pyplot as plt
 from skfda.exploratory.visualization.boxplot import Boxplot
 import numpy

@@ -10,7 +10,7 @@ Shows the usage of the different types of extrapolation.
 
 # sphinx_gallery_thumbnail_number = 2
 
-import fda
+import skfda
 import numpy as np
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d
@@ -19,10 +19,10 @@ import mpl_toolkits.mplot3d
 #
 # The extrapolation defines how to evaluate points that are
 # outside the domain range of a
-# :class:`FDataBasis <fda.basis.FDataBasis>` or a
-# :class:`FDataGrid <fda.grid.FDataGrid>`.
+# :class:`FDataBasis <skfda.basis.FDataBasis>` or a
+# :class:`FDataGrid <skfda.grid.FDataGrid>`.
 #
-# The :class:`FDataBasis <fda.functional_data.FData>` objects have a
+# The :class:`FDataBasis <skfda.functional_data.FData>` objects have a
 # predefined extrapolation which is applied in ´evaluate´
 # if the argument `extrapolation` is not supplied. This default value
 # could be specified when the object is created or changing the
@@ -30,23 +30,23 @@ import mpl_toolkits.mplot3d
 #
 # The extrapolation could be specified by a string with the short name of an
 # extrapolator, with an
-# :class:´Extrapolator <fda.extrapolation.Extrapolator>´ or with a callable.
+# :class:´Extrapolator <skfda.Extrapolator>´ or with a callable.
 #
 # To show how it works we will create a dataset with two unidimensional curves
 # defined in (0,1), and we will represent it using a grid and different types of
 # basis.
 #
 
-fdgrid = fda.datasets.make_sinusoidal_process(n_samples=2, error_std=0, random_state=0)
+fdgrid = skfda.datasets.make_sinusoidal_process(n_samples=2, error_std=0, random_state=0)
 fdgrid.dataset_label = "Grid"
 
-fd_fourier = fdgrid.to_basis(fda.basis.Fourier())
+fd_fourier = fdgrid.to_basis(skfda.basis.Fourier())
 fd_fourier.dataset_label = "Fourier Basis"
 
-fd_monomial = fdgrid.to_basis(fda.basis.Monomial(nbasis=5))
+fd_monomial = fdgrid.to_basis(skfda.basis.Monomial(nbasis=5))
 fd_monomial.dataset_label = "Monomial Basis"
 
-fd_bspline = fdgrid.to_basis(fda.basis.BSpline(nbasis=5))
+fd_bspline = fdgrid.to_basis(skfda.basis.BSpline(nbasis=5))
 fd_bspline.dataset_label = "BSpline Basis"
 
 
@@ -153,7 +153,7 @@ fdgrid.plot() # Plot dataset
 
 ###############################################################################
 #
-# The :class:´FillExtrapolation <fda.extrapolation.FillExtrapolation>´ will fill
+# The :class:´FillExtrapolation <skfda.FillExtrapolation>´ will fill
 # the points extrapolated with the same value. The case of filling with zeros
 # could be specified with the string `"zeros"`, which is equivalent to
 # `extrapolation=FillExtrapolation(0)`.
@@ -209,7 +209,7 @@ X, Y = np.meshgrid(t, t)
 Z = np.exp(-0.5 * (X**2 + Y**2))
 
 # Creation of FDataGrid
-fd_surface = fda.FDataGrid([Z], (t, t))
+fd_surface = skfda.FDataGrid([Z], (t, t))
 
 t = np.arange(-7, 7.5, 0.5)
 

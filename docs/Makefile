@@ -52,6 +52,10 @@ clean:
 	rm -rf $(BUILDDIR)/*
 	rm -rf auto_examples
 	rm -rf modules/autosummary
+	rm -rf modules/exploratory/visualization/autosummary
+	rm -rf modules/math/autosummary
+	rm -rf modules/preprocessing/autosummary
+	rm -rf modules/representation/autosummary
 
 .PHONY: html
 html:

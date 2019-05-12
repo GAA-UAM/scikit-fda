@@ -10,7 +10,7 @@ import math
 
 import numpy as np
 
-from skfda.exploratory.depth_measures import modified_band_depth
+from skfda.exploratory.depth import modified_band_depth
 from ... import FDataGrid
 from io import BytesIO
 from abc import ABC, abstractmethod

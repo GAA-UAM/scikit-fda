@@ -12,7 +12,7 @@ Shows the use of the MS-Plot applied to the Canadian Weather dataset.
 
 from skfda import datasets
 from skfda import FDataGrid
-from skfda.exploratory.depth_measures import fraiman_muniz_depth
+from skfda.exploratory.depth import fraiman_muniz_depth
 from skfda.exploratory.visualization.magnitude_shape_plot import (
     MagnitudeShapePlot)
 import matplotlib.pyplot as plt

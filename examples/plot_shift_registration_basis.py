@@ -11,20 +11,20 @@ process represented in a Fourier basis.
 
 # sphinx_gallery_thumbnail_number = 3
 
-import fda
+import skfda
 import matplotlib.pyplot as plt
 
 
 ###############################################################################
 # In this example we will use a
-# :func:`sinusoidal process <fda.datasets.make_sinusoidal_process>`
+# :func:`sinusoidal process <skfda.datasets.make_sinusoidal_process>`
 # synthetically generated. This dataset consists in a sinusoidal wave with fixed
 # period which contanis phase and amplitude variation with gaussian noise.
 #
 # In this example we want to register the curves using a translation
 # and remove the phase variation to perform further analysis.
 
-fd = fda.datasets.make_sinusoidal_process(random_state=1)
+fd = skfda.datasets.make_sinusoidal_process(random_state=1)
 fd.plot()
 
 
@@ -35,7 +35,7 @@ fd.plot()
 #
 # Because of their sinusoidal nature we will use a Fourier basis.
 
-basis = fda.basis.Fourier(nbasis=11)
+basis = skfda.representation.basis.Fourier(nbasis=11)
 fd_basis = fd.to_basis(basis)
 
 plt.figure()
@@ -43,11 +43,11 @@ fd_basis.plot()
 
 ###############################################################################
 # We will apply the
-# :func:`shift registration <fda.registration.shift_registration>`,
+# :func:`shift registration <skfda.preprocessing.registration.shift_registration>`,
 # which is suitable due to the periodicity of the dataset and the small
 # amount of amplitude variation.
 
-fd_registered = fda.registration.shift_registration(fd_basis)
+fd_registered = skfda.preprocessing.registration.shift_registration(fd_basis)
 
 ###############################################################################
 # We can observe how the sinusoidal pattern is easily distinguishable
@@ -70,7 +70,7 @@ fd_basis.mean().plot()
 fd_registered.mean().plot()
 
 # sinusoidal process without variation and noise
-sine = fda.datasets.make_sinusoidal_process(n_samples=1, phase_std=0,
+sine = skfda.datasets.make_sinusoidal_process(n_samples=1, phase_std=0,
                                             amplitude_std=0, error_std=0)
 
 sine.plot(linestyle='dashed')
@@ -82,7 +82,7 @@ plt.legend(['original mean', 'registered mean','sine'])
 # analysis, as they may be considered as nuisance or random effects.
 #
 
-deltas = fda.registration.shift_registration_deltas(fd_basis)
+deltas = skfda.preprocessing.registration.shift_registration_deltas(fd_basis)
 print(deltas)
 
 ###############################################################################

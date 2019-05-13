@@ -3,8 +3,8 @@ import unittest
 import numpy
 import scipy.stats.mstats
 
-from fda import math
-from fda.grid import FDataGrid
+from skfda.exploratory import stats
+from skfda import FDataGrid
 
 
 class TestFDataGrid(unittest.TestCase):
@@ -22,7 +22,7 @@ class TestFDataGrid(unittest.TestCase):
 
     def test_mean(self):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
-        mean = math.mean(fd)
+        mean = stats.mean(fd)
         numpy.testing.assert_array_equal(
             mean.data_matrix[0, ..., 0],
             numpy.array([1.5, 2.5, 3.5, 4.5, 5.5]))
@@ -33,7 +33,7 @@ class TestFDataGrid(unittest.TestCase):
 
     def test_gmean(self):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
-        mean = math.gmean(fd)
+        mean = stats.gmean(fd)
         numpy.testing.assert_array_equal(
             mean.data_matrix[0, ..., 0],
             scipy.stats.mstats.gmean(

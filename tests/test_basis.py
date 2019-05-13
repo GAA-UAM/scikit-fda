@@ -1,8 +1,10 @@
 import unittest
 
-from skfda.basis import Basis, FDataBasis, Constant, Monomial, BSpline, Fourier
+from skfda.representation.basis import (Basis, FDataBasis, Constant, Monomial,
+                                        BSpline, Fourier)
 
 import numpy as np
+
 
 class TestBasis(unittest.TestCase):
 

@@ -300,32 +300,16 @@ class TestBasis(unittest.TestCase):
                                             [36, 192]]))
 
     def test_fdatabasis_derivative_bspline(self):
-        monomial = FDataBasis(Monomial(nbasis=8),
+        bspline = FDataBasis(BSpline(nbasis=8),
                               [1, 5, 8, 9, 7, 8, 4, 5])
-        monomial2 = FDataBasis(Monomial(nbasis=5),
+        bspline2 = FDataBasis(BSpline(nbasis=5),
                               [[4, 9, 7, 4, 3],
                                [1, 7, 9, 8, 5],
                                [4, 6, 6, 6, 8]])
 
-        np.testing.assert_equal(monomial.derivative(),
-                                FDataBasis(Monomial(nbasis=7),
-                                           [5, 16, 27, 28, 40, 24, 35]))
-        np.testing.assert_equal(monomial.derivative(order=0), monomial)
-        np.testing.assert_equal(monomial.derivative(order=6),
-                                FDataBasis(Monomial(nbasis=2),
-                                           [2880, 25200]))
+        bspline.derivative()
 
-        np.testing.assert_equal(monomial2.derivative(),
-                                FDataBasis(Monomial(nbasis=4),
-                                           [[9, 14, 12, 12],
-                                            [7, 18, 24, 20],
-                                            [6, 12, 18, 32]]))
-        np.testing.assert_equal(monomial2.derivative(order=0), monomial2)
-        np.testing.assert_equal(monomial2.derivative(order=3),
-                                FDataBasis(Monomial(nbasis=2),
-                                           [[24, 72],
-                                            [48, 120],
-                                            [36, 192]]))
+
 
 if __name__ == '__main__':
     print()

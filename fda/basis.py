@@ -8,7 +8,6 @@ the corresponding basis classes.
 import copy
 from abc import ABC, abstractmethod
 
-import matplotlib.pyplot
 import numpy
 import scipy.integrate
 import scipy.interpolate
@@ -854,6 +853,17 @@ class BSpline(Basis):
 
         return mat
 
+    def _derivative(self, coefs, order=1):
+        from scipy.interpolate import BSpline as SciBSpline
+
+        knots  = numpy.array([self.knots[0]] * (self.order - 1) + self.knots
+                            + [self.knots[-1]] * (self.order - 1))
+
+        scibspline = SciBSpline(knots, coefs, self.order)
+        derivscibspline = SciBSpline.derivative(order)
+        # TODO calcular el numero de bases
+        return derivscibspline.c, BSpline(self.domain_range, self.nbasis, self.k)
+
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
 
@@ -1244,10 +1254,29 @@ class Fourier(Basis):
         """
         return 0 if penalty_degree == 0 else 1
 
-
-
     def _derivative(self, coefs, order=1):
-        signs = numpy.array(((1 if (j * i + i // 2) % 2 == 0 else -1)
+        if order < 0:
+            raise ValueError("derivative only takes non-negative values.")
+
+        if order == 0:
+            return self.copy(), coefs.copy()
+
+        omega = 2 * numpy.pi / self.period
+        deriv_factor = (numpy.array(range(self.nbasis-1)/2) * omega) ** order
+
+
+        deriv_coefs = numpy.zeros(coefs.shape)
+
+        if order % 2 == 0:
+            deriv_coefs[1::2] = -1 * coefs[1::2] * deriv_factor
+            deriv_coefs[2::2] = -1 * coefs[2::2] * deriv_factor
+        else:
+            deriv_coefs[2::2] = -1 * coefs[1::2] * deriv_factor
+            deriv_coefs[1::2] = -1 * coefs[2::2] * deriv_factor
+
+        # normalise
+        return mat
+
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
 

@@ -2,9 +2,10 @@ import sklearn.utils
 import numpy as np
 from scipy.stats import multivariate_normal
 import scipy.integrate
-from .. import covariances
-from .. import FDataGrid, SplineInterpolator
-from ..registration import normalize_warping
+from ..math import covariances
+from .. import FDataGrid
+from ..representation.interpolation import SplineInterpolator
+from ..preprocessing.registration import normalize_warping
 
 
 def make_gaussian_process(n_samples: int=100, n_features: int=100, *,

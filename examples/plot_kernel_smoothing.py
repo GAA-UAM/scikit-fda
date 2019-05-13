@@ -12,8 +12,8 @@ undersmoothing and oversmoothing.
 # License: MIT
 
 import skfda
-import skfda.kernel_smoothers as ks
-import skfda.validation as val
+import skfda.preprocessing.smoothing.kernel_smoothers as ks
+import skfda.preprocessing.smoothing.validation as val
 import matplotlib.pylab as plt
 import numpy as np
 
@@ -43,11 +43,12 @@ param_values = np.linspace(start=2, stop=25, num=24)
 llr = val.minimise(fd, param_values,
                    smoothing_method=ks.local_linear_regression)
 # Nadaraya-Watson kernel smoothing.
-nw = skfda.validation.minimise(fd, param_values,
-                             smoothing_method=ks.nw)
+nw = skfda.preprocessing.smoothing.validation.minimise(
+    fd, param_values, smoothing_method=ks.nw)
+
 # K-nearest neighbours kernel smoothing.
-knn = skfda.validation.minimise(fd, param_values,
-                              smoothing_method=ks.knn)
+knn = skfda.preprocessing.smoothing.validation.minimise(
+    fd, param_values, smoothing_method=ks.knn)
 
 plt.plot(param_values, knn['scores'])
 plt.plot(param_values, llr['scores'])

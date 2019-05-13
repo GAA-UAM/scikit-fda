@@ -23,18 +23,13 @@ and the following classes:
 """
 import errno as _errno
 
-from .core import *
-from .functional_data import FData
-from .basis import FDataBasis
-from .grid import FDataGrid
-from .math import mean, var, gmean, log, log2, log10, exp, sqrt, \
-    cumsum, inner_product, cov
-from .metrics import lp_distance, norm_lp
+from .representation import FData
+from .representation import FDataBasis
+from .representation import FDataGrid
 
+from . import representation, datasets, preprocessing, exploratory, math
 
 import os as _os
-
-from . import datasets, covariances, registration
 
 try:
     with open(_os.path.join(_os.path.dirname(__file__),

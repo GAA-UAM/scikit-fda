@@ -1,9 +1,9 @@
-fda
-===
+scikit-fda
+==========
 
 |build-status| |docs|
 
-fda: Functional Data Analysis in Python
+scikit-fda: Functional Data Analysis in Python
 
 Functional Data Analysis is the field of Statistics that analyses data that
 come in the shape of functions. To know more about fda have a look at fda_ or read [RS05]_.
@@ -42,10 +42,10 @@ References
 
 .. _fda: http://www.functionaldata.org/
 
-.. |build-status| image:: https://travis-ci.org/GAA-UAM/fda.svg
+.. |build-status| image:: https://travis-ci.org/GAA-UAM/scikit-fda.svg
     :alt: build status
     :scale: 100%
-    :target: https://travis-ci.org/GAA-UAM/fda
+    :target: https://travis-ci.org/GAA-UAM/scikit-fda
 
 .. |docs| image:: https://readthedocs.org/projects/fda/badge/?version=latest
     :alt: Documentation Status

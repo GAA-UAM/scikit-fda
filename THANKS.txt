@@ -1,0 +1,5 @@
+Miguel Carbajo Berrocal for the basis and discrete representations of functional data, and the smoothing functions.
+Carlos Ramos Carreño for the design, reviews and supervision, and for contributing the datasets module.
+Pablo Marcos Manchón for the registration functions, including integration with fdasrsf.
+Amanda Hernando Bernabé for visualization and clustering functions.
+Pablo Pérez Manso for regression and related utilities.

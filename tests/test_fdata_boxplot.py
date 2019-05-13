@@ -1,9 +1,9 @@
 import unittest
 import numpy as np
 
-from fda.grid import FDataGrid
-from fda.depth_measures import band_depth, fraiman_muniz_depth
-from fda.fdata_boxplot import Boxplot, SurfaceBoxplot
+from skfda import FDataGrid
+from skfda.exploratory.depth import band_depth, fraiman_muniz_depth
+from skfda.exploratory.visualization.boxplot import Boxplot, SurfaceBoxplot
 import matplotlib.pyplot as plt
 
 

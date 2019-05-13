@@ -9,19 +9,19 @@ means and derivatives.
 # Author: Miguel Carbajo Berrocal
 # License: MIT
 
-import fda
+import skfda
 import matplotlib.pyplot as plt
 import numpy as np
 
 ###############################################################################
 # In this example we are going to explore the functional properties of the
-# :func:`Tecator <fda.datasets.fetch_tecator>` dataset. This dataset measures
+# :func:`Tecator <skfda.datasets.fetch_tecator>` dataset. This dataset measures
 # the infrared absorbance spectrum of meat samples. The objective is to predict
 # the fat, water, and protein content of the samples.
 #
 # In this example we only want to discriminate between meat with less than 20%
 # of fat, and meat with a higher fat content.
-dataset = fda.datasets.fetch_tecator()
+dataset = skfda.datasets.fetch_tecator()
 fd = dataset['data']
 y = dataset['target']
 target_feature_names = dataset['target_feature_names']
@@ -39,8 +39,10 @@ fd[~low_fat].plot(c='b', linewidth=0.5, alpha=0.7)
 ###############################################################################
 # The means of each group are the following ones.
 
-fda.mean(fd[low_fat]).plot(c='r', linewidth=0.5)
-fda.mean(fd[~low_fat]).plot(c='b', linewidth=0.5, alpha=0.7)
+skfda.exploratory.stats.mean(fd[low_fat]).plot(c='r',
+                                               linewidth=0.5)
+skfda.exploratory.stats.mean(fd[~low_fat]).plot(c='b',
+                                                linewidth=0.5, alpha=0.7)
 fd.dataset_label = fd.dataset_label + ' - means'
 
 ###############################################################################

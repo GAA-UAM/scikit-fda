@@ -56,15 +56,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.doctest' ]
 
 doctest_global_setup = '''
-import skfda
-from skfda import *
-from skfda.basis import *
-from skfda.depth_measures import *
-from skfda.fdata_boxplot import *
-from skfda.magnitude_shape_plot import *
-from skfda.metrics import *
 import numpy
-import numpy as np
 numpy.set_printoptions(legacy='1.13')
 '''
 

@@ -11,9 +11,10 @@ Shows the use of the MS-Plot applied to the Canadian Weather dataset.
 # sphinx_gallery_thumbnail_number = 2
 
 from skfda import datasets
-from skfda.grid import FDataGrid
-from skfda.depth_measures import fraiman_muniz_depth
-from skfda.magnitude_shape_plot import MagnitudeShapePlot
+from skfda import FDataGrid
+from skfda.exploratory.depth import fraiman_muniz_depth
+from skfda.exploratory.visualization.magnitude_shape_plot import (
+    MagnitudeShapePlot)
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -45,7 +46,7 @@ fd_temperatures.plot(sample_labels=dataset["target"], label_colors=label_colors,
 
 #############################################################################################
 # The MS-Plot is generated. In order to show the results, the
-# :func:`plot method <skfda.magnitude_shape_plot.MagnitudeShapePlot.plot>` is used. Note that the
+# :func:`plot method <skfda.exploratory.visualization.magnitude_shape_plot.MagnitudeShapePlot.plot>` is used. Note that the
 # colors have been specified before to distinguish between outliers or not. In particular the tones
 # of the default colormap, (which is 'seismic' and can be customized), are assigned.
 
@@ -78,7 +79,7 @@ fd_temperatures.plot(sample_labels=msplot.outliers,
 # outliers but in the MS-Plot, they appear further left from the central points. This behaviour
 # can be modified specifying the parameter alpha.
 #
-# Now we use the :func:`Fraiman and Muniz depth measure <skfda.depth_measures.fraiman_muniz_depth>`
+# Now we use the :func:`Fraiman and Muniz depth measure <skfda.exploratory.depth_measures.fraiman_muniz_depth>`
 # in the MS-Plot.
 
 msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures,

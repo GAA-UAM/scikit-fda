@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# fda documentation build configuration file, created by
+# scikit-fda documentation build configuration file, created by
 # sphinx-quickstart on Sun Oct 22 18:46:59 2017.
 #
 # This file is execfile()d with the current directory set to its
@@ -24,12 +24,12 @@
 import sys
 import pkg_resources
 try:
-    release = pkg_resources.get_distribution('fda').version
+    release = pkg_resources.get_distribution('scikit-fda').version
 except pkg_resources.DistributionNotFound:
-    print('To build the documentation, The distribution information of fda\n'
-          'Has to be available.  Either install the package into your\n'
-          'development environment or run "setup.py develop" to setup the\n'
-          'metadata.  A virtualenv is recommended!\n')
+    print('To build the documentation, The distribution information of\n'
+          'scikit-fda has to be available.  Either install the package\n'
+          'into your development environment or run "setup.py develop"\n'
+          'to setup the metadata.  A virtualenv is recommended!\n')
     sys.exit(1)
 del pkg_resources
 
@@ -55,6 +55,11 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.intersphinx',
               'sphinx.ext.doctest' ]
 
+doctest_global_setup = '''
+import numpy
+numpy.set_printoptions(legacy='1.13')
+'''
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -68,7 +73,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'fda'
+project = 'scikit-fda'
 copyright = '2017, Author'
 author = 'Author'
 
@@ -126,7 +131,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'fdadoc'
+htmlhelp_basename = 'skfdadoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -152,7 +157,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'fda.tex', 'fda Documentation',
+    (master_doc, 'skfda.tex', 'scikit-fda Documentation',
      'Author', 'manual'),
 ]
 
@@ -161,7 +166,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'fda', 'fda Documentation',
+    (master_doc, 'skfda', 'scikit-fda Documentation',
      [author], 1)
 ]
 
@@ -171,8 +176,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'fda', 'fda Documentation',
-     author, 'fda', 'One line description of project.',
+    (master_doc, 'skfda', 'scikit-fda Documentation',
+     author, 'skfda', 'One line description of project.',
      'Miscellaneous'),
 ]
 
@@ -212,7 +217,7 @@ sphinx_gallery_conf = {
     'gallery_dirs': 'auto_examples',
     'reference_url': {
         # The module you locally document uses None
-        'fda': None,
+        'skfda': None,
     },
     'backreferences_dir': 'backreferences',
 }

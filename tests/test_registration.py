@@ -48,9 +48,9 @@ class TestWarping(unittest.TestCase):
         np.testing.assert_array_almost_equal(normalized.sample_points[0],
                                              np.linspace(0, 1, 50))
 
-        np.testing.assert_array_equal(normalized(0), [[0.], [0.]])
+        np.testing.assert_array_almost_equal(normalized(0), [[0.], [0.]])
 
-        np.testing.assert_array_equal(normalized(1), [[1.], [1.]])
+        np.testing.assert_array_almost_equal(normalized(1), [[1.], [1.]])
 
     def test_normalize_warpig(self):
         """Test normalization to (a, b)"""

@@ -2004,6 +2004,20 @@ class FDataBasis(FData):
         coefs = numpy.transpose(numpy.atleast_2d(other))
         return self.copy(coefficients=self.coefficients*coefs)
 
+    def inner_product2(self, other, lfd_self=None, lfd_other=None,
+                      weights=None):
+
+        if lfd_self is None:
+            lfd_self = Lfd(0)
+
+        if lfd_other is None:
+            lfd_other = Lfd(0)
+
+        if isinstance(other, Basis):
+            other = other.to_basis()
+
+        return inprod(self, other, lfd_self, lfd_other, weights)
+
     def inner_product(self, other, lfd_self=None, lfd_other=None,
                       weights=None):
         r"""Return an inner product matrix given a FDataBasis object.
@@ -2190,3 +2204,289 @@ class FDataBasis(FData):
         """Right division for FDataBasis object."""
 
         raise NotImplementedError
+
+
+
+def projectbasis(y, argvals, basisobj, penalize=False):
+    if not isinstance(basisobj, Basis):
+        raise ValueError("BASISOBJ is not a basis object.")
+
+    basismat = basisobj._compute_matrix(argvals, 0)
+    Bmat = basismat @ numpy.transpose(basismat)
+    if penalize:
+        penmat = basisobj.penalty(0)
+        penmat = penmat + 1e-18 * max(penmat) * penmat.shape[1]
+        landa = 0.0001 * numpy.sum(numpy.diag(Bmat)) / numpy.sum(numpy.diag(penmat))
+        Cmat = Bmat + landa * penmat
+    else:
+        Cmat = Bmat
+
+    if len(y.shape) <= 2:
+        Dmat = basismat @ y
+        coef = numpy.linalg.inv(Cmat) @ Dmat
+    else:
+        return NotImplemented
+    return coef
+
+
+def times(e1, e2):
+    if isinstance(e2, FDataBasis):
+
+        coef1 = e1.coefficients
+        coef2 = e2.coefficients
+        coefd1 = coef1.shape
+        coefd2 = coef2.shape
+        ndim1 = len(coefd1)
+        ndim2 = len(coefd2)
+
+        if ndim1 != ndim2:
+            raise ValueError(
+                "Number of dimensions of coefficient arrays do not match.")
+
+        if coefd1[0] == 1 and coefd2[0] > 1:
+            if ndim1 == 2:
+                # TODO Mirar que hace aquí la implementación de R
+                coef1 = coef1.reshape((coefd1[1], coefd2[0]))
+            elif ndim1 == 3:
+                raise NotImplementedError
+            else:
+                raise ValueError(
+                    "Dimensions of coefficient matrices not compatible.")
+
+            coefd1 = coef1.shape
+            e1.coefficients = coef1
+
+        if coefd1[0] > 1 and coefd2[0] == 1:
+            if ndim2 == 2:
+                # TODO mirar que hace aquí la implementación de R
+                coef2 = coef2.reshape((coefd2[1], coefd1[2]))
+            elif ndim1 == 3:
+                raise NotImplementedError
+            else:
+                raise ValueError(
+                    "Dimensions of coefficient matrices not compatible.")
+
+            coefd2 = coef2.shape
+            e2.coefficients = coef2
+
+        if coefd1[0] != coefd2[0]:
+            raise ValueError("Number of replications are not equal.")
+
+        if ndim1 > 2 and ndim2 > 2 and ndim1 != ndim2:
+            raise ValueError(
+                "Both arguments multivariate, but involve different numbers of functions.")
+
+        basisobj1 = e1.basis
+        basisobj2 = e2.basis
+        nbasis1 = basisobj1.nbasis
+        nbasis2 = basisobj2.nbasis
+
+        #  check that the ranges match if a range not supplied
+
+        rangeval1 = basisobj1.domain_range
+        rangeval2 = basisobj2.domain_range
+        if not _same_domain(rangeval1, rangeval2):
+            raise ValueError("The ranges of the arguments are not equal.")
+
+        #  set default basis object
+
+        basisobj = basisobj1.basis_of_product(basisobj2)
+
+        neval = max(10 * max(nbasis1, nbasis2) + 1, 201)
+        evalarg = numpy.linspace(rangeval1[0][0], rangeval2[0][1], neval)
+
+        #  set up arrays of function values
+
+        fdarray1 = e1.evaluate(evalarg)
+        fdarray2 = e2.evaluate(evalarg)
+
+        if (ndim1 <= 2 and ndim2 <= 2) or (ndim1 > 2 and ndim2 > 2):
+            fdarray = fdarray1 * fdarray2
+        else:
+            raise NotImplementedError
+
+        coefprod = projectbasis(numpy.transpose(fdarray), evalarg, basisobj)
+        return FDataBasis(basisobj, numpy.transpose(coefprod))
+    else:
+        return e1 * e2
+
+
+def knotmultchk(basisobj, knotmult):
+    if isinstance(basisobj, BSpline):
+        knots = basisobj.knots
+        nparams = len(knots)
+        if (nparams > 1):
+            for i in range(1, nparams):
+                if (knots[i] == knots[i - 1]):
+                    knotmult = numpy.append(knotmult, knots[i])
+
+    return knotmult
+
+
+def fdchk(fdobj):
+    if isinstance(fdobj, FDataBasis):
+        coef = fdobj.coefficients
+    elif isinstance(fdobj, Basis):
+        fdobj = fdobj.to_basis()
+        coef = fdobj.coefficients
+    else:
+        raise ValueError("FDOBJ is not an FD object.")
+
+    coefd = coef.shape
+    if len(coefd) > 2:
+        raise ValueError("Functional data object must be univariate")
+
+    return (fdobj.nsamples, fdobj)
+
+
+def inprod(fd_self, fd_other=None, lfd_self=Lfd(0), lfd_other=Lfd(0),
+           domain_range=None, weights=0):
+    nrep1 = fd_self.nsamples
+    coef1 = fd_self.coefficients
+    basisobj1 = fd_self.basis
+    range1 = basisobj1.domain_range[0]
+
+    if domain_range is None:
+        domain_range = range1
+
+    if fd_other is None:
+        if isinstance(basisobj1, BSpline):
+            basis2 = BSpline(basisobj1.domain_range, 1, 1)
+        elif isinstance(basisobj1, Fourier):
+            basis2 = Fourier(basisobj1.domain_range, 1)
+        else:
+            basis2 = Constant(basisobj1.domain_range)
+
+        fd_other = FDataBasis(basis2, 1)
+
+    nrep2 = fd_other.nsamples
+    coef2 = fd_other.coefficients
+    basisobj2 = fd_other.basis
+    range2 = basisobj2.domain_range[0]
+
+    # TODO comprobar que el rango de evaluación
+    # 1. Si viene por parámetro ver que está dentro de los rangos de ls funciones
+    # y será el rango de evaluación
+    # 2. Si viene sin dar el rango por parámetro se deberá mirar si son iguales
+
+
+    rngvec = domain_range
+
+    knotmult = numpy.array([])
+    if isinstance(basisobj1, BSpline):
+        knotmult = knotmultchk(basisobj1, knotmult)
+    if isinstance(basisobj2, BSpline):
+        knotmult = knotmultchk(basisobj2, knotmult)
+
+    if knotmult.size > 0:
+        knotmult = numpy.unique(knotmult)
+        knotmult = knotmult[knotmult > domain_range[1] and knotmult < domain_range[2]]
+        rngvec = [domain_range[0]] + knotmult + [domain_range[1]]
+
+    if numpy.all(coef1 == 0) or numpy.all(
+            coef2 == 0):  # TODO comprobar si todos los valores son cero
+        return numpy.zeros((nrep1, nrep2))
+
+
+    JMAX = 15
+    JMIN = 5
+    EPS = 1e-4
+
+    inprodmat = numpy.zeros((nrep1, nrep2))
+
+    nrng = len(rngvec)
+    for irng in range(1, nrng):
+        rngi = [rngvec[irng - 1], rngvec[irng]]
+
+        if irng > 1:
+            rngi[0] = rngi[0] + 1e-10
+        if irng < nrng - 1:
+            rngi[1] = rngi[1] - 1e-10
+
+        width = rngi[1] - rngi[0]
+        JMAXP = JMAX + 1
+        h = numpy.ones(JMAXP)
+        h[1] = 0.25
+        s = numpy.zeros((JMAXP, nrep1, nrep2))
+        sdim = len(s.shape)
+        #  the first iteration uses just the endpoints
+        fx1 = fd_self.evaluate(rngi, derivative=lfd_self.order)  # TODO evaluate the lfd object
+        fx2 = fd_other.evaluate(rngi, derivative=lfd_other.order)
+        #  multiply by values of weight function if necessary
+        if isinstance(weights, FDataBasis):  # TODO check !is.numeric(wtfd)):
+            wtd = weights.evaluate(rngi, derivative=0)
+            fx2 = wtd * fx2
+
+        s[0, :, :] = width * (fx1 @ numpy.transpose(fx2)) / 2
+        tnm = 0.5
+        #  now iterate to convergence
+
+        for iter in range(1, JMAX):
+            tnm = tnm * 2
+            if iter == 1:
+                x = numpy.mean(rngi)
+            else:
+                delta = width / tnm
+                x = numpy.arange(rngi[0] + delta / 2, rngi[1] - delta / 2 + 1e-4,
+                              delta)
+
+            fx1 = fd_self.evaluate(x, derivative=lfd_self.order)
+            fx2 = fd_other.evaluate(x, derivative=lfd_other.order)
+
+            if isinstance(weights, FDataBasis):
+                wtd = weights.evaluate(x, derivative=0)
+                fx2 = wtd * fx2
+
+            chs = width * (fx1 @ numpy.transpose(fx2)) / tnm
+            s[iter, :, :] = (s[iter - 1, :, :] + chs) / 2
+            if iter >= 4:
+                ya = s[(iter - 4):iter + 1, :, :]
+                # TODO mirar esto en r
+                ya = ya.reshape((5, nrep1, nrep2))
+                xa = h[(iter - 4):iter + 1]
+                absxa = abs(xa)
+                absxamin = min(absxa)
+                # TODO mirar esto en r
+                ns = numpy.argmin(absxa)
+                cs = ya.copy()
+                ds = ya.copy()
+                y = ya[ns, :, :]
+                ns = ns - 1
+                for m in range(0, 4):
+                    for i in range(0, (4 - m)):
+                        ho = xa[i]
+                        hp = xa[i + m + 1]
+                        w = (cs[i + 1, :, :] - ds[i, :, :]) / (ho - hp)
+                        hp = hp * w
+                        ho = ho * w
+                        ds[i] = hp
+                        cs[i] = ho
+
+                    # TODO calcular de nuevo este if
+                    if 2 * (ns + 1) < 5 - (m + 1):
+                        dy = cs[ns + 1, :, :]
+                    else:
+                        dy = ds[ns, :, :].copy()
+                        ns = ns - 1
+
+                    y = y + dy
+
+                ss = y
+                errval = numpy.max(numpy.abs(dy))
+                ssqval = numpy.max(numpy.abs(ss))
+                if numpy.all(ssqval > 0):
+                    crit = errval / ssqval
+                else:
+                    crit = errval
+
+                if crit < EPS and iter >= JMIN:
+                    break
+
+            s[iter + 1, :, :] = s[iter, :, :]
+            h[iter + 1] = 0.25 * h[iter]
+            if iter == JMAX:
+                raise Warning("Failure to converge.")
+
+        inprodmat = inprodmat + ss
+
+    return inprodmat

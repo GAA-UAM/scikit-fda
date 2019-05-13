@@ -44,7 +44,7 @@ setup(name='scikit-fda',
       packages=find_packages(),
       python_requires='>=3.6, <4',
       classifiers=[
-        'Development Status :: 1',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',

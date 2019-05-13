@@ -19,10 +19,10 @@ import mpl_toolkits.mplot3d
 #
 # The extrapolation defines how to evaluate points that are
 # outside the domain range of a
-# :class:`FDataBasis <skfda.basis.FDataBasis>` or a
-# :class:`FDataGrid <skfda.grid.FDataGrid>`.
+# :class:`FDataBasis <skfda.representation.basis.FDataBasis>` or a
+# :class:`FDataGrid <skfda.representation.grid.FDataGrid>`.
 #
-# The :class:`FDataBasis <skfda.functional_data.FData>` objects have a
+# The :class:`FDataBasis <skfda.representation._functional_data.FData>` objects have a
 # predefined extrapolation which is applied in ´evaluate´
 # if the argument `extrapolation` is not supplied. This default value
 # could be specified when the object is created or changing the
@@ -40,13 +40,13 @@ import mpl_toolkits.mplot3d
 fdgrid = skfda.datasets.make_sinusoidal_process(n_samples=2, error_std=0, random_state=0)
 fdgrid.dataset_label = "Grid"
 
-fd_fourier = fdgrid.to_basis(skfda.basis.Fourier())
+fd_fourier = fdgrid.to_basis(skfda.representation.basis.Fourier())
 fd_fourier.dataset_label = "Fourier Basis"
 
-fd_monomial = fdgrid.to_basis(skfda.basis.Monomial(nbasis=5))
+fd_monomial = fdgrid.to_basis(skfda.representation.basis.Monomial(nbasis=5))
 fd_monomial.dataset_label = "Monomial Basis"
 
-fd_bspline = fdgrid.to_basis(skfda.basis.BSpline(nbasis=5))
+fd_bspline = fdgrid.to_basis(skfda.representation.basis.BSpline(nbasis=5))
 fd_bspline.dataset_label = "BSpline Basis"
 
 

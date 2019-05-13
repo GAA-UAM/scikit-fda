@@ -1,7 +1,7 @@
 import numpy as np
 import rdata
 
-from ..grid import FDataGrid
+from .. import FDataGrid
 
 
 def fdata_constructor(obj, attrs):

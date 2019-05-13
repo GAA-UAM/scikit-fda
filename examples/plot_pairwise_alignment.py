@@ -50,13 +50,13 @@ plt.legend(['$f$', '$g$'])
 # In this example :math:`g` will be used as template and :math:`f` will be
 # aligned to it. In the following figure it is shown the result of the
 # registration process, wich can be computed using :func:`elastic_registration
-# <skfda.registration.elastic_registration>`.
+# <skfda.preprocessing.registration.elastic_registration>`.
 #
 
 f, g = fd[0], fd[1]
 
 # Aligns f to g
-fd_align = skfda.registration.elastic_registration(f, g)
+fd_align = skfda.preprocessing.registration.elastic_registration(f, g)
 
 
 plt.figure()
@@ -71,11 +71,11 @@ plt.legend(['$f$', '$g$', '$f \\circ \\gamma $'])
 ###############################################################################
 # The non-linear transformation :math:`\gamma` applied to :math:`f` in
 # the alignment can be obtained using  :func:`elastic_registration_warping
-# <skfda.registration.elastic_registration_warping>`.
+# <skfda.preprocessing.registration.elastic_registration_warping>`.
 #
 
 # Warping to align f to g
-warping = skfda.registration.elastic_registration_warping(f, g)
+warping = skfda.preprocessing.registration.elastic_registration_warping(f, g)
 
 plt.figure()
 
@@ -96,7 +96,7 @@ plt.legend(['$\\gamma$', '$\\gamma_{id}$'])
 # function.
 #
 
-warping_inverse = skfda.registration.invert_warping(warping)
+warping_inverse = skfda.preprocessing.registration.invert_warping(warping)
 
 
 plt.figure()
@@ -130,7 +130,7 @@ plt.figure()
 
 for lam, c in zip(lambdas, color):
     # Plots result of alignment
-    skfda.registration.elastic_registration(f, g, lam=lam).plot(color=c)
+    skfda.preprocessing.registration.elastic_registration(f, g, lam=lam).plot(color=c)
 
 
 f.plot(color='C0', linewidth=2., label='$f$')
@@ -149,7 +149,7 @@ plt.legend()
 plt.figure()
 
 for lam, c in zip(lambdas, color):
-    skfda.registration.elastic_registration_warping(f, g, lam=lam).plot(color=c)
+    skfda.preprocessing.registration.elastic_registration_warping(f, g, lam=lam).plot(color=c)
 
 # Plots identity
 plt.plot(t,t,  color='C0', linestyle="--")
@@ -195,7 +195,7 @@ plt.legend(handles=[l[0], l[-1]])
 plt.figure()
 
 # Registration of the sets
-fd_registered = skfda.registration.elastic_registration(fd, g)
+fd_registered = skfda.preprocessing.registration.elastic_registration(fd, g)
 
 # Plot of the curves
 fig, ax = fd.plot(color="C0", label="$f_i$")

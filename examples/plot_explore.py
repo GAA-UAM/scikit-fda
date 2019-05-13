@@ -39,8 +39,10 @@ fd[~low_fat].plot(c='b', linewidth=0.5, alpha=0.7)
 ###############################################################################
 # The means of each group are the following ones.
 
-skfda.mean(fd[low_fat]).plot(c='r', linewidth=0.5)
-skfda.mean(fd[~low_fat]).plot(c='b', linewidth=0.5, alpha=0.7)
+skfda.exploratory.stats.mean(fd[low_fat]).plot(c='r',
+                                               linewidth=0.5)
+skfda.exploratory.stats.mean(fd[~low_fat]).plot(c='b',
+                                                linewidth=0.5, alpha=0.7)
 fd.dataset_label = fd.dataset_label + ' - means'
 
 ###############################################################################

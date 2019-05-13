@@ -13,8 +13,8 @@ for FDataGrid whose domain dimension is 2.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from skfda.grid import FDataGrid
-from skfda.fdata_boxplot import SurfaceBoxplot, Boxplot
+from skfda import FDataGrid
+from skfda.exploratory.visualization.boxplot import SurfaceBoxplot, Boxplot
 from skfda.datasets import make_sinusoidal_process, make_gaussian_process
 
 ##################################################################################

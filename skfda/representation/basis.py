@@ -855,15 +855,15 @@ class BSpline(Basis):
         return mat
 
     def _derivative(self, coefs, order=1):
-        from scipy.interpolate import BSpline as SciBSpline
+        deriv_splines = [self._to_scipy_BSpline(coefs[i]).derivative(order)
+                   for i in range(coefs.shape[0])]
 
-        knots  = numpy.array([self.knots[0]] * (self.order - 1) + self.knots
-                            + [self.knots[-1]] * (self.order - 1))
+        deriv_coefs = [BSpline._from_scipy_BSpline(spline)[1]
+                    for spline in deriv_splines]
 
-        scibspline = SciBSpline(knots, coefs, self.order)
-        derivscibspline = SciBSpline.derivative(order)
-        # TODO calcular el numero de bases
-        return derivscibspline.c, BSpline(self.domain_range, self.nbasis, self.k)
+        deriv_basis = BSpline._from_scipy_BSpline(deriv_splines[0])[0]
+
+        return deriv_basis, numpy.array(deriv_coefs)[:, 0:deriv_basis.nbasis]
 
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
@@ -1093,7 +1093,27 @@ class BSpline(Basis):
         return ("create.bspline.basis(rangeval = c(" + str(drange[0]) + "," +
                 str(drange[1]) + "), nbasis = " + str(self.nbasis) +
                 ", norder = " + str(self.order) + ", breaks = " +
-                self._listtoR(self.knots) + ")")
+                self._list_to_R(self.knots) + ")")
+
+    def _to_scipy_BSpline(self, coefs):
+        from scipy.interpolate import BSpline as SciBSpline
+
+        knots = numpy.concatenate((
+            numpy.repeat(self.knots[0], self.order - 1),
+            self.knots,
+            numpy.repeat(self.knots[-1], self.order - 1)))
+
+        return SciBSpline(knots, coefs, self.order - 1)
+
+    @staticmethod
+    def _from_scipy_BSpline(bspline):
+        order = bspline.k
+        knots = bspline.t[order: -order]
+        coefs = bspline.c
+        domain_range = [knots[0], knots[-1]]
+
+        # TODO
+        return BSpline(domain_range, order=order+1, knots=knots), coefs
 
     @property
     def inknots(self):
@@ -2133,7 +2153,7 @@ class FDataBasis(FData):
 
     def _to_R(self):
         """Gives the code to build the object on fda package on R"""
-        return ("fd(coef = " + self._arraytoR(self.coefficients, True) +
+        return ("fd(coef = " + self._array_to_R(self.coefficients, True) +
                 ", basisobj = " + self.basis._to_R() + ")")
 
     def _array_to_R(self, coefficients, transpose=False):

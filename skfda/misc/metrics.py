@@ -337,7 +337,7 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
     given by
 
     .. math::
-        \\mathcal{R}(\\gamma) = \|\\sqrt{\\dot{\\gamma}}- 1 \|_{\\mathbb{L}^2}^2
+        \\mathcal{R}(\\gamma) = \\|\\sqrt{\\dot{\\gamma}}- 1 \\|_{\\mathbb{L}^2}^2
 
     See [SK16-4-10-1]_ for a detailed explanation.
 

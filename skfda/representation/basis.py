@@ -115,9 +115,9 @@ class Basis(ABC):
         """
         pass
 
+    @abstractmethod
     def _derivative(self, coefs, order=1):
-        """ TODO comentario"""
-        raise NotImplementedError
+        pass
 
     def evaluate(self, eval_points, derivative=0):
         """Evaluate Basis objects and its derivatives.

@@ -1,7 +1,7 @@
 """Functional principal component analysis.
 """
 
-from ...stats import mean
+from ....exploratory.stats import mean
 import numpy as np
 
 

@@ -309,8 +309,27 @@ class TestBasis(unittest.TestCase):
                                [1, 7, 9, 8, 5],
                                [4, 6, 6, 6, 8]])
 
-        bspline.derivative()
 
+
+        np.testing.assert_equal(bspline.derivative(),
+                                FDataBasis(BSpline([0., 1.], nbasis=7, order=3),
+                                           [60, 22.5, 5, -10, 5, -30, 15]))
+        np.testing.assert_equal(bspline.derivative(order=0), bspline)
+        np.testing.assert_equal(bspline.derivative(order=2),
+                                FDataBasis(BSpline([0., 1.], nbasis=6, order=2),
+                                           [-375, -87.5, -75, 75, -175, 450]))
+
+        np.testing.assert_equal(bspline2.derivative(),
+                                FDataBasis(BSpline(nbasis=4, order=3),
+                                           [[30, -6, -9, -6],
+                                            [36, 6, -3, -18],
+                                            [12, 0, 0, 12]]))
+        np.testing.assert_equal(bspline2.derivative(order=0), bspline2)
+        np.testing.assert_equal(bspline2.derivative(order=2),
+                                FDataBasis(BSpline(nbasis=3, order=2),
+                                           [[-144, -6, 12],
+                                            [-120, -18, -60],
+                                            [ -48, 0, 48]]))
 
 
 if __name__ == '__main__':

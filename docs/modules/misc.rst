@@ -1,10 +1,10 @@
 Math
 ====
 
-Useful math functions and objects.
+Miscelaneus functions and objects.
 
 .. toctree::
    :maxdepth: 4
    :caption: Modules:
    
-   math/metrics
+   misc/metrics

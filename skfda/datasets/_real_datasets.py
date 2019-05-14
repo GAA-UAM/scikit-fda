@@ -2,6 +2,8 @@ import numpy as np
 import rdata
 
 from .. import FDataGrid
+import warnings
+from Cython.Build.Dependencies import package
 
 
 def fdata_constructor(obj, attrs):
@@ -86,20 +88,20 @@ def fetch_ucr(name, **kwargs):
     import skdatasets
 
     dataset = skdatasets.ucr.fetch(name, **kwargs)
-    
+
     def ucr_to_fdatagrid(data):
         if data.dtype == np.object_:
             data = np.array(data.tolist())
-            
+
             # n_instances = data.shape[0]
             # dim_output = data.shape[1]
             # n_points = data.shape[2]
-            
+
             data = np.transpose(data, axes=(0, 2, 1))
-            
+
         sample_points = range(data.shape[1])
-            
-        return FDataGrid(data, sample_points=sample_points)   
+
+        return FDataGrid(data, sample_points=sample_points)
 
     dataset['data'] = ucr_to_fdatagrid(dataset['data'])
     del dataset['feature_names']
@@ -109,6 +111,31 @@ def fetch_ucr(name, **kwargs):
         dataset['data_test'] = ucr_to_fdatagrid(data_test)
 
     return dataset
+
+
+def _fetch_cran_no_encoding_warning(*args, **kwargs):
+    # Probably non thread safe
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=UserWarning,
+                                message="Unknown encoding. Assumed ASCII.")
+        return fetch_cran(*args, **kwargs)
+
+
+def _fetch_elem_stat_learn(name):
+    return _fetch_cran_no_encoding_warning(name, "ElemStatLearn",
+                                           version="0.1-7.1")
+
+
+def _fetch_ddalpha(name):
+    return _fetch_cran_no_encoding_warning(name, "ddalpha", version="1.3.4")
+
+
+def _fetch_fda(name):
+    return _fetch_cran_no_encoding_warning(name, "fda", version="2.4.7")
+
+
+def _fetch_fda_usc(name):
+    return _fetch_cran_no_encoding_warning(name, "fda.usc", version="1.3.0")
 
 
 _param_descr = """
@@ -171,9 +198,7 @@ def fetch_phoneme(return_X_y: bool = False):
     """
     DESCR = _phoneme_descr
 
-    raw_dataset = fetch_cran(
-        "phoneme", "ElemStatLearn",
-        version="0.1-7.1")
+    raw_dataset = _fetch_elem_stat_learn("phoneme")
 
     data = raw_dataset["phoneme"]
 
@@ -226,9 +251,7 @@ def fetch_growth(return_X_y: bool = False):
     """
     DESCR = _growth_descr
 
-    raw_dataset = fetch_cran(
-        "growth", "fda",
-        version="2.4.7")
+    raw_dataset = _fetch_fda("growth")
 
     data = raw_dataset["growth"]
 
@@ -304,9 +327,7 @@ def fetch_tecator(return_X_y: bool = False):
     """
     DESCR = _tecator_descr
 
-    raw_dataset = fetch_cran(
-        "tecator", "fda.usc",
-        version="1.3.0")
+    raw_dataset = _fetch_fda_usc("tecator")
 
     data = raw_dataset["tecator"]
 
@@ -375,9 +396,7 @@ def fetch_medflies(return_X_y: bool = False):
     """
     DESCR = _medflies_descr
 
-    raw_dataset = fetch_cran(
-        "medflies", "ddalpha",
-        version="1.3.4")
+    raw_dataset = _fetch_ddalpha("medflies")
 
     data = raw_dataset["medflies"]
 
@@ -402,15 +421,15 @@ if hasattr(fetch_medflies, "__doc__"):  # docstrings can be stripped off
     fetch_medflies.__doc__ += _medflies_descr + _param_descr
 
 _weather_descr = """
-    Daily temperature and precipitation at 35 different locations in Canada averaged 
-    over 1960 to 1994.
+    Daily temperature and precipitation at 35 different locations in Canada
+    averaged over 1960 to 1994.
 
     References:
-        Ramsay, James O., and Silverman, Bernard W. (2006), Functional Data Analysis, 
-        2nd ed. , Springer, New York.
+        Ramsay, James O., and Silverman, Bernard W. (2006),
+        Functional Data Analysis, 2nd ed. , Springer, New York.
 
-        Ramsay, James O., and Silverman, Bernard W. (2002), Applied Functional Data Analysis, 
-        Springer, New York
+        Ramsay, James O., and Silverman, Bernard W. (2002),
+        Applied Functional Data Analysis, Springer, New York
 """
 
 
@@ -423,22 +442,22 @@ def fetch_weather(return_X_y: bool = False):
     """
     DESCR = _weather_descr
 
-    raw_dataset = fetch_cran(
-        "CanadianWeather", "fda",
-        version="2.4.7")
+    raw_dataset = _fetch_fda("CanadianWeather")
 
     data = raw_dataset["CanadianWeather"]
 
     weather_daily = np.asarray(data["dailyAv"])
 
-    # Axes 0 and 1 must be transposed since in the downloaded dataset the data_matrix shape is
-    # (nfeatures, nsamples, ndim_image) while our data_matrix shape is (nsamples, nfeatures, ndim_image).
+    # Axes 0 and 1 must be transposed since in the downloaded dataset the
+    # data_matrix shape is (nfeatures, nsamples, ndim_image) while our
+    # data_matrix shape is (nsamples, nfeatures, ndim_image).
     temp_prec_daily = np.transpose(weather_daily[:, :, 0:2], axes=(1, 0, 2))
 
     curves = FDataGrid(data_matrix=temp_prec_daily,
                        sample_points=range(1, 366),
                        dataset_label="Canadian Weather",
-                       axes_labels=["day", "temperature (ºC)", "precipitation (mm.)"])
+                       axes_labels=["day", "temperature (ºC)",
+                                    "precipitation (mm.)"])
 
     target_names, target = np.unique(data["region"], return_inverse=True)
 
@@ -456,10 +475,11 @@ if hasattr(fetch_weather, "__doc__"):  # docstrings can be stripped off
     fetch_weather.__doc__ += _weather_descr + _param_descr
 
 _aemet_descr = """
-    Series of daily summaries of 73 spanish weather stations selected for the period 1980-2009. The
-    dataset contains the geographic information of each station and the average for the period 
-    1980-2009 of daily temperature, daily precipitation and daily wind speed.
-    Meteorological State Agency of Spain (AEMET), http://www.aemet.es/. Government of Spain.
+    Series of daily summaries of 73 spanish weather stations selected for the
+    period 1980-2009. The dataset contains the geographic information of each
+    station and the average for the period 1980-2009 of daily temperature,
+    daily precipitation and daily wind speed. Meteorological State Agency of
+    Spain (AEMET), http://www.aemet.es/. Government of Spain.
 
     Authors:
         Manuel Febrero Bande, Manuel Oviedo de la Fuente <manuel.oviedo@usc.es>
@@ -478,9 +498,7 @@ def fetch_aemet(return_X_y: bool = False):
     """
     DESCR = _aemet_descr
 
-    raw_dataset = fetch_cran(
-        "aemet", "fda.usc",
-        version="1.3.0")
+    raw_dataset = _fetch_fda_usc("aemet")
 
     data = raw_dataset["aemet"]
 
@@ -492,8 +510,10 @@ def fetch_aemet(return_X_y: bool = False):
         return fd_temp, fd_logprec, fd_wind
     else:
         return {"data": (fd_temp, fd_logprec, fd_wind),
-                "meta": np.asarray(data["df"])[:, np.array([0, 1, 2, 3, 6, 7])],
-                "meta_names": ["ind", "name", "province", "altitude", "longitude", "latitude"],
+                "meta": np.asarray(data["df"])[:,
+                                               np.array([0, 1, 2, 3, 6, 7])],
+                "meta_names": ["ind", "name", "province", "altitude",
+                               "longitude", "latitude"],
                 "meta_feature_names": ["location"],
                 "DESCR": DESCR}
 

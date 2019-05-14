@@ -1743,7 +1743,7 @@ class FDataBasis(FData):
 
     def _evaluate_composed(self, eval_points, *, derivative=0):
 
-        """Evaluate the object or its derivatives at a list of values with a
+        r"""Evaluate the object or its derivatives at a list of values with a
         different time for each sample.
 
         Returns a numpy array with the component (i,j) equal to :math:`f_i(t_j +
@@ -2131,7 +2131,7 @@ class FDataBasis(FData):
             numpy.array: Inner Product matrix.
 
         """
-        from ..math import LinearDifferentialOperator
+        from ..misc import LinearDifferentialOperator
 
         if not _same_domain(self.domain_range, other.domain_range):
             raise ValueError("Both Objects should have the same domain_range")

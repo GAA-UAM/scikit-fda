@@ -6,15 +6,16 @@ import matplotlib.pyplot as plt
 
 from skfda import FDataGrid
 from skfda.datasets import make_multimodal_samples
-from skfda.math.metrics import (fisher_rao_distance, amplitude_distance,
+from skfda.misc.metrics import (fisher_rao_distance, amplitude_distance,
                                 phase_distance, pairwise_distance, lp_distance,
                                 warping_distance)
-from skfda.preprocessing.registration import (elastic_registration, elastic_mean, to_srsf,
-                                from_srsf, elastic_registration_warping,
-                                invert_warping, normalize_warping)
+from skfda.preprocessing.registration import (
+    elastic_registration, to_srsf, from_srsf,
+    elastic_registration_warping, invert_warping, normalize_warping)
 
 metric = pairwise_distance(lp_distance)
 pairwise_fisher_rao = pairwise_distance(fisher_rao_distance)
+
 
 class TestElasticRegistration(unittest.TestCase):
     """Test elastic registration"""

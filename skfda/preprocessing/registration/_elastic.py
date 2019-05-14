@@ -196,14 +196,14 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
     penalty term, used to control the amount of warping.
 
     .. math::
-        d_{\\lambda}^2(f \\circ \\gamma, g) = \| SRSF(f \\circ \\gamma)
-        \\sqrt{\\dot{\\gamma}} - SRSF(g)\|_{\\mathbb{L}^2}^2 + \\lambda
+        d_{\\lambda}^2(f \\circ \\gamma, g) = \\| SRSF(f \\circ \\gamma)
+        \\sqrt{\\dot{\\gamma}} - SRSF(g)\\|_{\\mathbb{L}^2}^2 + \\lambda
         \\mathcal{R}(\\gamma)
 
     In the implementation it is used as penalty term
 
     .. math::
-        \\mathcal{R}(\\gamma) = \|\\sqrt{\\dot{\\gamma}}- 1 \|_{\\mathbb{L}^2}^2
+        \\mathcal{R}(\\gamma) = \\|\\sqrt{\\dot{\\gamma}}- 1 \\|_{\\mathbb{L}^2}^2
 
     Wich restrict the amount of elasticity employed in the alignment.
 
@@ -313,14 +313,14 @@ def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
     penalty term, used to control the amount of warping.
 
     .. math::
-        d_{\\lambda}^2(f \\circ \\gamma, g) = \| SRSF(f \\circ \\gamma)
-        \\sqrt{\\dot{\\gamma}} - SRSF(g)\|_{\\mathbb{L}^2}^2 + \\lambda
+        d_{\\lambda}^2(f \\circ \\gamma, g) = \\| SRSF(f \\circ \\gamma)
+        \\sqrt{\\dot{\\gamma}} - SRSF(g)\\|_{\\mathbb{L}^2}^2 + \\lambda
         \\mathcal{R}(\\gamma)
 
     In the implementation it is used as penalty term
 
     .. math::
-        \\mathcal{R}(\\gamma) = \|\\sqrt{\\dot{\\gamma}}- 1 \|_{\\mathbb{L}^2}^2
+        \\mathcal{R}(\\gamma) = \\|\\sqrt{\\dot{\\gamma}}- 1 \\|_{\\mathbb{L}^2}^2
 
     Wich restrict the amount of elasticity employed in the alignment.
 
@@ -387,7 +387,7 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
 
     Let :math:`\\gamma_i i=1...n` be a set of warping functions
     :math:`\\gamma_i:[a,b] \\rightarrow [a,b]` in :math:`\\Gamma`, i.e.,
-    monotone increasing and with the restriction :math:`\\gamma_i(a)=a \,
+    monotone increasing and with the restriction :math:`\\gamma_i(a)=a \\,
     \\gamma_i(b)=b`.
 
     The karcher mean :math:`\\bar \\gamma` is defined as the warping that
@@ -405,7 +405,7 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
         warping (:class:`FDataGrid`): Set of warpings.
         iter (int): Maximun number of interations. Defaults to 20.
         tol (float): Convergence criterion, if the norm of the mean of the
-            shooting vectors, :math:`\| \\bar v \|<tol`, the algorithm will stop.
+            shooting vectors, :math:`| \\bar v |<tol`, the algorithm will stop.
             Defaults to 1e-5.
         step_size (float): Step size :math:`\\epsilon` used to update the mean.
             Default to 1.
@@ -514,7 +514,7 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
 
     Let :math:`q_i` the corresponding SRSF of the observation :math:`f_i`.
     The space :math:`\\mathcal{A}` is defined using the equivalence classes
-    :math:`[q_i]=\\{ q_i \\circ \\gamma | \\gamma \\in \\Gamma \\}`, where
+    :math:`[q_i]=\\{ q_i \\circ \\gamma \\| \\gamma \\in \\Gamma \\}`, where
     :math:`\\Gamma` denotes the space of warping functions. The karcher mean
     in this space is defined as
 
@@ -535,7 +535,7 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
             used to select a central mean. Defaults True.
         iter (int): Maximun number of iterations. Defaults to 20.
         tol (float): Convergence criterion, the algorithm will stop if
-            :math:´\|mu^{(\\nu)} - mu^{(\\nu - 1)} \|_2 / \| mu^{(\\nu-1)} \|_2
+            :math:´\\|mu^{(\\nu)} - mu^{(\\nu - 1)} \\|_2 / \\| mu^{(\\nu-1)} \\|_2
             < tol´.
         initial (float): Value of the mean at the starting point. By default
             takes the average of the initial points of the samples.

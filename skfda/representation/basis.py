@@ -25,6 +25,7 @@ __email__ = "miguel.carbajo@estudiante.uam.es"
 
 MIN_EVAL_SAMPLES = 201
 
+
 # aux functions
 def _polypow(p, n=2):
     if n > 2:
@@ -380,7 +381,8 @@ class Constant(Basis):
         return penalty_degree
 
     def _derivative(self, coefs, order=1):
-        return self.copy, coefs if order == 0 else numpy.zeros(coefs.shape)
+        return (self.copy(), coefs if order == 0
+                else self.copy(), numpy.zeros(coefs.shape))
 
     def _compute_matrix(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
@@ -553,8 +555,8 @@ class Monomial(Basis):
 
     def _derivative(self, coefficients, order=1):
         return (Monomial(self.domain_range, self.nbasis - order),
-               numpy.array([numpy.polyder(x[::-1], order)[::-1]
-                                    for x in coefficients]))
+                numpy.array([numpy.polyder(x[::-1], order)[::-1]
+                             for x in coefficients]))
 
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
@@ -858,10 +860,10 @@ class BSpline(Basis):
 
     def _derivative(self, coefs, order=1):
         deriv_splines = [self._to_scipy_BSpline(coefs[i]).derivative(order)
-                   for i in range(coefs.shape[0])]
+                         for i in range(coefs.shape[0])]
 
         deriv_coefs = [BSpline._from_scipy_BSpline(spline)[1]
-                    for spline in deriv_splines]
+                       for spline in deriv_splines]
 
         deriv_basis = BSpline._from_scipy_BSpline(deriv_splines[0])[0]
 
@@ -1116,8 +1118,7 @@ class BSpline(Basis):
         coefs = bspline.c
         domain_range = [knots[0], knots[-1]]
 
-        # TODO
-        return BSpline(domain_range, order=order+1, knots=knots), coefs
+        return BSpline(domain_range, order=order + 1, knots=knots), coefs
 
     @property
     def inknots(self):
@@ -1232,7 +1233,7 @@ class Fourier(Basis):
             if nbasis > 1:
                 # 2*pi*n*x / period
                 args = numpy.outer(range(1, nbasis // 2 + 1), omega_t)
-                index = range(1, nbasis-1, 2)
+                index = range(1, nbasis - 1, 2)
                 # odd indexes are sine functions
                 mat[index] = numpy.sin(args)
                 index = range(2, nbasis, 2)

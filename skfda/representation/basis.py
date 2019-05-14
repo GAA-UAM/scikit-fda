@@ -2058,7 +2058,7 @@ class FDataBasis(FData):
             numpy.array: Inner Product matrix.
 
         """
-        from ..math import LinearDifferentialOperator
+        from ..misc import LinearDifferentialOperator
 
         if not _same_domain(self.domain_range, other.domain_range):
             raise ValueError("Both Objects should have the same domain_range")

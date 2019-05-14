@@ -61,17 +61,17 @@ def make_sinusoidal_process(n_samples: int=15, n_features: int=100, *,
                             amplitude_mean: float=1., amplitude_std: float=.05,
                             error_std: float=.2, random_state=None):
 
-    """Generate sinusoidal proccess.
+    r"""Generate sinusoidal proccess.
 
     Each sample :math:`x_i(t)` is generated as:
 
     .. math::
 
-        x_i(t) = \\alpha_i \sin(\omega t + \phi_i) + \epsilon_i(t)
+        x_i(t) = \alpha_i \sin(\omega t + \phi_i) + \epsilon_i(t)
 
 
-    where :math:`\omega=\\frac{2 \pi}{\\text{period}}`. Amplitudes
-    :math:`\\alpha_i` and phases :math:`\phi_i` are normally distributed.
+    where :math:`\omega=\frac{2 \pi}{\text{period}}`. Amplitudes
+    :math:`\alpha_i` and phases :math:`\phi_i` are normally distributed.
     :math:`\epsilon_i(t)` is a gaussian white noise process.
 
     Args:

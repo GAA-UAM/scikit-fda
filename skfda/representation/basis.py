@@ -1678,7 +1678,7 @@ class FDataBasis(FData):
 
     def _evaluate_composed(self, eval_points, *, derivative=0):
 
-        """Evaluate the object or its derivatives at a list of values with a
+        r"""Evaluate the object or its derivatives at a list of values with a
         different time for each sample.
 
         Returns a numpy array with the component (i,j) equal to :math:`f_i(t_j +

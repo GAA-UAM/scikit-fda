@@ -214,7 +214,7 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
 
 def invert_warping(fdatagrid, *, eval_points=None):
-    """Compute the inverse of a diffeomorphism.
+    r"""Compute the inverse of a diffeomorphism.
 
     Let :math:`\gamma : [a,b] \\rightarrow [a,b]` be a function strictly
     increasing, calculates the corresponding inverse

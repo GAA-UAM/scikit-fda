@@ -7,6 +7,7 @@ import numpy
 
 from ... import FDataGrid
 from ...representation.interpolation import SplineInterpolator
+from ...utils import constants
 
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"
@@ -259,7 +260,7 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
     try:
         warping_points = fd.sample_points
     except AttributeError:
-        warping_points = [numpy.linspace(*domain, 201)
+        warping_points = [numpy.linspace(*domain, constants.N_POINTS_COARSE_MESH)
                           for domain in fd.domain_range]
 
     return warping.to_grid(warping_points)

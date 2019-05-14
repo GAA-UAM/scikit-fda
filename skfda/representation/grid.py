@@ -16,7 +16,7 @@ import scipy.stats.mstats
 from . import basis as fdbasis
 from .interpolation import SplineInterpolator
 from . import FData
-from .._utils import _list_of_arrays
+from ..utils import _list_of_arrays, constants
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -929,7 +929,8 @@ class FDataGrid(FData):
                 try:
                     eval_points = fd.sample_points[0]
                 except:
-                    eval_points = numpy.linspace(*fd.domain_range[0], 201)
+                    eval_points = numpy.linspace(*fd.domain_range[0],
+                                                 constants.N_POINTS_COARSE_MESH)
 
             eval_points_transformation = fd(eval_points, keepdims=False)
             data_matrix = self(eval_points_transformation,

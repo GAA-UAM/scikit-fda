@@ -334,7 +334,9 @@ class Basis(ABC):
 
     def __eq__(self, other):
         """Equality of Basis"""
-        return type(self) == type(other) and _same_domain(self.domain_range, other.domain_range) and self.nbasis == other.nbasis
+        return (type(self) == type(other)
+                and _same_domain(self.domain_range, other.domain_range)
+                and self.nbasis == other.nbasis)
 
 
 class Constant(Basis):
@@ -1043,7 +1045,9 @@ class BSpline(Basis):
 
     def __eq__(self, other):
         """Equality of Basis"""
-        return super().__eq__(other) and self.order == other.order and self.knots == other.knots
+        return (super().__eq__(other)
+                and self.order == other.order
+                and self.knots == other.knots)
 
     def basis_of_product(self, other):
         """Multiplication of two Bspline Basis"""
@@ -1867,7 +1871,13 @@ class FDataBasis(FData):
             order (int, optional): Order of the derivative. Defaults to one.
         """
 
-        (basis, coefficients) = self.basis._derivative(self.coefficients, order)
+        if order < 0:
+            raise ValueError("order only takes non-negative integer values.")
+
+        if order is 0:
+            return self.copy()
+
+        basis, coefficients = self.basis._derivative(self.coefficients, order)
 
         return FDataBasis(basis, coefficients)
 
@@ -2195,7 +2205,8 @@ class FDataBasis(FData):
     def __eq__(self, other):
         """Equality of FDataBasis"""
         # TODO check all other params
-        return self.basis == other.basis and numpy.all(self.coefficients == other.coefficients)
+        return (self.basis == other.basis
+                and numpy.allclose(self.coefficients, other.coefficients))
 
     def concatenate(self, other):
         """Join samples from a similar FDataBasis object.

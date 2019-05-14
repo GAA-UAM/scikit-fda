@@ -1280,27 +1280,23 @@ class Fourier(Basis):
         return 0 if penalty_degree == 0 else 1
 
     def _derivative(self, coefs, order=1):
-        if order < 0:
-            raise ValueError("derivative only takes non-negative values.")
-
-        if order == 0:
-            return self.copy(), coefs.copy()
 
         omega = 2 * numpy.pi / self.period
-        deriv_factor = (numpy.array(range(self.nbasis-1)/2) * omega) ** order
-
+        deriv_factor = (numpy.arange(1, (self.nbasis+1)/2) * omega) ** order
 
         deriv_coefs = numpy.zeros(coefs.shape)
 
+        cos_sign, sin_sign = (-1)**int((order+1)/2), (-1)**int(order/2)
+
         if order % 2 == 0:
-            deriv_coefs[1::2] = -1 * coefs[1::2] * deriv_factor
-            deriv_coefs[2::2] = -1 * coefs[2::2] * deriv_factor
+            deriv_coefs[:, 1::2] = sin_sign * coefs[:, 1::2] * deriv_factor
+            deriv_coefs[:, 2::2] = cos_sign * coefs[:, 2::2] * deriv_factor
         else:
-            deriv_coefs[2::2] = -1 * coefs[1::2] * deriv_factor
-            deriv_coefs[1::2] = -1 * coefs[2::2] * deriv_factor
+            deriv_coefs[:, 2::2] = sin_sign * coefs[:, 1::2] * deriv_factor
+            deriv_coefs[:, 1::2] = cos_sign * coefs[:, 2::2] * deriv_factor
 
         # normalise
-        return mat
+        return self.copy(), deriv_coefs
 
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
@@ -2206,7 +2202,7 @@ class FDataBasis(FData):
         """Equality of FDataBasis"""
         # TODO check all other params
         return (self.basis == other.basis
-                and numpy.allclose(self.coefficients, other.coefficients))
+                and numpy.all(self.coefficients == other.coefficients))
 
     def concatenate(self, other):
         """Join samples from a similar FDataBasis object.

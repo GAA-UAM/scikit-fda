@@ -1,4 +1,4 @@
-"""Clustering Module."""
+"""K-Means Algorithms Module."""
 
 import numpy as np
 from ...representation.grid import FDataGrid
@@ -14,22 +14,40 @@ __email__ = "amanda.hernando@estudiante.uam.es"
 
 
 class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
-    """Base class to implement clustering algorithms.
+    """Base class to implement K-Means clustering algorithms.
 
-    Class from which both :class:`K-Means <fda.clustering.KMeans>` and
-    :class:`Fuzzy K-Means <fda.clustering.FuzzyKMeans>` classes inherit."""
+    Class from which both :class:`K-Means
+    <skfda.ml.clustering.base_kmeans.KMeans>` and
+    :class:`Fuzzy K-Means <skfda.ml.clustering.base_kmeans.FuzzyKMeans>`
+    classes inherit.
+    """
 
     def __init__(self, n_clusters, init, metric, n_init, max_iter, tol,
                  random_state):
-        """Sets the arguments *max_iter* and *random_state* and *p*.
+        """Initialization of the BaseKMeans class.
 
         Args:
-            max_iter (int): Maximum number of iterations of the clustering
+            n_clusters (int, optional): Number of groups into which the samples are
+                classified. Defaults to 2.
+            init (FDataGrid, optional): Contains the initial centers of the different
+                clusters the algorithm starts with. Its data_marix must be of
+                the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
+                Defaults to None, and the centers are initialized randomly.
+            metric (optional): metric that acceps two FDataGrid objects and returns
+                a matrix with shape (fdatagrid1.nsamples, fdatagrid2.nsamples).
+                Defaults to *pairwise_distance(lp_distance)*.
+            n_init (int, optional): Number of time the k-means algorithm will be
+                run with different centroid seeds. The final results will be the
+                best output of n_init consecutive runs in terms of inertia.
+            max_iter (int, optional): Maximum number of iterations of the
+                clustering algorithm for a single run. Defaults to 100.
+            tol (float, optional): tolerance used to compare the centroids
+                calculated with the previous ones in every single run of the
                 algorithm.
-            random_state (int): Seed to initialize the random state to choose
-                the initial centroids.
-            p (int): Identifies the p-norm used to calculate the distance
-                between functions.
+            random_state (int, RandomState instance or None, optional):
+                Determines random number generation for centroid initialization. ç
+                Use an int to make the randomness deterministic. Defaults to 0.
+                See :term:`Glossary <random_state>`.
         """
         self.n_clusters = n_clusters
         self.init = init
@@ -39,29 +57,13 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         self.tol = tol
         self.random_state = random_state
 
-
     def _generic_clustering_checks(self, fdatagrid):
-        """Checks the arguments *fdatagrid*, *n_clusters* and *init*
-        used in the :func:`fit <fda.clustering.BaseKMeans.fit>` function.
+        """Checks the arguments used in the
+        :func:`fit method <skfda.ml.clustering.base_kmeans.fit>`.
 
         Args:
             fdatagrid (FDataGrid object): Object whose samples
                 are classified into different groups.
-            n_clusters (int): Number of groups into which the samples are
-                classified.
-            init (FDataGrid): Contains the initial centers of the different
-                clusters the algorithm starts with or None. Its data_marix must
-                be of the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
-
-        Returns:
-            fdatagrid (FDataGrid object): Object whose samples
-                are classified into different groups.
-            n_clusters (int): Number of groups into which the samples are
-                classified.
-            init (FDataGrid): Contains the initial centers of the different
-                clusters the algorithm starts with. Its data_marix must be of
-                the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
-                If None, default value, the centers are generated randomly.
         """
 
         if fdatagrid.ndim_domain > 1:
@@ -100,11 +102,8 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
 
         return fdatagrid
 
-
     def _init_centroids(self, data_matrix, fdatagrid, random_state):
-        """Random initialization of the centroids used in the
-        :func:`fit function <fda.clustering.BaseKMeans.fit>` if *init*
-        is None.
+        """Compute the initial centroids
 
         Args:
             data_matrix (ndarray): matrix with the data only of the
@@ -112,8 +111,8 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                 classifying.
             fdatagrid (FDataGrid object): Object whose samples are
                 classified into different groups.
-            n_clusters (int): Number of groups into which the samples are
-                classified.
+            random_state (RandomState object): random number generation for
+                centroid initialization.
 
         Returns:
             centers (ndarray): initial centers
@@ -128,13 +127,26 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
 
         return centers
 
-
     @abstractmethod
     def fit(self, X, y=None, sample_weight=None):
+        """ Computes clustering.
+
+        Args:
+            X (FDataGrid object): Object whose samples are clusered,
+                classified into different groups.
+             y (Ignored): present here for API consistency by convention.
+            sample_weight (Ignored): present here for API consistency by
+                convention.
+        """
         pass
 
-
     def _check_is_fitted(self):
+        """Perform is_fitted validation for estimator.
+
+        Checks if the estimator is fitted by verifying the presence of
+        of the calculated attributes "labels_" and "cluster_centers_", and
+        raises a NotFittedError if that is not the case.
+        """
         msg = ("This %(name)s instance is not fitted yet. Call 'fit' with "
                "appropriate arguments before using this method.")
 
@@ -142,35 +154,101 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                 not hasattr(self, "cluster_centers_"):
             raise NotFittedError(msg % {'name': type(self).__name__})
 
-
     def _check_test_data(self, fdatagrid):
+        """Checks that the FDataGrid object and the calculated centroids have
+        compatible shapes.
+        """
         if fdatagrid.shape[1:3] != self.cluster_centers_.shape[1:3]:
             raise ValueError("The fdatagrid shape is not the one expected for "
                              "the calculated cluster_centers_.")
 
-
     def predict(self, X, sample_weight=None):
+        """Predict the closest cluster each sample in X belongs to.
+
+        Args:
+            X (FDataGrid object): Object whose samples are classified into
+                different groups.
+            y (Ignored): present here for API consistency by convention.
+            sample_weight (Ignored): present here for API consistency by
+                convention.
+
+        Returns:
+            labels_
+        """
         self._check_is_fitted()
         self._check_test_data(X)
         return self.labels_
 
 
-    def fit_predict(self, X, y=None, sample_weight=None, init=None):
-        self.fit(X, init)
+    def fit_predict(self, X, y=None, sample_weight=None):
+        """Compute cluster centers and predict cluster index for each sample.
+
+        Args:
+            X (FDataGrid object): Object whose samples are classified into
+                different groups.
+            y (Ignored): present here for API consistency by convention.
+            sample_weight (Ignored): present here for API consistency by
+                convention.
+
+        Returns:
+            labels_
+        """
+        self.fit(X)
         return self.labels_
 
 
     def transform(self, X):
+        """Transform X to a cluster-distance space.
+
+        Args:
+            X (FDataGrid object): Object whose samples are classified into
+                different groups.
+            y (Ignored): present here for API consistency by convention.
+            sample_weight (Ignored): present here for API consistency by
+                convention.
+
+        Returns:
+            distances_to_centers (numpy.ndarray: (nsamples, n_clusters)):
+                distances of each sample to each cluster.
+        """
         self._check_is_fitted()
         self._check_test_data(X)
         return self._distances_to_centers
 
 
-    def fit_transform(self, X, y=None, sample_weight=None, init=None):
-        self.fit(X, init)
+    def fit_transform(self, X, y=None, sample_weight=None):
+        """Compute clustering and transform X to cluster-distance space.
+
+        Args:
+            X (FDataGrid object): Object whose samples are classified into
+                different groups.
+            y (Ignored): present here for API consistency by convention.
+            sample_weight (Ignored): present here for API consistency by
+                convention.
+
+        Returns:
+            distances_to_centers (numpy.ndarray: (nsamples, n_clusters)):
+                distances of each sample to each cluster.
+        """
+        self.fit(X)
         return self._distances_to_centers
 
+
     def score(self, X, y=None, sample_weight=None):
+        """Opposite of the value of X on the K-means objective.
+
+        Args:
+            X (FDataGrid object): Object whose samples are classified into
+                different groups.
+            y (Ignored): present here for API consistency by convention.
+            sample_weight (Ignored): present here for API consistency by
+                convention.
+
+        Returns:
+            score (numpy.array: (fdatagrid.ndim_image)): negative *inertia_*
+                attribute.
+
+        """
         self._check_is_fitted()
         self._check_test_data(X)
         return -self.inertia_
@@ -220,21 +298,39 @@ class KMeans(BaseKMeans):
     This algorithm is applied for each dimension on the image of the FDataGrid object.
 
     Args:
-        fdatagrid (FDataGrid object): Object whose samples are clusered, classified into different groups.
-        n_clusters (int, optional): Number of groups into which the samples are classified. Defaults to 2.
+        n_clusters (int, optional): Number of groups into which the samples are 
+            classified. Defaults to 2.
         init (FDataGrid, optional): Contains the initial centers of the different
             clusters the algorithm starts with. Its data_marix must be of
             the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
             Defaults to None, and the centers are initialized randomly.
-        max_iter (int, optional): Maximum number of iterations of the clustering algorithm. Defaults to 100.
-        random_state (int, optional): Seed to initialize the random state to choose the initial centroids.
-            Defaults to None.
-        p (int, optional): Identifies the p-norm used to calculate the distance between functions. Defaults to 2.
-        n_iter (numpy.array, (fdatagrid.ndim_image)): number of iterations the
+        metric (optional): metric that acceps two FDataGrid objects and returns 
+            a matrix with shape (fdatagrid1.nsamples, fdatagrid2.nsamples). 
+            Defaults to *pairwise_distance(lp_distance)*.
+        n_init (int, optional): Number of time the k-means algorithm will be 
+            run with different centroid seeds. The final results will be the 
+            best output of n_init consecutive runs in terms of inertia.
+        max_iter (int, optional): Maximum number of iterations of the 
+            clustering algorithm for a single run. Defaults to 100.
+        tol (float, optional): tolerance used to compare the centroids 
+            calculated with the previous ones in every single run of the 
+            algorithm.
+        random_state (int, RandomState instance or None, optional): 
+            Determines random number generation for centroid initialization. ç
+            Use an int to make the randomness deterministic. Defaults to 0.
+            See :term:`Glossary <random_state>`.
+            
+    Attributes:
+        labels_ (numpy.ndarray: (nsamples, ndim_image)): 2-dimensional matrix 
+            in which each row contains the cluster that observation belongs to.
+        cluster_centers_ (FDataGrid object): data_matrix of shape 
+            (n_clusters, ncol, ndim_image) and contains the centroids for 
+            each cluster.
+        inertia_ (numpy.ndarray, (fdatagrid.ndim_image)): Sum of squared 
+            distances of samples to their closest cluster center for each 
+            dimension.
+        n_iter_ (numpy.ndarray, (fdatagrid.ndim_image)): number of iterations the
             algorithm was run for each dimension.
-        clustering_values (numpy.ndarray: (nsamples, ndim_image)): 2-dimensional matrix where each row
-            contains the cluster that observation belongs to.
-        centers (numpy.ndarray: (ndim_image, n_clusters, ncol)): Contains the centroids for each cluster.
 
     Example:
 
@@ -258,13 +354,26 @@ class KMeans(BaseKMeans):
         """Initialization of the KMeans class.
 
         Args:
-            max_iter (int): Maximum number of iterations of the clustering
+            n_clusters (int, optional): Number of groups into which the samples are
+                classified. Defaults to 2.
+            init (FDataGrid, optional): Contains the initial centers of the different
+                clusters the algorithm starts with. Its data_marix must be of
+                the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
+                Defaults to None, and the centers are initialized randomly.
+            metric (optional): metric that acceps two FDataGrid objects and returns
+                a matrix with shape (fdatagrid1.nsamples, fdatagrid2.nsamples).
+                Defaults to *pairwise_distance(lp_distance)*.
+            n_init (int, optional): Number of time the k-means algorithm will be
+                run with different centroid seeds. The final results will be the
+                best output of n_init consecutive runs in terms of inertia.
+            max_iter (int, optional): Maximum number of iterations of the
+                clustering algorithm for a single run. Defaults to 100.
+            tol (float, optional): tolerance used to compare the centroids
+                calculated with the previous ones in every single run of the
                 algorithm.
-            random_state (int): Defaults to 0. Determines random number generation
-                for centroid initialization. Use an int to make the randomness
-                deterministic.
-            p (int): Identifies the p-norm used to calculate the distance
-                between functions.
+            random_state (int, RandomState instance or None, optional):
+                Determines random number generation for centroid initialization.
+                Use an int to make the randomness deterministic. Defaults to 0.
         """
         super().__init__(n_clusters=n_clusters, init=init, metric=metric,
                          n_init=n_init, max_iter=max_iter, tol=tol,
@@ -275,31 +384,30 @@ class KMeans(BaseKMeans):
             image of the FDataGrid object.
 
         Args:
-             num_dim (int): Scalar indicating the dimension on the image of the
-                FdataGrid object the algorithm is being applied.
+            num_dim (int): Scalar indicating the dimension on the image of
+                the FdataGrid object the algorithm is being applied.
             fdatagrid (FDataGrid object): Object whose samples are clusered,
                 classified into different groups.
-            n_clusters (int): Number of groups into which the samples are classified.
-            init (FDataGrid): Contains the initial centers of the different
-                clusters the algorithm starts with. Its data_marix must be of
-                the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
-                Defaults to None, and the centers are initialized randomly.
+            random_state (RandomState object): random number generation for
+                centroid initialization.
 
         Returns:
             (tuple): tuple containing:
 
                 clustering_values (numpy.ndarray: (nsamples,)): 1-dimensional
                 array where each row contains the cluster that observation
-                   belongs to.
+                belongs to.
 
                 centers (numpy.ndarray: (n_clusters, ncol)): Contains the
                 centroids for each cluster.
+
+                distances_to_centers (numpy.ndarray: (nsamples, n_clusters)):
+                distances of each sample to each cluster.
 
                 repetitions(int): number of iterations the algorithm was run
                 for this dimension og the image.
 
         """
-
         data_matrix = fdatagrid.data_matrix[..., num_dim]
         fdatagrid_1dim = fdatagrid.copy(data_matrix=data_matrix)
         repetitions = 0
@@ -327,17 +435,15 @@ class KMeans(BaseKMeans):
         return clustering_values, centers, distances_to_centers, repetitions
 
     def fit(self, X, y=None, sample_weight=None):
-        """ Computes K-Means clustering calculating the *clustering_values*
-        and *centers* arguments.
+        """ Computes K-Means clustering calculating the attributes
+        *labels_*, *cluster_centers_*, *inertia_* and *n_iter_*.
 
         Args:
-            fdatagrid (FDataGrid object): Object whose samples are clusered,
+            X (FDataGrid object): Object whose samples are clusered,
                 classified into different groups.
-            n_clusters (int): Number of groups into which the samples are classified.
-            init (FDataGrid): Contains the initial centers of the different
-                clusters the algorithm starts with. Its data_marix must be of
-                the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
-                Defaults to None, and the centers are initialized randomly.
+             y (Ignored): present here for API consistency by convention.
+            sample_weight (Ignored): present here for API consistency by
+                convention.
         """
         random_state = check_random_state(self.random_state)
         fdatagrid = super()._generic_clustering_checks(fdatagrid=X)
@@ -381,7 +487,6 @@ class KMeans(BaseKMeans):
                 index_best_iter]
             n_iter[i] = n_iter_1D[index_best_iter]
 
-        self.fdatagrid = fdatagrid  # TODO: quitar
         self.labels_ = clustering_values
         self.cluster_centers_ = FDataGrid(data_matrix=centers,
                                           sample_points=fdatagrid.sample_points)
@@ -440,32 +545,45 @@ class FuzzyKMeans(BaseKMeans):
 
     This algorithm is applied for each dimension on the image of the FDataGrid object.
 
-    Args:
-        fdatagrid (FDataGrid object): Object whose samples are clusered,
-            classified into different groups.
-        n_clusters (int, optional): Number of groups into which the samples are
+    Args:          
+        n_clusters (int, optional): Number of groups into which the samples are 
             classified. Defaults to 2.
         init (FDataGrid, optional): Contains the initial centers of the different
             clusters the algorithm starts with. Its data_marix must be of
             the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
-            Defaults to None, ans the centers are initialized randomly.
-        max_iter (int, optional): Maximum number of iterations of the clustering
-            algorithm. Defaults to 100.
-        random_state (int, optional): Seed to initialize the random state to choose
-            the initial centroids. Defaults to 0.
-        p (int, optional): Identifies the p-norm used to calculate the distance
-            between functions. Defaults to 2.
-        n_iter (numpy.array, (fdatagrid.ndim_image)): number of iterations the
-            algorithm was run for each dimension.
-        membership_values (numpy.ndarray: ((nsamples, ndim_image, n_clusters)):
-            contains the degree of membership each observation has to each
-            cluster.
-        centers (numpy.ndarray: (ndim_image, n_clusters, ncol)): Contains the
-            centroids for each cluster.
+            Defaults to None, and the centers are initialized randomly.
+        metric (optional): metric that acceps two FDataGrid objects and returns 
+            a matrix with shape (fdatagrid1.nsamples, fdatagrid2.nsamples). 
+            Defaults to *pairwise_distance(lp_distance)*.
+        n_init (int, optional): Number of time the k-means algorithm will be 
+            run with different centroid seeds. The final results will be the 
+            best output of n_init consecutive runs in terms of inertia.
+        max_iter (int, optional): Maximum number of iterations of the 
+            clustering algorithm for a single run. Defaults to 100.
+        tol (float, optional): tolerance used to compare the centroids 
+            calculated with the previous ones in every single run of the 
+            algorithm.
+        random_state (int, RandomState instance or None, optional): 
+            Determines random number generation for centroid initialization. ç
+            Use an int to make the randomness deterministic. Defaults to 0.
+            See :term:`Glossary <random_state>`.
         fuzzifier (int, optional): Scalar parameter used to specify the
             degree of fuzziness in the fuzzy algorithm. Defaults to 2.
         n_dec (int, optional): designates the number of decimals of the labels
             returned in the fuzzy algorithm. Defaults to 3.
+            
+    Attributes:
+        labels_ (numpy.ndarray: (nsamples, ndim_image)): 2-dimensional matrix 
+            in which each row contains the cluster that observation belongs to.
+        cluster_centers_ (FDataGrid object): data_matrix of shape 
+            (n_clusters, ncol, ndim_image) and contains the centroids for 
+            each cluster.
+        inertia_ (numpy.ndarray, (fdatagrid.ndim_image)): Sum of squared 
+            distances of samples to their closest cluster center for each 
+            dimension.
+        n_iter_ (numpy.ndarray, (fdatagrid.ndim_image)): number of iterations the
+            algorithm was run for each dimension.
+
 
     Example:
 
@@ -491,12 +609,26 @@ class FuzzyKMeans(BaseKMeans):
         """Initialization of the FuzzyKMeans class.
 
         Args:
-            max_iter (int): Maximum number of iterations of the clustering
+            n_clusters (int, optional): Number of groups into which the samples are
+                classified. Defaults to 2.
+            init (FDataGrid, optional): Contains the initial centers of the different
+                clusters the algorithm starts with. Its data_marix must be of
+                the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
+                Defaults to None, and the centers are initialized randomly.
+            metric (optional): metric that acceps two FDataGrid objects and returns
+                a matrix with shape (fdatagrid1.nsamples, fdatagrid2.nsamples).
+                Defaults to *pairwise_distance(lp_distance)*.
+            n_init (int, optional): Number of time the k-means algorithm will be
+                run with different centroid seeds. The final results will be the
+                best output of n_init consecutive runs in terms of inertia.
+            max_iter (int, optional): Maximum number of iterations of the
+                clustering algorithm for a single run. Defaults to 100.
+            tol (float, optional): tolerance used to compare the centroids
+                calculated with the previous ones in every single run of the
                 algorithm.
-            random_state (int, optional): Seed to initialize the random state
-                to choose the initial centroids. Defaults to 0.
-            p (int): Identifies the p-norm used to calculate the distance
-                between functions.
+            random_state (int, RandomState instance or None, optional):
+                Determines random number generation for centroid initialization.
+                Use an int to make the randomness deterministic. Defaults to 0.
             fuzzifier (int, optional): Scalar parameter used to specify the
                 degree of fuzziness in the fuzzy algorithm. Defaults to 2.
             n_dec (int, optional): designates the number of decimals of the labels
@@ -510,35 +642,29 @@ class FuzzyKMeans(BaseKMeans):
         self.n_dec = n_dec
 
     def _fuzzy_kmeans_1Dimage(self, num_dim, fdatagrid, random_state):
-        """ Implementation of the Fuzzy C-Means algorithm for each dimension
+        """ Implementation of the Fuzzy K-Means algorithm for each dimension
         on the image of the FDataGrid object.
 
         Args:
-            fdatagrid (FDataGrid object): Object whose samples are clusered,
-                classified into different groups.
             num_dim (int): Scalar indicating the dimension on the image of
                 the FdataGrid object the algorithm is being applied.
-            n_clusters (int): Number of groups into which the samples are classified.
-            fuzzifier (int): Scalar parameter used to specify the degree of fuzziness.
-            init (FDataGrid): Contains the initial centers of the different
-                clusters the algorithm starts with. Its data_marix must be of
-                the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
-                Defaults to None, ans the centers are initialized randomly.
-            random_state (int): Seed to initialize the random state to choose
-                the initial centroids.
-            max_iter (int): Maximum number of iterations of the clustering algorithm.
-            p (int): Identifies the p-norm used to calculate the distance between functions.
-            n_dec (int): designates the number of decimals of the labels returned.
+            fdatagrid (FDataGrid object): Object whose samples are clusered,
+                classified into different groups.
+            random_state (RandomState object): random number generation for
+                centroid initialization.
 
         Returns:
             (tuple): tuple containing:
 
                 membership values (numpy.ndarray: (n_clusters, nsamples)):
-                2-dimensional matrix where each row contains the membership value
-                that observation has to each cluster.
+                2-dimensional matrix where each row contains the membership
+                value that observation has to each cluster.
 
-                centers (numpy.ndarray: (n_clusters, ncol)): Contains the centroids
-                for each cluster.
+                centers (numpy.ndarray: (n_clusters, ncol)): Contains the
+                centroids for each cluster.
+
+                distances_to_centers (numpy.ndarray: (nsamples, n_clusters)):
+                distances of each sample to each cluster.
 
                 repetitions(int): number of iterations the algorithm was run
                 for this dimension og the image.
@@ -589,17 +715,15 @@ class FuzzyKMeans(BaseKMeans):
                distances_to_centers, repetitions
 
     def fit(self, X, y=None, sample_weight=None):
-        """ Computes Fuzzy K-Means clustering calculating the *labels_*
-        and *centers* arguments.
+        """ Computes Fuzzy K-Means clustering calculating the attributes
+        *labels_*, *cluster_centers_*, *inertia_* and *n_iter_*.
 
         Args:
-            fdatagrid (FDataGrid object): Object whose samples are clusered,
+            X (FDataGrid object): Object whose samples are clusered,
                 classified into different groups.
-            n_clusters (int): Number of groups into which the samples are classified.
-            init (FDataGrid): Contains the initial centers of the different
-                clusters the algorithm starts with. Its data_marix must be of
-                the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
-                Defaults to None, and the centers are initialized randomly.
+             y (Ignored): present here for API consistency by convention.
+            sample_weight (Ignored): present here for API consistency by
+                convention.
         """
 
         fdatagrid = super()._generic_clustering_checks(fdatagrid=X)
@@ -652,7 +776,6 @@ class FuzzyKMeans(BaseKMeans):
                 index_best_iter]
             n_iter[i] = n_iter_1D[index_best_iter]
 
-        self.fdatagrid = fdatagrid  # TODO: quitar
         self.labels_ = membership_values
         self.cluster_centers_ = FDataGrid(data_matrix=centers,
                                           sample_points=fdatagrid.sample_points)

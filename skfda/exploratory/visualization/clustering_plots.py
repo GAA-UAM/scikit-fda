@@ -1,6 +1,6 @@
-"""Clustering Plot Module."""
+"""Clustering Plots Module."""
 
-from ...ml.clustering.base_kmeans import KMeans, FuzzyKMeans
+from ...ml.clustering.base_kmeans import FuzzyKMeans
 import numpy as np
 import matplotlib.pyplot as plt
 from mpldatacursor import datacursor
@@ -13,6 +13,13 @@ __email__ = "amanda.hernando@estudiante.uam.es"
 
 
 def _check_if_estimator(estimator):
+    """Checks the argument *estimator* is actually an estimator that
+    implements the *fit* method.
+
+    Args:
+        estimator (BaseEstimator object): estimator used to calculate the
+            clusters.
+    """
     msg = ("This %(name)s instance has no attribute \"fit\".")
     if not hasattr(estimator, "fit"):
         raise AttributeError(msg % {'name': type(estimator).__name__})
@@ -22,11 +29,14 @@ def _plot_clustering_checks(estimator, fdatagrid, sample_colors, sample_labels,
                             cluster_colors, cluster_labels,
                             center_colors, center_labels):
     """Checks the arguments *sample_colors*, *sample_labels*, *cluster_colors*,
-    *cluster_labels*, *center_colors*, *center_labels* passed to the plot
-    functions, such as :func:`plot_clustering <fda.clustering.BaseKMeans.plot>`,
-    have the correct dimensions.
+    *cluster_labels*, *center_colors*, *center_labels*, passed to the plot
+    functions, have the correct dimensions.
 
     Args:
+        estimator (BaseEstimator object): estimator used to calculate the
+            clusters.
+        fdatagrid (FDataGrd object): contains the samples which are grouped
+            into different clusters.
         sample_colors (list of colors): contains in order the colors of each
             sample of the fdatagrid.
         sample_labels (list of str): contains in order the labels of each sample
@@ -62,27 +72,27 @@ def _plot_clustering_checks(estimator, fdatagrid, sample_colors, sample_labels,
         raise ValueError(
             "cluster_labels must contain a label for each cluster.")
 
-    if center_colors is not None and len(center_colors) != estimator.n_clusters:
+    if center_colors is not None and len(
+            center_colors) != estimator.n_clusters:
         raise ValueError(
             "center_colors must contain a color for each center.")
 
-    if center_labels is not None and len(center_labels) != estimator.n_clusters:
+    if center_labels is not None and len(
+            center_labels) != estimator.n_clusters:
         raise ValueError(
             "centers_labels must contain a label for each center.")
 
 
 def _plot_clusters(estimator, fdatagrid, fig, ax, nrows, ncols, labels,
-                   sample_labels,
-                   cluster_colors, cluster_labels, center_colors,
-                   center_labels,
-                   colormap):
-    """Plot of the FDataGrid samples by clusters.
-
-    Once each sample is assigned a label, which are passed as argument to this
-    function, the plotting is implemented here. Each group is assigned a color
-    described in a leglend.
+                   sample_labels, cluster_colors, cluster_labels,
+                   center_colors, center_labels, colormap):
+    """Implementation of the plot of the FDataGrid samples by clusters.
 
     Args:
+        estimator (BaseEstimator object): estimator used to calculate the
+            clusters.
+        fdatagrid (FDataGrd object): contains the samples which are grouped
+            into different clusters.
         fig (figure object): figure over which the graphs are plotted in
             case ax is not specified. If None and ax is also None, the figure
             is initialized.
@@ -118,8 +128,8 @@ def _plot_clusters(estimator, fdatagrid, fig, ax, nrows, ncols, labels,
     """
     fig, ax = fdatagrid.generic_plotting_checks(fig, ax, nrows, ncols)
 
-    _plot_clustering_checks(estimator, fdatagrid, None, sample_labels, cluster_colors,
-                            cluster_labels, center_colors,
+    _plot_clustering_checks(estimator, fdatagrid, None, sample_labels,
+                            cluster_colors, cluster_labels, center_colors,
                             center_labels)
 
     if sample_labels is None:
@@ -171,11 +181,18 @@ def plot_clusters(estimator, X, fig=None, ax=None, nrows=None, ncols=None,
                   sample_labels=None, cluster_colors=None,
                   cluster_labels=None, center_colors=None, center_labels=None,
                   colormap=plt.cm.get_cmap('rainbow')):
-    """Plot of the FDataGrid samples by the clusters calculated with the
-    K-Means algorithm.
+    """Plot of the FDataGrid samples by clusters.
 
+    The clusters are calculated with the estimator passed as a parameter. If
+    the estimator is not fitted, the fit method is called.
+    Once each sample is assigned a label the plotting can be done.
+    Each group is assigned a color described in a leglend.
 
     Args:
+        estimator (BaseEstimator object): estimator used to calculate the
+            clusters.
+        X (FDataGrd object): contains the samples which are grouped
+            into different clusters.
         fig (figure object): figure over which the graphs are plotted in
             case ax is not specified. If None and ax is also None, the figure
             is initialized.
@@ -195,7 +212,7 @@ def plot_clusters(estimator, X, fig=None, ax=None, nrows=None, ncols=None,
             cluster the samples of the fdatagrid are classified into.
         center_colors (list of colors): contains in order the colors of each
             centroid of the clusters the samples of the fdatagrid are classified into.
-        center_labels list of colors): contains in order the labels of each
+        center_labels (list of colors): contains in order the labels of each
             centroid of the clusters the samples of the fdatagrid are classified into.
         colormap(colormap): colormap from which the colors of the plot are
             taken. Defaults to `rainbow`.
@@ -219,11 +236,9 @@ def plot_clusters(estimator, X, fig=None, ax=None, nrows=None, ncols=None,
     else:
         labels = estimator.labels_
 
-
     return _plot_clusters(estimator=estimator, fdatagrid=X,
                           fig=fig, ax=ax, nrows=nrows, ncols=ncols,
-                          labels=labels,
-                          sample_labels=sample_labels,
+                          labels=labels, sample_labels=sample_labels,
                           cluster_colors=cluster_colors,
                           cluster_labels=cluster_labels,
                           center_colors=center_colors,
@@ -231,10 +246,11 @@ def plot_clusters(estimator, X, fig=None, ax=None, nrows=None, ncols=None,
 
 
 def _labels_checks(fdatagrid, xlabels, ylabels, title, xlabel_str):
-    """Checks the arguments *xlabels*, *ylabels*, *title* passed to both
-    :func:`plot_fuzzy_kmeans_lines <fda.clustering.plot_fuzzy_kmeans_lines>` and
-    :func:`plot_fuzzy_kmeans_bars <fda.clustering.plot_fuzzy_kmeans_bars>`
-    functions. In case they are not set yet, hey are given a value.
+    """Checks the arguments *xlabels*, *ylabels*, *title* passed to the plot
+    functions :func:`plot_cluster_lines
+    <skfda.exploratory.visualization.clustering_plots.plot_cluster_lines>` and
+    :func:`plot_cluster_bars <skfda.exploratory.visualization.clustering_plots.plot_cluster_bars>`.
+    In case they are not set yet, they are given a value.
 
     Args:
         xlabels (list of str): Labels for the x-axes.
@@ -270,9 +286,10 @@ def _labels_checks(fdatagrid, xlabels, ylabels, title, xlabel_str):
 
 
 def plot_cluster_lines(estimator, X, fig=None, ax=None, nrows=None, ncols=None,
-               sample_colors=None, sample_labels=None, cluster_labels=None,
-               colormap=plt.cm.get_cmap('rainbow'), xlabels=None,
-               ylabels=None, title=None):
+                       sample_colors=None, sample_labels=None,
+                       cluster_labels=None,
+                       colormap=plt.cm.get_cmap('rainbow'), xlabels=None,
+                       ylabels=None, title=None):
     """Implementation of the plotting of the results of the
     :func:`Fuzzy K-Means <fda.clustering.fuzzy_kmeans>` method.
 
@@ -283,6 +300,10 @@ def plot_cluster_lines(estimator, X, fig=None, ax=None, nrows=None, ncols=None,
     <../auto_examples/plot_clustering.html>`_.
 
     Args:
+        estimator (BaseEstimator object): estimator used to calculate the
+            clusters.
+        X (FDataGrd object): contains the samples which are grouped
+            into different clusters.
         fig (figure object, optional): figure over which the graphs are
             plotted in case ax is not specified. If None and ax is also None,
             the figure is initialized.
@@ -331,13 +352,11 @@ def plot_cluster_lines(estimator, X, fig=None, ax=None, nrows=None, ncols=None,
 
     fig, ax = fdatagrid.generic_plotting_checks(fig, ax, nrows, ncols)
 
-    _plot_clustering_checks(estimator, fdatagrid,
-                                    sample_colors, sample_labels, None,
-                                    cluster_labels, None, None)
+    _plot_clustering_checks(estimator, fdatagrid, sample_colors, sample_labels,
+                            None, cluster_labels, None, None)
 
-    xlabels, ylabels, title = _labels_checks(fdatagrid,
-                                                       xlabels, ylabels,
-                                                  title, "Cluster")
+    xlabels, ylabels, title = _labels_checks(fdatagrid, xlabels, ylabels,
+                                             title, "Cluster")
 
     if sample_colors is None:
         cluster_colors = colormap(np.arange(estimator.n_clusters) /
@@ -350,7 +369,8 @@ def plot_cluster_lines(estimator, X, fig=None, ax=None, nrows=None, ncols=None,
                          range(fdatagrid.nsamples)]
 
     if cluster_labels is None:
-        cluster_labels = ['${}$'.format(i) for i in range(estimator.n_clusters)]
+        cluster_labels = ['${}$'.format(i) for i in
+                          range(estimator.n_clusters)]
 
     for j in range(fdatagrid.ndim_image):
         ax[j].get_xaxis().set_major_locator(MaxNLocator(integer=True))
@@ -368,10 +388,10 @@ def plot_cluster_lines(estimator, X, fig=None, ax=None, nrows=None, ncols=None,
     return fig, ax
 
 
-def plot_cluster_bars(estimator, X, fig=None, ax=None, nrows=None, ncols=None, sort=-1,
-              sample_labels=None, cluster_colors=None, cluster_labels=None,
-              colormap=plt.cm.get_cmap('rainbow'), xlabels=None,
-              ylabels=None, title=None):
+def plot_cluster_bars(estimator, X, fig=None, ax=None, nrows=None, ncols=None,
+                      sort=-1, sample_labels=None, cluster_colors=None,
+                      cluster_labels=None, colormap=plt.cm.get_cmap('rainbow'),
+                      xlabels=None, ylabels=None, title=None):
     """Implementation of the plotting of the results of the
     :func:`Fuzzy K-Means <fda.clustering.fuzzy_kmeans>` method.
 
@@ -383,6 +403,10 @@ def plot_cluster_bars(estimator, X, fig=None, ax=None, nrows=None, ncols=None, s
     See `Clustering Example <../auto_examples/plot_clustering.html>`_.
 
     Args:
+        estimator (BaseEstimator object): estimator used to calculate the
+            clusters.
+        X (FDataGrd object): contains the samples which are grouped
+            into different clusters.
         fig (figure object, optional): figure over which the graphs are
             plotted in case ax is not specified. If None and ax is also None,
             the figure is initialized.
@@ -397,11 +421,11 @@ def plot_cluster_bars(estimator, X, fig=None, ax=None, nrows=None, ncols=None, s
         sort(int, optional): Number in the range [-1, n_clusters) designating
             the cluster whose labels are sorted in a decrementing order.
             Defaults to -1, in this case, no sorting is done.
-        sample_colors (list of colors, optional): contains in order the colors of each
-            sample of the fdatagrid.
         sample_labels (list of str, optional): contains in order the labels
             of each sample  of the fdatagrid.
         cluster_labels (list of str, optional): contains in order the names of each
+            cluster the samples of the fdatagrid are classified into.
+        cluster_colors (list of colors): contains in order the colors of each
             cluster the samples of the fdatagrid are classified into.
         colormap(colormap, optional): colormap from which the colors of the plot are taken.
         xlabels (list of str): Labels for the x-axes. Defaults to
@@ -438,13 +462,11 @@ def plot_cluster_bars(estimator, X, fig=None, ax=None, nrows=None, ncols=None, s
         raise ValueError(
             "The sorting number must belong to the interval [-1, n_clusters)")
 
-    _plot_clustering_checks(estimator, fdatagrid,
-                                    None, sample_labels, cluster_colors,
-                                    cluster_labels, None, None)
+    _plot_clustering_checks(estimator, fdatagrid, None, sample_labels,
+                            cluster_colors, cluster_labels, None, None)
 
-    xlabels, ylabels, title = _labels_checks(fdatagrid,
-                                                       xlabels, ylabels,
-                                                  title, "Sample")
+    xlabels, ylabels, title = _labels_checks(fdatagrid, xlabels, ylabels,
+                                             title, "Sample")
 
     if sample_labels is None:
         sample_labels = np.arange(fdatagrid.nsamples)
@@ -460,15 +482,13 @@ def plot_cluster_bars(estimator, X, fig=None, ax=None, nrows=None, ncols=None, s
     patches = []
     for i in range(estimator.n_clusters):
         patches.append(
-            mpatches.Patch(color=cluster_colors[i],
-                           label=cluster_labels[i]))
+            mpatches.Patch(color=cluster_colors[i], label=cluster_labels[i]))
 
-    for j in range(estimator.fdatagrid.ndim_image):
+    for j in range(fdatagrid.ndim_image):
         sample_labels_dim = np.copy(sample_labels)
         cluster_colors_dim = np.copy(cluster_colors)
         if sort != -1:
-            sample_indices = np.argsort(
-                -estimator.labels_[:, j, sort])
+            sample_indices = np.argsort(-estimator.labels_[:, j, sort])
             sample_labels_dim = np.copy(sample_labels[sample_indices])
             labels_dim = np.copy(estimator.labels_[sample_indices, j])
 

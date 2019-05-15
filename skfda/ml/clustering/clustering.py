@@ -1,8 +1,8 @@
 """Clustering Module."""
 
 import numpy as np
-from .grid import FDataGrid
-from .metrics import pairwise_distance, lp_distance
+from ...representation.grid import FDataGrid
+from ...misc.metrics import pairwise_distance, lp_distance
 import matplotlib.pyplot as plt
 from mpldatacursor import datacursor
 import matplotlib.patches as mpatches

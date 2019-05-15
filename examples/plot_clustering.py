@@ -12,7 +12,7 @@ Canadian Weather dataset.
 # sphinx_gallery_thumbnail_number = 6
 
 from skfda import datasets
-from skfda.clustering import *
+from skfda.ml.clustering.clustering import *
 import matplotlib.pyplot as plt
 import numpy as np
 

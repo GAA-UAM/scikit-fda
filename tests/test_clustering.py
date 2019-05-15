@@ -37,6 +37,7 @@ class TestClustering(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             kmeans.cluster_centers_.data_matrix,
             centers.data_matrix)
+        np.testing.assert_allclose(kmeans.score(fd), np.array([-20.33333333]))
         np.testing.assert_array_equal(kmeans.n_iter_, np.array([3.]))
 
     def test_kmeans_multivariate(self):
@@ -48,22 +49,23 @@ class TestClustering(unittest.TestCase):
         kmeans = KMeans()
         kmeans.fit(fd)
         np.testing.assert_array_equal(kmeans.predict(fd),
-                                      np.array([[1, 0],
+                                      np.array([[1, 1],
                                                 [1, 1],
                                                 [0, 0]]))
         np.testing.assert_allclose(kmeans.transform(fd),
-                                   np.array([[[4.89897949, 0.12247449],
-                                              [1.22474487, 0.46368092]],
-                                             [[2.44948974, 0.5845226],
-                                              [1.22474487, 0.]],
-                                             [[0., 0.12247449],
-                                              [3.67423461, 0.70592729]]]))
+                                   np.array([[[4.89897949, 0.24494897],
+                                              [1.22474487, 0.23184046]],
+                                             [[2.44948974, 0.70592729],
+                                              [1.22474487, 0.23184046]],
+                                             [[0., 0.],
+                                              [3.67423461, 0.47478065]]]))
         centers = FDataGrid(data_matrix=np.array(
-            [[[3, 0.25], [4, 0.35], [5, 0.45], [6, 0.55]],
-             [[1.5, 0.5], [2.5, 0.6], [3.5, 0.7], [4.5, 0.7]]]),
+            [[[3, 0.2], [4, 0.3], [5, 0.4], [6, 0.5]],
+             [[1.5, 0.4], [2.5, 0.5], [3.5, 0.6], [4.5, 0.65]]]),
             sample_points=sample_points)
         np.testing.assert_allclose(kmeans.cluster_centers_.data_matrix,
                                    centers.data_matrix)
+        np.testing.assert_allclose(kmeans.score(fd), np.array([-3., -0.1075]))
         np.testing.assert_array_equal(kmeans.n_iter_, np.array([2., 2.]))
 
     def test_fuzzy_kmeans_univariate(self):
@@ -95,6 +97,8 @@ class TestClustering(unittest.TestCase):
               -0.19861085, -0.39836226]]), sample_points=sample_points)
         np.testing.assert_allclose(fuzzy_kmeans.cluster_centers_.data_matrix,
                                    centers.data_matrix)
+        np.testing.assert_allclose(fuzzy_kmeans.score(fd),
+                                   np.array([-65.38548165]))
         np.testing.assert_array_equal(fuzzy_kmeans.n_iter_, np.array([67.]))
 
     def test_fuzzy_kmeans_multivariate(self):
@@ -127,6 +131,8 @@ class TestClustering(unittest.TestCase):
              [[1, 0], [2, 0], [3, 0], [4, 0]]]), sample_points=sample_points)
         np.testing.assert_allclose(fuzzy_kmeans.cluster_centers_.data_matrix,
                                    centers.data_matrix)
+        np.testing.assert_allclose(fuzzy_kmeans.score(fd), np.array(
+            [-1.66211111e+04, -8.25302500e+00]))
         np.testing.assert_array_equal(fuzzy_kmeans.n_iter_,
                                       np.array([2., 2.]))
 

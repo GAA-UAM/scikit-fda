@@ -2,8 +2,9 @@
 Clustering
 ==========
 
-In this example, the use of the clustering methods is shown applied to the
-Canadian Weather dataset.
+In this example, the use of the clustering plot methods is shown applied to the
+Canadian Weather dataset. K-Means and Fuzzy K-Means algorithms are employed to
+calculate the results plotted.
 """
 
 # Author: Amanda Hernando Bernabé
@@ -13,6 +14,7 @@ Canadian Weather dataset.
 
 from skfda import datasets
 from skfda.representation.grid import FDataGrid
+from skfda.ml.clustering.base_kmeans import KMeans
 from skfda.exploratory.visualization.clustering_plots import *
 
 ##################################################################################
@@ -59,7 +61,7 @@ fd.plot(sample_labels=indexer, label_colors=climate_colors, label_names=climates
 
 ############################################################################################
 # The number of clusters is set with the number of climates, in order to see the performance
-# of the clustering methods and the seed is set to one in order to obatain always the same
+# of the clustering methods, and the seed is set to one in order to obatain always the same
 # result for the example.
 
 n_clusters = n_climates
@@ -67,10 +69,12 @@ seed = 2
 
 ############################################################################################
 # First, the class :class:`K-Means <fskfda.ml.clustering.base_kmeans.KMeans>`
-# is instantiated. Its :func:`fit method <skfda.ml.clustering.base_kmeans.KMeans.fit>`
-# is called with the desired. data,
-# resulting in the calculation of the clustering values, the number of cluster
-# each sample belongs to, and the centroids of each cluster.
+# is instantiated with the desired. parameters. Its :func:`fit method
+# <skfda.ml.clustering.base_kmeans.KMeans.fit>` is called ,
+# resulting in the calculation of several attributes which include among others,
+# the the number of cluster each sample belongs to (labels), and the centroids
+# of each cluster. The labels are obtaiined calling the method :func:`predict
+# <skfda.ml.clustering.base_kmeans.KMeans.predict>`
 
 kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
 kmeans.fit(fd)
@@ -78,8 +82,9 @@ print(kmeans.predict(fd))
 print(kmeans.cluster_centers_)
 
 ############################################################################################
-# To see the information in a graphic way, the :func:`plot method
-# <fda.clustering.KMeans.plot>` can be used.
+# To see the information in a graphic way, the method :func:`plot_clusters
+# <skfda.exploratory.visualization.clustering_plots.plot_clusters>` can be used
+# found in the visualization directory.
 
 # Customization of cluster colors and labels in order to match the first image
 # of raw data.
@@ -92,11 +97,13 @@ plot_clusters(kmeans, fd, cluster_colors=cluster_colors,
 ############################################################################################
 # Other clustering algorithm implemented is the Fuzzy K-Means found in the
 # class :class:`FuzzyKMeans <skfda.ml.clustering.base_kmeans.FuzzyKMeans>`. Following the above
-# procedure, an object of this type is instantiated and then, the
-# :func:`fit method <skfda.ml.clustering.base_kmeans.KMeans.fit>` is called with the desired. data.
-# Internally, the membership_values are calculated, which contains ´n_clusters´
+# procedure, an object of this type is instantiated  with the desired. data and then, the
+# :func:`fit method <skfda.ml.clustering.base_kmeans.KMeans.fit>` is called.
+# Internally, the attribute *labels_* is calculated, which contains ´n_clusters´
 # elements for each sample and dimension, denoting the degree of membership of
-# each sample to each cluster. Also, the centroids of each cluster are obtained.
+# each sample to each cluster. They are obtained calling the method :func:`predict
+# <skfda.ml.clustering.base_kmeans.KMeans.predict>`. Also, the centroids of
+# each cluster are obtained.
 
 fuzzy_kmeans = FuzzyKMeans(n_clusters=n_clusters, random_state=seed)
 fuzzy_kmeans.fit(fd)
@@ -104,9 +111,9 @@ print(fuzzy_kmeans.predict(fd))
 print(fuzzy_kmeans.cluster_centers_)
 
 ############################################################################################
-# To see the information in a graphic way, the :func:`plot method
-# <fda.clustering.FuzzyKMeans.plot>` can be used. It assigns each sample to the
-# cluster whose membership value is the greatest.
+# To see the information in a graphic way, the method :func:`plot_clusters
+# <skfda.exploratory.visualization.clustering_plots.plot_clusters>` can be used.
+# It assigns each sample to the cluster whose membership value is the greatest.
 
 plot_clusters(fuzzy_kmeans, fd, cluster_colors=cluster_colors,
               cluster_labels=cluster_labels)
@@ -125,8 +132,10 @@ plot_cluster_lines(fuzzy_kmeans, fd, cluster_labels=cluster_labels,
                                                           fd.ndim_image, 4))
 
 ############################################################################################
-# Lastly, the function :func:`plot_bars <fda.clustering.FuzzyKMeans.plot_bars>`
-# found in the :class:`Fuzzy K-Means <skfda.ml.clustering.base_kmeans.FuzzyKMeans>` class,
+# Lastly, the function :func:`plot_cluster_bars
+# <skfda.exploratory.visualization.clustering_plots.plot_cluster_bars>`
+# found in the module :mod:`clustering_plots
+# <skfda.exploratory.visualization.clustering_plots>`,
 # returns a barplot. Each sample is designated with a bar which is filled proportionally
 # to the membership values with the color of each cluster.
 

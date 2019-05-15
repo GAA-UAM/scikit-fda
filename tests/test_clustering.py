@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from skfda.representation.grid import FDataGrid
-from skfda.ml.clustering.clustering import KMeans, FuzzyKMeans
+from skfda.ml.clustering.base_kmeans import KMeans, FuzzyKMeans
 
 
 class TestClustering(unittest.TestCase):

@@ -8,4 +8,4 @@ of the functional data in clusters.
    :maxdepth: 4
    :caption: Modules:
 
-   clustering/clustering
+   clustering/base_kmeans

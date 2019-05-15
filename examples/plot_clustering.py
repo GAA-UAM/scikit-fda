@@ -12,9 +12,8 @@ Canadian Weather dataset.
 # sphinx_gallery_thumbnail_number = 6
 
 from skfda import datasets
-from skfda.ml.clustering.clustering import *
-import matplotlib.pyplot as plt
-import numpy as np
+from skfda.representation.grid import FDataGrid
+from skfda.exploratory.visualization.clustering_plots import *
 
 ##################################################################################
 # First, the Canadian Weather dataset is downloaded from the package 'fda' in CRAN.
@@ -67,14 +66,15 @@ n_clusters = n_climates
 seed = 2
 
 ############################################################################################
-# First, the class :class:`K-Means <fda.clustering.KMeans>` is instantiated. Its
-# :func:`fit method <fda.clustering.KMeans.fit>` is called with the desired. data,
+# First, the class :class:`K-Means <fskfda.ml.clustering.base_kmeans.KMeans>`
+# is instantiated. Its :func:`fit method <skfda.ml.clustering.base_kmeans.KMeans.fit>`
+# is called with the desired. data,
 # resulting in the calculation of the clustering values, the number of cluster
 # each sample belongs to, and the centroids of each cluster.
 
 kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
 kmeans.fit(fd)
-print(kmeans.labels_)
+print(kmeans.predict(fd))
 print(kmeans.cluster_centers_)
 
 ############################################################################################
@@ -86,20 +86,21 @@ print(kmeans.cluster_centers_)
 cluster_colors = climate_colors[np.array([1, 2, 0])]
 cluster_labels = climates[np.array([1, 2, 0])]
 
-kmeans.plot(cluster_colors=cluster_colors, cluster_labels=cluster_labels)
+plot_clusters(kmeans, fd, cluster_colors=cluster_colors,
+              cluster_labels=cluster_labels)
 
 ############################################################################################
 # Other clustering algorithm implemented is the Fuzzy K-Means found in the
-# class :class:`FuzzyKMeans <fda.clustering.FuzzyKMeans>`. Following the above
+# class :class:`FuzzyKMeans <skfda.ml.clustering.base_kmeans.FuzzyKMeans>`. Following the above
 # procedure, an object of this type is instantiated and then, the
-# :func:`fit method <fda.clustering.KMeans.fit>` is called with the desired. data.
+# :func:`fit method <skfda.ml.clustering.base_kmeans.KMeans.fit>` is called with the desired. data.
 # Internally, the membership_values are calculated, which contains ´n_clusters´
 # elements for each sample and dimension, denoting the degree of membership of
 # each sample to each cluster. Also, the centroids of each cluster are obtained.
 
 fuzzy_kmeans = FuzzyKMeans(n_clusters=n_clusters, random_state=seed)
 fuzzy_kmeans.fit(fd)
-print(fuzzy_kmeans.labels_)
+print(fuzzy_kmeans.predict(fd))
 print(fuzzy_kmeans.cluster_centers_)
 
 ############################################################################################
@@ -107,29 +108,30 @@ print(fuzzy_kmeans.cluster_centers_)
 # <fda.clustering.FuzzyKMeans.plot>` can be used. It assigns each sample to the
 # cluster whose membership value is the greatest.
 
-fuzzy_kmeans.plot(cluster_colors=cluster_colors, cluster_labels=cluster_labels)
+plot_clusters(fuzzy_kmeans, fd, cluster_colors=cluster_colors,
+              cluster_labels=cluster_labels)
 
 ############################################################################################
 # Another plot implemented to show the results in the class :class:`Fuzzy K-Means
-# <fda.clustering.FuzzyKMeans>` is the below one, which is similar to parallel coordinates.
+# <skfda.ml.clustering.base_kmeans.FuzzyKMeans>` is the below one, which is similar to parallel coordinates.
 # It is recommended to assign colors to each of the samples in order to identify them. In this
 # example, the colors are the ones of the first plot, dividing the samples by climate.
 
 colors_by_climate = colormap(indexer / (n_climates - 1))
 
 plt.figure()
-fuzzy_kmeans.plot_lines(cluster_labels=cluster_labels,
-                        sample_colors=colors_by_climate.reshape(fd.nsamples,
-                                                                fd.ndim_image, 4))
+plot_cluster_lines(fuzzy_kmeans, fd, cluster_labels=cluster_labels,
+                   sample_colors=colors_by_climate.reshape(fd.nsamples,
+                                                          fd.ndim_image, 4))
 
 ############################################################################################
 # Lastly, the function :func:`plot_bars <fda.clustering.FuzzyKMeans.plot_bars>`
-# found in the :class:`Fuzzy K-Means <fda.clustering.FuzzyKMeans>` class,
+# found in the :class:`Fuzzy K-Means <skfda.ml.clustering.base_kmeans.FuzzyKMeans>` class,
 # returns a barplot. Each sample is designated with a bar which is filled proportionally
 # to the membership values with the color of each cluster.
 
 plt.figure()
-fuzzy_kmeans.plot_bars(cluster_colors=cluster_colors,
+plot_cluster_bars(fuzzy_kmeans, fd, cluster_colors=cluster_colors,
                        cluster_labels=cluster_labels)
 
 ############################################################################################
@@ -137,13 +139,13 @@ fuzzy_kmeans.plot_bars(cluster_colors=cluster_colors,
 # cluster, which belongs to the interval [0, n_clusters).
 
 plt.figure()
-fuzzy_kmeans.plot_bars(sort=0, cluster_colors=cluster_colors,
+plot_cluster_bars(fuzzy_kmeans, fd, sort=0, cluster_colors=cluster_colors,
                        cluster_labels=cluster_labels)
 
 plt.figure()
-fuzzy_kmeans.plot_bars(sort=1, cluster_colors=cluster_colors,
+plot_cluster_bars(fuzzy_kmeans, fd, sort=1, cluster_colors=cluster_colors,
                        cluster_labels=cluster_labels)
 
 plt.figure()
-fuzzy_kmeans.plot_bars(sort=2, cluster_colors=cluster_colors,
+plot_cluster_bars(fuzzy_kmeans, fd, sort=2, cluster_colors=cluster_colors,
                        cluster_labels=cluster_labels)

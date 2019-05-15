@@ -1,5 +1,5 @@
-ML
-==
+Machine Learning
+================
 
 .. toctree::
    :maxdepth: 4

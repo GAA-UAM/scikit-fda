@@ -19,8 +19,7 @@ from scipy.special import binom
 
 from . import grid
 from . import FData
-from ..utils import _list_of_arrays
-from ..utils import constants
+from .._utils import _list_of_arrays, constants
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"

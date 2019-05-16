@@ -28,7 +28,7 @@ from .representation import FDataBasis
 from .representation import FDataGrid
 
 
-from . import representation, datasets, preprocessing, exploratory, misc, utils
+from . import representation, datasets, preprocessing, exploratory, misc, _utils
 
 
 import os as _os

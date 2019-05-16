@@ -15,7 +15,7 @@ from matplotlib.axes import Axes
 import mpl_toolkits.mplot3d
 
 from skfda.representation.extrapolation import _parse_extrapolation
-from ..utils import _coordinate_list, _list_of_arrays, constants
+from .._utils import _coordinate_list, _list_of_arrays, constants
 
 
 class FData(ABC):
@@ -887,7 +887,7 @@ class FData(ABC):
         if self.ndim_domain == 1:
 
             if npoints is None:
-                npoints = constants.N_POINS_UNIDIMENSIONAL_PLOT_MESH
+                npoints = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
 
             # Evaluates the object in a linspace
             eval_points = np.linspace(*domain_range[0], npoints)
@@ -904,7 +904,7 @@ class FData(ABC):
 
             # Selects the number of points
             if npoints is None:
-                npoints = 2 * (constants.N_POINS_SURFACE_PLOT_AX, )
+                npoints = 2 * (constants.N_POINTS_SURFACE_PLOT_AX, )
             elif np.isscalar(npoints):
                 npoints = (npoints, npoints)
             elif len(npoints) != 2:

@@ -227,6 +227,74 @@ class FDataGrid(FData):
         except IndexError:
             return 1
 
+    def _image_iterator(self):
+        """Returns an iterator throught the image dimensions"""
+        for k in range(self.ndim_image):
+            yield self.copy(data_matrix=self.data_matrix[..., k])
+
+    def image(self, dim=None):
+        r"""Return a component of the FDataGrid.
+
+        If the functional object contains samples
+        :math:`f: \mathbb{R}^n \rightarrow \mathbb{R}^d`, this method returns
+        a component of the vector :math:`f = (f_1, ..., f_d)`.
+
+        If dim is not specified an iterator over the image dimensions it is
+        returned.
+
+        Args:
+            dim (int, optional): Number of component of the image to be
+                returned, or None to iterate over all the components.
+
+        Examples:
+
+            We will construct a dataset of curves in :math:`\mathbb{R}^3`
+
+            >>> from skfda.datasets import make_multimodal_samples
+            >>> fd = make_multimodal_samples(ndim_image=3, random_state=0)
+            >>> fd.ndim_image
+            3
+
+            The functions of this dataset are vectorial functions
+            :math:`f(t) = (f_1(t), f_2(t), f_3(t))`. We can obtain a specific
+            component of the vector, for example, the first one.
+
+            >>> fd_1 = fd.image(1)
+            >>> fd_1
+            FDataGrid(...)
+
+            The function returned has image dimension equal to 1
+
+            >>> fd_1.ndim_image
+            1
+
+            We can use this method to iterate throught all the samples.
+
+            >>> for fd_i in fd.image():
+            ...     fd_1.ndim_image
+            1
+            1
+            1
+
+            This method can be used to split the FDataGrid in a list with
+            their compontes.
+
+            >>> fd_list = list(fd.image())
+            >>> len(fd_list)
+            3
+
+        """
+        # Returns an iterator over the dimensions
+        if dim is None:
+            return self._image_iterator()
+
+        else:
+            if dim < 1 or dim > self.ndim_image:
+                raise ValueError(f"Incorrect image dimension. Should be a "
+                                 f"number between 1 and {self.ndim_image}.")
+
+            return self.copy(data_matrix=self.data_matrix[..., dim-1])
+
     @property
     def ndim(self):
         """Return number of dimensions of the data matrix.
@@ -620,14 +688,17 @@ class FDataGrid(FData):
         return self.copy(data_matrix=data_matrix / self.data_matrix)
 
 
-    def concatenate(self, other):
+    def concatenate(self, *others, image=False):
         """Join samples from a similar FDataGrid object.
 
         Joins samples from another FDataGrid object if it has the same
         dimensions and sampling points.
 
         Args:
-            other (:obj:`FDataGrid`): another FDataGrid object.
+            others (:obj:`FDataGrid`): another FDataGrid object.
+            image (boolean, optional): If False concatenates as more samples,
+                else, concatenates the other functions as new componentes of the
+                image. Defaults to false.
 
         Returns:
             :obj:`FDataGrid`: FDataGrid object with the samples from the two
@@ -655,11 +726,13 @@ class FDataGrid(FData):
 
         """
         # Checks
-        self.__check_same_dimensions(other)
+        for other in others:
+            self.__check_same_dimensions(other)
 
-        return self.copy(data_matrix=numpy.concatenate((self.data_matrix,
-                                                        other.data_matrix),
-                                                       axis=0))
+        data = [self.data_matrix] + [other.data_matrix for other in others]
+        axis = 0 if image is False else -1
+
+        return self.copy(data_matrix=numpy.concatenate(data, axis=axis))
 
 
     def scatter(self, fig=None, ax=None, nrows=None, ncols=None, **kwargs):

@@ -85,6 +85,34 @@ class FData(ABC):
         """
         return self.ndim_image
 
+    @abstractmethod
+    def image(self, dim=None):
+        r"""Return a component of the FDataGrid.
+
+        If the functional object contains samples
+        :math:`f: \mathbb{R}^n \rightarrow \mathbb{R}^d`, this method returns
+        a component of the vector :math:`f = (f_1, ..., f_d)`.
+
+        If dim is not specified an iterator over the image dimensions it is
+        returned.
+
+        """
+        pass
+
+    def codomain(self, dim=None):
+        r"""Return a component of the FDataGrid. Alias to :meth:`image`.
+
+        If the functional object contains samples
+        :math:`f: \mathbb{R}^n \rightarrow \mathbb{R}^d`, this method returns
+        a component of the vector :math:`f = (f_1, ..., f_d)`.
+
+        If dim is not specified an iterator over the image dimensions it is
+        returned.
+
+        """
+        return self.image(dim=dim)
+
+
     @property
     def extrapolation(self):
         """Return default type of extrapolation."""
@@ -989,20 +1017,23 @@ class FData(ABC):
         pass
 
     @abstractmethod
-    def concatenate(self, other):
+    def concatenate(self, *others, image=False):
         """Join samples from a similar FData object.
 
         Joins samples from another FData object if it has the same
         dimensions and has compatible representations.
 
         Args:
-            other (:class:`FData`): another FData object.
+            others (:class:`FData`): other FData objects.
+            image (boolean, optional):  If False concatenates as more samples,
+                else, concatenates the other functions as new componentes of the
+                image. Defaults to false.
 
         Returns:
             :class:`FData`: FData object with the samples from the two
             original objects.
+            
         """
-
         pass
 
     @abstractmethod

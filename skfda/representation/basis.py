@@ -1640,6 +1640,41 @@ class FDataBasis(FData):
         # Only image dimension equal to 1 is supported
         return 1
 
+    def _image_iterator(self):
+        """Iterator over the image dimensions"""
+        yield self.copy()
+
+    def image(self, dim=None):
+        r"""Return a component of the FDataBasis.
+
+        If the functional object contains samples
+        :math:`f: \mathbb{R}^n \rightarrow \mathbb{R}^d`, this method returns
+        a component of the vector :math:`f = (f_1, ..., f_d)`.
+
+        If dim is not specified an iterator over the image dimensions it is
+        returned.
+
+        Args:
+            dim (int, optional): Number of component of the image to be
+                returned, or None to iterate over all the components.
+
+        Todo:
+            By the moment only unidimensional objects are supported in basis
+            form.
+
+        """
+        # Thats a dummie method to override the @abstractmethod
+
+        if dim is None:
+            return self._image_iterator()
+
+        elif dim != 1:
+            raise ValueError(f"Incorrect image dimension. Should be a "
+                             f"number between 1 and {self.ndim_image}.")
+        else:
+            return self.copy()
+
+
     @property
     def nbasis(self):
         """Return number of basis."""
@@ -2130,26 +2165,33 @@ class FDataBasis(FData):
         # TODO check all other params
         return self.basis == other.basis and numpy.all(self.coefficients == other.coefficients)
 
-    def concatenate(self, other):
+    def concatenate(self, *others, image=False):
         """Join samples from a similar FDataBasis object.
 
         Joins samples from another FDataBasis object if they have the same
         basis.
 
         Args:
-            other (:class:`FDataBasis`): another FDataBasis object.
+            others (:class:`FDataBasis`): other FDataBasis objects.
+            image (boolean, optional):  If False concatenates as more samples,
+                else, concatenates the other functions as new componentes of the
+                image. Multidimensional objects are not supported in basis form.
 
         Returns:
             :class:`FDataBasis`: FDataBasis object with the samples from the two
             original objects.
         """
 
-        if other.basis != self.basis:
-            raise ValueError("The objects should have the same basis.")
+        if image is True:
+            return NotImplemented
 
-        return self.copy(coefficients=numpy.concatenate((self.coefficients,
-                                                         other.coefficients),
-                                                        axis=0))
+        for other in others:
+            if other.basis != self.basis:
+                raise ValueError("The objects should have the same basis.")
+
+        data = [self.coefficients] + [other.coefficients for other in others]
+
+        return self.copy(coefficients=numpy.concatenate(data, axis=0))
 
     def compose(self, fd, *, eval_points=None, **kwargs):
         """Composition of functions.

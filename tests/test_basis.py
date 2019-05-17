@@ -300,6 +300,28 @@ class TestBasis(unittest.TestCase):
         np.testing.assert_raises(NotImplementedError, monomial2.__mul__,
                         monomial2)
 
+
+    def test_fdatabasis__mul__(self):
+        monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
+        monomial2 = FDataBasis(Monomial(nbasis=3), [[1, 2, 3], [3, 4, 5]])
+
+        np.testing.assert_equal(monomial1 / 2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[1/2, 1, 3/2]]))
+        np.testing.assert_equal(monomial2 / 2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[1/2, 1, 3/2], [3/2, 2, 5/2]]))
+
+        np.testing.assert_equal(monomial2 / [1, 2],
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[1, 2, 3], [3/2, 2, 5/2]]))
+
+        # np.testing.assert_raises(NotImplementedError, monomial2.__mul__,
+        #                 FDataBasis(Fourier(nbasis=3),
+        #                            [[2, 2, 3], [5, 4, 5]]))
+        # np.testing.assert_raises(NotImplementedError, monomial2.__mul__,
+        #                 monomial2)
+
 if __name__ == '__main__':
     print()
     unittest.main()

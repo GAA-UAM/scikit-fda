@@ -324,14 +324,14 @@ class Basis(ABC):
     def inner_product(self, other):
         return numpy.transpose(other.inner_product(self.to_basis()))
 
-    def add_same_basis(self, coefs1, coefs2):
+    def _add_same_basis(self, coefs1, coefs2):
         return self.copy(), coefs1 + coefs2
 
-    def add_costant(self, coefs, other):
+    def _add_costant(self, coefs, constant):
         coefs = coefs.copy()
-        other = numpy.array(other)
+        constant = numpy.array(constant)
         try:
-            coefs[:, 0] = coefs[:, 0] + other
+            coefs[:, 0] = coefs[:, 0] + constant
         except TypeError:
             raise NotImplementedError
 
@@ -350,7 +350,7 @@ class Basis(ABC):
 
         return self.copy(), coefs
 
-    def mul_costant(self, coefs, other):
+    def _mul_costant(self, coefs, other):
         coefs = coefs.copy()
         other = numpy.atleast_2d(other).reshape(-1, 1)
         try:
@@ -2230,10 +2230,10 @@ class FDataBasis(FData):
             if self.basis != other.basis:
                 raise NotImplementedError
             else:
-                basis, coefs = self.basis.add_same_basis(self.coefficients,
+                basis, coefs = self.basis._add_same_basis(self.coefficients,
                                                   other.coefficients)
         else:
-            basis, coefs = self.basis.add_costant(self.coefficients, other)
+            basis, coefs = self.basis._add_costant(self.coefficients, other)
 
         return self.copy(basis=basis, coefficients=coefs)
 
@@ -2264,7 +2264,7 @@ class FDataBasis(FData):
         if isinstance(other, FDataBasis):
             raise NotImplementedError
 
-        basis, coefs = self.basis.mul_costant(self.coefficients, other)
+        basis, coefs = self.basis._mul_costant(self.coefficients, other)
 
         return self.copy(basis=basis, coefficients=coefs)
 
@@ -2275,7 +2275,14 @@ class FDataBasis(FData):
     def __truediv__(self, other):
         """Division for FDataBasis object."""
 
-        raise NotImplementedError
+        other = numpy.array(other)
+
+        try:
+            other = 1 / other
+        except TypeError:
+            raise NotImplementedError
+
+        return self * other
 
     def __rtruediv__(self, other):
         """Right division for FDataBasis object."""

@@ -14,6 +14,7 @@ import scipy.interpolate
 import scipy.linalg
 from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
+from scipy.interpolate import BSpline as SciBSpline
 from scipy.special import binom
 
 from . import grid
@@ -381,7 +382,7 @@ class Constant(Basis):
         return penalty_degree
 
     def _derivative(self, coefs, order=1):
-        return (self.copy(), coefs if order == 0
+        return (self.copy(), coefs.copy() if order == 0
                 else self.copy(), numpy.zeros(coefs.shape))
 
     def _compute_matrix(self, eval_points, derivative=0):
@@ -553,10 +554,10 @@ class Monomial(Basis):
 
         return mat
 
-    def _derivative(self, coefficients, order=1):
+    def _derivative(self, coefs, order=1):
         return (Monomial(self.domain_range, self.nbasis - order),
                 numpy.array([numpy.polyder(x[::-1], order)[::-1]
-                             for x in coefficients]))
+                             for x in coefs]))
 
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
@@ -1102,7 +1103,6 @@ class BSpline(Basis):
                 self._list_to_R(self.knots) + ")")
 
     def _to_scipy_BSpline(self, coefs):
-        from scipy.interpolate import BSpline as SciBSpline
 
         knots = numpy.concatenate((
             numpy.repeat(self.knots[0], self.order - 1),

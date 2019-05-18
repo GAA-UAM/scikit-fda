@@ -95,7 +95,7 @@ def vectorial_norm(fdatagrid, p=2):
     Examples:
 
         >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.preprocessing.dim_reduction import vectorial_norm
+        >>> from skfda.misc.metrics import vectorial_norm
 
         First we will construct an example dataset with curves in
         :math:`\mathbb{R}^2`.

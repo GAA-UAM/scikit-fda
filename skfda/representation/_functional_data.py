@@ -1012,7 +1012,7 @@ class FData(ABC):
             others (:class:`FData`): other FData objects.
             as_coordinate (boolean, optional):  If False concatenates as
                 new samples, else, concatenates the other functions as
-                new componentes of the image. Defaults to false.
+                new componentes of the image. Defaults to False.
 
         Returns:
             :class:`FData`: FData object with the samples from the two

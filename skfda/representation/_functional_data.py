@@ -41,6 +41,7 @@ class FData(ABC):
         self.dataset_label = dataset_label
         self.axes_labels = axes_labels
         self.keepdims = keepdims
+        self._coordinate = None
 
     @property
     @abstractmethod
@@ -85,33 +86,17 @@ class FData(ABC):
         """
         return self.ndim_image
 
+    @property
     @abstractmethod
-    def image(self, dim=None):
+    def coordinate(self):
         r"""Return a component of the FDataGrid.
 
         If the functional object contains samples
         :math:`f: \mathbb{R}^n \rightarrow \mathbb{R}^d`, this method returns
         a component of the vector :math:`f = (f_1, ..., f_d)`.
 
-        If dim is not specified an iterator over the image dimensions it is
-        returned.
-
         """
         pass
-
-    def codomain(self, dim=None):
-        r"""Return a component of the FDataGrid. Alias to :meth:`image`.
-
-        If the functional object contains samples
-        :math:`f: \mathbb{R}^n \rightarrow \mathbb{R}^d`, this method returns
-        a component of the vector :math:`f = (f_1, ..., f_d)`.
-
-        If dim is not specified an iterator over the image dimensions it is
-        returned.
-
-        """
-        return self.image(dim=dim)
-
 
     @property
     def extrapolation(self):
@@ -1017,7 +1002,7 @@ class FData(ABC):
         pass
 
     @abstractmethod
-    def concatenate(self, *others, image=False):
+    def concatenate(self, *others, as_coordinate=False):
         """Join samples from a similar FData object.
 
         Joins samples from another FData object if it has the same
@@ -1025,14 +1010,14 @@ class FData(ABC):
 
         Args:
             others (:class:`FData`): other FData objects.
-            image (boolean, optional):  If False concatenates as more samples,
-                else, concatenates the other functions as new componentes of the
-                image. Defaults to false.
+            as_coordinate (boolean, optional):  If False concatenates as
+                new samples, else, concatenates the other functions as
+                new componentes of the image. Defaults to false.
 
         Returns:
             :class:`FData`: FData object with the samples from the two
             original objects.
-            
+
         """
         pass
 

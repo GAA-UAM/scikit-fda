@@ -9,4 +9,3 @@ this category deal with this problem.
    :caption: Modules:
 
    preprocessing/registration
-   preprocessing/dim_reduction

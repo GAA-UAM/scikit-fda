@@ -7,13 +7,13 @@ the corresponding basis classes.
 import copy
 from abc import ABC, abstractmethod
 
-import matplotlib.pyplot
 import numpy
 import scipy.integrate
 import scipy.interpolate
 import scipy.linalg
 from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
+from scipy.interpolate import BSpline as SciBSpline
 from scipy.special import binom
 
 from . import grid
@@ -24,6 +24,7 @@ __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
 MIN_EVAL_SAMPLES = 201
+
 
 # aux functions
 def _polypow(p, n=2):
@@ -113,6 +114,10 @@ class Basis(ABC):
              int: number of close to 0 eigenvalues.
 
         """
+        pass
+
+    @abstractmethod
+    def _derivative(self, coefs, order=1):
         pass
 
     def evaluate(self, eval_points, derivative=0):
@@ -330,7 +335,9 @@ class Basis(ABC):
 
     def __eq__(self, other):
         """Equality of Basis"""
-        return type(self) == type(other) and _same_domain(self.domain_range, other.domain_range) and self.nbasis == other.nbasis
+        return (type(self) == type(other)
+                and _same_domain(self.domain_range, other.domain_range)
+                and self.nbasis == other.nbasis)
 
 
 class Constant(Basis):
@@ -372,6 +379,10 @@ class Constant(Basis):
 
         """
         return penalty_degree
+
+    def _derivative(self, coefs, order=1):
+        return (self.copy(), coefs.copy() if order == 0
+                else self.copy(), numpy.zeros(coefs.shape))
 
     def _compute_matrix(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
@@ -541,6 +552,11 @@ class Monomial(Basis):
                     mat[i] = factor * eval_points ** (i - derivative)
 
         return mat
+
+    def _derivative(self, coefs, order=1):
+        return (Monomial(self.domain_range, self.nbasis - order),
+                numpy.array([numpy.polyder(x[::-1], order)[::-1]
+                             for x in coefs]))
 
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
@@ -842,6 +858,17 @@ class BSpline(Basis):
 
         return mat
 
+    def _derivative(self, coefs, order=1):
+        deriv_splines = [self._to_scipy_BSpline(coefs[i]).derivative(order)
+                         for i in range(coefs.shape[0])]
+
+        deriv_coefs = [BSpline._from_scipy_BSpline(spline)[1]
+                       for spline in deriv_splines]
+
+        deriv_basis = BSpline._from_scipy_BSpline(deriv_splines[0])[0]
+
+        return deriv_basis, numpy.array(deriv_coefs)[:, 0:deriv_basis.nbasis]
+
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
 
@@ -1020,7 +1047,9 @@ class BSpline(Basis):
 
     def __eq__(self, other):
         """Equality of Basis"""
-        return super().__eq__(other) and self.order == other.order and self.knots == other.knots
+        return (super().__eq__(other)
+                and self.order == other.order
+                and self.knots == other.knots)
 
     def basis_of_product(self, other):
         """Multiplication of two Bspline Basis"""
@@ -1070,7 +1099,25 @@ class BSpline(Basis):
         return ("create.bspline.basis(rangeval = c(" + str(drange[0]) + "," +
                 str(drange[1]) + "), nbasis = " + str(self.nbasis) +
                 ", norder = " + str(self.order) + ", breaks = " +
-                self._listtoR(self.knots) + ")")
+                self._list_to_R(self.knots) + ")")
+
+    def _to_scipy_BSpline(self, coefs):
+
+        knots = numpy.concatenate((
+            numpy.repeat(self.knots[0], self.order - 1),
+            self.knots,
+            numpy.repeat(self.knots[-1], self.order - 1)))
+
+        return SciBSpline(knots, coefs, self.order - 1)
+
+    @staticmethod
+    def _from_scipy_BSpline(bspline):
+        order = bspline.k
+        knots = bspline.t[order: -order]
+        coefs = bspline.c
+        domain_range = [knots[0], knots[-1]]
+
+        return BSpline(domain_range, order=order + 1, knots=knots), coefs
 
     @property
     def inknots(self):
@@ -1185,7 +1232,7 @@ class Fourier(Basis):
             if nbasis > 1:
                 # 2*pi*n*x / period
                 args = numpy.outer(range(1, nbasis // 2 + 1), omega_t)
-                index = range(1, nbasis-1, 2)
+                index = range(1, nbasis - 1, 2)
                 # odd indexes are sine functions
                 mat[index] = numpy.sin(args)
                 index = range(2, nbasis, 2)
@@ -1231,6 +1278,25 @@ class Fourier(Basis):
 
         """
         return 0 if penalty_degree == 0 else 1
+
+    def _derivative(self, coefs, order=1):
+
+        omega = 2 * numpy.pi / self.period
+        deriv_factor = (numpy.arange(1, (self.nbasis+1)/2) * omega) ** order
+
+        deriv_coefs = numpy.zeros(coefs.shape)
+
+        cos_sign, sin_sign = (-1)**int((order+1)/2), (-1)**int(order/2)
+
+        if order % 2 == 0:
+            deriv_coefs[:, 1::2] = sin_sign * coefs[:, 1::2] * deriv_factor
+            deriv_coefs[:, 2::2] = cos_sign * coefs[:, 2::2] * deriv_factor
+        else:
+            deriv_coefs[:, 2::2] = sin_sign * coefs[:, 1::2] * deriv_factor
+            deriv_coefs[:, 1::2] = cos_sign * coefs[:, 2::2] * deriv_factor
+
+        # normalise
+        return self.copy(), deriv_coefs
 
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
@@ -1801,7 +1867,15 @@ class FDataBasis(FData):
             order (int, optional): Order of the derivative. Defaults to one.
         """
 
-        raise NotImplementedError
+        if order < 0:
+            raise ValueError("order only takes non-negative integer values.")
+
+        if order is 0:
+            return self.copy()
+
+        basis, coefficients = self.basis._derivative(self.coefficients, order)
+
+        return FDataBasis(basis, coefficients)
 
     def mean(self):
         """Compute the mean of all the samples in a FDataBasis object.
@@ -2085,7 +2159,7 @@ class FDataBasis(FData):
 
     def _to_R(self):
         """Gives the code to build the object on fda package on R"""
-        return ("fd(coef = " + self._arraytoR(self.coefficients, True) +
+        return ("fd(coef = " + self._array_to_R(self.coefficients, True) +
                 ", basisobj = " + self.basis._to_R() + ")")
 
     def _array_to_R(self, coefficients, transpose=False):
@@ -2127,7 +2201,8 @@ class FDataBasis(FData):
     def __eq__(self, other):
         """Equality of FDataBasis"""
         # TODO check all other params
-        return self.basis == other.basis and numpy.all(self.coefficients == other.coefficients)
+        return (self.basis == other.basis
+                and numpy.all(self.coefficients == other.coefficients))
 
     def concatenate(self, other):
         """Join samples from a similar FDataBasis object.

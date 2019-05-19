@@ -10,7 +10,7 @@ class LinearDifferentialOperator:
 
     .. math::
         Lx(t) = b_0(t) x(t) + b_1(t) x'(x) +
-                \dots + b_{n-1}(t) d^{n-1}(x(t)) + b_n(t) d^n(x(t))
+                \\dots + b_{n-1}(t) d^{n-1}(x(t)) + b_n(t) d^n(x(t))
 
     Attributes:
         order (int): the order of the operator. It's the n coefficient in the

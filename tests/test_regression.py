@@ -1,9 +1,9 @@
 import unittest
 
 import numpy as np
-from fda import datasets, FDataBasis
-from fda.basis import Fourier
-from fda.regression import FunctionalRegression
+from skfda import datasets, FDataBasis
+from skfda.representation.basis import Fourier
+from skfda.ml.regression.functional import FunctionalRegression
 
 
 class TestRegression(unittest.TestCase):

@@ -2128,6 +2128,8 @@ class FDataBasis(FData):
     def inner_product2(self, other, lfd_self=None, lfd_other=None,
                       weights=None):
 
+        from skfda.misc._lfd import LinearDifferentialOperator as Lfd
+
         if lfd_self is None:
             lfd_self = Lfd(0)
 
@@ -2508,8 +2510,13 @@ def fdchk(fdobj):
     return (fdobj.nsamples, fdobj)
 
 
-def inprod(fd_self, fd_other=None, lfd_self=Lfd(0), lfd_other=Lfd(0),
+def inprod(fd_self, fd_other=None, lfd_self=None, lfd_other=None,
            domain_range=None, weights=0):
+    from skfda.misc._lfd import LinearDifferentialOperator as Lfd
+    if lfd_self is None:
+        lfd_self = Lfd(0)
+    if lfd_other is None:
+        lfd_other = Lfd(0)
     nrep1 = fd_self.nsamples
     coef1 = fd_self.coefficients
     basisobj1 = fd_self.basis

@@ -1,8 +1,8 @@
 from sklearn.metrics import mean_squared_error
 
-from fda.basis import *
+from skfda.representation.basis import *
 import numpy as np
-from fda import *
+from skfda.misc._lfd import LinearDifferentialOperator as Lfd
 
 
 class FunctionalRegression:
@@ -31,7 +31,7 @@ class FunctionalRegression:
             mj1 = mj2
             mj2 = mj2 + self.beta[j].nbasis
             xyfdj = x[j].times(self.weights).times(y)
-            wtfdj = xyfdj.plus_samples()
+            wtfdj = sum(xyfdj)
             Dmat[mj1:mj2] = inprod(self.beta[j].to_basis(), onesfd,
                                    Lfd(0), Lfd(0), rangeval, wtfdj)
 
@@ -40,7 +40,7 @@ class FunctionalRegression:
                 mk1 = mk2
                 mk2 = mk2 + self.beta[k].nbasis
                 xxfdjk = x[j].times(self.weights).times(x[k])
-                wtfdjk = xxfdjk.plus_samples()
+                wtfdjk = sum(xxfdjk)
                 Cmatjk = inprod(self.beta[j].to_basis(), self.beta[k].to_basis(),
                                 Lfd(0), Lfd(0), rangeval, wtfdjk)
 

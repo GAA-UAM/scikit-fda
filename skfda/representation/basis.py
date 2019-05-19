@@ -4,7 +4,6 @@ Defines functional data object in a basis function system representation and
 the corresponding basis classes.
 
 """
-
 import copy
 from abc import ABC, abstractmethod
 

@@ -56,8 +56,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.doctest' ]
 
 doctest_global_setup = '''
-import numpy
-numpy.set_printoptions(legacy='1.13')
+import numpy as np
+np.set_printoptions(legacy='1.13')
 '''
 
 # Add any paths that contain templates here, relative to this directory.

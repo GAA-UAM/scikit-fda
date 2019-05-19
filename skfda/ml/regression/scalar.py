@@ -1,6 +1,7 @@
 from sklearn.metrics import mean_squared_error
 
-from fda.basis import *
+from skfda.representation.basis import *
+import numpy as np
 
 
 class ScalarRegression:

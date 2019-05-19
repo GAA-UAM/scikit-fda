@@ -164,7 +164,7 @@ def _plot_clusters(estimator, fdatagrid, fig, ax, nrows, ncols, labels,
         for i in range(fdatagrid.nsamples):
             ax[j].plot(fdatagrid.sample_points[0],
                        fdatagrid.data_matrix[i, :, j],
-                       c=colors_by_cluster[i, j],
+                       c=colors_by_cluster[i],
                        label=sample_labels[i])
         for i in range(estimator.n_clusters):
             ax[j].plot(fdatagrid.sample_points[0],

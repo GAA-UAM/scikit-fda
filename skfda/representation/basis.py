@@ -338,7 +338,7 @@ class Basis(ABC):
         try:
             coefs[:, 0] = coefs[:, 0] + constant
         except TypeError:
-            raise NotImplementedError
+            return NotImplemented
 
         return self.copy(), coefs
 
@@ -351,7 +351,7 @@ class Basis(ABC):
         try:
             coefs[:, 0] = coefs[:, 0] - other
         except TypeError:
-            raise NotImplementedError
+            return NotImplemented
 
         return self.copy(), coefs
 
@@ -361,7 +361,7 @@ class Basis(ABC):
         try:
             coefs = coefs * other
         except TypeError:
-            raise NotImplementedError
+            return NotImplemented
 
         return self.copy(), coefs
 
@@ -2355,7 +2355,7 @@ class FDataBasis(FData):
         try:
             other = 1 / other
         except TypeError:
-            raise NotImplementedError
+            return NotImplemented
 
         return self * other
 

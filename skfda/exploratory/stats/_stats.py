@@ -1,4 +1,4 @@
-"""Functional data statistics.
+"""Functional data descriptive statistics.
 """
 
 

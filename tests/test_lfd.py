@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from skfda.representation.basis import FDataBasis, Constant, Monomial
-from skfda.math import LinearDifferentialOperator
+from skfda.misc import LinearDifferentialOperator
 
 
 class TestBasis(unittest.TestCase):

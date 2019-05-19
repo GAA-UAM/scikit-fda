@@ -335,33 +335,24 @@ class Basis(ABC):
     def _add_constant(self, coefs, constant):
         coefs = coefs.copy()
         constant = numpy.array(constant)
-        try:
-            coefs[:, 0] = coefs[:, 0] + constant
-        except TypeError:
-            return NotImplemented
+        coefs[:, 0] = coefs[:, 0] + constant
 
         return self.copy(), coefs
 
-    def sub_same_basis(self, coefs1, coefs2):
+    def _sub_same_basis(self, coefs1, coefs2):
         return self.copy(), coefs1 - coefs2
 
-    def sub_constant(self, coefs, other):
+    def _sub_constant(self, coefs, other):
         coefs = coefs.copy()
         other = numpy.array(other)
-        try:
-            coefs[:, 0] = coefs[:, 0] - other
-        except TypeError:
-            return NotImplemented
+        coefs[:, 0] = coefs[:, 0] - other
 
         return self.copy(), coefs
 
     def _mul_constant(self, coefs, other):
         coefs = coefs.copy()
         other = numpy.atleast_2d(other).reshape(-1, 1)
-        try:
-            coefs = coefs * other
-        except TypeError:
-            return NotImplemented
+        coefs = coefs * other
 
         return self.copy(), coefs
 
@@ -2308,7 +2299,10 @@ class FDataBasis(FData):
                 basis, coefs = self.basis._add_same_basis(self.coefficients,
                                                   other.coefficients)
         else:
-            basis, coefs = self.basis._add_constant(self.coefficients, other)
+            try:
+                basis, coefs = self.basis._add_constant(self.coefficients, other)
+            except TypeError:
+                return NotImplemented
 
         return self.copy(basis=basis, coefficients=coefs)
 
@@ -2323,10 +2317,13 @@ class FDataBasis(FData):
             if self.basis != other.basis:
                 raise NotImplementedError
             else:
-                basis, coefs = self.basis.sub_same_basis(self.coefficients,
+                basis, coefs = self.basis._sub_same_basis(self.coefficients,
                                                   other.coefficients)
         else:
-            basis, coefs = self.basis.sub_constant(self.coefficients, other)
+            try:
+                basis, coefs = self.basis._sub_constant(self.coefficients, other)
+            except TypeError:
+                return NotImplemented
 
         return self.copy(basis=basis, coefficients=coefs)
 
@@ -2339,7 +2336,10 @@ class FDataBasis(FData):
         if isinstance(other, FDataBasis):
             raise NotImplementedError
 
-        basis, coefs = self.basis._mul_constant(self.coefficients, other)
+        try:
+            basis, coefs = self.basis._mul_constant(self.coefficients, other)
+        except TypeError:
+            return NotImplemented
 
         return self.copy(basis=basis, coefficients=coefs)
 

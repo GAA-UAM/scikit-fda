@@ -102,7 +102,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
 
         return fdatagrid
 
-    def _init_centroids(self, data_matrix, fdatagrid, random_state):
+    def _init_centroids(self, fdatagrid, random_state):
         """Compute the initial centroids
 
         Args:
@@ -121,7 +121,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         while comparison:
             indices = random_state.permutation(fdatagrid.nsamples)[
                       :self.n_clusters]
-            centers = data_matrix[indices]
+            centers = fdatagrid.data_matrix[indices]
             unique_centers = np.unique(centers, axis=0)
             comparison = len(unique_centers) != self.n_clusters
 
@@ -179,7 +179,6 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         self._check_test_data(X)
         return self.labels_
 
-
     def fit_predict(self, X, y=None, sample_weight=None):
         """Compute cluster centers and predict cluster index for each sample.
 
@@ -195,7 +194,6 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         """
         self.fit(X)
         return self.labels_
-
 
     def transform(self, X):
         """Transform X to a cluster-distance space.
@@ -215,7 +213,6 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         self._check_test_data(X)
         return self._distances_to_centers
 
-
     def fit_transform(self, X, y=None, sample_weight=None):
         """Compute clustering and transform X to cluster-distance space.
 
@@ -232,7 +229,6 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         """
         self.fit(X)
         return self._distances_to_centers
-
 
     def score(self, X, y=None, sample_weight=None):
         """Opposite of the value of X on the K-means objective.
@@ -379,13 +375,11 @@ class KMeans(BaseKMeans):
                          n_init=n_init, max_iter=max_iter, tol=tol,
                          random_state=random_state)
 
-    def _kmeans_1Dimage(self, num_dim, fdatagrid, random_state):
-        """ Implementation of the K-Means algorithm for each dimension on the
-            image of the FDataGrid object.
+    def _kmeans_implementation(self, fdatagrid, random_state):
+        """ Implementation of the K-Means algorithm for FDataGrid objects
+        of any dimension.
 
         Args:
-            num_dim (int): Scalar indicating the dimension on the image of
-                the FdataGrid object the algorithm is being applied.
             fdatagrid (FDataGrid object): Object whose samples are clusered,
                 classified into different groups.
             random_state (RandomState object): random number generation for
@@ -398,38 +392,35 @@ class KMeans(BaseKMeans):
                 array where each row contains the cluster that observation
                 belongs to.
 
-                centers (numpy.ndarray: (n_clusters, ncol)): Contains the
-                centroids for each cluster.
+                centers (numpy.ndarray: (n_clusters, ncol, ndim_image)):
+                Contains the centroids for each cluster.
 
                 distances_to_centers (numpy.ndarray: (nsamples, n_clusters)):
                 distances of each sample to each cluster.
 
-                repetitions(int): number of iterations the algorithm was run
-                for this dimension og the image.
-
+                repetitions(int): number of iterations the algorithm was run.
         """
-        data_matrix = fdatagrid.data_matrix[..., num_dim]
-        fdatagrid_1dim = fdatagrid.copy(data_matrix=data_matrix)
         repetitions = 0
-        centers_old = np.zeros((self.n_clusters, fdatagrid.ncol))
+        centers_old = np.zeros(
+            (self.n_clusters, fdatagrid.ncol, fdatagrid.ndim_image))
 
         if self.init is None:
-            centers = super()._init_centroids(data_matrix, fdatagrid,
-                                              random_state)
+            centers = self._init_centroids(fdatagrid, random_state)
         else:
-            centers = np.copy(self.init.data_matrix[..., num_dim])
+            centers = np.copy(self.init.data_matrix)
 
         while not np.allclose(centers, centers_old, rtol=self.tol,
                               atol=self.tol) and repetitions < self.max_iter:
             centers_old = np.copy(centers)
             centers_fd = FDataGrid(centers, fdatagrid.sample_points)
-            distances_to_centers = self.metric(fdata1=fdatagrid_1dim,
+            distances_to_centers = self.metric(fdata1=fdatagrid,
                                                fdata2=centers_fd)
             clustering_values = np.argmin(distances_to_centers, axis=1)
             for i in range(self.n_clusters):
-                indices = np.where(clustering_values == i)
-                if indices[0].size != 0:
-                    centers[i] = np.average(data_matrix[indices, :], axis=1)
+                indices, = np.where(clustering_values == i)
+                if indices.size != 0:
+                    centers[i] = np.average(
+                        fdatagrid.data_matrix[indices, ...], axis=0)
             repetitions += 1
 
         return clustering_values, centers, distances_to_centers, repetitions
@@ -448,51 +439,33 @@ class KMeans(BaseKMeans):
         random_state = check_random_state(self.random_state)
         fdatagrid = super()._generic_clustering_checks(fdatagrid=X)
 
-        clustering_values = np.empty((fdatagrid.nsamples,
-                                      fdatagrid.ndim_image)).astype(int)
-        centers = np.empty(
-            (self.n_clusters, fdatagrid.ncol, fdatagrid.ndim_image))
+        clustering_values = np.empty(
+            (self.n_init, fdatagrid.nsamples)).astype(int)
+        centers = np.empty((self.n_init, self.n_clusters,
+                            fdatagrid.ncol, fdatagrid.ndim_image))
         distances_to_centers = np.empty(
-            (fdatagrid.nsamples, self.n_clusters, fdatagrid.ndim_image))
-        n_iter = np.empty((fdatagrid.ndim_image))
-        inertia = np.empty((fdatagrid.ndim_image))
+            (self.n_init, fdatagrid.nsamples, self.n_clusters))
+        distances_to_their_center = np.empty((self.n_init, fdatagrid.nsamples))
+        n_iter = np.empty((self.n_init))
 
-        for i in range(fdatagrid.ndim_image):
-            clustering_values_1D = np.empty((self.n_init,
-                                             fdatagrid.nsamples)).astype(int)
-            centers_1D = np.empty(
-                (self.n_init, self.n_clusters, fdatagrid.ncol))
-            distances_to_centers_1D = np.empty(
-                (self.n_init, fdatagrid.nsamples, self.n_clusters))
-            distances_to_their_center_1D = np.empty(
-                (self.n_init, fdatagrid.nsamples))
-            n_iter_1D = np.empty((self.n_init))
+        for j in range(self.n_init):
+            clustering_values[j, :], centers[j, :, :, :], \
+            distances_to_centers[j, :, :], n_iter[j] = \
+                self._kmeans_implementation(fdatagrid=fdatagrid,
+                                            random_state=random_state)
+            distances_to_their_center[j, :] = distances_to_centers[
+                j, np.arange(fdatagrid.nsamples),
+                clustering_values[j, :]]
 
-            for j in range(self.n_init):
-                clustering_values_1D[j, :], centers_1D[j, :, :], \
-                distances_to_centers_1D[j, :, :], n_iter_1D[j] = \
-                    self._kmeans_1Dimage(num_dim=i, fdatagrid=fdatagrid,
-                                         random_state=random_state)
+        inertia = np.sum(distances_to_their_center ** 2, axis=1)
+        index_best_iter = np.argmin(inertia)
 
-                distances_to_their_center_1D[j, :] = distances_to_centers_1D[
-                    j, np.arange(len(distances_to_centers_1D[j])),
-                    clustering_values_1D[j, :]]
-
-            inertia_1D = np.sum(distances_to_their_center_1D ** 2, axis=1)
-            index_best_iter = np.argmin(inertia_1D)
-            inertia[i] = inertia_1D[index_best_iter]
-            clustering_values[:, i] = clustering_values_1D[index_best_iter]
-            centers[:, :, i] = centers_1D[index_best_iter]
-            distances_to_centers[:, :, i] = distances_to_centers_1D[
-                index_best_iter]
-            n_iter[i] = n_iter_1D[index_best_iter]
-
-        self.labels_ = clustering_values
-        self.cluster_centers_ = FDataGrid(data_matrix=centers,
+        self.labels_ = clustering_values[index_best_iter]
+        self.cluster_centers_ = FDataGrid(data_matrix=centers[index_best_iter],
                                           sample_points=fdatagrid.sample_points)
-        self._distances_to_centers = distances_to_centers
-        self.inertia_ = inertia
-        self.n_iter_ = n_iter
+        self._distances_to_centers = distances_to_centers[index_best_iter]
+        self.inertia_ = inertia[index_best_iter]
+        self.n_iter_ = n_iter[index_best_iter]
 
         return self
 
@@ -641,13 +614,11 @@ class FuzzyKMeans(BaseKMeans):
         self.fuzzifier = fuzzifier
         self.n_dec = n_dec
 
-    def _fuzzy_kmeans_1Dimage(self, num_dim, fdatagrid, random_state):
-        """ Implementation of the Fuzzy K-Means algorithm for each dimension
-        on the image of the FDataGrid object.
+    def _fuzzy_kmeans_implementation(self, fdatagrid, random_state):
+        """ Implementation of the Fuzzy K-Means algorithm for FDataGrid objects
+        of any dimension.
 
         Args:
-            num_dim (int): Scalar indicating the dimension on the image of
-                the FdataGrid object the algorithm is being applied.
             fdatagrid (FDataGrid object): Object whose samples are clusered,
                 classified into different groups.
             random_state (RandomState object): random number generation for
@@ -656,59 +627,57 @@ class FuzzyKMeans(BaseKMeans):
         Returns:
             (tuple): tuple containing:
 
-                membership values (numpy.ndarray: (n_clusters, nsamples)):
+                membership values (numpy.ndarray: (nsamples, n_clusters)):
                 2-dimensional matrix where each row contains the membership
                 value that observation has to each cluster.
 
-                centers (numpy.ndarray: (n_clusters, ncol)): Contains the
-                centroids for each cluster.
+                centers (numpy.ndarray: (n_clusters, ncol, ndim_image)):
+                Contains the centroids for each cluster.
 
                 distances_to_centers (numpy.ndarray: (nsamples, n_clusters)):
                 distances of each sample to each cluster.
 
-                repetitions(int): number of iterations the algorithm was run
-                for this dimension og the image.
+                repetitions(int): number of iterations the algorithm was run.
 
         """
-        data_matrix = np.copy(fdatagrid.data_matrix[..., num_dim])
         repetitions = 0
-        centers_old = np.zeros((self.n_clusters, fdatagrid.ncol))
-        U = np.empty((self.n_clusters, fdatagrid.nsamples))
-
-        if self.init is None:
-            centers = super()._init_centroids(data_matrix,
-                                              fdatagrid, random_state)
-        else:
-            centers = np.copy(self.init.data_matrix[..., num_dim])
-
+        centers_old = np.zeros(
+            (self.n_clusters, fdatagrid.ncol, fdatagrid.ndim_image))
+        U = np.empty((fdatagrid.nsamples, self.n_clusters))
         distances_to_centers = np.empty((fdatagrid.nsamples, self.n_clusters))
 
-        while not np.array_equal(centers, centers_old) and \
-                repetitions < self.max_iter:
+        if self.init is None:
+            centers = self._init_centroids(fdatagrid, random_state)
+        else:
+            centers = np.copy(self.init.data_matrix)
+
+        while not np.allclose(centers, centers_old, rtol=self.tol,
+                              atol=self.tol) and repetitions < self.max_iter:
+
             centers_old = np.copy(centers)
+            centers_fd = FDataGrid(centers, fdatagrid.sample_points)
+            distances_to_centers = self.metric(
+                fdata1=fdatagrid,
+                fdata2=centers_fd)
+            distances_to_centers_raised = distances_to_centers ** (
+                                2 / (self.fuzzifier - 1))
+
             for i in range(fdatagrid.nsamples):
-                comparison = (data_matrix[i] == centers).all(-1)
+                comparison = (fdatagrid.data_matrix[i] == centers).all(
+                    axis=tuple(np.arange(fdatagrid.ndim)[1:]))
                 if comparison.sum() >= 1:
-                    U[np.where(comparison == True), i] = 1
-                    U[np.where(comparison == False), i] = 0
+                    U[i, np.where(comparison == True)] = 1
+                    U[i, np.where(comparison == False)] = 0
                 else:
-                    centers_fd = FDataGrid(centers, fdatagrid.sample_points)
-                    fd_single_sample = FDataGrid(data_matrix[i],
-                                                 fdatagrid.sample_points)
-                    distances_to_centers_single_sample = self.metric(
-                        fdata1=fd_single_sample,
-                        fdata2=centers_fd) ** (2 / (self.fuzzifier - 1))
                     for j in range(self.n_clusters):
-                        U[j, i] = 1 / np.sum(
-                            distances_to_centers_single_sample[0, j] /
-                            distances_to_centers_single_sample[0])
-                distances_to_centers[i] = distances_to_centers_single_sample[0]
+                        U[i, j] = 1 / np.sum(
+                            distances_to_centers_raised[i, j] /
+                            distances_to_centers_raised[i])
 
             U = np.power(U, self.fuzzifier)
-
             for i in range(self.n_clusters):
-                centers[i] = np.sum((U[i] * data_matrix.T).T, axis=0) / \
-                             np.sum(U[i])
+                centers[i] = np.sum((U[:, i] * fdatagrid.data_matrix.T).T,
+                                    axis=0) / np.sum(U[:, i])
             repetitions += 1
 
         return np.round(np.power(U, 1 / self.fuzzifier), self.n_dec), centers, \
@@ -725,7 +694,6 @@ class FuzzyKMeans(BaseKMeans):
             sample_weight (Ignored): present here for API consistency by
                 convention.
         """
-
         fdatagrid = super()._generic_clustering_checks(fdatagrid=X)
         random_state = check_random_state(self.random_state)
 
@@ -735,52 +703,35 @@ class FuzzyKMeans(BaseKMeans):
         if self.n_dec < 1:
             raise ValueError(
                 "The number of decimals should be greater than 0 in order to "
-                "obatain a rational result.")
+                "obtain a rational result.")
 
         membership_values = np.empty(
-            (fdatagrid.nsamples, fdatagrid.ndim_image, self.n_clusters))
+            (self.n_init, fdatagrid.nsamples, self.n_clusters))
         centers = np.empty(
-            (self.n_clusters, fdatagrid.ncol, fdatagrid.ndim_image))
+            (self.n_init, self.n_clusters, fdatagrid.ncol,
+             fdatagrid.ndim_image))
         distances_to_centers = np.empty(
-            (fdatagrid.nsamples, self.n_clusters, fdatagrid.ndim_image))
-        n_iter = np.empty((fdatagrid.ndim_image))
-        inertia = np.empty((fdatagrid.ndim_image))
+            (self.n_init, fdatagrid.nsamples, self.n_clusters))
+        distances_to_their_center = np.empty((self.n_init, fdatagrid.nsamples))
+        n_iter = np.empty((self.n_init))
 
-        for i in range(fdatagrid.ndim_image):
-            membership_values_1D = np.empty((self.n_init, fdatagrid.nsamples,
-                                             self.n_clusters))
-            centers_1D = np.empty(
-                (self.n_init, self.n_clusters, fdatagrid.ncol))
-            distances_to_centers_1D = np.empty(
-                (self.n_init, fdatagrid.nsamples, self.n_clusters))
-            distances_to_their_center_1D = np.empty(
-                (self.n_init, fdatagrid.nsamples))
-            n_iter_1D = np.empty((self.n_init))
+        for j in range(self.n_init):
+            membership_values[j, :, :], centers[j, :, :, :], \
+            distances_to_centers[j, :, :], n_iter[j] = \
+                self._fuzzy_kmeans_implementation(fdatagrid=fdatagrid,
+                                                  random_state=random_state)
+            distances_to_their_center[j, :] = distances_to_centers[
+                j, np.arange(fdatagrid.nsamples),
+                np.argmax(membership_values[j, :, :], axis=-1)]
 
-            for j in range(self.n_init):
-                U_1D, centers_1D[j, :, :], \
-                distances_to_centers_1D[j, :, :], n_iter_1D[j] = \
-                    self._fuzzy_kmeans_1Dimage(num_dim=i, fdatagrid=fdatagrid,
-                                               random_state=random_state)
-                membership_values_1D[j, :, :] = U_1D.T
-                distances_to_their_center_1D[j, :] = distances_to_centers_1D[
-                    j, np.arange(len(distances_to_centers_1D[j])),
-                    np.argmax(membership_values_1D[j, :, :], axis=-1)]
+        inertia = np.sum(distances_to_their_center ** 2, axis=1)
+        index_best_iter = np.argmin(inertia)
 
-            inertia_1D = np.sum(distances_to_their_center_1D ** 2, axis=1)
-            index_best_iter = np.argmin(inertia_1D)
-            inertia[i] = inertia_1D[index_best_iter]
-            membership_values[:, i, :] = membership_values_1D[index_best_iter]
-            centers[:, :, i] = centers_1D[index_best_iter]
-            distances_to_centers[:, :, i] = distances_to_centers_1D[
-                index_best_iter]
-            n_iter[i] = n_iter_1D[index_best_iter]
-
-        self.labels_ = membership_values
-        self.cluster_centers_ = FDataGrid(data_matrix=centers,
+        self.labels_ = membership_values[index_best_iter]
+        self.cluster_centers_ = FDataGrid(data_matrix=centers[index_best_iter],
                                           sample_points=fdatagrid.sample_points)
-        self._distances_to_centers = distances_to_centers
-        self.inertia_ = inertia
-        self.n_iter_ = n_iter
+        self._distances_to_centers = distances_to_centers[index_best_iter]
+        self.inertia_ = inertia[index_best_iter]
+        self.n_iter_ = n_iter[index_best_iter]
 
         return self

@@ -79,7 +79,6 @@ seed = 2
 kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
 kmeans.fit(fd)
 print(kmeans.predict(fd))
-print(kmeans.cluster_centers_)
 
 ############################################################################################
 # To see the information in a graphic way, the method :func:`plot_clusters
@@ -108,7 +107,6 @@ plot_clusters(kmeans, fd, cluster_colors=cluster_colors,
 fuzzy_kmeans = FuzzyKMeans(n_clusters=n_clusters, random_state=seed)
 fuzzy_kmeans.fit(fd)
 print(fuzzy_kmeans.predict(fd))
-print(fuzzy_kmeans.cluster_centers_)
 
 ############################################################################################
 # To see the information in a graphic way, the method :func:`plot_clusters
@@ -128,8 +126,7 @@ colors_by_climate = colormap(indexer / (n_climates - 1))
 
 plt.figure()
 plot_cluster_lines(fuzzy_kmeans, fd, cluster_labels=cluster_labels,
-                   sample_colors=colors_by_climate.reshape(fd.nsamples,
-                                                          fd.ndim_image, 4))
+                   sample_colors=colors_by_climate)
 
 ############################################################################################
 # Lastly, the function :func:`plot_cluster_bars

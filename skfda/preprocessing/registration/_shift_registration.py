@@ -4,7 +4,7 @@ This module contains methods to perform the registration of
 functional data using shifts, in basis as well in discretized form.
 """
 
-import numpy
+import numpy as np
 import scipy.integrate
 
 __author__ = "Pablo Marcos Manchón"
@@ -100,14 +100,14 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
     domain_range = fd.domain_range[0]
 
     if initial is None:
-        delta = numpy.zeros(fd.nsamples)
+        delta = np.zeros(fd.nsamples)
 
     elif len(initial) != fd.nsamples:
         raise ValueError(f"the initial shift ({len(initial)}) must have the "
                          f"same length than the number of samples "
                          f"({fd.nsamples})")
     else:
-        delta = numpy.asarray(initial)
+        delta = np.asarray(initial)
 
     # Fine equispaced mesh to evaluate the samples
     if eval_points is None:
@@ -117,22 +117,22 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
             nfine = len(eval_points)
         except AttributeError:
             nfine = max(fd.nbasis*10+1, 201)
-            eval_points = numpy.linspace(*domain_range, nfine)
+            eval_points = np.linspace(*domain_range, nfine)
 
     else:
         nfine = len(eval_points)
-        eval_points = numpy.asarray(eval_points)
+        eval_points = np.asarray(eval_points)
 
     # Auxiliar arrays to avoid multiple memory allocations
-    delta_aux = numpy.empty(fd.nsamples)
-    tfine_aux = numpy.empty(nfine)
+    delta_aux = np.empty(fd.nsamples)
+    tfine_aux = np.empty(nfine)
 
     # Computes the derivate of originals curves in the mesh points
     D1x = fd.evaluate(eval_points, derivative=1, keepdims=False)
 
     # Second term of the second derivate estimation of REGSSE. The
     # first term has been dropped to improve convergence (see references)
-    d2_regsse = scipy.integrate.trapz(numpy.square(D1x), eval_points,
+    d2_regsse = scipy.integrate.trapz(np.square(D1x), eval_points,
                                       axis=1)
 
     max_diff = tol + 1
@@ -143,10 +143,10 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
         D1x_tmp = D1x
         tfine_tmp = eval_points
         tfine_aux_tmp = tfine_aux
-        domain = numpy.empty(nfine, dtype=numpy.dtype(bool))
+        domain = np.empty(nfine, dtype=np.dtype(bool))
 
-    ones = numpy.ones(fd.nsamples)
-    eval_points_rep = numpy.outer(ones, eval_points)
+    ones = np.ones(fd.nsamples)
+    eval_points_rep = np.outer(ones, eval_points)
 
     # Newton-Rhapson iteration
     while max_diff > tol and iter < maxiter:
@@ -154,23 +154,23 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
         # Updates the limits for non periodic functions ignoring the ends
         if restrict_domain:
             # Calculates the new limits
-            a = domain_range[0] - min(numpy.min(delta), 0)
-            b = domain_range[1] - max(numpy.max(delta), 0)
+            a = domain_range[0] - min(np.min(delta), 0)
+            b = domain_range[1] - max(np.max(delta), 0)
 
             # New interval is (a,b)
-            numpy.logical_and(tfine_tmp >= a, tfine_tmp <= b, out=domain)
+            np.logical_and(tfine_tmp >= a, tfine_tmp <= b, out=domain)
             eval_points = tfine_tmp[domain]
             tfine_aux = tfine_aux_tmp[domain]
             D1x = D1x_tmp[:, domain]
             # Reescale the second derivate could be other approach
             # d2_regsse =
             #     d2_regsse_original * ( 1 + (a - b) / (domain[1] - domain[0]))
-            d2_regsse = scipy.integrate.trapz(numpy.square(D1x),
+            d2_regsse = scipy.integrate.trapz(np.square(D1x),
                                               eval_points, axis=1)
-            eval_points_rep = numpy.outer(ones, eval_points)
+            eval_points_rep = np.outer(ones, eval_points)
 
         # Computes the new values shifted
-        x = fd.evaluate(eval_points_rep + numpy.atleast_2d(delta).T,
+        x = fd.evaluate(eval_points_rep + np.atleast_2d(delta).T,
                         aligned_evaluation=False,
                         extrapolation=extrapolation,
                         keepdims=False)
@@ -178,18 +178,18 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
         x.mean(axis=0, out=tfine_aux)
 
         # Calculates x - mean
-        numpy.subtract(x, tfine_aux, out=x)
+        np.subtract(x, tfine_aux, out=x)
 
-        d1_regsse = scipy.integrate.trapz(numpy.multiply(x, D1x, out=x),
+        d1_regsse = scipy.integrate.trapz(np.multiply(x, D1x, out=x),
                                           eval_points, axis=1)
         # Updates the shifts by the Newton-Rhapson iteration
         # delta = delta - step_size * d1_regsse / d2_regsse
-        numpy.divide(d1_regsse, d2_regsse, out=delta_aux)
-        numpy.multiply(delta_aux, step_size, out=delta_aux)
-        numpy.subtract(delta, delta_aux, out=delta)
+        np.divide(d1_regsse, d2_regsse, out=delta_aux)
+        np.multiply(delta_aux, step_size, out=delta_aux)
+        np.subtract(delta, delta_aux, out=delta)
 
         # Updates convergence criterions
-        max_diff = numpy.abs(delta_aux, out=delta_aux).max()
+        max_diff = np.abs(delta_aux, out=delta_aux).max()
         iter += 1
 
     return delta

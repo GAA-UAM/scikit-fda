@@ -2286,10 +2286,6 @@ class FDataBasis(FData):
         else:
             return self.copy(coefficients=self.coefficients[key])
 
-    def sum_samples(self):
-        """Sums all the samples on the object to a single sample object"""
-        return self.copy(coefficients=numpy.sum(self.coefficients, axis=0))
-
     def __add__(self, other):
         """Addition for FDataBasis object."""
         if isinstance(other, FDataBasis):

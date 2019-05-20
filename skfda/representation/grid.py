@@ -105,14 +105,19 @@ class FDataGrid(FData):
 
         def __iter__(self):
             """Return an iterator through the image coordinates."""
+
             for k in range(len(self)):
                 yield self._fdatagrid.copy(
-                    data_matrix=self._fdatagrid.data_matrix[..., k])
+                    data_matrix=self._fdatagrid.data_matrix[..., k],
+                    axes_labels=self._fdatagrid._get_labels_coordinates(k))
 
         def __getitem__(self, key):
             """Get a specific coordinate."""
+            axes_labels = self._fdatagrid._get_labels_coordinates(key)
+
             return self._fdatagrid.copy(
-                data_matrix=self._fdatagrid.data_matrix[..., key])
+                data_matrix=self._fdatagrid.data_matrix[..., key],
+                axes_labels=axes_labels)
 
         def __len__(self):
             """Return the number of coordinates."""
@@ -193,10 +198,6 @@ class FDataGrid(FData):
         if self.data_matrix.ndim == 1 + self.ndim_domain:
             self.data_matrix = self.data_matrix[..., numpy.newaxis]
 
-        if axes_labels is not None and len(axes_labels) != (self.ndim_domain + self.ndim_image):
-            raise ValueError("There must be a label for each of the"
-                              "dimensions of the domain and the image.")
-
         self.interpolator = interpolator
 
 
@@ -249,7 +250,7 @@ class FDataGrid(FData):
             return 1
 
     @property
-    def coordinate(self):
+    def coordinates(self):
         r"""Returns an object to access to the image coordinates.
 
         If the functional object contains multivariate samples
@@ -302,10 +303,10 @@ class FDataGrid(FData):
             3
 
         """
-        if self._coordinate is None:
-            self._coordinate = FDataGrid._CoordinateIterator(self)
+        if self._coordinates is None:
+            self._coordinates = FDataGrid._CoordinateIterator(self)
 
-        return self._coordinate
+        return self._coordinates
 
     @property
     def ndim(self):
@@ -700,7 +701,7 @@ class FDataGrid(FData):
         return self.copy(data_matrix=data_matrix / self.data_matrix)
 
 
-    def concatenate(self, *others, as_coordinate=False):
+    def concatenate(self, *others, as_coordinates=False):
         """Join samples from a similar FDataGrid object.
 
         Joins samples from another FDataGrid object if it has the same
@@ -708,12 +709,12 @@ class FDataGrid(FData):
 
         Args:
             others (:obj:`FDataGrid`): another FDataGrid object.
-            as_coordinate (boolean, optional):  If False concatenates as
+            as_coordinates (boolean, optional):  If False concatenates as
                 new samples, else, concatenates the other functions as
-                new componentes of the image. Defaults to false.
+                new components of the image. Defaults to false.
 
         Returns:
-            :obj:`FDataGrid`: FDataGrid object with the samples from the two
+            :obj:`FDataGrid`: FDataGrid object with the samples from the
             original objects.
 
         Examples:
@@ -738,19 +739,31 @@ class FDataGrid(FData):
 
         """
         # Checks
-        for other in others:
-            self.__check_same_dimensions(other)
+        if not as_coordinates:
+            for other in others:
+                self.__check_same_dimensions(other)
 
-        if as_coordinate:
-            if any([self.nsamples != other.nsamples for other in others]):
-                raise ValueError(f"All the FDataGrids must contain the same "
-                                 f"number of samples {self.nsamples} to "
-                                 f"concatenate as a new coordinate.")
+        elif not all([numpy.array_equal(self.sample_points, other.sample_points)
+                      for other in others]):
+            raise ValueError("All the FDataGrids must be sampled in the  same "
+                             "sample points.")
+
+        elif any([self.nsamples != other.nsamples for other in others]):
+
+            raise ValueError(f"All the FDataGrids must contain the same "
+                             f"number of samples {self.nsamples} to "
+                             f"concatenate as a new coordinate.")
+
 
         data = [self.data_matrix] + [other.data_matrix for other in others]
-        axis = 0 if as_coordinate is False else -1
 
-        return self.copy(data_matrix=numpy.concatenate(data, axis=axis))
+
+        if as_coordinates:
+            return self.copy(data_matrix=numpy.concatenate(data, axis=-1),
+                             axes_labels=self._join_labels_coordinates(*others))
+
+        else:
+            return self.copy(data_matrix=numpy.concatenate(data, axis=0))
 
 
     def scatter(self, fig=None, ax=None, nrows=None, ncols=None, **kwargs):
@@ -1064,12 +1077,18 @@ class FDataGrid(FData):
 
     def __repr__(self):
         """Return repr(self)."""
+
+        if self.axes_labels is None:
+            axes_labels = None
+        else:
+            axes_labels = self.axes_labels.tolist()
+
         return (f"FDataGrid("
                 f"\n{repr(self.data_matrix)},"
                 f"\nsample_points={repr(self.sample_points)},"
                 f"\ndomain_range={repr(self.domain_range)},"
                 f"\ndataset_label={repr(self.dataset_label)},"
-                f"\naxes_labels={repr(self.axes_labels)},"
+                f"\naxes_labels={repr(axes_labels)},"
                 f"\nextrapolation={repr(self.extrapolation)},"
                 f"\ninterpolator={repr(self.interpolator)},"
                 f"\nkeepdims={repr(self.keepdims)})").replace('\n', '\n    ')

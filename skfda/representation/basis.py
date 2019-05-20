@@ -1489,11 +1489,6 @@ class FDataBasis(FData):
         self.basis = basis
         self.coefficients = coefficients
 
-        #self.dataset_label = dataset_label
-        #self.axes_labels = axes_labels
-        #self.extrapolation = extrapolation
-        #self.keepdims = keepdims
-
         super().__init__(extrapolation, dataset_label, axes_labels, keepdims)
 
 
@@ -1732,7 +1727,7 @@ class FDataBasis(FData):
         return 1
 
     @property
-    def coordinate(self,):
+    def coordinates(self):
         r"""Return a component of the FDataBasis.
 
         If the functional object contains samples
@@ -1741,14 +1736,14 @@ class FDataBasis(FData):
 
 
         Todo:
-            By the moment only unidimensional objects are supported in basis
+            By the moment, only unidimensional objects are supported in basis
             form.
 
         """
-        if self._coordinate is None:
-            self._coordinate = FDataBasis._CoordinateIterator(self)
+        if self._coordinates is None:
+            self._coordinates = FDataBasis._CoordinateIterator(self)
 
-        return self._coordinate
+        return self._coordinates
 
     @property
     def nbasis(self):
@@ -2228,11 +2223,16 @@ class FDataBasis(FData):
 
     def __repr__(self):
         """Representation of FDataBasis object."""
+        if self.axes_labels is None:
+            axes_labels = None
+        else:
+            axes_labels = self.axes_labels.tolist()
+
         return (f"{self.__class__.__name__}("
                 f"\nbasis={self.basis},"
                 f"\ncoefficients={self.coefficients},"
                 f"\ndataset_label={self.dataset_label},"
-                f"\naxes_labels={self.axes_labels},"
+                f"\naxes_labels={axes_labels},"
                 f"\nextrapolation={self.extrapolation},"
                 f"\nkeepdims={self.keepdims})").replace('\n', '\n    ')
 
@@ -2249,7 +2249,7 @@ class FDataBasis(FData):
         return (self.basis == other.basis
                 and numpy.all(self.coefficients == other.coefficients))
 
-    def concatenate(self, *others, as_coordinate=False):
+    def concatenate(self, *others, as_coordinates=False):
         """Join samples from a similar FDataBasis object.
 
         Joins samples from another FDataBasis object if they have the same
@@ -2257,16 +2257,20 @@ class FDataBasis(FData):
 
         Args:
             others (:class:`FDataBasis`): other FDataBasis objects.
-            as_coordinate (boolean, optional):  If False concatenates as
+            as_coordinates (boolean, optional):  If False concatenates as
                 new samples, else, concatenates the other functions as
-                new componentes of the image. Defaults to False.
+                new components of the image. Defaults to False.
 
         Returns:
-            :class:`FDataBasis`: FDataBasis object with the samples from the two
+            :class:`FDataBasis`: FDataBasis object with the samples from the
             original objects.
+
+        Todo:
+            By the moment, only unidimensional objects are supported in basis
+            form.
         """
 
-        if as_coordinate:
+        if as_coordinates:
             return NotImplemented
 
         for other in others:

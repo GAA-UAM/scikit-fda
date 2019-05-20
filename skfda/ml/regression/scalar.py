@@ -5,9 +5,9 @@ import numpy as np
 
 
 class ScalarRegression:
-    def __init__(self, beta, wt=None):
+    def __init__(self, beta, weights=None):
         self.beta = beta
-        self.weights = wt
+        self.weights = weights
 
     def fit(self, y, x):
 
@@ -18,13 +18,9 @@ class ScalarRegression:
 
         y = np.array(y).reshape((nsamples, 1))
 
-        Zmat = None
-        Rmat = None
-
-        for j in range(0, nbeta):
-            xfdj = x[j]
-            xcoef = xfdj.coefficients
-            xbasis = xfdj.basis
+        for j in range(nbeta):
+            xcoef = x[j].coefficients
+            xbasis = x[j].basis
             Jpsithetaj = xbasis.inner_product(beta[j])
             Zmat = xcoef @ Jpsithetaj if j == 0 else np.concatenate(
                 (Zmat, xcoef @ Jpsithetaj), axis=1)
@@ -33,17 +29,14 @@ class ScalarRegression:
             rtwt = np.sqrt(wt)
             Zmatwt = Zmat * rtwt
             ymatwt = y * rtwt
-            Cmat = np.transpose(Zmatwt @ Zmatwt + Rmat)
+            Cmat = np.transpose(Zmatwt @ Zmatwt)
             Dmat = np.transpose(Zmatwt) @ ymatwt
         else:
             Cmat = np.transpose(Zmat) @ Zmat
             Dmat = np.transpose(Zmat) @ y
 
-        # eigchk(Cmat)
         Cmatinv = np.linalg.inv(Cmat)
         betacoef = Cmatinv @ Dmat
-
-        df = np.sum(np.diag(Zmat @ Cmatinv @ np.transpose(Zmat)))
 
         mj2 = 0
         for j in range(0, nbeta):

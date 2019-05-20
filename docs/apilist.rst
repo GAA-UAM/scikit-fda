@@ -10,4 +10,4 @@ API Reference
    modules/exploratory
    modules/datasets
    modules/misc
-   
+   modules/ml

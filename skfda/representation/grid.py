@@ -271,7 +271,7 @@ class FDataGrid(FData):
             :math:`f(t) = (f_0(t), f_1(t), f_2(t))`. We can obtain a specific
             component of the vector, for example, the first one.
 
-            >>> fd_0 = fd.coordinate[0]
+            >>> fd_0 = fd.coordinates[0]
             >>> fd_0
             FDataGrid(...)
 
@@ -283,13 +283,13 @@ class FDataGrid(FData):
             Or we can get multiple components, it can be accesed as a 1-d
             numpy array of coordinates, for example, :math:`(f_0(t), f_1(t))`.
 
-            >>> fd_01 = fd.coordinate[0:2]
+            >>> fd_01 = fd.coordinates[0:2]
             >>> fd_01.ndim_image
             2
 
             We can use this method to iterate throught all the coordinates.
 
-            >>> for fd_i in fd.coordinate:
+            >>> for fd_i in fd.coordinates:
             ...     fd_i.ndim_image
             1
             1
@@ -298,7 +298,7 @@ class FDataGrid(FData):
             This object can be used to split a FDataGrid in a list with
             their components.
 
-            >>> fd_list = list(fd.coordinate)
+            >>> fd_list = list(fd.coordinates)
             >>> len(fd_list)
             3
 

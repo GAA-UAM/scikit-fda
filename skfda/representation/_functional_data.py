@@ -55,9 +55,12 @@ class FData(ABC):
         if labels is not None:
 
             labels = np.asarray(labels)
-            if len(labels) != (self.ndim_domain + self.ndim_image):
-                raise ValueError("There must be a label for each of the"
+            if len(labels) > (self.ndim_domain + self.ndim_image):
+                raise ValueError("There must be a label for each of the "
                                   "dimensions of the domain and the image.")
+            if len(labels) < (self.ndim_domain + self.ndim_image):
+                diff = (self.ndim_domain + self.ndim_image) - len(labels)
+                labels = np.concatenate((labels, diff*[None]))
 
         self._axes_labels = labels
 
@@ -685,8 +688,11 @@ class FData(ABC):
         if self.axes_labels is None:
             labels = None
         else:
-            labels = list(self.axes_labels[:self.ndim_domain])
-            labels.extend(list(self.axes_labels[self.ndim_domain:][key]))
+
+            labels = self.axes_labels[:self.ndim_domain].tolist()
+            image_label = np.atleast_1d(self.axes_labels[self.ndim_domain:][key])
+            labels.extend(image_label.tolist())
+
 
         return labels
 

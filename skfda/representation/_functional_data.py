@@ -935,7 +935,7 @@ class FData(ABC):
                     raise ValueError("There must be a color in label_colors "
                                      "for each of the labels that appear in "
                                      "sample_labels.")
-                sample_colors = label_colors[sample_labels]
+                sample_colors = np.asarray(label_colors)[sample_labels]
 
             else:
                 colormap = plt.cm.get_cmap('Greys')

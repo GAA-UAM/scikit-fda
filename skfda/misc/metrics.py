@@ -2,6 +2,7 @@
 import scipy.integrate
 import numpy
 
+
 from ..representation import FData
 from ..representation import FDataGrid
 from ..preprocessing.registration import (
@@ -29,9 +30,9 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None):
         fdata2 = FDataGrid([fdata1], sample_points=eval_points)
 
     # Checks dimension
-    elif (fdata1.ndim_image != 1 or fdata1.ndim_domain != 1 or
-        fdata2.ndim_image != 1 or fdata2.ndim_domain != 1):
-        raise ValueError("Objects should be unidimensional")
+    elif (fdata2.ndim_image != fdata1.ndim_image or
+          fdata2.ndim_domain != fdata1.ndim_domain):
+        raise ValueError("Objects should have the same dimensions")
 
     # Case different domain ranges
     elif not numpy.array_equal(fdata1.domain_range, fdata2.domain_range):
@@ -54,12 +55,66 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None):
         fdata1 = fdata1.to_grid(eval_points)
         fdata2 = fdata2.to_grid(eval_points)
 
-    elif not numpy.array_equal(fdata1.sample_points, fdata2.sample_points):
+    elif not numpy.array_equal(fdata1.sample_points,
+                                      fdata2.sample_points):
         raise ValueError("Sample points for both objects must be equal or"
                          "a new list evaluation points must be specified")
 
     return fdata1, fdata2
 
+def vectorial_norm(fdatagrid, p=2):
+    r"""Apply a vectorial norm to a multivariate function.
+
+    Given a multivariate function :math:`f:\mathbb{R}^n\rightarrow \mathbb{R}^d`
+    applies a vectorial norm :math:`\| \cdot \|` to produce a function
+    :math:`\|f\|:\mathbb{R}^n\rightarrow \mathbb{R}`.
+
+    For example, let :math:`f:\mathbb{R} \rightarrow \mathbb{R}^2` be
+    :math:`f(t)=(f_1(t), f_2(t))` and :math:`\| \cdot \|_2` the euclidian norm.
+
+    .. math::
+        \|f\|_2(t) = \sqrt { |f_1(t)|^2 + |f_2(t)|^2 }
+
+    In general if :math:`p \neq \pm \infty` and :math:`f:\mathbb{R}^n
+    \rightarrow \mathbb{R}^d`
+
+    .. math::
+        \|f\|_p(x_1, ... x_n) = \left ( \sum_{k=1}^{d} |f_k(x_1, ..., x_n)|^p
+        \right )^{(1/p)}
+
+    Args:
+        fdatagrid (:class:`FDatagrid`): Functional object to be transformed.
+        p (int, optional): Exponent in the lp norm. If p is a number then
+            it is applied sum(abs(x)**p)**(1./p), if p is inf then max(abs(x)),
+            and if p is -inf it is applied min(abs(x)). See numpy.linalg.norm
+            to more information. Defaults to 2.
+
+    Returns:
+        (:class:`FDatagrid`): FDatagrid with image dimension equal to 1.
+
+    Examples:
+
+        >>> from skfda.datasets import make_multimodal_samples
+        >>> from skfda.misc.metrics import vectorial_norm
+
+        First we will construct an example dataset with curves in
+        :math:`\mathbb{R}^2`.
+
+        >>> fd = make_multimodal_samples(ndim_image=2, random_state=0)
+        >>> fd.ndim_image
+        2
+
+        We will apply the euclidean norm
+
+        >>> fd = vectorial_norm(fd, p=2)
+        >>> fd.ndim_image
+        1
+
+    """
+    data_matrix = numpy.linalg.norm(fdatagrid.data_matrix, ord=p, axis=-1,
+                                    keepdims=True)
+
+    return fdatagrid.copy(data_matrix=data_matrix)
 
 
 def distance_from_norm(norm, **kwargs):
@@ -153,10 +208,10 @@ def pairwise_distance(distance, **kwargs):
     return pairwise
 
 
-def norm_lp(fdatagrid, p=2):
+def norm_lp(fdatagrid, p=2, p2=2):
     r"""Calculate the norm of all the samples in a FDataGrid object.
 
-    For each sample sample f the lp norm is defined as:
+    For each sample sample f the Lp norm is defined as:
 
     .. math::
         \lVert f \rVert = \left( \int_D \lvert f \rvert^p dx \right)^{
@@ -166,10 +221,33 @@ def norm_lp(fdatagrid, p=2):
 
     The integral is approximated using Simpson's rule.
 
+    In general, if f is a multivariate function :math:`(f_1, ..., f_d)`, and
+    :math:`D \subset \mathbb{R}^n`, it is applied the following generalization
+    of the Lp norm.
+
+    .. math::
+        \| f \| = \left( \int_D \| f \|_{*}^p dx \right)^{
+        \frac{1}{p}}
+
+    Where :math:`\| \cdot \|_*` denotes a vectorial norm. See
+    :func:`vectorial_norm` to more information.
+
+    For example, if :math:`f: \mathbb{R}^2 \rightarrow \mathbb{R}^2`, and
+    :math:`\| \cdot \|_*` is the euclidean norm
+    :math:`\| (x,y) \|_* = \sqrt{x^2 + y^2}`, the lp norm applied is
+
+    .. math::
+        \lVert f \rVert = \left( \int \int_D \left ( \sqrt{ \lvert f_1(x,y)
+        \rvert^2 + \lvert f_2(x,y) \rvert^2 } \right )^p dxdy \right)^{
+        \frac{1}{p}}
+
+
     Args:
         fdatagrid (FDataGrid): FDataGrid object.
         p (int, optional): p of the lp norm. Must be greater or equal
             than 1. Defaults to 2.
+        p2 (int, optional): p index of the vectorial norm applied in case of
+            multivariate objects. Defaults to 2.
 
     Returns:
         numpy.darray: Matrix with as many rows as samples in the first
@@ -200,13 +278,20 @@ def norm_lp(fdatagrid, p=2):
         raise ValueError(f"p must be equal or greater than 1.")
 
     if fdatagrid.ndim_image > 1:
-        raise ValueError("Not implemented for image with "
-                         "dimension greater than 1")
+        data_matrix = numpy.linalg.norm(fdatagrid.data_matrix, ord=p2, axis=-1,
+                                        keepdims=True)
+    else:
+        data_matrix = numpy.abs(fdatagrid.data_matrix)
 
-    # Computes the norm, approximating the integral with Simpson's rule.
-    res = scipy.integrate.simps(numpy.abs(fdatagrid.data_matrix[..., 0]) ** p,
-                                x=fdatagrid.sample_points
-                                ) ** (1 / p)
+    if fdatagrid.ndim_domain == 1:
+
+        # Computes the norm, approximating the integral with Simpson's rule.
+        res = scipy.integrate.simps(data_matrix[..., 0] ** p,
+                                    x=fdatagrid.sample_points) ** (1 / p)
+
+    else:
+        # Needed to perform surface integration
+        return NotImplemented
 
     if len(res) == 1:
         return res[0]

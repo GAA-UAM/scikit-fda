@@ -3,7 +3,6 @@ import rdata
 
 from .. import FDataGrid
 import warnings
-from Cython.Build.Dependencies import package
 
 
 def fdata_constructor(obj, attrs):

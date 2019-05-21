@@ -328,6 +328,33 @@ class Basis(ABC):
     def inner_product(self, other):
         return np.transpose(other.inner_product(self.to_basis()))
 
+    def _add_same_basis(self, coefs1, coefs2):
+        return self.copy(), coefs1 + coefs2
+
+    def _add_constant(self, coefs, constant):
+        coefs = coefs.copy()
+        constant = numpy.array(constant)
+        coefs[:, 0] = coefs[:, 0] + constant
+
+        return self.copy(), coefs
+
+    def _sub_same_basis(self, coefs1, coefs2):
+        return self.copy(), coefs1 - coefs2
+
+    def _sub_constant(self, coefs, other):
+        coefs = coefs.copy()
+        other = numpy.array(other)
+        coefs[:, 0] = coefs[:, 0] - other
+
+        return self.copy(), coefs
+
+    def _mul_constant(self, coefs, other):
+        coefs = coefs.copy()
+        other = numpy.atleast_2d(other).reshape(-1, 1)
+        coefs = coefs * other
+
+        return self.copy(), coefs
+
     def __repr__(self):
         """Representation of a Basis object."""
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
@@ -1362,7 +1389,8 @@ class Fourier(Basis):
             raise ValueError("Ranges are not equal.")
 
         if isinstance(other, Fourier) and self.period == other.period:
-            return Fourier(self.domain_range, self.nbasis + other.nbasis - 1, self.period)
+            return Fourier(self.domain_range, self.nbasis + other.nbasis - 1,
+                           self.period)
         else:
             return other.rbasis_of_product(self)
 
@@ -2254,14 +2282,24 @@ class FDataBasis(FData):
 
         if isinstance(key, int):
             return self.copy(coefficients=self.coefficients[key:key + 1])
-
         else:
             return self.copy(coefficients=self.coefficients[key])
 
     def __add__(self, other):
         """Addition for FDataBasis object."""
+        if isinstance(other, FDataBasis):
+            if self.basis != other.basis:
+                raise NotImplementedError
+            else:
+                basis, coefs = self.basis._add_same_basis(self.coefficients,
+                                                  other.coefficients)
+        else:
+            try:
+                basis, coefs = self.basis._add_constant(self.coefficients, other)
+            except TypeError:
+                return NotImplemented
 
-        raise NotImplementedError
+        return self.copy(basis=basis, coefficients=coefs)
 
     def __radd__(self, other):
         """Addition for FDataBasis object."""
@@ -2270,28 +2308,51 @@ class FDataBasis(FData):
 
     def __sub__(self, other):
         """Subtraction for FDataBasis object."""
+        if isinstance(other, FDataBasis):
+            if self.basis != other.basis:
+                raise NotImplementedError
+            else:
+                basis, coefs = self.basis._sub_same_basis(self.coefficients,
+                                                  other.coefficients)
+        else:
+            try:
+                basis, coefs = self.basis._sub_constant(self.coefficients, other)
+            except TypeError:
+                return NotImplemented
 
-        raise NotImplementedError
+        return self.copy(basis=basis, coefficients=coefs)
 
     def __rsub__(self, other):
         """Right subtraction for FDataBasis object."""
-
-        raise NotImplementedError
+        return (self * -1).__add__(other)
 
     def __mul__(self, other):
         """Multiplication for FDataBasis object."""
+        if isinstance(other, FDataBasis):
+            raise NotImplementedError
 
-        raise NotImplementedError
+        try:
+            basis, coefs = self.basis._mul_constant(self.coefficients, other)
+        except TypeError:
+            return NotImplemented
+
+        return self.copy(basis=basis, coefficients=coefs)
 
     def __rmul__(self, other):
         """Multiplication for FDataBasis object."""
-
         return self.__mul__(other)
 
     def __truediv__(self, other):
         """Division for FDataBasis object."""
 
-        raise NotImplementedError
+        other = numpy.array(other)
+
+        try:
+            other = 1 / other
+        except TypeError:
+            return NotImplemented
+
+        return self * other
 
     def __rtruediv__(self, other):
         """Right division for FDataBasis object."""

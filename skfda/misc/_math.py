@@ -4,7 +4,7 @@ Defines the basic mathematical operations for classes defined in this
 package. FDataBasis and FDataGrid.
 
 """
-import numpy
+import numpy as np
 import scipy.integrate
 from ..exploratory.stats import mean
 
@@ -28,7 +28,7 @@ def sqrt(fdatagrid):
         FDataGrid: Object whose elements are the square roots of the original.
 
     """
-    return fdatagrid.copy(data_matrix=numpy.sqrt(fdatagrid.data_matrix))
+    return fdatagrid.copy(data_matrix=np.sqrt(fdatagrid.data_matrix))
 
 
 def absolute(fdatagrid):
@@ -43,7 +43,7 @@ def absolute(fdatagrid):
             original.
 
     """
-    return fdatagrid.copy(data_matrix=numpy.absolute(fdatagrid.data_matrix))
+    return fdatagrid.copy(data_matrix=np.absolute(fdatagrid.data_matrix))
 
 
 def round(fdatagrid, decimals=0):
@@ -73,7 +73,7 @@ def exp(fdatagrid):
             the elements of the original.
 
     """
-    return fdatagrid.copy(data_matrix=numpy.exp(fdatagrid.data_matrix))
+    return fdatagrid.copy(data_matrix=np.exp(fdatagrid.data_matrix))
 
 
 def log(fdatagrid):
@@ -87,7 +87,7 @@ def log(fdatagrid):
         FDataGrid: Object whose elements are the logarithm of the original.
 
     """
-    return fdatagrid.copy(data_matrix=numpy.log(fdatagrid.data_matrix))
+    return fdatagrid.copy(data_matrix=np.log(fdatagrid.data_matrix))
 
 
 def log10(fdatagrid):
@@ -102,7 +102,7 @@ def log10(fdatagrid):
             original.
 
     """
-    return fdatagrid.copy(data_matrix=numpy.log10(fdatagrid.data_matrix))
+    return fdatagrid.copy(data_matrix=np.log10(fdatagrid.data_matrix))
 
 
 def log2(fdatagrid):
@@ -117,7 +117,7 @@ def log2(fdatagrid):
             original.
 
     """
-    return fdatagrid.copy(data_matrix=numpy.log2(fdatagrid.data_matrix))
+    return fdatagrid.copy(data_matrix=np.log2(fdatagrid.data_matrix))
 
 
 def cumsum(fdatagrid):
@@ -131,7 +131,7 @@ def cumsum(fdatagrid):
         FDataGrid: Object with the sample wise cumulative sum.
 
     """
-    return fdatagrid.copy(data_matrix=numpy.cumsum(fdatagrid.data_matrix,
+    return fdatagrid.copy(data_matrix=np.cumsum(fdatagrid.data_matrix,
                                                    axis=0))
 
 
@@ -164,16 +164,16 @@ def inner_product(fdatagrid, fdatagrid2):
         triangle delimited by the the lines y = 0, x = 1 and y = x; 0.5.
 
         >>> import skfda
-        >>> x = numpy.linspace(0,1,1001)
+        >>> x = np.linspace(0,1,1001)
         >>> fd1 = skfda.FDataGrid(x,x)
-        >>> fd2 = skfda.FDataGrid(numpy.ones(len(x)),x)
+        >>> fd2 = skfda.FDataGrid(np.ones(len(x)),x)
         >>> inner_product(fd1, fd2)
         array([[ 0.5]])
 
         If the FDataGrid object contains more than one sample
 
-        >>> fd1 = skfda.FDataGrid([x, numpy.ones(len(x))], x)
-        >>> fd2 = skfda.FDataGrid([numpy.ones(len(x)), x] ,x)
+        >>> fd1 = skfda.FDataGrid([x, np.ones(len(x))], x)
+        >>> fd2 = skfda.FDataGrid([np.ones(len(x)), x] ,x)
         >>> inner_product(fd1, fd2).round(2)
         array([[ 0.5 , 0.33],
                [ 1.  , 0.5 ]])
@@ -184,12 +184,12 @@ def inner_product(fdatagrid, fdatagrid2):
                                   "of the domain of the FDatagrid object is "
                                   "one.")
     # Checks
-    if not numpy.array_equal(fdatagrid.sample_points,
+    if not np.array_equal(fdatagrid.sample_points,
                              fdatagrid2.sample_points):
         raise ValueError("Sample points for both objects must be equal")
 
     # Creates an empty matrix with the desired size to store the results.
-    matrix = numpy.empty([fdatagrid.nsamples, fdatagrid2.nsamples])
+    matrix = np.empty([fdatagrid.nsamples, fdatagrid2.nsamples])
     # Iterates over the different samples of both objects.
     for i in range(fdatagrid.nsamples):
         for j in range(fdatagrid2.nsamples):

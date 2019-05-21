@@ -217,6 +217,97 @@ class TestBasis(unittest.TestCase):
         self.assertEqual(expec_basis, result.basis)
         np.testing.assert_array_almost_equal(expec_coefs, result.coefficients)
 
+    def test_fdatabasis__add__(self):
+        monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
+        monomial2 = FDataBasis(Monomial(nbasis=3), [[1, 2, 3], [3, 4, 5]])
+
+        np.testing.assert_equal(monomial1 + monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[2, 4, 6], [4, 6, 8]]))
+        np.testing.assert_equal(monomial2 + 1,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[2, 2, 3], [4, 4, 5]]))
+        np.testing.assert_equal(1 + monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[2, 2, 3], [4, 4, 5]]))
+        np.testing.assert_equal(monomial2 + [1, 2],
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[2, 2, 3], [5, 4, 5]]))
+        np.testing.assert_equal([1, 2] + monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[2, 2, 3], [5, 4, 5]]))
+
+        np.testing.assert_raises(NotImplementedError, monomial2.__add__,
+                        FDataBasis(Fourier(nbasis=3),
+                                   [[2, 2, 3], [5, 4, 5]]))
+
+    def test_fdatabasis__sub__(self):
+        monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
+        monomial2 = FDataBasis(Monomial(nbasis=3), [[1, 2, 3], [3, 4, 5]])
+
+        np.testing.assert_equal(monomial1 - monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[0, 0, 0], [-2, -2, -2]]))
+        np.testing.assert_equal(monomial2 - 1,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[0, 2, 3], [2, 4, 5]]))
+        np.testing.assert_equal(1 - monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[0, -2, -3], [-2, -4, -5]]))
+        np.testing.assert_equal(monomial2 - [1, 2],
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[0, 2, 3], [1, 4, 5]]))
+        np.testing.assert_equal([1, 2] - monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[0, -2, -3], [-1, -4, -5]]))
+
+        np.testing.assert_raises(NotImplementedError, monomial2.__sub__,
+                                 FDataBasis(Fourier(nbasis=3),
+                                            [[2, 2, 3], [5, 4, 5]]))
+        
+    def test_fdatabasis__mul__(self):
+        monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
+        monomial2 = FDataBasis(Monomial(nbasis=3), [[1, 2, 3], [3, 4, 5]])
+
+        np.testing.assert_equal(monomial1 * 2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[2, 4, 6]]))
+        np.testing.assert_equal(3 * monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[3, 6, 9], [9, 12, 15]]))
+        np.testing.assert_equal(3 * monomial2,
+                                monomial2 * 3)
+
+        np.testing.assert_equal(monomial2 * [1, 2],
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[1, 2, 3], [6, 8, 10]]))
+        np.testing.assert_equal([1, 2] * monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[1, 2, 3], [6, 8, 10]]))
+
+        np.testing.assert_raises(NotImplementedError, monomial2.__mul__,
+                        FDataBasis(Fourier(nbasis=3),
+                                   [[2, 2, 3], [5, 4, 5]]))
+        np.testing.assert_raises(NotImplementedError, monomial2.__mul__,
+                        monomial2)
+
+
+    def test_fdatabasis__mul__(self):
+        monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
+        monomial2 = FDataBasis(Monomial(nbasis=3), [[1, 2, 3], [3, 4, 5]])
+
+        np.testing.assert_equal(monomial1 / 2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[1/2, 1, 3/2]]))
+        np.testing.assert_equal(monomial2 / 2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[1/2, 1, 3/2], [3/2, 2, 5/2]]))
+
+        np.testing.assert_equal(monomial2 / [1, 2],
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[1, 2, 3], [3/2, 2, 5/2]]))
+
+        
     def test_fdatabasis_derivative_constant(self):
         monomial = FDataBasis(Monomial(nbasis=8),
                               [1, 5, 8, 9, 7, 8, 4, 5])

@@ -333,7 +333,7 @@ class Basis(ABC):
 
     def _add_constant(self, coefs, constant):
         coefs = coefs.copy()
-        constant = numpy.array(constant)
+        constant = np.array(constant)
         coefs[:, 0] = coefs[:, 0] + constant
 
         return self.copy(), coefs
@@ -343,14 +343,14 @@ class Basis(ABC):
 
     def _sub_constant(self, coefs, other):
         coefs = coefs.copy()
-        other = numpy.array(other)
+        other = np.array(other)
         coefs[:, 0] = coefs[:, 0] - other
 
         return self.copy(), coefs
 
     def _mul_constant(self, coefs, other):
         coefs = coefs.copy()
-        other = numpy.atleast_2d(other).reshape(-1, 1)
+        other = np.atleast_2d(other).reshape(-1, 1)
         coefs = coefs * other
 
         return self.copy(), coefs
@@ -2345,7 +2345,7 @@ class FDataBasis(FData):
     def __truediv__(self, other):
         """Division for FDataBasis object."""
 
-        other = numpy.array(other)
+        other = np.array(other)
 
         try:
             other = 1 / other

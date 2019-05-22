@@ -105,7 +105,8 @@ ax[0].legend(['Original', '4 elements', '7 elements'])
 ##############################################################################
 # We can also see the effect of changing the basis.
 # For example, in the Fourier basis the functions start and end at the same
-# points, so this basis is clearly non suitable for the Growth dataset.
+# points if the period is equal to the domain range, so this basis is clearly
+# non suitable for the Growth dataset.
 fd_basis = fd.to_basis(
     basis.Fourier(domain_range=fd.domain_range[0], nbasis=7)
     )

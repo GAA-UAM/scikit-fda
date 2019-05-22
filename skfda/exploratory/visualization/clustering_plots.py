@@ -314,10 +314,10 @@ def _set_labels(xlabel, ylabel, title, xlabel_str):
         xlabel = xlabel_str
 
     if ylabel is None:
-        ylabel = "Membership grade"
+        ylabel = "Degree of membership"
 
     if title is None:
-        title = "Membership grades of the samples to each cluster"
+        title = "Degrees of membership of the samples to each cluster"
 
     return xlabel, ylabel, title
 
@@ -399,9 +399,9 @@ def plot_cluster_lines(estimator, X, fig=None, ax=None, sample_colors=None,
             cluster the samples of the fdatagrid are classified into.
         colormap(colormap, optional): colormap from which the colors of the plot are taken.
         xlabel (str): Label for the x-axis. Defaults to "Sample".
-        ylabel (str): Label for the y-axis. Defaults to "Membership grade".
+        ylabel (str): Label for the y-axis. Defaults to "Degree of membership".
         title (str, optional): Title for the figure where the clustering results are ploted.
-            Defaults to "Membership grades of the samples to each cluster".
+            Defaults to "Degrees of membership of the samples to each cluster".
 
     Returns:
         (tuple): tuple containing:
@@ -495,9 +495,9 @@ def plot_cluster_bars(estimator, X, fig=None, ax=None, sort=-1,
             cluster the samples of the fdatagrid are classified into.
         colormap(colormap, optional): colormap from which the colors of the plot are taken.
         xlabel (str): Label for the x-axis. Defaults to "Sample".
-        ylabel (str): Label for the y-axis. Defaults to "Membership grade".
+        ylabel (str): Label for the y-axis. Defaults to "Degree of membership".
         title (str): Title for the figure where the clustering results are plotted.
-            Defaults to "Membership grades of the samples to each cluster".
+            Defaults to "Degrees of membership of the samples to each cluster".
 
     Returns:
         (tuple): tuple containing:

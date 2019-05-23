@@ -833,6 +833,7 @@ class FData(ABC):
         next_color = False
 
         if sample_labels is not None:
+            sample_labels = np.asarray(sample_labels)
 
             nlabels = np.max(sample_labels) + 1
 

@@ -371,26 +371,6 @@ class NeighborsClassifierMixin:
 
         return self.estimator_.predict(X)
 
-    def predict_proba(self, X):
-        """Return probability estimates for the test data X.
-
-        Args:
-            X (:class:`FDataGrid` or array-like): FDataGrid with the test
-                samples or array (n_query, n_indexed) if metric ==
-                'precomputed'.
-        Returns
-            p : array of shape = [n_samples, n_classes], or a list of n_outputs
-                of such arrays if n_outputs > 1.
-                The class probabilities of the input samples. Classes are
-                ordered by lexicographic order.
-
-        """
-        self._check_is_fitted()
-
-        X = self._transform_to_multivariate(X)
-
-        return self.estimator_.predict_proba(X)
-
 class NeighborsScalarRegresorMixin:
     """Mixin class for scalar regressor based in nearest neighbors"""
 
@@ -627,6 +607,26 @@ class KNeighborsClassifier(NeighborsBase, KNeighborsMixin, ClassifierMixin,
             algorithm=self.algorithm, leaf_size=self.leaf_size,
             metric=sk_metric, metric_params=self.metric_params,
             n_jobs=self.n_jobs)
+
+    def predict_proba(self, X):
+        """Return probability estimates for the test data X.
+
+        Args:
+            X (:class:`FDataGrid` or array-like): FDataGrid with the test
+                samples or array (n_query, n_indexed) if metric ==
+                'precomputed'.
+        Returns
+            p : array of shape = [n_samples, n_classes], or a list of n_outputs
+                of such arrays if n_outputs > 1.
+                The class probabilities of the input samples. Classes are
+                ordered by lexicographic order.
+
+        """
+        self._check_is_fitted()
+
+        X = self._transform_to_multivariate(X)
+
+        return self.estimator_.predict_proba(X)
 
 
 class RadiusNeighborsClassifier(NeighborsBase, RadiusNeighborsMixin,

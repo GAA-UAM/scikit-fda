@@ -10,7 +10,7 @@ from ..preprocessing.registration import (
     elastic_registration_warping)
 
 
-def _cast_to_grid(fdata1, fdata2, eval_points=None):
+def _cast_to_grid(fdata1, fdata2, eval_points=None, check=True, **kwargs):
     """Checks if the fdatas passed as argument are unidimensional and compatible
     and converts them to FDatagrid to compute their distances.
 
@@ -22,6 +22,10 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None):
     Returns:
         tuple: Tuple with two :obj:`FDataGrid` with the same sample points.
     """
+
+    # Dont perform any check
+    if not check:
+        return fdata1, fdata2
 
     # To allow use numpy arrays internally
     if (not isinstance(fdata1, FData) and not isinstance(fdata2, FData)
@@ -189,9 +193,7 @@ def pairwise_distance(distance, **kwargs):
     """
     def pairwise(fdata1, fdata2):
 
-        # Checks
-        if not numpy.array_equal(fdata1.domain_range, fdata2.domain_range):
-            raise ValueError("Domain ranges for both objects must be equal")
+        fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, **kwargs)
 
         # Creates an empty matrix with the desired size to store the results.
         matrix = numpy.empty((fdata1.nsamples, fdata2.nsamples))
@@ -199,7 +201,8 @@ def pairwise_distance(distance, **kwargs):
         # Iterates over the different samples of both objects.
         for i in range(fdata1.nsamples):
             for j in range(fdata2.nsamples):
-                matrix[i, j] = distance(fdata1[i], fdata2[j], **kwargs)
+                matrix[i, j] = distance(fdata1[i], fdata2[j], check=False,
+                                        **kwargs)
         # Computes the metric between all piars of x and y.
         return matrix
 
@@ -299,7 +302,7 @@ def norm_lp(fdatagrid, p=2, p2=2):
     return res
 
 
-def lp_distance(fdata1, fdata2, p=2, *, eval_points=None):
+def lp_distance(fdata1, fdata2, p=2, *, eval_points=None, check=True):
     r"""Lp distance for FDataGrid objects.
 
     Calculates the distance between all possible pairs of one sample of
@@ -339,14 +342,13 @@ def lp_distance(fdata1, fdata2, p=2, *, eval_points=None):
     """
     # Checks
 
-    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points)
+    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
+                                   check=check)
 
     return norm_lp(fdata1 - fdata2, p=p)
 
 
-
-
-def fisher_rao_distance(fdata1, fdata2, *, eval_points=None):
+def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, check=True):
     """Compute the Fisher-Rao distance btween two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
@@ -383,7 +385,8 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None):
 
     """
 
-    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points)
+    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
+                                   check=check)
 
     # Both should have the same sample points
     eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
@@ -400,7 +403,8 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None):
     # Return the L2 distance of the SRSF
     return lp_distance(fdata1_srsf, fdata2_srsf, p=2)
 
-def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
+def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, check=True,
+                       **kwargs):
     """Compute the amplitude distance between two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
@@ -449,7 +453,8 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
             (pp. 107-109). Springer.
     """
 
-    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points)
+    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
+                                   check=check)
 
     # Both should have the same sample points
     eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
@@ -488,7 +493,8 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
 
     return distance
 
-def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
+def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, check=True,
+                   **kwargs):
     """Compute the amplitude distance btween two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
@@ -528,7 +534,8 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
 
     """
 
-    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points)
+    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
+                                   check=check)
 
     # Rescale in (0,1)
     eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
@@ -554,7 +561,7 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
     return numpy.arccos(d)
 
 
-def warping_distance(warping1, warping2, *, eval_points=None):
+def warping_distance(warping1, warping2, *, eval_points=None, check=True):
     """Compute the distance between warpings functions.
 
     Let :math:`\\gamma_i` and :math:`\\gamma_j` be two warpings, defined in
@@ -591,7 +598,7 @@ def warping_distance(warping1, warping2, *, eval_points=None):
     """
 
     warping1, warping2 = _cast_to_grid(warping1, warping2,
-                                       eval_points=eval_points)
+                                       eval_points=eval_points, check=check)
 
     # Normalization of warping to (0,1)x(0,1)
     warping1 = normalize_warping(warping1, (0,1))

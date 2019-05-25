@@ -13,3 +13,4 @@ Introduction to classification
    :caption: Modules:
 
    ml/classification
+   ml/regression

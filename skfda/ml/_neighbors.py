@@ -2,7 +2,7 @@
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 
-from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 from sklearn.utils.multiclass import check_classification_targets
 from sklearn.preprocessing import LabelEncoder
@@ -12,6 +12,9 @@ from sklearn.neighbors import NearestNeighbors as _NearestNeighbors
 from sklearn.neighbors import KNeighborsClassifier as _KNeighborsClassifier
 from sklearn.neighbors import (RadiusNeighborsClassifier as
                                _RadiusNeighborsClassifier)
+from sklearn.neighbors import KNeighborsRegressor as _KNeighborsRegressor
+from sklearn.neighbors import (RadiusNeighborsRegressor as
+                               _RadiusNeighborsRegressor)
 
 from .. import FDataGrid
 from ..misc.metrics import lp_distance, pairwise_distance
@@ -50,7 +53,7 @@ def _from_multivariate(data_matrix, sample_points, shape, **kwargs):
     return FDataGrid(data_matrix.reshape(shape), sample_points, **kwargs)
 
 
-def _to_sklearn_metric(metric, sample_points, check=True):
+def _to_sklearn_metric(metric, sample_points):
     r"""Transform a metric between FDatagrid in a sklearn compatible one.
 
     Given a metric between FDatagrids returns a compatible metric used to
@@ -91,17 +94,11 @@ def _to_sklearn_metric(metric, sample_points, check=True):
     # Shape -> (Nsamples = 1, domain_dims...., image_dimension (-1))
     shape = [1] + [len(axis) for axis in sample_points] + [-1]
 
-    if check:
-        def sklearn_metric(x, y, **kwargs):
+    def sklearn_metric(x, y, check=True, **kwargs):
 
-            return metric(_from_multivariate(x, sample_points, shape),
-                          _from_multivariate(y, sample_points, shape), **kwargs)
-    else:
-        def sklearn_metric(x, y, **kwargs):
-
-            return metric(_from_multivariate(x, sample_points, shape),
-                          _from_multivariate(y, sample_points, shape),
-                          check=False, **kwargs)
+        return metric(_from_multivariate(x, sample_points, shape),
+                      _from_multivariate(y, sample_points, shape),
+                      check=check, **kwargs)
 
     return sklearn_metric
 
@@ -394,6 +391,32 @@ class NeighborsClassifierMixin:
 
         return self.estimator_.predict_proba(X)
 
+class NeighborsScalarRegresorMixin:
+    """Mixin class for scalar regressor based in nearest neighbors"""
+
+    def predict(self, X):
+        """Predict the target for the provided data
+        Parameters
+        ----------
+        X (:class:`FDataGrid` or array-like): FDataGrid with the test
+            samples or array (n_query, n_indexed) if metric ==
+            'precomputed'.
+        Returns
+        -------
+        y : array of int, shape = [n_samples] or [n_samples, n_outputs]
+            Target values
+        Notes
+        -----
+        This method wraps the corresponding sklearn routine in the module
+        ``sklearn.neighbors``.
+
+        """
+        self._check_is_fitted()
+
+        X = self._transform_to_multivariate(X)
+
+        return self.estimator_.predict(X)
+
 
 class NearestNeighbors(NeighborsBase, KNeighborsMixin, RadiusNeighborsMixin):
     """Unsupervised learner for implementing neighbor searches.
@@ -434,8 +457,9 @@ class NearestNeighbors(NeighborsBase, KNeighborsMixin, RadiusNeighborsMixin):
     --------
     KNeighborsClassifier
     RadiusNeighborsClassifier
-    KNeighborsRegressor
-    RadiusNeighborsRegressor
+    KNeighborsScalarRegressor
+    RadiusNeighborsScalarRegressor
+    NearestCentroids
     Notes
     -----
     See Nearest Neighbors in the sklearn online documentation for a discussion
@@ -554,9 +578,10 @@ class KNeighborsClassifier(NeighborsBase, KNeighborsMixin, ClassifierMixin,
     See also
     --------
     RadiusNeighborsClassifier
-    KNeighborsRegressor
-    RadiusNeighborsRegressor
+    KNeighborsScalarRegressor
+    RadiusNeighborsScalarRegressor
     NearestNeighbors
+    NearestCentroids
     Notes
     -----
     See Nearest Neighbors in the sklearn online documentation for a discussion
@@ -658,9 +683,10 @@ class RadiusNeighborsClassifier(NeighborsBase, RadiusNeighborsMixin,
     See also
     --------
     KNeighborsClassifier
-    RadiusNeighborsRegressor
-    KNeighborsRegressor
+    KNeighborsScalarRegressor
+    RadiusNeighborsScalarRegressor
     NearestNeighbors
+    NearestCentroids
 
     Notes
     -----
@@ -733,12 +759,12 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
     See also
     --------
     KNeighborsClassifier
-    RadiusNeighborsRegressor
-    KNeighborsRegressor
+    RadiusNeighborsClassifier
+    KNeighborsScalarRegressor
+    RadiusNeighborsScalarRegressor
     NearestNeighbors
 
     """
-
     def __init__(self, metric=lp_distance, mean=mean):
         """Initialize the classifier."""
         self.metric = metric
@@ -795,3 +821,201 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
 
         return self.classes_[self._pairwise_distance(
             X, self.centroids_).argmin(axis=1)]
+
+class KNeighborsScalarRegressor(NeighborsBase, KNeighborsMixin, RegressorMixin,
+                                NeighborsScalarRegresorMixin):
+    """Regression based on k-nearest neighbors with scalar response.
+
+    The target is predicted by local interpolation of the targets
+    associated of the nearest neighbors in the training set.
+
+    Parameters
+    ----------
+    n_neighbors : int, optional (default = 5)
+        Number of neighbors to use by default for :meth:`kneighbors` queries.
+    weights : str or callable, optional (default = 'uniform')
+        weight function used in prediction.  Possible values:
+
+        - 'uniform' : uniform weights.  All points in each neighborhood
+          are weighted equally.
+        - 'distance' : weight points by the inverse of their distance.
+          in this case, closer neighbors of a query point will have a
+          greater influence than neighbors which are further away.
+        - [callable] : a user-defined function which accepts an
+          array of distances, and returns an array of the same shape
+          containing the weights.
+
+    algorithm : {'auto', 'ball_tree', 'brute'}, optional
+        Algorithm used to compute the nearest neighbors:
+
+        - 'ball_tree' will use :class:`sklearn.neighbors.BallTree`.
+        - 'brute' will use a brute-force search.
+        - 'auto' will attempt to decide the most appropriate algorithm based on
+          the values passed to :meth:`fit` method.
+
+    leaf_size : int, optional (default = 30)
+        Leaf size passed to BallTree or KDTree.  This can affect the
+        speed of the construction and query, as well as the memory
+        required to store the tree.  The optimal value depends on the
+        nature of the problem.
+    metric : string or callable, (default
+        :func:`lp_distance <skfda.misc.metrics.lp_distance>`)
+        the distance metric to use for the tree.  The default metric is
+        the Lp distance. See the documentation of the metrics module
+        for a list of available metrics.
+    metric_params : dict, optional (default = None)
+        Additional keyword arguments for the metric function.
+    n_jobs : int or None, optional (default=None)
+        The number of parallel jobs to run for neighbors search.
+        ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
+        ``-1`` means using all processors.
+        Doesn't affect :meth:`fit` method.
+    See also
+    --------
+    KNeighborsClassifier
+    RadiusNeighborsClassifier
+    RadiusNeighborsScalarRegressor
+    NearestNeighbors
+    NearestCentroids
+    Notes
+    -----
+    See Nearest Neighbors in the sklearn online documentation for a discussion
+    of the choice of ``algorithm`` and ``leaf_size``.
+
+    This class wraps the sklearn regressor
+    `sklearn.neighbors.KNeighborsRegressor`.
+
+    .. warning::
+       Regarding the Nearest Neighbors algorithms, if it is found that two
+       neighbors, neighbor `k+1` and `k`, have identical distances
+       but different labels, the results will depend on the ordering of the
+       training data.
+
+    https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
+
+    """
+    def __init__(self, n_neighbors=5, weights='uniform', algorithm='auto',
+                 leaf_size=30, metric=lp_distance, metric_params=None,
+                 n_jobs=1):
+        """Initialize the classifier."""
+
+        super().__init__(n_neighbors=n_neighbors,
+                         weights=weights, algorithm=algorithm,
+                         leaf_size=leaf_size, metric=metric,
+                         metric_params=metric_params, n_jobs=n_jobs)
+
+    def _init_estimator(self, sk_metric):
+        """Initialize the sklearn K neighbors estimator.
+
+        Args:
+            sk_metric: (pyfunc or 'precomputed'): Metric compatible with
+                sklearn API or matrix (n_samples, n_samples) with precomputed
+                distances.
+
+        Returns:
+            Sklearn K Neighbors estimator initialized.
+
+        """
+        return _KNeighborsRegressor(
+            n_neighbors=self.n_neighbors, weights=self.weights,
+            algorithm=self.algorithm, leaf_size=self.leaf_size,
+            metric=sk_metric, metric_params=self.metric_params,
+            n_jobs=self.n_jobs)
+
+class RadiusNeighborsScalarRegressor(NeighborsBase, RadiusNeighborsMixin,
+                                     RegressorMixin,
+                                     NeighborsScalarRegresorMixin):
+    """Scalar regression based on neighbors within a fixed radius.
+
+    The target is predicted by local interpolation of the targets
+    associated of the nearest neighbors in the training set.
+
+    Parameters
+    ----------
+    radius : float, optional (default = 1.0)
+        Range of parameter space to use by default for :meth:`radius_neighbors`
+        queries.
+    weights : str or callable
+        weight function used in prediction.  Possible values:
+
+        - 'uniform' : uniform weights.  All points in each neighborhood
+          are weighted equally.
+        - 'distance' : weight points by the inverse of their distance.
+          in this case, closer neighbors of a query point will have a
+          greater influence than neighbors which are further away.
+        - [callable] : a user-defined function which accepts an
+          array of distances, and returns an array of the same shape
+          containing the weights.
+
+        Uniform weights are used by default.
+    algorithm : {'auto', 'ball_tree', 'brute'}, optional
+        Algorithm used to compute the nearest neighbors:
+
+        - 'ball_tree' will use :class:`sklearn.neighbors.BallTree`.
+        - 'brute' will use a brute-force search.
+        - 'auto' will attempt to decide the most appropriate algorithm
+          based on the values passed to :meth:`fit` method.
+
+    leaf_size : int, optional (default = 30)
+        Leaf size passed to BallTree. This can affect the
+        speed of the construction and query, as well as the memory
+        required to store the tree. The optimal value depends on the
+        nature of the problem.
+    metric : string or callable, (default
+        :func:`lp_distance <skfda.metrics.lp_distance>`)
+        the distance metric to use for the tree.  The default metric is
+        the Lp distance. See the documentation of the metrics module
+        for a list of available metrics.
+    metric_params : dict, optional (default = None)
+        Additional keyword arguments for the metric function.
+    n_jobs : int or None, optional (default=None)
+        The number of parallel jobs to run for neighbors search.
+        ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
+        ``-1`` means using all processors.
+
+    See also
+    --------
+    KNeighborsClassifier
+    RadiusNeighborsClassifier
+    KNeighborsScalarRegressor
+    NearestNeighbors
+    NearestCentroids
+    Notes
+    -----
+    See Nearest Neighbors in the sklearn online documentation for a discussion
+    of the choice of ``algorithm`` and ``leaf_size``.
+
+    This class wraps the sklearn classifier
+    `sklearn.neighbors.RadiusNeighborsClassifier`.
+
+    https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
+
+    """
+
+    def __init__(self, radius=1.0, weights='uniform', algorithm='auto',
+                 leaf_size=30, metric=lp_distance, metric_params=None,
+                 n_jobs=1):
+        """Initialize the classifier."""
+
+        super().__init__(radius=radius, weights=weights, algorithm=algorithm,
+                         leaf_size=leaf_size, metric=metric,
+                         metric_params=metric_params, n_jobs=n_jobs)
+
+
+    def _init_estimator(self, sk_metric):
+        """Initialize the sklearn radius neighbors estimator.
+
+        Args:
+            sk_metric: (pyfunc or 'precomputed'): Metric compatible with
+                sklearn API or matrix (n_samples, n_samples) with precomputed
+                distances.
+
+        Returns:
+            Sklearn Radius Neighbors estimator initialized.
+
+        """
+        return _RadiusNeighborsRegressor(
+            radius=self.radius, weights=self.weights,
+            algorithm=self.algorithm, leaf_size=self.leaf_size,
+            metric=sk_metric, metric_params=self.metric_params,
+            n_jobs=self.n_jobs)

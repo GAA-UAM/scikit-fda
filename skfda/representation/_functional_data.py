@@ -946,8 +946,10 @@ class FData(ABC):
         pass
 
     @abstractmethod
-    def mean(self):
+    def mean(self, weights=None):
         """Compute the mean of all the samples.
+
+        weights (array-like, optional): List of weights.
 
         Returns:
             FData : A FData object with just one sample representing

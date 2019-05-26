@@ -2,15 +2,16 @@
 """
 
 
-def mean(fdata):
+def mean(fdata, weights=None):
     """Compute the mean of all the samples in a FData object.
 
     Computes the mean of all the samples in a FDataGrid or FDataBasis object.
 
     Args:
-        fdata(FDataGrid or FDataBasis): Object containing all the samples
-        whose mean
-            is wanted.
+        fdata (FDataGrid or FDataBasis): Object containing all the samples
+            whose mean is wanted.
+        weight (array-like, optional): List of weights.
+
 
     Returns:
         FDataGrid or FDataBasis: A FDataGrid or FDataBasis object with just
@@ -18,7 +19,7 @@ def mean(fdata):
         object.
 
     """
-    return fdata.mean()
+    return fdata.mean(weights)
 
 
 def var(fdatagrid):

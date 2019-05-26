@@ -115,6 +115,10 @@ def vectorial_norm(fdatagrid, p=2):
         1
 
     """
+
+    if p == 'inf':
+        p == numpy.inf
+
     data_matrix = numpy.linalg.norm(fdatagrid.data_matrix, ord=p, axis=-1,
                                     keepdims=True)
 
@@ -248,7 +252,8 @@ def norm_lp(fdatagrid, p=2, p2=2):
     Args:
         fdatagrid (FDataGrid): FDataGrid object.
         p (int, optional): p of the lp norm. Must be greater or equal
-            than 1. Defaults to 2.
+            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
+            Defaults to 2.
         p2 (int, optional): p index of the vectorial norm applied in case of
             multivariate objects. Defaults to 2.
 
@@ -286,7 +291,14 @@ def norm_lp(fdatagrid, p=2, p2=2):
     else:
         data_matrix = numpy.abs(fdatagrid.data_matrix)
 
-    if fdatagrid.ndim_domain == 1:
+    if p == 'inf' or numpy.isinf(p):
+
+        if fdatagrid.ndim_domain == 1:
+            res = numpy.max(data_matrix[..., 0], axis=1)
+        else:
+            res = np.array([np.max(sample) for sample in data_matrix])
+
+    elif fdatagrid.ndim_domain == 1:
 
         # Computes the norm, approximating the integral with Simpson's rule.
         res = scipy.integrate.simps(data_matrix[..., 0] ** p,

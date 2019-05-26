@@ -14,3 +14,5 @@ Introduction to nearest neighbors regression
 
    skfda.ml.regression.KNeighborsScalarRegressor
    skfda.ml.regression.RadiusNeighborsScalarRegressor
+   skfda.ml.regression.KNeighborsFunctionalRegressor
+   skfda.ml.regression.RadiusNeighborsFunctionalRegressor

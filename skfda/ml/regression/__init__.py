@@ -1,3 +1,5 @@
 
 from .._neighbors import (KNeighborsScalarRegressor,
-                          RadiusNeighborsScalarRegressor)
+                          RadiusNeighborsScalarRegressor,
+                          KNeighborsFunctionalRegressor,
+                          RadiusNeighborsFunctionalRegressor)

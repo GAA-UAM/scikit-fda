@@ -969,6 +969,7 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
 
     >>> neigh.predict(fd[::2]) # Predict labels for even samples
     array([0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
+
     See also
     --------
     KNeighborsClassifier
@@ -1618,7 +1619,7 @@ class RadiusNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
     >>> from skfda.ml.regression import RadiusNeighborsFunctionalRegressor
     >>> neigh = RadiusNeighborsFunctionalRegressor(radius=.03)
     >>> neigh.fit(X_train, y_train)
-    KNeighborsFunctionalRegressor(algorithm='auto', leaf_size=30,...)
+    RadiusNeighborsFunctionalRegressor(algorithm='auto', leaf_size=30,...)
 
     We can predict the response of new samples.
 

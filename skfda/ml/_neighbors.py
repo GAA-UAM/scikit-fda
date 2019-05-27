@@ -369,8 +369,8 @@ class RadiusNeighborsMixin:
             Now we can query the neighbors in the radius.
 
             >>> distances, index = neigh.radius_neighbors(fd[:2])
-            >>> index
-            array([[ 0,  2,  6,  7, 11],...)
+            >>> index[0] # Neighbors of sample 0
+            array([ 0,  2,  6,  7, 11]...)
 
             >>> distances[0].round(2) # Distances to neighbors of the sample 0
             array([ 0.  ,  0.3 ,  0.29,  0.28,  0.29])
@@ -572,8 +572,8 @@ class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase, NeighborsMixin,
     We can query the neighbors in a given radius too.
 
     >>> distances, index = neigh.radius_neighbors(fd[:2])
-    >>> index
-    array([[ 0,  2,  6,  7, 11],...)
+    >>> index[0]
+    array([ 0,  2,  6,  7, 11]...)
 
     >>> distances[0].round(2) # Distances to neighbors of the sample 0
     array([ 0.  ,  0.3 ,  0.29,  0.28,  0.29])

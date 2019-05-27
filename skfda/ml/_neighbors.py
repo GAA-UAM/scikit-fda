@@ -245,8 +245,7 @@ class KNeighborsMixin:
 
             >>> distances, index = neigh.kneighbors(fd[:2])
             >>> index # Index of k-neighbors of samples 0 and 1
-            array([[ 0,  7,  6, 11,  2],
-                   [ 1, 14, 13,  9,  7]])
+            array([[ 0,  7,  6, 11,  2],...)
 
             >>> distances.round(2) # Distances to k-neighbors
             array([[ 0.  ,  0.28,  0.29,  0.29,  0.3 ],
@@ -564,8 +563,7 @@ class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase, NeighborsMixin,
 
     >>> distances, index = neigh.kneighbors(fd[:2])
     >>> index # Index of k-neighbors of samples 0 and 1
-    array([[ 0,  7,  6, 11,  2],
-           [ 1, 14, 13,  9,  7]])
+    array([[ 0,  7,  6, 11,  2],...)
 
     >>> distances.round(2) # Distances to k-neighbors
     array([[ 0.  ,  0.28,  0.29,  0.29,  0.3 ],

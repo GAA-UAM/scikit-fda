@@ -833,6 +833,7 @@ class FData(ABC):
         next_color = False
 
         if sample_labels is not None:
+            sample_labels = np.asarray(sample_labels)
 
             nlabels = np.max(sample_labels) + 1
 
@@ -847,7 +848,7 @@ class FData(ABC):
                     raise ValueError("There must be a color in label_colors "
                                      "for each of the labels that appear in "
                                      "sample_labels.")
-                sample_colors = label_colors[sample_labels]
+                sample_colors = np.asarray(label_colors)[sample_labels]
 
             else:
                 colormap = plt.cm.get_cmap('Greys')

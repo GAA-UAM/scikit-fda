@@ -56,8 +56,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.doctest' ]
 
 doctest_global_setup = '''
-import numpy
-numpy.set_printoptions(legacy='1.13')
+import numpy as np
+np.set_printoptions(legacy='1.13')
 '''
 
 # Add any paths that contain templates here, relative to this directory.
@@ -208,6 +208,7 @@ intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'mpldatacursor': ('https://pypi.org/project/mpldatacursor/', None),
 }
 
 sphinx_gallery_conf = {

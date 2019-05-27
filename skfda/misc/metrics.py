@@ -1,6 +1,5 @@
-
 import scipy.integrate
-import numpy
+import numpy as np
 
 
 from ..representation import FData
@@ -39,14 +38,14 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, check=True, **kwargs):
         raise ValueError("Objects should have the same dimensions")
 
     # Case different domain ranges
-    elif not numpy.array_equal(fdata1.domain_range, fdata2.domain_range):
+    elif not np.array_equal(fdata1.domain_range, fdata2.domain_range):
         raise ValueError("Domain ranges for both objects must be equal")
 
     # Case new evaluation points specified
     elif eval_points is not None:
-        if not numpy.array_equal(eval_points, fdata1.sample_points[0]):
+        if not np.array_equal(eval_points, fdata1.sample_points[0]):
             fdata1 = fdata1.to_grid(eval_points)
-        if not numpy.array_equal(eval_points, fdata2.sample_points[0]):
+        if not np.array_equal(eval_points, fdata2.sample_points[0]):
             fdata2 = fdata2.to_grid(eval_points)
 
     elif not isinstance(fdata1, FDataGrid) and isinstance(fdata2, FDataGrid):
@@ -59,7 +58,7 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, check=True, **kwargs):
         fdata1 = fdata1.to_grid(eval_points)
         fdata2 = fdata2.to_grid(eval_points)
 
-    elif not numpy.array_equal(fdata1.sample_points,
+    elif not np.array_equal(fdata1.sample_points,
                                       fdata2.sample_points):
         raise ValueError("Sample points for both objects must be equal or"
                          "a new list evaluation points must be specified")
@@ -116,11 +115,12 @@ def vectorial_norm(fdatagrid, p=2):
 
     """
 
-    if p == 'inf':
-        p == numpy.inf
 
-    data_matrix = numpy.linalg.norm(fdatagrid.data_matrix, ord=p, axis=-1,
-                                    keepdims=True)
+    if p == 'inf':
+        p == np.inf
+
+    data_matrix = np.linalg.norm(fdatagrid.data_matrix, ord=p, axis=-1,
+                                 keepdims=True)
 
     return fdatagrid.copy(data_matrix=data_matrix)
 
@@ -151,7 +151,7 @@ def distance_from_norm(norm, **kwargs):
 
         Firstly we create the functional data.
 
-        >>> x = numpy.linspace(0, 1, 1001)
+        >>> x = np.linspace(0, 1, 1001)
         >>> fd = FDataGrid([x], x)
         >>> fd2 =  FDataGrid([x/2], x)
 
@@ -199,8 +199,9 @@ def pairwise_distance(distance, **kwargs):
 
         fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, **kwargs)
 
+
         # Creates an empty matrix with the desired size to store the results.
-        matrix = numpy.empty((fdata1.nsamples, fdata2.nsamples))
+        matrix = np.empty((fdata1.nsamples, fdata2.nsamples))
 
         # Iterates over the different samples of both objects.
         for i in range(fdata1.nsamples):
@@ -268,8 +269,8 @@ def norm_lp(fdatagrid, p=2, p2=2):
         and y = x defined in the interval [0,1].
 
 
-        >>> x = numpy.linspace(0,1,1001)
-        >>> fd = FDataGrid([numpy.ones(len(x)), x] ,x)
+        >>> x = np.linspace(0,1,1001)
+        >>> fd = FDataGrid([np.ones(len(x)), x] ,x)
         >>> norm_lp(fd).round(2)
         array([ 1.  ,  0.58])
 
@@ -286,15 +287,15 @@ def norm_lp(fdatagrid, p=2, p2=2):
         raise ValueError(f"p must be equal or greater than 1.")
 
     if fdatagrid.ndim_image > 1:
-        data_matrix = numpy.linalg.norm(fdatagrid.data_matrix, ord=p2, axis=-1,
+        data_matrix = np.linalg.norm(fdatagrid.data_matrix, ord=p2, axis=-1,
                                         keepdims=True)
     else:
-        data_matrix = numpy.abs(fdatagrid.data_matrix)
+        data_matrix = np.abs(fdatagrid.data_matrix)
 
-    if p == 'inf' or numpy.isinf(p):
+    if p == 'inf' or np.isinf(p):
 
         if fdatagrid.ndim_domain == 1:
-            res = numpy.max(data_matrix[..., 0], axis=1)
+            res = np.max(data_matrix[..., 0], axis=1)
         else:
             res = np.array([np.max(sample) for sample in data_matrix])
 
@@ -334,9 +335,9 @@ def lp_distance(fdata1, fdata2, p=2, *, eval_points=None, check=True):
         = 0 and y = x/2. The result then is an array 2x2 with the computed
         l2 distance between every pair of functions.
 
-        >>> x = numpy.linspace(0, 1, 1001)
-        >>> fd = FDataGrid([numpy.ones(len(x))], x)
-        >>> fd2 =  FDataGrid([numpy.zeros(len(x))], x)
+        >>> x = np.linspace(0, 1, 1001)
+        >>> fd = FDataGrid([np.ones(len(x))], x)
+        >>> fd2 =  FDataGrid([np.zeros(len(x))], x)
         >>> lp_distance(fd, fd2).round(2)
         1.0
 
@@ -344,8 +345,8 @@ def lp_distance(fdata1, fdata2, p=2, *, eval_points=None, check=True):
         If the functional data are defined over a different set of points of
         discretisation the functions returns an exception.
 
-        >>> x = numpy.linspace(0, 2, 1001)
-        >>> fd2 =  FDataGrid([numpy.zeros(len(x)), x/2 + 0.5], x)
+        >>> x = np.linspace(0, 2, 1001)
+        >>> fd2 =  FDataGrid([np.zeros(len(x)), x/2 + 0.5], x)
         >>> lp_distance(fd, fd2)
         Traceback (most recent call last):
             ....
@@ -496,12 +497,12 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, check=True,
         # L2 norm || sqrt(Dh) - 1 ||^2
         penalty = warping(eval_points_normalized, derivative=1,
                           keepdims=False)[0]
-        penalty = numpy.sqrt(penalty, out=penalty)
+        penalty = np.sqrt(penalty, out=penalty)
         penalty -= 1
-        penalty = numpy.square(penalty, out=penalty)
+        penalty = np.square(penalty, out=penalty)
         penalty = scipy.integrate.simps(penalty, x=eval_points_normalized)
 
-        distance = numpy.sqrt(distance**2 + lam*penalty)
+        distance = np.sqrt(distance**2 + lam*penalty)
 
     return distance
 
@@ -566,11 +567,11 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, check=True,
     derivative_warping = warping(eval_points_normalized, keepdims=False,
                                  derivative=1)[0]
 
-    derivative_warping = numpy.sqrt(derivative_warping, out=derivative_warping)
+    derivative_warping = np.sqrt(derivative_warping, out=derivative_warping)
 
     d = scipy.integrate.simps(derivative_warping, x=eval_points_normalized)
 
-    return numpy.arccos(d)
+    return np.arccos(d)
 
 
 def warping_distance(warping1, warping2, *, eval_points=None, check=True):
@@ -620,10 +621,10 @@ def warping_distance(warping1, warping2, *, eval_points=None, check=True):
     warping2_data = warping2.derivative().data_matrix[0, ..., 0]
 
     # In this case the srsf is the sqrt(gamma')
-    srsf_warping1 = numpy.sqrt(warping1_data, out=warping1_data)
-    srsf_warping2 = numpy.sqrt(warping2_data, out=warping2_data)
+    srsf_warping1 = np.sqrt(warping1_data, out=warping1_data)
+    srsf_warping2 = np.sqrt(warping2_data, out=warping2_data)
 
-    product = numpy.multiply(srsf_warping1, srsf_warping2, out=srsf_warping1)
+    product = np.multiply(srsf_warping1, srsf_warping2, out=srsf_warping1)
     d = scipy.integrate.simps(product, x=warping1.sample_points[0])
 
-    return numpy.arccos(d)
+    return np.arccos(d)

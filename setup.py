@@ -1,7 +1,7 @@
 import os
 import sys
 
-import numpy
+import numpy as np
 
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
@@ -25,7 +25,7 @@ extensions = [
                   os.path.join(fdasrsf_path, 'optimum_reparam.pyx'),
                   os.path.join(fdasrsf_path, 'dp_grid.c')
               ],
-              include_dirs=[numpy.get_include()],
+              include_dirs=[np.get_include()],
               language='c',
               ),
 ]
@@ -55,7 +55,7 @@ setup(name='scikit-fda',
         'Topic :: Software Development :: Libraries :: Python Modules',
       ],
       install_requires=['numpy', 'scikit-learn', 'matplotlib',
-                        'scikit-datasets[cran]>=0.1.24', 'rdata'],
+                        'scikit-datasets[cran]>=0.1.24', 'rdata', 'mpldatacursor'],
       setup_requires=pytest_runner,
       tests_require=['pytest', 'numpy>=1.14'],
       test_suite='tests',

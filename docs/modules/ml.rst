@@ -1,16 +1,14 @@
 Machine Learning
 ================
 
-Miscelaneus functions and objects.
 
-Classification
---------------
+Machine Learning module.
 
-Introduction to classification
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Modules:
 
    ml/classification
+   ml/clustering
    ml/regression

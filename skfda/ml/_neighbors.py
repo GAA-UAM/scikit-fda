@@ -1316,8 +1316,11 @@ class NeighborsFunctionalRegressorMixin:
             self._sample_points = X.sample_points
             self._shape = X.data_matrix.shape[1:]
 
-            # Constructs sklearn metric to manage vector instead of FDatagrids
-            sk_metric = _to_sklearn_metric(self.metric, self._sample_points)
+            if not self.sklearn_metric:
+                # Constructs sklearn metric to manage vector instead of grids
+                sk_metric = _to_sklearn_metric(self.metric, self._sample_points)
+            else:
+                sk_metric = self.metric
 
             self.estimator_ = self._init_estimator(sk_metric)
             self.estimator_.fit(self._transform_to_multivariate(X))

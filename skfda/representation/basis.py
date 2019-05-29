@@ -2175,6 +2175,19 @@ class FDataBasis(FData):
         if weights is not None:
             other = other.times(weights)
 
+        if self.nsamples + other.nsamples > self.nbasis + other.nbasis:
+            return self._inner_product_gramm_matrix(other, lfd_self, lfd_other)
+        else:
+            return self._inner_product_integrate(other, lfd_self, lfd_other)
+
+
+    def _inner_product_gramm_matrix(self, other, lfd_self, lfd_other):
+
+        return self.coefficients @ self.basis.inner_product(other.basis) @ other.coefficients.T
+
+
+    def _inner_product_integrate(self, other, lfd_self, lfd_other):
+
         matrix = np.empty((self.nsamples, other.nsamples))
         (left, right) = self.domain_range[0]
 

@@ -2175,7 +2175,7 @@ class FDataBasis(FData):
         if weights is not None:
             other = other.times(weights)
 
-        if self.nsamples + other.nsamples > self.nbasis + other.nbasis:
+        if self.nsamples * other.nsamples > self.nbasis * other.nbasis:
             return self._inner_product_gramm_matrix(other, lfd_self, lfd_other)
         else:
             return self._inner_product_integrate(other, lfd_self, lfd_other)

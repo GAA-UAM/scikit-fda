@@ -182,6 +182,16 @@ class TestBasis(unittest.TestCase):
             np.transpose(monomial.inner_product(bsplinefd).round(3))
         )
 
+    def test_gram_inprod(self):
+        monomial = Monomial(nbasis=4)
+        bspline = BSpline(nbasis=5, order=3)
+        bsplinefd = FDataBasis(bspline, np.arange(0, 3000).reshape(600, 5))
+
+        np.testing.assert_array_almost_equal(
+            bsplinefd.inner_product(monomial).round(3),
+            np.transpose(monomial.inner_product(bsplinefd).round(3))
+        )
+
     def test_fdatabasis_times_fdatabasis_fdatabasis(self):
         monomial = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
         bspline = FDataBasis(BSpline(nbasis=6, order=4), [1, 2, 4, 1, 0, 1])

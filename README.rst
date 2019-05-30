@@ -1,4 +1,4 @@
-.. image:: https://raw.githubusercontent.com/GAA-UAM/scikit-fda/develop/docs/logos/title_logo/title_logo.png?sanitize=true&raw=true
+.. image:: https://raw.githubusercontent.com/GAA-UAM/scikit-fda/develop/docs/logos/title_logo/title_logo.png
 	:alt: scikit-fda: Functional Data Analysis in Python
 
 scikit-fda

@@ -1,5 +1,6 @@
 
-<img src="logos/title_logo/title_logo.svg" alt="scikit-fda: Functional Data Analysis in Python"/>
+.. image:: logos/title_logo/title_logo.png
+	:alt: scikit-fda: Functional Data Analysis in Python
 
 Welcome to scikit-fda's documentation!
 ======================================

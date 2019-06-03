@@ -11,6 +11,7 @@ import numbers
 import copy
 import numpy as np
 import scipy.stats.mstats
+import pandas.api.extensions
 
 
 from . import basis as fdbasis
@@ -23,7 +24,7 @@ __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
 
-class FDataGrid(FData):
+class FDataGrid(FData, pandas.api.extensions.ExtensionArray):
     r"""Represent discretised functional data.
 
     Class for representing functional data as a set of curves discretised
@@ -108,8 +109,8 @@ class FDataGrid(FData):
                 values of a functional datum evaluated at the
                 points of discretisation.
             sample_points (array_like, optional): an array containing the
-                points of discretisation where values have been recorded or a list
-                of lists with each of the list containing the points of
+                points of discretisation where values have been recorded or a
+                list of lists with each of the list containing the points of
                 dicretisation for each axis.
             domain_range (tuple or list of tuples, optional): contains the
                 edges of the interval in which the functional data is
@@ -118,9 +119,9 @@ class FDataGrid(FData):
                 the domain).
             dataset_label (str, optional): name of the dataset.
             axes_labels (list, optional): list containing the labels of the
-                different axes. The length of the list must be equal to the sum of the
-                number of dimensions of the domain plus the number of dimensions
-                of the image.
+                different axes. The length of the list must be equal to the
+                sum of the number of dimensions of the domain plus the number
+                of dimensions of the image.
 
         """
         self.data_matrix = np.atleast_2d(data_matrix)
@@ -145,7 +146,6 @@ class FDataGrid(FData):
                                  "points have shape {}"
                                  .format(data_shape, sample_points_shape))
 
-
         self._sample_range = np.array(
             [(self.sample_points[i][0], self.sample_points[i][-1])
              for i in range(self.ndim_domain)])
@@ -158,7 +158,8 @@ class FDataGrid(FData):
             self._domain_range = np.atleast_2d(domain_range)
             # sample range must by a 2 dimension matrix with as many rows as
             # dimensions in the domain and 2 columns
-            if (self._domain_range.ndim != 2 or self._domain_range.shape[1] != 2
+            if (self._domain_range.ndim != 2
+                    or self._domain_range.shape[1] != 2
                     or self._domain_range.shape[0] != self.ndim_domain):
                 raise ValueError("Incorrect shape of domain_range.")
             for i in range(self.ndim_domain):
@@ -172,15 +173,14 @@ class FDataGrid(FData):
         if self.data_matrix.ndim == 1 + self.ndim_domain:
             self.data_matrix = self.data_matrix[..., np.newaxis]
 
-        if axes_labels is not None and len(axes_labels) != (self.ndim_domain + self.ndim_image):
+        if axes_labels is not None and len(axes_labels) != (self.ndim_domain
+                                                            + self.ndim_image):
             raise ValueError("There must be a label for each of the"
-                              "dimensions of the domain and the image.")
+                             "dimensions of the domain and the image.")
 
         self.interpolator = interpolator
 
-
         super().__init__(extrapolation, dataset_label, axes_labels, keepdims)
-
 
         return
 
@@ -226,16 +226,6 @@ class FDataGrid(FData):
         # If there is no array that means the dimension of the image is 1.
         except IndexError:
             return 1
-
-    @property
-    def ndim(self):
-        """Return number of dimensions of the data matrix.
-
-        Returns:
-            int: Number of dimensions of the data matrix.
-
-        """
-        return self.data_matrix.ndim
 
     @property
     def nsamples(self):
@@ -312,7 +302,6 @@ class FDataGrid(FData):
             self._interpolator_evaluator = self._interpolator.evaluator(self)
 
         return self._interpolator_evaluator
-
 
     def _evaluate(self, eval_points, *, derivative=0):
         """"Evaluate the object or its derivatives at a list of values.
@@ -487,7 +476,7 @@ class FDataGrid(FData):
             dataset_label = None
 
         return self.copy(data_matrix=np.cov(self.data_matrix,
-                                               rowvar=False)[np.newaxis, ...],
+                                            rowvar=False)[np.newaxis, ...],
                          sample_points=[self.sample_points[0],
                                         self.sample_points[0]],
                          domain_range=[self.domain_range[0],
@@ -503,8 +492,8 @@ class FDataGrid(FData):
             FDataGrid object.
 
         """
-        return self.copy(data_matrix=
-                         [scipy.stats.mstats.gmean(self.data_matrix, 0)])
+        return self.copy(data_matrix=[
+            scipy.stats.mstats.gmean(self.data_matrix, 0)])
 
     def __add__(self, other):
         """Addition for FDataGrid object.
@@ -619,7 +608,6 @@ class FDataGrid(FData):
 
         return self.copy(data_matrix=data_matrix / self.data_matrix)
 
-
     def concatenate(self, other):
         """Join samples from a similar FDataGrid object.
 
@@ -658,25 +646,30 @@ class FDataGrid(FData):
         self.__check_same_dimensions(other)
 
         return self.copy(data_matrix=np.concatenate((self.data_matrix,
-                                                        other.data_matrix),
-                                                       axis=0))
-
+                                                    other.data_matrix),
+                                                    axis=0))
 
     def scatter(self, fig=None, ax=None, nrows=None, ncols=None, **kwargs):
         """Scatter plot of the FDatGrid object.
 
         Args:
-            fig (figure object, optional): figure over with the graphs are plotted in case ax is not specified.
-                If None and ax is also None, the figure is initialized.
-            ax (list of axis objects, optional): axis over where the graphs are plotted. If None, see param fig.
-            nrows(int, optional): designates the number of rows of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None.
-            ncols(int, optional): designates the number of columns of the figure to plot the different dimensions of the
-                image. Only specified if fig and ax are None.
-            **kwargs: keyword arguments to be passed to the matplotlib.pyplot.scatter function;
+            fig (figure object, optional): figure over with the graphs are
+                plotted in case ax is not specified. If None and ax is also
+                None, the figure is initialized.
+            ax (list of axis objects, optional): axis over where the graphs
+                are plotted. If None, see param fig.
+            nrows(int, optional): designates the number of rows of the figure
+                to plot the different dimensions of the image. Only specified
+                if fig and ax are None.
+            ncols(int, optional): designates the number of columns of the
+                figure to plot the different dimensions of the image. Only
+                specified if fig and ax are None.
+            **kwargs: keyword arguments to be passed to the
+                matplotlib.pyplot.scatter function;
 
         Returns:
-            fig (figure object): figure object in which the graphs are plotted in case ax is None.
+            fig (figure object): figure object in which the graphs are plotted
+                in case ax is None.
             ax (axes object): axes in which the graphs are plotted.
 
         """
@@ -685,19 +678,20 @@ class FDataGrid(FData):
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):
                 for j in range(self.nsamples):
-                    ax[i].scatter(self.sample_points[0], self.data_matrix[j, :, i].T, **kwargs)
+                    ax[i].scatter(self.sample_points[0],
+                                  self.data_matrix[j, :, i].T, **kwargs)
         else:
             X = self.sample_points[0]
             Y = self.sample_points[1]
             X, Y = np.meshgrid(X, Y)
             for i in range(self.ndim_image):
                 for j in range(self.nsamples):
-                    ax[i].scatter(X, Y, self.data_matrix[j, :, :, i].T, **kwargs)
+                    ax[i].scatter(X, Y, self.data_matrix[j, :, :, i].T,
+                                  **kwargs)
 
         self.set_labels(fig, ax)
 
         return fig, ax
-
 
     def to_basis(self, basis, **kwargs):
         """Return the basis representation of the object.
@@ -743,8 +737,8 @@ class FDataGrid(FData):
         """Return the discrete representation of the object.
 
         Args:
-            sample_points (array_like, optional):  2 dimension matrix where each
-            row contains the points of dicretisation for each axis of
+            sample_points (array_like, optional):  2 dimension matrix where
+            each row contains the points of dicretisation for each axis of
             data_matrix.
 
         Returns:
@@ -758,12 +752,12 @@ class FDataGrid(FData):
         return self.copy(data_matrix=self.evaluate(sample_points, grid=True),
                          sample_points=sample_points)
 
-
-
-    def copy(self, *, data_matrix=None, sample_points=None,
-                 domain_range=None, dataset_label=None,
-                 axes_labels=None, extrapolation=None,
-                 interpolator=None, keepdims=None):
+    def copy(self, *,
+             deep=False,  # For Pandas compatibility
+             data_matrix=None, sample_points=None,
+             domain_range=None, dataset_label=None,
+             axes_labels=None, extrapolation=None,
+             interpolator=None, keepdims=None):
         """Returns a copy of the FDataGrid.
 
         If an argument is provided the corresponding attribute in the new copy
@@ -798,10 +792,10 @@ class FDataGrid(FData):
             keepdims = self.keepdims
 
         return FDataGrid(data_matrix, sample_points=sample_points,
-                     domain_range=domain_range, dataset_label=dataset_label,
-                     axes_labels=axes_labels, extrapolation=extrapolation,
-                     interpolator=interpolator, keepdims=keepdims)
-
+                         domain_range=domain_range,
+                         dataset_label=dataset_label,
+                         axes_labels=axes_labels, extrapolation=extrapolation,
+                         interpolator=interpolator, keepdims=keepdims)
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               eval_points=None):
@@ -809,8 +803,8 @@ class FDataGrid(FData):
 
         Args:
             shifts (array_like or numeric): List with the shifts
-                corresponding for each sample or numeric with the shift to apply
-                to all samples.
+                corresponding for each sample or numeric with the shift to
+                apply to all samples.
             restrict_domain (bool, optional): If True restricts the domain to
                 avoid evaluate points outside the domain using extrapolation.
                 Defaults uses extrapolation.
@@ -828,7 +822,6 @@ class FDataGrid(FData):
             :class:`FDataGrid` with the shifted data.
         """
 
-
         if np.isscalar(shifts):
             shifts = [shifts]
 
@@ -839,7 +832,7 @@ class FDataGrid(FData):
             shifts = shifts[:, np.newaxis]
 
         # Case same shift for all the curves
-        if shifts.shape[0] == self.ndim_domain and shifts.ndim ==1:
+        if shifts.shape[0] == self.ndim_domain and shifts.ndim == 1:
 
             # Column vector with shapes
             shifts = np.atleast_2d(shifts).T
@@ -849,28 +842,24 @@ class FDataGrid(FData):
 
             return self.copy(sample_points=sample_points,
                              domain_range=domain_range)
-
-
         if shifts.shape[0] != self.nsamples:
-            raise ValueError(f"shifts vector ({shifts.shape[0]}) must have the "
-                             f"same length than the number of samples "
+            raise ValueError(f"shifts vector ({shifts.shape[0]}) must have the"
+                             f" same length than the number of samples "
                              f"({self.nsamples})")
 
         if eval_points is None:
             eval_points = self.sample_points
 
-
-
         if restrict_domain:
             domain = np.asarray(self.domain_range)
-            a = domain[:,0] - np.atleast_1d(np.min(np.min(shifts, axis=1), 0))
-            b = domain[:,1] - np.atleast_1d(np.max(np.max(shifts, axis=1), 0))
+            a = domain[:, 0] - np.atleast_1d(np.min(np.min(shifts, axis=1), 0))
+            b = domain[:, 1] - np.atleast_1d(np.max(np.max(shifts, axis=1), 0))
 
-            domain = np.vstack((a,b)).T
+            domain = np.vstack((a, b)).T
 
             eval_points = [eval_points[i][
-                np.logical_and(eval_points[i] >= domain[i,0],
-                                  eval_points[i] <= domain[i,1])]
+                np.logical_and(eval_points[i] >= domain[i, 0],
+                               eval_points[i] <= domain[i, 1])]
                            for i in range(self.ndim_domain)]
 
         else:
@@ -878,27 +867,22 @@ class FDataGrid(FData):
 
         eval_points = np.asarray(eval_points)
 
-
         eval_points_repeat = np.repeat(eval_points[np.newaxis, :],
                                        self.nsamples, axis=0)
 
         # Solve problem with cartesian and matrix indexing
         if self.ndim_domain > 1:
-            shifts[:,:2] = np.flip(shifts[:,:2], axis=1)
+            shifts[:, :2] = np.flip(shifts[:, :2], axis=1)
 
         shifts = np.repeat(shifts[..., np.newaxis],
-                              eval_points.shape[1], axis=2)
+                           eval_points.shape[1], axis=2)
 
         eval_points_shifted = eval_points_repeat + shifts
-
-
-        grid = True if self.ndim_domain > 1 else False
 
         data_matrix = self.evaluate(eval_points_shifted,
                                     extrapolation=extrapolation,
                                     aligned_evaluation=False,
                                     grid=True)
-
 
         return self.copy(data_matrix=data_matrix, sample_points=eval_points,
                          domain_range=domain)
@@ -928,7 +912,7 @@ class FDataGrid(FData):
             if eval_points is None:
                 try:
                     eval_points = fd.sample_points[0]
-                except:
+                except AttributeError:
                     eval_points = np.linspace(*fd.domain_range[0], 201)
 
             eval_points_transformation = fd(eval_points, keepdims=False)
@@ -942,10 +926,9 @@ class FDataGrid(FData):
 
             lengths = [len(ax) for ax in eval_points]
 
-            eval_points_transformation =  np.empty((self.nsamples,
-                                                       np.prod(lengths),
-                                                       self.ndim_domain))
-
+            eval_points_transformation = np.empty((self.nsamples,
+                                                   np.prod(lengths),
+                                                   self.ndim_domain))
 
             for i in range(self.nsamples):
                 eval_points_transformation[i] = np.array(
@@ -953,17 +936,14 @@ class FDataGrid(FData):
                     ).T
 
             data_flatten = self(eval_points_transformation,
-                               aligned_evaluation=False)
+                                aligned_evaluation=False)
 
             data_matrix = data_flatten.reshape((self.nsamples, *lengths,
                                                 self.ndim_image))
 
-
         return self.copy(data_matrix=data_matrix,
                          sample_points=eval_points,
                          domain_range=fd.domain_range)
-
-
 
     def __str__(self):
         """Return str(self)."""
@@ -1007,7 +987,7 @@ class FDataGrid(FData):
 
         for i in inputs:
             if isinstance(i, FDataGrid) and not np.all(i.sample_points ==
-                                                          self.sample_points):
+                                                       self.sample_points):
                 return NotImplemented
 
         new_inputs = [i.data_matrix if isinstance(i, FDataGrid)
@@ -1035,3 +1015,146 @@ class FDataGrid(FData):
         results = [self.copy(data_matrix=r) for r in results]
 
         return results[0] if len(results) == 1 else results
+
+    #####################################################################
+    # Pandas ExtensionArray methods
+    #####################################################################
+    @property
+    def dtype(self):
+        """The dtype for this extension array, FDataGridDType"""
+        return FDataGridDType
+
+    @property
+    def ndim(self):
+        """
+        Return number of dimensions of the functional data. It is
+        always 1, as each observation is considered a "scalar" object.
+
+        Returns:
+            int: Number of dimensions of the functional data.
+
+        """
+        return 1
+
+    @classmethod
+    def _from_sequence(cls, scalars, dtype=None, copy=False):
+        return cls(scalars, dtype=dtype)
+
+    @classmethod
+    def _from_factorized(cls, values, original):
+        return cls(values)
+
+    @property
+    def nbytes(self) -> int:
+        """
+        The number of bytes needed to store this object in memory.
+        """
+        return self.data_matrix.nbytes() + sum(
+            p.nbytes() for p in self.sample_points)
+
+    def isna(self):
+        """
+        A 1-D array indicating if each value is missing.
+
+        Returns:
+            na_values (np.ndarray): Array full of True values.
+        """
+        return np.ones(self.nsamples, dtype=bool)
+
+    def take(self, indices, allow_fill=False, fill_value=None):
+        """
+        Take elements from an array.
+        Parameters:
+            indices (sequence of integers):
+                Indices to be taken.
+            allow_fill (bool, default False): How to handle negative values
+                in `indices`.
+                * False: negative values in `indices` indicate positional
+                  indices from the right (the default). This is similar to
+                  :func:`numpy.take`.
+                * True: negative values in `indices` indicate
+                  missing values. These values are set to `fill_value`. Any
+                  other negative values raise a ``ValueError``.
+            fill_value (any, optional):
+                Fill value to use for NA-indices when `allow_fill` is True.
+                This may be ``None``, in which case the default NA value for
+                the type, ``self.dtype.na_value``, is used.
+                For many ExtensionArrays, there will be two representations of
+                `fill_value`: a user-facing "boxed" scalar, and a low-level
+                physical NA value. `fill_value` should be the user-facing
+                version, and the implementation should handle translating that
+                to the physical version for processing the take if necessary.
+        Returns:
+            FDataGrid
+        Raises:
+            IndexError: When the indices are out of bounds for the array.
+            ValueError: When `indices` contains negative values other than
+                        ``-1`` and `allow_fill` is True.
+        Notes:
+            ExtensionArray.take is called by ``Series.__getitem__``, ``.loc``,
+            ``iloc``, when `indices` is a sequence of values. Additionally,
+            it's called by :meth:`Series.reindex`, or any other method
+            that causes realignment, with a `fill_value`.
+        See Also:
+            numpy.take
+            pandas.api.extensions.take
+        """
+        from pandas.core.algorithms import take
+        # If the ExtensionArray is backed by an ndarray, then
+        # just pass that here instead of coercing to object.
+        data = self.astype(object)
+        if allow_fill and fill_value is None:
+            fill_value = self.dtype.na_value
+        # fill value should always be translated from the scalar
+        # type for the array, to the physical storage type for
+        # the data, before passing to take.
+        result = take(data, indices, fill_value=fill_value,
+                      allow_fill=allow_fill)
+        return self._from_sequence(result, dtype=self.dtype)
+
+    @classmethod
+    def _concat_same_type(
+            cls,
+            to_concat
+    ):
+        """
+        Concatenate multiple array
+
+        Parameters:
+            to_concat (sequence of FDataGrid)
+        Returns:
+            FDataGrid
+        """
+
+        first, *others = to_concat
+
+        for o in others:
+            first = first.concatenate(o)
+
+        # When #101 is ready
+        # return first.concatenate(others)
+
+        return first
+
+
+class FDataGridDType(pandas.api.extensions.ExtensionDtype):
+    """
+    DType corresponding to FDataGrid in Pandas
+    """
+    name = 'discretized functional data (grid)'
+    kind = 'O'
+    type = FDataGrid
+    _record_type = np.dtype([('hi', '>u8'), ('lo', '>u8')])
+    na_value = None
+
+    @classmethod
+    def construct_from_string(cls, string):
+        if string == cls.name:
+            return cls()
+        else:
+            raise TypeError("Cannot construct a '{}' from "
+                            "'{}'".format(cls, string))
+
+    @classmethod
+    def construct_array_type(cls):
+        return FDataGrid

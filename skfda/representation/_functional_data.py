@@ -1077,7 +1077,6 @@ class FData(ABC):
 
         pass
 
-
     def __iter__(self):
         """Iterate over the samples"""
 
@@ -1088,3 +1087,18 @@ class FData(ABC):
         """Returns the number of samples of the FData object."""
 
         return self.nsamples
+
+    def to_numpy(self):
+        """Returns a numpy array with the objects"""
+
+        # This is to prevent numpy to access inner dimensions
+        array = np.empty(shape=len(self), dtype=np.object_)
+
+        for i, f in enumerate(self):
+            array[i] = f
+
+        return array
+
+    def __array__(self, dtype=None):
+        """Automatic conversion to numpy array"""
+        return self.to_numpy()

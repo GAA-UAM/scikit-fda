@@ -664,7 +664,7 @@ class FuzzyKMeans(BaseKMeans):
 
             for i in range(fdatagrid.nsamples):
                 comparison = (fdatagrid.data_matrix[i] == centers).all(
-                    axis=tuple(np.arange(fdatagrid.nsamples)[1:]))
+                    axis=tuple(np.arange(fdatagrid.data_matrix.ndim)[1:]))
                 if comparison.sum() >= 1:
                     U[i, np.where(comparison == True)] = 1
                     U[i, np.where(comparison == False)] = 0

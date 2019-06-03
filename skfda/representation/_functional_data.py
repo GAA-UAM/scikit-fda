@@ -13,12 +13,13 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import mpl_toolkits.mplot3d
+import pandas.api.extensions
 
 from skfda.representation.extrapolation import _parse_extrapolation
 from .._utils import _coordinate_list, _list_of_arrays
 
 
-class FData(ABC):
+class FData(ABC, pandas.api.extensions.ExtensionArray):
     """Defines the structure of a functional data object.
 
     Attributes:
@@ -1088,6 +1089,10 @@ class FData(ABC):
 
         return self.nsamples
 
+    #####################################################################
+    # Numpy methods
+    #####################################################################
+
     def to_numpy(self):
         """Returns a numpy array with the objects"""
 
@@ -1102,3 +1107,110 @@ class FData(ABC):
     def __array__(self, dtype=None):
         """Automatic conversion to numpy array"""
         return self.to_numpy()
+
+    #####################################################################
+    # Pandas ExtensionArray methods
+    #####################################################################
+    @property
+    def ndim(self):
+        """
+        Return number of dimensions of the functional data. It is
+        always 1, as each observation is considered a "scalar" object.
+
+        Returns:
+            int: Number of dimensions of the functional data.
+
+        """
+        return 1
+
+    @classmethod
+    def _from_sequence(cls, scalars, dtype=None, copy=False):
+        return cls(scalars, dtype=dtype)
+
+    @classmethod
+    def _from_factorized(cls, values, original):
+        return cls(values)
+
+    def isna(self):
+        """
+        A 1-D array indicating if each value is missing.
+
+        Returns:
+            na_values (np.ndarray): Array full of True values.
+        """
+        return np.ones(self.nsamples, dtype=bool)
+
+    def take(self, indices, allow_fill=False, fill_value=None):
+        """
+        Take elements from an array.
+        Parameters:
+            indices (sequence of integers):
+                Indices to be taken.
+            allow_fill (bool, default False): How to handle negative values
+                in `indices`.
+                * False: negative values in `indices` indicate positional
+                  indices from the right (the default). This is similar to
+                  :func:`numpy.take`.
+                * True: negative values in `indices` indicate
+                  missing values. These values are set to `fill_value`. Any
+                  other negative values raise a ``ValueError``.
+            fill_value (any, optional):
+                Fill value to use for NA-indices when `allow_fill` is True.
+                This may be ``None``, in which case the default NA value for
+                the type, ``self.dtype.na_value``, is used.
+                For many ExtensionArrays, there will be two representations of
+                `fill_value`: a user-facing "boxed" scalar, and a low-level
+                physical NA value. `fill_value` should be the user-facing
+                version, and the implementation should handle translating that
+                to the physical version for processing the take if necessary.
+        Returns:
+            FData
+        Raises:
+            IndexError: When the indices are out of bounds for the array.
+            ValueError: When `indices` contains negative values other than
+                        ``-1`` and `allow_fill` is True.
+        Notes:
+            ExtensionArray.take is called by ``Series.__getitem__``, ``.loc``,
+            ``iloc``, when `indices` is a sequence of values. Additionally,
+            it's called by :meth:`Series.reindex`, or any other method
+            that causes realignment, with a `fill_value`.
+        See Also:
+            numpy.take
+            pandas.api.extensions.take
+        """
+        from pandas.core.algorithms import take
+        # If the ExtensionArray is backed by an ndarray, then
+        # just pass that here instead of coercing to object.
+        data = self.astype(object)
+        if allow_fill and fill_value is None:
+            fill_value = self.dtype.na_value
+        # fill value should always be translated from the scalar
+        # type for the array, to the physical storage type for
+        # the data, before passing to take.
+        result = take(data, indices, fill_value=fill_value,
+                      allow_fill=allow_fill)
+        return self._from_sequence(result, dtype=self.dtype)
+
+    @classmethod
+    def _concat_same_type(
+            cls,
+            to_concat
+    ):
+        """
+        Concatenate multiple array
+
+        Parameters:
+            to_concat (sequence of FData)
+        Returns:
+            FData
+        """
+
+        first, *others = to_concat
+
+        for o in others:
+            first = first.concatenate(o)
+
+        # When #101 is ready
+        # return first.concatenate(others)
+
+        return first

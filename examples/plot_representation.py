@@ -87,16 +87,26 @@ fd_basis.plot()
 ###############################################################################
 # We can increase the number of elements in the basis to try to reproduce the
 # original data with more fidelity.
-fd_basis = fd.to_basis(
+fd_basis_big = fd.to_basis(
     basis.BSpline(domain_range=fd.domain_range[0], nbasis=7)
     )
 
-fd_basis.plot()
+fd_basis_big.plot()
+
+##############################################################################
+# Lets compare the diferent representations in the same plot, for the same
+# curve
+fig, ax = fd[0].plot()
+fd_basis[0].plot(fig)
+fd_basis_big[0].plot(fig)
+
+ax[0].legend(['Original', '4 elements', '7 elements'])
 
 ##############################################################################
 # We can also see the effect of changing the basis.
 # For example, in the Fourier basis the functions start and end at the same
-# points, so this basis is clearly non suitable for the Growth dataset.
+# points if the period is equal to the domain range, so this basis is clearly
+# non suitable for the Growth dataset.
 fd_basis = fd.to_basis(
     basis.Fourier(domain_range=fd.domain_range[0], nbasis=7)
     )

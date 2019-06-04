@@ -5,3 +5,4 @@ Carlos Ramos Carreño for the design, reviews and supervision, and for contribut
 Pablo Marcos Manchón for the registration functions, including integration with fdasrsf.
 Amanda Hernando Bernabé for visualization and clustering functions.
 Pablo Pérez Manso for regression and related utilities.
+Sergio Ruiz Lozano for the design of the logo.

@@ -1,26 +1,27 @@
 from sklearn.metrics import mean_squared_error
+from sklearn.base import BaseEstimator, RegressorMixin
 
 from skfda.representation.basis import *
 import numpy as np
 
 
-class ScalarRegression:
+class ScalarRegression(BaseEstimator, RegressorMixin):
     def __init__(self, beta, weights=None):
         self.beta = beta
         self.weights = weights
 
-    def fit(self, y, x):
+    def fit(self, X, y=None):
 
-        y, x, beta, wt = self._argcheck(y, x)
+        y, X, beta, wt = self._argcheck(y, X)
 
         nbeta = len(beta)
-        nsamples = x[0].nsamples
+        nsamples = X[0].nsamples
 
         y = np.array(y).reshape((nsamples, 1))
 
         for j in range(nbeta):
-            xcoef = x[j].coefficients
-            xbasis = x[j].basis
+            xcoef = X[j].coefficients
+            xbasis = X[j].basis
             Jpsithetaj = xbasis.inner_product(beta[j])
             Zmat = xcoef @ Jpsithetaj if j == 0 else np.concatenate(
                 (Zmat, xcoef @ Jpsithetaj), axis=1)
@@ -46,9 +47,9 @@ class ScalarRegression:
 
         self.beta = beta
 
-    def predict(self, x):
-        return [sum(self.beta[i].inner_product(x[i][j])[0, 0] for i in
-                    range(len(self.beta))) for j in range(x[0].nsamples)]
+    def predict(self, X)
+        return [sum(self.beta[i].inner_product(X[i][j])[0, 0] for i in
+                    range(len(self.beta))) for j in range(X[0].nsamples)]
 
     def mean_squared_error(self, y_actual, y_predicted):
         return np.sqrt(mean_squared_error(y_actual, y_predicted))
@@ -94,3 +95,8 @@ class ScalarRegression:
             raise ValueError("The weights should be non negative values")
 
         return y, x, self.beta, self.weights
+
+    def score(self, X, y, sample_weight=None):
+        pass
+
+

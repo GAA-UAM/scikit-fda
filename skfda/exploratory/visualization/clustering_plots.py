@@ -13,6 +13,44 @@ __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
 
+def _change_luminosity(color, amount=0.5):
+    """
+    Changes the given color luminosity by the given amount.
+    Input can be matplotlib color string, hex string, or RGB tuple.
+
+    Note:
+        Based on https://stackoverflow.com/a/49601444/2455333
+    """
+    import matplotlib.colors as mc
+    import colorsys
+    try:
+        c = mc.cnames[color]
+    except TypeError:
+        c = color
+    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
+
+    intensity = (amount - 0.5) * 2
+    up = intensity > 0
+    intensity = abs(intensity)
+
+    lightness = c[1]
+    if up:
+        new_lightness = lightness + intensity * (1 - lightness)
+    else:
+        new_lightness = lightness - intensity * lightness
+
+    return colorsys.hls_to_rgb(c[0], new_lightness, c[2])
+
+
+def _darken(color, amount=0):
+    return _change_luminosity(color, 0.5 - amount/2)
+
+
+def _lighten(color, amount=0):
+    return _change_luminosity(color, 0.5 + amount/2)
+
+
+
 def _check_if_estimator(estimator):
     """Checks the argument *estimator* is actually an estimator that
     implements the *fit* method.
@@ -86,7 +124,7 @@ def _plot_clustering_checks(estimator, fdatagrid, sample_colors, sample_labels,
 
 def _plot_clusters(estimator, fdatagrid, fig, ax, nrows, ncols, labels,
                    sample_labels, cluster_colors, cluster_labels,
-                   center_colors, center_labels, colormap):
+                   center_colors, center_labels, center_width, colormap):
     """Implementation of the plot of the FDataGrid samples by clusters.
 
     Args:
@@ -118,6 +156,7 @@ def _plot_clusters(estimator, fdatagrid, fig, ax, nrows, ncols, labels,
             centroid of the clusters the samples of the fdatagrid are classified into.
         center_labels list of colors): contains in order the labels of each
             centroid of the clusters the samples of the fdatagrid are classified into.
+        center_width (int): width of the centroids.
         colormap(colormap): colormap from which the colors of the plot are taken.
 
     Returns:
@@ -146,7 +185,7 @@ def _plot_clusters(estimator, fdatagrid, fig, ax, nrows, ncols, labels,
                           range(estimator.n_clusters)]
 
     if center_colors is None:
-        center_colors = ["black"] * estimator.n_clusters
+        center_colors = [_darken(c, 0.5) for c in cluster_colors]
 
     if center_labels is None:
         center_labels = ['$CENTER: {}$'.format(i) for i in
@@ -169,7 +208,8 @@ def _plot_clusters(estimator, fdatagrid, fig, ax, nrows, ncols, labels,
         for i in range(estimator.n_clusters):
             ax[j].plot(fdatagrid.sample_points[0],
                        estimator.cluster_centers_.data_matrix[i, :, j],
-                       c=center_colors[i], label=center_labels[i])
+                       c=center_colors[i], label=center_labels[i], 
+                       linewidth=center_width)
         ax[j].legend(handles=patches)
         datacursor(formatter='{label}'.format)
 
@@ -181,6 +221,7 @@ def _plot_clusters(estimator, fdatagrid, fig, ax, nrows, ncols, labels,
 def plot_clusters(estimator, X, fig=None, ax=None, nrows=None, ncols=None,
                   sample_labels=None, cluster_colors=None,
                   cluster_labels=None, center_colors=None, center_labels=None,
+                  center_width=3,
                   colormap=plt.cm.get_cmap('rainbow')):
     """Plot of the FDataGrid samples by clusters.
 
@@ -215,6 +256,7 @@ def plot_clusters(estimator, X, fig=None, ax=None, nrows=None, ncols=None,
             centroid of the clusters the samples of the fdatagrid are classified into.
         center_labels (list of colors): contains in order the labels of each
             centroid of the clusters the samples of the fdatagrid are classified into.
+        center_width (int): width of the centroid curves.
         colormap(colormap): colormap from which the colors of the plot are
             taken. Defaults to `rainbow`.
 
@@ -244,7 +286,9 @@ def plot_clusters(estimator, X, fig=None, ax=None, nrows=None, ncols=None,
                           cluster_colors=cluster_colors,
                           cluster_labels=cluster_labels,
                           center_colors=center_colors,
-                          center_labels=center_labels, colormap=colormap)
+                          center_labels=center_labels, 
+                          center_width=center_width,
+                          colormap=colormap)
 
 
 def _set_labels(xlabel, ylabel, title, xlabel_str):
@@ -270,10 +314,10 @@ def _set_labels(xlabel, ylabel, title, xlabel_str):
         xlabel = xlabel_str
 
     if ylabel is None:
-        ylabel = "Membership grade"
+        ylabel = "Degree of membership"
 
     if title is None:
-        title = "Membership grades of the samples to each cluster"
+        title = "Degrees of membership of the samples to each cluster"
 
     return xlabel, ylabel, title
 
@@ -355,9 +399,9 @@ def plot_cluster_lines(estimator, X, fig=None, ax=None, sample_colors=None,
             cluster the samples of the fdatagrid are classified into.
         colormap(colormap, optional): colormap from which the colors of the plot are taken.
         xlabel (str): Label for the x-axis. Defaults to "Sample".
-        ylabel (str): Label for the y-axis. Defaults to "Membership grade".
+        ylabel (str): Label for the y-axis. Defaults to "Degree of membership".
         title (str, optional): Title for the figure where the clustering results are ploted.
-            Defaults to "Membership grades of the samples to each cluster".
+            Defaults to "Degrees of membership of the samples to each cluster".
 
     Returns:
         (tuple): tuple containing:
@@ -451,9 +495,9 @@ def plot_cluster_bars(estimator, X, fig=None, ax=None, sort=-1,
             cluster the samples of the fdatagrid are classified into.
         colormap(colormap, optional): colormap from which the colors of the plot are taken.
         xlabel (str): Label for the x-axis. Defaults to "Sample".
-        ylabel (str): Label for the y-axis. Defaults to "Membership grade".
+        ylabel (str): Label for the y-axis. Defaults to "Degree of membership".
         title (str): Title for the figure where the clustering results are plotted.
-            Defaults to "Membership grades of the samples to each cluster".
+            Defaults to "Degrees of membership of the samples to each cluster".
 
     Returns:
         (tuple): tuple containing:

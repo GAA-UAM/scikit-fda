@@ -3,7 +3,7 @@
 
 This module includes the most commonly used kernel smoother methods for FDA.
  So far only non parametric methods are implemented because we are only
- relaying on a discrete representation of functional data.
+ relying on a discrete representation of functional data.
 
 Todo:
     * Closed-form for KNN
@@ -14,13 +14,15 @@ import math
 import numpy as np
 
 from ...misc import kernels
-
+from ..._utils import parameter_aliases
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
 
-def nw(argvals, h=None, kernel=kernels.normal, w=None, cv=False):
+@parameter_aliases(smoothing_parameter=['h', 'bandwidth'])
+def nadaraya_watson(argvals, *, smoothing_parameter=None,
+                    kernel=kernels.normal, w=None, cv=False):
     r"""Nadaraya-Watson smoothing method.
 
     Provides an smoothing matrix :math:`\hat{H}` for the discretisation
@@ -35,25 +37,28 @@ def nw(argvals, h=None, kernel=kernels.normal, w=None, cv=False):
         \frac{x_1-x_k}{h}\right)}
 
     where :math:`K(\cdot)` is a kernel function and :math:`h` the kernel
-    window width.
+    window width or smoothing parameter.
 
     Args:
         argvals (ndarray): Vector of discretisation points.
-        h (float, optional): Window width of the kernel.
+        smoothing_parameter (float, optional): Window width of the kernel.
         kernel (function, optional): kernel function. By default a normal
             kernel.
         w (ndarray, optional): Case weights matrix.
         cv (bool, optional): Flag for cross-validation methods.
             Defaults to False.
+        h (float, optional): same as smoothing_parameter.
+        bandwidth (float, optional): same as smoothing_parameter.
 
     Examples:
-        >>> nw(np.array([1,2,4,5,7]), 3.5).round(3)
+        >>> nadaraya_watson(np.array([1,2,4,5,7]),
+        ...                 smoothing_parameter=3.5).round(3)
         array([[ 0.294, 0.282, 0.204, 0.153, 0.068],
                [ 0.249, 0.259, 0.22 , 0.179, 0.093],
                [ 0.165, 0.202, 0.238, 0.229, 0.165],
                [ 0.129, 0.172, 0.239, 0.249, 0.211],
                [ 0.073, 0.115, 0.221, 0.271, 0.319]])
-        >>> nw(np.array([1,2,4,5,7]), 2).round(3)
+        >>> nadaraya_watson(np.array([1,2,4,5,7]), h=2).round(3)
         array([[ 0.425, 0.375, 0.138, 0.058, 0.005],
                [ 0.309, 0.35 , 0.212, 0.114, 0.015],
                [ 0.103, 0.193, 0.319, 0.281, 0.103],
@@ -65,11 +70,11 @@ def nw(argvals, h=None, kernel=kernels.normal, w=None, cv=False):
 
     """
     delta_x = np.abs(np.subtract.outer(argvals, argvals))
-    if h is None:
-        h = np.percentile(delta_x, 15)
+    if smoothing_parameter is None:
+        smoothing_parameter = np.percentile(delta_x, 15)
     if cv:
         np.fill_diagonal(delta_x, math.inf)
-    delta_x = delta_x / h
+    delta_x = delta_x / smoothing_parameter
     k = kernel(delta_x)
     if w is not None:
         k = k * w
@@ -78,7 +83,9 @@ def nw(argvals, h=None, kernel=kernels.normal, w=None, cv=False):
     return (k.T / rs).T
 
 
-def local_linear_regression(argvals, h, kernel=kernels.normal, w=None,
+@parameter_aliases(smoothing_parameter=['h', 'bandwidth'])
+def local_linear_regression(argvals, smoothing_parameter, *,
+                            kernel=kernels.normal, w=None,
                             cv=False):
     r"""Local linear regression smoothing method.
 
@@ -103,12 +110,14 @@ def local_linear_regression(argvals, h, kernel=kernels.normal, w=None,
 
     Args:
         argvals (ndarray): Vector of discretisation points.
-        h (float, optional): Window width of the kernel.
+        smoothing_parameter (float, optional): Window width of the kernel.
         kernel (function, optional): kernel function. By default a normal
             kernel.
         w (ndarray, optional): Case weights matrix.
         cv (bool, optional): Flag for cross-validation methods.
             Defaults to False.
+        h (float, optional): same as smoothing_parameter.
+        bandwidth (float, optional): same as smoothing_parameter.
 
     Examples:
         >>> local_linear_regression(np.array([1,2,4,5,7]), 3.5).round(3)
@@ -132,7 +141,7 @@ def local_linear_regression(argvals, h, kernel=kernels.normal, w=None,
     delta_x = np.abs(np.subtract.outer(argvals, argvals))  # x_i - x_j
     if cv:
         np.fill_diagonal(delta_x, math.inf)
-    k = kernel(delta_x / h)  # K(x_i - x/ h)
+    k = kernel(delta_x / smoothing_parameter)  # K(x_i - x/ h)
     s1 = np.sum(k * delta_x, 1)  # S_n_1
     s2 = np.sum(k * delta_x ** 2, 1)  # S_n_2
     b = (k * (s2 - delta_x * s1)).T  # b_i(x_j)
@@ -144,7 +153,9 @@ def local_linear_regression(argvals, h, kernel=kernels.normal, w=None,
     return (b.T / rs).T  # \\hat{H}
 
 
-def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
+@parameter_aliases(smoothing_parameter=['k', 'n_neighbors'])
+def knn(argvals, *, smoothing_parameter=None, kernel=kernels.uniform,
+        w=None, cv=False):
     """K-nearest neighbour kernel smoother.
 
     Provides an smoothing matrix S for the discretisation points in argvals by
@@ -157,19 +168,21 @@ def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
 
     Args:
         argvals (ndarray): Vector of discretisation points.
-        k (int, optional): Number of nearest neighbours. By default it takes
-            the 5% closest points.
+        smoothing_parameter (int, optional): Number of nearest neighbours. By
+            default it takes the 5% closest points.
         kernel (function, optional): kernel function. By default a uniform
             kernel to perform a 'usual' k nearest neighbours estimation.
         w (ndarray, optional): Case weights matrix.
         cv (bool, optional): Flag for cross-validation methods.
             Defaults to False.
+        k (float, optional): same as smoothing_parameter.
+        n_neighbors (float, optional): same as smoothing_parameter.
 
     Returns:
         ndarray: Smoothing matrix.
 
     Examples:
-        >>> knn(np.array([1,2,4,5,7]), 2)
+        >>> knn(np.array([1,2,4,5,7]), smoothing_parameter=2)
         array([[ 0.5, 0.5, 0. , 0. , 0. ],
                [ 0.5, 0.5, 0. , 0. , 0. ],
                [ 0. , 0. , 0.5, 0.5, 0. ],
@@ -178,7 +191,7 @@ def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
 
         In case there are two points at the same distance it will take both.
 
-        >>> knn(np.array([1,2,3,5,7]), 2).round(3)
+        >>> knn(np.array([1,2,3,5,7]), k=2).round(3)
         array([[ 0.5  , 0.5  , 0.   , 0.   , 0.   ],
                [ 0.333, 0.333, 0.333, 0.   , 0.   ],
                [ 0.   , 0.5  , 0.5  , 0.   , 0.   ],
@@ -190,9 +203,10 @@ def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
     # Distances matrix of points in argvals
     delta_x = np.abs(np.subtract.outer(argvals, argvals))
 
-    if k is None:
-        k = np.floor(np.percentile(range(1, len(argvals)), 5))
-    elif k <= 0:
+    if smoothing_parameter is None:
+        smoothing_parameter = np.floor(np.percentile(
+            range(1, len(argvals)), 5))
+    elif smoothing_parameter <= 0:
         raise ValueError('h must be greater than 0')
     if cv:
         np.fill_diagonal(delta_x, math.inf)
@@ -203,8 +217,8 @@ def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
 
     # For each row in the distances matrix, it calculates the furthest point
     # within the k nearest neighbours
-    vec = np.percentile(delta_x, k / len(argvals) * 100, axis=0,
-                           interpolation='lower') + tol
+    vec = np.percentile(delta_x, smoothing_parameter / len(argvals) * 100,
+                        axis=0, interpolation='lower') + tol
 
     rr = kernel((delta_x.T / vec).T)
     # Applies the kernel to the result of dividing each row by the result

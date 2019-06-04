@@ -44,7 +44,7 @@ llr = val.minimise(fd, param_values,
                    smoothing_method=ks.local_linear_regression)
 # Nadaraya-Watson kernel smoothing.
 nw = skfda.preprocessing.smoothing.validation.minimise(
-    fd, param_values, smoothing_method=ks.nw)
+    fd, param_values, smoothing_method=ks.nadaraya_watson)
 
 # K-nearest neighbours kernel smoothing.
 knn = skfda.preprocessing.smoothing.validation.minimise(
@@ -100,11 +100,11 @@ nw['fdatagrid'][0:5].plot()
 # the following plots.
 
 fd_us = skfda.FDataGrid(
-    ks.nw(fd.sample_points, h=2).dot(fd.data_matrix[10, ..., 0]),
+    ks.nadaraya_watson(fd.sample_points, h=2).dot(fd.data_matrix[10, ..., 0]),
     fd.sample_points, fd.sample_range, fd.dataset_label,
     fd.axes_labels)
 fd_os = skfda.FDataGrid(
-    ks.nw(fd.sample_points, h=15).dot(fd.data_matrix[10, ..., 0]),
+    ks.nadaraya_watson(fd.sample_points, h=15).dot(fd.data_matrix[10, ..., 0]),
     fd.sample_points, fd.sample_range, fd.dataset_label,
     fd.axes_labels)
 

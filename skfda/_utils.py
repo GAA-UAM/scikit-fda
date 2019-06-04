@@ -1,6 +1,7 @@
 """Module with generic methods"""
 
 import numpy as np
+import functools
 
 
 def _list_of_arrays(original_array):
@@ -65,3 +66,29 @@ def _coordinate_list(axes):
 
     """
     return np.vstack(list(map(np.ravel, np.meshgrid(*axes, indexing='ij')))).T
+
+
+def parameter_aliases(**alias_assignments):
+    """Allows using aliases for parameters"""
+    def decorator(f):
+        @functools.wraps(f)
+        def aliasing_function(*args, **kwargs):
+            nonlocal alias_assignments
+            for parameter_name, aliases in alias_assignments.items():
+                aliases = tuple(aliases)
+                aliases_used = [a for a in kwargs
+                                if a in aliases + (parameter_name,)]
+                if len(aliases_used) > 1:
+                    raise ValueError(
+                        f"Several arguments with the same meaning used: " +
+                        str(aliases_used))
+
+                elif len(aliases_used) == 1:
+                    arg = kwargs.pop(aliases_used[0])
+                    kwargs[parameter_name] = arg
+
+            return f(*args, **kwargs)
+
+        return aliasing_function
+
+    return decorator

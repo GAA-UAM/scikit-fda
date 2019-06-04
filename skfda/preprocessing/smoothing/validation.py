@@ -83,7 +83,7 @@ def gcv(fdatagrid, s_matrix, penalisation_function=None):
 
 
 def minimise(fdatagrid, parameters,
-             smoothing_method=kernel_smoothers.nw, cv_method=gcv,
+             smoothing_method=kernel_smoothers.nadaraya_watson, cv_method=gcv,
              penalisation_function=None, **kwargs):
     """Chooses the best smoothness parameter and performs smoothing.
 
@@ -191,18 +191,20 @@ def minimise(fdatagrid, parameters,
     # Calculates the scores for each parameter.
     if penalisation_function is not None:
         for h in parameters:
-            s = smoothing_method(sample_points, h, **kwargs)
+            s = smoothing_method(sample_points, smoothing_parameter=h,
+                                 **kwargs)
             scores.append(
                 cv_method(fdatagrid, s,
                           penalisation_function=penalisation_function))
     else:
         for h in parameters:
-            s = smoothing_method(sample_points, h, **kwargs)
+            s = smoothing_method(sample_points, smoothing_parameter=h,
+                                 **kwargs)
             scores.append(
                 cv_method(fdatagrid, s))
     # gets the best parameter.
     h = parameters[int(np.argmin(scores))]
-    s = smoothing_method(sample_points, h, **kwargs)
+    s = smoothing_method(sample_points, smoothing_parameter=h, **kwargs)
     fdatagrid_adjusted = fdatagrid.copy(
         data_matrix=np.dot(fdatagrid.data_matrix[..., 0], s.T))
 

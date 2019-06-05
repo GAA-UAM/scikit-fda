@@ -325,6 +325,70 @@ class Basis(ABC):
     def _to_R(self):
         raise NotImplementedError
 
+    def inner_matrix(self, other=None):
+
+        r"""Return the Inner Product Matrix of a pair of basis.
+
+        The Inner Product Matrix is defined as
+
+        .. math::
+            IP_{ij} = \langle\phi_i, \theta_j\rangle
+
+        where :math:`\phi_i` is the ith element of the basi and
+        :math:`\theta_j` is the jth element of the second basis.
+        This matrix helps on the calculation of the inner product
+        between objects on two basis and for the change of basis.
+
+        Args:
+            other (:class:`Basis`): Basis to compute the inner product
+            matrix. If not basis is given, it computes the matrix with
+            itself returning the Gramian Matrix
+
+        Returns:
+            numpy.array: Inner Product Matrix of two basis
+
+        """
+        if other is None or self == other:
+            return self.gramian_matrix()
+
+        first = self.to_basis()
+        second = other.to_basis()
+
+        gramian = np.zeros((self.nbasis, other.nbasis))
+
+        for i in range(self.nbasis):
+            for j in range(other.nbasis):
+                gramian[i, j] = first[i].inner_product(second[j], None, None)
+
+        return gramian
+
+    def gramian_matrix(self):
+
+        r"""Return the Gramian Matrix of a basis
+
+        The Gramian Matrix is defined as
+
+        .. math::
+            G_{ij} = \langle\phi_i, \phi_j\rangle
+
+        where :math:`\phi_i` is the ith element of the basis. This is a symmetric matrix and
+        positive-semidefinite.
+
+        Returns:
+            numpy.array: Gramian Matrix of the basis.
+
+        """
+        fbasis = self.to_basis()
+
+        gramian = np.zeros((self.nbasis, self.nbasis))
+
+        for i in range(fbasis.nbasis):
+            for j in range(i, fbasis.nbasis):
+                gramian[i, j] = fbasis[i].inner_product(fbasis[j], None, None)
+                gramian[j, i] = gramian[i, j]
+
+        return gramian
+
     def inner_product(self, other):
         return np.transpose(other.inner_product(self.to_basis()))
 
@@ -2176,15 +2240,9 @@ class FDataBasis(FData):
             other = other.times(weights)
 
         if self.nsamples * other.nsamples > self.nbasis * other.nbasis:
-            return self._inner_product_gramm_matrix(other, lfd_self, lfd_other)
+            return self.coefficients @ self.basis.inner_matrix(other.basis) @ other.coefficients.T
         else:
             return self._inner_product_integrate(other, lfd_self, lfd_other)
-
-
-    def _inner_product_gramm_matrix(self, other, lfd_self, lfd_other):
-
-        return self.coefficients @ self.basis.inner_product(other.basis) @ other.coefficients.T
-
 
     def _inner_product_integrate(self, other, lfd_self, lfd_other):
 
@@ -2196,6 +2254,7 @@ class FDataBasis(FData):
                 fd = self[i].times(other[j])
                 matrix[i, j] = scipy.integrate.quad(
                     lambda x: fd.evaluate([x])[0], left, right)[0]
+
         return matrix
 
     def _to_R(self):

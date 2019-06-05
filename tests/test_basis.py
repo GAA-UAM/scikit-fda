@@ -127,6 +127,24 @@ class TestBasis(unittest.TestCase):
         prod = BSpline(domain_range=(0,1), nbasis=10, order=7, knots=[0, 0.3, 1/3, 2/3,1])
         self.assertEqual(bspline.basis_of_product(bspline2), prod)
 
+    def test_basis_inner_matrix(self):
+        np.testing.assert_array_almost_equal(Monomial(nbasis=3).inner_matrix(),
+                                             [[1, 1/2, 1/3], [1/2, 1/3, 1/4], [1/3, 1/4, 1/5]])
+
+        np.testing.assert_array_almost_equal(Monomial(nbasis=3).inner_matrix(Monomial(nbasis=3)),
+                                             [[1, 1/2, 1/3], [1/2, 1/3, 1/4], [1/3, 1/4, 1/5]])
+
+        np.testing.assert_array_almost_equal(Monomial(nbasis=3).inner_matrix(Monomial(nbasis=4)),
+                                             [[1, 1/2, 1/3, 1/4], [1/2, 1/3, 1/4, 1/5], [1/3, 1/4, 1/5, 1/6]])
+
+        # TODO testing with other basis
+
+    def test_basis_gramian_matrix(self):
+        np.testing.assert_array_almost_equal(Monomial(nbasis=3).gramian_matrix(),
+                                             [[1, 1/2, 1/3], [1/2, 1/3, 1/4], [1/3, 1/4, 1/5]])
+
+        # TODO testing with other basis
+
     def test_basis_basis_inprod(self):
         monomial = Monomial(nbasis=4)
         bspline = BSpline(nbasis=5, order=4)
@@ -138,6 +156,10 @@ class TestBasis(unittest.TestCase):
                  [0.00208338, 0.02916658, 0.07083342, 0.12916658, 0.10208338],
                  [0.00044654, 0.01339264, 0.04375022, 0.09910693, 0.09330368]])
             .round(3)
+        )
+        np.testing.assert_array_almost_equal(
+            monomial.inner_product(bspline),
+            bspline.inner_product(monomial).T
         )
 
     def test_basis_fdatabasis_inprod(self):
@@ -172,20 +194,19 @@ class TestBasis(unittest.TestCase):
                       [19.70392982, 63.03676315, 106.37009648]]).round(3)
         )
 
+        np.testing.assert_array_almost_equal(
+            monomialfd._inner_product_integrate(bsplinefd, None, None).round(3),
+            np.array([[16.14797697, 52.81464364, 89.4813103],
+                      [11.55565285, 38.22211951, 64.88878618],
+                      [18.14698361, 55.64698361, 93.14698361],
+                      [15.2495976, 48.9995976, 82.7495976],
+                      [19.70392982, 63.03676315, 106.37009648]]).round(3)
+        )
+
     def test_comutativity_inprod(self):
         monomial = Monomial(nbasis=4)
         bspline = BSpline(nbasis=5, order=3)
         bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
-
-        np.testing.assert_array_almost_equal(
-            bsplinefd.inner_product(monomial).round(3),
-            np.transpose(monomial.inner_product(bsplinefd).round(3))
-        )
-
-    def test_gram_inprod(self):
-        monomial = Monomial(nbasis=4)
-        bspline = BSpline(nbasis=5, order=3)
-        bsplinefd = FDataBasis(bspline, np.arange(0, 3000).reshape(600, 5))
 
         np.testing.assert_array_almost_equal(
             bsplinefd.inner_product(monomial).round(3),

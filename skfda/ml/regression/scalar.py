@@ -1,7 +1,7 @@
 from sklearn.metrics import mean_squared_error
 from sklearn.base import BaseEstimator, RegressorMixin
-
 from skfda.representation.basis import *
+
 import numpy as np
 
 
@@ -47,7 +47,7 @@ class ScalarRegression(BaseEstimator, RegressorMixin):
 
         self.beta = beta
 
-    def predict(self, X)
+    def predict(self, X):
         return [sum(self.beta[i].inner_product(X[i][j])[0, 0] for i in
                     range(len(self.beta))) for j in range(X[0].nsamples)]
 

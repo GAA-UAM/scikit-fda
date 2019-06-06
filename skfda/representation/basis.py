@@ -19,6 +19,7 @@ from scipy.special import binom
 from . import grid
 from . import FData
 from .._utils import _list_of_arrays
+import pandas.api.extensions
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -2430,3 +2431,40 @@ class FDataBasis(FData):
         """Right division for FDataBasis object."""
 
         raise NotImplementedError
+
+    #####################################################################
+    # Pandas ExtensionArray methods
+    #####################################################################
+    @property
+    def dtype(self):
+        """The dtype for this extension array, FDataGridDType"""
+        return FDataBasisDType
+
+    @property
+    def nbytes(self) -> int:
+        """
+        The number of bytes needed to store this object in memory.
+        """
+        return self.coefficients.nbytes()
+
+
+class FDataBasisDType(pandas.api.extensions.ExtensionDtype):
+    """
+    DType corresponding to FDataBasis in Pandas
+    """
+    name = 'functional data (basis)'
+    kind = 'O'
+    type = FDataBasis
+    na_value = None
+
+    @classmethod
+    def construct_from_string(cls, string):
+        if string == cls.name:
+            return cls()
+        else:
+            raise TypeError("Cannot construct a '{}' from "
+                            "'{}'".format(cls, string))
+
+    @classmethod
+    def construct_array_type(cls):
+        return FDataBasis

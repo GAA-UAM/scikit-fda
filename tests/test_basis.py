@@ -128,13 +128,13 @@ class TestBasis(unittest.TestCase):
         self.assertEqual(bspline.basis_of_product(bspline2), prod)
 
     def test_basis_inner_matrix(self):
-        np.testing.assert_array_almost_equal(Monomial(nbasis=3).inner_matrix(),
+        np.testing.assert_array_almost_equal(Monomial(nbasis=3)._inner_matrix(),
                                              [[1, 1/2, 1/3], [1/2, 1/3, 1/4], [1/3, 1/4, 1/5]])
 
-        np.testing.assert_array_almost_equal(Monomial(nbasis=3).inner_matrix(Monomial(nbasis=3)),
+        np.testing.assert_array_almost_equal(Monomial(nbasis=3)._inner_matrix(Monomial(nbasis=3)),
                                              [[1, 1/2, 1/3], [1/2, 1/3, 1/4], [1/3, 1/4, 1/5]])
 
-        np.testing.assert_array_almost_equal(Monomial(nbasis=3).inner_matrix(Monomial(nbasis=4)),
+        np.testing.assert_array_almost_equal(Monomial(nbasis=3)._inner_matrix(Monomial(nbasis=4)),
                                              [[1, 1/2, 1/3, 1/4], [1/2, 1/3, 1/4, 1/5], [1/3, 1/4, 1/5, 1/6]])
 
         # TODO testing with other basis

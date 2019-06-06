@@ -1,6 +1,6 @@
 import unittest
 from skfda.representation.basis import Monomial, Fourier, FDataBasis
-from skfda.ml.regression.scalar import ScalarRegression
+from skfda.ml.regression import LinearScalarRegression
 import numpy as np
 
 class TestRegression(unittest.TestCase):
@@ -13,11 +13,11 @@ class TestRegression(unittest.TestCase):
         x_Basis = Monomial(nbasis=7)
         x_fd = FDataBasis(x_Basis, np.identity(7))
 
-        scalar_test = ScalarRegression([beta_fd])
+        scalar_test = LinearScalarRegression([beta_fd])
         y = scalar_test.predict([x_fd])
 
-        scalar = ScalarRegression([beta_Basis])
-        scalar.fit(y, [x_fd])
+        scalar = LinearScalarRegression([beta_Basis])
+        scalar.fit([x_fd], y)
         np.testing.assert_array_almost_equal(scalar.beta[0].coefficients,
                                              beta_fd.coefficients)
 
@@ -31,8 +31,8 @@ class TestRegression(unittest.TestCase):
              0.10549625973303875,
              0.11384314859153018]
 
-        scalar = ScalarRegression([beta_Basis])
-        scalar.fit(y, [x_fd])
+        scalar = LinearScalarRegression([beta_Basis])
+        scalar.fit([x_fd], y)
         np.testing.assert_array_almost_equal(scalar.beta[0].coefficients,
                                              beta_fd.coefficients)
 

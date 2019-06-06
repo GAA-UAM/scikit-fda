@@ -139,8 +139,8 @@ class TestBasis(unittest.TestCase):
 
         # TODO testing with other basis
 
-    def test_basis_gramian_matrix(self):
-        np.testing.assert_array_almost_equal(Monomial(nbasis=3).gramian_matrix(),
+    def test_basis_gram_matrix(self):
+        np.testing.assert_array_almost_equal(Monomial(nbasis=3).gram_matrix(),
                                              [[1, 1/2, 1/3], [1/2, 1/3, 1/4], [1/3, 1/4, 1/5]])
 
         # TODO testing with other basis

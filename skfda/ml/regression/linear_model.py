@@ -5,7 +5,8 @@ from skfda.representation.basis import *
 import numpy as np
 
 
-class ScalarRegression(BaseEstimator, RegressorMixin):
+class LinearScalarRegression(BaseEstimator, RegressorMixin):
+
     def __init__(self, beta, weights=None):
         self.beta = beta
         self.weights = weights
@@ -28,13 +29,11 @@ class ScalarRegression(BaseEstimator, RegressorMixin):
 
         if any(w != 1 for w in wt):
             rtwt = np.sqrt(wt)
-            Zmatwt = Zmat * rtwt
-            ymatwt = y * rtwt
-            Cmat = np.transpose(Zmatwt @ Zmatwt)
-            Dmat = np.transpose(Zmatwt) @ ymatwt
-        else:
-            Cmat = np.transpose(Zmat) @ Zmat
-            Dmat = np.transpose(Zmat) @ y
+            Zmat = Zmat * rtwt
+            y = y * rtwt
+
+        Cmat = np.transpose(Zmat) @ Zmat
+        Dmat = np.transpose(Zmat) @ y
 
         Cmatinv = np.linalg.inv(Cmat)
         betacoef = Cmatinv @ Dmat
@@ -56,16 +55,16 @@ class ScalarRegression(BaseEstimator, RegressorMixin):
 
     def _argcheck(self, y, x):
         """Do some checks to types and shapes"""
-        if all(not isinstance(i, FDataBasis) for i in x):
+        if all(not isinstance(i, FData) for i in x):
             raise ValueError("All the dependent variable are scalar.")
-        if any(isinstance(i, FDataBasis) for i in y):
+        if any(isinstance(i, FData) for i in y):
             raise ValueError(
                 "Some of the independent variables are not scalar")
 
         ylen = len(y)
         xlen = len(x)
         blen = len(self.beta)
-        domain_range = ([i for i in x if isinstance(i, FDataBasis)][0]
+        domain_range = ([i for i in x if isinstance(i, FData)][0]
                         .domain_range)
 
         if blen != xlen:

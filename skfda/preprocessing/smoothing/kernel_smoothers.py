@@ -22,7 +22,7 @@ __email__ = "miguel.carbajo@estudiante.uam.es"
 
 @parameter_aliases(smoothing_parameter=['h', 'bandwidth'])
 def nadaraya_watson(argvals, *, smoothing_parameter=None,
-                    kernel=kernels.normal, w=None, cv=False):
+                    kernel=kernels.normal, weights=None, cv=False):
     r"""Nadaraya-Watson smoothing method.
 
     Provides an smoothing matrix :math:`\hat{H}` for the discretisation
@@ -44,7 +44,8 @@ def nadaraya_watson(argvals, *, smoothing_parameter=None,
         smoothing_parameter (float, optional): Window width of the kernel.
         kernel (function, optional): kernel function. By default a normal
             kernel.
-        w (ndarray, optional): Case weights matrix.
+        weights (ndarray, optional): Case weights matrix (in order to modify
+            the importance of each point in each observation).
         cv (bool, optional): Flag for cross-validation methods.
             Defaults to False.
         h (float, optional): same as smoothing_parameter.
@@ -76,8 +77,8 @@ def nadaraya_watson(argvals, *, smoothing_parameter=None,
         np.fill_diagonal(delta_x, math.inf)
     delta_x = delta_x / smoothing_parameter
     k = kernel(delta_x)
-    if w is not None:
-        k = k * w
+    if weights is not None:
+        k = k * weights
     rs = np.sum(k, 1)
     rs[rs == 0] = 1
     return (k.T / rs).T
@@ -85,7 +86,7 @@ def nadaraya_watson(argvals, *, smoothing_parameter=None,
 
 @parameter_aliases(smoothing_parameter=['h', 'bandwidth'])
 def local_linear_regression(argvals, smoothing_parameter, *,
-                            kernel=kernels.normal, w=None,
+                            kernel=kernels.normal, weights=None,
                             cv=False):
     r"""Local linear regression smoothing method.
 
@@ -113,7 +114,8 @@ def local_linear_regression(argvals, smoothing_parameter, *,
         smoothing_parameter (float, optional): Window width of the kernel.
         kernel (function, optional): kernel function. By default a normal
             kernel.
-        w (ndarray, optional): Case weights matrix.
+        weights (ndarray, optional): Case weights matrix (in order to modify
+            the importance of each point in each observation).
         cv (bool, optional): Flag for cross-validation methods.
             Defaults to False.
         h (float, optional): same as smoothing_parameter.
@@ -147,15 +149,15 @@ def local_linear_regression(argvals, smoothing_parameter, *,
     b = (k * (s2 - delta_x * s1)).T  # b_i(x_j)
     if cv:
         np.fill_diagonal(b, 0)
-    if w is not None:
-        b = b * w
+    if weights is not None:
+        b = b * weights
     rs = np.sum(b, 1)  # sum_{k=1}^{n}b_k(x_j)
     return (b.T / rs).T  # \\hat{H}
 
 
 @parameter_aliases(smoothing_parameter=['k', 'n_neighbors'])
 def knn(argvals, *, smoothing_parameter=None, kernel=kernels.uniform,
-        w=None, cv=False):
+        weights=None, cv=False):
     """K-nearest neighbour kernel smoother.
 
     Provides an smoothing matrix S for the discretisation points in argvals by
@@ -172,7 +174,8 @@ def knn(argvals, *, smoothing_parameter=None, kernel=kernels.uniform,
             default it takes the 5% closest points.
         kernel (function, optional): kernel function. By default a uniform
             kernel to perform a 'usual' k nearest neighbours estimation.
-        w (ndarray, optional): Case weights matrix.
+        weights (ndarray, optional): Case weights matrix (in order to modify
+            the importance of each point in each observation).
         cv (bool, optional): Flag for cross-validation methods.
             Defaults to False.
         k (float, optional): same as smoothing_parameter.
@@ -226,8 +229,8 @@ def knn(argvals, *, smoothing_parameter=None, kernel=kernels.uniform,
     # to the knn are below 1 and the rest above 1 so the kernel returns values
     # distinct to 0 only for the knn.
 
-    if w is not None:
-        rr = (rr.T * w).T
+    if weights is not None:
+        rr = (rr.T * weights).T
 
     # normalise every row
     rs = np.sum(rr, 1)

@@ -32,8 +32,8 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
             Zmat = Zmat * rtwt
             y = y * rtwt
 
-        Cmat = np.transpose(Zmat) @ Zmat
-        Dmat = np.transpose(Zmat) @ y
+        Cmat = Zmat.T @ Zmat
+        Dmat = Zmat.T @ y
 
         Cmatinv = np.linalg.inv(Cmat)
         betacoef = Cmatinv @ Dmat
@@ -42,7 +42,7 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         for j in range(0, nbeta):
             mj1 = mj2
             mj2 = mj2 + beta[j].nbasis
-            beta[j] = FDataBasis(beta[j], np.transpose(betacoef[mj1:mj2]))
+            beta[j] = FDataBasis(beta[j], betacoef[mj1:mj2].T)
 
         self.beta = beta
 
@@ -50,8 +50,8 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         return [sum(self.beta[i].inner_product(X[i][j])[0, 0] for i in
                     range(len(self.beta))) for j in range(X[0].nsamples)]
 
-    def mean_squared_error(self, y_actual, y_predicted):
-        return np.sqrt(mean_squared_error(y_actual, y_predicted))
+    def _mean_squared_error(self, y_actual, y_predicted):
+        return mean_squared_error(y_actual, y_predicted)
 
     def _argcheck(self, y, x):
         """Do some checks to types and shapes"""
@@ -96,6 +96,6 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         return y, x, self.beta, self.weights
 
     def score(self, X, y, sample_weight=None):
-        pass
+        return self._mean_squared_error(y, self.predict(X))
 
 

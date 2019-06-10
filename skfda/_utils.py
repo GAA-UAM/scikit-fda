@@ -2,6 +2,7 @@
 
 import numpy as np
 import functools
+import types
 
 
 def _list_of_arrays(original_array):
@@ -71,24 +72,61 @@ def _coordinate_list(axes):
 def parameter_aliases(**alias_assignments):
     """Allows using aliases for parameters"""
     def decorator(f):
-        @functools.wraps(f)
-        def aliasing_function(*args, **kwargs):
+
+        if isinstance(f, (types.FunctionType, types.LambdaType)):
+            # f is a function
+            @functools.wraps(f)
+            def aliasing_function(*args, **kwargs):
+                nonlocal alias_assignments
+                for parameter_name, aliases in alias_assignments.items():
+                    aliases = tuple(aliases)
+                    aliases_used = [a for a in kwargs
+                                    if a in aliases + (parameter_name,)]
+                    if len(aliases_used) > 1:
+                        raise ValueError(
+                            f"Several arguments with the same meaning used: " +
+                            str(aliases_used))
+
+                    elif len(aliases_used) == 1:
+                        arg = kwargs.pop(aliases_used[0])
+                        kwargs[parameter_name] = arg
+
+                return f(*args, **kwargs)
+            return aliasing_function
+
+        else:
+            # f is a class (an estimator)
+
+            class cls(f):
+                pass
+
             nonlocal alias_assignments
-            for parameter_name, aliases in alias_assignments.items():
-                aliases = tuple(aliases)
-                aliases_used = [a for a in kwargs
-                                if a in aliases + (parameter_name,)]
-                if len(aliases_used) > 1:
-                    raise ValueError(
-                        f"Several arguments with the same meaning used: " +
-                        str(aliases_used))
+            init = cls.__init__
+            cls.__init__ = parameter_aliases(**alias_assignments)(init)
 
-                elif len(aliases_used) == 1:
-                    arg = kwargs.pop(aliases_used[0])
-                    kwargs[parameter_name] = arg
+            set_params = cls.set_params
+            cls.set_params = parameter_aliases(**alias_assignments)(set_params)
 
-            return f(*args, **kwargs)
+            for key, value in alias_assignments.items():
+                def getter(self):
+                        return getattr(self, key)
 
-        return aliasing_function
+                def setter(self, new_value):
+                    return setattr(self, key, new_value)
+
+                for alias in value:
+                    setattr(cls, alias, property(getter, setter))
+
+            return cls
 
     return decorator
+
+
+def _check_estimator(estimator):
+    from sklearn.utils.estimator_checks import (
+        check_get_params_invariance, check_set_params)
+
+    name = estimator.__name__
+    instance = estimator()
+    check_get_params_invariance(name, instance)
+    check_set_params(name, instance)

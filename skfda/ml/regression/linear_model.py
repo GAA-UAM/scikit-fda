@@ -13,7 +13,7 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
 
     def fit(self, X, y=None):
 
-        y, X, beta, wt = self._argcheck(y, X)
+        y, X, beta, weights = self._argcheck(y, X)
 
         nbeta = len(beta)
         nsamples = X[0].nsamples
@@ -22,13 +22,12 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
 
         for j in range(nbeta):
             xcoef = X[j].coefficients
-            xbasis = X[j].basis
-            Jpsithetaj = xbasis.inner_product(beta[j])
-            Zmat = xcoef @ Jpsithetaj if j == 0 else np.concatenate(
-                (Zmat, xcoef @ Jpsithetaj), axis=1)
+            inner_x_beta = X[j].basis.inner_product(beta[j])
+            Zmat = xcoef @ inner_x_beta if j == 0 else np.concatenate(
+                (Zmat, xcoef @ inner_x_beta), axis=1)
 
-        if any(w != 1 for w in wt):
-            rtwt = np.sqrt(wt)
+        if any(w != 1 for w in weights):
+            rtwt = np.sqrt(weights)
             Zmat = Zmat * rtwt
             y = y * rtwt
 
@@ -36,13 +35,12 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         Dmat = Zmat.T @ y
 
         Cmatinv = np.linalg.inv(Cmat)
-        betacoef = Cmatinv @ Dmat
+        betacoefs = Cmatinv @ Dmat
 
-        mj2 = 0
+        idx = 0
         for j in range(0, nbeta):
-            mj1 = mj2
-            mj2 = mj2 + beta[j].nbasis
-            beta[j] = FDataBasis(beta[j], betacoef[mj1:mj2].T)
+            beta[j] = FDataBasis(beta[j], betacoefs[idx:beta[j].nbasis].T)
+            idx = idx + beta[j].nbasis
 
         self.beta = beta
 

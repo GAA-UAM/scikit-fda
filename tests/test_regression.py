@@ -6,23 +6,28 @@ import numpy as np
 class TestRegression(unittest.TestCase):
     """Test regression"""
 
-    def test_scalar_regression(self):
-        beta_Basis = Fourier(nbasis=5)
-        beta_fd = FDataBasis(beta_Basis, [1, 2, 3, 4, 5])
+    def test_linear_scalar_regression_auto(self):
+        beta_basis = Fourier(nbasis=5)
+        beta_fd = FDataBasis(beta_basis, [1, 2, 3, 4, 5])
 
-        x_Basis = Monomial(nbasis=7)
-        x_fd = FDataBasis(x_Basis, np.identity(7))
+        x_basis = Monomial(nbasis=7)
+        x_fd = FDataBasis(x_basis, np.identity(7))
 
         scalar_test = LinearScalarRegression([beta_fd])
         y = scalar_test.predict([x_fd])
 
-        scalar = LinearScalarRegression([beta_Basis])
+        scalar = LinearScalarRegression([beta_basis])
         scalar.fit([x_fd], y)
         np.testing.assert_array_almost_equal(scalar.beta[0].coefficients,
                                              beta_fd.coefficients)
 
-        beta_Basis = Fourier(nbasis=5)
-        beta_fd = FDataBasis(beta_Basis, [1, 1, 1, 1, 1])
+    def test_linear_scalar_regression(self):
+
+        x_basis = Monomial(nbasis=7)
+        x_fd = FDataBasis(x_basis, np.identity(7))
+
+        beta_basis = Fourier(nbasis=5)
+        beta_fd = FDataBasis(beta_basis, [1, 1, 1, 1, 1])
         y = [1.0000684777229512,
              0.1623672257830915,
              0.08521053851548224,
@@ -31,10 +36,11 @@ class TestRegression(unittest.TestCase):
              0.10549625973303875,
              0.11384314859153018]
 
-        scalar = LinearScalarRegression([beta_Basis])
+        scalar = LinearScalarRegression([beta_basis])
         scalar.fit([x_fd], y)
         np.testing.assert_array_almost_equal(scalar.beta[0].coefficients,
                                              beta_fd.coefficients)
+
 
 if __name__ == '__main__':
     print()

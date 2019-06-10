@@ -15,6 +15,10 @@ import numpy as np
 
 from ...misc import kernels
 from ..._utils import parameter_aliases
+from sklearn.base import BaseEstimator, TransformerMixin
+from skfda.representation.grid import FDataGrid
+import abc
+from abc import abstractclassmethod
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -235,3 +239,78 @@ def knn(argvals, *, smoothing_parameter=None, kernel=kernels.uniform,
     # normalise every row
     rs = np.sum(rr, 1)
     return (rr.T / rs).T
+
+
+def _check_r_to_r(f):
+    if f.ndim_domain != 1 or f.ndim_codomain != 1:
+        raise NotImplementedError("Only accepts functions from R to R")
+
+
+class _LinearKernelSmoother(abc.ABC, BaseEstimator, TransformerMixin):
+
+    def __init__(self, *, smoothing_parameter=None,
+                 kernel=kernels.normal, weights=None):
+        self.smoothing_parameter = smoothing_parameter
+        self.kernel = kernel
+        self.weights = weights
+
+    @abc.abstractmethod
+    def _hat_matrix_function(self):
+        pass
+
+    def _more_tags(self):
+        return {
+            'X_types': []
+            }
+
+    def fit(self, X: FDataGrid, y=None):
+
+        _check_r_to_r(X)
+
+        self.input_points_ = X.sample_points[0]
+
+        self.hat_matrix_ = self.hat_matrix_function()
+
+        return self
+
+    def transform(self, X: FDataGrid, y=None):
+
+        assert self.input_points_ == X.sample_points[0]
+
+        return X.copy(data_matrix=self.hat_matrix_ @ X.data_matrix)
+
+
+@parameter_aliases(smoothing_parameter=['h', 'bandwidth'])
+class NadarayaWatsonSmoother(_LinearKernelSmoother):
+
+    def _hat_matrix_function(self):
+        return nadaraya_watson(
+            self.input_points_,
+            smoothing_parameter=self.smoothing_parameter,
+            weights=self.weights)
+
+        return self
+
+
+@parameter_aliases(smoothing_parameter=['h', 'bandwidth'])
+class LocalLinearRegressionSmoother(_LinearKernelSmoother):
+
+    def _hat_matrix_function(self):
+        return local_linear_regression(
+            self.input_points_,
+            smoothing_parameter=self.smoothing_parameter,
+            weights=self.weights)
+
+        return self
+
+
+@parameter_aliases(smoothing_parameter=['k', 'n_neighbors'])
+class KNeighborsSmoother(_LinearKernelSmoother):
+
+    def _hat_matrix_function(self):
+        return knn(
+            self.input_points_,
+            smoothing_parameter=self.smoothing_parameter,
+            weights=self.weights)
+
+        return self

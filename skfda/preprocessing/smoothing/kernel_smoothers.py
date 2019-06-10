@@ -269,13 +269,13 @@ class _LinearKernelSmoother(abc.ABC, BaseEstimator, TransformerMixin):
 
         self.input_points_ = X.sample_points[0]
 
-        self.hat_matrix_ = self.hat_matrix_function()
+        self.hat_matrix_ = self._hat_matrix_function()
 
         return self
 
     def transform(self, X: FDataGrid, y=None):
 
-        assert self.input_points_ == X.sample_points[0]
+        assert all(self.input_points_ == X.sample_points[0])
 
         return X.copy(data_matrix=self.hat_matrix_ @ X.data_matrix)
 

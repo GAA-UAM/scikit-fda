@@ -40,15 +40,15 @@ fd[0:5].plot()
 param_values = np.linspace(start=2, stop=25, num=24)
 
 # Local linear regression kernel smoothing.
-llr = val.minimise(fd, param_values,
-                   smoothing_method=ks.local_linear_regression)
+llr = val.optimize_smoothing_parameter(
+    fd, param_values, smoothing_method=ks.LocalLinearRegressionSmoother())
 # Nadaraya-Watson kernel smoothing.
-nw = skfda.preprocessing.smoothing.validation.minimise(
-    fd, param_values, smoothing_method=ks.nadaraya_watson)
+nw = skfda.preprocessing.smoothing.validation.optimize_smoothing_parameter(
+    fd, param_values, smoothing_method=ks.NadarayaWatsonSmoother())
 
 # K-nearest neighbours kernel smoothing.
-knn = skfda.preprocessing.smoothing.validation.minimise(
-    fd, param_values, smoothing_method=ks.knn)
+knn = skfda.preprocessing.smoothing.validation.optimize_smoothing_parameter(
+    fd, param_values, smoothing_method=ks.KNeighborsSmoother())
 
 plt.plot(param_values, knn['scores'])
 plt.plot(param_values, llr['scores'])
@@ -99,20 +99,14 @@ nw['fdatagrid'][0:5].plot()
 # We can also appreciate the effects of undersmoothing and oversmoothing in
 # the following plots.
 
-fd_us = skfda.FDataGrid(
-    ks.nadaraya_watson(fd.sample_points, h=2).dot(fd.data_matrix[10, ..., 0]),
-    fd.sample_points, fd.sample_range, fd.dataset_label,
-    fd.axes_labels)
-fd_os = skfda.FDataGrid(
-    ks.nadaraya_watson(fd.sample_points, h=15).dot(fd.data_matrix[10, ..., 0]),
-    fd.sample_points, fd.sample_range, fd.dataset_label,
-    fd.axes_labels)
+fd_us = ks.NadarayaWatsonSmoother(h=2).fit_transform(fd[10])
+fd_os = ks.NadarayaWatsonSmoother(h=15).fit_transform(fd[10])
 
 # Under-smoothed
 fd[10].scatter(s=0.5)
-fd_us.plot(c='sandybrown')
+fd_us.plot()
 
 # Over-smoothed
 plt.figure()
 fd[10].scatter(s=0.5)
-fd_os.plot(c='r')
+fd_os.plot()

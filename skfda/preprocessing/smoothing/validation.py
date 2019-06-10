@@ -42,7 +42,7 @@ class LinearSmootherLeaveOneOutScorer():
     def __call__(self, estimator, X, y):
         y_est = estimator.transform(X)
 
-        hat_matrix = estimator._hat_matrix_function()
+        hat_matrix = estimator.hat_matrix_
 
         return np.mean(((y.data_matrix[..., 0] - y_est.data_matrix[..., 0])
                         / (1 - hat_matrix.diagonal())) ** 2)
@@ -83,7 +83,7 @@ class LinearSmootherGeneralizedCVScorer():
     def __call__(self, estimator, X, y):
         y_est = estimator.transform(X)
 
-        hat_matrix = estimator._hat_matrix_function()
+        hat_matrix = estimator.hat_matrix_
 
         if self.penalization_function is None:
             def penalization_function(hat_matrix):

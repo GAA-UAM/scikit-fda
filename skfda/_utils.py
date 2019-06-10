@@ -95,7 +95,7 @@ def parameter_aliases(**alias_assignments):
             return aliasing_function
 
         else:
-            # f is a class (an estimator)
+            # f is a class
 
             class cls(f):
                 pass
@@ -104,8 +104,10 @@ def parameter_aliases(**alias_assignments):
             init = cls.__init__
             cls.__init__ = parameter_aliases(**alias_assignments)(init)
 
-            set_params = cls.set_params
-            cls.set_params = parameter_aliases(**alias_assignments)(set_params)
+            set_params = getattr(cls, "set_params", None)
+            if set_params is not None:  # For estimators
+                cls.set_params = parameter_aliases(
+                    **alias_assignments)(set_params)
 
             for key, value in alias_assignments.items():
                 def getter(self):
@@ -116,6 +118,10 @@ def parameter_aliases(**alias_assignments):
 
                 for alias in value:
                     setattr(cls, alias, property(getter, setter))
+
+            cls.__name__ = f.__name__
+            cls.__doc__ = f.__doc__
+            cls.__module__ = f.__module__
 
             return cls
 

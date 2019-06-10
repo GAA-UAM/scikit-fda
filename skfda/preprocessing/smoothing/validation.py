@@ -8,12 +8,12 @@ __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
 
-def cv(fdatagrid, s_matrix):
-    r"""Cross validation scoring method.
+class LinearSmootherLeaveOneOutScorer():
+    r"""Leave-one-out cross validation scoring method for linear smoothers.
 
     It calculates the cross validation score for every sample in a FDataGrid
-    object given a smoothing matrix :math:`\hat{H}^\nu` calculated with a
-    parameter :math:`\nu`:
+    object given a linear smoother with a smoothing matrix :math:`\hat{H}^\nu`
+    calculated with a parameter :math:`\nu`:
 
     .. math::
         CV(\nu)=\frac{1}{n} \sum_i \left(y_i - \hat{y}_i^{\nu(
@@ -30,20 +30,26 @@ def cv(fdatagrid, s_matrix):
         \hat{H}_{ii}^\nu}\right)^2
 
     Args:
-        fdatagrid (FDataGrid): Object over which the CV score is calculated.
-        s_matrix (numpy.darray): Smoothig matrix.
+        estimator (Estimator): Linear smoothing estimator.
+        X (FDataGrid): Functional data to smooth.
+        y (FDataGrid): Functional data target. Should be the same as X.
 
     Returns:
         float: Cross validation score.
 
     """
-    y = fdatagrid.data_matrix[..., 0]
-    y_est = np.dot(s_matrix, y.T).T
-    return np.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
+
+    def __call__(self, estimator, X, y):
+        y_est = estimator.transform(X)
+
+        hat_matrix = estimator._hat_matrix_function()
+
+        return np.mean(((y.data_matrix[..., 0] - y_est.data_matrix[..., 0])
+                        / (1 - hat_matrix.diagonal())) ** 2)
 
 
-def gcv(fdatagrid, s_matrix, penalisation_function=None):
-    r"""General cross validation scoring method.
+class LinearSmootherGeneralizedCVScorer():
+    r"""Generalized cross validation scoring method for linear smoothers.
 
     It calculates the general cross validation score for every sample in a
     FDataGrid object given a smoothing matrix :math:`\hat{H}^\nu`
@@ -54,37 +60,45 @@ def gcv(fdatagrid, s_matrix, penalisation_function=None):
         y}_i^\nu\right)^2
 
     Where :math:`\hat{y}_i^{\nu}` is the adjusted :math:`y_i` and
-    :math:`\Xi` is a penalisation function. By default the penalisation
+    :math:`\Xi` is a penalization function. By default the penalization
     function is:
 
     .. math::
         \Xi(\nu,n) = \left( 1 - \frac{tr(\hat{H}^\nu)}{n} \right)^{-2}
 
-    But others such as the Akaike's information criterion can be considered.
+    but others such as the Akaike's information criterion can be considered.
 
     Args:
-        fdatagrid (FDataGrid): Object over which the CV score is calculated.
-        s_matrix (numpy.darray): Smoothig matrix.
-        penalisation_function (Function): Function taking a smoothing matrix
-            and returing a penalisation score. If None the general cross
-            validation penalisation is applied. Defaults to None.
+        estimator (Estimator): Linear smoothing estimator.
+        X (FDataGrid): Functional data to smooth.
+        y (FDataGrid): Functional data target. Should be the same as X.
 
     Returns:
         float: Cross validation score.
 
     """
-    y = fdatagrid.data_matrix[..., 0]
-    y_est = np.dot(s_matrix, y.T).T
-    if penalisation_function is not None:
-        return (np.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
-                * penalisation_function(s_matrix))
-    return (np.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
-            * (1 - s_matrix.diagonal().mean()) ** -2)
+    def __init__(self, penalization_function=None):
+        self.penalization_function = penalization_function
+
+    def __call__(self, estimator, X, y):
+        y_est = estimator.transform(X)
+
+        hat_matrix = estimator._hat_matrix_function()
+
+        if self.penalization_function is None:
+            def penalization_function(hat_matrix):
+                return (1 - hat_matrix.diagonal().mean()) ** -2
+        else:
+            penalization_function = self.penalization_function
+
+        return (np.mean(((y.data_matrix[..., 0] - y_est.data_matrix[..., 0])
+                         / (1 - hat_matrix.diagonal())) ** 2)
+                * penalization_function(hat_matrix))
 
 
-def minimise(fdatagrid, parameters,
-             smoothing_method=kernel_smoothers.nadaraya_watson, cv_method=gcv,
-             penalisation_function=None, **kwargs):
+def minimize(fdatagrid, parameters,
+             smoothing_method=None,
+             cv_method=None):
     """Chooses the best smoothness parameter and performs smoothing.
 
     Performs the smoothing of a FDataGrid object choosing the best
@@ -99,8 +113,8 @@ def minimise(fdatagrid, parameters,
         cv_method (Function): Function that takes a matrix,
             a smoothing matrix, and optionally a weights matrix and
             calculates a cross validation score.
-        penalisation_function(Fuction): if gcv is selected as cv_method a
-            penalisation function can be specified through this parameter.
+        penalization_function(Fuction): if gcv is selected as cv_method a
+            penalization function can be specified through this parameter.
 
     Returns:
         dict: A dictionary containing the following:
@@ -128,7 +142,8 @@ def minimise(fdatagrid, parameters,
         >>> import skfda
         >>> x = np.linspace(-2, 2, 5)
         >>> fd = skfda.FDataGrid(x ** 2, x)
-        >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn)
+        >>> res = minimize(fd, [2,3],
+        ...         smoothing_method=kernel_smoothers.KNeighborsSmoother())
         >>> np.array(res['scores']).round(2)
         array([ 11.67, 12.37])
         >>> round(res['best_score'], 2)
@@ -153,26 +168,31 @@ def minimise(fdatagrid, parameters,
             ...)
 
         Other validation methods can be used such as cross-validation or
-        general cross validation using other penalisation functions.
+        general cross validation using other penalization functions.
 
-        >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
-        ...                cv_method=cv)
+        >>> res = minimize(fd, [2,3],
+        ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
+        ...         cv_method=LinearSmootherLeaveOneOutScorer())
         >>> np.array(res['scores']).round(2)
         array([ 4.2, 5.5])
-        >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
-        ...                penalisation_function=aic)
+        >>> res = minimize(fd, [2,3],
+        ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
+        ...         cv_method=LinearSmootherGeneralizedCVScorer(aic))
         >>> np.array(res['scores']).round(2)
         array([ 9.35, 10.71])
-        >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
-        ...                penalisation_function=fpe)
+        >>> res = minimize(fd, [2,3],
+        ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
+        ...         cv_method=LinearSmootherGeneralizedCVScorer(fpe))
         >>> np.array(res['scores']).round(2)
         array([ 9.8, 11. ])
-        >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
-        ...                penalisation_function=shibata)
+        >>> res = minimize(fd, [2,3],
+        ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
+        ...         cv_method=LinearSmootherGeneralizedCVScorer(shibata))
         >>> np.array(res['scores']).round(2)
         array([ 7.56, 9.17])
-        >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
-        ...                penalisation_function=rice)
+        >>> res = minimize(fd, [2,3],
+        ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
+        ...         cv_method=LinearSmootherGeneralizedCVScorer(rice))
         >>> np.array(res['scores']).round(2)
         array([ 21. , 16.5])
 
@@ -185,34 +205,32 @@ def minimise(fdatagrid, parameters,
         raise NotImplementedError("This method only works when the dimension "
                                   "of the image of the FDatagrid object is "
                                   "one.")
+
+    if smoothing_method is None:
+        smoothing_method = kernel_smoothers.NadarayaWatsonSmoother()
+
+    if cv_method is None:
+        cv_method = LinearSmootherGeneralizedCVScorer()
+
     # Reduce one dimension the sample points.
-    sample_points = fdatagrid.sample_points[0]
     scores = []
+
     # Calculates the scores for each parameter.
-    if penalisation_function is not None:
-        for h in parameters:
-            s = smoothing_method(sample_points, smoothing_parameter=h,
-                                 **kwargs)
-            scores.append(
-                cv_method(fdatagrid, s,
-                          penalisation_function=penalisation_function))
-    else:
-        for h in parameters:
-            s = smoothing_method(sample_points, smoothing_parameter=h,
-                                 **kwargs)
-            scores.append(
-                cv_method(fdatagrid, s))
+    for h in parameters:
+        smoothing_method.smoothing_parameter = h
+        smoothing_method.fit(fdatagrid)
+        scores.append(cv_method(smoothing_method, fdatagrid, fdatagrid))
+
     # gets the best parameter.
     h = parameters[int(np.argmin(scores))]
-    s = smoothing_method(sample_points, smoothing_parameter=h, **kwargs)
-    fdatagrid_adjusted = fdatagrid.copy(
-        data_matrix=np.dot(fdatagrid.data_matrix[..., 0], s.T))
+    smoothing_method.smoothing_parameter = h
+    smoothing_method.fit(fdatagrid)
 
     return {'scores': scores,
             'best_score': np.min(scores),
             'best_parameter': h,
-            'hat_matrix': s,
-            'fdatagrid': fdatagrid_adjusted,
+            'hat_matrix': smoothing_method._hat_matrix_function(),
+            'fdatagrid': smoothing_method.transform(fdatagrid)
             }
 
 
@@ -223,11 +241,11 @@ def aic(s_matrix):
         \Xi(\nu,n) = \exp\left(2 * \frac{tr(\hat{H}^\nu)}{n}\right)
 
     Args:
-        s_matrix (numpy.darray): Smoothing matrix whose penalisation
+        s_matrix (numpy.darray): Smoothing matrix whose penalization
             score is desired.
 
     Returns:
-         float: Penalisation given by the Akaike's information criterion.
+         float: penalization given by the Akaike's information criterion.
 
     """
     return np.exp(2 * s_matrix.diagonal().mean())
@@ -241,11 +259,11 @@ def fpe(s_matrix):
         \frac{tr(\hat{H}^\nu)}{n}}
 
     Args:
-        s_matrix (numpy.darray): Smoothing matrix whose penalisation
+        s_matrix (numpy.darray): Smoothing matrix whose penalization
             score is desired.
 
     Returns:
-         float: Penalisation given by the finite prediction error.
+         float: penalization given by the finite prediction error.
 
     """
     return (1 + s_matrix.diagonal().mean()) / (1 - s_matrix.diagonal().mean())
@@ -258,11 +276,11 @@ def shibata(s_matrix):
         \Xi(\nu,n) = 1 + 2 * \frac{tr(\hat{H}^\nu)}{n}
 
     Args:
-        s_matrix (numpy.darray): Smoothing matrix whose penalisation
+        s_matrix (numpy.darray): Smoothing matrix whose penalization
             score is desired.
 
     Returns:
-         float: Penalisation given by the Shibata's model selector.
+         float: penalization given by the Shibata's model selector.
 
     """
     return 1 + 2 * s_matrix.diagonal().mean()
@@ -275,11 +293,11 @@ def rice(s_matrix):
         \Xi(\nu,n) = \left(1 - 2 * \frac{tr(\hat{H}^\nu)}{n}\right)^{-1}
 
     Args:
-        s_matrix (numpy.darray): Smoothing matrix whose penalisation
+        s_matrix (numpy.darray): Smoothing matrix whose penalization
             score is desired.
 
     Returns:
-         float: Penalisation given by the Rice's bandwidth selector.
+         float: penalization given by the Rice's bandwidth selector.
 
     """
     return (1 - 2 * s_matrix.diagonal().mean()) ** -1

@@ -331,6 +331,7 @@ class NadarayaWatsonSmoother(_LinearKernelSmoother):
         return nadaraya_watson(
             self.input_points_,
             smoothing_parameter=self.smoothing_parameter,
+            kernel=self.kernel,
             weights=self.weights)
 
         return self
@@ -395,6 +396,7 @@ class LocalLinearRegressionSmoother(_LinearKernelSmoother):
         return local_linear_regression(
             self.input_points_,
             smoothing_parameter=self.smoothing_parameter,
+            kernel=self.kernel,
             weights=self.weights)
 
         return self
@@ -452,6 +454,7 @@ class KNeighborsSmoother(_LinearKernelSmoother):
         return knn(
             self.input_points_,
             smoothing_parameter=self.smoothing_parameter,
+            kernel=self.kernel,
             weights=self.weights)
 
         return self

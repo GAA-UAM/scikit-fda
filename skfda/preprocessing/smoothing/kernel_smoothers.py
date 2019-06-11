@@ -449,6 +449,11 @@ class KNeighborsSmoother(_LinearKernelSmoother):
                [ 0.   , 0.   , 0.   , 0.5  , 0.5  ]])
 
     """
+    def __init__(self, *, smoothing_parameter=None,
+                 kernel=kernels.uniform, weights=None):
+        self.smoothing_parameter = smoothing_parameter
+        self.kernel = kernel
+        self.weights = weights
 
     def _hat_matrix_function(self):
         return knn(

@@ -10,7 +10,7 @@ from ..preprocessing.registration import (
 
 
 def _cast_to_grid(fdata1, fdata2, eval_points=None):
-    """Checks if the fdatas passed as argument are unidimensional and compatible
+    r"""Checks if the fdatas passed as argument are unidimensional and compatible
     and converts them to FDatagrid to compute their distances.
 
 
@@ -346,16 +346,16 @@ def lp_distance(fdata1, fdata2, p=2, *, eval_points=None):
 
 
 def fisher_rao_distance(fdata1, fdata2, *, eval_points=None):
-    """Compute the Fisher-Rao distance btween two functional objects.
+    r"""Compute the Fisher-Rao distance btween two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
     :math:`q_i` and :math:`q_j` be the corresponding SRSF (see :func:`to_srsf`),
     the fisher rao distance is defined as
 
     .. math::
-        d_{FR}(f_i, f_j) = \\| q_i - q_j \\|_2 =
-        \\left ( \\int_0^1 sgn(\\dot{f_i}(t))\\sqrt{|\\dot{f_i}(t)|} -
-        sgn(\\dot{f_j}(t))\\sqrt{|\\dot{f_j}(t)|} dt \\right )^{\\frac{1}{2}}
+        d_{FR}(f_i, f_j) = \| q_i - q_j \|_2 =
+        \left ( \int_0^1 sgn(\dot{f_i}(t))\sqrt{|\dot{f_i}(t)|} -
+        sgn(\dot{f_j}(t))\sqrt{|\dot{f_j}(t)|} dt \right )^{\frac{1}{2}}
 
     If the observations are distributions of random variables the distance will
     match with the usual fisher-rao distance in non-parametric form for
@@ -400,28 +400,28 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None):
     return lp_distance(fdata1_srsf, fdata2_srsf, p=2)
 
 def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
-    """Compute the amplitude distance between two functional objects.
+    r"""Compute the amplitude distance between two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
     :math:`q_i` and :math:`q_j` be the corresponding SRSF (see :func:`to_srsf`),
     the amplitude distance is defined as
 
     .. math::
-        d_{A}(f_i, f_j)=min_{\\gamma \\in \\Gamma}d_{FR}(f_i \\circ \\gamma,f_j)
+        d_{A}(f_i, f_j)=min_{\gamma \in \Gamma}d_{FR}(f_i \circ \gamma,f_j)
 
     A penalty term could be added to restrict the ammount of elasticity in the
     alignment used.
 
     .. math::
-        d_{\\lambda}^2(f_i, f_j) =min_{\\gamma \\in \\Gamma} \\{
-        d_{FR}^2(f_i \\circ \\gamma, f_j) + \\lambda \\mathcal{R}(\\gamma) \\}
+        d_{\lambda}^2(f_i, f_j) =min_{\gamma \in \Gamma} \{
+        d_{FR}^2(f_i \circ \gamma, f_j) + \lambda \mathcal{R}(\gamma) \}
 
 
     Where :math:`d_{FR}` is the Fisher-Rao distance and the penalty term is
     given by
 
     .. math::
-        \\mathcal{R}(\\gamma) = \\|\\sqrt{\\dot{\\gamma}}- 1 \\|_{\\mathbb{L}^2}^2
+        \mathcal{R}(\gamma) = \|\sqrt{\dot{\gamma}}- 1 \|_{\mathbb{L}^2}^2
 
     See [SK16-4-10-1]_ for a detailed explanation.
 
@@ -488,17 +488,17 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
     return distance
 
 def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
-    """Compute the amplitude distance btween two functional objects.
+    r"""Compute the amplitude distance btween two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
-    :math:`\\gamma_{ij}` the corresponding warping used in the elastic
+    :math:`\gamma_{ij}` the corresponding warping used in the elastic
     registration to align :math:`f_i` to :math:`f_j` (see
     :func:`elastic_registration`). The phase distance between :math:`f_i`
     and :math:`f_j` is defined as
 
     .. math::
-        d_{P}(f_i, f_j) = d_{FR}(\\gamma_{ij}, \\gamma_{id}) =
-        arcos \\left ( \\int_0^1 \\sqrt {\\dot \\gamma_{ij}(t)} dt \\right )
+        d_{P}(f_i, f_j) = d_{FR}(\gamma_{ij}, \gamma_{id}) =
+        arcos \left ( \int_0^1 \sqrt {\dot \gamma_{ij}(t)} dt \right )
 
     See [SK16-4-10-2]_ for a detailed explanation.
 
@@ -554,17 +554,17 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
 
 
 def warping_distance(warping1, warping2, *, eval_points=None):
-    """Compute the distance between warpings functions.
+    r"""Compute the distance between warpings functions.
 
-    Let :math:`\\gamma_i` and :math:`\\gamma_j` be two warpings, defined in
-    :math:`\\gamma_i:[a,b] \\rightarrow [a,b]`. The distance in the
-    space of warping functions, :math:`\\Gamma`, with the riemannian metric
+    Let :math:`\gamma_i` and :math:`\gamma_j` be two warpings, defined in
+    :math:`\gamma_i:[a,b] \rightarrow [a,b]`. The distance in the
+    space of warping functions, :math:`\Gamma`, with the riemannian metric
     given by the fisher-rao inner product can be computed using the structure
     of hilbert sphere in their srsf's.
 
     .. math::
-        d_{\\Gamma}(\\gamma_i, \\gamma_j) = cos^{-1} \\left ( \\int_0^1
-        \\sqrt{\\dot \\gamma_i(t)\\dot \\gamma_j(t)}dt \\right )
+        d_{\Gamma}(\gamma_i, \gamma_j) = cos^{-1} \left ( \int_0^1
+        \sqrt{\dot \gamma_i(t)\dot \gamma_j(t)}dt \right )
 
     See [SK16-4-11-2]_ for a detailed explanation.
 

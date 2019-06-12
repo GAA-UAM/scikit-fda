@@ -242,7 +242,7 @@ def invert_warping(fdatagrid, *, eval_points=None):
         >>> from skfda import FDataGrid
         >>> from skfda.preprocessing.registration import invert_warping
 
-        We will construct the warping :math:`\gamma : [0,1] \\rightarrow [0,1]`
+        We will construct the warping :math:`\gamma : [0,1] \rightarrow [0,1]`
         wich maps t to t^3.
 
         >>> t = np.linspace(0, 1)

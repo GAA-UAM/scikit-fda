@@ -216,9 +216,9 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 def invert_warping(fdatagrid, *, eval_points=None):
     r"""Compute the inverse of a diffeomorphism.
 
-    Let :math:`\gamma : [a,b] \\rightarrow [a,b]` be a function strictly
+    Let :math:`\gamma : [a,b] \rightarrow [a,b]` be a function strictly
     increasing, calculates the corresponding inverse
-    :math:`\gamma^{-1} : [a,b] \\rightarrow [a,b]` such that
+    :math:`\gamma^{-1} : [a,b] \rightarrow [a,b]` such that
     :math:`\gamma^{-1} \circ \gamma = \gamma \circ \gamma^{-1} = \gamma_{id}`.
 
     Uses a PCHIP interpolator to compute approximately the inverse.
@@ -304,12 +304,12 @@ def _normalize_scale(t, a=0, b=1):
 
 
 def normalize_warping(warping, domain_range=None):
-    """Rescale a warping to normalize their domain.
+    r"""Rescale a warping to normalize their domain.
 
-    Given a set of warpings :math:`\\gamma_i:[a,b] \\rightarrow [a,b]` it is
+    Given a set of warpings :math:`\gamma_i:[a,b]\rightarrow  [a,b]` it is
     used an affine traslation to change the domain of the transformation to
-    other domain, :math:`\\hat \\gamma_i:[\\hat a,\\hat b] \\rightarrow
-    [\\hat a, \\hat b]`.
+    other domain, :math:`\tilde \gamma_i:[\tilde a,\tilde b] \rightarrow
+    [\tilde a, \tilde b]`.
 
     Args:
         warping (:class:`FDatagrid`): Set of warpings to rescale.

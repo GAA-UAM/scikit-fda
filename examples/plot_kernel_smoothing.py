@@ -42,17 +42,25 @@ param_values = np.linspace(start=2, stop=25, num=24)
 # Local linear regression kernel smoothing.
 llr = val.optimize_smoothing_parameter(
     fd, param_values, smoothing_method=ks.LocalLinearRegressionSmoother())
+llr_fd = llr.best_estimator_.transform(fd)
+
 # Nadaraya-Watson kernel smoothing.
 nw = skfda.preprocessing.smoothing.validation.optimize_smoothing_parameter(
     fd, param_values, smoothing_method=ks.NadarayaWatsonSmoother())
+nw_fd = nw.best_estimator_.transform(fd)
 
 # K-nearest neighbours kernel smoothing.
 knn = skfda.preprocessing.smoothing.validation.optimize_smoothing_parameter(
     fd, param_values, smoothing_method=ks.KNeighborsSmoother())
+knn_fd = knn.best_estimator_.transform(fd)
 
-plt.plot(param_values, knn['scores'])
-plt.plot(param_values, llr['scores'])
-plt.plot(param_values, nw['scores'])
+plt.plot(param_values, knn.cv_results_['mean_test_score'])
+plt.plot(param_values, llr.cv_results_['mean_test_score'])
+plt.plot(param_values, nw.cv_results_['mean_test_score'])
+
+###############################################################################
+# We can plot the smoothed curves corresponding to the 11th element of the data
+# set (this is a random choice) for the three different smoothing methods.
 
 ax = plt.gca()
 ax.set_xlabel('Smoothing method parameter')
@@ -62,14 +70,10 @@ ax.legend(['k-nearest neighbours', 'local linear regression',
            'Nadaraya-Watson'],
           title='Smoothing method')
 
-###############################################################################
-# We can plot the smoothed curves corresponding to the 11th element of the data
-# set (this is a random choice) for the three different smoothing methods.
-
 fd[10].plot()
-knn['fdatagrid'][10].plot()
-llr['fdatagrid'][10].plot()
-nw['fdatagrid'][10].plot()
+knn_fd[10].plot()
+llr_fd[10].plot()
+nw_fd[10].plot()
 ax = plt.gca()
 ax.legend(['original data', 'k-nearest neighbours',
            'local linear regression',
@@ -85,7 +89,7 @@ fd[10].plot()
 # Smoothed
 plt.figure()
 fd[10].scatter(s=0.5)
-nw['fdatagrid'][10].plot(c='g')
+nw_fd[10].plot(c='g')
 
 ###############################################################################
 # Now, we can see the effects of a proper smoothing. We can plot the same 5
@@ -93,7 +97,7 @@ nw['fdatagrid'][10].plot(c='g')
 # the best choice of parameter.
 
 plt.figure(4)
-nw['fdatagrid'][0:5].plot()
+nw_fd[0:5].plot()
 
 ###############################################################################
 # We can also appreciate the effects of undersmoothing and oversmoothing in

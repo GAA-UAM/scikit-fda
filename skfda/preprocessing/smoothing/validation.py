@@ -120,23 +120,7 @@ def optimize_smoothing_parameter(fdatagrid, parameter_values,
             penalization function can be specified through this parameter.
 
     Returns:
-        dict: A dictionary containing the following:
-
-            {
-                'scores': (list of double) List of the scores for each
-                    parameter.
-
-                'best_score': (double) Minimum score.
-
-                'best_parameter': (double) Parameter that produces the
-                    lesser score.
-
-                'hat_matrix': (numpy.darray) Hat matrix built with the best
-                    parameter.
-
-                'fdatagrid': (FDataGrid) Smoothed FDataGrid object.
-
-            }
+        grid: A scikit-learn GridSearchCV estimator, properly fitted.
 
     Examples:
         Creates a FDataGrid object of the function :math:`y=x^2` and peforms
@@ -145,21 +129,21 @@ def optimize_smoothing_parameter(fdatagrid, parameter_values,
         >>> import skfda
         >>> x = np.linspace(-2, 2, 5)
         >>> fd = skfda.FDataGrid(x ** 2, x)
-        >>> res = optimize_smoothing_parameter(fd, [2,3],
-        ...         smoothing_method=kernel_smoothers.KNeighborsSmoother())
-        >>> np.array(res['scores']).round(2)
+        >>> grid = optimize_smoothing_parameter(fd, [2,3],
+        ...            smoothing_method=kernel_smoothers.KNeighborsSmoother())
+        >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-11.67, -12.37])
-        >>> round(res['best_score'], 2)
+        >>> round(grid.best_score_, 2)
         -11.67
-        >>> res['best_parameter']
+        >>> grid.best_params_['smoothing_parameter']
         2
-        >>> res['hat_matrix'].round(2)
+        >>> grid.best_estimator_.hat_matrix_.round(2)
         array([[ 0.5 , 0.5 , 0.  , 0.  , 0.  ],
                [ 0.33, 0.33, 0.33, 0.  , 0.  ],
                [ 0.  , 0.33, 0.33, 0.33, 0.  ],
                [ 0.  , 0.  , 0.33, 0.33, 0.33],
                [ 0.  , 0.  , 0.  , 0.5 , 0.5 ]])
-        >>> res['fdatagrid'].round(2)
+        >>> grid.best_estimator_.transform(fd).round(2)
         FDataGrid(
             array([[[ 2.5 ],
                     [ 1.67],
@@ -173,32 +157,32 @@ def optimize_smoothing_parameter(fdatagrid, parameter_values,
         Other validation methods can be used such as cross-validation or
         general cross validation using other penalization functions.
 
-        >>> res = optimize_smoothing_parameter(fd, [2,3],
+        >>> grid = optimize_smoothing_parameter(fd, [2,3],
         ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
         ...         cv_method=LinearSmootherLeaveOneOutScorer())
-        >>> np.array(res['scores']).round(2)
+        >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-4.2, -5.5])
-        >>> res = optimize_smoothing_parameter(fd, [2,3],
+        >>> grid = optimize_smoothing_parameter(fd, [2,3],
         ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
         ...         cv_method=LinearSmootherGeneralizedCVScorer(
         ...                         akaike_information_criterion))
-        >>> np.array(res['scores']).round(2)
+        >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([ -9.35, -10.71])
-        >>> res = optimize_smoothing_parameter(fd, [2,3],
+        >>> grid = optimize_smoothing_parameter(fd, [2,3],
         ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
         ...         cv_method=LinearSmootherGeneralizedCVScorer(
         ...                         finite_prediction_error))
-        >>> np.array(res['scores']).round(2)
+        >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([ -9.8, -11. ])
-        >>> res = optimize_smoothing_parameter(fd, [2,3],
+        >>> grid = optimize_smoothing_parameter(fd, [2,3],
         ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
         ...         cv_method=LinearSmootherGeneralizedCVScorer(shibata))
-        >>> np.array(res['scores']).round(2)
+        >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-7.56, -9.17])
-        >>> res = optimize_smoothing_parameter(fd, [2,3],
+        >>> grid = optimize_smoothing_parameter(fd, [2,3],
         ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
         ...         cv_method=LinearSmootherGeneralizedCVScorer(rice))
-        >>> np.array(res['scores']).round(2)
+        >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-21. , -16.5])
 
     """
@@ -221,6 +205,8 @@ def optimize_smoothing_parameter(fdatagrid, parameter_values,
                         param_grid={'smoothing_parameter': parameter_values},
                         scoring=cv_method, cv=[(slice(None), slice(None))])
     grid.fit(fdatagrid, fdatagrid)
+
+    return grid
     scores = grid.cv_results_['mean_test_score']
     best_score = grid.best_score_
     best_parameter = grid.best_params_['smoothing_parameter']

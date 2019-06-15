@@ -42,6 +42,3 @@ after_success:
         codecov
       fi
 
-# pip3 install -r requirements.txt
-# python setup.py install
-# pytest --cov-config=.coveragerc --cov=skfda

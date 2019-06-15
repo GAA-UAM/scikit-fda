@@ -33,7 +33,7 @@ script:
       fi
     - |
       if [[ $COVERAGE == true ]]; then
-        coverage run setup.py test
+        pytest --cov-config=.coveragerc --cov=skfda
       fi
 
 after_success:

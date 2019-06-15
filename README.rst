@@ -6,6 +6,9 @@ scikit-fda
 
 |build-status| |docs|
 
+.. image:: https://codecov.io/gh/GAA-UAM/scikit-fda/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/GAA-UAM/scikit-fda
+
 Functional Data Analysis is the field of Statistics that analyses data that
 come in the shape of functions. To know more about fda have a look at fda_ or read [RS05]_.
 

@@ -33,6 +33,7 @@ script:
       fi
     - |
       if [[ $COVERAGE == true ]]; then
+        pip3 install -r requirements.txt
         pytest --cov-config=.coveragerc --cov=skfda
       fi
 

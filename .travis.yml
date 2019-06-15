@@ -34,9 +34,6 @@ script:
     - |
       if [[ $COVERAGE == true ]]; then
         coverage run --source=skfda/ setup.py test
-#        pip3 install -r requirements.txt
-#        python setup.py install
-#        pytest --cov-config=.coveragerc --cov=skfda
       fi
 
 after_success:
@@ -44,3 +41,7 @@ after_success:
       if [[ $COVERAGE == true ]]; then
         codecov
       fi
+
+# pip3 install -r requirements.txt
+# python setup.py install
+# pytest --cov-config=.coveragerc --cov=skfda

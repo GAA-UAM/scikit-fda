@@ -19,18 +19,18 @@ import mpl_toolkits.mplot3d
 #
 # The extrapolation defines how to evaluate points that are
 # outside the domain range of a
-# :class:`FDataBasis <skfda.representation.basis.FDataBasis>` or a
-# :class:`FDataGrid <skfda.representation.grid.FDataGrid>`.
+# :class:`FDataBasis <skfda.FDataBasis>` or a
+# :class:`FDataGrid <skfda.FDataGrid>`.
 #
-# The :class:`FDataBasis <skfda.representation._functional_data.FData>` objects have a
+# The :class:`FDataBasis <skfda.FData>` objects have a
 # predefined extrapolation which is applied in ´evaluate´
 # if the argument `extrapolation` is not supplied. This default value
 # could be specified when the object is created or changing the
 # attribute `extrapolation`.
 #
 # The extrapolation could be specified by a string with the short name of an
-# extrapolator, with an
-# :class:´Extrapolator <skfda.Extrapolator>´ or with a callable.
+# extrapolator or with an
+# :class:´Extrapolator <skfda.representation.extrapolation.Extrapolator>´.
 #
 # To show how it works we will create a dataset with two unidimensional curves
 # defined in (0,1), and we will represent it using a grid and different types of
@@ -153,7 +153,7 @@ fdgrid.plot() # Plot dataset
 
 ###############################################################################
 #
-# The :class:´FillExtrapolation <skfda.FillExtrapolation>´ will fill
+# The :class:´FillExtrapolation <skfda.representation.extrapolation.FillExtrapolation>´ will fill
 # the points extrapolated with the same value. The case of filling with zeros
 # could be specified with the string `"zeros"`, which is equivalent to
 # `extrapolation=FillExtrapolation(0)`.

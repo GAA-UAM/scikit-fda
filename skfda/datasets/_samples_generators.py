@@ -167,7 +167,7 @@ def make_multimodal_samples(n_samples: int=15, *, n_modes: int=1,
                             noise: float=.0, modes_location=None,
                             random_state=None):
 
-    """Generate multimodal samples.
+    r"""Generate multimodal samples.
 
     Each sample :math:`x_i(t)` is proportional to a gaussian mixture, generated
     as the sum of multiple pdf of multivariate normal distributions with
@@ -175,11 +175,11 @@ def make_multimodal_samples(n_samples: int=15, *, n_modes: int=1,
 
     .. math::
 
-        x_i(t) \\propto \\sum_{n=1}^{\\text{n_modes}} \\exp \\left (
-        {-\\frac{1}{2\\sigma} (t-\\mu_n)^T \\mathbb{1} (t-\\mu_n)} \\right )
+        x_i(t) \propto \sum_{n=1}^{\text{n_modes}} \exp \left (
+        {-\frac{1}{2\sigma} (t-\mu_n)^T \mathbb{1} (t-\mu_n)} \right )
 
-    Where :math:`\\mu_n=\\text{mode_location}_n+\\epsilon` and :math:`\\epsilon`
-    is normally distributed, with mean :math:`\\mathbb{0}` and standard
+    Where :math:`\mu_n=\text{mode_location}_n+\epsilon` and :math:`\epsilon`
+    is normally distributed, with mean :math:`\mathbb{0}` and standard
     deviation given by the parameter `std`.
 
     Args:
@@ -188,7 +188,7 @@ def make_multimodal_samples(n_samples: int=15, *, n_modes: int=1,
         points_per_dim: Points per sample. If the object is multidimensional
             indicates the number of points for each dimension in the domain.
             The sample will have :math:
-            `\\text{points_per_dim}^\\text{ndim_domain}` points of
+            `\text{points_per_dim}^\text{ndim_domain}` points of
             discretization.
         ndim_domain: Number of dimensions of the domain.
         ndim_image: Number of dimensions of the image
@@ -197,7 +197,7 @@ def make_multimodal_samples(n_samples: int=15, *, n_modes: int=1,
         stop: Ending point of the samples. In multidimensional objects the
             ending point of each axis.
         std: Standard deviation of the variation of the modes location.
-        mode_std: Standard deviation :math:`\\sigma` of each mode.
+        mode_std: Standard deviation :math:`\sigma` of each mode.
         noise: Standard deviation of Gaussian noise added to the data.
         modes_location:  List of coordinates of each mode.
         random_state: Random state.

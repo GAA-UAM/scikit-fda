@@ -18,6 +18,11 @@ matrix:
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install: choco install python
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
+    - name: "Coverage and pep 8 tests on Python 3.7.1 on Xenial Linux"
+      python: 3.7           # this works for Linux but is ignored on macOS or Windows
+      dist: xenial          # required for Python >= 3.7
+      env:
+        - PEP8COVERAGE=true    # coverage test are only 
 install:
   - pip3 install --upgrade pip cython numpy || pip3 install --upgrade --user pip cython numpy # all three OSes agree about 'pip3'
   - pip3 install flake8 || pip3 install --user flake8
@@ -26,19 +31,17 @@ install:
 # 'python' points to Python 2.7 on macOS but points to Python 3.7 on Linux and Windows
 # 'python3' is a 'command not found' error on Windows but 'py' works on Windows only
 script:
-    - python3 setup.py test || python setup.py test
     - |
-      if [[ $PEP8 == true ]]; then
+      if [[ $PEP8COVERAGE == false ]]; then
+        python3 setup.py test || python setup.py test
+      else
         flake8 --exit-zero skfda
+        coverage run --source=skfda/ setup.py test;
       fi
-    - |
-      if [[ $COVERAGE == true ]]; then
-        coverage run --source=skfda/ setup.py test
-      fi
+
 
 after_success:
     - |
-      if [[ $COVERAGE == true ]]; then
+      if [[ $PEP8COVERAGE == true ]]; then
         codecov
       fi
-

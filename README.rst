@@ -7,7 +7,7 @@ scikit-fda
 |build-status| |docs| |Codecov|_ |PyPi|_
 
 .. |Codecov| image:: https://codecov.io/gh/GAA-UAM/scikit-fda/branch/develop/graph/badge.svg
-.. _Codecov: https://codecov.io/github/scikit-fda/scikit-fda?branch=develop
+.. _Codecov: https://codecov.io/github/GAA-UAM/scikit-fda?branch=develop
 
 .. |PyPi| image:: https://badge.fury.io/py/scikit-fda.svg
 .. _PyPi: https://badge.fury.io/py/scikit-fda

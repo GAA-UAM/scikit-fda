@@ -11,9 +11,9 @@ __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"
 
 
-def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
-                              extrapolation=None, step_size=1, initial=None,
-                              eval_points=None):
+def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2,
+                              restrict_domain=False, extrapolation=None,
+                              step_size=1, initial=None, eval_points=None):
     r"""Return the lists of shifts used in the shift registration procedure.
 
         Realizes a registration of the curves, using shift aligment, as is
@@ -68,8 +68,10 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
 
         >>> from skfda.datasets import make_sinusoidal_process
         >>> from skfda.representation.basis import Fourier
-        >>> from skfda.preprocessing.registration import shift_registration_deltas
-        >>> fd = make_sinusoidal_process(n_samples=2, error_std=0, random_state=1)
+        >>> from skfda.preprocessing.registration import
+        ...      shift_registration_deltas
+        >>> fd = make_sinusoidal_process(n_samples=2, error_std=0,
+        ...                              random_state=1)
 
         Registration of data in discretized form:
 
@@ -251,7 +253,8 @@ def shift_registration(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
         >>> from skfda.datasets import make_sinusoidal_process
         >>> from skfda.representation.basis import Fourier
         >>> from skfda.preprocessing.registration import shift_registration
-        >>> fd = make_sinusoidal_process(n_samples=2, error_std=0, random_state=1)
+        >>> fd = make_sinusoidal_process(n_samples=2, error_std=0,
+        ...                              random_state=1)
 
         Registration of data in discretized form:
 
@@ -279,7 +282,7 @@ def shift_registration(fd, *, maxiter=5, tol=1e-2, restrict_domain=False,
                                       step_size=step_size, initial=initial,
                                       eval_points=eval_points)
 
-    # Computes the values with the final shift to construct the FDataBasis
+    # Computes the values with the final shift to construct the FDataBasis
     return fd.shift(delta, restrict_domain=restrict_domain,
                     extrapolation=extrapolation,
                     eval_points=eval_points, **kwargs)

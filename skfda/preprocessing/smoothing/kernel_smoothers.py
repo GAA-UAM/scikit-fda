@@ -204,7 +204,7 @@ def knn(argvals, k=None, kernel=kernels.uniform, w=None, cv=False):
     # For each row in the distances matrix, it calculates the furthest point
     # within the k nearest neighbours
     vec = np.percentile(delta_x, k / len(argvals) * 100, axis=0,
-                           interpolation='lower') + tol
+                        interpolation='lower') + tol
 
     rr = kernel((delta_x.T / vec).T)
     # Applies the kernel to the result of dividing each row by the result

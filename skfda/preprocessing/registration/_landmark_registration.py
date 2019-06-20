@@ -69,8 +69,8 @@ def landmark_shift_deltas(fd, landmarks, location=None):
     """
 
     if len(landmarks) != fd.nsamples:
-        raise ValueError(f"landmark list ({len(landmarks)}) must have the same "
-                         f"length than the number of samples ({fd.nsamples})")
+        raise ValueError(f"landmark list ({len(landmarks)}) must have the same"
+                         f" length than the number of samples ({fd.nsamples})")
 
     landmarks = np.atleast_1d(landmarks)
 
@@ -183,8 +183,8 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
 
     Raises:
         ValueError: If the object to be registered has domain dimension greater
-            than 1 or the list of landmarks or locations does not match with the
-            number of samples.
+            than 1 or the list of landmarks or locations does not match with
+            the number of samples.
 
     References:
 
@@ -195,11 +195,13 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
 
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.preprocessing.registration import landmark_registration_warping
+        >>> from skfda.preprocessing.registration import
+        ...      landmark_registration_warping
 
         We will create a data with landmarks as example
 
-        >>> fd = make_multimodal_samples(n_samples=3, n_modes=2, random_state=9)
+        >>> fd = make_multimodal_samples(n_samples=3, n_modes=2,
+        ...                              random_state=9)
         >>> landmarks = make_multimodal_landmarks(n_samples=3, n_modes=2,
         ...                                       random_state=9)
         >>> landmarks = landmarks.squeeze()
@@ -269,8 +271,8 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
     """Perform landmark registration of the curves.
 
         Let :math:`t_{ij}` the time where the sample :math:`i` has the feature
-        :math:`j` and :math:`t^*_j` the new time for the feature. The registered
-        samples will have their features aligned, i.e.,
+        :math:`j` and :math:`t^*_j` the new time for the feature.
+        The registered samples will have their features aligned, i.e.,
         :math:`x^*_i(t^*_j)=x_i(t_{ij})`.
 
         See [RS05-7-3]_ for a detailed explanation.
@@ -304,7 +306,8 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
 
         We will create a data with landmarks as example
 
-        >>> fd = make_multimodal_samples(n_samples=3, n_modes=2, random_state=9)
+        >>> fd = make_multimodal_samples(n_samples=3, n_modes=2,
+        ...                              random_state=9)
         >>> landmarks = make_multimodal_landmarks(n_samples=3, n_modes=2,
         ...                                       random_state=9)
         >>> landmarks = landmarks.squeeze()

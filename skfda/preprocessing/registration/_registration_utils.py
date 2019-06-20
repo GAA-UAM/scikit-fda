@@ -97,8 +97,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.preprocessing.registration import (landmark_registration_warping,
-        ...                               mse_decomposition)
+        >>> from skfda.preprocessing.registration import
+        ...      landmark_registration_warping, mse_decomposition
 
 
         We will create and register data.
@@ -108,7 +108,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
         >>> landmarks = landmarks.squeeze()
         >>> warping = landmark_registration_warping(fd, landmarks)
         >>> fd_registered = fd.compose(warping)
-        >>> mse_amp, mse_pha, rsq, cr = mse_decomposition(fd, fd_registered, warping)
+        >>> mse_amp, mse_pha, rsq, cr = mse_decomposition(fd, fd_registered,
+        ...                                               warping)
 
         Mean square error produced by the amplitude variation.
 
@@ -139,8 +140,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
     if warping_function is not None and (warping_function.nsamples
                                          != original_fdata.nsamples):
-        raise ValueError(f"the registered curves and the warping functions must"
-                         f" have the same number of samples "
+        raise ValueError(f"the registered curves and the warping functions "
+                         f"must have the same number of samples "
                          f"({registered_fdata.nsamples})"
                          f"!=({warping_function.nsamples})")
 
@@ -186,9 +187,9 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
         covariate = np.inner(dh_fine_center.T, y_fine_sq_center.T)
         covariate = covariate.mean(axis=0)
         cr += np.divide(scipy.integrate.simps(covariate,
-                                                 eval_points),
-                           scipy.integrate.simps(eta_fine_sq,
-                                                 eval_points))
+                                              eval_points),
+                        scipy.integrate.simps(eta_fine_sq,
+                                              eval_points))
 
     # mse due to phase variation
     mse_pha = scipy.integrate.simps(cr*eta_fine_sq - mu_fine_sq, eval_points)

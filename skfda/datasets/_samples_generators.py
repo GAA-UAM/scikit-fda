@@ -8,9 +8,9 @@ from ..representation.interpolation import SplineInterpolator
 from ..preprocessing.registration import normalize_warping
 
 
-def make_gaussian_process(n_samples: int=100, n_features: int=100, *,
-                          start: float=0., stop: float=1.,
-                          mean=0, cov=None, noise: float=0.,
+def make_gaussian_process(n_samples: int = 100, n_features: int = 100, *,
+                          start: float = 0., stop: float = 1.,
+                          mean=0, cov=None, noise: float = 0.,
                           random_state=None):
     """Generate Gaussian process trajectories.
 
@@ -55,11 +55,12 @@ def make_gaussian_process(n_samples: int=100, n_features: int=100, *,
     return FDataGrid(sample_points=x, data_matrix=y)
 
 
-def make_sinusoidal_process(n_samples: int=15, n_features: int=100, *,
-                            start: float=0., stop: float=1., period: float=1.,
-                            phase_mean: float=0., phase_std: float=.6,
-                            amplitude_mean: float=1., amplitude_std: float=.05,
-                            error_std: float=.2, random_state=None):
+def make_sinusoidal_process(n_samples: int = 15, n_features: int = 100, *,
+                            start: float = 0., stop: float = 1.,
+                            period: float = 1., phase_mean: float = 0.,
+                            phase_std: float = .6, amplitude_mean: float = 1.,
+                            amplitude_std: float = .05, error_std: float = .2,
+                            random_state=None):
 
     r"""Generate sinusoidal proccess.
 
@@ -104,23 +105,22 @@ def make_sinusoidal_process(n_samples: int=15, n_features: int=100, *,
 
     error = random_state.normal(0, error_std, (n_samples, n_features))
 
-
     y = alpha @ np.sin((2*np.pi/period)*t + phi) + error
 
     return FDataGrid(sample_points=t, data_matrix=y)
 
 
-def make_multimodal_landmarks(n_samples: int=15, *, n_modes: int=1,
-                              ndim_domain: int=1, ndim_image: int = 1,
-                              start: float=-1, stop: float=1, std: float=.05,
-                              random_state=None):
+def make_multimodal_landmarks(n_samples: int = 15, *, n_modes: int = 1,
+                              ndim_domain: int = 1, ndim_image: int = 1,
+                              start: float = -1, stop: float = 1,
+                              std: float = .05, random_state=None):
     """Generate landmarks points.
 
     Used by :func:`make_multimodal_samples` to generate the location of the
     landmarks.
 
-    Generates a matrix containing the landmarks or locations of the modes of the
-    samples generates by :func:`make_multimodal_samples`.
+    Generates a matrix containing the landmarks or locations of the modes
+    of the samples generates by :func:`make_multimodal_samples`.
 
     If the same random state is used when generating the landmarks and
     multimodal samples, these will correspond to the position of the modes of
@@ -140,8 +140,8 @@ def make_multimodal_landmarks(n_samples: int=15, *, n_modes: int=1,
 
     Returns:
         :class:`np.ndarray` with the location of the modes, where the component
-        (i,j,k) corresponds to the mode k of the image dimension j of the sample
-        i.
+        (i,j,k) corresponds to the mode k of the image dimension j of the
+        sample i.
     """
 
     random_state = sklearn.utils.check_random_state(random_state)
@@ -149,7 +149,6 @@ def make_multimodal_landmarks(n_samples: int=15, *, n_modes: int=1,
     modes_location = np.linspace(start, stop, n_modes + 2)[1:-1]
     modes_location = np.repeat(modes_location[:, np.newaxis], ndim_domain,
                                axis=1)
-
 
     variation = random_state.multivariate_normal((0,) * ndim_domain,
                                                  std * np.eye(ndim_domain),
@@ -160,12 +159,12 @@ def make_multimodal_landmarks(n_samples: int=15, *, n_modes: int=1,
     return modes_location + variation
 
 
-def make_multimodal_samples(n_samples: int=15, *, n_modes: int=1,
-                            points_per_dim: int=100, ndim_domain: int=1,
-                            ndim_image: int=1, start: float=-1, stop: float=1.,
-                            std: float=.05, mode_std: float=.02,
-                            noise: float=.0, modes_location=None,
-                            random_state=None):
+def make_multimodal_samples(n_samples: int = 15, *, n_modes: int = 1,
+                            points_per_dim: int = 100, ndim_domain: int = 1,
+                            ndim_image: int = 1, start: float = -1,
+                            stop: float = 1., std: float = .05,
+                            mode_std: float = .02, noise: float = .0,
+                            modes_location=None, random_state=None):
 
     r"""Generate multimodal samples.
 
@@ -208,7 +207,6 @@ def make_multimodal_samples(n_samples: int=15, *, n_modes: int=1,
 
     random_state = sklearn.utils.check_random_state(random_state)
 
-
     if modes_location is None:
 
         location = make_multimodal_landmarks(n_samples=n_samples,
@@ -225,7 +223,6 @@ def make_multimodal_samples(n_samples: int=15, *, n_modes: int=1,
 
         shape = (n_samples, ndim_image, n_modes, ndim_domain)
         location = location.reshape(shape)
-
 
     axis = np.linspace(start, stop, points_per_dim)
 
@@ -249,12 +246,13 @@ def make_multimodal_samples(n_samples: int=15, *, n_modes: int=1,
     # Covariance matrix of the samples
     cov = mode_std * np.eye(ndim_domain)
 
-    for i in range(n_samples):
-        for j in range(ndim_image):
-            for k in range(n_modes):
-                data_matrix[i,...,j] += multivariate_normal.pdf(evaluation_grid,
-                                                                mean=location[i,j,k],
-                                                                cov=cov)
+    import itertools
+    for i, j, k in itertools.product(range(n_samples),
+                                     range(ndim_image),
+                                     range(n_modes)):
+        data_matrix[i, ..., j] += multivariate_normal.pdf(evaluation_grid,
+                                                          location[i, j, k],
+                                                          cov)
 
     # Constant to make modes value aprox. 1
     data_matrix *= (2*np.pi*mode_std)**(ndim_domain/2)
@@ -264,9 +262,9 @@ def make_multimodal_samples(n_samples: int=15, *, n_modes: int=1,
     return FDataGrid(sample_points=sample_points, data_matrix=data_matrix)
 
 
-def make_random_warping(n_samples: int=15, n_features: int=100, *,
-                        start: float=0., stop: float=1., sigma: float=1.,
-                        shape_parameter: float=50, n_random: int=4,
+def make_random_warping(n_samples: int = 15, n_features: int = 100, *,
+                        start: float = 0., stop: float = 1., sigma: float = 1.,
+                        shape_parameter: float = 50, n_random: int = 4,
                         random_state=None):
     r"""Generate random warping functions.
 
@@ -309,11 +307,10 @@ def make_random_warping(n_samples: int=15, n_features: int=100, *,
         :class:`FDataGrid` object comprising all the samples.
 
      """
-     # Based on the original implementation of J. D. Tucker in the
-     # package python_fdasrsf <https://github.com/jdtuck/fdasrsf_python>.
+    # Based on the original implementation of J. D. Tucker in the
+    # package python_fdasrsf <https://github.com/jdtuck/fdasrsf_python>.
 
     random_state = sklearn.utils.check_random_state(random_state)
-
 
     freq = shape_parameter + 1
 
@@ -322,14 +319,14 @@ def make_random_warping(n_samples: int=15, n_features: int=100, *,
     sqrt2 = np.sqrt(2)
     sqrt_sigma = np.sqrt(sigma)
 
-     # Originally it is compute in (0,1), then it is rescaled
+    # Originally it is compute in (0,1), then it is rescaled
     time = np.outer(np.linspace(0, 1, n_features), np.ones(n_samples))
 
     # Operates trasposed to broadcast dimensions
     v = np.outer(np.ones(n_features),
                  random_state.normal(scale=sqrt_sigma, size=n_samples))
 
-    for j in range(2,2+n_random):
+    for j in range(2, 2+n_random):
         alpha = random_state.normal(scale=sqrt_sigma, size=(2, n_samples))
         alpha *= sqrt2
         v += alpha[0] * np.cos(j*omega*time)
@@ -349,10 +346,9 @@ def make_random_warping(n_samples: int=15, n_features: int=100, *,
     # Creation of FDataGrid in the corresponding domain
     data_matrix = scipy.integrate.cumtrapz(v, dx=1./n_features, initial=0,
                                            axis=0)
-    warping = FDataGrid(data_matrix.T, sample_points=time[:,0])
+    warping = FDataGrid(data_matrix.T, sample_points=time[:, 0])
     warping = normalize_warping(warping, domain_range=(start, stop))
     warping.interpolator = SplineInterpolator(interpolation_order=3,
                                               monotone=True)
-
 
     return warping

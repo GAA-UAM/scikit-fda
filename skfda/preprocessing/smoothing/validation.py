@@ -107,6 +107,10 @@ def optimize_smoothing_parameter(fdatagrid, parameter_values,
     Performs the smoothing of a FDataGrid object choosing the best
     parameter of a given list using a cross validation scoring method.
 
+    Note:
+        This is similar to fitting a scikit-learn GridSearchCV over the
+        data, using the cv_method as a scorer.
+
     Args:
         fdatagrid (FDataGrid): FDataGrid object.
         parameters (list of double): List of parameters to be tested.
@@ -207,17 +211,6 @@ def optimize_smoothing_parameter(fdatagrid, parameter_values,
     grid.fit(fdatagrid, fdatagrid)
 
     return grid
-    scores = grid.cv_results_['mean_test_score']
-    best_score = grid.best_score_
-    best_parameter = grid.best_params_['smoothing_parameter']
-    best_estimator = grid.best_estimator_
-
-    return {'scores': scores,
-            'best_score': best_score,
-            'best_parameter': best_parameter,
-            'hat_matrix': best_estimator.hat_matrix_,
-            'fdatagrid': best_estimator.transform(fdatagrid)
-            }
 
 
 def akaike_information_criterion(hat_matrix):

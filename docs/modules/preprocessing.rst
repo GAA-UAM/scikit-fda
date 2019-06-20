@@ -8,4 +8,5 @@ this category deal with this problem.
    :maxdepth: 4
    :caption: Modules:
 
+   preprocessing/smoothing
    preprocessing/registration

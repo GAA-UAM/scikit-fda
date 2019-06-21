@@ -97,8 +97,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.preprocessing.registration import
-        ...      landmark_registration_warping, mse_decomposition
+        >>> from skfda.preprocessing.registration import (
+        ...      landmark_registration_warping, mse_decomposition)
 
 
         We will create and register data.

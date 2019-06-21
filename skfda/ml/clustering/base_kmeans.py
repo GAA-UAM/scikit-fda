@@ -121,8 +121,8 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         """
         comparison = True
         while comparison:
-            indices = (random_state.permutation(fdatagrid.nsamples)[
-                       :self.n_clusters])
+            indices = random_state.permutation(fdatagrid.nsamples)[
+                :self.n_clusters]
             centers = fdatagrid.data_matrix[indices]
             unique_centers = np.unique(centers, axis=0)
             comparison = len(unique_centers) != self.n_clusters
@@ -354,8 +354,8 @@ class KMeans(BaseKMeans):
         >>> kmeans.fit(fd, init=init_fd)
         >>> kmeans
         KMeans(max_iter=100,
-            metric=<function pairwise_distance.<locals>.pairwise
-            at 0x7faf3aa061e0>, # doctest:+ELLIPSIS
+            metric=<function pairwise_distance.<locals>.pairwise at
+            0x7faf3aa061e0>, # doctest:+ELLIPSIS
             n_clusters=2, random_state=0, tol=0.0001)
     """.replace('+IGNORE_RESULT', '+ELLIPSIS\n<...>')
 
@@ -481,10 +481,9 @@ class KMeans(BaseKMeans):
         index_best_iter = np.argmin(inertia)
 
         self.labels_ = clustering_values[index_best_iter]
-        self.cluster_centers_ = FDataGrid(
-            data_matrix=centers[index_best_iter],
-            sample_points=fdatagrid.sample_points
-        )
+        self.cluster_centers_ = FDataGrid(data_matrix=centers[index_best_iter],
+                                          sample_points=fdatagrid.sample_points
+                                          )
         self._distances_to_centers = distances_to_centers[index_best_iter]
         self.inertia_ = inertia[index_best_iter]
         self.n_iter_ = n_iter[index_best_iter]
@@ -696,15 +695,15 @@ class FuzzyKMeans(BaseKMeans):
             distances_to_centers = self.metric(
                 fdata1=fdatagrid,
                 fdata2=centers_fd)
-            distances_to_centers_raised = (distances_to_centers **
-                                           (2 / (self.fuzzifier - 1)))
+            distances_to_centers_raised = (distances_to_centers ** (
+                2 / (self.fuzzifier - 1)))
 
             for i in range(fdatagrid.nsamples):
                 comparison = (fdatagrid.data_matrix[i] == centers).all(
                     axis=tuple(np.arange(fdatagrid.data_matrix.ndim)[1:]))
                 if comparison.sum() >= 1:
-                    U[i, np.where(comparison is True)] = 1
-                    U[i, np.where(comparison is False)] = 0
+                    U[i, np.where(comparison == True)] = 1
+                    U[i, np.where(comparison == False)] = 0
                 else:
                     for j in range(self.n_clusters):
                         U[i, j] = 1 / np.sum(

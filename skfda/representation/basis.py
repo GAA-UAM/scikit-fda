@@ -154,7 +154,8 @@ class Basis(ABC):
                     plotted.
             derivative (int or tuple, optional): Order of derivative to be
                 plotted. Defaults 0.
-            **kwargs: keyword arguments to be passed to the fdata.plot function.
+            **kwargs: keyword arguments to be passed to the
+                fdata.plot function.
 
         Returns:
             fig (figure object): figure object in which the graphs are plotted.
@@ -225,9 +226,9 @@ class Basis(ABC):
             for j in range(i + 1, self.nbasis):
                 penalty_matrix[i, j] = scipy.integrate.quad(
                     lambda x: (self._evaluate_single_basis_coefficients(
-                        coefficients, i, x, cache)
-                               * self._evaluate_single_basis_coefficients(
-                                coefficients, j, x, cache)),
+                        coefficients, i, x, cache) *
+                               self._evaluate_single_basis_coefficients(
+                                   coefficients, j, x, cache)),
                     domain_range[0], domain_range[1]
                 )[0]
                 penalty_matrix[j, i] = penalty_matrix[i, j]
@@ -292,9 +293,9 @@ class Basis(ABC):
             corresponding values rescaled to the new bounds.
 
             Args:
-                domain_range (tuple, optional): Definition of the interval where
-                    the basis defines a space. Defaults uses the same as the
-                    original basis.
+                domain_range (tuple, optional): Definition of the interval
+                    where the basis defines a space. Defaults uses the same as
+                    the original basis.
         """
 
         if domain_range is None:
@@ -372,8 +373,8 @@ class Basis(ABC):
         .. math::
             G_{ij} = \langle\phi_i, \phi_j\rangle
 
-        where :math:`\phi_i` is the ith element of the basis. This is a symmetric matrix and
-        positive-semidefinite.
+        where :math:`\phi_i` is the ith element of the basis. This is a
+        symmetric matrix and positive-semidefinite.
 
         Returns:
             numpy.array: Gram Matrix of the basis.
@@ -493,7 +494,8 @@ class Constant(Basis):
             eval_points.
 
         """
-        return np.ones((1, len(eval_points))) if derivative == 0 else np.zeros((1, len(eval_points)))
+        return np.ones((1, len(eval_points))) if derivative == 0\
+            else np.zeros((1, len(eval_points)))
 
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
@@ -538,7 +540,8 @@ class Constant(Basis):
         if derivative_degree is None:
             return self._numerical_penalty(coefficients)
 
-        return (np.full((1, 1), (self.domain_range[0][1] - self.domain_range[0][0]))
+        return (np.full((1, 1),
+                        (self.domain_range[0][1] - self.domain_range[0][0]))
                 if derivative_degree == 0 else np.zeros((1, 1)))
 
     def basis_of_product(self, other):
@@ -873,8 +876,8 @@ class BSpline(Basis):
 
         if (nbasis - order + 2) < 2:
             raise ValueError(f"The number of basis ({nbasis}) minus the order "
-                             f"of the bspline ({order}) should be greater than "
-                             f"3.")
+                             f"of the bspline ({order}) should be greater "
+                             f"than 3.")
 
         if domain_range[0] != knots[0] or domain_range[1] != knots[-1]:
             raise ValueError("The ends of the knots must be the same as "
@@ -929,8 +932,8 @@ class BSpline(Basis):
 
         """
         # Places m knots at the boundaries
-        knots = np.array([self.knots[0]] * (self.order - 1) + self.knots
-                            + [self.knots[-1]] * (self.order - 1))
+        knots = np.array([self.knots[0]] * (self.order - 1) + self.knots +
+                         [self.knots[-1]] * (self.order - 1))
         # c is used the select which spline the function splev below computes
         c = np.zeros(len(knots))
 
@@ -997,8 +1000,8 @@ class BSpline(Basis):
         if derivative_degree is not None:
             if derivative_degree >= self.order:
                 raise ValueError(f"Penalty matrix cannot be evaluated for "
-                                 f"derivative of order {derivative_degree} for "
-                                 f"B-splines of order {self.order}")
+                                 f"derivative of order {derivative_degree} for"
+                                 f" B-splines of order {self.order}")
             if derivative_degree == self.order - 1:
                 # The derivative of the bsplines are constant in the intervals
                 # defined between knots
@@ -1038,19 +1041,19 @@ class BSpline(Basis):
                     # meaning that the column i corresponds to the ith knot.
                     # Let the ith not be a
                     # Then f(x) = pp(x - a)
-                    pp = (PPoly.from_spline((knots, c, self.order - 1))
-                              .c[:, no_0_intervals])
+                    pp = (PPoly.from_spline((knots, c, self.order - 1)).c[:,
+                          no_0_intervals])
                     # We need the actual coefficients of f, not pp. So we
                     # just recursively calculate the new coefficients
                     coeffs = pp.copy()
                     for j in range(self.order - 1):
                         coeffs[j + 1:] += (
                                 (binom(self.order - j - 1,
-                                       range(1, self.order - j))
-                                 * np.vstack([(-a) ** np.array(
-                                            range(1, self.order - j)) for a in
-                                                 self.knots[:-1]])
-                                 ).T * pp[j])
+                                       range(1, self.order - j)) *
+                                 np.vstack([(-a) **
+                                            np.array(range(1, self.order - j))
+                                            for a in self.knots[:-1]])).T *
+                                pp[j])
                     ppoly_lst.append(coeffs)
                     c[i] = 0
 
@@ -1060,7 +1063,7 @@ class BSpline(Basis):
                 for interval in range(len(no_0_intervals)):
                     for i in range(self.nbasis):
                         poly_i = np.trim_zeros(ppoly_lst[i][:,
-                                                  interval], 'f')
+                                               interval], 'f')
                         if len(poly_i) <= derivative_degree:
                             # if the order of the polynomial is lesser or
                             # equal to the derivative the result of the
@@ -1075,7 +1078,7 @@ class BSpline(Basis):
 
                         for j in range(i + 1, self.nbasis):
                             poly_j = np.trim_zeros(ppoly_lst[j][:,
-                                                      interval], 'f')
+                                                   interval], 'f')
                             if len(poly_j) <= derivative_degree:
                                 # if the order of the polynomial is lesser
                                 # or equal to the derivative the result of
@@ -1096,8 +1099,8 @@ class BSpline(Basis):
             # of the bspline minus 1
             if len(coefficients) >= self.order:
                 raise ValueError(f"Penalty matrix cannot be evaluated for "
-                                 f"derivative of order {len(coefficients) - 1} "
-                                 f"for B-splines of order {self.order}")
+                                 f"derivative of order {len(coefficients) - 1}"
+                                 f" for B-splines of order {self.order}")
 
         # compute using the inner product
         return self._numerical_penalty(coefficients)
@@ -1108,9 +1111,9 @@ class BSpline(Basis):
             The knots of the BSpline will be rescaled in the new interval.
 
             Args:
-                domain_range (tuple, optional): Definition of the interval where
-                    the basis defines a space. Defaults uses the same as the
-                    original basis.
+                domain_range (tuple, optional): Definition of the interval
+                    where the basis defines a space. Defaults uses the same as
+                    the original basis.
         """
 
         knots = np.array(self.knots, dtype=np.dtype('float'))
@@ -1171,7 +1174,9 @@ class BSpline(Basis):
             norder2 = other.nbasis - len(other.inknots)
             norder = min(norder1 + norder2 - 1, 20)
 
-            allbreaks = [self.domain_range[0][0]] + np.ndarray.tolist(allknots) + [self.domain_range[0][1]]
+            allbreaks = ([self.domain_range[0][0]] +
+                         np.ndarray.tolist(allknots) +
+                         [self.domain_range[0][1]])
             nbasis = len(allbreaks) + norder - 2
             return BSpline(self.domain_range, nbasis, norder, allbreaks)
         else:
@@ -1337,9 +1342,9 @@ class Fourier(Basis):
             if nbasis > 1:
                 # (2*pi*n / period) ^ n_derivative
                 factor = np.outer(
-                    (-1) ** (derivative // 2)
-                    * (np.array(range(1, nbasis // 2 + 1)) * omega)
-                    ** derivative,
+                    (-1) ** (derivative // 2) *
+                    (np.array(range(1, nbasis // 2 + 1)) * omega) **
+                    derivative,
                     np.ones(len(eval_points)))
                 # 2*pi*n*x / period
                 args = np.outer(range(1, nbasis // 2 + 1), omega_t)
@@ -1374,11 +1379,12 @@ class Fourier(Basis):
     def _derivative(self, coefs, order=1):
 
         omega = 2 * np.pi / self.period
-        deriv_factor = (np.arange(1, (self.nbasis+1)/2) * omega) ** order
+        deriv_factor = (np.arange(1, (self.nbasis + 1) / 2) * omega) ** order
 
         deriv_coefs = np.zeros(coefs.shape)
 
-        cos_sign, sin_sign = (-1)**int((order+1)/2), (-1)**int(order/2)
+        cos_sign, sin_sign = ((-1) ** int((order + 1) / 2),
+                              (-1) ** int(order / 2))
 
         if order % 2 == 0:
             deriv_coefs[:, 1::2] = sin_sign * coefs[:, 1::2] * deriv_factor
@@ -1468,9 +1474,9 @@ class Fourier(Basis):
             corresponding values rescaled to the new bounds.
 
             Args:
-                domain_range (tuple, optional): Definition of the interval where
-                    the basis defines a space. Defaults uses the same as the
-                    original basis.
+                domain_range (tuple, optional): Definition of the interval
+                    where the basis defines a space. Defaults uses the same as
+                    the original basis.
                 rescale_period (bool, optional): If true the period will be
                     rescaled using the ratio between the lengths of the new
                     and old interval. Defaults to False.
@@ -1478,15 +1484,15 @@ class Fourier(Basis):
 
         rescale_basis = super().rescale(domain_range)
 
-        if rescale_period == False:
+        if rescale_period is False:
             rescale_basis.period = self.period
         else:
             domain_rescaled = rescale_basis.domain_range[0]
             domain = self.domain_range[0]
 
-            rescale_basis.period = self.period * \
-                                   (domain_rescaled[1] - domain_rescaled[0]
-                                    ) / (domain[1] - domain[0])
+            rescale_basis.period = (self.period *
+                                    (domain_rescaled[1] - domain_rescaled[0]) /
+                                    (domain[1] - domain[0]))
 
         return rescale_basis
 
@@ -1556,13 +1562,12 @@ class FDataBasis(FData):
         self.basis = basis
         self.coefficients = coefficients
 
-        #self.dataset_label = dataset_label
-        #self.axes_labels = axes_labels
-        #self.extrapolation = extrapolation
-        #self.keepdims = keepdims
+        # self.dataset_label = dataset_label
+        # self.axes_labels = axes_labels
+        # self.extrapolation = extrapolation
+        # self.keepdims = keepdims
 
         super().__init__(extrapolation, dataset_label, axes_labels, keepdims)
-
 
     @classmethod
     def from_data(cls, data_matrix, sample_points, basis, weight_matrix=None,
@@ -1613,9 +1618,9 @@ class FDataBasis(FData):
             basis: (Basis): Basis used.
             weight_matrix (array_like, optional): Matrix to weight the
                 observations. Defaults to the identity matrix.
-            smoothness_parameter (int or float, optional): Smoothness parameter.
-                Trying with several factors in a logarythm scale is suggested.
-                If 0 no smoothing is performed. Defaults to 0.
+            smoothness_parameter (int or float, optional): Smoothness
+                parameter. Trying with several factors in a logarythm scale is
+                suggested. If 0 no smoothing is performed. Defaults to 0.
             penalty_degree (int): Integer indicating the order of the
                 derivative used in the computing of the penalty matrix. For
                 instance 2 means that the differential operator is
@@ -1653,15 +1658,12 @@ class FDataBasis(FData):
 
         References:
             .. [RS05-5-2-5] Ramsay, J., Silverman, B. W. (2005). How spline
-                smooths are computed. In *Functional Data Analysis* (pp. 86-87).
-                Springer.
+                smooths are computed. In *Functional Data Analysis*
+                (pp. 86-87). Springer.
 
             .. [RS05-5-2-7] Ramsay, J., Silverman, B. W. (2005). HSpline
                 smoothing as an augmented least squares problem. In *Functional
                 Data Analysis* (pp. 86-87). Springer.
-
-
-
 
         """
         # TODO add an option to return fit summaries: yhat, sse, gcv...
@@ -1720,8 +1722,8 @@ class FDataBasis(FData):
 
                 if smoothness_parameter > 0:
                     # In this case instead of resolving the original equation
-                    # we expand the system to include the penalty matrix so that
-                    # the rounding error is reduced
+                    # we expand the system to include the penalty matrix so
+                    # that the rounding error is reduced
                     if not penalty_matrix:
                         penalty_matrix = basis.penalty(penalty_degree,
                                                        penalty_coefficients)
@@ -1746,9 +1748,9 @@ class FDataBasis(FData):
                         axis=0)
                     # Augment data matrix by n - ndegenerated zeros
                     data_matrix = np.pad(data_matrix,
-                                            ((0, len(v) - ndegenerated),
-                                             (0, 0)),
-                                            mode='constant')
+                                         ((0, len(v) - ndegenerated),
+                                          (0, 0)),
+                                         mode='constant')
 
                 # Resolves the equation
                 # B.T @ B @ C = B.T @ D
@@ -1839,8 +1841,8 @@ class FDataBasis(FData):
         r"""Evaluate the object or its derivatives at a list of values with a
         different time for each sample.
 
-        Returns a numpy array with the component (i,j) equal to :math:`f_i(t_j +
-        \delta_i)`.
+        Returns a numpy array with the component (i,j) equal to :math:`f_i(t_j
+        + \delta_i)`.
 
         This method has to evaluate the basis values once per sample
         instead of reuse the same evaluation for all the samples
@@ -1879,8 +1881,8 @@ class FDataBasis(FData):
 
         Args:
             shifts (array_like or numeric): List with the the shift
-                corresponding for each sample or numeric with the shift to apply
-                to all samples.
+                corresponding for each sample or numeric with the shift to
+                apply to all samples.
             restrict_domain (bool, optional): If True restricts the domain to
                 avoid evaluate points outside the domain using extrapolation.
                 Defaults uses extrapolation.
@@ -1922,8 +1924,8 @@ class FDataBasis(FData):
                                         _basis, **kwargs)
 
         elif len(shifts) != self.nsamples:
-            raise ValueError(f"shifts vector ({len(shifts)}) must have the same"
-                             f" length than the number of samples "
+            raise ValueError(f"shifts vector ({len(shifts)}) must have the "
+                             f"same length than the number of samples "
                              f"({self.nsamples})")
 
         if restrict_domain:
@@ -1932,12 +1934,12 @@ class FDataBasis(FData):
             domain = (a, b)
             eval_points = eval_points[
                 np.logical_and(eval_points >= a,
-                                  eval_points <= b)]
+                               eval_points <= b)]
         else:
             domain = domain_range
 
         points_shifted = np.outer(np.ones(self.nsamples),
-                                     eval_points)
+                                  eval_points)
 
         points_shifted += np.atleast_2d(shifts).T
 
@@ -1963,7 +1965,7 @@ class FDataBasis(FData):
         if order < 0:
             raise ValueError("order only takes non-negative integer values.")
 
-        if order is 0:
+        if order == 0:
             return self.copy()
 
         basis, coefficients = self.basis._derivative(self.coefficients, order)
@@ -2173,11 +2175,15 @@ class FDataBasis(FData):
             evalarg = np.linspace(left, right, neval)
 
             first = self.copy(coefficients=(np.repeat(self.coefficients,
-                            other.nsamples, axis=0) if self.nsamples == 1 and
-                            other.nsamples > 1 else self.coefficients.copy()))
+                                                      other.nsamples, axis=0)
+                                            if (self.nsamples == 1 and
+                                                other.nsamples > 1)
+                                            else self.coefficients.copy()))
             second = other.copy(coefficients=(np.repeat(other.coefficients,
-                            self.nsamples, axis=0) if other.nsamples == 1 and
-                            self.nsamples > 1 else other.coefficients.copy()))
+                                                        self.nsamples, axis=0)
+                                              if (other.nsamples == 1 and
+                                                  self.nsamples > 1)
+                                              else other.coefficients.copy()))
 
             fdarray = first.evaluate(evalarg) * second.evaluate(evalarg)
 
@@ -2187,7 +2193,7 @@ class FDataBasis(FData):
             other = [other for _ in range(self.nsamples)]
 
         coefs = np.transpose(np.atleast_2d(other))
-        return self.copy(coefficients=self.coefficients*coefs)
+        return self.copy(coefficients=self.coefficients * coefs)
 
     def inner_product(self, other, lfd_self=None, lfd_other=None,
                       weights=None):
@@ -2213,9 +2219,11 @@ class FDataBasis(FData):
             other (FDataBasis, Basis): FDataBasis object containing the second
                     object to make the inner product
 
-            lfd_self (Lfd): LinearDifferentialOperator object for the first function evaluation
+            lfd_self (Lfd): LinearDifferentialOperator object for the first
+                function evaluation
 
-            lfd_other (Lfd): LinearDifferentialOperator object for the second function evaluation
+            lfd_other (Lfd): LinearDifferentialOperator object for the second
+                function evaluation
 
             weights(FDataBasis): a FDataBasis object with only one sample that
                     defines the weight to calculate the inner product
@@ -2241,7 +2249,9 @@ class FDataBasis(FData):
             other = other.times(weights)
 
         if self.nsamples * other.nsamples > self.nbasis * other.nbasis:
-            return self.coefficients @ self.basis._inner_matrix(other.basis) @ other.coefficients.T
+            return (self.coefficients @
+                    self.basis._inner_matrix(other.basis) @
+                    other.coefficients.T)
         else:
             return self._inner_product_integrate(other, lfd_self, lfd_other)
 
@@ -2302,8 +2312,8 @@ class FDataBasis(FData):
     def __eq__(self, other):
         """Equality of FDataBasis"""
         # TODO check all other params
-        return (self.basis == other.basis
-                and np.all(self.coefficients == other.coefficients))
+        return (self.basis == other.basis and
+                np.all(self.coefficients == other.coefficients))
 
     def concatenate(self, other):
         """Join samples from a similar FDataBasis object.
@@ -2315,16 +2325,16 @@ class FDataBasis(FData):
             other (:class:`FDataBasis`): another FDataBasis object.
 
         Returns:
-            :class:`FDataBasis`: FDataBasis object with the samples from the two
-            original objects.
+            :class:`FDataBasis`: FDataBasis object with the samples from the
+            two original objects.
         """
 
         if other.basis != self.basis:
             raise ValueError("The objects should have the same basis.")
 
         return self.copy(coefficients=np.concatenate((self.coefficients,
-                                                         other.coefficients),
-                                                        axis=0))
+                                                      other.coefficients),
+                                                     axis=0))
 
     def compose(self, fd, *, eval_points=None, **kwargs):
         """Composition of functions.
@@ -2345,7 +2355,7 @@ class FDataBasis(FData):
             basis = self.basis.rescale(fd.domain_range[0])
             composition = grid.to_basis(basis, **kwargs)
         else:
-            # Cant be convertered to basis due to the dimensions
+            #  Cant be convertered to basis due to the dimensions
             composition = grid
 
         return composition
@@ -2365,10 +2375,11 @@ class FDataBasis(FData):
                 raise NotImplementedError
             else:
                 basis, coefs = self.basis._add_same_basis(self.coefficients,
-                                                  other.coefficients)
+                                                          other.coefficients)
         else:
             try:
-                basis, coefs = self.basis._add_constant(self.coefficients, other)
+                basis, coefs = self.basis._add_constant(self.coefficients,
+                                                        other)
             except TypeError:
                 return NotImplemented
 
@@ -2386,10 +2397,11 @@ class FDataBasis(FData):
                 raise NotImplementedError
             else:
                 basis, coefs = self.basis._sub_same_basis(self.coefficients,
-                                                  other.coefficients)
+                                                          other.coefficients)
         else:
             try:
-                basis, coefs = self.basis._sub_constant(self.coefficients, other)
+                basis, coefs = self.basis._sub_constant(self.coefficients,
+                                                        other)
             except TypeError:
                 return NotImplemented
 

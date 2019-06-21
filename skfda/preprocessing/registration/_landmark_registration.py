@@ -195,8 +195,8 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
 
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.preprocessing.registration import
-        ...      landmark_registration_warping
+        >>> from skfda.preprocessing.registration import (
+        ...      landmark_registration_warping)
 
         We will create a data with landmarks as example
 

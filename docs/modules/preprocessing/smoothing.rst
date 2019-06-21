@@ -45,9 +45,10 @@ hat matrix.
    skfda.preprocessing.smoothing.validation.LinearSmootherLeaveOneOutScorer
    skfda.preprocessing.smoothing.validation.LinearSmootherGeneralizedCVScorer
    
-The `LinearSmootherGeneralizedCVScorer` object accepts also an optional
-penalization_function, used instead of the default one. The available ones
-are:
+The 
+:class:`~skfda.preprocessing.smoothing.validation.LinearSmootherGeneralizedCVScorer` 
+object accepts also an optional penalization_function, used instead of the 
+default one. The available ones are:
 
 .. autosummary::
    :toctree: autosummary
@@ -57,7 +58,8 @@ are:
    skfda.preprocessing.smoothing.validation.shibata
    skfda.preprocessing.smoothing.validation.rice
    
-An utility method is also provided, which calls the sckit-learn `GridSearchCV`
+An utility method is also provided, which calls the sckit-learn 
+:class:`~sklearn.model_selection.GridSearchCV`
 object with the scorers to find the best smoothing parameters from a list.
 
 .. autosummary::

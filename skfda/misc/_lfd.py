@@ -98,6 +98,6 @@ class LinearDifferentialOperator:
 
     def __eq__(self, other):
         """Equality of Lfd objects"""
-        return (self.order == other.nderic
-                and all(self.weights[i] == other.bwtlist[i]
-                        for i in range(self.order)))
+        return (self.order == other.nderic and
+                all(self.weights[i] == other.bwtlist[i]
+                    for i in range(self.order)))

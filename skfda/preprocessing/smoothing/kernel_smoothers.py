@@ -9,12 +9,9 @@ Todo:
     * Closed-form for KNN
 
 """
-import math
-
 import numpy as np
 
 from ...misc import kernels
-from ..._utils import parameter_aliases
 from sklearn.base import BaseEstimator, TransformerMixin
 from skfda.representation.grid import FDataGrid
 import abc
@@ -35,9 +32,36 @@ class _LinearKernelSmoother(abc.ABC, BaseEstimator, TransformerMixin):
         self.smoothing_parameter = smoothing_parameter
         self.kernel = kernel
         self.weights = weights
+        self._cv = False  # For testing purposes only
+
+    def _hat_matrix_function(self, *, input_points, smoothing_parameter,
+                             kernel, weights, _cv=False):
+
+        # Time deltas
+        delta_x = np.abs(np.subtract.outer(input_points, input_points))
+
+        # Obtain the non-normalized matrix
+        matrix = self._hat_matrix_function_not_normalized(
+            delta_x=delta_x,
+            smoothing_parameter=smoothing_parameter,
+            kernel=kernel)
+
+        # Adjust weights
+        if weights is not None:
+            matrix = matrix * weights
+
+        # Set diagonal to cero if requested (for testing purposes only)
+        if _cv:
+            np.fill_diagonal(matrix, 0)
+
+        # Renormalize weights
+        rs = np.sum(matrix, 1)
+        rs[rs == 0] = 1
+        return (matrix.T / rs).T
 
     @abc.abstractmethod
-    def _hat_matrix_function(self):
+    def _hat_matrix_function_not_normalized(self, *, delta_x,
+                                            smoothing_parameter, kernel):
         pass
 
     def _more_tags(self):
@@ -55,7 +79,8 @@ class _LinearKernelSmoother(abc.ABC, BaseEstimator, TransformerMixin):
                 input_points=self.input_points_,
                 smoothing_parameter=self.smoothing_parameter,
                 kernel=self.kernel,
-                weights=self.weights
+                weights=self.weights,
+                _cv=self._cv
             )
 
         return self
@@ -114,20 +139,14 @@ class NadarayaWatsonSmoother(_LinearKernelSmoother):
                [ 0.006, 0.022, 0.163, 0.305, 0.503]])
 
     """
-    def _hat_matrix_function(self, *, input_points, smoothing_parameter,
-                             kernel, weights, _cv=False):
-        delta_x = np.abs(np.subtract.outer(input_points, input_points))
+    def _hat_matrix_function_not_normalized(self, *, delta_x,
+                                            smoothing_parameter,
+                                            kernel):
         if smoothing_parameter is None:
             smoothing_parameter = np.percentile(delta_x, 15)
-        if _cv:
-            np.fill_diagonal(delta_x, math.inf)
-        delta_x = delta_x / smoothing_parameter
-        k = kernel(delta_x)
-        if weights is not None:
-            k = k * weights
-        rs = np.sum(k, 1)
-        rs[rs == 0] = 1
-        return (k.T / rs).T
+
+        k = kernel(delta_x / smoothing_parameter)
+        return k
 
 
 class LocalLinearRegressionSmoother(_LinearKernelSmoother):
@@ -183,22 +202,14 @@ class LocalLinearRegressionSmoother(_LinearKernelSmoother):
 
     """
 
-    def _hat_matrix_function(self, *, input_points, smoothing_parameter,
-                             kernel, weights, _cv=False):
-        delta_x = np.abs(np.subtract.outer(input_points,
-                                           input_points))  # x_i - x_j
-        if _cv:
-            np.fill_diagonal(delta_x, math.inf)
-        k = kernel(delta_x / smoothing_parameter)  # K(x_i - x/ h)
+    def _hat_matrix_function_not_normalized(self, *, delta_x,
+                                            smoothing_parameter, kernel):
+        k = kernel(delta_x / smoothing_parameter)
+
         s1 = np.sum(k * delta_x, 1)  # S_n_1
         s2 = np.sum(k * delta_x ** 2, 1)  # S_n_2
         b = (k * (s2 - delta_x * s1)).T  # b_i(x_j)
-        if _cv:
-            np.fill_diagonal(b, 0)
-        if weights is not None:
-            b = b * weights
-        rs = np.sum(b, 1)  # sum_{k=1}^{n}b_k(x_j)
-        return (b.T / rs).T  # \\hat{H}
+        return b
 
 
 class KNeighborsSmoother(_LinearKernelSmoother):
@@ -251,18 +262,16 @@ class KNeighborsSmoother(_LinearKernelSmoother):
             weights=weights
         )
 
-    def _hat_matrix_function(self, *, input_points, smoothing_parameter,
-                             kernel, weights, _cv=False):
-        # Distances matrix of points in argvals
-        delta_x = np.abs(np.subtract.outer(input_points, input_points))
+    def _hat_matrix_function_not_normalized(self, *, delta_x,
+                                            smoothing_parameter, kernel):
+
+        input_points_len = delta_x.shape[1]
 
         if smoothing_parameter is None:
             smoothing_parameter = np.floor(np.percentile(
-                range(1, len(input_points)), 5))
+                range(1, input_points_len), 5))
         elif smoothing_parameter <= 0:
             raise ValueError('h must be greater than 0')
-        if _cv:
-            np.fill_diagonal(delta_x, math.inf)
 
         # Tolerance to avoid points landing outside the kernel window due to
         # computation error
@@ -271,7 +280,7 @@ class KNeighborsSmoother(_LinearKernelSmoother):
         # For each row in the distances matrix, it calculates the furthest
         # point within the k nearest neighbours
         vec = np.percentile(delta_x, smoothing_parameter
-                            / len(input_points) * 100,
+                            / input_points_len * 100,
                             axis=0, interpolation='lower') + tol
 
         rr = kernel((delta_x.T / vec).T)
@@ -280,9 +289,4 @@ class KNeighborsSmoother(_LinearKernelSmoother):
         # corresponding to the knn are below 1 and the rest above 1 so the
         # kernel returns values distinct to 0 only for the knn.
 
-        if weights is not None:
-            rr = (rr.T * weights).T
-
-        # normalise every row
-        rs = np.sum(rr, 1)
-        return (rr.T / rs).T
+        return rr

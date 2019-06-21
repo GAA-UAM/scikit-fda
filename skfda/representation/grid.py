@@ -151,7 +151,7 @@ class FDataGrid(FData):
              for i in range(self.ndim_domain)])
 
         if domain_range is None:
-                self._domain_range = self.sample_range
+            self._domain_range = self.sample_range
             # Default value for domain_range is a list of tuples with
             # the first and last element of each list ofthe sample_points.
         else:
@@ -933,7 +933,7 @@ class FDataGrid(FData):
             for i in range(self.nsamples):
                 eval_points_transformation[i] = np.array(
                     list(map(np.ravel, grid_transformation[i].T))
-                    ).T
+                ).T
 
             data_flatten = self(eval_points_transformation,
                                 aligned_evaluation=False)

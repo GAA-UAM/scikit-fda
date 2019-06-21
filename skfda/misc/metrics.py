@@ -10,8 +10,8 @@ from ..preprocessing.registration import (
 
 
 def _cast_to_grid(fdata1, fdata2, eval_points=None):
-    r"""Checks if the fdatas passed as argument are unidimensional and compatible
-    and converts them to FDatagrid to compute their distances.
+    r"""Checks if the fdatas passed as argument are unidimensional and
+    compatible and converts them to FDatagrid to compute their distances.
 
 
     Args:
@@ -24,7 +24,7 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None):
 
     # To allow use numpy arrays internally
     if (not isinstance(fdata1, FData) and not isinstance(fdata2, FData)
-        and eval_points is not None):
+            and eval_points is not None):
         fdata1 = FDataGrid([fdata1], sample_points=eval_points)
         fdata2 = FDataGrid([fdata1], sample_points=eval_points)
 
@@ -50,23 +50,25 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None):
     elif not isinstance(fdata2, FDataGrid) and isinstance(fdata1, FDataGrid):
         fdata2 = fdata2.to_grid(fdata1.eval_points)
 
-    elif not isinstance(fdata1, FDataGrid) and not isinstance(fdata2, FDataGrid):
+    elif (not isinstance(fdata1, FDataGrid) and
+          not isinstance(fdata2, FDataGrid)):
         fdata1 = fdata1.to_grid(eval_points)
         fdata2 = fdata2.to_grid(eval_points)
 
     elif not np.array_equal(fdata1.sample_points,
-                                      fdata2.sample_points):
+                            fdata2.sample_points):
         raise ValueError("Sample points for both objects must be equal or"
                          "a new list evaluation points must be specified")
 
     return fdata1, fdata2
 
+
 def vectorial_norm(fdatagrid, p=2):
     r"""Apply a vectorial norm to a multivariate function.
 
-    Given a multivariate function :math:`f:\mathbb{R}^n\rightarrow \mathbb{R}^d`
-    applies a vectorial norm :math:`\| \cdot \|` to produce a function
-    :math:`\|f\|:\mathbb{R}^n\rightarrow \mathbb{R}`.
+    Given a multivariate function :math:`f:\mathbb{R}^n\rightarrow
+    \mathbb{R}^d` applies a vectorial norm :math:`\| \cdot \|` to produce a
+    function :math:`\|f\|:\mathbb{R}^n\rightarrow \mathbb{R}`.
 
     For example, let :math:`f:\mathbb{R} \rightarrow \mathbb{R}^2` be
     :math:`f(t)=(f_1(t), f_2(t))` and :math:`\| \cdot \|_2` the euclidian norm.
@@ -111,7 +113,7 @@ def vectorial_norm(fdatagrid, p=2):
 
     """
     data_matrix = np.linalg.norm(fdatagrid.data_matrix, ord=p, axis=-1,
-                                    keepdims=True)
+                                 keepdims=True)
 
     return fdatagrid.copy(data_matrix=data_matrix)
 
@@ -120,8 +122,8 @@ def distance_from_norm(norm, **kwargs):
     r"""Returns the distance induced by a norm.
 
     Given a norm :math:`\| \cdot \|: X \rightarrow \mathbb{R}`,
-    returns the distance :math:`d: X \times X \rightarrow \mathbb{R}` induced by
-    the norm:
+    returns the distance :math:`d: X \times X \rightarrow \mathbb{R}` induced
+    by the norm:
 
     .. math::
         d(f,g) = \|f - g\|
@@ -137,8 +139,8 @@ def distance_from_norm(norm, **kwargs):
     Examples:
         Computes the :math:`\mathbb{L}^2` distance between an object containing
         functional data corresponding to the function :math:`y(x) = x` defined
-        over the interval [0, 1] and another one containing data of the function
-        :math:`y(x) = x/2`.
+        over the interval [0, 1] and another one containing data of the
+        function :math:`y(x) = x/2`.
 
         Firstly we create the functional data.
 
@@ -163,6 +165,7 @@ def distance_from_norm(norm, **kwargs):
 
     return norm_distance
 
+
 def pairwise_distance(distance, **kwargs):
     r"""Return pairwise distance for FDataGrid objects.
 
@@ -183,8 +186,8 @@ def pairwise_distance(distance, **kwargs):
             to the distance function.
 
     Returns:
-        :obj:`Function`: Pairwise distance function, wich accepts two functional
-        data objects and returns the pairwise distance matrix.
+        :obj:`Function`: Pairwise distance function, wich accepts two
+            functional data objects and returns the pairwise distance matrix.
     """
     def pairwise(fdata1, fdata2):
 
@@ -278,7 +281,7 @@ def norm_lp(fdatagrid, p=2, p2=2):
 
     if fdatagrid.ndim_image > 1:
         data_matrix = np.linalg.norm(fdatagrid.data_matrix, ord=p2, axis=-1,
-                                        keepdims=True)
+                                     keepdims=True)
     else:
         data_matrix = np.abs(fdatagrid.data_matrix)
 
@@ -343,14 +346,12 @@ def lp_distance(fdata1, fdata2, p=2, *, eval_points=None):
     return norm_lp(fdata1 - fdata2, p=p)
 
 
-
-
 def fisher_rao_distance(fdata1, fdata2, *, eval_points=None):
     r"""Compute the Fisher-Rao distance btween two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
-    :math:`q_i` and :math:`q_j` be the corresponding SRSF (see :func:`to_srsf`),
-    the fisher rao distance is defined as
+    :math:`q_i` and :math:`q_j` be the corresponding SRSF
+    (see :func:`to_srsf`), the fisher rao distance is defined as
 
     .. math::
         d_{FR}(f_i, f_j) = \| q_i - q_j \|_2 =
@@ -389,9 +390,9 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None):
 
     # Calculate the corresponding srsf and normalize to (0,1)
     fdata1 = fdata1.copy(sample_points=eval_points_normalized,
-                         domain_range=(0,1))
+                         domain_range=(0, 1))
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
-                         domain_range=(0,1))
+                         domain_range=(0, 1))
 
     fdata1_srsf = to_srsf(fdata1)
     fdata2_srsf = to_srsf(fdata2)
@@ -399,12 +400,13 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None):
     # Return the L2 distance of the SRSF
     return lp_distance(fdata1_srsf, fdata2_srsf, p=2)
 
+
 def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
     r"""Compute the amplitude distance between two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
-    :math:`q_i` and :math:`q_j` be the corresponding SRSF (see :func:`to_srsf`),
-    the amplitude distance is defined as
+    :math:`q_i` and :math:`q_j` be the corresponding SRSF
+    (see :func:`to_srsf`), the amplitude distance is defined as
 
     .. math::
         d_{A}(f_i, f_j)=min_{\gamma \in \Gamma}d_{FR}(f_i \circ \gamma,f_j)
@@ -443,9 +445,9 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
         ValueError: If the objects are not unidimensional.
 
     Refereces:
-        ..  [SK16-4-10-1] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
-            and shape data analysis. In *Amplitude Space and a Metric Structure*
-            (pp. 107-109). Springer.
+        ..  [SK16-4-10-1] Srivastava, Anuj & Klassen, Eric P. (2016).
+            Functional and shape data analysis. In *Amplitude Space and a
+            Metric Structure* (pp. 107-109). Springer.
     """
 
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points)
@@ -455,20 +457,20 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
 
     # Calculate the corresponding srsf and normalize to (0,1)
     fdata1 = fdata1.copy(sample_points=eval_points_normalized,
-                         domain_range=(0,1))
+                         domain_range=(0, 1))
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
-                         domain_range=(0,1))
+                         domain_range=(0, 1))
 
     fdata1_srsf = to_srsf(fdata1)
     fdata2_srsf = to_srsf(fdata2)
 
     warping = elastic_registration_warping(fdata1,
-                                             template=fdata2,
-                                             lam=lam,
-                                             eval_points=eval_points_normalized,
-                                             fdatagrid_srsf=fdata1_srsf,
-                                             template_srsf=fdata2_srsf,
-                                             **kwargs)
+                                           template=fdata2,
+                                           lam=lam,
+                                           val_points=eval_points_normalized,
+                                           fdatagrid_srsf=fdata1_srsf,
+                                           template_srsf=fdata2_srsf,
+                                           **kwargs)
 
     fdata1_reg = fdata1.compose(warping)
 
@@ -486,6 +488,7 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
         distance = np.sqrt(distance**2 + lam*penalty)
 
     return distance
+
 
 def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
     r"""Compute the amplitude distance btween two functional objects.
@@ -521,9 +524,9 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
 
 
     Refereces:
-        ..  [SK16-4-10-2] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
-            and shape data analysis. In *Phase Space and a Metric Structure*
-            (pp. 109-111). Springer.
+        ..  [SK16-4-10-2] Srivastava, Anuj & Klassen, Eric P. (2016).
+            Functional and shape data analysis. In *Phase Space and a Metric
+            Structure* (pp. 109-111). Springer.
 
     """
 
@@ -534,14 +537,15 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
 
     # Calculate the corresponding srsf and normalize to (0,1)
     fdata1 = fdata1.copy(sample_points=eval_points_normalized,
-                         domain_range=(0,1))
+                         domain_range=(0, 1))
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
-                         domain_range=(0,1))
+                         domain_range=(0, 1))
 
-    warping = elastic_registration_warping(fdata1, template=fdata2,
-                                             lam=lam,
-                                             eval_points=eval_points_normalized,
-                                             **kwargs)
+    warping = elastic_registration_warping(fdata1,
+                                           template=fdata2,
+                                           lam=lam,
+                                           eval_points=eval_points_normalized,
+                                           **kwargs)
 
     derivative_warping = warping(eval_points_normalized, keepdims=False,
                                  derivative=1)[0]
@@ -583,9 +587,9 @@ def warping_distance(warping1, warping2, *, eval_points=None):
         ValueError: If the objects are not unidimensional.
 
     Refereces:
-        ..  [SK16-4-11-2] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
-            and shape data analysis. In *Probability Density Functions*
-            (pp. 113-117). Springer.
+        ..  [SK16-4-11-2] Srivastava, Anuj & Klassen, Eric P. (2016).
+            Functional and shape data analysis. In *Probability Density
+            Functions* (pp. 113-117). Springer.
 
     """
 
@@ -593,13 +597,13 @@ def warping_distance(warping1, warping2, *, eval_points=None):
                                        eval_points=eval_points)
 
     # Normalization of warping to (0,1)x(0,1)
-    warping1 = normalize_warping(warping1, (0,1))
-    warping2 = normalize_warping(warping2, (0,1))
+    warping1 = normalize_warping(warping1, (0, 1))
+    warping2 = normalize_warping(warping2, (0, 1))
 
     warping1_data = warping1.derivative().data_matrix[0, ..., 0]
     warping2_data = warping2.derivative().data_matrix[0, ..., 0]
 
-    # In this case the srsf is the sqrt(gamma')
+    # In this case the srsf is the sqrt(gamma')
     srsf_warping1 = np.sqrt(warping1_data, out=warping1_data)
     srsf_warping2 = np.sqrt(warping2_data, out=warping2_data)
 

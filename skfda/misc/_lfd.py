@@ -59,7 +59,7 @@ class LinearDifferentialOperator:
                 i in range(order + 1)]
 
         else:
-            if len(weights) is 0:
+            if len(weights) == 0:
                 raise ValueError("You have to provide one weight at least")
 
             if all(isinstance(n, int) for n in weights):

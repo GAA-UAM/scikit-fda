@@ -100,12 +100,12 @@ def make_sinusoidal_process(n_samples: int = 15, n_features: int = 100, *,
     alpha = np.diag(random_state.normal(amplitude_mean, amplitude_std,
                                         n_samples))
 
-    phi = np.outer(random_state.normal(phase_mean, phase_std,  n_samples),
+    phi = np.outer(random_state.normal(phase_mean, phase_std, n_samples),
                    np.ones(n_features))
 
     error = random_state.normal(0, error_std, (n_samples, n_features))
 
-    y = alpha @ np.sin((2*np.pi/period)*t + phi) + error
+    y = alpha @ np.sin((2 * np.pi / period) * t + phi) + error
 
     return FDataGrid(sample_points=t, data_matrix=y)
 
@@ -255,7 +255,7 @@ def make_multimodal_samples(n_samples: int = 15, *, n_modes: int = 1,
                                                           cov)
 
     # Constant to make modes value aprox. 1
-    data_matrix *= (2*np.pi*mode_std)**(ndim_domain/2)
+    data_matrix *= (2 * np.pi * mode_std) ** (ndim_domain / 2)
 
     data_matrix += random_state.normal(0, noise, size=data_matrix.shape)
 
@@ -326,11 +326,11 @@ def make_random_warping(n_samples: int = 15, n_features: int = 100, *,
     v = np.outer(np.ones(n_features),
                  random_state.normal(scale=sqrt_sigma, size=n_samples))
 
-    for j in range(2, 2+n_random):
+    for j in range(2, 2 + n_random):
         alpha = random_state.normal(scale=sqrt_sigma, size=(2, n_samples))
         alpha *= sqrt2
-        v += alpha[0] * np.cos(j*omega*time)
-        v += alpha[1] * np.sin(j*omega*time)
+        v += alpha[0] * np.cos(j * omega * time)
+        v += alpha[1] * np.sin(j * omega * time)
 
     v -= v.mean(axis=0)
 
@@ -344,7 +344,7 @@ def make_random_warping(n_samples: int = 15, n_features: int = 100, *,
     np.square(v, out=v)
 
     # Creation of FDataGrid in the corresponding domain
-    data_matrix = scipy.integrate.cumtrapz(v, dx=1./n_features, initial=0,
+    data_matrix = scipy.integrate.cumtrapz(v, dx=1. / n_features, initial=0,
                                            axis=0)
     warping = FDataGrid(data_matrix.T, sample_points=time[:, 0])
     warping = normalize_warping(warping, domain_range=(start, stop))

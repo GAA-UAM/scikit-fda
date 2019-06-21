@@ -192,7 +192,7 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
                                               eval_points))
 
     # mse due to phase variation
-    mse_pha = scipy.integrate.simps(cr*eta_fine_sq - mu_fine_sq, eval_points)
+    mse_pha = scipy.integrate.simps(cr * eta_fine_sq - mu_fine_sq, eval_points)
 
     # mse due to amplitude variation
     # mse_amp = mse_total - mse_pha

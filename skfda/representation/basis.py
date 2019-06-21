@@ -225,10 +225,10 @@ class Basis(ABC):
             )[0]
             for j in range(i + 1, self.nbasis):
                 penalty_matrix[i, j] = scipy.integrate.quad(
-                    lambda x: (self._evaluate_single_basis_coefficients(
-                        coefficients, i, x, cache) *
-                               self._evaluate_single_basis_coefficients(
-                                   coefficients, j, x, cache)),
+                    (lambda x: (self._evaluate_single_basis_coefficients(
+                                coefficients, i, x, cache) *
+                                self._evaluate_single_basis_coefficients(
+                                    coefficients, j, x, cache))),
                     domain_range[0], domain_range[1]
                 )[0]
                 penalty_matrix[j, i] = penalty_matrix[i, j]
@@ -651,7 +651,7 @@ class Monomial(Basis):
     def _derivative(self, coefs, order=1):
         return (Monomial(self.domain_range, self.nbasis - order),
                 np.array([np.polyder(x[::-1], order)[::-1]
-                             for x in coefs]))
+                          for x in coefs]))
 
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
@@ -738,9 +738,9 @@ class Monomial(Basis):
                     ipow = ibasis + jbasis - 2 * derivative_degree + 1
                     # coefficient after integrating
                     penalty_matrix[ibasis, jbasis] = (
-                            (integration_domain[1] ** ipow
-                             - integration_domain[0] ** ipow)
-                            * ifac * jfac / ipow)
+                        ((integration_domain[1] ** ipow) -
+                         (integration_domain[0] ** ipow)) *
+                        ifac * jfac / ipow)
                     penalty_matrix[jbasis, ibasis] = penalty_matrix[ibasis,
                                                                     jbasis]
 
@@ -1048,12 +1048,12 @@ class BSpline(Basis):
                     coeffs = pp.copy()
                     for j in range(self.order - 1):
                         coeffs[j + 1:] += (
-                                (binom(self.order - j - 1,
-                                       range(1, self.order - j)) *
-                                 np.vstack([(-a) **
-                                            np.array(range(1, self.order - j))
-                                            for a in self.knots[:-1]])).T *
-                                pp[j])
+                            (binom(self.order - j - 1,
+                                   range(1, self.order - j)) *
+                             np.vstack([(-a) **
+                                        np.array(range(1, self.order - j))
+                                        for a in self.knots[:-1]])).T *
+                            pp[j])
                     ppoly_lst.append(coeffs)
                     c[i] = 0
 

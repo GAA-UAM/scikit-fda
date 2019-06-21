@@ -121,8 +121,8 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         """
         comparison = True
         while comparison:
-            indices = random_state.permutation(fdatagrid.nsamples)[
-                      :self.n_clusters]
+            indices = (random_state.permutation(fdatagrid.nsamples)[
+                       :self.n_clusters])
             centers = fdatagrid.data_matrix[indices]
             unique_centers = np.unique(centers, axis=0)
             comparison = len(unique_centers) != self.n_clusters
@@ -696,8 +696,8 @@ class FuzzyKMeans(BaseKMeans):
             distances_to_centers = self.metric(
                 fdata1=fdatagrid,
                 fdata2=centers_fd)
-            distances_to_centers_raised = distances_to_centers ** (
-                                2 / (self.fuzzifier - 1))
+            distances_to_centers_raised = (distances_to_centers **
+                                           (2 / (self.fuzzifier - 1)))
 
             for i in range(fdatagrid.nsamples):
                 comparison = (fdatagrid.data_matrix[i] == centers).all(

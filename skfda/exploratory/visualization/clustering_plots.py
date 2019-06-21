@@ -43,11 +43,11 @@ def _change_luminosity(color, amount=0.5):
 
 
 def _darken(color, amount=0):
-    return _change_luminosity(color, 0.5 - amount/2)
+    return _change_luminosity(color, 0.5 - amount / 2)
 
 
 def _lighten(color, amount=0):
-    return _change_luminosity(color, 0.5 + amount/2)
+    return _change_luminosity(color, 0.5 + amount / 2)
 
 
 def _check_if_estimator(estimator):

@@ -197,5 +197,5 @@ def inner_product(fdatagrid, fdatagrid2):
                 fdatagrid.data_matrix[i, ..., 0] *
                 fdatagrid2.data_matrix[j, ..., 0],
                 x=fdatagrid.sample_points[0]
-                ))
+            ))
     return matrix

@@ -228,7 +228,7 @@ class Boxplot(FDataBoxplot):
             for i in range(len(prob)):
 
                 indices_samples = indices_descencing_depth[:, m][
-                                  :math.ceil(fdatagrid.nsamples * prob[i])]
+                    :math.ceil(fdatagrid.nsamples * prob[i])]
                 samples_used = fdatagrid.data_matrix[indices_samples, :, m]
                 max_samples_used = np.amax(samples_used, axis=0)
                 min_samples_used = np.amin(samples_used, axis=0)
@@ -253,11 +253,11 @@ class Boxplot(FDataBoxplot):
                     # outliers
                     for j in list(range(fdatagrid.nsamples)):
                         outliers_above = (
-                                outlying_max_envelope < fdatagrid.data_matrix[
-                                                        j, :, m])
+                            outlying_max_envelope < fdatagrid.data_matrix[
+                                j, :, m])
                         outliers_below = (
-                                outlying_min_envelope > fdatagrid.data_matrix[
-                                                        j, :, m])
+                            outlying_min_envelope > fdatagrid.data_matrix[
+                                j, :, m])
                         if (outliers_above.sum() > 0 or
                                 outliers_below.sum() > 0):
                             self._outliers[m, j] = 1
@@ -267,7 +267,7 @@ class Boxplot(FDataBoxplot):
 
             # mean sample
             self._median[m] = fdatagrid.data_matrix[
-                              indices_descencing_depth[0, m], :, m].T
+                indices_descencing_depth[0, m], :, m].T
 
         self._fdatagrid = fdatagrid
         self._prob = prob
@@ -539,14 +539,14 @@ class SurfaceBoxplot(FDataBoxplot):
 
         for m in range(fdatagrid.ndim_image):
             indices_samples = indices_descencing_depth[:, m][
-                              :math.ceil(fdatagrid.nsamples * 0.5)]
+                :math.ceil(fdatagrid.nsamples * 0.5)]
             samples_used = fdatagrid.data_matrix[indices_samples, :, :, m]
             max_samples_used = np.amax(samples_used, axis=0)
             min_samples_used = np.amin(samples_used, axis=0)
 
             # mean sample
             self._median[m] = fdatagrid.data_matrix[
-                              indices_descencing_depth[0, m], :, :, m]
+                indices_descencing_depth[0, m], :, :, m]
 
             # central envelope
             self._central_envelope[m] = np.asarray([max_samples_used,
@@ -668,7 +668,7 @@ class SurfaceBoxplot(FDataBoxplot):
                 y_corner = y[indices[1]]
                 ax[m].plot([x_corner, x_corner], [y_corner, y_corner],
                            [self.central_envelope[
-                                m, 1, indices[0], indices[1]],
+                               m, 1, indices[0], indices[1]],
                             self.central_envelope[
                                 m, 0, indices[0], indices[1]]],
                            color=self.colormap(self.boxcol))

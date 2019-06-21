@@ -442,7 +442,7 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
 
         eval_points = _normalize_scale(eval_points)
         warping = FDataGrid(_normalize_scale(warping.data_matrix[..., 0]),
-                            sample_points=_normalize_scale(warping.sample_points[0]))
+                            _normalize_scale(warping.sample_points[0]))
 
     psi = to_srsf(warping, eval_points=eval_points).data_matrix[..., 0].T
     mu = to_srsf(warping.mean(), eval_points=eval_points).data_matrix[0]
@@ -482,7 +482,7 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
             break
 
         # Update of mu
-        mu *= np.cos(step_size*v_norm)
+        mu *= np.cos(step_size * v_norm)
         vmean += np.sin(step_size * v_norm) / v_norm
         mu += vmean.T
 
@@ -645,10 +645,11 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
         # Gamma mean in Hilbert Sphere
         mean_normalized = warping_mean(gammas, return_shooting=False, **kwargs)
 
-        gamma_mean = FDataGrid(_normalize_scale(mean_normalized.data_matrix[..., 0],
-                                                a=eval_points[0],
-                                                b=eval_points[-1]),
-                               sample_points=eval_points)
+        gamma_mean = FDataGrid(_normalize_scale(
+            mean_normalized.data_matrix[..., 0],
+            a=eval_points[0],
+            b=eval_points[-1]),
+            sample_points=eval_points)
 
         gamma_inverse = invert_warping(gamma_mean)
 

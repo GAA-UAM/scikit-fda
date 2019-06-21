@@ -485,7 +485,7 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, **kwargs):
         penalty = np.square(penalty, out=penalty)
         penalty = scipy.integrate.simps(penalty, x=eval_points_normalized)
 
-        distance = np.sqrt(distance**2 + lam*penalty)
+        distance = np.sqrt(distance**2 + lam * penalty)
 
     return distance
 

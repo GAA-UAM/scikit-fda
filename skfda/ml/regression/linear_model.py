@@ -1,6 +1,5 @@
-from sklearn.metrics import mean_squared_error
 from sklearn.base import BaseEstimator, RegressorMixin
-from skfda.representation.basis import *
+from skfda.representation.basis import FDataBasis, Constant, Basis, FData
 
 import numpy as np
 

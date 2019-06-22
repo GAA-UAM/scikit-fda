@@ -24,9 +24,11 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         for j in range(nbeta):
             xcoef = X[j].coefficients
             inner_basis_x_beta_j = X[j].basis.inner_product(beta[j])
-            inner_x_beta = (xcoef @ inner_basis_x_beta_j if j == 0 else
-                            np.concatenate(
-                                (Zmat, xcoef @ inner_basis_x_beta_j), axis=1))
+            inner_x_beta = (xcoef @ inner_basis_x_beta_j
+                            if j == 0
+                            else np.concatenate((inner_x_beta,
+                                                 xcoef @ inner_basis_x_beta_j),
+                                                axis=1))
 
         if any(w != 1 for w in weights):
             inner_x_beta = inner_x_beta * np.sqrt(weights)
@@ -36,7 +38,7 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         inner_x_beta_y = inner_x_beta.T @ y
 
         gram_inner_x_beta_inv = np.linalg.inv(gram_inner_x_beta)
-        betacoefs = gram_inner_x_beta @ inner_x_beta_y
+        betacoefs = gram_inner_x_beta_inv @ inner_x_beta_y
 
         idx = 0
         for j in range(0, nbeta):

@@ -11,7 +11,7 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         self.beta = beta
         self.weights = weights
 
-    def fit(self, X, y=None):
+    def fit(self, X, y):
 
         y, X, beta, weights = self._argcheck(y, X)
 
@@ -41,14 +41,18 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
 
         idx = 0
         for j in range(0, nbeta):
-            beta[j] = FDataBasis(beta[j], betacoefs[idx:beta[j].nbasis].T)
+            beta[j] = FDataBasis(beta[j], betacoefs[idx:idx+beta[j].nbasis].T)
             idx = idx + beta[j].nbasis
 
         self.beta_ = beta
+        return self
 
     def predict(self, X):
         return [sum(self.beta[i].inner_product(X[i][j])[0, 0] for i in
                     range(len(self.beta))) for j in range(X[0].nsamples)]
+
+    def fit_predict(self, X, y):
+        return self.fit(X, y).predict(X)
 
     def _argcheck(self, y, x):
         """Do some checks to types and shapes"""

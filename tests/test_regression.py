@@ -1,5 +1,6 @@
 import unittest
-from skfda.representation.basis import Monomial, Fourier, FDataBasis
+from skfda.representation.basis import (FDataBasis, Constant, Monomial,
+                                        Fourier,  BSpline)
 from skfda.ml.regression import LinearScalarRegression
 import numpy as np
 
@@ -26,8 +27,7 @@ class TestLinearScalarRegression(unittest.TestCase):
         np.testing.assert_array_almost_equal(scalar.beta[0].coefficients,
                                              beta_fd.coefficients)
 
-
-    def test_regression_predict(self):
+    def test_regression_predict_single_explanatory(self):
 
         x_basis = Monomial(nbasis=7)
         x_fd = FDataBasis(x_basis, np.identity(7))
@@ -44,8 +44,33 @@ class TestLinearScalarRegression(unittest.TestCase):
 
         scalar = LinearScalarRegression([beta_basis])
         scalar.fit([x_fd], y)
-        np.testing.assert_array_almost_equal(scalar.beta[0].coefficients,
+        np.testing.assert_array_almost_equal(scalar.beta_[0].coefficients,
                                              beta_fd.coefficients)
+
+    def test_regression_predict_multiple_explanatory(self):
+        y = [1, 2, 3, 4, 5, 6, 7]
+
+        x0 = FDataBasis(Constant(domain_range=(0, 1)), np.ones((7, 1)))
+        x1 = FDataBasis(Monomial(nbasis=7), np.identity(7))
+
+        beta0 = Constant(domain_range=(0, 1))
+        beta1 = BSpline(domain_range=(0, 1), nbasis=5)
+
+        scalar = LinearScalarRegression([beta0, beta1])
+
+        scalar.fit([x0, x1], y)
+
+        betas = scalar.beta_
+
+        np.testing.assert_array_almost_equal(betas[0].coefficients.round(4),
+                                             np.array([[32.6518]]))
+
+        np.testing.assert_array_almost_equal(betas[1].coefficients.round(4),
+                                             np.array([[-28.6443,
+                                                        80.3996,
+                                                        -188.587,
+                                                        236.5832,
+                                                        -481.3449]]))
 
     def test_error_X_not_FData(self):
         """Tests that at least one of the explanatory variables

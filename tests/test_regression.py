@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 from skfda import datasets, FDataBasis
 from skfda.representation.basis import Fourier
-from skfda.ml.regression.functional import FunctionalRegression
+from skfda.ml.regression.linear_model import FunctionalRegression
 
 
 class TestRegression(unittest.TestCase):

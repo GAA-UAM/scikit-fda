@@ -58,14 +58,15 @@ default one. The available ones are:
    skfda.preprocessing.smoothing.validation.shibata
    skfda.preprocessing.smoothing.validation.rice
    
-An utility method is also provided, which calls the sckit-learn 
+An utility class is also provided, which inherits from the sckit-learn class 
 :class:`~sklearn.model_selection.GridSearchCV`
-object with the scorers to find the best smoothing parameters from a list.
+and performs a grid search using the scorers to find the best
+``smoothing_parameter`` from a list.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.smoothing.validation.optimize_smoothing_parameter
+   skfda.preprocessing.smoothing.validation.SmoothingParameterSearch
 
 
 References

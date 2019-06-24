@@ -99,6 +99,11 @@ class _LinearKernelSmoother(abc.ABC, BaseEstimator, TransformerMixin):
         return X.copy(data_matrix=self.hat_matrix_ @ X.data_matrix,
                       sample_points=self.output_points_)
 
+    def score(self, X, y):
+        from .validation import LinearSmootherGeneralizedCVScorer
+
+        return LinearSmootherGeneralizedCVScorer()(self, X, y)
+
 
 class NadarayaWatsonSmoother(_LinearKernelSmoother):
     r"""Nadaraya-Watson smoothing method.

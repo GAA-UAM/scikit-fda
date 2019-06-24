@@ -19,6 +19,7 @@ from scipy.special import binom
 from . import grid
 from . import FData
 from .._utils import _list_of_arrays
+import pandas.api.extensions
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -324,6 +325,70 @@ class Basis(ABC):
 
     def _to_R(self):
         raise NotImplementedError
+
+    def _inner_matrix(self, other=None):
+
+        r"""Return the Inner Product Matrix of a pair of basis.
+
+        The Inner Product Matrix is defined as
+
+        .. math::
+            IP_{ij} = \langle\phi_i, \theta_j\rangle
+
+        where :math:`\phi_i` is the ith element of the basi and
+        :math:`\theta_j` is the jth element of the second basis.
+        This matrix helps on the calculation of the inner product
+        between objects on two basis and for the change of basis.
+
+        Args:
+            other (:class:`Basis`): Basis to compute the inner product
+            matrix. If not basis is given, it computes the matrix with
+            itself returning the Gram Matrix
+
+        Returns:
+            numpy.array: Inner Product Matrix of two basis
+
+        """
+        if other is None or self == other:
+            return self.gram_matrix()
+
+        first = self.to_basis()
+        second = other.to_basis()
+
+        inner = np.zeros((self.nbasis, other.nbasis))
+
+        for i in range(self.nbasis):
+            for j in range(other.nbasis):
+                inner[i, j] = first[i].inner_product(second[j], None, None)
+
+        return inner
+
+    def gram_matrix(self):
+
+        r"""Return the Gram Matrix of a basis
+
+        The Gram Matrix is defined as
+
+        .. math::
+            G_{ij} = \langle\phi_i, \phi_j\rangle
+
+        where :math:`\phi_i` is the ith element of the basis. This is a symmetric matrix and
+        positive-semidefinite.
+
+        Returns:
+            numpy.array: Gram Matrix of the basis.
+
+        """
+        fbasis = self.to_basis()
+
+        gram = np.zeros((self.nbasis, self.nbasis))
+
+        for i in range(fbasis.nbasis):
+            for j in range(i, fbasis.nbasis):
+                gram[i, j] = fbasis[i].inner_product(fbasis[j], None, None)
+                gram[j, i] = gram[i, j]
+
+        return gram
 
     def inner_product(self, other):
         return np.transpose(other.inner_product(self.to_basis()))
@@ -2175,6 +2240,13 @@ class FDataBasis(FData):
         if weights is not None:
             other = other.times(weights)
 
+        if self.nsamples * other.nsamples > self.nbasis * other.nbasis:
+            return self.coefficients @ self.basis._inner_matrix(other.basis) @ other.coefficients.T
+        else:
+            return self._inner_product_integrate(other, lfd_self, lfd_other)
+
+    def _inner_product_integrate(self, other, lfd_self, lfd_other):
+
         matrix = np.empty((self.nsamples, other.nsamples))
         (left, right) = self.domain_range[0]
 
@@ -2183,6 +2255,7 @@ class FDataBasis(FData):
                 fd = self[i].times(other[j])
                 matrix[i, j] = scipy.integrate.quad(
                     lambda x: fd.evaluate([x])[0], left, right)[0]
+
         return matrix
 
     def _to_R(self):
@@ -2358,3 +2431,40 @@ class FDataBasis(FData):
         """Right division for FDataBasis object."""
 
         raise NotImplementedError
+
+    #####################################################################
+    # Pandas ExtensionArray methods
+    #####################################################################
+    @property
+    def dtype(self):
+        """The dtype for this extension array, FDataGridDType"""
+        return FDataBasisDType
+
+    @property
+    def nbytes(self) -> int:
+        """
+        The number of bytes needed to store this object in memory.
+        """
+        return self.coefficients.nbytes()
+
+
+class FDataBasisDType(pandas.api.extensions.ExtensionDtype):
+    """
+    DType corresponding to FDataBasis in Pandas
+    """
+    name = 'functional data (basis)'
+    kind = 'O'
+    type = FDataBasis
+    na_value = None
+
+    @classmethod
+    def construct_from_string(cls, string):
+        if string == cls.name:
+            return cls()
+        else:
+            raise TypeError("Cannot construct a '{}' from "
+                            "'{}'".format(cls, string))
+
+    @classmethod
+    def construct_array_type(cls):
+        return FDataBasis

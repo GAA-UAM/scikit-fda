@@ -40,19 +40,22 @@ fd[0:5].plot()
 param_values = np.linspace(start=2, stop=25, num=24)
 
 # Local linear regression kernel smoothing.
-llr = val.optimize_smoothing_parameter(
-    fd, param_values, smoothing_method=ks.LocalLinearRegressionSmoother())
-llr_fd = llr.best_estimator_.transform(fd)
+llr = val.SmoothingParameterSearch(
+    ks.LocalLinearRegressionSmoother(), param_values)
+llr.fit(fd)
+llr_fd = llr.transform(fd)
 
 # Nadaraya-Watson kernel smoothing.
-nw = skfda.preprocessing.smoothing.validation.optimize_smoothing_parameter(
-    fd, param_values, smoothing_method=ks.NadarayaWatsonSmoother())
-nw_fd = nw.best_estimator_.transform(fd)
+nw = val.SmoothingParameterSearch(
+    ks.NadarayaWatsonSmoother(), param_values)
+nw.fit(fd)
+nw_fd = nw.transform(fd)
 
 # K-nearest neighbours kernel smoothing.
-knn = skfda.preprocessing.smoothing.validation.optimize_smoothing_parameter(
-    fd, param_values, smoothing_method=ks.KNeighborsSmoother())
-knn_fd = knn.best_estimator_.transform(fd)
+knn = val.SmoothingParameterSearch(
+    ks.KNeighborsSmoother(), param_values)
+knn.fit(fd)
+knn_fd = knn.transform(fd)
 
 plt.plot(param_values, knn.cv_results_['mean_test_score'],
          label='k-nearest neighbors')

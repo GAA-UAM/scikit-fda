@@ -99,9 +99,7 @@ class LinearSmootherGeneralizedCVScorer():
                  * penalization_function(hat_matrix))
 
 
-def optimize_smoothing_parameter(fdatagrid, parameter_values,
-                                 smoothing_method=None,
-                                 cv_method=None):
+class SmoothingParameterSearch(GridSearchCV):
     """Chooses the best smoothing parameter and performs smoothing.
 
     Performs the smoothing of a FDataGrid object choosing the best
@@ -112,19 +110,42 @@ def optimize_smoothing_parameter(fdatagrid, parameter_values,
         data, using the cv_method as a scorer.
 
     Args:
-        fdatagrid (FDataGrid): FDataGrid object.
-        parameters (list of double): List of parameters to be tested.
-        smoothing_method (Function): Function that takes a list of
-            discretised points, a parameter, an optionally a weights matrix
-            and returns a hat matrix or smoothing matrix.
-        cv_method (Function): Function that takes a matrix,
-            a smoothing matrix, and optionally a weights matrix and
-            calculates a cross validation score.
-        penalization_function(Fuction): if gcv is selected as cv_method a
-            penalization function can be specified through this parameter.
+        estimator (smoother estimator): scikit-learn compatible smoother.
+        param_values (iterable): iterable containing the values to test
+            for *smoothing_parameter*.
+        scoring (scoring method): scoring method used to measure the
+            performance of the smoothing.
+        n_jobs (int or None, optional (default=None)):
+            Number of jobs to run in parallel.
+            ``None`` means 1 unless in a :obj:`joblib.parallel_backend`
+            context. ``-1`` means using all processors. See
+            :term:`scikit-learn Glossary <sklearn:n_jobs>` for more details.
 
-    Returns:
-        grid: A scikit-learn GridSearchCV estimator, properly fitted.
+        pre_dispatch (int, or string, optional):
+            Controls the number of jobs that get dispatched during parallel
+            execution. Reducing this number can be useful to avoid an
+            explosion of memory consumption when more jobs get dispatched
+            than CPUs can process. This parameter can be:
+
+            - None, in which case all the jobs are immediately
+              created and spawned. Use this for lightweight and
+              fast-running jobs, to avoid delays due to on-demand
+              spawning of the jobs
+
+            - An int, giving the exact number of total jobs that are
+              spawned
+
+            - A string, giving an expression as a function of n_jobs,
+              as in '2*n_jobs'
+        verbose (integer):
+            Controls the verbosity: the higher, the more messages.
+
+        error_score ('raise' or numeric):
+            Value to assign to the score if an error occurs in estimator
+            fitting. If set to 'raise', the error is raised. If a numeric
+            value is given, FitFailedWarning is raised. This parameter does
+            not affect the refit step, which will always raise the error.
+            Default is np.nan.
 
     Examples:
         Creates a FDataGrid object of the function :math:`y=x^2` and peforms
@@ -133,8 +154,9 @@ def optimize_smoothing_parameter(fdatagrid, parameter_values,
         >>> import skfda
         >>> x = np.linspace(-2, 2, 5)
         >>> fd = skfda.FDataGrid(x ** 2, x)
-        >>> grid = optimize_smoothing_parameter(fd, [2,3],
-        ...            smoothing_method=kernel_smoothers.KNeighborsSmoother())
+        >>> grid = SmoothingParameterSearch(
+        ...            kernel_smoothers.KNeighborsSmoother(), [2,3])
+        >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-11.67, -12.37])
         >>> round(grid.best_score_, 2)
@@ -147,7 +169,7 @@ def optimize_smoothing_parameter(fdatagrid, parameter_values,
                [ 0.  , 0.33, 0.33, 0.33, 0.  ],
                [ 0.  , 0.  , 0.33, 0.33, 0.33],
                [ 0.  , 0.  , 0.  , 0.5 , 0.5 ]])
-        >>> grid.best_estimator_.transform(fd).round(2)
+        >>> grid.transform(fd).round(2)
         FDataGrid(
             array([[[ 2.5 ],
                     [ 1.67],
@@ -161,56 +183,56 @@ def optimize_smoothing_parameter(fdatagrid, parameter_values,
         Other validation methods can be used such as cross-validation or
         general cross validation using other penalization functions.
 
-        >>> grid = optimize_smoothing_parameter(fd, [2,3],
-        ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
-        ...         cv_method=LinearSmootherLeaveOneOutScorer())
+        >>> grid = SmoothingParameterSearch(
+        ...         kernel_smoothers.KNeighborsSmoother(), [2,3],
+        ...         scoring=LinearSmootherLeaveOneOutScorer())
+        >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-4.2, -5.5])
-        >>> grid = optimize_smoothing_parameter(fd, [2,3],
-        ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
-        ...         cv_method=LinearSmootherGeneralizedCVScorer(
+        >>> grid = SmoothingParameterSearch(
+        ...         kernel_smoothers.KNeighborsSmoother(), [2,3],
+        ...         scoring=LinearSmootherGeneralizedCVScorer(
         ...                         akaike_information_criterion))
+        >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([ -9.35, -10.71])
-        >>> grid = optimize_smoothing_parameter(fd, [2,3],
-        ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
-        ...         cv_method=LinearSmootherGeneralizedCVScorer(
+        >>> grid = SmoothingParameterSearch(
+        ...         kernel_smoothers.KNeighborsSmoother(), [2,3],
+        ...         scoring=LinearSmootherGeneralizedCVScorer(
         ...                         finite_prediction_error))
+        >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([ -9.8, -11. ])
-        >>> grid = optimize_smoothing_parameter(fd, [2,3],
-        ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
-        ...         cv_method=LinearSmootherGeneralizedCVScorer(shibata))
+        >>> grid = SmoothingParameterSearch(
+        ...         kernel_smoothers.KNeighborsSmoother(), [2,3],
+        ...         scoring=LinearSmootherGeneralizedCVScorer(shibata))
+        >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-7.56, -9.17])
-        >>> grid = optimize_smoothing_parameter(fd, [2,3],
-        ...         smoothing_method=kernel_smoothers.KNeighborsSmoother(),
-        ...         cv_method=LinearSmootherGeneralizedCVScorer(rice))
+        >>> grid = SmoothingParameterSearch(
+        ...         kernel_smoothers.KNeighborsSmoother(), [2,3],
+        ...         scoring=LinearSmootherGeneralizedCVScorer(rice))
+        >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-21. , -16.5])
 
     """
-    if fdatagrid.ndim_domain != 1:
-        raise NotImplementedError("This method only works when the dimension "
-                                  "of the domain of the FDatagrid object is "
-                                  "one.")
-    if fdatagrid.ndim_image != 1:
-        raise NotImplementedError("This method only works when the dimension "
-                                  "of the image of the FDatagrid object is "
-                                  "one.")
 
-    if smoothing_method is None:
-        smoothing_method = kernel_smoothers.NadarayaWatsonSmoother()
+    def __init__(self, estimator, param_values, *, scoring=None, n_jobs=None,
+                 verbose=0, pre_dispatch='2*n_jobs',
+                 error_score=np.nan):
+        super().__init__(estimator=estimator, scoring=scoring,
+                         param_grid={'smoothing_parameter': param_values},
+                         n_jobs=n_jobs,
+                         refit=True, cv=[(slice(None), slice(None))],
+                         verbose=verbose, pre_dispatch=pre_dispatch,
+                         error_score=error_score, return_train_score=False)
+        self.estimator = estimator
+        self.param_values = param_values
+        self._scoring = scoring
 
-    if cv_method is None:
-        cv_method = LinearSmootherGeneralizedCVScorer()
-
-    grid = GridSearchCV(estimator=smoothing_method,
-                        param_grid={'smoothing_parameter': parameter_values},
-                        scoring=cv_method, cv=[(slice(None), slice(None))])
-    grid.fit(fdatagrid, fdatagrid)
-
-    return grid
+    def fit(self, X, y=None, groups=None, **fit_params):
+        return GridSearchCV.fit(self, X, y=X, groups=groups, **fit_params)
 
 
 def akaike_information_criterion(hat_matrix):

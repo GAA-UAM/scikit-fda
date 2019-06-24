@@ -42,16 +42,16 @@ class TestLeaveOneOut(unittest.TestCase):
 
         estimator = estimator_class()
 
-        grid = validation.optimize_smoothing_parameter(
-            fd, [2, 3],
-            smoothing_method=estimator,
-            cv_method=loo_scorer)
+        grid = validation.SmoothingParameterSearch(
+            estimator, [2, 3],
+            scoring=loo_scorer)
+        grid.fit(fd)
         score = np.array(grid.cv_results_['mean_test_score'])
 
-        grid_alt = validation.optimize_smoothing_parameter(
-            fd, [2, 3],
-            smoothing_method=estimator,
-            cv_method=loo_scorer_alt)
+        grid_alt = validation.SmoothingParameterSearch(
+            estimator, [2, 3],
+            scoring=loo_scorer_alt)
+        grid_alt.fit(fd)
         score_alt = np.array(grid_alt.cv_results_['mean_test_score'])
 
         np.testing.assert_array_almost_equal(score, score_alt)

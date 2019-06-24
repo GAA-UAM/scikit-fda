@@ -1,9 +1,17 @@
+.. image:: https://raw.githubusercontent.com/GAA-UAM/scikit-fda/develop/docs/logos/title_logo/title_logo.png
+	:alt: scikit-fda: Functional Data Analysis in Python
+
 scikit-fda
 ==========
 
-|build-status| |docs|
+|build-status| |docs| |Codecov|_ |PyPi|_
 
-scikit-fda: Functional Data Analysis in Python
+.. |Codecov| image:: https://codecov.io/gh/GAA-UAM/scikit-fda/branch/develop/graph/badge.svg
+.. _Codecov: https://codecov.io/github/GAA-UAM/scikit-fda?branch=develop
+
+.. |PyPi| image:: https://badge.fury.io/py/scikit-fda.svg
+.. _PyPi: https://badge.fury.io/py/scikit-fda
+
 
 Functional Data Analysis is the field of Statistics that analyses data that
 come in the shape of functions. To know more about fda have a look at fda_ or read [RS05]_.

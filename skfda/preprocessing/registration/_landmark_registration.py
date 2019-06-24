@@ -3,7 +3,7 @@
 This module contains methods to perform the landmark registration.
 """
 
-import numpy
+import numpy as np
 
 from ... import FDataGrid
 from ...representation.interpolation import SplineInterpolator
@@ -72,16 +72,16 @@ def landmark_shift_deltas(fd, landmarks, location=None):
         raise ValueError(f"landmark list ({len(landmarks)}) must have the same "
                          f"length than the number of samples ({fd.nsamples})")
 
-    landmarks = numpy.atleast_1d(landmarks)
+    landmarks = np.atleast_1d(landmarks)
 
     # Parses location
     if location is None:
-        p = (numpy.max(landmarks, axis=0) + numpy.min(landmarks, axis=0)) / 2.
+        p = (np.max(landmarks, axis=0) + np.min(landmarks, axis=0)) / 2.
     elif callable(location):
         p = location(landmarks)
     else:
         try:
-            p = numpy.atleast_1d(location)
+            p = np.atleast_1d(location)
         except:
             raise ValueError("Invalid location, must be None, a callable or a "
                              "number in the domain")
@@ -224,11 +224,11 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
         raise ValueError("The number of list of landmarks should be equal to "
                          "the number of samples")
 
-    landmarks = numpy.asarray(landmarks).reshape((fd.nsamples, -1))
+    landmarks = np.asarray(landmarks).reshape((fd.nsamples, -1))
 
     n_landmarks = landmarks.shape[-1]
 
-    data_matrix = numpy.empty((fd.nsamples, n_landmarks + 2))
+    data_matrix = np.empty((fd.nsamples, n_landmarks + 2))
 
     data_matrix[:, 0] = fd.domain_range[0][0]
     data_matrix[:, -1] = fd.domain_range[0][1]
@@ -236,7 +236,7 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
     data_matrix[:, 1:-1] = landmarks
 
     if location is None:
-        sample_points = numpy.mean(data_matrix, axis=0)
+        sample_points = np.mean(data_matrix, axis=0)
 
     elif n_landmarks != len(location):
 
@@ -244,7 +244,7 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
                          f"the number of landmarks ({len(location)}) != "
                          f"({n_landmarks})")
     else:
-        sample_points = numpy.empty(n_landmarks + 2)
+        sample_points = np.empty(n_landmarks + 2)
         sample_points[0] = fd.domain_range[0][0]
         sample_points[-1] = fd.domain_range[0][1]
         sample_points[1:-1] = location
@@ -259,7 +259,7 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
     try:
         warping_points = fd.sample_points
     except AttributeError:
-        warping_points = [numpy.linspace(*domain, 201)
+        warping_points = [np.linspace(*domain, 201)
                           for domain in fd.domain_range]
 
     return warping.to_grid(warping_points)

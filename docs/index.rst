@@ -6,8 +6,10 @@ Welcome to scikit-fda's documentation!
 ======================================
 
 .. toctree::
+   :includehidden:
    :maxdepth: 4
    :caption: Contents:
+   :titlesonly:
 
    apilist
    auto_examples/index

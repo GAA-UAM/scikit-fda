@@ -3,10 +3,24 @@ import numpy as np
 
 from . import kernel_smoothers
 from sklearn.model_selection import GridSearchCV
+import sklearn
 
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
+
+
+def _get_input_estimation_and_matrix(estimator, X):
+    """Returns the smoothed data evaluated at the input points & the matrix"""
+    if estimator.output_points is not None:
+        estimator = sklearn.base.clone(estimator)
+        estimator.output_points = None
+        estimator.fit(X)
+    y_est = estimator.transform(X)
+
+    hat_matrix = estimator.hat_matrix_
+
+    return y_est, hat_matrix
 
 
 class LinearSmootherLeaveOneOutScorer():
@@ -42,9 +56,8 @@ class LinearSmootherLeaveOneOutScorer():
     """
 
     def __call__(self, estimator, X, y):
-        y_est = estimator.transform(X)
 
-        hat_matrix = estimator.hat_matrix_
+        y_est, hat_matrix = _get_input_estimation_and_matrix(estimator, X)
 
         return -np.mean(((y.data_matrix[..., 0] - y_est.data_matrix[..., 0])
                          / (1 - hat_matrix.diagonal())) ** 2)
@@ -84,9 +97,7 @@ class LinearSmootherGeneralizedCVScorer():
         self.penalization_function = penalization_function
 
     def __call__(self, estimator, X, y):
-        y_est = estimator.transform(X)
-
-        hat_matrix = estimator.hat_matrix_
+        y_est, hat_matrix = _get_input_estimation_and_matrix(estimator, X)
 
         if self.penalization_function is None:
             def penalization_function(hat_matrix):
@@ -216,6 +227,26 @@ class SmoothingParameterSearch(GridSearchCV):
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-21. , -16.5])
 
+        Different output points can also be used. In that case the value used
+        as a target is still the smoothed value at the input points:
+        >>> output_points = np.linspace(-2, 2, 9)
+        >>> grid = SmoothingParameterSearch(
+        ...            kernel_smoothers.KNeighborsSmoother(
+        ...                output_points=output_points
+        ...            ), [2,3])
+        >>> _ = grid.fit(fd)
+        >>> np.array(grid.cv_results_['mean_test_score']).round(2)
+        array([-11.67, -12.37])
+        >>> grid.transform(fd).data_matrix.round(2)
+        array([[[ 2.5 ],
+                [ 2.5 ],
+                [ 1.67],
+                [ 0.5 ],
+                [ 0.67],
+                [ 0.5 ],
+                [ 1.67],
+                [ 2.5 ],
+                [ 2.5 ]]])
     """
 
     def __init__(self, estimator, param_values, *, scoring=None, n_jobs=None,
@@ -227,12 +258,13 @@ class SmoothingParameterSearch(GridSearchCV):
                          refit=True, cv=[(slice(None), slice(None))],
                          verbose=verbose, pre_dispatch=pre_dispatch,
                          error_score=error_score, return_train_score=False)
-        self.estimator = estimator
         self.param_values = param_values
-        self._scoring = scoring
 
     def fit(self, X, y=None, groups=None, **fit_params):
-        return GridSearchCV.fit(self, X, y=X, groups=groups, **fit_params)
+        if y is None:
+            y = X
+
+        return super().fit(X, y=y, groups=groups, **fit_params)
 
 
 def akaike_information_criterion(hat_matrix):

@@ -148,7 +148,7 @@ class NadarayaWatsonSmoother(_LinearKernelSmoother):
     .. math::
         \hat{H}_{i,j} = \frac{K\left(\frac{x_i-x_j}{h}\right)}{\sum_{k=1}^{
         n}K\left(
-        \frac{x_1-x_k}{h}\right)}
+        \frac{x_i-x_k}{h}\right)}
 
     where :math:`K(\cdot)` is a kernel function and :math:`h` the kernel
     window width or smoothing parameter.

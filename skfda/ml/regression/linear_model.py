@@ -50,9 +50,6 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         return [sum(self.beta[i].inner_product(X[i][j])[0, 0] for i in
                     range(len(self.beta))) for j in range(X[0].nsamples)]
 
-    def fit_predict(self, X, y):
-        return self.fit(X, y).predict(X)
-
     def _argcheck(self, y, x, sample_weight):
         """Do some checks to types and shapes"""
         if all(not isinstance(i, FData) for i in x):

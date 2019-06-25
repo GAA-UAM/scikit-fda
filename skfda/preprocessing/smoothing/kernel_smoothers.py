@@ -73,7 +73,16 @@ class _LinearKernelSmoother(abc.ABC, BaseEstimator, TransformerMixin):
             }
 
     def fit(self, X: FDataGrid, y=None):
+        """Compute the hat matrix for the desired output points.
 
+        Args:
+            X (FDataGrid):
+                The data whose points are used to compute the matrix.
+            y : Ignored
+        Returns:
+            self (object)
+
+        """
         _check_r_to_r(X)
 
         self.input_points_ = X.sample_points[0]
@@ -93,6 +102,16 @@ class _LinearKernelSmoother(abc.ABC, BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: FDataGrid, y=None):
+        """Multiplies the hat matrix for the functions values to smooth them.
+
+        Args:
+            X (FDataGrid):
+                The data to smooth.
+            y : Ignored
+        Returns:
+            self (object)
+
+        """
 
         assert all(self.input_points_ == X.sample_points[0])
 
@@ -100,6 +119,17 @@ class _LinearKernelSmoother(abc.ABC, BaseEstimator, TransformerMixin):
                       sample_points=self.output_points_)
 
     def score(self, X, y):
+        """Returns the generalized cross validation (GCV) score.
+
+        Args:
+            X (FDataGrid):
+                The data to smooth.
+            y (FDataGrid):
+                The target data. Typically the same as ``X``.
+        Returns:
+            self (object)
+
+        """
         from .validation import LinearSmootherGeneralizedCVScorer
 
         return LinearSmootherGeneralizedCVScorer()(self, X, y)

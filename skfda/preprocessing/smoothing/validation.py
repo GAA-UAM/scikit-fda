@@ -125,7 +125,8 @@ class SmoothingParameterSearch(GridSearchCV):
         param_values (iterable): iterable containing the values to test
             for *smoothing_parameter*.
         scoring (scoring method): scoring method used to measure the
-            performance of the smoothing.
+            performance of the smoothing. If ``None`` (the default) the
+            ``score`` method of the estimator is used.
         n_jobs (int or None, optional (default=None)):
             Number of jobs to run in parallel.
             ``None`` means 1 unless in a :obj:`joblib.parallel_backend`
@@ -229,6 +230,7 @@ class SmoothingParameterSearch(GridSearchCV):
 
         Different output points can also be used. In that case the value used
         as a target is still the smoothed value at the input points:
+
         >>> output_points = np.linspace(-2, 2, 9)
         >>> grid = SmoothingParameterSearch(
         ...            kernel_smoothers.KNeighborsSmoother(

@@ -56,8 +56,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.doctest' ]
 
 doctest_global_setup = '''
-import numpy
-numpy.set_printoptions(legacy='1.13')
+import numpy as np
+np.set_printoptions(legacy='1.13')
 '''
 
 # Add any paths that contain templates here, relative to this directory.
@@ -102,11 +102,16 @@ todo_include_todos = True
 #
 html_theme = "sphinx_rtd_theme"
 
+html_logo = "logos/notitle_logo/notitle_logo.png"
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+        'logo_only': True,
+        'style_nav_header_background': 'Gainsboro',
+    }
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -208,6 +213,7 @@ intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'mpldatacursor': ('https://pypi.org/project/mpldatacursor/', None),
 }
 
 sphinx_gallery_conf = {

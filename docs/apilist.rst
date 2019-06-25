@@ -2,8 +2,10 @@ API Reference
 =============
 
 .. toctree::
+   :includehidden:
    :maxdepth: 4
    :caption: Modules:
+   :titlesonly:
 
    modules/representation
    modules/preprocessing

@@ -107,10 +107,8 @@ class FDataGrid(FData):
         def __iter__(self):
             """Return an iterator through the image coordinates."""
 
-            for k in range(len(self)):
-                yield self._fdatagrid.copy(
-                    data_matrix=self._fdatagrid.data_matrix[..., k],
-                    axes_labels=self._fdatagrid._get_labels_coordinates(k))
+            for i in range(len(self)):
+                yield self[i]
 
         def __getitem__(self, key):
             """Get a specific coordinate."""
@@ -301,10 +299,8 @@ class FDataGrid(FData):
             3
 
         """
-        if self._coordinates is None:
-            self._coordinates = FDataGrid._CoordinateIterator(self)
 
-        return self._coordinates
+        return FDataGrid._CoordinateIterator(self)
 
     @property
     def ndim(self):
@@ -740,7 +736,7 @@ class FDataGrid(FData):
             for other in others:
                 self.__check_same_dimensions(other)
 
-        elif not all([numpy.array_equal(self.sample_points, other.sample_points)
+        elif not all([np.array_equal(self.sample_points, other.sample_points)
                       for other in others]):
             raise ValueError("All the FDataGrids must be sampled in the  same "
                              "sample points.")
@@ -757,11 +753,11 @@ class FDataGrid(FData):
 
 
         if as_coordinates:
-            return self.copy(data_matrix=numpy.concatenate(data, axis=-1),
+            return self.copy(data_matrix=np.concatenate(data, axis=-1),
                              axes_labels=self._join_labels_coordinates(*others))
 
         else:
-            return self.copy(data_matrix=numpy.concatenate(data, axis=0))
+            return self.copy(data_matrix=np.concatenate(data, axis=0))
 
 
     def scatter(self, fig=None, ax=None, nrows=None, ncols=None, **kwargs):

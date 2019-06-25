@@ -1,7 +1,7 @@
 import os
 import sys
 
-import numpy
+import numpy as np
 
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
@@ -25,7 +25,7 @@ extensions = [
                   os.path.join(fdasrsf_path, 'optimum_reparam.pyx'),
                   os.path.join(fdasrsf_path, 'dp_grid.c')
               ],
-              include_dirs=[numpy.get_include()],
+              include_dirs=[np.get_include()],
               language='c',
               ),
 ]

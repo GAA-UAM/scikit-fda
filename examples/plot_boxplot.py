@@ -15,7 +15,7 @@ from skfda import FDataGrid
 from skfda.exploratory.depth import band_depth, fraiman_muniz_depth
 import matplotlib.pyplot as plt
 from skfda.exploratory.visualization.boxplot import Boxplot
-import numpy
+import numpy as np
 
 ##################################################################################
 # First, the Canadian Weather dataset is downloaded from the package 'fda' in CRAN.
@@ -37,7 +37,7 @@ fd_temperatures = FDataGrid(data_matrix=fd.data_matrix[:, :, 0],
 colormap = plt.cm.get_cmap('seismic')
 label_names = dataset["target_names"]
 nlabels = len(label_names)
-label_colors = colormap( numpy.arange(nlabels) / (nlabels - 1))
+label_colors = colormap(np.arange(nlabels) / (nlabels - 1))
 
 plt.figure()
 fd_temperatures.plot(sample_labels=dataset["target"], label_colors=label_colors,

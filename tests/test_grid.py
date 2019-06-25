@@ -1,6 +1,6 @@
 import unittest
 
-import numpy
+import numpy as np
 import scipy.stats.mstats
 
 from skfda.exploratory import stats
@@ -13,46 +13,46 @@ class TestFDataGrid(unittest.TestCase):
 
     def test_init(self):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
-        numpy.testing.assert_array_equal(
+        np.testing.assert_array_equal(
             fd.data_matrix[..., 0],
-            numpy.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]]))
-        numpy.testing.assert_array_equal(fd.sample_range, [(0, 1)])
-        numpy.testing.assert_array_equal(
-            fd.sample_points, numpy.array([[0., 0.25, 0.5, 0.75, 1.]]))
+            np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]]))
+        np.testing.assert_array_equal(fd.sample_range, [(0, 1)])
+        np.testing.assert_array_equal(
+            fd.sample_points, np.array([[0., 0.25, 0.5, 0.75, 1.]]))
 
     def test_mean(self):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
         mean = stats.mean(fd)
-        numpy.testing.assert_array_equal(
+        np.testing.assert_array_equal(
             mean.data_matrix[0, ..., 0],
-            numpy.array([1.5, 2.5, 3.5, 4.5, 5.5]))
-        numpy.testing.assert_array_equal(fd.sample_range, [(0, 1)])
-        numpy.testing.assert_array_equal(
+            np.array([1.5, 2.5, 3.5, 4.5, 5.5]))
+        np.testing.assert_array_equal(fd.sample_range, [(0, 1)])
+        np.testing.assert_array_equal(
             fd.sample_points,
-            numpy.array([[0., 0.25, 0.5, 0.75, 1.]]))
+            np.array([[0., 0.25, 0.5, 0.75, 1.]]))
 
     def test_gmean(self):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
         mean = stats.gmean(fd)
-        numpy.testing.assert_array_equal(
+        np.testing.assert_array_equal(
             mean.data_matrix[0, ..., 0],
             scipy.stats.mstats.gmean(
-                numpy.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])))
-        numpy.testing.assert_array_equal(fd.sample_range, [(0, 1)])
-        numpy.testing.assert_array_equal(
+                np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])))
+        np.testing.assert_array_equal(fd.sample_range, [(0, 1)])
+        np.testing.assert_array_equal(
             fd.sample_points,
-            numpy.array([[0., 0.25, 0.5, 0.75, 1.]]))
+            np.array([[0., 0.25, 0.5, 0.75, 1.]]))
 
     def test_slice(self):
         t = 10
-        fd = FDataGrid(data_matrix=numpy.ones(t))
+        fd = FDataGrid(data_matrix=np.ones(t))
         fd = fd[:, 0]
-        numpy.testing.assert_array_equal(
+        np.testing.assert_array_equal(
             fd.data_matrix[..., 0],
-            numpy.array([[1]]))
-        numpy.testing.assert_array_equal(
+            np.array([[1]]))
+        np.testing.assert_array_equal(
             fd.sample_points,
-            numpy.array([[0]]))
+            np.array([[0]]))
 
     def test_concatenate(self):
         fd1 = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])

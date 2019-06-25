@@ -127,6 +127,31 @@ class TestBasis(unittest.TestCase):
         prod = BSpline(domain_range=(0,1), nbasis=10, order=7, knots=[0, 0.3, 1/3, 2/3,1])
         self.assertEqual(bspline.basis_of_product(bspline2), prod)
 
+    def test_basis_inner_matrix(self):
+        np.testing.assert_array_almost_equal(Monomial(nbasis=3)._inner_matrix(),
+                                             [[1, 1/2, 1/3], [1/2, 1/3, 1/4], [1/3, 1/4, 1/5]])
+
+        np.testing.assert_array_almost_equal(Monomial(nbasis=3)._inner_matrix(Monomial(nbasis=3)),
+                                             [[1, 1/2, 1/3], [1/2, 1/3, 1/4], [1/3, 1/4, 1/5]])
+
+        np.testing.assert_array_almost_equal(Monomial(nbasis=3)._inner_matrix(Monomial(nbasis=4)),
+                                             [[1, 1/2, 1/3, 1/4], [1/2, 1/3, 1/4, 1/5], [1/3, 1/4, 1/5, 1/6]])
+
+        # TODO testing with other basis
+
+    def test_basis_gram_matrix(self):
+        np.testing.assert_array_almost_equal(Monomial(nbasis=3).gram_matrix(),
+                                             [[1, 1/2, 1/3], [1/2, 1/3, 1/4], [1/3, 1/4, 1/5]])
+        np.testing.assert_almost_equal(Fourier(nbasis=3).gram_matrix(),
+                                       np.identity(3))
+        np.testing.assert_almost_equal(BSpline(nbasis=6).gram_matrix().round(4),
+            np.array([[4.760e-02, 2.920e-02, 6.200e-03, 4.000e-04, 0.000e+00, 0.000e+00],
+                      [2.920e-02, 7.380e-02, 5.210e-02, 1.150e-02, 1.000e-04, 0.000e+00],
+                      [6.200e-03, 5.210e-02, 1.090e-01, 7.100e-02, 1.150e-02, 4.000e-04],
+                      [4.000e-04, 1.150e-02, 7.100e-02, 1.090e-01, 5.210e-02, 6.200e-03],
+                      [0.000e+00, 1.000e-04, 1.150e-02, 5.210e-02, 7.380e-02, 2.920e-02],
+                      [0.000e+00, 0.000e+00, 4.000e-04, 6.200e-03, 2.920e-02, 4.760e-02]]))
+
     def test_basis_basis_inprod(self):
         monomial = Monomial(nbasis=4)
         bspline = BSpline(nbasis=5, order=4)
@@ -138,6 +163,10 @@ class TestBasis(unittest.TestCase):
                  [0.00208338, 0.02916658, 0.07083342, 0.12916658, 0.10208338],
                  [0.00044654, 0.01339264, 0.04375022, 0.09910693, 0.09330368]])
             .round(3)
+        )
+        np.testing.assert_array_almost_equal(
+            monomial.inner_product(bspline),
+            bspline.inner_product(monomial).T
         )
 
     def test_basis_fdatabasis_inprod(self):
@@ -165,6 +194,15 @@ class TestBasis(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(
             monomialfd.inner_product(bsplinefd).round(3),
+            np.array([[16.14797697, 52.81464364, 89.4813103],
+                      [11.55565285, 38.22211951, 64.88878618],
+                      [18.14698361, 55.64698361, 93.14698361],
+                      [15.2495976, 48.9995976, 82.7495976],
+                      [19.70392982, 63.03676315, 106.37009648]]).round(3)
+        )
+
+        np.testing.assert_array_almost_equal(
+            monomialfd._inner_product_integrate(bsplinefd, None, None).round(3),
             np.array([[16.14797697, 52.81464364, 89.4813103],
                       [11.55565285, 38.22211951, 64.88878618],
                       [18.14698361, 55.64698361, 93.14698361],
@@ -217,6 +255,97 @@ class TestBasis(unittest.TestCase):
         self.assertEqual(expec_basis, result.basis)
         np.testing.assert_array_almost_equal(expec_coefs, result.coefficients)
 
+    def test_fdatabasis__add__(self):
+        monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
+        monomial2 = FDataBasis(Monomial(nbasis=3), [[1, 2, 3], [3, 4, 5]])
+
+        np.testing.assert_equal(monomial1 + monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[2, 4, 6], [4, 6, 8]]))
+        np.testing.assert_equal(monomial2 + 1,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[2, 2, 3], [4, 4, 5]]))
+        np.testing.assert_equal(1 + monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[2, 2, 3], [4, 4, 5]]))
+        np.testing.assert_equal(monomial2 + [1, 2],
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[2, 2, 3], [5, 4, 5]]))
+        np.testing.assert_equal([1, 2] + monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[2, 2, 3], [5, 4, 5]]))
+
+        np.testing.assert_raises(NotImplementedError, monomial2.__add__,
+                        FDataBasis(Fourier(nbasis=3),
+                                   [[2, 2, 3], [5, 4, 5]]))
+
+    def test_fdatabasis__sub__(self):
+        monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
+        monomial2 = FDataBasis(Monomial(nbasis=3), [[1, 2, 3], [3, 4, 5]])
+
+        np.testing.assert_equal(monomial1 - monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[0, 0, 0], [-2, -2, -2]]))
+        np.testing.assert_equal(monomial2 - 1,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[0, 2, 3], [2, 4, 5]]))
+        np.testing.assert_equal(1 - monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[0, -2, -3], [-2, -4, -5]]))
+        np.testing.assert_equal(monomial2 - [1, 2],
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[0, 2, 3], [1, 4, 5]]))
+        np.testing.assert_equal([1, 2] - monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[0, -2, -3], [-1, -4, -5]]))
+
+        np.testing.assert_raises(NotImplementedError, monomial2.__sub__,
+                                 FDataBasis(Fourier(nbasis=3),
+                                            [[2, 2, 3], [5, 4, 5]]))
+        
+    def test_fdatabasis__mul__(self):
+        monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
+        monomial2 = FDataBasis(Monomial(nbasis=3), [[1, 2, 3], [3, 4, 5]])
+
+        np.testing.assert_equal(monomial1 * 2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[2, 4, 6]]))
+        np.testing.assert_equal(3 * monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[3, 6, 9], [9, 12, 15]]))
+        np.testing.assert_equal(3 * monomial2,
+                                monomial2 * 3)
+
+        np.testing.assert_equal(monomial2 * [1, 2],
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[1, 2, 3], [6, 8, 10]]))
+        np.testing.assert_equal([1, 2] * monomial2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[1, 2, 3], [6, 8, 10]]))
+
+        np.testing.assert_raises(NotImplementedError, monomial2.__mul__,
+                        FDataBasis(Fourier(nbasis=3),
+                                   [[2, 2, 3], [5, 4, 5]]))
+        np.testing.assert_raises(NotImplementedError, monomial2.__mul__,
+                        monomial2)
+
+
+    def test_fdatabasis__mul__(self):
+        monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
+        monomial2 = FDataBasis(Monomial(nbasis=3), [[1, 2, 3], [3, 4, 5]])
+
+        np.testing.assert_equal(monomial1 / 2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[1/2, 1, 3/2]]))
+        np.testing.assert_equal(monomial2 / 2,
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[1/2, 1, 3/2], [3/2, 2, 5/2]]))
+
+        np.testing.assert_equal(monomial2 / [1, 2],
+                                FDataBasis(Monomial(nbasis=3),
+                                           [[1, 2, 3], [3/2, 2, 5/2]]))
+
+        
     def test_fdatabasis_derivative_constant(self):
         monomial = FDataBasis(Monomial(nbasis=8),
                               [1, 5, 8, 9, 7, 8, 4, 5])

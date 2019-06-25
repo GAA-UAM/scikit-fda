@@ -1,5 +1,5 @@
 """Defines methods for the validation of the smoothing."""
-import numpy
+import numpy as np
 
 from . import kernel_smoothers
 
@@ -38,8 +38,8 @@ def cv(fdatagrid, s_matrix):
 
     """
     y = fdatagrid.data_matrix[..., 0]
-    y_est = numpy.dot(s_matrix, y.T).T
-    return numpy.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
+    y_est = np.dot(s_matrix, y.T).T
+    return np.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
 
 
 def gcv(fdatagrid, s_matrix, penalisation_function=None):
@@ -74,11 +74,11 @@ def gcv(fdatagrid, s_matrix, penalisation_function=None):
 
     """
     y = fdatagrid.data_matrix[..., 0]
-    y_est = numpy.dot(s_matrix, y.T).T
+    y_est = np.dot(s_matrix, y.T).T
     if penalisation_function is not None:
-        return (numpy.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
+        return (np.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
                 * penalisation_function(s_matrix))
-    return (numpy.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
+    return (np.mean(((y - y_est) / (1 - s_matrix.diagonal())) ** 2)
             * (1 - s_matrix.diagonal().mean()) ** -2)
 
 
@@ -126,10 +126,10 @@ def minimise(fdatagrid, parameters,
         smoothing by means of the k-nearest neighbours method.
 
         >>> import skfda
-        >>> x = numpy.linspace(-2, 2, 5)
+        >>> x = np.linspace(-2, 2, 5)
         >>> fd = skfda.FDataGrid(x ** 2, x)
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn)
-        >>> numpy.array(res['scores']).round(2)
+        >>> np.array(res['scores']).round(2)
         array([ 11.67, 12.37])
         >>> round(res['best_score'], 2)
         11.67
@@ -157,23 +157,23 @@ def minimise(fdatagrid, parameters,
 
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                cv_method=cv)
-        >>> numpy.array(res['scores']).round(2)
+        >>> np.array(res['scores']).round(2)
         array([ 4.2, 5.5])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                penalisation_function=aic)
-        >>> numpy.array(res['scores']).round(2)
+        >>> np.array(res['scores']).round(2)
         array([ 9.35, 10.71])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                penalisation_function=fpe)
-        >>> numpy.array(res['scores']).round(2)
+        >>> np.array(res['scores']).round(2)
         array([ 9.8, 11. ])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                penalisation_function=shibata)
-        >>> numpy.array(res['scores']).round(2)
+        >>> np.array(res['scores']).round(2)
         array([ 7.56, 9.17])
         >>> res = minimise(fd, [2,3], smoothing_method=kernel_smoothers.knn,
         ...                penalisation_function=rice)
-        >>> numpy.array(res['scores']).round(2)
+        >>> np.array(res['scores']).round(2)
         array([ 21. , 16.5])
 
     """
@@ -201,13 +201,13 @@ def minimise(fdatagrid, parameters,
             scores.append(
                 cv_method(fdatagrid, s))
     # gets the best parameter.
-    h = parameters[int(numpy.argmin(scores))]
+    h = parameters[int(np.argmin(scores))]
     s = smoothing_method(sample_points, h, **kwargs)
     fdatagrid_adjusted = fdatagrid.copy(
-        data_matrix=numpy.dot(fdatagrid.data_matrix[..., 0], s.T))
+        data_matrix=np.dot(fdatagrid.data_matrix[..., 0], s.T))
 
     return {'scores': scores,
-            'best_score': numpy.min(scores),
+            'best_score': np.min(scores),
             'best_parameter': h,
             'hat_matrix': s,
             'fdatagrid': fdatagrid_adjusted,
@@ -228,7 +228,7 @@ def aic(s_matrix):
          float: Penalisation given by the Akaike's information criterion.
 
     """
-    return numpy.exp(2 * s_matrix.diagonal().mean())
+    return np.exp(2 * s_matrix.diagonal().mean())
 
 
 def fpe(s_matrix):

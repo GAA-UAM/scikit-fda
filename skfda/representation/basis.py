@@ -2354,7 +2354,7 @@ class FDataBasis(FData):
         basis.
 
         Args:
-            others (:class:`FDataBasis`): other FDataBasis objects.
+            others (:class:`FDataBasis`): Objects to be concatenated.
             as_coordinates (boolean, optional):  If False concatenates as
                 new samples, else, concatenates the other functions as
                 new components of the image. Defaults to False.
@@ -2365,9 +2365,10 @@ class FDataBasis(FData):
 
         Todo:
             By the moment, only unidimensional objects are supported in basis
-            form.
+            representation.
         """
 
+        # TODO: Change to support multivariate functions in basis representation
         if as_coordinates:
             return NotImplemented
 

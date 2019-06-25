@@ -42,7 +42,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         self.dataset_label = dataset_label
         self.axes_labels = axes_labels
         self.keepdims = keepdims
-        self._coordinates = None
 
     @property
     def axes_labels(self):
@@ -111,9 +110,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     def coordinates(self):
         r"""Return a component of the FDataGrid.
 
-        If the functional object contains samples
+        If the functional object contains multivariate samples
         :math:`f: \mathbb{R}^n \rightarrow \mathbb{R}^d`, this method returns
-        a component of the vector :math:`f = (f_1, ..., f_d)`.
+        an iterator of the vector :math:`f = (f_1, ..., f_d)`.
 
         """
         pass

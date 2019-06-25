@@ -1832,10 +1832,8 @@ class FDataBasis(FData):
             form.
 
         """
-        if self._coordinates is None:
-            self._coordinates = FDataBasis._CoordinateIterator(self)
 
-        return self._coordinates
+        return FDataBasis._CoordinateIterator(self)
 
     @property
     def nbasis(self):

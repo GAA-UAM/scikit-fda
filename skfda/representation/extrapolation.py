@@ -36,7 +36,7 @@ class PeriodicExtrapolation(EvaluatorConstructor):
     """
 
     def evaluator(self, fdata):
-        """Returns the evaluator used by class:`FData`.
+        """Returns the evaluator used by :class:`FData`.
 
         Returns:
             (:class:`Evaluator`): Evaluator of the periodic extrapolation.
@@ -101,7 +101,7 @@ class BoundaryExtrapolation(EvaluatorConstructor):
     """
 
     def evaluator(self, fdata):
-        """Returns the evaluator used by class:`FData`.
+        """Returns the evaluator used by :class:`FData`.
 
         Returns:
             (:class:`Evaluator`): Evaluator of the periodic boundary.
@@ -173,7 +173,7 @@ class ExceptionExtrapolation(EvaluatorConstructor):
     """
 
     def evaluator(self, fdata):
-        """Returns the evaluator used by class:`FData`.
+        """Returns the evaluator used by :class:`FData`.
 
         Returns:
             (:class:`Evaluator`): Evaluator of the periodic extrapolation.
@@ -229,7 +229,7 @@ class FillExtrapolation(EvaluatorConstructor):
     """
 
     def __init__(self, fill_value):
-        """Returns the evaluator used by class:`FData`.
+        """Returns the evaluator used by :class:`FData`.
 
         Returns:
             (:class:`Evaluator`): Evaluator of the periodic extrapolation.

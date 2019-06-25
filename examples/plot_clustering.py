@@ -87,8 +87,8 @@ print(kmeans.predict(fd))
 
 # Customization of cluster colors and labels in order to match the first image
 # of raw data.
-cluster_colors = climate_colors[np.array([1, 2, 0])]
-cluster_labels = climates[np.array([1, 2, 0])]
+cluster_colors = climate_colors[np.array([0, 2, 1])]
+cluster_labels = climates[np.array([0, 2, 1])]
 
 plot_clusters(kmeans, fd, cluster_colors=cluster_colors,
               cluster_labels=cluster_labels)

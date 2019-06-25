@@ -21,17 +21,17 @@ __email__ = "pablo.marcosm@estudiante.uam.es"
 
 
 def to_srsf(fdatagrid, eval_points=None):
-    """Calculate the square-root slope function (SRSF) transform.
+    r"""Calculate the square-root slope function (SRSF) transform.
 
-    Let :math:`f_i : [a,b] \\rightarrow \\mathbb{R}` be an absolutely continuous
+    Let :math:`f_i : [a,b] \rightarrow \mathbb{R}` be an absolutely continuous
     function, the SRSF transform is defined as
 
     .. math::
-        SRSF(f_i(t)) = sgn(f_i(t)) \\sqrt{|Df_i(t)|} = q_i(t)
+        SRSF(f_i(t)) = sgn(f_i(t)) \sqrt{|Df_i(t)|} = q_i(t)
 
     This representation it is used to compute the extended non-parametric
     Fisher-Rao distance between functions, wich under the SRSF representation
-    becomes the usual :math:`\\mathbb{L}^2` distance between functions.
+    becomes the usual :math:`\mathbb{L}^2` distance between functions.
     See [SK16-4-6-1]_ .
 
     Args:
@@ -76,23 +76,23 @@ def to_srsf(fdatagrid, eval_points=None):
 
 
 def from_srsf(fdatagrid, initial=None, *, eval_points=None):
-    """Given a SRSF calculate the corresponding function in the original space.
+    r"""Given a SRSF calculate the corresponding function in the original space.
 
-    Let :math:`f_i : [a,b]\\rightarrow \\mathbb{R}` be an absolutely continuous
+    Let :math:`f_i : [a,b]\rightarrow \mathbb{R}` be an absolutely continuous
     function, the SRSF transform is defined as
 
     .. math::
-        SRSF(f_i(t)) = sgn(f_i(t)) \\sqrt{|Df_i(t)|} = q_i(t)
+        SRSF(f_i(t)) = sgn(f_i(t)) \sqrt{|Df_i(t)|} = q_i(t)
 
     This transformation is a mapping up to constant. Given the srsf and the
     initial value the original function can be obtained as
 
     .. math::
-        f_i(t) = f(a) + \\int_{a}^t q(t)|q(t)|dt
+        f_i(t) = f(a) + \int_{a}^t q(t)|q(t)|dt
 
     This representation it is used to compute the extended non-parametric
     Fisher-Rao distance between functions, wich under the SRSF representation
-    becomes the usual :math:`\\mathbb{L}^2` distance between functions.
+    becomes the usual :math:`\mathbb{L}^2` distance between functions.
     See [SK16-4-6-2]_ .
 
     Args:
@@ -146,7 +146,7 @@ def from_srsf(fdatagrid, initial=None, *, eval_points=None):
 
 
 def _elastic_alignment_array(template_data, q_data, eval_points, lam, grid_dim):
-    """Wrapper between the cython interface and python.
+    r"""Wrapper between the cython interface and python.
 
     Selects the corresponding routine depending on the dimensions of the arrays.
 
@@ -181,34 +181,34 @@ def _elastic_alignment_array(template_data, q_data, eval_points, lam, grid_dim):
 def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
                                  eval_points=None, fdatagrid_srsf=None,
                                  template_srsf=None, grid_dim=7, **kwargs):
-    """Calculate the warping to align a FDatagrid using the SRSF framework.
+    r"""Calculate the warping to align a FDatagrid using the SRSF framework.
 
     Let :math:`f` be a function of the functional data object wich will be
     aligned to the template :math:`g`. Calculates the warping wich minimises
     the Fisher-Rao distance between :math:`g` and the registered function
-    :math:`f^*(t)=f(\\gamma^*(t))=f \\circ \\gamma^*`.
+    :math:`f^*(t)=f(\gamma^*(t))=f \circ \gamma^*`.
 
     .. math::
-        \\gamma^* = argmin_{\\gamma \\in \\Gamma} d_{\\lambda}(f \\circ
-        \\gamma, g)
+        \gamma^* = argmin_{\gamma \in \Gamma} d_{\lambda}(f \circ
+        \gamma, g)
 
-    Where :math:`d_{\\lambda}` denotes the extended amplitude distance with a
+    Where :math:`d_{\lambda}` denotes the extended amplitude distance with a
     penalty term, used to control the amount of warping.
 
     .. math::
-        d_{\\lambda}^2(f \\circ \\gamma, g) = \\| SRSF(f \\circ \\gamma)
-        \\sqrt{\\dot{\\gamma}} - SRSF(g)\\|_{\\mathbb{L}^2}^2 + \\lambda
-        \\mathcal{R}(\\gamma)
+        d_{\lambda}^2(f \circ \gamma, g) = \| SRSF(f \circ \gamma)
+        \sqrt{\dot{\gamma}} - SRSF(g)\|_{\mathbb{L}^2}^2 + \lambda
+        \mathcal{R}(\gamma)
 
     In the implementation it is used as penalty term
 
     .. math::
-        \\mathcal{R}(\\gamma) = \\|\\sqrt{\\dot{\\gamma}}- 1 \\|_{\\mathbb{L}^2}^2
+        \mathcal{R}(\gamma) = \|\sqrt{\dot{\gamma}}- 1 \|_{\mathbb{L}^2}^2
 
     Wich restrict the amount of elasticity employed in the alignment.
 
     The registered function :math:`f^*(t)` can be calculated using the
-    composition :math:`f^*(t)=f(\\gamma^*(t))`.
+    composition :math:`f^*(t)=f(\gamma^*(t))`.
 
     If the template is not specified it is used the Karcher mean of the set of
     functions under the Fisher-Rao metric to perform the alignment, wich is
@@ -298,34 +298,34 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
 def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
                          fdatagrid_srsf=None, template_srsf=None, grid_dim=7,
                          **kwargs):
-    """Align a FDatagrid using the SRSF framework.
+    r"""Align a FDatagrid using the SRSF framework.
 
     Let :math:`f` be a function of the functional data object wich will be
     aligned to the template :math:`g`. Calculates the warping wich minimises
     the Fisher-Rao distance between :math:`g` and the registered function
-    :math:`f^*(t)=f(\\gamma^*(t))=f \\circ \\gamma^*`.
+    :math:`f^*(t)=f(\gamma^*(t))=f \circ \gamma^*`.
 
     .. math::
-        \\gamma^* = argmin_{\\gamma \\in \\Gamma} d_{\\lambda}(f \\circ
-        \\gamma, g)
+        \gamma^* = argmin_{\gamma \in \Gamma} d_{\lambda}(f \circ
+        \gamma, g)
 
-    Where :math:`d_{\\lambda}` denotes the extended Fisher-Rao distance with a
+    Where :math:`d_{\lambda}` denotes the extended Fisher-Rao distance with a
     penalty term, used to control the amount of warping.
 
     .. math::
-        d_{\\lambda}^2(f \\circ \\gamma, g) = \\| SRSF(f \\circ \\gamma)
-        \\sqrt{\\dot{\\gamma}} - SRSF(g)\\|_{\\mathbb{L}^2}^2 + \\lambda
-        \\mathcal{R}(\\gamma)
+        d_{\lambda}^2(f \circ \gamma, g) = \| SRSF(f \circ \gamma)
+        \sqrt{\dot{\gamma}} - SRSF(g)\|_{\mathbb{L}^2}^2 + \lambda
+        \mathcal{R}(\gamma)
 
     In the implementation it is used as penalty term
 
     .. math::
-        \\mathcal{R}(\\gamma) = \\|\\sqrt{\\dot{\\gamma}}- 1 \\|_{\\mathbb{L}^2}^2
+        \mathcal{R}(\gamma) = \|\sqrt{\dot{\gamma}}- 1 \|_{\mathbb{L}^2}^2
 
     Wich restrict the amount of elasticity employed in the alignment.
 
     The registered function :math:`f^*(t)` can be calculated using the
-    composition :math:`f^*(t)=f(\\gamma^*(t))`.
+    composition :math:`f^*(t)=f(\gamma^*(t))`.
 
     If the template is not specified it is used the Karcher mean of the set of
     functions under the elastic metric to perform the alignment, wich is
@@ -383,20 +383,20 @@ def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
 
 def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
                  return_shooting=False):
-    """Compute the karcher mean of a set of warpings.
+    r"""Compute the karcher mean of a set of warpings.
 
-    Let :math:`\\gamma_i i=1...n` be a set of warping functions
-    :math:`\\gamma_i:[a,b] \\rightarrow [a,b]` in :math:`\\Gamma`, i.e.,
-    monotone increasing and with the restriction :math:`\\gamma_i(a)=a \\,
-    \\gamma_i(b)=b`.
+    Let :math:`\gamma_i i=1...n` be a set of warping functions
+    :math:`\gamma_i:[a,b] \rightarrow [a,b]` in :math:`\Gamma`, i.e.,
+    monotone increasing and with the restriction :math:`\gamma_i(a)=a \,
+    \gamma_i(b)=b`.
 
-    The karcher mean :math:`\\bar \\gamma` is defined as the warping that
+    The karcher mean :math:`\bar \gamma` is defined as the warping that
     minimises locally the sum of Fisher-Rao squared distances.
     [SK16-8-3-2]_.
 
     .. math::
-        \\bar \\gamma = argmin_{\\gamma \\in \\Gamma} \\sum_{i=1}^{n}
-         d_{FR}^2(\\gamma, \\gamma_i)
+        \bar \gamma = argmin_{\gamma \in \Gamma} \sum_{i=1}^{n}
+         d_{FR}^2(\gamma, \gamma_i)
 
     The computation is performed using the structure of Hilbert Sphere obtained
     after a transformation of the warpings, see [S11-3-3]_.
@@ -405,9 +405,9 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
         warping (:class:`FDataGrid`): Set of warpings.
         iter (int): Maximun number of interations. Defaults to 20.
         tol (float): Convergence criterion, if the norm of the mean of the
-            shooting vectors, :math:`| \\bar v |<tol`, the algorithm will stop.
+            shooting vectors, :math:`| \bar v |<tol`, the algorithm will stop.
             Defaults to 1e-5.
-        step_size (float): Step size :math:`\\epsilon` used to update the mean.
+        step_size (float): Step size :math:`\epsilon` used to update the mean.
             Default to 1.
         eval_points (array_like): Discretisation points of the warpings.
         shooting (boolean): If true it is returned a tuple with the mean and the
@@ -507,22 +507,22 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
 def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
                  initial=None, eval_points=None, fdatagrid_srsf=None,
                  grid_dim=7, **kwargs):
-    """Compute the karcher mean under the elastic metric.
+    r"""Compute the karcher mean under the elastic metric.
 
     Calculates the karcher mean of a set of functional samples in the amplitude
-    space :math:`\\mathcal{A}=\\mathcal{F}/\\Gamma`.
+    space :math:`\mathcal{A}=\mathcal{F}/\Gamma`.
 
     Let :math:`q_i` the corresponding SRSF of the observation :math:`f_i`.
-    The space :math:`\\mathcal{A}` is defined using the equivalence classes
-    :math:`[q_i]=\\{ q_i \\circ \\gamma \\| \\gamma \\in \\Gamma \\}`, where
-    :math:`\\Gamma` denotes the space of warping functions. The karcher mean
+    The space :math:`\mathcal{A}` is defined using the equivalence classes
+    :math:`[q_i]=\{ q_i \circ \gamma \| \gamma \in \Gamma \}`, where
+    :math:`\Gamma` denotes the space of warping functions. The karcher mean
     in this space is defined as
 
     .. math::
-        [\\mu_q] = argmin_{[q] \\in \\mathcal{A}} \\sum_{i=1}^n
-        d_{\\lambda}^2([q],[q_i])
+        [\mu_q] = argmin_{[q] \in \mathcal{A}} \sum_{i=1}^n
+        d_{\lambda}^2([q],[q_i])
 
-    Once :math:`[\\mu_q]` is obtained it is selected the element of the
+    Once :math:`[\mu_q]` is obtained it is selected the element of the
     equivalence class which makes the mean of the warpings employed be the
     identity.
 
@@ -535,7 +535,7 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
             used to select a central mean. Defaults True.
         iter (int): Maximun number of iterations. Defaults to 20.
         tol (float): Convergence criterion, the algorithm will stop if
-            :math:´\\|mu^{(\\nu)} - mu^{(\\nu - 1)} \\|_2 / \\| mu^{(\\nu-1)} \\|_2
+            :math:´\|mu^{(\nu)} - mu^{(\nu - 1)} \|_2 / \| mu^{(\nu-1)} \|_2
             < tol´.
         initial (float): Value of the mean at the starting point. By default
             takes the average of the initial points of the samples.

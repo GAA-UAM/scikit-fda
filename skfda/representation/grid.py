@@ -701,7 +701,7 @@ class FDataGrid(FData):
         dimensions and sampling points.
 
         Args:
-            others (:obj:`FDataGrid`): another FDataGrid object.
+            others (:obj:`FDataGrid`): Objects to be concatenated.
             as_coordinates (boolean, optional):  If False concatenates as
                 new samples, else, concatenates the other functions as
                 new components of the image. Defaults to false.

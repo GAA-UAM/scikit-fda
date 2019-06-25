@@ -6,23 +6,22 @@ import numpy as np
 
 class LinearScalarRegression(BaseEstimator, RegressorMixin):
 
-    def __init__(self, beta, weights=None):
+    def __init__(self, beta_basis, weights=None):
         self.beta_ = None
-        self.beta = beta
-        self.weights = weights
+        self.beta_basis = beta_basis
 
-    def fit(self, X, y):
+    def fit(self, X, y=None, sample_weight=None):
 
-        y, X, beta, weights = self._argcheck(y, X)
+        y, X, weights = self._argcheck(y, X, sample_weight)
 
-        nbeta = len(beta)
+        nbeta = len(self.beta_basis)
         nsamples = X[0].nsamples
 
-        y = np.array(y).reshape((nsamples, 1))
+        y = np.asarray(y).reshape((nsamples, 1))
 
         for j in range(nbeta):
             xcoef = X[j].coefficients
-            inner_basis_x_beta_j = X[j].basis.inner_product(beta[j])
+            inner_basis_x_beta_j = X[j].basis.inner_product(self.beta_basis[j])
             inner_x_beta = (xcoef @ inner_basis_x_beta_j
                             if j == 0
                             else np.concatenate((inner_x_beta,
@@ -41,10 +40,10 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
 
         idx = 0
         for j in range(0, nbeta):
-            beta[j] = FDataBasis(beta[j], betacoefs[idx:idx+beta[j].nbasis].T)
-            idx = idx + beta[j].nbasis
+            self.beta_basis[j] = FDataBasis(self.beta_basis[j], betacoefs[idx:idx+self.beta_basis[j].nbasis].T)
+            idx = idx + self.beta_basis[j].nbasis
 
-        self.beta_ = beta
+        self.beta_ = self.beta_basis
         return self
 
     def predict(self, X):
@@ -54,7 +53,7 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
     def fit_predict(self, X, y):
         return self.fit(X, y).predict(X)
 
-    def _argcheck(self, y, x):
+    def _argcheck(self, y, x, sample_weight):
         """Do some checks to types and shapes"""
         if all(not isinstance(i, FData) for i in x):
             raise ValueError("All the dependent variable are scalar.")
@@ -94,4 +93,4 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         if np.any(np.array(self.weights) < 0):
             raise ValueError("The weights should be non negative values")
 
-        return y, x, self.beta, self.weights
+        return y, x, sample_weight

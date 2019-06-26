@@ -66,7 +66,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
 
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def nsamples(self):
         """Return the number of samples.
 
@@ -76,7 +77,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def ndim_domain(self):
         """Return number of dimensions of the domain.
 
@@ -86,7 +88,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         pass
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def ndim_image(self):
         """Return number of dimensions of the image.
 
@@ -106,7 +109,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         return self.ndim_image
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def coordinates(self):
         r"""Return a component of the FDataGrid.
 
@@ -145,7 +149,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         return self._extrapolator_evaluator
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def domain_range(self):
         """Return the domain range of the object
 
@@ -701,7 +706,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         functional objects.
 
         Args:
-            others (:obj:`FData`) Obects to be concatenates.
+            others (:obj:`FData`) Objects to be concatenated.
 
         Returns:
             (list): labels of the object

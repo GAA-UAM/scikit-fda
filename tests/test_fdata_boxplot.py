@@ -4,8 +4,6 @@ import numpy as np
 from skfda import FDataGrid
 from skfda.exploratory.depth import band_depth, fraiman_muniz_depth
 from skfda.exploratory.visualization.boxplot import Boxplot, SurfaceBoxplot
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 

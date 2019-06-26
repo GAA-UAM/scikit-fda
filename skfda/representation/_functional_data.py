@@ -57,14 +57,12 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             labels = np.asarray(labels)
             if len(labels) > (self.ndim_domain + self.ndim_image):
                 raise ValueError("There must be a label for each of the "
-                                  "dimensions of the domain and the image.")
+                                 "dimensions of the domain and the image.")
             if len(labels) < (self.ndim_domain + self.ndim_image):
                 diff = (self.ndim_domain + self.ndim_image) - len(labels)
-                labels = np.concatenate((labels, diff*[None]))
+                labels = np.concatenate((labels, diff * [None]))
 
         self._axes_labels = labels
-
-
 
     @property
     @abstractmethod
@@ -698,9 +696,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         else:
 
             labels = self.axes_labels[:self.ndim_domain].tolist()
-            image_label = np.atleast_1d(self.axes_labels[self.ndim_domain:][key])
+            image_label = np.atleast_1d(
+                self.axes_labels[self.ndim_domain:][key])
             labels.extend(image_label.tolist())
-
 
         return labels
 
@@ -770,7 +768,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                         ax[i].set_xlabel(self.axes_labels[0])
                     if self.axes_labels[1] is not None:
                         ax[i].set_ylabel(self.axes_labels[1])
-                    if self.axes_labels[i+2] is not None:
+                    if self.axes_labels[i + 2] is not None:
                         ax[i].set_zlabel(self.axes_labels[i + 2])
             else:
                 for i in range(self.ndim_image):

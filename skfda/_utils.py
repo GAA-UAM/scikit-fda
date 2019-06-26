@@ -111,7 +111,7 @@ def parameter_aliases(**alias_assignments):
 
             for key, value in alias_assignments.items():
                 def getter(self):
-                        return getattr(self, key)
+                    return getattr(self, key)
 
                 def setter(self, new_value):
                     return setattr(self, key, new_value)

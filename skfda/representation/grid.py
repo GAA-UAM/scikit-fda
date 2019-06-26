@@ -693,7 +693,6 @@ class FDataGrid(FData):
 
         return self.copy(data_matrix=data_matrix / self.data_matrix)
 
-
     def concatenate(self, *others, as_coordinates=False):
         """Join samples from a similar FDataGrid object.
 
@@ -741,24 +740,21 @@ class FDataGrid(FData):
             raise ValueError("All the FDataGrids must be sampled in the  same "
                              "sample points.")
 
-
         elif any([self.nsamples != other.nsamples for other in others]):
 
             raise ValueError(f"All the FDataGrids must contain the same "
                              f"number of samples {self.nsamples} to "
                              f"concatenate as a new coordinate.")
 
-
         data = [self.data_matrix] + [other.data_matrix for other in others]
-
 
         if as_coordinates:
             return self.copy(data_matrix=np.concatenate(data, axis=-1),
-                             axes_labels=self._join_labels_coordinates(*others))
+                             axes_labels=(
+                                 self._join_labels_coordinates(*others)))
 
         else:
             return self.copy(data_matrix=np.concatenate(data, axis=0))
-
 
     def scatter(self, fig=None, ax=None, nrows=None, ncols=None, **kwargs):
         """Scatter plot of the FDatGrid object.

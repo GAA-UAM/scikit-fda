@@ -2378,7 +2378,8 @@ class FDataBasis(FData):
             representation.
         """
 
-        # TODO: Change to support multivariate functions in basis representation
+        # TODO: Change to support multivariate functions
+        #  in basis representation
         if as_coordinates:
             return NotImplemented
 
@@ -2388,9 +2389,7 @@ class FDataBasis(FData):
 
         data = [self.coefficients] + [other.coefficients for other in others]
 
-
         return self.copy(coefficients=np.concatenate(data, axis=0))
-
 
     def compose(self, fd, *, eval_points=None, **kwargs):
         """Composition of functions.

@@ -2,6 +2,8 @@ import unittest
 
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 from skfda import FDataGrid
 from skfda.datasets import make_multimodal_samples
 from skfda.misc.metrics import (fisher_rao_distance, amplitude_distance,

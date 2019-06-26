@@ -53,10 +53,10 @@ def epanechnikov(u):
     """
     if isinstance(u, np.ndarray):
         res = np.zeros(u.shape)
-        res[abs(u) <= 1] = 0.75 * (1 - u[abs(u) <= 1] ** 2)
+        res[abs(u) <= 1] = 0.75*(1 - u[abs(u) <= 1] ** 2)
         return res
     if abs(u) <= 1:
-        return 0.75 * (1 - u ** 2)
+        return 0.75 * (1-u ** 2)
     return 0
 
 

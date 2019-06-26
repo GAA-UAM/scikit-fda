@@ -39,7 +39,7 @@ def _execute_covariance(covariance, x, y):
 class Brownian():
     """Brownian covariance"""
 
-    def __init__(self, *, variance: float = 1., origin: float = 0.):
+    def __init__(self, *, variance: float=1., origin: float=0.):
         self.variance = variance
         self.origin = origin
 

@@ -2,6 +2,8 @@ import unittest
 
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 from skfda import FDataGrid
 from skfda.representation.interpolation import SplineInterpolator
 from skfda.representation.basis import Fourier

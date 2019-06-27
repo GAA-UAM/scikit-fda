@@ -97,11 +97,35 @@ class FDataGrid(FData):
 
     """
 
+    class _CoordinateIterator:
+        """Internal class to iterate through the image coordinates."""
+
+        def __init__(self, fdatagrid):
+            """Create an iterator through the image coordinates."""
+            self._fdatagrid = fdatagrid
+
+        def __iter__(self):
+            """Return an iterator through the image coordinates."""
+
+            for i in range(len(self)):
+                yield self[i]
+
+        def __getitem__(self, key):
+            """Get a specific coordinate."""
+            axes_labels = self._fdatagrid._get_labels_coordinates(key)
+
+            return self._fdatagrid.copy(
+                data_matrix=self._fdatagrid.data_matrix[..., key],
+                axes_labels=axes_labels)
+
+        def __len__(self):
+            """Return the number of coordinates."""
+            return self._fdatagrid.ndim_image
+
     def __init__(self, data_matrix, sample_points=None,
                  domain_range=None, dataset_label=None,
                  axes_labels=None, extrapolation=None,
                  interpolator=None, keepdims=False):
-
         """Construct a FDataGrid object.
 
         Args:
@@ -119,10 +143,9 @@ class FDataGrid(FData):
                 the domain).
             dataset_label (str, optional): name of the dataset.
             axes_labels (list, optional): list containing the labels of the
-                different axes. The length of the list must be equal to the
-                sum of the number of dimensions of the domain plus the number
-                of dimensions of the image.
-
+                different axes. The length of the list must be equal to the sum
+                of the number of dimensions of the domain plus the number of
+                dimensions of the image.
         """
         self.data_matrix = np.atleast_2d(data_matrix)
 
@@ -173,11 +196,6 @@ class FDataGrid(FData):
         if self.data_matrix.ndim == 1 + self.ndim_domain:
             self.data_matrix = self.data_matrix[..., np.newaxis]
 
-        if axes_labels is not None and len(axes_labels) != (self.ndim_domain
-                                                            + self.ndim_image):
-            raise ValueError("There must be a label for each of the"
-                             "dimensions of the domain and the image.")
-
         self.interpolator = interpolator
 
         super().__init__(extrapolation, dataset_label, axes_labels, keepdims)
@@ -226,6 +244,73 @@ class FDataGrid(FData):
         # If there is no array that means the dimension of the image is 1.
         except IndexError:
             return 1
+
+    @property
+    def coordinates(self):
+        r"""Returns an object to access to the image coordinates.
+
+        If the functional object contains multivariate samples
+        :math:`f: \mathbb{R}^n \rightarrow \mathbb{R}^d`, this class allows
+        iterate and get coordinates of the vector
+        :math:`f = (f_0, ..., f_{d-1})`.
+
+        Examples:
+
+            We will construct a dataset of curves in :math:`\mathbb{R}^3`
+
+            >>> from skfda.datasets import make_multimodal_samples
+            >>> fd = make_multimodal_samples(ndim_image=3, random_state=0)
+            >>> fd.ndim_image
+            3
+
+            The functions of this dataset are vectorial functions
+            :math:`f(t) = (f_0(t), f_1(t), f_2(t))`. We can obtain a specific
+            component of the vector, for example, the first one.
+
+            >>> fd_0 = fd.coordinates[0]
+            >>> fd_0
+            FDataGrid(...)
+
+            The object returned has image dimension equal to 1
+
+            >>> fd_0.ndim_image
+            1
+
+            Or we can get multiple components, it can be accesed as a 1-d
+            numpy array of coordinates, for example, :math:`(f_0(t), f_1(t))`.
+
+            >>> fd_01 = fd.coordinates[0:2]
+            >>> fd_01.ndim_image
+            2
+
+            We can use this method to iterate throught all the coordinates.
+
+            >>> for fd_i in fd.coordinates:
+            ...     fd_i.ndim_image
+            1
+            1
+            1
+
+            This object can be used to split a FDataGrid in a list with
+            their components.
+
+            >>> fd_list = list(fd.coordinates)
+            >>> len(fd_list)
+            3
+
+        """
+
+        return FDataGrid._CoordinateIterator(self)
+
+    @property
+    def ndim(self):
+        """Return number of dimensions of the data matrix.
+
+        Returns:
+            int: Number of dimensions of the data matrix.
+
+        """
+        return self.data_matrix.ndim
 
     @property
     def nsamples(self):
@@ -608,17 +693,21 @@ class FDataGrid(FData):
 
         return self.copy(data_matrix=data_matrix / self.data_matrix)
 
-    def concatenate(self, other):
+
+    def concatenate(self, *others, as_coordinates=False):
         """Join samples from a similar FDataGrid object.
 
         Joins samples from another FDataGrid object if it has the same
         dimensions and sampling points.
 
         Args:
-            other (:obj:`FDataGrid`): another FDataGrid object.
+            others (:obj:`FDataGrid`): Objects to be concatenated.
+            as_coordinates (boolean, optional):  If False concatenates as
+                new samples, else, concatenates the other functions as
+                new components of the image. Defaults to false.
 
         Returns:
-            :obj:`FDataGrid`: FDataGrid object with the samples from the two
+            :obj:`FDataGrid`: FDataGrid object with the samples from the
             original objects.
 
         Examples:
@@ -643,11 +732,33 @@ class FDataGrid(FData):
 
         """
         # Checks
-        self.__check_same_dimensions(other)
+        if not as_coordinates:
+            for other in others:
+                self.__check_same_dimensions(other)
 
-        return self.copy(data_matrix=np.concatenate((self.data_matrix,
-                                                    other.data_matrix),
-                                                    axis=0))
+        elif not all([np.array_equal(self.sample_points, other.sample_points)
+                      for other in others]):
+            raise ValueError("All the FDataGrids must be sampled in the  same "
+                             "sample points.")
+
+
+        elif any([self.nsamples != other.nsamples for other in others]):
+
+            raise ValueError(f"All the FDataGrids must contain the same "
+                             f"number of samples {self.nsamples} to "
+                             f"concatenate as a new coordinate.")
+
+
+        data = [self.data_matrix] + [other.data_matrix for other in others]
+
+
+        if as_coordinates:
+            return self.copy(data_matrix=np.concatenate(data, axis=-1),
+                             axes_labels=self._join_labels_coordinates(*others))
+
+        else:
+            return self.copy(data_matrix=np.concatenate(data, axis=0))
+
 
     def scatter(self, fig=None, ax=None, nrows=None, ncols=None, **kwargs):
         """Scatter plot of the FDatGrid object.
@@ -953,12 +1064,18 @@ class FDataGrid(FData):
 
     def __repr__(self):
         """Return repr(self)."""
+
+        if self.axes_labels is None:
+            axes_labels = None
+        else:
+            axes_labels = self.axes_labels.tolist()
+
         return (f"FDataGrid("
                 f"\n{repr(self.data_matrix)},"
                 f"\nsample_points={repr(self.sample_points)},"
                 f"\ndomain_range={repr(self.domain_range)},"
                 f"\ndataset_label={repr(self.dataset_label)},"
-                f"\naxes_labels={repr(self.axes_labels)},"
+                f"\naxes_labels={repr(axes_labels)},"
                 f"\nextrapolation={repr(self.extrapolation)},"
                 f"\ninterpolator={repr(self.interpolator)},"
                 f"\nkeepdims={repr(self.keepdims)})").replace('\n', '\n    ')

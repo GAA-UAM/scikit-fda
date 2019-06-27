@@ -66,7 +66,7 @@ class Covariance(abc.ABC):
     def _sample_trajectories_plot(self):
         from ..datasets import make_gaussian_process
 
-        fd = make_gaussian_process(cov=self)
+        fd = make_gaussian_process(start=-1, cov=self)
         fig, ax = fd.plot()
         ax[0].set_title("Sample trajectories")
         return fig, ax
@@ -209,3 +209,25 @@ class Gaussian(Covariance):
         x_y = _squared_norms(x, y)
 
         return self.variance * np.exp(-x_y / (2 * self.length_scale**2))
+
+
+class Exponential(Covariance):
+    """Exponential covariance function."""
+
+    _latex_formula = (r"K(x, y) = \sigma^2 \exp\left(\frac{||x - y||}{l}"
+                      r"\right)")
+
+    _parameters = [("variance", r"\sigma^2"),
+                   ("length_scale", r"l")]
+
+    def __init__(self, *, variance: float = 1., length_scale: float = 1.):
+        self.variance = variance
+        self.length_scale = length_scale
+
+    def __call__(self, x, y):
+        x = _transform_to_2d(x)
+        y = _transform_to_2d(y)
+
+        x_y = _squared_norms(x, y)
+
+        return self.variance * np.exp(-np.sqrt(x_y) / (self.length_scale))

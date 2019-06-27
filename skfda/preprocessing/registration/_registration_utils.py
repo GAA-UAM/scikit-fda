@@ -8,6 +8,8 @@ import numpy as np
 import scipy.integrate
 from scipy.interpolate import PchipInterpolator
 
+from ...utils import constants
+
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"
 
@@ -150,7 +152,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
             eval_points = registered_fdata.sample_points[0]
 
         except AttributeError:
-            nfine = max(registered_fdata.basis.nbasis * 10 + 1, 201)
+            nfine = max(registered_fdata.basis.nbasis * 10 + 1,
+                        constants.N_POINTS_COARSE_MESH)
             domain_range = registered_fdata.domain_range[0]
             eval_points = np.linspace(*domain_range, nfine)
     else:

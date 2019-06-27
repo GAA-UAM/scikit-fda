@@ -1,5 +1,5 @@
 import unittest
-from skfda._utils import _check_estimator
+from skfda.utils import _check_estimator
 import skfda
 import skfda.preprocessing.smoothing.kernel_smoothers as kernel_smoothers
 import skfda.preprocessing.smoothing.validation as validation

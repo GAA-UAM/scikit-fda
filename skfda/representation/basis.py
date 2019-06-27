@@ -18,14 +18,11 @@ from scipy.special import binom
 
 from . import grid
 from . import FData
-from .._utils import _list_of_arrays
+from ..utils import _list_of_arrays, constants
 import pandas.api.extensions
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
-
-MIN_EVAL_SAMPLES = 201
-
 
 # aux functions
 def _polypow(p, n=2):
@@ -1943,8 +1940,9 @@ class FDataBasis(FData):
         domain_range = self.domain_range[0]
 
         if eval_points is None:  # Grid to discretize the function
-            nfine = max(self.nbasis * 10 + 1, 201)
-            eval_points = np.linspace(*domain_range, nfine)
+            nfine = max(self.nbasis * constants.BASIS_MIN_FACTOR + 1,
+                        constants.N_POINTS_COARSE_MESH)
+            eval_points = numpy.linspace(*domain_range, nfine)
         else:
             eval_points = np.asarray(eval_points)
 
@@ -2125,8 +2123,9 @@ class FDataBasis(FData):
             raise NotImplementedError
 
         if eval_points is None:
-            npoints = max(501, 10 * self.nbasis)
-            eval_points = np.linspace(*self.domain_range[0], npoints)
+            npoints = max(constants.N_POINTS_FINE_MESH,
+                          constants.BASIS_MIN_FACTOR * self.nbasis + 1)
+            eval_points = numpy.linspace(*self.domain_range[0], npoints)
 
         return grid.FDataGrid(self.evaluate(eval_points, keepdims=False),
                               sample_points=eval_points,
@@ -2204,8 +2203,9 @@ class FDataBasis(FData):
                 raise ValueError("The functions domains are different.")
 
             basisobj = self.basis.basis_of_product(other.basis)
-            neval = max(10 * max(self.nbasis, other.nbasis) + 1,
-                        MIN_EVAL_SAMPLES)
+            neval = max(constants.BASIS_MIN_FACTOR
+                        * max(self.nbasis, other.nbasis) + 1,
+                        constants.N_POINTS_COARSE_MESH)
             (left, right) = self.domain_range[0]
             evalarg = np.linspace(left, right, neval)
 

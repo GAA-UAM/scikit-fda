@@ -3,6 +3,8 @@
 import numpy as np
 import functools
 import types
+import matplotlib.backends.backend_svg
+import io
 
 
 def _list_of_arrays(original_array):
@@ -136,3 +138,13 @@ def _check_estimator(estimator):
     instance = estimator()
     check_get_params_invariance(name, instance)
     check_set_params(name, instance)
+
+
+def _figure_to_svg(figure):
+    old_canvas = figure.canvas
+    matplotlib.backends.backend_svg.FigureCanvas(figure)
+    output = io.BytesIO()
+    figure.savefig(output, format='svg')
+    figure.set_canvas(old_canvas)
+    data = output.getvalue()
+    return data.decode('utf-8')

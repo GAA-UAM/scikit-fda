@@ -4,7 +4,7 @@ Defines the abstract class that should be implemented by the funtional data
 objects of the package and contains some commons methods.
 """
 
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractproperty
 
 import numpy as np
 
@@ -42,6 +42,29 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         self.dataset_label = dataset_label
         self.axes_labels = axes_labels
         self.keepdims = keepdims
+
+    @property
+    def axes_labels(self):
+        """Return the list of axes labels"""
+        return self._axes_labels
+
+    @axes_labels.setter
+    def axes_labels(self, labels):
+        """Sets the list of labels"""
+
+        if labels is not None:
+
+            labels = np.asarray(labels)
+            if len(labels) > (self.ndim_domain + self.ndim_image):
+                raise ValueError("There must be a label for each of the "
+                                  "dimensions of the domain and the image.")
+            if len(labels) < (self.ndim_domain + self.ndim_image):
+                diff = (self.ndim_domain + self.ndim_image) - len(labels)
+                labels = np.concatenate((labels, diff*[None]))
+
+        self._axes_labels = labels
+
+
 
     @property
     @abstractmethod
@@ -85,6 +108,18 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         """
         return self.ndim_image
+
+    @property
+    @abstractmethod
+    def coordinates(self):
+        r"""Return a component of the FDataGrid.
+
+        If the functional object contains multivariate samples
+        :math:`f: \mathbb{R}^n \rightarrow \mathbb{R}^d`, this method returns
+        an iterator of the vector :math:`f = (f_1, ..., f_d)`.
+
+        """
+        pass
 
     @property
     def extrapolation(self):
@@ -645,6 +680,58 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         return fig, ax
 
+    def _get_labels_coordinates(self, key):
+        """Return the labels of a function when it is indexed by its components.
+
+        Args:
+            key (int, tuple, slice): Key used to index the coordinates.
+
+        Returns:
+            (list): labels of the object fd.coordinates[key.
+
+        """
+        if self.axes_labels is None:
+            labels = None
+        else:
+
+            labels = self.axes_labels[:self.ndim_domain].tolist()
+            image_label = np.atleast_1d(self.axes_labels[self.ndim_domain:][key])
+            labels.extend(image_label.tolist())
+
+
+        return labels
+
+    def _join_labels_coordinates(self, *others):
+        """Return the labels of the concatenation as new coordinates of multiple
+        functional objects.
+
+        Args:
+            others (:obj:`FData`) Objects to be concatenated.
+
+        Returns:
+            (list): labels of the object
+            self.concatenate(*others, as_coordinates=True).
+
+        """
+        # Labels should be None or a list of length self.ndim_domain +
+        # self.ndim_image.
+
+        if self.axes_labels is None:
+            labels = (self.ndim_domain + self.ndim_image) * [None]
+        else:
+            labels = self.axes_labels.tolist()
+
+        for other in others:
+            if other.axes_labels is None:
+                labels.extend(other.ndim_image * [None])
+            else:
+                labels.extend(list(other.axes_labels[self.ndim_domain:]))
+
+        if all(label is None for label in labels):
+            labels = None
+
+        return labels
+
     def set_labels(self, fig=None, ax=None, patches=None):
         """Set labels if any.
 
@@ -677,13 +764,18 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         if self.axes_labels is not None:
             if ax[0].name == '3d':
                 for i in range(self.ndim_image):
-                    ax[i].set_xlabel(self.axes_labels[0])
-                    ax[i].set_ylabel(self.axes_labels[1])
-                    ax[i].set_zlabel(self.axes_labels[i + 2])
+                    if self.axes_labels[0] is not None:
+                        ax[i].set_xlabel(self.axes_labels[0])
+                    if self.axes_labels[1] is not None:
+                        ax[i].set_ylabel(self.axes_labels[1])
+                    if self.axes_labels[i+2] is not None:
+                        ax[i].set_zlabel(self.axes_labels[i + 2])
             else:
                 for i in range(self.ndim_image):
-                    ax[i].set_xlabel(self.axes_labels[0])
-                    ax[i].set_ylabel(self.axes_labels[i + 1])
+                    if self.axes_labels[0] is not None:
+                        ax[i].set_xlabel(self.axes_labels[0])
+                    if self.axes_labels[i + 1] is not None:
+                        ax[i].set_ylabel(self.axes_labels[i + 1])
 
     def generic_plotting_checks(self, fig=None, ax=None, nrows=None,
                                  ncols=None):
@@ -991,20 +1083,23 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         pass
 
     @abstractmethod
-    def concatenate(self, other):
+    def concatenate(self, *others, as_coordinates=False):
         """Join samples from a similar FData object.
 
         Joins samples from another FData object if it has the same
         dimensions and has compatible representations.
 
         Args:
-            other (:class:`FData`): another FData object.
+            others (:class:`FData`): other FData objects.
+            as_coordinates (boolean, optional):  If False concatenates as
+                new samples, else, concatenates the other functions as
+                new components of the image. Defaults to False.
 
         Returns:
             :class:`FData`: FData object with the samples from the two
             original objects.
-        """
 
+        """
         pass
 
     @abstractmethod

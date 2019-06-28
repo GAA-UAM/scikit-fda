@@ -1,8 +1,10 @@
+import abc
 import numbers
 
-import numpy as np
-import abc
 import matplotlib
+
+import numpy as np
+import sklearn.gaussian_process.kernels as sklearn_kern
 
 from .._utils import _figure_to_svg
 
@@ -124,6 +126,11 @@ class Covariance(abc.ABC):
 
         return html
 
+    def to_sklearn(self):
+        """Convert it to a sklearn kernel, if there is one"""
+        raise NotImplementedError(f"{type(self).__name__} covariance not "
+                                  f"implemented in scikit-learn")
+
 
 class Brownian(Covariance):
     """Brownian covariance function."""
@@ -134,7 +141,7 @@ class Brownian(Covariance):
     _parameters = [("variance", r"\sigma^2"),
                    ("origin", r"\mathcal{O}")]
 
-    def __init__(self, *, variance: float = 1., origin: float = 0.):
+    def __init__(self, *, variance: float=1., origin: float=0.):
         self.variance = variance
         self.origin = origin
 
@@ -153,7 +160,7 @@ class Linear(Covariance):
     _parameters = [("variance", r"\sigma^2"),
                    ("intercept", r"c")]
 
-    def __init__(self, *, variance: float = 1., intercept: float = 0.):
+    def __init__(self, *, variance: float=1., intercept: float=0.):
         self.variance = variance
         self.intercept = intercept
 
@@ -162,6 +169,11 @@ class Linear(Covariance):
         y = _transform_to_2d(y)
 
         return self.variance * (x @ y.T + self.intercept)
+
+    def to_sklearn(self):
+        """Convert it to a sklearn kernel, if there is one"""
+        return (self.variance *
+                (sklearn_kern.DotProduct(0) + self.intercept))
 
 
 class Polynomial(Covariance):
@@ -174,8 +186,8 @@ class Polynomial(Covariance):
                    ("slope", r"\alpha"),
                    ("degree", r"d")]
 
-    def __init__(self, *, variance: float = 1., intercept: float = 0.,
-                 slope: float = 1., degree: float = 2.):
+    def __init__(self, *, variance: float=1., intercept: float=0.,
+                 slope: float=1., degree: float=2.):
         self.variance = variance
         self.intercept = intercept
         self.slope = slope
@@ -186,7 +198,14 @@ class Polynomial(Covariance):
         y = _transform_to_2d(y)
 
         return self.variance * (self.slope * x @ y.T
-                                + self.intercept)**self.degree
+                                + self.intercept) ** self.degree
+
+    def to_sklearn(self):
+        """Convert it to a sklearn kernel, if there is one"""
+        return (self.variance *
+                (self.slope *
+                 sklearn_kern.DotProduct(0) + + self.intercept)
+                ** self.degree)
 
 
 class Gaussian(Covariance):
@@ -198,7 +217,7 @@ class Gaussian(Covariance):
     _parameters = [("variance", r"\sigma^2"),
                    ("length_scale", r"l")]
 
-    def __init__(self, *, variance: float = 1., length_scale: float = 1.):
+    def __init__(self, *, variance: float=1., length_scale: float=1.):
         self.variance = variance
         self.length_scale = length_scale
 
@@ -208,7 +227,12 @@ class Gaussian(Covariance):
 
         x_y = _squared_norms(x, y)
 
-        return self.variance * np.exp(-x_y / (2 * self.length_scale**2))
+        return self.variance * np.exp(-x_y / (2 * self.length_scale ** 2))
+
+    def to_sklearn(self):
+        """Convert it to a sklearn kernel, if there is one"""
+        return (self.variance *
+                sklearn_kern.RBF(length_scale=self.length_scale))
 
 
 class Exponential(Covariance):
@@ -220,7 +244,7 @@ class Exponential(Covariance):
     _parameters = [("variance", r"\sigma^2"),
                    ("length_scale", r"l")]
 
-    def __init__(self, *, variance: float = 1., length_scale: float = 1.):
+    def __init__(self, *, variance: float=1., length_scale: float=1.):
         self.variance = variance
         self.length_scale = length_scale
 
@@ -231,3 +255,8 @@ class Exponential(Covariance):
         x_y = _squared_norms(x, y)
 
         return self.variance * np.exp(-np.sqrt(x_y) / (self.length_scale))
+
+    def to_sklearn(self):
+        """Convert it to a sklearn kernel, if there is one"""
+        return (self.variance *
+                sklearn_kern.Matern(length_scale=self.length_scale, nu=0.5))

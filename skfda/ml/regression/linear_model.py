@@ -3,6 +3,8 @@ from skfda.representation.basis import FDataBasis, Constant, Basis, FData
 
 import numpy as np
 
+from sklearn.utils.validation import check_is_fitted
+
 
 class LinearScalarRegression(BaseEstimator, RegressorMixin):
 
@@ -46,6 +48,7 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         return self
 
     def predict(self, X):
+        check_is_fitted(self, "beta_")
         return [sum(self.beta[i].inner_product(X[i][j])[0, 0] for i in
                     range(len(self.beta))) for j in range(X[0].nsamples)]
 

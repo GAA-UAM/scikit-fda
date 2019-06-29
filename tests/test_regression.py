@@ -24,7 +24,7 @@ class TestLinearScalarRegression(unittest.TestCase):
 
         scalar = LinearScalarRegression([beta_basis])
         scalar.fit([x_fd], y)
-        np.testing.assert_array_almost_equal(scalar.beta[0].coefficients,
+        np.testing.assert_array_almost_equal(scalar.beta_[0].coefficients,
                                              beta_fd.coefficients)
 
     def test_regression_predict_single_explanatory(self):
@@ -144,8 +144,8 @@ class TestLinearScalarRegression(unittest.TestCase):
         weights = [1 for _ in range(8)]
         beta = Monomial(nbasis=7)
 
-        scalar = LinearScalarRegression([beta], weights)
-        np.testing.assert_raises(ValueError, scalar.fit, [x_fd], y)
+        scalar = LinearScalarRegression([beta])
+        np.testing.assert_raises(ValueError, scalar.fit, [x_fd], y, weights)
 
     def test_error_weights_negative(self):
         """ Test that none of the weights are negative. """
@@ -155,8 +155,8 @@ class TestLinearScalarRegression(unittest.TestCase):
         weights = [-1 for _ in range(7)]
         beta = Monomial(nbasis=7)
 
-        scalar = LinearScalarRegression([beta], weights)
-        np.testing.assert_raises(ValueError, scalar.fit, [x_fd], y)
+        scalar = LinearScalarRegression([beta])
+        np.testing.assert_raises(ValueError, scalar.fit, [x_fd], y, weights)
 
 
 if __name__ == '__main__':

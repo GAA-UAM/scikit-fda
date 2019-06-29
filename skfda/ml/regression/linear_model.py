@@ -1,5 +1,3 @@
-from sklearn.metrics import mean_squared_error
-
 from skfda.representation.basis import *
 from skfda.misc._lfd import LinearDifferentialOperator as Lfd
 
@@ -165,13 +163,12 @@ class LinearFunctionalRegression(BaseEstimator, RegressorMixin):
         return self.fit(X, y).predict(X)
 
     def _argcheck(self, y, x):
-        if all(not isinstance(i, FDataBasis) for i in x):
-            domain_range = y.domain_range
-        else:
-            domain_range = ([i for i in x if isinstance(i, FDataBasis)]
-                            [0].domain_range)
+        """Do some checks to types and shapes"""
+        if not isinstance(y, FData):
+            raise ValueError("The explanined variable is not an FData objetc")
 
-        ylen = y.nsamples
+        domain_range = y.domain_range
+
         xlen = len(x)
         blen = len(self.beta)
 
@@ -181,10 +178,10 @@ class LinearFunctionalRegression(BaseEstimator, RegressorMixin):
 
         for j in range(0, xlen):
             if isinstance(x[j], list):
-                xjcoefs = np.array(x[j]).reshape((-1, 1))
+                xjcoefs = np.asarray(x[j]).reshape((-1, 1))
                 x[j] = FDataBasis(Constant(domain_range), xjcoefs)
 
-        if any(ylen != xfd.nsamples for xfd in x):
+        if any(y.nsamples != xfd.nsamples for xfd in x):
             raise ValueError("Dependent and independent variables should "
                              "have the same number of samples")
 
@@ -192,9 +189,9 @@ class LinearFunctionalRegression(BaseEstimator, RegressorMixin):
             raise ValueError("Betas should be a list of Basis.")
 
         if self.weights is None:
-            self.weights = [1 for _ in range(ylen)]
+            self.weights = [1 for _ in range(y.nsamples)]
 
-        if len(self.weights) != ylen:
+        if len(self.weights) != y.nsamples:
             raise ValueError("The number of weights should be equal to the "
                              "independent samples.")
 

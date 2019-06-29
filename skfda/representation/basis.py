@@ -1537,6 +1537,31 @@ class FDataBasis(FData):
             ...)
 
     """
+    class _CoordinateIterator:
+        """Internal class to iterate through the image coordinates.
+
+        Dummy object. Should be change to support multidimensional objects.
+
+        """
+        def __init__(self, fdatabasis):
+            """Create an iterator through the image coordinates."""
+            self._fdatabasis = fdatabasis
+
+        def __iter__(self):
+            """Return an iterator through the image coordinates."""
+            yield self._fdatabasis.copy()
+
+        def __getitem__(self, key):
+            """Get a specific coordinate."""
+
+            if key != 0:
+                return NotImplemented
+
+            return self._fdatabasis.copy()
+
+        def __len__(self):
+            """Return the number of coordinates."""
+            return self._fdatabasis.ndim_image
 
     def __init__(self, basis, coefficients, *, dataset_label=None,
                  axes_labels=None, extrapolation=None, keepdims=False):
@@ -1555,11 +1580,6 @@ class FDataBasis(FData):
                              "elements of the basis.")
         self.basis = basis
         self.coefficients = coefficients
-
-        #self.dataset_label = dataset_label
-        #self.axes_labels = axes_labels
-        #self.extrapolation = extrapolation
-        #self.keepdims = keepdims
 
         super().__init__(extrapolation, dataset_label, axes_labels, keepdims)
 
@@ -1797,6 +1817,23 @@ class FDataBasis(FData):
 
         # Only image dimension equal to 1 is supported
         return 1
+
+    @property
+    def coordinates(self):
+        r"""Return a component of the FDataBasis.
+
+        If the functional object contains samples
+        :math:`f: \mathbb{R}^n \rightarrow \mathbb{R}^d`, this object allows
+        a component of the vector :math:`f = (f_1, ..., f_d)`.
+
+
+        Todo:
+            By the moment, only unidimensional objects are supported in basis
+            form.
+
+        """
+
+        return FDataBasis._CoordinateIterator(self)
 
     @property
     def nbasis(self):
@@ -2284,11 +2321,16 @@ class FDataBasis(FData):
 
     def __repr__(self):
         """Representation of FDataBasis object."""
+        if self.axes_labels is None:
+            axes_labels = None
+        else:
+            axes_labels = self.axes_labels.tolist()
+
         return (f"{self.__class__.__name__}("
                 f"\nbasis={self.basis},"
                 f"\ncoefficients={self.coefficients},"
                 f"\ndataset_label={self.dataset_label},"
-                f"\naxes_labels={self.axes_labels},"
+                f"\naxes_labels={axes_labels},"
                 f"\nextrapolation={self.extrapolation},"
                 f"\nkeepdims={self.keepdims})").replace('\n', '\n    ')
 
@@ -2305,26 +2347,40 @@ class FDataBasis(FData):
         return (self.basis == other.basis
                 and np.all(self.coefficients == other.coefficients))
 
-    def concatenate(self, other):
+    def concatenate(self, *others, as_coordinates=False):
         """Join samples from a similar FDataBasis object.
 
         Joins samples from another FDataBasis object if they have the same
         basis.
 
         Args:
-            other (:class:`FDataBasis`): another FDataBasis object.
+            others (:class:`FDataBasis`): Objects to be concatenated.
+            as_coordinates (boolean, optional):  If False concatenates as
+                new samples, else, concatenates the other functions as
+                new components of the image. Defaults to False.
 
         Returns:
-            :class:`FDataBasis`: FDataBasis object with the samples from the two
+            :class:`FDataBasis`: FDataBasis object with the samples from the
             original objects.
+
+        Todo:
+            By the moment, only unidimensional objects are supported in basis
+            representation.
         """
 
-        if other.basis != self.basis:
-            raise ValueError("The objects should have the same basis.")
+        # TODO: Change to support multivariate functions in basis representation
+        if as_coordinates:
+            return NotImplemented
 
-        return self.copy(coefficients=np.concatenate((self.coefficients,
-                                                         other.coefficients),
-                                                        axis=0))
+        for other in others:
+            if other.basis != self.basis:
+                raise ValueError("The objects should have the same basis.")
+
+        data = [self.coefficients] + [other.coefficients for other in others]
+
+
+        return self.copy(coefficients=np.concatenate(data, axis=0))
+
 
     def compose(self, fd, *, eval_points=None, **kwargs):
         """Composition of functions.

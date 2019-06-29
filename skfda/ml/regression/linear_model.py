@@ -6,8 +6,7 @@ import numpy as np
 
 class LinearScalarRegression(BaseEstimator, RegressorMixin):
 
-    def __init__(self, beta_basis, weights=None):
-        self.beta_ = None
+    def __init__(self, beta_basis):
         self.beta_basis = beta_basis
 
     def fit(self, X, y=None, sample_weight=None):
@@ -50,7 +49,7 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         return [sum(self.beta[i].inner_product(X[i][j])[0, 0] for i in
                     range(len(self.beta))) for j in range(X[0].nsamples)]
 
-    def _argcheck(self, y, x, sample_weight):
+    def _argcheck(self, y, x, weights = None):
         """Do some checks to types and shapes"""
         if all(not isinstance(i, FData) for i in x):
             raise ValueError("All the dependent variable are scalar.")
@@ -60,7 +59,7 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
 
         ylen = len(y)
         xlen = len(x)
-        blen = len(self.beta)
+        blen = len(self.beta_basis)
         domain_range = ([i for i in x if isinstance(i, FData)][0]
                         .domain_range)
 
@@ -77,17 +76,17 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
             raise ValueError("The number of samples on independent and "
                              "dependent variables should be the same")
 
-        if any(not isinstance(b, Basis) for b in self.beta):
+        if any(not isinstance(b, Basis) for b in self.beta_basis):
             raise ValueError("Betas should be a list of Basis.")
 
-        if self.weights is None:
-            self.weights = [1 for _ in range(ylen)]
+        if weights is None:
+            weights = [1 for _ in range(ylen)]
 
-        if len(self.weights) != ylen:
+        if len(weights) != ylen:
             raise ValueError("The number of weights should be equal to the "
                              "independent samples.")
 
-        if np.any(np.array(self.weights) < 0):
+        if np.any(np.array(weights) < 0):
             raise ValueError("The weights should be non negative values")
 
-        return y, x, sample_weight
+        return y, x, weights

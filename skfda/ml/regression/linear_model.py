@@ -1,13 +1,12 @@
-from skfda.representation.basis import *
 from skfda.misc._lfd import LinearDifferentialOperator as Lfd
 
 from sklearn.base import BaseEstimator, RegressorMixin
-
-from sklearn.utils.validation import check_is_fitted
-
 from skfda.representation.basis import FDataBasis, Constant, Basis, FData
 
 import numpy as np
+
+from sklearn.utils.validation import check_is_fitted
+
 
 class LinearFunctionalRegression(BaseEstimator, RegressorMixin):
 
@@ -21,10 +20,8 @@ class LinearFunctionalRegression(BaseEstimator, RegressorMixin):
         rangeval = y.domain_range[0]
         onesfd = FDataBasis(Constant(rangeval), [1])
 
-        betaindex = np.concatenate((np.array([0]), np.add.accumulate([i.nbasis for i in self.beta])))
-        betacoefindex = [list(range(betaindex[i-1], betaindex[i])) for i in range(1, len(betaindex))]
-
-        ncoef = sum(self.beta[i].nbasis for i in range(len(self.beta)))
+        ncoef = sum(self.beta_basis[i].nbasis for i in
+                    range(len(self.beta_basis)))
 
         Cmat = np.zeros((ncoef, ncoef))
         Dmat = np.zeros((ncoef, 1))
@@ -32,39 +29,39 @@ class LinearFunctionalRegression(BaseEstimator, RegressorMixin):
         mj2 = 0
         for j in range(len(X)):
             mj1 = mj2
-            mj2 = mj2 + self.beta[j].nbasis
-            xyfdj = X[j].times(self.weights).times(y)
+            mj2 = mj2 + self.beta_basis[j].nbasis
+            xyfdj = X[j].times(weights).times(y)
             wtfdj = sum(xyfdj)
-            Dmat[mj1:mj2] = inprod(self.beta[j].to_basis(), onesfd,
-                                   Lfd(0), Lfd(0), rangeval, wtfdj)
+            Dmat[mj1:mj2] = self.beta_basis[j].to_basis().inner_product(onesfd,
+                                   Lfd(0), Lfd(0), wtfdj)
 
             mk2 = 0
             for k in range(0, j + 1):
                 mk1 = mk2
-                mk2 = mk2 + self.beta[k].nbasis
-                xxfdjk = X[j].times(self.weights).times(X[k])
+                mk2 = mk2 + self.beta_basis[k].nbasis
+                xxfdjk = X[j].times(weights).times(X[k])
                 wtfdjk = sum(xxfdjk)
-                Cmatjk = inprod(self.beta[j].to_basis(), self.beta[k].to_basis(),
-                                Lfd(0), Lfd(0), rangeval, wtfdjk)
+                Cmatjk = self.beta_basis[j].to_basis().inner_product(
+                    self.beta_basis[k].to_basis(), Lfd(0), Lfd(0), wtfdjk)
 
                 Cmat[mj1: mj2, mk1: mk2] = Cmatjk
                 Cmat[mk1: mk2, mj1: mj2] = np.transpose(Cmatjk)
 
         Cmat = (Cmat + np.transpose(Cmat)) / 2
         Cmatinv = np.linalg.inv(Cmat)
-        betacoef = np.transpose(np.transpose(Cmatinv) @ Dmat)[0]
+        betacoefs = np.transpose(np.transpose(Cmatinv) @ Dmat)[0]
 
-        mj2 = 0
-        for j in range(len(self.beta)):
-            mj1 = mj2
-            mj2 = mj2 + self.beta[j].nbasis
-            coefj = betacoef[mj1: mj2]
-            self.beta[j] = FDataBasis(self.beta[j].copy(), coefj)
+        idx = 0
+        for j in range(0, len(self.beta_basis)):
+            self.beta_basis[j] = FDataBasis(
+                self.beta_basis[j],
+                betacoefs[idx:idx+self.beta_basis[j].nbasis].T
+            )
+            idx = idx + self.beta_basis[j].nbasis
 
-    # TODO rehacer este predict
-    def predict(self, X):
-        return [sum(self.beta[i].inner_product(X[i][j])[0, 0] for i in
-                    range(len(self.beta))) for j in range(X[0].nsamples)]
+        self.beta_ = self.beta_basis
+        return self
+
 
     def _argcheck(self, y, x, weights = None):
         """Do some checks to types and shapes"""

@@ -46,7 +46,8 @@ class Evaluator(ABC):
 
     The evaluator is called internally by :func:`evaluate`.
 
-    Should implement the methods :func:`evaluate` and :func:`evaluate_composed`.
+    Should implement the methods :func:`evaluate` and
+    :func:`evaluate_composed`.
 
 
     """
@@ -54,8 +55,8 @@ class Evaluator(ABC):
     def evaluate(self, eval_points, *, derivative=0):
         """Evaluation method.
 
-        Evaluates the samples at the same evaluation points. The evaluation call
-        will receive a 2-d array with the evaluation points.
+        Evaluates the samples at the same evaluation points. The evaluation
+        call will receive a 2-d array with the evaluation points.
 
         This method is called internally by :meth:`evaluate` when the argument
         `aligned_evaluation` is True.
@@ -81,7 +82,8 @@ class Evaluator(ABC):
         """Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
-        call will receive a 3-d array with the evaluation points for each sample.
+        call will receive a 3-d array with the evaluation points for each
+        sample.
 
         This method is called internally by :meth:`evaluate` when the argument
         `aligned_evaluation` is False.
@@ -123,8 +125,8 @@ class GenericEvaluator(Evaluator):
     def evaluate(self, eval_points, *, derivative=0):
         """Evaluation method.
 
-        Evaluates the samples at the same evaluation points. The evaluation call
-        will receive a 2-d array with the evaluation points.
+        Evaluates the samples at the same evaluation points. The evaluation
+        call will receive a 2-d array with the evaluation points.
 
         This method is called internally by :meth:`evaluate` when the argument
         `aligned_evaluation` is True.
@@ -150,7 +152,8 @@ class GenericEvaluator(Evaluator):
         """Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
-        call will receive a 3-d array with the evaluation points for each sample.
+        call will receive a 3-d array with the evaluation points for each
+        sample.
 
         This method is called internally by :meth:`evaluate` when the argument
         `aligned_evaluation` is False.

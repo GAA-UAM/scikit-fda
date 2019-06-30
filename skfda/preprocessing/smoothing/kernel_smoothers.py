@@ -70,7 +70,7 @@ class _LinearKernelSmoother(abc.ABC, BaseEstimator, TransformerMixin):
     def _more_tags(self):
         return {
             'X_types': []
-            }
+        }
 
     def fit(self, X: FDataGrid, y=None):
         """Compute the hat matrix for the desired output points.
@@ -91,13 +91,13 @@ class _LinearKernelSmoother(abc.ABC, BaseEstimator, TransformerMixin):
                                else self.input_points_)
 
         self.hat_matrix_ = self._hat_matrix_function(
-                input_points=self.input_points_,
-                output_points=self.output_points_,
-                smoothing_parameter=self.smoothing_parameter,
-                kernel=self.kernel,
-                weights=self.weights,
-                _cv=self._cv
-            )
+            input_points=self.input_points_,
+            output_points=self.output_points_,
+            smoothing_parameter=self.smoothing_parameter,
+            kernel=self.kernel,
+            weights=self.weights,
+            _cv=self._cv
+        )
 
         return self
 

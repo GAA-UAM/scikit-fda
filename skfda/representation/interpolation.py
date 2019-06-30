@@ -2,7 +2,6 @@
 Module to interpolate functional data objects.
 """
 
-from abc import ABC, abstractmethod
 
 import numpy as np
 
@@ -10,7 +9,6 @@ import numpy as np
 from scipy.interpolate import (PchipInterpolator, UnivariateSpline,
                                RectBivariateSpline, RegularGridInterpolator)
 
-from .._utils import _list_of_arrays
 from .evaluator import Evaluator, EvaluatorConstructor
 
 
@@ -57,8 +55,9 @@ class SplineInterpolator(EvaluatorConstructor):
                 surfaces. If 0 the residuals of the interpolation will be 0.
                 Defaults 0.
             monotone (boolean, optional): Performs monotone interpolation in
-                curves using a PCHIP interpolator. Only valid for curves (domain
-                dimension equal to 1) and interpolation order equal to 1 or 3.
+                curves using a PCHIP interpolator. Only valid for curves
+                (domain dimension equal to 1) and interpolation order equal
+                to 1 or 3.
                 Defaults false.
 
         """
@@ -157,8 +156,9 @@ class SplineInterpolatorEvaluator(Evaluator):
                 surfaces. If 0 the residuals of the interpolation will be 0.
                 Defaults 0.
             monotone (boolean, optional): Performs monotone interpolation in
-                curves using a PCHIP interpolator. Only valid for curves (domain
-                dimension equal to 1) and interpolation order equal to 1 or 3.
+                curves using a PCHIP interpolator. Only valid for curves
+                (domain dimension equal to 1) and interpolation order equal to
+                1 or 3.
                 Defaults false.
 
         """
@@ -196,11 +196,13 @@ class SplineInterpolatorEvaluator(Evaluator):
         # be deleted
         self._fdatagrid = None
 
-    def _construct_spline_1_m(self, sample_points, data_matrix, k, s, monotone):
+    def _construct_spline_1_m(self, sample_points, data_matrix,
+                              k, s, monotone):
         r"""Construct the matrix of interpolators for curves.
 
         Constructs the matrix of interpolators for objects with domain
-        dimension = 1. Calling internally during the creationg of the evaluator.
+        dimension = 1. Calling internally during the creationg of the
+        evaluator.
 
         Uses internally the scipy interpolator UnivariateSpline or
         PchipInterpolator.
@@ -269,7 +271,8 @@ class SplineInterpolatorEvaluator(Evaluator):
         r"""Construct the matrix of interpolators for surfaces.
 
         Constructs the matrix of interpolators for objects with domain
-        dimension = 2. Calling internally during the creationg of the evaluator.
+        dimension = 2. Calling internally during the creationg of the
+        evaluator.
 
         Uses internally the scipy interpolator RectBivariateSpline.
 
@@ -306,7 +309,7 @@ class SplineInterpolatorEvaluator(Evaluator):
 
         def _process_derivative_2_m(derivative):
             if np.isscalar(derivative):
-                derivative = 2*[derivative]
+                derivative = 2 * [derivative]
             elif len(derivative) != 2:
                 raise ValueError("derivative should be a numeric value "
                                  "or a tuple of length 2 with (dx,dy).")
@@ -317,7 +320,7 @@ class SplineInterpolatorEvaluator(Evaluator):
         self._spline_evaluator = _spline_evaluator_2_m
         self._process_derivative = _process_derivative_2_m
 
-        # Matrix of splines
+        # Matrix of splines
         spline = np.empty((self._nsamples, self._ndim_image), dtype=object)
 
         for i in range(self._nsamples):
@@ -333,7 +336,8 @@ class SplineInterpolatorEvaluator(Evaluator):
         r"""Construct the matrix of interpolators.
 
         Constructs the matrix of interpolators for objects with domain
-        dimension > 2. Calling internally during the creationg of the evaluator.
+        dimension > 2. Calling internally during the creationg of the
+        evaluator.
 
         Only linear and nearest interpolators are available for objects with
         domain dimension >= 3. Uses internally the scipy interpolator
@@ -392,7 +396,8 @@ class SplineInterpolatorEvaluator(Evaluator):
         r"""Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
-        call will receive a 3-d array with the evaluation points for each sample.
+        call will receive a 3-d array with the evaluation points for
+        each sample.
 
         This method is called internally by :meth:`evaluate` when the argument
         `aligned_evaluation` is False.
@@ -416,7 +421,7 @@ class SplineInterpolatorEvaluator(Evaluator):
         """
         derivative = self._process_derivative(derivative)
 
-        # Constructs the evaluator for t_eval
+        # Constructs the evaluator for t_eval
         if self._ndim_image == 1:
             def evaluator(spl):
                 """Evaluator of object with image dimension equal to 1."""
@@ -439,7 +444,8 @@ class SplineInterpolatorEvaluator(Evaluator):
         """Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
-        call will receive a 3-d array with the evaluation points for each sample.
+        call will receive a 3-d array with the evaluation points for
+        each sample.
 
         This method is called internally by :meth:`evaluate` when the argument
         `aligned_evaluation` is False.

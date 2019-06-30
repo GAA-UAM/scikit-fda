@@ -145,14 +145,17 @@ def from_srsf(fdatagrid, initial=None, *, eval_points=None):
     return fdatagrid.copy(data_matrix=f_data_matrix, sample_points=eval_points)
 
 
-def _elastic_alignment_array(template_data, q_data, eval_points, lam, grid_dim):
+def _elastic_alignment_array(template_data, q_data,
+                             eval_points, lam, grid_dim):
     r"""Wrapper between the cython interface and python.
 
-    Selects the corresponding routine depending on the dimensions of the arrays.
+    Selects the corresponding routine depending on the dimensions of the
+    arrays.
 
     Args:
         template_data (numpy.ndarray): Array with the srsf of the template.
-        q_data (numpy.ndarray): Array with the srsf of the curves to be aligned.
+        q_data (numpy.ndarray): Array with the srsf of the curves
+                                to be aligned.
         eval_points (numpy.ndarray): Discretisation points of the functions.
         lam (float): Penalisation term.
         grid_dim (int): Dimension of the grid used in the alignment algorithm.
@@ -215,8 +218,8 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
     the local minimum of the sum of squares of elastic distances.
     See :func:`elastic_mean`.
 
-    In [SK16-4-3]_ are described extensively the algorithms employed and the SRSF
-    framework.
+    In [SK16-4-3]_ are described extensively the algorithms employed and
+    the SRSF framework.
 
     Args:
         fdatagrid (:class:`FDataGrid`): Functional data object to be aligned.
@@ -224,7 +227,8 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
             Can contain 1 sample to align all the curves to it or the same
             number of samples than the fdatagrid. By default it is used the
             elastic mean.
-        lam (float, optional): Controls the amount of elasticity. Defaults to 0.
+        lam (float, optional): Controls the amount of elasticity.
+            Defaults to 0.
         eval_points (array_like, optional): Set of points where the
             functions are evaluated, by default uses the sample points of the
             fdatagrid.
@@ -260,8 +264,8 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
         template = elastic_mean(fdatagrid, lam=lam, eval_points=eval_points,
                                 **kwargs)
 
-    elif ((template.nsamples != 1 and template.nsamples != fdatagrid.nsamples) or
-          template.ndim_domain != 1 or template.ndim_image != 1):
+    elif ((template.nsamples != 1 and template.nsamples != fdatagrid.nsamples)
+          or template.ndim_domain != 1 or template.ndim_image != 1):
 
         raise ValueError("The template should contain one sample to align all"
                          "the curves to the same function or the same number "
@@ -332,8 +336,8 @@ def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
     the local minimum of the sum of squares of elastic distances.
     See :func:`elastic_mean`.
 
-    In [SK16-4-2]_ are described extensively the algorithms employed and the SRSF
-    framework.
+    In [SK16-4-2]_ are described extensively the algorithms employed and
+    the SRSF framework.
 
     Args:
         fdatagrid (:class:`FDataGrid`): Functional data object to be aligned.
@@ -341,7 +345,8 @@ def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
             Can contain 1 sample to align all the curves to it or the same
             number of samples than the fdatagrid. By default it is used the
             elastic mean.
-        lam (float, optional): Controls the amount of elasticity. Defaults to 0.
+        lam (float, optional): Controls the amount of elasticity.
+            Defaults to 0.
         eval_points (array_like, optional): Set of points where the
             functions are evaluated, by default uses the sample points of the
             fdatagrid.
@@ -410,8 +415,8 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
         step_size (float): Step size :math:`\epsilon` used to update the mean.
             Default to 1.
         eval_points (array_like): Discretisation points of the warpings.
-        shooting (boolean): If true it is returned a tuple with the mean and the
-            shooting vectors, otherwise only the mean is returned.
+        shooting (boolean): If true it is returned a tuple with the mean and
+            the shooting vectors, otherwise only the mean is returned.
 
     Return:
         (:class:`FDataGrid`) Fdatagrid with the mean of the warpings. If
@@ -437,7 +442,7 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
 
         eval_points = _normalize_scale(eval_points)
         warping = FDataGrid(_normalize_scale(warping.data_matrix[..., 0]),
-                            sample_points=_normalize_scale(warping.sample_points[0]))
+                            _normalize_scale(warping.sample_points[0]))
 
     psi = to_srsf(warping, eval_points=eval_points).data_matrix[..., 0].T
     mu = to_srsf(warping.mean(), eval_points=eval_points).data_matrix[0]
@@ -477,7 +482,7 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
             break
 
         # Update of mu
-        mu *= np.cos(step_size*v_norm)
+        mu *= np.cos(step_size * v_norm)
         vmean += np.sin(step_size * v_norm) / v_norm
         mu += vmean.T
 
@@ -612,14 +617,15 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
         fdatagrid_normalized = fdatagrid_normalized.compose(gammas)
         srsf = to_srsf(fdatagrid_normalized).data_matrix[..., 0]
 
-        # Next iteration
+        # Next iteration
         mu_1 = srsf.mean(axis=0, out=mu_1)
 
         # Convergence criterion
         mu_norm = np.sqrt(scipy.integrate.simps(np.square(mu, out=mu_aux),
                                                 eval_points_normalized))
 
-        mu_diff = np.sqrt(scipy.integrate.simps(np.square(mu - mu_1, out=mu_aux),
+        mu_diff = np.sqrt(scipy.integrate.simps(np.square(mu - mu_1,
+                                                          out=mu_aux),
                                                 eval_points_normalized))
 
         if mu_diff / mu_norm < tol:
@@ -639,10 +645,11 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
         # Gamma mean in Hilbert Sphere
         mean_normalized = warping_mean(gammas, return_shooting=False, **kwargs)
 
-        gamma_mean = FDataGrid(_normalize_scale(mean_normalized.data_matrix[..., 0],
-                                                a=eval_points[0],
-                                                b=eval_points[-1]),
-                               sample_points=eval_points)
+        gamma_mean = FDataGrid(_normalize_scale(
+            mean_normalized.data_matrix[..., 0],
+            a=eval_points[0],
+            b=eval_points[-1]),
+            sample_points=eval_points)
 
         gamma_inverse = invert_warping(gamma_mean)
 

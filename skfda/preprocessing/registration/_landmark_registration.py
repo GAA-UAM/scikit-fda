@@ -7,7 +7,7 @@ import numpy as np
 
 from ... import FDataGrid
 from ...representation.interpolation import SplineInterpolator
-from ...utils import constants
+from ..._utils import constants
 
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"

@@ -31,7 +31,7 @@ from .representation import FData
 from .representation import FDataBasis
 from .representation import FDataGrid
 
-from . import representation, datasets, preprocessing, exploratory, math, _utils
+from . import representation, datasets, preprocessing, exploratory, misc, _utils
 
 import os as _os
 

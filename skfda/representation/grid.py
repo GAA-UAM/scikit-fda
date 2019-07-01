@@ -1024,8 +1024,9 @@ class FDataGrid(FData):
                 try:
                     eval_points = fd.sample_points[0]
                 except:
-                    eval_points = numpy.linspace(*fd.domain_range[0],
-                                                 constants.N_POINTS_COARSE_MESH)
+                    eval_points = np.linspace(*fd.domain_range[0],
+                                              constants.N_POINTS_COARSE_MESH)
+
 
             eval_points_transformation = fd(eval_points, keepdims=False)
             data_matrix = self(eval_points_transformation,

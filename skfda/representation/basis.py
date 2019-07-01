@@ -18,8 +18,9 @@ from scipy.special import binom
 
 from . import grid
 from . import FData
-from ..utils import _list_of_arrays, constants
+from .._utils import _list_of_arrays, constants
 import pandas.api.extensions
+
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -1940,9 +1941,11 @@ class FDataBasis(FData):
         domain_range = self.domain_range[0]
 
         if eval_points is None:  # Grid to discretize the function
+
             nfine = max(self.nbasis * constants.BASIS_MIN_FACTOR + 1,
                         constants.N_POINTS_COARSE_MESH)
-            eval_points = numpy.linspace(*domain_range, nfine)
+            eval_points = np.linspace(*domain_range, nfine)
+
         else:
             eval_points = np.asarray(eval_points)
 
@@ -2125,7 +2128,8 @@ class FDataBasis(FData):
         if eval_points is None:
             npoints = max(constants.N_POINTS_FINE_MESH,
                           constants.BASIS_MIN_FACTOR * self.nbasis + 1)
-            eval_points = numpy.linspace(*self.domain_range[0], npoints)
+            eval_points = np.linspace(*self.domain_range[0], npoints)
+
 
         return grid.FDataGrid(self.evaluate(eval_points, keepdims=False),
                               sample_points=eval_points,

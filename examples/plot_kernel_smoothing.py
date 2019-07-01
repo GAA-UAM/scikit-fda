@@ -40,38 +40,49 @@ fd[0:5].plot()
 param_values = np.linspace(start=2, stop=25, num=24)
 
 # Local linear regression kernel smoothing.
-llr = val.minimise(fd, param_values,
-                   smoothing_method=ks.local_linear_regression)
+llr = val.SmoothingParameterSearch(
+    ks.LocalLinearRegressionSmoother(), param_values)
+llr.fit(fd)
+llr_fd = llr.transform(fd)
+
 # Nadaraya-Watson kernel smoothing.
-nw = skfda.preprocessing.smoothing.validation.minimise(
-    fd, param_values, smoothing_method=ks.nw)
+nw = val.SmoothingParameterSearch(
+    ks.NadarayaWatsonSmoother(), param_values)
+nw.fit(fd)
+nw_fd = nw.transform(fd)
 
 # K-nearest neighbours kernel smoothing.
-knn = skfda.preprocessing.smoothing.validation.minimise(
-    fd, param_values, smoothing_method=ks.knn)
+knn = val.SmoothingParameterSearch(
+    ks.KNeighborsSmoother(), param_values)
+knn.fit(fd)
+knn_fd = knn.transform(fd)
 
-plt.plot(param_values, knn['scores'])
-plt.plot(param_values, llr['scores'])
-plt.plot(param_values, nw['scores'])
-
-ax = plt.gca()
-ax.set_xlabel('Smoothing method parameter')
-ax.set_ylabel('GCV score')
-ax.set_title('Scores through GCV for different smoothing methods')
-ax.legend(['k-nearest neighbours', 'local linear regression',
-           'Nadaraya-Watson'],
-          title='Smoothing method')
+plt.plot(param_values, knn.cv_results_['mean_test_score'],
+         label='k-nearest neighbors')
+plt.plot(param_values, llr.cv_results_['mean_test_score'],
+         label='local linear regression')
+plt.plot(param_values, nw.cv_results_['mean_test_score'],
+         label='Nadaraya-Watson')
+plt.legend()
 
 ###############################################################################
 # We can plot the smoothed curves corresponding to the 11th element of the data
 # set (this is a random choice) for the three different smoothing methods.
 
-fd[10].plot()
-knn['fdatagrid'][10].plot()
-llr['fdatagrid'][10].plot()
-nw['fdatagrid'][10].plot()
 ax = plt.gca()
-ax.legend(['original data', 'k-nearest neighbours',
+ax.set_xlabel('Smoothing method parameter')
+ax.set_ylabel('GCV score')
+ax.set_title('Scores through GCV for different smoothing methods')
+ax.legend(['k-nearest neighbors', 'local linear regression',
+           'Nadaraya-Watson'],
+          title='Smoothing method')
+
+fd[10].plot()
+knn_fd[10].plot()
+llr_fd[10].plot()
+nw_fd[10].plot()
+ax = plt.gca()
+ax.legend(['original data', 'k-nearest neighbors',
            'local linear regression',
            'Nadaraya-Watson'],
           title='Smoothing method')
@@ -85,7 +96,7 @@ fd[10].plot()
 # Smoothed
 plt.figure()
 fd[10].scatter(s=0.5)
-nw['fdatagrid'][10].plot(c='g')
+nw_fd[10].plot(c='g')
 
 ###############################################################################
 # Now, we can see the effects of a proper smoothing. We can plot the same 5
@@ -93,26 +104,20 @@ nw['fdatagrid'][10].plot(c='g')
 # the best choice of parameter.
 
 plt.figure(4)
-nw['fdatagrid'][0:5].plot()
+nw_fd[0:5].plot()
 
 ###############################################################################
 # We can also appreciate the effects of undersmoothing and oversmoothing in
 # the following plots.
 
-fd_us = skfda.FDataGrid(
-    ks.nw(fd.sample_points, h=2).dot(fd.data_matrix[10, ..., 0]),
-    fd.sample_points, fd.sample_range, fd.dataset_label,
-    fd.axes_labels)
-fd_os = skfda.FDataGrid(
-    ks.nw(fd.sample_points, h=15).dot(fd.data_matrix[10, ..., 0]),
-    fd.sample_points, fd.sample_range, fd.dataset_label,
-    fd.axes_labels)
+fd_us = ks.NadarayaWatsonSmoother(smoothing_parameter=2).fit_transform(fd[10])
+fd_os = ks.NadarayaWatsonSmoother(smoothing_parameter=15).fit_transform(fd[10])
 
 # Under-smoothed
 fd[10].scatter(s=0.5)
-fd_us.plot(c='sandybrown')
+fd_us.plot()
 
 # Over-smoothed
 plt.figure()
 fd[10].scatter(s=0.5)
-fd_os.plot(c='r')
+fd_os.plot()

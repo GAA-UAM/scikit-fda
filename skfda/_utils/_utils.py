@@ -1,6 +1,8 @@
 """Module with generic methods"""
 
 import numpy as np
+import functools
+import types
 
 
 def _list_of_arrays(original_array):
@@ -65,6 +67,7 @@ def _coordinate_list(axes):
 
     """
     return np.vstack(list(map(np.ravel, np.meshgrid(*axes, indexing='ij')))).T
+
 
 def parameter_aliases(**alias_assignments):
     """Allows using aliases for parameters"""

@@ -64,7 +64,7 @@ fd_align.plot()
 # In general these type of alignments are not possible, in the following
 # figure it is shown how it works with a real dataset.
 # The :func:`berkeley growth dataset<skfda.datasets.fetch_growth>`
-# contains the growth curves of a set childs, in this case will be used only the
+# contains the growth curves of a set children, in this case will be used only the
 # males. The growth curves will be resampled using cubic interpolation and derived
 # to obtain the velocity curves.
 #

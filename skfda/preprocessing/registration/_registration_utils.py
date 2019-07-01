@@ -97,8 +97,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.preprocessing.registration import (landmark_registration_warping,
-        ...                               mse_decomposition)
+        >>> from skfda.preprocessing.registration import (
+        ...      landmark_registration_warping, mse_decomposition)
 
 
         We will create and register data.
@@ -108,7 +108,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
         >>> landmarks = landmarks.squeeze()
         >>> warping = landmark_registration_warping(fd, landmarks)
         >>> fd_registered = fd.compose(warping)
-        >>> mse_amp, mse_pha, rsq, cr = mse_decomposition(fd, fd_registered, warping)
+        >>> mse_amp, mse_pha, rsq, cr = mse_decomposition(fd, fd_registered,
+        ...                                               warping)
 
         Mean square error produced by the amplitude variation.
 
@@ -139,8 +140,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
     if warping_function is not None and (warping_function.nsamples
                                          != original_fdata.nsamples):
-        raise ValueError(f"the registered curves and the warping functions must"
-                         f" have the same number of samples "
+        raise ValueError(f"the registered curves and the warping functions "
+                         f"must have the same number of samples "
                          f"({registered_fdata.nsamples})"
                          f"!=({warping_function.nsamples})")
 
@@ -186,12 +187,12 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
         covariate = np.inner(dh_fine_center.T, y_fine_sq_center.T)
         covariate = covariate.mean(axis=0)
         cr += np.divide(scipy.integrate.simps(covariate,
-                                                 eval_points),
-                           scipy.integrate.simps(eta_fine_sq,
-                                                 eval_points))
+                                              eval_points),
+                        scipy.integrate.simps(eta_fine_sq,
+                                              eval_points))
 
     # mse due to phase variation
-    mse_pha = scipy.integrate.simps(cr*eta_fine_sq - mu_fine_sq, eval_points)
+    mse_pha = scipy.integrate.simps(cr * eta_fine_sq - mu_fine_sq, eval_points)
 
     # mse due to amplitude variation
     # mse_amp = mse_total - mse_pha
@@ -216,9 +217,9 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 def invert_warping(fdatagrid, *, eval_points=None):
     r"""Compute the inverse of a diffeomorphism.
 
-    Let :math:`\gamma : [a,b] \\rightarrow [a,b]` be a function strictly
+    Let :math:`\gamma : [a,b] \rightarrow [a,b]` be a function strictly
     increasing, calculates the corresponding inverse
-    :math:`\gamma^{-1} : [a,b] \\rightarrow [a,b]` such that
+    :math:`\gamma^{-1} : [a,b] \rightarrow [a,b]` such that
     :math:`\gamma^{-1} \circ \gamma = \gamma \circ \gamma^{-1} = \gamma_{id}`.
 
     Uses a PCHIP interpolator to compute approximately the inverse.
@@ -242,7 +243,7 @@ def invert_warping(fdatagrid, *, eval_points=None):
         >>> from skfda import FDataGrid
         >>> from skfda.preprocessing.registration import invert_warping
 
-        We will construct the warping :math:`\gamma : [0,1] \\rightarrow [0,1]`
+        We will construct the warping :math:`\gamma : [0,1] \rightarrow [0,1]`
         wich maps t to t^3.
 
         >>> t = np.linspace(0, 1)
@@ -304,12 +305,12 @@ def _normalize_scale(t, a=0, b=1):
 
 
 def normalize_warping(warping, domain_range=None):
-    """Rescale a warping to normalize their domain.
+    r"""Rescale a warping to normalize their domain.
 
-    Given a set of warpings :math:`\\gamma_i:[a,b] \\rightarrow [a,b]` it is
+    Given a set of warpings :math:`\gamma_i:[a,b]\rightarrow  [a,b]` it is
     used an affine traslation to change the domain of the transformation to
-    other domain, :math:`\\hat \\gamma_i:[\\hat a,\\hat b] \\rightarrow
-    [\\hat a, \\hat b]`.
+    other domain, :math:`\tilde \gamma_i:[\tilde a,\tilde b] \rightarrow
+    [\tilde a, \tilde b]`.
 
     Args:
         warping (:class:`FDatagrid`): Set of warpings to rescale.

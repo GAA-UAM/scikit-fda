@@ -4,8 +4,6 @@ Defines methods to evaluate points outside the domain range.
 
 """
 
-from abc import ABC, abstractmethod
-
 from .evaluator import EvaluatorConstructor, Evaluator, GenericEvaluator
 
 import numpy as np
@@ -17,7 +15,8 @@ class PeriodicExtrapolation(EvaluatorConstructor):
     Examples:
 
         >>> from skfda.datasets import make_sinusoidal_process
-        >>> from skfda.representation.extrapolation import PeriodicExtrapolation
+        >>> from skfda.representation.extrapolation import (
+        ...     PeriodicExtrapolation)
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -36,7 +35,7 @@ class PeriodicExtrapolation(EvaluatorConstructor):
     """
 
     def evaluator(self, fdata):
-        """Returns the evaluator used by class:`FData`.
+        """Returns the evaluator used by :class:`FData`.
 
         Returns:
             (:class:`Evaluator`): Evaluator of the periodic extrapolation.
@@ -82,7 +81,8 @@ class BoundaryExtrapolation(EvaluatorConstructor):
     Examples:
 
         >>> from skfda.datasets import make_sinusoidal_process
-        >>> from skfda.representation.extrapolation import BoundaryExtrapolation
+        >>> from skfda.representation.extrapolation import (
+        ...     BoundaryExtrapolation)
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -101,7 +101,7 @@ class BoundaryExtrapolation(EvaluatorConstructor):
     """
 
     def evaluator(self, fdata):
-        """Returns the evaluator used by class:`FData`.
+        """Returns the evaluator used by :class:`FData`.
 
         Returns:
             (:class:`Evaluator`): Evaluator of the periodic boundary.
@@ -149,7 +149,8 @@ class ExceptionExtrapolation(EvaluatorConstructor):
     Examples:
 
         >>> from skfda.datasets import make_sinusoidal_process
-        >>> from skfda.representation.extrapolation import ExceptionExtrapolation
+        >>> from skfda.representation.extrapolation import (
+        ...     ExceptionExtrapolation)
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -173,7 +174,7 @@ class ExceptionExtrapolation(EvaluatorConstructor):
     """
 
     def evaluator(self, fdata):
-        """Returns the evaluator used by class:`FData`.
+        """Returns the evaluator used by :class:`FData`.
 
         Returns:
             (:class:`Evaluator`): Evaluator of the periodic extrapolation.
@@ -229,7 +230,7 @@ class FillExtrapolation(EvaluatorConstructor):
     """
 
     def __init__(self, fill_value):
-        """Returns the evaluator used by class:`FData`.
+        """Returns the evaluator used by :class:`FData`.
 
         Returns:
             (:class:`Evaluator`): Evaluator of the periodic extrapolation.
@@ -246,8 +247,9 @@ class FillExtrapolation(EvaluatorConstructor):
 
     def __eq__(self, other):
         """Equality operator bethween evaluator constructors"""
-        return super().__eq__(other) and (self.fill_value == other.fill_value
-                                          or self.fill_value is other.fill_value)
+        return (super().__eq__(other) and
+                (self.fill_value == other.fill_value
+                 or self.fill_value is other.fill_value))
 
     def evaluator(self, fdata):
 
@@ -288,7 +290,8 @@ class FillExtrapolationEvaluator(Evaluator):
         """Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
-        call will receive a 3-d array with the evaluation points for each sample.
+        call will receive a 3-d array with the evaluation points for
+        each sample.
 
         This method is called internally by :meth:`evaluate` when the argument
         `aligned_evaluation` is False.

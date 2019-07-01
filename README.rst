@@ -4,7 +4,14 @@
 scikit-fda
 ==========
 
-|build-status| |docs|
+|build-status| |docs| |Codecov|_ |PyPi|_
+
+.. |Codecov| image:: https://codecov.io/gh/GAA-UAM/scikit-fda/branch/develop/graph/badge.svg
+.. _Codecov: https://codecov.io/github/GAA-UAM/scikit-fda?branch=develop
+
+.. |PyPi| image:: https://badge.fury.io/py/scikit-fda.svg
+.. _PyPi: https://badge.fury.io/py/scikit-fda
+
 
 Functional Data Analysis is the field of Statistics that analyses data that
 come in the shape of functions. To know more about fda have a look at fda_ or read [RS05]_.
@@ -43,7 +50,7 @@ References
 
 .. _fda: http://www.functionaldata.org/
 
-.. |build-status| image:: https://travis-ci.org/GAA-UAM/scikit-fda.svg
+.. |build-status| image:: https://travis-ci.org/GAA-UAM/scikit-fda.svg?branch=develop
     :alt: build status
     :scale: 100%
     :target: https://travis-ci.org/GAA-UAM/scikit-fda

@@ -7,7 +7,7 @@ The following constants are defined:
     and N_POINTS_FINE_MESH.
 .. data:: N_POINTS_FINE_MESH
     Constant used in the discretization of a basis object, by default de
-    number of points used are the maximun between BASIS_MIN_FACTOR * nbasis +1
+    number of points used are the maximum between BASIS_MIN_FACTOR * nbasis +1
     and N_POINTS_FINE_MESH.
 .. data:: N_POINTS_COARSE_MESH
     Constant used in the default discretization of a basis in some methods.

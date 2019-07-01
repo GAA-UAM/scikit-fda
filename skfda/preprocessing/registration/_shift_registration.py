@@ -7,6 +7,8 @@ functional data using shifts, in basis as well in discretized form.
 import numpy as np
 import scipy.integrate
 
+from .._utils import constants
+
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"
 
@@ -118,7 +120,8 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2,
             eval_points = fd.sample_points[0]
             nfine = len(eval_points)
         except AttributeError:
-            nfine = max(fd.nbasis * 10 + 1, 201)
+            nfine = max(fd.nbasis * constants.BASIS_MIN_FACTOR + 1,
+                        constants.N_POINTS_COARSE_MESH)
             eval_points = np.linspace(*domain_range, nfine)
 
     else:

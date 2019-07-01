@@ -3,7 +3,7 @@ This module contains the definition of the constants used in the package.
 The following constants are defined:
 .. data:: BASIS_MIN_FACTOR
     Constant used in the discretization of a basis object, by default de
-    number of points used are the maximun between BASIS_MIN_FACTOR * nbasis +1
+    number of points used are the maximum between BASIS_MIN_FACTOR * nbasis +1
     and N_POINTS_FINE_MESH.
 .. data:: N_POINTS_FINE_MESH
     Constant used in the discretization of a basis object, by default de

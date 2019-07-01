@@ -1,7 +1,8 @@
 """Magnitude-Shape Plot Module.
 
-This module contains the necessary functions to construct the Magnitude-Shape Plot.
-First the directional outlingness is calculated and then, an outliers detection method is implemented.
+This module contains the necessary functions to construct the Magnitude-Shape
+Plot. First the directional outlingness is calculated and then, an outliers
+detection method is implemented.
 
 """
 
@@ -32,7 +33,8 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
 
     The first one, the mean directional outlyingness, describes the relative
     position (including both distance and direction) of the samples on average
-    to the center curve; its norm can be regarded as the magnitude outlyingness.
+    to the center curve; its norm can be regarded as the magnitude
+    outlyingness.
 
     The second one, the variation of the directional outlyingness, measures
     the change of the directional outlyingness in terms of both norm and
@@ -43,45 +45,52 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
 
     .. math::
         \mathbf{O}\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right) =
-        \left\{\frac{1}{d\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right)} - 1\right\} \cdot \mathbf{v}(t)
+        \left\{\frac{1}{d\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right)} - 1
+        \right\} \cdot \mathbf{v}(t)
 
-    where :math:`\mathbf{X}` is a stochastic process with probability distribution
-    :math:`F`, :math:`d` a depth function and :math:`\mathbf{v}(t) = \left\{\mathbf{X}(t) -
-    \mathbf{Z}(t)\right\} / \lVert \mathbf{X}(t) - \mathbf{Z}(t) \rVert`
-    is the spatial sign of :math:`\left\{\mathbf{X}(t) - \mathbf{Z}(t)\right\}`,
-    :math:`\mathbf{Z}(t)` denotes the median and ∥ · ∥ denotes the :math:`L_2` norm.
+    where :math:`\mathbf{X}` is a stochastic process with probability
+    distribution :math:`F`, :math:`d` a depth function and :math:`\mathbf{v}(t)
+    = \left\{ \mathbf{X}(t) - \mathbf{Z}(t)\right\} / \lVert \mathbf{X}(t) -
+    \mathbf{Z}(t) \rVert` is the spatial sign of :math:`\left\{\mathbf{X}(t) -
+    \mathbf{Z}(t)\right\}`, :math:`\mathbf{Z}(t)` denotes the median and ∥ · ∥
+    denotes the :math:`L_2` norm.
 
     From the above formula, we define the mean directional outlyingness as:
 
     .. math::
         \mathbf{MO}\left(\mathbf{X} , F_{\mathbf{X}}\right) = \int_I
-        \mathbf{O}\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right) \cdot w(t) dt ;
+        \mathbf{O}\left(\mathbf{X}(t) , F_{\mathbf{X}(t)}\right) \cdot w(t) dt;
 
     and the variation of the directional outlyingness as:
 
     .. math::
-        VO\left(\mathbf{X} , F_{\mathbf{X}}\right) = \int_I  \lVert\mathbf{O}\left(\mathbf{X}(t) ,
-        F_{\mathbf{X}(t)}\right)-\mathbf{MO}\left(\mathbf{X} , F_{\mathbf{X}}\right)  \rVert^2 \cdot w(t) dt
+        VO\left(\mathbf{X} , F_{\mathbf{X}}\right) = \int_I  \lVert\mathbf{O}
+        \left(\mathbf{X}(t), F_{\mathbf{X}(t)}\right)-\mathbf{MO}\left(
+        \mathbf{X} , F_{\mathbf{X}}\right)  \rVert^2 \cdot w(t) dt
 
-    where :math:`w(t)` a weight function defined on the domain of :math:`\mathbf{X}`, :math:`I`.
+    where :math:`w(t)` a weight function defined on the domain of
+    :math:`\mathbf{X}`, :math:`I`.
 
     Then, the total functional outlyingness can be computed using these values:
 
     .. math::
-        FO\left(\mathbf{X} , F_{\mathbf{X}}\right) = \lVert \mathbf{MO}\left(\mathbf{X} ,
-        F_{\mathbf{X}}\right)\rVert^2 +  VO\left(\mathbf{X} , F_{\mathbf{X}}\right) .
+        FO\left(\mathbf{X} , F_{\mathbf{X}}\right) = \lVert \mathbf{MO}\left(
+        \mathbf{X} , F_{\mathbf{X}}\right)\rVert^2 +  VO\left(\mathbf{X} ,
+        F_{\mathbf{X}}\right) .
 
     Args:
-        fdatagrid (FDataGrid): Object containing the samples to be ordered according to
-            the directional outlyingness.
-        depth_method (:ref:`depth measure <depth-measures>`, optional): Method used to
-            order the data. Defaults to :func:`modified band depth <fda.depth_measures.modified_band_depth>`.
-        dim_weights (array_like, optional): an array containing the weights of each of
-            the dimensions of the image. Defaults to the same weight for each of the
-            dimensions: 1/ndim_image.
-        pointwise_weights (array_like, optional): an array containing the weights of each
-            point of discretisation where values have been recorded. Defaults to the same
-            weight for each of the points: 1/len(interval).
+        fdatagrid (FDataGrid): Object containing the samples to be ordered
+            according to the directional outlyingness.
+        depth_method (:ref:`depth measure <depth-measures>`, optional): Method
+            used to order the data. Defaults to :func:`modified band depth
+            <fda.depth_measures.modified_band_depth>`.
+        dim_weights (array_like, optional): an array containing the weights of
+            each of the dimensions of the image. Defaults to the same weight
+            for each of the dimensions: 1/ndim_image.
+        pointwise_weights (array_like, optional): an array containing the
+            weights of each point of discretisation where values have been
+            recorded. Defaults to the same weight for each of the points:
+            1/len(interval).
 
     Returns:
         (tuple): tuple containing:
@@ -89,16 +98,20 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
             dir_outlyingness (numpy.array((fdatagrid.shape))): List containing
             the values of the directional outlyingness of the FDataGrid object.
 
-            mean_dir_outl (numpy.array((fdatagrid.nsamples, 2))): List containing
-            the values of the magnitude outlyingness for each of the samples.
+            mean_dir_outl (numpy.array((fdatagrid.nsamples, 2))): List
+                containing the values of the magnitude outlyingness for each of
+                the samples.
 
             variation_dir_outl (numpy.array((fdatagrid.nsamples,))): List
-            containing the values of the shape outlyingness for each of the samples.
+                containing the values of the shape outlyingness for each of
+                the samples.
 
     Example:
 
-        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2], [0.5, 0.5, 1, 2, 1.5, 1],
-        ...                [-1, -1, -0.5, 1, 1, 0.5], [-0.5, -0.5, -0.5, -1, -1, -1]]
+        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
+        ...                [0.5, 0.5, 1, 2, 1.5, 1],
+        ...                [-1, -1, -0.5, 1, 1, 0.5],
+        ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> directional_outlyingness(fd)
@@ -131,7 +144,8 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
                 [-1. ]]]), array([[ 1.66666667],
                [ 0.        ],
                [-0.73333333],
-               [-1.        ]]), array([ 0.74074074,  0.        ,  0.36740741,  0.53333333]))
+               [-1.        ]]), array([ 0.74074074,  0.        ,  0.36740741,
+                0.53333333]))
 
 
     """
@@ -145,11 +159,12 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
             "There must be a weight in dim_weights for each dimension of the "
             "image and altogether must sum 1.")
 
-    if pointwise_weights is not None and (len(
-            pointwise_weights) != fdatagrid.ncol or pointwise_weights.sum() != 1):
+    if (pointwise_weights is not None and
+            (len(pointwise_weights) != fdatagrid.ncol or
+             pointwise_weights.sum() != 1)):
         raise ValueError(
-            "There must be a weight in pointwise_weights for each recorded time "
-            "point and altogether must sum 1.")
+            "There must be a weight in pointwise_weights for each recorded "
+            "time point and altogether must sum 1.")
 
     depth, depth_pointwise = depth_method(fdatagrid, pointwise=True)
 
@@ -164,7 +179,8 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
     weighted_depth = depth * dim_weights
     sample_depth = weighted_depth.sum(axis=-1)
 
-    # Obtaining the median sample Z, to caculate v(t) = {X(t) − Z(t)}/∥ X(t) − Z(t)∥
+    # Obtaining the median sample Z, to caculate
+    # v(t) = {X(t) − Z(t)}/∥ X(t) − Z(t)∥
     median_index = np.argmax(sample_depth)
     median = fdatagrid.data_matrix[median_index]
     v = fdatagrid.data_matrix - median
@@ -187,7 +203,8 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
                                   (fdatagrid.ndim_image, 1)).T
     weighted_dir_outlyingness = dir_outlyingness * pointwise_weights_1
     mean_dir_outl = scipy.integrate.simps(weighted_dir_outlyingness,
-                                          fdatagrid.sample_points[0], axis = 1)
+                                          fdatagrid.sample_points[0],
+                                          axis=1)
 
     # Calcuation variation directinal outlyingness
     mean_dir_outl_pointwise = np.repeat(mean_dir_outl, fdatagrid.ncol,
@@ -196,24 +213,26 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
         la.norm(dir_outlyingness - mean_dir_outl_pointwise, axis=-1))
     weighted_norm = norm * pointwise_weights
     variation_dir_outl = scipy.integrate.simps(weighted_norm,
-                                          fdatagrid.sample_points[0], axis=1)
+                                               fdatagrid.sample_points[0],
+                                               axis=1)
 
     return dir_outlyingness, mean_dir_outl, variation_dir_outl
+
 
 class MagnitudeShapePlot:
     r"""Implementation of the magnitude-shape plot
 
-    This plot, which is based on the calculation of the
-    :func:`directional outlyingness <fda.magnitude_shape_plot.directional_outlyingness>`
+    This plot, which is based on the calculation of the :func:`directional
+    outlyingness <fda.magnitude_shape_plot.directional_outlyingness>`
     of each of the samples, serves as a visualization tool for the centrality
     of curves. Furthermore, an outlier detection procedure is included.
 
-    The norm of the mean of the directional outlyingness (:math:`\lVert\mathbf{MO}\rVert`)
-    is plotted in the x-axis, and the variation of the directional outlyingness (:math:`VO`)
-    in the y-axis.
+    The norm of the mean of the directional outlyingness (:math:`\lVert
+    \mathbf{MO}\rVert`) is plotted in the x-axis, and the variation of the
+    directional outlyingness (:math:`VO`) in the y-axis.
 
-    Considering :math:`\mathbf{Y} = \left(\mathbf{MO}^T, VO\right)^T`, the outlier detection method
-    is implemented as described below.
+    Considering :math:`\mathbf{Y} = \left(\mathbf{MO}^T, VO\right)^T`, the
+    outlier detection method is implemented as described below.
 
     First, the square robust Mahalanobis distance is calculated based on a
     sample of size :math:`h \leq fdatagrid.nsamples`:
@@ -224,11 +243,11 @@ class MagnitudeShapePlot:
         \left( \mathbf{Y} - \mathbf{\tilde{Y}}^*_J\right)
 
     where :math:`J` denotes the group of :math:`h` samples that minimizes the
-    determinant of the corresponding covariance matrix, :math:`\mathbf{\tilde{Y}}^*_J
-    = h^{-1}\sum_{i\in{J}}\mathbf{Y}_i` and :math:`\mathbf{S}^*_J
-    = h^{-1}\sum_{i\in{J}}\left( \mathbf{Y}_i - \mathbf{\tilde{Y}}^*_J\right)
-    \left( \mathbf{Y}_i - \mathbf{\tilde{Y}}^*_J\right)^T`. The
-    sub-sample of size h controls the robustness of the method.
+    determinant of the corresponding covariance matrix,
+    :math:`\mathbf{\tilde{Y}}^*_J = h^{-1}\sum_{i\in{J}}\mathbf{Y}_i` and
+    :math:`\mathbf{S}^*_J = h^{-1}\sum_{i\in{J}}\left( \mathbf{Y}_i - \mathbf{
+    \tilde{Y}}^*_J\right) \left( \mathbf{Y}_i - \mathbf{\tilde{Y}}^*_J
+    \right)^T`. The sub-sample of size h controls the robustness of the method.
 
     Then, the tail of this distance distribution is approximated as follows:
 
@@ -237,8 +256,8 @@ class MagnitudeShapePlot:
         \mathbf{Y}, \mathbf{\tilde{Y}}^*_J\right)\sim F_{p+1, m-p}
 
     where :math:`p` is the dmension of the image, and :math:`c` and :math:`m`
-    are parameters determining the degrees of freedom of the :math:`F`-distribution
-    and the scaling factor.
+    are parameters determining the degrees of freedom of the
+    :math:`F`-distribution and the scaling factor.
 
     .. math::
         c = E \left[s^*_{jj}\right]
@@ -248,12 +267,13 @@ class MagnitudeShapePlot:
     .. math::
         m = \frac{2}{CV^2}
 
-    where :math:`CV` is the estimated coefficient of variation of the diagonal elements of the  MCD shape estimator.
+    where :math:`CV` is the estimated coefficient of variation of the diagonal
+    elements of the  MCD shape estimator.
 
     Finally, we choose a cutoff value to determine the outliers, C ,
     as the α quantile of :math:`F_{p+1, m-p}`. We set :math:`\alpha = 0.993`,
-    which is used in the classical boxplot for detecting outliers under a normal
-    distribution.
+    which is used in the classical boxplot for detecting outliers under a
+    normal distribution.
 
     Attributes:
         fdatagrid (FDataGrid): Object to be visualized.
@@ -273,11 +293,12 @@ class MagnitudeShapePlot:
         outliers (1-D array, (fdatagrid.nsamples,)): Contains 1 or 0 to denote
             if a sample is an outlier or not, respecively.
         colormap(matplotlib.pyplot.LinearSegmentedColormap, optional): Colormap
-            from which the colors of the plot are extracted. Defaults to 'seismic'.
+            from which the colors of the plot are extracted. Defaults to
+            'seismic'.
         color (float, optional): Tone of the colormap in which the nonoutlier
             points are  plotted. Defaults to 0.2.
-        outliercol (float, optional): Tone of the colormap in which the outliers
-            are plotted. Defaults to 0.8.
+        outliercol (float, optional): Tone of the colormap in which the
+            outliers are plotted. Defaults to 0.8.
         xlabel (string, optional): Label of the x-axis. Defaults to 'MO',
             mean of the  directional outlyingness.
         ylabel (string, optional): Label of the y-axis. Defaults to 'VO',
@@ -286,8 +307,10 @@ class MagnitudeShapePlot:
 
     Example:
 
-        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2], [0.5, 0.5, 1, 2, 1.5, 1],
-        ...                [-1, -1, -0.5, 1, 1, 0.5], [-0.5, -0.5, -0.5, -1, -1, -1]]
+        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
+        ...                [0.5, 0.5, 1, 2, 1.5, 1],
+        ...                [-1, -1, -0.5, 1, 1, 0.5],
+        ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> MagnitudeShapePlot(fd)
@@ -325,7 +348,8 @@ class MagnitudeShapePlot:
                 dataset_label=None,
                 axes_labels=None,
                 extrapolation=None,
-                interpolator=SplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
+                interpolator=SplineInterpolator(interpolation_order=1,
+                smoothness_parameter=0.0, monotone=False),
                 keepdims=False),
             depth_method=modified_band_depth,
             dim_weights=None,
@@ -346,31 +370,32 @@ class MagnitudeShapePlot:
 
     def __init__(self, fdatagrid, depth_method=modified_band_depth,
                  dim_weights=None, pointwise_weights=None, alpha=0.993,
-                 assume_centered=False, support_fraction=None,random_state=0):
+                 assume_centered=False, support_fraction=None, random_state=0):
         """Initialization of the MagnitudeShapePlot class.
 
         Args:
             fdatagrid (FDataGrid): Object containing the data.
-            depth_method (:ref:`depth measure <depth-measures>`, optional): Method
-                used to order the data. Defaults to :func:`modified band depth
-                <fda.depth_measures.modified_band_depth>`.
+            depth_method (:ref:`depth measure <depth-measures>`, optional):
+                Method used to order the data. Defaults to :func:`modified band
+                depth <fda.depth_measures.modified_band_depth>`.
             dim_weights (array_like, optional): an array containing the weights
                 of each of the dimensions of the image.
             pointwise_weights (array_like, optional): an array containing the
-                weights of each points of discretisati on where values have been
-                recorded.
+                weights of each points of discretisati on where values have
+                been recorded.
             alpha (float, optional): Denotes the quantile to choose the cutoff
                 value for detecting outliers Defaults to 0.993, which is used
                 in the classical boxplot.
-            assume_centered (boolean, optional): If True, the support of the robust
-                location and the covariance estimates is computed, and a
+            assume_centered (boolean, optional): If True, the support of the
+                robust location and the covariance estimates is computed, and a
                 covariance estimate is recomputed from it, without centering
                 the data. Useful to work with data whose mean is significantly
                 equal to zero but is not exactly zero. If False, default value,
                 the robust location and covariance are directly computed with
                 the FastMCD algorithm without additional treatment.
-            support_fraction (float, 0 < support_fraction < 1, optional): The proportion
-                of points to be included in the support of the raw MCD estimate.
+            support_fraction (float, 0 < support_fraction < 1, optional): The
+                proportion of points to be included in the support of the
+                raw MCD estimate.
                 Default is None, which implies that the minimum value of
                 support_fraction will be used within the algorithm:
                 [n_sample + n_features + 1] / 2
@@ -395,7 +420,8 @@ class MagnitudeShapePlot:
         points = np.array(list(zip(mean_dir_outl, variation_dir_outl))).astype(
             float)
 
-        # The square mahalanobis distances of the samples are calulated using MCD.
+        # The square mahalanobis distances of the samples are
+        # calulated using MCD.
         cov = MinCovDet(store_precision=False, assume_centered=assume_centered,
                         support_fraction=support_fraction,
                         random_state=random_state).fit(points)
@@ -410,7 +436,8 @@ class MagnitudeShapePlot:
         dfn = p + 1
         dfd = m - p
 
-        # Calculation of the cutoff value and scaling factor to identify outliers.
+        # Calculation of the cutoff value and scaling factor to identify
+        # outliers.
         cutoff_value = f.ppf(alpha, dfn, dfd, loc=0, scale=1)
         scaling = c * dfd / m / dfn
         outliers = (scaling * rmd_2 > cutoff_value) * 1
@@ -466,8 +493,8 @@ class MagnitudeShapePlot:
     @colormap.setter
     def colormap(self, value):
         if not isinstance(value, matplotlib.colors.LinearSegmentedColormap):
-            raise ValueError(
-                "colormap must be of type matplotlib.colors.LinearSegmentedColormap")
+            raise ValueError("colormap must be of type "
+                             "matplotlib.colors.LinearSegmentedColormap")
         self._colormap = value
 
     @property

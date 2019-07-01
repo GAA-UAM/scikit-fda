@@ -141,7 +141,7 @@ class Brownian(Covariance):
     _parameters = [("variance", r"\sigma^2"),
                    ("origin", r"\mathcal{O}")]
 
-    def __init__(self, *, variance: float=1., origin: float=0.):
+    def __init__(self, *, variance: float = 1., origin: float = 0.):
         self.variance = variance
         self.origin = origin
 

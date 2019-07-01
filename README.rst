@@ -50,7 +50,7 @@ References
 
 .. _fda: http://www.functionaldata.org/
 
-.. |build-status| image:: https://travis-ci.org/GAA-UAM/scikit-fda.svg
+.. |build-status| image:: https://travis-ci.org/GAA-UAM/scikit-fda.svg?branch=develop
     :alt: build status
     :scale: 100%
     :target: https://travis-ci.org/GAA-UAM/scikit-fda

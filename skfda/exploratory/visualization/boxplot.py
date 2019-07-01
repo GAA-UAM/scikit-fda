@@ -18,22 +18,23 @@ from abc import ABC, abstractmethod
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
+
 class FDataBoxplot(ABC):
     """Abstract class inherited by the Boxplot and SurfaceBoxplot classes.
 
-    It the data of the functional boxplot or surface boxplot of a FDataGrid object,
-    depending on the dimensions of the domain, 1 or 2 respectively.
+    It the data of the functional boxplot or surface boxplot of a FDataGrid
+    object, depending on the dimensions of the domain, 1 or 2 respectively.
 
-    It forces to both classes, Boxplot and SurfaceBoxplot to conain at least the median,
-    central and outlying envelopes and a colormap for their graphical representation,
-    obtained calling the plot method.
+    It forces to both classes, Boxplot and SurfaceBoxplot to conain at least
+    the median, central and outlying envelopes and a colormap for their
+    graphical representation, obtained calling the plot method.
 
     """
     @abstractmethod
     def __init__(self, factor=1.5):
         if factor < 0:
-            raise ValueError(
-                "The number used to calculate the outlying envelope must be positive.")
+            raise ValueError("The number used to calculate the "
+                             "outlying envelope must be positive.")
         self._factor = factor
 
     @property
@@ -63,8 +64,8 @@ class FDataBoxplot(ABC):
     @colormap.setter
     def colormap(self, value):
         if not isinstance(value, matplotlib.colors.LinearSegmentedColormap):
-            raise ValueError(
-                "colormap must be of type matplotlib.colors.LinearSegmentedColormap")
+            raise ValueError("colormap must be of type "
+                             "matplotlib.colors.LinearSegmentedColormap")
         self._colormap = value
 
     @abstractmethod
@@ -84,15 +85,17 @@ class FDataBoxplot(ABC):
 class Boxplot(FDataBoxplot):
     r"""Representation of the functional boxplot.
 
-    Class implementing the functionl boxplot which is an informative exploratory
-    tool for visualizing functional data, as well as its generalization, the
-    enhanced functional boxplot. Only supports 1 dimensional domain functional data.
+    Class implementing the functionl boxplot which is an informative
+    exploratory tool for visualizing functional data, as well as its
+    generalization, the enhanced functional boxplot. Only supports 1
+    dimensional domain functional data.
 
-    Based on the center outward ordering induced by a :ref:`depth measure <depth-measures>`
-    for functional data, the descriptive statistics of a functional boxplot are: the
-    envelope of the 50% central region, the median curve,and the maximum non-outlying envelope.
-    In addition, outliers can be detected in a functional boxplot by the 1.5 times the 50%
-    central region empirical rule, analogous to the rule for classical boxplots.
+    Based on the center outward ordering induced by a :ref:`depth measure
+    <depth-measures>` for functional data, the descriptive statistics of a
+    functional boxplot are: the envelope of the 50% central region, the median
+    curve,and the maximum non-outlying envelope. In addition, outliers can be
+    detected in a functional boxplot by the 1.5 times the 50% central region
+    empirical rule, analogous to the rule for classical boxplots.
 
     Attributes:
         fdatagrid (FDataGrid): Object containing the data.
@@ -112,15 +115,19 @@ class Boxplot(FDataBoxplot):
         outliercol (string): Color of the ouliers.
         mediancol (string): Color of the median.
         show_full_outliers (boolean): If False (the default) then only the part
-            outside the box is plotted. If True, complete outling curves are plotted
+            outside the box is plotted. If True, complete outling curves are
+            plotted
 
     Example:
         Function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
 
-        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2], [0.5, 0.5, 1, 2, 1.5, 1], [-1, -1, -0.5, 1, 1, 0.5],
+        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
+        ...                [0.5, 0.5, 1, 2, 1.5, 1],
+        ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = FDataGrid(data_matrix, sample_points, dataset_label="dataset", axes_labels=["x_label", "y_label"])
+        >>> fd = FDataGrid(data_matrix, sample_points, dataset_label="dataset",
+        ...                axes_labels=["x_label", "y_label"])
         >>> Boxplot(fd)
         Boxplot(
             FDataGrid=FDataGrid(
@@ -156,12 +163,14 @@ class Boxplot(FDataBoxplot):
                 dataset_label='dataset',
                 axes_labels=['x_label', 'y_label'],
                 extrapolation=None,
-                interpolator=SplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
+                interpolator=SplineInterpolator(interpolation_order=1,
+                smoothness_parameter=0.0, monotone=False),
                 keepdims=False),
             median=array([[ 0.5,  0.5,  1. ,  2. ,  1.5,  1. ]]),
             central envelope=array([[[ 0.5,  0.5,  1. ,  2. ,  1.5,  1. ],
                     [-1. , -1. , -0.5,  1. ,  1. ,  0.5]]]),
-            outlying envelope=array([[[ 1.  ,  1.  ,  2.  ,  3.  ,  2.25,  1.75],
+            outlying envelope=array([[[ 1.  ,  1.  ,  2.  ,  3.  ,  2.25,
+                                        1.75],
                     [-1.  , -1.  , -0.5 , -0.5 ,  0.25, -0.25]]]),
             central_regions=array([[[ 0.5,  0.5,  1. ,  2. ,  1.5,  1. ],
                     [-1. , -1. , -0.5,  1. ,  1. ,  0.5]]]),
@@ -178,8 +187,9 @@ class Boxplot(FDataBoxplot):
             method (:ref:`depth measure <depth-measures>`, optional): Method
                 used to order the data. Defaults to :func:`modified band depth
                 <fda.depth_measures.modified_band_depth>`.
-            prob (list of float, optional): List with float numbers (in the range
-                from 1 to 0) that indicate which central regions to represent.
+            prob (list of float, optional): List with float numbers (in the
+                range from 1 to 0) that indicate which central regions to
+                represent.
                 Defaults to [0.5] which represents the 50% central region.
             factor (double): Number used to calculate the outlying envelope.
 
@@ -218,7 +228,7 @@ class Boxplot(FDataBoxplot):
             for i in range(len(prob)):
 
                 indices_samples = indices_descencing_depth[:, m][
-                                  :math.ceil(fdatagrid.nsamples * prob[i])]
+                    :math.ceil(fdatagrid.nsamples * prob[i])]
                 samples_used = fdatagrid.data_matrix[indices_samples, :, m]
                 max_samples_used = np.amax(samples_used, axis=0)
                 min_samples_used = np.amin(samples_used, axis=0)
@@ -243,13 +253,13 @@ class Boxplot(FDataBoxplot):
                     # outliers
                     for j in list(range(fdatagrid.nsamples)):
                         outliers_above = (
-                                outlying_max_envelope < fdatagrid.data_matrix[
-                                                        j, :, m])
+                            outlying_max_envelope < fdatagrid.data_matrix[
+                                j, :, m])
                         outliers_below = (
-                                outlying_min_envelope > fdatagrid.data_matrix[
-                                                        j, :, m])
-                        if (
-                                outliers_above.sum() > 0 or outliers_below.sum() > 0):
+                            outlying_min_envelope > fdatagrid.data_matrix[
+                                j, :, m])
+                        if (outliers_above.sum() > 0 or
+                                outliers_below.sum() > 0):
                             self._outliers[m, j] = 1
                 # central regions
                 self._central_regions[ncentral_regions * m + i] = np.asarray(
@@ -257,7 +267,7 @@ class Boxplot(FDataBoxplot):
 
             # mean sample
             self._median[m] = fdatagrid.data_matrix[
-                              indices_descencing_depth[0, m], :, m].T
+                indices_descencing_depth[0, m], :, m].T
 
         self._fdatagrid = fdatagrid
         self._prob = prob
@@ -302,20 +312,21 @@ class Boxplot(FDataBoxplot):
         self._show_full_outliers = boolean
 
     def plot(self, fig=None, ax=None, nrows=None, ncols=None):
-        """Visualization of the functional boxplot of the fdatagrid (ndim_domain=1).
+        """Visualization of the functional boxplot of the fdatagrid
+        (ndim_domain=1).
 
         Args:
             fig (figure object, optional): figure over with the graphs are
-                plotted in case ax is not specified. If None and ax is also None,
-                the figure is initialized.
+                plotted in case ax is not specified. If None and ax is also
+                None, the figure is initialized.
             ax (list of axis objects, optional): axis over where the graphs are
                 plotted. If None, see param fig.
             nrows(int, optional): designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
                 if fig and ax are None.
-            ncols(int, optional): designates the number of columns of the figure
-                to plot the different dimensions of the image. Only specified
-                if fig and ax are None.
+            ncols(int, optional): designates the number of columns of the
+                figure to plot the different dimensions of the image. Only
+                specified if fig and ax are None.
 
          Returns:
             fig (figure object): figure object in which the graphs are plotted.
@@ -399,14 +410,15 @@ class Boxplot(FDataBoxplot):
 class SurfaceBoxplot(FDataBoxplot):
     r"""Representation of the surface boxplot.
 
-    Class implementing the surface boxplot. Analogously to the functional boxplot,
-    it is an informative exploratory tool for visualizing functional data with
-    domain dimension 2. Nevertheless, it does not implement the enhanced
-    surface boxplot.
+    Class implementing the surface boxplot. Analogously to the functional
+    boxplot, it is an informative exploratory tool for visualizing functional
+    data with domain dimension 2. Nevertheless, it does not implement the
+    enhanced surface boxplot.
 
-    Based on the center outward ordering induced by a :ref:`depth measure <depth-measures>`
-    for functional data, it represents the envelope of the 50% central region, the median curve,
-    and the maximum non-outlying envelope.
+    Based on the center outward ordering induced by a :ref:`depth measure
+    <depth-measures>` for functional data, it represents the envelope of the
+    50% central region, the median curve, and the maximum non-outlying
+    envelope.
 
     Attributes:
         fdatagrid (FDataGrid): Object containing the data.
@@ -418,17 +430,21 @@ class SurfaceBoxplot(FDataBoxplot):
             contains the outlying envelope/s.
         colormap (matplotlib.colors.LinearSegmentedColormap): Colormap from
             which the colors to represent the central regions are selected.
-        boxcol (string): Color of the box, which includes median and central envelope.
+        boxcol (string): Color of the box, which includes median and central
+            envelope.
         outcol (string): Color of the outlying envelope.
 
     Example:
         Function :math:`f : \mathbb{R^2}\longmapsto\mathbb{R^2}`.
 
-        >>> data_matrix = [[[[1, 4], [0.3, 1.5], [1, 3]], [[2, 8], [0.4, 2], [2, 9]]],
-        ...                [[[2, 10], [0.5, 3], [2, 10]], [[3, 12], [0.6, 3], [3, 15]]]]
+        >>> data_matrix = [[[[1, 4], [0.3, 1.5], [1, 3]],
+        ...                 [[2, 8], [0.4, 2], [2, 9]]],
+        ...                [[[2, 10], [0.5, 3], [2, 10]],
+        ...                 [[3, 12], [0.6, 3], [3, 15]]]]
         >>> sample_points = [[2, 4], [3, 6, 8]]
-        >>> fd = FDataGrid(data_matrix, sample_points, dataset_label= "dataset",
-        ...                axes_labels=["x1_label", "x2_label", "y1_label", "y2_label"])
+        >>> fd = FDataGrid(data_matrix, sample_points, dataset_label="dataset",
+        ...                axes_labels=["x1_label", "x2_label",
+        ...                             "y1_label", "y2_label"])
         >>> SurfaceBoxplot(fd)
         SurfaceBoxplot(
             FDataGrid=FDataGrid(
@@ -454,7 +470,8 @@ class SurfaceBoxplot(FDataBoxplot):
                 dataset_label='dataset',
                 axes_labels=['x1_label', 'x2_label', 'y1_label', 'y2_label'],
                 extrapolation=None,
-                interpolator=SplineInterpolator(interpolation_order=1, smoothness_parameter=0.0, monotone=False),
+                interpolator=SplineInterpolator(interpolation_order=1,
+                smoothness_parameter=0.0, monotone=False),
                 keepdims=False),
             median=array([[[ 1. ,  0.3,  1. ],
                     [ 2. ,  0.4,  2. ]],
@@ -497,8 +514,9 @@ class SurfaceBoxplot(FDataBoxplot):
             method (:ref:`depth measure <depth-measures>`, optional): Method
                 used to order the data. Defaults to :func:`modified band depth
                 <fda.depth_measures.modified_band_depth>`.
-            prob (list of float, optional): List with float numbers (in the range
-                from 1 to 0) that indicate which central regions to represent.
+            prob (list of float, optional): List with float numbers (in the
+                range from 1 to 0) that indicate which central regions to
+                represent.
                 Defaults to [0.5] which represents the 50% central region.
             factor (double): Number used to calculate the outlying envelope.
 
@@ -521,14 +539,14 @@ class SurfaceBoxplot(FDataBoxplot):
 
         for m in range(fdatagrid.ndim_image):
             indices_samples = indices_descencing_depth[:, m][
-                              :math.ceil(fdatagrid.nsamples * 0.5)]
+                :math.ceil(fdatagrid.nsamples * 0.5)]
             samples_used = fdatagrid.data_matrix[indices_samples, :, :, m]
             max_samples_used = np.amax(samples_used, axis=0)
             min_samples_used = np.amin(samples_used, axis=0)
 
             # mean sample
             self._median[m] = fdatagrid.data_matrix[
-                              indices_descencing_depth[0, m], :, :, m]
+                indices_descencing_depth[0, m], :, :, m]
 
             # central envelope
             self._central_envelope[m] = np.asarray([max_samples_used,
@@ -590,23 +608,25 @@ class SurfaceBoxplot(FDataBoxplot):
         self._outcol = value
 
     def plot(self, fig=None, ax=None, nrows=None, ncols=None):
-        """Visualization of the surface boxplot of the fdatagrid (ndim_domain=2).
+        """Visualization of the surface boxplot of the fdatagrid
+        (ndim_domain=2).
 
          Args:
              fig (figure object, optional): figure over with the graphs are
-                plotted in case ax is not specified. If None and ax is also None,
-                the figure is initialized.
-             ax (list of axis objects, optional): axis over where the graphs are
-                plotted. If None, see param fig.
+                 plotted in case ax is not specified. If None and ax is also
+                 None, the figure is initialized.
+             ax (list of axis objects, optional): axis over where the graphs
+                 are plotted. If None, see param fig.
              nrows(int, optional): designates the number of rows of the figure
                  to plot the different dimensions of the image. Only specified
                  if fig and ax are None.
-             ncols(int, optional): designates the number of columns of the figure
-                 to plot the different dimensions of the image. Only specified
-                 if fig and ax are None.
+             ncols(int, optional): designates the number of columns of the
+                 figure to plot the different dimensions of the image. Only
+                 specified if fig and ax are None.
 
         Returns:
-             fig (figure object): figure object in which the graphs are plotted.
+             fig (figure object): figure object in which the graphs are
+                 plotted.
              ax (axes object): axes in which the graphs are plotted.
 
         """
@@ -648,7 +668,7 @@ class SurfaceBoxplot(FDataBoxplot):
                 y_corner = y[indices[1]]
                 ax[m].plot([x_corner, x_corner], [y_corner, y_corner],
                            [self.central_envelope[
-                                m, 1, indices[0], indices[1]],
+                               m, 1, indices[0], indices[1]],
                             self.central_envelope[
                                 m, 0, indices[0], indices[1]]],
                            color=self.colormap(self.boxcol))
@@ -689,8 +709,9 @@ class SurfaceBoxplot(FDataBoxplot):
 
     def __repr__(self):
         """Return repr(self)."""
-        return (f"SurfaceBoxplot("
-                f"\nFDataGrid={repr(self.fdatagrid)},"
-                f"\nmedian={repr(self.median)},"
-                f"\ncentral envelope={repr(self.central_envelope)},"
-                f"\noutlying envelope={repr(self.outlying_envelope)})").replace('\n', '\n    ')
+        return ((f"SurfaceBoxplot("
+                 f"\nFDataGrid={repr(self.fdatagrid)},"
+                 f"\nmedian={repr(self.median)},"
+                 f"\ncentral envelope={repr(self.central_envelope)},"
+                 f"\noutlying envelope={repr(self.outlying_envelope)})")
+                .replace('\n', '\n    '))

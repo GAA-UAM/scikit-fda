@@ -7,7 +7,7 @@ functional data using shifts, in basis as well in discretized form.
 import numpy as np
 import scipy.integrate
 
-from .._utils import constants
+from ..._utils import constants
 
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"

@@ -4,27 +4,31 @@ Defines functional data object in a basis function system representation and
 the corresponding basis classes.
 
 """
-import copy
 from abc import ABC, abstractmethod
+import copy
 
-import numpy as np
+from numpy import polyder, polyint, polymul, polyval
+import pandas.api.extensions
 import scipy.integrate
+from scipy.interpolate import BSpline as SciBSpline
+from scipy.interpolate import PPoly
 import scipy.interpolate
 import scipy.linalg
-from numpy import polyder, polyint, polymul, polyval
-from scipy.interpolate import PPoly
-from scipy.interpolate import BSpline as SciBSpline
 from scipy.special import binom
 
-from . import grid
+import numpy as np
+
 from . import FData
+from . import grid
 from .._utils import _list_of_arrays, constants
-import pandas.api.extensions
+
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
 # aux functions
+
+
 def _polypow(p, n=2):
     if n > 2:
         return polymul(p, _polypow(p, n - 1))
@@ -325,7 +329,6 @@ class Basis(ABC):
         raise NotImplementedError
 
     def _inner_matrix(self, other=None):
-
         r"""Return the Inner Product Matrix of a pair of basis.
 
         The Inner Product Matrix is defined as
@@ -362,7 +365,6 @@ class Basis(ABC):
         return inner
 
     def gram_matrix(self):
-
         r"""Return the Gram Matrix of a basis
 
         The Gram Matrix is defined as
@@ -1039,7 +1041,7 @@ class BSpline(Basis):
                     # Let the ith not be a
                     # Then f(x) = pp(x - a)
                     pp = (PPoly.from_spline((knots, c, self.order - 1)).c[:,
-                          no_0_intervals])
+                                                                          no_0_intervals])
                     # We need the actual coefficients of f, not pp. So we
                     # just recursively calculate the new coefficients
                     coeffs = pp.copy()
@@ -1060,7 +1062,7 @@ class BSpline(Basis):
                 for interval in range(len(no_0_intervals)):
                     for i in range(self.nbasis):
                         poly_i = np.trim_zeros(ppoly_lst[i][:,
-                                               interval], 'f')
+                                                            interval], 'f')
                         if len(poly_i) <= derivative_degree:
                             # if the order of the polynomial is lesser or
                             # equal to the derivative the result of the
@@ -1075,7 +1077,7 @@ class BSpline(Basis):
 
                         for j in range(i + 1, self.nbasis):
                             poly_j = np.trim_zeros(ppoly_lst[j][:,
-                                                   interval], 'f')
+                                                                interval], 'f')
                             if len(poly_j) <= derivative_degree:
                                 # if the order of the polynomial is lesser
                                 # or equal to the derivative the result of
@@ -1546,6 +1548,7 @@ class FDataBasis(FData):
         Dummy object. Should be change to support multidimensional objects.
 
         """
+
         def __init__(self, fdatabasis):
             """Create an iterator through the image coordinates."""
             self._fdatabasis = fdatabasis
@@ -1683,6 +1686,32 @@ class FDataBasis(FData):
                 Data Analysis* (pp. 86-87). Springer.
 
         """
+        from ..preprocessing.smoothing import BasisSmoother
+        from .grid import FDataGrid
+
+        # n is the samples
+        # m is the observations
+        # k is the number of elements of the basis
+
+        # Each sample in a column (m x n)
+        data_matrix = np.atleast_2d(data_matrix)
+
+        fd = FDataGrid(data_matrix=data_matrix, sample_points=sample_points)
+
+        penalty = (penalty_degree if penalty_degree is not None
+                   else penalty_coefficients)
+
+        smoother = BasisSmoother(
+            basis=basis, weights=weight_matrix,
+            smoothing_parameter=smoothness_parameter,
+            penalty=penalty,
+            penalty_matrix=penalty_matrix,
+            method=method,
+            keepdims=keepdims,
+            return_basis=True)
+
+        return smoother.fit_transform(fd)
+
         # TODO add an option to return fit summaries: yhat, sse, gcv...
         if penalty_degree is None and penalty_coefficients is None:
             penalty_degree = 2
@@ -1871,7 +1900,6 @@ class FDataBasis(FData):
         return res.reshape((self.nsamples, len(eval_points), 1))
 
     def _evaluate_composed(self, eval_points, *, derivative=0):
-
         r"""Evaluate the object or its derivatives at a list of values with a
         different time for each sample.
 

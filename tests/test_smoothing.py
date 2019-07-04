@@ -1,11 +1,12 @@
 import unittest
-from skfda._utils import _check_estimator
-import skfda
-import skfda.preprocessing.smoothing.kernel_smoothers as kernel_smoothers
-import skfda.preprocessing.smoothing.validation as validation
+
+import sklearn
 
 import numpy as np
-import sklearn
+import skfda
+from skfda._utils import _check_estimator
+import skfda.preprocessing.smoothing.kernel_smoothers as kernel_smoothers
+import skfda.preprocessing.smoothing.validation as validation
 
 
 class TestSklearnEstimators(unittest.TestCase):

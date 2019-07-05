@@ -16,7 +16,7 @@ import mpl_toolkits.mplot3d
 import pandas.api.extensions
 
 from skfda.representation.extrapolation import _parse_extrapolation
-from .._utils import _coordinate_list, _list_of_arrays
+from .._utils import _coordinate_list, _list_of_arrays, constants
 
 
 class FData(ABC, pandas.api.extensions.ExtensionArray):
@@ -980,7 +980,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         if self.ndim_domain == 1:
 
             if npoints is None:
-                npoints = 501
+                npoints = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
 
             # Evaluates the object in a linspace
             eval_points = np.linspace(*domain_range[0], npoints)
@@ -997,7 +997,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
             # Selects the number of points
             if npoints is None:
-                npoints = (30, 30)
+                npoints = 2*(constants.N_POINTS_SURFACE_PLOT_AX,)
             elif np.isscalar(npoints):
                 npoints = (npoints, npoints)
             elif len(npoints) != 2:

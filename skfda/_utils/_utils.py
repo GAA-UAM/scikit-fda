@@ -1,10 +1,12 @@
 """Module with generic methods"""
 
-import numpy as np
 import functools
-import types
-import matplotlib.backends.backend_svg
 import io
+import types
+
+import matplotlib.backends.backend_svg
+
+import numpy as np
 
 
 def _list_of_arrays(original_array):

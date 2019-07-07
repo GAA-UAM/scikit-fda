@@ -6,7 +6,6 @@ package. FDataBasis and FDataGrid.
 """
 import numpy as np
 import scipy.integrate
-from ..exploratory.stats import mean
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -132,7 +131,7 @@ def cumsum(fdatagrid):
 
     """
     return fdatagrid.copy(data_matrix=np.cumsum(fdatagrid.data_matrix,
-                                                   axis=0))
+                                                axis=0))
 
 
 def inner_product(fdatagrid, fdatagrid2):
@@ -185,7 +184,7 @@ def inner_product(fdatagrid, fdatagrid2):
                                   "one.")
     # Checks
     if not np.array_equal(fdatagrid.sample_points,
-                             fdatagrid2.sample_points):
+                          fdatagrid2.sample_points):
         raise ValueError("Sample points for both objects must be equal")
 
     # Creates an empty matrix with the desired size to store the results.
@@ -198,5 +197,5 @@ def inner_product(fdatagrid, fdatagrid2):
                 fdatagrid.data_matrix[i, ..., 0] *
                 fdatagrid2.data_matrix[j, ..., 0],
                 x=fdatagrid.sample_points[0]
-                ))
+            ))
     return matrix

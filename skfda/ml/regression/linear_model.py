@@ -23,33 +23,33 @@ class LinearFunctionalRegression(BaseEstimator, RegressorMixin):
         ncoef = sum(self.beta_basis[i].nbasis for i in
                     range(len(self.beta_basis)))
 
-        Cmat = np.zeros((ncoef, ncoef))
-        Dmat = np.zeros((ncoef, 1))
+        betaInner = np.zeros((ncoef, ncoef))
+        betaWeight = np.zeros((ncoef, 1))
 
         mj2 = 0
         for j in range(len(X)):
             mj1 = mj2
             mj2 = mj2 + self.beta_basis[j].nbasis
-            xyfdj = X[j].times(weights).times(y)
-            wtfdj = sum(xyfdj)
-            Dmat[mj1:mj2] = self.beta_basis[j].to_basis().inner_product(onesfd,
-                                   Lfd(0), Lfd(0), wtfdj)
+            xy = X[j].times(weights).times(y)
+            xysum = sum(xy)
+            betaWeight[mj1:mj2] = self.beta_basis[j].to_basis().inner_product(
+                onesfd, Lfd(0), Lfd(0), xysum)
 
             mk2 = 0
             for k in range(0, j + 1):
                 mk1 = mk2
                 mk2 = mk2 + self.beta_basis[k].nbasis
-                xxfdjk = X[j].times(weights).times(X[k])
-                wtfdjk = sum(xxfdjk)
-                Cmatjk = self.beta_basis[j].to_basis().inner_product(
-                    self.beta_basis[k].to_basis(), Lfd(0), Lfd(0), wtfdjk)
+                xjxk = X[j].times(weights).times(X[k])
+                xjxksum = sum(xjxk)
+                betaInnerjk = self.beta_basis[j].to_basis().inner_product(
+                    self.beta_basis[k].to_basis(), Lfd(0), Lfd(0), xjxksum)
 
-                Cmat[mj1: mj2, mk1: mk2] = Cmatjk
-                Cmat[mk1: mk2, mj1: mj2] = np.transpose(Cmatjk)
+                betaInner[mj1: mj2, mk1: mk2] = betaInnerjk
+                betaInner[mk1: mk2, mj1: mj2] = np.transpose(betaInnerjk)
 
-        Cmat = (Cmat + np.transpose(Cmat)) / 2
-        Cmatinv = np.linalg.inv(Cmat)
-        betacoefs = np.transpose(np.transpose(Cmatinv) @ Dmat)[0]
+        betaInner = (betaInner + np.transpose(betaInner)) / 2
+        betaInnerInv = np.linalg.inv(betaInner)
+        betacoefs = np.transpose(np.transpose(betaInnerInv) @ betaWeight)[0]
 
         idx = 0
         for j in range(0, len(self.beta_basis)):
@@ -60,7 +60,17 @@ class LinearFunctionalRegression(BaseEstimator, RegressorMixin):
             idx = idx + self.beta_basis[j].nbasis
 
         self.beta_ = self.beta_basis
+        self.ybasis_ = y.basis
+
         return self
+
+    def predict(self, X):
+        check_is_fitted(self, ["beta_", "ybasis_"])
+        X = self._X_to_Basis(X, self.ybasis_.domain_range)
+        return [sum([self.beta_[i].to_grid() * X[i][j].to_grid()
+                     for i in range(len(self.beta_))])
+                .to_basis(self.ybasis_)
+                for j in range(X[0].nsamples)]
 
 
     def _argcheck(self, y, x, weights = None):
@@ -77,10 +87,7 @@ class LinearFunctionalRegression(BaseEstimator, RegressorMixin):
             raise ValueError("Independent variables number should be equal "
                              "to the number of beta basis")
 
-        for j in range(0, xlen):
-            if isinstance(x[j], list):
-                xjcoefs = np.asarray(x[j]).reshape((-1, 1))
-                x[j] = FDataBasis(Constant(y.domain_range), xjcoefs)
+        x = self._X_to_Basis(x, y.domain_range)
 
         if any(y.nsamples != xfd.nsamples for xfd in x):
             raise ValueError("Dependent and independent variables should "
@@ -100,3 +107,11 @@ class LinearFunctionalRegression(BaseEstimator, RegressorMixin):
             raise ValueError("The weights should be non negative values")
 
         return y, x, weights
+
+    def _X_to_Basis(self, X, domain_range):
+        X = X.copy()
+        for j in range(0, len(X)):
+            if isinstance(X[j], list):
+                xjcoefs = np.asarray(X[j]).reshape((-1, 1))
+                X[j] = FDataBasis(Constant(domain_range), xjcoefs)
+        return X

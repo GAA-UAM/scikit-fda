@@ -119,7 +119,7 @@ print(probs)
 # In this case, we will vary the number of neighbors between 1 and 11.
 #
 
-# only odd numbers
+# Only odd numbers, to prevent ties
 param_grid = {'n_neighbors': np.arange(1, 12, 2)}
 
 
@@ -171,7 +171,7 @@ plt.ylim((0.9, 1))
 # supported.
 #
 # We will fit the model with the sklearn distance and search for the best
-# parameter. The results can vary sightly, due to the approximation during
+# parameter. The results can vary slightly, due to the approximation during
 # the integration, but the result should be similar.
 #
 

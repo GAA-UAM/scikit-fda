@@ -779,9 +779,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
     def generic_plotting_checks(self, fig=None, ax=None, nrows=None,
                                 ncols=None):
-        """Check the arguments passed to both :func:`plot
-        <fda.functional_data.plot>` and :func:`scatter <fda.grid.scatter>`
-         methods of the FDataGrid object.
+        """Check the arguments passed to both :func:`plot <skfda.FData.plot>`
+        and :func:`scatter <skfda.FDataGrid.scatter>` methods.
 
         Args:
             fig (figure object, optional): figure over with the graphs are
@@ -799,9 +798,10 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 customized in the same call.
 
         Returns:
-            fig (figure object): figure object in which the graphs are plotted
-                in case ax is None.
-            ax (axes object): axes in which the graphs are plotted.
+            (tuple): tuple containing:
+
+                * fig (figure): figure object in which the graphs are plotted.
+                * ax (list): axes in which the graphs are plotted.
 
         """
         if self.ndim_domain > 2:
@@ -851,8 +851,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         Args:
             chart (figure object, axe or list of axes, optional): figure over
                 with the graphs are plotted or axis over where the graphs are
-                    plotted. If None and ax is also None, the figure is
-                    initialized.
+                plotted. If None and ax is also None, the figure is
+                initialized.
             derivative (int or tuple, optional): Order of derivative to be
                 plotted. In case of surfaces a tuple with the order of
                 derivation in each direction can be passed. See
@@ -1029,11 +1029,10 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """Make a copy of the object.
 
         Args:
-            **kwargs: named args with attributes to be changed in the new copy.
+            kwargs: named args with attributes to be changed in the new copy.
 
         Returns:
-            FData: A copy of the FData object with the arguments specified
-            in **kwargs changed.
+            FData: A copy of the FData object.
 
         """
         pass
@@ -1235,19 +1234,21 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         return np.ones(self.nsamples, dtype=bool)
 
     def take(self, indices, allow_fill=False, fill_value=None):
-        """
-        Take elements from an array.
+        """Take elements from an array.
+
         Parameters:
             indices (sequence of integers):
                 Indices to be taken.
             allow_fill (bool, default False): How to handle negative values
                 in `indices`.
+
                 * False: negative values in `indices` indicate positional
                   indices from the right (the default). This is similar to
                   :func:`numpy.take`.
                 * True: negative values in `indices` indicate
                   missing values. These values are set to `fill_value`. Any
                   other negative values raise a ``ValueError``.
+
             fill_value (any, optional):
                 Fill value to use for NA-indices when `allow_fill` is True.
                 This may be ``None``, in which case the default NA value for
@@ -1257,17 +1258,21 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 physical NA value. `fill_value` should be the user-facing
                 version, and the implementation should handle translating that
                 to the physical version for processing the take if necessary.
+
         Returns:
             FData
+
         Raises:
             IndexError: When the indices are out of bounds for the array.
             ValueError: When `indices` contains negative values other than
-                        ``-1`` and `allow_fill` is True.
+                ``-1`` and `allow_fill` is True.
+
         Notes:
             ExtensionArray.take is called by ``Series.__getitem__``, ``.loc``,
             ``iloc``, when `indices` is a sequence of values. Additionally,
             it's called by :meth:`Series.reindex`, or any other method
             that causes realignment, with a `fill_value`.
+
         See Also:
             numpy.take
             pandas.api.extensions.take
@@ -1295,6 +1300,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         Parameters:
             to_concat (sequence of FData)
+
         Returns:
             FData
         """

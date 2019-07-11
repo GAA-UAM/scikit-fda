@@ -9,8 +9,6 @@ import scipy.integrate
 
 from ..._utils import constants
 
-__author__ = "Pablo Marcos Manchón"
-__email__ = "pablo.marcosm@estudiante.uam.es"
 
 
 def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2,

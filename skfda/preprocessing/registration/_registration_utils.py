@@ -8,8 +8,6 @@ import numpy as np
 import scipy.integrate
 from scipy.interpolate import PchipInterpolator
 
-__author__ = "Pablo Marcos Manchón"
-__email__ = "pablo.marcosm@estudiante.uam.es"
 
 
 def mse_decomposition(original_fdata, registered_fdata, warping_function=None,

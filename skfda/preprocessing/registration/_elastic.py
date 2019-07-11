@@ -10,8 +10,6 @@ from ... import FDataGrid
 from...representation.interpolation import SplineInterpolator
 
 
-__author__ = "Pablo Marcos Manchón"
-__email__ = "pablo.marcosm@estudiante.uam.es"
 
 ###############################################################################
 # Based on the original implementation of J. Derek Tucker in                  #

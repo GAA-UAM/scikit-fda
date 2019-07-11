@@ -15,8 +15,6 @@ from ... import FDataGrid
 from io import BytesIO
 from abc import ABC, abstractmethod
 
-__author__ = "Amanda Hernando Bernabé"
-__email__ = "amanda.hernando@estudiante.uam.es"
 
 
 class FDataBoxplot(ABC):

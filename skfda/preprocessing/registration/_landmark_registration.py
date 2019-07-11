@@ -8,8 +8,6 @@ import numpy as np
 from ... import FDataGrid
 from ...representation.interpolation import SplineInterpolator
 
-__author__ = "Pablo Marcos Manchón"
-__email__ = "pablo.marcosm@estudiante.uam.es"
 
 
 def landmark_shift_deltas(fd, landmarks, location=None):

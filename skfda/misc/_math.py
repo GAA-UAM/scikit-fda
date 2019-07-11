@@ -8,13 +8,6 @@ import numpy as np
 import scipy.integrate
 
 
-__author__ = "Miguel Carbajo Berrocal"
-__license__ = "GPL3"
-__version__ = ""
-__maintainer__ = ""
-__email__ = ""
-__status__ = "Development"
-
 
 def sqrt(fdatagrid):
     """Perform a element wise square root operation.

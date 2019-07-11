@@ -6,8 +6,6 @@ from sklearn.model_selection import GridSearchCV
 import sklearn
 
 
-__author__ = "Miguel Carbajo Berrocal"
-__email__ = "miguel.carbajo@estudiante.uam.es"
 
 
 def _get_input_estimation_and_matrix(estimator, X):

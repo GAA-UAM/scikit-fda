@@ -4,9 +4,6 @@ from scipy import stats
 import numpy as np
 
 
-__author__ = "Miguel Carbajo Berrocal"
-__email__ = "miguel.carbajo@estudiante.uam.es"
-
 
 def normal(u):
     r"""Evaluate a normal kernel.

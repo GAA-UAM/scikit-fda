@@ -9,8 +9,6 @@ from sklearn.exceptions import NotFittedError
 import warnings
 from sklearn.utils import check_random_state
 
-__author__ = "Amanda Hernando Bernabé"
-__email__ = "amanda.hernando@estudiante.uam.es"
 
 
 class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):

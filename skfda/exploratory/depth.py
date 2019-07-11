@@ -9,8 +9,6 @@ from .. import FDataGrid
 import itertools
 from functools import reduce
 
-__author__ = "Amanda Hernando Bernabé"
-__email__ = "amanda.hernando@estudiante.uam.es"
 
 
 def _rank_samples(fdatagrid):

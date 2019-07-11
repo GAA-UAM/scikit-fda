@@ -1,8 +1,6 @@
 import numpy as np
 
 
-__author__ = "Pablo Pérez Manso"
-__email__ = "92manso@gmail.com"
 
 
 class LinearDifferentialOperator:

@@ -21,8 +21,6 @@ from . import FData
 from .._utils import _list_of_arrays, constants
 import pandas.api.extensions
 
-__author__ = "Miguel Carbajo Berrocal"
-__email__ = "miguel.carbajo@estudiante.uam.es"
 
 # aux functions
 def _polypow(p, n=2):

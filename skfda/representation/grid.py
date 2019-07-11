@@ -20,9 +20,6 @@ from . import FData
 from .._utils import _list_of_arrays, constants
 
 
-__author__ = "Miguel Carbajo Berrocal"
-__email__ = "miguel.carbajo@estudiante.uam.es"
-
 
 class FDataGrid(FData):
     r"""Represent discretised functional data.

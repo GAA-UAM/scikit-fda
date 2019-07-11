@@ -16,8 +16,6 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from skfda.representation.grid import FDataGrid
 import abc
 
-__author__ = "Miguel Carbajo Berrocal"
-__email__ = "miguel.carbajo@estudiante.uam.es"
 
 
 def _check_r_to_r(f):

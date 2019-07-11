@@ -9,8 +9,6 @@ from matplotlib.ticker import MaxNLocator
 from sklearn.exceptions import NotFittedError
 import warnings
 
-__author__ = "Amanda Hernando Bernabé"
-__email__ = "amanda.hernando@estudiante.uam.es"
 
 
 def _change_luminosity(color, amount=0.5):

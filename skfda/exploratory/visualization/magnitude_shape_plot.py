@@ -19,8 +19,6 @@ import scipy
 from ... import FDataGrid
 from skfda.exploratory.depth import modified_band_depth
 
-__author__ = "Amanda Hernando Bernabé"
-__email__ = "amanda.hernando@estudiante.uam.es"
 
 
 def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,

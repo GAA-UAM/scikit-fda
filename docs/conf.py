@@ -55,6 +55,9 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.intersphinx',
               'sphinx.ext.doctest' ]
 
+autodoc_default_flags = ['members', 'inherited-members']
+
+
 doctest_global_setup = '''
 import numpy as np
 np.set_printoptions(legacy='1.13')

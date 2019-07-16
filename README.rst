@@ -7,13 +7,13 @@ scikit-fda: Functional Data Analysis in Python
 |python|_ |build-status| |docs| |Codecov|_ |PyPi|_ |license|_
 
 Functional Data Analysis, or FDA, is the field of Statistics that analyses data that
-come in the shape of functions. 
+depend on a continuous parameter.
 
 This package offers classes, methods and functions to give support to FDA
 in Python. Includes a wide range of utils to work with functional data, and its
-representation, exploration, or preprocessing, among other tasks such as inference, classification,
+representation, exploratory analysis, or preprocessing, among other tasks such as inference, classification,
 regression or clustering of functional data. See documentation for further information on the features 
-included in the package
+included in the package.
 
 Documentation
 =============
@@ -29,7 +29,7 @@ The documentation of the latest version, corresponding with the develop version 
 Installation
 ============
 Currently, *scikit-fda* is available in Python 3.6 and 3.7, regardless of the platform.
-The latest stable version can be installed via pipy_:
+The latest stable version can be installed via PyPI_:
 
 .. code:: 
 
@@ -89,7 +89,7 @@ License
 The package is licensed under the BSD 3-Clause License. A copy of the license_ can be found along with the code.
 
 .. _examples: https://fda.readthedocs.io/en/latest/auto_examples/index.html
-.. _pipy: https://pypi.org/project/scikit-fda/
+.. _PyPI: https://pypi.org/project/scikit-fda/
 
 .. |python| image:: https://img.shields.io/pypi/pyversions/scikit-fda.svg
 .. _python: https://badge.fury.io/py/scikit-fda

@@ -4,7 +4,7 @@
 scikit-fda: Functional Data Analysis in Python
 ===================================================
 
-|python|_ |build-status| |docs| |Codecov|_ |PyPi|_ |license|_
+|python|_ |build-status| |docs| |Codecov|_ |PyPIBadge|_ |license|_
 
 Functional Data Analysis, or FDA, is the field of Statistics that analyses data that
 depend on a continuous parameter.
@@ -20,16 +20,16 @@ Documentation
 
 The documentation is available at 
 `fda.readthedocs.io/en/stable/ <https://fda.readthedocs.io/en/stable/>`_, which 
-includes detailed information of the different modules, classes and methods available, along with several examples_ 
+includes detailed information of the different modules, classes and methods of the package, along with several examples_ 
 showing different funcionalities. 
 
-The documentation of the latest version, corresponding with the develop version of the package can be found at
+The documentation of the latest version, corresponding with the develop version of the package, can be found at
 `fda.readthedocs.io/en/latest/ <https://fda.readthedocs.io/en/latest/>`_.
 
 Installation
 ============
 Currently, *scikit-fda* is available in Python 3.6 and 3.7, regardless of the platform.
-The latest stable version can be installed via PyPI_:
+The stable version can be installed via PyPI_:
 
 .. code:: 
 
@@ -48,8 +48,8 @@ by cloning this repository and doing a manual installation.
     pip install -r requirements.txt    # Install dependencies
     python setup.py install
 
-Make sure that your default Python version is currently supported or change the python and pip 
-commands to specify version, such as ``python3.6``:
+Make sure that your default Python version is currently supported, or change the python and pip 
+commands specifying a version, such as ``python3.6``:
 
 .. code:: 
 
@@ -65,17 +65,21 @@ Requirements
 * `setuptools <https://github.com/pypa/setuptools>`_ - Python Packaging 
 * `cython <https://github.com/cython/cython>`_ - Python to C compiler 
 * `numpy <https://github.com/numpy/numpy>`_ - The fundamental package for scientific computing with Python
+* `pandas <https://github.com/pandas-dev/pandas>`_ - Powerful Python data analysis toolkit
 * `scipy <https://github.com/scipy/scipy>`_ - Scientific computation in Python
 * `scikit-learn <https://github.com/scikit-learn/scikit-learn>`_ - Machine learning in Python
 * `matplotlib <https://github.com/matplotlib/matplotlib>`_ - Plotting with Python
 * `mpldatacursor <https://github.com/joferkington/mpldatacursor/>`_ - Interactive data cursors for matplotlib
 * `rdata <https://github.com/vnmabus/rdata>`_ - Reader of R datasets in .rda format in Python
+* `scikit-datasets <https://github.com/daviddiazvico/scikit-datasets>`_ - Scikit-learn compatible datasets
+
+The dependencies are automatically installed during the installation. 
 
 Contributions
 =============
-All contributions are welcome. You can help this project grow in multiple ways, from creating an issue, reporting an improvement or bug, to doing a repository fork and creating a pull request to the development branch. 
+All contributions are welcome. You can help this project grow in multiple ways, from creating an issue, reporting an improvement or a bug, to doing a repository fork and creating a pull request to the development branch. 
 
-All the people involved at some point in the development of the package can be found in the `contributors file <https://github.com/GAA-UAM/scikit-fda/blob/develop/THANKS.txt>`_.
+The people involved at some point in the development of the package can be found in the `contributors file <https://github.com/GAA-UAM/scikit-fda/blob/develop/THANKS.txt>`_.
 
 Citation
 ========
@@ -107,8 +111,8 @@ The package is licensed under the BSD 3-Clause License. A copy of the license_ c
 .. |Codecov| image:: https://codecov.io/gh/GAA-UAM/scikit-fda/branch/develop/graph/badge.svg
 .. _Codecov: https://codecov.io/github/GAA-UAM/scikit-fda?branch=develop
 
-.. |PyPi| image:: https://badge.fury.io/py/scikit-fda.svg
-.. _PyPi: https://badge.fury.io/py/scikit-fda
+.. |PyPIBadge| image:: https://badge.fury.io/py/scikit-fda.svg
+.. _PyPIBadge: https://badge.fury.io/py/scikit-fda
 
 .. |license| image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
 .. _license: https://github.com/GAA-UAM/scikit-fda/blob/master/LICENSE.txt

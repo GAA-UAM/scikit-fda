@@ -49,7 +49,7 @@ by cloning this repository and doing a manual installation.
     python setup.py install
 
 Make sure that your default Python version is currently supported, or change the python and pip 
-commands specifying a version, such as ``python3.6``:
+commands by specifying a version, such as ``python3.6``:
 
 .. code:: 
 

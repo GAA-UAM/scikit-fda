@@ -135,6 +135,7 @@ class BasisSmoother(_LinearSmoother):
 
     The fit is made so as to reduce the penalized sum of squared errors
     [RS05-5-2-5]_:
+
     .. math::
 
         PENSSE(c) = (y - \Phi c)' W (y - \Phi c) + \lambda c'Rc
@@ -147,15 +148,17 @@ class BasisSmoother(_LinearSmoother):
     x(s)) \right] ^2 ds` where :math:`L` is a linear differential operator.
 
     Each element of :math:`R` has the following close form:
+
     .. math::
 
         R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
 
     By deriving the first formula we obtain the closed formed of the
     estimated coefficients matrix:
+
     .. math::
 
-        \hat(c) = \left( |Phi' W \Phi + \lambda R \right)^{-1} \Phi' W y
+        \hat{c} = \left( \Phi' W \Phi + \lambda R \right)^{-1} \Phi' W y
 
     The solution of this matrix equation is done using the cholesky
     method for the resolution of a LS problem. If this method throughs a
@@ -167,11 +170,11 @@ class BasisSmoother(_LinearSmoother):
         basis: (Basis): Basis used.
         weights (array_like, optional): Matrix to weight the
             observations. Defaults to the identity matrix.
-        smoothness_parameter (int or float, optional): Smoothness
+        smoothing_parameter (int or float, optional): Smoothing
             parameter. Trying with several factors in a logarythm scale is
             suggested. If 0 no smoothing is performed. Defaults to 0.
-        penalty (int, iterable or LinearDifferentialOperator): If it is an
-            integer, it indicates the order of the
+        penalty (int, iterable or :class:`LinearDifferentialOperator`): If it
+            is an integer, it indicates the order of the
             derivative used in the computing of the penalty matrix. For
             instance 2 means that the differential operator is
             :math:`f''(x)`. If it is an iterable, it consists on coefficients
@@ -192,11 +195,9 @@ class BasisSmoother(_LinearSmoother):
             data as an FDataGrid, like the other smoothers. If ``True`` returns
             a FDataBasis object.
 
-    Returns:
-        FDataBasis: Represention of the data in a functional form as
-            product of coefficients by basis functions.
-
     Examples:
+        By default, the data is converted to basis form without smoothing:
+
         >>> import numpy as np
         >>> import skfda
         >>> t = np.linspace(0, 1, 5)
@@ -230,6 +231,45 @@ class BasisSmoother(_LinearSmoother):
                [ 0.14, -0.29,  0.29,  0.71,  0.14],
                [ 0.43,  0.14, -0.14,  0.14,  0.43]])
 
+        If the smoothing parameter is set to something else than zero, we can
+        penalize approximations that are not smooth enough using a linear
+        differential operator:
+
+        >>> from skfda.misc import LinearDifferentialOperator
+        >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
+        >>> basis = skfda.representation.basis.Fourier((0, 1), nbasis=3)
+        >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
+        ...                basis, method='cholesky',
+        ...                smoothing_parameter=1,
+        ...                penalty=LinearDifferentialOperator(weights=[3, 5]),
+        ...                return_basis=True)
+        >>> fd_basis = smoother.fit_transform(fd)
+        >>> fd_basis.coefficients.round(2)
+        array([[ 0.18,  0.07,  0.09]])
+
+        >>> from skfda.misc import LinearDifferentialOperator
+        >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
+        >>> basis = skfda.representation.basis.Fourier((0, 1), nbasis=3)
+        >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
+        ...                basis, method='qr',
+        ...                smoothing_parameter=1,
+        ...                penalty=LinearDifferentialOperator(weights=[3, 5]),
+        ...                return_basis=True)
+        >>> fd_basis = smoother.fit_transform(fd)
+        >>> fd_basis.coefficients.round(2)
+        array([[ 0.18,  0.07,  0.09]])
+
+        >>> from skfda.misc import LinearDifferentialOperator
+        >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
+        >>> basis = skfda.representation.basis.Fourier((0, 1), nbasis=3)
+        >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
+        ...                basis, method='matrix',
+        ...                smoothing_parameter=1,
+        ...                penalty=LinearDifferentialOperator(weights=[3, 5]),
+        ...                return_basis=True)
+        >>> fd_basis = smoother.fit_transform(fd)
+        >>> fd_basis.coefficients.round(2)
+        array([[ 0.18,  0.07,  0.09]])
 
     References:
         .. [RS05-5-2-5] Ramsay, J., Silverman, B. W. (2005). How spline

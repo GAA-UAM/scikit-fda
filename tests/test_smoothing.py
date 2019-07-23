@@ -5,8 +5,11 @@ import sklearn
 import numpy as np
 import skfda
 from skfda._utils import _check_estimator
+import skfda.preprocessing.smoothing as smoothing
 import skfda.preprocessing.smoothing.kernel_smoothers as kernel_smoothers
 import skfda.preprocessing.smoothing.validation as validation
+from skfda.representation.basis import BSpline, Monomial
+from skfda.representation.grid import FDataGrid
 
 
 class TestSklearnEstimators(unittest.TestCase):
@@ -65,3 +68,53 @@ class TestLeaveOneOut(unittest.TestCase):
 
     def test_knn(self):
         self._test_generic(kernel_smoothers.KNeighborsSmoother)
+
+
+class TestBasisSmoother(unittest.TestCase):
+
+    def test_cholesky(self):
+        t = np.linspace(0, 1, 5)
+        x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
+        basis = BSpline((0, 1), nbasis=5)
+        fd = FDataGrid(data_matrix=x, sample_points=t)
+        smoother = smoothing.BasisSmoother(basis=basis,
+                                           smoothing_parameter=10,
+                                           penalty=2, method='cholesky',
+                                           return_basis=True)
+        fd_basis = smoother.fit_transform(fd)
+        np.testing.assert_array_almost_equal(
+            fd_basis.coefficients.round(2),
+            np.array([[0.60, 0.47, 0.20, -0.07, -0.20]])
+        )
+
+    def test_qr(self):
+        t = np.linspace(0, 1, 5)
+        x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
+        basis = BSpline((0, 1), nbasis=5)
+        fd = FDataGrid(data_matrix=x, sample_points=t)
+        smoother = smoothing.BasisSmoother(basis=basis,
+                                           smoothing_parameter=10,
+                                           penalty=2, method='qr',
+                                           return_basis=True)
+        fd_basis = smoother.fit_transform(fd)
+        np.testing.assert_array_almost_equal(
+            fd_basis.coefficients.round(2),
+            np.array([[0.60, 0.47, 0.20, -0.07, -0.20]])
+        )
+
+    def test_monomial_smoothing(self):
+        # It does not have much sense to apply smoothing in this basic case
+        # where the fit is very good but its just for testing purposes
+        t = np.linspace(0, 1, 5)
+        x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
+        basis = Monomial(nbasis=4)
+        fd = FDataGrid(data_matrix=x, sample_points=t)
+        smoother = smoothing.BasisSmoother(basis=basis,
+                                           smoothing_parameter=1,
+                                           penalty=2,
+                                           return_basis=True)
+        fd_basis = smoother.fit_transform(fd)
+        # These results where extracted from the R package fda
+        np.testing.assert_array_almost_equal(
+            fd_basis.coefficients.round(2),
+            np.array([[0.61, -0.88, 0.06, 0.02]]))

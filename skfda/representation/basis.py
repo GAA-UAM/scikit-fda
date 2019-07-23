@@ -1590,9 +1590,7 @@ class FDataBasis(FData):
         super().__init__(extrapolation, dataset_label, axes_labels, keepdims)
 
     @classmethod
-    def from_data(cls, data_matrix, sample_points, basis, weight_matrix=None,
-                  smoothness_parameter=0, penalty_degree=None,
-                  penalty_coefficients=None, penalty_matrix=None,
+    def from_data(cls, data_matrix, sample_points, basis,
                   method='cholesky', keepdims=False):
         r"""Transform raw data to a smooth functional form.
 
@@ -1674,14 +1672,8 @@ class FDataBasis(FData):
 
         fd = FDataGrid(data_matrix=data_matrix, sample_points=sample_points)
 
-        penalty = (penalty_degree if penalty_degree is not None
-                   else penalty_coefficients)
-
         smoother = BasisSmoother(
-            basis=basis, weights=weight_matrix,
-            smoothing_parameter=smoothness_parameter,
-            penalty=penalty,
-            penalty_matrix=penalty_matrix,
+            basis=basis,
             method=method,
             keepdims=keepdims,
             return_basis=True)

@@ -1,9 +1,8 @@
 import unittest
 
+import numpy as np
 from skfda.representation.basis import (Basis, FDataBasis, Constant, Monomial,
                                         BSpline, Fourier)
-
-import numpy as np
 
 
 class TestBasis(unittest.TestCase):
@@ -15,10 +14,9 @@ class TestBasis(unittest.TestCase):
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = BSpline((0, 1), nbasis=5)
         np.testing.assert_array_almost_equal(
-            FDataBasis.from_data(x, t, basis, smoothness_parameter=10,
-                                 penalty_degree=2, method='cholesky'
+            FDataBasis.from_data(x, t, basis, method='cholesky'
                                  ).coefficients.round(2),
-            np.array([[0.60, 0.47, 0.20, -0.07, -0.20]])
+            np.array([[1., 2.78, -3., -0.78, 1.]])
         )
 
     def test_from_data_qr(self):
@@ -26,24 +24,10 @@ class TestBasis(unittest.TestCase):
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = BSpline((0, 1), nbasis=5)
         np.testing.assert_array_almost_equal(
-            FDataBasis.from_data(x, t, basis, smoothness_parameter=10,
-                                 penalty_degree=2, method='qr'
+            FDataBasis.from_data(x, t, basis, method='qr'
                                  ).coefficients.round(2),
-            np.array([[0.60, 0.47, 0.20, -0.07, -0.20]])
+            np.array([[1., 2.78, -3., -0.78, 1.]])
         )
-
-    def test_monomial_smoothing(self):
-        # It does not have much sense to apply smoothing in this basic case
-        # where the fit is very good but its just for testing purposes
-        t = np.linspace(0, 1, 5)
-        x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
-        basis = Monomial(nbasis=4)
-        fd = FDataBasis.from_data(x, t, basis,
-                                  penalty_degree=2,
-                                  smoothness_parameter=1)
-        # These results where extracted from the R package fda
-        np.testing.assert_array_almost_equal(
-            fd.coefficients.round(2), np.array([[0.61, -0.88, 0.06, 0.02]]))
 
     def test_bspline_penalty_special_case(self):
         basis = BSpline(nbasis=5)
@@ -89,7 +73,8 @@ class TestBasis(unittest.TestCase):
         monomial = Monomial(nbasis=5)
         fourier = Fourier(nbasis=3)
         prod = BSpline(nbasis=9, order=8)
-        self.assertEqual(Basis.default_basis_of_product(monomial, fourier), prod)
+        self.assertEqual(Basis.default_basis_of_product(
+            monomial, fourier), prod)
 
     def test_basis_constant_product(self):
         constant = Constant()
@@ -123,34 +108,40 @@ class TestBasis(unittest.TestCase):
 
     def test_basis_bspline_product(self):
         bspline = BSpline(nbasis=6, order=4)
-        bspline2 = BSpline(domain_range=(0, 1), nbasis=6, order=4, knots=[0, 0.3, 1 / 3, 1])
-        prod = BSpline(domain_range=(0,1), nbasis=10, order=7, knots=[0, 0.3, 1/3, 2/3,1])
+        bspline2 = BSpline(domain_range=(0, 1), nbasis=6,
+                           order=4, knots=[0, 0.3, 1 / 3, 1])
+        prod = BSpline(domain_range=(0, 1), nbasis=10, order=7,
+                       knots=[0, 0.3, 1 / 3, 2 / 3, 1])
         self.assertEqual(bspline.basis_of_product(bspline2), prod)
 
     def test_basis_inner_matrix(self):
         np.testing.assert_array_almost_equal(Monomial(nbasis=3)._inner_matrix(),
-                                             [[1, 1/2, 1/3], [1/2, 1/3, 1/4], [1/3, 1/4, 1/5]])
+                                             [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
 
         np.testing.assert_array_almost_equal(Monomial(nbasis=3)._inner_matrix(Monomial(nbasis=3)),
-                                             [[1, 1/2, 1/3], [1/2, 1/3, 1/4], [1/3, 1/4, 1/5]])
+                                             [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
 
         np.testing.assert_array_almost_equal(Monomial(nbasis=3)._inner_matrix(Monomial(nbasis=4)),
-                                             [[1, 1/2, 1/3, 1/4], [1/2, 1/3, 1/4, 1/5], [1/3, 1/4, 1/5, 1/6]])
+                                             [[1, 1 / 2, 1 / 3, 1 / 4], [1 / 2, 1 / 3, 1 / 4, 1 / 5], [1 / 3, 1 / 4, 1 / 5, 1 / 6]])
 
         # TODO testing with other basis
 
     def test_basis_gram_matrix(self):
         np.testing.assert_array_almost_equal(Monomial(nbasis=3).gram_matrix(),
-                                             [[1, 1/2, 1/3], [1/2, 1/3, 1/4], [1/3, 1/4, 1/5]])
+                                             [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
         np.testing.assert_almost_equal(Fourier(nbasis=3).gram_matrix(),
                                        np.identity(3))
         np.testing.assert_almost_equal(BSpline(nbasis=6).gram_matrix().round(4),
-            np.array([[4.760e-02, 2.920e-02, 6.200e-03, 4.000e-04, 0.000e+00, 0.000e+00],
-                      [2.920e-02, 7.380e-02, 5.210e-02, 1.150e-02, 1.000e-04, 0.000e+00],
-                      [6.200e-03, 5.210e-02, 1.090e-01, 7.100e-02, 1.150e-02, 4.000e-04],
-                      [4.000e-04, 1.150e-02, 7.100e-02, 1.090e-01, 5.210e-02, 6.200e-03],
-                      [0.000e+00, 1.000e-04, 1.150e-02, 5.210e-02, 7.380e-02, 2.920e-02],
-                      [0.000e+00, 0.000e+00, 4.000e-04, 6.200e-03, 2.920e-02, 4.760e-02]]))
+                                       np.array([[4.760e-02, 2.920e-02, 6.200e-03, 4.000e-04, 0.000e+00, 0.000e+00],
+                                                 [2.920e-02, 7.380e-02, 5.210e-02,
+                                                  1.150e-02, 1.000e-04, 0.000e+00],
+                                                 [6.200e-03, 5.210e-02, 1.090e-01,
+                                                  7.100e-02, 1.150e-02, 4.000e-04],
+                                                 [4.000e-04, 1.150e-02, 7.100e-02,
+                                                  1.090e-01, 5.210e-02, 6.200e-03],
+                                                 [0.000e+00, 1.000e-04, 1.150e-02,
+                                                  5.210e-02, 7.380e-02, 2.920e-02],
+                                                 [0.000e+00, 0.000e+00, 4.000e-04, 6.200e-03, 2.920e-02, 4.760e-02]]))
 
     def test_basis_basis_inprod(self):
         monomial = Monomial(nbasis=4)
@@ -202,7 +193,8 @@ class TestBasis(unittest.TestCase):
         )
 
         np.testing.assert_array_almost_equal(
-            monomialfd._inner_product_integrate(bsplinefd, None, None).round(3),
+            monomialfd._inner_product_integrate(
+                bsplinefd, None, None).round(3),
             np.array([[16.14797697, 52.81464364, 89.4813103],
                       [11.55565285, 38.22211951, 64.88878618],
                       [18.14698361, 55.64698361, 93.14698361],
@@ -227,11 +219,12 @@ class TestBasis(unittest.TestCase):
 
         prod_basis = BSpline(nbasis=9, order=6, knots=[0, 0.25, 0.5, 0.75, 1])
         prod_coefs = np.array([[0.9788352,  1.6289955,  2.7004969,  6.2678739,
-                      8.7636441,  4.0069960,  0.7126961,  2.8826708,
-                      6.0052311]])
+                                8.7636441,  4.0069960,  0.7126961,  2.8826708,
+                                6.0052311]])
 
         self.assertEqual(prod_basis, times_fdar.basis)
-        np.testing.assert_array_almost_equal(prod_coefs, times_fdar.coefficients)
+        np.testing.assert_array_almost_equal(
+            prod_coefs, times_fdar.coefficients)
 
     def test_fdatabasis_times_fdatabasis_list(self):
         monomial = FDataBasis(Monomial(nbasis=3),
@@ -276,8 +269,8 @@ class TestBasis(unittest.TestCase):
                                            [[2, 2, 3], [5, 4, 5]]))
 
         np.testing.assert_raises(NotImplementedError, monomial2.__add__,
-                        FDataBasis(Fourier(nbasis=3),
-                                   [[2, 2, 3], [5, 4, 5]]))
+                                 FDataBasis(Fourier(nbasis=3),
+                                            [[2, 2, 3], [5, 4, 5]]))
 
     def test_fdatabasis__sub__(self):
         monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
@@ -302,7 +295,7 @@ class TestBasis(unittest.TestCase):
         np.testing.assert_raises(NotImplementedError, monomial2.__sub__,
                                  FDataBasis(Fourier(nbasis=3),
                                             [[2, 2, 3], [5, 4, 5]]))
-        
+
     def test_fdatabasis__mul__(self):
         monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
         monomial2 = FDataBasis(Monomial(nbasis=3), [[1, 2, 3], [3, 4, 5]])
@@ -324,11 +317,10 @@ class TestBasis(unittest.TestCase):
                                            [[1, 2, 3], [6, 8, 10]]))
 
         np.testing.assert_raises(NotImplementedError, monomial2.__mul__,
-                        FDataBasis(Fourier(nbasis=3),
-                                   [[2, 2, 3], [5, 4, 5]]))
+                                 FDataBasis(Fourier(nbasis=3),
+                                            [[2, 2, 3], [5, 4, 5]]))
         np.testing.assert_raises(NotImplementedError, monomial2.__mul__,
-                        monomial2)
-
+                                 monomial2)
 
     def test_fdatabasis__mul__(self):
         monomial1 = FDataBasis(Monomial(nbasis=3), [1, 2, 3])
@@ -336,23 +328,22 @@ class TestBasis(unittest.TestCase):
 
         np.testing.assert_equal(monomial1 / 2,
                                 FDataBasis(Monomial(nbasis=3),
-                                           [[1/2, 1, 3/2]]))
+                                           [[1 / 2, 1, 3 / 2]]))
         np.testing.assert_equal(monomial2 / 2,
                                 FDataBasis(Monomial(nbasis=3),
-                                           [[1/2, 1, 3/2], [3/2, 2, 5/2]]))
+                                           [[1 / 2, 1, 3 / 2], [3 / 2, 2, 5 / 2]]))
 
         np.testing.assert_equal(monomial2 / [1, 2],
                                 FDataBasis(Monomial(nbasis=3),
-                                           [[1, 2, 3], [3/2, 2, 5/2]]))
+                                           [[1, 2, 3], [3 / 2, 2, 5 / 2]]))
 
-        
     def test_fdatabasis_derivative_constant(self):
         monomial = FDataBasis(Monomial(nbasis=8),
                               [1, 5, 8, 9, 7, 8, 4, 5])
         monomial2 = FDataBasis(Monomial(nbasis=5),
-                              [[4, 9, 7, 4, 3],
-                               [1, 7, 9, 8, 5],
-                               [4, 6, 6, 6, 8]])
+                               [[4, 9, 7, 4, 3],
+                                [1, 7, 9, 8, 5],
+                                [4, 6, 6, 6, 8]])
 
         np.testing.assert_equal(monomial.derivative(),
                                 FDataBasis(Monomial(nbasis=7),
@@ -378,9 +369,9 @@ class TestBasis(unittest.TestCase):
         monomial = FDataBasis(Monomial(nbasis=8),
                               [1, 5, 8, 9, 7, 8, 4, 5])
         monomial2 = FDataBasis(Monomial(nbasis=5),
-                              [[4, 9, 7, 4, 3],
-                               [1, 7, 9, 8, 5],
-                               [4, 6, 6, 6, 8]])
+                               [[4, 9, 7, 4, 3],
+                                [1, 7, 9, 8, 5],
+                                [4, 6, 6, 6, 8]])
 
         np.testing.assert_equal(monomial.derivative(),
                                 FDataBasis(Monomial(nbasis=7),
@@ -404,7 +395,7 @@ class TestBasis(unittest.TestCase):
 
     def test_fdatabasis_derivative_fourier(self):
         fourier = FDataBasis(Fourier(nbasis=7),
-                              [1, 5, 8, 9, 8, 4, 5])
+                             [1, 5, 8, 9, 8, 4, 5])
         fourier2 = FDataBasis(Fourier(nbasis=5),
                               [[4, 9, 7, 4, 3],
                                [1, 7, 9, 8, 5],
@@ -433,13 +424,15 @@ class TestBasis(unittest.TestCase):
         np.testing.assert_equal(fou1.basis, fourier2.basis)
         np.testing.assert_almost_equal(fou1.coefficients.round(5),
                                        [[0, -43.98230, 56.54867, -37.69911, 50.26548],
-                                        [0, -56.54867, 43.98230, -62.83185, 100.53096],
+                                        [0, -56.54867, 43.98230, -
+                                            62.83185, 100.53096],
                                         [0, -37.69911, 37.69911, -100.53096, 75.39822]])
         np.testing.assert_equal(fou0, fourier2)
         np.testing.assert_equal(fou2.basis, fourier2.basis)
         np.testing.assert_almost_equal(fou2.coefficients.round(5),
                                        [[0, -355.30576, -276.34892, -631.65468, -473.74101],
-                                        [0, -276.34892, -355.30576, -1263.30936, -789.56835],
+                                        [0, -276.34892, -355.30576, -
+                                            1263.30936, -789.56835],
                                         [0, -236.87051, -236.87051, -947.48202, -1263.30936]])
 
     def test_fdatabasis_derivative_bspline(self):

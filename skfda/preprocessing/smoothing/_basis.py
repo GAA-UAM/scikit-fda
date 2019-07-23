@@ -474,7 +474,7 @@ class BasisSmoother(_LinearSmoother):
         elif data_matrix.shape[0] == self.basis.nbasis:
             # If the number of basis equals the number of points and no
             # smoothing is required
-            coefficients = np.linalg.solve(basis_values, data_matrix)
+            coefficients = np.linalg.solve(basis_values, data_matrix).T
 
         else:  # data_matrix.shape[0] < basis.nbasis
             raise ValueError(f"The number of basis functions "

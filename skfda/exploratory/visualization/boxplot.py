@@ -110,13 +110,13 @@ class Boxplot(FDataBoxplot):
         central_regions (array, (fdatagrid.ndim_image * ncentral_regions, 2,
             nsample_points)): contains the central regions.
         outliers (array, (fdatagrid.ndim_image, fdatagrid.nsamples)):
-            contains the outliers
+            contains the outliers.
         barcol (string): Color of the envelopes and vertical lines.
         outliercol (string): Color of the ouliers.
         mediancol (string): Color of the median.
         show_full_outliers (boolean): If False (the default) then only the part
             outside the box is plotted. If True, complete outling curves are
-            plotted
+            plotted.
 
     Example:
         Function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
@@ -328,9 +328,12 @@ class Boxplot(FDataBoxplot):
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
 
-         Returns:
-            fig (figure object): figure object in which the graphs are plotted.
-            ax (axes object): axes in which the graphs are plotted.
+        Returns:
+            (tuple): tuple containing:
+
+                * fig (figure): figure object in which the graphs are plotted.
+                * ax (list): axes in which the graphs are plotted.
+
 
         """
 
@@ -625,9 +628,10 @@ class SurfaceBoxplot(FDataBoxplot):
                  specified if fig and ax are None.
 
         Returns:
-             fig (figure object): figure object in which the graphs are
-                 plotted.
-             ax (axes object): axes in which the graphs are plotted.
+            (tuple): tuple containing:
+
+                * fig (figure): figure object in which the graphs are plotted.
+                * ax (list): axes in which the graphs are plotted.
 
         """
         fig, ax = self.fdatagrid.generic_plotting_checks(fig, ax, nrows,

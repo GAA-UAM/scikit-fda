@@ -771,13 +771,15 @@ class FDataGrid(FData):
             ncols(int, optional): designates the number of columns of the
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
-            **kwargs: keyword arguments to be passed to the
+            kwargs: keyword arguments to be passed to the
                 matplotlib.pyplot.scatter function;
 
         Returns:
-            fig (figure object): figure object in which the graphs are plotted
-                in case ax is None.
-            ax (axes object): axes in which the graphs are plotted.
+            (tuple): tuple containing:
+
+                * fig (figure): figure object in which the graphs are plotted.
+                * ax (list): axes in which the graphs are plotted.
+
 
         """
         fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)

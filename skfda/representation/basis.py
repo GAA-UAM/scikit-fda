@@ -1603,6 +1603,7 @@ class FDataBasis(FData):
 
         The fit is made so as to reduce the sum of squared errors
         [RS05-5-2-5]_:
+
         .. math::
 
             SSE(c) = (y - \Phi c)' (y - \Phi c)
@@ -1614,9 +1615,10 @@ class FDataBasis(FData):
 
         By deriving the first formula we obtain the closed formed of the
         estimated coefficients matrix:
+
         .. math::
 
-            \hat(c) = \left( |Phi' \Phi \right)^{-1} \Phi' y
+            \hat{c} = \left( \Phi' \Phi \right)^{-1} \Phi' y
 
         The solution of this matrix equation is done using the cholesky
         method for the resolution of a LS problem. If this method throughs a

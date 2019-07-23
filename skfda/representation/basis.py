@@ -159,8 +159,10 @@ class Basis(ABC):
                 fdata.plot function.
 
         Returns:
-            fig (figure object): figure object in which the graphs are plotted.
-            ax (axes object): axes in which the graphs are plotted.
+            (tuple): tuple containing:
+
+                * fig (figure): figure object in which the graphs are plotted.
+                * ax (list): axes in which the graphs are plotted.
 
         """
         self.to_basis().plot(chart=chart, derivative=derivative, **kwargs)
@@ -502,7 +504,7 @@ class Constant(Basis):
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
 
-        The penalty matrix is defined as [RS05-5-6-2]_:
+        The penalty matrix is defined as [RS05-5-6-2-1]_:
 
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
@@ -531,7 +533,7 @@ class Constant(Basis):
             array([[ 0.]])
 
         References:
-            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
+            .. [RS05-5-6-2-1] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
                 Springer.
 
@@ -658,7 +660,7 @@ class Monomial(Basis):
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
 
-        The penalty matrix is defined as [RS05-5-6-2]_:
+        The penalty matrix is defined as [RS05-5-6-2-2]_:
 
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
@@ -688,7 +690,7 @@ class Monomial(Basis):
                    [ 0.,  0.,  6., 12.]])
 
         References:
-            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
+            .. [RS05-5-6-2-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
                 Springer.
 
@@ -969,7 +971,7 @@ class BSpline(Basis):
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
 
-        The penalty matrix is defined as [RS05-5-6-2]_:
+        The penalty matrix is defined as [RS05-5-6-2-3]_:
 
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
@@ -991,7 +993,7 @@ class BSpline(Basis):
             numpy.array: Penalty matrix.
 
         References:
-            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
+            .. [RS05-5-6-2-3] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
                 Springer.
 
@@ -1401,7 +1403,7 @@ class Fourier(Basis):
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
 
-        The penalty matrix is defined as [RS05-5-6-2]_:
+        The penalty matrix is defined as [RS05-5-6-2-4]_:
 
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
@@ -1423,7 +1425,7 @@ class Fourier(Basis):
             numpy.array: Penalty matrix.
 
         References:
-            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
+            .. [RS05-5-6-2-4] Ramsay, J., Silverman, B. W. (2005). Specifying the
                 roughness penalty. In *Functional Data Analysis* (pp. 106-107).
                 Springer.
 
@@ -2067,13 +2069,13 @@ class FDataBasis(FData):
         Args:
             other (int, list, FDataBasis): Object to multiply with the
                                            FDataBasis object.
-                - int: Multiplies all samples with the value
-                - list: multiply each values with the samples respectively.
-                        Length should match with FDataBasis samples
-                - FDataBasis: if there is one sample it multiplies this with
-                              all the samples in the object. If not, it
-                              multiplies each sample respectively. Samples
-                              should match
+
+                * int: Multiplies all samples with the value
+                * list: multiply each values with the samples respectively.
+                    Length should match with FDataBasis samples
+                * FDataBasis: if there is one sample it multiplies this with
+                    all the samples in the object. If not, it multiplies each
+                    sample respectively. Samples should match
 
         Returns:
             (FDataBasis): FDataBasis object containing the multiplication
@@ -2281,7 +2283,7 @@ class FDataBasis(FData):
             fd (:class:`FData`): FData object to make the composition. Should
                 have the same number of samples and image dimension equal to 1.
             eval_points (array_like): Points to perform the evaluation.
-             **kwargs: Named arguments to be passed to :func:`from_data`.
+             kwargs: Named arguments to be passed to :func:`from_data`.
         """
 
         grid = self.to_grid().compose(fd, eval_points=eval_points)

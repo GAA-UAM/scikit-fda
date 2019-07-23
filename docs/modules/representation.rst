@@ -53,6 +53,7 @@ The following classes are used to define different basis systems.
    skfda.representation.basis.BSpline
    skfda.representation.basis.Fourier
    skfda.representation.basis.Monomial
+   skfda.representation.basis.Constant
 
 Generic representation
 ----------------------
@@ -67,7 +68,7 @@ receive an element of this class as an argument.
    :toctree: autosummary
 
    skfda.representation.FData
-   
+
 Extrapolation
 -------------
 All representations of functional data allow evaluation outside of the original
@@ -75,5 +76,5 @@ interval using extrapolation methods.
 
 .. toctree::
    :maxdepth: 4
-   
+
    representation/extrapolation

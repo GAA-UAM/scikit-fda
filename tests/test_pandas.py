@@ -39,3 +39,7 @@ class TestPandas(unittest.TestCase):
             df["function"].dtype, skfda.representation.basis.FDataBasisDType)
         self.assertEqual(len(df["function"]), self.fd_basis.nsamples)
         self.assertEqual(df["function"][0], self.fd_basis[0])
+
+    def test_take(self):
+        self.assertEqual(self.fd.take(0), self.fd[0])
+        self.assertEqual(self.fd.take(0, axis=0), self.fd[0])

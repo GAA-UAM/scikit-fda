@@ -13,7 +13,7 @@ import pandas.api.extensions
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
-from skfda.representation.extrapolation import _parse_extrapolation
+from .extrapolation import _parse_extrapolation
 
 from .._utils import _coordinate_list, _list_of_arrays, constants
 

@@ -4,6 +4,7 @@ from .base import (NearestNeighborsMixinInit, NeighborsBase, NeighborsMixin,
 
 from ..misc.metrics import lp_distance
 
+
 class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase, NeighborsMixin,
                        KNeighborsMixin, RadiusNeighborsMixin):
     """Unsupervised learner for implementing neighbor searches.
@@ -108,33 +109,3 @@ class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase, NeighborsMixin,
                          algorithm=algorithm, leaf_size=leaf_size,
                          metric=metric, metric_params=metric_params,
                          n_jobs=n_jobs, sklearn_metric=sklearn_metric)
-
-    def fit(self, X, y=None):
-        """Fit the model using X as training data.
-
-        Args:
-            X (:class:`FDataGrid`, array_matrix): Training data. FDataGrid
-                with the training data or array matrix with shape
-                [n_samples, n_samples] if metric='precomputed'.
-            y (None) : Parameter ignored.
-
-        Note:
-            This method wraps the corresponding sklearn routine in the module
-            ``sklearn.neighbors``.
-
-        """
-        # If metric is precomputed no different with the Sklearn stimator
-        if self.metric == 'precomputed':
-            self.estimator_ = self._init_estimator(self.metric)
-            self.estimator_.fit(X)
-        else:
-            self._sample_points = X.sample_points
-            self._shape = X.data_matrix.shape[1:]
-
-            # Constructs sklearn metric to manage vector instead of FDatagrids
-            sk_metric = _to_sklearn_metric(self.metric, self._sample_points)
-
-            self.estimator_ = self._init_estimator(sk_metric)
-            self.estimator_.fit(self._transform_to_multivariate(X))
-
-        return self

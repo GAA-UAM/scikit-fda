@@ -14,6 +14,7 @@ from .base import (NeighborsBase, NeighborsMixin,
 from ..exploratory.stats import mean
 from ..misc.metrics import lp_distance
 
+
 class KNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
                                 KNeighborsMixin, RegressorMixin,
                                 NeighborsScalarRegresorMixin):
@@ -113,6 +114,7 @@ class KNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
     https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
 
     """
+
     def __init__(self, n_neighbors=5, weights='uniform', algorithm='auto',
                  leaf_size=30, metric=lp_distance, metric_params=None,
                  n_jobs=1, sklearn_metric=False):
@@ -141,6 +143,7 @@ class KNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
             algorithm=self.algorithm, leaf_size=self.leaf_size,
             metric=sk_metric, metric_params=self.metric_params,
             n_jobs=self.n_jobs)
+
 
 class RadiusNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
                                      RadiusNeighborsMixin, RegressorMixin,
@@ -248,7 +251,6 @@ class RadiusNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
                          metric_params=metric_params, n_jobs=n_jobs,
                          sklearn_metric=sklearn_metric)
 
-
     def _init_estimator(self, sk_metric):
         """Initialize the sklearn radius neighbors estimator.
 
@@ -266,6 +268,7 @@ class RadiusNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
             algorithm=self.algorithm, leaf_size=self.leaf_size,
             metric=sk_metric, metric_params=self.metric_params,
             n_jobs=self.n_jobs)
+
 
 class KNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
                                     NeighborsBase, KNeighborsMixin,
@@ -367,10 +370,9 @@ class KNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
 
     """
 
-
     def __init__(self, n_neighbors=5, weights='uniform', regressor=mean,
                  algorithm='auto', leaf_size=30, metric=lp_distance,
-                 metric_params=None,  n_jobs=1, sklearn_metric=False):
+                 metric_params=None, n_jobs=1, sklearn_metric=False):
         """Initialize the classifier."""
 
         super().__init__(n_neighbors=n_neighbors, radius=1.,
@@ -383,6 +385,7 @@ class KNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
     def _query(self, X):
         """Return distances and neighbors of given sample"""
         return self.estimator_.kneighbors(X)
+
 
 class RadiusNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
                                          NeighborsBase, RadiusNeighborsMixin,

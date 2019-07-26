@@ -138,19 +138,11 @@ class NeighborsBase(ABC, BaseEstimator):
 
         return X
 
-    def _transform_from_multivariate(self, X):
-        """Transform from array like to FDatagrid."""
-
-        if X.ndim == 1:
-            shape = (1, ) + self._shape
-        else:
-            shape = (len(X), ) + self._shape
-
-        return _from_multivariate(X, self._sample_points, shape)
 
 class NeighborsMixin:
     """Mixin class to train the neighbors models"""
-    def fit(self, X, y):
+
+    def fit(self, X, y=None):
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -159,6 +151,7 @@ class NeighborsMixin:
                 [n_samples, n_samples] if metric='precomputed'.
             y (array-like or sparse matrix): Target values of
                 shape = [n_samples] or [n_samples, n_outputs].
+                In the case of unsupervised search, this parameter is ignored.
 
         Note:
             This method wraps the corresponding sklearn routine in the module
@@ -175,7 +168,8 @@ class NeighborsMixin:
 
             if not self.sklearn_metric:
                 # Constructs sklearn metric to manage vector
-                sk_metric = _to_sklearn_metric(self.metric, self._sample_points)
+                sk_metric = _to_sklearn_metric(
+                    self.metric, self._sample_points)
             else:
                 sk_metric = self.metric
 
@@ -441,6 +435,7 @@ class NeighborsClassifierMixin:
 
         return self.estimator_.predict(X)
 
+
 class NeighborsScalarRegresorMixin:
     """Mixin class for scalar regressor based in nearest neighbors"""
 
@@ -467,6 +462,7 @@ class NeighborsScalarRegresorMixin:
 
         return self.estimator_.predict(X)
 
+
 class NearestNeighborsMixinInit:
     def _init_estimator(self, sk_metric):
         """Initialize the sklearn nearest neighbors estimator.
@@ -486,6 +482,7 @@ class NearestNeighborsMixinInit:
             metric=sk_metric, metric_params=self.metric_params,
             n_jobs=self.n_jobs)
 
+
 class NeighborsFunctionalRegressorMixin:
     """Mixin class for the functional regressors based in neighbors"""
 
@@ -499,7 +496,7 @@ class NeighborsFunctionalRegressorMixin:
 
 
         """
-        if X.nsamples != y.nsamples:
+        if len(X) != y.nsamples:
             raise ValueError("The response and dependent variable must "
                              "contain the same number of samples,")
 
@@ -513,7 +510,8 @@ class NeighborsFunctionalRegressorMixin:
 
             if not self.sklearn_metric:
                 # Constructs sklearn metric to manage vector instead of grids
-                sk_metric = _to_sklearn_metric(self.metric, self._sample_points)
+                sk_metric = _to_sklearn_metric(
+                    self.metric, self._sample_points)
             else:
                 sk_metric = self.metric
 
@@ -550,7 +548,6 @@ class NeighborsFunctionalRegressorMixin:
 
         return self.regressor(neighbors, weights)
 
-
     def _weighted_local_regression(self, neighbors, distance):
         """Perform local regression using custom weights"""
 
@@ -577,7 +574,6 @@ class NeighborsFunctionalRegressorMixin:
 
         distances, neighbors = self._query(X)
 
-
         # Todo: change the concatenation after merge image-operations branch
         if len(neighbors[0]) == 0:
             pred = self._outlier_response(neighbors)
@@ -588,7 +584,7 @@ class NeighborsFunctionalRegressorMixin:
             if len(idx) == 0:
                 new_pred = self._outlier_response(neighbors)
             else:
-                new_pred = self.local_regressor(self._y[idx], distances[i+1])
+                new_pred = self.local_regressor(self._y[idx], distances[i + 1])
 
             pred = pred.concatenate(new_pred)
 
@@ -598,8 +594,8 @@ class NeighborsFunctionalRegressorMixin:
         """Response in case of no neighbors"""
 
         if (not hasattr(self, "outlier_response") or
-            self.outlier_response is None):
-            index = np.where([len(n)==0 for n in neighbors])[0]
+                self.outlier_response is None):
+            index = np.where([len(n) == 0 for n in neighbors])[0]
 
             raise ValueError(f"No neighbors found for test samples  {index}, "
                              "you can try using larger radius, give a reponse "
@@ -607,7 +603,6 @@ class NeighborsFunctionalRegressorMixin:
                              " dataset.")
         else:
             return self.outlier_response
-
 
     @abstractmethod
     def _query(self):

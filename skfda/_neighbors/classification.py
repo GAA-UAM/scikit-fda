@@ -13,6 +13,7 @@ from sklearn.neighbors import (RadiusNeighborsClassifier as
 from ..misc.metrics import lp_distance, pairwise_distance
 from ..exploratory.stats import mean
 
+
 class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
                            ClassifierMixin, NeighborsClassifierMixin):
     """Classifier implementing the k-nearest neighbors vote.
@@ -352,6 +353,7 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
     NearestNeighbors
 
     """
+
     def __init__(self, metric=lp_distance, mean=mean):
         """Initialize the classifier."""
         self.metric = metric

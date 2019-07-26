@@ -1,4 +1,4 @@
 
 
-from .._neighbors import (KNeighborsClassifier, RadiusNeighborsClassifier,
-                          NearestNeighbors, NearestCentroids)
+from ..._neighbors import (KNeighborsClassifier, RadiusNeighborsClassifier,
+                           NearestNeighbors, NearestCentroids)

@@ -534,8 +534,8 @@ class FDataGrid(FData):
         """
         if weights is not None:
 
-            return self.copy(data_matrix=numpy.average(
-                self.data_matrix, weights=weights, axis=0)[numpy.newaxis,...]
+            return self.copy(data_matrix=np.average(
+                self.data_matrix, weights=weights, axis=0)[np.newaxis,...]
                              )
 
         return self.copy(data_matrix=self.data_matrix.mean(axis=0,

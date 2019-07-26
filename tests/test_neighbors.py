@@ -11,8 +11,12 @@ from skfda.ml.classification import (KNeighborsClassifier,
                                      NearestNeighbors)
 
 from skfda.ml.regression import (KNeighborsScalarRegressor,
-                                 RadiusNeighborsScalarRegressor)
+                                 RadiusNeighborsScalarRegressor,
+                                 KNeighborsFunctionalRegressor,
+                                 RadiusNeighborsFunctionalRegressor)
+
 from skfda.misc.metrics import lp_distance, lp_distance
+from skfda.representation.basis import Fourier
 
 class TestNeighbors(unittest.TestCase):
 
@@ -34,6 +38,10 @@ class TestNeighbors(unittest.TestCase):
                                          modes_location=modes_location,
                                          noise=.05,
                                          random_state=random_state)
+        self.X2 = make_multimodal_samples(n_samples=30,
+                                         modes_location=modes_location,
+                                         noise=.05,
+                                         random_state=1)
 
         self.probs = np.array(15*[[1., 0.]] + 15*[[0., 1.]])[idx]
 
@@ -136,6 +144,86 @@ class TestNeighbors(unittest.TestCase):
             for i in range(30):
                 self.assertEqual(graph[0, i] == 1.0, i in links[0])
                 self.assertEqual(graph[0, i] == 0.0, i not in links[0])
+
+    def test_knn_functional_response(self):
+        knnr = KNeighborsFunctionalRegressor(n_neighbors=1)
+
+        knnr.fit(self.X, self.X)
+
+        res = knnr.predict(self.X)
+        np.testing.assert_array_almost_equal(res.data_matrix,
+                                             self.X.data_matrix)
+
+    def test_radius_functional_response(self):
+        knnr = RadiusNeighborsFunctionalRegressor(weights='distance')
+
+        knnr.fit(self.X, self.X)
+
+        res = knnr.predict(self.X)
+        np.testing.assert_array_almost_equal(res.data_matrix,
+                                             self.X.data_matrix)
+
+    def test_functional_response_custom_weights(self):
+
+        def weights(weights):
+
+            return np.array([w == 0 for w in weights], dtype=float)
+
+        knnr = KNeighborsFunctionalRegressor(weights=weights, n_neighbors=5)
+        response = self.X.to_basis(Fourier(domain_range=(-1, 1), nbasis=10))
+        knnr.fit(self.X, response)
+
+        res = knnr.predict(self.X)
+        np.testing.assert_array_almost_equal(res.coefficients,
+                                             response.coefficients)
+
+    def test_functional_response_basis(self):
+        knnr = KNeighborsFunctionalRegressor(weights='distance', n_neighbors=5)
+        response = self.X.to_basis(Fourier(domain_range=(-1, 1), nbasis=10))
+        knnr.fit(self.X, response)
+
+        res = knnr.predict(self.X)
+        np.testing.assert_array_almost_equal(res.coefficients,
+                                             response.coefficients)
+
+    def test_radius_outlier_functional_response(self):
+        knnr = RadiusNeighborsFunctionalRegressor(radius=0.001)
+        knnr.fit(self.X[3:6], self.X[3:6])
+
+        # No value given
+        with np.testing.assert_raises(ValueError):
+            knnr.predict(self.X[:10])
+
+        # Test response
+        knnr = RadiusNeighborsFunctionalRegressor(radius=0.001,
+                                                  outlier_response=self.X[0])
+        knnr.fit(self.X[3:6], self.X[3:6])
+
+        res = knnr.predict(self.X[0])
+        np.testing.assert_array_almost_equal(self.X[0].data_matrix,
+                                             res.data_matrix)
+
+    def test_nearest_centroids_exceptions(self):
+
+        # Test more than one class
+        nn = NearestCentroids()
+        with np.testing.assert_raises(ValueError):
+            nn.fit(self.X[0:3], 3*[0])
+
+        # Precomputed not supported
+        nn = NearestCentroids(metric='precomputed')
+        with np.testing.assert_raises(ValueError):
+            nn.fit(self.X[0:3], 3*[0])
+
+    def test_functional_regressor_exceptions(self):
+
+        knnr = RadiusNeighborsFunctionalRegressor()
+
+        with np.testing.assert_raises(ValueError):
+            knnr.fit(self.X[:3], self.X[:4])
+
+
+
 
 if __name__ == '__main__':
     print()

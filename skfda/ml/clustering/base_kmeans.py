@@ -452,7 +452,7 @@ class KMeans(BaseKMeans):
         Args:
             X (FDataGrid object): Object whose samples are clusered,
                 classified into different groups.
-             y (Ignored): present here for API consistency by convention.
+            y (Ignored): present here for API consistency by convention.
             sample_weight (Ignored): present here for API consistency by
                 convention.
         """
@@ -726,7 +726,7 @@ class FuzzyKMeans(BaseKMeans):
         Args:
             X (FDataGrid object): Object whose samples are clusered,
                 classified into different groups.
-             y (Ignored): present here for API consistency by convention.
+            y (Ignored): present here for API consistency by convention.
             sample_weight (Ignored): present here for API consistency by
                 convention.
         """

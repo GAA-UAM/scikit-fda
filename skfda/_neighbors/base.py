@@ -66,7 +66,7 @@ def _to_sklearn_metric(metric, sample_points):
         >>> import numpy as np
         >>> from skfda import FDataGrid
         >>> from skfda.misc.metrics import lp_distance
-        >>> from skfda.ml._neighbors import _to_sklearn_metric
+        >>> from skfda._neighbors.base import _to_sklearn_metric
 
         Calculate the Lp distance between fd and fd2.
 

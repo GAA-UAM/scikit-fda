@@ -3,15 +3,15 @@ Module to interpolate functional data objects.
 """
 
 
-import numpy as np
-
-# Scipy interpolator methods used internally
 from scipy.interpolate import (PchipInterpolator, UnivariateSpline,
                                RectBivariateSpline, RegularGridInterpolator)
+
+import numpy as np
 
 from .evaluator import Evaluator, EvaluatorConstructor
 
 
+# Scipy interpolator methods used internally
 class SplineInterpolator(EvaluatorConstructor):
     r"""Spline interpolator of :class:`FDataGrid`.
 
@@ -85,7 +85,7 @@ class SplineInterpolator(EvaluatorConstructor):
         return (super().__eq__(other) and
                 self.interpolation_order == other.interpolation_order and
                 self.smoothness_parameter == other.smoothness_parameter and
-                self.monoton == other.monotone)
+                self.monotone == other.monotone)
 
     def evaluator(self, fdatagrid):
         """Construct a SplineInterpolatorEvaluator used in the evaluation.

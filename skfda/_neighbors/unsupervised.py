@@ -5,8 +5,8 @@ from .base import (NearestNeighborsMixinInit, NeighborsBase, NeighborsMixin,
 from ..misc.metrics import lp_distance
 
 
-class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase, NeighborsMixin,
-                       KNeighborsMixin, RadiusNeighborsMixin):
+class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase,
+                       NeighborsMixin, KNeighborsMixin, RadiusNeighborsMixin):
     """Unsupervised learner for implementing neighbor searches.
 
     Parameters
@@ -43,8 +43,8 @@ class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase, NeighborsMixin,
         Doesn't affect :meth:`fit` method.
     sklearn_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
-        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of the
-        module :mod:`skfda.misc.metrics`.
+        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
+        the module :mod:`skfda.misc.metrics`.
     Examples
     --------
     Firstly, we will create a toy dataset with 2 classes

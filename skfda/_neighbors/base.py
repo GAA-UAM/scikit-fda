@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 from sklearn.neighbors import NearestNeighbors as _NearestNeighbors
+import scipy.integrate
 
 from .. import FDataGrid
 from ..misc.metrics import lp_distance
@@ -114,11 +115,6 @@ class NeighborsBase(ABC, BaseEstimator):
         self.n_jobs = n_jobs
         self.sklearn_metric = sklearn_metric
 
-    @abstractmethod
-    def _init_estimator(self, sk_metric):
-        """Initializes the estimator returned by :meth:`_sklearn_neighbors`."""
-        pass
-
     def _check_is_fitted(self):
         """Check if the estimator is fitted.
 
@@ -167,7 +163,7 @@ class NeighborsMixin:
             self._shape = X.data_matrix.shape[1:]
 
             if not self.sklearn_metric:
-                # Constructs sklearn metric to manage vector
+                # Constructs sklearn metric to manage vector
                 sk_metric = _to_sklearn_metric(
                     self.metric, self._sample_points)
             else:
@@ -187,10 +183,11 @@ class KNeighborsMixin:
         Returns indices of and distances to the neighbors of each point.
 
         Args:
-            X (:class:`FDataGrid` or matrix): FDatagrid with the query functions
-                or  matrix (n_query, n_indexed) if metric == 'precomputed'. If
-                not provided, neighbors of each indexed point are returned. In
-                this case, the query point is not considered its own neighbor.
+            X (:class:`FDataGrid` or matrix): FDatagrid with the query
+                functions or  matrix (n_query, n_indexed) if
+                metric == 'precomputed'. If not provided, neighbors of each
+                indexed point are returned. In this case, the query point is
+                not considered its own neighbor.
             n_neighbors (int): Number of neighbors to get (default is the value
                 passed to the constructor).
         return_distance (boolean, optional): Defaults to True. If False,
@@ -243,10 +240,11 @@ class KNeighborsMixin:
         """Computes the (weighted) graph of k-Neighbors for points in X
 
         Args:
-            X (:class:`FDataGrid` or matrix): FDatagrid with the query functions
-                or  matrix (n_query, n_indexed) if metric == 'precomputed'. If
-                not provided, neighbors of each indexed point are returned. In
-                this case, the query point is not considered its own neighbor.
+            X (:class:`FDataGrid` or matrix): FDatagrid with the query
+                functions or  matrix (n_query, n_indexed) if
+                metric == 'precomputed'. If not provided, neighbors of each
+                indexed point are returned. In this case, the query point is
+                not considered its own neighbor.
             n_neighbors (int): Number of neighbors to get (default is the value
                 passed to the constructor).
             mode ('connectivity' or 'distance', optional): Type of returned
@@ -373,8 +371,8 @@ class RadiusNeighborsMixin:
 
         X = self._transform_to_multivariate(X)
 
-        return self.estimator_.radius_neighbors(X=X, radius=radius,
-                                                return_distance=return_distance)
+        return self.estimator_.radius_neighbors(
+            X=X, radius=radius, return_distance=return_distance)
 
     def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity'):
         """Computes the (weighted) graph of Neighbors for points in X
@@ -518,7 +516,7 @@ class NeighborsFunctionalRegressorMixin:
             self.estimator_ = self._init_estimator(sk_metric)
             self.estimator_.fit(self._transform_to_multivariate(X))
 
-        # Choose proper local regressor
+        # Choose proper local regressor
         if self.weights == 'uniform':
             self.local_regressor = self._uniform_local_regression
         elif self.weights == 'distance':
@@ -574,7 +572,6 @@ class NeighborsFunctionalRegressorMixin:
 
         distances, neighbors = self._query(X)
 
-        # Todo: change the concatenation after merge image-operations branch
         if len(neighbors[0]) == 0:
             pred = self._outlier_response(neighbors)
         else:
@@ -599,21 +596,76 @@ class NeighborsFunctionalRegressorMixin:
 
             raise ValueError(f"No neighbors found for test samples  {index}, "
                              "you can try using larger radius, give a reponse "
-                             "for outliers, or consider removing them from your"
-                             " dataset.")
+                             "for outliers, or consider removing them from "
+                             "your dataset.")
         else:
             return self.outlier_response
 
-    @abstractmethod
-    def _query(self):
-        """Return distances and neighbors of given sample"""
-        pass
+    def score(self, X, y, sample_weight=None):
+        r"""Return an extension of the coefficient of determination R^2.
 
-    def score(self, X, y):
-        """TODO"""
+        The coefficient is defined as
 
-        # something like
-        # pred = self.pred(X)
-        # return score(pred, y)
-        #
-        raise NotImplementedError
+        .. math::
+            1 - \frac{\sum_{i=1}^{n}\int (y_i(t) - \hat{y}_i(t))^2dt}
+            {\sum_{i=1}^{n} \int (y_i(t) - \frac{1}{n}\sum_{i=1}^{n}y_i(t))^2dt}
+
+        where :math:`\hat{y}_i` is the prediction associated to the test sample
+        :math:`X_i`, and :math:`{y}_i` is the true response.
+
+        The best possible score is 1.0 and it can be negative
+        (because the model can be arbitrarily worse). A constant model that
+        always predicts the expected value of y, disregarding the input
+        features, would get a R^2 score of 0.0.
+
+        Args:
+            X (FDataGrid): Test samples to be predicted.
+            y (FData): True responses of the test samples.
+            sample_weight (array_like, shape = [n_samples], optional): Sample
+                weights.
+
+        Returns:
+            (float): Coefficient of determination.
+
+        """
+        if y.ndim_image != 1 or y.ndim_domain != 1:
+            raise ValueError("Score not implemented for multivariate "
+                             "functional data.")
+
+        # Make prediction
+        pred = self.predict(X)
+
+        u = y - pred
+        v = y - y.mean()
+
+        # Discretize to integrate and make squares if needed
+        if type(u) != FDataGrid:
+            u = u.to_grid()
+            v = v.to_grid()
+
+        data_u = u.data_matrix[..., 0]
+        data_v = v.data_matrix[..., 0]
+
+        # Square without allocate more memory
+        np.square(data_u, out=data_u)
+        np.square(data_v, out=data_v)
+
+        if sample_weight is not None:
+            if len(sample_weight) != len(y):
+                raise ValueError("Must be a weight for each sample.")
+
+            sample_weight = np.asarray(sample_weight)
+            sample_weight = sample_weight / sample_weight.sum()
+            data_u_t = data_u.T
+            data_u_t *= sample_weight
+            data_v_t = data_v.T
+            data_v_t *= sample_weight
+
+        # Sum and integrate
+        sum_u = np.sum(data_u, axis=0)
+        sum_v = np.sum(data_v, axis=0)
+
+        int_u = scipy.integrate.simps(sum_u, x=u.sample_points[0])
+        int_v = scipy.integrate.simps(sum_v, x=v.sample_points[0])
+
+        return 1 - int_u / int_v

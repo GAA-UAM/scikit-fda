@@ -20,8 +20,8 @@ class KNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
                                 NeighborsScalarRegresorMixin):
     """Regression based on k-nearest neighbors with scalar response.
 
-    The target is predicted by local interpolation of the targets
-    associated of the nearest neighbors in the training set.
+    The target is predicted by local interpolation of the targets associated of
+    the nearest neighbors in the training set.
 
     Parameters
     ----------
@@ -66,8 +66,8 @@ class KNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
         Doesn't affect :meth:`fit` method.
     sklearn_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
-        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of the
-        module :mod:`skfda.misc.metrics`.
+        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
+        the module :mod:`skfda.misc.metrics`.
     Examples
     --------
     Firstly, we will create a toy dataset with gaussian-like samples shifted.
@@ -150,8 +150,8 @@ class RadiusNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
                                      NeighborsScalarRegresorMixin):
     """Scalar regression based on neighbors within a fixed radius.
 
-    The target is predicted by local interpolation of the targets
-    associated of the nearest neighbors in the training set.
+    The target is predicted by local interpolation of the targets associated of
+    the nearest neighbors in the training set.
 
     Parameters
     ----------
@@ -197,8 +197,8 @@ class RadiusNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
         ``-1`` means using all processors.
     sklearn_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
-        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of the
-        module :mod:`skfda.misc.metrics`.
+        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
+        the module :mod:`skfda.misc.metrics`.
     Examples
     --------
     Firstly, we will create a toy dataset with gaussian-like samples shifted.
@@ -327,17 +327,17 @@ class KNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
         ``-1`` means using all processors.
     sklearn_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
-        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of the
-        module :mod:`skfda.misc.metrics`.
+        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
+        the module :mod:`skfda.misc.metrics`.
     Examples
     --------
     Firstly, we will create a toy dataset with gaussian-like samples shifted,
     and we will try to predict 5 X +1.
 
     >>> from skfda.datasets import make_multimodal_samples
-    >>> X_train = make_multimodal_samples(n_samples=30, std=.5, random_state=0)
+    >>> X_train = make_multimodal_samples(n_samples=30, std=.05, random_state=0)
     >>> y_train = 5 * X_train + 1
-    >>> X_test = make_multimodal_samples(n_samples=5, std=.5, random_state=0)
+    >>> X_test = make_multimodal_samples(n_samples=5, std=.05, random_state=0)
 
     We will fit a K-Nearest Neighbors functional regressor.
 
@@ -447,17 +447,17 @@ class RadiusNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
         ``-1`` means using all processors.
     sklearn_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
-        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of the
-        module :mod:`skfda.misc.metrics`.
+        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
+        the module :mod:`skfda.misc.metrics`.
     Examples
     --------
     Firstly, we will create a toy dataset with gaussian-like samples shifted,
-    and we will try to predict 5 X +1.
+    and we will try to predict the response 5 X +1.
 
     >>> from skfda.datasets import make_multimodal_samples
-    >>> X_train = make_multimodal_samples(n_samples=30, std=.5, random_state=0)
+    >>> X_train = make_multimodal_samples(n_samples=30, std=.05, random_state=0)
     >>> y_train = 5 * X_train + 1
-    >>> X_test = make_multimodal_samples(n_samples=5, std=.5, random_state=0)
+    >>> X_test = make_multimodal_samples(n_samples=5, std=.05, random_state=0)
 
     We will fit a Radius Nearest Neighbors functional regressor.
 

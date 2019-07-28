@@ -1,5 +1,6 @@
 
-from .base import NeighborsBase, NeighborsMixin, KNeighborsMixin, NeighborsClassifierMixin, RadiusNeighborsMixin
+from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
+                   NeighborsClassifierMixin, RadiusNeighborsMixin)
 
 from sklearn.utils.multiclass import check_classification_targets
 from sklearn.preprocessing import LabelEncoder
@@ -61,8 +62,8 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         Doesn't affect :meth:`fit` method.
     sklearn_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
-        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of the
-        module :mod:`skfda.misc.metrics`.
+        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
+        the module :mod:`skfda.misc.metrics`.
     Examples
     --------
     Firstly, we will create a toy dataset with 2 classes
@@ -219,8 +220,8 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
         ``-1`` means using all processors.
     sklearn_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
-        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of the
-        module :mod:`skfda.misc.metrics`.
+        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
+        the module :mod:`skfda.misc.metrics`.
     Examples
     --------
     Firstly, we will create a toy dataset with 2 classes.
@@ -305,18 +306,18 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
     ----------
         metric : callable, (default
             :func:`lp_distance <skfda.metrics.lp_distance>`)
-            The metric to use when calculating distance between test samples and
-            centroids. See the documentation of the metrics module
+            The metric to use when calculating distance between test samples
+            and centroids. See the documentation of the metrics module
             for a list of available metrics. Defaults used L2 distance.
         mean: callable, (default :func:`mean <skfda.exploratory.stats.mean>`)
             The centroids for the samples corresponding to each class is the
             point from which the sum of the distances (according to the metric)
             of all samples that belong to that particular class are minimized.
             By default it is used the usual mean, which minimizes the sum of L2
-            distance. This parameter allows change the centroid constructor. The
-            function must accept a :class:`FData` with the samples of one class
-            and return a :class:`FData` object with only one sample representing
-            the centroid.
+            distance. This parameter allows change the centroid constructor.
+            The function must accept a :class:`FData` with the samples of one
+            class and return a :class:`FData` object with only one sample
+            representing the centroid.
     Attributes
     ----------
     centroids_ : :class:`FDataGrid`
@@ -387,8 +388,6 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
 
         self.centroids_ = self.mean(X[y_ind == 0])
 
-        # This could be changed to allow all the concatenation at the same time
-        # After merge image-operations
         for cur_class in range(1, n_classes):
             center_mask = y_ind == cur_class
             centroid = self.mean(X[center_mask])

@@ -236,9 +236,9 @@ class TestNeighbors(unittest.TestCase):
                                                   outlier_response=self.X[0])
         knnr.fit(self.X[:6], self.X[:6])
 
-        res = knnr.predict(self.X[7])
+        res = knnr.predict(self.X[:7])
         np.testing.assert_array_almost_equal(self.X[0].data_matrix,
-                                             res.data_matrix)
+                                             res[6].data_matrix)
 
     def test_nearest_centroids_exceptions(self):
 
@@ -282,6 +282,38 @@ class TestNeighbors(unittest.TestCase):
         result = np.array([[0, 3], [1, 2], [2, 1], [3, 0]])
         np.testing.assert_array_almost_equal(neighbors, result)
 
+    def test_score_functional_response(self):
+
+        neigh = KNeighborsFunctionalRegressor()
+
+        y = 5 * self.X + 1
+        neigh.fit(self.X, y)
+        r = neigh.score(self.X, y)
+        np.testing.assert_almost_equal(r,0.962651178452408)
+
+        #Weighted case and basis form
+        y = y.to_basis(Fourier(domain_range=y.domain_range[0], nbasis=5))
+        neigh.fit(self.X, y)
+
+        r = neigh.score(self.X[:7], y[:7], sample_weight=4*[1./5]+ 3 *[1./15])
+        np.testing.assert_almost_equal(r, 0.9982527586114364)
+
+    def test_score_functional_response_exceptions(self):
+        neigh = RadiusNeighborsFunctionalRegressor()
+        neigh.fit(self.X, self.X)
+
+        with np.testing.assert_raises(ValueError):
+            neigh.score(self.X, self.X, sample_weight=[1,2,3])
+
+    def test_multivariate_response_score(self):
+
+        neigh = RadiusNeighborsFunctionalRegressor()
+        y = make_multimodal_samples(n_samples=5, ndim_domain=2, random_state=0)
+        neigh.fit(self.X[:5], y)
+
+        # It is not supported the multivariate score by the moment
+        with np.testing.assert_raises(ValueError):
+            neigh.score(self.X[:5], y)
 
 if __name__ == '__main__':
     print()

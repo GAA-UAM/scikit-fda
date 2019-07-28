@@ -489,7 +489,7 @@ class BasisSmoother(_LinearSmoother):
         if self.return_basis:
             return fdatabasis
         else:
-            return fdatabasis(self.output_points_)
+            return fdatabasis.to_grid(eval_points=self.output_points_)
 
         return self
 

@@ -117,8 +117,7 @@ class _Matrix():
                             @ estimator._cached_coef_matrix.T)
 
             fdatabasis = FDataBasis(
-                basis=estimator.basis, coefficients=coefficients,
-                keepdims=estimator.keepdims)
+                basis=estimator.basis, coefficients=coefficients)
 
             return fdatabasis
         else:
@@ -191,12 +190,17 @@ class BasisSmoother(_LinearSmoother):
             the least squares method. The values admitted are 'cholesky', 'qr'
             and 'matrix' for Cholesky and QR factorisation methods, and matrix
             inversion respectively. The default is 'cholesky'.
+        output_points (ndarray, optional): The output points. If ommited,
+            the input points are used. If ``return_basis`` is ``True``, this
+            parameter is ignored.
         return_basis (boolean): If ``False`` (the default) returns the smoothed
             data as an FDataGrid, like the other smoothers. If ``True`` returns
             a FDataBasis object.
 
     Examples:
-        By default, the data is converted to basis form without smoothing:
+
+        By default, this smoother returns a FDataGrid, like the other
+        smoothers:
 
         >>> import numpy as np
         >>> import skfda
@@ -204,6 +208,21 @@ class BasisSmoother(_LinearSmoother):
         >>> x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         >>> x
         array([ 1.,  1., -1., -1.,  1.])
+
+        >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
+        >>> basis = skfda.representation.basis.Fourier((0, 1), nbasis=3)
+        >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
+        ...                basis, method='cholesky')
+        >>> fd_smooth = smoother.fit_transform(fd)
+        >>> fd_smooth.data_matrix.round(2)
+        array([[[ 1.],
+                [ 1.],
+                [-1.],
+                [-1.],
+                [ 1.]]])
+
+        However, the parameter ``return_basis`` can be used to return the data
+        in basis form, by default, without extra smoothing:
 
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), nbasis=3)
@@ -299,7 +318,6 @@ class BasisSmoother(_LinearSmoother):
                  penalty_matrix=None,
                  output_points=None,
                  method='cholesky',
-                 keepdims=False,
                  return_basis=False):
         self.basis = basis
         self.smoothing_parameter = smoothing_parameter
@@ -308,7 +326,6 @@ class BasisSmoother(_LinearSmoother):
         self.penalty_matrix = penalty_matrix
         self.output_points = output_points
         self.method = method
-        self.keepdims = keepdims
         self.return_basis = return_basis
 
     def _method_function(self):
@@ -483,8 +500,7 @@ class BasisSmoother(_LinearSmoother):
                              f"({data_matrix.shape[0]}).")
 
         fdatabasis = FDataBasis(
-            basis=self.basis, coefficients=coefficients,
-            keepdims=self.keepdims)
+            basis=self.basis, coefficients=coefficients)
 
         if self.return_basis:
             return fdatabasis

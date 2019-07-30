@@ -6,18 +6,21 @@ detection method is implemented.
 
 """
 
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import scipy.integrate
-from sklearn.covariance import MinCovDet
-from scipy.stats import f, variation
-from numpy import linalg as la
 from io import BytesIO
+
+import matplotlib
+from numpy import linalg as la
 import scipy
+import scipy.integrate
+from scipy.stats import f, variation
+from sklearn.covariance import MinCovDet
+
+import matplotlib.pyplot as plt
+import numpy as np
+from skfda.exploratory.depth import modified_band_depth
 
 from ... import FDataGrid
-from skfda.exploratory.depth import modified_band_depth
+
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
@@ -52,8 +55,8 @@ def directional_outlyingness(fdatagrid, depth_method=modified_band_depth,
     distribution :math:`F`, :math:`d` a depth function and :math:`\mathbf{v}(t)
     = \left\{ \mathbf{X}(t) - \mathbf{Z}(t)\right\} / \lVert \mathbf{X}(t) -
     \mathbf{Z}(t) \rVert` is the spatial sign of :math:`\left\{\mathbf{X}(t) -
-    \mathbf{Z}(t)\right\}`, :math:`\mathbf{Z}(t)` denotes the median and ∥ · ∥
-    denotes the :math:`L_2` norm.
+    \mathbf{Z}(t)\right\}`, :math:`\mathbf{Z}(t)` denotes the median and
+    :math:`\lVert \cdot \rVert` denotes the :math:`L_2` norm.
 
     From the above formula, we define the mean directional outlyingness as:
 
@@ -252,7 +255,7 @@ class MagnitudeShapePlot:
     Then, the tail of this distance distribution is approximated as follows:
 
     .. math::
-        \frac{c\left(m − p\right)}{m\left(p + 1\right)}RMD^2\left(
+        \frac{c\left(m - p\right)}{m\left(p + 1\right)}RMD^2\left(
         \mathbf{Y}, \mathbf{\tilde{Y}}^*_J\right)\sim F_{p+1, m-p}
 
     where :math:`p` is the dmension of the image, and :math:`c` and :math:`m`
@@ -271,9 +274,9 @@ class MagnitudeShapePlot:
     elements of the  MCD shape estimator.
 
     Finally, we choose a cutoff value to determine the outliers, C ,
-    as the α quantile of :math:`F_{p+1, m-p}`. We set :math:`\alpha = 0.993`,
-    which is used in the classical boxplot for detecting outliers under a
-    normal distribution.
+    as the :math:`\alpha` quantile of :math:`F_{p+1, m-p}`. We set
+    :math:`\alpha = 0.993`, which is used in the classical boxplot for
+    detecting outliers under a normal distribution.
 
     Attributes:
         fdatagrid (FDataGrid): Object to be visualized.

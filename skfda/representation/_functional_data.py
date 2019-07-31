@@ -6,16 +6,15 @@ objects of the package and contains some commons methods.
 
 from abc import ABC, abstractmethod, abstractproperty
 
-import numpy as np
-
-import matplotlib.patches as mpatches
-
-import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import mpl_toolkits.mplot3d
 import pandas.api.extensions
 
-from skfda.representation.extrapolation import _parse_extrapolation
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numpy as np
+from .extrapolation import _parse_extrapolation
+
 from .._utils import _coordinate_list, _list_of_arrays, constants
 
 
@@ -997,7 +996,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
             # Selects the number of points
             if npoints is None:
-                npoints = 2*(constants.N_POINTS_SURFACE_PLOT_AX,)
+                npoints = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
             elif np.isscalar(npoints):
                 npoints = (npoints, npoints)
             elif len(npoints) != 2:
@@ -1218,22 +1217,29 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
     @classmethod
     def _from_sequence(cls, scalars, dtype=None, copy=False):
-        return cls(scalars, dtype=dtype)
+        if copy:
+            scalars = [f.copy() for f in scalars]
+
+        if dtype is not None and dtype != cls.dtype.fget(None):
+            raise ValueError(f"Invalid dtype {dtype}")
+
+        return cls._concat_same_type(scalars)
 
     @classmethod
     def _from_factorized(cls, values, original):
-        return cls(values)
+        raise NotImplementedError("Factorization does not make sense for "
+                                  "functional data")
 
     def isna(self):
         """
         A 1-D array indicating if each value is missing.
 
         Returns:
-            na_values (np.ndarray): Array full of True values.
+            na_values (np.ndarray): Array full of False values.
         """
-        return np.ones(self.nsamples, dtype=bool)
+        return np.zeros(self.nsamples, dtype=bool)
 
-    def take(self, indices, allow_fill=False, fill_value=None):
+    def take(self, indices, allow_fill=False, fill_value=None, axis=0):
         """Take elements from an array.
 
         Parameters:
@@ -1278,6 +1284,12 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             pandas.api.extensions.take
         """
         from pandas.core.algorithms import take
+
+        # The axis parameter must exist, because sklearn tries to use take
+        # instead of __getitem__
+        if axis != 0:
+            raise ValueError(f"Axis must be 0, not {axis}")
+
         # If the ExtensionArray is backed by an ndarray, then
         # just pass that here instead of coercing to object.
         data = self.astype(object)
@@ -1307,10 +1319,4 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         first, *others = to_concat
 
-        for o in others:
-            first = first.concatenate(o)
-
-        # When #101 is ready
-        # return first.concatenate(others)
-
-        return first
+        return first.concatenate(*others)

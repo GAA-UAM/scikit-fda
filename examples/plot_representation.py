@@ -9,8 +9,9 @@ Explores the different representations of functional data.
 # License: MIT
 
 import skfda
-from skfda.representation.interpolation import SplineInterpolator
 import skfda.representation.basis as basis
+from skfda.representation.interpolation import SplineInterpolator
+
 
 ###############################################################################
 # In this example we are going to show the different representations of
@@ -79,8 +80,8 @@ fd.plot()
 ###############################################################################
 # We will represent it using a basis of B-splines.
 fd_basis = fd.to_basis(
-    basis.BSpline(domain_range=fd.domain_range[0], nbasis=4)
-    )
+    basis.BSpline(nbasis=4)
+)
 
 fd_basis.plot()
 
@@ -88,8 +89,8 @@ fd_basis.plot()
 # We can increase the number of elements in the basis to try to reproduce the
 # original data with more fidelity.
 fd_basis_big = fd.to_basis(
-    basis.BSpline(domain_range=fd.domain_range[0], nbasis=7)
-    )
+    basis.BSpline(nbasis=7)
+)
 
 fd_basis_big.plot()
 
@@ -108,12 +109,11 @@ ax[0].legend(['Original', '4 elements', '7 elements'])
 # points if the period is equal to the domain range, so this basis is clearly
 # non suitable for the Growth dataset.
 fd_basis = fd.to_basis(
-    basis.Fourier(domain_range=fd.domain_range[0], nbasis=7)
-    )
+    basis.Fourier(nbasis=7)
+)
 
 fd_basis.plot()
 
 ##############################################################################
 # The data is now represented as the coefficients in the basis expansion.
 print(fd_basis)
-

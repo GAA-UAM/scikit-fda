@@ -855,7 +855,7 @@ class FDataGrid(FData):
             array([ 1.,  1., -1., -1.,  1.])
 
             >>> fd = FDataGrid(x, t)
-            >>> basis = skfda.representation.basis.Fourier((0, 1), nbasis=3)
+            >>> basis = skfda.representation.basis.Fourier(nbasis=3)
             >>> fd_b = fd.to_basis(basis)
             >>> fd_b.coefficients.round(2)
             array([[ 0.  , 0.71, 0.71]])
@@ -867,6 +867,12 @@ class FDataGrid(FData):
         elif self.ndim_image > 1:
             raise NotImplementedError("Only support 1 dimension on the "
                                       "image.")
+
+        # Readjust the domain range if there was not an explicit one
+        if basis._domain_range is None:
+            basis = basis.copy()
+            basis.domain_range = self.domain_range
+
         return fdbasis.FDataBasis.from_data(self.data_matrix[..., 0],
                                             self.sample_points[0],
                                             basis,

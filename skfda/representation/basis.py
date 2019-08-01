@@ -4,27 +4,31 @@ Defines functional data object in a basis function system representation and
 the corresponding basis classes.
 
 """
-import copy
 from abc import ABC, abstractmethod
+import copy
 
-import numpy as np
+from numpy import polyder, polyint, polymul, polyval
+import pandas.api.extensions
 import scipy.integrate
+from scipy.interpolate import BSpline as SciBSpline
+from scipy.interpolate import PPoly
 import scipy.interpolate
 import scipy.linalg
-from numpy import polyder, polyint, polymul, polyval
-from scipy.interpolate import PPoly
-from scipy.interpolate import BSpline as SciBSpline
 from scipy.special import binom
 
-from . import grid
+import numpy as np
+
 from . import FData
+from . import grid
 from .._utils import _list_of_arrays, constants
-import pandas.api.extensions
+
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
 # aux functions
+
+
 def _polypow(p, n=2):
     if n > 2:
         return polymul(p, _polypow(p, n - 1))
@@ -58,7 +62,7 @@ class Basis(ABC):
 
     """
 
-    def __init__(self, domain_range=(0, 1), nbasis=1):
+    def __init__(self, domain_range=None, nbasis=1):
         """Basis constructor.
 
         Args:
@@ -67,21 +71,33 @@ class Basis(ABC):
             nbasis: Number of functions that form the basis. Defaults to 1.
         """
 
-        # TODO: Allow multiple dimensions
-        domain_range = _list_of_arrays(domain_range)
+        if domain_range is not None:
+            # TODO: Allow multiple dimensions
+            domain_range = _list_of_arrays(domain_range)
 
-        # Some checks
-        _check_domain(domain_range)
+            # Some checks
+            _check_domain(domain_range)
 
         if nbasis < 1:
             raise ValueError("The number of basis has to be strictly "
                              "possitive.")
 
-        self.domain_range = domain_range
+        self._domain_range = domain_range
         self.nbasis = nbasis
         self._drop_index_lst = []
 
         super().__init__()
+
+    @property
+    def domain_range(self):
+        if self._domain_range is None:
+            return [np.array([0, 1])]
+        else:
+            return self._domain_range
+
+    @domain_range.setter
+    def domain_range(self, value):
+        self._domain_range = value
 
     @abstractmethod
     def _compute_matrix(self, eval_points, derivative=0):
@@ -327,7 +343,6 @@ class Basis(ABC):
         raise NotImplementedError
 
     def _inner_matrix(self, other=None):
-
         r"""Return the Inner Product Matrix of a pair of basis.
 
         The Inner Product Matrix is defined as
@@ -364,7 +379,6 @@ class Basis(ABC):
         return inner
 
     def gram_matrix(self):
-
         r"""Return the Gram Matrix of a basis
 
         The Gram Matrix is defined as
@@ -449,7 +463,7 @@ class Constant(Basis):
 
     """
 
-    def __init__(self, domain_range=(0, 1)):
+    def __init__(self, domain_range=None):
         """Constant basis constructor.
 
         Args:
@@ -531,9 +545,9 @@ class Constant(Basis):
             array([[ 0.]])
 
         References:
-            .. [RS05-5-6-2-1] Ramsay, J., Silverman, B. W. (2005). Specifying the
-                roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springer.
+            .. [RS05-5-6-2-1] Ramsay, J., Silverman, B. W. (2005). Specifying
+                the roughness penalty. In *Functional Data Analysis*
+                (pp. 106-107). Springer.
 
         """
         if derivative_degree is None:
@@ -688,9 +702,9 @@ class Monomial(Basis):
                    [ 0.,  0.,  6., 12.]])
 
         References:
-            .. [RS05-5-6-2-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
-                roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springer.
+            .. [RS05-5-6-2-1] Ramsay, J., Silverman, B. W. (2005). Specifying
+                the roughness penalty. In *Functional Data Analysis*
+                (pp. 106-107). Springer.
 
         """
 
@@ -858,38 +872,46 @@ class BSpline(Basis):
             if nbasis is None:
                 raise ValueError("Must provide either a list of knots or the"
                                  "number of basis.")
-            if domain_range is None:
-                domain_range = (0, 1)
-            knots = list(np.linspace(*domain_range, nbasis - order + 2))
         else:
             knots = list(knots)
             knots.sort()
             if domain_range is None:
                 domain_range = (knots[0], knots[-1])
+            else:
+                if domain_range[0] != knots[0] or domain_range[1] != knots[-1]:
+                    raise ValueError("The ends of the knots must be the same "
+                                     "as the domain_range.")
 
         # nbasis default to number of knots + order of the splines - 2
         if nbasis is None:
             nbasis = len(knots) + order - 2
-            if domain_range is None:
-                domain_range = (knots[0], knots[-1])
 
         if (nbasis - order + 2) < 2:
             raise ValueError(f"The number of basis ({nbasis}) minus the order "
                              f"of the bspline ({order}) should be greater "
                              f"than 3.")
 
-        if domain_range[0] != knots[0] or domain_range[1] != knots[-1]:
-            raise ValueError("The ends of the knots must be the same as "
-                             "the domain_range.")
+        self.order = order
+        self.knots = None if knots is None else list(knots)
+        super().__init__(domain_range, nbasis)
 
         # Checks
-        if nbasis != order + len(knots) - 2:
-            raise ValueError("The number of basis has to equal the order "
-                             "plus the number of knots minus 2.")
+        if self.nbasis != self.order + len(self.knots) - 2:
+            raise ValueError(f"The number of basis ({self.nbasis}) has to "
+                             f"equal the order ({self.order}) plus the "
+                             f"number of knots ({len(self.knots)}) minus 2.")
 
-        self.order = order
-        self.knots = list(knots)
-        super().__init__(domain_range, nbasis)
+    @property
+    def knots(self):
+        if self._knots is None:
+            return list(np.linspace(*self.domain_range[0],
+                                    self.nbasis - self.order + 2))
+        else:
+            return self._knots
+
+    @knots.setter
+    def knots(self, value):
+        self._knots = value
 
     def _ndegenerated(self, penalty_degree):
         """Return number of 0 or nearly to 0 eigenvalues of the penalty matrix.
@@ -991,9 +1013,9 @@ class BSpline(Basis):
             numpy.array: Penalty matrix.
 
         References:
-            .. [RS05-5-6-2-3] Ramsay, J., Silverman, B. W. (2005). Specifying the
-                roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springer.
+            .. [RS05-5-6-2-1] Ramsay, J., Silverman, B. W. (2005). Specifying
+                the roughness penalty. In *Functional Data Analysis*
+                (pp. 106-107). Springer.
 
         """
         if derivative_degree is not None:
@@ -1040,8 +1062,8 @@ class BSpline(Basis):
                     # meaning that the column i corresponds to the ith knot.
                     # Let the ith not be a
                     # Then f(x) = pp(x - a)
-                    pp = (PPoly.from_spline((knots, c, self.order - 1)).c[:,
-                          no_0_intervals])
+                    pp = (PPoly.from_spline(
+                        (knots, c, self.order - 1)).c[:, no_0_intervals])
                     # We need the actual coefficients of f, not pp. So we
                     # just recursively calculate the new coefficients
                     coeffs = pp.copy()
@@ -1062,7 +1084,7 @@ class BSpline(Basis):
                 for interval in range(len(no_0_intervals)):
                     for i in range(self.nbasis):
                         poly_i = np.trim_zeros(ppoly_lst[i][:,
-                                               interval], 'f')
+                                                            interval], 'f')
                         if len(poly_i) <= derivative_degree:
                             # if the order of the polynomial is lesser or
                             # equal to the derivative the result of the
@@ -1077,7 +1099,7 @@ class BSpline(Basis):
 
                         for j in range(i + 1, self.nbasis):
                             poly_j = np.trim_zeros(ppoly_lst[j][:,
-                                                   interval], 'f')
+                                                                interval], 'f')
                             if len(poly_j) <= derivative_degree:
                                 # if the order of the polynomial is lesser
                                 # or equal to the derivative the result of
@@ -1268,7 +1290,7 @@ class Fourier(Basis):
 
     """
 
-    def __init__(self, domain_range=(0, 1), nbasis=3, period=None):
+    def __init__(self, domain_range=None, nbasis=3, period=None):
         """Construct a Fourier object.
 
         It forces the object to have an odd number of basis. If nbasis is
@@ -1283,19 +1305,29 @@ class Fourier(Basis):
 
         """
 
-        domain_range = _list_of_arrays(domain_range)
+        if domain_range is not None:
+            domain_range = _list_of_arrays(domain_range)
 
-        if len(domain_range) != 1:
-            raise ValueError("Domain range should be unidimensional.")
+            if len(domain_range) != 1:
+                raise ValueError("Domain range should be unidimensional.")
 
-        domain_range = domain_range[0]
+            domain_range = domain_range[0]
 
-        if period is None:
-            period = domain_range[1] - domain_range[0]
         self.period = period
         # If number of basis is even, add 1
         nbasis += 1 - nbasis % 2
         super().__init__(domain_range, nbasis)
+
+    @property
+    def period(self):
+        if self._period is None:
+            return self.domain_range[0][1] - self.domain_range[0][0]
+        else:
+            return self._period
+
+    @period.setter
+    def period(self, value):
+        self._period = value
 
     def _compute_matrix(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
@@ -1423,9 +1455,9 @@ class Fourier(Basis):
             numpy.array: Penalty matrix.
 
         References:
-            .. [RS05-5-6-2-4] Ramsay, J., Silverman, B. W. (2005). Specifying the
-                roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-                Springer.
+            .. [RS05-5-6-2-1] Ramsay, J., Silverman, B. W. (2005). Specifying
+                the roughness penalty. In *Functional Data Analysis*
+                (pp. 106-107). Springer.
 
         """
         if isinstance(derivative_degree, int):
@@ -1548,6 +1580,7 @@ class FDataBasis(FData):
         Dummy object. Should be change to support multidimensional objects.
 
         """
+
         def __init__(self, fdatabasis):
             """Create an iterator through the image coordinates."""
             self._fdatabasis = fdatabasis
@@ -1873,7 +1906,6 @@ class FDataBasis(FData):
         return res.reshape((self.nsamples, len(eval_points), 1))
 
     def _evaluate_composed(self, eval_points, *, derivative=0):
-
         r"""Evaluate the object or its derivatives at a list of values with a
         different time for each sample.
 

@@ -6,18 +6,18 @@ list of discretisation points.
 
 """
 
+import copy
 import numbers
 
-import copy
-import numpy as np
-import scipy.stats.mstats
 import pandas.api.extensions
+import scipy.stats.mstats
 
+import numpy as np
 
-from . import basis as fdbasis
-from .interpolation import SplineInterpolator
 from . import FData
+from . import basis as fdbasis
 from .._utils import _list_of_arrays, constants
+from .interpolation import SplineInterpolator
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -303,16 +303,6 @@ class FDataGrid(FData):
         return FDataGrid._CoordinateIterator(self)
 
     @property
-    def ndim(self):
-        """Return number of dimensions of the data matrix.
-
-        Returns:
-            int: Number of dimensions of the data matrix.
-
-        """
-        return self.data_matrix.ndim
-
-    @property
     def nsamples(self):
         """Return number of rows of the data_matrix. Also the number of samples.
 
@@ -587,6 +577,47 @@ class FDataGrid(FData):
         return self.copy(data_matrix=[
             scipy.stats.mstats.gmean(self.data_matrix, 0)])
 
+    def __eq__(self, other):
+        """Comparison of FDataGrid objects"""
+        if not isinstance(other, FDataGrid):
+            return NotImplemented
+
+        if not np.array_equal(self.data_matrix, other.data_matrix):
+            return False
+
+        if len(self.sample_points) != len(other.sample_points):
+            return False
+
+        for a, b in zip(self.sample_points, other.sample_points):
+            if not np.array_equal(a, b):
+                return False
+
+        if not np.array_equal(self.domain_range, other.domain_range):
+            return False
+
+        if self.dataset_label != other.dataset_label:
+            return False
+
+        if self.axes_labels is None or other.axes_labels is None:
+            # Both must be None
+            if self.axes_labels is not other.axes_labels:
+                return False
+        else:
+            if len(self.axes_labels) != len(other.axes_labels):
+                return False
+
+            for a, b in zip(self.axes_labels, other.axes_labels):
+                if a != b:
+                    return False
+
+        if self.extrapolation != other.extrapolation:
+            return False
+
+        if self.interpolator != other.interpolator:
+            return False
+
+        return True
+
     def __add__(self, other):
         """Addition for FDataGrid object.
 
@@ -831,7 +862,7 @@ class FDataGrid(FData):
             array([ 1.,  1., -1., -1.,  1.])
 
             >>> fd = FDataGrid(x, t)
-            >>> basis = skfda.representation.basis.Fourier((0, 1), nbasis=3)
+            >>> basis = skfda.representation.basis.Fourier(nbasis=3)
             >>> fd_b = fd.to_basis(basis)
             >>> fd_b.coefficients.round(2)
             array([[ 0.  , 0.71, 0.71]])
@@ -843,6 +874,12 @@ class FDataGrid(FData):
         elif self.ndim_image > 1:
             raise NotImplementedError("Only support 1 dimension on the "
                                       "image.")
+
+        # Readjust the domain range if there was not an explicit one
+        if basis._domain_range is None:
+            basis = basis.copy()
+            basis.domain_range = self.domain_range
+
         return fdbasis.FDataBasis.from_data(self.data_matrix[..., 0],
                                             self.sample_points[0],
                                             basis,

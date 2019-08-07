@@ -1,10 +1,10 @@
 import unittest
 
-import numpy as np
 import scipy.stats.mstats
 
-from skfda.exploratory import stats
+import numpy as np
 from skfda import FDataGrid
+from skfda.exploratory import stats
 
 
 class TestFDataGrid(unittest.TestCase):
@@ -19,6 +19,10 @@ class TestFDataGrid(unittest.TestCase):
         np.testing.assert_array_equal(fd.sample_range, [(0, 1)])
         np.testing.assert_array_equal(
             fd.sample_points, np.array([[0., 0.25, 0.5, 0.75, 1.]]))
+
+    def test_copy_equals(self):
+        fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
+        self.assertEqual(fd, fd.copy())
 
     def test_mean(self):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
@@ -53,21 +57,6 @@ class TestFDataGrid(unittest.TestCase):
         np.testing.assert_array_equal(
             fd.sample_points,
             np.array([[0]]))
-
-    def test_concatenate(self):
-        fd1 = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
-        fd2 = FDataGrid([[3, 4, 5, 6, 7], [4, 5, 6, 7, 8]])
-
-        fd1.axes_labels = ["x", "y"]
-        fd = fd1.concatenate(fd2)
-
-        np.testing.assert_equal(fd.nsamples, 4)
-        np.testing.assert_equal(fd.ndim_image, 1)
-        np.testing.assert_equal(fd.ndim_domain, 1)
-        np.testing.assert_array_equal(fd.data_matrix[..., 0],
-                                      [[1, 2, 3, 4, 5], [2, 3, 4, 5, 6],
-                                       [3, 4, 5, 6, 7], [4, 5, 6, 7, 8]])
-        np.testing.assert_array_equal(fd1.axes_labels, fd.axes_labels)
 
     def test_concatenate(self):
         fd1 = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])

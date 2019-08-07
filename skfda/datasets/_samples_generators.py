@@ -1,11 +1,13 @@
-import sklearn.utils
-import numpy as np
-from scipy.stats import multivariate_normal
 import scipy.integrate
-from ..misc import covariances
+from scipy.stats import multivariate_normal
+import sklearn.utils
+
+import numpy as np
+
 from .. import FDataGrid
-from ..representation.interpolation import SplineInterpolator
+from ..misc import covariances
 from ..preprocessing.registration import normalize_warping
+from ..representation.interpolation import SplineInterpolator
 
 
 def make_gaussian_process(n_samples: int = 100, n_features: int = 100, *,
@@ -61,7 +63,6 @@ def make_sinusoidal_process(n_samples: int = 15, n_features: int = 100, *,
                             phase_std: float = .6, amplitude_mean: float = 1.,
                             amplitude_std: float = .05, error_std: float = .2,
                             random_state=None):
-
     r"""Generate sinusoidal proccess.
 
     Each sample :math:`x_i(t)` is generated as:
@@ -165,7 +166,6 @@ def make_multimodal_samples(n_samples: int = 15, *, n_modes: int = 1,
                             stop: float = 1., std: float = .05,
                             mode_std: float = .02, noise: float = .0,
                             modes_location=None, random_state=None):
-
     r"""Generate multimodal samples.
 
     Each sample :math:`x_i(t)` is proportional to a gaussian mixture, generated
@@ -174,10 +174,10 @@ def make_multimodal_samples(n_samples: int = 15, *, n_modes: int = 1,
 
     .. math::
 
-        x_i(t) \propto \sum_{n=1}^{\text{n_modes}} \exp \left (
+        x_i(t) \propto \sum_{n=1}^{\text{n\_modes}} \exp \left (
         {-\frac{1}{2\sigma} (t-\mu_n)^T \mathbb{1} (t-\mu_n)} \right )
 
-    Where :math:`\mu_n=\text{mode_location}_n+\epsilon` and :math:`\epsilon`
+    Where :math:`\mu_n=\text{mode\_location}_n+\epsilon` and :math:`\epsilon`
     is normally distributed, with mean :math:`\mathbb{0}` and standard
     deviation given by the parameter `std`.
 
@@ -286,7 +286,7 @@ def make_random_warping(n_samples: int = 15, n_features: int = 100, *,
     An affine traslation it is used to define the warping in :math:`[a,b]`.
 
     The smoothing and shape of the warpings can be controlling changing
-    :math:`N`, :math:`\sigma` and :math:`K= 1 + \text{shape_parameter}`.
+    :math:`N`, :math:`\sigma` and :math:`K= 1 + \text{shape\_parameter}`.
 
 
     Args:

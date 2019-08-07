@@ -4,16 +4,19 @@ This module contains the classes to construct the functional data boxplot and
 visualize it.
 
 """
-import matplotlib
-import matplotlib.pyplot as plt
+from abc import ABC, abstractmethod
+from io import BytesIO
 import math
 
+import matplotlib
+
+import matplotlib.pyplot as plt
 import numpy as np
 
-from skfda.exploratory.depth import modified_band_depth
 from ... import FDataGrid
-from io import BytesIO
-from abc import ABC, abstractmethod
+from ..depth import modified_band_depth
+from ..outliers import _envelopes
+
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
@@ -54,7 +57,7 @@ class FDataBoxplot(ABC):
         pass
 
     @property
-    def outlying_envelope(self):
+    def non_outlying_envelope(self):
         pass
 
     @property
@@ -103,12 +106,13 @@ class Boxplot(FDataBoxplot):
             the median/s.
         central_envelope (array, (fdatagrid.ndim_image, 2, nsample_points)):
             contains the central envelope/s.
-        outlying_envelope (array, (fdatagrid.ndim_image, 2, nsample_points)):
-            contains the outlying envelope/s.
+        non_outlying_envelope (array, (fdatagrid.ndim_image, 2,
+            nsample_points)):
+            contains the non-outlying envelope/s.
         colormap (matplotlib.colors.LinearSegmentedColormap): Colormap from
             which the colors to represent the central regions are selected.
-        central_regions (array, (fdatagrid.ndim_image * ncentral_regions, 2,
-            nsample_points)): contains the central regions.
+        envelopes (array, (fdatagrid.ndim_image * ncentral_regions, 2,
+            nsample_points)): contains the region envelopes.
         outliers (array, (fdatagrid.ndim_image, fdatagrid.nsamples)):
             contains the outliers.
         barcol (string): Color of the envelopes and vertical lines.
@@ -137,21 +141,18 @@ class Boxplot(FDataBoxplot):
                         [ 3. ],
                         [ 2.5],
                         [ 2. ]],
-        <BLANKLINE>
                        [[ 0.5],
                         [ 0.5],
                         [ 1. ],
                         [ 2. ],
                         [ 1.5],
                         [ 1. ]],
-        <BLANKLINE>
                        [[-1. ],
                         [-1. ],
                         [-0.5],
                         [ 1. ],
                         [ 1. ],
                         [ 0.5]],
-        <BLANKLINE>
                        [[-0.5],
                         [-0.5],
                         [-0.5],
@@ -166,15 +167,46 @@ class Boxplot(FDataBoxplot):
                 interpolator=SplineInterpolator(interpolation_order=1,
                 smoothness_parameter=0.0, monotone=False),
                 keepdims=False),
-            median=array([[ 0.5,  0.5,  1. ,  2. ,  1.5,  1. ]]),
-            central envelope=array([[[ 0.5,  0.5,  1. ,  2. ,  1.5,  1. ],
-                    [-1. , -1. , -0.5,  1. ,  1. ,  0.5]]]),
-            outlying envelope=array([[[ 1.  ,  1.  ,  2.  ,  3.  ,  2.25,
-                                        1.75],
-                    [-1.  , -1.  , -0.5 , -0.5 ,  0.25, -0.25]]]),
-            central_regions=array([[[ 0.5,  0.5,  1. ,  2. ,  1.5,  1. ],
-                    [-1. , -1. , -0.5,  1. ,  1. ,  0.5]]]),
-            outliers=array([[ 1.,  0.,  0.,  1.]]))
+            median=array([[ 0.5],
+                          [ 0.5],
+                          [ 1. ],
+                          [ 2. ],
+                          [ 1.5],
+                          [ 1. ]]),
+            central envelope=(array([[-1. ],
+                                     [-1. ],
+                                     [-0.5],
+                                     [ 1. ],
+                                     [ 1. ],
+                                     [ 0.5]]), array([[ 0.5],
+                                     [ 0.5],
+                                     [ 1. ],
+                                     [ 2. ],
+                                     [ 1.5],
+                                     [ 1. ]])),
+            non-outlying envelope=(array([[-1. ],
+                                          [-1. ],
+                                          [-0.5],
+                                          [ 1. ],
+                                          [ 1. ],
+                                          [ 0.5]]), array([[ 0.5],
+                                          [ 0.5],
+                                          [ 1. ],
+                                          [ 2. ],
+                                          [ 1.5],
+                                          [ 1. ]])),
+            envelopes=[(array([[-1. ],
+                               [-1. ],
+                               [-0.5],
+                               [ 1. ],
+                               [ 1. ],
+                               [ 0.5]]), array([[ 0.5],
+                               [ 0.5],
+                               [ 1. ],
+                               [ 2. ],
+                               [ 1.5],
+                               [ 1. ]]))],
+            outliers=array([ True, False, False,  True]))
 
     """
 
@@ -207,67 +239,36 @@ class Boxplot(FDataBoxplot):
         if min(prob) < 0 or max(prob) > 1:
             raise ValueError("Probabilities must be between 0 and 1.")
 
-        nsample_points = len(fdatagrid.sample_points[0])
-        ncentral_regions = len(prob)
-
-        self._median = np.ndarray((fdatagrid.ndim_image, nsample_points))
-        self._central_envelope = np.ndarray((fdatagrid.ndim_image, 2,
-                                             nsample_points))
-        self._outlying_envelope = np.ndarray((fdatagrid.ndim_image, 2,
-                                              nsample_points))
-        self._central_regions = np.ndarray(
-            (fdatagrid.ndim_image * ncentral_regions,
-             2, nsample_points))
-        self._outliers = np.zeros((fdatagrid.ndim_image, fdatagrid.nsamples))
+        self._envelopes = [None] * len(prob)
 
         depth = method(fdatagrid)
-        indices_descencing_depth = (-depth).argsort(axis=0)
+        indices_descending_depth = (-depth).argsort(axis=0)
 
-        for m in range(fdatagrid.ndim_image):
+        # The median is the deepest curve
+        self._median = fdatagrid[indices_descending_depth[0]
+                                 ].data_matrix[0, ...]
 
-            for i in range(len(prob)):
+        # Central region and envelope must be computed for outlier detection
+        central_region = _envelopes._compute_region(
+            fdatagrid, indices_descending_depth, 0.5)
+        self._central_envelope = _envelopes._compute_envelope(central_region)
 
-                indices_samples = indices_descencing_depth[:, m][
-                    :math.ceil(fdatagrid.nsamples * prob[i])]
-                samples_used = fdatagrid.data_matrix[indices_samples, :, m]
-                max_samples_used = np.amax(samples_used, axis=0)
-                min_samples_used = np.amin(samples_used, axis=0)
+        # Non-outlying envelope
+        non_outlying_threshold = _envelopes._non_outlying_threshold(
+            self._central_envelope, factor)
+        predicted_outliers = _envelopes._predict_outliers(
+            fdatagrid, non_outlying_threshold)
+        inliers = fdatagrid[predicted_outliers == 0]
+        self._non_outlying_envelope = _envelopes._compute_envelope(inliers)
 
-                if prob[i] == 0.5:
-                    # central envelope
-                    self._central_envelope[m] = np.asarray(
-                        [max_samples_used.T, min_samples_used.T])
+        # Outliers
+        self._outliers = _envelopes._predict_outliers(
+            fdatagrid, self._non_outlying_envelope)
 
-                    # outlying envelope
-                    max_value = np.amax(fdatagrid.data_matrix[:, :, m], axis=0)
-                    min_value = np.amin(fdatagrid.data_matrix[:, :, m], axis=0)
-                    iqr = np.absolute(max_samples_used - min_samples_used)
-                    outlying_max_envelope = np.minimum(
-                        max_samples_used + iqr * factor, max_value)
-                    outlying_min_envelope = np.maximum(
-                        min_samples_used - iqr * factor, min_value)
-                    self._outlying_envelope[m] = np.asarray(
-                        [outlying_max_envelope.flatten(),
-                         outlying_min_envelope.flatten()])
-
-                    # outliers
-                    for j in list(range(fdatagrid.nsamples)):
-                        outliers_above = (
-                            outlying_max_envelope < fdatagrid.data_matrix[
-                                j, :, m])
-                        outliers_below = (
-                            outlying_min_envelope > fdatagrid.data_matrix[
-                                j, :, m])
-                        if (outliers_above.sum() > 0 or
-                                outliers_below.sum() > 0):
-                            self._outliers[m, j] = 1
-                # central regions
-                self._central_regions[ncentral_regions * m + i] = np.asarray(
-                    [max_samples_used.flatten(), min_samples_used.flatten()])
-
-            # mean sample
-            self._median[m] = fdatagrid.data_matrix[
-                indices_descencing_depth[0, m], :, m].T
+        for i, p in enumerate(prob):
+            region = _envelopes._compute_region(
+                fdatagrid, indices_descending_depth, p)
+            self._envelopes[i] = _envelopes._compute_envelope(region)
 
         self._fdatagrid = fdatagrid
         self._prob = prob
@@ -290,12 +291,12 @@ class Boxplot(FDataBoxplot):
         return self._central_envelope
 
     @property
-    def outlying_envelope(self):
-        return self._outlying_envelope
+    def non_outlying_envelope(self):
+        return self._non_outlying_envelope
 
     @property
-    def central_regions(self):
-        return self._central_regions
+    def envelopes(self):
+        return self._envelopes
 
     @property
     def outliers(self):
@@ -347,52 +348,53 @@ class Boxplot(FDataBoxplot):
         else:
             var_zorder = 4
 
+        outliers = self.fdatagrid[self.outliers]
+
         for m in range(self.fdatagrid.ndim_image):
 
-            # outliers
-            for j in list(range(self.fdatagrid.nsamples)):
-                if self.outliers[m, j]:
-                    ax[m].plot(self.fdatagrid.sample_points[0],
-                               self.fdatagrid.data_matrix[j, :, m],
-                               color=self.outliercol,
-                               linestyle='--', zorder=1)
+            # Outliers
+            for o in outliers:
+                ax[m].plot(o.sample_points[0],
+                           o.data_matrix[0, :, m],
+                           color=self.outliercol,
+                           linestyle='--', zorder=1)
 
             for i in range(len(self._prob)):
                 # central regions
                 ax[m].fill_between(self.fdatagrid.sample_points[0],
-                                   self.central_regions[
-                                       m * len(self._prob) + i, 0],
-                                   self.central_regions[
-                                       m * len(self._prob) + i, 1],
+                                   self.envelopes[i][0][..., m],
+                                   self.envelopes[i][1][..., m],
                                    facecolor=color[i], zorder=var_zorder)
 
             # outlying envelope
             ax[m].plot(self.fdatagrid.sample_points[0],
-                       self.outlying_envelope[m, 0],
+                       self.non_outlying_envelope[0][..., m],
                        self.fdatagrid.sample_points[0],
-                       self.outlying_envelope[m, 1], color=self.barcol,
-                       zorder=4)
+                       self.non_outlying_envelope[1][..., m],
+                       color=self.barcol, zorder=4)
 
             # central envelope
             ax[m].plot(self.fdatagrid.sample_points[0],
-                       self.central_envelope[m, 0],
+                       self.central_envelope[0][..., m],
                        self.fdatagrid.sample_points[0],
-                       self.central_envelope[m, 1], color=self.barcol,
-                       zorder=4)
+                       self.central_envelope[1][..., m],
+                       color=self.barcol, zorder=4)
 
             # vertical lines
             index = math.ceil(self.fdatagrid.ncol / 2)
             x = self.fdatagrid.sample_points[0][index]
-            ax[m].plot([x, x], [self.outlying_envelope[m, 0][index],
-                                self.central_envelope[m, 0][index]],
+            ax[m].plot([x, x],
+                       [self.non_outlying_envelope[0][..., m][index],
+                        self.central_envelope[0][..., m][index]],
                        color=self.barcol,
                        zorder=4)
-            ax[m].plot([x, x], [self.outlying_envelope[m, 1][index],
-                                self.central_envelope[m, 1][index]],
+            ax[m].plot([x, x],
+                       [self.non_outlying_envelope[1][..., m][index],
+                        self.central_envelope[1][..., m][index]],
                        color=self.barcol, zorder=4)
 
             # median sample
-            ax[m].plot(self.fdatagrid.sample_points[0], self.median[m],
+            ax[m].plot(self.fdatagrid.sample_points[0], self.median[..., m],
                        color=self.mediancol, zorder=5)
 
         self.fdatagrid.set_labels(fig, ax)
@@ -405,8 +407,8 @@ class Boxplot(FDataBoxplot):
                 f"\nFDataGrid={repr(self.fdatagrid)},"
                 f"\nmedian={repr(self.median)},"
                 f"\ncentral envelope={repr(self.central_envelope)},"
-                f"\noutlying envelope={repr(self.outlying_envelope)},"
-                f"\ncentral_regions={repr(self.central_regions)},"
+                f"\nnon-outlying envelope={repr(self.non_outlying_envelope)},"
+                f"\nenvelopes={repr(self.envelopes)},"
                 f"\noutliers={repr(self.outliers)})").replace('\n', '\n    ')
 
 
@@ -429,8 +431,8 @@ class SurfaceBoxplot(FDataBoxplot):
             the median/s.
         central_envelope (array, (fdatagrid.ndim_image, 2, lx, ly)):
             contains the central envelope/s.
-        outlying_envelope (array,(fdatagrid.ndim_image, 2, lx, ly)):
-            contains the outlying envelope/s.
+        non_outlying_envelope (array,(fdatagrid.ndim_image, 2, lx, ly)):
+            contains the non-outlying envelope/s.
         colormap (matplotlib.colors.LinearSegmentedColormap): Colormap from
             which the colors to represent the central regions are selected.
         boxcol (string): Color of the box, which includes median and central
@@ -438,61 +440,70 @@ class SurfaceBoxplot(FDataBoxplot):
         outcol (string): Color of the outlying envelope.
 
     Example:
-        Function :math:`f : \mathbb{R^2}\longmapsto\mathbb{R^2}`.
+        Function :math:`f : \mathbb{R^2}\longmapsto\mathbb{R}`.
 
-        >>> data_matrix = [[[[1, 4], [0.3, 1.5], [1, 3]],
-        ...                 [[2, 8], [0.4, 2], [2, 9]]],
-        ...                [[[2, 10], [0.5, 3], [2, 10]],
-        ...                 [[3, 12], [0.6, 3], [3, 15]]]]
+        >>> data_matrix = [[[[1], [0.7], [1]],
+        ...                 [[4], [0.4], [5]]],
+        ...                [[[2], [0.5], [2]],
+        ...                 [[3], [0.6], [3]]]]
         >>> sample_points = [[2, 4], [3, 6, 8]]
         >>> fd = FDataGrid(data_matrix, sample_points, dataset_label="dataset",
-        ...                axes_labels=["x1_label", "x2_label",
-        ...                             "y1_label", "y2_label"])
+        ...                axes_labels=["x1_label", "x2_label", "y_label"])
         >>> SurfaceBoxplot(fd)
         SurfaceBoxplot(
             FDataGrid=FDataGrid(
-                array([[[[  1. ,   4. ],
-                         [  0.3,   1.5],
-                         [  1. ,   3. ]],
-        <BLANKLINE>
-                        [[  2. ,   8. ],
-                         [  0.4,   2. ],
-                         [  2. ,   9. ]]],
-        <BLANKLINE>
-        <BLANKLINE>
-                       [[[  2. ,  10. ],
-                         [  0.5,   3. ],
-                         [  2. ,  10. ]],
-        <BLANKLINE>
-                        [[  3. ,  12. ],
-                         [  0.6,   3. ],
-                         [  3. ,  15. ]]]]),
+                array([[[[ 1. ],
+                         [ 0.7],
+                         [ 1. ]],
+                        [[ 4. ],
+                         [ 0.4],
+                         [ 5. ]]],
+                       [[[ 2. ],
+                         [ 0.5],
+                         [ 2. ]],
+                        [[ 3. ],
+                         [ 0.6],
+                         [ 3. ]]]]),
                 sample_points=[array([2, 4]), array([3, 6, 8])],
                 domain_range=array([[2, 4],
                        [3, 8]]),
                 dataset_label='dataset',
-                axes_labels=['x1_label', 'x2_label', 'y1_label', 'y2_label'],
+                axes_labels=['x1_label', 'x2_label', 'y_label'],
                 extrapolation=None,
                 interpolator=SplineInterpolator(interpolation_order=1,
                 smoothness_parameter=0.0, monotone=False),
                 keepdims=False),
-            median=array([[[ 1. ,  0.3,  1. ],
-                    [ 2. ,  0.4,  2. ]],
-        <BLANKLINE>
-                   [[ 4. ,  1.5,  3. ],
-                    [ 8. ,  2. ,  9. ]]]),
-            central envelope=array([[[[ 1. ,  0.3,  1. ],
-                     [ 2. ,  0.4,  2. ]],
-        <BLANKLINE>
-                    [[ 1. ,  0.3,  1. ],
-                     [ 2. ,  0.4,  2. ]]],
-        <BLANKLINE>
-        <BLANKLINE>
-                   [[[ 4. ,  1.5,  3. ],
-                     [ 8. ,  2. ,  9. ]],
-        <BLANKLINE>
-                    [[ 4. ,  1.5,  3. ],
-                     [ 8. ,  2. ,  9. ]]]]),
+            median=array([[[ 1. ],
+                           [ 0.7],
+                           [ 1. ]],
+                          [[ 4. ],
+                           [ 0.4],
+                           [ 5. ]]]),
+            central envelope=(array([[[ 1. ],
+                                      [ 0.7],
+                                      [ 1. ]],
+                                     [[ 4. ],
+                                      [ 0.4],
+                                      [ 5. ]]]),
+                              array([[[ 1. ],
+                                      [ 0.7],
+                                      [ 1. ]],
+                                     [[ 4. ],
+                                      [ 0.4],
+                                      [ 5. ]]])),
+            outlying envelope=(array([[[ 1. ],
+                                       [ 0.7],
+                                       [ 1. ]],
+                                      [[ 4. ],
+                                       [ 0.4],
+                                       [ 5. ]]]),
+                               array([[[ 1. ],
+                                       [ 0.7],
+                                       [ 1. ]],
+                                      [[ 4. ],
+                                       [ 0.4],
+                                       [ 5. ]]])))
+
             outlying envelope=array([[[[ 1. ,  0.3,  1. ],
                      [ 2. ,  0.4,  2. ]],
         <BLANKLINE>
@@ -530,41 +541,24 @@ class SurfaceBoxplot(FDataBoxplot):
             raise ValueError(
                 "Class only supports FDataGrid with domain dimension 2.")
 
-        lx = len(fdatagrid.sample_points[0])
-        ly = len(fdatagrid.sample_points[1])
-
-        self._median = np.ndarray((fdatagrid.ndim_image, lx, ly))
-        self._central_envelope = np.ndarray((fdatagrid.ndim_image, 2, lx, ly))
-        self._outlying_envelope = np.ndarray((fdatagrid.ndim_image, 2, lx, ly))
-
         depth = method(fdatagrid)
-        indices_descencing_depth = (-depth).argsort(axis=0)
+        indices_descending_depth = (-depth).argsort(axis=0)
 
-        for m in range(fdatagrid.ndim_image):
-            indices_samples = indices_descencing_depth[:, m][
-                :math.ceil(fdatagrid.nsamples * 0.5)]
-            samples_used = fdatagrid.data_matrix[indices_samples, :, :, m]
-            max_samples_used = np.amax(samples_used, axis=0)
-            min_samples_used = np.amin(samples_used, axis=0)
+        # The mean is the deepest curve
+        self._median = fdatagrid.data_matrix[indices_descending_depth[0]]
 
-            # mean sample
-            self._median[m] = fdatagrid.data_matrix[
-                indices_descencing_depth[0, m], :, :, m]
+        # Central region and envelope must be computed for outlier detection
+        central_region = _envelopes._compute_region(
+            fdatagrid, indices_descending_depth, 0.5)
+        self._central_envelope = _envelopes._compute_envelope(central_region)
 
-            # central envelope
-            self._central_envelope[m] = np.asarray([max_samples_used,
-                                                    min_samples_used])
-
-            # outlying envelope
-            max_value = np.amax(fdatagrid.data_matrix[:, :, :, m], axis=0)
-            min_value = np.amin(fdatagrid.data_matrix[:, :, :, m], axis=0)
-            iqr = np.absolute(max_samples_used - min_samples_used)
-            oulying_max_envelope = np.minimum(max_samples_used + iqr * factor,
-                                              max_value)
-            oulying_min_envelope = np.maximum(min_samples_used - iqr * factor,
-                                              min_value)
-            self._outlying_envelope[m] = np.asarray([oulying_max_envelope,
-                                                     oulying_min_envelope])
+        # Non-outlying envelope
+        non_outlying_threshold = _envelopes._non_outlying_threshold(
+            self._central_envelope, factor)
+        predicted_outliers = _envelopes._predict_outliers(
+            fdatagrid, non_outlying_threshold)
+        inliers = fdatagrid[predicted_outliers == 0]
+        self._non_outlying_envelope = _envelopes._compute_envelope(inliers)
 
         self._fdatagrid = fdatagrid
         self.colormap = plt.cm.get_cmap('Greys')
@@ -584,8 +578,8 @@ class SurfaceBoxplot(FDataBoxplot):
         return self._central_envelope
 
     @property
-    def outlying_envelope(self):
-        return self._outlying_envelope
+    def non_outlying_envelope(self):
+        return self._non_outlying_envelope
 
     @property
     def boxcol(self):
@@ -645,67 +639,77 @@ class SurfaceBoxplot(FDataBoxplot):
         for m in range(self.fdatagrid.ndim_image):
 
             # mean sample
-            ax[m].plot_wireframe(X, Y, np.squeeze(self.median[m]).T,
+            ax[m].plot_wireframe(X, Y, np.squeeze(self.median[..., m]).T,
                                  rstride=ly, cstride=lx,
                                  color=self.colormap(self.boxcol))
-            ax[m].plot_surface(X, Y, np.squeeze(self.median[m]).T,
+            ax[m].plot_surface(X, Y, np.squeeze(self.median[..., m]).T,
                                color=self.colormap(self.boxcol), alpha=0.8)
 
             # central envelope
-            ax[m].plot_surface(X, Y, np.squeeze(self.central_envelope[m, 0]).T,
-                               color=self.colormap(self.boxcol), alpha=0.5)
-            ax[m].plot_wireframe(X, Y,
-                                 np.squeeze(self.central_envelope[m, 0]).T,
-                                 rstride=ly, cstride=lx,
-                                 color=self.colormap(self.boxcol))
-            ax[m].plot_surface(X, Y, np.squeeze(self.central_envelope[m, 1]).T,
-                               color=self.colormap(self.boxcol), alpha=0.5)
-            ax[m].plot_wireframe(X, Y,
-                                 np.squeeze(self.central_envelope[m, 1]).T,
-                                 rstride=ly, cstride=lx,
-                                 color=self.colormap(self.boxcol))
+            ax[m].plot_surface(
+                X, Y, np.squeeze(self.central_envelope[0][..., m]).T,
+                color=self.colormap(self.boxcol), alpha=0.5)
+            ax[m].plot_wireframe(
+                X, Y, np.squeeze(self.central_envelope[0][..., m]).T,
+                rstride=ly, cstride=lx,
+                color=self.colormap(self.boxcol))
+            ax[m].plot_surface(
+                X, Y, np.squeeze(self.central_envelope[1][..., m]).T,
+                color=self.colormap(self.boxcol), alpha=0.5)
+            ax[m].plot_wireframe(
+                X, Y, np.squeeze(self.central_envelope[1][..., m]).T,
+                rstride=ly, cstride=lx,
+                color=self.colormap(self.boxcol))
 
             # box vertical lines
             for indices in [(0, 0), (0, ly - 1), (lx - 1, 0),
                             (lx - 1, ly - 1)]:
                 x_corner = x[indices[0]]
                 y_corner = y[indices[1]]
-                ax[m].plot([x_corner, x_corner], [y_corner, y_corner],
-                           [self.central_envelope[
-                               m, 1, indices[0], indices[1]],
-                            self.central_envelope[
-                                m, 0, indices[0], indices[1]]],
-                           color=self.colormap(self.boxcol))
+                ax[m].plot(
+                    [x_corner, x_corner], [y_corner, y_corner],
+                    [
+                        self.central_envelope[1][..., m][indices[0],
+                                                         indices[1]],
+                        self.central_envelope[0][..., m][indices[0],
+                                                         indices[1]]],
+                    color=self.colormap(self.boxcol))
 
             # outlying envelope
-            ax[m].plot_surface(X, Y,
-                               np.squeeze(self.outlying_envelope[m, 0]).T,
-                               color=self.colormap(self.outcol), alpha=0.3)
-            ax[m].plot_wireframe(X, Y,
-                                 np.squeeze(self.outlying_envelope[m, 0]).T,
-                                 rstride=ly, cstride=lx,
-                                 color=self.colormap(self.outcol))
-            ax[m].plot_surface(X, Y,
-                               np.squeeze(self.outlying_envelope[m, 1]).T,
-                               color=self.colormap(self.outcol), alpha=0.3)
-            ax[m].plot_wireframe(X, Y,
-                                 np.squeeze(self.outlying_envelope[m, 1]).T,
-                                 rstride=ly, cstride=lx,
-                                 color=self.colormap(self.outcol))
+            ax[m].plot_surface(
+                X, Y,
+                np.squeeze(self.non_outlying_envelope[0][..., m]).T,
+                color=self.colormap(self.outcol), alpha=0.3)
+            ax[m].plot_wireframe(
+                X, Y,
+                np.squeeze(self.non_outlying_envelope[0][..., m]).T,
+                rstride=ly, cstride=lx,
+                color=self.colormap(self.outcol))
+            ax[m].plot_surface(
+                X, Y,
+                np.squeeze(self.non_outlying_envelope[1][..., m]).T,
+                color=self.colormap(self.outcol), alpha=0.3)
+            ax[m].plot_wireframe(
+                X, Y,
+                np.squeeze(self.non_outlying_envelope[1][..., m]).T,
+                rstride=ly, cstride=lx,
+                color=self.colormap(self.outcol))
 
             # vertical lines from central to outlying envelope
             x_index = math.floor(lx / 2)
             x_central = x[x_index]
             y_index = math.floor(ly / 2)
             y_central = y[y_index]
-            ax[m].plot([x_central, x_central], [y_central, y_central],
-                       [self.outlying_envelope[m, 1, x_index, y_index],
-                        self.central_envelope[m, 1, x_index, y_index]],
-                       color=self.colormap(self.boxcol))
-            ax[m].plot([x_central, x_central], [y_central, y_central],
-                       [self.outlying_envelope[m, 0, x_index, y_index],
-                        self.central_envelope[m, 0, x_index, y_index]],
-                       color=self.colormap(self.boxcol))
+            ax[m].plot(
+                [x_central, x_central], [y_central, y_central],
+                [self.non_outlying_envelope[1][..., m][x_index, y_index],
+                 self.central_envelope[1][..., m][x_index, y_index]],
+                color=self.colormap(self.boxcol))
+            ax[m].plot(
+                [x_central, x_central], [y_central, y_central],
+                [self.non_outlying_envelope[0][..., m][x_index, y_index],
+                 self.central_envelope[0][..., m][x_index, y_index]],
+                color=self.colormap(self.boxcol))
 
         self.fdatagrid.set_labels(fig, ax)
 
@@ -717,5 +721,5 @@ class SurfaceBoxplot(FDataBoxplot):
                  f"\nFDataGrid={repr(self.fdatagrid)},"
                  f"\nmedian={repr(self.median)},"
                  f"\ncentral envelope={repr(self.central_envelope)},"
-                 f"\noutlying envelope={repr(self.outlying_envelope)})")
+                 f"\noutlying envelope={repr(self.non_outlying_envelope)})")
                 .replace('\n', '\n    '))

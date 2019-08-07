@@ -55,9 +55,6 @@ def _to_sklearn_metric(metric, sample_points):
             two FDataGrids and return a float representing the distance.
         sample_points (array_like): Array of arrays with the sample points of
             the FDataGrids.
-        check (boolean, optional): If False it is passed the named parameter
-            `check=False` to avoid the repetition of checks in internal
-            routines.
 
     Returns:
         (pyfunc): sklearn vector metric.
@@ -87,11 +84,11 @@ def _to_sklearn_metric(metric, sample_points):
     # Shape -> (Nsamples = 1, domain_dims...., image_dimension (-1))
     shape = [1] + [len(axis) for axis in sample_points] + [-1]
 
-    def sklearn_metric(x, y, check=True, **kwargs):
+    def sklearn_metric(x, y, _check=False, **kwargs):
 
         return metric(_from_multivariate(x, sample_points, shape),
                       _from_multivariate(y, sample_points, shape),
-                      check=check, **kwargs)
+                      _check=_check, **kwargs)
 
     return sklearn_metric
 
@@ -608,7 +605,7 @@ class NeighborsFunctionalRegressorMixin:
 
         .. math::
             1 - \frac{\sum_{i=1}^{n}\int (y_i(t) - \hat{y}_i(t))^2dt}
-            {\sum_{i=1}^{n} \int (y_i(t) - \frac{1}{n}\sum_{i=1}^{n}y_i(t))^2dt}
+            {\sum_{i=1}^{n} \int (y_i(t)- \frac{1}{n}\sum_{i=1}^{n}y_i(t))^2dt}
 
         where :math:`\hat{y}_i` is the prediction associated to the test sample
         :math:`X_i`, and :math:`{y}_i` is the true response.

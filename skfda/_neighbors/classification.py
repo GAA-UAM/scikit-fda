@@ -170,7 +170,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
                                 RadiusNeighborsMixin, ClassifierMixin,
                                 NeighborsClassifierMixin):
-    """Classifier implementing a vote among neighbors within a given radius
+    """Classifier implementing a vote among neighbors within a given radius.
 
     Parameters
     ----------

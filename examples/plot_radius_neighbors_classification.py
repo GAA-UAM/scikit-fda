@@ -27,18 +27,22 @@ from skfda.misc.metrics import pairwise_distance, lp_distance
 # radius, instead of use the k nearest neighbors.
 #
 # Firstly, we will construct a toy dataset to show the basic usage of the API.
-#
-# We will create two classes of sinusoidal samples, with different locations
-# of their phase.
+# We will create two classes of sinusoidal samples, with different phases.
 #
 
+# Make toy dataset
 fd1 = skfda.datasets.make_sinusoidal_process(error_std=.0, phase_std=.35,
                                              random_state=0)
 fd2 = skfda.datasets.make_sinusoidal_process(phase_mean=1.9, error_std=.0,
                                              random_state=1)
 
-fd1.plot(color='C0')
-fd2.plot(color='C1')
+X = fd1.concatenate(fd2)
+y = np.array(15*[0] + 15*[1])
+
+# Plot toy dataset
+plt.figure()
+X.plot(sample_labels=y, label_colors=['C0', 'C1'])
+
 
 
 ################################################################################
@@ -48,38 +52,35 @@ fd2.plot(color='C1')
 # :func:`sklearn.model_selection.train_test_split`.
 
 # Concatenate the two classes in the same FDataGrid
-X = fd1.concatenate(fd2)
-y = np.array(15*[0] + 15*[1])
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33,
-                                                    shuffle=True, random_state=0)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25,
+                                                    shuffle=True, stratify=y,
+                                                    random_state=0)
 
 
 ################################################################################
 #
-# As in the multivariate data, the label assigned to a test sample will be the
+# The label assigned to a test sample will be the
 # majority class of its neighbors, in this case all the samples in the ball
 # center in the sample.
 #
 # If we use the :math:`\mathbb{L}^\infty` metric, we can visualize a ball
 # as a bandwidth with a fixed radius around a function.
-#
 # The following figure shows the ball centered in the first sample of the test
 # partition.
 #
 
+radius = 0.3
+sample = X_test[0] # Center of the ball
 
 plt.figure()
+X_train.plot(sample_labels=y_train, label_colors=['C0', 'C1'])
 
-sample = X_test[0]
-
-X_train[y_train == 0].plot(color='C0')
-X_train[y_train == 1].plot(color='C1')
+# Plot ball
 sample.plot(color='red', linewidth=3)
-
-lower = sample - 0.3
-upper = sample + 0.3
-
+lower = sample - radius
+upper = sample + radius
 plt.fill_between(sample.sample_points[0], lower.data_matrix.flatten(),
                  upper.data_matrix[0].flatten(),  alpha=.25, color='C1')
 
@@ -95,13 +96,12 @@ plt.fill_between(sample.sample_points[0], lower.data_matrix.flatten(),
 l_inf = pairwise_distance(lp_distance, p=np.inf)
 distances = l_inf(sample, X_train)[0] # L_inf distances to 'sample'
 
+# Plot samples in the ball
 plt.figure()
-
-X_train[distances <= .3].plot(color='C0')
+X_train[distances <= radius].plot(color='C0')
 sample.plot(color='red', linewidth=3)
-
 plt.fill_between(sample.sample_points[0], lower.data_matrix.flatten(),
-                 upper.data_matrix[0].flatten(),  alpha=.25, color='C1')
+                 upper.data_matrix[0].flatten(), alpha=.25, color='C1')
 
 
 ################################################################################
@@ -115,7 +115,7 @@ plt.fill_between(sample.sample_points[0], lower.data_matrix.flatten(),
 # In this case we will weight the vote inversely proportional to the distance.
 #
 
-radius_nn = RadiusNeighborsClassifier(radius=.3,  weights='distance')
+radius_nn = RadiusNeighborsClassifier(radius=radius,  weights='distance')
 radius_nn.fit(X_train, y_train)
 
 
@@ -129,8 +129,7 @@ print(pred)
 
 ################################################################################
 #
-# In this case, we get 100% accuracy, althouth, it is a toy dataset and it does
-# not have much merit.
+# In this case, we get 100% accuracy, althouth, it is a toy dataset.
 #
 
 test_score = radius_nn.score(X_test, y_test)
@@ -138,7 +137,7 @@ print(test_score)
 
 ################################################################################
 #
-# As in the K-nearest neighbor example, we can use a sklearn metric
+# As in the K-nearest neighbor example, we can use the euclidean sklearn metric
 # approximately equivalent to the functional :math:`\mathbb{L}^2` one,
 # but computationally faster.
 #
@@ -150,7 +149,7 @@ print(test_score)
 # :math:`\sqrt{\bigtriangleup h}`.
 #
 # In this dataset :math:`\bigtriangleup h=0.001`, so, we have to multiply the
-# radius by :math:`10` to achieve the same result.
+# radius by :math:`\frac{1}{\bigtriangleup h}=10` to achieve the same result.
 #
 # The computation using this metric it is 1000 times faster. See the
 # K-neighbors classifier example and the API documentation to get detailled
@@ -164,10 +163,9 @@ radius_nn = RadiusNeighborsClassifier(radius=3, metric='euclidean',
 
 
 radius_nn.fit(X_train, y_train)
-
 test_score = radius_nn.score(X_test, y_test)
-print(test_score)
 
+print(test_score)
 
 ################################################################################
 #

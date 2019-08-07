@@ -1,14 +1,36 @@
+.. _clustering-module:
+
 Clustering
 ==========
 
-Functions to cluster functional data in a FDataGrid object.
+Module with classes to perform clustering of functional data.
 
-This module contains functions to group observations in such a way that those in
-the same group (called a cluster) are more similar (in some sense) to each other
-than to those in other groups (clusters).
 
-.. toctree::
-   :maxdepth: 4
-   :caption: Modules:
+K means algorithms
+------------------
 
-   clustering/base_kmeans
+The following classes implement both, the K-Means and the Fuzzy K-Means
+algorithms respectively. In order to show the results in a visual way,
+the module :mod:`skfda.exploratory.visualization.clustering_plots
+<skfda.exploratory.visualization.clustering_plots>` can be used.
+See the `Clustering Example <../auto_examples/plot_clustering.html>`_ for a
+detailed explanation.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.ml.clustering.KMeans
+   skfda.ml.clustering.FuzzyKMeans
+
+
+Nearest Neighbors
+-----------------
+
+The class :class:`NearestNeighbors <skfda.ml.clustering.NearestNeighbors>`
+implements the nearest neighbors algorithm to perform unsupervised neighbor
+searches.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.ml.clustering.NearestNeighbors

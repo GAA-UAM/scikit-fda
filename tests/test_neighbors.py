@@ -7,13 +7,14 @@ from skfda.datasets import make_multimodal_samples
 
 from skfda.ml.classification import (KNeighborsClassifier,
                                      RadiusNeighborsClassifier,
-                                     NearestCentroids,
-                                     NearestNeighbors)
+                                     NearestCentroids)
 
 from skfda.ml.regression import (KNeighborsScalarRegressor,
                                  RadiusNeighborsScalarRegressor,
                                  KNeighborsFunctionalRegressor,
                                  RadiusNeighborsFunctionalRegressor)
+
+from skfda.ml.clustering import NearestNeighbors
 
 from skfda.misc.metrics import lp_distance, pairwise_distance
 from skfda.representation.basis import Fourier

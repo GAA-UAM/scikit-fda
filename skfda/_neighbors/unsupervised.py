@@ -57,7 +57,7 @@ class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase,
 
     We will fit a Nearest Neighbors estimator
 
-    >>> from skfda.ml.classification import NearestNeighbors
+    >>> from skfda.ml.clustering import NearestNeighbors
     >>> neigh = NearestNeighbors(radius=.3)
     >>> neigh.fit(fd)
     NearestNeighbors(algorithm='auto', leaf_size=30,...)

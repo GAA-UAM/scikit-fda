@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import train_test_split, GridSearchCV, KFold
 from skfda.ml.regression import KNeighborsScalarRegressor
-from skfda.misc.metrics import norm_lp
 
 
 ################################################################################
@@ -29,33 +28,22 @@ from skfda.misc.metrics import norm_lp
 #
 # Firstly we will fetch a dataset to show the basic usage.
 #
-# The caniadian weather dataset contains the daily temperature and precipitation
-# at 35 different locations in Canada averaged over 1960 to 1994.
+# The caniadian weather dataset contains the daily temperature and
+# precipitation at 35 different locations in Canada averaged over 1960 to 1994.
 #
-# The following figure shows the different temperature curves.
+# The following figure shows the different temperature and precipitation
+# curves.
 #
 
 data = skfda.datasets.fetch_weather()
 fd = data['data']
 
-# TODO: Change this after merge operations-with-images
-fd.axes_labels = None
-X = fd.copy(data_matrix=fd.data_matrix[..., 0])
 
+# Split dataset, temperatures and curves of precipitation
+X, y_func = fd.coordinates
 
+plt.figure()
 X.plot()
-
-
-################################################################################
-#
-# In this example we are not interested in the precipitation curves directly,
-# as in the case with regression response, we will train a nearest neighbor
-# regressor to predict a scalar magnitude.
-#
-# In the next figure the precipitation curves are shown.
-#
-
-y_func = fd.copy(data_matrix=fd.data_matrix[..., 1])
 
 plt.figure()
 y_func.plot()
@@ -63,14 +51,12 @@ y_func.plot()
 ################################################################################
 #
 # We will try to predict the total log precipitation, i.e,
-# :math:`logPrecTot_i = \log \int_0^{365} prec_i(t)dt` using the temperature
+# :math:`logPrecTot_i = \log \sum_{t=0}^{365} prec_i(t)` using the temperature
 # curves.
 #
-# To obtain the precTot we will calculate the :math:`\mathbb{L}^1` norm of
-# the precipitation curves.
-#
 
-prec = norm_lp(y_func, 1)
+# Sum directly from the data matrix
+prec = y_func.data_matrix.sum(axis=1)[:,0]
 log_prec = np.log(prec)
 
 print(log_prec)
@@ -82,12 +68,13 @@ print(log_prec)
 # :func:`sklearn.model_selection.train_test_split`.
 #
 
-X_train, X_test, y_train, y_test = train_test_split(X, log_prec, random_state=7)
+X_train, X_test, y_train, y_test = train_test_split(X, log_prec,
+                                                    random_state=7)
 
 ################################################################################
 #
 # Firstly we will try make a prediction with the default values of the
-# estimator, using 5 neighbors and the :math:`\mathbb{L}^2`.
+# estimator, using 5 neighbors and the :math:`\mathbb{L}^2` distance.
 #
 # We can fit the :class:`KNeighborsScalarRegressor
 # <skfda.ml.regression.KNeighborsScalarRegressor>` in the same way than the
@@ -162,17 +149,17 @@ param_grid = {'n_neighbors': np.arange(1, 12, 2),
 
 
 knn = KNeighborsScalarRegressor(metric='euclidean', sklearn_metric=True)
-gscv = GridSearchCV(knn, param_grid, cv=KFold(shuffle=True, random_state=0))
+gscv = GridSearchCV(knn, param_grid, cv=KFold(n_splits=3,
+                                              shuffle=True, random_state=0))
 gscv.fit(X, log_prec)
 
 ################################################################################
 #
-# We obtain that 7 is the optimal number of neighbors, and a lower value of the
-# :math:`R^2` coefficient, but much closer to the real one.
+# We obtain that 7 is the optimal number of neighbors.
 #
 
-print(gscv.best_params_)
-print(gscv.best_score_)
+print("Best params", gscv.best_params_)
+print("Best score", gscv.best_score_)
 
 ################################################################################
 #

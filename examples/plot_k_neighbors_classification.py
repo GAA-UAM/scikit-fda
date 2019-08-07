@@ -11,7 +11,8 @@ Shows the usage of the k-nearest neighbors classifier.
 import skfda
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, GridSearchCV, KFold
+from sklearn.model_selection import (train_test_split, GridSearchCV,
+                                     StratifiedShuffleSplit)
 from skfda.ml.classification import KNeighborsClassifier
 
 
@@ -21,21 +22,24 @@ from skfda.ml.classification import KNeighborsClassifier
 # classifier in their functional version, which is a extension of the
 # multivariate one, but using functional metrics between the observations.
 #
-# Firstly, we are going to fetch a functional data dataset, such as the Berkeley
-# Growth Study. This dataset correspond to the height of several boys and girls
+# Firstly, we are going to fetch a functional dataset, such as the Berkeley
+# Growth Study. This dataset contains the height of several boys and girls
 # measured until the 18 years of age.
-#
 # We will try to predict the sex by using its growth curves.
 #
 # The following figure shows the growth curves grouped by sex.
 #
 
+# Loads dataset
 data = skfda.datasets.fetch_growth()
 X = data['data']
 y = data['target']
+class_names = data['target_names']
 
-X[y==0].plot(color='C0')
-X[y==1].plot(color='C1')
+# Plot samples grouped by sex
+plt.figure()
+X.plot(sample_labels=y, label_names=class_names, label_colors=['C0', 'C1'])
+
 
 ################################################################################
 #
@@ -50,15 +54,13 @@ print(y)
 # We can split the dataset using the sklearn function
 # :func:`train_test_split <sklearn.model_selection.train_test_split>`.
 #
-# We will use two thirds of the dataset for the training partition and the
-# remaining samples for testing.
-#
 # The function will return two :class:`FDataGrid <skfda.FDataGrid>`'s,
 # ``X_train`` and ``X_test`` with the corresponding partitions, and arrays
 # with their class labels.
 #
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=0)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25,
+                                                    stratify=y, random_state=0)
 
 
 ################################################################################
@@ -83,7 +85,6 @@ knn.fit(X_train, y_train)
 # k-nearest neighbors and will asign the majority class. By default, it is
 # used the :math:`\mathbb{L}^2` distance between functions, to determine the
 # neighbourhood of a sample, with 5 neighbors.
-#
 # Can be used any of the functional metrics of the module
 # :mod:`skfda.misc.metrics`.
 #
@@ -106,7 +107,7 @@ print(score)
 # using :func:`predict_proba`, which will return an array with the
 # probabilities of the classes, in lexicographic order, for each test sample.
 
-probs = knn.predict_proba(X_test[:5])
+probs = knn.predict_proba(X_test[:5]) # Predict first 5 samples
 print(probs)
 
 
@@ -124,7 +125,10 @@ param_grid = {'n_neighbors': np.arange(1, 12, 2)}
 
 
 knn = KNeighborsClassifier()
-gscv = GridSearchCV(knn, param_grid, cv=KFold(shuffle=True, random_state=0))
+
+# Perform grid search with cross-validation
+ss = StratifiedShuffleSplit(n_splits=5, test_size=.25, random_state=0)
+gscv = GridSearchCV(knn, param_grid, cv=ss)
 gscv.fit(X, y)
 
 
@@ -134,13 +138,12 @@ print("Best score:", gscv.best_score_)
 
 ################################################################################
 #
-# We have obtained the greatest mean accuracy using 3 neighbors.  The following
+# We have obtained the greatest mean accuracy using 11 neighbors. The following
 # figure shows the score depending on the number of neighbors.
 #
 
 plt.figure()
 plt.bar(param_grid['n_neighbors'], gscv.cv_results_['mean_test_score'])
-
 plt.xticks(param_grid['n_neighbors'])
 plt.ylabel("Number of Neighbors")
 plt.xlabel("Test score")
@@ -149,10 +152,14 @@ plt.ylim((0.9, 1))
 
 ################################################################################
 #
-# In this dataset, the functional observations have been sampled equiespaciated.
-# If we approximate the integral of the :math:`\mathbb{L}^2` distance as a
-# Riemann sum (actually the Simpson's rule it is used), we obtain that
-# it is approximately equivalent to the euclidean distance between vectors.
+# When the functional data have been sampled in an equiespaced way, or
+# approximately equiespaced, it is possible to use the scikit-learn vector
+# metrics with similar results.
+#
+# For example, in the case of the :math:`\mathbb{L}^2` distance,
+# if the integral of the distance it is approximated as a
+# Riemann sum, we obtain that it is proporitonal to the euclidean
+# distance between vectors.
 #
 # .. math::
 #   \|f - g \|_{\mathbb{L}^2} =  \left ( \int_a^b |f(x) - g(x)|^2 dx \right )
@@ -176,7 +183,7 @@ plt.ylim((0.9, 1))
 #
 
 knn = KNeighborsClassifier(metric='euclidean', sklearn_metric=True)
-gscv2 = GridSearchCV(knn, param_grid, cv=KFold(shuffle=True, random_state=0))
+gscv2 = GridSearchCV(knn, param_grid, cv=ss)
 gscv2.fit(X, y)
 
 print("Best params:", gscv2.best_params_)
@@ -185,16 +192,16 @@ print("Best score:", gscv2.best_score_)
 ################################################################################
 #
 # The advantage of use the sklearn metrics is the computational speed, three
-# orders of magnitude faster. But it is not always possible to resample samples
-# equiespaced nor do all functional metrics have a vector equivalent in this
-# way.
+# orders of magnitude faster. But it is not always possible to have
+# equiespaced samples nor do all functional metrics have a vector equivalent
+# in this way.
 #
 # The mean score time depending on the metric is shown below.
 #
 
-print("Mean score time (seconds)")
-print("L2 distance:", np.mean(gscv.cv_results_['mean_score_time']), "(s)")
-print("Sklearn distance:", np.mean(gscv2.cv_results_['mean_score_time']), "(s)")
+print("Mean score time (milliseconds)")
+print("L2 distance:", 1000*np.mean(gscv.cv_results_['mean_score_time']), "(ms)")
+print("Euclidean distance:", 1000*np.mean(gscv2.cv_results_['mean_score_time']), "(ms)")
 
 ################################################################################
 #

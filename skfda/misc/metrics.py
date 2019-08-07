@@ -9,8 +9,8 @@ from ..preprocessing.registration import (
     elastic_registration_warping)
 
 
-def _cast_to_grid(fdata1, fdata2, eval_points=None, check=True, **kwargs):
-    """Checks if the fdatas passed as argument are unidimensional and 
+def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
+    """Checks if the fdatas passed as argument are unidimensional and
     compatible and converts them to FDatagrid to compute their distances.
 
     Args:
@@ -22,16 +22,9 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, check=True, **kwargs):
     """
 
     # Dont perform any check
-    if not check:
+    if not _check:
         return fdata1, fdata2
 
-    # To allow use numpy arrays internally
-    if (not isinstance(fdata1, FData) and not isinstance(fdata2, FData)
-            and eval_points is not None):
-        fdata1 = FDataGrid([fdata1], sample_points=eval_points)
-        fdata2 = FDataGrid([fdata1], sample_points=eval_points)
-
-    # Checks dimension
     elif (fdata2.ndim_image != fdata1.ndim_image or
           fdata2.ndim_domain != fdata1.ndim_domain):
         raise ValueError("Objects should have the same dimensions")
@@ -42,21 +35,21 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, check=True, **kwargs):
 
     # Case new evaluation points specified
     elif eval_points is not None:
-        if not np.array_equal(eval_points, fdata1.sample_points[0]):
-            fdata1 = fdata1.to_grid(eval_points)
-        if not np.array_equal(eval_points, fdata2.sample_points[0]):
-            fdata2 = fdata2.to_grid(eval_points)
+        fdata1 = fdata1.to_grid(eval_points)
+        fdata2 = fdata2.to_grid(eval_points)
 
     elif not isinstance(fdata1, FDataGrid) and isinstance(fdata2, FDataGrid):
-        fdata1 = fdata1.to_grid(fdata2.eval_points)
+        fdata1 = fdata1.to_grid(fdata2.sample_points[0])
 
     elif not isinstance(fdata2, FDataGrid) and isinstance(fdata1, FDataGrid):
-        fdata2 = fdata2.to_grid(fdata1.eval_points)
+        fdata2 = fdata2.to_grid(fdata1.sample_points[0])
 
     elif (not isinstance(fdata1, FDataGrid) and
           not isinstance(fdata2, FDataGrid)):
-        fdata1 = fdata1.to_grid(eval_points)
-        fdata2 = fdata2.to_grid(eval_points)
+        domain = fdata1.domain_range[0]
+        sample_points = np.linspace(*domain)
+        fdata1 = fdata1.to_grid(sample_points)
+        fdata2 = fdata2.to_grid(sample_points)
 
     elif not np.array_equal(fdata1.sample_points,
                             fdata2.sample_points):
@@ -118,7 +111,7 @@ def vectorial_norm(fdatagrid, p=2):
 
 
     if p == 'inf':
-        p == np.inf
+        p = np.inf
 
     data_matrix = np.linalg.norm(fdatagrid.data_matrix, ord=p, axis=-1,
                                  keepdims=True)
@@ -208,7 +201,7 @@ def pairwise_distance(distance, **kwargs):
         # Iterates over the different samples of both objects.
         for i in range(fdata1.nsamples):
             for j in range(fdata2.nsamples):
-                matrix[i, j] = distance(fdata1[i], fdata2[j], check=False,
+                matrix[i, j] = distance(fdata1[i], fdata2[j], _check=False,
                                         **kwargs)
         # Computes the metric between all piars of x and y.
         return matrix
@@ -285,10 +278,12 @@ def norm_lp(fdatagrid, p=2, p2=2):
 
     """
     # Checks that the lp normed is well defined
-    if p < 1:
+    if not (p == 'inf' or np.isinf(p)) and p < 1:
         raise ValueError(f"p must be equal or greater than 1.")
 
     if fdatagrid.ndim_image > 1:
+        if p2 == 'inf':
+            p2 = np.inf
         data_matrix = np.linalg.norm(fdatagrid.data_matrix, ord=p2, axis=-1,
                                      keepdims=True)
     else:
@@ -317,7 +312,7 @@ def norm_lp(fdatagrid, p=2, p2=2):
     return res
 
 
-def lp_distance(fdata1, fdata2, p=2, *, eval_points=None, check=True):
+def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
     r"""Lp distance for FDataGrid objects.
 
     Calculates the distance between all possible pairs of one sample of
@@ -329,6 +324,14 @@ def lp_distance(fdata1, fdata2, p=2, *, eval_points=None, check=True):
         d(f, g) = d(f, g) = \lVert f - g \rVert
 
     The norm is specified as a parameter but defaults to the l2 norm.
+
+    Args:
+        fdatagrid (FDataGrid): FDataGrid object.
+        p (int, optional): p of the lp norm. Must be greater or equal
+            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
+            Defaults to 2.
+        p2 (int, optional): p index of the vectorial norm applied in case of
+            multivariate objects. Defaults to 2. See :func:`norm_lp`.
 
     Examples:
         Computes the distances between an object containing functional data
@@ -358,12 +361,12 @@ def lp_distance(fdata1, fdata2, p=2, *, eval_points=None, check=True):
     # Checks
 
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
-                                   check=check)
+                                   _check=_check)
 
-    return norm_lp(fdata1 - fdata2, p=p)
+    return norm_lp(fdata1 - fdata2, p=p, p2=p2)
 
-  
-def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, check=True):
+
+def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
     r"""Compute the Fisher-Rao distance between two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
@@ -401,7 +404,7 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, check=True):
     """
 
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
-                                   check=check)
+                                   _check=_check)
 
     # Both should have the same sample points
     eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
@@ -419,8 +422,8 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, check=True):
     return lp_distance(fdata1_srsf, fdata2_srsf, p=2)
 
 
-def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, check=True,
-                       **kwargs):
+def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
+                       _check=True, **kwargs):
     r"""Compute the amplitude distance between two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
@@ -470,7 +473,7 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, check=True,
     """
 
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
-                                   check=check)
+                                   _check=_check)
 
     # Both should have the same sample points
     eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
@@ -509,8 +512,8 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None, check=True,
 
     return distance
 
-  
-def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, check=True,
+
+def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
                    **kwargs):
     r"""Compute the amplitude distance btween two functional objects.
 
@@ -552,7 +555,7 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, check=True,
     """
 
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
-                                   check=check)
+                                   _check=_check)
 
     # Rescale in (0,1)
     eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
@@ -579,7 +582,7 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, check=True,
     return np.arccos(d)
 
 
-def warping_distance(warping1, warping2, *, eval_points=None, check=True):
+def warping_distance(warping1, warping2, *, eval_points=None, _check=True):
     r"""Compute the distance between warpings functions.
 
     Let :math:`\gamma_i` and :math:`\gamma_j` be two warpings, defined in
@@ -616,7 +619,7 @@ def warping_distance(warping1, warping2, *, eval_points=None, check=True):
     """
 
     warping1, warping2 = _cast_to_grid(warping1, warping2,
-                                       eval_points=eval_points, check=check)
+                                       eval_points=eval_points, _check=_check)
 
     # Normalization of warping to (0,1)x(0,1)
     warping1 = normalize_warping(warping1, (0, 1))

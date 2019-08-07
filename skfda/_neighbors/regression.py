@@ -335,7 +335,8 @@ class KNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
     and we will try to predict 5 X +1.
 
     >>> from skfda.datasets import make_multimodal_samples
-    >>> X_train = make_multimodal_samples(n_samples=30, std=.05, random_state=0)
+    >>> X_train = make_multimodal_samples(n_samples=30, std=.05,
+    ...                                   random_state=0)
     >>> y_train = 5 * X_train + 1
     >>> X_test = make_multimodal_samples(n_samples=5, std=.05, random_state=0)
 
@@ -455,7 +456,8 @@ class RadiusNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
     and we will try to predict the response 5 X +1.
 
     >>> from skfda.datasets import make_multimodal_samples
-    >>> X_train = make_multimodal_samples(n_samples=30, std=.05, random_state=0)
+    >>> X_train = make_multimodal_samples(n_samples=30, std=.05,
+    ...                                   random_state=0)
     >>> y_train = 5 * X_train + 1
     >>> X_test = make_multimodal_samples(n_samples=5, std=.05, random_state=0)
 

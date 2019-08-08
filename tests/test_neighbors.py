@@ -18,6 +18,7 @@ from skfda.ml.clustering import NearestNeighbors
 
 from skfda.misc.metrics import lp_distance, pairwise_distance
 from skfda.representation.basis import Fourier
+from skfda.exploratory.stats import mean as l2_mean
 
 
 class TestNeighbors(unittest.TestCase):
@@ -51,7 +52,8 @@ class TestNeighbors(unittest.TestCase):
 
         for neigh in (KNeighborsClassifier(),
                       RadiusNeighborsClassifier(radius=.1),
-                      NearestCentroids()):
+                      NearestCentroids(),
+                      NearestCentroids(metric=lp_distance, mean=l2_mean)):
 
             neigh.fit(self.X, self.y)
             pred = neigh.predict(self.X)
@@ -61,7 +63,7 @@ class TestNeighbors(unittest.TestCase):
     def test_predict_proba_classifier(self):
         """Tests predict proba for k neighbors classifier"""
 
-        neigh = KNeighborsClassifier()
+        neigh = KNeighborsClassifier(metric=lp_distance)
 
         neigh.fit(self.X, self.y)
         probs = neigh.predict_proba(self.X)
@@ -176,7 +178,9 @@ class TestNeighbors(unittest.TestCase):
                                              self.X[:4].data_matrix)
 
     def test_radius_functional_response(self):
-        knnr = RadiusNeighborsFunctionalRegressor(weights='distance')
+        knnr = RadiusNeighborsFunctionalRegressor(metric=lp_distance,
+                                                  weights='distance',
+                                                  regressor=l2_mean)
 
         knnr.fit(self.X, self.X)
 

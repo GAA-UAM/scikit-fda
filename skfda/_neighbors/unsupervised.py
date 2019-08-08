@@ -2,8 +2,6 @@
 from .base import (NearestNeighborsMixinInit, NeighborsBase, NeighborsMixin,
                    KNeighborsMixin, RadiusNeighborsMixin, _to_sklearn_metric)
 
-from ..misc.metrics import lp_distance
-
 
 class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase,
                        NeighborsMixin, KNeighborsMixin, RadiusNeighborsMixin):

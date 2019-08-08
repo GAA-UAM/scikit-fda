@@ -56,7 +56,7 @@ y_func.plot()
 #
 
 # Sum directly from the data matrix
-prec = y_func.data_matrix.sum(axis=1)[:,0]
+prec = y_func.data_matrix.sum(axis=1)[:, 0]
 log_prec = np.log(prec)
 
 print(log_prec)

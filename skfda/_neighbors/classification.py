@@ -309,7 +309,8 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
             The metric to use when calculating distance between test samples
             and centroids. See the documentation of the metrics module
             for a list of available metrics. Defaults used L2 distance.
-        centroid: callable, (default :func:`mean <skfda.exploratory.stats.mean>`)
+        centroid: callable, (default
+            :func:`mean <skfda.exploratory.stats.mean>`)
             The centroids for the samples corresponding to each class is the
             point from which the sum of the distances (according to the metric)
             of all samples that belong to that particular class are minimized.

@@ -1,5 +1,5 @@
 """Private module with the implementation of the neighbors estimators
-Includes the following classes estimators:
+Includes the following classes:
  - NearestNeighbors
  - KNeighborsClassifier
  - RadiusNeighborsClassifier
@@ -7,7 +7,7 @@ Includes the following classes estimators:
  - KNeighborsScalarRegressor
  - RadiusNeighborsScalarRegressor
  - KNeighborsFunctionalRegressor
- - RadiusNeighborsFunctionalRegressor'
+ - RadiusNeighborsFunctionalRegressor
 """
 
 from .unsupervised import NearestNeighbors

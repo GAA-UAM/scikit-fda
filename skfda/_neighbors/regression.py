@@ -11,9 +11,6 @@ from .base import (NeighborsBase, NeighborsMixin,
                    NeighborsFunctionalRegressorMixin,
                    NearestNeighborsMixinInit)
 
-from ..exploratory.stats import mean
-from ..misc.metrics import lp_distance
-
 
 class KNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
                                 KNeighborsMixin, RegressorMixin,

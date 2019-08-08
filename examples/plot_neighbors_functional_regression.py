@@ -13,10 +13,9 @@ Shows the usage of the nearest neighbors regressor with functional response.
 import skfda
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.model_selection import train_test_split, GridSearchCV, KFold
+from sklearn.model_selection import train_test_split
 from skfda.ml.regression import KNeighborsFunctionalRegressor
 from skfda.representation.basis import Fourier
-from skfda.preprocessing.registration import elastic_mean
 
 
 ################################################################################

@@ -1,6 +1,6 @@
 
 
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 
 import numpy as np
 from sklearn.base import BaseEstimator
@@ -508,7 +508,7 @@ class NeighborsFunctionalRegressorMixin:
             self._shape = X.data_matrix.shape[1:]
 
             if not self.sklearn_metric:
-                # Constructs sklearn metric to manage vector instead of grids
+
                 if self.metric == 'lp_distance':
                     metric = lp_distance
                 else:

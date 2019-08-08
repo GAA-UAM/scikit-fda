@@ -14,7 +14,7 @@ Shows the usage of the radius nearest neighbors classifier.
 import skfda
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.model_selection import train_test_split, GridSearchCV, KFold
+from sklearn.model_selection import train_test_split
 from skfda.ml.classification import RadiusNeighborsClassifier
 from skfda.misc.metrics import pairwise_distance, lp_distance
 

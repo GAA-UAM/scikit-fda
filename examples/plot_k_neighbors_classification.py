@@ -107,7 +107,7 @@ print(score)
 # using :func:`predict_proba`, which will return an array with the
 # probabilities of the classes, in lexicographic order, for each test sample.
 
-probs = knn.predict_proba(X_test[:5]) # Predict first 5 samples
+probs = knn.predict_proba(X_test[:5])  # Predict first 5 samples
 print(probs)
 
 
@@ -200,8 +200,10 @@ print("Best score:", gscv2.best_score_)
 #
 
 print("Mean score time (milliseconds)")
-print("L2 distance:", 1000*np.mean(gscv.cv_results_['mean_score_time']), "(ms)")
-print("Euclidean distance:", 1000*np.mean(gscv2.cv_results_['mean_score_time']), "(ms)")
+print("L2 distance:", 1000 *
+      np.mean(gscv.cv_results_['mean_score_time']), "(ms)")
+print("Euclidean distance:", 1000 *
+      np.mean(gscv2.cv_results_['mean_score_time']), "(ms)")
 
 ################################################################################
 #

@@ -10,6 +10,7 @@ import scipy.integrate
 
 from .. import FDataGrid
 from ..misc.metrics import lp_distance
+from ..exploratory.stats import mean as l2_mean
 
 
 def _to_multivariate(fdatagrid):
@@ -99,7 +100,7 @@ class NeighborsBase(ABC, BaseEstimator):
     @abstractmethod
     def __init__(self, n_neighbors=None, radius=None,
                  weights='uniform', algorithm='auto',
-                 leaf_size=30, metric=lp_distance, metric_params=None,
+                 leaf_size=30, metric='lp_distance', metric_params=None,
                  n_jobs=None, sklearn_metric=False):
 
         self.n_neighbors = n_neighbors
@@ -161,8 +162,11 @@ class NeighborsMixin:
 
             if not self.sklearn_metric:
                 # Constructs sklearn metric to manage vector
-                sk_metric = _to_sklearn_metric(
-                    self.metric, self._sample_points)
+                if self.metric == 'lp_distance':
+                    metric = lp_distance
+                else:
+                    metric = self.metric
+                sk_metric = _to_sklearn_metric(metric, self._sample_points)
             else:
                 sk_metric = self.metric
 
@@ -505,13 +509,22 @@ class NeighborsFunctionalRegressorMixin:
 
             if not self.sklearn_metric:
                 # Constructs sklearn metric to manage vector instead of grids
-                sk_metric = _to_sklearn_metric(
-                    self.metric, self._sample_points)
+                if self.metric == 'lp_distance':
+                    metric = lp_distance
+                else:
+                    metric = self.metric
+
+                sk_metric = _to_sklearn_metric(metric, self._sample_points)
             else:
                 sk_metric = self.metric
 
             self.estimator_ = self._init_estimator(sk_metric)
             self.estimator_.fit(self._transform_to_multivariate(X))
+
+        if self.regressor == 'mean':
+            self._regressor = l2_mean
+        else:
+            self._regressor = self.regressor
 
         # Choose proper local regressor
         if self.weights == 'uniform':
@@ -528,7 +541,7 @@ class NeighborsFunctionalRegressorMixin:
 
     def _uniform_local_regression(self, neighbors, distance=None):
         """Perform local regression with uniform weights"""
-        return self.regressor(neighbors)
+        return self._regressor(neighbors)
 
     def _distance_local_regression(self, neighbors, distance):
         """Perform local regression using distances as weights"""
@@ -541,14 +554,14 @@ class NeighborsFunctionalRegressorMixin:
             weights = 1. / distance
             weights /= np.sum(weights)
 
-        return self.regressor(neighbors, weights)
+        return self._regressor(neighbors, weights)
 
     def _weighted_local_regression(self, neighbors, distance):
         """Perform local regression using custom weights"""
 
         weights = self.weights(distance)
 
-        return self.regressor(neighbors, weights)
+        return self._regressor(neighbors, weights)
 
     def predict(self, X):
         """Predict functional responses.

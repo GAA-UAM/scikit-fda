@@ -101,7 +101,7 @@ class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase,
     """
 
     def __init__(self, n_neighbors=5, radius=1.0, algorithm='auto',
-                 leaf_size=30, metric=lp_distance, metric_params=None,
+                 leaf_size=30, metric='lp_distance', metric_params=None,
                  n_jobs=1, sklearn_metric=False):
         """Initialize the nearest neighbors searcher."""
 

@@ -12,7 +12,7 @@ from sklearn.neighbors import (RadiusNeighborsClassifier as
                                _RadiusNeighborsClassifier)
 
 from ..misc.metrics import lp_distance, pairwise_distance
-from ..exploratory.stats import mean
+from ..exploratory.stats import mean as l2_mean
 
 
 class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
@@ -118,7 +118,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     """
 
     def __init__(self, n_neighbors=5, weights='uniform', algorithm='auto',
-                 leaf_size=30, metric=lp_distance, metric_params=None,
+                 leaf_size=30, metric='lp_distance', metric_params=None,
                  n_jobs=1, sklearn_metric=False):
         """Initialize the classifier."""
 
@@ -266,7 +266,7 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
     """
 
     def __init__(self, radius=1.0, weights='uniform', algorithm='auto',
-                 leaf_size=30, metric=lp_distance, metric_params=None,
+                 leaf_size=30, metric='lp_distance', metric_params=None,
                  outlier_label=None, n_jobs=1, sklearn_metric=False):
         """Initialize the classifier."""
 
@@ -309,12 +309,12 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
             The metric to use when calculating distance between test samples
             and centroids. See the documentation of the metrics module
             for a list of available metrics. Defaults used L2 distance.
-        mean: callable, (default :func:`mean <skfda.exploratory.stats.mean>`)
+        centroid: callable, (default :func:`mean <skfda.exploratory.stats.mean>`)
             The centroids for the samples corresponding to each class is the
             point from which the sum of the distances (according to the metric)
             of all samples that belong to that particular class are minimized.
             By default it is used the usual mean, which minimizes the sum of L2
-            distance. This parameter allows change the centroid constructor.
+            distances. This parameter allows change the centroid constructor.
             The function must accept a :class:`FData` with the samples of one
             class and return a :class:`FData` object with only one sample
             representing the centroid.
@@ -355,7 +355,7 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
 
     """
 
-    def __init__(self, metric=lp_distance, mean=mean):
+    def __init__(self, metric='lp_distance', mean='mean'):
         """Initialize the classifier."""
         self.metric = metric
         self.mean = mean
@@ -373,8 +373,12 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
         """
         if self.metric == 'precomputed':
             raise ValueError("Precomputed is not supported.")
+        elif self.metric == 'lp_distance':
+            self._pairwise_distance = pairwise_distance(lp_distance)
+        else:
+            self._pairwise_distance = pairwise_distance(self.metric)
 
-        self._pairwise_distance = pairwise_distance(self.metric)
+        mean = l2_mean if self.mean == 'mean' else self.mean
 
         check_classification_targets(y)
 
@@ -386,11 +390,11 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
             raise ValueError(f'The number of classes has to be greater than'
                              f' one; got {n_classes} class')
 
-        self.centroids_ = self.mean(X[y_ind == 0])
+        self.centroids_ = mean(X[y_ind == 0])
 
         for cur_class in range(1, n_classes):
             center_mask = y_ind == cur_class
-            centroid = self.mean(X[center_mask])
+            centroid = mean(X[center_mask])
             self.centroids_ = self.centroids_.concatenate(centroid)
 
         return self

@@ -116,7 +116,7 @@ class KNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
     """
 
     def __init__(self, n_neighbors=5, weights='uniform', algorithm='auto',
-                 leaf_size=30, metric=lp_distance, metric_params=None,
+                 leaf_size=30, metric='lp_distance', metric_params=None,
                  n_jobs=1, sklearn_metric=False):
         """Initialize the classifier."""
 
@@ -242,7 +242,7 @@ class RadiusNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
     """
 
     def __init__(self, radius=1.0, weights='uniform', algorithm='auto',
-                 leaf_size=30, metric=lp_distance, metric_params=None,
+                 leaf_size=30, metric='lp_distance', metric_params=None,
                  n_jobs=1, sklearn_metric=False):
         """Initialize the classifier."""
 
@@ -371,8 +371,8 @@ class KNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
 
     """
 
-    def __init__(self, n_neighbors=5, weights='uniform', regressor=mean,
-                 algorithm='auto', leaf_size=30, metric=lp_distance,
+    def __init__(self, n_neighbors=5, weights='uniform', regressor='mean',
+                 algorithm='auto', leaf_size=30, metric='lp_distance',
                  metric_params=None, n_jobs=1, sklearn_metric=False):
         """Initialize the classifier."""
 
@@ -492,8 +492,8 @@ class RadiusNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
 
     """
 
-    def __init__(self, radius=1., weights='uniform', regressor=mean,
-                 algorithm='auto', leaf_size=30, metric=lp_distance,
+    def __init__(self, radius=1., weights='uniform', regressor='mean',
+                 algorithm='auto', leaf_size=30, metric='lp_distance',
                  metric_params=None, outlier_response=None, n_jobs=1,
                  sklearn_metric=False):
         """Initialize the classifier."""

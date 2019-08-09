@@ -53,7 +53,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx_rtd_theme',
               'sphinx_gallery.gen_gallery',
               'sphinx.ext.intersphinx',
-              'sphinx.ext.doctest' ]
+              'sphinx.ext.doctest']
 
 autodoc_default_flags = ['members', 'inherited-members']
 
@@ -112,9 +112,9 @@ html_logo = "logos/notitle_logo/notitle_logo.png"
 # documentation.
 #
 html_theme_options = {
-        'logo_only': True,
-        'style_nav_header_background': 'Gainsboro',
-    }
+    'logo_only': True,
+    'style_nav_header_background': 'Gainsboro',
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -142,6 +142,8 @@ html_sidebars = {
 htmlhelp_basename = 'skfdadoc'
 
 # -- Options for LaTeX output ---------------------------------------------
+
+latex_engine = 'lualatex'
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
@@ -230,6 +232,7 @@ sphinx_gallery_conf = {
         'skfda': None,
     },
     'backreferences_dir': 'backreferences',
+    'doc_module': 'skfda',
 }
 
 autosummary_generate = True

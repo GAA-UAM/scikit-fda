@@ -11,11 +11,13 @@ FDataGrids.
 
 # sphinx_gallery_thumbnail_number = 3
 
-import skfda
-import numpy as np
-import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
+
+import matplotlib.pyplot as plt
+import numpy as np
+import skfda
 from skfda.representation.interpolation import SplineInterpolator
+
 
 ###############################################################################
 # The :class:`FDataGrid` class is used for datasets containing discretized
@@ -25,9 +27,8 @@ from skfda.representation.interpolation import SplineInterpolator
 # We will construct an example dataset with two curves with 6 points of
 # discretization.
 #
-
 fd = skfda.datasets.make_sinusoidal_process(n_samples=2, n_features=6,
-                                          random_state=1)
+                                            random_state=1)
 fd.scatter()
 plt.legend(["Sample 1", "Sample 2"])
 
@@ -41,7 +42,7 @@ plt.legend(["Sample 1", "Sample 2"])
 fd.plot()
 fd.scatter()
 
-################################################################################
+##########################################################################
 # The interpolation method of the FDataGrid could be changed setting the
 # attribute `interpolator`. Once we have set an interpolator it is used for
 # the evaluation of the object.
@@ -63,7 +64,7 @@ fd.scatter()
 
 # Sample with noise
 fd_smooth = skfda.datasets.make_sinusoidal_process(n_samples=1, n_features=30,
-                                                 random_state=1, error_std=.3)
+                                                   random_state=1, error_std=.3)
 
 # Cubic interpolator
 fd_smooth.interpolator = SplineInterpolator(interpolation_order=3)
@@ -124,9 +125,8 @@ fd_monotone = fd.copy(data_matrix=np.sort(fd.data_matrix, axis=1))
 fd_monotone.plot(linestyle='--', label="cubic")
 
 
-
 fd_monotone.interpolator = SplineInterpolator(interpolation_order=3,
-                                                           monotone=True)
+                                              monotone=True)
 fd_monotone.plot(label="PCHIP")
 
 fd_monotone.scatter(c='C1')
@@ -143,7 +143,7 @@ plt.legend()
 
 X, Y, Z = axes3d.get_test_data(1.2)
 data_matrix = [Z.T]
-sample_points = [X[0,:], Y[:, 0]]
+sample_points = [X[0, :], Y[:, 0]]
 
 
 fd = skfda.FDataGrid(data_matrix, sample_points)

@@ -1679,7 +1679,6 @@ class FDataBasis(FData):
         smoother = BasisSmoother(
             basis=basis,
             method=method,
-            keepdims=keepdims,
             return_basis=True)
 
         return smoother.fit_transform(fd)

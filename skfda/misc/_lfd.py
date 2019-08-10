@@ -88,7 +88,7 @@ class LinearDifferentialOperator:
         """Representation of Lfd object."""
 
         bwtliststr = ""
-        for i in range(self.order):
+        for i in range(self.order + 1):
             bwtliststr = bwtliststr + "\n" + self.weights[i].__repr__() + ","
 
         return (f"{self.__class__.__name__}("

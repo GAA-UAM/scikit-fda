@@ -5,27 +5,20 @@ This module includes the most commonly used kernel smoother methods for FDA.
  So far only non parametric methods are implemented because we are only
  relying on a discrete representation of functional data.
 
-Todo:
-    * Closed-form for KNN
-
 """
+import abc
+
 import numpy as np
 
 from ...misc import kernels
-from sklearn.base import BaseEstimator, TransformerMixin
-from skfda.representation.grid import FDataGrid
-import abc
+from ._linear import _LinearSmoother
+
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
 
-def _check_r_to_r(f):
-    if f.ndim_domain != 1 or f.ndim_codomain != 1:
-        raise NotImplementedError("Only accepts functions from R to R")
-
-
-class _LinearKernelSmoother(abc.ABC, BaseEstimator, TransformerMixin):
+class _LinearKernelSmoother(_LinearSmoother):
 
     def __init__(self, *, smoothing_parameter=None,
                  kernel=kernels.normal, weights=None,
@@ -35,6 +28,16 @@ class _LinearKernelSmoother(abc.ABC, BaseEstimator, TransformerMixin):
         self.weights = weights
         self.output_points = output_points
         self._cv = False  # For testing purposes only
+
+    def _hat_matrix(self, input_points, output_points):
+        return self._hat_matrix_function(
+            input_points=input_points,
+            output_points=output_points,
+            smoothing_parameter=self.smoothing_parameter,
+            kernel=self.kernel,
+            weights=self.weights,
+            _cv=self._cv
+        )
 
     def _hat_matrix_function(self, *, input_points, output_points,
                              smoothing_parameter,
@@ -72,68 +75,6 @@ class _LinearKernelSmoother(abc.ABC, BaseEstimator, TransformerMixin):
             'X_types': []
         }
 
-    def fit(self, X: FDataGrid, y=None):
-        """Compute the hat matrix for the desired output points.
-
-        Args:
-            X (FDataGrid):
-                The data whose points are used to compute the matrix.
-            y : Ignored
-        Returns:
-            self (object)
-
-        """
-        _check_r_to_r(X)
-
-        self.input_points_ = X.sample_points[0]
-        self.output_points_ = (self.output_points
-                               if self.output_points is not None
-                               else self.input_points_)
-
-        self.hat_matrix_ = self._hat_matrix_function(
-            input_points=self.input_points_,
-            output_points=self.output_points_,
-            smoothing_parameter=self.smoothing_parameter,
-            kernel=self.kernel,
-            weights=self.weights,
-            _cv=self._cv
-        )
-
-        return self
-
-    def transform(self, X: FDataGrid, y=None):
-        """Multiplies the hat matrix for the functions values to smooth them.
-
-        Args:
-            X (FDataGrid):
-                The data to smooth.
-            y : Ignored
-        Returns:
-            self (object)
-
-        """
-
-        assert all(self.input_points_ == X.sample_points[0])
-
-        return X.copy(data_matrix=self.hat_matrix_ @ X.data_matrix,
-                      sample_points=self.output_points_)
-
-    def score(self, X, y):
-        """Returns the generalized cross validation (GCV) score.
-
-        Args:
-            X (FDataGrid):
-                The data to smooth.
-            y (FDataGrid):
-                The target data. Typically the same as ``X``.
-        Returns:
-            self (object)
-
-        """
-        from .validation import LinearSmootherGeneralizedCVScorer
-
-        return LinearSmootherGeneralizedCVScorer()(self, X, y)
-
 
 class NadarayaWatsonSmoother(_LinearKernelSmoother):
     r"""Nadaraya-Watson smoothing method.
@@ -165,6 +106,7 @@ class NadarayaWatsonSmoother(_LinearKernelSmoother):
             the input points are used.
 
     Examples:
+        >>> from skfda import FDataGrid
         >>> fd = FDataGrid(sample_points=[1, 2, 4, 5, 7],
         ...                data_matrix=[[1, 2, 3, 4, 5]])
         >>> smoother = NadarayaWatsonSmoother(smoothing_parameter=3.5)
@@ -175,7 +117,7 @@ class NadarayaWatsonSmoother(_LinearKernelSmoother):
                 [ 3.03],
                 [ 3.24],
                 [ 3.65]]])
-        >>> smoother.hat_matrix_.round(3)
+        >>> smoother.hat_matrix().round(3)
         array([[ 0.294, 0.282, 0.204, 0.153, 0.068],
                [ 0.249, 0.259, 0.22 , 0.179, 0.093],
                [ 0.165, 0.202, 0.238, 0.229, 0.165],
@@ -189,7 +131,7 @@ class NadarayaWatsonSmoother(_LinearKernelSmoother):
                 [ 3.09],
                 [ 3.55],
                 [ 4.28]]])
-        >>> smoother.hat_matrix_.round(3)
+        >>> smoother.hat_matrix().round(3)
         array([[ 0.425, 0.375, 0.138, 0.058, 0.005],
                [ 0.309, 0.35 , 0.212, 0.114, 0.015],
                [ 0.103, 0.193, 0.319, 0.281, 0.103],
@@ -210,7 +152,7 @@ class NadarayaWatsonSmoother(_LinearKernelSmoother):
                 [ 3.55],
                 [ 3.95],
                 [ 4.28]]])
-        >>> smoother.hat_matrix_.round(3)
+        >>> smoother.hat_matrix().round(3)
         array([[ 0.425,  0.375,  0.138,  0.058,  0.005],
                [ 0.309,  0.35 ,  0.212,  0.114,  0.015],
                [ 0.195,  0.283,  0.283,  0.195,  0.043],
@@ -220,6 +162,7 @@ class NadarayaWatsonSmoother(_LinearKernelSmoother):
                [ 0.006,  0.022,  0.163,  0.305,  0.503]])
 
     """
+
     def _hat_matrix_function_not_normalized(self, *, delta_x,
                                             smoothing_parameter,
                                             kernel):
@@ -265,6 +208,7 @@ class LocalLinearRegressionSmoother(_LinearKernelSmoother):
             the input points are used.
 
     Examples:
+        >>> from skfda import FDataGrid
         >>> fd = FDataGrid(sample_points=[1, 2, 4, 5, 7],
         ...                data_matrix=[[1, 2, 3, 4, 5]])
         >>> smoother = LocalLinearRegressionSmoother(smoothing_parameter=3.5)
@@ -275,7 +219,7 @@ class LocalLinearRegressionSmoother(_LinearKernelSmoother):
                 [ 3.29],
                 [ 4.27],
                 [ 5.08]]])
-        >>> smoother.hat_matrix_.round(3)
+        >>> smoother.hat_matrix().round(3)
         array([[ 0.614,  0.429,  0.077, -0.03 , -0.09 ],
                [ 0.381,  0.595,  0.168, -0.   , -0.143],
                [-0.104,  0.112,  0.697,  0.398, -0.104],
@@ -289,7 +233,7 @@ class LocalLinearRegressionSmoother(_LinearKernelSmoother):
                 [ 3.31],
                 [ 4.04],
                 [ 5.04]]])
-        >>> smoother.hat_matrix_.round(3)
+        >>> smoother.hat_matrix().round(3)
         array([[ 0.714,  0.386, -0.037, -0.053, -0.01 ],
                [ 0.352,  0.724,  0.045, -0.081, -0.04 ],
                [-0.078,  0.052,  0.74 ,  0.364, -0.078],
@@ -310,7 +254,7 @@ class LocalLinearRegressionSmoother(_LinearKernelSmoother):
                 [ 4.04],
                 [ 5.35],
                 [ 5.04]]])
-        >>> smoother.hat_matrix_.round(3)
+        >>> smoother.hat_matrix().round(3)
         array([[ 0.714,  0.386, -0.037, -0.053, -0.01 ],
                [ 0.352,  0.724,  0.045, -0.081, -0.04 ],
                [-0.084,  0.722,  0.722, -0.084, -0.278],
@@ -353,6 +297,7 @@ class KNeighborsSmoother(_LinearKernelSmoother):
             the input points are used.
 
     Examples:
+        >>> from skfda import FDataGrid
         >>> fd = FDataGrid(sample_points=[1, 2, 4, 5, 7],
         ...                data_matrix=[[1, 2, 3, 4, 5]])
         >>> smoother = KNeighborsSmoother(smoothing_parameter=2)
@@ -364,7 +309,7 @@ class KNeighborsSmoother(_LinearKernelSmoother):
                 [ 3.5],
                 [ 4.5]]])
 
-        >>> smoother.hat_matrix_.round(3)
+        >>> smoother.hat_matrix().round(3)
         array([[ 0.5, 0.5, 0. , 0. , 0. ],
                [ 0.5, 0.5, 0. , 0. , 0. ],
                [ 0. , 0. , 0.5, 0.5, 0. ],
@@ -383,7 +328,7 @@ class KNeighborsSmoother(_LinearKernelSmoother):
                 [ 2.5],
                 [ 4. ],
                 [ 4.5]]])
-        >>> smoother.hat_matrix_.round(3)
+        >>> smoother.hat_matrix().round(3)
         array([[ 0.5  , 0.5  , 0.   , 0.   , 0.   ],
                [ 0.333, 0.333, 0.333, 0.   , 0.   ],
                [ 0.   , 0.5  , 0.5  , 0.   , 0.   ],
@@ -405,7 +350,7 @@ class KNeighborsSmoother(_LinearKernelSmoother):
                 [ 4.5],
                 [ 4.5]]])
 
-        >>> smoother.hat_matrix_.round(3)
+        >>> smoother.hat_matrix().round(3)
         array([[ 0.5  ,  0.5  ,  0.   ,  0.   ,  0.   ],
                [ 0.333,  0.333,  0.333,  0.   ,  0.   ],
                [ 0.   ,  0.5  ,  0.5  ,  0.   ,  0.   ],
@@ -415,6 +360,7 @@ class KNeighborsSmoother(_LinearKernelSmoother):
                [ 0.   ,  0.   ,  0.   ,  0.5  ,  0.5  ]])
 
     """
+
     def __init__(self, *, smoothing_parameter=None,
                  kernel=kernels.uniform, weights=None,
                  output_points=None):

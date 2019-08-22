@@ -10,3 +10,4 @@ and visualize functional data.
    
    exploratory/visualization
    exploratory/depth
+   exploratory/outliers

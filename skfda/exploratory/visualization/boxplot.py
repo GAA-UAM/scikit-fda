@@ -210,14 +210,15 @@ class Boxplot(FDataBoxplot):
 
     """
 
-    def __init__(self, fdatagrid, method=modified_band_depth, prob=[0.5],
+    def __init__(self, fdatagrid, depth_method=modified_band_depth, prob=[0.5],
                  factor=1.5):
         """Initialization of the Boxplot class.
 
         Args:
             fdatagrid (FDataGrid): Object containing the data.
-            method (:ref:`depth measure <depth-measures>`, optional): Method
-                used to order the data. Defaults to :func:`modified band depth
+            depth_method (:ref:`depth measure <depth-measures>`, optional):
+                Method used to order the data. Defaults to :func:`modified
+                band depth
                 <fda.depth_measures.modified_band_depth>`.
             prob (list of float, optional): List with float numbers (in the
                 range from 1 to 0) that indicate which central regions to
@@ -241,7 +242,7 @@ class Boxplot(FDataBoxplot):
 
         self._envelopes = [None] * len(prob)
 
-        depth = method(fdatagrid)
+        depth = depth_method(fdatagrid)
         indices_descending_depth = (-depth).argsort(axis=0)
 
         # The median is the deepest curve

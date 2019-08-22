@@ -16,7 +16,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skfda.exploratory.depth import modified_band_depth
 
-from ..outliers import directional_outlyingness_stats
+from ..outliers import (directional_outlyingness_stats,
+                        DirectionalOutlierDetector)
 
 
 __author__ = "Amanda Hernando Bernabé"
@@ -35,57 +36,14 @@ class MagnitudeShapePlot:
     \mathbf{MO}\rVert`) is plotted in the x-axis, and the variation of the
     directional outlyingness (:math:`VO`) in the y-axis.
 
-    Considering :math:`\mathbf{Y} = \left(\mathbf{MO}^T, VO\right)^T`, the
-    outlier detection method is implemented as described below.
-
-    First, the square robust Mahalanobis distance is calculated based on a
-    sample of size :math:`h \leq fdatagrid.nsamples`:
-
-    .. math::
-        {RMD}^2\left( \mathbf{Y}, \mathbf{\tilde{Y}}^*_J\right) = \left(
-        \mathbf{Y} - \mathbf{\tilde{Y}}^*_J\right)^T  {\mathbf{S}^*_J}^{-1}
-        \left( \mathbf{Y} - \mathbf{\tilde{Y}}^*_J\right)
-
-    where :math:`J` denotes the group of :math:`h` samples that minimizes the
-    determinant of the corresponding covariance matrix,
-    :math:`\mathbf{\tilde{Y}}^*_J = h^{-1}\sum_{i\in{J}}\mathbf{Y}_i` and
-    :math:`\mathbf{S}^*_J = h^{-1}\sum_{i\in{J}}\left( \mathbf{Y}_i - \mathbf{
-    \tilde{Y}}^*_J\right) \left( \mathbf{Y}_i - \mathbf{\tilde{Y}}^*_J
-    \right)^T`. The sub-sample of size h controls the robustness of the method.
-
-    Then, the tail of this distance distribution is approximated as follows:
-
-    .. math::
-        \frac{c\left(m - p\right)}{m\left(p + 1\right)}RMD^2\left(
-        \mathbf{Y}, \mathbf{\tilde{Y}}^*_J\right)\sim F_{p+1, m-p}
-
-    where :math:`p` is the dmension of the image, and :math:`c` and :math:`m`
-    are parameters determining the degrees of freedom of the
-    :math:`F`-distribution and the scaling factor.
-
-    .. math::
-        c = E \left[s^*_{jj}\right]
-
-    where :math:`s^*_{jj}` are the diagonal elements of MCD and
-
-    .. math::
-        m = \frac{2}{CV^2}
-
-    where :math:`CV` is the estimated coefficient of variation of the diagonal
-    elements of the  MCD shape estimator.
-
-    Finally, we choose a cutoff value to determine the outliers, C ,
-    as the :math:`\alpha` quantile of :math:`F_{p+1, m-p}`. We set
-    :math:`\alpha = 0.993`, which is used in the classical boxplot for
-    detecting outliers under a normal distribution.
+    The outliers are detected using an instance of
+    :class:`DirectionalOutlierDetector`.
 
     Attributes:
         fdatagrid (FDataGrid): Object to be visualized.
         depth_method (:ref:`depth measure <depth-measures>`, optional): Method
             used to order the data. Defaults to :func:`modified band depth
             <fda.depth_measures.modified_band_depth>`.
-        dim_weights (array_like, optional): an array containing the weights
-            of each of the dimensions of the image.
         pointwise_weights (array_like, optional): an array containing the
             weights of each points of discretisation where values have been
             recorded.
@@ -163,7 +121,7 @@ class MagnitudeShapePlot:
                    [ 0.        ,  0.        ],
                    [-0.73333333,  0.36740741],
                    [-1.        ,  0.53333333]]),
-            outliers=array([0, 0, 0, 0]),
+            outliers=array([False, False, False, False]),
             colormap=seismic,
             color=0.2,
             outliercol=(0.8,),
@@ -172,9 +130,7 @@ class MagnitudeShapePlot:
             title='MS-Plot')
     """
 
-    def __init__(self, fdatagrid, depth_method=modified_band_depth,
-                 pointwise_weights=None, alpha=0.993,
-                 assume_centered=False, support_fraction=None, random_state=0):
+    def __init__(self, fdatagrid, **kwargs):
         """Initialization of the MagnitudeShapePlot class.
 
         Args:
@@ -212,47 +168,15 @@ class MagnitudeShapePlot:
         if fdatagrid.ndim_image > 1:
             raise NotImplementedError("Only support 1 dimension on the image.")
 
-        # The depths of the samples are calculated giving them an ordering.
-        *_, mean_dir_outl, variation_dir_outl = directional_outlyingness_stats(
-            fdatagrid,
-            depth_method,
-            pointwise_weights)
+        self.outlier_detector = DirectionalOutlierDetector(**kwargs)
 
-        points = np.array(
-            list(
-                zip(
-                    mean_dir_outl.ravel(), variation_dir_outl
-                )
-            ))
+        y = self.outlier_detector.fit_predict(fdatagrid)
 
-        # The square mahalanobis distances of the samples are
-        # calulated using MCD.
-        cov = MinCovDet(store_precision=False, assume_centered=assume_centered,
-                        support_fraction=support_fraction,
-                        random_state=random_state).fit(points)
-        rmd_2 = cov.mahalanobis(points)
+        points = self.outlier_detector.points_
 
-        # Calculation of the degrees of freedom of the F-distribution
-        # (approximation of the tail of the distance distribution).
-        s_jj = np.diag(cov.covariance_)
-        c = np.mean(s_jj)
-        m = 2 / np.square(variation(s_jj))
-        p = fdatagrid.ndim_image
-        dfn = p + 1
-        dfd = m - p
-
-        # Calculation of the cutoff value and scaling factor to identify
-        # outliers.
-        cutoff_value = f.ppf(alpha, dfn, dfd, loc=0, scale=1)
-        scaling = c * dfd / m / dfn
-        outliers = (scaling * rmd_2 > cutoff_value) * 1
+        outliers = (y == -1)
 
         self._fdatagrid = fdatagrid
-        self._depth_method = depth_method
-        self._pointwise_weights = pointwise_weights
-        self._alpha = alpha
-        self._mean_dir_outl = mean_dir_outl
-        self._variation_dir_outl = variation_dir_outl
         self._points = points
         self._outliers = outliers
         self._colormap = plt.cm.get_cmap('seismic')
@@ -268,19 +192,19 @@ class MagnitudeShapePlot:
 
     @property
     def depth_method(self):
-        return self._depth_method
+        return self.outlier_detector.depth_method
 
     @property
     def pointwise_weights(self):
-        return self._pointwise_weights
+        return self.outlier_detector.pointwise_weights
 
     @property
     def alpha(self):
-        return self._alpha
+        return self.outlier_detector.alpha
 
     @property
     def points(self):
-        return self._points
+        return self.outlier_detector.points_
 
     @property
     def outliers(self):
@@ -340,7 +264,7 @@ class MagnitudeShapePlot:
             ax = matplotlib.pyplot.gca()
 
         colors_rgba = [tuple(i) for i in colors]
-        ax.scatter(self._mean_dir_outl.ravel(), self._variation_dir_outl,
+        ax.scatter(self.points[:, 0], self.points[:, 1],
                    color=colors_rgba)
 
         ax.set_xlabel(self.xlabel)

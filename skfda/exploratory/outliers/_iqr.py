@@ -13,7 +13,7 @@ class IQROutlierDetector(BaseEstimator, OutlierMixin):
     points selected as outliers by the functional boxplot.
 
     Parameters:
-        depth (Callable): The functional depth measure used.
+        depth_method (Callable): The functional depth measure used.
         factor (float): The number of times the IQR is multiplied.
 
     Example:
@@ -32,12 +32,12 @@ class IQROutlierDetector(BaseEstimator, OutlierMixin):
 
     """
 
-    def __init__(self, *, depth=modified_band_depth, factor=1.5):
-        self.depth = depth
+    def __init__(self, *, depth_method=modified_band_depth, factor=1.5):
+        self.depth_method = depth_method
         self.factor = factor
 
     def fit(self, X, y=None):
-        depth = self.depth(X)
+        depth = self.depth_method(X)
         indices_descending_depth = (-depth).argsort(axis=0)
 
         # Central region and envelope must be computed for outlier detection
@@ -51,7 +51,7 @@ class IQROutlierDetector(BaseEstimator, OutlierMixin):
 
         return self
 
-    def predict(self, X, y=None):
+    def predict(self, X):
         outliers = _envelopes._predict_outliers(
             X, self.non_outlying_threshold_)
 

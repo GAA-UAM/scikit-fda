@@ -16,7 +16,7 @@ class TestBoxplot(unittest.TestCase):
                        [-0.5, -0.5, -0.5, -1, -1, -1]]
         sample_points = [0, 2, 4, 6, 8, 10]
         fd = FDataGrid(data_matrix, sample_points)
-        fdataBoxplot = Boxplot(fd, method=fraiman_muniz_depth)
+        fdataBoxplot = Boxplot(fd, depth_method=fraiman_muniz_depth)
         np.testing.assert_array_equal(
             fdataBoxplot.median.ravel(),
             np.array([-1., -1., -0.5, 1., 1., 0.5]))

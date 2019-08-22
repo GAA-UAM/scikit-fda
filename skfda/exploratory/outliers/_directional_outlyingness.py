@@ -2,8 +2,12 @@ import typing
 
 from numpy import linalg as la
 import scipy.integrate
+from scipy.stats import f, variation
+from sklearn.base import BaseEstimator, OutlierMixin
+from sklearn.covariance import MinCovDet
 
 import numpy as np
+from skfda.exploratory.depth import modified_band_depth
 
 from ... import FDataGrid
 from ..depth import fraiman_muniz_depth
@@ -203,3 +207,165 @@ def directional_outlyingness_stats(
         functional_directional_outlyingness=functional_dir_outlyingness,
         mean_directional_outlyingness=mean_dir_outlyingness,
         variation_directional_outlyingness=variation_dir_outlyingness)
+
+
+class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
+    r"""Outlier detector using directional outlyingness.
+
+    Considering :math:`\mathbf{Y} = \left(\mathbf{MO}^T, VO\right)^T`, the
+    outlier detection method is implemented as described below.
+
+    First, the square robust Mahalanobis distance is calculated based on a
+    sample of size :math:`h \leq fdatagrid.nsamples`:
+
+    .. math::
+        {RMD}^2\left( \mathbf{Y}, \mathbf{\tilde{Y}}^*_J\right) = \left(
+        \mathbf{Y} - \mathbf{\tilde{Y}}^*_J\right)^T  {\mathbf{S}^*_J}^{-1}
+        \left( \mathbf{Y} - \mathbf{\tilde{Y}}^*_J\right)
+
+    where :math:`J` denotes the group of :math:`h` samples that minimizes the
+    determinant of the corresponding covariance matrix,
+    :math:`\mathbf{\tilde{Y}}^*_J = h^{-1}\sum_{i\in{J}}\mathbf{Y}_i` and
+    :math:`\mathbf{S}^*_J = h^{-1}\sum_{i\in{J}}\left( \mathbf{Y}_i - \mathbf{
+    \tilde{Y}}^*_J\right) \left( \mathbf{Y}_i - \mathbf{\tilde{Y}}^*_J
+    \right)^T`. The sub-sample of size h controls the robustness of the method.
+
+    Then, the tail of this distance distribution is approximated as follows:
+
+    .. math::
+        \frac{c\left(m - p\right)}{m\left(p + 1\right)}RMD^2\left(
+        \mathbf{Y}, \mathbf{\tilde{Y}}^*_J\right)\sim F_{p+1, m-p}
+
+    where :math:`p` is the dmension of the image, and :math:`c` and :math:`m`
+    are parameters determining the degrees of freedom of the
+    :math:`F`-distribution and the scaling factor.
+
+    .. math::
+        c = E \left[s^*_{jj}\right]
+
+    where :math:`s^*_{jj}` are the diagonal elements of MCD and
+
+    .. math::
+        m = \frac{2}{CV^2}
+
+    where :math:`CV` is the estimated coefficient of variation of the diagonal
+    elements of the  MCD shape estimator.
+
+    Finally, we choose a cutoff value to determine the outliers, C ,
+    as the :math:`\alpha` quantile of :math:`F_{p+1, m-p}`. We set
+    :math:`\alpha = 0.993`, which is used in the classical boxplot for
+    detecting outliers under a normal distribution.
+
+    Parameters:
+        depth_method (:ref:`depth measure <depth-measures>`, optional):
+            Method used to order the data. Defaults to :func:`modified band
+            depth <fda.depth_measures.modified_band_depth>`.
+        pointwise_weights (array_like, optional): an array containing the
+            weights of each points of discretisati on where values have
+            been recorded.
+        alpha (float, optional): Denotes the quantile to choose the cutoff
+            value for detecting outliers Defaults to 0.993, which is used
+            in the classical boxplot.
+        assume_centered (boolean, optional): If True, the support of the
+            robust location and the covariance estimates is computed, and a
+            covariance estimate is recomputed from it, without centering
+            the data. Useful to work with data whose mean is significantly
+            equal to zero but is not exactly zero. If False, default value,
+            the robust location and covariance are directly computed with
+            the FastMCD algorithm without additional treatment.
+        support_fraction (float, 0 < support_fraction < 1, optional): The
+            proportion of points to be included in the support of the
+            raw MCD estimate.
+            Default is None, which implies that the minimum value of
+            support_fraction will be used within the algorithm:
+            [n_sample + n_features + 1] / 2
+        random_state (int, RandomState instance or None, optional): If int,
+            random_state is the seed used by the random number generator;
+            If RandomState instance, random_state is the random number
+            generator; If None, the random number generator is the
+            RandomState instance used by np.random. By default, it is 0.
+
+    Example:
+        Function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
+
+        >>> import skfda
+        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
+        ...                [0.5, 0.5, 1, 2, 1.5, 1],
+        ...                [-1, -1, -0.5, 1, 1, 0.5],
+        ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
+        >>> sample_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> out_detector = DirectionalOutlierDetector()
+        >>> out_detector.fit_predict(fd)
+        array([1, 1, 1, 1])
+
+    """
+
+    def __init__(self, *, depth_method=modified_band_depth,
+                 pointwise_weights=None,
+                 assume_centered=False,
+                 support_fraction=None,
+                 random_state=0,
+                 alpha=0.993):
+        self.depth_method = depth_method
+        self.pointwise_weights = pointwise_weights
+        self.assume_centered = assume_centered
+        self.support_fraction = support_fraction
+        self.random_state = random_state
+        self.alpha = alpha
+
+    def _compute_points(self, X):
+        # The depths of the samples are calculated giving them an ordering.
+        *_, mean_dir_outl, variation_dir_outl = directional_outlyingness_stats(
+            X,
+            self.depth_method,
+            self.pointwise_weights)
+
+        points = np.array(
+            list(
+                zip(
+                    mean_dir_outl.ravel(), variation_dir_outl
+                )
+            ))
+
+        return points
+
+    def fit(self, X, y=None):
+
+        self.points_ = self._compute_points(X)
+
+        # The square mahalanobis distances of the samples are
+        # calulated using MCD.
+        self.cov_ = MinCovDet(store_precision=False,
+                              assume_centered=self.assume_centered,
+                              support_fraction=self.support_fraction,
+                              random_state=self.random_state).fit(self.points_)
+
+        # Calculation of the degrees of freedom of the F-distribution
+        # (approximation of the tail of the distance distribution).
+        s_jj = np.diag(self.cov_.covariance_)
+        c = np.mean(s_jj)
+        m = 2 / np.square(variation(s_jj))
+        p = X.ndim_image
+        dfn = p + 1
+        dfd = m - p
+
+        # Calculation of the cutoff value and scaling factor to identify
+        # outliers.
+        self.cutoff_value_ = f.ppf(self.alpha, dfn, dfd, loc=0, scale=1)
+        self.scaling_ = c * dfd / m / dfn
+
+        return self
+
+    def predict(self, X):
+
+        points = self._compute_points(X)
+
+        rmd_2 = self.cov_.mahalanobis(points)
+
+        outliers = self.scaling_ * rmd_2 > self.cutoff_value_
+
+        # Predict as scikit-learn outlier detectors
+        predicted = ~outliers + outliers * -1
+
+        return predicted

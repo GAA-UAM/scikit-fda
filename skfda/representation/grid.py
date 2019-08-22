@@ -1137,7 +1137,8 @@ class FDataGrid(FData):
             return self.copy(data_matrix=self.data_matrix[key],
                              sample_points=sample_points)
 
-        if isinstance(key, int):
+        if isinstance(key, numbers.Integral):  # To accept also numpy ints
+            key = int(key)
             return self.copy(data_matrix=self.data_matrix[key:key + 1])
 
         else:

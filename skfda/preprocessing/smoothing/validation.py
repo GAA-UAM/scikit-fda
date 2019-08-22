@@ -1,9 +1,8 @@
 """Defines methods for the validation of the smoothing."""
-import numpy as np
-
-from . import kernel_smoothers
-from sklearn.model_selection import GridSearchCV
 import sklearn
+from sklearn.model_selection import GridSearchCV
+
+import numpy as np
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -18,7 +17,7 @@ def _get_input_estimation_and_matrix(estimator, X):
         estimator.fit(X)
     y_est = estimator.transform(X)
 
-    hat_matrix = estimator.hat_matrix_
+    hat_matrix = estimator.hat_matrix()
 
     return y_est, hat_matrix
 
@@ -93,6 +92,7 @@ class LinearSmootherGeneralizedCVScorer():
         penalization.
 
     """
+
     def __init__(self, penalization_function=None):
         self.penalization_function = penalization_function
 
@@ -164,6 +164,7 @@ class SmoothingParameterSearch(GridSearchCV):
         smoothing by means of the k-nearest neighbours method.
 
         >>> import skfda
+        >>> from skfda.preprocessing.smoothing import kernel_smoothers
         >>> x = np.linspace(-2, 2, 5)
         >>> fd = skfda.FDataGrid(x ** 2, x)
         >>> grid = SmoothingParameterSearch(
@@ -175,7 +176,7 @@ class SmoothingParameterSearch(GridSearchCV):
         -11.67
         >>> grid.best_params_['smoothing_parameter']
         2
-        >>> grid.best_estimator_.hat_matrix_.round(2)
+        >>> grid.best_estimator_.hat_matrix().round(2)
         array([[ 0.5 , 0.5 , 0.  , 0.  , 0.  ],
                [ 0.33, 0.33, 0.33, 0.  , 0.  ],
                [ 0.  , 0.33, 0.33, 0.33, 0.  ],

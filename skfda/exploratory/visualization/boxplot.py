@@ -421,8 +421,9 @@ class SurfaceBoxplot(FDataBoxplot):
     data with domain dimension 2. Nevertheless, it does not implement the
     enhanced surface boxplot.
 
-    Based on the center outward ordering induced by a :ref:`depth measure
-    <depth-measures>` for functional data, it represents the envelope of the
+    Based on the center outward ordering induced by a
+    :ref:`depth measure <depth-measures>`
+    for functional data, it represents the envelope of the
     50% central region, the median curve, and the maximum non-outlying
     envelope.
 
@@ -504,19 +505,14 @@ class SurfaceBoxplot(FDataBoxplot):
                                       [[ 4. ],
                                        [ 0.4],
                                        [ 5. ]]])))
-
             outlying envelope=array([[[[ 1. ,  0.3,  1. ],
-                     [ 2. ,  0.4,  2. ]],
-        <BLANKLINE>
-                    [[ 1. ,  0.3,  1. ],
-                     [ 2. ,  0.4,  2. ]]],
-        <BLANKLINE>
-        <BLANKLINE>
-                   [[[ 4. ,  1.5,  3. ],
-                     [ 8. ,  2. ,  9. ]],
-        <BLANKLINE>
-                    [[ 4. ,  1.5,  3. ],
-                     [ 8. ,  2. ,  9. ]]]]))
+                                       [ 2. ,  0.4,  2. ]],
+                                      [[ 1. ,  0.3,  1. ],
+                                       [ 2. ,  0.4,  2. ]]],
+                                     [[[ 4. ,  1.5,  3. ],
+                                       [ 8. ,  2. ,  9. ]],
+                                      [[ 4. ,  1.5,  3. ],
+                                       [ 8. ,  2. ,  9. ]]]]))
 
 
     """
@@ -606,8 +602,7 @@ class SurfaceBoxplot(FDataBoxplot):
         self._outcol = value
 
     def plot(self, fig=None, ax=None, nrows=None, ncols=None):
-        """Visualization of the surface boxplot of the fdatagrid
-        (ndim_domain=2).
+        """Visualization of the surface boxplot of the fdatagrid (ndim_domain=2).
 
          Args:
              fig (figure object, optional): figure over with the graphs are

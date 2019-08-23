@@ -141,6 +141,11 @@ def directional_outlyingness_stats(
     >>> stats.variation_directional_outlyingness
     array([ 0.74074074,  0.08230453,  0.0462963 ,  0.06687243])
 
+    References:
+        Dai, Wenlin, and Genton, Marc G. "Directional outlyingness for
+        multivariate functional data." Computational Statistics & Data
+        Analysis 131 (2019): 50-65.
+
     """
     if fdatagrid.ndim_domain > 1:
         raise NotImplementedError("Only support 1 dimension on the domain.")
@@ -299,6 +304,11 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         >>> out_detector.fit_predict(fd)
         array([1, 1, 1, 1])
 
+    References:
+        Dai, Wenlin, and Genton, Marc G. "Multivariate functional data
+        visualization and outlier detection." Journal of Computational
+        and Graphical Statistics 27.4 (2018): 923-934.
+
     """
 
     def __init__(self, *, depth_method=modified_band_depth,
@@ -330,7 +340,7 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
 
         return points
 
-    def fit(self, X, y=None):
+    def fit_predict(self, X, y=None):
 
         self.points_ = self._compute_points(X)
 
@@ -355,13 +365,7 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         self.cutoff_value_ = f.ppf(self.alpha, dfn, dfd, loc=0, scale=1)
         self.scaling_ = c * dfd / m / dfn
 
-        return self
-
-    def predict(self, X):
-
-        points = self._compute_points(X)
-
-        rmd_2 = self.cov_.mahalanobis(points)
+        rmd_2 = self.cov_.mahalanobis(self.points_)
 
         outliers = self.scaling_ * rmd_2 > self.cutoff_value_
 

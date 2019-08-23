@@ -1,3 +1,4 @@
+"""Unsupervised learner for implementing neighbor searches."""
 
 from .base import (NearestNeighborsMixinInit, NeighborsBase, NeighborsMixin,
                    KNeighborsMixin, RadiusNeighborsMixin, _to_sklearn_metric)
@@ -30,7 +31,7 @@ class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase,
     metric : string or callable, (default
         :func:`lp_distance <skfda.misc.metrics.lp_distance>`)
         the distance metric to use for the tree.  The default metric is
-        the Lp distance. See the documentation of the metrics module
+        the L2 distance. See the documentation of the metrics module
         for a list of available metrics.
     metric_params : dict, optional (default = None)
         Additional keyword arguments for the metric function.
@@ -99,7 +100,7 @@ class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase,
     """
 
     def __init__(self, n_neighbors=5, radius=1.0, algorithm='auto',
-                 leaf_size=30, metric='lp_distance', metric_params=None,
+                 leaf_size=30, metric='l2', metric_params=None,
                  n_jobs=1, sklearn_metric=False):
         """Initialize the nearest neighbors searcher."""
 

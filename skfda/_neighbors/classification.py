@@ -1,3 +1,4 @@
+"""Neighbor models for supervised classification."""
 
 from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
                    NeighborsClassifierMixin, RadiusNeighborsMixin)
@@ -51,7 +52,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     metric : string or callable, (default
         :func:`lp_distance <skfda.misc.metrics.lp_distance>`)
         the distance metric to use for the tree.  The default metric is
-        the Lp distance. See the documentation of the metrics module
+        the L2 distance. See the documentation of the metrics module
         for a list of available metrics.
     metric_params : dict, optional (default = None)
         Additional keyword arguments for the metric function.
@@ -118,7 +119,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     """
 
     def __init__(self, n_neighbors=5, weights='uniform', algorithm='auto',
-                 leaf_size=30, metric='lp_distance', metric_params=None,
+                 leaf_size=30, metric='l2', metric_params=None,
                  n_jobs=1, sklearn_metric=False):
         """Initialize the classifier."""
 
@@ -206,7 +207,7 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
     metric : string or callable, (default
         :func:`lp_distance <skfda.metrics.lp_distance>`)
         the distance metric to use for the tree.  The default metric is
-        the Lp distance. See the documentation of the metrics module
+        the L2 distance. See the documentation of the metrics module
         for a list of available metrics.
     outlier_label : int, optional (default = None)
         Label, which is given for outlier samples (samples with no
@@ -266,7 +267,7 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
     """
 
     def __init__(self, radius=1.0, weights='uniform', algorithm='auto',
-                 leaf_size=30, metric='lp_distance', metric_params=None,
+                 leaf_size=30, metric='l2', metric_params=None,
                  outlier_label=None, n_jobs=1, sklearn_metric=False):
         """Initialize the classifier."""
 
@@ -356,7 +357,7 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
 
     """
 
-    def __init__(self, metric='lp_distance', mean='mean'):
+    def __init__(self, metric='l2', mean='mean'):
         """Initialize the classifier."""
         self.metric = metric
         self.mean = mean
@@ -374,7 +375,7 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
         """
         if self.metric == 'precomputed':
             raise ValueError("Precomputed is not supported.")
-        elif self.metric == 'lp_distance':
+        elif self.metric == 'l2':
             self._pairwise_distance = pairwise_distance(lp_distance)
         else:
             self._pairwise_distance = pairwise_distance(self.metric)

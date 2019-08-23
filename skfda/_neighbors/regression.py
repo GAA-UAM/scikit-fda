@@ -1,4 +1,4 @@
-
+"""Neighbor models for regression."""
 
 from sklearn.neighbors import KNeighborsRegressor as _KNeighborsRegressor
 from sklearn.neighbors import (RadiusNeighborsRegressor as
@@ -52,7 +52,7 @@ class KNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
     metric : string or callable, (default
         :func:`lp_distance <skfda.misc.metrics.lp_distance>`)
         the distance metric to use for the tree.  The default metric is
-        the Lp distance. See the documentation of the metrics module
+        the L2 distance. See the documentation of the metrics module
         for a list of available metrics.
     metric_params : dict, optional (default = None)
         Additional keyword arguments for the metric function.
@@ -113,7 +113,7 @@ class KNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
     """
 
     def __init__(self, n_neighbors=5, weights='uniform', algorithm='auto',
-                 leaf_size=30, metric='lp_distance', metric_params=None,
+                 leaf_size=30, metric='l2', metric_params=None,
                  n_jobs=1, sklearn_metric=False):
         """Initialize the classifier."""
 
@@ -184,7 +184,7 @@ class RadiusNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
     metric : string or callable, (default
         :func:`lp_distance <skfda.metrics.lp_distance>`)
         the distance metric to use for the tree.  The default metric is
-        the Lp distance. See the documentation of the metrics module
+        the L2 distance. See the documentation of the metrics module
         for a list of available metrics.
     metric_params : dict, optional (default = None)
         Additional keyword arguments for the metric function.
@@ -239,7 +239,7 @@ class RadiusNeighborsScalarRegressor(NeighborsBase, NeighborsMixin,
     """
 
     def __init__(self, radius=1.0, weights='uniform', algorithm='auto',
-                 leaf_size=30, metric='lp_distance', metric_params=None,
+                 leaf_size=30, metric='l2', metric_params=None,
                  n_jobs=1, sklearn_metric=False):
         """Initialize the classifier."""
 
@@ -314,7 +314,7 @@ class KNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
     metric : string or callable, (default
         :func:`lp_distance <skfda.metrics.lp_distance>`)
         the distance metric to use for the tree.  The default metric is
-        the Lp distance. See the documentation of the metrics module
+        the L2 distance. See the documentation of the metrics module
         for a list of available metrics.
     metric_params : dict, optional (default = None)
         Additional keyword arguments for the metric function.
@@ -369,7 +369,7 @@ class KNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
     """
 
     def __init__(self, n_neighbors=5, weights='uniform', regressor='mean',
-                 algorithm='auto', leaf_size=30, metric='lp_distance',
+                 algorithm='auto', leaf_size=30, metric='l2',
                  metric_params=None, n_jobs=1, sklearn_metric=False):
         """Initialize the classifier."""
 
@@ -433,7 +433,7 @@ class RadiusNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
     metric : string or callable, (default
         :func:`lp_distance <skfda.metrics.lp_distance>`)
         the distance metric to use for the tree.  The default metric is
-        the Lp distance. See the documentation of the metrics module
+        the L2 distance. See the documentation of the metrics module
         for a list of available metrics.
     metric_params : dict, optional (default = None)
         Additional keyword arguments for the metric function.
@@ -490,7 +490,7 @@ class RadiusNeighborsFunctionalRegressor(NearestNeighborsMixinInit,
     """
 
     def __init__(self, radius=1., weights='uniform', regressor='mean',
-                 algorithm='auto', leaf_size=30, metric='lp_distance',
+                 algorithm='auto', leaf_size=30, metric='l2',
                  metric_params=None, outlier_response=None, n_jobs=1,
                  sklearn_metric=False):
         """Initialize the classifier."""

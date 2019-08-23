@@ -1,4 +1,4 @@
-
+"""Base classes for the neighbor estimators"""
 
 from abc import ABC, abstractmethod
 
@@ -100,7 +100,7 @@ class NeighborsBase(ABC, BaseEstimator):
     @abstractmethod
     def __init__(self, n_neighbors=None, radius=None,
                  weights='uniform', algorithm='auto',
-                 leaf_size=30, metric='lp_distance', metric_params=None,
+                 leaf_size=30, metric='l2', metric_params=None,
                  n_jobs=None, sklearn_metric=False):
 
         self.n_neighbors = n_neighbors
@@ -162,7 +162,7 @@ class NeighborsMixin:
 
             if not self.sklearn_metric:
                 # Constructs sklearn metric to manage vector
-                if self.metric == 'lp_distance':
+                if self.metric == 'l2':
                     metric = lp_distance
                 else:
                     metric = self.metric
@@ -509,7 +509,7 @@ class NeighborsFunctionalRegressorMixin:
 
             if not self.sklearn_metric:
 
-                if self.metric == 'lp_distance':
+                if self.metric == 'l2':
                     metric = lp_distance
                 else:
                     metric = self.metric

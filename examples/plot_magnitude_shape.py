@@ -13,7 +13,7 @@ Shows the use of the MS-Plot applied to the Canadian Weather dataset.
 import matplotlib.pyplot as plt
 import numpy as np
 from skfda import datasets
-from skfda.exploratory.depth import fraiman_muniz_depth
+from skfda.exploratory.depth import fraiman_muniz_depth, modified_band_depth
 from skfda.exploratory.visualization.magnitude_shape_plot import (
     MagnitudeShapePlot)
 
@@ -50,7 +50,8 @@ fd_temperatures.plot(sample_labels=dataset["target"],
 # between outliers or not. In particular the tones of the default colormap,
 # (which is 'seismic' and can be customized), are assigned.
 
-msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures)
+msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures,
+                            depth_method=modified_band_depth)
 
 color = 0.3
 outliercol = 0.7

@@ -3,14 +3,14 @@ import typing
 from numpy import linalg as la
 import scipy.integrate
 from scipy.stats import f, variation
+import scipy.stats
 from sklearn.base import BaseEstimator, OutlierMixin
 from sklearn.covariance import MinCovDet
 
 import numpy as np
-from skfda.exploratory.depth import modified_band_depth
+from skfda.exploratory.depth.multivariate import projection_depth
 
 from ... import FDataGrid
-from ..depth import fraiman_muniz_depth
 
 
 class DirectionalOutlyingnessStats(typing.NamedTuple):
@@ -21,8 +21,8 @@ class DirectionalOutlyingnessStats(typing.NamedTuple):
 
 
 def directional_outlyingness_stats(
-        fdatagrid: FDataGrid,
-        depth_method=fraiman_muniz_depth,
+        fdatagrid: FDataGrid, *,
+        depth_method=projection_depth,
         pointwise_weights=None) -> DirectionalOutlyingnessStats:
     r"""Computes the directional outlyingness of the functional data.
 
@@ -155,13 +155,14 @@ def directional_outlyingness_stats(
          pointwise_weights.sum() != 1)):
         raise ValueError(
             "There must be a weight in pointwise_weights for each recorded "
-            "time point and altogether must sum 1.")
+            "time point and altogether must integrate to 1.")
 
     if pointwise_weights is None:
         pointwise_weights = np.ones(
-            len(fdatagrid.sample_points[0])) / len(fdatagrid.sample_points[0])
+            len(fdatagrid.sample_points[0])) / (
+                fdatagrid.domain_range[0][1] - fdatagrid.domain_range[0][0])
 
-    _, depth_pointwise = depth_method(fdatagrid, pointwise=True)
+    depth_pointwise = depth_method(fdatagrid, pointwise=True)
     assert depth_pointwise.shape == fdatagrid.data_matrix.shape[:-1]
 
     # Obtaining the pointwise median sample Z, to calculate
@@ -182,7 +183,6 @@ def directional_outlyingness_stats(
 
     # Calculation directinal outlyingness
     dir_outlyingness = (1 / depth_pointwise[..., np.newaxis] - 1) * v_unitary
-    assert dir_outlyingness.shape == fdatagrid.data_matrix.shape
 
     # Calculation mean directional outlyingness
     weighted_dir_outlyingness = (dir_outlyingness
@@ -200,7 +200,8 @@ def directional_outlyingness_stats(
                              mean_dir_outlyingness[:, np.newaxis, :], axis=-1))
     weighted_norm = norm * pointwise_weights
     variation_dir_outlyingness = scipy.integrate.simps(
-        weighted_norm, fdatagrid.sample_points[0], axis=1)
+        weighted_norm, fdatagrid.sample_points[0],
+        axis=1)
     assert variation_dir_outlyingness.shape == (fdatagrid.nsamples,)
 
     functional_dir_outlyingness = (np.square(la.norm(mean_dir_outlyingness))
@@ -263,8 +264,8 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
 
     Parameters:
         depth_method (:ref:`depth measure <depth-measures>`, optional):
-            Method used to order the data. Defaults to :func:`modified band
-            depth <fda.depth_measures.modified_band_depth>`.
+            Method used to order the data. Defaults to :func:`projection
+            depth <fda.depth_measures.multivariate.projection_depth>`.
         pointwise_weights (array_like, optional): an array containing the
             weights of each points of discretisati on where values have
             been recorded.
@@ -311,7 +312,7 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
 
     """
 
-    def __init__(self, *, depth_method=modified_band_depth,
+    def __init__(self, *, depth_method=projection_depth,
                  pointwise_weights=None,
                  assume_centered=False,
                  support_fraction=None,
@@ -328,8 +329,8 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         # The depths of the samples are calculated giving them an ordering.
         *_, mean_dir_outl, variation_dir_outl = directional_outlyingness_stats(
             X,
-            self.depth_method,
-            self.pointwise_weights)
+            depth_method=self.depth_method,
+            pointwise_weights=self.pointwise_weights)
 
         points = np.array(
             list(

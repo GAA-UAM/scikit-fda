@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 from skfda import FDataGrid
 from skfda.datasets import fetch_weather
+from skfda.exploratory.depth import modified_band_depth
 from skfda.exploratory.visualization.magnitude_shape_plot import (
     MagnitudeShapePlot)
 
@@ -15,7 +16,8 @@ class TestMagnitudeShapePlot(unittest.TestCase):
                                     sample_points=fd.sample_points,
                                     dataset_label=fd.dataset_label,
                                     axes_labels=fd.axes_labels[0:2])
-        msplot = MagnitudeShapePlot(fd_temperatures, random_state=0)
+        msplot = MagnitudeShapePlot(
+            fd_temperatures, depth_method=modified_band_depth)
         np.testing.assert_allclose(msplot.points,
                                    np.array([[0.25839562,   3.14995827],
                                              [1.3774155,   0.91556716],

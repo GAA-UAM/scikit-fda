@@ -21,7 +21,7 @@ from skfda.exploratory.visualization.magnitude_shape_plot import (
 # First, we generate a synthetic dataset following [DaWe18]_
 
 random_state = np.random.RandomState(0)
-n_samples = 95
+n_samples = 200
 
 fd = skfda.datasets.make_gaussian_process(
     n_samples=n_samples, n_features=100,
@@ -32,7 +32,7 @@ fd = skfda.datasets.make_gaussian_process(
 ##############################################################################
 # We now add the outliers
 
-mangnitude_outlier = skfda.datasets.make_gaussian_process(
+magnitude_outlier = skfda.datasets.make_gaussian_process(
     n_samples=1, n_features=100,
     cov=skfda.misc.covariances.Exponential(),
     mean=lambda t: 4 * t + 20,
@@ -59,7 +59,7 @@ shape_outlier_sin = skfda.datasets.make_gaussian_process(
 shape_outlier_slope = skfda.datasets.make_gaussian_process(
     n_samples=1, n_features=100,
     cov=skfda.misc.covariances.Exponential(),
-    mean=lambda t: 7 * t,
+    mean=lambda t: 10 * t,
     random_state=random_state)
 
 magnitude_shape_outlier = skfda.datasets.make_gaussian_process(
@@ -69,7 +69,7 @@ magnitude_shape_outlier = skfda.datasets.make_gaussian_process(
     random_state=random_state)
 
 
-fd = fd.concatenate(mangnitude_outlier, shape_outlier_shift,
+fd = fd.concatenate(magnitude_outlier, shape_outlier_shift,
                     shape_outlier_peak, shape_outlier_sin,
                     shape_outlier_slope, magnitude_shape_outlier)
 
@@ -107,7 +107,7 @@ fd.plot(sample_labels=labels,
 # We now show the points in the MS-plot using the same colors
 
 plt.figure()
-plt.scatter(msplot.points[:, 0], msplot.points[:, 1],
+plt.scatter(msplot.points[:, 0].ravel(), msplot.points[:, 1].ravel(),
             c=colors[0:1] * n_samples + colors[1:])
 plt.title("MS-Plot")
 plt.xlabel("magnitude outlyingness")

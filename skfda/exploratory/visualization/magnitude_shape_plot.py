@@ -70,13 +70,14 @@ class MagnitudeShapePlot:
     Example:
 
         >>> import skfda
+        >>> from skfda.exploratory.depth import modified_band_depth
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = skfda.FDataGrid(data_matrix, sample_points)
-        >>> MagnitudeShapePlot(fd)
+        >>> MagnitudeShapePlot(fd, depth_method=modified_band_depth)
         MagnitudeShapePlot(
             FDataGrid=FDataGrid(
                 array([[[ 1. ],
@@ -136,8 +137,8 @@ class MagnitudeShapePlot:
         Args:
             fdatagrid (FDataGrid): Object containing the data.
             depth_method (:ref:`depth measure <depth-measures>`, optional):
-                Method used to order the data. Defaults to :func:`modified band
-                depth <fda.depth_measures.modified_band_depth>`.
+                Method used to order the data. Defaults to :func:`projection
+                depth <fda.depth_measures.multivariate.projection_depth>`.
             pointwise_weights (array_like, optional): an array containing the
                 weights of each points of discretisati on where values have
                 been recorded.
@@ -172,12 +173,9 @@ class MagnitudeShapePlot:
 
         y = self.outlier_detector.fit_predict(fdatagrid)
 
-        points = self.outlier_detector.points_
-
         outliers = (y == -1)
 
         self._fdatagrid = fdatagrid
-        self._points = points
         self._outliers = outliers
         self._colormap = plt.cm.get_cmap('seismic')
         self._color = 0.2
@@ -264,7 +262,7 @@ class MagnitudeShapePlot:
             ax = matplotlib.pyplot.gca()
 
         colors_rgba = [tuple(i) for i in colors]
-        ax.scatter(self.points[:, 0], self.points[:, 1],
+        ax.scatter(self.points[:, 0].ravel(), self.points[:, 1].ravel(),
                    color=colors_rgba)
 
         ax.set_xlabel(self.xlabel)

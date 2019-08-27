@@ -316,12 +316,14 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
                  pointwise_weights=None,
                  assume_centered=False,
                  support_fraction=None,
+                 num_resamples=1000,
                  random_state=0,
                  alpha=0.993):
         self.depth_method = depth_method
         self.pointwise_weights = pointwise_weights
         self.assume_centered = assume_centered
         self.support_fraction = support_fraction
+        self.num_resamples = num_resamples
         self.random_state = random_state
         self.alpha = alpha
 
@@ -341,7 +343,61 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
 
         return points
 
+    def _parameters_asymptotic(self, sample_size, dimension):
+        """Returns the c and m parameters using their asymptotic formula."""
+
+        n = sample_size
+        p = dimension
+
+        h = np.floor((n + p + 1) / 2)
+
+        # c estimation
+        xi_left = scipy.stats.chi2.rvs(
+            size=self.num_resamples, df=p + 2, random_state=self.random_state_)
+        xi_right = scipy.stats.ncx2.rvs(
+            size=self.num_resamples, df=p, nc=h / n,
+            random_state=self.random_state_)
+
+        c_numerator = np.sum(xi_left < xi_right) / self.num_resamples
+        c_denominator = h / n
+
+        estimated_c = c_numerator / c_denominator
+
+        # m estimation
+        alpha = (n - h) / n
+        q_alpha = scipy.stats.chi2.ppf(1 - alpha, df=p)
+
+        dist_p2 = scipy.stats.chi2.cdf(q_alpha, df=p + 2)
+        dist_p4 = scipy.stats.chi2.cdf(q_alpha, df=p + 4)
+        c_alpha = (1 - alpha) / dist_p2
+        c2 = -dist_p2 / 2
+        c3 = -dist_p4 / 2
+        c4 = 3 * c3
+
+        b1 = (c_alpha * (c3 - c4)) / (1 - alpha)
+        b2 = (0.5 + c_alpha / (1 - alpha) *
+              (c3 - q_alpha / p * (c2 + (1 - alpha) / 2)))
+
+        v1 = ((1 - alpha) * b1**2 * (alpha * (
+            c_alpha * q_alpha / p - 1) ** 2 - 1)
+            - 2 * c3 * c_alpha**2 * (3 * (b1 - p * b2)**2
+                                     + (p + 2) * b2 * (2 * b1 - p * b2)))
+        v2 = n * (b1 * (b1 - p * b2) * (1 - alpha))**2 * c_alpha**2
+        v = v1 / v2
+
+        m_async = 2 / (c_alpha**2 * v)
+
+        estimated_m = (m_async *
+                       np.exp(0.725 - 0.00663 * p - 0.0780 * np.log(n)))
+
+        return estimated_c, estimated_m
+
     def fit_predict(self, X, y=None):
+
+        try:
+            self.random_state_ = np.random.RandomState(self.random_state)
+        except ValueError:
+            self.random_state_ = self.random_state
 
         self.points_ = self._compute_points(X)
 
@@ -350,14 +406,18 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         self.cov_ = MinCovDet(store_precision=False,
                               assume_centered=self.assume_centered,
                               support_fraction=self.support_fraction,
-                              random_state=self.random_state).fit(self.points_)
+                              random_state=self.random_state_).fit(
+                                  self.points_)
 
         # Calculation of the degrees of freedom of the F-distribution
         # (approximation of the tail of the distance distribution).
-        s_jj = np.diag(self.cov_.covariance_)
-        c = np.mean(s_jj)
-        m = 2 / np.square(variation(s_jj))
-        p = X.ndim_image
+
+        # One per dimension (mean dir out) plus one (variational dir out)
+        dimension = X.ndim_codomain + 1
+        c, m = self._parameters_asymptotic(
+            sample_size=X.nsamples,
+            dimension=dimension)
+        p = dimension
         dfn = p + 1
         dfd = m - p
 

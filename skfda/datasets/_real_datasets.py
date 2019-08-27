@@ -1,8 +1,20 @@
-import numpy as np
+import warnings
+
 import rdata
 
+import numpy as np
+
 from .. import FDataGrid
-import warnings
+
+
+def _get_skdatasets_repositories():
+    import skdatasets
+
+    repositories = getattr(skdatasets, "repositories", None)
+    if repositories is None:
+        repositories = skdatasets
+
+    return repositories
 
 
 def fdata_constructor(obj, attrs):
@@ -53,7 +65,7 @@ def fetch_cran(name, package_name, *, converter=None,
         package_name: Name of the R package containing the dataset.
 
     """
-    import skdatasets
+    repositories = _get_skdatasets_repositories()
 
     if converter is None:
         converter = rdata.conversion.SimpleConverter({
@@ -61,8 +73,8 @@ def fetch_cran(name, package_name, *, converter=None,
             "fdata": fdata_constructor,
             "functional": functional_constructor})
 
-    return skdatasets.cran.fetch_dataset(name, package_name,
-                                         converter=converter, **kwargs)
+    return repositories.cran.fetch_dataset(name, package_name,
+                                           converter=converter, **kwargs)
 
 
 def fetch_ucr(name, **kwargs):
@@ -84,9 +96,9 @@ def fetch_ucr(name, **kwargs):
 
 
     """
-    import skdatasets
+    repositories = _get_skdatasets_repositories()
 
-    dataset = skdatasets.ucr.fetch(name, **kwargs)
+    dataset = repositories.ucr.fetch(name, **kwargs)
 
     def ucr_to_fdatagrid(data):
         if data.dtype == np.object_:

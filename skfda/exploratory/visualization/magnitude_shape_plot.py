@@ -77,7 +77,7 @@ class MagnitudeShapePlot:
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = skfda.FDataGrid(data_matrix, sample_points)
-        >>> MagnitudeShapePlot(fd, depth_method=modified_band_depth)
+        >>> MagnitudeShapePlot(fd)
         MagnitudeShapePlot(
             FDataGrid=FDataGrid(
                 array([[[ 1. ],
@@ -86,21 +86,18 @@ class MagnitudeShapePlot:
                         [ 3. ],
                         [ 2.5],
                         [ 2. ]],
-        <BLANKLINE>
                        [[ 0.5],
                         [ 0.5],
                         [ 1. ],
                         [ 2. ],
                         [ 1.5],
                         [ 1. ]],
-        <BLANKLINE>
                        [[-1. ],
                         [-1. ],
                         [-0.5],
                         [ 1. ],
                         [ 1. ],
                         [ 0.5]],
-        <BLANKLINE>
                        [[-0.5],
                         [-0.5],
                         [-0.5],
@@ -115,13 +112,13 @@ class MagnitudeShapePlot:
                 interpolator=SplineInterpolator(interpolation_order=1,
                 smoothness_parameter=0.0, monotone=False),
                 keepdims=False),
-            depth_method=modified_band_depth,
+            depth_method=projection_depth,
             pointwise_weights=None,
             alpha=0.993,
-            points=array([[ 1.66666667,  0.74074074],
-                   [ 0.        ,  0.        ],
-                   [-0.73333333,  0.36740741],
-                   [-1.        ,  0.53333333]]),
+            points=array([[ 1.12415127,  0.05813094],
+                          [ 0.        ,  0.        ],
+                          [-0.53959261,  0.08037234],
+                          [-1.17661166,  0.4294388 ]]),
             outliers=array([False, False, False, False]),
             colormap=seismic,
             color=0.2,

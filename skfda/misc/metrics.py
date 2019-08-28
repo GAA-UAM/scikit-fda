@@ -512,10 +512,9 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
 
     return distance
 
-
 def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
                    **kwargs):
-    r"""Compute the amplitude distance btween two functional objects.
+    r"""Compute the phase distance between two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
     :math:`\gamma_{ij}` the corresponding warping used in the elastic

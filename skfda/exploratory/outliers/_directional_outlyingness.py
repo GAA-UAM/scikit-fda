@@ -2,7 +2,7 @@ import typing
 
 from numpy import linalg as la
 import scipy.integrate
-from scipy.stats import f, variation
+from scipy.stats import f
 import scipy.stats
 from sklearn.base import BaseEstimator, OutlierMixin
 from sklearn.covariance import MinCovDet
@@ -10,6 +10,7 @@ from sklearn.covariance import MinCovDet
 import numpy as np
 from skfda.exploratory.depth.multivariate import projection_depth
 
+from . import _directional_outlyingness_experiment_results as experiments
 from ... import FDataGrid
 
 
@@ -344,7 +345,7 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         return points
 
     def _parameters_asymptotic(self, sample_size, dimension):
-        """Returns the c and m parameters using their asymptotic formula."""
+        """Return the scaling and cutoff parameters via asymptotic formula."""
 
         n = sample_size
         p = dimension
@@ -385,12 +386,45 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         v2 = n * (b1 * (b1 - p * b2) * (1 - alpha))**2 * c_alpha**2
         v = v1 / v2
 
-        m_async = 2 / (c_alpha**2 * v)
+        m_asympt = 2 / (c_alpha**2 * v)
 
-        estimated_m = (m_async *
+        estimated_m = (m_asympt *
                        np.exp(0.725 - 0.00663 * p - 0.0780 * np.log(n)))
 
-        return estimated_c, estimated_m
+        dfn = p
+        dfd = estimated_m - p + 1
+
+        # Calculation of the cutoff value and scaling factor to identify
+        # outliers.
+        scaling = estimated_c * dfd / estimated_m / dfn
+        cutoff_value = f.ppf(self.alpha, dfn, dfd, loc=0, scale=1)
+
+        return scaling, cutoff_value
+
+    def _parameters_numeric(self, sample_size, dimension):
+
+        key = sample_size // 5
+
+        use_asympt = True
+
+        if dimension == 2:
+            scaling_list = experiments.dim2_scaling_list
+            cutoff_list = experiments.dim2_cutoff_list
+            assert len(scaling_list) == len(cutoff_list)
+            if key < len(scaling_list):
+                use_asympt = False
+
+        elif dimension == 3:
+            scaling_list = experiments.dim3_scaling_list
+            cutoff_list = experiments.dim3_cutoff_list
+            assert len(scaling_list) == len(cutoff_list)
+            if key < len(scaling_list):
+                use_asympt = False
+
+        if use_asympt:
+            return self._parameters_asymptotic(sample_size, dimension)
+        else:
+            return scaling_list[key], cutoff_list[key]
 
     def fit_predict(self, X, y=None):
 
@@ -414,17 +448,9 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
 
         # One per dimension (mean dir out) plus one (variational dir out)
         dimension = X.ndim_codomain + 1
-        c, m = self._parameters_asymptotic(
+        self.scaling_, self.cutoff_value_ = self._parameters_numeric(
             sample_size=X.nsamples,
             dimension=dimension)
-        p = dimension
-        dfn = p + 1
-        dfd = m - p
-
-        # Calculation of the cutoff value and scaling factor to identify
-        # outliers.
-        self.cutoff_value_ = f.ppf(self.alpha, dfn, dfd, loc=0, scale=1)
-        self.scaling_ = c * dfd / m / dfn
 
         rmd_2 = self.cov_.mahalanobis(self.points_)
 

@@ -245,18 +245,8 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
 
     where :math:`p` is the dimension of the image, and :math:`c` and :math:`m`
     are parameters determining the degrees of freedom of the
-    :math:`F`-distribution and the scaling factor.
-
-    .. math::
-        c = E \left[s^*_{jj}\right]
-
-    where :math:`s^*_{jj}` are the diagonal elements of MCD and
-
-    .. math::
-        m = \frac{2}{CV^2}
-
-    where :math:`CV` is the estimated coefficient of variation of the diagonal
-    elements of the  MCD shape estimator.
+    :math:`F`-distribution and the scaling factor, given by empirical results
+    and an asymptotic formula.
 
     Finally, we choose a cutoff value to determine the outliers, C ,
     as the :math:`\alpha` quantile of :math:`F_{p+1, m-p}`. We set
@@ -335,12 +325,8 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
             depth_method=self.depth_method,
             pointwise_weights=self.pointwise_weights)
 
-        points = np.array(
-            list(
-                zip(
-                    mean_dir_outl.ravel(), variation_dir_outl
-                )
-            ))
+        points = np.concatenate((mean_dir_outl,
+                                 variation_dir_outl[:, np.newaxis]), axis=1)
 
         return points
 

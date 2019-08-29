@@ -513,14 +513,21 @@ class FDataGrid(FData):
         if not np.array_equal(self.sample_points, other.sample_points):
             raise ValueError("Sample points for both objects must be equal")
 
-    def mean(self):
+    def mean(self, weights=None):
         """Compute the mean of all the samples.
 
+        weights (array-like, optional): List of weights.
         Returns:
             FDataGrid : A FDataGrid object with just one sample representing
             the mean of all the samples in the original object.
 
         """
+        if weights is not None:
+
+            return self.copy(data_matrix=np.average(
+                self.data_matrix, weights=weights, axis=0)[np.newaxis,...]
+                             )
+
         return self.copy(data_matrix=self.data_matrix.mean(axis=0,
                                                            keepdims=True))
 

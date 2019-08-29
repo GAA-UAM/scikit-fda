@@ -1919,7 +1919,7 @@ class FDataBasis(FData):
 
         return FDataBasis(basis, coefficients)
 
-    def mean(self):
+    def mean(self, weights=None):
         """Compute the mean of all the samples in a FDataBasis object.
 
         Returns:
@@ -1937,7 +1937,17 @@ class FDataBasis(FData):
                 ...)
 
         """
+
+        if weights is not None:
+            return self.copy(coefficients=
+                             np.average(self.coefficients,
+                                        weights=weights,
+                                        axis=0
+                                        )[np.newaxis,...]
+                             )
+
         return self.copy(coefficients=np.mean(self.coefficients, axis=0))
+
 
     def gmean(self, eval_points=None):
         """Compute the geometric mean of the functional data object.

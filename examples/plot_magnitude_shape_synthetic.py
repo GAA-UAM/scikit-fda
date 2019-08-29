@@ -13,8 +13,7 @@ Shows the use of the MS-Plot applied to a synthetic dataset.
 import matplotlib.pyplot as plt
 import numpy as np
 import skfda
-from skfda.exploratory.visualization.magnitude_shape_plot import (
-    MagnitudeShapePlot)
+from skfda.exploratory.visualization import MagnitudeShapePlot
 
 
 ##############################################################################

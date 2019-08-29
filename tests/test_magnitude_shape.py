@@ -4,8 +4,7 @@ import numpy as np
 from skfda import FDataGrid
 from skfda.datasets import fetch_weather
 from skfda.exploratory.depth import modified_band_depth
-from skfda.exploratory.visualization.magnitude_shape_plot import (
-    MagnitudeShapePlot)
+from skfda.exploratory.visualization import MagnitudeShapePlot
 
 
 class TestMagnitudeShapePlot(unittest.TestCase):

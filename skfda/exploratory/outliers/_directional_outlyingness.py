@@ -242,8 +242,8 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         \frac{c\left(m - p\right)}{m\left(p + 1\right)}RMD^2\left(
         \mathbf{Y}, \mathbf{\tilde{Y}}^*_J\right)\sim F_{p+1, m-p}
 
-    where :math:`p` is the dimension of the image, and :math:`c` and :math:`m`
-    are parameters determining the degrees of freedom of the
+    where :math:`p` is the dimension of the image plus one, and :math:`c` and
+    :math:`m` are parameters determining the degrees of freedom of the
     :math:`F`-distribution and the scaling factor, given by empirical results
     and an asymptotic formula.
 

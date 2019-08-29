@@ -14,8 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skfda import datasets
 from skfda.exploratory.depth import fraiman_muniz_depth, modified_band_depth
-from skfda.exploratory.visualization.magnitude_shape_plot import (
-    MagnitudeShapePlot)
+from skfda.exploratory.visualization import MagnitudeShapePlot
 
 
 ##############################################################################

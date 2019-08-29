@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skfda import datasets
 from skfda.exploratory.depth import band_depth, fraiman_muniz_depth
-from skfda.exploratory.visualization.boxplot import Boxplot
+from skfda.exploratory.visualization import Boxplot
 
 
 ##############################################################################

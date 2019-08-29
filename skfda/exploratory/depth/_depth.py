@@ -41,8 +41,8 @@ def outlyingness_to_depth(outlyingness, *, supreme=None):
 
     References:
         .. [Se06] Serfling, R. (2006). Depth functions in nonparametric
-        multivariate inference. DIMACS Series in Discrete Mathematics and
-        Theoretical Computer Science, 72, 1.
+           multivariate inference. DIMACS Series in Discrete Mathematics and
+           Theoretical Computer Science, 72, 1.
     """
 
     if supreme is None or math.isinf(supreme):

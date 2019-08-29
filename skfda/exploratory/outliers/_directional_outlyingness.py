@@ -10,7 +10,6 @@ from sklearn.covariance import MinCovDet
 import numpy as np
 from skfda.exploratory.depth.multivariate import projection_depth
 
-from . import _directional_outlyingness_experiment_results as experiments
 from ... import FDataGrid
 
 
@@ -388,6 +387,8 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         return scaling, cutoff_value
 
     def _parameters_numeric(self, sample_size, dimension):
+        from . import \
+            _directional_outlyingness_experiment_results as experiments
 
         key = sample_size // 5
 

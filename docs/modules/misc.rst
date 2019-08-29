@@ -1,10 +1,10 @@
-Math
-====
+Miscellaneous
+=============
 
-Miscelaneus functions and objects.
+Miscellaneous functions and objects.
 
 .. toctree::
    :maxdepth: 4
    :caption: Modules:
-   
+
    misc/metrics

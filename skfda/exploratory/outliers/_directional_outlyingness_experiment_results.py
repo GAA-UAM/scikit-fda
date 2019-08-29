@@ -1,5 +1,16 @@
 # flake8: noqa
 
+# This data is from a simulation program in [HaRo2005]_. The data was taken
+# from the supplementary material in [DaGe2018]_.
+#
+# References:
+# .. [DaGe2018] Dai, Wenlin, and Genton, Marc G. "Multivariate functional data
+#    visualization and outlier detection." Journal of Computational
+#    and Graphical Statistics 27.4 (2018): 923-934.
+# .. [HaRo2005] Hardin, Johanna, and Rocke, David M. "The distribution of
+#    robust distances." Journal of Computational and Graphical Statistics
+#    14.4 (2005): 928-946.
+
 dim2_scaling_list = [
     0.2121335,  0.1253451,  0.1565217,  0.1547636,  0.1622325,  0.1505572,  0.1612500,  0.1588387,  0.1604616,  0.1525656,
     0.1633614,  0.1594639,  0.1588519,  0.1556130,  0.1549800,  0.1568933,  0.1565923,  0.1567227,  0.1570298,  0.1550760,

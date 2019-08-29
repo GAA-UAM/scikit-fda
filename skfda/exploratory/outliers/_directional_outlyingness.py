@@ -302,13 +302,15 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
 
     """
 
-    def __init__(self, *, depth_method=projection_depth,
-                 pointwise_weights=None,
-                 assume_centered=False,
-                 support_fraction=None,
-                 num_resamples=1000,
-                 random_state=0,
-                 alpha=0.993):
+    def __init__(
+            self, *, depth_method=projection_depth,
+            pointwise_weights=None,
+            assume_centered=False,
+            support_fraction=None,
+            num_resamples=1000,
+            random_state=0,
+            alpha=0.993,
+            _force_asymptotic=False):
         self.depth_method = depth_method
         self.pointwise_weights = pointwise_weights
         self.assume_centered = assume_centered
@@ -316,6 +318,7 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         self.num_resamples = num_resamples
         self.random_state = random_state
         self.alpha = alpha
+        self._force_asymptotic = _force_asymptotic
 
     def _compute_points(self, X):
         # The depths of the samples are calculated giving them an ordering.
@@ -435,9 +438,14 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
 
         # One per dimension (mean dir out) plus one (variational dir out)
         dimension = X.ndim_codomain + 1
-        self.scaling_, self.cutoff_value_ = self._parameters_numeric(
-            sample_size=X.nsamples,
-            dimension=dimension)
+        if self._force_asymptotic:
+            self.scaling_, self.cutoff_value_ = self._parameters_asymptotic(
+                sample_size=X.nsamples,
+                dimension=dimension)
+        else:
+            self.scaling_, self.cutoff_value_ = self._parameters_numeric(
+                sample_size=X.nsamples,
+                dimension=dimension)
 
         rmd_2 = self.cov_.mahalanobis(self.points_)
 

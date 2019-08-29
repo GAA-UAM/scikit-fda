@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 from skfda import FDataGrid
 from skfda.exploratory.depth import modified_band_depth
+from skfda.exploratory.outliers import DirectionalOutlierDetector
 from skfda.exploratory.outliers import directional_outlyingness_stats
 
 
@@ -39,6 +40,19 @@ class TestsDirectionalOutlyingness(unittest.TestCase):
                                    rtol=1e-06)
         np.testing.assert_allclose(stats.variation_directional_outlyingness,
                                    np.array([0., 0., 0.]), atol=1e-6)
+
+    def test_asymptotic_formula(self):
+        data_matrix = [[1, 1, 2, 3, 2.5, 2],
+                       [0.5, 0.5, 1, 2, 1.5, 1],
+                       [-1, -1, -0.5, 1, 1, 0.5],
+                       [-0.5, -0.5, -0.5, -1, -1, -1]]
+        sample_points = [0, 2, 4, 6, 8, 10]
+        fd = FDataGrid(data_matrix, sample_points)
+        out_detector = DirectionalOutlierDetector(
+            _force_asymptotic=True)
+        prediction = out_detector.fit_predict(fd)
+        np.testing.assert_allclose(prediction,
+                                   np.array([1, 1, 1, 1]))
 
 
 if __name__ == '__main__':

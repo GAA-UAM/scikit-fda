@@ -1,13 +1,17 @@
 """Clustering Plots Module."""
 
-from ...ml.clustering.base_kmeans import FuzzyKMeans
-import numpy as np
-import matplotlib.pyplot as plt
-from mpldatacursor import datacursor
-import matplotlib.patches as mpatches
-from matplotlib.ticker import MaxNLocator
-from sklearn.exceptions import NotFittedError
 import warnings
+
+from matplotlib.ticker import MaxNLocator
+from mpldatacursor import datacursor
+from sklearn.exceptions import NotFittedError
+
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numpy as np
+
+from ...ml.clustering.base_kmeans import FuzzyKMeans
+
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
@@ -93,12 +97,12 @@ def _plot_clustering_checks(estimator, fdatagrid, sample_colors, sample_labels,
     """
 
     if sample_colors is not None and len(
-            sample_colors) != fdatagrid.nsamples:
+            sample_colors) != fdatagrid.n_samples:
         raise ValueError(
             "sample_colors must contain a color for each sample.")
 
     if sample_labels is not None and len(
-            sample_labels) != fdatagrid.nsamples:
+            sample_labels) != fdatagrid.n_samples:
         raise ValueError(
             "sample_labels must contain a label for each sample.")
 
@@ -144,7 +148,7 @@ def _plot_clusters(estimator, fdatagrid, fig, ax, nrows, ncols, labels,
         ncols(int): designates the number of columns of the figure to plot
             the different dimensions of the image. Only specified if fig
             and ax are None.
-        labels (numpy.ndarray, int: (nsamples, ndim_image)): 2-dimensional
+        labels (numpy.ndarray, int: (n_samples, ndim_image)): 2-dimensional
             matrix where each row contains the number of cluster cluster
             that observation belongs to.
         sample_labels (list of str): contains in order the labels of each
@@ -179,7 +183,7 @@ def _plot_clusters(estimator, fdatagrid, fig, ax, nrows, ncols, labels,
 
     if sample_labels is None:
         sample_labels = ['$SAMPLE: {}$'.format(i) for i in
-                         range(fdatagrid.nsamples)]
+                         range(fdatagrid.n_samples)]
 
     if cluster_colors is None:
         cluster_colors = colormap(
@@ -205,7 +209,7 @@ def _plot_clusters(estimator, fdatagrid, fig, ax, nrows, ncols, labels,
                            label=cluster_labels[i]))
 
     for j in range(fdatagrid.ndim_image):
-        for i in range(fdatagrid.nsamples):
+        for i in range(fdatagrid.n_samples):
             ax[j].plot(fdatagrid.sample_points[0],
                        fdatagrid.data_matrix[i, :, j],
                        c=colors_by_cluster[i],
@@ -454,14 +458,14 @@ def plot_cluster_lines(estimator, X, fig=None, ax=None, sample_colors=None,
 
     if sample_labels is None:
         sample_labels = ['$SAMPLE: {}$'.format(i) for i in
-                         range(fdatagrid.nsamples)]
+                         range(fdatagrid.n_samples)]
 
     if cluster_labels is None:
         cluster_labels = ['${}$'.format(i) for i in
                           range(estimator.n_clusters)]
 
     ax.get_xaxis().set_major_locator(MaxNLocator(integer=True))
-    for i in range(fdatagrid.nsamples):
+    for i in range(fdatagrid.n_samples):
         ax.plot(np.arange(estimator.n_clusters),
                 estimator.labels_[i],
                 label=sample_labels[i],
@@ -550,7 +554,7 @@ def plot_cluster_bars(estimator, X, fig=None, ax=None, sort=-1,
     xlabels, ylabels, title = _set_labels(xlabel, ylabel, title, "Sample")
 
     if sample_labels is None:
-        sample_labels = np.arange(fdatagrid.nsamples)
+        sample_labels = np.arange(fdatagrid.n_samples)
 
     if cluster_colors is None:
         cluster_colors = colormap(
@@ -580,14 +584,14 @@ def plot_cluster_bars(estimator, X, fig=None, ax=None, sort=-1,
     else:
         labels_dim = estimator.labels_
 
-    conc = np.zeros((fdatagrid.nsamples, 1))
+    conc = np.zeros((fdatagrid.n_samples, 1))
     labels_dim = np.concatenate((conc, labels_dim), axis=-1)
     for i in range(estimator.n_clusters):
-        ax.bar(np.arange(fdatagrid.nsamples),
+        ax.bar(np.arange(fdatagrid.n_samples),
                labels_dim[:, i + 1],
                bottom=np.sum(labels_dim[:, :(i + 1)], axis=1),
                color=cluster_colors[i])
-    ax.set_xticks(np.arange(fdatagrid.nsamples))
+    ax.set_xticks(np.arange(fdatagrid.n_samples))
     ax.set_xticklabels(sample_labels)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)

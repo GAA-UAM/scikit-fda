@@ -52,7 +52,7 @@ class MagnitudeShapePlot:
             in the classical boxplot.
         points(numpy.ndarray): 2-dimensional matrix where each row
             contains the points plotted in the graph.
-        outliers (1-D array, (fdatagrid.nsamples,)): Contains 1 or 0 to denote
+        outliers (1-D array, (fdatagrid.n_samples,)): Contains 1 or 0 to denote
             if a sample is an outlier or not, respecively.
         colormap(matplotlib.pyplot.LinearSegmentedColormap, optional): Colormap
             from which the colors of the plot are extracted. Defaults to
@@ -251,7 +251,7 @@ class MagnitudeShapePlot:
             ax (axes object): axes in which the graph is plotted.
 
         """
-        colors = np.zeros((self.fdatagrid.nsamples, 4))
+        colors = np.zeros((self.fdatagrid.n_samples, 4))
         colors[np.where(self.outliers == 1)] = self.colormap(self.outliercol)
         colors[np.where(self.outliers == 0)] = self.colormap(self.color)
 

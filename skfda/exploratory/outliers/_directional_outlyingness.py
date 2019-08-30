@@ -193,7 +193,7 @@ def directional_outlyingness_stats(
                                                   fdatagrid.sample_points[0],
                                                   axis=1)
     assert mean_dir_outlyingness.shape == (
-        fdatagrid.nsamples, fdatagrid.ndim_codomain)
+        fdatagrid.n_samples, fdatagrid.ndim_codomain)
 
     # Calculation variation directional outlyingness
     norm = np.square(la.norm(dir_outlyingness -
@@ -202,11 +202,11 @@ def directional_outlyingness_stats(
     variation_dir_outlyingness = scipy.integrate.simps(
         weighted_norm, fdatagrid.sample_points[0],
         axis=1)
-    assert variation_dir_outlyingness.shape == (fdatagrid.nsamples,)
+    assert variation_dir_outlyingness.shape == (fdatagrid.n_samples,)
 
     functional_dir_outlyingness = (np.square(la.norm(mean_dir_outlyingness))
                                    + variation_dir_outlyingness)
-    assert functional_dir_outlyingness.shape == (fdatagrid.nsamples,)
+    assert functional_dir_outlyingness.shape == (fdatagrid.n_samples,)
 
     return DirectionalOutlyingnessStats(
         directional_outlyingness=dir_outlyingness,
@@ -222,7 +222,7 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
     outlier detection method is implemented as described below.
 
     First, the square robust Mahalanobis distance is calculated based on a
-    sample of size :math:`h \leq fdatagrid.nsamples`:
+    sample of size :math:`h \leq fdatagrid.n_samples`:
 
     .. math::
         {RMD}^2\left( \mathbf{Y}, \mathbf{\tilde{Y}}^*_J\right) = \left(
@@ -440,11 +440,11 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         dimension = X.ndim_codomain + 1
         if self._force_asymptotic:
             self.scaling_, self.cutoff_value_ = self._parameters_asymptotic(
-                sample_size=X.nsamples,
+                sample_size=X.n_samples,
                 dimension=dimension)
         else:
             self.scaling_, self.cutoff_value_ = self._parameters_numeric(
-                sample_size=X.nsamples,
+                sample_size=X.n_samples,
                 dimension=dimension)
 
         rmd_2 = self.cov_.mahalanobis(self.points_)

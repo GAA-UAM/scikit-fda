@@ -168,7 +168,7 @@ class SplineInterpolatorEvaluator(Evaluator):
         self._fdatagrid = fdatagrid
         self._ndim_image = fdatagrid.ndim_image
         self._ndim_domain = fdatagrid.ndim_domain
-        self._nsamples = fdatagrid.nsamples
+        self._n_samples = fdatagrid.n_samples
         self._keepdims = fdatagrid.keepdims
         self._domain_range = fdatagrid.domain_range
 
@@ -213,7 +213,7 @@ class SplineInterpolatorEvaluator(Evaluator):
             k (integer): Order of the spline interpolators.
 
         Returns:
-            (np.ndarray): Array of size nsamples x ndim_image with the
+            (np.ndarray): Array of size n_samples x ndim_image with the
             corresponding interpolator of the sample i, and image dimension j
             in the entry (i,j) of the array.
 
@@ -282,7 +282,7 @@ class SplineInterpolatorEvaluator(Evaluator):
             k (integer): Order of the spline interpolators.
 
         Returns:
-            (np.ndarray): Array of size nsamples x ndim_image with the
+            (np.ndarray): Array of size n_samples x ndim_image with the
             corresponding interpolator of the sample i, and image dimension j
             in the entry (i,j) of the array.
 
@@ -321,9 +321,9 @@ class SplineInterpolatorEvaluator(Evaluator):
         self._process_derivative = _process_derivative_2_m
 
         # Matrix of splines
-        spline = np.empty((self._nsamples, self._ndim_image), dtype=object)
+        spline = np.empty((self._n_samples, self._ndim_image), dtype=object)
 
-        for i in range(self._nsamples):
+        for i in range(self._n_samples):
             for j in range(self._ndim_image):
                 spline[i, j] = RectBivariateSpline(sample_points[0],
                                                    sample_points[1],
@@ -349,7 +349,7 @@ class SplineInterpolatorEvaluator(Evaluator):
             k (integer): Order of the spline interpolators.
 
         Returns:
-            (np.ndarray): Array of size nsamples x ndim_image with the
+            (np.ndarray): Array of size n_samples x ndim_image with the
             corresponding interpolator of the sample i, and image dimension j
             in the entry (i,j) of the array.
 
@@ -383,9 +383,9 @@ class SplineInterpolatorEvaluator(Evaluator):
         # Evaluator of splines called in evaluate
         self._spline_evaluator = _spline_evaluator_n_m
 
-        spline = np.empty((self._nsamples, self._ndim_image), dtype=object)
+        spline = np.empty((self._n_samples, self._ndim_image), dtype=object)
 
-        for i in range(self._nsamples):
+        for i in range(self._n_samples):
             for j in range(self._ndim_image):
                 spline[i, j] = RegularGridInterpolator(
                     sample_points, data_matrix[i, ..., j], method, False)
@@ -435,7 +435,7 @@ class SplineInterpolatorEvaluator(Evaluator):
 
         # Points evaluated inside the domain
         res = np.apply_along_axis(evaluator, 1, self._splines)
-        res = res.reshape(self._nsamples, eval_points.shape[0],
+        res = res.reshape(self._n_samples, eval_points.shape[0],
                           self._ndim_image)
 
         return res
@@ -467,7 +467,7 @@ class SplineInterpolatorEvaluator(Evaluator):
                 argument.
 
         """
-        shape = (self._nsamples, eval_points.shape[1], self._ndim_image)
+        shape = (self._n_samples, eval_points.shape[1], self._ndim_image)
         res = np.empty(shape)
 
         derivative = self._process_derivative(derivative)
@@ -477,7 +477,7 @@ class SplineInterpolatorEvaluator(Evaluator):
                 """Evaluator of sample with image dimension equal to 1"""
                 return self._spline_evaluator(spl[0], t, derivative)
 
-            for i in range(self._nsamples):
+            for i in range(self._n_samples):
                 res[i] = evaluator(eval_points[i], self._splines[i]).reshape(
                     (eval_points.shape[1], self._ndim_image))
 
@@ -487,7 +487,7 @@ class SplineInterpolatorEvaluator(Evaluator):
                 return np.array([self._spline_evaluator(spl, t, derivative)
                                  for spl in spl_m]).T
 
-            for i in range(self._nsamples):
+            for i in range(self._n_samples):
                 res[i] = evaluator(eval_points[i], self._splines[i])
 
         return res

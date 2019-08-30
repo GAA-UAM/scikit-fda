@@ -2,15 +2,16 @@
 
 from abc import ABC, abstractmethod
 
-import numpy as np
-from sklearn.base import BaseEstimator
-from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
-from sklearn.neighbors import NearestNeighbors as _NearestNeighbors
 import scipy.integrate
+from sklearn.base import BaseEstimator
+from sklearn.neighbors import NearestNeighbors as _NearestNeighbors
+from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
+
+import numpy as np
 
 from .. import FDataGrid
-from ..misc.metrics import lp_distance
 from ..exploratory.stats import mean as l2_mean
+from ..misc.metrics import lp_distance
 
 
 def _to_multivariate(fdatagrid):
@@ -21,11 +22,11 @@ def _to_multivariate(fdatagrid):
         fdatagrid (:class:`FDataGrid`): Grid to be converted to matrix
 
     Returns:
-        (np.array): Numpy array with size (nsamples, points), where
+        (np.array): Numpy array with size (n_samples, points), where
             points = prod([len(d) for d in fdatagrid.sample_points]
 
     """
-    return fdatagrid.data_matrix.reshape(fdatagrid.nsamples, -1)
+    return fdatagrid.data_matrix.reshape(fdatagrid.n_samples, -1)
 
 
 def _from_multivariate(data_matrix, sample_points, shape, **kwargs):
@@ -82,7 +83,7 @@ def _to_sklearn_metric(metric, sample_points):
         1.0
 
     """
-    # Shape -> (Nsamples = 1, domain_dims...., image_dimension (-1))
+    # Shape -> (n_samples = 1, domain_dims...., image_dimension (-1))
     shape = [1] + [len(axis) for axis in sample_points] + [-1]
 
     def sklearn_metric(x, y, _check=False, **kwargs):
@@ -495,7 +496,7 @@ class NeighborsFunctionalRegressorMixin:
 
 
         """
-        if len(X) != y.nsamples:
+        if len(X) != y.n_samples:
             raise ValueError("The response and dependent variable must "
                              "contain the same number of samples,")
 

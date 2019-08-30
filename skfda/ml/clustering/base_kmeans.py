@@ -36,7 +36,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
             init (FDataGrid, optional): Contains the initial centers of the
                 different clusters the algorithm starts with. Its data_marix
                 must be of the shape (n_clusters, fdatagrid.ncol,
-                fdatagrid.ndim_image). Defaults to None, and the centers are
+                fdatagrid.dim_codomain). Defaults to None, and the centers are
                 initialized randomly.
             metric (optional): metric that acceps two FDataGrid objects and
             returns a matrix with shape (fdatagrid1.n_samples,
@@ -72,7 +72,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                 are classified into different groups.
         """
 
-        if fdatagrid.ndim_domain > 1:
+        if fdatagrid.dim_domain > 1:
             raise NotImplementedError(
                 "Only support 1 dimension on the domain.")
 
@@ -94,9 +94,9 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                           "because the init parameter is set.")
 
         if self.init is not None and self.init.shape != (
-                self.n_clusters, fdatagrid.ncol, fdatagrid.ndim_image):
+                self.n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain):
             raise ValueError("The init FDataGrid data_matrix should be of "
-                             "shape (n_clusters, n_features, ndim_image) and "
+                             "shape (n_clusters, n_features, dim_codomain) and "
                              "gives the initial centers.")
 
         if self.max_iter < 1:
@@ -247,7 +247,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                 convention.
 
         Returns:
-            score (numpy.array: (fdatagrid.ndim_image)): negative *inertia_*
+            score (numpy.array: (fdatagrid.dim_codomain)): negative *inertia_*
                 attribute.
 
         """
@@ -314,7 +314,7 @@ class KMeans(BaseKMeans):
             classified. Defaults to 2.
         init (FDataGrid, optional): Contains the initial centers of the
             different clusters the algorithm starts with. Its data_marix must
-            be of the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
+            be of the shape (n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain).
             Defaults to None, and the centers are initialized randomly.
         metric (optional): metric that acceps two FDataGrid objects and returns
             a matrix with shape (fdatagrid1.n_samples, fdatagrid2.n_samples).
@@ -333,15 +333,15 @@ class KMeans(BaseKMeans):
             See :term:`Glossary <random_state>`.
 
     Attributes:
-        labels_ (numpy.ndarray: (n_samples, ndim_image)): 2-dimensional matrix
+        labels_ (numpy.ndarray: (n_samples, dim_codomain)): 2-dimensional matrix
             in which each row contains the cluster that observation belongs to.
         cluster_centers_ (FDataGrid object): data_matrix of shape
-            (n_clusters, ncol, ndim_image) and contains the centroids for
+            (n_clusters, ncol, dim_codomain) and contains the centroids for
             each cluster.
-        inertia_ (numpy.ndarray, (fdatagrid.ndim_image)): Sum of squared
+        inertia_ (numpy.ndarray, (fdatagrid.dim_codomain)): Sum of squared
             distances of samples to their closest cluster center for each
             dimension.
-        n_iter_ (numpy.ndarray, (fdatagrid.ndim_image)): number of iterations
+        n_iter_ (numpy.ndarray, (fdatagrid.dim_codomain)): number of iterations
             the algorithm was run for each dimension.
 
     Example:
@@ -374,7 +374,7 @@ class KMeans(BaseKMeans):
             init (FDataGrid, optional): Contains the initial centers of the
                 different clusters the algorithm starts with. Its data_marix
                 must be of the shape (n_clusters, fdatagrid.ncol,
-                fdatagrid.ndim_image). Defaults to None, and the centers are
+                fdatagrid.dim_codomain). Defaults to None, and the centers are
                 initialized randomly.
             metric (optional): metric that acceps two FDataGrid objects and
                 returns a matrix with shape (fdatagrid1.n_samples,
@@ -416,7 +416,7 @@ class KMeans(BaseKMeans):
                 array where each row contains the cluster that observation
                 belongs to.
 
-                centers (numpy.ndarray: (n_clusters, ncol, ndim_image)):
+                centers (numpy.ndarray: (n_clusters, ncol, dim_codomain)):
                 Contains the centroids for each cluster.
 
                 distances_to_centers (numpy.ndarray: (n_samples, n_clusters)):
@@ -426,7 +426,7 @@ class KMeans(BaseKMeans):
         """
         repetitions = 0
         centers_old = np.zeros(
-            (self.n_clusters, fdatagrid.ncol, fdatagrid.ndim_image))
+            (self.n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain))
 
         if self.init is None:
             centers = self._init_centroids(fdatagrid, random_state)
@@ -466,7 +466,7 @@ class KMeans(BaseKMeans):
         clustering_values = np.empty(
             (self.n_init, fdatagrid.n_samples)).astype(int)
         centers = np.empty((self.n_init, self.n_clusters,
-                            fdatagrid.ncol, fdatagrid.ndim_image))
+                            fdatagrid.ncol, fdatagrid.dim_codomain))
         distances_to_centers = np.empty(
             (self.n_init, fdatagrid.n_samples, self.n_clusters))
         distances_to_their_center = np.empty(
@@ -560,7 +560,7 @@ class FuzzyKMeans(BaseKMeans):
             classified. Defaults to 2.
         init (FDataGrid, optional): Contains the initial centers of the
             different clusters the algorithm starts with. Its data_marix must
-            be of the shape (n_clusters, fdatagrid.ncol, fdatagrid.ndim_image).
+            be of the shape (n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain).
             Defaults to None, and the centers are initialized randomly.
         metric (optional): metric that acceps two FDataGrid objects and returns
             a matrix with shape (fdatagrid1.n_samples, fdatagrid2.n_samples).
@@ -583,15 +583,15 @@ class FuzzyKMeans(BaseKMeans):
             returned in the fuzzy algorithm. Defaults to 3.
 
     Attributes:
-        labels_ (numpy.ndarray: (n_samples, ndim_image)): 2-dimensional matrix
+        labels_ (numpy.ndarray: (n_samples, dim_codomain)): 2-dimensional matrix
             in which each row contains the cluster that observation belongs to.
         cluster_centers_ (FDataGrid object): data_matrix of shape
-            (n_clusters, ncol, ndim_image) and contains the centroids for
+            (n_clusters, ncol, dim_codomain) and contains the centroids for
             each cluster.
-        inertia_ (numpy.ndarray, (fdatagrid.ndim_image)): Sum of squared
+        inertia_ (numpy.ndarray, (fdatagrid.dim_codomain)): Sum of squared
             distances of samples to their closest cluster center for each
             dimension.
-        n_iter_ (numpy.ndarray, (fdatagrid.ndim_image)): number of iterations
+        n_iter_ (numpy.ndarray, (fdatagrid.dim_codomain)): number of iterations
             the algorithm was run for each dimension.
 
 
@@ -625,7 +625,7 @@ class FuzzyKMeans(BaseKMeans):
             init (FDataGrid, optional): Contains the initial centers of the
                 different clusters the algorithm starts with. Its data_marix
                 must be of the shape (n_clusters, fdatagrid.ncol,
-                fdatagrid.ndim_image).
+                fdatagrid.dim_codomain).
                 Defaults to None, and the centers are initialized randomly.
             metric (optional): metric that acceps two FDataGrid objects and
                 returns a matrix with shape (fdatagrid1.n_samples,
@@ -672,7 +672,7 @@ class FuzzyKMeans(BaseKMeans):
                 2-dimensional matrix where each row contains the membership
                 value that observation has to each cluster.
 
-                centers (numpy.ndarray: (n_clusters, ncol, ndim_image)):
+                centers (numpy.ndarray: (n_clusters, ncol, dim_codomain)):
                 Contains the centroids for each cluster.
 
                 distances_to_centers (numpy.ndarray: (n_samples, n_clusters)):
@@ -683,7 +683,7 @@ class FuzzyKMeans(BaseKMeans):
         """
         repetitions = 0
         centers_old = np.zeros(
-            (self.n_clusters, fdatagrid.ncol, fdatagrid.ndim_image))
+            (self.n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain))
         U = np.empty((fdatagrid.n_samples, self.n_clusters))
         distances_to_centers = np.empty((fdatagrid.n_samples, self.n_clusters))
 
@@ -750,7 +750,7 @@ class FuzzyKMeans(BaseKMeans):
             (self.n_init, fdatagrid.n_samples, self.n_clusters))
         centers = np.empty(
             (self.n_init, self.n_clusters, fdatagrid.ncol,
-             fdatagrid.ndim_image))
+             fdatagrid.dim_codomain))
         distances_to_centers = np.empty(
             (self.n_init, fdatagrid.n_samples, self.n_clusters))
         distances_to_their_center = np.empty(

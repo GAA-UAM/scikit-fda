@@ -4,10 +4,10 @@ import scipy.stats.mstats
 
 import numpy as np
 from skfda import FDataGrid, FDataBasis
-from skfda.representation.basis import Monomial
-from skfda.exploratory import stats
 from skfda.datasets import make_multimodal_samples
+from skfda.exploratory import stats
 from skfda.misc.metrics import lp_distance, norm_lp, vectorial_norm
+from skfda.representation.basis import Monomial
 
 
 class TestLpMetrics(unittest.TestCase):
@@ -19,14 +19,14 @@ class TestLpMetrics(unittest.TestCase):
         basis = Monomial(nbasis=3, domain_range=(1, 5))
         self.fd_basis = FDataBasis(basis, [[1, 1, 0], [0, 0, 1]])
         self.fd_curve = self.fd.concatenate(self.fd, as_coordinates=True)
-        self.fd_surface = make_multimodal_samples(n_samples=3, ndim_domain=2,
+        self.fd_surface = make_multimodal_samples(n_samples=3, dim_domain=2,
                                                   random_state=0)
 
     def test_vectorial_norm(self):
 
         vec = vectorial_norm(self.fd_curve, p=2)
         np.testing.assert_array_almost_equal(vec.data_matrix,
-                                             np.sqrt(2)* self.fd.data_matrix)
+                                             np.sqrt(2) * self.fd.data_matrix)
 
         vec = vectorial_norm(self.fd_curve, p='inf')
         np.testing.assert_array_almost_equal(vec.data_matrix,
@@ -58,7 +58,7 @@ class TestLpMetrics(unittest.TestCase):
 
     def test_norm_lp_surface_inf(self):
         np.testing.assert_allclose(norm_lp(self.fd_surface, p='inf').round(5),
-                                   [0.99994, 0.99793 , 0.99868])
+                                   [0.99994, 0.99793, 0.99868])
 
     def test_norm_lp_surface(self):
         # Integration of surfaces not implemented, add test case after
@@ -79,7 +79,7 @@ class TestLpMetrics(unittest.TestCase):
     def test_lp_error_domain_ranges(self):
         sample_points = [2, 3, 4, 5, 6]
         fd2 = FDataGrid([[2, 3, 4, 5, 6], [1, 4, 9, 16, 25]],
-                            sample_points=sample_points)
+                        sample_points=sample_points)
 
         with np.testing.assert_raises(ValueError):
             lp_distance(self.fd, fd2)
@@ -87,7 +87,7 @@ class TestLpMetrics(unittest.TestCase):
     def test_lp_error_sample_points(self):
         sample_points = [1, 2, 4, 4.3, 5]
         fd2 = FDataGrid([[2, 3, 4, 5, 6], [1, 4, 9, 16, 25]],
-                            sample_points=sample_points)
+                        sample_points=sample_points)
 
         with np.testing.assert_raises(ValueError):
             lp_distance(self.fd, fd2)
@@ -101,7 +101,6 @@ class TestLpMetrics(unittest.TestCase):
                         self.fd_basis, eval_points=[1, 2, 3, 4, 5]), 0)
         np.testing.assert_allclose(lp_distance(self.fd_basis, self.fd_basis),
                                    0)
-
 
 
 if __name__ == '__main__':

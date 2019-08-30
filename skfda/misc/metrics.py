@@ -25,8 +25,8 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
     if not _check:
         return fdata1, fdata2
 
-    elif (fdata2.ndim_image != fdata1.ndim_image or
-          fdata2.ndim_domain != fdata1.ndim_domain):
+    elif (fdata2.dim_codomain != fdata1.dim_codomain or
+          fdata2.dim_domain != fdata1.dim_domain):
         raise ValueError("Objects should have the same dimensions")
 
     # Case different domain ranges
@@ -97,14 +97,14 @@ def vectorial_norm(fdatagrid, p=2):
         First we will construct an example dataset with curves in
         :math:`\mathbb{R}^2`.
 
-        >>> fd = make_multimodal_samples(ndim_image=2, random_state=0)
-        >>> fd.ndim_image
+        >>> fd = make_multimodal_samples(dim_codomain=2, random_state=0)
+        >>> fd.dim_codomain
         2
 
         We will apply the euclidean norm
 
         >>> fd = vectorial_norm(fd, p=2)
-        >>> fd.ndim_image
+        >>> fd.dim_codomain
         1
 
     """
@@ -279,7 +279,7 @@ def norm_lp(fdatagrid, p=2, p2=2):
     if not (p == 'inf' or np.isinf(p)) and p < 1:
         raise ValueError(f"p must be equal or greater than 1.")
 
-    if fdatagrid.ndim_image > 1:
+    if fdatagrid.dim_codomain > 1:
         if p2 == 'inf':
             p2 = np.inf
         data_matrix = np.linalg.norm(fdatagrid.data_matrix, ord=p2, axis=-1,
@@ -289,12 +289,12 @@ def norm_lp(fdatagrid, p=2, p2=2):
 
     if p == 'inf' or np.isinf(p):
 
-        if fdatagrid.ndim_domain == 1:
+        if fdatagrid.dim_domain == 1:
             res = np.max(data_matrix[..., 0], axis=1)
         else:
             res = np.array([np.max(sample) for sample in data_matrix])
 
-    elif fdatagrid.ndim_domain == 1:
+    elif fdatagrid.dim_domain == 1:
 
         # Computes the norm, approximating the integral with Simpson's rule.
         res = scipy.integrate.simps(data_matrix[..., 0] ** p,

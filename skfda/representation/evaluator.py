@@ -62,13 +62,13 @@ class Evaluator(ABC):
 
         Args:
             eval_points (numpy.ndarray): Numpy array with shape
-                ``(number_eval_points, ndim_domain)`` with the
+                ``(number_eval_points, dim_domain)`` with the
                 evaluation points.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape
-                ``(n_samples, number_eval_points, ndim_image)`` with the
+                ``(n_samples, number_eval_points, dim_codomain)`` with the
                 result of the evaluation. The entry ``(i,j,k)`` will contain
                 the value k-th image dimension of the i-th sample, at the
                 j-th evaluation point.
@@ -87,13 +87,13 @@ class Evaluator(ABC):
 
         Args:
             eval_points (numpy.ndarray): Numpy array with shape
-                ``(n_samples, number_eval_points, ndim_domain)`` with the
+                ``(n_samples, number_eval_points, dim_domain)`` with the
                 evaluation points for each sample.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape
-                ``(n_samples, number_eval_points, ndim_image)`` with the
+                ``(n_samples, number_eval_points, dim_codomain)`` with the
                 result of the evaluation. The entry ``(i,j,k)`` will contain
                 the value k-th image dimension of the i-th sample, at the
                 j-th evaluation point.
@@ -131,13 +131,13 @@ class GenericEvaluator(Evaluator):
 
         Args:
             eval_points (numpy.ndarray): Numpy array with shape
-                `(len(eval_points), ndim_domain)` with the evaluation points.
+                `(len(eval_points), dim_domain)` with the evaluation points.
                 Each entry represents the coordinate of a point.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3-d array with shape `(n_samples,
-                len(eval_points), ndim_image)` with the result of the
+                len(eval_points), dim_codomain)` with the result of the
                 evaluation. The entry (i,j,k) will contain the value k-th
                 image dimension of the i-th sample, at the j-th evaluation
                 point.
@@ -158,13 +158,13 @@ class GenericEvaluator(Evaluator):
 
         Args:
             eval_points (numpy.ndarray): Numpy array with shape
-                `(n_samples, number_eval_points, ndim_domain)` with the
+                `(n_samples, number_eval_points, dim_domain)` with the
                  evaluation points for each sample.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape `(n_samples,
-                number_eval_points, ndim_image)` with the result of the
+                number_eval_points, dim_codomain)` with the result of the
                 evaluation. The entry (i,j,k) will contain the value k-th image
                 dimension of the i-th sample, at the j-th evaluation point.
 

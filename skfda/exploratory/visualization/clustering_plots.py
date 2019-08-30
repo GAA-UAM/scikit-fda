@@ -148,7 +148,7 @@ def _plot_clusters(estimator, fdatagrid, fig, ax, nrows, ncols, labels,
         ncols(int): designates the number of columns of the figure to plot
             the different dimensions of the image. Only specified if fig
             and ax are None.
-        labels (numpy.ndarray, int: (n_samples, ndim_image)): 2-dimensional
+        labels (numpy.ndarray, int: (n_samples, dim_codomain)): 2-dimensional
             matrix where each row contains the number of cluster cluster
             that observation belongs to.
         sample_labels (list of str): contains in order the labels of each
@@ -208,7 +208,7 @@ def _plot_clusters(estimator, fdatagrid, fig, ax, nrows, ncols, labels,
             mpatches.Patch(color=cluster_colors[i],
                            label=cluster_labels[i]))
 
-    for j in range(fdatagrid.ndim_image):
+    for j in range(fdatagrid.dim_codomain):
         for i in range(fdatagrid.n_samples):
             ax[j].plot(fdatagrid.sample_points[0],
                        fdatagrid.data_matrix[i, :, j],

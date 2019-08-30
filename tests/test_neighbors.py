@@ -4,21 +4,17 @@ import unittest
 
 import numpy as np
 from skfda.datasets import make_multimodal_samples
-
+from skfda.exploratory.stats import mean as l2_mean
+from skfda.misc.metrics import lp_distance, pairwise_distance
 from skfda.ml.classification import (KNeighborsClassifier,
                                      RadiusNeighborsClassifier,
                                      NearestCentroids)
-
+from skfda.ml.clustering import NearestNeighbors
 from skfda.ml.regression import (KNeighborsScalarRegressor,
                                  RadiusNeighborsScalarRegressor,
                                  KNeighborsFunctionalRegressor,
                                  RadiusNeighborsFunctionalRegressor)
-
-from skfda.ml.clustering import NearestNeighbors
-
-from skfda.misc.metrics import lp_distance, pairwise_distance
 from skfda.representation.basis import Fourier
-from skfda.exploratory.stats import mean as l2_mean
 
 
 class TestNeighbors(unittest.TestCase):
@@ -294,13 +290,14 @@ class TestNeighbors(unittest.TestCase):
         y = 5 * self.X + 1
         neigh.fit(self.X, y)
         r = neigh.score(self.X, y)
-        np.testing.assert_almost_equal(r,0.962651178452408)
+        np.testing.assert_almost_equal(r, 0.962651178452408)
 
-        #Weighted case and basis form
+        # Weighted case and basis form
         y = y.to_basis(Fourier(domain_range=y.domain_range[0], nbasis=5))
         neigh.fit(self.X, y)
 
-        r = neigh.score(self.X[:7], y[:7], sample_weight=4*[1./5]+ 3 *[1./15])
+        r = neigh.score(self.X[:7], y[:7],
+                        sample_weight=4 * [1. / 5] + 3 * [1. / 15])
         np.testing.assert_almost_equal(r, 0.9982527586114364)
 
     def test_score_functional_response_exceptions(self):
@@ -308,17 +305,18 @@ class TestNeighbors(unittest.TestCase):
         neigh.fit(self.X, self.X)
 
         with np.testing.assert_raises(ValueError):
-            neigh.score(self.X, self.X, sample_weight=[1,2,3])
+            neigh.score(self.X, self.X, sample_weight=[1, 2, 3])
 
     def test_multivariate_response_score(self):
 
         neigh = RadiusNeighborsFunctionalRegressor()
-        y = make_multimodal_samples(n_samples=5, ndim_domain=2, random_state=0)
+        y = make_multimodal_samples(n_samples=5, dim_domain=2, random_state=0)
         neigh.fit(self.X[:5], y)
 
         # It is not supported the multivariate score by the moment
         with np.testing.assert_raises(ValueError):
             neigh.score(self.X[:5], y)
+
 
 if __name__ == '__main__':
     print()

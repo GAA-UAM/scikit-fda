@@ -51,13 +51,13 @@ def _periodic_evaluation(fdata, eval_points, *, derivative=0):
         fdata (:class:´FData´): Object where the evaluation is taken place.
         eval_points (:class: numpy.ndarray): Numpy array with the evalation
             points outside the domain range. The shape of the array may be
-            `n_eval_points` x `ndim_image` or `n_samples` x `n_eval_points`
-            x `ndim_image`.
+            `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
+            x `dim_codomain`.
         derivate (numeric, optional): Order of derivative to be evaluated.
 
     Returns:
         (numpy.ndarray): numpy array with the evaluation of the points in
-        a matrix with shape `n_samples` x `n_eval_points`x `ndim_image`.
+        a matrix with shape `n_samples` x `n_eval_points`x `dim_codomain`.
     """
 
     domain_range = np.asarray(fdata.domain_range)
@@ -117,18 +117,18 @@ def _boundary_evaluation(fdata, eval_points, *, derivative=0):
         fdata (:class:´FData´): Object where the evaluation is taken place.
         eval_points (:class: numpy.ndarray): Numpy array with the evalation
             points outside the domain range. The shape of the array may be
-            `n_eval_points` x `ndim_image` or `n_samples` x `n_eval_points`
-            x `ndim_image`.
+            `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
+            x `dim_codomain`.
         derivate (numeric, optional): Order of derivative to be evaluated.
 
     Returns:
         (numpy.ndarray): numpy array with the evaluation of the points in
-        a matrix with shape `n_samples` x `n_eval_points`x `ndim_image`.
+        a matrix with shape `n_samples` x `n_eval_points`x `dim_codomain`.
     """
 
     domain_range = fdata.domain_range
 
-    for i in range(fdata.ndim_domain):
+    for i in range(fdata.dim_domain):
         a, b = domain_range[i]
         eval_points[eval_points[..., i] < a, i] = a
         eval_points[eval_points[..., i] > b, i] = b
@@ -190,8 +190,8 @@ def _exception_evaluation(fdata, eval_points, *, derivative=0):
         fdata (:class:´FData´): Object where the evaluation is taken place.
         eval_points (:class: numpy.ndarray): Numpy array with the evalation
             points outside the domain range. The shape of the array may be
-            `n_eval_points` x `ndim_image` or `n_samples` x `n_eval_points`
-            x `ndim_image`.
+            `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
+            x `dim_codomain`.
         derivate (numeric, optional): Order of derivative to be evaluated.
 
     Raises:
@@ -264,7 +264,7 @@ class FillExtrapolationEvaluator(Evaluator):
 
     def _fill(self, eval_points):
         shape = (self.fdata.n_samples, eval_points.shape[-2],
-                 self.fdata.ndim_image)
+                 self.fdata.dim_codomain)
         return np.full(shape, self.fill_value)
 
     def evaluate(self, eval_points, *, derivative=0):
@@ -275,13 +275,13 @@ class FillExtrapolationEvaluator(Evaluator):
             fdata (:class:´FData´): Object where the evaluation is taken place.
             eval_points (:class: numpy.ndarray): Numpy array with the evalation
                 points outside the domain range. The shape of the array may be
-                `n_eval_points` x `ndim_image` or `n_samples` x `n_eval_points`
-                x `ndim_image`.
+                `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
+                x `dim_codomain`.
             derivate (numeric, optional): Order of derivative to be evaluated.
 
         Returns:
             (numpy.ndarray): numpy array with the evaluation of the points in
-            a matrix with shape `n_samples` x `n_eval_points`x `ndim_image`.
+            a matrix with shape `n_samples` x `n_eval_points`x `dim_codomain`.
 
         """
         return self._fill(eval_points)
@@ -298,13 +298,13 @@ class FillExtrapolationEvaluator(Evaluator):
 
         Args:
             eval_points (numpy.ndarray): Numpy array with shape
-                `(n_samples, number_eval_points, ndim_domain)` with the
+                `(n_samples, number_eval_points, dim_domain)` with the
                  evaluation points for each sample.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape `(n_samples,
-                number_eval_points, ndim_image)` with the result of the
+                number_eval_points, dim_codomain)` with the result of the
                 evaluation. The entry (i,j,k) will contain the value k-th image
                 dimension of the i-th sample, at the j-th evaluation point.
 

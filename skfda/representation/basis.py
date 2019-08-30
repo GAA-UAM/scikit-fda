@@ -1598,7 +1598,7 @@ class FDataBasis(FData):
 
         def __len__(self):
             """Return the number of coordinates."""
-            return self._fdatabasis.ndim_image
+            return self._fdatabasis.dim_codomain
 
     def __init__(self, basis, coefficients, *, dataset_label=None,
                  axes_labels=None, extrapolation=None, keepdims=False):
@@ -1718,14 +1718,14 @@ class FDataBasis(FData):
         return self.coefficients.shape[0]
 
     @property
-    def ndim_domain(self):
+    def dim_domain(self):
         """Return number of dimensions of the domain."""
 
         # Only domain dimension equal to 1 is supported
         return 1
 
     @property
-    def ndim_image(self):
+    def dim_codomain(self):
         """Return number of dimensions of the image."""
 
         # Only image dimension equal to 1 is supported
@@ -1849,7 +1849,7 @@ class FDataBasis(FData):
             :obj:`FDataBasis` with the shifted data.
         """
 
-        if self.ndim_image > 1 or self.ndim_domain > 1:
+        if self.dim_codomain > 1 or self.dim_domain > 1:
             raise ValueError
 
         domain_range = self.domain_range[0]
@@ -2041,7 +2041,7 @@ class FDataBasis(FData):
 
         """
 
-        if self.ndim_image > 1 or self.ndim_domain > 1:
+        if self.dim_codomain > 1 or self.dim_domain > 1:
             raise NotImplementedError
 
         if eval_points is None:
@@ -2326,7 +2326,7 @@ class FDataBasis(FData):
 
         grid = self.to_grid().compose(fd, eval_points=eval_points)
 
-        if fd.ndim_domain == 1:
+        if fd.dim_domain == 1:
             basis = self.basis.rescale(fd.domain_range[0])
             composition = grid.to_basis(basis, **kwargs)
         else:

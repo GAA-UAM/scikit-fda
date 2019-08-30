@@ -100,7 +100,7 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2,
 
     # Initial estimation of the shifts
 
-    if fd.ndim_image > 1 or fd.ndim_domain > 1:
+    if fd.dim_codomain > 1 or fd.dim_domain > 1:
         raise NotImplementedError("Method for unidimensional data.")
 
     domain_range = fd.domain_range[0]

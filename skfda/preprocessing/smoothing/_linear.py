@@ -14,7 +14,7 @@ from ... import FDataGrid
 
 
 def _check_r_to_r(f):
-    if f.ndim_domain != 1 or f.ndim_codomain != 1:
+    if f.dim_domain != 1 or f.dim_codomain != 1:
         raise NotImplementedError("Only accepts functions from R to R")
 
 

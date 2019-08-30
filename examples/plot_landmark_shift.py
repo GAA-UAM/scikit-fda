@@ -103,7 +103,7 @@ l2 = fd_restricted.plot(label="Restricted samples")
 #
 
 fd = skfda.datasets.make_multimodal_samples(n_samples=3, points_per_dim=30,
-                                            ndim_domain=2, random_state=1)
+                                            dim_domain=2, random_state=1)
 
 fd.plot()
 
@@ -111,7 +111,7 @@ fd.plot()
 # In this case the landmarks will be defined by tuples with 2 coordinates.
 #
 
-landmarks = skfda.datasets.make_multimodal_landmarks(n_samples=3, ndim_domain=2,
+landmarks = skfda.datasets.make_multimodal_landmarks(n_samples=3, dim_domain=2,
                                                      random_state=1).squeeze()
 print(landmarks)
 

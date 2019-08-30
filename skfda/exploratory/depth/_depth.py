@@ -98,7 +98,7 @@ def _rank_samples(fdatagrid):
 
 
     """
-    if fdatagrid.ndim_image > 1:
+    if fdatagrid.dim_codomain > 1:
         raise ValueError("Currently multivariate data is not allowed")
 
     ranks = np.zeros(fdatagrid.data_matrix.shape[:-1])
@@ -150,7 +150,7 @@ def band_depth(fdatagrid, *, pointwise=False):
         nchoose2 = n * (n - 1) / 2
 
         ranks = _rank_samples(fdatagrid)
-        axis = tuple(range(1, fdatagrid.ndim_domain + 1))
+        axis = tuple(range(1, fdatagrid.dim_domain + 1))
         n_samples_above = fdatagrid.n_samples - np.amax(ranks, axis=axis)
         n_samples_below = np.amin(ranks, axis=axis) - 1
         depth = ((n_samples_below * n_samples_above + fdatagrid.n_samples - 1)
@@ -207,7 +207,7 @@ def modified_band_depth(fdatagrid, *, pointwise=False):
     n_samples_above = fdatagrid.n_samples - ranks
     n_samples_below = ranks - 1
     match = n_samples_above * n_samples_below
-    axis = tuple(range(1, fdatagrid.ndim_domain + 1))
+    axis = tuple(range(1, fdatagrid.dim_domain + 1))
 
     if pointwise:
         depth_pointwise = (match + fdatagrid.n_samples - 1) / nchoose2
@@ -302,7 +302,7 @@ def fraiman_muniz_depth(fdatagrid, *, pointwise=False):
 
 
     """
-    if fdatagrid.ndim_domain > 1 or fdatagrid.ndim_image > 1:
+    if fdatagrid.dim_domain > 1 or fdatagrid.dim_codomain > 1:
         raise ValueError("Currently multivariate data is not allowed")
 
     pointwise_depth = np.array([

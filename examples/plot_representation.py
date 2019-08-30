@@ -56,11 +56,11 @@ first_curve.plot()
 ###############################################################################
 # This representation allows also functions with arbitrary dimensions of the
 # domain and codomain.
-fd = skfda.datasets.make_multimodal_samples(n_samples=1, ndim_domain=2,
-                                            ndim_image=2)
+fd = skfda.datasets.make_multimodal_samples(n_samples=1, dim_domain=2,
+                                            dim_codomain=2)
 
-print(fd.ndim_domain)
-print(fd.ndim_codomain)
+print(fd.dim_domain)
+print(fd.dim_codomain)
 
 fd.plot()
 

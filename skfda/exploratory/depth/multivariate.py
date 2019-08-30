@@ -10,7 +10,7 @@ def _stagel_donoho_outlyingness(X, *, pointwise=False):
     if pointwise is False:
         raise NotImplementedError("Only implemented pointwise")
 
-    if X.ndim_codomain == 1:
+    if X.dim_codomain == 1:
         # Special case, can be computed exactly
         m = X.data_matrix[..., 0]
 

@@ -639,7 +639,7 @@ class NeighborsFunctionalRegressorMixin:
             (float): Coefficient of determination.
 
         """
-        if y.ndim_image != 1 or y.ndim_domain != 1:
+        if y.dim_codomain != 1 or y.dim_domain != 1:
             raise ValueError("Score not implemented for multivariate "
                              "functional data.")
 

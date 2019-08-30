@@ -344,18 +344,6 @@ class FDataGrid(FData):
         return self._domain_range
 
     @property
-    def shape(self):
-        """Dimensions (aka shape) of the data_matrix.
-
-        Returns:
-            list of int: List containing the length of the matrix on each of
-            its axis. If the matrix is 2 dimensional shape returns [number of
-            rows, number of columns].
-
-        """
-        return self.data_matrix.shape
-
-    @property
     def interpolator(self):
         """Defines the type of interpolation applied in `evaluate`."""
         return self._interpolator

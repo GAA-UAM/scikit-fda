@@ -93,7 +93,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
             warnings.warn("Warning: The number of iterations is ignored "
                           "because the init parameter is set.")
 
-        if self.init is not None and self.init.shape != (
+        if self.init is not None and self.init.data_matrix.shape != (
                 self.n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain):
             raise ValueError("The init FDataGrid data_matrix should be of "
                              "shape (n_clusters, n_features, dim_codomain) and "
@@ -164,7 +164,8 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         """Checks that the FDataGrid object and the calculated centroids have
         compatible shapes.
         """
-        if fdatagrid.shape[1:3] != self.cluster_centers_.shape[1:3]:
+        if (fdatagrid.data_matrix.shape[1:3]
+                != self.cluster_centers_.data_matrix.shape[1:3]):
             raise ValueError("The fdatagrid shape is not the one expected for "
                              "the calculated cluster_centers_.")
 

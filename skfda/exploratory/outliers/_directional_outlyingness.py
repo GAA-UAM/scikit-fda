@@ -170,7 +170,7 @@ def directional_outlyingness_stats(
     median_index = np.argmax(depth_pointwise, axis=0)
     pointwise_median = fdatagrid.data_matrix[
         median_index, range(fdatagrid.data_matrix.shape[1])]
-    assert pointwise_median.shape == fdatagrid.shape[1:]
+    assert pointwise_median.shape == fdatagrid.data_matrix.shape[1:]
     v = fdatagrid.data_matrix - pointwise_median
     assert v.shape == fdatagrid.data_matrix.shape
     v_norm = la.norm(v, axis=-1, keepdims=True)

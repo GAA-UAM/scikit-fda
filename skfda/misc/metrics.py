@@ -1,12 +1,12 @@
 import scipy.integrate
+
 import numpy as np
 
-
-from ..representation import FData
-from ..representation import FDataGrid
 from ..preprocessing.registration import (
     normalize_warping, _normalize_scale, to_srsf,
     elastic_registration_warping)
+from ..representation import FData
+from ..representation import FDataGrid
 
 
 def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
@@ -109,7 +109,6 @@ def vectorial_norm(fdatagrid, p=2):
 
     """
 
-
     if p == 'inf':
         p = np.inf
 
@@ -194,13 +193,12 @@ def pairwise_distance(distance, **kwargs):
 
         fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, **kwargs)
 
-
         # Creates an empty matrix with the desired size to store the results.
-        matrix = np.empty((fdata1.nsamples, fdata2.nsamples))
+        matrix = np.empty((fdata1.n_samples, fdata2.n_samples))
 
         # Iterates over the different samples of both objects.
-        for i in range(fdata1.nsamples):
-            for j in range(fdata2.nsamples):
+        for i in range(fdata1.n_samples):
+            for j in range(fdata2.n_samples):
                 matrix[i, j] = distance(fdata1[i], fdata2[j], _check=False,
                                         **kwargs)
         # Computes the metric between all piars of x and y.
@@ -511,6 +509,7 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
         distance = np.sqrt(distance**2 + lam * penalty)
 
     return distance
+
 
 def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
                    **kwargs):

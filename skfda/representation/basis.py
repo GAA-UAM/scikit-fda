@@ -1713,7 +1713,7 @@ class FDataBasis(FData):
         return smoother.fit_transform(fd)
 
     @property
-    def nsamples(self):
+    def n_samples(self):
         """Return number of samples."""
         return self.coefficients.shape[0]
 
@@ -1763,7 +1763,7 @@ class FDataBasis(FData):
 
         Args:
             eval_points (array_like): List of points where the functions are
-                evaluated. If a matrix of shape `nsamples` x eval_points is
+                evaluated. If a matrix of shape `n_samples` x eval_points is
                 given each sample is evaluated at the values in the
                 corresponding row.
             derivative (int, optional): Order of the derivative. Defaults to 0.
@@ -1782,7 +1782,7 @@ class FDataBasis(FData):
 
         res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
 
-        return res.reshape((self.nsamples, len(eval_points), 1))
+        return res.reshape((self.n_samples, len(eval_points), 1))
 
     def _evaluate_composed(self, eval_points, *, derivative=0):
         r"""Evaluate the object or its derivatives at a list of values with a
@@ -1796,7 +1796,7 @@ class FDataBasis(FData):
         as :func:`evaluate`.
 
         Args:
-            eval_points (numpy.ndarray): Matrix of size `nsamples`x n_points
+            eval_points (numpy.ndarray): Matrix of size `n_samples`x n_points
             derivative (int, optional): Order of the derivative. Defaults to 0.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range.
@@ -1810,17 +1810,17 @@ class FDataBasis(FData):
 
         eval_points = eval_points[..., 0]
 
-        res_matrix = np.empty((self.nsamples, eval_points.shape[1]))
+        res_matrix = np.empty((self.n_samples, eval_points.shape[1]))
 
         _matrix = np.empty((eval_points.shape[1], self.nbasis))
 
-        for i in range(self.nsamples):
+        for i in range(self.n_samples):
             basis_values = self.basis.evaluate(eval_points[i], derivative).T
 
             np.multiply(basis_values, self.coefficients[i], out=_matrix)
             np.sum(_matrix, axis=1, out=res_matrix[i])
 
-        return res_matrix.reshape((self.nsamples, eval_points.shape[1], 1))
+        return res_matrix.reshape((self.n_samples, eval_points.shape[1], 1))
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               eval_points=None, **kwargs):
@@ -1870,10 +1870,10 @@ class FDataBasis(FData):
                                         eval_points + shifts,
                                         _basis, **kwargs)
 
-        elif len(shifts) != self.nsamples:
+        elif len(shifts) != self.n_samples:
             raise ValueError(f"shifts vector ({len(shifts)}) must have the "
                              f"same length than the number of samples "
-                             f"({self.nsamples})")
+                             f"({self.n_samples})")
 
         if restrict_domain:
             a = domain_range[0] - min(np.min(shifts), 0)
@@ -1885,7 +1885,7 @@ class FDataBasis(FData):
         else:
             domain = domain_range
 
-        points_shifted = np.outer(np.ones(self.nsamples),
+        points_shifted = np.outer(np.ones(self.n_samples),
                                   eval_points)
 
         points_shifted += np.atleast_2d(shifts).T
@@ -1939,15 +1939,13 @@ class FDataBasis(FData):
         """
 
         if weights is not None:
-            return self.copy(coefficients=
-                             np.average(self.coefficients,
-                                        weights=weights,
-                                        axis=0
-                                        )[np.newaxis,...]
+            return self.copy(coefficients=np.average(self.coefficients,
+                                                     weights=weights,
+                                                     axis=0
+                                                     )[np.newaxis, ...]
                              )
 
         return self.copy(coefficients=np.mean(self.coefficients, axis=0))
-
 
     def gmean(self, eval_points=None):
         """Compute the geometric mean of the functional data object.
@@ -2074,7 +2072,7 @@ class FDataBasis(FData):
 
     def to_list(self):
         """Splits FDataBasis samples into a list"""
-        return [self[i] for i in range(self.nsamples)]
+        return [self[i] for i in range(self.n_samples)]
 
     def copy(self, *, basis=None, coefficients=None, dataset_label=None,
              axes_labels=None, extrapolation=None, keepdims=None):
@@ -2134,14 +2132,14 @@ class FDataBasis(FData):
             evalarg = np.linspace(left, right, neval)
 
             first = self.copy(coefficients=(np.repeat(self.coefficients,
-                                                      other.nsamples, axis=0)
-                                            if (self.nsamples == 1 and
-                                                other.nsamples > 1)
+                                                      other.n_samples, axis=0)
+                                            if (self.n_samples == 1 and
+                                                other.n_samples > 1)
                                             else self.coefficients.copy()))
             second = other.copy(coefficients=(np.repeat(other.coefficients,
-                                                        self.nsamples, axis=0)
-                                              if (other.nsamples == 1 and
-                                                  self.nsamples > 1)
+                                                        self.n_samples, axis=0)
+                                              if (other.n_samples == 1 and
+                                                  self.n_samples > 1)
                                               else other.coefficients.copy()))
 
             fdarray = first.evaluate(evalarg) * second.evaluate(evalarg)
@@ -2149,7 +2147,7 @@ class FDataBasis(FData):
             return FDataBasis.from_data(fdarray, evalarg, basisobj)
 
         if isinstance(other, int):
-            other = [other for _ in range(self.nsamples)]
+            other = [other for _ in range(self.n_samples)]
 
         coefs = np.transpose(np.atleast_2d(other))
         return self.copy(coefficients=self.coefficients * coefs)
@@ -2207,7 +2205,7 @@ class FDataBasis(FData):
         if weights is not None:
             other = other.times(weights)
 
-        if self.nsamples * other.nsamples > self.nbasis * other.nbasis:
+        if self.n_samples * other.n_samples > self.nbasis * other.nbasis:
             return (self.coefficients @
                     self.basis._inner_matrix(other.basis) @
                     other.coefficients.T)
@@ -2216,11 +2214,11 @@ class FDataBasis(FData):
 
     def _inner_product_integrate(self, other, lfd_self, lfd_other):
 
-        matrix = np.empty((self.nsamples, other.nsamples))
+        matrix = np.empty((self.n_samples, other.n_samples))
         (left, right) = self.domain_range[0]
 
-        for i in range(self.nsamples):
-            for j in range(other.nsamples):
+        for i in range(self.n_samples):
+            for j in range(other.n_samples):
                 fd = self[i].times(other[j])
                 matrix[i, j] = scipy.integrate.quad(
                     lambda x: fd.evaluate([x])[0], left, right)[0]

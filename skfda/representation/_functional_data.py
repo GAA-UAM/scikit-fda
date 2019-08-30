@@ -13,16 +13,16 @@ import pandas.api.extensions
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
-from .extrapolation import _parse_extrapolation
 
 from .._utils import _coordinate_list, _list_of_arrays, constants
+from .extrapolation import _parse_extrapolation
 
 
 class FData(ABC, pandas.api.extensions.ExtensionArray):
     """Defines the structure of a functional data object.
 
     Attributes:
-        nsamples (int): Number of samples.
+        n_samples (int): Number of samples.
         ndim_domain (int): Dimension of the domain.
         ndim_image (int): Dimension of the image.
         extrapolation (Extrapolation): Default extrapolation mode.
@@ -65,7 +65,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
     @property
     @abstractmethod
-    def nsamples(self):
+    def n_samples(self):
         """Return the number of samples.
 
         Returns:
@@ -169,7 +169,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             (np.ndarray): Numpy array with the eval_points, if
             evaluation_aligned is True with shape `number of evaluation points`
             x `ndim_domain`. If the points are not aligned the shape of the
-            points will be `nsamples` x `number of evaluation points`
+            points will be `n_samples` x `number of evaluation points`
             x `ndim_domain`.
 
         """
@@ -188,10 +188,10 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         else:  # Different eval_points for each sample
 
-            if eval_points.ndim < 2 or eval_points.shape[0] != self.nsamples:
+            if eval_points.ndim < 2 or eval_points.shape[0] != self.n_samples:
 
                 raise ValueError(f"eval_points should be a list "
-                                 f"of length {self.nsamples} with the "
+                                 f"of length {self.n_samples} with the "
                                  f"evaluation points for each sample.")
 
             eval_points = eval_points.reshape((eval_points.shape[0],
@@ -205,7 +205,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         Args:
             eval_points (np.ndarray): Array with shape `n_eval_points` x
-                `ndim_domain` with the evaluation points, or shape ´nsamples´ x
+                `ndim_domain` with the evaluation points, or shape ´n_samples´ x
                 `n_eval_points` x `ndim_domain` with different evaluation
                 points for each sample.
 
@@ -261,7 +261,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 in a different grid.
             keepdims (bool, optional): If the image dimension is equal to 1 and
                 keepdims is True the return matrix has shape
-                nsamples x eval_points x 1 else nsamples x eval_points.
+                n_samples x eval_points x 1 else n_samples x eval_points.
                 By default is used the value given during the instance of the
                 object.
 
@@ -300,7 +300,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                                  aligned_evaluation=False)
         else:
 
-            if len(axes) != self.nsamples:
+            if len(axes) != self.n_samples:
                 raise ValueError("Should be provided a list of axis per "
                                  "sample")
             elif len(axes[0]) != self.ndim_domain:
@@ -308,18 +308,18 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                                  f"({self.ndim_domain}) != {len(axes[0])}")
 
             lengths = [len(ax) for ax in axes[0]]
-            eval_points = np.empty((self.nsamples,
+            eval_points = np.empty((self.n_samples,
                                     np.prod(lengths),
                                     self.ndim_domain))
 
-            for i in range(self.nsamples):
+            for i in range(self.n_samples):
                 eval_points[i] = _coordinate_list(axes[i])
 
             res = self.evaluate(eval_points, derivative=derivative,
                                 extrapolation=extrapolation,
                                 keepdims=True, aligned_evaluation=False)
 
-        shape = [self.nsamples] + lengths
+        shape = [self.n_samples] + lengths
 
         if keepdims is None:
             keepdims = self.keepdims
@@ -348,10 +348,10 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         Returns:
             (ndarray): Matrix with the points evaluated with shape
-            `nsamples` x `number of points evaluated` x `ndim_image`.
+            `n_samples` x `number of points evaluated` x `ndim_image`.
 
         """
-        res = np.empty((self.nsamples, index_matrix.shape[-1],
+        res = np.empty((self.n_samples, index_matrix.shape[-1],
                         self.ndim_image))
 
         # Case aligned evaluation
@@ -433,12 +433,12 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 spanned by the input arrays, or at points specified by the
                 input arrays. If true the eval_points should be a list of size
                 ndim_domain with the corresponding times for each axis. The
-                return matrix has shape nsamples x len(t1) x len(t2) x ... x
+                return matrix has shape n_samples x len(t1) x len(t2) x ... x
                 len(t_ndim_domain) x ndim_image. If the domain dimension is 1
                 the parameter has no efect. Defaults to False.
             keepdims (bool, optional): If the image dimension is equal to 1 and
                 keepdims is True the return matrix has shape
-                nsamples x eval_points x 1 else nsamples x eval_points.
+                n_samples x eval_points x 1 else n_samples x eval_points.
                 By default is used the value given during the instance of the
                 object.
 
@@ -552,12 +552,12 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 spanned by the input arrays, or at points specified by the
                 input arrays. If true the eval_points should be a list of size
                 ndim_domain with the corresponding times for each axis. The
-                return matrix has shape nsamples x len(t1) x len(t2) x ... x
+                return matrix has shape n_samples x len(t1) x len(t2) x ... x
                 len(t_ndim_domain) x ndim_image. If the domain dimension is 1
                 the parameter has no efect. Defaults to False.
             keepdims (bool, optional): If the image dimension is equal to 1 and
                 keepdims is True the return matrix has shape
-                nsamples x eval_points x 1 else nsamples x eval_points.
+                n_samples x eval_points x 1 else n_samples x eval_points.
                 By default is used the value given during the instance of the
                 object.
 
@@ -965,15 +965,15 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         else:
 
             if 'color' in kwargs:
-                sample_colors = self.nsamples * [kwargs.get("color")]
+                sample_colors = self.n_samples * [kwargs.get("color")]
                 kwargs.pop('color')
 
             elif 'c' in kwargs:
-                sample_colors = self.nsamples * [kwargs.get("color")]
+                sample_colors = self.n_samples * [kwargs.get("color")]
                 kwargs.pop('c')
 
             else:
-                sample_colors = np.empty((self.nsamples,)).astype(str)
+                sample_colors = np.empty((self.n_samples,)).astype(str)
                 next_color = True
 
         if self.ndim_domain == 1:
@@ -986,7 +986,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             mat = self(eval_points, derivative=derivative, keepdims=True)
 
             for i in range(self.ndim_image):
-                for j in range(self.nsamples):
+                for j in range(self.n_samples):
                     if sample_labels is None and next_color:
                         sample_colors[j] = ax[i]._get_lines.get_next_color()
                     ax[i].plot(eval_points, mat[j, ..., i].T,
@@ -1013,7 +1013,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             X, Y = np.meshgrid(x, y, indexing='ij')
 
             for i in range(self.ndim_image):
-                for j in range(self.nsamples):
+                for j in range(self.n_samples):
                     if sample_labels is None and next_color:
                         sample_colors[j] = ax[i]._get_lines.get_next_color()
                     ax[i].plot_surface(X, Y, Z[j, ..., i],
@@ -1175,13 +1175,13 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     def __iter__(self):
         """Iterate over the samples"""
 
-        for i in range(self.nsamples):
+        for i in range(self.n_samples):
             yield self[i]
 
     def __len__(self):
         """Returns the number of samples of the FData object."""
 
-        return self.nsamples
+        return self.n_samples
 
     #####################################################################
     # Numpy methods
@@ -1239,7 +1239,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         Returns:
             na_values (np.ndarray): Array full of False values.
         """
-        return np.zeros(self.nsamples, dtype=bool)
+        return np.zeros(self.n_samples, dtype=bool)
 
     def take(self, indices, allow_fill=False, fill_value=None, axis=0):
         """Take elements from an array.

@@ -65,7 +65,7 @@ class TestFDataGrid(unittest.TestCase):
         fd1.axes_labels = ["x", "y"]
         fd = fd1.concatenate(fd2)
 
-        np.testing.assert_equal(fd.nsamples, 4)
+        np.testing.assert_equal(fd.n_samples, 4)
         np.testing.assert_equal(fd.ndim_image, 1)
         np.testing.assert_equal(fd.ndim_domain, 1)
         np.testing.assert_array_equal(fd.data_matrix[..., 0],
@@ -81,7 +81,7 @@ class TestFDataGrid(unittest.TestCase):
         fd2.axes_labels = ["w", "t"]
         fd = fd1.concatenate(fd2, as_coordinates=True)
 
-        np.testing.assert_equal(fd.nsamples, 2)
+        np.testing.assert_equal(fd.n_samples, 2)
         np.testing.assert_equal(fd.ndim_image, 2)
         np.testing.assert_equal(fd.ndim_domain, 1)
 

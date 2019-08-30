@@ -4,9 +4,11 @@ This module contains routines related to the registration procedure.
 """
 import collections
 
-import numpy as np
 import scipy.integrate
 from scipy.interpolate import PchipInterpolator
+
+import numpy as np
+
 
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"
@@ -132,18 +134,18 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
     if registered_fdata.ndim_domain != 1 or registered_fdata.ndim_image != 1:
         raise NotImplementedError
 
-    if original_fdata.nsamples != registered_fdata.nsamples:
+    if original_fdata.n_samples != registered_fdata.n_samples:
         raise ValueError(f"the registered and unregistered curves must have "
                          f"the same number of samples "
-                         f"({registered_fdata.nsamples})!= "
-                         f"({original_fdata.nsamples})")
+                         f"({registered_fdata.n_samples})!= "
+                         f"({original_fdata.n_samples})")
 
-    if warping_function is not None and (warping_function.nsamples
-                                         != original_fdata.nsamples):
+    if warping_function is not None and (warping_function.n_samples
+                                         != original_fdata.n_samples):
         raise ValueError(f"the registered curves and the warping functions "
                          f"must have the same number of samples "
-                         f"({registered_fdata.nsamples})"
-                         f"!=({warping_function.nsamples})")
+                         f"({registered_fdata.n_samples})"
+                         f"!=({warping_function.n_samples})")
 
     # Creates the mesh to discretize the functions
     if eval_points is None:
@@ -274,9 +276,9 @@ def invert_warping(fdatagrid, *, eval_points=None):
 
     y = fdatagrid(eval_points, keepdims=False)
 
-    data_matrix = np.empty((fdatagrid.nsamples, len(eval_points)))
+    data_matrix = np.empty((fdatagrid.n_samples, len(eval_points)))
 
-    for i in range(fdatagrid.nsamples):
+    for i in range(fdatagrid.n_samples):
         data_matrix[i] = PchipInterpolator(y[i], eval_points)(eval_points)
 
     return fdatagrid.copy(data_matrix=data_matrix, sample_points=eval_points)

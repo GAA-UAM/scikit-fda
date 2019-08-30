@@ -1,12 +1,15 @@
 
 
-import numpy as np
 import scipy.integrate
+
+import numpy as np
 import optimum_reparam
+
 from . import invert_warping
+from ... import FDataGrid
 from ._registration_utils import _normalize_scale
 
-from ... import FDataGrid
+
 from...representation.interpolation import SplineInterpolator
 
 
@@ -138,7 +141,7 @@ def from_srsf(fdatagrid, initial=None, *, eval_points=None):
 
     if initial is not None:
         initial = np.atleast_1d(initial)
-        initial = initial.reshape(fdatagrid.nsamples, 1, fdatagrid.ndim_image)
+        initial = initial.reshape(fdatagrid.n_samples, 1, fdatagrid.ndim_image)
         initial = np.repeat(initial, len(eval_points), axis=1)
         f_data_matrix += initial
 
@@ -264,7 +267,7 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
         template = elastic_mean(fdatagrid, lam=lam, eval_points=eval_points,
                                 **kwargs)
 
-    elif ((template.nsamples != 1 and template.nsamples != fdatagrid.nsamples)
+    elif ((template.n_samples != 1 and template.n_samples != fdatagrid.n_samples)
           or template.ndim_domain != 1 or template.ndim_image != 1):
 
         raise ValueError("The template should contain one sample to align all"
@@ -450,7 +453,7 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
 
     n_points = mu.shape[0]
 
-    sine = np.empty((warping.nsamples, 1))
+    sine = np.empty((warping.n_samples, 1))
 
     for _ in range(iter):
         # Dot product

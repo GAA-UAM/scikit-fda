@@ -70,7 +70,7 @@ class LinearDifferentialOperator:
 
             elif all(isinstance(n, FDataBasis) for n in weights):
                 if all([_same_domain(weights[0].domain_range,
-                                     x.domain_range) and x.nsamples == 1 for x
+                                     x.domain_range) and x.n_samples == 1 for x
                         in weights]):
                     self.order = len(weights) - 1
                     self.weights = weights

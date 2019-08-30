@@ -460,8 +460,8 @@ def fetch_weather(return_X_y: bool = False):
     weather_daily = np.asarray(data["dailyAv"])
 
     # Axes 0 and 1 must be transposed since in the downloaded dataset the
-    # data_matrix shape is (nfeatures, nsamples, ndim_image) while our
-    # data_matrix shape is (nsamples, nfeatures, ndim_image).
+    # data_matrix shape is (nfeatures, n_samples, ndim_image) while our
+    # data_matrix shape is (n_samples, nfeatures, ndim_image).
     temp_prec_daily = np.transpose(weather_daily[:, :, 0:2], axes=(1, 0, 2))
 
     curves = FDataGrid(data_matrix=temp_prec_daily,

@@ -68,9 +68,9 @@ def landmark_shift_deltas(fd, landmarks, location=None):
 
     """
 
-    if len(landmarks) != fd.nsamples:
+    if len(landmarks) != fd.n_samples:
         raise ValueError(f"landmark list ({len(landmarks)}) must have the same"
-                         f" length than the number of samples ({fd.nsamples})")
+                         f" length than the number of samples ({fd.n_samples})")
 
     landmarks = np.atleast_1d(landmarks)
 
@@ -222,15 +222,15 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
         raise NotImplementedError("Method only implemented for objects with"
                                   "domain dimension up to 1.")
 
-    if len(landmarks) != fd.nsamples:
+    if len(landmarks) != fd.n_samples:
         raise ValueError("The number of list of landmarks should be equal to "
                          "the number of samples")
 
-    landmarks = np.asarray(landmarks).reshape((fd.nsamples, -1))
+    landmarks = np.asarray(landmarks).reshape((fd.n_samples, -1))
 
     n_landmarks = landmarks.shape[-1]
 
-    data_matrix = np.empty((fd.nsamples, n_landmarks + 2))
+    data_matrix = np.empty((fd.n_samples, n_landmarks + 2))
 
     data_matrix[:, 0] = fd.domain_range[0][0]
     data_matrix[:, -1] = fd.domain_range[0][1]

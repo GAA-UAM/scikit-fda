@@ -303,7 +303,7 @@ class FDataGrid(FData):
         return FDataGrid._CoordinateIterator(self)
 
     @property
-    def nsamples(self):
+    def n_samples(self):
         """Return number of rows of the data_matrix. Also the number of samples.
 
         Returns:
@@ -488,7 +488,7 @@ class FDataGrid(FData):
         sample_points = self.sample_points[0]
         for _ in range(order):
             mdata = []
-            for i in range(self.nsamples):
+            for i in range(self.n_samples):
                 arr = (np.diff(data_matrix[i]) /
                        (sample_points[1:]
                         - sample_points[:-1]))
@@ -525,8 +525,8 @@ class FDataGrid(FData):
         if weights is not None:
 
             return self.copy(data_matrix=np.average(
-                self.data_matrix, weights=weights, axis=0)[np.newaxis,...]
-                             )
+                self.data_matrix, weights=weights, axis=0)[np.newaxis, ...]
+            )
 
         return self.copy(data_matrix=self.data_matrix.mean(axis=0,
                                                            keepdims=True))
@@ -778,10 +778,10 @@ class FDataGrid(FData):
             raise ValueError("All the FDataGrids must be sampled in the  same "
                              "sample points.")
 
-        elif any([self.nsamples != other.nsamples for other in others]):
+        elif any([self.n_samples != other.n_samples for other in others]):
 
             raise ValueError(f"All the FDataGrids must contain the same "
-                             f"number of samples {self.nsamples} to "
+                             f"number of samples {self.n_samples} to "
                              f"concatenate as a new coordinate.")
 
         data = [self.data_matrix] + [other.data_matrix for other in others]
@@ -824,7 +824,7 @@ class FDataGrid(FData):
 
         if self.ndim_domain == 1:
             for i in range(self.ndim_image):
-                for j in range(self.nsamples):
+                for j in range(self.n_samples):
                     ax[i].scatter(self.sample_points[0],
                                   self.data_matrix[j, :, i].T, **kwargs)
         else:
@@ -832,7 +832,7 @@ class FDataGrid(FData):
             Y = self.sample_points[1]
             X, Y = np.meshgrid(X, Y)
             for i in range(self.ndim_image):
-                for j in range(self.nsamples):
+                for j in range(self.n_samples):
                     ax[i].scatter(X, Y, self.data_matrix[j, :, :, i].T,
                                   **kwargs)
 
@@ -995,10 +995,10 @@ class FDataGrid(FData):
 
             return self.copy(sample_points=sample_points,
                              domain_range=domain_range)
-        if shifts.shape[0] != self.nsamples:
+        if shifts.shape[0] != self.n_samples:
             raise ValueError(f"shifts vector ({shifts.shape[0]}) must have the"
                              f" same length than the number of samples "
-                             f"({self.nsamples})")
+                             f"({self.n_samples})")
 
         if eval_points is None:
             eval_points = self.sample_points
@@ -1021,7 +1021,7 @@ class FDataGrid(FData):
         eval_points = np.asarray(eval_points)
 
         eval_points_repeat = np.repeat(eval_points[np.newaxis, :],
-                                       self.nsamples, axis=0)
+                                       self.n_samples, axis=0)
 
         # Solve problem with cartesian and matrix indexing
         if self.ndim_domain > 1:
@@ -1057,8 +1057,8 @@ class FDataGrid(FData):
                              f"({self.ndim_domain})!=({fd.ndim_image}).")
 
         # All composed with same function
-        if fd.nsamples == 1 and self.nsamples != 1:
-            fd = fd.copy(data_matrix=np.repeat(fd.data_matrix, self.nsamples,
+        if fd.n_samples == 1 and self.n_samples != 1:
+            fd = fd.copy(data_matrix=np.repeat(fd.data_matrix, self.n_samples,
                                                axis=0))
 
         if fd.ndim_domain == 1:
@@ -1080,11 +1080,11 @@ class FDataGrid(FData):
 
             lengths = [len(ax) for ax in eval_points]
 
-            eval_points_transformation = np.empty((self.nsamples,
+            eval_points_transformation = np.empty((self.n_samples,
                                                    np.prod(lengths),
                                                    self.ndim_domain))
 
-            for i in range(self.nsamples):
+            for i in range(self.n_samples):
                 eval_points_transformation[i] = np.array(
                     list(map(np.ravel, grid_transformation[i].T))
                 ).T
@@ -1092,7 +1092,7 @@ class FDataGrid(FData):
             data_flatten = self(eval_points_transformation,
                                 aligned_evaluation=False)
 
-            data_matrix = data_flatten.reshape((self.nsamples, *lengths,
+            data_matrix = data_flatten.reshape((self.n_samples, *lengths,
                                                 self.ndim_image))
 
         return self.copy(data_matrix=data_matrix,

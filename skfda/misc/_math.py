@@ -4,8 +4,9 @@ Defines the basic mathematical operations for classes defined in this
 package. FDataBasis and FDataGrid.
 
 """
-import numpy as np
 import scipy.integrate
+
+import numpy as np
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -188,10 +189,10 @@ def inner_product(fdatagrid, fdatagrid2):
         raise ValueError("Sample points for both objects must be equal")
 
     # Creates an empty matrix with the desired size to store the results.
-    matrix = np.empty([fdatagrid.nsamples, fdatagrid2.nsamples])
+    matrix = np.empty([fdatagrid.n_samples, fdatagrid2.n_samples])
     # Iterates over the different samples of both objects.
-    for i in range(fdatagrid.nsamples):
-        for j in range(fdatagrid2.nsamples):
+    for i in range(fdatagrid.n_samples):
+        for j in range(fdatagrid2.n_samples):
             # Calculates the inner product using Simpson's rule.
             matrix[i, j] = (scipy.integrate.simps(
                 fdatagrid.data_matrix[i, ..., 0] *

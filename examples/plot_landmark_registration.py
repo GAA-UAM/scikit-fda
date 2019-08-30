@@ -8,9 +8,9 @@ This example shows the basic usage of the landmark registration.
 # Author: Pablo Marcos Manchón
 # License: MIT
 
-import skfda
 import matplotlib.pyplot as plt
 import numpy as np
+import skfda
 
 
 ###############################################################################
@@ -29,9 +29,8 @@ import numpy as np
 # :func:`make_multimodal_samples <skfda.datasets.make_multimodal_samples>`, wich
 # in this case will be used to generate bimodal curves.
 #
-
 fd = skfda.datasets.make_multimodal_samples(n_samples=4, n_modes=2, std=.002,
-                                          mode_std=.005, random_state=1)
+                                            mode_std=.005, random_state=1)
 fd.plot()
 
 ###############################################################################
@@ -50,8 +49,8 @@ fd.plot()
 #
 
 landmarks = skfda.datasets.make_multimodal_landmarks(n_samples=4, n_modes=2,
-                                                   std=.002, random_state=1
-                                                   ).squeeze()
+                                                     std=.002, random_state=1
+                                                     ).squeeze()
 
 print(landmarks)
 
@@ -76,7 +75,7 @@ print(landmarks)
 #
 
 warping = skfda.preprocessing.registration.landmark_registration_warping(fd, landmarks,
-                                                         location=[-0.5, 0.5])
+                                                                         location=[-0.5, 0.5])
 
 plt.figure()
 
@@ -84,7 +83,7 @@ plt.figure()
 warping.plot()
 
 # Plot landmarks
-for i in range(fd.nsamples):
+for i in range(fd.n_samples):
     plt.scatter([-0.5, 0.5], landmarks[i])
 
 ###############################################################################
@@ -108,7 +107,8 @@ plt.scatter([-0.5, 0.5], [1, 1])
 # mean position is taken.
 #
 
-fd_registered = skfda.preprocessing.registration.landmark_registration(fd, landmarks)
+fd_registered = skfda.preprocessing.registration.landmark_registration(
+    fd, landmarks)
 fd_registered.plot()
 
 plt.scatter(np.mean(landmarks, axis=0), [1, 1])

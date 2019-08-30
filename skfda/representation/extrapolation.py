@@ -4,9 +4,9 @@ Defines methods to evaluate points outside the domain range.
 
 """
 
-from .evaluator import EvaluatorConstructor, Evaluator, GenericEvaluator
-
 import numpy as np
+
+from .evaluator import EvaluatorConstructor, Evaluator, GenericEvaluator
 
 
 class PeriodicExtrapolation(EvaluatorConstructor):
@@ -51,13 +51,13 @@ def _periodic_evaluation(fdata, eval_points, *, derivative=0):
         fdata (:class:´FData´): Object where the evaluation is taken place.
         eval_points (:class: numpy.ndarray): Numpy array with the evalation
             points outside the domain range. The shape of the array may be
-            `n_eval_points` x `ndim_image` or `nsamples` x `n_eval_points`
+            `n_eval_points` x `ndim_image` or `n_samples` x `n_eval_points`
             x `ndim_image`.
         derivate (numeric, optional): Order of derivative to be evaluated.
 
     Returns:
         (numpy.ndarray): numpy array with the evaluation of the points in
-        a matrix with shape `nsamples` x `n_eval_points`x `ndim_image`.
+        a matrix with shape `n_samples` x `n_eval_points`x `ndim_image`.
     """
 
     domain_range = np.asarray(fdata.domain_range)
@@ -117,13 +117,13 @@ def _boundary_evaluation(fdata, eval_points, *, derivative=0):
         fdata (:class:´FData´): Object where the evaluation is taken place.
         eval_points (:class: numpy.ndarray): Numpy array with the evalation
             points outside the domain range. The shape of the array may be
-            `n_eval_points` x `ndim_image` or `nsamples` x `n_eval_points`
+            `n_eval_points` x `ndim_image` or `n_samples` x `n_eval_points`
             x `ndim_image`.
         derivate (numeric, optional): Order of derivative to be evaluated.
 
     Returns:
         (numpy.ndarray): numpy array with the evaluation of the points in
-        a matrix with shape `nsamples` x `n_eval_points`x `ndim_image`.
+        a matrix with shape `n_samples` x `n_eval_points`x `ndim_image`.
     """
 
     domain_range = fdata.domain_range
@@ -190,7 +190,7 @@ def _exception_evaluation(fdata, eval_points, *, derivative=0):
         fdata (:class:´FData´): Object where the evaluation is taken place.
         eval_points (:class: numpy.ndarray): Numpy array with the evalation
             points outside the domain range. The shape of the array may be
-            `n_eval_points` x `ndim_image` or `nsamples` x `n_eval_points`
+            `n_eval_points` x `ndim_image` or `n_samples` x `n_eval_points`
             x `ndim_image`.
         derivate (numeric, optional): Order of derivative to be evaluated.
 
@@ -263,7 +263,7 @@ class FillExtrapolationEvaluator(Evaluator):
         self.fdata = fdata
 
     def _fill(self, eval_points):
-        shape = (self.fdata.nsamples, eval_points.shape[-2],
+        shape = (self.fdata.n_samples, eval_points.shape[-2],
                  self.fdata.ndim_image)
         return np.full(shape, self.fill_value)
 
@@ -275,13 +275,13 @@ class FillExtrapolationEvaluator(Evaluator):
             fdata (:class:´FData´): Object where the evaluation is taken place.
             eval_points (:class: numpy.ndarray): Numpy array with the evalation
                 points outside the domain range. The shape of the array may be
-                `n_eval_points` x `ndim_image` or `nsamples` x `n_eval_points`
+                `n_eval_points` x `ndim_image` or `n_samples` x `n_eval_points`
                 x `ndim_image`.
             derivate (numeric, optional): Order of derivative to be evaluated.
 
         Returns:
             (numpy.ndarray): numpy array with the evaluation of the points in
-            a matrix with shape `nsamples` x `n_eval_points`x `ndim_image`.
+            a matrix with shape `n_samples` x `n_eval_points`x `ndim_image`.
 
         """
         return self._fill(eval_points)

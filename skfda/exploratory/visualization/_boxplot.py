@@ -113,7 +113,7 @@ class Boxplot(FDataBoxplot):
             which the colors to represent the central regions are selected.
         envelopes (array, (fdatagrid.ndim_image * ncentral_regions, 2,
             nsample_points)): contains the region envelopes.
-        outliers (array, (fdatagrid.ndim_image, fdatagrid.nsamples)):
+        outliers (array, (fdatagrid.ndim_image, fdatagrid.n_samples)):
             contains the outliers.
         barcol (string): Color of the envelopes and vertical lines.
         outliercol (string): Color of the ouliers.

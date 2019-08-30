@@ -146,15 +146,15 @@ def band_depth(fdatagrid, *, pointwise=False):
     if pointwise:
         return modified_band_depth(fdatagrid, pointwise)
     else:
-        n = fdatagrid.nsamples
+        n = fdatagrid.n_samples
         nchoose2 = n * (n - 1) / 2
 
         ranks = _rank_samples(fdatagrid)
         axis = tuple(range(1, fdatagrid.ndim_domain + 1))
-        nsamples_above = fdatagrid.nsamples - np.amax(ranks, axis=axis)
-        nsamples_below = np.amin(ranks, axis=axis) - 1
-        depth = ((nsamples_below * nsamples_above + fdatagrid.nsamples - 1) /
-                 nchoose2)
+        n_samples_above = fdatagrid.n_samples - np.amax(ranks, axis=axis)
+        n_samples_below = np.amin(ranks, axis=axis) - 1
+        depth = ((n_samples_below * n_samples_above + fdatagrid.n_samples - 1)
+                 / nchoose2)
 
         return depth
 
@@ -200,24 +200,24 @@ def modified_band_depth(fdatagrid, *, pointwise=False):
                [ 0.83,  0.83,  0.83,  0.5 ,  0.5 ,  0.5 ]])
 
     """
-    n = fdatagrid.nsamples
+    n = fdatagrid.n_samples
     nchoose2 = n * (n - 1) / 2
 
     ranks = _rank_samples(fdatagrid)
-    nsamples_above = fdatagrid.nsamples - ranks
-    nsamples_below = ranks - 1
-    match = nsamples_above * nsamples_below
+    n_samples_above = fdatagrid.n_samples - ranks
+    n_samples_below = ranks - 1
+    match = n_samples_above * n_samples_below
     axis = tuple(range(1, fdatagrid.ndim_domain + 1))
 
     if pointwise:
-        depth_pointwise = (match + fdatagrid.nsamples - 1) / nchoose2
+        depth_pointwise = (match + fdatagrid.n_samples - 1) / nchoose2
 
         return depth_pointwise
     else:
         npoints_sample = reduce(lambda x, y: x * len(y),
                                 fdatagrid.sample_points, 1)
         proportion = match.sum(axis=axis) / npoints_sample
-        depth = (proportion + fdatagrid.nsamples - 1) / nchoose2
+        depth = (proportion + fdatagrid.n_samples - 1) / nchoose2
 
         return depth
 

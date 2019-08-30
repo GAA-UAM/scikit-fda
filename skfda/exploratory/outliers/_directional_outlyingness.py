@@ -2,15 +2,15 @@ import typing
 
 from numpy import linalg as la
 import scipy.integrate
-from scipy.stats import f, variation
+from scipy.stats import f
+import scipy.stats
 from sklearn.base import BaseEstimator, OutlierMixin
 from sklearn.covariance import MinCovDet
 
 import numpy as np
-from skfda.exploratory.depth import modified_band_depth
+from skfda.exploratory.depth.multivariate import projection_depth
 
 from ... import FDataGrid
-from ..depth import fraiman_muniz_depth
 
 
 class DirectionalOutlyingnessStats(typing.NamedTuple):
@@ -21,8 +21,8 @@ class DirectionalOutlyingnessStats(typing.NamedTuple):
 
 
 def directional_outlyingness_stats(
-        fdatagrid: FDataGrid,
-        depth_method=fraiman_muniz_depth,
+        fdatagrid: FDataGrid, *,
+        depth_method=projection_depth,
         pointwise_weights=None) -> DirectionalOutlyingnessStats:
     r"""Computes the directional outlyingness of the functional data.
 
@@ -104,42 +104,47 @@ def directional_outlyingness_stats(
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> stats = directional_outlyingness_stats(fd)
         >>> stats.directional_outlyingness
-        array([[[ 1.        ],
-                [ 1.        ],
-                [ 1.        ],
-                [ 1.        ],
-                [ 1.        ],
-                [ 1.        ]],
-               [[ 0.33333333],
-                [ 0.33333333],
-                [ 0.33333333],
-                [ 0.33333333],
-                [ 0.33333333],
-                [ 0.33333333]],
-               [[-0.33333333],
-                [-0.33333333],
+        array([[[ 0.89932101],
+                [ 0.89932101],
+                [ 1.57381177],
+                [ 1.01173614],
+                [ 1.12415127],
+                [ 1.12415127]],
+               [[ 0.        ],
+                [ 0.        ],
                 [ 0.        ],
                 [ 0.        ],
                 [ 0.        ],
                 [ 0.        ]],
-               [[ 0.        ],
-                [ 0.        ],
-                [ 0.        ],
-                [-0.33333333],
-                [-0.33333333],
-                [-0.33333333]]])
+               [[-0.89932101],
+                [-0.89932101],
+                [-0.67449076],
+                [-0.33724538],
+                [-0.22483025],
+                [-0.22483025]],
+               [[-0.44966051],
+                [-0.44966051],
+                [-0.67449076],
+                [-1.6862269 ],
+                [-2.02347228],
+                [-1.57381177]]])
 
     >>> stats.functional_directional_outlyingness
-    array([ 3.93209877,  3.27366255,  3.23765432,  3.25823045])
+    array([ 2.99742218,  2.93929124,  3.01966359,  3.36873005])
 
     >>> stats.mean_directional_outlyingness
-    array([[ 1.66666667],
-           [ 0.55555556],
-           [-0.16666667],
-           [-0.27777778]])
+    array([[ 1.12415127],
+           [ 0.        ],
+           [-0.53959261],
+           [-1.17661166]])
 
     >>> stats.variation_directional_outlyingness
-    array([ 0.74074074,  0.08230453,  0.0462963 ,  0.06687243])
+    array([ 0.05813094,  0.        ,  0.08037234,  0.4294388 ])
+
+    References:
+        Dai, Wenlin, and Genton, Marc G. "Directional outlyingness for
+        multivariate functional data." Computational Statistics & Data
+        Analysis 131 (2019): 50-65.
 
     """
     if fdatagrid.ndim_domain > 1:
@@ -150,13 +155,14 @@ def directional_outlyingness_stats(
          pointwise_weights.sum() != 1)):
         raise ValueError(
             "There must be a weight in pointwise_weights for each recorded "
-            "time point and altogether must sum 1.")
+            "time point and altogether must integrate to 1.")
 
     if pointwise_weights is None:
         pointwise_weights = np.ones(
-            len(fdatagrid.sample_points[0])) / len(fdatagrid.sample_points[0])
+            len(fdatagrid.sample_points[0])) / (
+                fdatagrid.domain_range[0][1] - fdatagrid.domain_range[0][0])
 
-    _, depth_pointwise = depth_method(fdatagrid, pointwise=True)
+    depth_pointwise = depth_method(fdatagrid, pointwise=True)
     assert depth_pointwise.shape == fdatagrid.data_matrix.shape[:-1]
 
     # Obtaining the pointwise median sample Z, to calculate
@@ -177,7 +183,6 @@ def directional_outlyingness_stats(
 
     # Calculation directinal outlyingness
     dir_outlyingness = (1 / depth_pointwise[..., np.newaxis] - 1) * v_unitary
-    assert dir_outlyingness.shape == fdatagrid.data_matrix.shape
 
     # Calculation mean directional outlyingness
     weighted_dir_outlyingness = (dir_outlyingness
@@ -195,7 +200,8 @@ def directional_outlyingness_stats(
                              mean_dir_outlyingness[:, np.newaxis, :], axis=-1))
     weighted_norm = norm * pointwise_weights
     variation_dir_outlyingness = scipy.integrate.simps(
-        weighted_norm, fdatagrid.sample_points[0], axis=1)
+        weighted_norm, fdatagrid.sample_points[0],
+        axis=1)
     assert variation_dir_outlyingness.shape == (fdatagrid.nsamples,)
 
     functional_dir_outlyingness = (np.square(la.norm(mean_dir_outlyingness))
@@ -236,20 +242,10 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         \frac{c\left(m - p\right)}{m\left(p + 1\right)}RMD^2\left(
         \mathbf{Y}, \mathbf{\tilde{Y}}^*_J\right)\sim F_{p+1, m-p}
 
-    where :math:`p` is the dimension of the image, and :math:`c` and :math:`m`
-    are parameters determining the degrees of freedom of the
-    :math:`F`-distribution and the scaling factor.
-
-    .. math::
-        c = E \left[s^*_{jj}\right]
-
-    where :math:`s^*_{jj}` are the diagonal elements of MCD and
-
-    .. math::
-        m = \frac{2}{CV^2}
-
-    where :math:`CV` is the estimated coefficient of variation of the diagonal
-    elements of the  MCD shape estimator.
+    where :math:`p` is the dimension of the image plus one, and :math:`c` and
+    :math:`m` are parameters determining the degrees of freedom of the
+    :math:`F`-distribution and the scaling factor, given by empirical results
+    and an asymptotic formula.
 
     Finally, we choose a cutoff value to determine the outliers, C ,
     as the :math:`\alpha` quantile of :math:`F_{p+1, m-p}`. We set
@@ -258,8 +254,8 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
 
     Parameters:
         depth_method (:ref:`depth measure <depth-measures>`, optional):
-            Method used to order the data. Defaults to :func:`modified band
-            depth <fda.depth_measures.modified_band_depth>`.
+            Method used to order the data. Defaults to :func:`projection
+            depth <fda.depth_measures.multivariate.projection_depth>`.
         pointwise_weights (array_like, optional): an array containing the
             weights of each points of discretisati on where values have
             been recorded.
@@ -299,38 +295,133 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         >>> out_detector.fit_predict(fd)
         array([1, 1, 1, 1])
 
+    References:
+        Dai, Wenlin, and Genton, Marc G. "Multivariate functional data
+        visualization and outlier detection." Journal of Computational
+        and Graphical Statistics 27.4 (2018): 923-934.
+
     """
 
-    def __init__(self, *, depth_method=modified_band_depth,
-                 pointwise_weights=None,
-                 assume_centered=False,
-                 support_fraction=None,
-                 random_state=0,
-                 alpha=0.993):
+    def __init__(
+            self, *, depth_method=projection_depth,
+            pointwise_weights=None,
+            assume_centered=False,
+            support_fraction=None,
+            num_resamples=1000,
+            random_state=0,
+            alpha=0.993,
+            _force_asymptotic=False):
         self.depth_method = depth_method
         self.pointwise_weights = pointwise_weights
         self.assume_centered = assume_centered
         self.support_fraction = support_fraction
+        self.num_resamples = num_resamples
         self.random_state = random_state
         self.alpha = alpha
+        self._force_asymptotic = _force_asymptotic
 
     def _compute_points(self, X):
         # The depths of the samples are calculated giving them an ordering.
         *_, mean_dir_outl, variation_dir_outl = directional_outlyingness_stats(
             X,
-            self.depth_method,
-            self.pointwise_weights)
+            depth_method=self.depth_method,
+            pointwise_weights=self.pointwise_weights)
 
-        points = np.array(
-            list(
-                zip(
-                    mean_dir_outl.ravel(), variation_dir_outl
-                )
-            ))
+        points = np.concatenate((mean_dir_outl,
+                                 variation_dir_outl[:, np.newaxis]), axis=1)
 
         return points
 
-    def fit(self, X, y=None):
+    def _parameters_asymptotic(self, sample_size, dimension):
+        """Return the scaling and cutoff parameters via asymptotic formula."""
+
+        n = sample_size
+        p = dimension
+
+        h = np.floor((n + p + 1) / 2)
+
+        # c estimation
+        xi_left = scipy.stats.chi2.rvs(
+            size=self.num_resamples, df=p + 2, random_state=self.random_state_)
+        xi_right = scipy.stats.ncx2.rvs(
+            size=self.num_resamples, df=p, nc=h / n,
+            random_state=self.random_state_)
+
+        c_numerator = np.sum(xi_left < xi_right) / self.num_resamples
+        c_denominator = h / n
+
+        estimated_c = c_numerator / c_denominator
+
+        # m estimation
+        alpha = (n - h) / n
+        q_alpha = scipy.stats.chi2.ppf(1 - alpha, df=p)
+
+        dist_p2 = scipy.stats.chi2.cdf(q_alpha, df=p + 2)
+        dist_p4 = scipy.stats.chi2.cdf(q_alpha, df=p + 4)
+        c_alpha = (1 - alpha) / dist_p2
+        c2 = -dist_p2 / 2
+        c3 = -dist_p4 / 2
+        c4 = 3 * c3
+
+        b1 = (c_alpha * (c3 - c4)) / (1 - alpha)
+        b2 = (0.5 + c_alpha / (1 - alpha) *
+              (c3 - q_alpha / p * (c2 + (1 - alpha) / 2)))
+
+        v1 = ((1 - alpha) * b1**2 * (alpha * (
+            c_alpha * q_alpha / p - 1) ** 2 - 1)
+            - 2 * c3 * c_alpha**2 * (3 * (b1 - p * b2)**2
+                                     + (p + 2) * b2 * (2 * b1 - p * b2)))
+        v2 = n * (b1 * (b1 - p * b2) * (1 - alpha))**2 * c_alpha**2
+        v = v1 / v2
+
+        m_asympt = 2 / (c_alpha**2 * v)
+
+        estimated_m = (m_asympt *
+                       np.exp(0.725 - 0.00663 * p - 0.0780 * np.log(n)))
+
+        dfn = p
+        dfd = estimated_m - p + 1
+
+        # Calculation of the cutoff value and scaling factor to identify
+        # outliers.
+        scaling = estimated_c * dfd / estimated_m / dfn
+        cutoff_value = f.ppf(self.alpha, dfn, dfd, loc=0, scale=1)
+
+        return scaling, cutoff_value
+
+    def _parameters_numeric(self, sample_size, dimension):
+        from . import \
+            _directional_outlyingness_experiment_results as experiments
+
+        key = sample_size // 5
+
+        use_asympt = True
+
+        if dimension == 2:
+            scaling_list = experiments.dim2_scaling_list
+            cutoff_list = experiments.dim2_cutoff_list
+            assert len(scaling_list) == len(cutoff_list)
+            if key < len(scaling_list):
+                use_asympt = False
+
+        elif dimension == 3:
+            scaling_list = experiments.dim3_scaling_list
+            cutoff_list = experiments.dim3_cutoff_list
+            assert len(scaling_list) == len(cutoff_list)
+            if key < len(scaling_list):
+                use_asympt = False
+
+        if use_asympt:
+            return self._parameters_asymptotic(sample_size, dimension)
+        else:
+            return scaling_list[key], cutoff_list[key]
+
+    def fit_predict(self, X, y=None):
+
+        try:
+            self.random_state_ = np.random.RandomState(self.random_state)
+        except ValueError:
+            self.random_state_ = self.random_state
 
         self.points_ = self._compute_points(X)
 
@@ -339,29 +430,24 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         self.cov_ = MinCovDet(store_precision=False,
                               assume_centered=self.assume_centered,
                               support_fraction=self.support_fraction,
-                              random_state=self.random_state).fit(self.points_)
+                              random_state=self.random_state_).fit(
+                                  self.points_)
 
         # Calculation of the degrees of freedom of the F-distribution
         # (approximation of the tail of the distance distribution).
-        s_jj = np.diag(self.cov_.covariance_)
-        c = np.mean(s_jj)
-        m = 2 / np.square(variation(s_jj))
-        p = X.ndim_image
-        dfn = p + 1
-        dfd = m - p
 
-        # Calculation of the cutoff value and scaling factor to identify
-        # outliers.
-        self.cutoff_value_ = f.ppf(self.alpha, dfn, dfd, loc=0, scale=1)
-        self.scaling_ = c * dfd / m / dfn
+        # One per dimension (mean dir out) plus one (variational dir out)
+        dimension = X.ndim_codomain + 1
+        if self._force_asymptotic:
+            self.scaling_, self.cutoff_value_ = self._parameters_asymptotic(
+                sample_size=X.nsamples,
+                dimension=dimension)
+        else:
+            self.scaling_, self.cutoff_value_ = self._parameters_numeric(
+                sample_size=X.nsamples,
+                dimension=dimension)
 
-        return self
-
-    def predict(self, X):
-
-        points = self._compute_points(X)
-
-        rmd_2 = self.cov_.mahalanobis(points)
+        rmd_2 = self.cov_.mahalanobis(self.points_)
 
         outliers = self.scaling_ * rmd_2 > self.cutoff_value_
 

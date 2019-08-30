@@ -23,12 +23,13 @@ the package, along with several examples showing different funcionalities.
 import os
 import sys
 
-import numpy as np
-
+from Cython.Build import cythonize
+from Cython.Distutils import build_ext
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
-from Cython.Distutils import build_ext
-from Cython.Build import cythonize
+
+import numpy as np
+
 
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
 pytest_runner = ['pytest-runner'] if needs_pytest else []
@@ -80,6 +81,7 @@ setup(name='scikit-fda',
           'Topic :: Software Development :: Libraries :: Python Modules',
       ],
       install_requires=['numpy',
+                        'scipy>=1.3.0',
                         'scikit-learn',
                         'matplotlib',
                         'scikit-datasets[cran]>=0.1.24',

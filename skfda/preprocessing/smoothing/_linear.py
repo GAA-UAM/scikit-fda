@@ -98,7 +98,7 @@ class _LinearSmoother(abc.ABC, BaseEstimator, TransformerMixin):
                 The data to smooth.
             y : Ignored
         Returns:
-            self (object)
+            FDataGrid: Functional data smoothed.
 
         """
 
@@ -117,7 +117,7 @@ class _LinearSmoother(abc.ABC, BaseEstimator, TransformerMixin):
             y (FDataGrid):
                 The target data. Typically the same as ``X``.
         Returns:
-            self (object)
+            float: Generalized cross validation score.
 
         """
         from .validation import LinearSmootherGeneralizedCVScorer

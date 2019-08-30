@@ -163,8 +163,9 @@ class MagnitudeShapePlot:
 
         """
 
-        if fdatagrid.ndim_image > 1:
-            raise NotImplementedError("Only support 1 dimension on the image.")
+        if fdatagrid.dim_codomain > 1:
+            raise NotImplementedError(
+                "Only support 1 dimension on the codomain.")
 
         self.outlier_detector = DirectionalOutlierDetector(**kwargs)
 

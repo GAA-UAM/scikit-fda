@@ -147,7 +147,7 @@ def directional_outlyingness_stats(
         Analysis 131 (2019): 50-65.
 
     """
-    if fdatagrid.ndim_domain > 1:
+    if fdatagrid.dim_domain > 1:
         raise NotImplementedError("Only support 1 dimension on the domain.")
 
     if (pointwise_weights is not None and
@@ -193,7 +193,7 @@ def directional_outlyingness_stats(
                                                   fdatagrid.sample_points[0],
                                                   axis=1)
     assert mean_dir_outlyingness.shape == (
-        fdatagrid.n_samples, fdatagrid.ndim_codomain)
+        fdatagrid.n_samples, fdatagrid.dim_codomain)
 
     # Calculation variation directional outlyingness
     norm = np.square(la.norm(dir_outlyingness -
@@ -437,7 +437,7 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         # (approximation of the tail of the distance distribution).
 
         # One per dimension (mean dir out) plus one (variational dir out)
-        dimension = X.ndim_codomain + 1
+        dimension = X.dim_codomain + 1
         if self._force_asymptotic:
             self.scaling_, self.cutoff_value_ = self._parameters_asymptotic(
                 sample_size=X.n_samples,

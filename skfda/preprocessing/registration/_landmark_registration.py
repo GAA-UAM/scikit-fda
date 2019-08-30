@@ -218,7 +218,7 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
         FDataGrid(...)
     """
 
-    if fd.ndim_domain > 1:
+    if fd.dim_domain > 1:
         raise NotImplementedError("Method only implemented for objects with"
                                   "domain dimension up to 1.")
 

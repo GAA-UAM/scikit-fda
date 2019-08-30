@@ -112,7 +112,7 @@ def make_sinusoidal_process(n_samples: int = 15, n_features: int = 100, *,
 
 
 def make_multimodal_landmarks(n_samples: int = 15, *, n_modes: int = 1,
-                              ndim_domain: int = 1, ndim_image: int = 1,
+                              dim_domain: int = 1, dim_codomain: int = 1,
                               start: float = -1, stop: float = 1,
                               std: float = .05, random_state=None):
     """Generate landmarks points.
@@ -130,8 +130,8 @@ def make_multimodal_landmarks(n_samples: int = 15, *, n_modes: int = 1,
     Args:
         n_samples: Total number of samples.
         n_modes: Number of modes of each sample.
-        ndim_domain: Number of dimensions of the domain.
-        ndim_image: Number of dimensions of the image
+        dim_domain: Number of dimensions of the domain.
+        dim_codomain: Number of dimensions of the codomain.
         start: Starting point of the samples. In multidimensional objects the
             starting point of the axis.
         stop: Ending point of the samples. In multidimensional objects the
@@ -148,21 +148,21 @@ def make_multimodal_landmarks(n_samples: int = 15, *, n_modes: int = 1,
     random_state = sklearn.utils.check_random_state(random_state)
 
     modes_location = np.linspace(start, stop, n_modes + 2)[1:-1]
-    modes_location = np.repeat(modes_location[:, np.newaxis], ndim_domain,
+    modes_location = np.repeat(modes_location[:, np.newaxis], dim_domain,
                                axis=1)
 
-    variation = random_state.multivariate_normal((0,) * ndim_domain,
-                                                 std * np.eye(ndim_domain),
+    variation = random_state.multivariate_normal((0,) * dim_domain,
+                                                 std * np.eye(dim_domain),
                                                  size=(n_samples,
-                                                       ndim_image,
+                                                       dim_codomain,
                                                        n_modes))
 
     return modes_location + variation
 
 
 def make_multimodal_samples(n_samples: int = 15, *, n_modes: int = 1,
-                            points_per_dim: int = 100, ndim_domain: int = 1,
-                            ndim_image: int = 1, start: float = -1,
+                            points_per_dim: int = 100, dim_domain: int = 1,
+                            dim_codomain: int = 1, start: float = -1,
                             stop: float = 1., std: float = .05,
                             mode_std: float = .02, noise: float = .0,
                             modes_location=None, random_state=None):
@@ -187,10 +187,10 @@ def make_multimodal_samples(n_samples: int = 15, *, n_modes: int = 1,
         points_per_dim: Points per sample. If the object is multidimensional
             indicates the number of points for each dimension in the domain.
             The sample will have :math:
-            `\text{points_per_dim}^\text{ndim_domain}` points of
+            `\text{points_per_dim}^\text{dim_domain}` points of
             discretization.
-        ndim_domain: Number of dimensions of the domain.
-        ndim_image: Number of dimensions of the image
+        dim_domain: Number of dimensions of the domain.
+        dim_codomain: Number of dimensions of the image
         start: Starting point of the samples. In multidimensional objects the
             starting point of each axis.
         stop: Ending point of the samples. In multidimensional objects the
@@ -211,8 +211,8 @@ def make_multimodal_samples(n_samples: int = 15, *, n_modes: int = 1,
 
         location = make_multimodal_landmarks(n_samples=n_samples,
                                              n_modes=n_modes,
-                                             ndim_domain=ndim_domain,
-                                             ndim_image=ndim_image,
+                                             dim_domain=dim_domain,
+                                             dim_codomain=dim_codomain,
                                              start=start,
                                              stop=stop,
                                              std=std,
@@ -221,41 +221,41 @@ def make_multimodal_samples(n_samples: int = 15, *, n_modes: int = 1,
     else:
         location = np.asarray(modes_location)
 
-        shape = (n_samples, ndim_image, n_modes, ndim_domain)
+        shape = (n_samples, dim_codomain, n_modes, dim_domain)
         location = location.reshape(shape)
 
     axis = np.linspace(start, stop, points_per_dim)
 
-    if ndim_domain == 1:
+    if dim_domain == 1:
         sample_points = axis
         evaluation_grid = axis
     else:
-        sample_points = np.repeat(axis[:, np.newaxis], ndim_domain, axis=1).T
+        sample_points = np.repeat(axis[:, np.newaxis], dim_domain, axis=1).T
 
         meshgrid = np.meshgrid(*sample_points)
 
-        evaluation_grid = np.empty(meshgrid[0].shape + (ndim_domain,))
+        evaluation_grid = np.empty(meshgrid[0].shape + (dim_domain,))
 
-        for i in range(ndim_domain):
+        for i in range(dim_domain):
             evaluation_grid[..., i] = meshgrid[i]
 
     # Data matrix of the grid
-    shape = (n_samples,) + ndim_domain * (points_per_dim,) + (ndim_image,)
+    shape = (n_samples,) + dim_domain * (points_per_dim,) + (dim_codomain,)
     data_matrix = np.zeros(shape)
 
     # Covariance matrix of the samples
-    cov = mode_std * np.eye(ndim_domain)
+    cov = mode_std * np.eye(dim_domain)
 
     import itertools
     for i, j, k in itertools.product(range(n_samples),
-                                     range(ndim_image),
+                                     range(dim_codomain),
                                      range(n_modes)):
         data_matrix[i, ..., j] += multivariate_normal.pdf(evaluation_grid,
                                                           location[i, j, k],
                                                           cov)
 
     # Constant to make modes value aprox. 1
-    data_matrix *= (2 * np.pi * mode_std) ** (ndim_domain / 2)
+    data_matrix *= (2 * np.pi * mode_std) ** (dim_domain / 2)
 
     data_matrix += random_state.normal(0, noise, size=data_matrix.shape)
 

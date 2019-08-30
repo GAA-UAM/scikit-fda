@@ -131,7 +131,7 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
     """
 
-    if registered_fdata.ndim_domain != 1 or registered_fdata.ndim_image != 1:
+    if registered_fdata.dim_domain != 1 or registered_fdata.dim_codomain != 1:
         raise NotImplementedError
 
     if original_fdata.n_samples != registered_fdata.n_samples:
@@ -268,7 +268,7 @@ def invert_warping(fdatagrid, *, eval_points=None):
 
     """
 
-    if fdatagrid.ndim_image != 1 or fdatagrid.ndim_domain != 1:
+    if fdatagrid.dim_codomain != 1 or fdatagrid.dim_domain != 1:
         raise ValueError("Multidimensional object not supported.")
 
     if eval_points is None:

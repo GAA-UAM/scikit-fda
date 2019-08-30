@@ -179,7 +179,7 @@ def inner_product(fdatagrid, fdatagrid2):
                [ 1.  , 0.5 ]])
 
     """
-    if fdatagrid.ndim_domain != 1:
+    if fdatagrid.dim_domain != 1:
         raise NotImplementedError("This method only works when the dimension "
                                   "of the domain of the FDatagrid object is "
                                   "one.")

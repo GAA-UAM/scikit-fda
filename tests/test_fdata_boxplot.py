@@ -1,10 +1,9 @@
 import unittest
 
-import matplotlib.pyplot as plt
 import numpy as np
 from skfda import FDataGrid
-from skfda.exploratory.depth import band_depth, fraiman_muniz_depth
-from skfda.exploratory.visualization.boxplot import Boxplot, SurfaceBoxplot
+from skfda.exploratory.depth import fraiman_muniz_depth
+from skfda.exploratory.visualization import Boxplot, SurfaceBoxplot
 
 
 class TestBoxplot(unittest.TestCase):

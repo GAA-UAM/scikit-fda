@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skfda import FDataGrid
 from skfda.datasets import make_sinusoidal_process, make_gaussian_process
-from skfda.exploratory.visualization.boxplot import SurfaceBoxplot, Boxplot
+from skfda.exploratory.visualization import SurfaceBoxplot, Boxplot
 
 
 ##############################################################################

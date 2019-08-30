@@ -4,18 +4,55 @@ This module includes different methods to order functional data,
 from the center (larger values) outwards(smaller ones)."""
 
 from functools import reduce
-import itertools
+import math
 
 import scipy.integrate
 from scipy.stats import rankdata
 
 import numpy as np
 
-from .. import FDataGrid
-
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
+
+
+def outlyingness_to_depth(outlyingness, *, supreme=None):
+    r"""Convert outlyingness function to depth function.
+
+    An outlyingness function :math:`O(x)` can be converted to a depth
+    function as
+
+    .. math::
+        D(x) = \frac{1}{1 + O(x)}
+
+    if :math:`O(x)` is unbounded or as
+
+    .. math::
+        D(x) = 1 - \frac{O(x)}{\sup O(x)}
+
+    if :math:`O(x)` is bounded ([Se06]_).
+
+    Args:
+        outlyingness (Callable): Outlyingness function.
+        supreme (float, optional): Supreme value of the outlyingness function.
+
+    Returns:
+        Callable: The corresponding depth function.
+
+    References:
+        .. [Se06] Serfling, R. (2006). Depth functions in nonparametric
+           multivariate inference. DIMACS Series in Discrete Mathematics and
+           Theoretical Computer Science, 72, 1.
+    """
+
+    if supreme is None or math.isinf(supreme):
+        def depth(*args, **kwargs):
+            return 1 / (1 + outlyingness(*args, **kwargs))
+    else:
+        def depth(*args, **kwargs):
+            return 1 - outlyingness(*args, **kwargs) / supreme
+
+    return depth
 
 
 def _rank_samples(fdatagrid):
@@ -30,12 +67,14 @@ def _rank_samples(fdatagrid):
     Examples:
         Univariate setting:
 
+        >>> import skfda
+        >>>
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
         >>> _rank_samples(fd)
         array([[ 4.,  4.,  4.,  4.,  4.,  4.],
                [ 3.,  3.,  3.,  3.,  3.,  3.],
@@ -49,7 +88,7 @@ def _rank_samples(fdatagrid):
         ...                [[[2], [0.5], [2]],
         ...                 [[3], [0.6], [3]]]]
         >>> sample_points = [[2, 4], [3, 6, 8]]
-        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
         >>> _rank_samples(fd)
         array([[[ 1.,  2.,  1.],
                 [ 2.,  1.,  2.]],
@@ -70,7 +109,7 @@ def _rank_samples(fdatagrid):
     return ranks
 
 
-def band_depth(fdatagrid, pointwise=False):
+def band_depth(fdatagrid, *, pointwise=False):
     """Implementation of Band Depth for functional data.
 
     The band depth of each sample is obtained by computing the fraction of the
@@ -82,47 +121,45 @@ def band_depth(fdatagrid, pointwise=False):
     Args:
         fdatagrid (FDataGrid): Object over whose samples the band depth is
             going to be calculated.
-        pointwise (boolean, optional): Indicates if the pointwise depth is also
-            returned. Defaults to False.
+        pointwise (boolean, optional): Indicates if the pointwise depth is
+            returned instead. Defaults to False.
 
     Returns:
-        depth (numpy.darray): Array containing the band depth of the samples.
-
-    Returns:
-        depth_pointwise (numpy.darray, optional): Array containing the band
-            depth of the samples at each point of discretisation. Only returned
+        depth (numpy.darray): Array containing the band depth of the samples,
+            or the band depth of the samples at each point of discretization
             if pointwise equals to True.
 
     Examples:
 
+        >>> import skfda
+        >>>
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
         >>> band_depth(fd)
         array([ 0.5       ,  0.83333333,  0.5       ,  0.5       ])
 
     """
-    n = fdatagrid.nsamples
-    nchoose2 = n * (n - 1) / 2
-
-    ranks = _rank_samples(fdatagrid)
-    axis = tuple(range(1, fdatagrid.ndim_domain + 1))
-    nsamples_above = fdatagrid.nsamples - np.amax(ranks, axis=axis)
-    nsamples_below = np.amin(ranks, axis=axis) - 1
-    depth = ((nsamples_below * nsamples_above + fdatagrid.nsamples - 1) /
-             nchoose2)
-
     if pointwise:
-        _, depth_pointwise = modified_band_depth(fdatagrid, pointwise)
-        return depth, depth_pointwise
+        return modified_band_depth(fdatagrid, pointwise)
     else:
+        n = fdatagrid.nsamples
+        nchoose2 = n * (n - 1) / 2
+
+        ranks = _rank_samples(fdatagrid)
+        axis = tuple(range(1, fdatagrid.ndim_domain + 1))
+        nsamples_above = fdatagrid.nsamples - np.amax(ranks, axis=axis)
+        nsamples_below = np.amin(ranks, axis=axis) - 1
+        depth = ((nsamples_below * nsamples_above + fdatagrid.nsamples - 1) /
+                 nchoose2)
+
         return depth
 
 
-def modified_band_depth(fdatagrid, pointwise=False):
+def modified_band_depth(fdatagrid, *, pointwise=False):
     """Implementation of Modified Band Depth for functional data.
 
     The band depth of each sample is obtained by computing the fraction of time
@@ -135,28 +172,27 @@ def modified_band_depth(fdatagrid, pointwise=False):
         fdatagrid (FDataGrid): Object over whose samples the modified band
             depth is going to be calculated.
         pointwise (boolean, optional): Indicates if the pointwise depth is
-            also returned. Defaults to False.
+            returned instead. Defaults to False.
 
     Returns:
         depth (numpy.darray): Array containing the modified band depth of the
-            samples.
-
-    Returns:
-        depth_pointwise (numpy.darray, optional): Array containing the modified
-            band depth of the samples at each point of discretisation. Only
-            returned if pointwise equals to True.
+            samples, or the modified band depth of the samples at each point
+            of discretization if pointwise equals to True.
 
     Examples:
 
+        >>> import skfda
+        >>>
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> depth, pointwise = modified_band_depth(fd, pointwise = True)
+        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> depth = modified_band_depth(fd)
         >>> depth.round(2)
         array([ 0.5 ,  0.83,  0.72,  0.67])
+        >>> pointwise = modified_band_depth(fd, pointwise = True)
         >>> pointwise.round(2)
         array([[ 0.5 ,  0.5 ,  0.5 ,  0.5 ,  0.5 ,  0.5 ],
                [ 0.83,  0.83,  0.83,  0.83,  0.83,  0.83],
@@ -172,15 +208,17 @@ def modified_band_depth(fdatagrid, pointwise=False):
     nsamples_below = ranks - 1
     match = nsamples_above * nsamples_below
     axis = tuple(range(1, fdatagrid.ndim_domain + 1))
-    npoints_sample = reduce(lambda x, y: x * len(y),
-                            fdatagrid.sample_points, 1)
-    proportion = match.sum(axis=axis) / npoints_sample
-    depth = (proportion + fdatagrid.nsamples - 1) / nchoose2
 
     if pointwise:
         depth_pointwise = (match + fdatagrid.nsamples - 1) / nchoose2
-        return depth, depth_pointwise
+
+        return depth_pointwise
     else:
+        npoints_sample = reduce(lambda x, y: x * len(y),
+                                fdatagrid.sample_points, 1)
+        proportion = match.sum(axis=axis) / npoints_sample
+        depth = (proportion + fdatagrid.nsamples - 1) / nchoose2
+
         return depth
 
 
@@ -209,7 +247,7 @@ def _cumulative_distribution(column):
     return count_cumulative[indexes].reshape(column.shape)
 
 
-def fraiman_muniz_depth(fdatagrid, pointwise=False):
+def fraiman_muniz_depth(fdatagrid, *, pointwise=False):
     r"""Implementation of Fraiman and Muniz (FM) Depth for functional data.
 
     Each column is considered as the samples of an aleatory variable.
@@ -229,32 +267,33 @@ def fraiman_muniz_depth(fdatagrid, pointwise=False):
     Args:
         fdatagrid (FDataGrid): Object over whose samples the FM depth is going
             to be calculated.
-        pointwise (boolean, optional): Indicates if the pointwise depth is also
-             returned. Defaults to False.
+        pointwise (boolean, optional): Indicates if the pointwise depth is
+             returned instead. Defaults to False.
 
     Returns:
-        depth (numpy.darray): Array containing the FM depth of the samples.
-        depth_pointwise (numpy.darray, optional): Array containing the FM depth
-            of the samples at each point of discretisation. Only returned if
-            pointwise equals to True.
+        depth (numpy.darray): Array containing the Fraiman-Muniz depth of the
+            samples, or the Fraiman-Muniz of the samples at each point
+            of discretization if pointwise equals to True.
 
     Examples:
         Currently, this depth function can only be used
         for univariate functional data:
 
+        >>> import skfda
+        >>>
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
         >>> fraiman_muniz_depth(fd)
         array([ 0.5  ,  0.75 ,  0.925,  0.875])
 
         You can use ``pointwise`` to obtain the pointwise depth,
         before the integral is applied.
 
-        >>> depth, pointwise = fraiman_muniz_depth(fd, pointwise = True)
+        >>> pointwise = fraiman_muniz_depth(fd, pointwise = True)
         >>> pointwise
         array([[ 0.5 ,  0.5 ,  0.5 ,  0.5 ,  0.5 ,  0.5 ],
                [ 0.75,  0.75,  0.75,  0.75,  0.75,  0.75],
@@ -271,14 +310,15 @@ def fraiman_muniz_depth(fdatagrid, pointwise=False):
             fdatagrid.data_matrix[:, i, 0])
         ) for i in range(len(fdatagrid.sample_points[0]))]).T
 
-    interval_len = (fdatagrid.domain_range[0][1]
-                    - fdatagrid.domain_range[0][0])
-
-    depth = (scipy.integrate.simps(pointwise_depth,
-                                   fdatagrid.sample_points[0])
-             / interval_len)
-
     if pointwise:
-        return depth, pointwise_depth
+        return pointwise_depth
     else:
+
+        interval_len = (fdatagrid.domain_range[0][1]
+                        - fdatagrid.domain_range[0][0])
+
+        depth = (scipy.integrate.simps(pointwise_depth,
+                                       fdatagrid.sample_points[0])
+                 / interval_len)
+
         return depth

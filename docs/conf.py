@@ -21,7 +21,9 @@
 # import sys
 # sys.path.insert(0, '/home/miguel/Desktop/fda/fda')
 
+import os
 import sys
+
 import pkg_resources
 try:
     release = pkg_resources.get_distribution('scikit-fda').version
@@ -236,3 +238,4 @@ sphinx_gallery_conf = {
 }
 
 autosummary_generate = True
+os.environ['_SKFDA_USE_PYPLOT'] = '1'

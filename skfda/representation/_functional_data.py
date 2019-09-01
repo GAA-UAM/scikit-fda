@@ -14,7 +14,7 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .._utils import _coordinate_list, _list_of_arrays, constants
+from .._utils import _coordinate_list, _list_of_arrays, constants, _create_figure
 from .extrapolation import _parse_extrapolation
 
 
@@ -632,7 +632,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         elif ncols is not None and nrows is None:
             nrows = int(np.ceil(self.dim_codomain / ncols))
 
-        fig = plt.gcf()
+        fig = _create_figure()
         axes = fig.get_axes()
 
         # If it is not empty
@@ -888,7 +888,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         Returns:
             fig (figure object): figure object in which the graphs are plotted.
-            ax (axes object): axes in which the graphs are plotted.
 
         """
 
@@ -1011,7 +1010,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         self.set_labels(fig, ax, patches)
 
-        return fig, ax
+        return fig
 
     @abstractmethod
     def copy(self, **kwargs):

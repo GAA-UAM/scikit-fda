@@ -14,8 +14,9 @@ from sklearn.covariance import MinCovDet
 
 import matplotlib.pyplot as plt
 import numpy as np
-from skfda.exploratory.depth import modified_band_depth
 
+from ..._utils import _create_figure, _figure_to_svg
+from ..depth import modified_band_depth
 from ..outliers import (directional_outlyingness_stats,
                         DirectionalOutlierDetector)
 
@@ -249,7 +250,6 @@ class MagnitudeShapePlot:
 
         Returns:
             fig (figure object): figure object in which the graph is plotted.
-            ax (axes object): axes in which the graph is plotted.
 
         """
         colors = np.zeros((self.fdatagrid.n_samples, 4))
@@ -257,7 +257,8 @@ class MagnitudeShapePlot:
         colors[np.where(self.outliers == 0)] = self.colormap(self.color)
 
         if ax is None:
-            ax = matplotlib.pyplot.gca()
+            fig = _create_figure()
+            ax = fig.add_subplot(1, 1, 1)
 
         colors_rgba = [tuple(i) for i in colors]
         ax.scatter(self.points[:, 0].ravel(), self.points[:, 1].ravel(),
@@ -267,7 +268,7 @@ class MagnitudeShapePlot:
         ax.set_ylabel(self.ylabel)
         ax.set_title(self.title)
 
-        return ax.get_figure(), ax
+        return ax.get_figure()
 
     def __repr__(self):
         """Return repr(self)."""
@@ -286,10 +287,5 @@ class MagnitudeShapePlot:
                 f"\ntitle={repr(self.title)})").replace('\n', '\n    ')
 
     def _repr_svg_(self):
-        plt.figure()
-        fig, _ = self.plot()
-        output = BytesIO()
-        fig.savefig(output, format='svg')
-        data = output.getvalue()
-        plt.close(fig)
-        return data.decode('utf-8')
+        fig = self.plot()
+        return _figure_to_svg(fig)

@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ... import FDataGrid
+from ..._utils import _create_figure, _figure_to_svg
 from ..depth import modified_band_depth
 from ..outliers import _envelopes
 
@@ -76,13 +77,8 @@ class FDataBoxplot(ABC):
         pass
 
     def _repr_svg_(self):
-        plt.figure()
-        fig, _ = self.plot()
-        output = BytesIO()
-        fig.savefig(output, format='svg')
-        data = output.getvalue()
-        plt.close(fig)
-        return data.decode('utf-8')
+        fig = self.plot()
+        return _figure_to_svg(fig)
 
 
 class Boxplot(FDataBoxplot):
@@ -331,11 +327,7 @@ class Boxplot(FDataBoxplot):
                 specified if fig and ax are None.
 
         Returns:
-            (tuple): tuple containing:
-
-                * fig (figure): figure object in which the graphs are plotted.
-                * ax (list): axes in which the graphs are plotted.
-
+            fig (figure): figure object in which the graphs are plotted.
 
         """
 
@@ -400,7 +392,7 @@ class Boxplot(FDataBoxplot):
 
         self.fdatagrid.set_labels(fig, ax)
 
-        return fig, ax
+        return fig
 
     def __repr__(self):
         """Return repr(self)."""
@@ -609,10 +601,7 @@ class SurfaceBoxplot(FDataBoxplot):
                  specified if fig and ax are None.
 
         Returns:
-            (tuple): tuple containing:
-
-                * fig (figure): figure object in which the graphs are plotted.
-                * ax (list): axes in which the graphs are plotted.
+            fig (figure): figure object in which the graphs are plotted.
 
         """
         fig, ax = self.fdatagrid.generic_plotting_checks(fig, ax, nrows,
@@ -700,7 +689,7 @@ class SurfaceBoxplot(FDataBoxplot):
 
         self.fdatagrid.set_labels(fig, ax)
 
-        return fig, ax
+        return fig
 
     def __repr__(self):
         """Return repr(self)."""

@@ -14,7 +14,7 @@ from ... import FDataGrid
 
 
 def _check_r_to_r(f):
-    if f.ndim_domain != 1 or f.ndim_codomain != 1:
+    if f.dim_domain != 1 or f.dim_codomain != 1:
         raise NotImplementedError("Only accepts functions from R to R")
 
 
@@ -98,7 +98,7 @@ class _LinearSmoother(abc.ABC, BaseEstimator, TransformerMixin):
                 The data to smooth.
             y : Ignored
         Returns:
-            self (object)
+            FDataGrid: Functional data smoothed.
 
         """
 
@@ -117,7 +117,7 @@ class _LinearSmoother(abc.ABC, BaseEstimator, TransformerMixin):
             y (FDataGrid):
                 The target data. Typically the same as ``X``.
         Returns:
-            self (object)
+            float: Generalized cross validation score.
 
         """
         from .validation import LinearSmootherGeneralizedCVScorer

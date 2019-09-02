@@ -13,18 +13,18 @@ import pandas.api.extensions
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
-from .extrapolation import _parse_extrapolation
 
 from .._utils import _coordinate_list, _list_of_arrays, constants
+from .extrapolation import _parse_extrapolation
 
 
 class FData(ABC, pandas.api.extensions.ExtensionArray):
     """Defines the structure of a functional data object.
 
     Attributes:
-        nsamples (int): Number of samples.
-        ndim_domain (int): Dimension of the domain.
-        ndim_image (int): Dimension of the image.
+        n_samples (int): Number of samples.
+        dim_domain (int): Dimension of the domain.
+        dim_codomain (int): Dimension of the image.
         extrapolation (Extrapolation): Default extrapolation mode.
         dataset_label (str): name of the dataset.
         axes_labels (list): list containing the labels of the different
@@ -54,18 +54,18 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         if labels is not None:
 
             labels = np.asarray(labels)
-            if len(labels) > (self.ndim_domain + self.ndim_image):
+            if len(labels) > (self.dim_domain + self.dim_codomain):
                 raise ValueError("There must be a label for each of the "
                                  "dimensions of the domain and the image.")
-            if len(labels) < (self.ndim_domain + self.ndim_image):
-                diff = (self.ndim_domain + self.ndim_image) - len(labels)
+            if len(labels) < (self.dim_domain + self.dim_codomain):
+                diff = (self.dim_domain + self.dim_codomain) - len(labels)
                 labels = np.concatenate((labels, diff * [None]))
 
         self._axes_labels = labels
 
     @property
     @abstractmethod
-    def nsamples(self):
+    def n_samples(self):
         """Return the number of samples.
 
         Returns:
@@ -76,7 +76,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
     @property
     @abstractmethod
-    def ndim_domain(self):
+    def dim_domain(self):
         """Return number of dimensions of the domain.
 
         Returns:
@@ -87,24 +87,14 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
     @property
     @abstractmethod
-    def ndim_image(self):
-        """Return number of dimensions of the image.
-
-        Returns:
-            int: Number of dimensions of the image.
-
-        """
-        pass
-
-    @property
-    def ndim_codomain(self):
+    def dim_codomain(self):
         """Return number of dimensions of the codomain.
 
         Returns:
             int: Number of dimensions of the codomain.
 
         """
-        return self.ndim_image
+        pass
 
     @property
     @abstractmethod
@@ -168,9 +158,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         Returns:
             (np.ndarray): Numpy array with the eval_points, if
             evaluation_aligned is True with shape `number of evaluation points`
-            x `ndim_domain`. If the points are not aligned the shape of the
-            points will be `nsamples` x `number of evaluation points`
-            x `ndim_domain`.
+            x `dim_domain`. If the points are not aligned the shape of the
+            points will be `n_samples` x `number of evaluation points`
+            x `dim_domain`.
 
         """
 
@@ -184,19 +174,19 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         if evaluation_aligned:  # Samples evaluated at same eval points
 
             eval_points = eval_points.reshape((eval_points.shape[0],
-                                               self.ndim_domain))
+                                               self.dim_domain))
 
         else:  # Different eval_points for each sample
 
-            if eval_points.ndim < 2 or eval_points.shape[0] != self.nsamples:
+            if eval_points.ndim < 2 or eval_points.shape[0] != self.n_samples:
 
                 raise ValueError(f"eval_points should be a list "
-                                 f"of length {self.nsamples} with the "
+                                 f"of length {self.n_samples} with the "
                                  f"evaluation points for each sample.")
 
             eval_points = eval_points.reshape((eval_points.shape[0],
                                                eval_points.shape[1],
-                                               self.ndim_domain))
+                                               self.dim_domain))
 
         return eval_points
 
@@ -205,8 +195,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         Args:
             eval_points (np.ndarray): Array with shape `n_eval_points` x
-                `ndim_domain` with the evaluation points, or shape ´nsamples´ x
-                `n_eval_points` x `ndim_domain` with different evaluation
+                `dim_domain` with the evaluation points, or shape ´n_samples´ x
+                `n_eval_points` x `dim_domain` with different evaluation
                 points for each sample.
 
         Returns:
@@ -261,12 +251,12 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 in a different grid.
             keepdims (bool, optional): If the image dimension is equal to 1 and
                 keepdims is True the return matrix has shape
-                nsamples x eval_points x 1 else nsamples x eval_points.
+                n_samples x eval_points x 1 else n_samples x eval_points.
                 By default is used the value given during the instance of the
                 object.
 
         Returns:
-            (numpy.darray): Numpy array with ndim_domain + 1 dimensions with
+            (numpy.darray): Numpy array with dim_domain + 1 dimensions with
                 the result of the evaluation.
 
         Raises:
@@ -280,16 +270,16 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
             lengths = [len(ax) for ax in axes]
 
-            if len(axes) != self.ndim_domain:
+            if len(axes) != self.dim_domain:
                 raise ValueError(f"Length of axes should be "
-                                 f"{self.ndim_domain}")
+                                 f"{self.dim_domain}")
 
             eval_points = _coordinate_list(axes)
 
             res = self.evaluate(eval_points, derivative=derivative,
                                 extrapolation=extrapolation, keepdims=True)
 
-        elif self.ndim_domain == 1:
+        elif self.dim_domain == 1:
 
             eval_points = [ax.squeeze(0) for ax in axes]
 
@@ -300,32 +290,32 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                                  aligned_evaluation=False)
         else:
 
-            if len(axes) != self.nsamples:
+            if len(axes) != self.n_samples:
                 raise ValueError("Should be provided a list of axis per "
                                  "sample")
-            elif len(axes[0]) != self.ndim_domain:
+            elif len(axes[0]) != self.dim_domain:
                 raise ValueError(f"Incorrect length of axes. "
-                                 f"({self.ndim_domain}) != {len(axes[0])}")
+                                 f"({self.dim_domain}) != {len(axes[0])}")
 
             lengths = [len(ax) for ax in axes[0]]
-            eval_points = np.empty((self.nsamples,
+            eval_points = np.empty((self.n_samples,
                                     np.prod(lengths),
-                                    self.ndim_domain))
+                                    self.dim_domain))
 
-            for i in range(self.nsamples):
+            for i in range(self.n_samples):
                 eval_points[i] = _coordinate_list(axes[i])
 
             res = self.evaluate(eval_points, derivative=derivative,
                                 extrapolation=extrapolation,
                                 keepdims=True, aligned_evaluation=False)
 
-        shape = [self.nsamples] + lengths
+        shape = [self.n_samples] + lengths
 
         if keepdims is None:
             keepdims = self.keepdims
 
-        if self.ndim_image != 1 or keepdims:
-            shape += [self.ndim_image]
+        if self.dim_codomain != 1 or keepdims:
+            shape += [self.dim_codomain]
 
         # Roll the list of result in a list
         return res.reshape(shape)
@@ -348,11 +338,11 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         Returns:
             (ndarray): Matrix with the points evaluated with shape
-            `nsamples` x `number of points evaluated` x `ndim_image`.
+            `n_samples` x `number of points evaluated` x `dim_codomain`.
 
         """
-        res = np.empty((self.nsamples, index_matrix.shape[-1],
-                        self.ndim_image))
+        res = np.empty((self.n_samples, index_matrix.shape[-1],
+                        self.dim_codomain))
 
         # Case aligned evaluation
         if index_matrix.ndim == 1:
@@ -377,13 +367,13 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         Args:
             eval_points (numpy.ndarray): Numpy array with shape
-                `(len(eval_points), ndim_domain)` with the evaluation points.
+                `(len(eval_points), dim_domain)` with the evaluation points.
                 Each entry represents the coordinate of a point.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape `(n_samples,
-                len(eval_points), ndim_image)` with the result of the
+                len(eval_points), dim_codomain)` with the result of the
                 evaluation. The entry (i,j,k) will contain the value k-th image
                 dimension of the i-th sample, at the j-th evaluation point.
 
@@ -401,13 +391,13 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         Args:
             eval_points (numpy.ndarray): Numpy array with shape
-                `(n_samples, len(eval_points), ndim_domain)` with the
+                `(n_samples, len(eval_points), dim_domain)` with the
                 evaluation points for each sample.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape `(n_samples,
-                len(eval_points), ndim_image)` with the result of the
+                len(eval_points), dim_codomain)` with the result of the
                 evaluation. The entry (i,j,k) will contain the value k-th image
                 dimension of the i-th sample, at the j-th evaluation point.
 
@@ -432,13 +422,13 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             grid (bool, optional): Whether to evaluate the results on a grid
                 spanned by the input arrays, or at points specified by the
                 input arrays. If true the eval_points should be a list of size
-                ndim_domain with the corresponding times for each axis. The
-                return matrix has shape nsamples x len(t1) x len(t2) x ... x
-                len(t_ndim_domain) x ndim_image. If the domain dimension is 1
+                dim_domain with the corresponding times for each axis. The
+                return matrix has shape n_samples x len(t1) x len(t2) x ... x
+                len(t_dim_domain) x dim_codomain. If the domain dimension is 1
                 the parameter has no efect. Defaults to False.
             keepdims (bool, optional): If the image dimension is equal to 1 and
                 keepdims is True the return matrix has shape
-                nsamples x eval_points x 1 else nsamples x eval_points.
+                n_samples x eval_points x 1 else n_samples x eval_points.
                 By default is used the value given during the instance of the
                 object.
 
@@ -528,7 +518,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             keepdims = self.keepdims
 
         # Delete last axis if not keepdims and
-        if self.ndim_image == 1 and not keepdims:
+        if self.dim_codomain == 1 and not keepdims:
             res = res.reshape(res.shape[:-1])
 
         return res
@@ -551,13 +541,13 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             grid (bool, optional): Whether to evaluate the results on a grid
                 spanned by the input arrays, or at points specified by the
                 input arrays. If true the eval_points should be a list of size
-                ndim_domain with the corresponding times for each axis. The
-                return matrix has shape nsamples x len(t1) x len(t2) x ... x
-                len(t_ndim_domain) x ndim_image. If the domain dimension is 1
+                dim_domain with the corresponding times for each axis. The
+                return matrix has shape n_samples x len(t1) x len(t2) x ... x
+                len(t_dim_domain) x dim_codomain. If the domain dimension is 1
                 the parameter has no efect. Defaults to False.
             keepdims (bool, optional): If the image dimension is equal to 1 and
                 keepdims is True the return matrix has shape
-                nsamples x eval_points x 1 else nsamples x eval_points.
+                n_samples x eval_points x 1 else n_samples x eval_points.
                 By default is used the value given during the instance of the
                 object.
 
@@ -629,18 +619,18 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         """
 
-        if self.ndim_domain == 1:
+        if self.dim_domain == 1:
             projection = None
         else:
             projection = '3d'
 
         if ncols is None and nrows is None:
-            ncols = int(np.ceil(np.sqrt(self.ndim_image)))
-            nrows = int(np.ceil(self.ndim_image / ncols))
+            ncols = int(np.ceil(np.sqrt(self.dim_codomain)))
+            nrows = int(np.ceil(self.dim_codomain / ncols))
         elif ncols is None and nrows is not None:
-            nrows = int(np.ceil(self.ndim_image / nrows))
+            nrows = int(np.ceil(self.dim_codomain / nrows))
         elif ncols is not None and nrows is None:
-            nrows = int(np.ceil(self.ndim_image / ncols))
+            nrows = int(np.ceil(self.dim_codomain / ncols))
 
         fig = plt.gcf()
         axes = fig.get_axes()
@@ -661,19 +651,19 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
             # If compatible uses the same figure
             if (same_projection and geometry == (nrows, ncols) and
-                    self.ndim_image == len(axes)):
+                    self.dim_codomain == len(axes)):
                 return fig, axes
 
             else:  # Create new figure if it is not compatible
                 fig = plt.figure()
 
-        for i in range(self.ndim_image):
+        for i in range(self.dim_codomain):
             fig.add_subplot(nrows, ncols, i + 1, projection=projection)
 
-        if ncols > 1 and self.axes_labels is not None and self.ndim_image > 1:
+        if ncols > 1 and self.axes_labels is not None and self.dim_codomain > 1:
             plt.subplots_adjust(wspace=0.4)
 
-        if nrows > 1 and self.axes_labels is not None and self.ndim_image > 1:
+        if nrows > 1 and self.axes_labels is not None and self.dim_codomain > 1:
             plt.subplots_adjust(hspace=0.4)
 
         ax = fig.get_axes()
@@ -694,9 +684,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             labels = None
         else:
 
-            labels = self.axes_labels[:self.ndim_domain].tolist()
+            labels = self.axes_labels[:self.dim_domain].tolist()
             image_label = np.atleast_1d(
-                self.axes_labels[self.ndim_domain:][key])
+                self.axes_labels[self.dim_domain:][key])
             labels.extend(image_label.tolist())
 
         return labels
@@ -713,19 +703,19 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             self.concatenate(*others, as_coordinates=True).
 
         """
-        # Labels should be None or a list of length self.ndim_domain +
-        # self.ndim_image.
+        # Labels should be None or a list of length self.dim_domain +
+        # self.dim_codomain.
 
         if self.axes_labels is None:
-            labels = (self.ndim_domain + self.ndim_image) * [None]
+            labels = (self.dim_domain + self.dim_codomain) * [None]
         else:
             labels = self.axes_labels.tolist()
 
         for other in others:
             if other.axes_labels is None:
-                labels.extend(other.ndim_image * [None])
+                labels.extend(other.dim_codomain * [None])
             else:
-                labels.extend(list(other.axes_labels[self.ndim_domain:]))
+                labels.extend(list(other.axes_labels[self.dim_domain:]))
 
         if all(label is None for label in labels):
             labels = None
@@ -750,7 +740,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             if self.dataset_label is not None:
                 fig.suptitle(self.dataset_label)
             ax = fig.get_axes()
-            if patches is not None and self.ndim_image > 1:
+            if patches is not None and self.dim_codomain > 1:
                 fig.legend(handles=patches)
             elif patches is not None:
                 ax[0].legend(handles=patches)
@@ -762,7 +752,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         if self.axes_labels is not None:
             if ax[0].name == '3d':
-                for i in range(self.ndim_image):
+                for i in range(self.dim_codomain):
                     if self.axes_labels[0] is not None:
                         ax[i].set_xlabel(self.axes_labels[0])
                     if self.axes_labels[1] is not None:
@@ -770,7 +760,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                     if self.axes_labels[i + 2] is not None:
                         ax[i].set_zlabel(self.axes_labels[i + 2])
             else:
-                for i in range(self.ndim_image):
+                for i in range(self.dim_codomain):
                     if self.axes_labels[0] is not None:
                         ax[i].set_xlabel(self.axes_labels[0])
                     if self.axes_labels[i + 1] is not None:
@@ -803,7 +793,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 * ax (list): axes in which the graphs are plotted.
 
         """
-        if self.ndim_domain > 2:
+        if self.dim_domain > 2:
             raise NotImplementedError("Plot only supported for functional data"
                                       "modeled in at most 3 dimensions.")
 
@@ -811,11 +801,11 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             raise ValueError("fig and axes parameters cannot be passed as "
                              "arguments at the same time.")
 
-        if fig is not None and len(fig.get_axes()) != self.ndim_image:
+        if fig is not None and len(fig.get_axes()) != self.dim_codomain:
             raise ValueError("Number of axes of the figure must be equal to"
                              "the dimension of the image.")
 
-        if ax is not None and len(ax) != self.ndim_image:
+        if ax is not None and len(ax) != self.dim_codomain:
             raise ValueError("Number of axes must be equal to the dimension "
                              "of the image.")
 
@@ -827,7 +817,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                              " fig is None and ax is None.")
 
         if ((nrows is not None and ncols is not None)
-                and ((nrows * ncols) < self.ndim_image)):
+                and ((nrows * ncols) < self.dim_codomain)):
             raise ValueError("The number of columns and the number of rows "
                              "specified is incorrect.")
 
@@ -891,8 +881,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             label_names (list of str): name of each of the groups which appear
                 in a legend, there must be one for each one. Defaults to None
                 and the legend is not shown.
-            **kwargs: if ndim_domain is 1, keyword arguments to be passed to
-                the matplotlib.pyplot.plot function; if ndim_domain is 2,
+            **kwargs: if dim_domain is 1, keyword arguments to be passed to
+                the matplotlib.pyplot.plot function; if dim_domain is 2,
                 keyword arguments to be passed to the
                 matplotlib.pyplot.plot_surface function.
 
@@ -965,18 +955,18 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         else:
 
             if 'color' in kwargs:
-                sample_colors = self.nsamples * [kwargs.get("color")]
+                sample_colors = self.n_samples * [kwargs.get("color")]
                 kwargs.pop('color')
 
             elif 'c' in kwargs:
-                sample_colors = self.nsamples * [kwargs.get("color")]
+                sample_colors = self.n_samples * [kwargs.get("color")]
                 kwargs.pop('c')
 
             else:
-                sample_colors = np.empty((self.nsamples,)).astype(str)
+                sample_colors = np.empty((self.n_samples,)).astype(str)
                 next_color = True
 
-        if self.ndim_domain == 1:
+        if self.dim_domain == 1:
 
             if npoints is None:
                 npoints = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
@@ -985,8 +975,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             eval_points = np.linspace(*domain_range[0], npoints)
             mat = self(eval_points, derivative=derivative, keepdims=True)
 
-            for i in range(self.ndim_image):
-                for j in range(self.nsamples):
+            for i in range(self.dim_codomain):
+                for j in range(self.n_samples):
                     if sample_labels is None and next_color:
                         sample_colors[j] = ax[i]._get_lines.get_next_color()
                     ax[i].plot(eval_points, mat[j, ..., i].T,
@@ -1012,8 +1002,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
             X, Y = np.meshgrid(x, y, indexing='ij')
 
-            for i in range(self.ndim_image):
-                for j in range(self.nsamples):
+            for i in range(self.dim_codomain):
+                for j in range(self.n_samples):
                     if sample_labels is None and next_color:
                         sample_colors[j] = ax[i]._get_lines.get_next_color()
                     ax[i].plot_surface(X, Y, Z[j, ..., i],
@@ -1037,8 +1027,10 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         pass
 
     @abstractmethod
-    def mean(self):
+    def mean(self, weights=None):
         """Compute the mean of all the samples.
+
+        weights (array-like, optional): List of weights.
 
         Returns:
             FData : A FData object with just one sample representing
@@ -1173,13 +1165,13 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     def __iter__(self):
         """Iterate over the samples"""
 
-        for i in range(self.nsamples):
+        for i in range(self.n_samples):
             yield self[i]
 
     def __len__(self):
         """Returns the number of samples of the FData object."""
 
-        return self.nsamples
+        return self.n_samples
 
     #####################################################################
     # Numpy methods
@@ -1237,7 +1229,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         Returns:
             na_values (np.ndarray): Array full of False values.
         """
-        return np.zeros(self.nsamples, dtype=bool)
+        return np.zeros(self.n_samples, dtype=bool)
 
     def take(self, indices, allow_fill=False, fill_value=None, axis=0):
         """Take elements from an array.

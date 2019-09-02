@@ -1,12 +1,15 @@
 
 
-import numpy as np
 import scipy.integrate
+
+import numpy as np
 import optimum_reparam
+
 from . import invert_warping
+from ... import FDataGrid
 from ._registration_utils import _normalize_scale
 
-from ... import FDataGrid
+
 from...representation.interpolation import SplineInterpolator
 
 
@@ -53,13 +56,13 @@ def to_srsf(fdatagrid, eval_points=None):
 
     """
 
-    if fdatagrid.ndim_domain > 1:
+    if fdatagrid.dim_domain > 1:
         raise ValueError("Only support functional objects with unidimensional "
                          "domain.")
 
-    elif fdatagrid.ndim_image > 1:
+    elif fdatagrid.dim_codomain > 1:
         raise ValueError("Only support functional objects with unidimensional "
-                         "image.")
+                         "codomain.")
 
     elif eval_points is None:
         eval_points = fdatagrid.sample_points[0]
@@ -116,11 +119,11 @@ def from_srsf(fdatagrid, initial=None, *, eval_points=None):
 
     """
 
-    if fdatagrid.ndim_domain > 1:
+    if fdatagrid.dim_domain > 1:
         raise ValueError("Only support functional objects with "
                          "unidimensional domain.")
 
-    elif fdatagrid.ndim_image > 1:
+    elif fdatagrid.dim_codomain > 1:
         raise ValueError("Only support functional objects with unidimensional "
                          "image.")
 
@@ -138,7 +141,8 @@ def from_srsf(fdatagrid, initial=None, *, eval_points=None):
 
     if initial is not None:
         initial = np.atleast_1d(initial)
-        initial = initial.reshape(fdatagrid.nsamples, 1, fdatagrid.ndim_image)
+        initial = initial.reshape(
+            fdatagrid.n_samples, 1, fdatagrid.dim_codomain)
         initial = np.repeat(initial, len(eval_points), axis=1)
         f_data_matrix += initial
 
@@ -256,7 +260,7 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
     """
 
     # Check of params
-    if fdatagrid.ndim_domain != 1 or fdatagrid.ndim_image != 1:
+    if fdatagrid.dim_domain != 1 or fdatagrid.dim_codomain != 1:
 
         raise ValueError("Not supported multidimensional functional objects.")
 
@@ -264,8 +268,8 @@ def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
         template = elastic_mean(fdatagrid, lam=lam, eval_points=eval_points,
                                 **kwargs)
 
-    elif ((template.nsamples != 1 and template.nsamples != fdatagrid.nsamples)
-          or template.ndim_domain != 1 or template.ndim_image != 1):
+    elif ((template.n_samples != 1 and template.n_samples != fdatagrid.n_samples)
+          or template.dim_domain != 1 or template.dim_codomain != 1):
 
         raise ValueError("The template should contain one sample to align all"
                          "the curves to the same function or the same number "
@@ -450,7 +454,7 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
 
     n_points = mu.shape[0]
 
-    sine = np.empty((warping.nsamples, 1))
+    sine = np.empty((warping.n_samples, 1))
 
     for _ in range(iter):
         # Dot product
@@ -569,11 +573,11 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
 
     """
 
-    if fdatagrid.ndim_domain != 1 or fdatagrid.ndim_image != 1:
+    if fdatagrid.dim_domain != 1 or fdatagrid.dim_codomain != 1:
         raise ValueError("Not supported multidimensional functional objects.")
 
-    if fdatagrid_srsf is not None and (fdatagrid_srsf.ndim_domain != 1 or
-                                       fdatagrid_srsf.ndim_image != 1):
+    if fdatagrid_srsf is not None and (fdatagrid_srsf.dim_domain != 1 or
+                                       fdatagrid_srsf.dim_codomain != 1):
         raise ValueError("Not supported multidimensional functional objects.")
 
     elif fdatagrid_srsf is None:

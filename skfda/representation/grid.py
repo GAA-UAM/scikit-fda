@@ -83,7 +83,7 @@ class FDataGrid(FData):
         >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
         >>> sample_points = [2, 4]
         >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> fd.ndim_domain, fd.ndim_image
+        >>> fd.dim_domain, fd.dim_codomain
         (1, 2)
 
         Representation of a functional data object with 2 samples
@@ -92,7 +92,7 @@ class FDataGrid(FData):
         >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
         >>> sample_points = [[2, 4], [3,6]]
         >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> fd.ndim_domain, fd.ndim_image
+        >>> fd.dim_domain, fd.dim_codomain
         (2, 1)
 
     """
@@ -120,7 +120,7 @@ class FDataGrid(FData):
 
         def __len__(self):
             """Return the number of coordinates."""
-            return self._fdatagrid.ndim_image
+            return self._fdatagrid.dim_codomain
 
     def __init__(self, data_matrix, sample_points=None,
                  domain_range=None, dataset_label=None,
@@ -160,7 +160,7 @@ class FDataGrid(FData):
 
             self.sample_points = _list_of_arrays(sample_points)
 
-            data_shape = self.data_matrix.shape[1: 1 + self.ndim_domain]
+            data_shape = self.data_matrix.shape[1: 1 + self.dim_domain]
             sample_points_shape = [len(i) for i in self.sample_points]
 
             if not np.array_equal(data_shape, sample_points_shape):
@@ -171,7 +171,7 @@ class FDataGrid(FData):
 
         self._sample_range = np.array(
             [(self.sample_points[i][0], self.sample_points[i][-1])
-             for i in range(self.ndim_domain)])
+             for i in range(self.dim_domain)])
 
         if domain_range is None:
             self._domain_range = self.sample_range
@@ -183,9 +183,9 @@ class FDataGrid(FData):
             # dimensions in the domain and 2 columns
             if (self._domain_range.ndim != 2
                     or self._domain_range.shape[1] != 2
-                    or self._domain_range.shape[0] != self.ndim_domain):
+                    or self._domain_range.shape[0] != self.dim_domain):
                 raise ValueError("Incorrect shape of domain_range.")
-            for i in range(self.ndim_domain):
+            for i in range(self.dim_domain):
                 if (self._domain_range[i, 0] > self.sample_points[i][0]
                         or self._domain_range[i, -1] < self.sample_points[i]
                         [-1]):
@@ -193,7 +193,7 @@ class FDataGrid(FData):
                                      "range.")
 
         # Adjust the data matrix if the dimension of the image is one
-        if self.data_matrix.ndim == 1 + self.ndim_domain:
+        if self.data_matrix.ndim == 1 + self.dim_domain:
             self.data_matrix = self.data_matrix[..., np.newaxis]
 
         self.interpolator = interpolator
@@ -219,7 +219,7 @@ class FDataGrid(FData):
         return self.copy(data_matrix=self.data_matrix.round(decimals))
 
     @property
-    def ndim_domain(self):
+    def dim_domain(self):
         """Return number of dimensions of the domain.
 
         Returns:
@@ -229,7 +229,7 @@ class FDataGrid(FData):
         return len(self.sample_points)
 
     @property
-    def ndim_image(self):
+    def dim_codomain(self):
         """Return number of dimensions of the image.
 
         Returns:
@@ -240,7 +240,7 @@ class FDataGrid(FData):
             # The dimension of the image is the length of the array that can
             #  be extracted from the data_matrix using all the dimensions of
             #  the domain.
-            return self.data_matrix.shape[1 + self.ndim_domain]
+            return self.data_matrix.shape[1 + self.dim_domain]
         # If there is no array that means the dimension of the image is 1.
         except IndexError:
             return 1
@@ -259,8 +259,8 @@ class FDataGrid(FData):
             We will construct a dataset of curves in :math:`\mathbb{R}^3`
 
             >>> from skfda.datasets import make_multimodal_samples
-            >>> fd = make_multimodal_samples(ndim_image=3, random_state=0)
-            >>> fd.ndim_image
+            >>> fd = make_multimodal_samples(dim_codomain=3, random_state=0)
+            >>> fd.dim_codomain
             3
 
             The functions of this dataset are vectorial functions
@@ -273,20 +273,20 @@ class FDataGrid(FData):
 
             The object returned has image dimension equal to 1
 
-            >>> fd_0.ndim_image
+            >>> fd_0.dim_codomain
             1
 
             Or we can get multiple components, it can be accesed as a 1-d
             numpy array of coordinates, for example, :math:`(f_0(t), f_1(t))`.
 
             >>> fd_01 = fd.coordinates[0:2]
-            >>> fd_01.ndim_image
+            >>> fd_01.dim_codomain
             2
 
             We can use this method to iterate throught all the coordinates.
 
             >>> for fd_i in fd.coordinates:
-            ...     fd_i.ndim_image
+            ...     fd_i.dim_codomain
             1
             1
             1
@@ -303,7 +303,7 @@ class FDataGrid(FData):
         return FDataGrid._CoordinateIterator(self)
 
     @property
-    def nsamples(self):
+    def n_samples(self):
         """Return number of rows of the data_matrix. Also the number of samples.
 
         Returns:
@@ -342,18 +342,6 @@ class FDataGrid(FData):
             Do not have to be equal to the sample_range.
         """
         return self._domain_range
-
-    @property
-    def shape(self):
-        """Dimensions (aka shape) of the data_matrix.
-
-        Returns:
-            list of int: List containing the length of the matrix on each of
-            its axis. If the matrix is 2 dimensional shape returns [number of
-            rows, number of columns].
-
-        """
-        return self.data_matrix.shape
 
     @property
     def interpolator(self):
@@ -470,7 +458,7 @@ class FDataGrid(FData):
                 ...)
 
         """
-        if self.ndim_domain != 1:
+        if self.dim_domain != 1:
             raise NotImplementedError(
                 "This method only works when the dimension "
                 "of the domain of the FDatagrid object is "
@@ -478,7 +466,7 @@ class FDataGrid(FData):
         if order < 1:
             raise ValueError("The order of a derivative has to be greater "
                              "or equal than 1.")
-        if self.ndim_domain > 1 or self.ndim_image > 1:
+        if self.dim_domain > 1 or self.dim_codomain > 1:
             raise NotImplementedError("Not implemented for 2 or more"
                                       " dimensional data.")
         if np.isnan(self.data_matrix).any():
@@ -488,7 +476,7 @@ class FDataGrid(FData):
         sample_points = self.sample_points[0]
         for _ in range(order):
             mdata = []
-            for i in range(self.nsamples):
+            for i in range(self.n_samples):
                 arr = (np.diff(data_matrix[i]) /
                        (sample_points[1:]
                         - sample_points[:-1]))
@@ -513,14 +501,21 @@ class FDataGrid(FData):
         if not np.array_equal(self.sample_points, other.sample_points):
             raise ValueError("Sample points for both objects must be equal")
 
-    def mean(self):
+    def mean(self, weights=None):
         """Compute the mean of all the samples.
 
+        weights (array-like, optional): List of weights.
         Returns:
             FDataGrid : A FDataGrid object with just one sample representing
             the mean of all the samples in the original object.
 
         """
+        if weights is not None:
+
+            return self.copy(data_matrix=np.average(
+                self.data_matrix, weights=weights, axis=0)[np.newaxis, ...]
+            )
+
         return self.copy(data_matrix=self.data_matrix.mean(axis=0,
                                                            keepdims=True))
 
@@ -771,10 +766,10 @@ class FDataGrid(FData):
             raise ValueError("All the FDataGrids must be sampled in the  same "
                              "sample points.")
 
-        elif any([self.nsamples != other.nsamples for other in others]):
+        elif any([self.n_samples != other.n_samples for other in others]):
 
             raise ValueError(f"All the FDataGrids must contain the same "
-                             f"number of samples {self.nsamples} to "
+                             f"number of samples {self.n_samples} to "
                              f"concatenate as a new coordinate.")
 
         data = [self.data_matrix] + [other.data_matrix for other in others]
@@ -815,17 +810,17 @@ class FDataGrid(FData):
         """
         fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
 
-        if self.ndim_domain == 1:
-            for i in range(self.ndim_image):
-                for j in range(self.nsamples):
+        if self.dim_domain == 1:
+            for i in range(self.dim_codomain):
+                for j in range(self.n_samples):
                     ax[i].scatter(self.sample_points[0],
                                   self.data_matrix[j, :, i].T, **kwargs)
         else:
             X = self.sample_points[0]
             Y = self.sample_points[1]
             X, Y = np.meshgrid(X, Y)
-            for i in range(self.ndim_image):
-                for j in range(self.nsamples):
+            for i in range(self.dim_codomain):
+                for j in range(self.n_samples):
                     ax[i].scatter(X, Y, self.data_matrix[j, :, :, i].T,
                                   **kwargs)
 
@@ -861,10 +856,10 @@ class FDataGrid(FData):
             array([[ 0.  , 0.71, 0.71]])
 
         """
-        if self.ndim_domain > 1:
+        if self.dim_domain > 1:
             raise NotImplementedError("Only support 1 dimension on the "
                                       "domain.")
-        elif self.ndim_image > 1:
+        elif self.dim_codomain > 1:
             raise NotImplementedError("Only support 1 dimension on the "
                                       "image.")
 
@@ -974,11 +969,11 @@ class FDataGrid(FData):
         shifts = np.array(shifts)
 
         # Case unidimensional treated as the multidimensional
-        if self.ndim_domain == 1 and shifts.ndim == 1 and shifts.shape[0] != 1:
+        if self.dim_domain == 1 and shifts.ndim == 1 and shifts.shape[0] != 1:
             shifts = shifts[:, np.newaxis]
 
         # Case same shift for all the curves
-        if shifts.shape[0] == self.ndim_domain and shifts.ndim == 1:
+        if shifts.shape[0] == self.dim_domain and shifts.ndim == 1:
 
             # Column vector with shapes
             shifts = np.atleast_2d(shifts).T
@@ -988,10 +983,10 @@ class FDataGrid(FData):
 
             return self.copy(sample_points=sample_points,
                              domain_range=domain_range)
-        if shifts.shape[0] != self.nsamples:
+        if shifts.shape[0] != self.n_samples:
             raise ValueError(f"shifts vector ({shifts.shape[0]}) must have the"
                              f" same length than the number of samples "
-                             f"({self.nsamples})")
+                             f"({self.n_samples})")
 
         if eval_points is None:
             eval_points = self.sample_points
@@ -1006,7 +1001,7 @@ class FDataGrid(FData):
             eval_points = [eval_points[i][
                 np.logical_and(eval_points[i] >= domain[i, 0],
                                eval_points[i] <= domain[i, 1])]
-                           for i in range(self.ndim_domain)]
+                           for i in range(self.dim_domain)]
 
         else:
             domain = self.domain_range
@@ -1014,10 +1009,10 @@ class FDataGrid(FData):
         eval_points = np.asarray(eval_points)
 
         eval_points_repeat = np.repeat(eval_points[np.newaxis, :],
-                                       self.nsamples, axis=0)
+                                       self.n_samples, axis=0)
 
         # Solve problem with cartesian and matrix indexing
-        if self.ndim_domain > 1:
+        if self.dim_domain > 1:
             shifts[:, :2] = np.flip(shifts[:, :2], axis=1)
 
         shifts = np.repeat(shifts[..., np.newaxis],
@@ -1044,17 +1039,17 @@ class FDataGrid(FData):
             eval_points (array_like): Points to perform the evaluation.
         """
 
-        if self.ndim_domain != fd.ndim_image:
+        if self.dim_domain != fd.dim_codomain:
             raise ValueError(f"Dimension of codomain of first function do not "
                              f"match with the domain of the second function "
-                             f"({self.ndim_domain})!=({fd.ndim_image}).")
+                             f"({self.dim_domain})!=({fd.dim_codomain}).")
 
         # All composed with same function
-        if fd.nsamples == 1 and self.nsamples != 1:
-            fd = fd.copy(data_matrix=np.repeat(fd.data_matrix, self.nsamples,
+        if fd.n_samples == 1 and self.n_samples != 1:
+            fd = fd.copy(data_matrix=np.repeat(fd.data_matrix, self.n_samples,
                                                axis=0))
 
-        if fd.ndim_domain == 1:
+        if fd.dim_domain == 1:
             if eval_points is None:
                 try:
                     eval_points = fd.sample_points[0]
@@ -1073,11 +1068,11 @@ class FDataGrid(FData):
 
             lengths = [len(ax) for ax in eval_points]
 
-            eval_points_transformation = np.empty((self.nsamples,
+            eval_points_transformation = np.empty((self.n_samples,
                                                    np.prod(lengths),
-                                                   self.ndim_domain))
+                                                   self.dim_domain))
 
-            for i in range(self.nsamples):
+            for i in range(self.n_samples):
                 eval_points_transformation[i] = np.array(
                     list(map(np.ravel, grid_transformation[i].T))
                 ).T
@@ -1085,8 +1080,8 @@ class FDataGrid(FData):
             data_flatten = self(eval_points_transformation,
                                 aligned_evaluation=False)
 
-            data_matrix = data_flatten.reshape((self.nsamples, *lengths,
-                                                self.ndim_image))
+            data_matrix = data_flatten.reshape((self.n_samples, *lengths,
+                                                self.dim_codomain))
 
         return self.copy(data_matrix=data_matrix,
                          sample_points=eval_points,
@@ -1121,11 +1116,11 @@ class FDataGrid(FData):
         if isinstance(key, tuple):
             # If there are not values for every dimension, the remaining ones
             # are kept
-            key += (slice(None),) * (self.ndim_domain + 1 - len(key))
+            key += (slice(None),) * (self.dim_domain + 1 - len(key))
 
             sample_points = [self.sample_points[i][subkey]
                              for i, subkey in enumerate(
-                                 key[1:1 + self.ndim_domain])]
+                                 key[1:1 + self.dim_domain])]
 
             return self.copy(data_matrix=self.data_matrix[key],
                              sample_points=sample_points)

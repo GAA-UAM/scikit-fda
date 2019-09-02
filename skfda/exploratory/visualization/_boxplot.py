@@ -102,18 +102,18 @@ class Boxplot(FDataBoxplot):
 
     Attributes:
         fdatagrid (FDataGrid): Object containing the data.
-        median (array, (fdatagrid.ndim_image, nsample_points)): contains
+        median (array, (fdatagrid.dim_codomain, nsample_points)): contains
             the median/s.
-        central_envelope (array, (fdatagrid.ndim_image, 2, nsample_points)):
+        central_envelope (array, (fdatagrid.dim_codomain, 2, nsample_points)):
             contains the central envelope/s.
-        non_outlying_envelope (array, (fdatagrid.ndim_image, 2,
+        non_outlying_envelope (array, (fdatagrid.dim_codomain, 2,
             nsample_points)):
             contains the non-outlying envelope/s.
         colormap (matplotlib.colors.LinearSegmentedColormap): Colormap from
             which the colors to represent the central regions are selected.
-        envelopes (array, (fdatagrid.ndim_image * ncentral_regions, 2,
+        envelopes (array, (fdatagrid.dim_codomain * ncentral_regions, 2,
             nsample_points)): contains the region envelopes.
-        outliers (array, (fdatagrid.ndim_image, fdatagrid.nsamples)):
+        outliers (array, (fdatagrid.dim_codomain, fdatagrid.n_samples)):
             contains the outliers.
         barcol (string): Color of the envelopes and vertical lines.
         outliercol (string): Color of the ouliers.
@@ -229,7 +229,7 @@ class Boxplot(FDataBoxplot):
         """
         FDataBoxplot.__init__(self, factor)
 
-        if fdatagrid.ndim_domain != 1:
+        if fdatagrid.dim_domain != 1:
             raise ValueError(
                 "Function only supports FDataGrid with domain dimension 1.")
 
@@ -315,7 +315,7 @@ class Boxplot(FDataBoxplot):
 
     def plot(self, fig=None, ax=None, nrows=None, ncols=None):
         """Visualization of the functional boxplot of the fdatagrid
-        (ndim_domain=1).
+        (dim_domain=1).
 
         Args:
             fig (figure object, optional): figure over with the graphs are
@@ -351,7 +351,7 @@ class Boxplot(FDataBoxplot):
 
         outliers = self.fdatagrid[self.outliers]
 
-        for m in range(self.fdatagrid.ndim_image):
+        for m in range(self.fdatagrid.dim_codomain):
 
             # Outliers
             for o in outliers:
@@ -429,11 +429,11 @@ class SurfaceBoxplot(FDataBoxplot):
 
     Attributes:
         fdatagrid (FDataGrid): Object containing the data.
-        median (array, (fdatagrid.ndim_image, lx, ly)): contains
+        median (array, (fdatagrid.dim_codomain, lx, ly)): contains
             the median/s.
-        central_envelope (array, (fdatagrid.ndim_image, 2, lx, ly)):
+        central_envelope (array, (fdatagrid.dim_codomain, 2, lx, ly)):
             contains the central envelope/s.
-        non_outlying_envelope (array,(fdatagrid.ndim_image, 2, lx, ly)):
+        non_outlying_envelope (array,(fdatagrid.dim_codomain, 2, lx, ly)):
             contains the non-outlying envelope/s.
         colormap (matplotlib.colors.LinearSegmentedColormap): Colormap from
             which the colors to represent the central regions are selected.
@@ -525,7 +525,7 @@ class SurfaceBoxplot(FDataBoxplot):
         """
         FDataBoxplot.__init__(self, factor)
 
-        if fdatagrid.ndim_domain != 2:
+        if fdatagrid.dim_domain != 2:
             raise ValueError(
                 "Class only supports FDataGrid with domain dimension 2.")
 
@@ -593,7 +593,7 @@ class SurfaceBoxplot(FDataBoxplot):
         self._outcol = value
 
     def plot(self, fig=None, ax=None, nrows=None, ncols=None):
-        """Visualization of the surface boxplot of the fdatagrid (ndim_domain=2).
+        """Visualization of the surface boxplot of the fdatagrid (dim_domain=2).
 
          Args:
              fig (figure object, optional): figure over with the graphs are
@@ -623,7 +623,7 @@ class SurfaceBoxplot(FDataBoxplot):
         ly = len(y)
         X, Y = np.meshgrid(x, y)
 
-        for m in range(self.fdatagrid.ndim_image):
+        for m in range(self.fdatagrid.dim_codomain):
 
             # mean sample
             ax[m].plot_wireframe(X, Y, np.squeeze(self.median[..., m]).T,

@@ -65,9 +65,9 @@ class TestFDataGrid(unittest.TestCase):
         fd1.axes_labels = ["x", "y"]
         fd = fd1.concatenate(fd2)
 
-        np.testing.assert_equal(fd.nsamples, 4)
-        np.testing.assert_equal(fd.ndim_image, 1)
-        np.testing.assert_equal(fd.ndim_domain, 1)
+        np.testing.assert_equal(fd.n_samples, 4)
+        np.testing.assert_equal(fd.dim_codomain, 1)
+        np.testing.assert_equal(fd.dim_domain, 1)
         np.testing.assert_array_equal(fd.data_matrix[..., 0],
                                       [[1, 2, 3, 4, 5], [2, 3, 4, 5, 6],
                                        [3, 4, 5, 6, 7], [4, 5, 6, 7, 8]])
@@ -81,9 +81,9 @@ class TestFDataGrid(unittest.TestCase):
         fd2.axes_labels = ["w", "t"]
         fd = fd1.concatenate(fd2, as_coordinates=True)
 
-        np.testing.assert_equal(fd.nsamples, 2)
-        np.testing.assert_equal(fd.ndim_image, 2)
-        np.testing.assert_equal(fd.ndim_domain, 1)
+        np.testing.assert_equal(fd.n_samples, 2)
+        np.testing.assert_equal(fd.dim_codomain, 2)
+        np.testing.assert_equal(fd.dim_domain, 1)
 
         np.testing.assert_array_equal(fd.data_matrix,
                                       [[[1, 3], [2, 4], [3, 5], [4, 6]],
@@ -118,7 +118,7 @@ class TestFDataGrid(unittest.TestCase):
         fd3 = fd1.concatenate(fd2, fd1, fd, as_coordinates=True)
 
         # Multiple indexation
-        np.testing.assert_equal(fd3.ndim_image, 5)
+        np.testing.assert_equal(fd3.dim_codomain, 5)
         np.testing.assert_array_equal(fd3.coordinates[:2].data_matrix,
                                       fd.data_matrix)
         np.testing.assert_array_equal(fd3.coordinates[-2:].data_matrix,

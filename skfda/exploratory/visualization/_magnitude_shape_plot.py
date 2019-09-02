@@ -52,7 +52,7 @@ class MagnitudeShapePlot:
             in the classical boxplot.
         points(numpy.ndarray): 2-dimensional matrix where each row
             contains the points plotted in the graph.
-        outliers (1-D array, (fdatagrid.nsamples,)): Contains 1 or 0 to denote
+        outliers (1-D array, (fdatagrid.n_samples,)): Contains 1 or 0 to denote
             if a sample is an outlier or not, respecively.
         colormap(matplotlib.pyplot.LinearSegmentedColormap, optional): Colormap
             from which the colors of the plot are extracted. Defaults to
@@ -70,6 +70,7 @@ class MagnitudeShapePlot:
     Example:
 
         >>> import skfda
+        >>> from skfda.exploratory.depth import modified_band_depth
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
@@ -85,21 +86,18 @@ class MagnitudeShapePlot:
                         [ 3. ],
                         [ 2.5],
                         [ 2. ]],
-        <BLANKLINE>
                        [[ 0.5],
                         [ 0.5],
                         [ 1. ],
                         [ 2. ],
                         [ 1.5],
                         [ 1. ]],
-        <BLANKLINE>
                        [[-1. ],
                         [-1. ],
                         [-0.5],
                         [ 1. ],
                         [ 1. ],
                         [ 0.5]],
-        <BLANKLINE>
                        [[-0.5],
                         [-0.5],
                         [-0.5],
@@ -114,13 +112,13 @@ class MagnitudeShapePlot:
                 interpolator=SplineInterpolator(interpolation_order=1,
                 smoothness_parameter=0.0, monotone=False),
                 keepdims=False),
-            depth_method=modified_band_depth,
+            depth_method=projection_depth,
             pointwise_weights=None,
             alpha=0.993,
-            points=array([[ 1.66666667,  0.74074074],
-                   [ 0.        ,  0.        ],
-                   [-0.73333333,  0.36740741],
-                   [-1.        ,  0.53333333]]),
+            points=array([[ 1.12415127,  0.05813094],
+                          [ 0.        ,  0.        ],
+                          [-0.53959261,  0.08037234],
+                          [-1.17661166,  0.4294388 ]]),
             outliers=array([False, False, False, False]),
             colormap=seismic,
             color=0.2,
@@ -136,8 +134,8 @@ class MagnitudeShapePlot:
         Args:
             fdatagrid (FDataGrid): Object containing the data.
             depth_method (:ref:`depth measure <depth-measures>`, optional):
-                Method used to order the data. Defaults to :func:`modified band
-                depth <fda.depth_measures.modified_band_depth>`.
+                Method used to order the data. Defaults to :func:`projection
+                depth <fda.depth_measures.multivariate.projection_depth>`.
             pointwise_weights (array_like, optional): an array containing the
                 weights of each points of discretisati on where values have
                 been recorded.
@@ -165,19 +163,17 @@ class MagnitudeShapePlot:
 
         """
 
-        if fdatagrid.ndim_image > 1:
-            raise NotImplementedError("Only support 1 dimension on the image.")
+        if fdatagrid.dim_codomain > 1:
+            raise NotImplementedError(
+                "Only support 1 dimension on the codomain.")
 
         self.outlier_detector = DirectionalOutlierDetector(**kwargs)
 
         y = self.outlier_detector.fit_predict(fdatagrid)
 
-        points = self.outlier_detector.points_
-
         outliers = (y == -1)
 
         self._fdatagrid = fdatagrid
-        self._points = points
         self._outliers = outliers
         self._colormap = plt.cm.get_cmap('seismic')
         self._color = 0.2
@@ -256,7 +252,7 @@ class MagnitudeShapePlot:
             ax (axes object): axes in which the graph is plotted.
 
         """
-        colors = np.zeros((self.fdatagrid.nsamples, 4))
+        colors = np.zeros((self.fdatagrid.n_samples, 4))
         colors[np.where(self.outliers == 1)] = self.colormap(self.outliercol)
         colors[np.where(self.outliers == 0)] = self.colormap(self.color)
 
@@ -264,7 +260,7 @@ class MagnitudeShapePlot:
             ax = matplotlib.pyplot.gca()
 
         colors_rgba = [tuple(i) for i in colors]
-        ax.scatter(self.points[:, 0], self.points[:, 1],
+        ax.scatter(self.points[:, 0].ravel(), self.points[:, 1].ravel(),
                    color=colors_rgba)
 
         ax.set_xlabel(self.xlabel)

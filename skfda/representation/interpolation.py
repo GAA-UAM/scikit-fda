@@ -166,13 +166,13 @@ class SplineInterpolatorEvaluator(Evaluator):
         data_matrix = fdatagrid.data_matrix
 
         self._fdatagrid = fdatagrid
-        self._ndim_image = fdatagrid.ndim_image
-        self._ndim_domain = fdatagrid.ndim_domain
-        self._nsamples = fdatagrid.nsamples
+        self._dim_codomain = fdatagrid.dim_codomain
+        self._dim_domain = fdatagrid.dim_domain
+        self._n_samples = fdatagrid.n_samples
         self._keepdims = fdatagrid.keepdims
         self._domain_range = fdatagrid.domain_range
 
-        if self._ndim_domain == 1:
+        if self._dim_domain == 1:
             self._splines = self._construct_spline_1_m(sample_points,
                                                        data_matrix,
                                                        k, s, monotone)
@@ -180,7 +180,7 @@ class SplineInterpolatorEvaluator(Evaluator):
             raise ValueError("Monotone interpolation is only supported with "
                              "domain dimension equal to 1.")
 
-        elif self._ndim_domain == 2:
+        elif self._dim_domain == 2:
             self._splines = self._construct_spline_2_m(sample_points,
                                                        data_matrix, k, s)
 
@@ -213,7 +213,7 @@ class SplineInterpolatorEvaluator(Evaluator):
             k (integer): Order of the spline interpolators.
 
         Returns:
-            (np.ndarray): Array of size nsamples x ndim_image with the
+            (np.ndarray): Array of size n_samples x dim_codomain with the
             corresponding interpolator of the sample i, and image dimension j
             in the entry (i,j) of the array.
 
@@ -282,7 +282,7 @@ class SplineInterpolatorEvaluator(Evaluator):
             k (integer): Order of the spline interpolators.
 
         Returns:
-            (np.ndarray): Array of size nsamples x ndim_image with the
+            (np.ndarray): Array of size n_samples x dim_codomain with the
             corresponding interpolator of the sample i, and image dimension j
             in the entry (i,j) of the array.
 
@@ -321,10 +321,10 @@ class SplineInterpolatorEvaluator(Evaluator):
         self._process_derivative = _process_derivative_2_m
 
         # Matrix of splines
-        spline = np.empty((self._nsamples, self._ndim_image), dtype=object)
+        spline = np.empty((self._n_samples, self._dim_codomain), dtype=object)
 
-        for i in range(self._nsamples):
-            for j in range(self._ndim_image):
+        for i in range(self._n_samples):
+            for j in range(self._dim_codomain):
                 spline[i, j] = RectBivariateSpline(sample_points[0],
                                                    sample_points[1],
                                                    data_matrix[i, :, :, j],
@@ -349,7 +349,7 @@ class SplineInterpolatorEvaluator(Evaluator):
             k (integer): Order of the spline interpolators.
 
         Returns:
-            (np.ndarray): Array of size nsamples x ndim_image with the
+            (np.ndarray): Array of size n_samples x dim_codomain with the
             corresponding interpolator of the sample i, and image dimension j
             in the entry (i,j) of the array.
 
@@ -383,10 +383,10 @@ class SplineInterpolatorEvaluator(Evaluator):
         # Evaluator of splines called in evaluate
         self._spline_evaluator = _spline_evaluator_n_m
 
-        spline = np.empty((self._nsamples, self._ndim_image), dtype=object)
+        spline = np.empty((self._n_samples, self._dim_codomain), dtype=object)
 
-        for i in range(self._nsamples):
-            for j in range(self._ndim_image):
+        for i in range(self._n_samples):
+            for j in range(self._dim_codomain):
                 spline[i, j] = RegularGridInterpolator(
                     sample_points, data_matrix[i, ..., j], method, False)
 
@@ -404,13 +404,13 @@ class SplineInterpolatorEvaluator(Evaluator):
 
         Args:
             eval_points (np.ndarray): Numpy array with shape
-                `(n_samples, number_eval_points, ndim_domain)` with the
+                `(n_samples, number_eval_points, dim_domain)` with the
                  evaluation points for each sample.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (np.darray): Numpy 3d array with shape `(n_samples,
-                number_eval_points, ndim_image)` with the result of the
+                number_eval_points, dim_codomain)` with the result of the
                 evaluation. The entry (i,j,k) will contain the value k-th image
                 dimension of the i-th sample, at the j-th evaluation point.
 
@@ -422,7 +422,7 @@ class SplineInterpolatorEvaluator(Evaluator):
         derivative = self._process_derivative(derivative)
 
         # Constructs the evaluator for t_eval
-        if self._ndim_image == 1:
+        if self._dim_codomain == 1:
             def evaluator(spl):
                 """Evaluator of object with image dimension equal to 1."""
                 return self._spline_evaluator(spl[0], eval_points, derivative)
@@ -435,8 +435,8 @@ class SplineInterpolatorEvaluator(Evaluator):
 
         # Points evaluated inside the domain
         res = np.apply_along_axis(evaluator, 1, self._splines)
-        res = res.reshape(self._nsamples, eval_points.shape[0],
-                          self._ndim_image)
+        res = res.reshape(self._n_samples, eval_points.shape[0],
+                          self._dim_codomain)
 
         return res
 
@@ -452,13 +452,13 @@ class SplineInterpolatorEvaluator(Evaluator):
 
         Args:
             eval_points (np.ndarray): Numpy array with shape
-                `(n_samples, number_eval_points, ndim_domain)` with the
+                `(n_samples, number_eval_points, dim_domain)` with the
                  evaluation points for each sample.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (np.darray): Numpy 3d array with shape `(n_samples,
-                number_eval_points, ndim_image)` with the result of the
+                number_eval_points, dim_codomain)` with the result of the
                 evaluation. The entry (i,j,k) will contain the value k-th image
                 dimension of the i-th sample, at the j-th evaluation point.
 
@@ -467,19 +467,19 @@ class SplineInterpolatorEvaluator(Evaluator):
                 argument.
 
         """
-        shape = (self._nsamples, eval_points.shape[1], self._ndim_image)
+        shape = (self._n_samples, eval_points.shape[1], self._dim_codomain)
         res = np.empty(shape)
 
         derivative = self._process_derivative(derivative)
 
-        if self._ndim_image == 1:
+        if self._dim_codomain == 1:
             def evaluator(t, spl):
                 """Evaluator of sample with image dimension equal to 1"""
                 return self._spline_evaluator(spl[0], t, derivative)
 
-            for i in range(self._nsamples):
+            for i in range(self._n_samples):
                 res[i] = evaluator(eval_points[i], self._splines[i]).reshape(
-                    (eval_points.shape[1], self._ndim_image))
+                    (eval_points.shape[1], self._dim_codomain))
 
         else:
             def evaluator(t, spl_m):
@@ -487,7 +487,7 @@ class SplineInterpolatorEvaluator(Evaluator):
                 return np.array([self._spline_evaluator(spl, t, derivative)
                                  for spl in spl_m]).T
 
-            for i in range(self._nsamples):
+            for i in range(self._n_samples):
                 res[i] = evaluator(eval_points[i], self._splines[i])
 
         return res

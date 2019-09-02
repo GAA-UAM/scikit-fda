@@ -16,9 +16,9 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         y, X, weights = self._argcheck(y, X, sample_weight)
 
         nbeta = len(self.beta_basis)
-        nsamples = X[0].nsamples
+        n_samples = X[0].n_samples
 
-        y = np.asarray(y).reshape((nsamples, 1))
+        y = np.asarray(y).reshape((n_samples, 1))
 
         for j in range(nbeta):
             xcoef = X[j].coefficients
@@ -41,7 +41,8 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
 
         idx = 0
         for j in range(0, nbeta):
-            self.beta_basis[j] = FDataBasis(self.beta_basis[j], betacoefs[idx:idx+self.beta_basis[j].nbasis].T)
+            self.beta_basis[j] = FDataBasis(
+                self.beta_basis[j], betacoefs[idx:idx + self.beta_basis[j].nbasis].T)
             idx = idx + self.beta_basis[j].nbasis
 
         self.beta_ = self.beta_basis
@@ -50,9 +51,9 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
     def predict(self, X):
         check_is_fitted(self, "beta_")
         return [sum(self.beta[i].inner_product(X[i][j])[0, 0] for i in
-                    range(len(self.beta))) for j in range(X[0].nsamples)]
+                    range(len(self.beta))) for j in range(X[0].n_samples)]
 
-    def _argcheck(self, y, x, weights = None):
+    def _argcheck(self, y, x, weights=None):
         """Do some checks to types and shapes"""
         if all(not isinstance(i, FData) for i in x):
             raise ValueError("All the dependent variable are scalar.")
@@ -75,7 +76,7 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
                 xjcoefs = np.array(x[j]).reshape((-1, 1))
                 x[j] = FDataBasis(Constant(domain_range), xjcoefs)
 
-        if any(ylen != xfd.nsamples for xfd in x):
+        if any(ylen != xfd.n_samples for xfd in x):
             raise ValueError("The number of samples on independent and "
                              "dependent variables should be the same")
 

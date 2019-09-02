@@ -7,7 +7,7 @@ def _compute_region(fdatagrid,
                     indices_descending_depth,
                     prob):
     indices_samples = indices_descending_depth[
-        :math.ceil(fdatagrid.nsamples * prob)]
+        :math.ceil(fdatagrid.n_samples * prob)]
     return fdatagrid[indices_samples]
 
 

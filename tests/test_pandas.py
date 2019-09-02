@@ -16,28 +16,28 @@ class TestPandas(unittest.TestCase):
         series = pd.Series(self.fd)
         self.assertEqual(
             series.dtype, skfda.representation.grid.FDataGridDType)
-        self.assertEqual(len(series), self.fd.nsamples)
+        self.assertEqual(len(series), self.fd.n_samples)
         self.assertEqual(series[0], self.fd[0])
 
     def test_fdatabasis_series(self):
         series = pd.Series(self.fd_basis)
         self.assertEqual(
             series.dtype, skfda.representation.basis.FDataBasisDType)
-        self.assertEqual(len(series), self.fd_basis.nsamples)
+        self.assertEqual(len(series), self.fd_basis.n_samples)
         self.assertEqual(series[0], self.fd_basis[0])
 
     def test_fdatagrid_dataframe(self):
         df = pd.DataFrame({"function": self.fd})
         self.assertEqual(
             df["function"].dtype, skfda.representation.grid.FDataGridDType)
-        self.assertEqual(len(df["function"]), self.fd.nsamples)
+        self.assertEqual(len(df["function"]), self.fd.n_samples)
         self.assertEqual(df["function"][0], self.fd[0])
 
     def test_fdatabasis_dataframe(self):
         df = pd.DataFrame({"function": self.fd_basis})
         self.assertEqual(
             df["function"].dtype, skfda.representation.basis.FDataBasisDType)
-        self.assertEqual(len(df["function"]), self.fd_basis.nsamples)
+        self.assertEqual(len(df["function"]), self.fd_basis.n_samples)
         self.assertEqual(df["function"][0], self.fd_basis[0])
 
     def test_take(self):

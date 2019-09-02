@@ -4,10 +4,12 @@ This module contains methods to perform the registration of
 functional data using shifts, in basis as well in discretized form.
 """
 
-import numpy as np
 import scipy.integrate
 
+import numpy as np
+
 from ..._utils import constants
+
 
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"
@@ -98,18 +100,18 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2,
 
     # Initial estimation of the shifts
 
-    if fd.ndim_image > 1 or fd.ndim_domain > 1:
+    if fd.dim_codomain > 1 or fd.dim_domain > 1:
         raise NotImplementedError("Method for unidimensional data.")
 
     domain_range = fd.domain_range[0]
 
     if initial is None:
-        delta = np.zeros(fd.nsamples)
+        delta = np.zeros(fd.n_samples)
 
-    elif len(initial) != fd.nsamples:
+    elif len(initial) != fd.n_samples:
         raise ValueError(f"the initial shift ({len(initial)}) must have the "
                          f"same length than the number of samples "
-                         f"({fd.nsamples})")
+                         f"({fd.n_samples})")
     else:
         delta = np.asarray(initial)
 
@@ -129,7 +131,7 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2,
         eval_points = np.asarray(eval_points)
 
     # Auxiliar arrays to avoid multiple memory allocations
-    delta_aux = np.empty(fd.nsamples)
+    delta_aux = np.empty(fd.n_samples)
     tfine_aux = np.empty(nfine)
 
     # Computes the derivate of originals curves in the mesh points
@@ -150,7 +152,7 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2,
         tfine_aux_tmp = tfine_aux
         domain = np.empty(nfine, dtype=np.dtype(bool))
 
-    ones = np.ones(fd.nsamples)
+    ones = np.ones(fd.n_samples)
     eval_points_rep = np.outer(ones, eval_points)
 
     # Newton-Rhapson iteration

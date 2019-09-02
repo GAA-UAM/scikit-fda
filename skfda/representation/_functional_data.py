@@ -795,14 +795,14 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         if self.dim_domain > 2:
             raise NotImplementedError("Plot only supported for functional data"
-                                      "modeled in at most 3 dimensions.")
+                                      " modeled in at most 3 dimensions.")
 
         if fig is not None and ax is not None:
             raise ValueError("fig and axes parameters cannot be passed as "
                              "arguments at the same time.")
 
         if fig is not None and len(fig.get_axes()) != self.dim_codomain:
-            raise ValueError("Number of axes of the figure must be equal to"
+            raise ValueError("Number of axes of the figure must be equal to "
                              "the dimension of the image.")
 
         if ax is not None and len(ax) != self.dim_codomain:
@@ -825,7 +825,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             fig, ax = self.set_figure_and_axes(nrows, ncols)
 
         elif fig is not None:
-            ax = fig.get_axes()
+            ax = fig.axes
 
         else:
             fig = ax[0].get_figure()

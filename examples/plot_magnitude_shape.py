@@ -37,14 +37,13 @@ label_names = dataset["target_names"]
 nlabels = len(label_names)
 label_colors = colormap(np.arange(nlabels) / (nlabels - 1))
 
-plt.figure()
 fd_temperatures.plot(sample_labels=dataset["target"],
                      label_colors=label_colors,
                      label_names=label_names)
 
 ##############################################################################
 # The MS-Plot is generated. In order to show the results, the
-# :func:`plot method <skfda.exploratory.visualization.magnitude_shape_plot.MagnitudeShapePlot.plot>`
+# :func:`~skfda.exploratory.visualization.MagnitudeShapePlot.plot` method
 # is used. Note that the colors have been specified before to distinguish
 # between outliers or not. In particular the tones of the default colormap,
 # (which is 'seismic' and can be customized), are assigned.
@@ -55,7 +54,6 @@ msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures,
 color = 0.3
 outliercol = 0.7
 
-plt.figure()
 msplot.color = color
 msplot.outliercol = outliercol
 msplot.plot()
@@ -64,7 +62,6 @@ msplot.plot()
 # To show the utility of the plot, the curves are plotted according to the
 # distinction made by the MS-Plot (outliers or not) with the same colors.
 
-plt.figure()
 fd_temperatures.plot(sample_labels=msplot.outliers.astype(int),
                      label_colors=msplot.colormap([color, outliercol]),
                      label_names=['nonoutliers', 'outliers'])
@@ -79,20 +76,19 @@ fd_temperatures.plot(sample_labels=msplot.outliers.astype(int),
 # outliers but in the MS-Plot, they appear further left from the central
 # points. This behaviour can be modified specifying the parameter alpha.
 #
-# Now we use the
-# :func:`Fraiman and Muniz depth measure <skfda.exploratory.depth_measures.fraiman_muniz_depth>`
-# in the MS-Plot.
+# Now we use the pointwise
+# :func:`~skfda.exploratory.depth_measures.fraiman_muniz_depth` in the
+# MS-Plot.
 
 msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures,
                             depth_method=fraiman_muniz_depth)
 
-plt.figure()
 msplot.color = color
 msplot.outliercol = outliercol
 msplot.plot()
 
 ##############################################################################
-# We can observe that none of the samples are pointed as outliers.
+# We can observe that almost none of the samples are pointed as outliers.
 # Nevertheless, if we group them in three groups according to their position
 # in the MS-Plot, the result is the expected one. Those samples at the left
 # (larger deviation in the mean directional outlyingness) correspond to the
@@ -108,16 +104,19 @@ colors[:] = color
 colors[group1] = outliercol
 colors[group2] = 0.9
 
-plt.figure()
-plt.scatter(msplot.points[:, 0], msplot.points[:, 1], c=colormap(colors))
-plt.title("MS-Plot")
-plt.xlabel("magnitude outlyingness")
-plt.ylabel("shape outlyingness")
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+ax.scatter(msplot.points[:, 0], msplot.points[:, 1], c=colormap(colors))
+ax.set_title("MS-Plot")
+ax.set_xlabel("magnitude outlyingness")
+ax.set_ylabel("shape outlyingness")
 
 labels = np.copy(msplot.outliers.astype(int))
 labels[group1] = 1
 labels[group2] = 2
 
-plt.figure()
+##############################################################################
+# We now plot the curves with their corresponding color:
+
 fd_temperatures.plot(sample_labels=labels,
                      label_colors=colormap([color, outliercol, 0.9]))

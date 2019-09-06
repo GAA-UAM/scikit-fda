@@ -1,11 +1,11 @@
 """Unsupervised learner for implementing neighbor searches."""
 
-from .base import (NearestNeighborsMixinInit, NeighborsBase, NeighborsMixin,
-                   KNeighborsMixin, RadiusNeighborsMixin, _to_sklearn_metric)
+from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
+                   RadiusNeighborsMixin)
 
 
-class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase,
-                       NeighborsMixin, KNeighborsMixin, RadiusNeighborsMixin):
+class NearestNeighbors(NeighborsBase, NeighborsMixin, KNeighborsMixin,
+                       RadiusNeighborsMixin):
     """Unsupervised learner for implementing neighbor searches.
 
     Parameters
@@ -108,3 +108,23 @@ class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase,
                          algorithm=algorithm, leaf_size=leaf_size,
                          metric=metric, metric_params=metric_params,
                          n_jobs=n_jobs, sklearn_metric=sklearn_metric)
+
+    def _init_estimator(self, sk_metric):
+        """Initialize the sklearn nearest neighbors estimator.
+
+        Args:
+            sk_metric: (pyfunc or 'precomputed'): Metric compatible with
+                sklearn API or matrix (n_samples, n_samples) with precomputed
+                distances.
+
+        Returns:
+            Sklearn K Neighbors estimator initialized.
+
+        """
+        from sklearn.neighbors import NearestNeighbors as _NearestNeighbors
+        
+        return _NearestNeighbors(
+            n_neighbors=self.n_neighbors, radius=self.radius,
+            algorithm=self.algorithm, leaf_size=self.leaf_size,
+            metric=sk_metric, metric_params=self.metric_params,
+            n_jobs=self.n_jobs)

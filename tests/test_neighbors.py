@@ -10,10 +10,7 @@ from skfda.ml.classification import (KNeighborsClassifier,
                                      RadiusNeighborsClassifier,
                                      NearestCentroids)
 from skfda.ml.clustering import NearestNeighbors
-from skfda.ml.regression import (KNeighborsScalarRegressor,
-                                 RadiusNeighborsScalarRegressor,
-                                 KNeighborsFunctionalRegressor,
-                                 RadiusNeighborsFunctionalRegressor)
+from skfda.ml.regression import KNeighborsRegressor, RadiusNeighborsRegressor
 from skfda.representation.basis import Fourier
 
 
@@ -22,8 +19,9 @@ class TestNeighbors(unittest.TestCase):
     def setUp(self):
         """Creates test data"""
         random_state = np.random.RandomState(0)
-        modes_location = np.concatenate((random_state.normal(-.3, .04, size=15),
-                                         random_state.normal(.3, .04, size=15)))
+        modes_location = np.concatenate(
+            (random_state.normal(-.3, .04, size=15),
+             random_state.normal(.3, .04, size=15)))
 
         idx = np.arange(30)
         random_state.shuffle(idx)
@@ -71,8 +69,8 @@ class TestNeighbors(unittest.TestCase):
 
         # Dummy test, with weight = distance, only the sample with distance 0
         # will be returned, obtaining the exact location
-        knnr = KNeighborsScalarRegressor(weights='distance')
-        rnnr = RadiusNeighborsScalarRegressor(weights='distance', radius=.1)
+        knnr = KNeighborsRegressor(weights='distance')
+        rnnr = RadiusNeighborsRegressor(weights='distance', radius=.1)
 
         knnr.fit(self.X, self.modes_location)
         rnnr.fit(self.X, self.modes_location)
@@ -83,6 +81,7 @@ class TestNeighbors(unittest.TestCase):
                                              self.modes_location)
 
     def test_kneighbors(self):
+        """Test k neighbor searches for all k-neighbors estimators"""
 
         nn = NearestNeighbors()
         nn.fit(self.X)
@@ -90,7 +89,7 @@ class TestNeighbors(unittest.TestCase):
         knn = KNeighborsClassifier()
         knn.fit(self.X, self.y)
 
-        knnr = KNeighborsScalarRegressor()
+        knnr = KNeighborsRegressor()
         knnr.fit(self.X, self.modes_location)
 
         for neigh in [nn, knn, knnr]:
@@ -120,7 +119,7 @@ class TestNeighbors(unittest.TestCase):
         knn = RadiusNeighborsClassifier(radius=.1)
         knn.fit(self.X, self.y)
 
-        knnr = RadiusNeighborsScalarRegressor(radius=.1)
+        knnr = RadiusNeighborsRegressor(radius=.1)
         knnr.fit(self.X, self.modes_location)
 
         for neigh in [nn, knn, knnr]:
@@ -143,7 +142,7 @@ class TestNeighbors(unittest.TestCase):
                 self.assertEqual(graph[0, i] == 0.0, i not in links[0])
 
     def test_knn_functional_response(self):
-        knnr = KNeighborsFunctionalRegressor(n_neighbors=1)
+        knnr = KNeighborsRegressor(n_neighbors=1)
 
         knnr.fit(self.X, self.X)
 
@@ -153,7 +152,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_knn_functional_response_sklearn(self):
         # Check sklearn metric
-        knnr = KNeighborsFunctionalRegressor(n_neighbors=1, metric='euclidean',
+        knnr = KNeighborsRegressor(n_neighbors=1, metric='euclidean',
                                              sklearn_metric=True)
         knnr.fit(self.X, self.X)
 
@@ -162,7 +161,7 @@ class TestNeighbors(unittest.TestCase):
                                              self.X.data_matrix)
 
     def test_knn_functional_response_precomputed(self):
-        knnr = KNeighborsFunctionalRegressor(n_neighbors=4, weights='distance',
+        knnr = KNeighborsRegressor(n_neighbors=4, weights='distance',
                                              metric='precomputed')
         d = pairwise_distance(lp_distance)
         distances = d(self.X[:4], self.X[:4])
@@ -174,7 +173,7 @@ class TestNeighbors(unittest.TestCase):
                                              self.X[:4].data_matrix)
 
     def test_radius_functional_response(self):
-        knnr = RadiusNeighborsFunctionalRegressor(metric=lp_distance,
+        knnr = RadiusNeighborsRegressor(metric=lp_distance,
                                                   weights='distance',
                                                   regressor=l2_mean)
 
@@ -190,7 +189,7 @@ class TestNeighbors(unittest.TestCase):
 
             return np.array([w == 0 for w in weights], dtype=float)
 
-        knnr = KNeighborsFunctionalRegressor(weights=weights, n_neighbors=5)
+        knnr = KNeighborsRegressor(weights=weights, n_neighbors=5)
         response = self.X.to_basis(Fourier(domain_range=(-1, 1), nbasis=10))
         knnr.fit(self.X, response)
 
@@ -200,7 +199,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_functional_regression_distance_weights(self):
 
-        knnr = KNeighborsFunctionalRegressor(
+        knnr = KNeighborsRegressor(
             weights='distance', n_neighbors=10)
         knnr.fit(self.X[:10], self.X[:10])
         res = knnr.predict(self.X[11])
@@ -216,7 +215,7 @@ class TestNeighbors(unittest.TestCase):
                                              response.data_matrix)
 
     def test_functional_response_basis(self):
-        knnr = KNeighborsFunctionalRegressor(weights='distance', n_neighbors=5)
+        knnr = KNeighborsRegressor(weights='distance', n_neighbors=5)
         response = self.X.to_basis(Fourier(domain_range=(-1, 1), nbasis=10))
         knnr.fit(self.X, response)
 
@@ -225,7 +224,7 @@ class TestNeighbors(unittest.TestCase):
                                              response.coefficients)
 
     def test_radius_outlier_functional_response(self):
-        knnr = RadiusNeighborsFunctionalRegressor(radius=0.001)
+        knnr = RadiusNeighborsRegressor(radius=0.001)
         knnr.fit(self.X[3:6], self.X[3:6])
 
         # No value given
@@ -233,7 +232,7 @@ class TestNeighbors(unittest.TestCase):
             knnr.predict(self.X[:10])
 
         # Test response
-        knnr = RadiusNeighborsFunctionalRegressor(radius=0.001,
+        knnr = RadiusNeighborsRegressor(radius=0.001,
                                                   outlier_response=self.X[0])
         knnr.fit(self.X[:6], self.X[:6])
 
@@ -255,7 +254,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_functional_regressor_exceptions(self):
 
-        knnr = RadiusNeighborsFunctionalRegressor()
+        knnr = RadiusNeighborsRegressor()
 
         with np.testing.assert_raises(ValueError):
             knnr.fit(self.X[:3], self.X[:4])
@@ -285,7 +284,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_score_functional_response(self):
 
-        neigh = KNeighborsFunctionalRegressor()
+        neigh = KNeighborsRegressor()
 
         y = 5 * self.X + 1
         neigh.fit(self.X, y)
@@ -301,7 +300,7 @@ class TestNeighbors(unittest.TestCase):
         np.testing.assert_almost_equal(r, 0.9982527586114364)
 
     def test_score_functional_response_exceptions(self):
-        neigh = RadiusNeighborsFunctionalRegressor()
+        neigh = RadiusNeighborsRegressor()
         neigh.fit(self.X, self.X)
 
         with np.testing.assert_raises(ValueError):
@@ -309,7 +308,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_multivariate_response_score(self):
 
-        neigh = RadiusNeighborsFunctionalRegressor()
+        neigh = RadiusNeighborsRegressor()
         y = make_multimodal_samples(n_samples=5, dim_domain=2, random_state=0)
         neigh.fit(self.X[:5], y)
 

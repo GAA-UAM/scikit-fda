@@ -1,8 +1,4 @@
 
 
-from ..._neighbors import (KNeighborsScalarRegressor,
-                           RadiusNeighborsScalarRegressor,
-                           KNeighborsFunctionalRegressor,
-                           RadiusNeighborsFunctionalRegressor)
-
+from ..._neighbors import KNeighborsRegressor, RadiusNeighborsRegressor
 from .linear_model import LinearScalarRegression

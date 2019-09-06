@@ -1,19 +1,16 @@
 """Neighbor models for supervised classification."""
 
-from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
-                   NeighborsClassifierMixin, RadiusNeighborsMixin)
+
 
 from sklearn.utils.multiclass import check_classification_targets
 from sklearn.preprocessing import LabelEncoder
 from sklearn.base import ClassifierMixin, BaseEstimator
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from sklearn.neighbors import KNeighborsClassifier as _KNeighborsClassifier
-from sklearn.neighbors import (RadiusNeighborsClassifier as
-                               _RadiusNeighborsClassifier)
-
 from ..misc.metrics import lp_distance, pairwise_distance
 from ..exploratory.stats import mean as l2_mean
+from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
+                   NeighborsClassifierMixin, RadiusNeighborsMixin)
 
 
 class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
@@ -141,6 +138,9 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
             Sklearn K Neighbors estimator initialized.
 
         """
+        from sklearn.neighbors import (KNeighborsClassifier as
+                                       _KNeighborsClassifier)
+
         return _KNeighborsClassifier(
             n_neighbors=self.n_neighbors, weights=self.weights,
             algorithm=self.algorithm, leaf_size=self.leaf_size,
@@ -290,6 +290,9 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
             Sklearn Radius Neighbors estimator initialized.
 
         """
+        from sklearn.neighbors import (RadiusNeighborsClassifier as
+                                       _RadiusNeighborsClassifier)
+
         return _RadiusNeighborsClassifier(
             radius=self.radius, weights=self.weights,
             algorithm=self.algorithm, leaf_size=self.leaf_size,

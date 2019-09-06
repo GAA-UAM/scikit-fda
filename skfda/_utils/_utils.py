@@ -2,7 +2,6 @@
 
 import functools
 import io
-import os
 import types
 
 import matplotlib.backends.backend_svg
@@ -146,21 +145,7 @@ def _check_estimator(estimator):
 
 def _create_figure():
     """Create figure using the default backend."""
-
-    if '_SKFDA_USE_PYPLOT' in os.environ:
-        use_pyplot = os.environ['_SKFDA_USE_PYPLOT'] == '1'
-    else:
-        use_pyplot = False
-
-    if use_pyplot:
-        fig = plt.figure()
-    else:
-        fig = matplotlib.figure.Figure()
-
-        # Get the default backend
-        backend = plt.new_figure_manager.__self__
-
-        backend.new_figure_manager_given_figure(1, fig)
+    fig = plt.figure()
 
     return fig
 

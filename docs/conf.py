@@ -238,4 +238,3 @@ sphinx_gallery_conf = {
 }
 
 autosummary_generate = True
-os.environ['_SKFDA_USE_PYPLOT'] = '1'

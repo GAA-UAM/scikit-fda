@@ -45,7 +45,7 @@ def _from_multivariate(data_matrix, sample_points, shape, **kwargs):
     return FDataGrid(data_matrix.reshape(shape), sample_points, **kwargs)
 
 
-def _to_sklearn_metric(metric, sample_points):
+def _to_multivariate_metric(metric, sample_points):
     r"""Transform a metric between FDatagrid in a sklearn compatible one.
 
     Given a metric between FDatagrids returns a compatible metric used to
@@ -65,7 +65,7 @@ def _to_sklearn_metric(metric, sample_points):
         >>> import numpy as np
         >>> from skfda import FDataGrid
         >>> from skfda.misc.metrics import lp_distance
-        >>> from skfda._neighbors.base import _to_sklearn_metric
+        >>> from skfda._neighbors.base import _to_multivariate_metric
 
         Calculate the Lp distance between fd and fd2.
 
@@ -77,7 +77,7 @@ def _to_sklearn_metric(metric, sample_points):
 
         Creation of the sklearn-style metric.
 
-        >>> sklearn_lp_distance = _to_sklearn_metric(lp_distance, [x])
+        >>> sklearn_lp_distance = _to_multivariate_metric(lp_distance, [x])
         >>> sklearn_lp_distance(np.ones(len(x)), np.zeros(len(x))).round(2)
         1.0
 
@@ -85,13 +85,13 @@ def _to_sklearn_metric(metric, sample_points):
     # Shape -> (n_samples = 1, domain_dims...., image_dimension (-1))
     shape = [1] + [len(axis) for axis in sample_points] + [-1]
 
-    def sklearn_metric(x, y, _check=False, **kwargs):
+    def multivariate_metric(x, y, _check=False, **kwargs):
 
         return metric(_from_multivariate(x, sample_points, shape),
                       _from_multivariate(y, sample_points, shape),
                       _check=_check, **kwargs)
 
-    return sklearn_metric
+    return multivariate_metric
 
 
 class NeighborsBase(ABC, BaseEstimator):
@@ -101,7 +101,7 @@ class NeighborsBase(ABC, BaseEstimator):
     def __init__(self, n_neighbors=None, radius=None,
                  weights='uniform', algorithm='auto',
                  leaf_size=30, metric='l2', metric_params=None,
-                 n_jobs=None, sklearn_metric=False):
+                 n_jobs=None, multivariate_metric=False):
 
         self.n_neighbors = n_neighbors
         self.radius = radius
@@ -111,7 +111,7 @@ class NeighborsBase(ABC, BaseEstimator):
         self.metric = metric
         self.metric_params = metric_params
         self.n_jobs = n_jobs
-        self.sklearn_metric = sklearn_metric
+        self.multivariate_metric = multivariate_metric
 
     def _check_is_fitted(self):
         """Check if the estimator is fitted.
@@ -160,13 +160,13 @@ class NeighborsMixin:
             self._sample_points = X.sample_points
             self._shape = X.data_matrix.shape[1:]
 
-            if not self.sklearn_metric:
+            if not self.multivariate_metric:
                 # Constructs sklearn metric to manage vector
                 if self.metric == 'l2':
                     metric = lp_distance
                 else:
                     metric = self.metric
-                sk_metric = _to_sklearn_metric(metric, self._sample_points)
+                sk_metric = _to_multivariate_metric(metric, self._sample_points)
             else:
                 sk_metric = self.metric
 
@@ -482,14 +482,14 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
             self._sample_points = X.sample_points
             self._shape = X.data_matrix.shape[1:]
 
-            if not self.sklearn_metric:
+            if not self.multivariate_metric:
 
                 if self.metric == 'l2':
                     metric = lp_distance
                 else:
                     metric = self.metric
 
-                sk_metric = _to_sklearn_metric(metric, self._sample_points)
+                sk_metric = _to_multivariate_metric(metric, self._sample_points)
             else:
                 sk_metric = self.metric
 

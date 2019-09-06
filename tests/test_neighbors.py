@@ -153,7 +153,7 @@ class TestNeighbors(unittest.TestCase):
     def test_knn_functional_response_sklearn(self):
         # Check sklearn metric
         knnr = KNeighborsRegressor(n_neighbors=1, metric='euclidean',
-                                             sklearn_metric=True)
+                                             multivariate_metric=True)
         knnr.fit(self.X, self.X)
 
         res = knnr.predict(self.X)
@@ -273,7 +273,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_search_neighbors_sklearn(self):
 
-        nn = NearestNeighbors(metric='euclidean', sklearn_metric=True,
+        nn = NearestNeighbors(metric='euclidean', multivariate_metric=True,
                               n_neighbors=2)
         nn.fit(self.X[:4], self.y[:4])
 

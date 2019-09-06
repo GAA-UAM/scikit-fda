@@ -58,7 +58,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
         Doesn't affect :meth:`fit` method.
-    sklearn_metric : boolean, optional (default = False)
+    multivariate_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
         :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
         the module :mod:`skfda.misc.metrics`.
@@ -117,14 +117,14 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
     def __init__(self, n_neighbors=5, weights='uniform', algorithm='auto',
                  leaf_size=30, metric='l2', metric_params=None,
-                 n_jobs=1, sklearn_metric=False):
+                 n_jobs=1, multivariate_metric=False):
         """Initialize the classifier."""
 
         super().__init__(n_neighbors=n_neighbors,
                          weights=weights, algorithm=algorithm,
                          leaf_size=leaf_size, metric=metric,
                          metric_params=metric_params, n_jobs=n_jobs,
-                         sklearn_metric=sklearn_metric)
+                         multivariate_metric=multivariate_metric)
 
     def _init_estimator(self, sk_metric):
         """Initialize the sklearn K neighbors estimator.
@@ -219,7 +219,7 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
         The number of parallel jobs to run for neighbors search.
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
-    sklearn_metric : boolean, optional (default = False)
+    multivariate_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
         :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
         the module :mod:`skfda.misc.metrics`.
@@ -268,13 +268,13 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
 
     def __init__(self, radius=1.0, weights='uniform', algorithm='auto',
                  leaf_size=30, metric='l2', metric_params=None,
-                 outlier_label=None, n_jobs=1, sklearn_metric=False):
+                 outlier_label=None, n_jobs=1, multivariate_metric=False):
         """Initialize the classifier."""
 
         super().__init__(radius=radius, weights=weights, algorithm=algorithm,
                          leaf_size=leaf_size, metric=metric,
                          metric_params=metric_params, n_jobs=n_jobs,
-                         sklearn_metric=sklearn_metric)
+                         multivariate_metric=multivariate_metric)
 
         self.outlier_label = outlier_label
 

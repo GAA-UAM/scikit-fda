@@ -126,11 +126,11 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
                          metric_params=metric_params, n_jobs=n_jobs,
                          multivariate_metric=multivariate_metric)
 
-    def _init_estimator(self, sk_metric):
+    def _init_estimator(self, sklearn_metric):
         """Initialize the sklearn K neighbors estimator.
 
         Args:
-            sk_metric: (pyfunc or 'precomputed'): Metric compatible with
+            sklearn_metric: (pyfunc or 'precomputed'): Metric compatible with
                 sklearn API or matrix (n_samples, n_samples) with precomputed
                 distances.
 
@@ -144,7 +144,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         return _KNeighborsClassifier(
             n_neighbors=self.n_neighbors, weights=self.weights,
             algorithm=self.algorithm, leaf_size=self.leaf_size,
-            metric=sk_metric, metric_params=self.metric_params,
+            metric=sklearn_metric, metric_params=self.metric_params,
             n_jobs=self.n_jobs)
 
     def predict_proba(self, X):
@@ -278,11 +278,11 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
 
         self.outlier_label = outlier_label
 
-    def _init_estimator(self, sk_metric):
+    def _init_estimator(self, sklearn_metric):
         """Initialize the sklearn radius neighbors estimator.
 
         Args:
-            sk_metric: (pyfunc or 'precomputed'): Metric compatible with
+            sklearn_metric: (pyfunc or 'precomputed'): Metric compatible with
                 sklearn API or matrix (n_samples, n_samples) with precomputed
                 distances.
 
@@ -296,7 +296,7 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
         return _RadiusNeighborsClassifier(
             radius=self.radius, weights=self.weights,
             algorithm=self.algorithm, leaf_size=self.leaf_size,
-            metric=sk_metric, metric_params=self.metric_params,
+            metric=sklearn_metric, metric_params=self.metric_params,
             outlier_label=self.outlier_label, n_jobs=self.n_jobs)
 
 

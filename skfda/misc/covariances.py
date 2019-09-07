@@ -6,7 +6,7 @@ import matplotlib
 import numpy as np
 import sklearn.gaussian_process.kernels as sklearn_kern
 
-from .._utils import _figure_to_svg
+from .._utils import _create_figure, _figure_to_svg
 
 
 def _squared_norms(x, y):
@@ -58,20 +58,20 @@ class Covariance(abc.ABC):
 
         cov_matrix = self(x, x)
 
-        fig = matplotlib.figure.Figure()
+        fig = _create_figure()
         ax = fig.add_subplot(1, 1, 1)
         ax.imshow(cov_matrix, extent=[-1, 1, 1, -1])
         ax.set_title("Covariance function in [-1, 1]")
 
-        return fig, ax
+        return fig
 
     def _sample_trajectories_plot(self):
         from ..datasets import make_gaussian_process
 
         fd = make_gaussian_process(start=-1, cov=self)
-        fig, ax = fd.plot()
-        ax[0].set_title("Sample trajectories")
-        return fig, ax
+        fig = fd.plot()
+        fig.axes[0].set_title("Sample trajectories")
+        return fig
 
     def __repr__(self):
 
@@ -96,16 +96,16 @@ class Covariance(abc.ABC):
         return fr"\(\displaystyle {self._latex_content()}\)"
 
     def _repr_html_(self):
-        fig, _ = self.heatmap()
+        fig = self.heatmap()
         heatmap = _figure_to_svg(fig)
 
-        fig, _ = self._sample_trajectories_plot()
+        fig = self._sample_trajectories_plot()
         sample_trajectories = _figure_to_svg(fig)
 
-        row_style = 'style="display: flex; display:table-row"'
+        row_style = 'style="position:relative; display:table-row"'
 
         def column_style(percent):
-            return (f'style="flex: {percent}%; display: table-cell; '
+            return (f'style="width: {percent}%; display: table-cell; '
                     f'vertical-align: middle"')
 
         html = f"""

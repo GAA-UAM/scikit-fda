@@ -185,7 +185,7 @@ ax.set_ylim((0.9, 1))
 # the integration, but the result should be similar.
 #
 
-knn = KNeighborsClassifier(metric='euclidean', sklearn_metric=True)
+knn = KNeighborsClassifier(metric='euclidean', multivariate_metric=True)
 gscv2 = GridSearchCV(knn, param_grid, cv=ss)
 gscv2.fit(X, y)
 

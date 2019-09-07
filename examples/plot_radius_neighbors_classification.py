@@ -159,7 +159,7 @@ print(test_score)
 #
 
 radius_nn = RadiusNeighborsClassifier(radius=3, metric='euclidean',
-                                      weights='distance', sklearn_metric=True)
+                                      weights='distance', multivariate_metric=True)
 
 
 radius_nn.fit(X_train, y_train)

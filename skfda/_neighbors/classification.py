@@ -93,8 +93,8 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     See also
     --------
     RadiusNeighborsClassifier
-    KNeighborsScalarRegressor
-    RadiusNeighborsScalarRegressor
+    KNeighborsRegressor
+    RadiusNeighborsRegressor
     NearestNeighbors
     NearestCentroids
     Notes
@@ -249,8 +249,8 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
     See also
     --------
     KNeighborsClassifier
-    KNeighborsScalarRegressor
-    RadiusNeighborsScalarRegressor
+    KNeighborsRegressor
+    RadiusNeighborsRegressor
     NearestNeighbors
     NearestCentroids
 
@@ -354,9 +354,10 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
     --------
     KNeighborsClassifier
     RadiusNeighborsClassifier
-    KNeighborsScalarRegressor
-    RadiusNeighborsScalarRegressor
+    KNeighborsRegressor
+    RadiusNeighborsegressor
     NearestNeighbors
+    NearestCentroids
 
     """
 

@@ -84,8 +84,8 @@ class NearestNeighbors(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     --------
     KNeighborsClassifier
     RadiusNeighborsClassifier
-    KNeighborsScalarRegressor
-    RadiusNeighborsScalarRegressor
+    KNeighborsRegressor
+    RadiusNeighborsRegressor
     NearestCentroids
     Notes
     -----

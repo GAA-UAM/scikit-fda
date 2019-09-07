@@ -505,11 +505,11 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
 
         # Choose proper local regressor
         if self.weights == 'uniform':
-            self.local_regressor = self._uniform_local_regression
+            self._local_regressor = self._uniform_local_regression
         elif self.weights == 'distance':
-            self.local_regressor = self._distance_local_regression
+            self._local_regressor = self._distance_local_regression
         else:
-            self.local_regressor = self._weighted_local_regression
+            self._local_regressor = self._weighted_local_regression
 
         # Store the responses
         self._y = y
@@ -626,13 +626,14 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
         if len(neighbors[0]) == 0:
             pred = self._outlier_response(neighbors)
         else:
-            pred = self.local_regressor(self._y[neighbors[0]], distances[0])
+            pred = self._local_regressor(self._y[neighbors[0]], distances[0])
 
         for i, idx in enumerate(neighbors[1:]):
             if len(idx) == 0:
                 new_pred = self._outlier_response(neighbors)
             else:
-                new_pred = self.local_regressor(self._y[idx], distances[i + 1])
+                new_pred = self._local_regressor(self._y[idx],
+                                                 distances[i + 1])
 
             pred = pred.concatenate(new_pred)
 

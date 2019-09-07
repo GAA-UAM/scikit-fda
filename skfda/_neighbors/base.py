@@ -166,12 +166,12 @@ class NeighborsMixin:
                     metric = lp_distance
                 else:
                     metric = self.metric
-                sk_metric = _to_multivariate_metric(metric,
-                                                    self._sample_points)
+                sklearn_metric = _to_multivariate_metric(metric,
+                                                         self._sample_points)
             else:
-                sk_metric = self.metric
+                sklearn_metric = self.metric
 
-            self.estimator_ = self._init_estimator(sk_metric)
+            self.estimator_ = self._init_estimator(sklearn_metric)
             self.estimator_.fit(self._transform_to_multivariate(X), y)
 
         return self
@@ -490,12 +490,12 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
                 else:
                     metric = self.metric
 
-                sk_metric = _to_multivariate_metric(metric,
-                                                    self._sample_points)
+                sklearn_metric = _to_multivariate_metric(metric,
+                                                         self._sample_points)
             else:
-                sk_metric = self.metric
+                sklearn_metric = self.metric
 
-            self.estimator_ = self._init_estimator(sk_metric)
+            self.estimator_ = self._init_estimator(sklearn_metric)
             self.estimator_.fit(self._transform_to_multivariate(X))
 
         if self.regressor == 'mean':
@@ -582,11 +582,11 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
 
         return self.estimator_.predict(X)
 
-    def _init_estimator(self, sk_metric):
+    def _init_estimator(self, sklearn_metric):
         """Initialize the sklearn nearest neighbors estimator.
 
         Args:
-            sk_metric: (pyfunc or 'precomputed'): Metric compatible with
+            sklearn_metric: (pyfunc or 'precomputed'): Metric compatible with
                 sklearn API or matrix (n_samples, n_samples) with precomputed
                 distances.
 
@@ -600,10 +600,10 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
             return _NearestNeighbors(
                 n_neighbors=self.n_neighbors, radius=self.radius,
                 algorithm=self.algorithm, leaf_size=self.leaf_size,
-                metric=sk_metric, metric_params=self.metric_params,
+                metric=sklearn_metric, metric_params=self.metric_params,
                 n_jobs=self.n_jobs)
         else:
-            return self._init_multivariate_estimator(sk_metric)
+            return self._init_multivariate_estimator(sklearn_metric)
 
     def _functional_predict(self, X):
         """Predict functional responses.

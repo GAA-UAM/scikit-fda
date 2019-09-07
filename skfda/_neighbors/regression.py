@@ -141,11 +141,11 @@ class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
                          multivariate_metric=multivariate_metric)
         self.regressor = regressor
 
-    def _init_multivariate_estimator(self, sk_metric):
+    def _init_multivariate_estimator(self, sklearn_metric):
         """Initialize the sklearn K neighbors estimator.
 
         Args:
-            sk_metric: (pyfunc or 'precomputed'): Metric compatible with
+            sklearn_metric: (pyfunc or 'precomputed'): Metric compatible with
                 sklearn API or matrix (n_samples, n_samples) with precomputed
                 distances.
 
@@ -159,7 +159,7 @@ class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
         return _KNeighborsRegressor(
             n_neighbors=self.n_neighbors, weights=self.weights,
             algorithm=self.algorithm, leaf_size=self.leaf_size,
-            metric=sk_metric, metric_params=self.metric_params,
+            metric=sklearn_metric, metric_params=self.metric_params,
             n_jobs=self.n_jobs)
 
     def _query(self, X):
@@ -305,11 +305,11 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
         self.regressor = regressor
         self.outlier_response = outlier_response
 
-    def _init_multivariate_estimator(self, sk_metric):
+    def _init_multivariate_estimator(self, sklearn_metric):
         """Initialize the sklearn radius neighbors estimator.
 
         Args:
-            sk_metric: (pyfunc or 'precomputed'): Metric compatible with
+            sklearn_metric: (pyfunc or 'precomputed'): Metric compatible with
                 sklearn API or matrix (n_samples, n_samples) with precomputed
                 distances.
 
@@ -323,7 +323,7 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
         return _RadiusNeighborsRegressor(
             radius=self.radius, weights=self.weights,
             algorithm=self.algorithm, leaf_size=self.leaf_size,
-            metric=sk_metric, metric_params=self.metric_params,
+            metric=sklearn_metric, metric_params=self.metric_params,
             n_jobs=self.n_jobs)
 
     def _query(self, X):

@@ -10,6 +10,7 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
+from ..._utils import _create_figure
 from ...ml.clustering.base_kmeans import FuzzyKMeans
 
 
@@ -361,7 +362,7 @@ def _fig_and_ax_checks(fig, ax):
                       "the graph is going to be shown.")
 
     if fig is None and ax is None:
-        fig = plt.gcf()
+        fig = _create_figure()
 
     if ax is None:
         axes = fig.get_axes()

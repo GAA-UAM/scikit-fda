@@ -160,7 +160,6 @@ for lam, c in zip(lambdas, color):
 # Plots identity
 fig.axes[0].plot(t, t,  color='C0', linestyle="--")
 
-fig
 
 
 ##############################################################################

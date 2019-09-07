@@ -13,7 +13,7 @@ The following classes implement both, the K-Means and the Fuzzy K-Means
 algorithms respectively. In order to show the results in a visual way,
 the module :mod:`skfda.exploratory.visualization.clustering_plots
 <skfda.exploratory.visualization.clustering_plots>` can be used.
-See the `Clustering Example <../auto_examples/plot_clustering.html>`_ for a
+See the example :ref:`sphx_glr_auto_examples_plot_clustering.py` for a
 detailed explanation.
 
 .. autosummary::

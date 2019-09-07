@@ -79,12 +79,12 @@ class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
 
     >>> neigh = KNeighborsRegressor()
     >>> neigh.fit(X_train, y_train)
-    KNeighborsScalarRegressor(algorithm='auto', leaf_size=30,...)
+    KNeighborsRegressor(algorithm='auto', leaf_size=30,...)
 
     We can predict the modes of new samples
 
     >>> neigh.predict(X_test).round(2) # Predict test data
-    array([0.38, 0.14, 0.27, 0.52, 0.38])
+    array([ 0.38, 0.14, 0.27, 0.52, 0.38])
 
 
     Now we will create a functional response to train the model
@@ -96,7 +96,7 @@ class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
     We train the estimator with the functional response
 
     >>> neigh.fit(X_train, y_train)
-    KNeighborsFunctionalRegressor(algorithm='auto', leaf_size=30,...)
+    KNeighborsRegressor(algorithm='auto', leaf_size=30,...)
 
     And predict the responses as in the first case.
 
@@ -107,7 +107,7 @@ class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
     --------
     KNeighborsClassifier
     RadiusNeighborsClassifier
-    RadiusNeighborsScalarRegressor
+    RadiusNeighborsRegressor
     NearestNeighbors
     NearestCentroids
     Notes
@@ -247,12 +247,12 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
 
     >>> neigh = RadiusNeighborsRegressor(radius=0.2)
     >>> neigh.fit(X_train, y_train)
-    KNeighborsScalarRegressor(algorithm='auto', leaf_size=30,...)
+    RadiusNeighborsRegressor(algorithm='auto', leaf_size=30,...)
 
     We can predict the modes of new samples
 
     >>> neigh.predict(X_test).round(2) # Predict test data
-    array([0.39, 0.07, 0.26, 0.5 , 0.46])
+    array([ 0.39, 0.07, 0.26, 0.5 , 0.46])
 
 
     Now we will create a functional response to train the model
@@ -264,7 +264,7 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
     We train the estimator with the functional response
 
     >>> neigh.fit(X_train, y_train)
-    KNeighborsFunctionalRegressor(algorithm='auto', leaf_size=30,...)
+    RadiusNeighborsRegressor(algorithm='auto', leaf_size=30,...)
 
     And predict the responses as in the first case.
 
@@ -275,7 +275,7 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
     --------
     KNeighborsClassifier
     RadiusNeighborsClassifier
-    KNeighborsScalarRegressor
+    KNeighborsRegressor
     NearestNeighbors
     NearestCentroids
     Notes

@@ -172,7 +172,7 @@ plt.ylim((0.9, 1))
 # functional one, due to the constant multiplication do no affect the
 # order of the neighbors.
 #
-# Setting the parameter ``sklearn_metric`` of the classifier to True,
+# Setting the parameter ``multivariate_metric`` of the classifier to True,
 # a vectorial metric of sklearn can be passed. In
 # :class:`sklearn.neighbors.DistanceMetric` there are listed all the metrics
 # supported.
@@ -182,7 +182,7 @@ plt.ylim((0.9, 1))
 # the integration, but the result should be similar.
 #
 
-knn = KNeighborsClassifier(metric='euclidean', sklearn_metric=True)
+knn = KNeighborsClassifier(metric='euclidean', multivariate_metric=True)
 gscv2 = GridSearchCV(knn, param_grid, cv=ss)
 gscv2.fit(X, y)
 

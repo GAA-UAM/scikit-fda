@@ -14,7 +14,7 @@ import skfda
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import train_test_split
-from skfda.ml.regression import KNeighborsFunctionalRegressor
+from skfda.ml.regression import KNeighborsRegressor
 from skfda.representation.basis import Fourier
 
 
@@ -22,10 +22,10 @@ from skfda.representation.basis import Fourier
 #
 # In this example we are going to show the usage of the nearest neighbors
 # regressors with functional response. There is available a K-nn version,
-# :class:`KNeighborsFunctionalRegressor
-# <skfda.ml.regression.KNeighborsFunctionalRegressor>`, and other one based in
-# the radius, :class:`RadiusNeighborsFunctionalRegressor
-# <skfda.ml.regression.RadiusNeighborsFunctionalRegressor>`.
+# :class:`KNeighborsRegressor
+# <skfda.ml.regression.KNeighborsRegressor>`, and other one based in
+# the radius, :class:`RadiusNeighborsRegressor
+# <skfda.ml.regression.RadiusNeighborsRegressor>`.
 #
 #
 # As in the scalar response example, we will fetch the caniadian weather
@@ -80,7 +80,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.1,
 #
 
 
-knn = KNeighborsFunctionalRegressor(n_neighbors=5, weights='distance')
+knn = KNeighborsRegressor(n_neighbors=5, weights='distance')
 knn.fit(X_train, y_train)
 
 ################################################################################

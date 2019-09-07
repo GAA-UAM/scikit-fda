@@ -141,7 +141,6 @@ g.plot(fig=fig, color='C1', linewidth=2., label='$g$')
 # Legend
 fig.axes[0].legend()
 
-fig
 
 
 ##############################################################################

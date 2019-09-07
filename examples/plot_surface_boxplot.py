@@ -14,20 +14,21 @@ functional boxplot for FDataGrid whose domain dimension is 2.
 import matplotlib.pyplot as plt
 import numpy as np
 from skfda import FDataGrid
-from skfda.datasets import make_sinusoidal_process, make_gaussian_process
+from skfda.datasets import make_gaussian_process
 from skfda.exploratory.visualization import SurfaceBoxplot, Boxplot
 
 
 ##############################################################################
-# In order to instantiate a :func:`surface boxplot object
-# <skfda.boxplot.SurfaceBoxplot>`, a functional data object with bidimensional
-# domain must be generated. In this example, a FDataGrid representing a
-# function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}` is constructed,
+# In order to instantiate a
+# :class:`~skfda.exploratory.visualization.SurfaceBoxplot`, a functional data
+# object with bidimensional domain must be generated. In this example, a
+# FDataGrid representing a function
+# :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}` is constructed,
 # using as an example a Brownian process extruded into another dimension.
 #
 # The values of the Brownian process are generated using
-# :func:`make_gaussian_process method <skfda.datasets.make_gaussian_process>`,
-# Those functions return FDataGrid objects whose 'data_matrix'
+# :func:`~skfda.datasets.make_gaussian_process`,
+# Those functions return FDataGrid objects whose ``data_matrix``
 # store the values needed.
 n_samples = 10
 n_features = 10
@@ -51,7 +52,6 @@ fd_2 = FDataGrid(data_matrix=cube,
                  sample_points=np.tile(fd.sample_points, (2, 1)),
                  dataset_label="Extruded Brownian process")
 
-plt.figure()
 fd_2.plot()
 
 ##############################################################################
@@ -65,15 +65,14 @@ fd_2.plot()
 # first two generated functional data objects, are plotted below, to help to
 # visualize the data.
 
-plt.figure()
 fd.plot()
 
 ##############################################################################
-# To terminate the example, the instantiation of the SurfaceBoxplot object is
+# To terminate the example, the instantiation of the
+# :class:`~skfda.exploratory.visualization.SurfaceBoxplot` object is
 # made, showing the surface boxplot which corresponds to our FDataGrid
 
 surfaceBoxplot = SurfaceBoxplot(fd_2)
-plt.figure()
 surfaceBoxplot.plot()
 
 ##############################################################################
@@ -83,10 +82,9 @@ surfaceBoxplot.plot()
 #
 # Analogous to the procedure followed before of plotting the three-dimensional
 # data and their correponding profiles, we can obtain also the functional
-# boxplot for one-dimensional data with the :func:`fdboxplot function
-# <skfda.boxplot.fdboxplot>` passing as arguments the first FdataGrid
-# object. The profile of the surface boxplot is obtained.
+# boxplot for one-dimensional data with the
+# :class:`~skfda.exploratory.visualization.Boxplot` passing as arguments the
+# first FdataGrid object. The profile of the surface boxplot is obtained.
 
-plt.figure()
 boxplot1 = Boxplot(fd)
 boxplot1.plot()

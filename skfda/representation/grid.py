@@ -801,10 +801,7 @@ class FDataGrid(FData):
                 matplotlib.pyplot.scatter function;
 
         Returns:
-            (tuple): tuple containing:
-
-                * fig (figure): figure object in which the graphs are plotted.
-                * ax (list): axes in which the graphs are plotted.
+            fig (figure): figure object in which the graphs are plotted.
 
 
         """
@@ -826,7 +823,7 @@ class FDataGrid(FData):
 
         self.set_labels(fig, ax)
 
-        return fig, ax
+        return fig
 
     def to_basis(self, basis, **kwargs):
         """Return the basis representation of the object.

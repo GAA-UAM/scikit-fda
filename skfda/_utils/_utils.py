@@ -6,6 +6,7 @@ import types
 
 import matplotlib.backends.backend_svg
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -142,7 +143,16 @@ def _check_estimator(estimator):
     check_set_params(name, instance)
 
 
+def _create_figure():
+    """Create figure using the default backend."""
+    fig = plt.figure()
+
+    return fig
+
+
 def _figure_to_svg(figure):
+    """Return the SVG representation of a figure."""
+
     old_canvas = figure.canvas
     matplotlib.backends.backend_svg.FigureCanvas(figure)
     output = io.BytesIO()

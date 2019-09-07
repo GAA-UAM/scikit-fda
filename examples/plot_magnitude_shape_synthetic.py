@@ -76,18 +76,16 @@ fd = fd.concatenate(magnitude_outlier, shape_outlier_shift,
 # The data is plotted to show the curves we are working with.
 labels = [0] * n_samples + [1] * 6
 
-plt.figure()
 fd.plot(sample_labels=labels,
         label_colors=['lightgrey', 'black'])
 
 ##############################################################################
 # The MS-Plot is generated. In order to show the results, the
-# :func:`plot method <skfda.exploratory.visualization.magnitude_shape_plot.MagnitudeShapePlot.plot>`
-# is used.
+# :func:`~skfda.exploratory.visualization.MagnitudeShapePlot.plot`
+# method is used.
 
 msplot = MagnitudeShapePlot(fdatagrid=fd)
 
-plt.figure()
 msplot.plot()
 
 ##############################################################################
@@ -98,19 +96,19 @@ labels = [0] * n_samples + [1, 2, 3, 4, 5, 6]
 colors = ['lightgrey', 'orange', 'blue', 'black',
           'green', 'brown', 'lightblue']
 
-plt.figure()
 fd.plot(sample_labels=labels,
         label_colors=colors)
 
 ##############################################################################
 # We now show the points in the MS-plot using the same colors
 
-plt.figure()
-plt.scatter(msplot.points[:, 0].ravel(), msplot.points[:, 1].ravel(),
-            c=colors[0:1] * n_samples + colors[1:])
-plt.title("MS-Plot")
-plt.xlabel("magnitude outlyingness")
-plt.ylabel("shape outlyingness")
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+ax.scatter(msplot.points[:, 0].ravel(), msplot.points[:, 1].ravel(),
+           c=colors[0:1] * n_samples + colors[1:])
+ax.set_title("MS-Plot")
+ax.set_xlabel("magnitude outlyingness")
+ax.set_ylabel("shape outlyingness")
 
 ##############################################################################
 # .. rubric:: References

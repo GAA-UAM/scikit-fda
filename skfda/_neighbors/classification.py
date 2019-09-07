@@ -91,11 +91,12 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
     See also
     --------
-    RadiusNeighborsClassifier
-    KNeighborsRegressor
-    RadiusNeighborsRegressor
-    NearestNeighbors
-    NearestCentroids
+    :class:`~skfda.ml.classification.RadiusNeighborsClassifier`
+    :class:`~skfda.ml.classification.NearestCentroids`
+    :class:`~skfda.ml.regression.KNeighborsRegressor`
+    :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
+    :class:`~skfda.ml.clustering.NearestNeighbors`
+
     Notes
     -----
     See Nearest Neighbors in the sklearn online documentation for a discussion
@@ -247,11 +248,11 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
 
     See also
     --------
-    KNeighborsClassifier
-    KNeighborsRegressor
-    RadiusNeighborsRegressor
-    NearestNeighbors
-    NearestCentroids
+    :class:`~skfda.ml.classification.KNeighborsClassifier`
+    :class:`~skfda.ml.classification.NearestCentroids`
+    :class:`~skfda.ml.regression.KNeighborsRegressor`
+    :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
+    :class:`~skfda.ml.clustering.NearestNeighbors`
 
     Notes
     -----
@@ -351,12 +352,11 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
 
     See also
     --------
-    KNeighborsClassifier
-    RadiusNeighborsClassifier
-    KNeighborsRegressor
-    RadiusNeighborsegressor
-    NearestNeighbors
-    NearestCentroids
+    :class:`~skfda.ml.classification.KNeighborsClassifier`
+    :class:`~skfda.ml.classification.RadiusNeighborsClassifier`
+    :class:`~skfda.ml.regression.KNeighborsRegressor`
+    :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
+    :class:`~skfda.ml.clustering.NearestNeighbors`
 
     """
 

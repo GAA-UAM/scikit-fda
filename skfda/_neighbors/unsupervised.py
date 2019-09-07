@@ -82,11 +82,12 @@ class NearestNeighbors(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
     See also
     --------
-    KNeighborsClassifier
-    RadiusNeighborsClassifier
-    KNeighborsRegressor
-    RadiusNeighborsRegressor
-    NearestCentroids
+    :class:`~skfda.ml.classification.KNeighborsClassifier`
+    :class:`~skfda.ml.classification.RadiusNeighborsClassifier`
+    :class:`~skfda.ml.classification.NearestCentroids`
+    :class:`~skfda.ml.regression.KNeighborsRegressor`
+    :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
+
     Notes
     -----
     See Nearest Neighbors in the sklearn online documentation for a discussion

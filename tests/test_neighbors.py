@@ -282,6 +282,15 @@ class TestNeighbors(unittest.TestCase):
         result = np.array([[0, 3], [1, 2], [2, 1], [3, 0]])
         np.testing.assert_array_almost_equal(neighbors, result)
 
+    def test_score_scalar_response(self):
+
+        neigh = KNeighborsRegressor()
+
+        neigh.fit(self.X, self.modes_location)
+        r = neigh.score(self.X, self.modes_location)
+        np.testing.assert_almost_equal(r, 0.9975889963743335)
+
+
     def test_score_functional_response(self):
 
         neigh = KNeighborsRegressor()

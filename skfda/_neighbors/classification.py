@@ -1,7 +1,6 @@
 """Neighbor models for supervised classification."""
 
 
-
 from sklearn.utils.multiclass import check_classification_targets
 from sklearn.preprocessing import LabelEncoder
 from sklearn.base import ClassifierMixin, BaseEstimator

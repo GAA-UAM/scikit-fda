@@ -14,17 +14,20 @@ from sklearn.model_selection import train_test_split, GridSearchCV, KFold
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 import skfda
-from skfda.ml.regression import KNeighborsScalarRegressor
+from skfda.ml.regression import KNeighborsRegressor
+
 
 
 ##############################################################################
 #
 # In this example, we are going to show the usage of the nearest neighbors
 # regressors with scalar response. There is available a K-nn version,
-# :class:`~skfda.ml.regression.KNeighborsScalarRegressor`, and other one based
-# in the radius,
-# :class:`~skfda.ml.regression.RadiusNeighborsScalarRegressor`.
+# :class:`KNeighborsRegressor
+# <skfda.ml.regression.KNeighborsRegressor>`, and other one based in the
+# radius, :class:`RadiusNeighborsRegressor
+# <skfda.ml.regression.RadiusNeighborsRegressor>`.
 #
 # Firstly we will fetch a dataset to show the basic usage.
 #
@@ -80,15 +83,16 @@ X_train, X_test, y_train, y_test = train_test_split(X, log_prec,
 # Firstly we will try make a prediction with the default values of the
 # estimator, using 5 neighbors and the :math:`\mathbb{L}^2` distance.
 #
-# We can fit the :class:`~skfda.ml.regression.KNeighborsScalarRegressor` in
-# the same way than the scikit-learn estimators. This estimator is an
-# extension of the sklearn :class:`~sklearn.neighbors.KNeighborsRegressor`,
-# but accepting a :class:`~skfda.representation.grid.FDataGrid` as input
-# instead of an array with multivariate data.
+# We can fit the :class:`~skfda.ml.regression.KNeighborsRegressor` in the 
+# same way than the
+# sklearn estimators. This estimator is an extension of the sklearn
+# :class:`~sklearn.neighbors.KNeighborsRegressor`, but accepting a
+# :class:`~skfda.representation.grid.FDataGrid` as input instead of an array with
+# multivariate data.
 #
 
 
-knn = KNeighborsScalarRegressor(weights='distance')
+knn = KNeighborsRegressor(weights='distance')
 knn.fit(X_train, y_train)
 
 ##############################################################################
@@ -153,7 +157,7 @@ param_grid = {'n_neighbors': np.arange(1, 12, 2),
               'weights': ['uniform', 'distance']}
 
 
-knn = KNeighborsScalarRegressor(metric='euclidean', sklearn_metric=True)
+knn = KNeighborsRegressor(metric='euclidean', multivariate_metric=True)
 gscv = GridSearchCV(knn, param_grid, cv=KFold(n_splits=3,
                                               shuffle=True, random_state=0))
 gscv.fit(X, log_prec)

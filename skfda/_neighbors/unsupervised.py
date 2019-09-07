@@ -1,11 +1,11 @@
 """Unsupervised learner for implementing neighbor searches."""
 
-from .base import (NearestNeighborsMixinInit, NeighborsBase, NeighborsMixin,
-                   KNeighborsMixin, RadiusNeighborsMixin, _to_sklearn_metric)
+from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
+                   RadiusNeighborsMixin)
 
 
-class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase,
-                       NeighborsMixin, KNeighborsMixin, RadiusNeighborsMixin):
+class NearestNeighbors(NeighborsBase, NeighborsMixin, KNeighborsMixin,
+                       RadiusNeighborsMixin):
     """Unsupervised learner for implementing neighbor searches.
 
     Parameters
@@ -40,7 +40,7 @@ class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase,
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
         Doesn't affect :meth:`fit` method.
-    sklearn_metric : boolean, optional (default = False)
+    multivariate_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
         :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
         the module :mod:`skfda.misc.metrics`.
@@ -82,11 +82,12 @@ class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase,
 
     See also
     --------
-    KNeighborsClassifier
-    RadiusNeighborsClassifier
-    KNeighborsScalarRegressor
-    RadiusNeighborsScalarRegressor
-    NearestCentroids
+    :class:`~skfda.ml.classification.KNeighborsClassifier`
+    :class:`~skfda.ml.classification.RadiusNeighborsClassifier`
+    :class:`~skfda.ml.classification.NearestCentroids`
+    :class:`~skfda.ml.regression.KNeighborsRegressor`
+    :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
+
     Notes
     -----
     See Nearest Neighbors in the sklearn online documentation for a discussion
@@ -101,10 +102,31 @@ class NearestNeighbors(NearestNeighborsMixinInit, NeighborsBase,
 
     def __init__(self, n_neighbors=5, radius=1.0, algorithm='auto',
                  leaf_size=30, metric='l2', metric_params=None,
-                 n_jobs=1, sklearn_metric=False):
+                 n_jobs=1, multivariate_metric=False):
         """Initialize the nearest neighbors searcher."""
 
         super().__init__(n_neighbors=n_neighbors, radius=radius,
                          algorithm=algorithm, leaf_size=leaf_size,
                          metric=metric, metric_params=metric_params,
-                         n_jobs=n_jobs, sklearn_metric=sklearn_metric)
+                         n_jobs=n_jobs,
+                         multivariate_metric=multivariate_metric)
+
+    def _init_estimator(self, sklearn_metric):
+        """Initialize the sklearn nearest neighbors estimator.
+
+        Args:
+            sklearn_metric: (pyfunc or 'precomputed'): Metric compatible with
+                sklearn API or matrix (n_samples, n_samples) with precomputed
+                distances.
+
+        Returns:
+            Sklearn K Neighbors estimator initialized.
+
+        """
+        from sklearn.neighbors import NearestNeighbors as _NearestNeighbors
+
+        return _NearestNeighbors(
+            n_neighbors=self.n_neighbors, radius=self.radius,
+            algorithm=self.algorithm, leaf_size=self.leaf_size,
+            metric=sklearn_metric, metric_params=self.metric_params,
+            n_jobs=self.n_jobs)

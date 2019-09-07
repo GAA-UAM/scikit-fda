@@ -38,25 +38,24 @@ label_names = dataset["target_names"]
 nlabels = len(label_names)
 label_colors = colormap(np.arange(nlabels) / (nlabels - 1))
 
-plt.figure()
 fd_temperatures.plot(sample_labels=dataset["target"],
                      label_colors=label_colors,
                      label_names=label_names)
 
 
 ##############################################################################
-# We instantiate a :func:`functional boxplot object <skfda.boxplot.Boxplot>`
-# with the data, and we call its
-# :func:`plot function <skfda.boxplot.Boxplot.plot>` to show the graph.
+# We instantiate a :class:`~skfda.exploratory.visualization.Boxplot`
+# object with the data, and we call its
+# :func:`~skfda.exploratory.visualization.Boxplot.plot` function to show the
+# graph.
 #
 # By default, only the part of the outlier curves which falls out of the
 # central regions is plotted. We want the entire curve to be shown, that is
-# why the show_full_outliers parameter is set to True.
+# why the ``show_full_outliers`` parameter is set to True.
 
 fdBoxplot = Boxplot(fd_temperatures)
 fdBoxplot.show_full_outliers = True
 
-plt.figure()
 fdBoxplot.plot()
 
 ##############################################################################
@@ -71,7 +70,6 @@ fdBoxplot.plot()
 color = 0.3
 outliercol = 0.7
 
-plt.figure()
 fd_temperatures.plot(sample_labels=fdBoxplot.outliers.astype(int),
                      label_colors=colormap([color, outliercol]),
                      label_names=["nonoutliers", "outliers"])
@@ -79,24 +77,22 @@ fd_temperatures.plot(sample_labels=fdBoxplot.outliers.astype(int),
 ##############################################################################
 # The curves pointed as outliers are are those curves with significantly lower
 # values than the rest. This is the expected result due to the depth measure
-# used, the :func:`modified band depth
-# <skfda.boxplot.depth_measures.fraiman_muniz_depth>` which rank the samples
-# according to their magnitude.
+# used, :func:`~skfda.exploratory.depth.fraiman_muniz_depth`, which ranks
+# the samples according to their magnitude.
 #
-# The :func:`functional boxplot object <skfda.boxplot.Boxplot>` admits any
+# The :class:`~skfda.exploratory.visualization.Boxplot` object admits any
 # :ref:`depth measure <depth-measures>` defined or customized by the user. Now
-# the call is done with the :func:`band depth measure
-# <skfda.boxplot.depth_measures.band_depth>` and the factor is reduced
-# in order to designate some samples as outliers (otherwise, with this measure
-# and the default factor, none of the curves are pointed out as outliers). We
-# can see that the outliers detected belong to the Pacific and Arctic climates
-# which are less common to find in Canada. As a consequence, this measure
-# detects better shape outliers compared to the previous one.
+# the call is done with the :func:`~skfda.exploratory.depth.band_depth` and
+# the factor is reduced in order to designate some samples as outliers
+# (otherwise, with this measure and the default factor, none of the curves are
+# pointed out as outliers). We can see that the outliers detected belong to
+# the Pacific and Arctic climates which are less common to find in Canada. As
+# a consequence, this measure detects better shape outliers compared to the
+# previous one.
 
 fdBoxplot = Boxplot(fd_temperatures, depth_method=band_depth, factor=0.4)
 fdBoxplot.show_full_outliers = True
 
-plt.figure()
 fdBoxplot.plot()
 
 ##############################################################################
@@ -104,17 +100,15 @@ fdBoxplot.plot()
 # boxplot, which can include other central regions, apart from the central or
 # 50% one.
 #
-# In the following instantiation, the :func:`Fraiman and Muniz depth measure
-# <skfda.boxplot.depth_measures.fraiman_muniz_depth>` is used and the 25% and
+# In the following instantiation, the
+# :func:`~skfda.exploratory.depth.fraiman_muniz_depth` is used and the 25% and
 # 75% central regions are specified.
 
 fdBoxplot = Boxplot(fd_temperatures,  depth_method=fraiman_muniz_depth,
                     prob=[0.75, 0.5, 0.25])
-plt.figure()
 fdBoxplot.plot()
 
 ##############################################################################
-# The above two lines could be replaced just by fdBoxplot since the default
-# representation of the :func:`boxplot object <skfda.boxplot.Boxplot>` is the
-# image of the plot. However, due to generation of this notebook it does not
-# show the image and that is why the plot method is called.
+# The above two lines could be replaced just by fdBoxplot inside a notebook
+# since the default representation of the
+# :class:`~skfda.exploratory.visualization.Boxplot` is the image of the plot.

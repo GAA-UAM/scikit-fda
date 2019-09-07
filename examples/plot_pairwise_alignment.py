@@ -193,7 +193,6 @@ g.plot(fig=fig, color="C1", label="$g_i$")
 labels = fig.axes[0].get_lines()
 fig.axes[0].legend(handles=[labels[0], labels[-1]])
 
-fig
 
 ##############################################################################
 # The following figure shows the result of the pairwise alignment of

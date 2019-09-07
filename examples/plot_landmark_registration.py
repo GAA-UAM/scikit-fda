@@ -83,7 +83,6 @@ fig = warping.plot()
 for i in range(fd.n_samples):
     fig.axes[0].scatter([-0.5, 0.5], landmarks[i])
 
-fig
 
 ##############################################################################
 #

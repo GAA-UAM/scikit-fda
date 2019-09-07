@@ -166,7 +166,8 @@ class NeighborsMixin:
                     metric = lp_distance
                 else:
                     metric = self.metric
-                sk_metric = _to_multivariate_metric(metric, self._sample_points)
+                sk_metric = _to_multivariate_metric(metric,
+                                                    self._sample_points)
             else:
                 sk_metric = self.metric
 
@@ -489,7 +490,8 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
                 else:
                     metric = self.metric
 
-                sk_metric = _to_multivariate_metric(metric, self._sample_points)
+                sk_metric = _to_multivariate_metric(metric,
+                                                    self._sample_points)
             else:
                 sk_metric = self.metric
 
@@ -551,7 +553,6 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
             or :class:`FData` containing as many samples as X.
 
         """
-
         self._check_is_fitted()
 
         # Choose type of prediction
@@ -577,7 +578,6 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
         ``sklearn.neighbors``.
 
         """
-
         X = self._transform_to_multivariate(X)
 
         return self.estimator_.predict(X)
@@ -652,9 +652,7 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
         else:
             return self.outlier_response
 
-
     def score(self, X, y, sample_weight=None):
-
         r"""Return the coefficient of determination R^2 of the prediction.
 
         In the multivariate response case, the coefficient :math:`R^2` is
@@ -698,7 +696,6 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
         else:
             # Default sklearn multivariate score
             return super().score(X, y, sample_weight=sample_weight)
-
 
     def _functional_score(self, X, y, sample_weight=None):
         r"""Return an extension of the coefficient of determination R^2.

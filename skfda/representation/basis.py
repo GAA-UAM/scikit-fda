@@ -171,10 +171,7 @@ class Basis(ABC):
                 fdata.plot function.
 
         Returns:
-            (tuple): tuple containing:
-
-                * fig (figure): figure object in which the graphs are plotted.
-                * ax (list): axes in which the graphs are plotted.
+            fig (figure): figure object in which the graphs are plotted.
 
         """
         self.to_basis().plot(chart=chart, derivative=derivative, **kwargs)

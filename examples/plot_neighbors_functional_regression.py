@@ -22,10 +22,8 @@ from skfda.representation.basis import Fourier
 #
 # In this example we are going to show the usage of the nearest neighbors
 # regressors with functional response. There is available a K-nn version,
-# :class:`KNeighborsRegressor
-# <skfda.ml.regression.KNeighborsRegressor>`, and other one based in
-# the radius, :class:`RadiusNeighborsRegressor
-# <skfda.ml.regression.RadiusNeighborsRegressor>`.
+# :class:`~skfda.ml.regression.KNeighborsRegressor`, and other one based in
+# the radius, :class:`~skfda.ml.regression.RadiusNeighborsRegressor`.
 #
 #
 # As in the :ref:`scalar response example

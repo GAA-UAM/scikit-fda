@@ -204,7 +204,7 @@ class KNeighborsMixin:
                 Indices of the nearest points in the population matrix.
 
         Examples:
-            Firstly, we will create a toy dataset with 2 classes
+            Firstly, we will create a toy dataset.
 
             >>> from skfda.datasets import make_sinusoidal_process
             >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
@@ -261,7 +261,7 @@ class KNeighborsMixin:
             A[i, j] is assigned the weight of edge that connects i to j.
 
         Examples:
-            Firstly, we will create a toy dataset with 2 classes.
+            Firstly, we will create a toy dataset.
 
             >>> from skfda.datasets import make_sinusoidal_process
             >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
@@ -330,7 +330,7 @@ class RadiusNeighborsMixin:
                 within a ball of size ``radius`` around the query points.
 
         Examples:
-            Firstly, we will create a toy dataset with 2 classes.
+            Firstly, we will create a toy dataset.
 
             >>> from skfda.datasets import make_sinusoidal_process
             >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)

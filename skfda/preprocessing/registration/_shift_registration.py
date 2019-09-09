@@ -122,7 +122,7 @@ def shift_registration_deltas(fd, *, maxiter=5, tol=1e-2,
             eval_points = fd.sample_points[0]
             nfine = len(eval_points)
         except AttributeError:
-            nfine = max(fd.nbasis * constants.BASIS_MIN_FACTOR + 1,
+            nfine = max(fd.n_basis * constants.BASIS_MIN_FACTOR + 1,
                         constants.N_POINTS_COARSE_MESH)
             eval_points = np.linspace(*domain_range, nfine)
 

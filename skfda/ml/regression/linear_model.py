@@ -41,8 +41,9 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         idx = 0
         for j in range(0, nbeta):
             self.beta_basis[j] = FDataBasis(
-                self.beta_basis[j], betacoefs[idx:idx + self.beta_basis[j].nbasis].T)
-            idx = idx + self.beta_basis[j].nbasis
+                self.beta_basis[j],
+                betacoefs[idx:idx + self.beta_basis[j].n_basis].T)
+            idx = idx + self.beta_basis[j].n_basis
 
         self.beta_ = self.beta_basis
         return self

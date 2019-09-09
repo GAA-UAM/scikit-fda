@@ -87,6 +87,7 @@ class NearestNeighbors(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     :class:`~skfda.ml.classification.NearestCentroids`
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
+    :class:`~skfda.ml.exploratory.outliers.LocalOutlierFactor`
 
     Notes
     -----

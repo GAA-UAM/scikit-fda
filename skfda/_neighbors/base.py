@@ -97,11 +97,12 @@ def _to_multivariate_metric(metric, sample_points):
 class NeighborsBase(ABC, BaseEstimator):
     """Base class for nearest neighbors estimators."""
 
-    @abstractmethod
+
     def __init__(self, n_neighbors=None, radius=None,
                  weights='uniform', algorithm='auto',
                  leaf_size=30, metric='l2', metric_params=None,
                  n_jobs=None, multivariate_metric=False):
+        """Initializes the nearest neighbors estimator"""
 
         self.n_neighbors = n_neighbors
         self.radius = radius

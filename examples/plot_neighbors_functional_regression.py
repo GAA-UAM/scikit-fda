@@ -57,7 +57,7 @@ y.plot()
 # representation, employing for it a fourier basis with 5 elements.
 #
 
-y = y.to_basis(Fourier(nbasis=5))
+y = y.to_basis(Fourier(n_basis=5))
 
 y.plot()
 

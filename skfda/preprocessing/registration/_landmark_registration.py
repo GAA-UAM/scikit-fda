@@ -319,7 +319,7 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
 
         This method will work for FDataBasis as for FDataGrids
 
-        >>> fd = fd.to_basis(BSpline(nbasis=12))
+        >>> fd = fd.to_basis(BSpline(n_basis=12))
         >>> landmark_registration(fd, landmarks)
         FDataBasis(...)
 

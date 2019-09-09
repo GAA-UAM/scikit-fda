@@ -58,17 +58,17 @@ class Basis(ABC):
     Attributes:
         domain_range (tuple): a tuple of length 2 containing the initial and
             end values of the interval over which the basis can be evaluated.
-        nbasis (int): number of functions in the basis.
+        n_basis (int): number of functions in the basis.
 
     """
 
-    def __init__(self, domain_range=None, nbasis=1):
+    def __init__(self, domain_range=None, n_basis=1):
         """Basis constructor.
 
         Args:
             domain_range (tuple or list of tuples, optional): Definition of the
                 interval where the basis defines a space. Defaults to (0,1).
-            nbasis: Number of functions that form the basis. Defaults to 1.
+            n_basis: Number of functions that form the basis. Defaults to 1.
         """
 
         if domain_range is not None:
@@ -78,12 +78,12 @@ class Basis(ABC):
             # Some checks
             _check_domain(domain_range)
 
-        if nbasis < 1:
+        if n_basis < 1:
             raise ValueError("The number of basis has to be strictly "
                              "possitive.")
 
         self._domain_range = domain_range
-        self.nbasis = nbasis
+        self.n_basis = n_basis
         self._drop_index_lst = []
 
         super().__init__()
@@ -203,7 +203,7 @@ class Basis(ABC):
 
         """
         if x not in cache:
-            res = np.zeros(self.nbasis)
+            res = np.zeros(self.n_basis)
             for i, k in enumerate(coefficients):
                 if callable(k):
                     res += k(x) * self._compute_matrix([x], i)[:, 0]
@@ -227,15 +227,15 @@ class Basis(ABC):
 
         # Range of first dimension
         domain_range = self.domain_range[0]
-        penalty_matrix = np.zeros((self.nbasis, self.nbasis))
+        penalty_matrix = np.zeros((self.n_basis, self.n_basis))
         cache = {}
-        for i in range(self.nbasis):
+        for i in range(self.n_basis):
             penalty_matrix[i, i] = scipy.integrate.quad(
                 lambda x: (self._evaluate_single_basis_coefficients(
                     coefficients, i, x, cache) ** 2),
                 domain_range[0], domain_range[1]
             )[0]
-            for j in range(i + 1, self.nbasis):
+            for j in range(i + 1, self.n_basis):
                 penalty_matrix[i, j] = scipy.integrate.quad(
                     (lambda x: (self._evaluate_single_basis_coefficients(
                                 coefficients, i, x, cache) *
@@ -296,9 +296,9 @@ class Basis(ABC):
         if not _same_domain(one.domain_range, other.domain_range):
             raise ValueError("Ranges are not equal.")
 
-        norder = min(8, one.nbasis + other.nbasis)
-        nbasis = max(one.nbasis + other.nbasis, norder + 1)
-        return BSpline(one.domain_range, nbasis, norder)
+        norder = min(8, one.n_basis + other.n_basis)
+        n_basis = max(one.n_basis + other.n_basis, norder + 1)
+        return BSpline(one.domain_range, n_basis, norder)
 
     def rescale(self, domain_range=None):
         r"""Return a copy of the basis with a new domain range, with the
@@ -313,7 +313,7 @@ class Basis(ABC):
         if domain_range is None:
             domain_range = self.domain_range
 
-        return type(self)(domain_range, self.nbasis)
+        return type(self)(domain_range, self.n_basis)
 
     def same_domain(self, other):
         r"""Returns if two basis are defined on the same domain range.
@@ -328,7 +328,7 @@ class Basis(ABC):
         return copy.deepcopy(self)
 
     def to_basis(self):
-        return FDataBasis(self.copy(), np.identity(self.nbasis))
+        return FDataBasis(self.copy(), np.identity(self.n_basis))
 
     def _list_to_R(self, knots):
         retstring = "c("
@@ -367,10 +367,10 @@ class Basis(ABC):
         first = self.to_basis()
         second = other.to_basis()
 
-        inner = np.zeros((self.nbasis, other.nbasis))
+        inner = np.zeros((self.n_basis, other.n_basis))
 
-        for i in range(self.nbasis):
-            for j in range(other.nbasis):
+        for i in range(self.n_basis):
+            for j in range(other.n_basis):
                 inner[i, j] = first[i].inner_product(second[j], None, None)
 
         return inner
@@ -392,10 +392,10 @@ class Basis(ABC):
         """
         fbasis = self.to_basis()
 
-        gram = np.zeros((self.nbasis, self.nbasis))
+        gram = np.zeros((self.n_basis, self.n_basis))
 
-        for i in range(fbasis.nbasis):
-            for j in range(i, fbasis.nbasis):
+        for i in range(fbasis.n_basis):
+            for j in range(i, fbasis.n_basis):
                 gram[i, j] = fbasis[i].inner_product(fbasis[j], None, None)
                 gram[j, i] = gram[i, j]
 
@@ -434,13 +434,13 @@ class Basis(ABC):
     def __repr__(self):
         """Representation of a Basis object."""
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
-                f"nbasis={self.nbasis})")
+                f"n_basis={self.n_basis})")
 
     def __eq__(self, other):
         """Equality of Basis"""
         return (type(self) == type(other)
                 and _same_domain(self.domain_range, other.domain_range)
-                and self.nbasis == other.nbasis)
+                and self.n_basis == other.n_basis)
 
 
 class Constant(Basis):
@@ -582,13 +582,13 @@ class Monomial(Basis):
     Attributes:
         domain_range (tuple): a tuple of length 2 containing the initial and
             end values of the interval over which the basis can be evaluated.
-        nbasis (int): number of functions in the basis.
+        n_basis (int): number of functions in the basis.
 
     Examples:
         Defines a monomial base over the interval :math:`[0, 5]` consisting
         on the first 3 powers of :math:`t`: :math:`1, t, t^2`.
 
-        >>> bs_mon = Monomial((0,5), nbasis=3)
+        >>> bs_mon = Monomial((0,5), n_basis=3)
 
         And evaluates all the functions in the basis in a list of descrete
         values.
@@ -642,14 +642,14 @@ class Monomial(Basis):
 
         """
         # Initialise empty matrix
-        mat = np.zeros((self.nbasis, len(eval_points)))
+        mat = np.zeros((self.n_basis, len(eval_points)))
 
         # For each basis computes its value for each evaluation
         if derivative == 0:
-            for i in range(self.nbasis):
+            for i in range(self.n_basis):
                 mat[i] = eval_points ** i
         else:
-            for i in range(self.nbasis):
+            for i in range(self.n_basis):
                 if derivative <= i:
                     factor = i
                     for j in range(2, derivative + 1):
@@ -659,7 +659,7 @@ class Monomial(Basis):
         return mat
 
     def _derivative(self, coefs, order=1):
-        return (Monomial(self.domain_range, self.nbasis - order),
+        return (Monomial(self.domain_range, self.n_basis - order),
                 np.array([np.polyder(x[::-1], order)[::-1]
                           for x in coefs]))
 
@@ -692,7 +692,7 @@ class Monomial(Basis):
             numpy.array: Penalty matrix.
 
         Examples:
-            >>> Monomial(nbasis=4).penalty(2)
+            >>> Monomial(n_basis=4).penalty(2)
             array([[ 0.,  0.,  0.,  0.],
                    [ 0.,  0.,  0.,  0.],
                    [ 0.,  0.,  4.,  6.],
@@ -711,9 +711,9 @@ class Monomial(Basis):
         integration_domain = self.domain_range[0]
 
         # initialize penalty matrix as all zeros
-        penalty_matrix = np.zeros((self.nbasis, self.nbasis))
+        penalty_matrix = np.zeros((self.n_basis, self.n_basis))
         # iterate over the cartesion product of the basis system with itself
-        for ibasis in range(self.nbasis):
+        for ibasis in range(self.n_basis):
             # notice that the index ibasis it is also the exponent of the
             # monomial
             # ifac is the factor resulting of deriving the monomial as many
@@ -725,7 +725,7 @@ class Monomial(Basis):
             else:
                 ifac = 1
 
-            for jbasis in range(self.nbasis):
+            for jbasis in range(self.n_basis):
                 # notice that the index jbasis it is also the exponent of the
                 # monomial
                 # jfac is the factor resulting of deriving the monomial as
@@ -762,7 +762,7 @@ class Monomial(Basis):
             raise ValueError("Ranges are not equal.")
 
         if isinstance(other, Monomial):
-            return Monomial(self.domain_range, self.nbasis + other.nbasis)
+            return Monomial(self.domain_range, self.n_basis + other.n_basis)
 
         return other.rbasis_of_product(self)
 
@@ -773,7 +773,7 @@ class Monomial(Basis):
     def _to_R(self):
         drange = self.domain_range[0]
         return "create.monomial.basis(rangeval = c(" + str(drange[0]) + "," +\
-               str(drange[1]) + "), nbasis = " + str(self.nbasis) + ")"
+               str(drange[1]) + "), n_basis = " + str(self.n_basis) + ")"
 
 
 class BSpline(Basis):
@@ -799,19 +799,19 @@ class BSpline(Basis):
     Attributes:
         domain_range (tuple): A tuple of length 2 containing the initial and
             end values of the interval over which the basis can be evaluated.
-        nbasis (int): Number of functions in the basis.
+        n_basis (int): Number of functions in the basis.
         order (int): Order of the splines. One greather than their degree.
         knots (list): List of knots of the spline functions.
 
     Examples:
         Constructs specifying number of basis and order.
 
-        >>> bss = BSpline(nbasis=8, order=4)
+        >>> bss = BSpline(n_basis=8, order=4)
 
         If no order is specified defaults to 4 because cubic splines are
         the most used. So the previous example is the same as:
 
-        >>> bss = BSpline(nbasis=8)
+        >>> bss = BSpline(n_basis=8)
 
         It is also possible to create a BSpline basis specifying the knots.
 
@@ -820,7 +820,7 @@ class BSpline(Basis):
         Once we create a basis we can evaluate each of its functions at a
         set of points.
 
-        >>> bss = BSpline(nbasis=3, order=3)
+        >>> bss = BSpline(n_basis=3, order=3)
         >>> bss.evaluate([0, 0.5, 1])
         array([[ 1.  ,  0.25,  0.  ],
                [ 0.  ,  0.5 ,  0.  ],
@@ -839,7 +839,7 @@ class BSpline(Basis):
 
     """
 
-    def __init__(self, domain_range=None, nbasis=None, order=4, knots=None):
+    def __init__(self, domain_range=None, n_basis=None, order=4, knots=None):
         """Bspline basis constructor.
 
         Args:
@@ -847,7 +847,7 @@ class BSpline(Basis):
                 the basis defines a space. Defaults to (0,1) if knots are not
                 specified. If knots are specified defaults to the first and
                 last element of the knots.
-            nbasis (int, optional): Number of splines that form the basis.
+            n_basis (int, optional): Number of splines that form the basis.
             order (int, optional): Order of the splines. One greater that
                 their degree. Defaults to 4 which mean cubic splines.
             knots (array_like): List of knots of the splines. If domain_range
@@ -866,7 +866,7 @@ class BSpline(Basis):
 
         # Knots default to equally space points in the domain_range
         if knots is None:
-            if nbasis is None:
+            if n_basis is None:
                 raise ValueError("Must provide either a list of knots or the"
                                  "number of basis.")
         else:
@@ -879,22 +879,22 @@ class BSpline(Basis):
                     raise ValueError("The ends of the knots must be the same "
                                      "as the domain_range.")
 
-        # nbasis default to number of knots + order of the splines - 2
-        if nbasis is None:
-            nbasis = len(knots) + order - 2
+        # n_basis default to number of knots + order of the splines - 2
+        if n_basis is None:
+            n_basis = len(knots) + order - 2
 
-        if (nbasis - order + 2) < 2:
-            raise ValueError(f"The number of basis ({nbasis}) minus the order "
+        if (n_basis - order + 2) < 2:
+            raise ValueError(f"The number of basis ({n_basis}) minus the order "
                              f"of the bspline ({order}) should be greater "
                              f"than 3.")
 
         self.order = order
         self.knots = None if knots is None else list(knots)
-        super().__init__(domain_range, nbasis)
+        super().__init__(domain_range, n_basis)
 
         # Checks
-        if self.nbasis != self.order + len(self.knots) - 2:
-            raise ValueError(f"The number of basis ({self.nbasis}) has to "
+        if self.n_basis != self.order + len(self.knots) - 2:
+            raise ValueError(f"The number of basis ({self.n_basis}) has to "
                              f"equal the order ({self.order}) plus the "
                              f"number of knots ({len(self.knots)}) minus 2.")
 
@@ -902,7 +902,7 @@ class BSpline(Basis):
     def knots(self):
         if self._knots is None:
             return list(np.linspace(*self.domain_range[0],
-                                    self.nbasis - self.order + 2))
+                                    self.n_basis - self.order + 2))
         else:
             return self._knots
 
@@ -956,10 +956,10 @@ class BSpline(Basis):
         c = np.zeros(len(knots))
 
         # Initialise empty matrix
-        mat = np.empty((self.nbasis, len(eval_points)))
+        mat = np.empty((self.n_basis, len(eval_points)))
 
         # For each basis computes its value for each evaluation point
-        for i in range(self.nbasis):
+        for i in range(self.n_basis):
             # write a 1 in c in the position of the spline calculated in each
             # iteration
             c[i] = 1
@@ -980,7 +980,7 @@ class BSpline(Basis):
 
         deriv_basis = BSpline._from_scipy_BSpline(deriv_splines[0])[0]
 
-        return deriv_basis, np.array(deriv_coefs)[:, 0:deriv_basis.nbasis]
+        return deriv_basis, np.array(deriv_coefs)[:, 0:deriv_basis.n_basis]
 
     def penalty(self, derivative_degree=None, coefficients=None):
         r"""Return a penalty matrix given a differential operator.
@@ -1049,7 +1049,7 @@ class BSpline(Basis):
                 no_0_intervals = np.where(np.diff(knots) > 0)[0]
 
                 # For each basis gets its piecewise polynomial representation
-                for i in range(self.nbasis):
+                for i in range(self.n_basis):
                     # write a 1 in c in the position of the spline
                     # transformed in each iteration
                     c[i] = 1
@@ -1076,9 +1076,9 @@ class BSpline(Basis):
 
                 # Now for each pair of basis computes the inner product after
                 # applying the linear differential operator
-                penalty_matrix = np.zeros((self.nbasis, self.nbasis))
+                penalty_matrix = np.zeros((self.n_basis, self.n_basis))
                 for interval in range(len(no_0_intervals)):
-                    for i in range(self.nbasis):
+                    for i in range(self.n_basis):
                         poly_i = np.trim_zeros(ppoly_lst[i][:,
                                                             interval], 'f')
                         if len(poly_i) <= derivative_degree:
@@ -1093,7 +1093,7 @@ class BSpline(Basis):
                         penalty_matrix[i, i] += np.diff(polyval(
                             integral, self.knots[interval: interval + 2]))[0]
 
-                        for j in range(i + 1, self.nbasis):
+                        for j in range(i + 1, self.n_basis):
                             poly_j = np.trim_zeros(ppoly_lst[j][:,
                                                                 interval], 'f')
                             if len(poly_j) <= derivative_degree:
@@ -1149,12 +1149,12 @@ class BSpline(Basis):
             # TODO: Allow multiple dimensions
             domain_range = self.domain_range[0]
 
-        return BSpline(domain_range, self.nbasis, self.order, knots)
+        return BSpline(domain_range, self.n_basis, self.order, knots)
 
     def __repr__(self):
         """Representation of a BSpline basis."""
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
-                f"nbasis={self.nbasis}, order={self.order}, "
+                f"n_basis={self.n_basis}, order={self.order}, "
                 f"knots={self.knots})")
 
     def __eq__(self, other):
@@ -1187,31 +1187,31 @@ class BSpline(Basis):
                 m2 = m2 + multunique[i]
                 allknots[m1:m2] = uniqueknots[i]
 
-            norder1 = self.nbasis - len(self.inknots)
-            norder2 = other.nbasis - len(other.inknots)
+            norder1 = self.n_basis - len(self.inknots)
+            norder2 = other.n_basis - len(other.inknots)
             norder = min(norder1 + norder2 - 1, 20)
 
             allbreaks = ([self.domain_range[0][0]] +
                          np.ndarray.tolist(allknots) +
                          [self.domain_range[0][1]])
-            nbasis = len(allbreaks) + norder - 2
-            return BSpline(self.domain_range, nbasis, norder, allbreaks)
+            n_basis = len(allbreaks) + norder - 2
+            return BSpline(self.domain_range, n_basis, norder, allbreaks)
         else:
-            norder = min(self.nbasis - len(self.inknots) + 2, 8)
-            nbasis = max(self.nbasis + other.nbasis, norder + 1)
-            return BSpline(self.domain_range, nbasis, norder)
+            norder = min(self.n_basis - len(self.inknots) + 2, 8)
+            n_basis = max(self.n_basis + other.n_basis, norder + 1)
+            return BSpline(self.domain_range, n_basis, norder)
 
     def rbasis_of_product(self, other):
         """Multiplication of a Bspline Basis with other basis"""
 
-        norder = min(self.nbasis - len(self.inknots) + 2, 8)
-        nbasis = max(self.nbasis + other.nbasis, norder + 1)
-        return BSpline(self.domain_range, nbasis, norder)
+        norder = min(self.n_basis - len(self.inknots) + 2, 8)
+        n_basis = max(self.n_basis + other.n_basis, norder + 1)
+        return BSpline(self.domain_range, n_basis, norder)
 
     def _to_R(self):
         drange = self.domain_range[0]
         return ("create.bspline.basis(rangeval = c(" + str(drange[0]) + "," +
-                str(drange[1]) + "), nbasis = " + str(self.nbasis) +
+                str(drange[1]) + "), n_basis = " + str(self.n_basis) +
                 ", norder = " + str(self.order) + ", breaks = " +
                 self._list_to_R(self.knots) + ")")
 
@@ -1262,13 +1262,13 @@ class Fourier(Basis):
     Attributes:
         domain_range (tuple): A tuple of length 2 containing the initial and
             end values of the interval over which the basis can be evaluated.
-        nbasis (int): Number of functions in the basis.
+        n_basis (int): Number of functions in the basis.
         period (int or float): Period (:math:`T`).
 
     Examples:
         Constructs specifying number of basis, definition interval and period.
 
-        >>> fb = Fourier((0, np.pi), nbasis=3, period=1)
+        >>> fb = Fourier((0, np.pi), n_basis=3, period=1)
         >>> fb.evaluate([0, np.pi / 4, np.pi / 2, np.pi]).round(2)
         array([[ 1.  ,  1.  ,  1.  ,  1.  ],
                [ 0.  , -1.38, -0.61,  1.1 ],
@@ -1286,16 +1286,16 @@ class Fourier(Basis):
 
     """
 
-    def __init__(self, domain_range=None, nbasis=3, period=None):
+    def __init__(self, domain_range=None, n_basis=3, period=None):
         """Construct a Fourier object.
 
-        It forces the object to have an odd number of basis. If nbasis is
+        It forces the object to have an odd number of basis. If n_basis is
         even, it is incremented by one.
 
         Args:
             domain_range (tuple): Tuple defining the domain over which the
             function is defined.
-            nbasis (int): Number of basis functions.
+            n_basis (int): Number of basis functions.
             period (int or float): Period of the trigonometric functions that
                 define the basis.
 
@@ -1311,8 +1311,8 @@ class Fourier(Basis):
 
         self.period = period
         # If number of basis is even, add 1
-        nbasis += 1 - nbasis % 2
-        super().__init__(domain_range, nbasis)
+        n_basis += 1 - n_basis % 2
+        super().__init__(domain_range, n_basis)
 
     @property
     def period(self):
@@ -1344,41 +1344,41 @@ class Fourier(Basis):
 
         omega = 2 * np.pi / self.period
         omega_t = omega * eval_points
-        nbasis = self.nbasis if self.nbasis % 2 != 0 else self.nbasis + 1
+        n_basis = self.n_basis if self.n_basis % 2 != 0 else self.n_basis + 1
 
         # Initialise empty matrix
-        mat = np.empty((self.nbasis, len(eval_points)))
+        mat = np.empty((self.n_basis, len(eval_points)))
         if derivative == 0:
             # First base function is a constant
             # The division by numpy.sqrt(2) is so that it has the same norm as
             # the sine and cosine: sqrt(period / 2)
             mat[0] = np.ones(len(eval_points)) / np.sqrt(2)
-            if nbasis > 1:
+            if n_basis > 1:
                 # 2*pi*n*x / period
-                args = np.outer(range(1, nbasis // 2 + 1), omega_t)
-                index = range(1, nbasis - 1, 2)
+                args = np.outer(range(1, n_basis // 2 + 1), omega_t)
+                index = range(1, n_basis - 1, 2)
                 # odd indexes are sine functions
                 mat[index] = np.sin(args)
-                index = range(2, nbasis, 2)
+                index = range(2, n_basis, 2)
                 # even indexes are cosine functions
                 mat[index] = np.cos(args)
         # evaluates the derivatives
         else:
             # First base function is a constant, so its derivative is 0.
             mat[0] = np.zeros(len(eval_points))
-            if nbasis > 1:
+            if n_basis > 1:
                 # (2*pi*n / period) ^ n_derivative
                 factor = np.outer(
                     (-1) ** (derivative // 2) *
-                    (np.array(range(1, nbasis // 2 + 1)) * omega) **
+                    (np.array(range(1, n_basis // 2 + 1)) * omega) **
                     derivative,
                     np.ones(len(eval_points)))
                 # 2*pi*n*x / period
-                args = np.outer(range(1, nbasis // 2 + 1), omega_t)
+                args = np.outer(range(1, n_basis // 2 + 1), omega_t)
                 # even indexes
-                index_e = range(2, nbasis, 2)
+                index_e = range(2, n_basis, 2)
                 # odd indexes
-                index_o = range(1, nbasis - 1, 2)
+                index_o = range(1, n_basis - 1, 2)
                 if derivative % 2 == 0:
                     mat[index_o] = factor * np.sin(args)
                     mat[index_e] = factor * np.cos(args)
@@ -1406,7 +1406,7 @@ class Fourier(Basis):
     def _derivative(self, coefs, order=1):
 
         omega = 2 * np.pi / self.period
-        deriv_factor = (np.arange(1, (self.nbasis + 1) / 2) * omega) ** order
+        deriv_factor = (np.arange(1, (self.n_basis + 1) / 2) * omega) ** order
 
         deriv_coefs = np.zeros(coefs.shape)
 
@@ -1460,14 +1460,14 @@ class Fourier(Basis):
             omega = 2 * np.pi / self.period
             # the derivatives of the functions of the basis are also orthogonal
             # so only the diagonal is different from 0.
-            penalty_matrix = np.zeros(self.nbasis)
+            penalty_matrix = np.zeros(self.n_basis)
             if derivative_degree == 0:
                 penalty_matrix[0] = 1
             else:
                 # the derivative of a constant is 0
                 # the first basis function is a constant
                 penalty_matrix[0] = 0
-            index_even = np.array(range(2, self.nbasis, 2))
+            index_even = np.array(range(2, self.n_basis, 2))
             exponents = index_even / 2
             # factor resulting of deriving the basis function the times
             # indcated in the derivative_degree
@@ -1487,7 +1487,7 @@ class Fourier(Basis):
             raise ValueError("Ranges are not equal.")
 
         if isinstance(other, Fourier) and self.period == other.period:
-            return Fourier(self.domain_range, self.nbasis + other.nbasis - 1,
+            return Fourier(self.domain_range, self.n_basis + other.n_basis - 1,
                            self.period)
         else:
             return other.rbasis_of_product(self)
@@ -1526,13 +1526,13 @@ class Fourier(Basis):
     def _to_R(self):
         drange = self.domain_range[0]
         return ("create.fourier.basis(rangeval = c(" + str(drange[0]) + "," +
-                str(drange[1]) + "), nbasis = " + str(self.nbasis) +
+                str(drange[1]) + "), n_basis = " + str(self.n_basis) +
                 ", period = " + str(self.period) + ")")
 
     def __repr__(self):
         """Representation of a Fourier basis."""
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
-                f"nbasis={self.nbasis}, period={self.period})")
+                f"n_basis={self.n_basis}, period={self.period})")
 
     def __eq__(self, other):
         """Equality of Basis"""
@@ -1561,11 +1561,11 @@ class FDataBasis(FData):
             functional datum.
 
     Examples:
-        >>> basis = Monomial(nbasis=4)
+        >>> basis = Monomial(n_basis=4)
         >>> coefficients = [1, 1, 3, .5]
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
-            basis=Monomial(domain_range=[array([0, 1])], nbasis=4),
+            basis=Monomial(domain_range=[array([0, 1])], n_basis=4),
             coefficients=[[ 1.   1.   3.   0.5]],
             ...)
 
@@ -1608,7 +1608,7 @@ class FDataBasis(FData):
                 basis function in the basis.
         """
         coefficients = np.atleast_2d(coefficients)
-        if coefficients.shape[1] != basis.nbasis:
+        if coefficients.shape[1] != basis.n_basis:
             raise ValueError("The length or number of columns of coefficients "
                              "has to be the same equal to the number of "
                              "elements of the basis.")
@@ -1675,7 +1675,7 @@ class FDataBasis(FData):
             >>> x
             array([ 1.,  1., -1., -1.,  1.])
 
-            >>> basis = Fourier((0, 1), nbasis=3)
+            >>> basis = Fourier((0, 1), n_basis=3)
             >>> fd = FDataBasis.from_data(x, t, basis)
             >>> fd.coefficients.round(2)
             array([[ 0.  , 0.71, 0.71]])
@@ -1746,9 +1746,9 @@ class FDataBasis(FData):
         return FDataBasis._CoordinateIterator(self)
 
     @property
-    def nbasis(self):
+    def n_basis(self):
         """Return number of basis."""
-        return self.basis.nbasis
+        return self.basis.n_basis
 
     @property
     def domain_range(self):
@@ -1809,7 +1809,7 @@ class FDataBasis(FData):
 
         res_matrix = np.empty((self.n_samples, eval_points.shape[1]))
 
-        _matrix = np.empty((eval_points.shape[1], self.nbasis))
+        _matrix = np.empty((eval_points.shape[1], self.n_basis))
 
         for i in range(self.n_samples):
             basis_values = self.basis.evaluate(eval_points[i], derivative).T
@@ -1852,7 +1852,7 @@ class FDataBasis(FData):
         domain_range = self.domain_range[0]
 
         if eval_points is None:  # Grid to discretize the function
-            nfine = max(self.nbasis * 10 + 1, constants.N_POINTS_COARSE_MESH)
+            nfine = max(self.n_basis * 10 + 1, constants.N_POINTS_COARSE_MESH)
             eval_points = np.linspace(*domain_range, nfine)
         else:
             eval_points = np.asarray(eval_points)
@@ -1925,11 +1925,11 @@ class FDataBasis(FData):
             FDataBasis object.
 
         Examples:
-            >>> basis = Monomial(nbasis=4)
+            >>> basis = Monomial(n_basis=4)
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
             >>> FDataBasis(basis, coefficients).mean()
             FDataBasis(
-                basis=Monomial(domain_range=[array([0, 1])], nbasis=4),
+                basis=Monomial(domain_range=[array([0, 1])], n_basis=4),
                 coefficients=[[ 1.  1.  3.  0.5]],
                 ...)
 
@@ -2022,7 +2022,7 @@ class FDataBasis(FData):
 
         Examples:
             >>> fd = FDataBasis(coefficients=[[1, 1, 1], [1, 0, 1]],
-            ...                 basis=Monomial((0,5), nbasis=3))
+            ...                 basis=Monomial((0,5), n_basis=3))
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
                 array([[[ 1.],
@@ -2043,7 +2043,7 @@ class FDataBasis(FData):
 
         if eval_points is None:
             npoints = max(constants.N_POINTS_FINE_MESH,
-                          constants.BASIS_MIN_FACTOR * self.nbasis)
+                          constants.BASIS_MIN_FACTOR * self.n_basis)
             eval_points = np.linspace(*self.domain_range[0], npoints)
 
         return grid.FDataGrid(self.evaluate(eval_points, keepdims=False),
@@ -2123,7 +2123,7 @@ class FDataBasis(FData):
 
             basisobj = self.basis.basis_of_product(other.basis)
             neval = max(constants.BASIS_MIN_FACTOR *
-                        max(self.nbasis, other.nbasis) + 1,
+                        max(self.n_basis, other.n_basis) + 1,
                         constants.N_POINTS_COARSE_MESH)
             (left, right) = self.domain_range[0]
             evalarg = np.linspace(left, right, neval)
@@ -2202,7 +2202,7 @@ class FDataBasis(FData):
         if weights is not None:
             other = other.times(weights)
 
-        if self.n_samples * other.n_samples > self.nbasis * other.nbasis:
+        if self.n_samples * other.n_samples > self.n_basis * other.n_basis:
             return (self.coefficients @
                     self.basis._inner_matrix(other.basis) @
                     other.coefficients.T)
@@ -2265,7 +2265,7 @@ class FDataBasis(FData):
         """Return str(self)."""
 
         return (f"{self.__class__.__name__}("
-                f"\nbasis={self.basis},"
+                f"\n_basis={self.basis},"
                 f"\ncoefficients={self.coefficients})").replace('\n', '\n    ')
 
     def __eq__(self, other):

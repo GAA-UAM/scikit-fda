@@ -1,14 +1,15 @@
 
 import unittest
-from skfda.representation.basis import FDataBasis, Monomial, BSpline, Fourier
+
 import numpy as np
+from skfda.representation.basis import FDataBasis, Monomial, BSpline, Fourier
 
 
 class TestBasisEvaluationFourier(unittest.TestCase):
 
     def test_evaluation_simple_fourier(self):
         """Test the evaluation of FDataBasis"""
-        fourier = Fourier(domain_range=(0, 1), nbasis=3)
+        fourier = Fourier(domain_range=(0, 1), n_basis=3)
 
         coefficients = np.array([[0.00078238, 0.48857741, 0.63971985],
                                  [0.01778079, 0.73440271, 0.20148638]])
@@ -27,7 +28,7 @@ class TestBasisEvaluationFourier(unittest.TestCase):
 
     def test_evaluation_point_fourier(self):
         """Test the evaluation of a single point FDataBasis"""
-        fourier = Fourier(domain_range=(0, 1), nbasis=3)
+        fourier = Fourier(domain_range=(0, 1), n_basis=3)
 
         coefficients = np.array([[0.00078238, 0.48857741, 0.63971985],
                                  [0.01778079, 0.73440271, 0.20148638]])
@@ -48,7 +49,7 @@ class TestBasisEvaluationFourier(unittest.TestCase):
 
     def test_evaluation_derivative_fourier(self):
         """Test the evaluation of the derivative of a FDataBasis"""
-        fourier = Fourier(domain_range=(0, 1), nbasis=3)
+        fourier = Fourier(domain_range=(0, 1), n_basis=3)
 
         coefficients = np.array([[0.00078238, 0.48857741, 0.63971985],
                                  [0.01778079, 0.73440271, 0.20148638]])
@@ -70,7 +71,7 @@ class TestBasisEvaluationFourier(unittest.TestCase):
         """Test the evaluation of FDataBasis with the grid option set to
             true. Nothing should be change due to the domain dimension is 1,
             but can accept the """
-        fourier = Fourier(domain_range=(0, 1), nbasis=3)
+        fourier = Fourier(domain_range=(0, 1), n_basis=3)
 
         coefficients = np.array([[0.00078238, 0.48857741, 0.63971985],
                                  [0.01778079, 0.73440271, 0.20148638]])
@@ -94,7 +95,7 @@ class TestBasisEvaluationFourier(unittest.TestCase):
     def test_evaluation_composed_fourier(self):
         """Test the evaluation of FDataBasis the a matrix of times instead of
         a list of times """
-        fourier = Fourier(domain_range=(0, 1), nbasis=3)
+        fourier = Fourier(domain_range=(0, 1), n_basis=3)
 
         coefficients = np.array([[0.00078238, 0.48857741, 0.63971985],
                                  [0.01778079, 0.73440271, 0.20148638]])
@@ -121,7 +122,7 @@ class TestBasisEvaluationFourier(unittest.TestCase):
 
     def test_evaluation_keepdims_fourier(self):
         """Test behaviour of keepdims """
-        fourier = Fourier(domain_range=(0, 1), nbasis=3)
+        fourier = Fourier(domain_range=(0, 1), n_basis=3)
 
         coefficients = np.array([[0.00078238, 0.48857741, 0.63971985],
                                  [0.01778079, 0.73440271, 0.20148638]])
@@ -160,7 +161,7 @@ class TestBasisEvaluationFourier(unittest.TestCase):
 
     def test_evaluation_composed_keepdims_fourier(self):
         """Test behaviour of keepdims with composed evaluation"""
-        fourier = Fourier(domain_range=(0, 1), nbasis=3)
+        fourier = Fourier(domain_range=(0, 1), n_basis=3)
 
         coefficients = np.array([[0.00078238, 0.48857741, 0.63971985],
                                  [0.01778079, 0.73440271, 0.20148638]])
@@ -205,7 +206,7 @@ class TestBasisEvaluationFourier(unittest.TestCase):
     def test_evaluation_grid_keepdims_fourier(self):
         """Test behaviour of keepdims with grid evaluation"""
 
-        fourier = Fourier(domain_range=(0, 1), nbasis=3)
+        fourier = Fourier(domain_range=(0, 1), n_basis=3)
 
         coefficients = np.array([[0.00078238, 0.48857741, 0.63971985],
                                  [0.01778079, 0.73440271, 0.20148638]])
@@ -248,10 +249,10 @@ class TestBasisEvaluationFourier(unittest.TestCase):
 
     def test_domain_in_list_fourier(self):
         """Test the evaluation of FDataBasis"""
-        for fourier in (Fourier(domain_range=[(0, 1)], nbasis=3),
-                        Fourier(domain_range=((0, 1),), nbasis=3),
-                        Fourier(domain_range=np.array((0, 1)), nbasis=3),
-                        Fourier(domain_range=np.array([(0, 1)]), nbasis=3)):
+        for fourier in (Fourier(domain_range=[(0, 1)], n_basis=3),
+                        Fourier(domain_range=((0, 1),), n_basis=3),
+                        Fourier(domain_range=np.array((0, 1)), n_basis=3),
+                        Fourier(domain_range=np.array([(0, 1)]), n_basis=3)):
 
             coefficients = np.array([[0.00078238, 0.48857741, 0.63971985],
                                      [0.01778079, 0.73440271, 0.20148638]])
@@ -271,7 +272,7 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
 
     def test_evaluation_simple_bspline(self):
         """Test the evaluation of FDataBasis"""
-        bspline = BSpline(domain_range=(0, 1), nbasis=5, order=3)
+        bspline = BSpline(domain_range=(0, 1), n_basis=5, order=3)
 
         coefficients = [[0.00078238, 0.48857741, 0.63971985, 0.23, 0.33],
                         [0.01778079, 0.73440271, 0.20148638, 0.54, 0.12]]
@@ -288,7 +289,7 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
 
     def test_evaluation_point_bspline(self):
         """Test the evaluation of a single point FDataBasis"""
-        bspline = BSpline(domain_range=(0, 1), nbasis=5, order=3)
+        bspline = BSpline(domain_range=(0, 1), n_basis=5, order=3)
 
         coefficients = [[0.00078238, 0.48857741, 0.63971985, 0.23, 0.33],
                         [0.01778079, 0.73440271, 0.20148638, 0.54, 0.12]]
@@ -308,7 +309,7 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
 
     def test_evaluation_derivative_bspline(self):
         """Test the evaluation of the derivative of a FDataBasis"""
-        bspline = BSpline(domain_range=(0, 1), nbasis=5, order=3)
+        bspline = BSpline(domain_range=(0, 1), n_basis=5, order=3)
 
         coefficients = [[0.00078238, 0.48857741, 0.63971985, 0.23, 0.33],
                         [0.01778079, 0.73440271, 0.20148638, 0.54, 0.12]]
@@ -327,7 +328,7 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
         """Test the evaluation of FDataBasis with the grid option set to
             true. Nothing should be change due to the domain dimension is 1,
             but can accept the """
-        bspline = BSpline(domain_range=(0, 1), nbasis=5, order=3)
+        bspline = BSpline(domain_range=(0, 1), n_basis=5, order=3)
 
         coefficients = [[0.00078238, 0.48857741, 0.63971985, 0.23, 0.33],
                         [0.01778079, 0.73440271, 0.20148638, 0.54, 0.12]]
@@ -351,7 +352,7 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
     def test_evaluation_composed_bspline(self):
         """Test the evaluation of FDataBasis the a matrix of times instead of
         a list of times """
-        bspline = BSpline(domain_range=(0, 1), nbasis=5, order=3)
+        bspline = BSpline(domain_range=(0, 1), n_basis=5, order=3)
 
         coefficients = [[0.00078238, 0.48857741, 0.63971985, 0.23, 0.33],
                         [0.01778079, 0.73440271, 0.20148638, 0.54, 0.12]]
@@ -379,7 +380,7 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
 
     def test_evaluation_keepdims_bspline(self):
         """Test behaviour of keepdims """
-        bspline = BSpline(domain_range=(0, 1), nbasis=5, order=3)
+        bspline = BSpline(domain_range=(0, 1), n_basis=5, order=3)
 
         coefficients = [[0.00078238, 0.48857741, 0.63971985, 0.23, 0.33],
                         [0.01778079, 0.73440271, 0.20148638, 0.54, 0.12]]
@@ -416,7 +417,7 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
 
     def test_evaluation_composed_keepdims_bspline(self):
         """Test behaviour of keepdims with composed evaluation"""
-        bspline = BSpline(domain_range=(0, 1), nbasis=5, order=3)
+        bspline = BSpline(domain_range=(0, 1), n_basis=5, order=3)
 
         coefficients = [[0.00078238, 0.48857741, 0.63971985, 0.23, 0.33],
                         [0.01778079, 0.73440271, 0.20148638, 0.54, 0.12]]
@@ -457,7 +458,7 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
     def test_evaluation_grid_keepdims_bspline(self):
         """Test behaviour of keepdims with grid evaluation"""
 
-        bspline = BSpline(domain_range=(0, 1), nbasis=5, order=3)
+        bspline = BSpline(domain_range=(0, 1), n_basis=5, order=3)
 
         coefficients = [[0.00078238, 0.48857741, 0.63971985, 0.23, 0.33],
                         [0.01778079, 0.73440271, 0.20148638, 0.54, 0.12]]
@@ -496,11 +497,11 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
     def test_domain_in_list_bspline(self):
         """Test the evaluation of FDataBasis"""
 
-        for bspline in (BSpline(domain_range=[(0, 1)], nbasis=5, order=3),
-                        BSpline(domain_range=((0, 1),), nbasis=5, order=3),
-                        BSpline(domain_range=np.array((0, 1)), nbasis=5,
+        for bspline in (BSpline(domain_range=[(0, 1)], n_basis=5, order=3),
+                        BSpline(domain_range=((0, 1),), n_basis=5, order=3),
+                        BSpline(domain_range=np.array((0, 1)), n_basis=5,
                                 order=3),
-                        BSpline(domain_range=np.array([(0, 1)]), nbasis=5,
+                        BSpline(domain_range=np.array([(0, 1)]), n_basis=5,
                                 order=3)
                         ):
 
@@ -527,7 +528,7 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
     def test_evaluation_simple_monomial(self):
         """Test the evaluation of FDataBasis"""
 
-        monomial = Monomial(domain_range=(0, 1), nbasis=3)
+        monomial = Monomial(domain_range=(0, 1), n_basis=3)
 
         coefficients = [[1, 2, 3], [0.5, 1.4, 1.3]]
 
@@ -543,7 +544,7 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
 
     def test_evaluation_point_monomial(self):
         """Test the evaluation of a single point FDataBasis"""
-        monomial = Monomial(domain_range=(0, 1), nbasis=3)
+        monomial = Monomial(domain_range=(0, 1), n_basis=3)
 
         coefficients = [[1, 2, 3], [0.5, 1.4, 1.3]]
 
@@ -562,7 +563,7 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
 
     def test_evaluation_derivative_monomial(self):
         """Test the evaluation of the derivative of a FDataBasis"""
-        monomial = Monomial(domain_range=(0, 1), nbasis=3)
+        monomial = Monomial(domain_range=(0, 1), n_basis=3)
 
         coefficients = [[1, 2, 3], [0.5, 1.4, 1.3]]
 
@@ -580,7 +581,7 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
         """Test the evaluation of FDataBasis with the grid option set to
             true. Nothing should be change due to the domain dimension is 1,
             but can accept the """
-        monomial = Monomial(domain_range=(0, 1), nbasis=3)
+        monomial = Monomial(domain_range=(0, 1), n_basis=3)
 
         coefficients = [[1, 2, 3], [0.5, 1.4, 1.3]]
 
@@ -603,7 +604,7 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
     def test_evaluation_composed_monomial(self):
         """Test the evaluation of FDataBasis the a matrix of times instead of
         a list of times """
-        monomial = Monomial(domain_range=(0, 1), nbasis=3)
+        monomial = Monomial(domain_range=(0, 1), n_basis=3)
 
         coefficients = [[1, 2, 3], [0.5, 1.4, 1.3]]
 
@@ -629,7 +630,7 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
 
     def test_evaluation_keepdims_monomial(self):
         """Test behaviour of keepdims """
-        monomial = Monomial(domain_range=(0, 1), nbasis=3)
+        monomial = Monomial(domain_range=(0, 1), n_basis=3)
 
         coefficients = [[1, 2, 3], [0.5, 1.4, 1.3]]
 
@@ -663,7 +664,7 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
 
     def test_evaluation_composed_keepdims_monomial(self):
         """Test behaviour of keepdims with composed evaluation"""
-        monomial = Monomial(domain_range=(0, 1), nbasis=3)
+        monomial = Monomial(domain_range=(0, 1), n_basis=3)
 
         coefficients = [[1, 2, 3], [0.5, 1.4, 1.3]]
 
@@ -700,7 +701,7 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
     def test_evaluation_grid_keepdims_monomial(self):
         """Test behaviour of keepdims with grid evaluation"""
 
-        monomial = Monomial(domain_range=(0, 1), nbasis=3)
+        monomial = Monomial(domain_range=(0, 1), n_basis=3)
 
         coefficients = [[1, 2, 3], [0.5, 1.4, 1.3]]
 
@@ -737,10 +738,10 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
     def test_domain_in_list_monomial(self):
         """Test the evaluation of FDataBasis"""
 
-        for monomial in (Monomial(domain_range=[(0, 1)], nbasis=3),
-                         Monomial(domain_range=((0, 1),), nbasis=3),
-                         Monomial(domain_range=np.array((0, 1)), nbasis=3),
-                         Monomial(domain_range=np.array([(0, 1)]), nbasis=3)):
+        for monomial in (Monomial(domain_range=[(0, 1)], n_basis=3),
+                         Monomial(domain_range=((0, 1),), n_basis=3),
+                         Monomial(domain_range=np.array((0, 1)), n_basis=3),
+                         Monomial(domain_range=np.array([(0, 1)]), n_basis=3)):
 
             coefficients = [[1, 2, 3], [0.5, 1.4, 1.3]]
 

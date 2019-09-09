@@ -210,7 +210,7 @@ class BasisSmoother(_LinearSmoother):
         array([ 1.,  1., -1., -1.,  1.])
 
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
-        >>> basis = skfda.representation.basis.Fourier((0, 1), nbasis=3)
+        >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='cholesky')
         >>> fd_smooth = smoother.fit_transform(fd)
@@ -225,7 +225,7 @@ class BasisSmoother(_LinearSmoother):
         in basis form, by default, without extra smoothing:
 
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
-        >>> basis = skfda.representation.basis.Fourier((0, 1), nbasis=3)
+        >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='cholesky', return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
@@ -256,7 +256,7 @@ class BasisSmoother(_LinearSmoother):
 
         >>> from skfda.misc import LinearDifferentialOperator
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
-        >>> basis = skfda.representation.basis.Fourier((0, 1), nbasis=3)
+        >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='cholesky',
         ...                smoothing_parameter=1,
@@ -268,7 +268,7 @@ class BasisSmoother(_LinearSmoother):
 
         >>> from skfda.misc import LinearDifferentialOperator
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
-        >>> basis = skfda.representation.basis.Fourier((0, 1), nbasis=3)
+        >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='qr',
         ...                smoothing_parameter=1,
@@ -280,7 +280,7 @@ class BasisSmoother(_LinearSmoother):
 
         >>> from skfda.misc import LinearDifferentialOperator
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
-        >>> basis = skfda.representation.basis.Fourier((0, 1), nbasis=3)
+        >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='matrix',
         ...                smoothing_parameter=1,
@@ -467,7 +467,7 @@ class BasisSmoother(_LinearSmoother):
         #  C the coefficient matrix (the unknown)
         #  Y is the data_matrix
 
-        if(data_matrix.shape[0] > self.basis.nbasis
+        if(data_matrix.shape[0] > self.basis.n_basis
            or self.smoothing_parameter > 0):
 
             # TODO: The penalty could be None (if the matrix is passed)
@@ -488,14 +488,14 @@ class BasisSmoother(_LinearSmoother):
                                   penalty_matrix=penalty_matrix,
                                   ndegenerated=ndegenerated)
 
-        elif data_matrix.shape[0] == self.basis.nbasis:
+        elif data_matrix.shape[0] == self.basis.n_basis:
             # If the number of basis equals the number of points and no
             # smoothing is required
             coefficients = np.linalg.solve(basis_values, data_matrix).T
 
-        else:  # data_matrix.shape[0] < basis.nbasis
+        else:  # data_matrix.shape[0] < basis.n_basis
             raise ValueError(f"The number of basis functions "
-                             f"({self.basis.nbasis}) "
+                             f"({self.basis.n_basis}) "
                              f"exceed the number of points to be smoothed "
                              f"({data_matrix.shape[0]}).")
 

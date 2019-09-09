@@ -96,6 +96,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
+    :class:`~skfda.ml.exploratory.outliers.LocalOutlierFactor`
 
     Notes
     -----
@@ -253,6 +254,7 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
+    :class:`~skfda.ml.exploratory.outliers.LocalOutlierFactor`
 
     Notes
     -----
@@ -357,6 +359,7 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
+    :class:`~skfda.ml.exploratory.outliers.LocalOutlierFactor`
 
     """
 

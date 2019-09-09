@@ -16,7 +16,7 @@ class TestLpMetrics(unittest.TestCase):
         sample_points = [1, 2, 3, 4, 5]
         self.fd = FDataGrid([[2, 3, 4, 5, 6], [1, 4, 9, 16, 25]],
                             sample_points=sample_points)
-        basis = Monomial(nbasis=3, domain_range=(1, 5))
+        basis = Monomial(n_basis=3, domain_range=(1, 5))
         self.fd_basis = FDataBasis(basis, [[1, 1, 0], [0, 0, 1]])
         self.fd_curve = self.fd.concatenate(self.fd, as_coordinates=True)
         self.fd_surface = make_multimodal_samples(n_samples=3, dim_domain=2,

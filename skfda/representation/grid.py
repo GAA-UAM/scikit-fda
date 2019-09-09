@@ -847,7 +847,7 @@ class FDataGrid(FData):
             array([ 1.,  1., -1., -1.,  1.])
 
             >>> fd = FDataGrid(x, t)
-            >>> basis = skfda.representation.basis.Fourier(nbasis=3)
+            >>> basis = skfda.representation.basis.Fourier(n_basis=3)
             >>> fd_b = fd.to_basis(basis)
             >>> fd_b.coefficients.round(2)
             array([[ 0.  , 0.71, 0.71]])

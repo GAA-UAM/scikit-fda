@@ -59,8 +59,9 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         Doesn't affect :meth:`fit` method.
     multivariate_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
-        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
-        the module :mod:`skfda.misc.metrics`.
+        :class:`~sklearn.neighbors.DistanceMetric`) or a functional metric of
+        the module `skfda.misc.metrics` if ``False``.
+        
     Examples
     --------
     Firstly, we will create a toy dataset with 2 classes

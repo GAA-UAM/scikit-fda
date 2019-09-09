@@ -15,10 +15,13 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     The anomaly score of each sample is called Local Outlier Factor.
     It measures the local deviation of density of a given sample with
     respect to its neighbors.
+
     It is local in that the anomaly score depends on how isolated the object
     is with respect to the surrounding neighborhood.
+
     More precisely, locality is given by k-nearest neighbors, whose distance
     is used to estimate the local density.
+
     By comparing the local density of a sample to the local densities of
     its neighbors, one can identify samples that have a substantially lower
     density than their neighbors. These are considered outliers.
@@ -31,51 +34,30 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         all samples will be used.
     algorithm : {'auto', 'ball_tree', 'kd_tree', 'brute'}, optional
         Algorithm used to compute the nearest neighbors:
+        
         - 'ball_tree' will use :class:`BallTree`
         - 'kd_tree' will use :class:`KDTree`
         - 'brute' will use a brute-force search.
         - 'auto' will attempt to decide the most appropriate algorithm
           based on the values passed to :meth:`fit` method.
-        Note: fitting on sparse input will override the setting of
-        this parameter, using brute force.
+
     leaf_size : int, optional (default=30)
         Leaf size passed to :class:`BallTree` or :class:`KDTree`. This can
         affect the speed of the construction and query, as well as the memory
         required to store the tree. The optimal value depends on the
         nature of the problem.
-    metric : string or callable, default 'minkowski'
-        metric used for the distance computation. Any metric from scikit-learn
-        or scipy.spatial.distance can be used.
-        If 'precomputed', the training input X is expected to be a distance
-        matrix.
-        If metric is a callable function, it is called on each
-        pair of instances (rows) and the resulting value recorded. The callable
-        should take two arrays as input and return one value indicating the
-        distance between them. This works for Scipy's metrics, but is less
-        efficient than passing the metric name as a string.
-        Valid values for metric are:
-        - from scikit-learn: ['cityblock', 'cosine', 'euclidean', 'l1', 'l2',
-          'manhattan']
-        - from scipy.spatial.distance: ['braycurtis', 'canberra', 'chebyshev',
-          'correlation', 'dice', 'hamming', 'jaccard', 'kulsinski',
-          'mahalanobis', 'minkowski', 'rogerstanimoto', 'russellrao',
-          'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean',
-          'yule']
-        See the documentation for scipy.spatial.distance for details on these
-        metrics:
-        https://docs.scipy.org/doc/scipy/reference/spatial.distance.html
-    p : integer, optional (default=2)
-        Parameter for the Minkowski metric from
-        :func:`sklearn.metrics.pairwise.pairwise_distances`. When p = 1, this
-        is equivalent to using manhattan_distance (l1), and euclidean_distance
-        (l2) for p = 2. For arbitrary p, minkowski_distance (l_p) is used.
+    metric : string or callable, (default
+        :func:`lp_distance <skfda.misc.metrics.lp_distance>`)
+        the distance metric to use for the tree.  The default metric is
+        the L2 distance. See the documentation of the metrics module
+        for a list of available metrics.
     metric_params : dict, optional (default=None)
         Additional keyword arguments for the metric function.
     contamination : float in (0., 0.5), optional (default='auto')
         The amount of contamination of the data set, i.e. the proportion
         of outliers in the data set. When fitting this is used to define the
         threshold on the decision function. If "auto", the decision function
-        threshold is determined as in the original paper.
+        threshold is determined as in the original paper [Rca479bb49841-1]_.
     novelty : boolean, default False
         By default, LocalOutlierFactor is only meant to be used for outlier
         detection (novelty=False). Set novelty to True if you want to use
@@ -88,13 +70,18 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         ``-1`` means using all processors. See :term:`Glossary <n_jobs>`
         for more details.
         Affects only :meth:`kneighbors` and :meth:`kneighbors_graph` methods.
+    multivariate_metric : boolean, optional (default = False)
+        Indicates if the metric used is a sklearn distance between vectors (see
+        :class:`~sklearn.neighbors.DistanceMetric`) or a functional metric of
+        the module `skfda.misc.metrics` if ``False``.
 
     Attributes
     ----------
     negative_outlier_factor_ : numpy array, shape (n_samples,)
         The opposite LOF of the training samples. The higher, the more normal.
-        Inliers tend to have a LOF score close to 1 (``negative_outlier_factor_``
-        close to -1), while outliers tend to have a larger LOF score.
+        Inliers tend to have a LOF score close to 1
+        (``negative_outlier_factor_`` close to -1), while outliers tend to have
+        a larger LOF score.
         The local outlier factor (LOF) of a sample captures its
         supposed 'degree of abnormality'.
         It is the average of the ratio of the local reachability density of
@@ -110,10 +97,57 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         case, the offset is defined in such a way we obtain the expected
         number of outliers in training.
 
+    Examples:
+
+        **Local Outlier Factor (LOF) for outlier detection**.
+
+        >>> from skfda.exploratory.outliers import LocalOutlierFactor
+
+        Creation of simulated dataset with 2 outliers to be used with LOF.
+
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> fd_clean = make_sinusoidal_process(n_samples=25, error_std=0,
+        ...                                    phase_std=0.1, random_state=0)
+        >>> fd_outliers = make_sinusoidal_process(
+        ...     n_samples=2, error_std=0, phase_mean=0.5, random_state=5)
+        >>> fd = fd_outliers.concatenate(fd_clean) # Dataset with 2 outliers
+
+        Detection of outliers with LOF.
+
+        >>> lof = LocalOutlierFactor()
+        >>> is_outlier = lof.fit_predict(fd)
+        >>> is_outlier # -1 for anomalies/outliers and +1 for inliers
+        array([ -1, -1,  1,  1,  1,  1,  1,  1, ...,  1,  1,  1,  1])
+
+        The negative outlier factor stored.
+
+        >>> lof.negative_outlier_factor_.round(2)
+        array([ -7.07, -1.54, -1.  , -0.99, ..., -0.97,  -1,  -0.99])
+
+        **Novelty detection with LOF**.
+
+        Creation of a dataset without outliers.
+
+        >>> fd_train = make_sinusoidal_process(n_samples=25, error_std=0,
+        ...                                    phase_std=0.1, random_state=9)
+
+        Fit of LOF using the dataset without outliers.
+
+        >>> lof = LocalOutlierFactor(novelty=True)
+        >>> lof.fit(fd_train)
+        LocalOutlierFactor(algorithm='auto', ..., novelty=True)
+
+        Detection of annomalies for new samples.
+
+        >>> lof.predict(fd) # Predict with samples not used in fit
+        array([ -1, -1,  1,  1,  1,  1,  1,  1, ...,  1,  1,  1,  1])
+
+
     References
     ----------
-    .. [1] Breunig, M. M., Kriegel, H. P., Ng, R. T., & Sander, J. (2000, May).
-           LOF: identifying density-based local outliers. In ACM sigmod record.
+    .. [Rca479bb49841-1] Breunig, M. M., Kriegel, H. P., Ng, R. T., & Sander,
+       J. (2000, May). LOF: identifying density-based local outliers. In ACM
+       sigmod record.
 
     Notes
     -----
@@ -190,7 +224,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
         return self
 
-    def predict(self, X, y=None):
+    def predict(self, X):
         """Predict the labels (1 inlier, -1 outlier) of X according to LOF.
 
         This method allows to generalize prediction to *new observations* (not
@@ -201,7 +235,8 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         ----------
         X : :class:`~skfda.FDataGrid` or array_like
             FDataGrid containing the query sample or samples to compute the
-            Local Outlier Factor w.r.t. to the training samples.
+            Local Outlier Factor w.r.t. to the training samples or array with
+            the distances to the training samples if metric='precomputed'.
 
         Returns
         -------
@@ -262,7 +297,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
         return res
 
-    def decision_function(self, X, y=None):
+    def decision_function(self, X):
         """Shifted opposite of the Local Outlier Factor of X.
 
         Bigger is better, i.e. large values correspond to inliers.

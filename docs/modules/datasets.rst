@@ -17,6 +17,7 @@ The following functions are used to retrieve specific functional datasets:
    skfda.datasets.fetch_medflies
    skfda.datasets.fetch_weather
    skfda.datasets.fetch_aemet
+   skfda.datasets.fetch_octane
 
 Those functions return a dictionary with at least a "data" field containing the
 instance data, and a "target" field containing the class labels or regression values,

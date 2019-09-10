@@ -34,7 +34,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         all samples will be used.
     algorithm : {'auto', 'ball_tree', 'kd_tree', 'brute'}, optional
         Algorithm used to compute the nearest neighbors:
-        
+
         - 'ball_tree' will use :class:`BallTree`
         - 'kd_tree' will use :class:`KDTree`
         - 'brute' will use a brute-force search.
@@ -57,7 +57,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         The amount of contamination of the data set, i.e. the proportion
         of outliers in the data set. When fitting this is used to define the
         threshold on the decision function. If "auto", the decision function
-        threshold is determined as in the original paper [Rca479bb49841-1]_.
+        threshold is determined as in the original paper [BKNS2000]_.
     novelty : boolean, default False
         By default, LocalOutlierFactor is only meant to be used for outlier
         detection (novelty=False). Set novelty to True if you want to use
@@ -145,7 +145,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
     References
     ----------
-    .. [Rca479bb49841-1] Breunig, M. M., Kriegel, H. P., Ng, R. T., & Sander,
+    .. [BKNS2000] Breunig, M. M., Kriegel, H. P., Ng, R. T., & Sander,
        J. (2000, May). LOF: identifying density-based local outliers. In ACM
        sigmod record.
 
@@ -251,7 +251,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
 
     def fit_predict(self, X, y=None):
-        """"Fits the model to the training set X and returns the labels.
+        """Fits the model to the training set X and returns the labels.
 
         Label is 1 for an inlier and -1 for an outlier according to the LOF
         score and the contamination parameter.

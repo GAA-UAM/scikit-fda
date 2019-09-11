@@ -117,7 +117,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         >>> lof = LocalOutlierFactor()
         >>> is_outlier = lof.fit_predict(fd)
         >>> is_outlier # -1 for anomalies/outliers and +1 for inliers
-        array([ -1, -1,  1,  1,  1,  1,  1,  1, ...,  1,  1,  1,  1])
+        array([-1, -1,  1,  1,  1,  1,  1,  1, ...,  1,  1,  1,  1])
 
         The negative outlier factor stored.
 
@@ -140,7 +140,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         Detection of annomalies for new samples.
 
         >>> lof.predict(fd) # Predict with samples not used in fit
-        array([ -1, -1,  1,  1,  1,  1,  1,  1, ...,  1,  1,  1,  1])
+        array([-1, -1,  1,  1,  1,  1,  1,  1, ...,  1,  1,  1,  1])
 
 
     References

@@ -2,9 +2,10 @@
 
 from sklearn.base import OutlierMixin
 from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
-                    _to_multivariate_metric)
+                   _to_multivariate_metric)
 
 from ..misc.metrics import lp_distance
+
 
 class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
                          OutlierMixin):
@@ -164,6 +165,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
     """
+
     def __init__(self, n_neighbors=20, algorithm='auto',
                  leaf_size=30, metric='l2', metric_params=None,
                  contamination='auto', novelty=False,
@@ -202,7 +204,6 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         self.negative_outlier_factor_ = self.estimator_.negative_outlier_factor_
         self.n_neighbors_ = self.estimator_.n_neighbors_
         self.offset_ = self.estimator_.offset_
-
 
     def fit(self, X, y=None):
         """Fit the model using X as training data.
@@ -250,7 +251,6 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         X_multivariate = self._transform_to_multivariate(X)
 
         return self.estimator_.predict(X_multivariate)
-
 
     def fit_predict(self, X, y=None):
         """Fits the model to the training set X and returns the labels.

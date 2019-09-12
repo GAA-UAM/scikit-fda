@@ -46,10 +46,10 @@ fdgrid.dataset_label = "Grid"
 fd_fourier = fdgrid.to_basis(skfda.representation.basis.Fourier())
 fd_fourier.dataset_label = "Fourier Basis"
 
-fd_monomial = fdgrid.to_basis(skfda.representation.basis.Monomial(nbasis=5))
+fd_monomial = fdgrid.to_basis(skfda.representation.basis.Monomial(n_basis=5))
 fd_monomial.dataset_label = "Monomial Basis"
 
-fd_bspline = fdgrid.to_basis(skfda.representation.basis.BSpline(nbasis=5))
+fd_bspline = fdgrid.to_basis(skfda.representation.basis.BSpline(n_basis=5))
 fd_bspline.dataset_label = "BSpline Basis"
 
 

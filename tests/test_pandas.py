@@ -10,7 +10,7 @@ class TestPandas(unittest.TestCase):
         self.fd = skfda.FDataGrid(
             [[1, 2, 3, 4, 5, 6, 7], [2, 3, 4, 5, 6, 7, 9]])
         self.fd_basis = self.fd.to_basis(skfda.representation.basis.BSpline(
-            nbasis=5))
+            n_basis=5))
 
     def test_fdatagrid_series(self):
         series = pd.Series(self.fd)

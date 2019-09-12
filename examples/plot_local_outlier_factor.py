@@ -53,7 +53,7 @@ print(is_outlier) # 1 for inliners / -1 for outliers
 # TODO: Use one hot encoding internally to allow arbitrary sample_labels
 is_outlier[is_outlier == -1] = 0
 
-fd.plot(sample_labels=is_outlier, label_colors=['C1', 'C0'],
+fd.plot(sample_labels=is_outlier, label_colors=['darkorange', 'lightgrey'],
         label_names=["outlier", "inliner"])
 
 

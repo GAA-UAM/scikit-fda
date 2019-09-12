@@ -123,7 +123,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         The negative outlier factor stored.
 
         >>> lof.negative_outlier_factor_.round(2)
-        array([-7.07, -1.54, -1.  , -0.99, ..., -0.97,  -1. ,  -0.99])
+        array([-7.11, -1.54, -1.  , -0.99, ..., -0.97,  -1. ,  -0.99])
 
         **Novelty detection with LOF**.
 

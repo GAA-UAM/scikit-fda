@@ -151,9 +151,9 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
     Notes
     -----
-        This estimator wraps the scikit-learn analogous class
+        This estimator wraps the scikit-learn class
         :class:`~sklearn.neighbors.LocalOutlierFactor` employing functional
-        metrics instead of the multivariate ones.
+        metrics and data instead of the multivariate ones.
 
     See also
     --------
@@ -193,7 +193,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
         return _LocalOutlierFactor(
             n_neighbors=self.n_neighbors, algorithm=self.algorithm,
-            leaf_size=self.leaf_size, metric=self.metric,
+            leaf_size=self.leaf_size, metric=sklearn_metric,
             metric_params=self.metric_params, contamination=self.contamination,
             novelty=self.novelty, n_jobs=self.n_jobs)
 
@@ -224,12 +224,14 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
         return self
 
-    def predict(self, X):
+    def predict(self, X=None):
         """Predict the labels (1 inlier, -1 outlier) of X according to LOF.
 
         This method allows to generalize prediction to *new observations* (not
         in the training set). Only available for novelty detection (when
         novelty is set to True).
+
+        If X is None, returns the same as fit_predict(X_train).
 
         Parameters
         ----------
@@ -356,4 +358,4 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         self._check_is_fitted()
         X_multivariate = self._transform_to_multivariate(X)
 
-        return self.estimator_.decision_function(X_multivariate)
+        return self.estimator_.score_samples(X_multivariate)

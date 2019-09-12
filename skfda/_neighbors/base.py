@@ -167,6 +167,7 @@ class NeighborsMixin:
                     metric = lp_distance
                 else:
                     metric = self.metric
+
                 sklearn_metric = _to_multivariate_metric(metric,
                                                          self._sample_points)
             else:

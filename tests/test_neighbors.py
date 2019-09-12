@@ -107,7 +107,6 @@ class TestNeighbors(unittest.TestCase):
 
             dist, links = neigh.kneighbors(self.X[:4])
 
-
             np.testing.assert_array_equal(links, [[0, 7, 21, 23, 15],
                                                   [1, 12, 19, 18, 17],
                                                   [2, 17, 22, 27, 26],
@@ -165,7 +164,7 @@ class TestNeighbors(unittest.TestCase):
     def test_knn_functional_response_sklearn(self):
         # Check sklearn metric
         knnr = KNeighborsRegressor(n_neighbors=1, metric='euclidean',
-                                             multivariate_metric=True)
+                                   multivariate_metric=True)
         knnr.fit(self.X, self.X)
 
         res = knnr.predict(self.X)
@@ -174,7 +173,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_knn_functional_response_precomputed(self):
         knnr = KNeighborsRegressor(n_neighbors=4, weights='distance',
-                                             metric='precomputed')
+                                   metric='precomputed')
         d = pairwise_distance(lp_distance)
         distances = d(self.X[:4], self.X[:4])
 
@@ -186,8 +185,8 @@ class TestNeighbors(unittest.TestCase):
 
     def test_radius_functional_response(self):
         knnr = RadiusNeighborsRegressor(metric=lp_distance,
-                                                  weights='distance',
-                                                  regressor=l2_mean)
+                                        weights='distance',
+                                        regressor=l2_mean)
 
         knnr.fit(self.X, self.X)
 
@@ -245,7 +244,7 @@ class TestNeighbors(unittest.TestCase):
 
         # Test response
         knnr = RadiusNeighborsRegressor(radius=0.001,
-                                                  outlier_response=self.X[0])
+                                        outlier_response=self.X[0])
         knnr.fit(self.X[:6], self.X[:6])
 
         res = knnr.predict(self.X[:7])
@@ -301,7 +300,6 @@ class TestNeighbors(unittest.TestCase):
         neigh.fit(self.X, self.modes_location)
         r = neigh.score(self.X, self.modes_location)
         np.testing.assert_almost_equal(r, 0.9975889963743335)
-
 
     def test_score_functional_response(self):
 
@@ -372,12 +370,11 @@ class TestNeighbors(unittest.TestCase):
         res5 = lof5.fit(self.fd_lof).predict()
         np.testing.assert_array_equal(expected, res5)
 
-
         # Check values of negative outlier factor
         negative_lof = [-7.1068, -1.5412, -0.9961, -0.9854, -0.9896, -1.0993,
-                        -1.065 , -0.9871, -0.9821, -0.9955, -1.0385, -1.0072,
-                        -0.9832, -1.0134, -0.9939, -1.0074, -0.992,  -0.992,
-                        -0.9883, -1.0012, -1.1149, -1.002,  -0.9994, -0.9869,
+                        -1.065, -0.9871, -0.9821, -0.9955, -1.0385, -1.0072,
+                        -0.9832, -1.0134, -0.9939, -1.0074, -0.992, -0.992,
+                        -0.9883, -1.0012, -1.1149, -1.002, -0.9994, -0.9869,
                         -0.9726, -0.9989, -0.9904]
 
         np.testing.assert_array_almost_equal(
@@ -390,7 +387,6 @@ class TestNeighbors(unittest.TestCase):
         np.testing.assert_array_almost_equal(lof.negative_outlier_factor_,
                                              lof3.negative_outlier_factor_)
 
-
     def test_lof_decision_function(self):
         """ Test decision function and score samples of LOF"""
 
@@ -400,14 +396,13 @@ class TestNeighbors(unittest.TestCase):
         score = lof.score_samples(self.fd_lof[:5])
 
         np.testing.assert_array_almost_equal(
-            score.round(4),[-5.9726, -1.3445, -0.9853, -0.9817, -0.985 ],
+            score.round(4), [-5.9726, -1.3445, -0.9853, -0.9817, -0.985],
             err_msg='Error in LocalOutlierFactor.score_samples')
 
         # Test decision_function = score_function - offset
         np.testing.assert_array_almost_equal(
             lof.decision_function(self.fd_lof[:5]), score - lof.offset_,
             err_msg='Error in LocalOutlierFactor.decision_function')
-
 
     def test_lof_exceptions(self):
         """ Test error due to novelty attribute"""
@@ -424,9 +419,6 @@ class TestNeighbors(unittest.TestCase):
         # Error in predict function
         with np.testing.assert_raises(AttributeError):
             lof.predict(self.fd_lof[5:])
-
-
-
 
 
 if __name__ == '__main__':

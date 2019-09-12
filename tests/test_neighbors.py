@@ -201,7 +201,7 @@ class TestNeighbors(unittest.TestCase):
             return np.array([w == 0 for w in weights], dtype=float)
 
         knnr = KNeighborsRegressor(weights=weights, n_neighbors=5)
-        response = self.X.to_basis(Fourier(domain_range=(-1, 1), nbasis=10))
+        response = self.X.to_basis(Fourier(domain_range=(-1, 1), n_basis=10))
         knnr.fit(self.X, response)
 
         res = knnr.predict(self.X)
@@ -227,7 +227,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_functional_response_basis(self):
         knnr = KNeighborsRegressor(weights='distance', n_neighbors=5)
-        response = self.X.to_basis(Fourier(domain_range=(-1, 1), nbasis=10))
+        response = self.X.to_basis(Fourier(domain_range=(-1, 1), n_basis=10))
         knnr.fit(self.X, response)
 
         res = knnr.predict(self.X)
@@ -311,7 +311,7 @@ class TestNeighbors(unittest.TestCase):
         np.testing.assert_almost_equal(r, 0.962651178452408)
 
         # Weighted case and basis form
-        y = y.to_basis(Fourier(domain_range=y.domain_range[0], nbasis=5))
+        y = y.to_basis(Fourier(domain_range=y.domain_range[0], n_basis=5))
         neigh.fit(self.X, y)
 
         r = neigh.score(self.X[:7], y[:7],

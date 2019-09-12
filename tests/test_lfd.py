@@ -1,9 +1,8 @@
 import unittest
 
 import numpy as np
-
-from skfda.representation.basis import FDataBasis, Constant, Monomial
 from skfda.misc import LinearDifferentialOperator
+from skfda.representation.basis import FDataBasis, Constant, Monomial
 
 
 class TestBasis(unittest.TestCase):
@@ -47,7 +46,7 @@ class TestBasis(unittest.TestCase):
 
     def test_init_list_fdatabasis(self):
         weights = np.arange(4 * 5).reshape((5, 4))
-        monomial = Monomial((0, 1), nbasis=4)
+        monomial = Monomial((0, 1), n_basis=4)
         fd = FDataBasis(monomial, weights)
 
         fdlist = [FDataBasis(monomial, weights[i])

@@ -10,8 +10,8 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ..._utils import _create_figure
 from ...ml.clustering.base_kmeans import FuzzyKMeans
+from ._utils import _create_figure
 
 
 __author__ = "Amanda Hernando Bernabé"

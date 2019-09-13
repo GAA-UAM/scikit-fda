@@ -832,9 +832,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         return fig, ax
 
-    def plot(self, chart=None, *, derivative=0, fig=None, ax=None, nrows=None,
-             ncols=None, npoints=None, domain_range=None, sample_labels=None,
-             label_colors=None, label_names=None, **kwargs):
+    def plot(self, *args, **kwargs):
         """Plot the FDatGrid object.
 
         Args:
@@ -851,13 +849,13 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 None, the figure is initialized.
             ax (list of axis objects, optional): axis over where the graphs are
                 plotted. If None, see param fig.
-            nrows(int, optional): designates the number of rows of the figure
+            n_rows (int, optional): designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
                 if fig and ax are None.
-            ncols(int, optional): designates the number of columns of the
+            n_cols (int, optional): designates the number of columns of the
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
-            npoints (int or tuple, optional): Number of points to evaluate in
+            n_points (int or tuple, optional): Number of points to evaluate in
                 the plot. In case of surfaces a tuple of length 2 can be pased
                 with the number of points to plot in each axis, otherwise the
                 same number of points will be used in the two axes. By default
@@ -890,127 +888,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             fig (figure object): figure object in which the graphs are plotted.
 
         """
+        from ..exploratory.visualization.representation import plot_curves
 
-        # Parse chart argument
-        if chart is not None:
-            if fig is not None or ax is not None:
-                raise ValueError("fig, axes and chart parameters cannot "
-                                 "be passed as arguments at the same time.")
-            if isinstance(chart, plt.Figure):
-                fig = chart
-            elif isinstance(chart, Axes):
-                ax = [chart]
-            else:
-                ax = chart
-
-        if domain_range is None:
-            domain_range = self.domain_range
-        else:
-            domain_range = _list_of_arrays(domain_range)
-
-        fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
-
-        patches = None
-        next_color = False
-
-        if sample_labels is not None:
-            sample_labels = np.asarray(sample_labels)
-
-            nlabels = np.max(sample_labels) + 1
-
-            if np.any((sample_labels < 0) | (sample_labels >= nlabels)) or \
-                    not np.all(np.isin(range(nlabels), sample_labels)):
-                raise ValueError("sample_labels must contain at least an "
-                                 "occurence of numbers between 0 and number "
-                                 "of distint sample labels.")
-
-            if label_colors is not None:
-                if len(label_colors) != nlabels:
-                    raise ValueError("There must be a color in label_colors "
-                                     "for each of the labels that appear in "
-                                     "sample_labels.")
-                sample_colors = np.asarray(label_colors)[sample_labels]
-
-            else:
-                colormap = plt.cm.get_cmap('Greys')
-                sample_colors = colormap(sample_labels / (nlabels - 1))
-
-            if label_names is not None:
-                if len(label_names) != nlabels:
-                    raise ValueError("There must be a name in  label_names "
-                                     "for each of the labels that appear in "
-                                     "sample_labels.")
-
-                if label_colors is None:
-                    label_colors = colormap(
-                        np.arange(nlabels) / (nlabels - 1))
-
-                patches = []
-                for i in range(nlabels):
-                    patches.append(
-                        mpatches.Patch(color=label_colors[i],
-                                       label=label_names[i]))
-
-        else:
-
-            if 'color' in kwargs:
-                sample_colors = self.n_samples * [kwargs.get("color")]
-                kwargs.pop('color')
-
-            elif 'c' in kwargs:
-                sample_colors = self.n_samples * [kwargs.get("color")]
-                kwargs.pop('c')
-
-            else:
-                sample_colors = np.empty((self.n_samples,)).astype(str)
-                next_color = True
-
-        if self.dim_domain == 1:
-
-            if npoints is None:
-                npoints = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
-
-            # Evaluates the object in a linspace
-            eval_points = np.linspace(*domain_range[0], npoints)
-            mat = self(eval_points, derivative=derivative, keepdims=True)
-
-            for i in range(self.dim_codomain):
-                for j in range(self.n_samples):
-                    if sample_labels is None and next_color:
-                        sample_colors[j] = ax[i]._get_lines.get_next_color()
-                    ax[i].plot(eval_points, mat[j, ..., i].T,
-                               c=sample_colors[j], **kwargs)
-
-        else:
-
-            # Selects the number of points
-            if npoints is None:
-                npoints = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
-            elif np.isscalar(npoints):
-                npoints = (npoints, npoints)
-            elif len(npoints) != 2:
-                raise ValueError("npoints should be a number or a tuple of "
-                                 "length 2.")
-
-            # Axes where will be evaluated
-            x = np.linspace(*domain_range[0], npoints[0])
-            y = np.linspace(*domain_range[1], npoints[1])
-
-            # Evaluation of the functional object
-            Z = self((x, y), derivative=derivative, grid=True, keepdims=True)
-
-            X, Y = np.meshgrid(x, y, indexing='ij')
-
-            for i in range(self.dim_codomain):
-                for j in range(self.n_samples):
-                    if sample_labels is None and next_color:
-                        sample_colors[j] = ax[i]._get_lines.get_next_color()
-                    ax[i].plot_surface(X, Y, Z[j, ..., i],
-                                       color=sample_colors[j], **kwargs)
-
-        self.set_labels(fig, ax, patches)
-
-        return fig
+        return plot_curves(self, *args, **kwargs)
 
     @abstractmethod
     def copy(self, **kwargs):

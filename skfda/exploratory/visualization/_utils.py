@@ -217,3 +217,40 @@ def _set_labels(fdata, fig=None, axes=None, patches=None):
                     axes[i].set_xlabel(fdata.axes_labels[0])
                 if fdata.axes_labels[i + 1] is not None:
                     axes[i].set_ylabel(fdata.axes_labels[i + 1])
+
+
+def _change_luminosity(color, amount=0.5):
+    """
+    Changes the given color luminosity by the given amount.
+    Input can be matplotlib color string, hex string, or RGB tuple.
+
+    Note:
+        Based on https://stackoverflow.com/a/49601444/2455333
+    """
+    import matplotlib.colors as mc
+    import colorsys
+    try:
+        c = mc.cnames[color]
+    except TypeError:
+        c = color
+    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
+
+    intensity = (amount - 0.5) * 2
+    up = intensity > 0
+    intensity = abs(intensity)
+
+    lightness = c[1]
+    if up:
+        new_lightness = lightness + intensity * (1 - lightness)
+    else:
+        new_lightness = lightness - intensity * lightness
+
+    return colorsys.hls_to_rgb(c[0], new_lightness, c[2])
+
+
+def _darken(color, amount=0):
+    return _change_luminosity(color, 0.5 - amount / 2)
+
+
+def _lighten(color, amount=0):
+    return _change_luminosity(color, 0.5 + amount / 2)

@@ -43,7 +43,7 @@ def _get_figure_and_axes(chart=None, fig=None, axes=None):
             axes = chart
 
     if fig is None and axes is None:
-        fig = fig = _create_figure()
+        fig = _create_figure()
         axes = []
 
     elif fig is not None:

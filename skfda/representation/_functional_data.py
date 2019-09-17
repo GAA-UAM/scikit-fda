@@ -706,9 +706,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         """
         from ..exploratory.visualization.representation import (
-            plot_hypersurfaces)
+            plot_graph)
 
-        return plot_hypersurfaces(self, *args, **kwargs)
+        return plot_graph(self, *args, **kwargs)
 
     @abstractmethod
     def copy(self, **kwargs):

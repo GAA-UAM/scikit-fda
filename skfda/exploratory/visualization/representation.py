@@ -72,12 +72,12 @@ def _get_color_info(fdata, sample_labels, label_names, label_colors, kwargs):
     return sample_colors, patches
 
 
-def plot_hypersurfaces(fdata, chart=None, *, derivative=0, fig=None, axes=None,
-                       n_rows=None, n_cols=None, n_points=None,
-                       domain_range=None,
-                       sample_labels=None, label_colors=None, label_names=None,
-                       **kwargs):
-    """Plot the FDatGrid object as hypersurfaces.
+def plot_graph(fdata, chart=None, *, derivative=0, fig=None, axes=None,
+               n_rows=None, n_cols=None, n_points=None,
+               domain_range=None,
+               sample_labels=None, label_colors=None, label_names=None,
+               **kwargs):
+    """Plot the FDatGrid object graph as hypersurfaces.
 
     Plots each coordinate separately. If the domain is one dimensional, the
     plots will be curves, and if it is two dimensional, they will be surfaces.
@@ -161,7 +161,7 @@ def plot_hypersurfaces(fdata, chart=None, *, derivative=0, fig=None, axes=None,
         for i in range(fdata.dim_codomain):
             for j in range(fdata.n_samples):
 
-                if sample_labels is not None:
+                if sample_colors is not None:
                     color_dict["color"] = sample_colors[j]
 
                 axes[i].plot(eval_points, mat[j, ..., i].T,
@@ -192,7 +192,7 @@ def plot_hypersurfaces(fdata, chart=None, *, derivative=0, fig=None, axes=None,
         for i in range(fdata.dim_codomain):
             for j in range(fdata.n_samples):
 
-                if sample_labels is not None:
+                if sample_colors is not None:
                     color_dict["color"] = sample_colors[j]
 
                 axes[i].plot_surface(X, Y, Z[j, ..., i],
@@ -290,7 +290,7 @@ def plot_scatter(fdata, chart=None, *, sample_points=None, derivative=0,
         for i in range(fdata.dim_codomain):
             for j in range(fdata.n_samples):
 
-                if sample_labels is not None:
+                if sample_colors is not None:
                     color_dict["color"] = sample_colors[j]
 
                 axes[i].scatter(sample_points[0],
@@ -308,7 +308,7 @@ def plot_scatter(fdata, chart=None, *, sample_points=None, derivative=0,
         for i in range(fdata.dim_codomain):
             for j in range(fdata.n_samples):
 
-                if sample_labels is not None:
+                if sample_colors is not None:
                     color_dict["color"] = sample_colors[j]
 
                 axes[i].scatter(X, Y,

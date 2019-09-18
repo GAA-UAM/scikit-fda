@@ -63,7 +63,7 @@ def _get_color_info(fdata, sample_labels, label_names, label_colors, kwargs):
             kwargs.pop('color')
 
         elif 'c' in kwargs:
-            sample_colors = fdata.n_samples * [kwargs.get("color")]
+            sample_colors = fdata.n_samples * [kwargs.get("c")]
             kwargs.pop('c')
 
         else:

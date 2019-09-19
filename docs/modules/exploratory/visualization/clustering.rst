@@ -7,9 +7,9 @@ implemented. It contains the following methods:
 .. autosummary::
    :toctree: autosummary
 
-   skfda.exploratory.visualization.clustering_plots.plot_clusters
-   skfda.exploratory.visualization.clustering_plots.plot_cluster_lines
-   skfda.exploratory.visualization.clustering_plots.plot_cluster_bars
+   skfda.exploratory.visualization.clustering.plot_clusters
+   skfda.exploratory.visualization.clustering.plot_cluster_lines
+   skfda.exploratory.visualization.clustering.plot_cluster_bars
 
 In the first one, the samples of the FDataGrid are divided by clusters which
 are assigned different colors. The following functions, are only valid for the

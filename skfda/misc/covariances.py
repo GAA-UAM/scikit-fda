@@ -6,7 +6,7 @@ import matplotlib
 import numpy as np
 import sklearn.gaussian_process.kernels as sklearn_kern
 
-from .._utils import _create_figure, _figure_to_svg
+from ..exploratory.visualization._utils import _create_figure, _figure_to_svg
 
 
 def _squared_norms(x, y):

@@ -782,19 +782,19 @@ class FDataGrid(FData):
         else:
             return self.copy(data_matrix=np.concatenate(data, axis=0))
 
-    def scatter(self, fig=None, ax=None, nrows=None, ncols=None, **kwargs):
+    def scatter(self, *args, **kwargs):
         """Scatter plot of the FDatGrid object.
 
         Args:
             fig (figure object, optional): figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-            ax (list of axis objects, optional): axis over where the graphs
+            axes (list of axis objects, optional): axis over where the graphs
                 are plotted. If None, see param fig.
-            nrows(int, optional): designates the number of rows of the figure
+            n_rows(int, optional): designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
                 if fig and ax are None.
-            ncols(int, optional): designates the number of columns of the
+            n_cols(int, optional): designates the number of columns of the
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
             kwargs: keyword arguments to be passed to the
@@ -805,25 +805,9 @@ class FDataGrid(FData):
 
 
         """
-        fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
+        from ..exploratory.visualization.representation import plot_scatter
 
-        if self.dim_domain == 1:
-            for i in range(self.dim_codomain):
-                for j in range(self.n_samples):
-                    ax[i].scatter(self.sample_points[0],
-                                  self.data_matrix[j, :, i].T, **kwargs)
-        else:
-            X = self.sample_points[0]
-            Y = self.sample_points[1]
-            X, Y = np.meshgrid(X, Y)
-            for i in range(self.dim_codomain):
-                for j in range(self.n_samples):
-                    ax[i].scatter(X, Y, self.data_matrix[j, :, :, i].T,
-                                  **kwargs)
-
-        self.set_labels(fig, ax)
-
-        return fig
+        return plot_scatter(self, *args, **kwargs)
 
     def to_basis(self, basis, **kwargs):
         """Return the basis representation of the object.

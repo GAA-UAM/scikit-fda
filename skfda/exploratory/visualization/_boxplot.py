@@ -5,7 +5,6 @@ visualize it.
 
 """
 from abc import ABC, abstractmethod
-from io import BytesIO
 import math
 
 import matplotlib
@@ -13,10 +12,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ... import FDataGrid
-from ..._utils import _create_figure, _figure_to_svg
 from ..depth import modified_band_depth
 from ..outliers import _envelopes
+from ._utils import (_figure_to_svg, _get_figure_and_axes,
+                     _set_figure_layout_for_fdata, _set_labels)
 
 
 __author__ = "Amanda Hernando Bernabé"
@@ -73,7 +72,8 @@ class FDataBoxplot(ABC):
         self._colormap = value
 
     @abstractmethod
-    def plot(self, fig=None, ax=None, nrows=None, ncols=None):
+    def plot(self, chart=None, *, fig=None, axes=None,
+             n_rows=None, n_cols=None):
         pass
 
     def _repr_svg_(self):
@@ -121,6 +121,7 @@ class Boxplot(FDataBoxplot):
     Example:
         Function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
 
+        >>> from skfda import FDataGrid
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
@@ -309,7 +310,8 @@ class Boxplot(FDataBoxplot):
             raise ValueError("show_full_outliers must be boolean type")
         self._show_full_outliers = boolean
 
-    def plot(self, fig=None, ax=None, nrows=None, ncols=None):
+    def plot(self, chart=None, *, fig=None, axes=None,
+             n_rows=None, n_cols=None):
         """Visualization of the functional boxplot of the fdatagrid
         (dim_domain=1).
 
@@ -317,12 +319,12 @@ class Boxplot(FDataBoxplot):
             fig (figure object, optional): figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-            ax (list of axis objects, optional): axis over where the graphs are
-                plotted. If None, see param fig.
-            nrows(int, optional): designates the number of rows of the figure
+            axes (list of axis objects, optional): axis over where the graphs
+                are plotted. If None, see param fig.
+            n_rows(int, optional): designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
                 if fig and ax are None.
-            ncols(int, optional): designates the number of columns of the
+            n_cols(int, optional): designates the number of columns of the
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
 
@@ -331,8 +333,9 @@ class Boxplot(FDataBoxplot):
 
         """
 
-        fig, ax = self.fdatagrid.generic_plotting_checks(fig, ax, nrows,
-                                                         ncols)
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout_for_fdata(
+            self.fdatagrid, fig, axes, n_rows, n_cols)
         tones = np.linspace(0.1, 1.0, len(self._prob) + 1, endpoint=False)[1:]
         color = self.colormap(tones)
 
@@ -347,50 +350,50 @@ class Boxplot(FDataBoxplot):
 
             # Outliers
             for o in outliers:
-                ax[m].plot(o.sample_points[0],
-                           o.data_matrix[0, :, m],
-                           color=self.outliercol,
-                           linestyle='--', zorder=1)
+                axes[m].plot(o.sample_points[0],
+                             o.data_matrix[0, :, m],
+                             color=self.outliercol,
+                             linestyle='--', zorder=1)
 
             for i in range(len(self._prob)):
                 # central regions
-                ax[m].fill_between(self.fdatagrid.sample_points[0],
-                                   self.envelopes[i][0][..., m],
-                                   self.envelopes[i][1][..., m],
-                                   facecolor=color[i], zorder=var_zorder)
+                axes[m].fill_between(self.fdatagrid.sample_points[0],
+                                     self.envelopes[i][0][..., m],
+                                     self.envelopes[i][1][..., m],
+                                     facecolor=color[i], zorder=var_zorder)
 
             # outlying envelope
-            ax[m].plot(self.fdatagrid.sample_points[0],
-                       self.non_outlying_envelope[0][..., m],
-                       self.fdatagrid.sample_points[0],
-                       self.non_outlying_envelope[1][..., m],
-                       color=self.barcol, zorder=4)
+            axes[m].plot(self.fdatagrid.sample_points[0],
+                         self.non_outlying_envelope[0][..., m],
+                         self.fdatagrid.sample_points[0],
+                         self.non_outlying_envelope[1][..., m],
+                         color=self.barcol, zorder=4)
 
             # central envelope
-            ax[m].plot(self.fdatagrid.sample_points[0],
-                       self.central_envelope[0][..., m],
-                       self.fdatagrid.sample_points[0],
-                       self.central_envelope[1][..., m],
-                       color=self.barcol, zorder=4)
+            axes[m].plot(self.fdatagrid.sample_points[0],
+                         self.central_envelope[0][..., m],
+                         self.fdatagrid.sample_points[0],
+                         self.central_envelope[1][..., m],
+                         color=self.barcol, zorder=4)
 
             # vertical lines
             index = math.ceil(self.fdatagrid.ncol / 2)
             x = self.fdatagrid.sample_points[0][index]
-            ax[m].plot([x, x],
-                       [self.non_outlying_envelope[0][..., m][index],
-                        self.central_envelope[0][..., m][index]],
-                       color=self.barcol,
-                       zorder=4)
-            ax[m].plot([x, x],
-                       [self.non_outlying_envelope[1][..., m][index],
-                        self.central_envelope[1][..., m][index]],
-                       color=self.barcol, zorder=4)
+            axes[m].plot([x, x],
+                         [self.non_outlying_envelope[0][..., m][index],
+                          self.central_envelope[0][..., m][index]],
+                         color=self.barcol,
+                         zorder=4)
+            axes[m].plot([x, x],
+                         [self.non_outlying_envelope[1][..., m][index],
+                          self.central_envelope[1][..., m][index]],
+                         color=self.barcol, zorder=4)
 
             # median sample
-            ax[m].plot(self.fdatagrid.sample_points[0], self.median[..., m],
-                       color=self.mediancol, zorder=5)
+            axes[m].plot(self.fdatagrid.sample_points[0], self.median[..., m],
+                         color=self.mediancol, zorder=5)
 
-        self.fdatagrid.set_labels(fig, ax)
+        _set_labels(self.fdatagrid, fig, axes)
 
         return fig
 
@@ -436,6 +439,7 @@ class SurfaceBoxplot(FDataBoxplot):
     Example:
         Function :math:`f : \mathbb{R^2}\longmapsto\mathbb{R}`.
 
+        >>> from skfda import FDataGrid
         >>> data_matrix = [[[[1], [0.7], [1]],
         ...                 [[4], [0.4], [5]]],
         ...                [[[2], [0.5], [2]],
@@ -584,19 +588,20 @@ class SurfaceBoxplot(FDataBoxplot):
                 "outcol must be a number between 0 and 1.")
         self._outcol = value
 
-    def plot(self, fig=None, ax=None, nrows=None, ncols=None):
+    def plot(self, chart=None, *, fig=None, axes=None,
+             n_rows=None, n_cols=None):
         """Visualization of the surface boxplot of the fdatagrid (dim_domain=2).
 
          Args:
              fig (figure object, optional): figure over with the graphs are
                  plotted in case ax is not specified. If None and ax is also
                  None, the figure is initialized.
-             ax (list of axis objects, optional): axis over where the graphs
+             axes (list of axis objects, optional): axis over where the graphs
                  are plotted. If None, see param fig.
-             nrows(int, optional): designates the number of rows of the figure
+             n_rows(int, optional): designates the number of rows of the figure
                  to plot the different dimensions of the image. Only specified
                  if fig and ax are None.
-             ncols(int, optional): designates the number of columns of the
+             n_cols(int, optional): designates the number of columns of the
                  figure to plot the different dimensions of the image. Only
                  specified if fig and ax are None.
 
@@ -604,8 +609,10 @@ class SurfaceBoxplot(FDataBoxplot):
             fig (figure): figure object in which the graphs are plotted.
 
         """
-        fig, ax = self.fdatagrid.generic_plotting_checks(fig, ax, nrows,
-                                                         ncols)
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout_for_fdata(
+            self.fdatagrid, fig, axes, n_rows, n_cols)
+
         x = self.fdatagrid.sample_points[0]
         lx = len(x)
         y = self.fdatagrid.sample_points[1]
@@ -615,24 +622,24 @@ class SurfaceBoxplot(FDataBoxplot):
         for m in range(self.fdatagrid.dim_codomain):
 
             # mean sample
-            ax[m].plot_wireframe(X, Y, np.squeeze(self.median[..., m]).T,
-                                 rstride=ly, cstride=lx,
-                                 color=self.colormap(self.boxcol))
-            ax[m].plot_surface(X, Y, np.squeeze(self.median[..., m]).T,
-                               color=self.colormap(self.boxcol), alpha=0.8)
+            axes[m].plot_wireframe(X, Y, np.squeeze(self.median[..., m]).T,
+                                   rstride=ly, cstride=lx,
+                                   color=self.colormap(self.boxcol))
+            axes[m].plot_surface(X, Y, np.squeeze(self.median[..., m]).T,
+                                 color=self.colormap(self.boxcol), alpha=0.8)
 
             # central envelope
-            ax[m].plot_surface(
+            axes[m].plot_surface(
                 X, Y, np.squeeze(self.central_envelope[0][..., m]).T,
                 color=self.colormap(self.boxcol), alpha=0.5)
-            ax[m].plot_wireframe(
+            axes[m].plot_wireframe(
                 X, Y, np.squeeze(self.central_envelope[0][..., m]).T,
                 rstride=ly, cstride=lx,
                 color=self.colormap(self.boxcol))
-            ax[m].plot_surface(
+            axes[m].plot_surface(
                 X, Y, np.squeeze(self.central_envelope[1][..., m]).T,
                 color=self.colormap(self.boxcol), alpha=0.5)
-            ax[m].plot_wireframe(
+            axes[m].plot_wireframe(
                 X, Y, np.squeeze(self.central_envelope[1][..., m]).T,
                 rstride=ly, cstride=lx,
                 color=self.colormap(self.boxcol))
@@ -642,7 +649,7 @@ class SurfaceBoxplot(FDataBoxplot):
                             (lx - 1, ly - 1)]:
                 x_corner = x[indices[0]]
                 y_corner = y[indices[1]]
-                ax[m].plot(
+                axes[m].plot(
                     [x_corner, x_corner], [y_corner, y_corner],
                     [
                         self.central_envelope[1][..., m][indices[0],
@@ -652,20 +659,20 @@ class SurfaceBoxplot(FDataBoxplot):
                     color=self.colormap(self.boxcol))
 
             # outlying envelope
-            ax[m].plot_surface(
+            axes[m].plot_surface(
                 X, Y,
                 np.squeeze(self.non_outlying_envelope[0][..., m]).T,
                 color=self.colormap(self.outcol), alpha=0.3)
-            ax[m].plot_wireframe(
+            axes[m].plot_wireframe(
                 X, Y,
                 np.squeeze(self.non_outlying_envelope[0][..., m]).T,
                 rstride=ly, cstride=lx,
                 color=self.colormap(self.outcol))
-            ax[m].plot_surface(
+            axes[m].plot_surface(
                 X, Y,
                 np.squeeze(self.non_outlying_envelope[1][..., m]).T,
                 color=self.colormap(self.outcol), alpha=0.3)
-            ax[m].plot_wireframe(
+            axes[m].plot_wireframe(
                 X, Y,
                 np.squeeze(self.non_outlying_envelope[1][..., m]).T,
                 rstride=ly, cstride=lx,
@@ -676,18 +683,18 @@ class SurfaceBoxplot(FDataBoxplot):
             x_central = x[x_index]
             y_index = math.floor(ly / 2)
             y_central = y[y_index]
-            ax[m].plot(
+            axes[m].plot(
                 [x_central, x_central], [y_central, y_central],
                 [self.non_outlying_envelope[1][..., m][x_index, y_index],
                  self.central_envelope[1][..., m][x_index, y_index]],
                 color=self.colormap(self.boxcol))
-            ax[m].plot(
+            axes[m].plot(
                 [x_central, x_central], [y_central, y_central],
                 [self.non_outlying_envelope[0][..., m][x_index, y_index],
                  self.central_envelope[0][..., m][x_index, y_index]],
                 color=self.colormap(self.boxcol))
 
-        self.fdatagrid.set_labels(fig, ax)
+        _set_labels(self.fdatagrid, fig, axes)
 
         return fig
 

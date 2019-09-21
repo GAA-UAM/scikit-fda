@@ -11,7 +11,8 @@ from skfda.ml.classification import (KNeighborsClassifier,
                                      NearestCentroids)
 from skfda.ml.clustering import NearestNeighbors
 from skfda.ml.regression import KNeighborsRegressor, RadiusNeighborsRegressor
-from skfda.exploratory.outliers import LocalOutlierFactor
+#from skfda.exploratory.outliers import LocalOutlierFactor
+from skfda._neighbors.outlier import LocalOutlierFactor # Pending theory
 from skfda.representation.basis import Fourier
 
 

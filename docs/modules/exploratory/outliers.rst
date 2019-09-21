@@ -41,12 +41,3 @@ with the following function.
    :toctree: autosummary
 
    skfda.exploratory.outliers.directional_outlyingness_stats
-
-
-Local Outlier Factor
---------------------
-
-.. autosummary::
-   :toctree: autosummary
-
-   skfda.exploratory.outliers.LocalOutlierFactor

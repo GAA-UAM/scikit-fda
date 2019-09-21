@@ -10,6 +10,5 @@ Includes the following classes:
 """
 from .unsupervised import NearestNeighbors
 from .regression import KNeighborsRegressor, RadiusNeighborsRegressor
-from .outlier import LocalOutlierFactor
 from .classification import (KNeighborsClassifier, RadiusNeighborsClassifier,
                              NearestCentroids)

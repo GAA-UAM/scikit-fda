@@ -102,7 +102,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
         **Local Outlier Factor (LOF) for outlier detection**.
 
-        >>> from skfda.exploratory.outliers import LocalOutlierFactor
+        >>> from skfda._neighbors.outlier import LocalOutlierFactor
 
         Creation of simulated dataset with 2 outliers to be used with LOF.
 

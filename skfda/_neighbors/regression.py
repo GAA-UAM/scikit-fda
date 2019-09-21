@@ -110,7 +110,7 @@ class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
     :class:`~skfda.ml.classification.NearestCentroids`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
-    :class:`~skfda.ml.exploratory.outliers.LocalOutlierFactor`
+
 
     Notes
     -----
@@ -280,7 +280,7 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
     :class:`~skfda.ml.classification.NearestCentroids`
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
-    :class:`~skfda.ml.exploratory.outliers.LocalOutlierFactor`
+
 
     Notes
     -----

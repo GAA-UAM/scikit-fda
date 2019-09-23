@@ -50,9 +50,7 @@ the develop branch, by cloning this repository and doing a manual installation.
 .. code-block:: bash
 
    git clone https://github.com/GAA-UAM/scikit-fda.git
-   cd scikit-fda/
-   pip install -r requirements.txt
-   python setup.py install
+   pip install ./scikit-fda
 
 
 In this type of installation make sure that your default Python version is

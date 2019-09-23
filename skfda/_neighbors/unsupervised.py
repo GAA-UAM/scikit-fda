@@ -88,6 +88,7 @@ class NearestNeighbors(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
 
+
     Notes
     -----
     See Nearest Neighbors in the sklearn online documentation for a discussion

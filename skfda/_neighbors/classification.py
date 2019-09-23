@@ -59,8 +59,9 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         Doesn't affect :meth:`fit` method.
     multivariate_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
-        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
-        the module :mod:`skfda.misc.metrics`.
+        :class:`~sklearn.neighbors.DistanceMetric`) or a functional metric of
+        the module `skfda.misc.metrics` if ``False``.
+
     Examples
     --------
     Firstly, we will create a toy dataset with 2 classes
@@ -96,6 +97,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
+    
 
     Notes
     -----
@@ -254,6 +256,7 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
 
+
     Notes
     -----
     See Nearest Neighbors in the sklearn online documentation for a discussion
@@ -357,6 +360,7 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
+
 
     """
 

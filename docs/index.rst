@@ -70,12 +70,11 @@ The people involved at some point in the development of the package can be
 found in the `contributors file
 <https://github.com/GAA-UAM/scikit-fda/blob/develop/THANKS.txt>`_.
 
-Citation
---------
+.. Citation
+   --------
+   If you find this project useful, please cite:
 
-If you find this project useful, please cite:
-
-.. todo:: Include citation to scikit-fda paper.
+   .. todo:: Include citation to scikit-fda paper.
 
 License
 -------

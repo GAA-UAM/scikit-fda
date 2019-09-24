@@ -44,22 +44,18 @@ Installation from source
 It is possible to install the latest version of the package, available in the
 develop branch,  by cloning this repository and doing a manual installation.
 
-.. code::
+.. code:: bash
 
     git clone https://github.com/GAA-UAM/scikit-fda.git
-    cd scikit-fda/
-    pip install -r requirements.txt    # Install dependencies
-    python setup.py install
+    pip install ./scikit-fda
 
 Make sure that your default Python version is currently supported, or change
 the python and pip commands by specifying a version, such as ``python3.6``:
 
-.. code::
+.. code:: bash
 
     git clone https://github.com/GAA-UAM/scikit-fda.git
-    cd scikit-fda/
-    python3.6 -m pip install -r requirements.txt    # Install dependencies
-    python3.6 setup.py install
+    python3.6 -m pip install ./scikit-fda
 
 Requirements
 ------------
@@ -88,11 +84,11 @@ The people involved at some point in the development of the package can be
 found in the `contributors
 file <https://github.com/GAA-UAM/scikit-fda/blob/develop/THANKS.txt>`_.
 
-Citation
-========
-If you find this project useful, please cite:
+.. Citation
+   ========
+   If you find this project useful, please cite:
 
-.. todo:: Include citation to scikit-fda paper.
+   .. todo:: Include citation to scikit-fda paper.
 
 License
 =======

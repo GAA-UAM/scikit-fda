@@ -122,4 +122,4 @@ license_ can be found along with the code.
 .. _license: https://github.com/GAA-UAM/scikit-fda/blob/master/LICENSE.txt
 
 .. |doi| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3468127.svg
-   :target: https://doi.org/10.5281/zenodo.3468127
+   	:target: https://doi.org/10.5281/zenodo.3468127

@@ -531,3 +531,71 @@ def fetch_aemet(return_X_y: bool = False):
 
 if hasattr(fetch_aemet, "__doc__"):  # docstrings can be stripped off
     fetch_aemet.__doc__ += _aemet_descr + _param_descr
+
+
+_octane_descr = """
+    Near infrared (NIR) spectra of gasoline samples, with wavelengths ranging
+    from 1102nm to 1552nm with measurements every two nm.
+    This dataset contains six outliers to which ethanol was added, which is
+    required in some states. See [RDEH2006]_ and [HuRS2015]_ for further
+    details.
+
+    The data is labeled according to this different composition.
+
+    Source:
+        Esbensen K. (2001). Multivariate data analysis in practice. 5th edn.
+        Camo Software, Trondheim, Norway.
+
+    References:
+        ..  [RDEH2006] Rousseeuw, Peter & Debruyne, Michiel & Engelen, Sanne &
+            Hubert, Mia. (2006). Robustness and Outlier Detection in
+            Chemometrics. Critical Reviews in Analytical Chemistry. 36.
+            221-242. 10.1080/10408340600969403.
+        ..  [HuRS2015] Hubert, Mia & Rousseeuw, Peter & Segaert, Pieter. (2015).
+            Multivariate functional outlier detection. Statistical Methods and
+            Applications. 24. 177-202. 10.1007/s10260-015-0297-8.
+
+"""
+
+def fetch_octane(return_X_y: bool = False):
+    """Load near infrared spectra of gasoline samples.
+
+    This function fetchs the octane dataset from the R package 'mrfDepth'
+    from CRAN.
+
+    """
+    DESCR = _octane_descr
+
+    # octane file from mrfDepth R package
+    raw_dataset = fetch_cran("octane", "mrfDepth", version="1.0.11")
+    data = raw_dataset['octane'][..., 0].T
+
+    # The R package only stores the values of the curves, but the paper
+    # describes the rest of the data. According to [RDEH2006], Section 5.4:
+
+    # "wavelengths ranging from 1102nm to 1552nm with measurements every two
+    # nm.""
+    sample_points = np.linspace(1102, 1552, 226)
+
+    # "The octane data set contains six outliers (25, 26, 36–39) to which
+    # alcohol was added".
+    target = np.zeros(len(data), dtype=int)
+    target[24] = target[25] = target [35:39] = 1 # Outliers 1
+
+    axes_labels = ["wavelength (nm)", "absorbances"]
+
+    curves = FDataGrid(data,
+                       sample_points=sample_points,
+                       dataset_label="Octane",
+                       axes_labels=axes_labels)
+
+    if return_X_y:
+        return curves, target
+    else:
+        return {"data": curves,
+                "target": target,
+                "target_names": ['inliner', 'outlier'],
+                "DESCR" : DESCR}
+
+if hasattr(fetch_octane, "__doc__"):  # docstrings can be stripped off
+    fetch_octane.__doc__ += _octane_descr + _param_descr

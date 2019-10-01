@@ -4,11 +4,9 @@ Defines methods to evaluate points outside the domain range.
 
 """
 
-from abc import ABC, abstractmethod
+import numpy as np
 
 from .evaluator import EvaluatorConstructor, Evaluator, GenericEvaluator
-
-import numpy as np
 
 
 class PeriodicExtrapolation(EvaluatorConstructor):
@@ -17,7 +15,8 @@ class PeriodicExtrapolation(EvaluatorConstructor):
     Examples:
 
         >>> from skfda.datasets import make_sinusoidal_process
-        >>> from skfda.representation.extrapolation import PeriodicExtrapolation
+        >>> from skfda.representation.extrapolation import (
+        ...     PeriodicExtrapolation)
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -36,7 +35,7 @@ class PeriodicExtrapolation(EvaluatorConstructor):
     """
 
     def evaluator(self, fdata):
-        """Returns the evaluator used by class:`FData`.
+        """Returns the evaluator used by :class:`FData`.
 
         Returns:
             (:class:`Evaluator`): Evaluator of the periodic extrapolation.
@@ -52,13 +51,13 @@ def _periodic_evaluation(fdata, eval_points, *, derivative=0):
         fdata (:class:´FData´): Object where the evaluation is taken place.
         eval_points (:class: numpy.ndarray): Numpy array with the evalation
             points outside the domain range. The shape of the array may be
-            `n_eval_points` x `ndim_image` or `nsamples` x `n_eval_points`
-            x `ndim_image`.
+            `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
+            x `dim_codomain`.
         derivate (numeric, optional): Order of derivative to be evaluated.
 
     Returns:
         (numpy.ndarray): numpy array with the evaluation of the points in
-        a matrix with shape `nsamples` x `n_eval_points`x `ndim_image`.
+        a matrix with shape `n_samples` x `n_eval_points`x `dim_codomain`.
     """
 
     domain_range = np.asarray(fdata.domain_range)
@@ -82,7 +81,8 @@ class BoundaryExtrapolation(EvaluatorConstructor):
     Examples:
 
         >>> from skfda.datasets import make_sinusoidal_process
-        >>> from skfda.representation.extrapolation import BoundaryExtrapolation
+        >>> from skfda.representation.extrapolation import (
+        ...     BoundaryExtrapolation)
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -101,7 +101,7 @@ class BoundaryExtrapolation(EvaluatorConstructor):
     """
 
     def evaluator(self, fdata):
-        """Returns the evaluator used by class:`FData`.
+        """Returns the evaluator used by :class:`FData`.
 
         Returns:
             (:class:`Evaluator`): Evaluator of the periodic boundary.
@@ -117,18 +117,18 @@ def _boundary_evaluation(fdata, eval_points, *, derivative=0):
         fdata (:class:´FData´): Object where the evaluation is taken place.
         eval_points (:class: numpy.ndarray): Numpy array with the evalation
             points outside the domain range. The shape of the array may be
-            `n_eval_points` x `ndim_image` or `nsamples` x `n_eval_points`
-            x `ndim_image`.
+            `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
+            x `dim_codomain`.
         derivate (numeric, optional): Order of derivative to be evaluated.
 
     Returns:
         (numpy.ndarray): numpy array with the evaluation of the points in
-        a matrix with shape `nsamples` x `n_eval_points`x `ndim_image`.
+        a matrix with shape `n_samples` x `n_eval_points`x `dim_codomain`.
     """
 
     domain_range = fdata.domain_range
 
-    for i in range(fdata.ndim_domain):
+    for i in range(fdata.dim_domain):
         a, b = domain_range[i]
         eval_points[eval_points[..., i] < a, i] = a
         eval_points[eval_points[..., i] > b, i] = b
@@ -149,7 +149,8 @@ class ExceptionExtrapolation(EvaluatorConstructor):
     Examples:
 
         >>> from skfda.datasets import make_sinusoidal_process
-        >>> from skfda.representation.extrapolation import ExceptionExtrapolation
+        >>> from skfda.representation.extrapolation import (
+        ...     ExceptionExtrapolation)
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
 
         We can set the default type of extrapolation
@@ -173,7 +174,7 @@ class ExceptionExtrapolation(EvaluatorConstructor):
     """
 
     def evaluator(self, fdata):
-        """Returns the evaluator used by class:`FData`.
+        """Returns the evaluator used by :class:`FData`.
 
         Returns:
             (:class:`Evaluator`): Evaluator of the periodic extrapolation.
@@ -189,8 +190,8 @@ def _exception_evaluation(fdata, eval_points, *, derivative=0):
         fdata (:class:´FData´): Object where the evaluation is taken place.
         eval_points (:class: numpy.ndarray): Numpy array with the evalation
             points outside the domain range. The shape of the array may be
-            `n_eval_points` x `ndim_image` or `nsamples` x `n_eval_points`
-            x `ndim_image`.
+            `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
+            x `dim_codomain`.
         derivate (numeric, optional): Order of derivative to be evaluated.
 
     Raises:
@@ -229,7 +230,7 @@ class FillExtrapolation(EvaluatorConstructor):
     """
 
     def __init__(self, fill_value):
-        """Returns the evaluator used by class:`FData`.
+        """Returns the evaluator used by :class:`FData`.
 
         Returns:
             (:class:`Evaluator`): Evaluator of the periodic extrapolation.
@@ -246,8 +247,9 @@ class FillExtrapolation(EvaluatorConstructor):
 
     def __eq__(self, other):
         """Equality operator bethween evaluator constructors"""
-        return super().__eq__(other) and (self.fill_value == other.fill_value
-                                          or self.fill_value is other.fill_value)
+        return (super().__eq__(other) and
+                (self.fill_value == other.fill_value
+                 or self.fill_value is other.fill_value))
 
     def evaluator(self, fdata):
 
@@ -261,8 +263,8 @@ class FillExtrapolationEvaluator(Evaluator):
         self.fdata = fdata
 
     def _fill(self, eval_points):
-        shape = (self.fdata.nsamples, eval_points.shape[-2],
-                 self.fdata.ndim_image)
+        shape = (self.fdata.n_samples, eval_points.shape[-2],
+                 self.fdata.dim_codomain)
         return np.full(shape, self.fill_value)
 
     def evaluate(self, eval_points, *, derivative=0):
@@ -273,13 +275,13 @@ class FillExtrapolationEvaluator(Evaluator):
             fdata (:class:´FData´): Object where the evaluation is taken place.
             eval_points (:class: numpy.ndarray): Numpy array with the evalation
                 points outside the domain range. The shape of the array may be
-                `n_eval_points` x `ndim_image` or `nsamples` x `n_eval_points`
-                x `ndim_image`.
+                `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
+                x `dim_codomain`.
             derivate (numeric, optional): Order of derivative to be evaluated.
 
         Returns:
             (numpy.ndarray): numpy array with the evaluation of the points in
-            a matrix with shape `nsamples` x `n_eval_points`x `ndim_image`.
+            a matrix with shape `n_samples` x `n_eval_points`x `dim_codomain`.
 
         """
         return self._fill(eval_points)
@@ -288,20 +290,21 @@ class FillExtrapolationEvaluator(Evaluator):
         """Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
-        call will receive a 3-d array with the evaluation points for each sample.
+        call will receive a 3-d array with the evaluation points for
+        each sample.
 
         This method is called internally by :meth:`evaluate` when the argument
         `aligned_evaluation` is False.
 
         Args:
             eval_points (numpy.ndarray): Numpy array with shape
-                `(n_samples, number_eval_points, ndim_domain)` with the
+                `(n_samples, number_eval_points, dim_domain)` with the
                  evaluation points for each sample.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape `(n_samples,
-                number_eval_points, ndim_image)` with the result of the
+                number_eval_points, dim_codomain)` with the result of the
                 evaluation. The entry (i,j,k) will contain the value k-th image
                 dimension of the i-th sample, at the j-th evaluation point.
 

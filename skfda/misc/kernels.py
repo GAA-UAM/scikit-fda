@@ -1,7 +1,7 @@
 """Defines the most commonly used kernels."""
 import math
 from scipy import stats
-import numpy
+import numpy as np
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -30,8 +30,8 @@ def cosine(u):
         \end{cases}
 
     """
-    if isinstance(u, numpy.ndarray):
-        res = numpy.zeros(u.shape)
+    if isinstance(u, np.ndarray):
+        res = np.zeros(u.shape)
         res[abs(u) <= 1] = math.pi / 4 * (math.cos(math.pi * u[abs(u) <= 1]
                                                    / 2))
         return res
@@ -51,12 +51,12 @@ def epanechnikov(u):
         \end{cases}
 
     """
-    if isinstance(u, numpy.ndarray):
-        res = numpy.zeros(u.shape)
-        res[abs(u) <= 1] = 0.75*(1 - u[abs(u) <= 1] ** 2)
+    if isinstance(u, np.ndarray):
+        res = np.zeros(u.shape)
+        res[abs(u) <= 1] = 0.75 * (1 - u[abs(u) <= 1] ** 2)
         return res
     if abs(u) <= 1:
-        return 0.75 * (1-u ** 2)
+        return 0.75 * (1 - u ** 2)
     return 0
 
 
@@ -71,8 +71,8 @@ def tri_weight(u):
         \end{cases}
 
     """
-    if isinstance(u, numpy.ndarray):
-        res = numpy.zeros(u.shape)
+    if isinstance(u, np.ndarray):
+        res = np.zeros(u.shape)
         res[abs(u) <= 1] = 35 / 32 * (1 - u[abs(u) <= 1] ** 2) ** 3
         return res
     if abs(u) <= 1:
@@ -91,8 +91,8 @@ def quartic(u):
         \end{cases}
 
     """
-    if isinstance(u, numpy.ndarray):
-        res = numpy.zeros(u.shape)
+    if isinstance(u, np.ndarray):
+        res = np.zeros(u.shape)
         res[abs(u) <= 1] = 15 / 16 * (1 - u[abs(u) <= 1] ** 2) ** 2
         return res
     if abs(u) <= 1:
@@ -112,8 +112,8 @@ def uniform(u):
         \end{cases}
 
     """
-    if isinstance(u, numpy.ndarray):
-        res = numpy.zeros(u.shape)
+    if isinstance(u, np.ndarray):
+        res = np.zeros(u.shape)
         res[abs(u) <= 1] = 0.5
         return res
     if abs(u) <= 1:

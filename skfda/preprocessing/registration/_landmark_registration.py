@@ -3,7 +3,7 @@
 This module contains methods to perform the landmark registration.
 """
 
-import numpy
+import numpy as np
 
 from ... import FDataGrid
 from ...representation.interpolation import SplineInterpolator
@@ -68,20 +68,20 @@ def landmark_shift_deltas(fd, landmarks, location=None):
 
     """
 
-    if len(landmarks) != fd.nsamples:
-        raise ValueError(f"landmark list ({len(landmarks)}) must have the same "
-                         f"length than the number of samples ({fd.nsamples})")
+    if len(landmarks) != fd.n_samples:
+        raise ValueError(f"landmark list ({len(landmarks)}) must have the same"
+                         f" length than the number of samples ({fd.n_samples})")
 
-    landmarks = numpy.atleast_1d(landmarks)
+    landmarks = np.atleast_1d(landmarks)
 
     # Parses location
     if location is None:
-        p = (numpy.max(landmarks, axis=0) + numpy.min(landmarks, axis=0)) / 2.
+        p = (np.max(landmarks, axis=0) + np.min(landmarks, axis=0)) / 2.
     elif callable(location):
         p = location(landmarks)
     else:
         try:
-            p = numpy.atleast_1d(location)
+            p = np.atleast_1d(location)
         except:
             raise ValueError("Invalid location, must be None, a callable or a "
                              "number in the domain")
@@ -183,8 +183,8 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
 
     Raises:
         ValueError: If the object to be registered has domain dimension greater
-            than 1 or the list of landmarks or locations does not match with the
-            number of samples.
+            than 1 or the list of landmarks or locations does not match with
+            the number of samples.
 
     References:
 
@@ -195,11 +195,13 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
 
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.preprocessing.registration import landmark_registration_warping
+        >>> from skfda.preprocessing.registration import (
+        ...      landmark_registration_warping)
 
         We will create a data with landmarks as example
 
-        >>> fd = make_multimodal_samples(n_samples=3, n_modes=2, random_state=9)
+        >>> fd = make_multimodal_samples(n_samples=3, n_modes=2,
+        ...                              random_state=9)
         >>> landmarks = make_multimodal_landmarks(n_samples=3, n_modes=2,
         ...                                       random_state=9)
         >>> landmarks = landmarks.squeeze()
@@ -216,19 +218,19 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
         FDataGrid(...)
     """
 
-    if fd.ndim_domain > 1:
+    if fd.dim_domain > 1:
         raise NotImplementedError("Method only implemented for objects with"
                                   "domain dimension up to 1.")
 
-    if len(landmarks) != fd.nsamples:
+    if len(landmarks) != fd.n_samples:
         raise ValueError("The number of list of landmarks should be equal to "
                          "the number of samples")
 
-    landmarks = numpy.asarray(landmarks).reshape((fd.nsamples, -1))
+    landmarks = np.asarray(landmarks).reshape((fd.n_samples, -1))
 
     n_landmarks = landmarks.shape[-1]
 
-    data_matrix = numpy.empty((fd.nsamples, n_landmarks + 2))
+    data_matrix = np.empty((fd.n_samples, n_landmarks + 2))
 
     data_matrix[:, 0] = fd.domain_range[0][0]
     data_matrix[:, -1] = fd.domain_range[0][1]
@@ -236,7 +238,7 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
     data_matrix[:, 1:-1] = landmarks
 
     if location is None:
-        sample_points = numpy.mean(data_matrix, axis=0)
+        sample_points = np.mean(data_matrix, axis=0)
 
     elif n_landmarks != len(location):
 
@@ -244,7 +246,7 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
                          f"the number of landmarks ({len(location)}) != "
                          f"({n_landmarks})")
     else:
-        sample_points = numpy.empty(n_landmarks + 2)
+        sample_points = np.empty(n_landmarks + 2)
         sample_points[0] = fd.domain_range[0][0]
         sample_points[-1] = fd.domain_range[0][1]
         sample_points[1:-1] = location
@@ -259,7 +261,7 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
     try:
         warping_points = fd.sample_points
     except AttributeError:
-        warping_points = [numpy.linspace(*domain, 201)
+        warping_points = [np.linspace(*domain, 201)
                           for domain in fd.domain_range]
 
     return warping.to_grid(warping_points)
@@ -269,8 +271,8 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
     """Perform landmark registration of the curves.
 
         Let :math:`t_{ij}` the time where the sample :math:`i` has the feature
-        :math:`j` and :math:`t^*_j` the new time for the feature. The registered
-        samples will have their features aligned, i.e.,
+        :math:`j` and :math:`t^*_j` the new time for the feature.
+        The registered samples will have their features aligned, i.e.,
         :math:`x^*_i(t^*_j)=x_i(t_{ij})`.
 
         See [RS05-7-3]_ for a detailed explanation.
@@ -304,7 +306,8 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
 
         We will create a data with landmarks as example
 
-        >>> fd = make_multimodal_samples(n_samples=3, n_modes=2, random_state=9)
+        >>> fd = make_multimodal_samples(n_samples=3, n_modes=2,
+        ...                              random_state=9)
         >>> landmarks = make_multimodal_landmarks(n_samples=3, n_modes=2,
         ...                                       random_state=9)
         >>> landmarks = landmarks.squeeze()
@@ -316,7 +319,7 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
 
         This method will work for FDataBasis as for FDataGrids
 
-        >>> fd = fd.to_basis(BSpline(nbasis=12, domain_range=(-1,1)))
+        >>> fd = fd.to_basis(BSpline(n_basis=12))
         >>> landmark_registration(fd, landmarks)
         FDataBasis(...)
 

@@ -1,8 +1,20 @@
-import numpy as np
+import warnings
+
 import rdata
 
+import numpy as np
+
 from .. import FDataGrid
-import warnings
+
+
+def _get_skdatasets_repositories():
+    import skdatasets
+
+    repositories = getattr(skdatasets, "repositories", None)
+    if repositories is None:
+        repositories = skdatasets
+
+    return repositories
 
 
 def fdata_constructor(obj, attrs):
@@ -53,7 +65,7 @@ def fetch_cran(name, package_name, *, converter=None,
         package_name: Name of the R package containing the dataset.
 
     """
-    import skdatasets
+    repositories = _get_skdatasets_repositories()
 
     if converter is None:
         converter = rdata.conversion.SimpleConverter({
@@ -61,8 +73,8 @@ def fetch_cran(name, package_name, *, converter=None,
             "fdata": fdata_constructor,
             "functional": functional_constructor})
 
-    return skdatasets.cran.fetch_dataset(name, package_name,
-                                         converter=converter, **kwargs)
+    return repositories.cran.fetch_dataset(name, package_name,
+                                           converter=converter, **kwargs)
 
 
 def fetch_ucr(name, **kwargs):
@@ -84,9 +96,9 @@ def fetch_ucr(name, **kwargs):
 
 
     """
-    import skdatasets
+    repositories = _get_skdatasets_repositories()
 
-    dataset = skdatasets.ucr.fetch(name, **kwargs)
+    dataset = repositories.ucr.fetch(name, **kwargs)
 
     def ucr_to_fdatagrid(data):
         if data.dtype == np.object_:
@@ -448,8 +460,8 @@ def fetch_weather(return_X_y: bool = False):
     weather_daily = np.asarray(data["dailyAv"])
 
     # Axes 0 and 1 must be transposed since in the downloaded dataset the
-    # data_matrix shape is (nfeatures, nsamples, ndim_image) while our
-    # data_matrix shape is (nsamples, nfeatures, ndim_image).
+    # data_matrix shape is (nfeatures, n_samples, dim_codomain) while our
+    # data_matrix shape is (n_samples, nfeatures, dim_codomain).
     temp_prec_daily = np.transpose(weather_daily[:, :, 0:2], axes=(1, 0, 2))
 
     curves = FDataGrid(data_matrix=temp_prec_daily,

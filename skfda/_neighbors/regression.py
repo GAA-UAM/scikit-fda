@@ -111,6 +111,7 @@ class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
 
+
     Notes
     -----
     See Nearest Neighbors in the sklearn online documentation for a discussion
@@ -279,6 +280,7 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
     :class:`~skfda.ml.classification.NearestCentroids`
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
+
 
     Notes
     -----

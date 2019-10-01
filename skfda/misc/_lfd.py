@@ -59,7 +59,7 @@ class LinearDifferentialOperator:
                 i in range(order + 1)]
 
         else:
-            if len(weights) is 0:
+            if len(weights) == 0:
                 raise ValueError("You have to provide one weight at least")
 
             if all(isinstance(n, int) for n in weights):
@@ -70,7 +70,7 @@ class LinearDifferentialOperator:
 
             elif all(isinstance(n, FDataBasis) for n in weights):
                 if all([_same_domain(weights[0].domain_range,
-                                     x.domain_range) and x.nsamples == 1 for x
+                                     x.domain_range) and x.n_samples == 1 for x
                         in weights]):
                     self.order = len(weights) - 1
                     self.weights = weights
@@ -88,7 +88,7 @@ class LinearDifferentialOperator:
         """Representation of Lfd object."""
 
         bwtliststr = ""
-        for i in range(self.order):
+        for i in range(self.order + 1):
             bwtliststr = bwtliststr + "\n" + self.weights[i].__repr__() + ","
 
         return (f"{self.__class__.__name__}("
@@ -98,6 +98,6 @@ class LinearDifferentialOperator:
 
     def __eq__(self, other):
         """Equality of Lfd objects"""
-        return (self.order == other.nderic
-                and all(self.weights[i] == other.bwtlist[i]
-                        for i in range(self.order)))
+        return (self.order == other.nderic and
+                all(self.weights[i] == other.bwtlist[i]
+                    for i in range(self.order)))

@@ -4,9 +4,11 @@ This module contains routines related to the registration procedure.
 """
 import collections
 
-import numpy
 import scipy.integrate
 from scipy.interpolate import PchipInterpolator
+
+import numpy as np
+
 
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"
@@ -97,8 +99,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.preprocessing.registration import (landmark_registration_warping,
-        ...                               mse_decomposition)
+        >>> from skfda.preprocessing.registration import (
+        ...      landmark_registration_warping, mse_decomposition)
 
 
         We will create and register data.
@@ -108,7 +110,8 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
         >>> landmarks = landmarks.squeeze()
         >>> warping = landmark_registration_warping(fd, landmarks)
         >>> fd_registered = fd.compose(warping)
-        >>> mse_amp, mse_pha, rsq, cr = mse_decomposition(fd, fd_registered, warping)
+        >>> mse_amp, mse_pha, rsq, cr = mse_decomposition(fd, fd_registered,
+        ...                                               warping)
 
         Mean square error produced by the amplitude variation.
 
@@ -128,21 +131,21 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 
     """
 
-    if registered_fdata.ndim_domain != 1 or registered_fdata.ndim_image != 1:
+    if registered_fdata.dim_domain != 1 or registered_fdata.dim_codomain != 1:
         raise NotImplementedError
 
-    if original_fdata.nsamples != registered_fdata.nsamples:
+    if original_fdata.n_samples != registered_fdata.n_samples:
         raise ValueError(f"the registered and unregistered curves must have "
                          f"the same number of samples "
-                         f"({registered_fdata.nsamples})!= "
-                         f"({original_fdata.nsamples})")
+                         f"({registered_fdata.n_samples})!= "
+                         f"({original_fdata.n_samples})")
 
-    if warping_function is not None and (warping_function.nsamples
-                                         != original_fdata.nsamples):
-        raise ValueError(f"the registered curves and the warping functions must"
-                         f" have the same number of samples "
-                         f"({registered_fdata.nsamples})"
-                         f"!=({warping_function.nsamples})")
+    if warping_function is not None and (warping_function.n_samples
+                                         != original_fdata.n_samples):
+        raise ValueError(f"the registered curves and the warping functions "
+                         f"must have the same number of samples "
+                         f"({registered_fdata.n_samples})"
+                         f"!=({warping_function.n_samples})")
 
     # Creates the mesh to discretize the functions
     if eval_points is None:
@@ -150,22 +153,22 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
             eval_points = registered_fdata.sample_points[0]
 
         except AttributeError:
-            nfine = max(registered_fdata.basis.nbasis * 10 + 1, 201)
+            nfine = max(registered_fdata.basis.n_basis * 10 + 1, 201)
             domain_range = registered_fdata.domain_range[0]
-            eval_points = numpy.linspace(*domain_range, nfine)
+            eval_points = np.linspace(*domain_range, nfine)
     else:
-        eval_points = numpy.asarray(eval_points)
+        eval_points = np.asarray(eval_points)
 
     x_fine = original_fdata.evaluate(eval_points, keepdims=False)
     y_fine = registered_fdata.evaluate(eval_points, keepdims=False)
     mu_fine = x_fine.mean(axis=0)  # Mean unregistered function
     eta_fine = y_fine.mean(axis=0)  # Mean registered function
-    mu_fine_sq = numpy.square(mu_fine)
-    eta_fine_sq = numpy.square(eta_fine)
+    mu_fine_sq = np.square(mu_fine)
+    eta_fine_sq = np.square(eta_fine)
 
     # Total mean square error of the original funtions
     # mse_total = scipy.integrate.simps(
-    #    numpy.mean(numpy.square(x_fine - mu_fine), axis=0),
+    #    np.mean(np.square(x_fine - mu_fine), axis=0),
     #    eval_points)
 
     cr = 1.  # Constant related to the covariation between the deformation
@@ -179,24 +182,24 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
         dh_fine_mean = dh_fine.mean(axis=0)
         dh_fine_center = dh_fine - dh_fine_mean
 
-        y_fine_sq = numpy.square(y_fine)  # y^2
-        y_fine_sq_center = numpy.subtract(
+        y_fine_sq = np.square(y_fine)  # y^2
+        y_fine_sq_center = np.subtract(
             y_fine_sq, eta_fine_sq)  # y^2 - E[y^2]
 
-        covariate = numpy.inner(dh_fine_center.T, y_fine_sq_center.T)
+        covariate = np.inner(dh_fine_center.T, y_fine_sq_center.T)
         covariate = covariate.mean(axis=0)
-        cr += numpy.divide(scipy.integrate.simps(covariate,
-                                                 eval_points),
-                           scipy.integrate.simps(eta_fine_sq,
-                                                 eval_points))
+        cr += np.divide(scipy.integrate.simps(covariate,
+                                              eval_points),
+                        scipy.integrate.simps(eta_fine_sq,
+                                              eval_points))
 
     # mse due to phase variation
-    mse_pha = scipy.integrate.simps(cr*eta_fine_sq - mu_fine_sq, eval_points)
+    mse_pha = scipy.integrate.simps(cr * eta_fine_sq - mu_fine_sq, eval_points)
 
     # mse due to amplitude variation
     # mse_amp = mse_total - mse_pha
-    y_fine_center = numpy.subtract(y_fine, eta_fine)
-    y_fine_center_sq = numpy.square(y_fine_center, out=y_fine_center)
+    y_fine_center = np.subtract(y_fine, eta_fine)
+    y_fine_center_sq = np.square(y_fine_center, out=y_fine_center)
     y_fine_center_sq_mean = y_fine_center_sq.mean(axis=0)
 
     mse_amp = scipy.integrate.simps(y_fine_center_sq_mean, eval_points)
@@ -216,9 +219,9 @@ def mse_decomposition(original_fdata, registered_fdata, warping_function=None,
 def invert_warping(fdatagrid, *, eval_points=None):
     r"""Compute the inverse of a diffeomorphism.
 
-    Let :math:`\gamma : [a,b] \\rightarrow [a,b]` be a function strictly
+    Let :math:`\gamma : [a,b] \rightarrow [a,b]` be a function strictly
     increasing, calculates the corresponding inverse
-    :math:`\gamma^{-1} : [a,b] \\rightarrow [a,b]` such that
+    :math:`\gamma^{-1} : [a,b] \rightarrow [a,b]` such that
     :math:`\gamma^{-1} \circ \gamma = \gamma \circ \gamma^{-1} = \gamma_{id}`.
 
     Uses a PCHIP interpolator to compute approximately the inverse.
@@ -242,7 +245,7 @@ def invert_warping(fdatagrid, *, eval_points=None):
         >>> from skfda import FDataGrid
         >>> from skfda.preprocessing.registration import invert_warping
 
-        We will construct the warping :math:`\gamma : [0,1] \\rightarrow [0,1]`
+        We will construct the warping :math:`\gamma : [0,1] \rightarrow [0,1]`
         wich maps t to t^3.
 
         >>> t = np.linspace(0, 1)
@@ -265,7 +268,7 @@ def invert_warping(fdatagrid, *, eval_points=None):
 
     """
 
-    if fdatagrid.ndim_image != 1 or fdatagrid.ndim_domain != 1:
+    if fdatagrid.dim_codomain != 1 or fdatagrid.dim_domain != 1:
         raise ValueError("Multidimensional object not supported.")
 
     if eval_points is None:
@@ -273,9 +276,9 @@ def invert_warping(fdatagrid, *, eval_points=None):
 
     y = fdatagrid(eval_points, keepdims=False)
 
-    data_matrix = numpy.empty((fdatagrid.nsamples, len(eval_points)))
+    data_matrix = np.empty((fdatagrid.n_samples, len(eval_points)))
 
-    for i in range(fdatagrid.nsamples):
+    for i in range(fdatagrid.n_samples):
         data_matrix[i] = PchipInterpolator(y[i], eval_points)(eval_points)
 
     return fdatagrid.copy(data_matrix=data_matrix, sample_points=eval_points)
@@ -304,12 +307,12 @@ def _normalize_scale(t, a=0, b=1):
 
 
 def normalize_warping(warping, domain_range=None):
-    """Rescale a warping to normalize their domain.
+    r"""Rescale a warping to normalize their domain.
 
-    Given a set of warpings :math:`\\gamma_i:[a,b] \\rightarrow [a,b]` it is
+    Given a set of warpings :math:`\gamma_i:[a,b]\rightarrow  [a,b]` it is
     used an affine traslation to change the domain of the transformation to
-    other domain, :math:`\\hat \\gamma_i:[\\hat a,\\hat b] \\rightarrow
-    [\\hat a, \\hat b]`.
+    other domain, :math:`\tilde \gamma_i:[\tilde a,\tilde b] \rightarrow
+    [\tilde a, \tilde b]`.
 
     Args:
         warping (:class:`FDatagrid`): Set of warpings to rescale.

@@ -21,7 +21,9 @@
 # import sys
 # sys.path.insert(0, '/home/miguel/Desktop/fda/fda')
 
+import os
 import sys
+
 import pkg_resources
 try:
     release = pkg_resources.get_distribution('scikit-fda').version
@@ -53,11 +55,14 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx_rtd_theme',
               'sphinx_gallery.gen_gallery',
               'sphinx.ext.intersphinx',
-              'sphinx.ext.doctest' ]
+              'sphinx.ext.doctest']
+
+autodoc_default_flags = ['members', 'inherited-members']
+
 
 doctest_global_setup = '''
-import numpy
-numpy.set_printoptions(legacy='1.13')
+import numpy as np
+np.set_printoptions(legacy='1.13')
 '''
 
 # Add any paths that contain templates here, relative to this directory.
@@ -102,11 +107,16 @@ todo_include_todos = True
 #
 html_theme = "sphinx_rtd_theme"
 
+html_logo = "logos/notitle_logo/notitle_logo.png"
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    'logo_only': True,
+    'style_nav_header_background': 'Gainsboro',
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -134,6 +144,8 @@ html_sidebars = {
 htmlhelp_basename = 'skfdadoc'
 
 # -- Options for LaTeX output ---------------------------------------------
+
+latex_engine = 'lualatex'
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
@@ -206,6 +218,7 @@ intersphinx_mapping = {
         sys.version_info), None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
+    'sklearn': ('https://scikit-learn.org/stable', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'mpldatacursor': ('https://pypi.org/project/mpldatacursor/', None),
@@ -221,6 +234,7 @@ sphinx_gallery_conf = {
         'skfda': None,
     },
     'backreferences_dir': 'backreferences',
+    'doc_module': 'skfda',
 }
 
 autosummary_generate = True

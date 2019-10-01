@@ -3,10 +3,9 @@
 import unittest
 
 import numpy as np
-
+from skfda import FDataGrid, FDataBasis
 from skfda.datasets import make_sinusoidal_process
 from skfda.representation.basis import Fourier
-from skfda import FDataGrid, FDataBasis
 from skfda.representation.extrapolation import (
     PeriodicExtrapolation, BoundaryExtrapolation, ExceptionExtrapolation,
     FillExtrapolation)
@@ -21,7 +20,7 @@ class TestBasis(unittest.TestCase):
 
     def test_constructor_FDataBasis_setting(self):
         coeff = self.dummy_data
-        basis = Fourier(nbasis=3)
+        basis = Fourier(n_basis=3)
 
         a = FDataBasis(basis, coeff)
         np.testing.assert_equal(a.extrapolation, None)
@@ -45,7 +44,7 @@ class TestBasis(unittest.TestCase):
 
     def test_FDataBasis_setting(self):
         coeff = self.dummy_data
-        basis = Fourier(nbasis=3)
+        basis = Fourier(n_basis=3)
         a = FDataBasis(basis, coeff)
 
         a.extrapolation = "periodic"

@@ -46,7 +46,8 @@ class Evaluator(ABC):
 
     The evaluator is called internally by :func:`evaluate`.
 
-    Should implement the methods :func:`evaluate` and :func:`evaluate_composed`.
+    Should implement the methods :func:`evaluate` and
+    :func:`evaluate_composed`.
 
 
     """
@@ -54,24 +55,23 @@ class Evaluator(ABC):
     def evaluate(self, eval_points, *, derivative=0):
         """Evaluation method.
 
-        Evaluates the samples at the same evaluation points. The evaluation call
-        will receive a 2-d array with the evaluation points.
-
-        This method is called internally by :meth:`evaluate` when the argument
-        `aligned_evaluation` is True.
+        Evaluates the samples at the same evaluation points. The evaluation
+        call will receive a 2-d array with the evaluation points.
+        This method is called internally by :meth:`evaluate` when the
+        argument ``aligned_evaluation`` is True.
 
         Args:
             eval_points (numpy.ndarray): Numpy array with shape
-                `(len(eval_points), ndim_domain)` with the evaluation points.
-                Each entry represents the coordinate of a point.
+                ``(number_eval_points, dim_domain)`` with the
+                evaluation points.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
-            (numpy.darray): Numpy 3-d array with shape `(n_samples,
-                len(eval_points), ndim_image)` with the result of the
-                evaluation. The entry (i,j,k) will contain the value k-th
-                image dimension of the i-th sample, at the j-th evaluation
-                point.
+            (numpy.darray): Numpy 3d array with shape
+                ``(n_samples, number_eval_points, dim_codomain)`` with the
+                result of the evaluation. The entry ``(i,j,k)`` will contain
+                the value k-th image dimension of the i-th sample, at the
+                j-th evaluation point.
 
         """
         pass
@@ -81,22 +81,22 @@ class Evaluator(ABC):
         """Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
-        call will receive a 3-d array with the evaluation points for each sample.
-
-        This method is called internally by :meth:`evaluate` when the argument
-        `aligned_evaluation` is False.
+        call will receive a 3-d array with the evaluation points for each
+        sample. This method is called internally by :func:`evaluate` when
+        the argument ``aligned_evaluation`` is False.
 
         Args:
             eval_points (numpy.ndarray): Numpy array with shape
-                `(n_samples, number_eval_points, ndim_domain)` with the
-                 evaluation points for each sample.
+                ``(n_samples, number_eval_points, dim_domain)`` with the
+                evaluation points for each sample.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
-            (numpy.darray): Numpy 3d array with shape `(n_samples,
-                number_eval_points, ndim_image)` with the result of the
-                evaluation. The entry (i,j,k) will contain the value k-th image
-                dimension of the i-th sample, at the j-th evaluation point.
+            (numpy.darray): Numpy 3d array with shape
+                ``(n_samples, number_eval_points, dim_codomain)`` with the
+                result of the evaluation. The entry ``(i,j,k)`` will contain
+                the value k-th image dimension of the i-th sample, at the
+                j-th evaluation point.
 
         """
         pass
@@ -123,21 +123,21 @@ class GenericEvaluator(Evaluator):
     def evaluate(self, eval_points, *, derivative=0):
         """Evaluation method.
 
-        Evaluates the samples at the same evaluation points. The evaluation call
-        will receive a 2-d array with the evaluation points.
+        Evaluates the samples at the same evaluation points. The evaluation
+        call will receive a 2-d array with the evaluation points.
 
         This method is called internally by :meth:`evaluate` when the argument
         `aligned_evaluation` is True.
 
         Args:
             eval_points (numpy.ndarray): Numpy array with shape
-                `(len(eval_points), ndim_domain)` with the evaluation points.
+                `(len(eval_points), dim_domain)` with the evaluation points.
                 Each entry represents the coordinate of a point.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3-d array with shape `(n_samples,
-                len(eval_points), ndim_image)` with the result of the
+                len(eval_points), dim_codomain)` with the result of the
                 evaluation. The entry (i,j,k) will contain the value k-th
                 image dimension of the i-th sample, at the j-th evaluation
                 point.
@@ -150,20 +150,21 @@ class GenericEvaluator(Evaluator):
         """Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
-        call will receive a 3-d array with the evaluation points for each sample.
+        call will receive a 3-d array with the evaluation points for each
+        sample.
 
         This method is called internally by :meth:`evaluate` when the argument
         `aligned_evaluation` is False.
 
         Args:
             eval_points (numpy.ndarray): Numpy array with shape
-                `(n_samples, number_eval_points, ndim_domain)` with the
+                `(n_samples, number_eval_points, dim_domain)` with the
                  evaluation points for each sample.
             derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape `(n_samples,
-                number_eval_points, ndim_image)` with the result of the
+                number_eval_points, dim_codomain)` with the result of the
                 evaluation. The entry (i,j,k) will contain the value k-th image
                 dimension of the i-th sample, at the j-th evaluation point.
 

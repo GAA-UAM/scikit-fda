@@ -10,13 +10,15 @@ It includes the modules:
     best smooths a FDataGrid object.
     - depth_measures: depth methods to order he samples of FDataGrid objects.
     - magnitude-shape plot: visualization tool.
-    - fdata_boxplot: informative exploratory tool for visualizing functional data.
+    - fdata_boxplot: informative exploratory tool for visualizing functional
+    data.
     - clustering: K-Means and Fuzzy-KMeans algorithms implemented to cluster
     data in the FDataGrid, along with plotting methods.
 and the following classes:
     - FDataGrid: Discrete representation of functional data.
     - FDataBasis: Basis representation for functional data.
-    - Boxplot: Implements the functional boxplot for FDataGrid with domain dimension 1.
+    - Boxplot: Implements the functional boxplot for FDataGrid with domain
+    dimension 1.
     - SurfaceBoxplot: Implements the functional boxplot for FDataGrid with
     domain dimension 2.
     - MagnitudeShapePlot: Implements the magnitude shape plot for FDataGrid
@@ -31,7 +33,7 @@ from .representation import FData
 from .representation import FDataBasis
 from .representation import FDataGrid
 
-from . import representation, datasets, preprocessing, exploratory, misc
+from . import representation, datasets, preprocessing, exploratory, misc, ml
 
 import os as _os
 

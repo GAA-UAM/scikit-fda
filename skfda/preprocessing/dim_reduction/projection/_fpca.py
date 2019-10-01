@@ -1,8 +1,9 @@
 """Functional principal component analysis.
 """
 
-from ....exploratory.stats import mean
 import numpy as np
+
+from ....exploratory.stats import mean
 
 
 def fpca(fdatagrid, n=2):
@@ -26,7 +27,7 @@ def fpca(fdatagrid, n=2):
     # singular value decomposition
     u, s, v = np.linalg.svd(fdatagrid.data_matrix)
     principal_directions = v.T  # obtain the eigenvectors matrix
-    eigenvalues = (np.diag(s) ** 2) / (fdatagrid.nsamples - 1)
+    eigenvalues = (np.diag(s) ** 2) / (fdatagrid.n_samples - 1)
     scores = u @ s  # functional principal scores
 
     return scores, principal_directions, eigenvalues

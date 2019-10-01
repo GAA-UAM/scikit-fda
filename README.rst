@@ -4,7 +4,7 @@
 scikit-fda: Functional Data Analysis in Python
 ===================================================
 
-|python|_ |build-status| |docs| |Codecov|_ |PyPIBadge|_ |license|_
+|python|_ |build-status| |docs| |Codecov|_ |PyPIBadge|_ |license|_ |doi|_
 
 Functional Data Analysis, or FDA, is the field of Statistics that analyses
 data that depend on a continuous parameter.
@@ -120,3 +120,6 @@ license_ can be found along with the code.
 
 .. |license| image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
 .. _license: https://github.com/GAA-UAM/scikit-fda/blob/master/LICENSE.txt
+
+.. |doi| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3468127.svg
+   :target: https://doi.org/10.5281/zenodo.3468127

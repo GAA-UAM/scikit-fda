@@ -9,7 +9,7 @@ from ._landmark_registration import (landmark_shift_deltas,
                                      landmark_registration_warping,
                                      landmark_registration)
 
-from ._shift_registration import ShiftRegistration
+from .shift_registration import ShiftRegistration
 
 from ._registration_utils import (mse_decomposition,
                                   invert_warping,

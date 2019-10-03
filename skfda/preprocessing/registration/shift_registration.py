@@ -299,6 +299,9 @@ class ShiftRegistration(RegistrationTransformer):
         Returns:
             RegistrationTransformer: self
 
+        Raises:
+            AttributeError: If this method is call when restrict_domain=True.
+
         """
         if self.restrict_domain:
             raise AttributeError("fit and predict are not available when "
@@ -325,7 +328,7 @@ class ShiftRegistration(RegistrationTransformer):
             FData: Functional data registered.
 
         Raises:
-            AttributeError: If it is call when restrict_domain=True.
+            AttributeError: If this method is call when restrict_domain=True.
 
         """
 
@@ -358,20 +361,20 @@ class ShiftRegistration(RegistrationTransformer):
 
         Examples:
 
-        Creation of a synthetic functional dataset.
+        Creates a synthetic functional dataset.
 
         >>> from skfda.preprocessing.registration import ShiftRegistration
         >>> from skfda.datasets import make_sinusoidal_process
         >>> fd = make_sinusoidal_process(error_std=0, random_state=1)
         >>> fd.extrapolation = 'periodic'
 
-        Dataset registration and centering
+        Dataset registration and centering.
 
         >>> reg = ShiftRegistration()
         >>> fd_registered = reg.fit_transform(fd)
         >>> fd_centered = fd_registered - fd_registered.mean()
 
-        Reverse the translation applied during the registration
+        Reverse the translation applied during the registration.
 
         >>> reg.inverse_transform(fd_centered)
         FDataGrid(...)

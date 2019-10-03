@@ -17,7 +17,7 @@ class ShiftRegistration(RegistrationTransformer):
     r"""Register a functional dataset using shift alignment.
 
     Realizes the registration of a set of curves using a shift aligment
-    [RS05-7-2-1]_. Let :math:`\{x_i(t)\}_{i=1}^{N}` be a functional dataset,
+    [RaSi2005-7-2]_. Let :math:`\{x_i(t)\}_{i=1}^{N}` be a functional dataset,
     calculates :math:`\delta_{i}` for each sample such that
     :math:`x_i(t + \delta_{i})` minimizes the least squares criterion:
 
@@ -27,7 +27,8 @@ class ShiftRegistration(RegistrationTransformer):
 
     Estimates each shift parameter :math:`\delta_i` iteratively by
     using a modified Newton-Raphson algorithm, updating the template
-    :math:`\mu` in each iteration as is described in detail in [RS05-7-9-1-1]_.
+    :math:`\mu` in each iteration as is described in detail in
+    [RaSi2005-7-9-1]_.
 
     Method only implemented for univariate functional data.
 
@@ -52,7 +53,7 @@ class ShiftRegistration(RegistrationTransformer):
             By default uses the method defined in the data to be transformed.
             See the `extrapolation` documentation to obtain more information.
         step_size (int or float, optional): Parameter to adjust the rate of
-            convergence in the Newton-Raphson algorithm, see [RS05-7-9-1-1]_.
+            convergence in the Newton-Raphson algorithm, see [RaSi2005-7-9-1]_.
             Defaults to 1.
         restrict_domain (bool, optional): If True restricts the domain to avoid
             evaluate points outside the domain using extrapolation, in which
@@ -112,10 +113,10 @@ class ShiftRegistration(RegistrationTransformer):
 
 
     References:
-        ..  [RS05-7-2-1] Ramsay, J., Silverman, B. W. (2005). Shift
+        ..  [RaSi2005-7-2] Ramsay, J., Silverman, B. W. (2005). Shift
             registration. In *Functional Data Analysis* (pp. 129-132).
             Springer.
-        ..  [RS05-7-9-1-1] Ramsay, J., Silverman, B. W. (2005). Shift
+        ..  [RaSi2005-7-9-1] Ramsay, J., Silverman, B. W. (2005). Shift
             registration by the Newton-Raphson algorithm. In *Functional
             Data Analysis* (pp. 142-144). Springer.
     """

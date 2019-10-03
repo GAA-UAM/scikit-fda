@@ -1,10 +1,9 @@
-"""Shift Registration of functional data module.
+"""Class to apply Shift Registration to functional data"""
 
-This module contains methods to perform the registration of
-functional data using shifts, in basis as well in discretized form.
-"""
+# Pablo Marcos Manchón
+# pablo.marcosm@protonmail.com
 
-import scipy.integrate
+from scipy.integrate import simps
 
 import numpy as np
 
@@ -13,15 +12,117 @@ from .base import RegistrationTransformer
 from ... import FData, FDataGrid
 
 
-__author__ = "Pablo Marcos Manchón"
-__email__ = "pablo.marcosm@estudiante.uam.es"
-
 class ShiftRegistration(RegistrationTransformer):
+    r"""Register a functional dataset using shift alignment.
 
-    def __init__(self, maxiter=5, tol=1e-2, restrict_domain=False,
-                 template="mean", extrapolation=None, step_size=1,
-                 initial=None, output_points=None, **kwargs):
-        self.max_iter = maxiter
+    Realizes the registration of a set of curves using a shift aligment
+    [RS05-7-2-1]_. Let :math:`\{x_i(t)\}_{i=1}^{N}` be a functional dataset,
+    calculates :math:`\delta_{i}` for each sample such that
+    :math:`x_i(t + \delta_{i})` minimizes the least squares criterion:
+
+    .. math::
+        \text{REGSSE} = \sum_{i=1}^{N} \int_{\mathcal{T}}
+        [x_i(t + \delta_i) - \hat\mu(t)]^2 ds
+
+    Estimates each shift parameter :math:`\delta_i` iteratively by
+    using a modified Newton-Raphson algorithm, updating the template
+    :math:`\mu` in each iteration as is described in detail in [RS05-7-9-1-1]_.
+
+    Method only implemented for univariate functional data.
+
+    Args:
+        max_iter (int, optional): Maximun number of iterations.
+            Defaults sets to 5. Generally 2 or 3 iterations are sufficient to
+            obtain a good alignment.
+        tol (float, optional): Tolerance allowable. The process will stop if
+            :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
+            Default sets to 1e-2.
+        template (str, callable or FData, optional): Template to use in the
+            least squares criterion. If template="mean" it is use the
+            functional mean as in the original paper. The template can be a
+            callable that will receive an FDataGrid with the samples and will
+            return another FDataGrid with template, such as any of the means or
+            medians of the module `skfda.explotatory.stats`.
+            If the template is an FData it is used directly as the final
+            template to the registration and it is not necessary to fit the
+            estimator. Defaults to "mean".
+        extrapolation (str or :class:`Extrapolation`, optional): Controls the
+            extrapolation mode for points outside the domain range.
+            By default uses the method defined in the data to be transformed.
+            See the `extrapolation` documentation to obtain more information.
+        step_size (int or float, optional): Parameter to adjust the rate of
+            convergence in the Newton-Raphson algorithm, see [RS05-7-9-1-1]_.
+            Defaults to 1.
+        restrict_domain (bool, optional): If True restricts the domain to avoid
+            evaluate points outside the domain using extrapolation, in which
+            case only the fit_transform method will be available, as training
+            and transformation must be done together. Defaults to False.
+        initial (str or array_like, optional): Array with an initial estimation
+            of shifts. Default uses a list of zeros for the initial shifts.
+        output_points (array_like, optional): Set of points where the
+            functions are evaluated to obtain the discrete
+            representation of the object to integrate. If None is
+            passed it calls numpy.linspace in FDataBasis and uses the
+            `sample_points` in FDataGrids.
+
+    Attributes:
+        template_ (FData): Template :math:`\mu` learned during the fitting
+            used to the transformation.
+        deltas_ (numpy.ndarray): List of shifts :math:`\delta_i` applied
+            during the last transformation.
+        n_iter_ (int): Number of iterations performed during the last
+            transformation.
+
+    Note:
+        Due to the use of derivatives for the estimation of the shifts, the
+        samples to be registered may be smooth for the correct convergence of
+        the method.
+
+    Examples:
+
+        >>> from skfda.preprocessing.registration import ShiftRegistration
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> from skfda.representation.basis import Fourier
+
+
+        Registration and creation of dataset in discretized form:
+
+        >>> fd = make_sinusoidal_process(n_samples=10, error_std=0,
+        ...                              random_state=1)
+        >>> reg = ShiftRegistration(extrapolation="periodic")
+        >>> fd_registered = reg.fit_transform(fd)
+        >>> fd_registered
+        FDataGrid(...)
+
+        Shifts applied during the transformation
+
+        >>> reg.deltas_.round(3)
+        array([ -0.126,  0.19 ,  0.029,  0.036, -0.104,  0.116,  ..., -0.058])
+
+
+        Registration and creation of a dataset in basis form using the
+        transformation previosly fitted:
+
+        >>> fd = make_sinusoidal_process(n_samples=2, error_std=0,
+        ...                              random_state=2)
+        >>> fd_basis = fd.to_basis(Fourier())
+        >>> reg.transform(fd_basis)
+        FDataBasis(...)
+
+
+    References:
+        ..  [RS05-7-2-1] Ramsay, J., Silverman, B. W. (2005). Shift
+            registration. In *Functional Data Analysis* (pp. 129-132).
+            Springer.
+        ..  [RS05-7-9-1-1] Ramsay, J., Silverman, B. W. (2005). Shift
+            registration by the Newton-Raphson algorithm. In *Functional
+            Data Analysis* (pp. 142-144). Springer.
+    """
+
+    def __init__(self, max_iter=5, tol=1e-2, template="mean",
+                 extrapolation=None, step_size=1, restrict_domain=False,
+                 initial="zeros", output_points=None, **kwargs):
+        self.max_iter = max_iter
         self.tol = tol
         self.template = template
         self.restrict_domain = restrict_domain
@@ -30,102 +131,34 @@ class ShiftRegistration(RegistrationTransformer):
         self.initial = initial
         self.output_points = output_points
 
-
-    def _shift_registration_deltas(self, fd, template):
-        r"""Return the lists of shifts used in the shift registration procedure.
-
-            Realizes a registration of the curves, using shift aligment, as is
-            defined in [RS05-7-2-1]_. Calculates :math:`\delta_{i}` for each sample
-            such that :math:`x_i(t + \delta_{i})` minimizes the least squares
-            criterion:
-
-            .. math::
-                \text{REGSSE} = \sum_{i=1}^{N} \int_{\mathcal{T}}
-                [x_i(t + \delta_i) - \hat\mu(t)]^2 ds
-
-            Estimates the shift parameter :math:`\delta_i` iteratively by
-            using a modified Newton-Raphson algorithm, updating the mean
-            in each iteration, as is described in detail in [RS05-7-9-1-1]_.
-
-            Method only implemented for Funtional objects with domain and image
-            dimension equal to 1.
+    def _compute_deltas(self, fd, template):
+        r"""Compute the shifts to perform the registration.
 
         Args:
-            fd (:class:`FData`): Functional data object to be registered.
-            maxiter (int, optional): Maximun number of iterations.
-                Defaults to 5.
-            tol (float, optional): Tolerance allowable. The process will stop if
-                :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
-                Default sets to 1e-2.
-            restrict_domain (bool, optional): If True restricts the domain to
-                avoid evaluate points outside the domain using extrapolation.
-                Defaults uses extrapolation.
-            extrapolation (str or :class:`Extrapolation`, optional): Controls the
-                extrapolation mode for elements outside the domain range.
-                By default uses the method defined in fd. See :module:
-                `extrapolation` to obtain more information.
-            step_size (int or float, optional): Parameter to adjust the rate of
-                convergence in the Newton-Raphson algorithm, see [RS05-7-9-1-1]_.
-                Defaults to 1.
-            initial (array_like, optional): Initial estimation of shifts.
-                Default uses a list of zeros for the initial shifts.
-            output_points (array_like, optional): Set of points where the
-                functions are evaluated to obtain the discrete
-                representation of the object to integrate. If None is
-                passed it calls numpy.linspace in FDataBasis and uses the
-                `sample_points` in FDataGrids.
+            fd (FData: Functional object to be registered.
+            template (str, FData or callable): Template to align the
+                the samples. "mean" to compute the mean iteratively as in
+                the original paper, an FData with the templated calculated or
+                a callable wich constructs the template.
 
         Returns:
-            :class:`numpy.ndarray`: list with the shifts.
+            tuple: A tuple with an array of deltas and an FDataGrid with the
+                template.
 
-        Raises:
-            ValueError: If the initial array has different length than the
-                number of samples.
-
-        Examples:
-
-            >>> from skfda.datasets import make_sinusoidal_process
-            >>> from skfda.representation.basis import Fourier
-            >>> from skfda.preprocessing.registration import (
-            ...      shift_registration_deltas)
-            >>> fd = make_sinusoidal_process(n_samples=2, error_std=0,
-            ...                              random_state=1)
-
-            Registration of data in discretized form:
-
-            >>> shift_registration_deltas(fd).round(3)
-            array([-0.022,  0.03 ])
-
-            Registration of data in basis form:
-
-            >>> fd = fd.to_basis(Fourier())
-            >>> shift_registration_deltas(fd).round(3)
-            array([-0.022,  0.03 ])
-
-
-        References:
-            ..  [RS05-7-2-1] Ramsay, J., Silverman, B. W. (2005). Shift
-                registration. In *Functional Data Analysis* (pp. 129-132).
-                Springer.
-            ..  [RS05-7-9-1-1] Ramsay, J., Silverman, B. W. (2005). Shift
-                registration by the Newton-Raphson algorithm. In *Functional
-                Data Analysis* (pp. 142-144). Springer.
         """
-
-        # Initial estimation of the shifts
-
         if fd.dim_codomain > 1 or fd.dim_domain > 1:
             raise NotImplementedError("Method for unidimensional data.")
 
         domain_range = fd.domain_range[0]
 
-        if self.initial is None:
+        # Initial estimation of the shifts
+        if self.initial is "zeros":
             delta = np.zeros(fd.n_samples)
 
         elif len(self.initial) != fd.n_samples:
-            raise ValueError(f"the initial shift ({len(self.initial)}) must have the "
-                             f"same length than the number of samples "
-                             f"({fd.n_samples})")
+            raise ValueError(f"the initial shift ({len(self.initial)}) must "
+                             f"have the same length than the number of samples"
+                             f" ({fd.n_samples})")
         else:
             delta = np.asarray(self.initial)
 
@@ -152,8 +185,7 @@ class ShiftRegistration(RegistrationTransformer):
 
         # Second term of the second derivate estimation of REGSSE. The
         # first term has been dropped to improve convergence (see references)
-        d2_regsse = scipy.integrate.trapz(np.square(D1x), output_points,
-                                          axis=1)
+        d2_regsse = simps(np.square(D1x), output_points, axis=1)
 
         max_diff = self.tol + 1
         self.n_iter_ = 0
@@ -166,7 +198,7 @@ class ShiftRegistration(RegistrationTransformer):
             if self.restrict_domain:
                 template_points_aux = tfine_aux
 
-            template="fixed"
+            template = "fixed"
         else:
             tfine_aux = np.empty(nfine)
 
@@ -196,9 +228,8 @@ class ShiftRegistration(RegistrationTransformer):
                 D1x = D1x_tmp[:, domain]
                 # Reescale the second derivate could be other approach
                 # d2_regsse =
-                #     d2_regsse_original * ( 1 + (a - b) / (domain[1] - domain[0]))
-                d2_regsse = scipy.integrate.trapz(np.square(D1x),
-                                                  output_points, axis=1)
+                # d2_regsse_original * ( 1 + (a - b) / (domain[1] - domain[0]))
+                d2_regsse = simps(np.square(D1x), output_points, axis=1)
 
                 # Recompute base points for evaluation
                 output_points_rep = np.outer(ones, output_points)
@@ -210,17 +241,15 @@ class ShiftRegistration(RegistrationTransformer):
                             keepdims=False)
 
             if template == "mean":
-                print("Updating mean")
                 x.mean(axis=0, out=tfine_aux)
             elif template == "fixed" and self.restrict_domain:
-                print("Restricting mean")
                 tfine_aux = template_points_aux[domain]
 
             # Calculates x - mean
             np.subtract(x, tfine_aux, out=x)
 
-            d1_regsse = scipy.integrate.trapz(np.multiply(x, D1x, out=x),
-                                              output_points, axis=1)
+            d1_regsse = simps(np.multiply(x, D1x, out=x),
+                              output_points, axis=1)
             # Updates the shifts by the Newton-Rhapson iteration
             # delta = delta - step_size * d1_regsse / d2_regsse
             np.divide(d1_regsse, d2_regsse, out=delta_aux)
@@ -230,7 +259,6 @@ class ShiftRegistration(RegistrationTransformer):
             # Updates convergence criterions
             max_diff = np.abs(delta_aux, out=delta_aux).max()
             self.n_iter_ += 1
-
 
         if template == "fixed":
 
@@ -243,33 +271,119 @@ class ShiftRegistration(RegistrationTransformer):
 
         return delta, template
 
-
     def fit_transform(self, X: FData, y=None):
+        """Fit the estimator and transform the data.
 
-        deltas, template = self._shift_registration_deltas(X, self.template)
-        self.template_ = template
-        self.deltas_ = deltas
+        Args:
+            X (FData): Functional dataset to be transformed.
+            y (ignored): not used, present for API consistency by convention.
 
-        # Computes the values with the final shift to construct the FDataBasis
-        return X.shift(deltas, restrict_domain=self.restrict_domain,
+        Returns:
+            FData: Functional data registered.
+
+        """
+        self.deltas_, self.template_ = self._compute_deltas(X, self.template)
+
+        return X.shift(self.deltas_, restrict_domain=self.restrict_domain,
                        extrapolation=self.extrapolation,
                        eval_points=self.output_points)
 
     def fit(self, X: FData, y=None):
+        """Fit the estimator.
 
-        deltas, template = self._shift_registration_deltas(X, self.template)
+        Args:
+            X (FData): Functional dataset used to construct the template for
+                the alignment.
+            y (ignored): not used, present for API consistency by convention.
 
-        self.template_ = template
+        Returns:
+            RegistrationTransformer: self
+
+        """
+        if self.restrict_domain:
+            raise AttributeError("fit and predict are not available when "
+                                 "restrict_domain=True, fitting and "
+                                 "transformation should be done together. Use "
+                                 "an extrapolation method with "
+                                 "restrict_domain=False or fit_predict")
+
+        _, self.template_ = self._compute_deltas(X, self.template)
 
         return self
 
     def transform(self, X: FData, y=None):
+        """Register the data.
 
-        deltas, template = self._shift_registration_deltas(X, self.template_)
+        Transforms the data using the template previously learned during
+        fitting.
+
+        Args:
+            X (FData): Functional dataset to be transformed.
+            y (ignored): not used, present for API consistency by convention.
+
+        Returns:
+            FData: Functional data registered.
+
+        Raises:
+            AttributeError: If it is call when restrict_domain=True.
+
+        """
+
+        if self.restrict_domain:
+            raise AttributeError("fit and predict are not available when "
+                                 "restrict_domain=True, fitting and "
+                                 "transformation should be done together. Use "
+                                 "an extrapolation method with "
+                                 "restrict_domain=False or fit_predict")
+
+        deltas, template = self._compute_deltas(X, self.template_)
         self.template_ = template
         self.deltas_ = deltas
 
-        # Computes the values with the final shift to construct the FDataBasis
         return X.shift(deltas, restrict_domain=self.restrict_domain,
+                       extrapolation=self.extrapolation,
+                       eval_points=self.output_points)
+
+    def inverse_transform(self, X: FData, y=None):
+        """Applies the inverse transformation.
+
+        Applies the opossite shift used in the last call to `transform`.
+
+        Args:
+            X (FData): Functional dataset to be transformed.
+            y (ignored): not used, present for API consistency by convention.
+
+        Returns:
+            FData: Functional data registered.
+
+        Examples:
+
+        Creation of a synthetic functional dataset.
+
+        >>> from skfda.preprocessing.registration import ShiftRegistration
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> fd = make_sinusoidal_process(error_std=0, random_state=1)
+        >>> fd.extrapolation = 'periodic'
+
+        Dataset registration and centering
+
+        >>> reg = ShiftRegistration()
+        >>> fd_registered = reg.fit_transform(fd)
+        >>> fd_centered = fd_registered - fd_registered.mean()
+
+        Reverse the translation applied during the registration
+
+        >>> reg.inverse_transform(fd_centered)
+        FDataGrid(...)
+
+        """
+        if not hasattr(self, "deltas_"):
+            raise AttributeError("Data must be previously transformed to learn"
+                                 " the inverse transformation")
+        elif len(X) != len(self.deltas_):
+            raise ValueError("Data must contain the same number of samples "
+                             "than the dataset previously transformed")
+
+        return X.shift(-self.deltas_, restrict_domain=self.restrict_domain,
                        extrapolation=self.extrapolation,
                        eval_points=self.output_points)

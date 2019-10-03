@@ -83,17 +83,20 @@ on the elastic framework.
 
 
 
-Amplitude and Phase Decomposition
----------------------------------
+Validation
+----------
 
-The amplitude and phase variation may be quantified by comparing a sample before
-and after registration. The package contains an implementation of the
-decomposition procedure developed by *Kneip and Ramsay (2008)*.
+This module contains several classes methods for the quantification and
+validation of the registration procedure.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.mse_decomposition
+   skfda.preprocessing.registration.validation.RegistrationScorer
+   skfda.preprocessing.registration.validation.mse_r_squared
+   skfda.preprocessing.registration.validation.least_squares
+   skfda.preprocessing.registration.validation.sobolev_least_squares
+   skfda.preprocessing.registration.validation.pairwise_correlation
 
 
 Utility functions

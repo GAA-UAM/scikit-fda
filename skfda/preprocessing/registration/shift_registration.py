@@ -97,7 +97,7 @@ class ShiftRegistration(RegistrationTransformer):
         Shifts applied during the transformation
 
         >>> reg.deltas_.round(3)
-        array([ -0.126,  0.19 ,  0.029,  0.036, -0.104,  0.116,  ..., -0.058])
+        array([-0.126,  0.19 ,  0.029,  0.036, -0.104,  0.116,  ..., -0.058])
 
 
         Registration and creation of a dataset in basis form using the

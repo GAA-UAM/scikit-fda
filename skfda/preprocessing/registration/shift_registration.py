@@ -4,6 +4,7 @@
 # pablo.marcosm@protonmail.com
 
 from scipy.integrate import simps
+from sklearn.utils.validation import check_is_fitted
 
 import numpy as np
 
@@ -244,6 +245,10 @@ class ShiftRegistration(RegistrationTransformer):
                 x.mean(axis=0, out=tfine_aux)
             elif template == "fixed" and self.restrict_domain:
                 tfine_aux = template_points_aux[domain]
+            elif callable(template): # Callable
+                fd_x = FDataGrid(x, sample_points=output_points)
+                fd_tfine = template(fd_x)
+                tfine_aux = fd_tfine.data_matrix.flatten()
 
             # Calculates x - mean
             np.subtract(x, tfine_aux, out=x)
@@ -338,6 +343,13 @@ class ShiftRegistration(RegistrationTransformer):
                                  "transformation should be done together. Use "
                                  "an extrapolation method with "
                                  "restrict_domain=False or fit_predict")
+
+        # If the template is an FData, fit doesnt learn nothing
+        if not hasattr(self, 'template_') and isinstance(self.template, FData):
+            self.template_ = self.template
+
+        # Check is fitted
+        check_is_fitted(self, 'template_')
 
         deltas, template = self._compute_deltas(X, self.template_)
         self.template_ = template

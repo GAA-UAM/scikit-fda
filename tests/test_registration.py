@@ -10,7 +10,8 @@ from skfda.datasets import (make_multimodal_samples, make_multimodal_landmarks,
 from skfda.preprocessing.registration import (
     normalize_warping, invert_warping, landmark_shift_deltas, landmark_shift,
     landmark_registration_warping, landmark_registration, ShiftRegistration)
-
+from skfda.exploratory.stats import mean
+from sklearn.exceptions import NotFittedError
 
 class TestWarping(unittest.TestCase):
     """Test warpings functions"""
@@ -218,6 +219,58 @@ class TestShiftRegistration(unittest.TestCase):
         np.testing.assert_array_almost_equal(fd.data_matrix,
                                              self.fd.data_matrix, decimal=3)
 
+    def test_raises(self):
+
+        reg = ShiftRegistration()
+
+        # Test not fitted
+        with np.testing.assert_raises(NotFittedError):
+            reg.transform(self.fd)
+
+        reg.fit(self.fd)
+        reg.set_params(restrict_domain=True)
+
+        # Test use fit or transform with restrict_domain=True
+        with np.testing.assert_raises(AttributeError):
+            reg.transform(self.fd)
+
+        with np.testing.assert_raises(AttributeError):
+            reg.fit(self.fd)
+
+        # Test inverse_transform without previous transformation
+        with np.testing.assert_raises(AttributeError):
+            reg.inverse_transform(self.fd)
+
+        reg.fit_transform(self.fd)
+
+        # Test inverse transform with different number of sample
+        with np.testing.assert_raises(ValueError):
+            reg.inverse_transform(self.fd[:1])
+
+        reg.set_params(initial=[0.])
+
+        # Wrong initial estimation
+        with np.testing.assert_raises(ValueError):
+            reg.fit_transform(self.fd)
+
+    def test_template(self):
+
+        reg = ShiftRegistration()
+        fd_registered_1 = reg.fit_transform(self.fd)
+
+        reg_2 = ShiftRegistration(template=reg.template_)
+        fd_registered_2 = reg_2.fit_transform(self.fd)
+
+        reg_3= ShiftRegistration(template=mean)
+        fd_registered_3 = reg_3.fit_transform(self.fd)
+
+        np.testing.assert_array_almost_equal(fd_registered_1.data_matrix,
+                                             fd_registered_3.data_matrix)
+
+        # With the template fixed could vary the convergence
+        np.testing.assert_array_almost_equal(fd_registered_1.data_matrix,
+                                             fd_registered_2.data_matrix,
+                                             decimal=3)
 
 
 

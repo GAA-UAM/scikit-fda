@@ -14,7 +14,7 @@ Many of the issues involved in registration can be solved by considering
 the simplest case, a simple shift in the time scale. This often happens because
 the time at which the recording process begins is arbitrary, and is unrelated
 to the beginning of the interesting segment of the data. In the
-:ref:`sphx_glr_auto_examples_plot_shift_registration_basis.py` example
+:ref:`sphx_glr_auto_examples_plot_shift_registration.py` example
 is shown the basic usage of this method.
 
 .. autosummary::

@@ -14,14 +14,13 @@ Many of the issues involved in registration can be solved by considering
 the simplest case, a simple shift in the time scale. This often happens because
 the time at which the recording process begins is arbitrary, and is unrelated
 to the beginning of the interesting segment of the data. In the
-`Shift Registration Example <../auto_examples/plot_shift_registration_basis.html>`_
-it is shown the basic usage of this methods applied to periodic data.
+:ref:`sphx_glr_auto_examples_plot_shift_registration_basis.py` example
+is shown the basic usage of this method.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.shift_registration
-   skfda.preprocessing.registration.shift_registration_deltas
+   skfda.preprocessing.registration.ShiftRegistration
 
 
 Landmark Registration

@@ -195,7 +195,7 @@ class ShiftRegistration(RegistrationTransformer):
         # Case template fixed
         if isinstance(template, FData):
             original_template = template
-            tfine_aux = template.evaluate(output_points, keepdims=False)
+            tfine_aux = template.evaluate(output_points, keepdims=False)[0]
 
             if self.restrict_domain:
                 template_points_aux = tfine_aux
@@ -246,7 +246,7 @@ class ShiftRegistration(RegistrationTransformer):
                 x.mean(axis=0, out=tfine_aux)
             elif template == "fixed" and self.restrict_domain:
                 tfine_aux = template_points_aux[domain]
-            elif callable(template): # Callable
+            elif callable(template):  # Callable
                 fd_x = FDataGrid(x, sample_points=output_points)
                 fd_tfine = template(fd_x)
                 tfine_aux = fd_tfine.data_matrix.flatten()

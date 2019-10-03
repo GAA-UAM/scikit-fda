@@ -13,6 +13,7 @@ from skfda.preprocessing.registration import (
 from skfda.exploratory.stats import mean
 from sklearn.exceptions import NotFittedError
 
+
 class TestWarping(unittest.TestCase):
     """Test warpings functions"""
 
@@ -86,7 +87,7 @@ class TestWarping(unittest.TestCase):
                             aligned_evaluation=False)
         # Test default location
         fd_registered = landmark_shift(fd, landmarks)
-        center = (landmarks.max() + landmarks.min())/2
+        center = (landmarks.max() + landmarks.min()) / 2
         reg_modes = fd_registered(center)
 
         # Test callable location
@@ -161,15 +162,15 @@ class TestWarping(unittest.TestCase):
         np.testing.assert_almost_equal(ret.rsq, 0.9915489952877273)
         np.testing.assert_almost_equal(ret.cr, 0.9999963424653829)
 
+
 class TestShiftRegistration(unittest.TestCase):
     """Test shift registration"""
 
     def setUp(self):
         """Initialization of samples"""
-        self.fd = fd = make_sinusoidal_process(n_samples=2, error_std=0,
-                                               random_state=1)
+        self.fd = make_sinusoidal_process(n_samples=2, error_std=0,
+                                          random_state=1)
         self.fd.extrapolation = "periodic"
-
 
     def test_fit_transform(self):
 
@@ -185,14 +186,13 @@ class TestShiftRegistration(unittest.TestCase):
         self.assertTrue(isinstance(fd_reg, FDataGrid))
 
         deltas = reg.deltas_.round(3)
-        np.testing.assert_array_almost_equal(deltas, [-0.022,  0.03])
+        np.testing.assert_array_almost_equal(deltas, [-0.022, 0.03])
 
         # Test with Basis
         fd = self.fd.to_basis(Fourier())
         reg.fit_transform(fd)
         deltas = reg.deltas_.round(3)
-        np.testing.assert_array_almost_equal(deltas, [-0.022,  0.03])
-
+        np.testing.assert_array_almost_equal(deltas, [-0.022, 0.03])
 
     def test_fit_and_transform(self):
         """Test wrapper of shift_registration_deltas"""
@@ -208,7 +208,7 @@ class TestShiftRegistration(unittest.TestCase):
 
         fd_registered = reg.transform(fd)
         deltas = reg.deltas_.round(3)
-        np.testing.assert_array_almost_equal(deltas, [ 0.071, -0.071])
+        np.testing.assert_array_almost_equal(deltas, [0.071, -0.071])
 
     def test_inverse_transform(self):
 
@@ -247,6 +247,11 @@ class TestShiftRegistration(unittest.TestCase):
         with np.testing.assert_raises(ValueError):
             reg.inverse_transform(self.fd[:1])
 
+        fd = make_multimodal_samples(dim_domain=2, random_state=0)
+
+        with np.testing.assert_raises(NotImplementedError):
+            reg.fit_transform(fd)
+
         reg.set_params(initial=[0.])
 
         # Wrong initial estimation
@@ -261,8 +266,11 @@ class TestShiftRegistration(unittest.TestCase):
         reg_2 = ShiftRegistration(template=reg.template_)
         fd_registered_2 = reg_2.fit_transform(self.fd)
 
-        reg_3= ShiftRegistration(template=mean)
+        reg_3 = ShiftRegistration(template=mean)
         fd_registered_3 = reg_3.fit_transform(self.fd)
+
+        reg_4 = ShiftRegistration(template=reg.template_)
+        fd_registered_4 = reg_4.transform(self.fd)
 
         np.testing.assert_array_almost_equal(fd_registered_1.data_matrix,
                                              fd_registered_3.data_matrix)
@@ -272,6 +280,40 @@ class TestShiftRegistration(unittest.TestCase):
                                              fd_registered_2.data_matrix,
                                              decimal=3)
 
+        np.testing.assert_array_almost_equal(fd_registered_2.data_matrix,
+                                             fd_registered_4.data_matrix)
+
+    def test_restrict_domain(self):
+        reg = ShiftRegistration(restrict_domain=True)
+        fd_registered_1 = reg.fit_transform(self.fd)
+
+        np.testing.assert_array_almost_equal(
+            fd_registered_1.domain_range.round(3), [[0.022, 0.969]])
+
+        reg2 = ShiftRegistration(restrict_domain=True, template=reg.template_)
+        fd_registered_2 = reg2.fit_transform(self.fd)
+
+        np.testing.assert_array_almost_equal(
+            fd_registered_2.data_matrix, fd_registered_1.data_matrix,
+            decimal=3)
+
+        reg3 = ShiftRegistration(restrict_domain=True, template=mean)
+        fd_registered_3 = reg3.fit_transform(self.fd)
+
+        np.testing.assert_array_almost_equal(
+            fd_registered_3.data_matrix, fd_registered_1.data_matrix)
+
+    def test_initial_estimation(self):
+        reg = ShiftRegistration(initial=[-0.02161235, 0.03032652])
+        reg.fit_transform(self.fd)
+
+        # Only needed 1 iteration until convergence
+        self.assertEqual(reg.n_iter_, 1)
+
+    def test_custom_output_points(self):
+        reg = ShiftRegistration(output_points=np.linspace(0, 1, 50))
+        reg.fit_transform(self.fd)
+        print(reg.deltas_)
 
 
 if __name__ == '__main__':

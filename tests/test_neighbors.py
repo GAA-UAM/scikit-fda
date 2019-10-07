@@ -3,17 +3,16 @@
 import unittest
 
 import numpy as np
-from skfda.datasets import make_multimodal_samples
+from skfda.datasets import make_multimodal_samples, make_sinusoidal_process
 from skfda.exploratory.stats import mean as l2_mean
 from skfda.misc.metrics import lp_distance, pairwise_distance
 from skfda.ml.classification import (KNeighborsClassifier,
                                      RadiusNeighborsClassifier,
                                      NearestCentroids)
 from skfda.ml.clustering import NearestNeighbors
-from skfda.ml.regression import (KNeighborsScalarRegressor,
-                                 RadiusNeighborsScalarRegressor,
-                                 KNeighborsFunctionalRegressor,
-                                 RadiusNeighborsFunctionalRegressor)
+from skfda.ml.regression import KNeighborsRegressor, RadiusNeighborsRegressor
+#from skfda.exploratory.outliers import LocalOutlierFactor
+from skfda._neighbors.outlier import LocalOutlierFactor # Pending theory
 from skfda.representation.basis import Fourier
 
 
@@ -22,8 +21,9 @@ class TestNeighbors(unittest.TestCase):
     def setUp(self):
         """Creates test data"""
         random_state = np.random.RandomState(0)
-        modes_location = np.concatenate((random_state.normal(-.3, .04, size=15),
-                                         random_state.normal(.3, .04, size=15)))
+        modes_location = np.concatenate(
+            (random_state.normal(-.3, .04, size=15),
+             random_state.normal(.3, .04, size=15)))
 
         idx = np.arange(30)
         random_state.shuffle(idx)
@@ -42,6 +42,13 @@ class TestNeighbors(unittest.TestCase):
                                           random_state=1)
 
         self.probs = np.array(15 * [[1., 0.]] + 15 * [[0., 1.]])[idx]
+
+        # Dataset with outliers
+        fd_clean = make_sinusoidal_process(n_samples=25, error_std=0,
+                                           phase_std=0.1, random_state=0)
+        fd_outliers = make_sinusoidal_process(n_samples=2, error_std=0,
+                                              phase_mean=0.5, random_state=5)
+        self.fd_lof = fd_outliers.concatenate(fd_clean)
 
     def test_predict_classifier(self):
         """Tests predict for neighbors classifier"""
@@ -71,8 +78,8 @@ class TestNeighbors(unittest.TestCase):
 
         # Dummy test, with weight = distance, only the sample with distance 0
         # will be returned, obtaining the exact location
-        knnr = KNeighborsScalarRegressor(weights='distance')
-        rnnr = RadiusNeighborsScalarRegressor(weights='distance', radius=.1)
+        knnr = KNeighborsRegressor(weights='distance')
+        rnnr = RadiusNeighborsRegressor(weights='distance', radius=.1)
 
         knnr.fit(self.X, self.modes_location)
         rnnr.fit(self.X, self.modes_location)
@@ -83,17 +90,21 @@ class TestNeighbors(unittest.TestCase):
                                              self.modes_location)
 
     def test_kneighbors(self):
+        """Test k neighbor searches for all k-neighbors estimators"""
 
         nn = NearestNeighbors()
         nn.fit(self.X)
 
+        lof = LocalOutlierFactor(n_neighbors=5)
+        lof.fit(self.X)
+
         knn = KNeighborsClassifier()
         knn.fit(self.X, self.y)
 
-        knnr = KNeighborsScalarRegressor()
+        knnr = KNeighborsRegressor()
         knnr.fit(self.X, self.modes_location)
 
-        for neigh in [nn, knn, knnr]:
+        for neigh in [nn, knn, knnr, lof]:
 
             dist, links = neigh.kneighbors(self.X[:4])
 
@@ -102,11 +113,11 @@ class TestNeighbors(unittest.TestCase):
                                                   [2, 17, 22, 27, 26],
                                                   [3, 4, 9, 5, 25]])
 
+            graph = neigh.kneighbors_graph(self.X[:4])
+
             dist_kneigh = lp_distance(self.X[0], self.X[7])
 
             np.testing.assert_array_almost_equal(dist[0, 1], dist_kneigh)
-
-            graph = neigh.kneighbors_graph(self.X[:4])
 
             for i in range(30):
                 self.assertEqual(graph[0, i] == 1.0, i in links[0])
@@ -120,7 +131,7 @@ class TestNeighbors(unittest.TestCase):
         knn = RadiusNeighborsClassifier(radius=.1)
         knn.fit(self.X, self.y)
 
-        knnr = RadiusNeighborsScalarRegressor(radius=.1)
+        knnr = RadiusNeighborsRegressor(radius=.1)
         knnr.fit(self.X, self.modes_location)
 
         for neigh in [nn, knn, knnr]:
@@ -143,7 +154,7 @@ class TestNeighbors(unittest.TestCase):
                 self.assertEqual(graph[0, i] == 0.0, i not in links[0])
 
     def test_knn_functional_response(self):
-        knnr = KNeighborsFunctionalRegressor(n_neighbors=1)
+        knnr = KNeighborsRegressor(n_neighbors=1)
 
         knnr.fit(self.X, self.X)
 
@@ -153,8 +164,8 @@ class TestNeighbors(unittest.TestCase):
 
     def test_knn_functional_response_sklearn(self):
         # Check sklearn metric
-        knnr = KNeighborsFunctionalRegressor(n_neighbors=1, metric='euclidean',
-                                             sklearn_metric=True)
+        knnr = KNeighborsRegressor(n_neighbors=1, metric='euclidean',
+                                   multivariate_metric=True)
         knnr.fit(self.X, self.X)
 
         res = knnr.predict(self.X)
@@ -162,8 +173,8 @@ class TestNeighbors(unittest.TestCase):
                                              self.X.data_matrix)
 
     def test_knn_functional_response_precomputed(self):
-        knnr = KNeighborsFunctionalRegressor(n_neighbors=4, weights='distance',
-                                             metric='precomputed')
+        knnr = KNeighborsRegressor(n_neighbors=4, weights='distance',
+                                   metric='precomputed')
         d = pairwise_distance(lp_distance)
         distances = d(self.X[:4], self.X[:4])
 
@@ -174,9 +185,9 @@ class TestNeighbors(unittest.TestCase):
                                              self.X[:4].data_matrix)
 
     def test_radius_functional_response(self):
-        knnr = RadiusNeighborsFunctionalRegressor(metric=lp_distance,
-                                                  weights='distance',
-                                                  regressor=l2_mean)
+        knnr = RadiusNeighborsRegressor(metric=lp_distance,
+                                        weights='distance',
+                                        regressor=l2_mean)
 
         knnr.fit(self.X, self.X)
 
@@ -190,8 +201,8 @@ class TestNeighbors(unittest.TestCase):
 
             return np.array([w == 0 for w in weights], dtype=float)
 
-        knnr = KNeighborsFunctionalRegressor(weights=weights, n_neighbors=5)
-        response = self.X.to_basis(Fourier(domain_range=(-1, 1), nbasis=10))
+        knnr = KNeighborsRegressor(weights=weights, n_neighbors=5)
+        response = self.X.to_basis(Fourier(domain_range=(-1, 1), n_basis=10))
         knnr.fit(self.X, response)
 
         res = knnr.predict(self.X)
@@ -200,7 +211,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_functional_regression_distance_weights(self):
 
-        knnr = KNeighborsFunctionalRegressor(
+        knnr = KNeighborsRegressor(
             weights='distance', n_neighbors=10)
         knnr.fit(self.X[:10], self.X[:10])
         res = knnr.predict(self.X[11])
@@ -216,8 +227,8 @@ class TestNeighbors(unittest.TestCase):
                                              response.data_matrix)
 
     def test_functional_response_basis(self):
-        knnr = KNeighborsFunctionalRegressor(weights='distance', n_neighbors=5)
-        response = self.X.to_basis(Fourier(domain_range=(-1, 1), nbasis=10))
+        knnr = KNeighborsRegressor(weights='distance', n_neighbors=5)
+        response = self.X.to_basis(Fourier(domain_range=(-1, 1), n_basis=10))
         knnr.fit(self.X, response)
 
         res = knnr.predict(self.X)
@@ -225,7 +236,7 @@ class TestNeighbors(unittest.TestCase):
                                              response.coefficients)
 
     def test_radius_outlier_functional_response(self):
-        knnr = RadiusNeighborsFunctionalRegressor(radius=0.001)
+        knnr = RadiusNeighborsRegressor(radius=0.001)
         knnr.fit(self.X[3:6], self.X[3:6])
 
         # No value given
@@ -233,8 +244,8 @@ class TestNeighbors(unittest.TestCase):
             knnr.predict(self.X[:10])
 
         # Test response
-        knnr = RadiusNeighborsFunctionalRegressor(radius=0.001,
-                                                  outlier_response=self.X[0])
+        knnr = RadiusNeighborsRegressor(radius=0.001,
+                                        outlier_response=self.X[0])
         knnr.fit(self.X[:6], self.X[:6])
 
         res = knnr.predict(self.X[:7])
@@ -255,7 +266,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_functional_regressor_exceptions(self):
 
-        knnr = RadiusNeighborsFunctionalRegressor()
+        knnr = RadiusNeighborsRegressor()
 
         with np.testing.assert_raises(ValueError):
             knnr.fit(self.X[:3], self.X[:4])
@@ -274,7 +285,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_search_neighbors_sklearn(self):
 
-        nn = NearestNeighbors(metric='euclidean', sklearn_metric=True,
+        nn = NearestNeighbors(metric='euclidean', multivariate_metric=True,
                               n_neighbors=2)
         nn.fit(self.X[:4], self.y[:4])
 
@@ -283,9 +294,17 @@ class TestNeighbors(unittest.TestCase):
         result = np.array([[0, 3], [1, 2], [2, 1], [3, 0]])
         np.testing.assert_array_almost_equal(neighbors, result)
 
+    def test_score_scalar_response(self):
+
+        neigh = KNeighborsRegressor()
+
+        neigh.fit(self.X, self.modes_location)
+        r = neigh.score(self.X, self.modes_location)
+        np.testing.assert_almost_equal(r, 0.9975889963743335)
+
     def test_score_functional_response(self):
 
-        neigh = KNeighborsFunctionalRegressor()
+        neigh = KNeighborsRegressor()
 
         y = 5 * self.X + 1
         neigh.fit(self.X, y)
@@ -293,7 +312,7 @@ class TestNeighbors(unittest.TestCase):
         np.testing.assert_almost_equal(r, 0.962651178452408)
 
         # Weighted case and basis form
-        y = y.to_basis(Fourier(domain_range=y.domain_range[0], nbasis=5))
+        y = y.to_basis(Fourier(domain_range=y.domain_range[0], n_basis=5))
         neigh.fit(self.X, y)
 
         r = neigh.score(self.X[:7], y[:7],
@@ -301,7 +320,7 @@ class TestNeighbors(unittest.TestCase):
         np.testing.assert_almost_equal(r, 0.9982527586114364)
 
     def test_score_functional_response_exceptions(self):
-        neigh = RadiusNeighborsFunctionalRegressor()
+        neigh = RadiusNeighborsRegressor()
         neigh.fit(self.X, self.X)
 
         with np.testing.assert_raises(ValueError):
@@ -309,13 +328,98 @@ class TestNeighbors(unittest.TestCase):
 
     def test_multivariate_response_score(self):
 
-        neigh = RadiusNeighborsFunctionalRegressor()
+        neigh = RadiusNeighborsRegressor()
         y = make_multimodal_samples(n_samples=5, dim_domain=2, random_state=0)
         neigh.fit(self.X[:5], y)
 
         # It is not supported the multivariate score by the moment
         with np.testing.assert_raises(ValueError):
             neigh.score(self.X[:5], y)
+
+    def test_lof_fit_predict(self):
+        """ Test same results with different forms to call fit_predict"""
+
+        # Outliers
+        expected = np.ones(len(self.fd_lof))
+        expected[0:2] = -1
+
+        # With default l2 distance
+        lof = LocalOutlierFactor()
+        res = lof.fit_predict(self.fd_lof)
+        np.testing.assert_array_equal(expected, res)
+
+        # With explicit l2 distance
+        lof2 = LocalOutlierFactor(metric=lp_distance)
+        res2 = lof2.fit_predict(self.fd_lof)
+        np.testing.assert_array_equal(expected, res2)
+
+        d = pairwise_distance(lp_distance)
+        distances = d(self.fd_lof, self.fd_lof)
+
+        # With precompute distances
+        lof3 = LocalOutlierFactor(metric="precomputed")
+        res3 = lof3.fit_predict(distances)
+        np.testing.assert_array_equal(expected, res3)
+
+        # With multivariate sklearn
+        lof4 = LocalOutlierFactor(metric="euclidean", multivariate_metric=True)
+        res4 = lof4.fit_predict(self.fd_lof)
+        np.testing.assert_array_equal(expected, res4)
+
+        # Other way of call fit_predict, undocumented in sklearn
+        lof5 = LocalOutlierFactor(novelty=True)
+        res5 = lof5.fit(self.fd_lof).predict()
+        np.testing.assert_array_equal(expected, res5)
+
+        # Check values of negative outlier factor
+        negative_lof = [-7.1068, -1.5412, -0.9961, -0.9854, -0.9896, -1.0993,
+                        -1.065, -0.9871, -0.9821, -0.9955, -1.0385, -1.0072,
+                        -0.9832, -1.0134, -0.9939, -1.0074, -0.992, -0.992,
+                        -0.9883, -1.0012, -1.1149, -1.002, -0.9994, -0.9869,
+                        -0.9726, -0.9989, -0.9904]
+
+        np.testing.assert_array_almost_equal(
+            lof.negative_outlier_factor_.round(4), negative_lof)
+
+        # Check same negative outlier factor
+        np.testing.assert_array_almost_equal(lof.negative_outlier_factor_,
+                                             lof2.negative_outlier_factor_)
+
+        np.testing.assert_array_almost_equal(lof.negative_outlier_factor_,
+                                             lof3.negative_outlier_factor_)
+
+    def test_lof_decision_function(self):
+        """ Test decision function and score samples of LOF"""
+
+        lof = LocalOutlierFactor(novelty=True)
+        lof.fit(self.fd_lof[5:])
+
+        score = lof.score_samples(self.fd_lof[:5])
+
+        np.testing.assert_array_almost_equal(
+            score.round(4), [-5.9726, -1.3445, -0.9853, -0.9817, -0.985],
+            err_msg='Error in LocalOutlierFactor.score_samples')
+
+        # Test decision_function = score_function - offset
+        np.testing.assert_array_almost_equal(
+            lof.decision_function(self.fd_lof[:5]), score - lof.offset_,
+            err_msg='Error in LocalOutlierFactor.decision_function')
+
+    def test_lof_exceptions(self):
+        """ Test error due to novelty attribute"""
+
+        lof = LocalOutlierFactor(novelty=True)
+
+        # Error in fit_predict function
+        with np.testing.assert_raises(AttributeError):
+            lof.fit_predict(self.fd_lof[5:])
+
+        lof.set_params(novelty=False)
+        lof.fit(self.fd_lof[5:])
+
+        # Error in predict function
+        with np.testing.assert_raises(AttributeError):
+            lof.predict(self.fd_lof[5:])
 
 
 if __name__ == '__main__':

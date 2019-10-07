@@ -2,14 +2,13 @@
 
 from abc import ABC, abstractmethod
 
-import scipy.integrate
 from sklearn.base import BaseEstimator
-from sklearn.neighbors import NearestNeighbors as _NearestNeighbors
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
+from sklearn.base import RegressorMixin
 
 import numpy as np
 
-from .. import FDataGrid
+from .. import FDataGrid, FData
 from ..exploratory.stats import mean as l2_mean
 from ..misc.metrics import lp_distance
 
@@ -46,7 +45,7 @@ def _from_multivariate(data_matrix, sample_points, shape, **kwargs):
     return FDataGrid(data_matrix.reshape(shape), sample_points, **kwargs)
 
 
-def _to_sklearn_metric(metric, sample_points):
+def _to_multivariate_metric(metric, sample_points):
     r"""Transform a metric between FDatagrid in a sklearn compatible one.
 
     Given a metric between FDatagrids returns a compatible metric used to
@@ -66,7 +65,7 @@ def _to_sklearn_metric(metric, sample_points):
         >>> import numpy as np
         >>> from skfda import FDataGrid
         >>> from skfda.misc.metrics import lp_distance
-        >>> from skfda._neighbors.base import _to_sklearn_metric
+        >>> from skfda._neighbors.base import _to_multivariate_metric
 
         Calculate the Lp distance between fd and fd2.
 
@@ -78,7 +77,7 @@ def _to_sklearn_metric(metric, sample_points):
 
         Creation of the sklearn-style metric.
 
-        >>> sklearn_lp_distance = _to_sklearn_metric(lp_distance, [x])
+        >>> sklearn_lp_distance = _to_multivariate_metric(lp_distance, [x])
         >>> sklearn_lp_distance(np.ones(len(x)), np.zeros(len(x))).round(2)
         1.0
 
@@ -86,23 +85,23 @@ def _to_sklearn_metric(metric, sample_points):
     # Shape -> (n_samples = 1, domain_dims...., image_dimension (-1))
     shape = [1] + [len(axis) for axis in sample_points] + [-1]
 
-    def sklearn_metric(x, y, _check=False, **kwargs):
+    def multivariate_metric(x, y, _check=False, **kwargs):
 
         return metric(_from_multivariate(x, sample_points, shape),
                       _from_multivariate(y, sample_points, shape),
                       _check=_check, **kwargs)
 
-    return sklearn_metric
+    return multivariate_metric
 
 
 class NeighborsBase(ABC, BaseEstimator):
     """Base class for nearest neighbors estimators."""
 
-    @abstractmethod
     def __init__(self, n_neighbors=None, radius=None,
                  weights='uniform', algorithm='auto',
                  leaf_size=30, metric='l2', metric_params=None,
-                 n_jobs=None, sklearn_metric=False):
+                 n_jobs=None, multivariate_metric=False):
+        """Initializes the nearest neighbors estimator"""
 
         self.n_neighbors = n_neighbors
         self.radius = radius
@@ -112,7 +111,7 @@ class NeighborsBase(ABC, BaseEstimator):
         self.metric = metric
         self.metric_params = metric_params
         self.n_jobs = n_jobs
-        self.sklearn_metric = sklearn_metric
+        self.multivariate_metric = multivariate_metric
 
     def _check_is_fitted(self):
         """Check if the estimator is fitted.
@@ -161,17 +160,19 @@ class NeighborsMixin:
             self._sample_points = X.sample_points
             self._shape = X.data_matrix.shape[1:]
 
-            if not self.sklearn_metric:
+            if not self.multivariate_metric:
                 # Constructs sklearn metric to manage vector
                 if self.metric == 'l2':
                     metric = lp_distance
                 else:
                     metric = self.metric
-                sk_metric = _to_sklearn_metric(metric, self._sample_points)
-            else:
-                sk_metric = self.metric
 
-            self.estimator_ = self._init_estimator(sk_metric)
+                sklearn_metric = _to_multivariate_metric(metric,
+                                                         self._sample_points)
+            else:
+                sklearn_metric = self.metric
+
+            self.estimator_ = self._init_estimator(sklearn_metric)
             self.estimator_.fit(self._transform_to_multivariate(X), y)
 
         return self
@@ -203,7 +204,7 @@ class KNeighborsMixin:
                 Indices of the nearest points in the population matrix.
 
         Examples:
-            Firstly, we will create a toy dataset with 2 classes
+            Firstly, we will create a toy dataset.
 
             >>> from skfda.datasets import make_sinusoidal_process
             >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
@@ -260,7 +261,7 @@ class KNeighborsMixin:
             A[i, j] is assigned the weight of edge that connects i to j.
 
         Examples:
-            Firstly, we will create a toy dataset with 2 classes.
+            Firstly, we will create a toy dataset.
 
             >>> from skfda.datasets import make_sinusoidal_process
             >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
@@ -329,7 +330,7 @@ class RadiusNeighborsMixin:
                 within a ball of size ``radius`` around the query points.
 
         Examples:
-            Firstly, we will create a toy dataset with 2 classes.
+            Firstly, we will create a toy dataset.
 
             >>> from skfda.datasets import make_sinusoidal_process
             >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
@@ -436,57 +437,32 @@ class NeighborsClassifierMixin:
         return self.estimator_.predict(X)
 
 
-class NeighborsScalarRegresorMixin:
-    """Mixin class for scalar regressor based in nearest neighbors"""
-
-    def predict(self, X):
-        """Predict the target for the provided data
-        Parameters
-        ----------
-        X (:class:`FDataGrid` or array-like): FDataGrid with the test
-            samples or array (n_query, n_indexed) if metric ==
-            'precomputed'.
-        Returns
-        -------
-        y : array of int, shape = [n_samples] or [n_samples, n_outputs]
-            Target values
-        Notes
-        -----
-        This method wraps the corresponding sklearn routine in the module
-        ``sklearn.neighbors``.
-
-        """
-        self._check_is_fitted()
-
-        X = self._transform_to_multivariate(X)
-
-        return self.estimator_.predict(X)
-
-
-class NearestNeighborsMixinInit:
-    def _init_estimator(self, sk_metric):
-        """Initialize the sklearn nearest neighbors estimator.
-
-        Args:
-            sk_metric: (pyfunc or 'precomputed'): Metric compatible with
-                sklearn API or matrix (n_samples, n_samples) with precomputed
-                distances.
-
-        Returns:
-            Sklearn K Neighbors estimator initialized.
-
-        """
-        return _NearestNeighbors(
-            n_neighbors=self.n_neighbors, radius=self.radius,
-            algorithm=self.algorithm, leaf_size=self.leaf_size,
-            metric=sk_metric, metric_params=self.metric_params,
-            n_jobs=self.n_jobs)
-
-
-class NeighborsFunctionalRegressorMixin:
-    """Mixin class for the functional regressors based in neighbors"""
+class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
+    """Mixin class for the regressors based on neighbors"""
 
     def fit(self, X, y):
+        """Fit the model using X as training data and y as responses.
+
+        Args:
+            X (:class:`FDataGrid`, array_matrix): Training data. FDataGrid
+                with the training data or array matrix with shape
+                [n_samples, n_samples] if metric='precomputed'.
+            Y (:class:`FData` or array_like): Training data. FData
+                with the training respones (functional response case)
+                or array matrix with length `n_samples` in the multivariate
+                response case.
+        Returns:
+            Estimator: self.
+
+        """
+        self._functional = isinstance(y, FData)
+
+        if self._functional:
+            return self._functional_fit(X, y)
+        else:
+            return super().fit(X, y)
+
+    def _functional_fit(self, X, y):
         """Fit the model using X as training data.
 
         Args:
@@ -508,18 +484,19 @@ class NeighborsFunctionalRegressorMixin:
             self._sample_points = X.sample_points
             self._shape = X.data_matrix.shape[1:]
 
-            if not self.sklearn_metric:
+            if not self.multivariate_metric:
 
                 if self.metric == 'l2':
                     metric = lp_distance
                 else:
                     metric = self.metric
 
-                sk_metric = _to_sklearn_metric(metric, self._sample_points)
+                sklearn_metric = _to_multivariate_metric(metric,
+                                                         self._sample_points)
             else:
-                sk_metric = self.metric
+                sklearn_metric = self.metric
 
-            self.estimator_ = self._init_estimator(sk_metric)
+            self.estimator_ = self._init_estimator(sklearn_metric)
             self.estimator_.fit(self._transform_to_multivariate(X))
 
         if self.regressor == 'mean':
@@ -529,11 +506,11 @@ class NeighborsFunctionalRegressorMixin:
 
         # Choose proper local regressor
         if self.weights == 'uniform':
-            self.local_regressor = self._uniform_local_regression
+            self._local_regressor = self._uniform_local_regression
         elif self.weights == 'distance':
-            self.local_regressor = self._distance_local_regression
+            self._local_regressor = self._distance_local_regression
         else:
-            self.local_regressor = self._weighted_local_regression
+            self._local_regressor = self._weighted_local_regression
 
         # Store the responses
         self._y = y
@@ -565,6 +542,71 @@ class NeighborsFunctionalRegressorMixin:
         return self._regressor(neighbors, weights)
 
     def predict(self, X):
+        """Predict the target for the provided data
+        Parameters
+        ----------
+        X (:class:`FDataGrid` or array-like): FDataGrid with the test
+            samples or array (n_query, n_indexed) if metric ==
+            'precomputed'.
+        Returns
+        -------
+        y : array of shape = [n_samples] or [n_samples, n_outputs]
+            or :class:`FData` containing as many samples as X.
+
+        """
+        self._check_is_fitted()
+
+        # Choose type of prediction
+        if self._functional:
+            return self._functional_predict(X)
+        else:
+            return self._multivariate_predict(X)
+
+    def _multivariate_predict(self, X):
+        """Predict the target for the provided data
+        Parameters
+        ----------
+        X (:class:`FDataGrid` or array-like): FDataGrid with the test
+            samples or array (n_query, n_indexed) if metric ==
+            'precomputed'.
+        Returns
+        -------
+        y : array of int, shape = [n_samples] or [n_samples, n_outputs]
+            Target values
+        Notes
+        -----
+        This method wraps the corresponding sklearn routine in the module
+        ``sklearn.neighbors``.
+
+        """
+        X = self._transform_to_multivariate(X)
+
+        return self.estimator_.predict(X)
+
+    def _init_estimator(self, sklearn_metric):
+        """Initialize the sklearn nearest neighbors estimator.
+
+        Args:
+            sklearn_metric: (pyfunc or 'precomputed'): Metric compatible with
+                sklearn API or matrix (n_samples, n_samples) with precomputed
+                distances.
+
+        Returns:
+            Sklearn K Neighbors estimator initialized.
+
+        """
+        if self._functional:
+            from sklearn.neighbors import NearestNeighbors as _NearestNeighbors
+
+            return _NearestNeighbors(
+                n_neighbors=self.n_neighbors, radius=self.radius,
+                algorithm=self.algorithm, leaf_size=self.leaf_size,
+                metric=sklearn_metric, metric_params=self.metric_params,
+                n_jobs=self.n_jobs)
+        else:
+            return self._init_multivariate_estimator(sklearn_metric)
+
+    def _functional_predict(self, X):
         """Predict functional responses.
 
         Args:
@@ -577,7 +619,6 @@ class NeighborsFunctionalRegressorMixin:
             y : :class:`FDataGrid` containing as many samples as X.
 
         """
-        self._check_is_fitted()
 
         X = self._transform_to_multivariate(X)
 
@@ -586,13 +627,14 @@ class NeighborsFunctionalRegressorMixin:
         if len(neighbors[0]) == 0:
             pred = self._outlier_response(neighbors)
         else:
-            pred = self.local_regressor(self._y[neighbors[0]], distances[0])
+            pred = self._local_regressor(self._y[neighbors[0]], distances[0])
 
         for i, idx in enumerate(neighbors[1:]):
             if len(idx) == 0:
                 new_pred = self._outlier_response(neighbors)
             else:
-                new_pred = self.local_regressor(self._y[idx], distances[i + 1])
+                new_pred = self._local_regressor(self._y[idx],
+                                                 distances[i + 1])
 
             pred = pred.concatenate(new_pred)
 
@@ -613,6 +655,51 @@ class NeighborsFunctionalRegressorMixin:
             return self.outlier_response
 
     def score(self, X, y, sample_weight=None):
+        r"""Return the coefficient of determination R^2 of the prediction.
+
+        In the multivariate response case, the coefficient :math:`R^2` is
+        defined as
+
+        .. math::
+            1 - \frac{\sum_{i=1}^{n} (y_i - \hat y_i)^2}
+            {\sum_{i=1}^{n} (y_i - \frac{1}{n}\sum_{i=1}^{n}y_i)^2}
+
+        where :math:`\hat{y}_i` is the prediction associated to the test sample
+        :math:`X_i`, and :math:`{y}_i` is the true response. See
+        :func:`sklearn.metrics.r2_score <sklearn.metrics.r2_score>` for more
+        information.
+
+
+        In the functional case it is returned an extension of the coefficient
+        of determination :math:`R^2`, defined as
+
+        .. math::
+            1 - \frac{\sum_{i=1}^{n}\int (y_i(t) - \hat{y}_i(t))^2dt}
+            {\sum_{i=1}^{n} \int (y_i(t)- \frac{1}{n}\sum_{i=1}^{n}y_i(t))^2dt}
+
+
+        The best possible score is 1.0 and it can be negative
+        (because the model can be arbitrarily worse). A constant model that
+        always predicts the expected value of y, disregarding the input
+        features, would get a R^2 score of 0.0.
+
+        Args:
+            X (FDataGrid): Test samples to be predicted.
+            y (FData or array-like): True responses of the test samples.
+            sample_weight (array_like, shape = [n_samples], optional): Sample
+                weights.
+
+        Returns:
+            (float): Coefficient of determination.
+
+        """
+        if self._functional:
+            return self._functional_score(X, y, sample_weight=sample_weight)
+        else:
+            # Default sklearn multivariate score
+            return super().score(X, y, sample_weight=sample_weight)
+
+    def _functional_score(self, X, y, sample_weight=None):
         r"""Return an extension of the coefficient of determination R^2.
 
         The coefficient is defined as
@@ -639,6 +726,11 @@ class NeighborsFunctionalRegressorMixin:
             (float): Coefficient of determination.
 
         """
+
+        # TODO: If it is created a module in ml.regression with other
+        # score metrics, move it.
+        from scipy.integrate import simps
+
         if y.dim_codomain != 1 or y.dim_domain != 1:
             raise ValueError("Score not implemented for multivariate "
                              "functional data.")
@@ -676,7 +768,7 @@ class NeighborsFunctionalRegressorMixin:
         sum_u = np.sum(data_u, axis=0)
         sum_v = np.sum(data_v, axis=0)
 
-        int_u = scipy.integrate.simps(sum_u, x=u.sample_points[0])
-        int_v = scipy.integrate.simps(sum_v, x=v.sample_points[0])
+        int_u = simps(sum_u, x=u.sample_points[0])
+        int_v = simps(sum_v, x=v.sample_points[0])
 
         return 1 - int_u / int_v

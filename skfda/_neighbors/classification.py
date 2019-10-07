@@ -1,19 +1,15 @@
 """Neighbor models for supervised classification."""
 
-from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
-                   NeighborsClassifierMixin, RadiusNeighborsMixin)
 
 from sklearn.utils.multiclass import check_classification_targets
 from sklearn.preprocessing import LabelEncoder
 from sklearn.base import ClassifierMixin, BaseEstimator
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from sklearn.neighbors import KNeighborsClassifier as _KNeighborsClassifier
-from sklearn.neighbors import (RadiusNeighborsClassifier as
-                               _RadiusNeighborsClassifier)
-
 from ..misc.metrics import lp_distance, pairwise_distance
 from ..exploratory.stats import mean as l2_mean
+from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
+                   NeighborsClassifierMixin, RadiusNeighborsMixin)
 
 
 class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
@@ -61,10 +57,11 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
         Doesn't affect :meth:`fit` method.
-    sklearn_metric : boolean, optional (default = False)
+    multivariate_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
-        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
-        the module :mod:`skfda.misc.metrics`.
+        :class:`~sklearn.neighbors.DistanceMetric`) or a functional metric of
+        the module `skfda.misc.metrics` if ``False``.
+
     Examples
     --------
     Firstly, we will create a toy dataset with 2 classes
@@ -95,11 +92,13 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
     See also
     --------
-    RadiusNeighborsClassifier
-    KNeighborsScalarRegressor
-    RadiusNeighborsScalarRegressor
-    NearestNeighbors
-    NearestCentroids
+    :class:`~skfda.ml.classification.RadiusNeighborsClassifier`
+    :class:`~skfda.ml.classification.NearestCentroids`
+    :class:`~skfda.ml.regression.KNeighborsRegressor`
+    :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
+    :class:`~skfda.ml.clustering.NearestNeighbors`
+    
+
     Notes
     -----
     See Nearest Neighbors in the sklearn online documentation for a discussion
@@ -120,20 +119,20 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
     def __init__(self, n_neighbors=5, weights='uniform', algorithm='auto',
                  leaf_size=30, metric='l2', metric_params=None,
-                 n_jobs=1, sklearn_metric=False):
+                 n_jobs=1, multivariate_metric=False):
         """Initialize the classifier."""
 
         super().__init__(n_neighbors=n_neighbors,
                          weights=weights, algorithm=algorithm,
                          leaf_size=leaf_size, metric=metric,
                          metric_params=metric_params, n_jobs=n_jobs,
-                         sklearn_metric=sklearn_metric)
+                         multivariate_metric=multivariate_metric)
 
-    def _init_estimator(self, sk_metric):
+    def _init_estimator(self, sklearn_metric):
         """Initialize the sklearn K neighbors estimator.
 
         Args:
-            sk_metric: (pyfunc or 'precomputed'): Metric compatible with
+            sklearn_metric: (pyfunc or 'precomputed'): Metric compatible with
                 sklearn API or matrix (n_samples, n_samples) with precomputed
                 distances.
 
@@ -141,10 +140,13 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
             Sklearn K Neighbors estimator initialized.
 
         """
+        from sklearn.neighbors import (KNeighborsClassifier as
+                                       _KNeighborsClassifier)
+
         return _KNeighborsClassifier(
             n_neighbors=self.n_neighbors, weights=self.weights,
             algorithm=self.algorithm, leaf_size=self.leaf_size,
-            metric=sk_metric, metric_params=self.metric_params,
+            metric=sklearn_metric, metric_params=self.metric_params,
             n_jobs=self.n_jobs)
 
     def predict_proba(self, X):
@@ -219,7 +221,7 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
         The number of parallel jobs to run for neighbors search.
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
-    sklearn_metric : boolean, optional (default = False)
+    multivariate_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
         :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
         the module :mod:`skfda.misc.metrics`.
@@ -248,11 +250,12 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
 
     See also
     --------
-    KNeighborsClassifier
-    KNeighborsScalarRegressor
-    RadiusNeighborsScalarRegressor
-    NearestNeighbors
-    NearestCentroids
+    :class:`~skfda.ml.classification.KNeighborsClassifier`
+    :class:`~skfda.ml.classification.NearestCentroids`
+    :class:`~skfda.ml.regression.KNeighborsRegressor`
+    :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
+    :class:`~skfda.ml.clustering.NearestNeighbors`
+
 
     Notes
     -----
@@ -268,21 +271,21 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
 
     def __init__(self, radius=1.0, weights='uniform', algorithm='auto',
                  leaf_size=30, metric='l2', metric_params=None,
-                 outlier_label=None, n_jobs=1, sklearn_metric=False):
+                 outlier_label=None, n_jobs=1, multivariate_metric=False):
         """Initialize the classifier."""
 
         super().__init__(radius=radius, weights=weights, algorithm=algorithm,
                          leaf_size=leaf_size, metric=metric,
                          metric_params=metric_params, n_jobs=n_jobs,
-                         sklearn_metric=sklearn_metric)
+                         multivariate_metric=multivariate_metric)
 
         self.outlier_label = outlier_label
 
-    def _init_estimator(self, sk_metric):
+    def _init_estimator(self, sklearn_metric):
         """Initialize the sklearn radius neighbors estimator.
 
         Args:
-            sk_metric: (pyfunc or 'precomputed'): Metric compatible with
+            sklearn_metric: (pyfunc or 'precomputed'): Metric compatible with
                 sklearn API or matrix (n_samples, n_samples) with precomputed
                 distances.
 
@@ -290,10 +293,13 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
             Sklearn Radius Neighbors estimator initialized.
 
         """
+        from sklearn.neighbors import (RadiusNeighborsClassifier as
+                                       _RadiusNeighborsClassifier)
+
         return _RadiusNeighborsClassifier(
             radius=self.radius, weights=self.weights,
             algorithm=self.algorithm, leaf_size=self.leaf_size,
-            metric=sk_metric, metric_params=self.metric_params,
+            metric=sklearn_metric, metric_params=self.metric_params,
             outlier_label=self.outlier_label, n_jobs=self.n_jobs)
 
 
@@ -349,11 +355,12 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
 
     See also
     --------
-    KNeighborsClassifier
-    RadiusNeighborsClassifier
-    KNeighborsScalarRegressor
-    RadiusNeighborsScalarRegressor
-    NearestNeighbors
+    :class:`~skfda.ml.classification.KNeighborsClassifier`
+    :class:`~skfda.ml.classification.RadiusNeighborsClassifier`
+    :class:`~skfda.ml.regression.KNeighborsRegressor`
+    :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
+    :class:`~skfda.ml.clustering.NearestNeighbors`
+
 
     """
 

@@ -4,17 +4,12 @@ Defines the abstract class that should be implemented by the funtional data
 objects of the package and contains some commons methods.
 """
 
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 
-from matplotlib.axes import Axes
-import mpl_toolkits.mplot3d
 import pandas.api.extensions
-
-import matplotlib.patches as mpatches
-import matplotlib.pyplot as plt
 import numpy as np
 
-from .._utils import _coordinate_list, _list_of_arrays, constants
+from .._utils import _coordinate_list, _list_of_arrays
 from .extrapolation import _parse_extrapolation
 
 
@@ -602,74 +597,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         pass
 
-    def set_figure_and_axes(self, nrows, ncols):
-        """Set figure and its axes.
-
-        Args:
-            nrows(int, optional): designates the number of rows of the figure
-                to plot the different dimensions of the image. ncols must be
-                also be customized in the same call.
-            ncols(int, optional): designates the number of columns of the
-                figure to plot the different dimensions of the image. nrows
-                must be also be customized in the same call.
-
-        Returns:
-            fig (figure object): figure object initialiazed.
-            ax (axes object): axes of the initialized figure.
-
-        """
-
-        if self.dim_domain == 1:
-            projection = None
-        else:
-            projection = '3d'
-
-        if ncols is None and nrows is None:
-            ncols = int(np.ceil(np.sqrt(self.dim_codomain)))
-            nrows = int(np.ceil(self.dim_codomain / ncols))
-        elif ncols is None and nrows is not None:
-            nrows = int(np.ceil(self.dim_codomain / nrows))
-        elif ncols is not None and nrows is None:
-            nrows = int(np.ceil(self.dim_codomain / ncols))
-
-        fig = plt.gcf()
-        axes = fig.get_axes()
-
-        # If it is not empty
-        if len(axes) != 0:
-            # Gets geometry of current fig
-            geometry = (fig.axes[0]
-                        .get_subplotspec()
-                        .get_topmost_subplotspec()
-                        .get_gridspec().get_geometry())
-
-            # Check if the projection of the axes is the same
-            if projection == '3d':
-                same_projection = all(a.name == '3d' for a in axes)
-            else:
-                same_projection = all(a.name == 'rectilinear' for a in axes)
-
-            # If compatible uses the same figure
-            if (same_projection and geometry == (nrows, ncols) and
-                    self.dim_codomain == len(axes)):
-                return fig, axes
-
-            else:  # Create new figure if it is not compatible
-                fig = plt.figure()
-
-        for i in range(self.dim_codomain):
-            fig.add_subplot(nrows, ncols, i + 1, projection=projection)
-
-        if ncols > 1 and self.axes_labels is not None and self.dim_codomain > 1:
-            plt.subplots_adjust(wspace=0.4)
-
-        if nrows > 1 and self.axes_labels is not None and self.dim_codomain > 1:
-            plt.subplots_adjust(hspace=0.4)
-
-        ax = fig.get_axes()
-
-        return fig, ax
-
     def _get_labels_coordinates(self, key):
         """Return the labels of a function when it is indexed by its components.
 
@@ -722,119 +649,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         return labels
 
-    def set_labels(self, fig=None, ax=None, patches=None):
-        """Set labels if any.
-
-        Args:
-            fig (figure object): figure object containing the axes that
-                implement set_xlabel and set_ylabel, and set_zlabel in case
-                of a 3d projection.
-            ax (list of axes): axes objects that implement set_xlabel and
-                set_ylabel, and set_zlabel in case of a 3d projection; used if
-                fig is None.
-            patches (list of mpatches.Patch); objects used to generate each
-                entry in the legend.
-
-        """
-        if fig is not None:
-            if self.dataset_label is not None:
-                fig.suptitle(self.dataset_label)
-            ax = fig.get_axes()
-            if patches is not None and self.dim_codomain > 1:
-                fig.legend(handles=patches)
-            elif patches is not None:
-                ax[0].legend(handles=patches)
-        elif len(ax) == 1:
-            if self.dataset_label is not None:
-                ax[0].set_title(self.dataset_label)
-            if patches is not None:
-                ax[0].legend(handles=patches)
-
-        if self.axes_labels is not None:
-            if ax[0].name == '3d':
-                for i in range(self.dim_codomain):
-                    if self.axes_labels[0] is not None:
-                        ax[i].set_xlabel(self.axes_labels[0])
-                    if self.axes_labels[1] is not None:
-                        ax[i].set_ylabel(self.axes_labels[1])
-                    if self.axes_labels[i + 2] is not None:
-                        ax[i].set_zlabel(self.axes_labels[i + 2])
-            else:
-                for i in range(self.dim_codomain):
-                    if self.axes_labels[0] is not None:
-                        ax[i].set_xlabel(self.axes_labels[0])
-                    if self.axes_labels[i + 1] is not None:
-                        ax[i].set_ylabel(self.axes_labels[i + 1])
-
-    def generic_plotting_checks(self, fig=None, ax=None, nrows=None,
-                                ncols=None):
-        """Check the arguments passed to both :func:`plot <skfda.FData.plot>`
-        and :func:`scatter <skfda.FDataGrid.scatter>` methods.
-
-        Args:
-            fig (figure object, optional): figure over with the graphs are
-                plotted in case ax is not specified. If None and ax is also
-                None, the figure is initialized.
-            ax (list of axis objects, optional): axis over where the graphs are
-                plotted. If None, see param fig.
-            nrows(int, optional): designates the number of rows of the figure
-                to plot the different dimensions of the image. Only specified
-                if fig and ax are None. ncols must be also be customized in the
-                same call.
-            ncols(int, optional): designates the number of columns of the
-                figure to plot the different dimensions of the image. Only
-                specified if fig and ax are None. nrows must be also be
-                customized in the same call.
-
-        Returns:
-            (tuple): tuple containing:
-
-                * fig (figure): figure object in which the graphs are plotted.
-                * ax (list): axes in which the graphs are plotted.
-
-        """
-        if self.dim_domain > 2:
-            raise NotImplementedError("Plot only supported for functional data"
-                                      "modeled in at most 3 dimensions.")
-
-        if fig is not None and ax is not None:
-            raise ValueError("fig and axes parameters cannot be passed as "
-                             "arguments at the same time.")
-
-        if fig is not None and len(fig.get_axes()) != self.dim_codomain:
-            raise ValueError("Number of axes of the figure must be equal to"
-                             "the dimension of the image.")
-
-        if ax is not None and len(ax) != self.dim_codomain:
-            raise ValueError("Number of axes must be equal to the dimension "
-                             "of the image.")
-
-        if ((ax is not None or fig is not None) and
-                (nrows is not None or ncols is not None)):
-            raise ValueError("The number of columns and/or number of rows of "
-                             "the figure, in which each dimension of the "
-                             "image is plotted, can only be customized in case"
-                             " fig is None and ax is None.")
-
-        if ((nrows is not None and ncols is not None)
-                and ((nrows * ncols) < self.dim_codomain)):
-            raise ValueError("The number of columns and the number of rows "
-                             "specified is incorrect.")
-
-        if fig is None and ax is None:
-            fig, ax = self.set_figure_and_axes(nrows, ncols)
-
-        elif fig is not None:
-            ax = fig.get_axes()
-
-        else:
-            fig = ax[0].get_figure()
-
-        return fig, ax
-
-    def plot(self, chart=None, *, derivative=0, fig=None, ax=None, nrows=None,
-             ncols=None, npoints=None, domain_range=None, sample_labels=None,
-             label_colors=None, label_names=None, **kwargs):
+    def plot(self, *args, **kwargs):
         """Plot the FDatGrid object.
 
         Args:
@@ -851,13 +666,13 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 None, the figure is initialized.
             ax (list of axis objects, optional): axis over where the graphs are
                 plotted. If None, see param fig.
-            nrows(int, optional): designates the number of rows of the figure
+            n_rows (int, optional): designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
                 if fig and ax are None.
-            ncols(int, optional): designates the number of columns of the
+            n_cols (int, optional): designates the number of columns of the
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
-            npoints (int or tuple, optional): Number of points to evaluate in
+            n_points (int or tuple, optional): Number of points to evaluate in
                 the plot. In case of surfaces a tuple of length 2 can be pased
                 with the number of points to plot in each axis, otherwise the
                 same number of points will be used in the two axes. By default
@@ -888,130 +703,12 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         Returns:
             fig (figure object): figure object in which the graphs are plotted.
-            ax (axes object): axes in which the graphs are plotted.
 
         """
+        from ..exploratory.visualization.representation import (
+            plot_graph)
 
-        # Parse chart argument
-        if chart is not None:
-            if fig is not None or ax is not None:
-                raise ValueError("fig, axes and chart parameters cannot "
-                                 "be passed as arguments at the same time.")
-            if isinstance(chart, plt.Figure):
-                fig = chart
-            elif isinstance(chart, Axes):
-                ax = [chart]
-            else:
-                ax = chart
-
-        if domain_range is None:
-            domain_range = self.domain_range
-        else:
-            domain_range = _list_of_arrays(domain_range)
-
-        fig, ax = self.generic_plotting_checks(fig, ax, nrows, ncols)
-
-        patches = None
-        next_color = False
-
-        if sample_labels is not None:
-            sample_labels = np.asarray(sample_labels)
-
-            nlabels = np.max(sample_labels) + 1
-
-            if np.any((sample_labels < 0) | (sample_labels >= nlabels)) or \
-                    not np.all(np.isin(range(nlabels), sample_labels)):
-                raise ValueError("sample_labels must contain at least an "
-                                 "occurence of numbers between 0 and number "
-                                 "of distint sample labels.")
-
-            if label_colors is not None:
-                if len(label_colors) != nlabels:
-                    raise ValueError("There must be a color in label_colors "
-                                     "for each of the labels that appear in "
-                                     "sample_labels.")
-                sample_colors = np.asarray(label_colors)[sample_labels]
-
-            else:
-                colormap = plt.cm.get_cmap('Greys')
-                sample_colors = colormap(sample_labels / (nlabels - 1))
-
-            if label_names is not None:
-                if len(label_names) != nlabels:
-                    raise ValueError("There must be a name in  label_names "
-                                     "for each of the labels that appear in "
-                                     "sample_labels.")
-
-                if label_colors is None:
-                    label_colors = colormap(
-                        np.arange(nlabels) / (nlabels - 1))
-
-                patches = []
-                for i in range(nlabels):
-                    patches.append(
-                        mpatches.Patch(color=label_colors[i],
-                                       label=label_names[i]))
-
-        else:
-
-            if 'color' in kwargs:
-                sample_colors = self.n_samples * [kwargs.get("color")]
-                kwargs.pop('color')
-
-            elif 'c' in kwargs:
-                sample_colors = self.n_samples * [kwargs.get("color")]
-                kwargs.pop('c')
-
-            else:
-                sample_colors = np.empty((self.n_samples,)).astype(str)
-                next_color = True
-
-        if self.dim_domain == 1:
-
-            if npoints is None:
-                npoints = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
-
-            # Evaluates the object in a linspace
-            eval_points = np.linspace(*domain_range[0], npoints)
-            mat = self(eval_points, derivative=derivative, keepdims=True)
-
-            for i in range(self.dim_codomain):
-                for j in range(self.n_samples):
-                    if sample_labels is None and next_color:
-                        sample_colors[j] = ax[i]._get_lines.get_next_color()
-                    ax[i].plot(eval_points, mat[j, ..., i].T,
-                               c=sample_colors[j], **kwargs)
-
-        else:
-
-            # Selects the number of points
-            if npoints is None:
-                npoints = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
-            elif np.isscalar(npoints):
-                npoints = (npoints, npoints)
-            elif len(npoints) != 2:
-                raise ValueError("npoints should be a number or a tuple of "
-                                 "length 2.")
-
-            # Axes where will be evaluated
-            x = np.linspace(*domain_range[0], npoints[0])
-            y = np.linspace(*domain_range[1], npoints[1])
-
-            # Evaluation of the functional object
-            Z = self((x, y), derivative=derivative, grid=True, keepdims=True)
-
-            X, Y = np.meshgrid(x, y, indexing='ij')
-
-            for i in range(self.dim_codomain):
-                for j in range(self.n_samples):
-                    if sample_labels is None and next_color:
-                        sample_colors[j] = ax[i]._get_lines.get_next_color()
-                    ax[i].plot_surface(X, Y, Z[j, ..., i],
-                                       color=sample_colors[j], **kwargs)
-
-        self.set_labels(fig, ax, patches)
-
-        return fig, ax
+        return plot_graph(self, *args, **kwargs)
 
     @abstractmethod
     def copy(self, **kwargs):

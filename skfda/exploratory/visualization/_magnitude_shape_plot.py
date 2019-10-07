@@ -6,18 +6,14 @@ detection method is implemented.
 
 """
 
-from io import BytesIO
-
 import matplotlib
-from scipy.stats import f, variation
-from sklearn.covariance import MinCovDet
 
 import matplotlib.pyplot as plt
 import numpy as np
-from skfda.exploratory.depth import modified_band_depth
 
-from ..outliers import (directional_outlyingness_stats,
-                        DirectionalOutlierDetector)
+from ..depth import modified_band_depth
+from ..outliers import DirectionalOutlierDetector
+from ._utils import _figure_to_svg, _get_figure_and_axes, _set_figure_layout
 
 
 __author__ = "Amanda Hernando Bernabé"
@@ -240,7 +236,7 @@ class MagnitudeShapePlot:
                 "outcol must be a number between 0 and 1.")
         self._outliercol = value
 
-    def plot(self, ax=None):
+    def plot(self, chart=None, *, fig=None, axes=None,):
         """Visualization of the magnitude shape plot of the fdatagrid.
 
         Args:
@@ -249,25 +245,25 @@ class MagnitudeShapePlot:
 
         Returns:
             fig (figure object): figure object in which the graph is plotted.
-            ax (axes object): axes in which the graph is plotted.
 
         """
+
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout(fig, axes)
+
         colors = np.zeros((self.fdatagrid.n_samples, 4))
         colors[np.where(self.outliers == 1)] = self.colormap(self.outliercol)
         colors[np.where(self.outliers == 0)] = self.colormap(self.color)
 
-        if ax is None:
-            ax = matplotlib.pyplot.gca()
-
         colors_rgba = [tuple(i) for i in colors]
-        ax.scatter(self.points[:, 0].ravel(), self.points[:, 1].ravel(),
-                   color=colors_rgba)
+        axes[0].scatter(self.points[:, 0].ravel(), self.points[:, 1].ravel(),
+                        color=colors_rgba)
 
-        ax.set_xlabel(self.xlabel)
-        ax.set_ylabel(self.ylabel)
-        ax.set_title(self.title)
+        axes[0].set_xlabel(self.xlabel)
+        axes[0].set_ylabel(self.ylabel)
+        axes[0].set_title(self.title)
 
-        return ax.get_figure(), ax
+        return fig
 
     def __repr__(self):
         """Return repr(self)."""
@@ -286,10 +282,5 @@ class MagnitudeShapePlot:
                 f"\ntitle={repr(self.title)})").replace('\n', '\n    ')
 
     def _repr_svg_(self):
-        plt.figure()
-        fig, _ = self.plot()
-        output = BytesIO()
-        fig.savefig(output, format='svg')
-        data = output.getvalue()
-        plt.close(fig)
-        return data.decode('utf-8')
+        fig = self.plot()
+        return _figure_to_svg(fig)

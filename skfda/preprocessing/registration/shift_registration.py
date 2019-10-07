@@ -43,7 +43,7 @@ class ShiftRegistration(RegistrationTransformer):
             least squares criterion. If template="mean" it is use the
             functional mean as in the original paper. The template can be a
             callable that will receive an FDataGrid with the samples and will
-            return another FDataGrid with template, such as any of the means or
+            return another FDataGrid as a template, such as any of the means or
             medians of the module `skfda.explotatory.stats`.
             If the template is an FData it is used directly as the final
             template to the registration and it is not necessary to fit the
@@ -268,7 +268,7 @@ class ShiftRegistration(RegistrationTransformer):
 
         if template == "fixed":
 
-            # Stores the original template instead of build it again
+            # Stores the original template instead of building it again
             template = original_template
         else:
 
@@ -345,7 +345,7 @@ class ShiftRegistration(RegistrationTransformer):
                                  "an extrapolation method with "
                                  "restrict_domain=False or fit_predict")
 
-        # If the template is an FData, fit doesnt learn nothing
+        # If the template is an FData, fit doesnt learn anything
         if not hasattr(self, 'template_') and isinstance(self.template, FData):
             self.template_ = self.template
 

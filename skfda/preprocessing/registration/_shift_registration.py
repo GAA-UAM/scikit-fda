@@ -45,9 +45,11 @@ class ShiftRegistration(RegistrationTransformer):
             callable that will receive an FDataGrid with the samples and will
             return another FDataGrid as a template, such as any of the means or
             medians of the module `skfda.explotatory.stats`.
-            If the template is an FData it is used directly as the final
-            template to the registration and it is not necessary to fit the
-            estimator. Defaults to "mean".
+            If the template is an FData is used directly as the final
+            template to the registration, if it is a callable or "mean" the
+            template is computed iteratively constructing a temporal template
+            in each iteration. In [RaSi2005-7-9-1] is described in detail this
+            procedure. Defaults to "mean".
         extrapolation (str or :class:`Extrapolation`, optional): Controls the
             extrapolation mode for points outside the domain range.
             By default uses the method defined in the data to be transformed.
@@ -249,7 +251,7 @@ class ShiftRegistration(RegistrationTransformer):
             elif callable(template):  # Callable
                 fd_x = FDataGrid(x, sample_points=output_points)
                 fd_tfine = template(fd_x)
-                tfine_aux = fd_tfine.data_matrix.flatten()
+                tfine_aux = fd_tfine.data_matrix.ravel()
 
             # Calculates x - mean
             np.subtract(x, tfine_aux, out=x)
@@ -316,7 +318,13 @@ class ShiftRegistration(RegistrationTransformer):
                                  "an extrapolation method with "
                                  "restrict_domain=False or fit_predict")
 
-        _, self.template_ = self._compute_deltas(X, self.template)
+
+        # If the template is an FData, fit doesnt learn anything
+        if  isinstance(self.template, FData):
+            self.template_ = self.template
+
+        else:
+            _, self.template_ = self._compute_deltas(X, self.template)
 
         return self
 
@@ -344,10 +352,6 @@ class ShiftRegistration(RegistrationTransformer):
                                  "transformation should be done together. Use "
                                  "an extrapolation method with "
                                  "restrict_domain=False or fit_predict")
-
-        # If the template is an FData, fit doesnt learn anything
-        if not hasattr(self, 'template_') and isinstance(self.template, FData):
-            self.template_ = self.template
 
         # Check is fitted
         check_is_fitted(self, 'template_')

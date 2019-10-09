@@ -48,7 +48,7 @@ class ShiftRegistration(RegistrationTransformer):
             If the template is an FData is used directly as the final
             template to the registration, if it is a callable or "mean" the
             template is computed iteratively constructing a temporal template
-            in each iteration. In [RaSi2005-7-9-1] is described in detail this
+            in each iteration. In [RaSi2005-7-9-1]_ is described in detail this
             procedure. Defaults to "mean".
         extrapolation (str or :class:`Extrapolation`, optional): Controls the
             extrapolation mode for points outside the domain range.

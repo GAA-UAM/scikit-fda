@@ -43,8 +43,18 @@ class RegistrationScorer():
         self.eval_points = eval_points
 
     def __call__(self, estimator, X, y=None):
-        """Compute the score of the transformation"""
+        """Compute the score of the transformation.
 
+        Args:
+            estimator (Estimator): Registration method estimator. The estimator
+                should be fitted.
+            X (:class:`FData <skfda.FData>`): Functional data to be registered.
+            y (:class:`FData <skfda.FData>`, optional): Functional data target.
+                If provided should be the same as `X` in general.
+
+        Returns:
+            float: Cross validation score.
+        """
         if y is None:
             y = X
 
@@ -170,8 +180,45 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
             *Functional Data Analysis with R and Matlab* (pp. 125-126).
             Springer.
 
+    Examples:
+
+        Calculate the score of the shift registration of a sinusoidal process
+        synthetically generated.
+
+        >>> from skfda.preprocessing.registration.validation import \
+        ...                                         AmplitudePhaseDecomposition
+        >>> from skfda.preprocessing.registration import ShiftRegistration
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> X = make_sinusoidal_process(error_std=0, random_state=0)
+
+        Fit the registration procedure.
+
+        >>> shift_registration = ShiftRegistration()
+        >>> shift_registration.fit(X)
+        ShiftRegistration(...)
+
+        Compute the :math:`R^2` correlation index
+
+        >>> scorer = AmplitudePhaseDecomposition()
+        >>> score = scorer(shift_registration, X)
+        >>> round(score, 3)
+        0.972
+
+        Also it is possible to get all the values of the decomposition.
+
+        >>> scorer = AmplitudePhaseDecomposition(return_stats=True)
+        >>> stats = scorer(shift_registration, X)
+        >>> round(stats.r_squared, 3)
+        0.972
+        >>> round(stats.mse_amp, 3)
+        0.07
+        >>> round(stats.mse_pha, 3)
+        0.227
+        >>> round(stats.c_r, 3)
+        1.0
+
+
     See also:
-        :class:`~AmplitudePhaseDecomposition`
         :class:`~LeastSquares`
         :class:`~SobolevLeastSquares`
         :class:`~PairwiseCorrelation`
@@ -183,8 +230,18 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         self.return_stats=return_stats
 
     def __call__(self, estimator, X, y=None):
-        """Compute the score of the transformation"""
+        """Compute the score of the transformation.
 
+        Args:
+            estimator (Estimator): Registration method estimator. The estimator
+                should be fitted.
+            X (:class:`FData <skfda.FData>`): Functional data to be registered.
+            y (:class:`FData <skfda.FData>`, optional): Functional data target.
+                If provided should be the same as `X` in general.
+
+        Returns:
+            float: Cross validation score.
+        """
         if y is None:
             y = X
 
@@ -202,7 +259,7 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
 
         Args:
             X (FData): Original functional data.
-            y (Fdata): Functional data registered.
+            y (FData): Functional data registered.
 
         Returns:
             float: Score of the transformation.
@@ -248,10 +305,11 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         cr = 1.  # Constant related to the covariation between the deformation
         # functions and y^2
 
-        # If the warping functions are not provided, are suppose to be independent
+        # If the warping functions are not provided, are suppose independent
         if warping is not None:
             # Derivates warping functions
-            dh_fine = warping.evaluate(eval_points, derivative=1, keepdims=False)
+            dh_fine = warping.evaluate(eval_points, derivative=1,
+                                       keepdims=False)
             dh_fine_mean = dh_fine.mean(axis=0)
             dh_fine_center = dh_fine - dh_fine_mean
 
@@ -280,7 +338,7 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         # squared correlation measure of proportion of phase variation
         rsq = mse_pha / (mse_total)
 
-        if return_stats is True:
+        if self.return_stats is True:
             stats = AmplitudePhaseDecompositionStats(rsq, mse_amp, mse_pha, cr)
             return stats
 
@@ -332,9 +390,32 @@ class LeastSquares(AmplitudePhaseDecomposition):
             Using Fisher-Rao Metric (2011). In *Comparisons with other Methods*
             (p. 18). arXiv:1103.3817v2.
 
+    Examples:
+
+        Calculate the score of the shift registration of a sinusoidal process
+        synthetically generated.
+
+        >>> from skfda.preprocessing.registration.validation import \
+        ...                                                        LeastSquares
+        >>> from skfda.preprocessing.registration import ShiftRegistration
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> X = make_sinusoidal_process(error_std=0, random_state=0)
+
+        Fit the registration procedure.
+
+        >>> shift_registration = ShiftRegistration()
+        >>> shift_registration.fit(X)
+        ShiftRegistration(...)
+
+        Compute the least squares score.
+        >>> scorer = LeastSquares()
+        >>> score = scorer(shift_registration, X)
+        >>> round(score, 3)
+        0.796
+
+
     See also:
         :class:`~AmplitudePhaseDecomposition`
-        :class:`~LeastSquares`
         :class:`~SobolevLeastSquares`
         :class:`~PairwiseCorrelation`
 
@@ -344,7 +425,7 @@ class LeastSquares(AmplitudePhaseDecomposition):
 
         Args:
             X (FData): Original functional data.
-            y (Fdata): Functional data registered.
+            y (FData): Functional data registered.
 
         Returns:
             float: Score of the transformation.
@@ -393,8 +474,8 @@ class SobolevLeastSquares(RegistrationScorer):
         {\sum_{i=1}^{N} \int\left(\dot{f}_{i}(t)-\frac{1}{N} \sum_{j=1}^{N}
         \dot{f}_{j}\right)^{2} dt}
 
-    where :math:`f_i` and :math:`\tilde f_i` are the derivatives of the
-    original and the registered data respectively.
+    where :math:`\dot f_i` and :math:`\dot \tilde f_i` are the derivatives of
+    the original and the registered data respectively.
 
     This criterion measures the total cross-sectional variance of the
     derivatives of the aligned functions, relative to the original value.
@@ -424,10 +505,32 @@ class SobolevLeastSquares(RegistrationScorer):
             Using Fisher-Rao Metric (2011). In *Comparisons with other Methods*
             (p. 18). arXiv:1103.3817v2.
 
+    Examples:
+
+        Calculate the score of the shift registration of a sinusoidal process
+        synthetically generated.
+
+        >>> from skfda.preprocessing.registration.validation import \
+        ...                                                 SobolevLeastSquares
+        >>> from skfda.preprocessing.registration import ShiftRegistration
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> X = make_sinusoidal_process(error_std=0, random_state=0)
+
+        Fit the registration procedure.
+
+        >>> shift_registration = ShiftRegistration()
+        >>> shift_registration.fit(X)
+        ShiftRegistration(...)
+
+        Compute the sobolev least squares score.
+        >>> scorer = SobolevLeastSquares()
+        >>> score = scorer(shift_registration, X)
+        >>> round(score, 3)
+        0.762
+
     See also:
         :class:`~AmplitudePhaseDecomposition`
         :class:`~LeastSquares`
-        :class:`~SobolevLeastSquares`
         :class:`~PairwiseCorrelation`
 
     """
@@ -436,7 +539,7 @@ class SobolevLeastSquares(RegistrationScorer):
 
         Args:
             X (FData): Original functional data.
-            y (Fdata): Functional data registered.
+            y (FData): Functional data registered.
 
         Returns:
             float: Score of the transformation.
@@ -500,11 +603,33 @@ class PairwiseCorrelation(RegistrationScorer):
             Using Fisher-Rao Metric (2011). In *Comparisons with other Methods*
             (p. 18). arXiv:1103.3817v2.
 
+    Examples:
+
+        Calculate the score of the shift registration of a sinusoidal process
+        synthetically generated.
+
+        >>> from skfda.preprocessing.registration.validation import \
+        ...                                                 PairwiseCorrelation
+        >>> from skfda.preprocessing.registration import ShiftRegistration
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> X = make_sinusoidal_process(error_std=0, random_state=0)
+
+        Fit the registration procedure.
+
+        >>> shift_registration = ShiftRegistration()
+        >>> shift_registration.fit(X)
+        ShiftRegistration(...)
+
+        Compute the pairwise correlation score.
+        >>> scorer = PairwiseCorrelation()
+        >>> score = scorer(shift_registration, X)
+        >>> round(score, 3)
+        1.816
+
     See also:
         :class:`~AmplitudePhaseDecomposition`
         :class:`~LeastSquares`
         :class:`~SobolevLeastSquares`
-        :class:`~PairwiseCorrelation`
 
     """
 
@@ -513,7 +638,7 @@ class PairwiseCorrelation(RegistrationScorer):
 
         Args:
             X (FData): Original functional data.
-            y (Fdata): Functional data registered.
+            y (FData): Functional data registered.
 
         Returns:
             float: Score of the transformation.

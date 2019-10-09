@@ -10,12 +10,13 @@ def _check_univariate(fd):
     """Checks if an FData is univariate and raises an error"""
 
     if fd.dim_domain != 1 or fd.dim_codomain != 1:
-        raise ValueError(f"The functional data must be univariate, i.e.,"
-                         f"with dim_domain=1 ({fd.dim_domain}) and "
-                         f"dim_codomain=1 ({fd.dim_codomain})")
-
-
-
+        raise ValueError(f"The functional data must be univariate, i.e., " +
+                         f"with dim_domain=1 " +
+                         (f"" if fd.dim_domain==1
+                          else f"(currently is {fd.dim_domain}) ") +
+                         f"and dim_codomain=1 " +
+                         (f"" if fd.dim_codomain==1 else
+                          f"(currently is  {fd.dim_codomain})"))
 
 def _to_grid(X, y, eval_points=None):
     """Transforms the functional data in grids to perform calculations."""

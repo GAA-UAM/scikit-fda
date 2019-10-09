@@ -152,21 +152,6 @@ class TestWarping(unittest.TestCase):
         np.testing.assert_array_almost_equal(fd_reg(center), original_values,
                                              decimal=2)
 
-    def _test_mse_decomposition(self):
-        # Test disabled
-        fd = make_multimodal_samples(n_samples=3, random_state=1)
-        landmarks = make_multimodal_landmarks(n_samples=3, random_state=1)
-        landmarks = landmarks.squeeze()
-        warping = landmark_registration_warping(fd, landmarks)
-        fd_registered = fd.compose(warping)
-        ret = mse_decomposition(fd, fd_registered, warping)
-
-        np.testing.assert_almost_equal(ret.mse_amp, 0.0009866997121476962)
-        np.testing.assert_almost_equal(ret.mse_pha, 0.11576861468435257)
-        np.testing.assert_almost_equal(ret.rsq, 0.9915489952877273)
-        np.testing.assert_almost_equal(ret.cr, 0.9999963424653829)
-
-
 class TestShiftRegistration(unittest.TestCase):
     """Test shift registration"""
 
@@ -346,6 +331,20 @@ class TestRegistrationValidation(unittest.TestCase):
         scorer = PairwiseCorrelation()
         score = scorer(self.shift_registration, self.X)
         np.testing.assert_almost_equal(score, 1.816298653)
+
+    def test_mse_decomposition(self):
+
+        fd = make_multimodal_samples(n_samples=3, random_state=1)
+        landmarks = make_multimodal_landmarks(n_samples=3, random_state=1)
+        landmarks = landmarks.squeeze()
+        warping = landmark_registration_warping(fd, landmarks)
+        fd_registered = fd.compose(warping)
+        scorer = AmplitudePhaseDecomposition(return_stats=True)
+        ret = scorer.score_function(fd, fd_registered, warping=warping)
+        np.testing.assert_almost_equal(ret.mse_amp, 0.0009866997121476962)
+        np.testing.assert_almost_equal(ret.mse_pha, 0.11576861468435257)
+        np.testing.assert_almost_equal(ret.r_squared, 0.9915489952877273)
+        np.testing.assert_almost_equal(ret.c_r, 0.9999963424653829)
 
 
 if __name__ == '__main__':

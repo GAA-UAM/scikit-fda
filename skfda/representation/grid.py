@@ -975,6 +975,8 @@ class FDataGrid(FData):
 
         if eval_points is None:
             eval_points = self.sample_points
+        else:
+            eval_points = np.atleast_2d(eval_points)
 
         if restrict_domain:
             domain = np.asarray(self.domain_range)

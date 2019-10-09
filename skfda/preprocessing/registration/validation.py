@@ -211,7 +211,7 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         >>> round(stats.r_squared, 3)
         0.972
         >>> round(stats.mse_amp, 3)
-        0.07
+        0.007
         >>> round(stats.mse_pha, 3)
         0.227
         >>> round(stats.c_r, 3)

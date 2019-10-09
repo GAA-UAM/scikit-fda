@@ -270,7 +270,7 @@ class TestShiftRegistration(unittest.TestCase):
         fd_registered_3 = reg_3.fit_transform(self.fd)
 
         reg_4 = ShiftRegistration(template=reg.template_)
-        fd_registered_4 = reg_4.transform(self.fd)
+        fd_registered_4 = reg_4.fit(self.fd).transform(self.fd)
 
         np.testing.assert_array_almost_equal(fd_registered_1.data_matrix,
                                              fd_registered_3.data_matrix)
@@ -313,7 +313,6 @@ class TestShiftRegistration(unittest.TestCase):
     def test_custom_output_points(self):
         reg = ShiftRegistration(output_points=np.linspace(0, 1, 50))
         reg.fit_transform(self.fd)
-        print(reg.deltas_)
 
 
 if __name__ == '__main__':

@@ -6,6 +6,37 @@ import types
 
 import numpy as np
 
+def _check_univariate(fd):
+    """Checks if an FData is univariate and raises an error"""
+
+    if fd.dim_domain != 1 or fd.dim_codomain != 1:
+        raise ValueError(f"The functional data must be univariate, i.e.,"
+                         f"with dim_domain=1 ({fd.dim_domain}) and "
+                         f"dim_codomain=1 ({fd.dim_codomain})")
+
+
+
+
+def _to_grid(X, y, eval_points=None):
+    """Transforms the functional data in grids to perform calculations."""
+
+    from .. import FDataGrid
+    x_is_grid = isinstance(X, FDataGrid)
+    y_is_grid = isinstance(y, FDataGrid)
+
+    if eval_points is not None:
+        X = X.to_grid(eval_points)
+        y = y.to_grid(eval_points)
+    elif x_is_grid and not y_is_grid:
+        y = y.to_grid(X.sample_points[0])
+    elif not x_is_grid and y_is_grid:
+        X = X.to_grid(y.sample_points[0])
+    elif not x_is_grid and not y_is_grid:
+        X = X.to_grid()
+        y = y.to_grid()
+
+    return X, y
+
 
 def _list_of_arrays(original_array):
     """Convert to a list of arrays.

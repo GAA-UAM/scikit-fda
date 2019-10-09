@@ -3,26 +3,7 @@
 import numpy as np
 from typing import NamedTuple
 
-
-def _to_grid(X, y, eval_points=None):
-    """Transforms the functional data in grids to perform calculations."""
-
-    from ... import FDataGrid
-    x_is_grid = isinstance(X, FDataGrid)
-    y_is_grid = isinstance(y, FDataGrid)
-
-    if eval_points is not None:
-        X = X.to_grid(eval_points)
-        y = y.to_grid(eval_points)
-    elif x_is_grid and not y_is_grid:
-        y = y.to_grid(X.sample_points[0])
-    elif not x_is_grid and y_is_grid:
-        X = X.to_grid(y.sample_points[0])
-    elif not x_is_grid and not y_is_grid:
-        X = X.to_grid()
-        y = y.to_grid()
-
-    return X, y
+from ..._utils import _check_univariate, _to_grid
 
 
 class RegistrationScorer():
@@ -32,10 +13,9 @@ class RegistrationScorer():
     model validation or parameter selection.
 
     Attributes:
-        score_function (callable): Function to compute the score. By default
-            it is used :func:`mse_r_squared`. See other
-            available metrics in the module :mod:`registration.validation
-            <skfda.preprocessing.registration.validation>`.
+        eval_points (array_like, optional): Set of points where the
+            functions are evaluated to obtain a discrete representation and
+            perform the calculation.
 
     Args:
         estimator (Estimator): Registration method estimator. The estimator
@@ -52,23 +32,18 @@ class RegistrationScorer():
         to the `score_function` when necessary.
 
     See also:
-        :func:`mse_r_squared <mse_r_squared>`
-        :func:`least_squares <least_squares>`
-        :func:`sobolev_least_squares <sobolev_least_squares>`
-        :func:`pairwise_correlation <pairwise_correlation>`
+        :class:`~AmplitudePhaseDecomposition`
+        :class:`~LeastSquares`
+        :class:`~SobolevLeastSquares`
+        :class:`~PairwiseCorrelation`
 
     """
-
-    def __init__(self, score_function=None):
-        self.score_function = score_function
+    def __init__(self, eval_points=None):
+        """Initialize the transformer"""
+        self.eval_points = eval_points
 
     def __call__(self, estimator, X, y=None):
-
-        # By default it is used the R^2 coefficient of Ramsay
-        if self.score_function is None:
-            score_function = mse_r_squared
-        else:
-            score_function = self.score_function
+        """Compute the score of the transformation"""
 
         if y is None:
             y = X
@@ -76,17 +51,10 @@ class RegistrationScorer():
         # Register the data
         X_reg = estimator.transform(X)
 
-        # Pass the warpings if needed in the score function
-        # and the estimator generates warpings
-        # By the moment only used in the mse_r_squared
-        if (hasattr(estimator, 'warping_') and
-                'warping' in score_function.__kwdefaults__):
-            return score_function(y, X_reg, warping=estimator.warping_)
-        else:
-            return score_function(y, X_reg)
+        return self.score_function(y, X_reg)
 
 
-class AmplitudePhaseDecomposition(NamedTuple):
+class AmplitudePhaseDecompositionStats(NamedTuple):
     r"""Named tuple to store the values of the amplitude-phase decomposition.
 
     Values of the amplitude phase decomposition computed in
@@ -106,7 +74,7 @@ class AmplitudePhaseDecomposition(NamedTuple):
     c_r: float
 
 
-def mse_r_squared(X, y, *, warping=None, return_stats=False, eval_points=None):
+class AmplitudePhaseDecomposition(RegistrationScorer):
     r"""Compute mean square error measures for amplitude and phase variation.
 
     Once the registration has taken place, this function computes two mean
@@ -160,18 +128,23 @@ def mse_r_squared(X, y, *, warping=None, return_stats=False, eval_points=None):
 
     See [KR08-3]_ for a detailed explanation.
 
-
-    Args:
-        X (:class:`FData`): Unregistered functions.
-        y (:class:`FData`, optional): Target data, generally the same as X. By
-            default 'None', which uses `X` as target.
+    Attributes:
         return_stats (boolean, optional): If `true` returns a named tuple
             with four values: :math:`R^2`, :math:`MSE_{amp}`, :math:`MSE_{pha}`
             and :math:`C_R`. Otherwise the squared correlation index
             :math:`R^2` is returned. Default `False`.
-        eval_points: (array_like, optional): Set of points where the
+
+        eval_points (array_like, optional): Set of points where the
             functions are evaluated to obtain a discrete representation and
             perform the calculation.
+
+
+    Args:
+        estimator (RegistrationTransformer): Registration transformer.
+        X (:class:`FData`): Unregistered functions.
+        y (:class:`FData`, optional): Target data, generally the same as X. By
+            default 'None', which uses `X` as target.
+
 
     Returns:
         (float or :class:`NamedTuple <typing.NamedTuple>`): squared correlation
@@ -198,93 +171,123 @@ def mse_r_squared(X, y, *, warping=None, return_stats=False, eval_points=None):
             Springer.
 
     See also:
-        :class:`RegistrationScorer <RegistrationScorer>`
-        :func:`least_squares <least_squares>`
-        :func:`sobolev_least_squares <sobolev_least_squares>`
-        :func:`pairwise_correlation <pairwise_correlation>`
+        :class:`~AmplitudePhaseDecomposition`
+        :class:`~LeastSquares`
+        :class:`~SobolevLeastSquares`
+        :class:`~PairwiseCorrelation`
 
     """
-    from scipy.integrate import simps
+    def __init__(self, return_stats=False, eval_points=None):
+        """Initialize the transformer"""
+        super().__init__(eval_points)
+        self.return_stats=return_stats
 
-    # Parameter checks
-    if not X._univariate or not y._univariate:
-        raise ValueError("Scorer only valid for univariate data.")
+    def __call__(self, estimator, X, y=None):
+        """Compute the score of the transformation"""
 
-    if len(y) != len(X):
-        raise ValueError(f"the registered and unregistered curves must have "
-                         f"the same number of samples ({len(y)})!=({len(X)})")
+        if y is None:
+            y = X
 
-    if warping is not None and len(warping) != len(X):
-        raise ValueError(f"The registered curves and the warping functions "
-                         f"must have the same number of samples "
-                         f"({len(X)})!=({len(warping)})")
+        # Register the data
+        X_reg = estimator.transform(X)
 
-    # Creates the mesh to discretize the functions
-    if eval_points is None:
-        try:
-            eval_points = y.sample_points[0]
+        # Pass the warpings if are generated in the transformer
+        if hasattr(estimator, 'warping_'):
+            return self.score_function(y, X_reg, warping=estimator.warping_)
+        else:
+            return self.score_function(y, X_reg)
 
-        except AttributeError:
-            nfine = max(y.basis.nbasis * 10 + 1, 201)
-            eval_points = np.linspace(*y.domain_range[0], nfine)
-    else:
-        eval_points = np.asarray(eval_points)
+    def score_function(self, X, y, *, warping=None):
+        """Compute the score of the transformation performed.
 
-    x_fine = X.evaluate(eval_points, keepdims=False)
-    y_fine = y.evaluate(eval_points, keepdims=False)
-    mu_fine = x_fine.mean(axis=0)  # Mean unregistered function
-    eta_fine = y_fine.mean(axis=0)  # Mean registered function
-    mu_fine_sq = np.square(mu_fine)
-    eta_fine_sq = np.square(eta_fine)
+        Args:
+            X (FData): Original functional data.
+            y (Fdata): Functional data registered.
 
-    # Total mean square error of the original funtions
-    # mse_total = scipy.integrate.simps(
-    #    np.mean(np.square(x_fine - mu_fine), axis=0),
-    #    eval_points)
+        Returns:
+            float: Score of the transformation.
 
-    cr = 1.  # Constant related to the covariation between the deformation
-    # functions and y^2
+        """
+        from scipy.integrate import simps
 
-    # If the warping functions are not provided, are suppose to be independent
-    if warping is not None:
-        # Derivates warping functions
-        dh_fine = warping.evaluate(eval_points, derivative=1, keepdims=False)
-        dh_fine_mean = dh_fine.mean(axis=0)
-        dh_fine_center = dh_fine - dh_fine_mean
+        _check_univariate(X)
+        _check_univariate(y)
 
-        y_fine_sq = np.square(y_fine)  # y^2
-        y_fine_sq_center = np.subtract(y_fine_sq, eta_fine_sq)  # y^2-E[y2]
+        if len(y) != len(X):
+            raise ValueError(f"the registered and unregistered curves must have "
+                             f"the same number of samples ({len(y)})!=({len(X)})")
 
-        covariate = np.inner(dh_fine_center.T, y_fine_sq_center.T)
-        covariate = covariate.mean(axis=0)
-        cr += np.divide(simps(covariate, eval_points),
-                        simps(eta_fine_sq, eval_points))
+        if warping is not None and len(warping) != len(X):
+            raise ValueError(f"The registered curves and the warping functions "
+                             f"must have the same number of samples "
+                             f"({len(X)})!=({len(warping)})")
 
-    # mse due to phase variation
-    mse_pha = simps(cr * eta_fine_sq - mu_fine_sq, eval_points)
+        # Creates the mesh to discretize the functions
+        if self.eval_points is None:
+            try:
+                eval_points = y.sample_points[0]
 
-    # mse due to amplitude variation
-    # mse_amp = mse_total - mse_pha
-    y_fine_center = np.subtract(y_fine, eta_fine)
-    y_fine_center_sq = np.square(y_fine_center, out=y_fine_center)
-    y_fine_center_sq_mean = y_fine_center_sq.mean(axis=0)
+            except AttributeError:
+                nfine = max(y.basis.nbasis * 10 + 1, 201)
+                eval_points = np.linspace(*y.domain_range[0], nfine)
+        else:
+            eval_points = np.asarray(self.eval_points)
 
-    mse_amp = simps(y_fine_center_sq_mean, eval_points)
+        x_fine = X.evaluate(eval_points, keepdims=False)
+        y_fine = y.evaluate(eval_points, keepdims=False)
+        mu_fine = x_fine.mean(axis=0)  # Mean unregistered function
+        eta_fine = y_fine.mean(axis=0)  # Mean registered function
+        mu_fine_sq = np.square(mu_fine)
+        eta_fine_sq = np.square(eta_fine)
 
-    # Total mean square error of the original funtions
-    mse_total = mse_pha + mse_amp
+        # Total mean square error of the original funtions
+        # mse_total = scipy.integrate.simps(
+        #    np.mean(np.square(x_fine - mu_fine), axis=0),
+        #    eval_points)
 
-    # squared correlation measure of proportion of phase variation
-    rsq = mse_pha / (mse_total)
+        cr = 1.  # Constant related to the covariation between the deformation
+        # functions and y^2
 
-    if return_stats is True:
-        stats = AmplitudePhaseDecomposition(rsq, mse_amp, mse_pha, cr)
-        return stats
+        # If the warping functions are not provided, are suppose to be independent
+        if warping is not None:
+            # Derivates warping functions
+            dh_fine = warping.evaluate(eval_points, derivative=1, keepdims=False)
+            dh_fine_mean = dh_fine.mean(axis=0)
+            dh_fine_center = dh_fine - dh_fine_mean
 
-    return rsq
+            y_fine_sq = np.square(y_fine)  # y^2
+            y_fine_sq_center = np.subtract(y_fine_sq, eta_fine_sq)  # y^2-E[y2]
+
+            covariate = np.inner(dh_fine_center.T, y_fine_sq_center.T)
+            covariate = covariate.mean(axis=0)
+            cr += np.divide(simps(covariate, eval_points),
+                            simps(eta_fine_sq, eval_points))
+
+        # mse due to phase variation
+        mse_pha = simps(cr * eta_fine_sq - mu_fine_sq, eval_points)
+
+        # mse due to amplitude variation
+        # mse_amp = mse_total - mse_pha
+        y_fine_center = np.subtract(y_fine, eta_fine)
+        y_fine_center_sq = np.square(y_fine_center, out=y_fine_center)
+        y_fine_center_sq_mean = y_fine_center_sq.mean(axis=0)
+
+        mse_amp = simps(y_fine_center_sq_mean, eval_points)
+
+        # Total mean square error of the original funtions
+        mse_total = mse_pha + mse_amp
+
+        # squared correlation measure of proportion of phase variation
+        rsq = mse_pha / (mse_total)
+
+        if return_stats is True:
+            stats = AmplitudePhaseDecompositionStats(rsq, mse_amp, mse_pha, cr)
+            return stats
+
+        return rsq
 
 
-def least_squares(X, y, *, eval_points=None):
+class LeastSquares(AmplitudePhaseDecomposition):
     r"""Cross-validated measure of the registration procedure.
 
     Computes a cross-validated measure of the level of synchronization
@@ -304,7 +307,13 @@ def least_squares(X, y, *, eval_points=None):
     curves, while zero corresponds to no improvement in the synchronization. It
     can be negative because the model can be arbitrarily worse.
 
+    Attributes:
+        eval_points (array_like, optional): Set of points where the
+            functions are evaluated to obtain a discrete representation and
+            perform the calculation.
+
     Args:
+        estimator (RegistrationTransformer): Registration transformer.
         X (:class:`FData <skfda.FData>`): Original functional data.
         y (:class:`FData <skfda.FData>`): Registered functional data.
 
@@ -324,41 +333,55 @@ def least_squares(X, y, *, eval_points=None):
             (p. 18). arXiv:1103.3817v2.
 
     See also:
-        :class:`RegistrationScorer <RegistrationScorer>`
-        :func:`mse_r_squared <mse_r_squared>`
-        :func:`sobolev_least_squares <sobolev_least_squares>`
-        :func:`pairwise_correlation <pairwise_correlation>`
+        :class:`~AmplitudePhaseDecomposition`
+        :class:`~LeastSquares`
+        :class:`~SobolevLeastSquares`
+        :class:`~PairwiseCorrelation`
 
     """
-    from ...misc.metrics import pairwise_distance, lp_distance
+    def score_function(self, X, y):
+        """Compute the score of the transformation performed.
 
-    X, y = _to_grid(X, y, eval_points=eval_points)
+        Args:
+            X (FData): Original functional data.
+            y (Fdata): Functional data registered.
 
-    # Instead of compute f_i - 1/(N-1) sum(j!=i)f_j for each i = 1 ... N
-    # It is used (1 + 1/(N-1))f_i - 1/(N-1) sum(j=1 ... N) f_j =
-    # (1 + 1/(N-1))f_i - N/(N-1) mean(f) =
-    # C1 * f_1 - C2 mean(f) for each i= 1 ... N
-    N = len(X)
-    C1 = 1 + 1 / (N - 1)
-    C2 = N / (N - 1)
+        Returns:
+            float: Score of the transformation.
 
-    X = C1 * X
-    y = C1 * y
-    mean_X = C2 * X.mean()
-    mean_y = C2 * y.mean()
+        """
+        from ...misc.metrics import pairwise_distance, lp_distance
 
-    # Compute distance to mean
-    distance = pairwise_distance(lp_distance)
-    ls_x = distance(X, mean_X).flatten()
-    ls_y = distance(y, mean_y).flatten()
+        _check_univariate(X)
+        _check_univariate(y)
 
-    # Quotient of distance
-    quotient = ls_y / ls_x
+        X, y = _to_grid(X, y, eval_points=self.eval_points)
 
-    return 1 - 1. / N * quotient.sum()
+        # Instead of compute f_i - 1/(N-1) sum(j!=i)f_j for each i = 1 ... N
+        # It is used (1 + 1/(N-1))f_i - 1/(N-1) sum(j=1 ... N) f_j =
+        # (1 + 1/(N-1))f_i - N/(N-1) mean(f) =
+        # C1 * f_1 - C2 mean(f) for each i= 1 ... N
+        N = len(X)
+        C1 = 1 + 1 / (N - 1)
+        C2 = N / (N - 1)
+
+        X = C1 * X
+        y = C1 * y
+        mean_X = C2 * X.mean()
+        mean_y = C2 * y.mean()
+
+        # Compute distance to mean
+        distance = pairwise_distance(lp_distance)
+        ls_x = distance(X, mean_X).flatten()
+        ls_y = distance(y, mean_y).flatten()
+
+        # Quotient of distance
+        quotient = ls_y / ls_x
+
+        return 1 - 1. / N * quotient.sum()
 
 
-def sobolev_least_squares(X, y, *, eval_points=None):
+class SobolevLeastSquares(RegistrationScorer):
     r"""Cross-validated measure of the registration procedure.
 
     Computes a cross-validated measure of the level of synchronization
@@ -379,12 +402,15 @@ def sobolev_least_squares(X, y, *, eval_points=None):
     curves, while zero corresponds to no improvement in the registration. It
     can be negative because the model can be arbitrarily worse.
 
-    Args:
-        X (:class:`FData <skfda.FData>`): Original functional data.
-        y (:class:`FData <skfda.FData>`): Registered functional data.
+    Attributes:
         eval_points (array_like, optional): Set of points where the
             functions are evaluated to obtain a discrete representation and
             perform the calculation.
+
+    Args:
+        estimator (RegistrationTransformer): Registration transformer.
+        X (:class:`FData <skfda.FData>`): Original functional data.
+        y (:class:`FData <skfda.FData>`): Registered functional data.
 
     Note:
         The original sobolev least square measure used in [S11-5-2-3]_ is
@@ -399,31 +425,45 @@ def sobolev_least_squares(X, y, *, eval_points=None):
             (p. 18). arXiv:1103.3817v2.
 
     See also:
-        :class:`RegistrationScorer <RegistrationScorer>`
-        :func:`mse_r_squared <mse_r_squared>`
-        :func:`least_squares <least_squares>`
-        :func:`pairwise_correlation <pairwise_correlation>`
+        :class:`~AmplitudePhaseDecomposition`
+        :class:`~LeastSquares`
+        :class:`~SobolevLeastSquares`
+        :class:`~PairwiseCorrelation`
 
     """
-    from ...misc.metrics import pairwise_distance, lp_distance
+    def score_function(self, X, y):
+        """Compute the score of the transformation performed.
 
-    # Compute derivative
-    X = X.derivative()
-    y = y.derivative()
+        Args:
+            X (FData): Original functional data.
+            y (Fdata): Functional data registered.
 
-    # Discretize if needed
-    X, y = _to_grid(X, y, eval_points=eval_points)
+        Returns:
+            float: Score of the transformation.
 
-    # L2 distance to mean
-    distance = pairwise_distance(lp_distance)
+        """
+        from ...misc.metrics import pairwise_distance, lp_distance
 
-    sls_x = distance(X, X.mean())
-    sls_y = distance(y, y.mean())
+        _check_univariate(X)
+        _check_univariate(y)
 
-    return 1 - sls_y.sum() / sls_x.sum()
+        # Compute derivative
+        X = X.derivative()
+        y = y.derivative()
+
+        # Discretize if needed
+        X, y = _to_grid(X, y, eval_points=self.eval_points)
+
+        # L2 distance to mean
+        distance = pairwise_distance(lp_distance)
+
+        sls_x = distance(X, X.mean())
+        sls_y = distance(y, y.mean())
+
+        return 1 - sls_y.sum() / sls_x.sum()
 
 
-def pairwise_correlation(X, y, *, eval_points=None):
+class PairwiseCorrelation(RegistrationScorer):
     r"""Cross-validated measure of pairwise correlation between functions.
 
     Computes a cross-validated pairwise correlation between functions
@@ -441,12 +481,15 @@ def pairwise_correlation(X, y, *, eval_points=None):
     The larger the value of :math:`pc`, the better the alignment between
     functions in general.
 
-    Args:
-        X (:class:`FData <skfda.FData>`): Original functional data.
-        y (:class:`FData <skfda.FData>`): Registered functional data.
+    Attributes:
         eval_points (array_like, optional): Set of points where the
             functions are evaluated to obtain a discrete representation and
             perform the calculation.
+
+    Args:
+        estimator (RegistrationTransformer): Registration transformer.
+        X (:class:`FData <skfda.FData>`): Original functional data.
+        y (:class:`FData <skfda.FData>`): Registered functional data.
 
     Note:
         Pearson’s correlation between functions is calculated assuming
@@ -458,22 +501,37 @@ def pairwise_correlation(X, y, *, eval_points=None):
             (p. 18). arXiv:1103.3817v2.
 
     See also:
-        :class:`RegistrationScorer <RegistrationScorer>`
-        :func:`mse_r_squared <mse_r_squared>`
-        :func:`least_squares <least_squares>`
-        :func:`sobolev_least_squares <sobolev_least_squares>`
+        :class:`~AmplitudePhaseDecomposition`
+        :class:`~LeastSquares`
+        :class:`~SobolevLeastSquares`
+        :class:`~PairwiseCorrelation`
 
     """
-    # Discretize functional data if needed
-    X, y = _to_grid(X, y, eval_points=eval_points)
 
-    # Compute correlation matrices with zeros in diagonal
-    # corrcoefs computes the correlation between vector, without weights
-    # due to the sample points
-    X_corr = np.corrcoef(X.data_matrix[..., 0])
-    np.fill_diagonal(X_corr, 0.)
+    def score_function(self, X, y):
+        """Compute the score of the transformation performed.
 
-    y_corr = np.corrcoef(y.data_matrix[..., 0])
-    np.fill_diagonal(y_corr, 0.)
+        Args:
+            X (FData): Original functional data.
+            y (Fdata): Functional data registered.
 
-    return y_corr.sum() / X_corr.sum()
+        Returns:
+            float: Score of the transformation.
+
+        """
+        _check_univariate(X)
+        _check_univariate(y)
+
+        # Discretize functional data if needed
+        X, y = _to_grid(X, y, eval_points=self.eval_points)
+
+        # Compute correlation matrices with zeros in diagonal
+        # corrcoefs computes the correlation between vector, without weights
+        # due to the sample points
+        X_corr = np.corrcoef(X.data_matrix[..., 0])
+        np.fill_diagonal(X_corr, 0.)
+
+        y_corr = np.corrcoef(y.data_matrix[..., 0])
+        np.fill_diagonal(y_corr, 0.)
+
+        return y_corr.sum() / X_corr.sum()

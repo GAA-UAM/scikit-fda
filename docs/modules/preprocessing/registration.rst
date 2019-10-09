@@ -92,11 +92,11 @@ validation of the registration procedure.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.validation.RegistrationScorer
-   skfda.preprocessing.registration.validation.mse_r_squared
-   skfda.preprocessing.registration.validation.least_squares
-   skfda.preprocessing.registration.validation.sobolev_least_squares
-   skfda.preprocessing.registration.validation.pairwise_correlation
+
+   skfda.preprocessing.registration.validation.AmplitudePhaseDecomposition
+   skfda.preprocessing.registration.validation.LeastSquares
+   skfda.preprocessing.registration.validation.SobolevLeastSquares
+   skfda.preprocessing.registration.validation.PairwiseCorrelation
 
 
 Utility functions

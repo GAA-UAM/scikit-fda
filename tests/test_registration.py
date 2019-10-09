@@ -12,6 +12,10 @@ from skfda.preprocessing.registration import (
     landmark_registration_warping, landmark_registration, ShiftRegistration)
 from skfda.exploratory.stats import mean
 from sklearn.exceptions import NotFittedError
+from skfda._utils import _check_estimator
+from skfda.preprocessing.registration.validation import \
+    (AmplitudePhaseDecomposition, LeastSquares,
+     SobolevLeastSquares, PairwiseCorrelation)
 
 
 class TestWarping(unittest.TestCase):
@@ -313,6 +317,35 @@ class TestShiftRegistration(unittest.TestCase):
     def test_custom_output_points(self):
         reg = ShiftRegistration(output_points=np.linspace(0, 1, 50))
         reg.fit_transform(self.fd)
+
+
+class TestRegistrationValidation(unittest.TestCase):
+    """Test shift registration"""
+
+    def setUp(self):
+        """Initialization of samples"""
+        self.X = make_sinusoidal_process(error_std=0, random_state=0)
+        self.shift_registration = ShiftRegistration().fit(self.X)
+
+    def test_amplitude_phase_score(self):
+        scorer = AmplitudePhaseDecomposition()
+        score = scorer(self.shift_registration, self.X)
+        np.testing.assert_almost_equal(score, 0.972000160)
+
+    def test_least_squares_score(self):
+        scorer = LeastSquares()
+        score = scorer(self.shift_registration, self.X)
+        np.testing.assert_almost_equal(score, 0.795742349)
+
+    def test_sobolev_least_squares_score(self):
+        scorer = SobolevLeastSquares()
+        score = scorer(self.shift_registration, self.X)
+        np.testing.assert_almost_equal(score, 0.762240135)
+
+    def test_pairwise_correlation(self):
+        scorer = PairwiseCorrelation()
+        score = scorer(self.shift_registration, self.X)
+        np.testing.assert_almost_equal(score, 1.816298653)
 
 
 if __name__ == '__main__':

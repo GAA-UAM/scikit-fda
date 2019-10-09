@@ -318,9 +318,8 @@ class ShiftRegistration(RegistrationTransformer):
                                  "an extrapolation method with "
                                  "restrict_domain=False or fit_predict")
 
-
         # If the template is an FData, fit doesnt learn anything
-        if  isinstance(self.template, FData):
+        if isinstance(self.template, FData):
             self.template_ = self.template
 
         else:

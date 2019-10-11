@@ -317,6 +317,11 @@ class TestRegistrationValidation(unittest.TestCase):
         score = scorer(self.shift_registration, self.X)
         np.testing.assert_almost_equal(score, 0.972000160)
 
+    def test_default_score(self):
+        
+        score = self.shift_registration.score(self.X)
+        np.testing.assert_almost_equal(score, 0.972000160)
+
     def test_least_squares_score(self):
         scorer = LeastSquares()
         score = scorer(self.shift_registration, self.X)

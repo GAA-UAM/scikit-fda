@@ -4,7 +4,7 @@ import numpy as np
 
 from ..preprocessing.registration import (
     normalize_warping, _normalize_scale, to_srsf,
-    elastic_registration_warping)
+    ElasticRegistration)
 from ..representation import FData
 from ..representation import FDataGrid
 

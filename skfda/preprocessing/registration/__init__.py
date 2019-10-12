@@ -17,7 +17,5 @@ from ._registration_utils import (invert_warping,
 
 from . import validation
 
-from ._elastic import (to_srsf, from_srsf,
-                       elastic_registration,
-                       elastic_registration_warping,
+from ._elastic import (ElasticRegistration, to_srsf, from_srsf,
                        elastic_mean, warping_mean)

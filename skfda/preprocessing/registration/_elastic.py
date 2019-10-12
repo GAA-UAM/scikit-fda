@@ -1,16 +1,19 @@
 
 
 import scipy.integrate
+from sklearn.utils.validation import check_is_fitted
+
 
 import numpy as np
 import optimum_reparam
 
+
 from . import invert_warping
-from ... import FDataGrid
+from .base import RegistrationTransformer
 from ._registration_utils import _normalize_scale
-
-
-from...representation.interpolation import SplineInterpolator
+from ... import FDataGrid
+from ..._utils import _check_univariate
+from ...representation.interpolation import SplineInterpolator
 
 
 __author__ = "Pablo Marcos Manchón"
@@ -185,127 +188,8 @@ def _elastic_alignment_array(template_data, q_data,
                    lam, grid_dim).T
 
 
-def elastic_registration_warping(fdatagrid, template=None, *, lam=0.,
-                                 eval_points=None, fdatagrid_srsf=None,
-                                 template_srsf=None, grid_dim=7, **kwargs):
-    r"""Calculate the warping to align a FDatagrid using the SRSF framework.
 
-    Let :math:`f` be a function of the functional data object wich will be
-    aligned to the template :math:`g`. Calculates the warping wich minimises
-    the Fisher-Rao distance between :math:`g` and the registered function
-    :math:`f^*(t)=f(\gamma^*(t))=f \circ \gamma^*`.
-
-    .. math::
-        \gamma^* = argmin_{\gamma \in \Gamma} d_{\lambda}(f \circ
-        \gamma, g)
-
-    Where :math:`d_{\lambda}` denotes the extended amplitude distance with a
-    penalty term, used to control the amount of warping.
-
-    .. math::
-        d_{\lambda}^2(f \circ \gamma, g) = \| SRSF(f \circ \gamma)
-        \sqrt{\dot{\gamma}} - SRSF(g)\|_{\mathbb{L}^2}^2 + \lambda
-        \mathcal{R}(\gamma)
-
-    In the implementation it is used as penalty term
-
-    .. math::
-        \mathcal{R}(\gamma) = \|\sqrt{\dot{\gamma}}- 1 \|_{\mathbb{L}^2}^2
-
-    Wich restrict the amount of elasticity employed in the alignment.
-
-    The registered function :math:`f^*(t)` can be calculated using the
-    composition :math:`f^*(t)=f(\gamma^*(t))`.
-
-    If the template is not specified it is used the Karcher mean of the set of
-    functions under the Fisher-Rao metric to perform the alignment, wich is
-    the local minimum of the sum of squares of elastic distances.
-    See :func:`elastic_mean`.
-
-    In [SK16-4-3]_ are described extensively the algorithms employed and
-    the SRSF framework.
-
-    Args:
-        fdatagrid (:class:`FDataGrid`): Functional data object to be aligned.
-        template (:class:`FDataGrid`, optional): Template to align the curves.
-            Can contain 1 sample to align all the curves to it or the same
-            number of samples than the fdatagrid. By default it is used the
-            elastic mean.
-        lam (float, optional): Controls the amount of elasticity.
-            Defaults to 0.
-        eval_points (array_like, optional): Set of points where the
-            functions are evaluated, by default uses the sample points of the
-            fdatagrid.
-        fdatagrid_srsf (:class:`FDataGrid`, optional): SRSF of the fdatagrid,
-            may be passed to avoid repeated calculation.
-        template_srsf (:class:`FDataGrid`, optional): SRSF of the template,
-            may be passed to avoid repeated calculation.
-        grid_dim (int, optional): Dimension of the grid used in the alignment
-            algorithm. Defaults 7.
-        **kwargs: Named arguments to be passed to :func:`elastic_mean`.
-
-    Returns:
-        (:class:`FDataGrid`): Warping to align the given fdatagrid to the
-        template.
-
-    Raises:
-        ValueError: If functions are multidimensional or the number of samples
-            are different.
-
-    References:
-        ..  [SK16-4-3] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
-            and shape data analysis. In *Functional Data and Elastic
-            Registration* (pp. 73-122). Springer.
-
-    """
-
-    # Check of params
-    if fdatagrid.dim_domain != 1 or fdatagrid.dim_codomain != 1:
-
-        raise ValueError("Not supported multidimensional functional objects.")
-
-    if template is None:
-        template = elastic_mean(fdatagrid, lam=lam, eval_points=eval_points,
-                                **kwargs)
-
-    elif ((template.n_samples != 1 and template.n_samples != fdatagrid.n_samples)
-          or template.dim_domain != 1 or template.dim_codomain != 1):
-
-        raise ValueError("The template should contain one sample to align all"
-                         "the curves to the same function or the same number "
-                         "of samples than the fdatagrid")
-
-    # Construction of srsfs
-    if fdatagrid_srsf is None:
-        fdatagrid_srsf = to_srsf(fdatagrid, eval_points=eval_points)
-
-    if template_srsf is None:
-        template_srsf = to_srsf(template, eval_points=eval_points)
-
-    if eval_points is None:
-        eval_points = fdatagrid_srsf.sample_points[0]
-
-    # Discretizacion in evaluation points
-    q_data = fdatagrid_srsf(eval_points, keepdims=False).squeeze()
-    template_data = template_srsf(eval_points, keepdims=False).squeeze()
-
-    # Values of the warping
-    gamma = _elastic_alignment_array(template_data, q_data,
-                                     _normalize_scale(eval_points),
-                                     lam, grid_dim)
-
-    # Normalize warping to original interval
-    gamma = _normalize_scale(gamma, a=eval_points[0], b=eval_points[-1])
-
-    # Interpolator
-    interpolator = SplineInterpolator(interpolation_order=3, monotone=True)
-
-    return FDataGrid(gamma, eval_points, interpolator=interpolator)
-
-
-def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
-                         fdatagrid_srsf=None, template_srsf=None, grid_dim=7,
-                         **kwargs):
+class ElasticRegistration(RegistrationTransformer):
     r"""Align a FDatagrid using the SRSF framework.
 
     Let :math:`f` be a function of the functional data object wich will be
@@ -336,39 +220,34 @@ def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
     composition :math:`f^*(t)=f(\gamma^*(t))`.
 
     If the template is not specified it is used the Karcher mean of the set of
-    functions under the elastic metric to perform the alignment, wich is
-    the local minimum of the sum of squares of elastic distances.
-    See :func:`elastic_mean`.
+    functions under the elastic metric to perform the alignment, also known as
+    `elastic mean`, wich is the local minimum of the sum of squares of elastic
+    distances. See :func:`elastic_mean`.
 
     In [SK16-4-2]_ are described extensively the algorithms employed and
     the SRSF framework.
 
     Args:
-        fdatagrid (:class:`FDataGrid`): Functional data object to be aligned.
-        template (:class:`FDataGrid`, optional): Template to align the curves.
-            Can contain 1 sample to align all the curves to it or the same
-            number of samples than the fdatagrid. By default it is used the
-            elastic mean.
-        lam (float, optional): Controls the amount of elasticity.
+        template (str, :class:`FDataGrid` or callable, optional): Template to
+            align the curves. Can contain 1 sample to align all the curves to
+            it or the same number of samples than the fdatagrid. By default
+            `elastic mean`, in which case :func:`elastic_mean` is called.
+        penalty_term (float, optional): Controls the amount of elasticity.
             Defaults to 0.
-        eval_points (array_like, optional): Set of points where the
+        output_points (array_like, optional): Set of points where the
             functions are evaluated, by default uses the sample points of the
-            fdatagrid.
-        fdatagrid_srsf (:class:`FDataGrid`, optional): SRSF of the fdatagrid,
-            may be passed to avoid repeated calculation.
-        template_srsf (:class:`FDataGrid`, optional): SRSF of the template,
-            may be passed to avoid repeated calculation.
-        grid_dim (int, optional): Dimension of the grid used in the alignment
-            algorithm. Defaults 7.
-        **kwargs: Named arguments to be passed to :func:`elastic_mean`.
+            fdatagrid which will be transformed.
+        grid_dim (int, optional): Dimension of the grid used in the DP
+            alignment algorithm. Defaults 7.
+        **kwargs: Named arguments to be passed to be passed to the callable
+            which constructs the template or to :func:`elastic_mean` by
+            default.
 
-    Returns:
-        (:class:`FDataGrid`): FDatagrid with the samples aligned to the
-            template.
-
-    Raises:
-        ValueError: If functions are multidimensional or the number of samples
-            are different.
+    Attributes:
+        template_ (:class:`FDataGrid`): Template learned during fitting,
+            used for alignment in :meth:`transform`.
+        warping_ (:class:`FDataGrid`): Warping applied during the last
+            transformation.
 
     References:
         ..  [SK16-4-2] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
@@ -376,18 +255,143 @@ def elastic_registration(fdatagrid, template=None, *, lam=0., eval_points=None,
             Registration* (pp. 73-122). Springer.
 
     """
+    def __init__(self, template="elastic mean", penalty=0., output_points=None,
+                 grid_dim=7, **kwargs):
+        """Initializes the registration transformer"""
 
-    # Calculates corresponding set of warpings
-    warping = elastic_registration_warping(fdatagrid,
-                                           template=template,
-                                           lam=lam,
-                                           eval_points=eval_points,
-                                           fdatagrid_srsf=fdatagrid_srsf,
-                                           template_srsf=template_srsf,
-                                           grid_dim=grid_dim,
-                                           **kwargs)
+        self.template = template
+        self.penalty = penalty
+        self.output_points = output_points
+        self.grid_dim = grid_dim
+        self.kwargs = kwargs
 
-    return fdatagrid.compose(warping, eval_points=eval_points)
+    def fit(self, X: FDataGrid=None, y=None):
+        """Fit the transformer.
+
+        Learns the template used during the transformation.
+
+        Args:
+            X (FDataGrid, optionl): Functional samples used as training
+                samples. If the template provided it is an FDataGrid this
+                samples are it is not need to construct the template from the
+                samples and this argument is ignored.
+            y (Ignored): Present for API conventions.
+
+        Returns:
+            RegistrationTransformer: self.
+
+        """
+        if isinstance(self.template, FDataGrid):
+            self.template_ = self.template # Template already constructed
+        elif X is None:
+            raise ValueError("Must be provided a dataset X to construct the "
+                             "template.")
+        elif self.template == "elastic mean":
+            self.template_ = elastic_mean(X, **self.kwargs)
+        else:
+            self.template_ = self.template(X, **self.kwargs)
+
+        # Constructs the SRSF of the template
+        self._template_srsf = to_srsf(self.template_,
+                                      eval_points=self.output_points)
+        return self
+
+
+    def transform(self, X: FDataGrid, y=None):
+        """Apply elastic registration to the data.
+
+        Args:
+            X (:class:`FDataGrid`): Functional data to be registered.
+            y (ignored):
+
+        Returns:
+            :class:`FDataGrid`: Registered samples.
+
+        """
+        check_is_fitted(self, '_template_srsf')
+        _check_univariate(X)
+
+        if (len(self._template_srsf) != 1 and
+            len(fdatagrid) != len(self._template_srsf)):
+
+            raise ValueError("The template should contain one sample to align "
+                             "all the curves to the same function or the "
+                             "same number of samples than X.")
+
+
+        fdatagrid_srsf = to_srsf(X, eval_points=self.output_points)
+
+        # Points of discretization
+        if self.output_points is None:
+            output_points = fdatagrid_srsf.sample_points[0]
+        else:
+            output_points = self.output_points
+
+        # Discretizacion in evaluation points
+        q_data = fdatagrid_srsf(output_points, keepdims=False).squeeze()
+        template_data = self._template_srsf(output_points, keepdims=False).squeeze()
+
+        if q_data.shape[0] == 1:
+            q_data = q_data[0]
+
+        if template_data.shape[0] == 1:
+            template_data = template_data[0]
+
+        # Values of the warping
+        gamma = _elastic_alignment_array(template_data, q_data,
+                                         _normalize_scale(output_points),
+                                         self.penalty, self.grid_dim)
+
+        # Normalize warping to original interval
+        gamma = _normalize_scale(
+            gamma, a=output_points[0], b=output_points[-1])
+
+        # Interpolator
+        interpolator = SplineInterpolator(interpolation_order=3, monotone=True)
+
+        self.warping_ = FDataGrid(gamma, output_points,
+                                  interpolator=interpolator)
+
+
+        return X.compose(self.warping_, eval_points=output_points)
+
+    def inverse_transform(self, X: FDataGrid):
+        r"""Reverse the registration procedure previosly applied.
+
+        Let :math:`gamma(t)` the warping applied to construct a registered
+        functional datum :math:`f^*(t)=f(\gamma(t))`.
+
+        Given a functional datum :math:`f^*(t) it is computed
+        :math:`\gamma^{-1}(t)` to reverse the registration procedure
+        :math:`f(t)=f^*(\gamma^{-1}(t))`.
+
+        Args:
+            X (:class:`FDataGrid`): Functional data to apply the reverse
+                transform.
+
+        Returns:
+            :class:`FDataGrid`: Functional data compose by the inverse warping.
+
+        Raises:
+            ValueError: If the warpings :math:`\gamma` were not build via
+            :meth:`transform` or if the number of samples of `X` os different
+            than the number of samples of the dataset previosly transformed.
+
+        See also:
+            :func:`invert_warping`
+
+        """
+        if not hasattr(self, 'warping_'):
+            raise ValueError("Data must be previosly transformed to apply the "
+                             "inverse transform")
+        elif len(X) != len(self.warping_):
+            raise ValueError("Data must contain the same number of samples "
+                             "than the dataset previously transformed")
+
+        inverse_warping = invert_warping(self.warping_)
+
+        return X.compose(inverse_warping, eval_points=self.output_points)
+
 
 
 def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,

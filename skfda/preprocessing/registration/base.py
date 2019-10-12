@@ -8,6 +8,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from ... import FData
 
 class RegistrationTransformer(ABC, BaseEstimator, TransformerMixin):
+    """Base class for the registration methods."""
 
     def score(self, X: FData, y=None):
         r"""Returns the percentage of total variation removed.
@@ -26,7 +27,7 @@ class RegistrationTransformer(ABC, BaseEstimator, TransformerMixin):
 
         Args:
             X (FData): Functional data to be registered
-            y : Ignored
+            y (Ignored): Ignored, only for API conventions.
 
         Returns:
             float.

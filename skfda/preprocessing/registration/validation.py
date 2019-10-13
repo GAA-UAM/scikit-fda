@@ -3,7 +3,7 @@
 import numpy as np
 from typing import NamedTuple
 
-from ..._utils import _check_univariate, _to_grid
+from ..._utils import check_is_univariate, _to_grid
 
 
 class RegistrationScorer():
@@ -267,8 +267,8 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         """
         from scipy.integrate import simps
 
-        _check_univariate(X)
-        _check_univariate(y)
+        check_is_univariate(X)
+        check_is_univariate(y)
 
         if len(y) != len(X):
             raise ValueError(f"the registered and unregistered curves must have "
@@ -433,8 +433,8 @@ class LeastSquares(AmplitudePhaseDecomposition):
         """
         from ...misc.metrics import pairwise_distance, lp_distance
 
-        _check_univariate(X)
-        _check_univariate(y)
+        check_is_univariate(X)
+        check_is_univariate(y)
 
         X, y = _to_grid(X, y, eval_points=self.eval_points)
 
@@ -547,8 +547,8 @@ class SobolevLeastSquares(RegistrationScorer):
         """
         from ...misc.metrics import pairwise_distance, lp_distance
 
-        _check_univariate(X)
-        _check_univariate(y)
+        check_is_univariate(X)
+        check_is_univariate(y)
 
         # Compute derivative
         X = X.derivative()
@@ -644,8 +644,8 @@ class PairwiseCorrelation(RegistrationScorer):
             float: Score of the transformation.
 
         """
-        _check_univariate(X)
-        _check_univariate(y)
+        check_is_univariate(X)
+        check_is_univariate(y)
 
         # Discretize functional data if needed
         X, y = _to_grid(X, y, eval_points=self.eval_points)

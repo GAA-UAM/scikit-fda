@@ -12,7 +12,7 @@ from . import invert_warping
 from .base import RegistrationTransformer
 from ._registration_utils import _normalize_scale
 from ... import FDataGrid
-from ..._utils import _check_univariate
+from ..._utils import check_is_univariate
 from ...representation.interpolation import SplineInterpolator
 
 
@@ -309,7 +309,7 @@ class ElasticRegistration(RegistrationTransformer):
 
         """
         check_is_fitted(self, '_template_srsf')
-        _check_univariate(X)
+        check_is_univariate(X)
 
         if (len(self._template_srsf) != 1 and
             len(X) != len(self._template_srsf)):
@@ -328,8 +328,8 @@ class ElasticRegistration(RegistrationTransformer):
             output_points = self.output_points
 
         # Discretizacion in evaluation points
-        q_data = fdatagrid_srsf(output_points, keepdims=False).squeeze()
-        template_data = self._template_srsf(output_points, keepdims=False).squeeze()
+        q_data = fdatagrid_srsf(output_points, keepdims=False)
+        template_data = self._template_srsf(output_points, keepdims=False)
 
         if q_data.shape[0] == 1:
             q_data = q_data[0]
@@ -374,8 +374,31 @@ class ElasticRegistration(RegistrationTransformer):
 
         Raises:
             ValueError: If the warpings :math:`\gamma` were not build via
-            :meth:`transform` or if the number of samples of `X` os different
+            :meth:`transform` or if the number of samples of `X` is different
             than the number of samples of the dataset previosly transformed.
+
+        Examples:
+
+            Center the datasets taking into account the misalignment.
+
+            >>> from skfda.preprocessing.registration import \
+            ...                                             ElasticRegistration
+            >>> from skfda.datasets import make_multimodal_samples
+            >>> X = make_multimodal_samples(random_state=0)
+
+            Registration of the dataset.
+
+            >>> elastic_registration = ElasticRegistration()
+            >>> X = elastic_registration.fit_transform(X)
+
+            Substract the elastic mean build as template during the
+            registration and reverse the transformation.
+
+            >>> X = X - elastic_registration.template_
+            >>> X_center = elastic_registration.inverse_transform(X)
+            >>> X_center
+            FDataGrid(...)
+
 
         See also:
             :func:`invert_warping`

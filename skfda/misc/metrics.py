@@ -482,23 +482,22 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
                          domain_range=(0, 1))
 
-    fdata1_srsf = to_srsf(fdata1)
-    fdata2_srsf = to_srsf(fdata2)
+    #fdata1_srsf = to_srsf(fdata1)
+    #fdata2_srsf = to_srsf(fdata2)
 
-    warping = elastic_registration_warping(fdata1,
-                                           template=fdata2,
-                                           lam=lam,
-                                           val_points=eval_points_normalized,
-                                           fdatagrid_srsf=fdata1_srsf,
-                                           template_srsf=fdata2_srsf,
-                                           **kwargs)
+    elastic_registration = ElasticRegistration(template=fdata2,
+                                               penalty=lam,
+                                               output_points=eval_points_normalized,
+                                               **kwargs)
 
-    fdata1_reg = fdata1.compose(warping)
 
-    distance = lp_distance(to_srsf(fdata1_reg), fdata2_srsf)
+    fdata1_reg = elastic_registration.fit_transform(fdata1)
+
+    distance = lp_distance(to_srsf(fdata1_reg), to_srsf(fdata2))
 
     if lam != 0.0:
         # L2 norm || sqrt(Dh) - 1 ||^2
+        warping = elastic_registration.warping_
         penalty = warping(eval_points_normalized, derivative=1,
                           keepdims=False)[0]
         penalty = np.sqrt(penalty, out=penalty)
@@ -564,14 +563,15 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
                          domain_range=(0, 1))
 
-    warping = elastic_registration_warping(fdata1,
-                                           template=fdata2,
-                                           lam=lam,
-                                           eval_points=eval_points_normalized,
-                                           **kwargs)
+    elastic_registration = ElasticRegistration(penalty=lam, template=fdata2,
+                                               output_points=eval_points_normalized)
 
-    derivative_warping = warping(eval_points_normalized, keepdims=False,
-                                 derivative=1)[0]
+    elastic_registration.fit_transform(fdata1)
+
+
+    derivative_warping = elastic_registration.warping_(eval_points_normalized,
+                                                       keepdims=False,
+                                                       derivative=1)[0]
 
     derivative_warping = np.sqrt(derivative_warping, out=derivative_warping)
 

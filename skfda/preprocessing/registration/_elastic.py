@@ -312,7 +312,7 @@ class ElasticRegistration(RegistrationTransformer):
         _check_univariate(X)
 
         if (len(self._template_srsf) != 1 and
-            len(fdatagrid) != len(self._template_srsf)):
+            len(X) != len(self._template_srsf)):
 
             raise ValueError("The template should contain one sample to align "
                              "all the curves to the same function or the "

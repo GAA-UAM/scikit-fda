@@ -7,11 +7,10 @@ from skfda.datasets import make_multimodal_samples
 from skfda.misc.metrics import (fisher_rao_distance, amplitude_distance,
                                 phase_distance, pairwise_distance, lp_distance,
                                 warping_distance)
-from skfda.preprocessing.registration import (
-    ElasticRegistration,
-    invert_warping, normalize_warping, elastic_mean)
-
-from skfda.preprocessing.registration.elastic import SRSF
+from skfda.preprocessing.registration import (ElasticRegistration,
+                                              invert_warping,
+                                              normalize_warping)
+from skfda.preprocessing.registration.elastic import SRSF, elastic_mean
 
 metric = pairwise_distance(lp_distance)
 pairwise_fisher_rao = pairwise_distance(fisher_rao_distance)
@@ -55,6 +54,22 @@ class TestElasticRegistration(unittest.TestCase):
                         [-0.83464009], [-0.23449228], [0.]]]
 
         np.testing.assert_almost_equal(data_matrix, srsf.data_matrix)
+
+    def test_from_srsf_with_output_points(self):
+        """Test from srsf"""
+
+        # Checks SRSF conversion
+        srsf_transformer = SRSF(
+            store_initial=False,
+            output_points=self.dummy_sample.sample_points[0])
+        srsf = srsf_transformer.inverse_transform(self.dummy_sample)
+
+        data_matrix = [[[0.], [-0.23449228], [-0.83464009],
+                        [-1.38200046], [-1.55623723], [-1.38200046],
+                        [-0.83464009], [-0.23449228], [0.]]]
+
+        np.testing.assert_almost_equal(data_matrix, srsf.data_matrix)
+
 
     def test_srsf_conversion(self):
         """Converts to srsf and pull backs"""
@@ -107,6 +122,19 @@ class TestElasticRegistration(unittest.TestCase):
 
         np.testing.assert_allclose(values, expected, atol=1e-4)
 
+    def test_callable_alignment(self):
+        """Test alignment by default"""
+        # Should give same result than test_template_alignment
+        reg = ElasticRegistration(template=elastic_mean)
+        register = reg.fit_transform(self.unimodal_samples)
+
+        values = register([-.25, -.1, 0, .1, .25])
+        expected = [[0.6607, 0.9974, 0.7722, 0.3636, 0.0459],
+                    [0.6407, 0.9982, 0.7916, 0.3822, 0.0501],
+                    [0.6472, 0.9976, 0.7859, 0.3766, 0.0488]]
+
+        np.testing.assert_allclose(values, expected, atol=1e-4)
+
     def test_simetry_of_aligment(self):
         """Check registration using inverse composition"""
         reg = ElasticRegistration(template=self.template)
@@ -117,6 +145,34 @@ class TestElasticRegistration(unittest.TestCase):
         distances = np.diag(metric(self.unimodal_samples, register))
 
         np.testing.assert_allclose(distances, 0, atol=12e-3)
+
+    def test_raises(self):
+        reg = ElasticRegistration()
+
+        # X not in fit, but template is not an FDataGrid
+        with np.testing.assert_raises(ValueError):
+            reg.fit()
+
+        # Inverse transform without previous transform
+        with np.testing.assert_raises(ValueError):
+            reg.inverse_transform(self.unimodal_samples)
+
+        # Inverse transform with different number of samples than transform
+        reg.fit_transform(self.unimodal_samples)
+        with np.testing.assert_raises(ValueError):
+            reg.inverse_transform(self.unimodal_samples[0])
+
+        # FDataGrid as template with n != 1 and n!= n_samples to transform
+        reg = ElasticRegistration(template=self.unimodal_samples)
+        with np.testing.assert_raises(ValueError):
+            reg.transform(self.unimodal_samples[0])
+
+    def test_score(self):
+        """Test score method of the transformer"""
+        reg = ElasticRegistration()
+        reg.fit(self.unimodal_samples)
+        score =reg.score(self.unimodal_samples)
+        np.testing.assert_almost_equal(score, 0.9997604452)
 
 
 class TestElasticDistances(unittest.TestCase):

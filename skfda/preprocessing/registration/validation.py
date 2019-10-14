@@ -285,7 +285,7 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
                 eval_points = y.sample_points[0]
 
             except AttributeError:
-                nfine = max(y.basis.nbasis * 10 + 1, 201)
+                nfine = max(y.basis.n_basis * 10 + 1, 201)
                 eval_points = np.linspace(*y.domain_range[0], nfine)
         else:
             eval_points = np.asarray(self.eval_points)

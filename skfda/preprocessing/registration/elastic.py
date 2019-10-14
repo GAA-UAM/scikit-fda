@@ -481,7 +481,7 @@ class ElasticRegistration(RegistrationTransformer):
         return X.compose(inverse_warping, eval_points=self.output_points)
 
 
-def warping_mean(warping, *, iter=100, tol=1e-5, step_size=.3):
+def warping_mean(warping, *, iter=100, tol=1e-6, step_size=.3):
     r"""Compute the karcher mean of a set of warpings.
 
     Let :math:`\gamma_i i=1...n` be a set of warping functions
@@ -557,12 +557,12 @@ def warping_mean(warping, *, iter=100, tol=1e-5, step_size=.3):
         # Compute shooting vectors
         for i in range(len(warping)):
             psi_i = psi[i]
-            #print(Psi.shape, psi.shape)
+
             inner = scipy.integrate.simps(mu*psi_i, x=eval_points)
-            #print(tmp)
+
             if inner > 1:
                 inner = 1
-            if inner < -1:
+            elif inner < -1:
                 inner = -1
 
             theta = np.arccos(inner)

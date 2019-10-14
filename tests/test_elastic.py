@@ -116,9 +116,9 @@ class TestElasticRegistration(unittest.TestCase):
         register = reg.fit_transform(self.unimodal_samples)
 
         values = register([-.25, -.1, 0, .1, .25])
-        expected = [[0.6607, 0.9974, 0.7722, 0.3636, 0.0459],
-                    [0.6407, 0.9982, 0.7916, 0.3822, 0.0501],
-                    [0.6472, 0.9976, 0.7859, 0.3766, 0.0488]]
+        expected = [[0.623701, 0.997427, 0.772248, 0.390317, 0.064725],
+                    [0.639201, 0.997155, 0.791649, 0.382181, 0.050098],
+                    [0.63332 , 0.997369, 0.785886, 0.376556, 0.048804]]
 
         np.testing.assert_allclose(values, expected, atol=1e-4)
 
@@ -129,9 +129,9 @@ class TestElasticRegistration(unittest.TestCase):
         register = reg.fit_transform(self.unimodal_samples)
 
         values = register([-.25, -.1, 0, .1, .25])
-        expected = [[0.6607, 0.9974, 0.7722, 0.3636, 0.0459],
-                    [0.6407, 0.9982, 0.7916, 0.3822, 0.0501],
-                    [0.6472, 0.9976, 0.7859, 0.3766, 0.0488]]
+        expected = [[0.623701, 0.997427, 0.772248, 0.390317, 0.064725],
+                    [0.639201, 0.997155, 0.791649, 0.382181, 0.050098],
+                    [0.63332 , 0.997369, 0.785886, 0.376556, 0.048804]]
 
         np.testing.assert_allclose(values, expected, atol=1e-4)
 
@@ -172,7 +172,7 @@ class TestElasticRegistration(unittest.TestCase):
         reg = ElasticRegistration()
         reg.fit(self.unimodal_samples)
         score =reg.score(self.unimodal_samples)
-        np.testing.assert_almost_equal(score, 0.9997604452)
+        np.testing.assert_almost_equal(score, 0.999666175)
 
 
 class TestElasticDistances(unittest.TestCase):

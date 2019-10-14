@@ -11,7 +11,7 @@ import optimum_reparam
 
 from . import invert_warping
 from .base import RegistrationTransformer
-from ._registration_utils import _normalize_scale
+from ._warping import _normalize_scale
 from ... import FDataGrid
 from ..._utils import check_is_univariate
 from ...representation.interpolation import SplineInterpolator
@@ -481,9 +481,7 @@ class ElasticRegistration(RegistrationTransformer):
         return X.compose(inverse_warping, eval_points=self.output_points)
 
 
-
-def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1.,
-                 return_shooting=False):
+def warping_mean(warping, *, iter=100, tol=1e-5, step_size=.3):
     r"""Compute the karcher mean of a set of warpings.
 
     Let :math:`\gamma_i i=1...n` be a set of warping functions
@@ -510,8 +508,6 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1.,
             Defaults to 1e-5.
         step_size (float): Step size :math:`\epsilon` used to update the mean.
             Default to 1.
-        shooting (boolean): If true it is returned a tuple with the mean and
-            the shooting vectors, otherwise only the mean is returned.
 
     Return:
         (:class:`FDataGrid`) Fdatagrid with the mean of the warpings. If
@@ -532,61 +528,66 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1.,
     eval_points = warping.sample_points[0]
     original_eval_points = eval_points
 
+    # Rescale warping to (0, 1)
     if warping.sample_points[0][0] != 0 or warping.sample_points[0][-1] != 1:
 
         eval_points = _normalize_scale(eval_points)
         warping = FDataGrid(_normalize_scale(warping.data_matrix[..., 0]),
                             _normalize_scale(warping.sample_points[0]))
 
+    # Compute srsf of warpings and their mean
     srsf = SRSF(output_points=eval_points, store_initial=False)
-    psi = srsf.fit_transform(warping).data_matrix[..., 0].T
-    mu = srsf.fit_transform(warping.mean()).data_matrix[0]
+    psi = srsf.fit_transform(warping)
 
-    dot_aux = np.empty(psi.shape)
+    # Find psi closest to the mean
+    psi_centered = psi - srsf.fit_transform(warping.mean())
+    psi_data = psi_centered.data_matrix[..., 0]
+    np.square(psi_data, out=psi_data)
+    d = psi_data.sum(axis=1).argmin()
 
-    n_points = mu.shape[0]
+    # Get raw values to calculate
+    mu = psi[d].data_matrix[0,..., 0]
+    psi = psi.data_matrix[..., 0]
+    vmean = np.empty((1, len(eval_points)))
 
-    sine = np.empty((warping.n_samples, 1))
-
+    # Construction of shooting vectors
     for _ in range(iter):
-        # Dot product
-        # <psi, mu> = S psi(t) mu(t) dt
-        dot = scipy.integrate.simps(np.multiply(psi, mu, out=dot_aux),
-                                    eval_points, axis=0)
 
-        # Theorically is not possible (Cauchy–Schwarz inequallity), but due to
-        # numerical approximation could be greater than 1
-        dot[dot < -1] = -1
-        dot[dot > 1] = 1
-        theta = np.arccos(dot)[:, np.newaxis]
+        vmean[0] = 0.
+        # Compute shooting vectors
+        for i in range(len(warping)):
+            psi_i = psi[i]
+            #print(Psi.shape, psi.shape)
+            inner = scipy.integrate.simps(mu*psi_i, x=eval_points)
+            #print(tmp)
+            if inner > 1:
+                inner = 1
+            if inner < -1:
+                inner = -1
 
-        # Be carefully with tangent vectors and division by 0
-        idx = theta[:, 0] > tol
-        sine[idx] = theta[idx] / np.sin(theta[idx])
-        sine[~idx] = 0.
+            theta = np.arccos(inner)
 
-        # compute shooting vector
-        cos_theta = np.repeat(np.cos(theta), n_points, axis=1)
-        shooting = np.multiply(sine, (psi - np.multiply(cos_theta.T, mu)).T)
+            if theta > 1e-10:
+                vmean += theta / np.sin(theta) * (psi_i - np.cos(theta)*mu)
 
         # Mean of shooting vectors
-        vmean = shooting.mean(axis=0, keepdims=True)
-        v_norm = scipy.integrate.simps(np.square(vmean[0]))**(.5)
+        vmean /= warping.n_samples
+        v_norm = np.sqrt(scipy.integrate.simps(np.square(vmean)))
 
         # Convergence criterion
         if v_norm < tol:
             break
 
-        # Update of mu
-        mu *= np.cos(step_size * v_norm)
-        vmean += np.sin(step_size * v_norm) / v_norm
-        mu += vmean.T
+        # Calculate exponential map of mu
+        a = np.cos(step_size*v_norm)
+        b = np.sin(step_size*v_norm) / v_norm
+        mu =  a * mu +  b * vmean
 
     # Recover mean in original gamma space
-    warping_mean = scipy.integrate.cumtrapz(np.square(mu, out=mu)[:, 0],
+    warping_mean = scipy.integrate.cumtrapz(np.square(mu, out=mu)[0],
                                             x=eval_points, initial=0)
 
-    # Affine traslation
+    # Affine traslation to original scale
     warping_mean = _normalize_scale(warping_mean,
                                     a=original_eval_points[0],
                                     b=original_eval_points[-1])
@@ -596,11 +597,6 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1.,
 
     mean = FDataGrid([warping_mean], sample_points=original_eval_points,
                      interpolator=monotone_interpolator)
-
-    # Shooting vectors are used in models based in the amplitude-phase
-    # decomposition under this metric.
-    if return_shooting:
-        return mean, shooting
 
     return mean
 
@@ -731,7 +727,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, iter=20, tol=1e-3,
 
     if center:
         # Gamma mean in Hilbert Sphere
-        mean_normalized = warping_mean(gammas, return_shooting=False, **kwargs)
+        mean_normalized = warping_mean(gammas, **kwargs)
 
         gamma_mean = FDataGrid(_normalize_scale(
             mean_normalized.data_matrix[..., 0],

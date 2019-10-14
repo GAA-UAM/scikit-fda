@@ -9,6 +9,8 @@ from scipy.interpolate import PchipInterpolator
 
 import numpy as np
 
+from ..._utils import check_is_univariate
+
 
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"
@@ -66,8 +68,7 @@ def invert_warping(fdatagrid, *, eval_points=None):
 
     """
 
-    if fdatagrid.dim_codomain != 1 or fdatagrid.dim_domain != 1:
-        raise ValueError("Multidimensional object not supported.")
+    check_is_univariate(fdatagrid)
 
     if eval_points is None:
         eval_points = fdatagrid.sample_points[0]

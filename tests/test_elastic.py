@@ -8,8 +8,10 @@ from skfda.misc.metrics import (fisher_rao_distance, amplitude_distance,
                                 phase_distance, pairwise_distance, lp_distance,
                                 warping_distance)
 from skfda.preprocessing.registration import (
-    to_srsf, from_srsf, ElasticRegistration,
+    ElasticRegistration,
     invert_warping, normalize_warping, elastic_mean)
+
+from skfda.preprocessing.registration.elastic import SRSF
 
 metric = pairwise_distance(lp_distance)
 pairwise_fisher_rao = pairwise_distance(fisher_rao_distance)
@@ -33,7 +35,8 @@ class TestElasticRegistration(unittest.TestCase):
     def test_to_srsf(self):
         """Test to srsf"""
         # Checks SRSF conversion
-        srsf = to_srsf(self.dummy_sample)
+
+        srsf = SRSF().fit_transform(self.dummy_sample)
 
         data_matrix = [[[-0.92155896], [-0.75559027], [0.25355399],
                         [0.81547327], [0.95333713], [0.81547327],
@@ -45,7 +48,7 @@ class TestElasticRegistration(unittest.TestCase):
         """Test from srsf"""
 
         # Checks SRSF conversion
-        srsf = from_srsf(self.dummy_sample)
+        srsf = SRSF(store_initial=False).inverse_transform(self.dummy_sample)
 
         data_matrix = [[[0.], [-0.23449228], [-0.83464009],
                         [-1.38200046], [-1.55623723], [-1.38200046],
@@ -55,8 +58,11 @@ class TestElasticRegistration(unittest.TestCase):
 
     def test_srsf_conversion(self):
         """Converts to srsf and pull backs"""
-        initial = self.unimodal_samples(-1)
-        converted = from_srsf(to_srsf(self.unimodal_samples), initial=initial)
+
+        srsf = SRSF()
+
+        converted = srsf.fit_transform(self.unimodal_samples)
+        converted = srsf.inverse_transform(converted)
 
         # Distances between original samples and s -> to_srsf -> from_srsf
         distances = np.diag(metric(converted, self.unimodal_samples))

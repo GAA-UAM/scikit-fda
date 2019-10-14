@@ -6,7 +6,7 @@ from .grid import FDataGrid
 
 class EvaluationTransformer(BaseEstimator, TransformerMixin):
     r"""
-    Transformer returning the coefficients of FDataBasis objects as a matrix.
+    Transformer returning the evaluations of FData objects as a matrix.
 
     Args:
         eval_points (array_like): List of points where the functions are

@@ -14,9 +14,9 @@ import scipy.stats.mstats
 
 import numpy as np
 
-from . import FData
 from . import basis as fdbasis
 from .._utils import _list_of_arrays, constants
+from ._functional_data import FData
 from .interpolation import SplineInterpolator
 
 

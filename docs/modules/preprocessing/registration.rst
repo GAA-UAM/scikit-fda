@@ -31,7 +31,7 @@ takes all the times of a given feature into a common value.
 
 The simplest case in which each sample presents a unique landmark can be solved
 by performing a translation in the time scale. See the
-`Landmark Shift Example <../auto_examples/plot_landmark_shift.html>`_.
+:ref:`sphx_glr_auto_examples_plot_landmark_shift.py` example..
 
 .. autosummary::
    :toctree: autosummary
@@ -42,8 +42,7 @@ by performing a translation in the time scale. See the
 
 The general case of landmark registration may present multiple landmarks for
 each sample and a non-linear transformation in the time scale should be applied.
-See the `Landmark Registration Example
-<../auto_examples/plot_landmark_registration.html>`_
+See the :ref:`sphx_glr_auto_examples_plot_landmark_registration.py` example.
 
 .. autosummary::
    :toctree: autosummary
@@ -57,16 +56,15 @@ Elastic Registration
 
 The elastic registration is a novel approach to this problem that uses the
 properties of the Fisher-Rao metric to perform the alignment of the curves.
-In the examples of `pairwise alignment
-<../auto_examples/plot_pairwise_alignment.html>`_ and `elastic registration
-<../auto_examples/plot_elastic_registration.html>`_ is shown a brief
+In the examples of
+:ref:`sphx_glr_auto_examples_plot_pairwise_alignment.py` and
+:ref:`sphx_glr_auto_examples_plot_elastic_registration.py` is shown a brief
 introduction to this topic along the usage of the corresponding functions.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.elastic_registration
-   skfda.preprocessing.registration.elastic_registration_warping
+   skfda.preprocessing.registration.ElasticRegistration
 
 
 The module contains some routines related with the elastic registration, making
@@ -76,11 +74,9 @@ on the elastic framework.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.elastic_mean
-   skfda.preprocessing.registration.warping_mean
-   skfda.preprocessing.registration.to_srsf
-   skfda.preprocessing.registration.from_srsf
-
+   skfda.preprocessing.registration.elastic.elastic_mean
+   skfda.preprocessing.registration.elastic.warping_mean
+   skfda.preprocessing.registration.elastic.SRSF
 
 
 Validation
@@ -99,11 +95,11 @@ validation of the registration procedure.
    skfda.preprocessing.registration.validation.PairwiseCorrelation
 
 
-Utility functions
+Warping utils
 -----------------
 
-There are some other method related with the registration problem in this
-module.
+There module contains some functions related with the warping of functional
+data.
 
 .. autosummary::
    :toctree: autosummary

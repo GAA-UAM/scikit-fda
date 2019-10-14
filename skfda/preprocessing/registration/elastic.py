@@ -97,6 +97,7 @@ class SRSF(BaseEstimator, TransformerMixin):
     """
     def __init__(self, output_points=None, store_initial=True):
         """Initializes the transformer.
+
         Args:
             eval_points: (array_like, optional): Set of points where the
                 functions are evaluated, by default uses the sample points of
@@ -112,13 +113,17 @@ class SRSF(BaseEstimator, TransformerMixin):
 
     def fit(self, X: FDataGrid):
         """Fits the transformer.
+
         Stores the initial value of the functions to be transformed, in order
         to apply its inverse transform.
+
         Args:
             X (:class:`FDataGrid <skfda.FDataGrid`): Functional data to be
                 transformed.
+
         Returns:
             (Estimator): self
+
         """
         check_is_univariate(X)
 
@@ -130,16 +135,23 @@ class SRSF(BaseEstimator, TransformerMixin):
 
     def transform(self, X: FDataGrid):
         r"""Computes the square-root slope function (SRSF) transform.
+
         Let :math:`f : [a,b] \rightarrow \mathbb{R}` be an absolutely continuous
         function, the SRSF transform is defined as [SK16-4-6-1]_:
+
         .. math::
+
             SRSF(f(t)) = sgn(f(t)) \sqrt{\dot f(t)|} = q(t)
+
         Args:
             X (:class:`FDataGrid`): Functions to be transformed.
+
         Returns:
             :class:`FDataGrid`: SRSF functions.
+
         Raises:
             ValueError: If functions are not univariate.
+
         References:
             ..  [SK16-4-6-1] Srivastava, Anuj & Klassen, Eric P. (2016).
                 Functional and shape data analysis. In *Square-Root Slope
@@ -173,19 +185,27 @@ class SRSF(BaseEstimator, TransformerMixin):
 
     def inverse_transform(self, X: FDataGrid):
         r"""Computes the inverse SRSF transform.
+
         Given the srsf and the initial value the original function can be
         obtained as [SK16-4-6-2]_ :
+
         .. math::
             f(t) = f(a) + \int_{a}^t q(t)|q(t)|dt
+
         where :math:`q(t)=SRSF(f(t))`.
+
         If it is applied this inverse transformation without fitting the
         estimator it is assumed that :math:`f(a)=0`.
+
         Args:
             X (:class:`FDataGrid`): SRSF to be transformed.
+
         Returns:
             :class:`FDataGrid`: Functions in the original space.
+
         Raises:
             ValueError: If functions are multidimensional.
+
         References:
             ..  [SK16-4-6-2] Srivastava, Anuj & Klassen, Eric P. (2016).
                 Functional and shape data analysis. In *Square-Root Slope
@@ -286,7 +306,7 @@ class ElasticRegistration(RegistrationTransformer):
     If the template is not specified it is used the Karcher mean of the set of
     functions under the elastic metric to perform the alignment, also known as
     `elastic mean`, wich is the local minimum of the sum of squares of elastic
-    distances. See :func:`elastic_mean`.
+    distances. See :func:`~elastic_mean`.
 
     In [SK16-4-2]_ are described extensively the algorithms employed and
     the SRSF framework.
@@ -304,7 +324,7 @@ class ElasticRegistration(RegistrationTransformer):
         grid_dim (int, optional): Dimension of the grid used in the DP
             alignment algorithm. Defaults 7.
         **kwargs: Named arguments to be passed to be passed to the callable
-            which constructs the template or to :func:`elastic_mean` by
+            which constructs the template or to :func:`~elastic_mean` by
             default.
 
     Attributes:
@@ -317,6 +337,28 @@ class ElasticRegistration(RegistrationTransformer):
         ..  [SK16-4-2] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
             and shape data analysis. In *Functional Data and Elastic
             Registration* (pp. 73-122). Springer.
+
+    Examples:
+
+        Elastic registration of with train/test sets.
+
+        >>> from skfda.preprocessing.registration import \
+        ...                                             ElasticRegistration
+        >>> from skfda.datasets import make_multimodal_samples
+        >>> X_train = make_multimodal_samples(n_samples=15, random_state=0)
+        >>> X_test = make_multimodal_samples(n_samples=3, random_state=1)
+
+        Fit the transformer, which learns the elastic mean of the train
+        set as template.
+
+        >>> elastic_registration = ElasticRegistration()
+        >>> elastic_registration.fit(X_train)
+        ElasticRegistration(...)
+
+        Registration of the test set.
+
+        >>> elastic_registration.transform(X_test)
+        FDataGrid(...)
 
     """
     def __init__(self, template="elastic mean", penalty=0., output_points=None,
@@ -501,7 +543,7 @@ def warping_mean(warping, *, iter=100, tol=1e-6, step_size=.3):
     after a transformation of the warpings, see [S11-3-3]_.
 
     Args:
-        warping (:class:`FDataGrid`): Set of warpings.
+        warping (:class:`~skfda.FDataGrid`): Set of warpings.
         iter (int): Maximun number of interations. Defaults to 20.
         tol (float): Convergence criterion, if the norm of the mean of the
             shooting vectors, :math:`| \bar v |<tol`, the algorithm will stop.
@@ -510,7 +552,7 @@ def warping_mean(warping, *, iter=100, tol=1e-6, step_size=.3):
             Default to 1.
 
     Return:
-        (:class:`FDataGrid`) Fdatagrid with the mean of the warpings. If
+        (:class:`~skfda.FDataGrid`) Fdatagrid with the mean of the warpings. If
         shooting is True the shooting vectors will be returned in a tuple with
         the mean.
 
@@ -625,14 +667,14 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, iter=20, tol=1e-3,
     See [SK16-8-3-1]_ and [S11-3]_.
 
     Args:
-        fdatagrid (:class:`FDataGrid`): Set of functions to compute the mean.
+        fdatagrid (:class:`~skfda.FDataGrid`): Set of functions to compute the
+            mean.
         penalty (float): Penalisation term. Defaults to 0.
         center (boolean): If true it is computed the mean of the warpings and
             used to select a central mean. Defaults True.
         iter (int): Maximun number of iterations. Defaults to 20.
         tol (float): Convergence criterion, the algorithm will stop if
-            :math:´\|mu^{(\nu)} - mu^{(\nu - 1)} \|_2 / \| mu^{(\nu-1)} \|_2
-            < tol´.
+            :math:´|mu_{(\nu)} - mu_{(\nu - 1)}|_2 / | mu_{(\nu-1)} |_2 < tol´.
         initial (float): Value of the mean at the starting point. By default
             takes the average of the initial points of the samples.
         grid_dim (int, optional): Dimension of the grid used in the alignment
@@ -640,7 +682,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, iter=20, tol=1e-3,
         ** kwargs : Named options to be pased to :func:`warping_mean`.
 
     Return:
-        (:class:`FDataGrid`): FDatagrid with the mean of the functions.
+        :class:`~skfda.FDataGrid`: FDatagrid with the mean of the functions.
 
     Raises:
         ValueError: If the object is multidimensional or the shape of the srsf
@@ -656,7 +698,6 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, iter=20, tol=1e-3,
             Alignment* (pp. 7-10). arXiv:1103.3817v2.
 
     """
-
     check_is_univariate(fdatagrid)
 
     srsf_transformer = SRSF(store_initial=False)

@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import skfda
 
+from skfda.preprocessing.registration import ElasticRegistration, invert_warping
+from skfda.datasets import make_multimodal_samples
 
 ##############################################################################
 # Given any two functions :math:`f` and :math:`g`, we define their
@@ -38,47 +40,45 @@ import skfda
 # Due to the similarity of these curves can be aligned almost perfectly
 # between them.
 #
+
 # Samples with modes in 1/3 and 2/3
-fd = skfda.datasets.make_multimodal_samples(
-    n_samples=2, modes_location=[1 / 3, 2 / 3],
-    random_state=1, start=0, mode_std=.01)
+fd = make_multimodal_samples(n_samples=2, modes_location=[1 / 3, 2 / 3],
+                             random_state=1, start=0, mode_std=.01)
 
 fig = fd.plot()
 fig.axes[0].legend(['$f$', '$g$'])
 
-fig
 
 ##############################################################################
 # In this example :math:`g` will be used as template and :math:`f` will be
 # aligned to it. In the following figure it is shown the result of the
 # registration process, wich can be computed using
-# :func:`~skfda.preprocessing.registration.elastic_registration`.
+# :class:`~skfda.preprocessing.registration.ElasticRegistration`.
 #
 
 f, g = fd[0], fd[1]
 
+elastic_registration = ElasticRegistration(template=g)
+
+
 # Aligns f to g
-fd_align = skfda.preprocessing.registration.elastic_registration(f, g)
+f_align = elastic_registration.fit_transform(f)
 
 fig = fd.plot()
-fd_align.plot(fig=fig, color='C0', linestyle='--')
+f_align.plot(fig=fig, color='C0', linestyle='--')
 
 
 # Legend
 fig.axes[0].legend(['$f$', '$g$', '$f \\circ \\gamma $'])
 
-fig
 
 ##############################################################################
 # The non-linear transformation :math:`\gamma` applied to :math:`f` in
-# the alignment can be obtained using
-# :func:`~skfda.preprocessing.registration.elastic_registration_warping`.
+# the alignment is stored in the attribute `warping_`.
 #
 
-# Warping to align f to g
-warping = skfda.preprocessing.registration.elastic_registration_warping(f, g)
-
-# Warping used
+# Warping used in the last transformation
+warping = elastic_registration.warping_
 fig = warping.plot()
 
 # Plot identity
@@ -97,7 +97,7 @@ fig
 # function.
 #
 
-warping_inverse = skfda.preprocessing.registration.invert_warping(warping)
+warping_inverse = invert_warping(warping)
 
 fig = fd.plot(label='$f$')
 g.compose(warping_inverse).plot(fig=fig, color='C1', linestyle='--')
@@ -105,9 +105,6 @@ g.compose(warping_inverse).plot(fig=fig, color='C1', linestyle='--')
 
 # Legend
 fig.axes[0].legend(['$f$', '$g$', '$g \\circ \\gamma^{-1} $'])
-
-fig
-
 
 ##############################################################################
 # The amount of deformation used in the registration can be controlled by
@@ -120,19 +117,20 @@ fig
 #
 
 # Values of lambda
-lambdas = np.linspace(0, .2, 20)
+penalties = np.linspace(0, .2, 20)
 
 # Creation of a color gradient
 cmap = clr.LinearSegmentedColormap.from_list('custom cmap', ['C1', 'C0'])
-color = cmap(.2 + 3 * lambdas)
+color = cmap(.2 + 3 * penalties)
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
 
-for lam, c in zip(lambdas, color):
-    # Plots result of alignment
-    skfda.preprocessing.registration.elastic_registration(
-        f, g, lam=lam).plot(fig=fig, color=c)
+
+for penalty, c in zip(penalties, color):
+
+    elastic_registration.set_params(penalty=penalty)
+    elastic_registration.transform(f).plot(fig, color=c)
 
 
 f.plot(fig=fig, color='C0', linewidth=2., label='$f$')
@@ -140,7 +138,6 @@ g.plot(fig=fig, color='C1', linewidth=2., label='$g$')
 
 # Legend
 fig.axes[0].legend()
-
 
 
 ##############################################################################
@@ -152,9 +149,10 @@ fig.axes[0].legend()
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
 
-for lam, c in zip(lambdas, color):
-    skfda.preprocessing.registration.elastic_registration_warping(
-        f, g, lam=lam).plot(fig=fig, color=c)
+for penalty, c in zip(penalties, color):
+    elastic_registration.set_params(penalty=penalty)
+    elastic_registration.transform(f)
+    elastic_registration.warping_.plot(fig, color=c)
 
 # Plots identity
 fig.axes[0].plot(t, t,  color='C0', linestyle="--")
@@ -198,7 +196,9 @@ fig.axes[0].legend(handles=[labels[0], labels[-1]])
 #
 
 # Registration of the sets
-fd_registered = skfda.preprocessing.registration.elastic_registration(fd, g)
+elastic_registration = ElasticRegistration(template=g)
+
+fd_registered = elastic_registration.fit_transform(fd)
 
 # Plot of the curves
 fig = fd.plot(color="C0", label="$f_i$")

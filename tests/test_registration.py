@@ -238,7 +238,7 @@ class TestShiftRegistration(unittest.TestCase):
 
         fd = make_multimodal_samples(dim_domain=2, random_state=0)
 
-        with np.testing.assert_raises(NotImplementedError):
+        with np.testing.assert_raises(ValueError):
             reg.fit_transform(fd)
 
         reg.set_params(initial=[0.])
@@ -318,7 +318,7 @@ class TestRegistrationValidation(unittest.TestCase):
         np.testing.assert_almost_equal(score, 0.972000160)
 
     def test_default_score(self):
-        
+
         score = self.shift_registration.score(self.X)
         np.testing.assert_almost_equal(score, 0.972000160)
 

@@ -74,11 +74,11 @@ class SRSF(BaseEstimator, TransformerMixin):
         Create a toy dataset and apply the transformation and its inverse.
 
         >>> from skfda.datasets import make_sinusoidal_process
-        >>> from skfda.preprocessing.registration import SRSF
+        >>> from skfda.preprocessing.registration.elastic import SRSF
         >>> fd = make_sinusoidal_process(error_std=0, random_state=0)
         >>> srsf = SRSF()
         >>> srsf
-        SRSF(eval_points=None)
+        SRSF(output_points=None, store_initial=True)
 
         Fits the estimator (to apply the inverse transform) and apply the SRSF
 

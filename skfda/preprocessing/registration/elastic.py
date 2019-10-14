@@ -92,7 +92,7 @@ class SRSF(BaseEstimator, TransformerMixin):
 
         >>> zero = fd - fd_pull_back
         >>> zero.data_matrix.flatten().round(3)
-        array([ 0.,  0.,  0., ...])
+        array([ 0. ,  0. ,  0. , ... ])
 
     """
     def __init__(self, output_points=None, store_initial=True):

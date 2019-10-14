@@ -217,7 +217,7 @@ class SRSF(BaseEstimator, TransformerMixin):
 
 
 def _elastic_alignment_array(template_data, q_data,
-                             eval_points, lam, grid_dim):
+                             eval_points, penalty, grid_dim):
     r"""Wrapper between the cython interface and python.
 
     Selects the corresponding routine depending on the dimensions of the
@@ -228,7 +228,7 @@ def _elastic_alignment_array(template_data, q_data,
         q_data (numpy.ndarray): Array with the srsf of the curves
                                 to be aligned.
         eval_points (numpy.ndarray): Discretisation points of the functions.
-        lam (float): Penalisation term.
+        penalty (float): Penalisation term.
         grid_dim (int): Dimension of the grid used in the alignment algorithm.
 
     Return:
@@ -249,7 +249,7 @@ def _elastic_alignment_array(template_data, q_data,
     return reparam(np.ascontiguousarray(template_data.T),
                    np.ascontiguousarray(eval_points),
                    np.ascontiguousarray(q_data.T),
-                   lam, grid_dim).T
+                   penalty, grid_dim).T
 
 
 
@@ -482,7 +482,7 @@ class ElasticRegistration(RegistrationTransformer):
 
 
 
-def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
+def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1.,
                  return_shooting=False):
     r"""Compute the karcher mean of a set of warpings.
 
@@ -510,7 +510,6 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
             Defaults to 1e-5.
         step_size (float): Step size :math:`\epsilon` used to update the mean.
             Default to 1.
-        eval_points (array_like): Discretisation points of the warpings.
         shooting (boolean): If true it is returned a tuple with the mean and
             the shooting vectors, otherwise only the mean is returned.
 
@@ -529,9 +528,8 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
             arXiv:1103.3817v2.
     """
 
-    if eval_points is None:
-        eval_points = warping.sample_points[0]
 
+    eval_points = warping.sample_points[0]
     original_eval_points = eval_points
 
     if warping.sample_points[0][0] != 0 or warping.sample_points[0][-1] != 1:
@@ -607,9 +605,8 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
     return mean
 
 
-def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
-                 initial=None, eval_points=None, fdatagrid_srsf=None,
-                 grid_dim=7, **kwargs):
+def elastic_mean(fdatagrid, *, penalty=0., center=True, iter=20, tol=1e-3,
+                 initial=None, grid_dim=7, **kwargs):
     r"""Compute the karcher mean under the elastic metric.
 
     Calculates the karcher mean of a set of functional samples in the amplitude
@@ -633,7 +630,7 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
 
     Args:
         fdatagrid (:class:`FDataGrid`): Set of functions to compute the mean.
-        lam (float): Penalisation term. Defaults to 0.
+        penalty (float): Penalisation term. Defaults to 0.
         center (boolean): If true it is computed the mean of the warpings and
             used to select a central mean. Defaults True.
         iter (int): Maximun number of iterations. Defaults to 20.
@@ -642,9 +639,6 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
             < tol´.
         initial (float): Value of the mean at the starting point. By default
             takes the average of the initial points of the samples.
-        eval_points (array_like): Points of discretization of the fdatagrid.
-        fdatagrid_srsf (:class:`FDataGrid`): SRSF if the fdatagrid, if it is
-            passed it is not computed in the algorithm.
         grid_dim (int, optional): Dimension of the grid used in the alignment
             algorithm. Defaults 7.
         ** kwargs : Named options to be pased to :func:`warping_mean`.
@@ -668,18 +662,10 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
     """
 
     check_is_univariate(fdatagrid)
-    srsf_transformer = SRSF(store_initial=False, output_points=eval_points)
 
-    if fdatagrid_srsf is not None:
-        check_is_univariate(fdatagrid_srsf)
-
-    else:
-        fdatagrid_srsf = srsf_transformer.fit_transform(fdatagrid)
-
-    if eval_points is not None:
-        eval_points = np.asarray(eval_points)
-    else:
-        eval_points = fdatagrid.sample_points[0]
+    srsf_transformer = SRSF(store_initial=False)
+    fdatagrid_srsf = srsf_transformer.fit_transform(fdatagrid)
+    eval_points = fdatagrid.sample_points[0]
 
     eval_points_normalized = _normalize_scale(eval_points)
     y_scale = eval_points[-1] - eval_points[0]
@@ -707,12 +693,12 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
     for _ in range(iter):
 
         gammas = _elastic_alignment_array(
-            mu, srsf, eval_points_normalized, lam, grid_dim)
+            mu, srsf, eval_points_normalized, penalty, grid_dim)
         gammas = FDataGrid(gammas, sample_points=eval_points_normalized,
                            interpolator=interpolator)
 
         fdatagrid_normalized = fdatagrid_normalized.compose(gammas)
-        srsf = srsf_transformer.fit_transform(
+        srsf = srsf_transformer.transform(
             fdatagrid_normalized).data_matrix[..., 0]
 
         # Next iteration

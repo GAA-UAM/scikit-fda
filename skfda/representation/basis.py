@@ -13,16 +13,15 @@ import scipy.integrate
 from scipy.interpolate import BSpline as SciBSpline
 from scipy.interpolate import PPoly
 import scipy.interpolate
-import scipy.linalg
 from scipy.special import binom
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 
 import numpy as np
 
-from . import FData
 from . import grid
 from .._utils import _list_of_arrays, constants
+from ._functional_data import FData
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -2464,7 +2463,7 @@ class CoefficientsTransformer(BaseEstimator, TransformerMixin):
         shape_ (tuple): original shape of coefficients per sample.
 
     Examples:
-        >>> from skfda.representation.basis import (Monomial,
+        >>> from skfda.representation.basis import (FDataBasis, Monomial,
         ...                                         CoefficientsTransformer)
         >>>
         >>> basis = Monomial(n_basis=4)

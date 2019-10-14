@@ -14,14 +14,13 @@ Many of the issues involved in registration can be solved by considering
 the simplest case, a simple shift in the time scale. This often happens because
 the time at which the recording process begins is arbitrary, and is unrelated
 to the beginning of the interesting segment of the data. In the
-`Shift Registration Example <../auto_examples/plot_shift_registration_basis.html>`_
-it is shown the basic usage of this methods applied to periodic data.
+:ref:`sphx_glr_auto_examples_plot_shift_registration.py` example
+is shown the basic usage of this method.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.shift_registration
-   skfda.preprocessing.registration.shift_registration_deltas
+   skfda.preprocessing.registration.ShiftRegistration
 
 
 Landmark Registration
@@ -84,17 +83,20 @@ on the elastic framework.
 
 
 
-Amplitude and Phase Decomposition
----------------------------------
+Validation
+----------
 
-The amplitude and phase variation may be quantified by comparing a sample before
-and after registration. The package contains an implementation of the
-decomposition procedure developed by *Kneip and Ramsay (2008)*.
+This module contains several classes methods for the quantification and
+validation of the registration procedure.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.mse_decomposition
+
+   skfda.preprocessing.registration.validation.AmplitudePhaseDecomposition
+   skfda.preprocessing.registration.validation.LeastSquares
+   skfda.preprocessing.registration.validation.SobolevLeastSquares
+   skfda.preprocessing.registration.validation.PairwiseCorrelation
 
 
 Utility functions

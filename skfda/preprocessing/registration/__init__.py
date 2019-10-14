@@ -11,10 +11,7 @@ from ._landmark_registration import (landmark_shift_deltas,
 
 from ._shift_registration import ShiftRegistration
 
-from ._registration_utils import (invert_warping,
-                                  normalize_warping,
-                                  _normalize_scale)
-
+from ._warping import invert_warping, normalize_warping
 
 from .elastic import ElasticRegistration
 

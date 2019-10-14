@@ -2,9 +2,8 @@ import scipy.integrate
 
 import numpy as np
 
-from ..preprocessing.registration import (
-    normalize_warping, _normalize_scale,
-    ElasticRegistration)
+from ..preprocessing.registration import normalize_warping, ElasticRegistration
+from ..preprocessing.registration._warping import _normalize_scale
 from ..preprocessing.registration.elastic import SRSF
 from ..representation import FData
 from ..representation import FDataGrid

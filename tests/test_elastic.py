@@ -3,14 +3,15 @@ import unittest
 import numpy as np
 
 from skfda import FDataGrid
-from skfda.datasets import make_multimodal_samples
+from skfda.datasets import make_multimodal_samples, make_random_warping
 from skfda.misc.metrics import (fisher_rao_distance, amplitude_distance,
                                 phase_distance, pairwise_distance, lp_distance,
                                 warping_distance)
 from skfda.preprocessing.registration import (ElasticRegistration,
                                               invert_warping,
                                               normalize_warping)
-from skfda.preprocessing.registration.elastic import SRSF, elastic_mean
+from skfda.preprocessing.registration.elastic import (SRSF, elastic_mean,
+                                                      warping_mean)
 
 metric = pairwise_distance(lp_distance)
 pairwise_fisher_rao = pairwise_distance(fisher_rao_distance)
@@ -163,7 +164,7 @@ class TestElasticRegistration(unittest.TestCase):
             reg.inverse_transform(self.unimodal_samples[0])
 
         # FDataGrid as template with n != 1 and n!= n_samples to transform
-        reg = ElasticRegistration(template=self.unimodal_samples)
+        reg = ElasticRegistration(template=self.unimodal_samples).fit()
         with np.testing.assert_raises(ValueError):
             reg.transform(self.unimodal_samples[0])
 
@@ -174,6 +175,12 @@ class TestElasticRegistration(unittest.TestCase):
         score =reg.score(self.unimodal_samples)
         np.testing.assert_almost_equal(score, 0.999666175)
 
+    def test_warping_mean(self):
+        warping = make_random_warping(start=-1, random_state=0)
+        mean = warping_mean(warping)
+        values = mean([-1, -.5, 0, .5, 1])
+        expected = [[-1., -0.3762928 , 0.13613892, 0.59923733,  1. ]]
+        np.testing.assert_array_almost_equal(values, expected)
 
 class TestElasticDistances(unittest.TestCase):
     """Test elastic distances"""

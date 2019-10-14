@@ -601,11 +601,7 @@ def warping_mean(warping, *, iter=100, tol=1e-6, step_size=.3):
             psi_i = psi[i]
 
             inner = scipy.integrate.simps(mu*psi_i, x=eval_points)
-
-            if inner > 1:
-                inner = 1
-            elif inner < -1:
-                inner = -1
+            inner = max(min(inner, 1), -1)
 
             theta = np.arccos(inner)
 

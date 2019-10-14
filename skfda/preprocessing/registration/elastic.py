@@ -2,6 +2,7 @@
 
 import scipy.integrate
 from sklearn.utils.validation import check_is_fitted
+from sklearn.base import BaseEstimator, TransformerMixin
 
 
 import numpy as np
@@ -25,131 +26,194 @@ __email__ = "pablo.marcosm@estudiante.uam.es"
 # and *ElasticFDA.jl* (https://github.com/jdtuck/ElasticFDA.jl).              #
 ###############################################################################
 
+class SRSF(BaseEstimator, TransformerMixin):
+    r"""Square-Root Slope Function (SRSF) transform.
 
-def to_srsf(fdatagrid, eval_points=None):
-    r"""Calculate the square-root slope function (SRSF) transform.
-
-    Let :math:`f_i : [a,b] \rightarrow \mathbb{R}` be an absolutely continuous
+    Let :math:`f : [a,b] \rightarrow \mathbb{R}` be an absolutely continuous
     function, the SRSF transform is defined as
 
     .. math::
-        SRSF(f_i(t)) = sgn(f_i(t)) \sqrt{|Df_i(t)|} = q_i(t)
+        SRSF(f(t)) = sgn(f(t)) \sqrt{|\dot f(t)|} = q(t)
 
     This representation it is used to compute the extended non-parametric
     Fisher-Rao distance between functions, wich under the SRSF representation
     becomes the usual :math:`\mathbb{L}^2` distance between functions.
-    See [SK16-4-6-1]_ .
+    See [SK16-4-6]_ .
 
-    Args:
-        fdatagrid (:class:`FDataGrid`): Functions to be transformed.
-        eval_points: (array_like, optional): Set of points where the
+    The inverse SRSF transform is defined as
+
+    .. math::
+        f(t) = f(a) + \int_{a}^t q(t)|q(t)|dt .
+
+    This transformation is a mapping up to constant. Given the SRSF and the
+    initial value :math:`f(a)` the original function can be obtained, for this
+    reason it is necessary to store the value :math:`f(a)` during the fit,
+    which is dropped due to derivation. If it is applied the inverse
+    transformation without fit the estimator it is assumed that :math:`f(a)=0`.
+
+    Attributes:
+        eval_points (array_like, optional): Set of points where the
             functions are evaluated, by default uses the sample points of the
             fdatagrid.
+        store_initial (bool): If true stores the value :math:`f(a)` of the
+            samples during fitting to apply the inverse transform.
+            Defaults True.
 
-    Returns:
-        :class:`FDataGrid`: SRSF functions.
-
-    Raises:
-        ValueError: If functions are multidimensional.
+    Note:
+        Due to the use of derivatives it is recommended that the samples are
+        sufficiently smooth, or have passed a smoothing preprocessing before,
+        in order to achieve good results.
 
     References:
-        ..  [SK16-4-6-1] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
+        ..  [SK16-4-6] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
             and shape data analysis. In *Square-Root Slope Function
             Representation* (pp. 91-93). Springer.
 
-    """
+    Examples:
 
-    if fdatagrid.dim_domain > 1:
-        raise ValueError("Only support functional objects with unidimensional "
-                         "domain.")
+        Create a toy dataset and apply the transformation and its inverse.
 
-    elif fdatagrid.dim_codomain > 1:
-        raise ValueError("Only support functional objects with unidimensional "
-                         "codomain.")
+        >>> from skfda.datasets import make_sinusoidal_process
+        >>> from skfda.preprocessing.registration import SRSF
+        >>> fd = make_sinusoidal_process(error_std=0, random_state=0)
+        >>> srsf = SRSF()
+        >>> srsf
+        SRSF(eval_points=None)
 
-    elif eval_points is None:
-        eval_points = fdatagrid.sample_points[0]
+        Fits the estimator (to apply the inverse transform) and apply the SRSF
 
-    g = fdatagrid.derivative()
+        >>> q = srsf.fit_transform(fd)
 
-    # Evaluation with the corresponding interpolation
-    g_data_matrix = g(eval_points, keepdims=False)
+        Apply the inverse transform.
 
-    # SRSF(f) = sign(f) * sqrt|Df|
-    q_data_matrix = np.sign(g_data_matrix) * np.sqrt(np.abs(g_data_matrix))
+        >>> fd_pull_back = srsf.inverse_transform(q)
 
-    return fdatagrid.copy(data_matrix=q_data_matrix, sample_points=eval_points)
+        The original and the pull back `fd` are almost equal
 
-
-def from_srsf(fdatagrid, initial=None, *, eval_points=None):
-    r"""Given a SRSF calculate the corresponding function in the original space.
-
-    Let :math:`f_i : [a,b]\rightarrow \mathbb{R}` be an absolutely continuous
-    function, the SRSF transform is defined as
-
-    .. math::
-        SRSF(f_i(t)) = sgn(f_i(t)) \sqrt{|Df_i(t)|} = q_i(t)
-
-    This transformation is a mapping up to constant. Given the srsf and the
-    initial value the original function can be obtained as
-
-    .. math::
-        f_i(t) = f(a) + \int_{a}^t q(t)|q(t)|dt
-
-    This representation it is used to compute the extended non-parametric
-    Fisher-Rao distance between functions, wich under the SRSF representation
-    becomes the usual :math:`\mathbb{L}^2` distance between functions.
-    See [SK16-4-6-2]_ .
-
-    Args:
-        fdatagrid (:class:`FDataGrid`): SRSF to be transformed.
-        initial (array_like): List of values of initial values of the original
-            functions.
-        eval_points: (array_like, optional): Set of points where the
-            functions are evaluated, by default uses the sample points of the
-            fdatagrid.
-
-    Returns:
-        :class:`FDataGrid`: Functions in the original space.
-
-    Raises:
-        ValueError: If functions are multidimensional.
-
-    References:
-        ..  [SK16-4-6-2] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
-            and shape data analysis. In *Square-Root Slope Function
-            Representation* (pp. 91-93). Springer.
+        >>> zero = fd - fd_pull_back
+        >>> zero.data_matrix.flatten().round(3)
+        array([ 0.,  0.,  0., ...])
 
     """
+    def __init__(self, output_points=None, store_initial=True):
+        """Initializes the transformer.
+        Args:
+            eval_points: (array_like, optional): Set of points where the
+                functions are evaluated, by default uses the sample points of
+                the :class:`FDataGrid <skfda.FDataGrid>` transformed.
+            store_initial (bool): If true stores the value :math:`f(a)` of the
+                samples during fitting to apply the inverse transform.
+                Defaults True.
 
-    if fdatagrid.dim_domain > 1:
-        raise ValueError("Only support functional objects with "
-                         "unidimensional domain.")
+        """
+        self.output_points = output_points
+        self.store_initial = store_initial
 
-    elif fdatagrid.dim_codomain > 1:
-        raise ValueError("Only support functional objects with unidimensional "
-                         "image.")
 
-    elif eval_points is None:
-        eval_points = fdatagrid.sample_points[0]
+    def fit(self, X: FDataGrid):
+        """Fits the transformer.
+        Stores the initial value of the functions to be transformed, in order
+        to apply its inverse transform.
+        Args:
+            X (:class:`FDataGrid <skfda.FDataGrid`): Functional data to be
+                transformed.
+        Returns:
+            (Estimator): self
+        """
+        check_is_univariate(X)
 
-    q_data_matrix = fdatagrid(eval_points, keepdims=True)
+        if self.store_initial:
+            a = X.domain_range[0][0] # Stores initial value
+            self.initial_ = X(a).reshape(X.n_samples, 1, X.dim_codomain)
 
-    f_data_matrix = q_data_matrix * np.abs(q_data_matrix)
+        return self
 
-    f_data_matrix = scipy.integrate.cumtrapz(f_data_matrix,
-                                             x=eval_points,
-                                             axis=1,
-                                             initial=0)
+    def transform(self, X: FDataGrid):
+        r"""Computes the square-root slope function (SRSF) transform.
+        Let :math:`f : [a,b] \rightarrow \mathbb{R}` be an absolutely continuous
+        function, the SRSF transform is defined as [SK16-4-6-1]_:
+        .. math::
+            SRSF(f(t)) = sgn(f(t)) \sqrt{\dot f(t)|} = q(t)
+        Args:
+            X (:class:`FDataGrid`): Functions to be transformed.
+        Returns:
+            :class:`FDataGrid`: SRSF functions.
+        Raises:
+            ValueError: If functions are not univariate.
+        References:
+            ..  [SK16-4-6-1] Srivastava, Anuj & Klassen, Eric P. (2016).
+                Functional and shape data analysis. In *Square-Root Slope
+                Function Representation* (pp. 91-93). Springer.
 
-    if initial is not None:
-        initial = np.atleast_1d(initial)
-        initial = initial.reshape(
-            fdatagrid.n_samples, 1, fdatagrid.dim_codomain)
-        initial = np.repeat(initial, len(eval_points), axis=1)
-        f_data_matrix += initial
+        """
+        check_is_univariate(X)
 
-    return fdatagrid.copy(data_matrix=f_data_matrix, sample_points=eval_points)
+        if self.store_initial:
+            check_is_fitted(self, 'initial_')
+
+        if self.output_points is None:
+            output_points = X.sample_points[0]
+        else:
+            output_points = self.output_points
+
+        g = X.derivative()
+
+        # Evaluation with the corresponding interpolation
+        data_matrix = g(output_points, keepdims=False)
+
+        # SRSF(f) = sign(f) * sqrt|Df| (avoiding multiple allocation)
+        sign_g = np.sign(data_matrix)
+        data_matrix = np.abs(data_matrix, out=data_matrix)
+        data_matrix = np.sqrt(data_matrix, out=data_matrix)
+        data_matrix *= sign_g
+
+
+        return X.copy(data_matrix=data_matrix, sample_points=output_points)
+
+
+    def inverse_transform(self, X: FDataGrid):
+        r"""Computes the inverse SRSF transform.
+        Given the srsf and the initial value the original function can be
+        obtained as [SK16-4-6-2]_ :
+        .. math::
+            f(t) = f(a) + \int_{a}^t q(t)|q(t)|dt
+        where :math:`q(t)=SRSF(f(t))`.
+        If it is applied this inverse transformation without fitting the
+        estimator it is assumed that :math:`f(a)=0`.
+        Args:
+            X (:class:`FDataGrid`): SRSF to be transformed.
+        Returns:
+            :class:`FDataGrid`: Functions in the original space.
+        Raises:
+            ValueError: If functions are multidimensional.
+        References:
+            ..  [SK16-4-6-2] Srivastava, Anuj & Klassen, Eric P. (2016).
+                Functional and shape data analysis. In *Square-Root Slope
+                Function Representation* (pp. 91-93). Springer.
+
+        """
+        check_is_univariate(X)
+
+        if self.store_initial:
+            check_is_fitted(self, 'initial_')
+
+        if self.output_points is None:
+            output_points = X.sample_points[0]
+        else:
+            output_points = self.output_points
+
+        data_matrix = X(output_points, keepdims=True)
+
+        data_matrix *= np.abs(data_matrix)
+
+        f_data_matrix = scipy.integrate.cumtrapz(data_matrix, x=output_points,
+                                                 axis=1, initial=0)
+
+        # If the transformer was fitted, sum the initial value
+        if hasattr(self, 'initial_'):
+            f_data_matrix += self.initial_
+
+        return X.copy(data_matrix=f_data_matrix, sample_points=output_points)
 
 
 def _elastic_alignment_array(template_data, q_data,
@@ -292,8 +356,9 @@ class ElasticRegistration(RegistrationTransformer):
             self.template_ = self.template(X, **self.kwargs)
 
         # Constructs the SRSF of the template
-        self._template_srsf = to_srsf(self.template_,
-                                      eval_points=self.output_points)
+        srsf = SRSF(output_points=self.output_points, store_initial=False)
+        self._template_srsf = srsf.fit_transform(self.template_)
+
         return self
 
 
@@ -318,8 +383,8 @@ class ElasticRegistration(RegistrationTransformer):
                              "all the curves to the same function or the "
                              "same number of samples than X.")
 
-
-        fdatagrid_srsf = to_srsf(X, eval_points=self.output_points)
+        srsf = SRSF(output_points=self.output_points, store_initial=False)
+        fdatagrid_srsf = srsf.fit_transform(X)
 
         # Points of discretization
         if self.output_points is None:
@@ -475,8 +540,10 @@ def warping_mean(warping, *, iter=20, tol=1e-5, step_size=1., eval_points=None,
         warping = FDataGrid(_normalize_scale(warping.data_matrix[..., 0]),
                             _normalize_scale(warping.sample_points[0]))
 
-    psi = to_srsf(warping, eval_points=eval_points).data_matrix[..., 0].T
-    mu = to_srsf(warping.mean(), eval_points=eval_points).data_matrix[0]
+    srsf = SRSF(output_points=eval_points, store_initial=False)
+    psi = srsf.fit_transform(warping).data_matrix[..., 0].T
+    mu = srsf.fit_transform(warping.mean()).data_matrix[0]
+
     dot_aux = np.empty(psi.shape)
 
     n_points = mu.shape[0]
@@ -600,15 +667,14 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
 
     """
 
-    if fdatagrid.dim_domain != 1 or fdatagrid.dim_codomain != 1:
-        raise ValueError("Not supported multidimensional functional objects.")
+    check_is_univariate(fdatagrid)
+    srsf_transformer = SRSF(store_initial=False, output_points=eval_points)
 
-    if fdatagrid_srsf is not None and (fdatagrid_srsf.dim_domain != 1 or
-                                       fdatagrid_srsf.dim_codomain != 1):
-        raise ValueError("Not supported multidimensional functional objects.")
+    if fdatagrid_srsf is not None:
+        check_is_univariate(fdatagrid_srsf)
 
-    elif fdatagrid_srsf is None:
-        fdatagrid_srsf = to_srsf(fdatagrid, eval_points=eval_points)
+    else:
+        fdatagrid_srsf = srsf_transformer.fit_transform(fdatagrid)
 
     if eval_points is not None:
         eval_points = np.asarray(eval_points)
@@ -646,7 +712,8 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
                            interpolator=interpolator)
 
         fdatagrid_normalized = fdatagrid_normalized.compose(gammas)
-        srsf = to_srsf(fdatagrid_normalized).data_matrix[..., 0]
+        srsf = srsf_transformer.fit_transform(
+            fdatagrid_normalized).data_matrix[..., 0]
 
         # Next iteration
         mu_1 = srsf.mean(axis=0, out=mu_1)
@@ -664,13 +731,17 @@ def elastic_mean(fdatagrid, *, lam=0., center=True, iter=20, tol=1e-3,
 
         mu = mu_1
 
+
     if initial is None:
         initial = fdatagrid.data_matrix[:, 0].mean()
 
+    srsf_transformer.set_params(store_initial=True)
+    srsf_transformer.initial_ = initial
+
+
     # Karcher mean orbit in space L2/Gamma
-    karcher_mean = from_srsf(fdatagrid.copy(data_matrix=[mu],
-                                            sample_points=eval_points),
-                             initial=initial)
+    karcher_mean = srsf_transformer.inverse_transform(
+        fdatagrid.copy(data_matrix=[mu], sample_points=eval_points))
 
     if center:
         # Gamma mean in Hilbert Sphere

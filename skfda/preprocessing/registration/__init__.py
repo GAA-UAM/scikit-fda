@@ -15,7 +15,7 @@ from ._registration_utils import (invert_warping,
                                   normalize_warping,
                                   _normalize_scale)
 
-from . import validation
 
-from ._elastic import (ElasticRegistration, to_srsf, from_srsf,
-                       elastic_mean, warping_mean)
+from .elastic import ElasticRegistration, elastic_mean, warping_mean
+
+from . import validation, elastic

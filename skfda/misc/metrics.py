@@ -3,8 +3,9 @@ import scipy.integrate
 import numpy as np
 
 from ..preprocessing.registration import (
-    normalize_warping, _normalize_scale, to_srsf,
+    normalize_warping, _normalize_scale,
     ElasticRegistration)
+from ..preprocessing.registration.elastic import SRSF
 from ..representation import FData
 from ..representation import FDataGrid
 
@@ -369,7 +370,7 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
     :math:`q_i` and :math:`q_j` be the corresponding SRSF
-    (see :func:`to_srsf`), the fisher rao distance is defined as
+    (see :class:`SRSF`), the fisher rao distance is defined as
 
     .. math::
         d_{FR}(f_i, f_j) = \| q_i - q_j \|_2 =
@@ -413,8 +414,9 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
                          domain_range=(0, 1))
 
-    fdata1_srsf = to_srsf(fdata1)
-    fdata2_srsf = to_srsf(fdata2)
+    srsf = SRSF(store_initial=False)
+    fdata1_srsf = srsf.fit_transform(fdata1)
+    fdata2_srsf = srsf.transform(fdata2)
 
     # Return the L2 distance of the SRSF
     return lp_distance(fdata1_srsf, fdata2_srsf, p=2)
@@ -426,7 +428,7 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
     :math:`q_i` and :math:`q_j` be the corresponding SRSF
-    (see :func:`to_srsf`), the amplitude distance is defined as
+    (see :class:`SRSF`), the amplitude distance is defined as
 
     .. math::
         d_{A}(f_i, f_j)=min_{\gamma \in \Gamma}d_{FR}(f_i \circ \gamma,f_j)
@@ -482,8 +484,6 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
                          domain_range=(0, 1))
 
-    #fdata1_srsf = to_srsf(fdata1)
-    #fdata2_srsf = to_srsf(fdata2)
 
     elastic_registration = ElasticRegistration(template=fdata2,
                                                penalty=lam,
@@ -493,7 +493,10 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
 
     fdata1_reg = elastic_registration.fit_transform(fdata1)
 
-    distance = lp_distance(to_srsf(fdata1_reg), to_srsf(fdata2))
+    srsf = SRSF(store_initial=False)
+    fdata1_reg_srsf = srsf.fit_transform(fdata1_reg)
+    fdata2_srsf = srsf.transform(fdata2)
+    distance = lp_distance(fdata1_reg_srsf, fdata2_srsf)
 
     if lam != 0.0:
         # L2 norm || sqrt(Dh) - 1 ||^2

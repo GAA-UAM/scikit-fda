@@ -9,8 +9,13 @@ from skfda.datasets import (make_multimodal_samples, make_multimodal_landmarks,
                             make_sinusoidal_process)
 from skfda.preprocessing.registration import (
     normalize_warping, invert_warping, landmark_shift_deltas, landmark_shift,
-    landmark_registration_warping, landmark_registration, mse_decomposition,
-    shift_registration_deltas, shift_registration)
+    landmark_registration_warping, landmark_registration, ShiftRegistration)
+from skfda.exploratory.stats import mean
+from sklearn.exceptions import NotFittedError
+from skfda._utils import _check_estimator
+from skfda.preprocessing.registration.validation import \
+    (AmplitudePhaseDecomposition, LeastSquares,
+     SobolevLeastSquares, PairwiseCorrelation)
 
 
 class TestWarping(unittest.TestCase):
@@ -86,7 +91,7 @@ class TestWarping(unittest.TestCase):
                             aligned_evaluation=False)
         # Test default location
         fd_registered = landmark_shift(fd, landmarks)
-        center = (landmarks.max() + landmarks.min())/2
+        center = (landmarks.max() + landmarks.min()) / 2
         reg_modes = fd_registered(center)
 
         # Test callable location
@@ -147,39 +152,199 @@ class TestWarping(unittest.TestCase):
         np.testing.assert_array_almost_equal(fd_reg(center), original_values,
                                              decimal=2)
 
+class TestShiftRegistration(unittest.TestCase):
+    """Test shift registration"""
+
+    def setUp(self):
+        """Initialization of samples"""
+        self.fd = make_sinusoidal_process(n_samples=2, error_std=0,
+                                          random_state=1)
+        self.fd.extrapolation = "periodic"
+
+    def test_fit_transform(self):
+
+        reg = ShiftRegistration()
+
+        # Test fit transform with FDataGrid
+        fd_reg = reg.fit_transform(self.fd)
+
+        # Check attributes fitted
+        self.assertTrue(hasattr(reg, 'deltas_'))
+        self.assertTrue(hasattr(reg, 'template_'))
+        self.assertTrue(hasattr(reg, 'n_iter_'))
+        self.assertTrue(isinstance(fd_reg, FDataGrid))
+
+        deltas = reg.deltas_.round(3)
+        np.testing.assert_array_almost_equal(deltas, [-0.022, 0.03])
+
+        # Test with Basis
+        fd = self.fd.to_basis(Fourier())
+        reg.fit_transform(fd)
+        deltas = reg.deltas_.round(3)
+        np.testing.assert_array_almost_equal(deltas, [-0.022, 0.03])
+
+    def test_fit_and_transform(self):
+        """Test wrapper of shift_registration_deltas"""
+
+        fd = make_sinusoidal_process(n_samples=2, error_std=0, random_state=10)
+
+        reg = ShiftRegistration()
+        response = reg.fit(self.fd)
+
+        # Check attributes and returned value
+        self.assertTrue(hasattr(reg, 'template_'))
+        self.assertTrue(response is reg)
+
+        fd_registered = reg.transform(fd)
+        deltas = reg.deltas_.round(3)
+        np.testing.assert_array_almost_equal(deltas, [0.071, -0.071])
+
+    def test_inverse_transform(self):
+
+        reg = ShiftRegistration()
+        fd = reg.fit_transform(self.fd)
+        fd = reg.inverse_transform(fd)
+
+        np.testing.assert_array_almost_equal(fd.data_matrix,
+                                             self.fd.data_matrix, decimal=3)
+
+    def test_raises(self):
+
+        reg = ShiftRegistration()
+
+        # Test not fitted
+        with np.testing.assert_raises(NotFittedError):
+            reg.transform(self.fd)
+
+        reg.fit(self.fd)
+        reg.set_params(restrict_domain=True)
+
+        # Test use fit or transform with restrict_domain=True
+        with np.testing.assert_raises(AttributeError):
+            reg.transform(self.fd)
+
+        with np.testing.assert_raises(AttributeError):
+            reg.fit(self.fd)
+
+        # Test inverse_transform without previous transformation
+        with np.testing.assert_raises(AttributeError):
+            reg.inverse_transform(self.fd)
+
+        reg.fit_transform(self.fd)
+
+        # Test inverse transform with different number of sample
+        with np.testing.assert_raises(ValueError):
+            reg.inverse_transform(self.fd[:1])
+
+        fd = make_multimodal_samples(dim_domain=2, random_state=0)
+
+        with np.testing.assert_raises(NotImplementedError):
+            reg.fit_transform(fd)
+
+        reg.set_params(initial=[0.])
+
+        # Wrong initial estimation
+        with np.testing.assert_raises(ValueError):
+            reg.fit_transform(self.fd)
+
+    def test_template(self):
+
+        reg = ShiftRegistration()
+        fd_registered_1 = reg.fit_transform(self.fd)
+
+        reg_2 = ShiftRegistration(template=reg.template_)
+        fd_registered_2 = reg_2.fit_transform(self.fd)
+
+        reg_3 = ShiftRegistration(template=mean)
+        fd_registered_3 = reg_3.fit_transform(self.fd)
+
+        reg_4 = ShiftRegistration(template=reg.template_)
+        fd_registered_4 = reg_4.fit(self.fd).transform(self.fd)
+
+        np.testing.assert_array_almost_equal(fd_registered_1.data_matrix,
+                                             fd_registered_3.data_matrix)
+
+        # With the template fixed could vary the convergence
+        np.testing.assert_array_almost_equal(fd_registered_1.data_matrix,
+                                             fd_registered_2.data_matrix,
+                                             decimal=3)
+
+        np.testing.assert_array_almost_equal(fd_registered_2.data_matrix,
+                                             fd_registered_4.data_matrix)
+
+    def test_restrict_domain(self):
+        reg = ShiftRegistration(restrict_domain=True)
+        fd_registered_1 = reg.fit_transform(self.fd)
+
+        np.testing.assert_array_almost_equal(
+            fd_registered_1.domain_range.round(3), [[0.022, 0.969]])
+
+        reg2 = ShiftRegistration(restrict_domain=True, template=reg.template_)
+        fd_registered_2 = reg2.fit_transform(self.fd)
+
+        np.testing.assert_array_almost_equal(
+            fd_registered_2.data_matrix, fd_registered_1.data_matrix,
+            decimal=3)
+
+        reg3 = ShiftRegistration(restrict_domain=True, template=mean)
+        fd_registered_3 = reg3.fit_transform(self.fd)
+
+        np.testing.assert_array_almost_equal(
+            fd_registered_3.data_matrix, fd_registered_1.data_matrix)
+
+    def test_initial_estimation(self):
+        reg = ShiftRegistration(initial=[-0.02161235, 0.03032652])
+        reg.fit_transform(self.fd)
+
+        # Only needed 1 iteration until convergence
+        self.assertEqual(reg.n_iter_, 1)
+
+    def test_custom_output_points(self):
+        reg = ShiftRegistration(output_points=np.linspace(0, 1, 50))
+        reg.fit_transform(self.fd)
+
+
+class TestRegistrationValidation(unittest.TestCase):
+    """Test shift registration"""
+
+    def setUp(self):
+        """Initialization of samples"""
+        self.X = make_sinusoidal_process(error_std=0, random_state=0)
+        self.shift_registration = ShiftRegistration().fit(self.X)
+
+    def test_amplitude_phase_score(self):
+        scorer = AmplitudePhaseDecomposition()
+        score = scorer(self.shift_registration, self.X)
+        np.testing.assert_almost_equal(score, 0.972000160)
+
+    def test_least_squares_score(self):
+        scorer = LeastSquares()
+        score = scorer(self.shift_registration, self.X)
+        np.testing.assert_almost_equal(score, 0.795742349)
+
+    def test_sobolev_least_squares_score(self):
+        scorer = SobolevLeastSquares()
+        score = scorer(self.shift_registration, self.X)
+        np.testing.assert_almost_equal(score, 0.762240135)
+
+    def test_pairwise_correlation(self):
+        scorer = PairwiseCorrelation()
+        score = scorer(self.shift_registration, self.X)
+        np.testing.assert_almost_equal(score, 1.816298653)
+
     def test_mse_decomposition(self):
+
         fd = make_multimodal_samples(n_samples=3, random_state=1)
         landmarks = make_multimodal_landmarks(n_samples=3, random_state=1)
         landmarks = landmarks.squeeze()
         warping = landmark_registration_warping(fd, landmarks)
         fd_registered = fd.compose(warping)
-        ret = mse_decomposition(fd, fd_registered, warping)
-
+        scorer = AmplitudePhaseDecomposition(return_stats=True)
+        ret = scorer.score_function(fd, fd_registered, warping=warping)
         np.testing.assert_almost_equal(ret.mse_amp, 0.0009866997121476962)
         np.testing.assert_almost_equal(ret.mse_pha, 0.11576861468435257)
-        np.testing.assert_almost_equal(ret.rsq, 0.9915489952877273)
-        np.testing.assert_almost_equal(ret.cr, 0.9999963424653829)
-
-    def test_shift_registration_deltas(self):
-
-        fd = make_sinusoidal_process(n_samples=2, error_std=0, random_state=1)
-
-        deltas = shift_registration_deltas(fd).round(3)
-        np.testing.assert_array_almost_equal(deltas, [-0.022,  0.03])
-
-        fd = fd.to_basis(Fourier())
-        deltas = shift_registration_deltas(fd).round(3)
-        np.testing.assert_array_almost_equal(deltas, [-0.022,  0.03])
-
-    def test_shift_registration(self):
-        """Test wrapper of shift_registration_deltas"""
-
-        fd = make_sinusoidal_process(n_samples=2, error_std=0, random_state=1)
-
-        fd_reg = shift_registration(fd)
-        deltas = shift_registration_deltas(fd)
-        np.testing.assert_array_almost_equal(fd_reg.data_matrix,
-                                             fd.shift(deltas).data_matrix)
+        np.testing.assert_almost_equal(ret.r_squared, 0.9915489952877273)
+        np.testing.assert_almost_equal(ret.c_r, 0.9999963424653829)
 
 
 if __name__ == '__main__':

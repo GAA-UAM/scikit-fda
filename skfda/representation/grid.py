@@ -545,7 +545,11 @@ class FDataGrid(FData):
         else:
             dataset_label = None
 
-        return self.copy(data_matrix=np.cov(self.data_matrix,
+        if self.dim_domain != 1 or self.dim_codomain != 1:
+            raise NotImplementedError("Covariance only implemented "
+                                      "for univariate functions")
+
+        return self.copy(data_matrix=np.cov(self.data_matrix[..., 0],
                                             rowvar=False)[np.newaxis, ...],
                          sample_points=[self.sample_points[0],
                                         self.sample_points[0]],
@@ -971,6 +975,8 @@ class FDataGrid(FData):
 
         if eval_points is None:
             eval_points = self.sample_points
+        else:
+            eval_points = np.atleast_2d(eval_points)
 
         if restrict_domain:
             domain = np.asarray(self.domain_range)

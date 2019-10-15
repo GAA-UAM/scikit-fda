@@ -20,7 +20,7 @@ from skfda.preprocessing.registration.elastic import elastic_mean
 
 ##############################################################################
 # In the example of pairwise alignment was shown the usage of
-# :func:`~skfda.preprocessing.registration.ElasticRegistration` to align
+# :class:`~skfda.preprocessing.registration.ElasticRegistration` to align
 # a set of functional observations to a given template or a set of templates.
 #
 # In the groupwise alignment all the samples are aligned to the same template,

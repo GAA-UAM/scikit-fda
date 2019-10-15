@@ -98,7 +98,7 @@ validation of the registration procedure.
 Warping utils
 -----------------
 
-There module contains some functions related with the warping of functional
+This module contains some functions related with the warping of functional
 data.
 
 .. autosummary::

@@ -544,7 +544,7 @@ def warping_mean(warping, *, iter=100, tol=1e-6, step_size=.3):
 
     Args:
         warping (:class:`~skfda.FDataGrid`): Set of warpings.
-        iter (int): Maximun number of interations. Defaults to 20.
+        iter (int): Maximum number of interations. Defaults to 20.
         tol (float): Convergence criterion, if the norm of the mean of the
             shooting vectors, :math:`| \bar v |<tol`, the algorithm will stop.
             Defaults to 1e-5.
@@ -668,7 +668,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, iter=20, tol=1e-3,
         penalty (float): Penalisation term. Defaults to 0.
         center (boolean): If true it is computed the mean of the warpings and
             used to select a central mean. Defaults True.
-        iter (int): Maximun number of iterations. Defaults to 20.
+        iter (int): Maximum number of iterations. Defaults to 20.
         tol (float): Convergence criterion, the algorithm will stop if
             :math:´|mu_{(\nu)} - mu_{(\nu - 1)}|_2 / | mu_{(\nu-1)} |_2 < tol´.
         initial (float): Value of the mean at the starting point. By default

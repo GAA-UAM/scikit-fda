@@ -1,4 +1,4 @@
-
+max_iter
 
 import scipy.integrate
 from sklearn.utils.validation import check_is_fitted
@@ -323,9 +323,6 @@ class ElasticRegistration(RegistrationTransformer):
             fdatagrid which will be transformed.
         grid_dim (int, optional): Dimension of the grid used in the DP
             alignment algorithm. Defaults 7.
-        **kwargs: Named arguments to be passed to be passed to the callable
-            which constructs the template or to :func:`~elastic_mean` by
-            default.
 
     Attributes:
         template_ (:class:`FDataGrid`): Template learned during fitting,
@@ -362,14 +359,13 @@ class ElasticRegistration(RegistrationTransformer):
 
     """
     def __init__(self, template="elastic mean", penalty=0., output_points=None,
-                 grid_dim=7, **kwargs):
+                 grid_dim=7):
         """Initializes the registration transformer"""
 
         self.template = template
         self.penalty = penalty
         self.output_points = output_points
         self.grid_dim = grid_dim
-        self.kwargs = kwargs
 
     def fit(self, X: FDataGrid=None, y=None):
         """Fit the transformer.
@@ -393,9 +389,9 @@ class ElasticRegistration(RegistrationTransformer):
             raise ValueError("Must be provided a dataset X to construct the "
                              "template.")
         elif self.template == "elastic mean":
-            self.template_ = elastic_mean(X, **self.kwargs)
+            self.template_ = elastic_mean(X)
         else:
-            self.template_ = self.template(X, **self.kwargs)
+            self.template_ = self.template(X)
 
         # Constructs the SRSF of the template
         srsf = SRSF(output_points=self.output_points, store_initial=False)
@@ -523,7 +519,7 @@ class ElasticRegistration(RegistrationTransformer):
         return X.compose(inverse_warping, eval_points=self.output_points)
 
 
-def warping_mean(warping, *, iter=100, tol=1e-6, step_size=.3):
+def warping_mean(warping, *, max_iter=100, tol=1e-6, step_size=.3):
     r"""Compute the karcher mean of a set of warpings.
 
     Let :math:`\gamma_i i=1...n` be a set of warping functions
@@ -544,7 +540,7 @@ def warping_mean(warping, *, iter=100, tol=1e-6, step_size=.3):
 
     Args:
         warping (:class:`~skfda.FDataGrid`): Set of warpings.
-        iter (int): Maximum number of interations. Defaults to 20.
+        max_iter (int): Maximum number of interations. Defaults to 100.
         tol (float): Convergence criterion, if the norm of the mean of the
             shooting vectors, :math:`| \bar v |<tol`, the algorithm will stop.
             Defaults to 1e-5.
@@ -593,7 +589,7 @@ def warping_mean(warping, *, iter=100, tol=1e-6, step_size=.3):
     vmean = np.empty((1, len(eval_points)))
 
     # Construction of shooting vectors
-    for _ in range(iter):
+    for _ in range(max_iter):
 
         vmean[0] = 0.
         # Compute shooting vectors
@@ -639,7 +635,7 @@ def warping_mean(warping, *, iter=100, tol=1e-6, step_size=.3):
     return mean
 
 
-def elastic_mean(fdatagrid, *, penalty=0., center=True, iter=20, tol=1e-3,
+def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
                  initial=None, grid_dim=7, **kwargs):
     r"""Compute the karcher mean under the elastic metric.
 
@@ -668,7 +664,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, iter=20, tol=1e-3,
         penalty (float): Penalisation term. Defaults to 0.
         center (boolean): If true it is computed the mean of the warpings and
             used to select a central mean. Defaults True.
-        iter (int): Maximum number of iterations. Defaults to 20.
+        max_iter (int): Maximum number of iterations. Defaults to 20.
         tol (float): Convergence criterion, the algorithm will stop if
             :math:´|mu_{(\nu)} - mu_{(\nu - 1)}|_2 / | mu_{(\nu-1)} |_2 < tol´.
         initial (float): Value of the mean at the starting point. By default
@@ -723,7 +719,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, iter=20, tol=1e-3,
     mu_1 = np.empty(mu.shape)
 
     # Main iteration
-    for _ in range(iter):
+    for _ in range(max_iter):
 
         gammas = _elastic_alignment_array(
             mu, srsf, eval_points_normalized, penalty, grid_dim)

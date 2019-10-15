@@ -125,7 +125,7 @@ class ShiftRegistration(RegistrationTransformer):
 
     def __init__(self, max_iter=5, tol=1e-2, template="mean",
                  extrapolation=None, step_size=1, restrict_domain=False,
-                 initial="zeros", output_points=None, **kwargs):
+                 initial="zeros", output_points=None):
         self.max_iter = max_iter
         self.tol = tol
         self.template = template

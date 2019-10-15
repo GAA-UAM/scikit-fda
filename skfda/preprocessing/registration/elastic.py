@@ -1,4 +1,3 @@
-max_iter
 
 import scipy.integrate
 from sklearn.utils.validation import check_is_fitted

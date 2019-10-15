@@ -111,7 +111,7 @@ class SRSF(BaseEstimator, TransformerMixin):
         self.store_initial = store_initial
 
 
-    def fit(self, X: FDataGrid):
+    def fit(self, X: FDataGrid, y=None):
         """Fits the transformer.
 
         Stores the initial value of the functions to be transformed, in order
@@ -120,6 +120,7 @@ class SRSF(BaseEstimator, TransformerMixin):
         Args:
             X (:class:`FDataGrid <skfda.FDataGrid`): Functional data to be
                 transformed.
+            y (Ignored): Present for API conventions.
 
         Returns:
             (Estimator): self
@@ -133,7 +134,7 @@ class SRSF(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self, X: FDataGrid):
+    def transform(self, X: FDataGrid, y=None):
         r"""Computes the square-root slope function (SRSF) transform.
 
         Let :math:`f : [a,b] \rightarrow \mathbb{R}` be an absolutely continuous
@@ -145,6 +146,7 @@ class SRSF(BaseEstimator, TransformerMixin):
 
         Args:
             X (:class:`FDataGrid`): Functions to be transformed.
+            y (Ignored): Present for API conventions.
 
         Returns:
             :class:`FDataGrid`: SRSF functions.
@@ -183,7 +185,7 @@ class SRSF(BaseEstimator, TransformerMixin):
         return X.copy(data_matrix=data_matrix, sample_points=output_points)
 
 
-    def inverse_transform(self, X: FDataGrid):
+    def inverse_transform(self, X: FDataGrid, y=None):
         r"""Computes the inverse SRSF transform.
 
         Given the srsf and the initial value the original function can be
@@ -199,6 +201,7 @@ class SRSF(BaseEstimator, TransformerMixin):
 
         Args:
             X (:class:`FDataGrid`): SRSF to be transformed.
+            y (Ignored): Present for API conventions.
 
         Returns:
             :class:`FDataGrid`: Functions in the original space.
@@ -405,7 +408,7 @@ class ElasticRegistration(RegistrationTransformer):
 
         Args:
             X (:class:`FDataGrid`): Functional data to be registered.
-            y (ignored):
+            y (ignored): Present for API conventions.
 
         Returns:
             :class:`FDataGrid`: Registered samples.
@@ -458,7 +461,7 @@ class ElasticRegistration(RegistrationTransformer):
 
         return X.compose(self.warping_, eval_points=output_points)
 
-    def inverse_transform(self, X: FDataGrid):
+    def inverse_transform(self, X: FDataGrid, y=None):
         r"""Reverse the registration procedure previosly applied.
 
         Let :math:`gamma(t)` the warping applied to construct a registered
@@ -471,6 +474,7 @@ class ElasticRegistration(RegistrationTransformer):
         Args:
             X (:class:`FDataGrid`): Functional data to apply the reverse
                 transform.
+            y (Ignored): Present for API conventions.
 
         Returns:
             :class:`FDataGrid`: Functional data compose by the inverse warping.

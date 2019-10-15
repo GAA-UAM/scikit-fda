@@ -496,7 +496,7 @@ class FDataGrid(FData):
                          dataset_label=dataset_label)
 
     def __check_same_dimensions(self, other):
-        if self.data_matrix.shape[1] != other.data_matrix.shape[1]:
+        if self.data_matrix.shape[1:-1] != other.data_matrix.shape[1:-1]:
             raise ValueError("Error in columns dimensions")
         if not np.array_equal(self.sample_points, other.sample_points):
             raise ValueError("Sample points for both objects must be equal")
@@ -610,18 +610,37 @@ class FDataGrid(FData):
 
         return True
 
+    def _get_op_matrix(self, other):
+        if isinstance(other, numbers.Number):
+            return other
+        elif isinstance(other, np.ndarray):
+            # Product by number or matrix with equal dimensions, or
+            # matrix with same shape but only one sample
+            if(other.shape == () or other.shape == (1)
+               or other.shape == self.data_matrix.shape
+               or other.shape == self.data_matrix.shape[1:]):
+                return other
+            # Missing last dimension (codomain dimension)
+            elif (other.shape == self.data_matrix.shape[:-1]
+                  or other.shape == self.data_matrix.shape[1:-1]):
+                return other[..., np.newaxis]
+            else:
+                return None
+        elif isinstance(other, FDataGrid):
+            self.__check_same_dimensions(other)
+            return other.data_matrix
+        else:
+            return None
+
     def __add__(self, other):
         """Addition for FDataGrid object.
 
         It supports other FDataGrid objects, numpy.ndarray and numbers.
 
         """
-        if isinstance(other, (np.ndarray, numbers.Number)):
-            data_matrix = other
-        elif isinstance(other, FDataGrid):
-            self.__check_same_dimensions(other)
-            data_matrix = other.data_matrix
-        else:
+
+        data_matrix = self._get_op_matrix(other)
+        if data_matrix is None:
             return NotImplemented
 
         return self.copy(data_matrix=self.data_matrix + data_matrix)
@@ -641,12 +660,8 @@ class FDataGrid(FData):
         It supports other FDataGrid objects, numpy.ndarray and numbers.
 
         """
-        if isinstance(other, (np.ndarray, numbers.Number)):
-            data_matrix = other
-        elif isinstance(other, FDataGrid):
-            self.__check_same_dimensions(other)
-            data_matrix = other.data_matrix
-        else:
+        data_matrix = self._get_op_matrix(other)
+        if data_matrix is None:
             return NotImplemented
 
         return self.copy(data_matrix=self.data_matrix - data_matrix)
@@ -657,12 +672,8 @@ class FDataGrid(FData):
         It supports other FDataGrid objects, numpy.ndarray and numbers.
 
         """
-        if isinstance(other, (np.ndarray, numbers.Number)):
-            data_matrix = other
-        elif isinstance(other, FDataGrid):
-            self.__check_same_dimensions(other)
-            data_matrix = other.data_matrix
-        else:
+        data_matrix = self._get_op_matrix(other)
+        if data_matrix is None:
             return NotImplemented
 
         return self.copy(data_matrix=data_matrix - self.data_matrix)
@@ -673,12 +684,8 @@ class FDataGrid(FData):
         It supports other FDataGrid objects, numpy.ndarray and numbers.
 
         """
-        if isinstance(other, (np.ndarray, numbers.Number)):
-            data_matrix = other
-        elif isinstance(other, FDataGrid):
-            self.__check_same_dimensions(other)
-            data_matrix = other.data_matrix
-        else:
+        data_matrix = self._get_op_matrix(other)
+        if data_matrix is None:
             return NotImplemented
 
         return self.copy(data_matrix=self.data_matrix * data_matrix)
@@ -697,12 +704,8 @@ class FDataGrid(FData):
         It supports other FDataGrid objects, numpy.ndarray and numbers.
 
         """
-        if isinstance(other, (np.ndarray, numbers.Number)):
-            data_matrix = other
-        elif isinstance(other, FDataGrid):
-            self.__check_same_dimensions(other)
-            data_matrix = other.data_matrix
-        else:
+        data_matrix = self._get_op_matrix(other)
+        if data_matrix is None:
             return NotImplemented
 
         return self.copy(data_matrix=self.data_matrix / data_matrix)
@@ -713,12 +716,8 @@ class FDataGrid(FData):
         It supports other FDataGrid objects, numpy.ndarray and numbers.
 
         """
-        if isinstance(other, (np.ndarray, numbers.Number)):
-            data_matrix = other
-        elif isinstance(other, FDataGrid):
-            self.__check_same_dimensions(other)
-            data_matrix = other.data_matrix
-        else:
+        data_matrix = self._get_op_matrix(other)
+        if data_matrix is None:
             return NotImplemented
 
         return self.copy(data_matrix=data_matrix / self.data_matrix)

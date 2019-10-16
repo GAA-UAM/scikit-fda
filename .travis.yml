@@ -16,7 +16,9 @@ matrix:
     - name: "Python 3.7.3 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
-      before_install: choco install python
+      before_install:
+        - choco install python
+        - python -m ensurepip
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
     - name: "Coverage and pep 8 tests on Python 3.7.1 on Xenial Linux"
       python: 3.7           # this works for Linux but is ignored on macOS or Windows
@@ -24,11 +26,11 @@ matrix:
       env:
         - PEP8COVERAGE=true    # coverage test are only 
 install:
-  - pip install --upgrade pip cython numpy || pip install --upgrade --user pip cython numpy # all three OSes agree about 'pip3'
+  - pip3 install --upgrade pip cython numpy || pip3 install --upgrade --user pip cython numpy # all three OSes agree about 'pip3'
   - |
       if [[ $PEP8COVERAGE == true ]]; then
-        pip install flake8 || pip install --user flake8
-        pip install codecov pytest-cov || pip install --user codecov pytest-cov
+        pip3 install flake8 || pip3 install --user flake8
+        pip3 install codecov pytest-cov || pip3 install --user codecov pytest-cov
       fi
 
 # 'python' points to Python 2.7 on macOS but points to Python 3.7 on Linux and Windows

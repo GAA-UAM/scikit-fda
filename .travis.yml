@@ -24,11 +24,11 @@ matrix:
       env:
         - PEP8COVERAGE=true    # coverage test are only 
 install:
-  - pip3 install --upgrade pip cython numpy || pip3 install --upgrade --user pip cython numpy # all three OSes agree about 'pip3'
+  - pip install --upgrade pip cython numpy || pip install --upgrade --user pip cython numpy # all three OSes agree about 'pip3'
   - |
       if [[ $PEP8COVERAGE == true ]]; then
-        pip3 install flake8 || pip3 install --user flake8
-        pip3 install codecov pytest-cov || pip3 install --user codecov pytest-cov
+        pip install flake8 || pip install --user flake8
+        pip install codecov pytest-cov || pip install --user codecov pytest-cov
       fi
 
 # 'python' points to Python 2.7 on macOS but points to Python 3.7 on Linux and Windows

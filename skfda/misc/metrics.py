@@ -413,7 +413,7 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
                          domain_range=(0, 1))
 
-    srsf = SRSF(store_initial=False)
+    srsf = SRSF(initial_value=0)
     fdata1_srsf = srsf.fit_transform(fdata1)
     fdata2_srsf = srsf.transform(fdata2)
 
@@ -492,7 +492,7 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
 
     fdata1_reg = elastic_registration.fit_transform(fdata1)
 
-    srsf = SRSF(store_initial=False)
+    srsf = SRSF(initial_value=0)
     fdata1_reg_srsf = srsf.fit_transform(fdata1_reg)
     fdata2_srsf = srsf.transform(fdata2)
     distance = lp_distance(fdata1_reg_srsf, fdata2_srsf)

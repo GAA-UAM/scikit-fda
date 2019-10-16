@@ -54,9 +54,10 @@ class SRSF(BaseEstimator, TransformerMixin):
         eval_points (array_like, optional): Set of points where the
             functions are evaluated, by default uses the sample points of the
             fdatagrid.
-        store_initial (bool): If true stores the value :math:`f(a)` of the
-            samples during fitting to apply the inverse transform.
-            Defaults True.
+        initial_value (float, optional): Initial value to apply in the
+            inverse transformation. If `None` there are stored the initial
+            values of the functions during the transformation to apply
+            during the inverse transformation. Defaults None.
 
     Note:
         Due to the use of derivatives it is recommended that the samples are
@@ -77,7 +78,7 @@ class SRSF(BaseEstimator, TransformerMixin):
         >>> fd = make_sinusoidal_process(error_std=0, random_state=0)
         >>> srsf = SRSF()
         >>> srsf
-        SRSF(output_points=None, store_initial=True)
+        SRSF(intial_value=None, output_points=None)
 
         Fits the estimator (to apply the inverse transform) and apply the SRSF
 
@@ -94,44 +95,37 @@ class SRSF(BaseEstimator, TransformerMixin):
         array([ 0. ,  0. ,  0. , ... ])
 
     """
-    def __init__(self, output_points=None, store_initial=True):
+    def __init__(self, output_points=None, initial_value=None):
         """Initializes the transformer.
 
         Args:
             eval_points: (array_like, optional): Set of points where the
                 functions are evaluated, by default uses the sample points of
                 the :class:`FDataGrid <skfda.FDataGrid>` transformed.
-            store_initial (bool): If true stores the value :math:`f(a)` of the
-                samples during fitting to apply the inverse transform.
-                Defaults True.
+            initial_value (float, optional): Initial value to apply in the
+                inverse transformation. If `None` there are stored the initial
+                values of the functions during the transformation to apply
+                during the inverse transformation. Defaults None.
 
         """
         self.output_points = output_points
-        self.store_initial = store_initial
+        self.initial_value = initial_value
 
 
-    def fit(self, X: FDataGrid, y=None):
-        """Fits the transformer.
-
-        Stores the initial value of the functions to be transformed, in order
-        to apply its inverse transform.
+    def fit(self, X=None, y=None):
+        """This transformer do not need to be fitted.
 
         Args:
-            X (:class:`FDataGrid <skfda.FDataGrid`): Functional data to be
-                transformed.
+            X (Ignored): Present for API conventions.
             y (Ignored): Present for API conventions.
 
         Returns:
             (Estimator): self
 
         """
-        check_is_univariate(X)
-
-        if self.store_initial:
-            a = X.domain_range[0][0] # Stores initial value
-            self.initial_ = X(a).reshape(X.n_samples, 1, X.dim_codomain)
-
         return self
+
+
 
     def transform(self, X: FDataGrid, y=None):
         r"""Computes the square-root slope function (SRSF) transform.
@@ -161,9 +155,6 @@ class SRSF(BaseEstimator, TransformerMixin):
         """
         check_is_univariate(X)
 
-        if self.store_initial:
-            check_is_fitted(self, 'initial_')
-
         if self.output_points is None:
             output_points = X.sample_points[0]
         else:
@@ -180,6 +171,10 @@ class SRSF(BaseEstimator, TransformerMixin):
         data_matrix = np.sqrt(data_matrix, out=data_matrix)
         data_matrix *= sign_g
 
+        # Store the values of the transformation
+        if self.initial_value is None:
+            a = X.domain_range[0][0]
+            self.initial_value_ = X(a).reshape(X.n_samples, 1, X.dim_codomain)
 
         return X.copy(data_matrix=data_matrix, sample_points=output_points)
 
@@ -216,8 +211,14 @@ class SRSF(BaseEstimator, TransformerMixin):
         """
         check_is_univariate(X)
 
-        if self.store_initial:
-            check_is_fitted(self, 'initial_')
+        if self.initial_value is None and not hasattr(self, 'initial_value_'):
+            raise AttributeError("When initial_value=None is expected a "
+                                 "previous transformation of the data to "
+                                 "store the initial values to apply in the "
+                                 "inverse transformation. Also it is possible "
+                                 "to fix these values setting the attribute"
+                                 "initial value without a previous "
+                                 "transformation.")
 
         if self.output_points is None:
             output_points = X.sample_points[0]
@@ -232,8 +233,10 @@ class SRSF(BaseEstimator, TransformerMixin):
                                                  axis=1, initial=0)
 
         # If the transformer was fitted, sum the initial value
-        if hasattr(self, 'initial_'):
-            f_data_matrix += self.initial_
+        if self.initial_value is None:
+            f_data_matrix += self.initial_value_
+        else:
+            f_data_matrix += self.initial_value
 
         return X.copy(data_matrix=f_data_matrix, sample_points=output_points)
 
@@ -396,7 +399,7 @@ class ElasticRegistration(RegistrationTransformer):
             self.template_ = self.template(X)
 
         # Constructs the SRSF of the template
-        srsf = SRSF(output_points=self.output_points, store_initial=False)
+        srsf = SRSF(output_points=self.output_points, initial_value=0)
         self._template_srsf = srsf.fit_transform(self.template_)
 
         return self
@@ -423,7 +426,7 @@ class ElasticRegistration(RegistrationTransformer):
                              "all the curves to the same function or the "
                              "same number of samples than X.")
 
-        srsf = SRSF(output_points=self.output_points, store_initial=False)
+        srsf = SRSF(output_points=self.output_points, initial_value=0)
         fdatagrid_srsf = srsf.fit_transform(X)
 
         # Points of discretization
@@ -577,7 +580,7 @@ def warping_mean(warping, *, max_iter=100, tol=1e-6, step_size=.3):
                             _normalize_scale(warping.sample_points[0]))
 
     # Compute srsf of warpings and their mean
-    srsf = SRSF(output_points=eval_points, store_initial=False)
+    srsf = SRSF(output_points=eval_points, initial_value=0)
     psi = srsf.fit_transform(warping)
 
     # Find psi closest to the mean
@@ -695,7 +698,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
     """
     check_is_univariate(fdatagrid)
 
-    srsf_transformer = SRSF(store_initial=False)
+    srsf_transformer = SRSF(initial_value=0)
     fdatagrid_srsf = srsf_transformer.fit_transform(fdatagrid)
     eval_points = fdatagrid.sample_points[0]
 
@@ -753,8 +756,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
     if initial is None:
         initial = fdatagrid.data_matrix[:, 0].mean()
 
-    srsf_transformer.set_params(store_initial=True)
-    srsf_transformer.initial_ = initial
+    srsf_transformer.set_params(initial_value=initial)
 
 
     # Karcher mean orbit in space L2/Gamma

@@ -9,12 +9,14 @@ from scipy.interpolate import PchipInterpolator
 
 import numpy as np
 
+from ..._utils import check_is_univariate
+
 
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"
 
 
-def invert_warping(fdatagrid, *, eval_points=None):
+def invert_warping(fdatagrid, *, output_points=None):
     r"""Compute the inverse of a diffeomorphism.
 
     Let :math:`\gamma : [a,b] \rightarrow [a,b]` be a function strictly
@@ -66,20 +68,19 @@ def invert_warping(fdatagrid, *, eval_points=None):
 
     """
 
-    if fdatagrid.dim_codomain != 1 or fdatagrid.dim_domain != 1:
-        raise ValueError("Multidimensional object not supported.")
+    check_is_univariate(fdatagrid)
 
-    if eval_points is None:
-        eval_points = fdatagrid.sample_points[0]
+    if output_points is None:
+        output_points = fdatagrid.sample_points[0]
 
-    y = fdatagrid(eval_points, keepdims=False)
+    y = fdatagrid(output_points, keepdims=False)
 
-    data_matrix = np.empty((fdatagrid.n_samples, len(eval_points)))
+    data_matrix = np.empty((fdatagrid.n_samples, len(output_points)))
 
     for i in range(fdatagrid.n_samples):
-        data_matrix[i] = PchipInterpolator(y[i], eval_points)(eval_points)
+        data_matrix[i] = PchipInterpolator(y[i], output_points)(output_points)
 
-    return fdatagrid.copy(data_matrix=data_matrix, sample_points=eval_points)
+    return fdatagrid.copy(data_matrix=data_matrix, sample_points=output_points)
 
 
 def _normalize_scale(t, a=0, b=1):

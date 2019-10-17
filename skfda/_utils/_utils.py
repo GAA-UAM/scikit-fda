@@ -6,9 +6,18 @@ import types
 
 import numpy as np
 
-def _check_univariate(fd):
-    """Checks if an FData is univariate and raises an error"""
+def check_is_univariate(fd):
+    """Checks if an FData is univariate and raises an error
 
+    Args:
+        fd (:class:`~skfda.FData`): Functional object to check if is
+            univariate.
+
+    Raises:
+        ValueError: If it is not univariate, i.e., `fd.dim_domain != 1` or
+            `fd.dim_codomain != 1`.
+
+    """
     if fd.dim_domain != 1 or fd.dim_codomain != 1:
         raise ValueError(f"The functional data must be univariate, i.e., " +
                          f"with dim_domain=1 " +
@@ -19,7 +28,7 @@ def _check_univariate(fd):
                           f"(currently is  {fd.dim_codomain})"))
 
 def _to_grid(X, y, eval_points=None):
-    """Transforms the functional data in grids to perform calculations."""
+    """Transform a pair of FDatas in grids to perform calculations."""
 
     from .. import FDataGrid
     x_is_grid = isinstance(X, FDataGrid)

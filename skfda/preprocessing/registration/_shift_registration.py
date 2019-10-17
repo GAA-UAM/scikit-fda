@@ -8,7 +8,7 @@ from sklearn.utils.validation import check_is_fitted
 
 import numpy as np
 
-from ..._utils import constants
+from ..._utils import constants, check_is_univariate
 from .base import RegistrationTransformer
 from ... import FData, FDataGrid
 
@@ -125,7 +125,7 @@ class ShiftRegistration(RegistrationTransformer):
 
     def __init__(self, max_iter=5, tol=1e-2, template="mean",
                  extrapolation=None, step_size=1, restrict_domain=False,
-                 initial="zeros", output_points=None, **kwargs):
+                 initial="zeros", output_points=None):
         self.max_iter = max_iter
         self.tol = tol
         self.template = template
@@ -150,8 +150,7 @@ class ShiftRegistration(RegistrationTransformer):
                 template.
 
         """
-        if fd.dim_codomain > 1 or fd.dim_domain > 1:
-            raise NotImplementedError("Method for unidimensional data.")
+        check_is_univariate(fd)
 
         domain_range = fd.domain_range[0]
 

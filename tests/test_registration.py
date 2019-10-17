@@ -55,6 +55,21 @@ class TestWarping(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(normalized(1), [[1.], [1.]])
 
+    def test_standard_normalize_warping_default_value(self):
+        """Test normalization """
+
+        normalized = normalize_warping(self.polynomial)
+
+        # Test new domain range (0, 1)
+        np.testing.assert_array_equal(normalized.domain_range, [(-1, 1)])
+
+        np.testing.assert_array_almost_equal(normalized.sample_points[0],
+                                             np.linspace(-1, 1, 50))
+
+        np.testing.assert_array_almost_equal(normalized(-1), [[-1], [-1]])
+
+        np.testing.assert_array_almost_equal(normalized(1), [[1.], [1.]])
+
     def test_normalize_warpig(self):
         """Test normalization to (a, b)"""
         a = -4
@@ -238,7 +253,7 @@ class TestShiftRegistration(unittest.TestCase):
 
         fd = make_multimodal_samples(dim_domain=2, random_state=0)
 
-        with np.testing.assert_raises(NotImplementedError):
+        with np.testing.assert_raises(ValueError):
             reg.fit_transform(fd)
 
         reg.set_params(initial=[0.])
@@ -317,6 +332,23 @@ class TestRegistrationValidation(unittest.TestCase):
         score = scorer(self.shift_registration, self.X)
         np.testing.assert_almost_equal(score, 0.972000160)
 
+    def test_amplitude_phase_score_with_output_points(self):
+        eval_points = self.X.sample_points[0]
+        scorer = AmplitudePhaseDecomposition(eval_points=eval_points)
+        score = scorer(self.shift_registration, self.X)
+        np.testing.assert_almost_equal(score, 0.972000160)
+
+    def test_amplitude_phase_score_with_basis(self):
+        scorer = AmplitudePhaseDecomposition()
+        X = self.X.to_basis(Fourier())
+        score = scorer(self.shift_registration, X)
+        np.testing.assert_almost_equal(score, 0.9950259588)
+
+    def test_default_score(self):
+
+        score = self.shift_registration.score(self.X)
+        np.testing.assert_almost_equal(score, 0.972000160)
+
     def test_least_squares_score(self):
         scorer = LeastSquares()
         score = scorer(self.shift_registration, self.X)
@@ -345,6 +377,18 @@ class TestRegistrationValidation(unittest.TestCase):
         np.testing.assert_almost_equal(ret.mse_pha, 0.11576861468435257)
         np.testing.assert_almost_equal(ret.r_squared, 0.9915489952877273)
         np.testing.assert_almost_equal(ret.c_r, 0.9999963424653829)
+
+    def test_raises_amplitude_phase(self):
+        scorer = AmplitudePhaseDecomposition()
+
+        # Inconsistent number of functions registered
+        with np.testing.assert_raises(ValueError):
+            scorer.score_function(self.X, self.X[:2])
+
+        # Inconsistent number of functions registered
+        with np.testing.assert_raises(ValueError):
+            scorer.score_function(self.X, self.X, warping=self.X[:2])
+
 
 
 if __name__ == '__main__':

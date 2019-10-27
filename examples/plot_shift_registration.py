@@ -1,6 +1,6 @@
 """
-Shift Registration of basis
-===========================
+Shift Registration
+==================
 
 Shows the use of shift registration applied to a sinusoidal
 process represented in a Fourier basis.
@@ -12,8 +12,10 @@ process represented in a Fourier basis.
 # sphinx_gallery_thumbnail_number = 3
 
 import matplotlib.pyplot as plt
-import skfda
 
+from skfda.datasets import make_sinusoidal_process
+from skfda.preprocessing.registration import ShiftRegistration
+from skfda.representation.basis import Fourier
 
 ##############################################################################
 # In this example we will use a
@@ -24,7 +26,7 @@ import skfda
 #
 # In this example we want to register the curves using a translation
 # and remove the phase variation to perform further analysis.
-fd = skfda.datasets.make_sinusoidal_process(random_state=1)
+fd = make_sinusoidal_process(random_state=1)
 fd.plot()
 
 
@@ -32,25 +34,22 @@ fd.plot()
 # We will smooth the curves using a basis representation, which will help us
 # to remove the gaussian noise. Smoothing before registration
 # is essential due to the use of derivatives in the optimization process.
-#
 # Because of their sinusoidal nature we will use a Fourier basis.
 
-basis = skfda.representation.basis.Fourier(n_basis=11)
-fd_basis = fd.to_basis(basis)
-
+fd_basis = fd.to_basis(Fourier(n_basis=11))
 fd_basis.plot()
 
 ##############################################################################
-# We will apply the
-# :func:`~skfda.preprocessing.registration.shift_registration`,
+# We will use the
+# :func:`~skfda.preprocessing.registration.ShiftRegistration` transformer,
 # which is suitable due to the periodicity of the dataset and the small
 # amount of amplitude variation.
-
-fd_registered = skfda.preprocessing.registration.shift_registration(fd_basis)
-
-##############################################################################
+#
 # We can observe how the sinusoidal pattern is easily distinguishable
 # once the alignment has been made.
+
+shift_registration = ShiftRegistration()
+fd_registered = shift_registration.fit_transform(fd_basis)
 
 fd_registered.plot()
 
@@ -63,28 +62,23 @@ fd_registered.plot()
 # curves varying their amplitude with respect to the original process,
 # however, this effect is mitigated after the registration.
 
-fig = fd_basis.mean().plot()
-fd_registered.mean().plot(fig=fig)
-
 # sinusoidal process without variation and noise
-sine = skfda.datasets.make_sinusoidal_process(n_samples=1, phase_std=0,
-                                              amplitude_std=0, error_std=0)
+sine = make_sinusoidal_process(n_samples=1, phase_std=0,
+                               amplitude_std=0, error_std=0)
 
-sine.plot(fig=fig, linestyle='dashed')
+fig = fd_basis.mean().plot()
+fd_registered.mean().plot(fig)
+sine.plot(fig, linestyle='dashed')
 
 fig.axes[0].legend(['original mean', 'registered mean', 'sine'])
 
 ##############################################################################
-# The values of the shifts :math:`\delta_i` may be relevant for further
-# analysis, as they may be considered as nuisance or random effects.
+# The values of the shifts :math:`\delta_i`, stored in the attribute `deltas_`
+# may be relevant for further analysis, as they may be considered as nuisance
+# or random effects.
 #
 
-deltas = skfda.preprocessing.registration.shift_registration_deltas(fd_basis)
-print(deltas)
+print(shift_registration.deltas_)
 
-##############################################################################
-# The aligned functions can be obtained from the :math:`\delta_i` list
-# using the `shift` method.
-#
 
-fd_basis.shift(deltas).plot()
+plt.show()

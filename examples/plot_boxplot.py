@@ -38,9 +38,9 @@ label_names = dataset["target_names"]
 nlabels = len(label_names)
 label_colors = colormap(np.arange(nlabels) / (nlabels - 1))
 
-fd_temperatures.plot(sample_labels=dataset["target"],
-                     label_colors=label_colors,
-                     label_names=label_names)
+fd_temperatures.plot(group=dataset["target"],
+                     group_colors=label_colors,
+                     group_names=label_names)
 
 
 ##############################################################################
@@ -70,9 +70,9 @@ fdBoxplot.plot()
 color = 0.3
 outliercol = 0.7
 
-fd_temperatures.plot(sample_labels=fdBoxplot.outliers.astype(int),
-                     label_colors=colormap([color, outliercol]),
-                     label_names=["nonoutliers", "outliers"])
+fd_temperatures.plot(group=fdBoxplot.outliers.astype(int),
+                     group_colors=colormap([color, outliercol]),
+                     group_names=["nonoutliers", "outliers"])
 
 ##############################################################################
 # The curves pointed as outliers are are those curves with significantly lower

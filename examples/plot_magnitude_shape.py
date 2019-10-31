@@ -37,9 +37,9 @@ label_names = dataset["target_names"]
 nlabels = len(label_names)
 label_colors = colormap(np.arange(nlabels) / (nlabels - 1))
 
-fd_temperatures.plot(sample_labels=dataset["target"],
-                     label_colors=label_colors,
-                     label_names=label_names)
+fd_temperatures.plot(group=dataset["target"],
+                     group_colors=label_colors,
+                     group_names=label_names)
 
 ##############################################################################
 # The MS-Plot is generated. In order to show the results, the
@@ -62,9 +62,9 @@ msplot.plot()
 # To show the utility of the plot, the curves are plotted according to the
 # distinction made by the MS-Plot (outliers or not) with the same colors.
 
-fd_temperatures.plot(sample_labels=msplot.outliers.astype(int),
-                     label_colors=msplot.colormap([color, outliercol]),
-                     label_names=['nonoutliers', 'outliers'])
+fd_temperatures.plot(group=msplot.outliers.astype(int),
+                     group_colors=msplot.colormap([color, outliercol]),
+                     group_names=['nonoutliers', 'outliers'])
 
 ##############################################################################
 # We can observe that most of the curves  pointed as outliers belong either to
@@ -118,5 +118,5 @@ labels[group2] = 2
 ##############################################################################
 # We now plot the curves with their corresponding color:
 
-fd_temperatures.plot(sample_labels=labels,
-                     label_colors=colormap([color, outliercol, 0.9]))
+fd_temperatures.plot(group=labels,
+                     group_colors=colormap([color, outliercol, 0.9]))

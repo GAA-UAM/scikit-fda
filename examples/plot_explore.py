@@ -36,7 +36,7 @@ labels = np.zeros(fd.n_samples, dtype=int)
 labels[low_fat] = 1
 colors = ['red', 'blue']
 
-fig = fd.plot(sample_labels=labels, label_colors=colors,
+fig = fd.plot(group=labels, group_colors=colors,
               linewidth=0.5, alpha=0.7)
 
 ##############################################################################
@@ -48,7 +48,7 @@ mean_high = skfda.exploratory.stats.mean(fd[~low_fat])
 means = mean_high.concatenate(mean_low)
 
 means.dataset_label = fd.dataset_label + ' - means'
-means.plot(sample_labels=[0, 1], label_colors=colors,
+means.plot(group=[0, 1], group_colors=colors,
            linewidth=0.5)
 
 ##############################################################################
@@ -60,11 +60,11 @@ means.plot(sample_labels=[0, 1], label_colors=colors,
 # The first derivative is shown below:
 
 fdd = fd.derivative(1)
-fig = fdd.plot(sample_labels=labels, label_colors=colors,
+fig = fdd.plot(group=labels, group_colors=colors,
                linewidth=0.5, alpha=0.7)
 
 ##############################################################################
 # We now show the second derivative:
 fdd = fd.derivative(2)
-fig = fdd.plot(sample_labels=labels, label_colors=colors,
+fig = fdd.plot(group=labels, group_colors=colors,
                linewidth=0.5, alpha=0.7)

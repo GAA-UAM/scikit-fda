@@ -9,50 +9,50 @@ from ._utils import (_get_figure_and_axes, _set_figure_layout_for_fdata,
                      _set_labels)
 
 
-def _get_label_colors(n_labels, label_colors=None):
+def _get_label_colors(n_labels, group_colors=None):
     """Get the colors of each label"""
 
-    if label_colors is not None:
-        if len(label_colors) != n_labels:
-            raise ValueError("There must be a color in label_colors "
+    if group_colors is not None:
+        if len(group_colors) != n_labels:
+            raise ValueError("There must be a color in group_colors "
                              "for each of the labels that appear in "
-                             "sample_labels.")
+                             "group.")
     else:
         colormap = matplotlib.cm.get_cmap()
-        label_colors = colormap(np.arange(n_labels) / (n_labels - 1))
+        group_colors = colormap(np.arange(n_labels) / (n_labels - 1))
 
-    return label_colors
+    return group_colors
 
 
-def _get_color_info(fdata, sample_labels, label_names, label_colors, kwargs):
+def _get_color_info(fdata, group, group_names, group_colors, kwargs):
 
     patches = None
 
-    if sample_labels is not None:
+    if group is not None:
         # In this case, each curve has a label, and all curves with the same
         # label should have the same color
 
-        sample_labels = np.asarray(sample_labels)
+        group = np.asarray(group)
 
-        n_labels = np.max(sample_labels) + 1
+        n_labels = np.max(group) + 1
 
-        if np.any((sample_labels < 0) | (sample_labels >= n_labels)) or \
-                not np.all(np.isin(range(n_labels), sample_labels)):
-            raise ValueError("Sample_labels must contain at least an "
+        if np.any((group < 0) | (group >= n_labels)) or \
+                not np.all(np.isin(range(n_labels), group)):
+            raise ValueError("group must contain at least an "
                              "occurence of numbers between 0 and number "
                              "of distint sample labels.")
 
-        label_colors = _get_label_colors(n_labels, label_colors)
-        sample_colors = np.asarray(label_colors)[sample_labels]
+        group_colors = _get_label_colors(n_labels, group_colors)
+        sample_colors = np.asarray(group_colors)[group]
 
-        if label_names is not None:
-            if len(label_names) != n_labels:
-                raise ValueError("There must be a name in  label_names "
+        if group_names is not None:
+            if len(group_names) != n_labels:
+                raise ValueError("There must be a name in  group_names "
                                  "for each of the labels that appear in "
-                                 "sample_labels.")
+                                 "group.")
 
             patches = [matplotlib.patches.Patch(color=c, label=l)
-                       for c, l in zip(label_colors, label_names)]
+                       for c, l in zip(group_colors, group_names)]
 
     else:
         # In this case, each curve has a different color unless specified
@@ -75,7 +75,7 @@ def _get_color_info(fdata, sample_labels, label_names, label_colors, kwargs):
 def plot_graph(fdata, chart=None, *, derivative=0, fig=None, axes=None,
                n_rows=None, n_cols=None, n_points=None,
                domain_range=None,
-               sample_labels=None, label_colors=None, label_names=None,
+               group=None, group_colors=None, group_names=None,
                **kwargs):
     """Plot the FDatGrid object graph as hypersurfaces.
 
@@ -115,15 +115,15 @@ def plot_graph(fdata, chart=None, *, derivative=0, fig=None, axes=None,
             interval; in the case of surfaces a list with 2 tuples with
             the ranges for each dimension. Default uses the domain range
             of the functional object.
-        sample_labels (list of int): contains integers from [0 to number of
+        group (list of int): contains integers from [0 to number of
             labels) indicating to which group each sample belongs to. Then,
             the samples with the same label are plotted in the same color.
             If None, the default value, each sample is plotted in the color
             assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-        label_colors (list of colors): colors in which groups are
+        group_colors (list of colors): colors in which groups are
             represented, there must be one for each group. If None, each
             group is shown with distict colors in the "Greys" colormap.
-        label_names (list of str): name of each of the groups which appear
+        group_names (list of str): name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown.
         **kwargs: if dim_domain is 1, keyword arguments to be passed to
@@ -145,7 +145,7 @@ def plot_graph(fdata, chart=None, *, derivative=0, fig=None, axes=None,
         domain_range = _list_of_arrays(domain_range)
 
     sample_colors, patches = _get_color_info(
-        fdata, sample_labels, label_names, label_colors, kwargs)
+        fdata, group, group_names, group_colors, kwargs)
 
     if fdata.dim_domain == 1:
 
@@ -205,8 +205,8 @@ def plot_graph(fdata, chart=None, *, derivative=0, fig=None, axes=None,
 
 def plot_scatter(fdata, chart=None, *, sample_points=None, derivative=0,
                  fig=None, axes=None,
-                 n_rows=None, n_cols=None, n_points=None, domain_range=None,
-                 sample_labels=None, label_colors=None, label_names=None,
+                 n_rows=None, n_cols=None, domain_range=None,
+                 group=None, group_colors=None, group_names=None,
                  **kwargs):
     """Plot the FDatGrid object.
 
@@ -231,28 +231,21 @@ def plot_scatter(fdata, chart=None, *, sample_points=None, derivative=0,
         n_cols(int, optional): designates the number of columns of the
             figure to plot the different dimensions of the image. Only
             specified if fig and ax are None.
-        n_points (int or tuple, optional): Number of points to evaluate in
-            the plot. In case of surfaces a tuple of length 2 can be pased
-            with the number of points to plot in each axis, otherwise the
-            same number of points will be used in the two axes. By default
-            in unidimensional plots will be used 501 points; in surfaces
-            will be used 30 points per axis, wich makes a grid with 900
-            points.
         domain_range (tuple or list of tuples, optional): Range where the
             function will be plotted. In objects with unidimensional domain
             the domain range should be a tuple with the bounds of the
             interval; in the case of surfaces a list with 2 tuples with
             the ranges for each dimension. Default uses the domain range
             of the functional object.
-        sample_labels (list of int): contains integers from [0 to number of
+        group (list of int): contains integers from [0 to number of
             labels) indicating to which group each sample belongs to. Then,
             the samples with the same label are plotted in the same color.
             If None, the default value, each sample is plotted in the color
             assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-        label_colors (list of colors): colors in which groups are
+        group_colors (list of colors): colors in which groups are
             represented, there must be one for each group. If None, each
             group is shown with distict colors in the "Greys" colormap.
-        label_names (list of str): name of each of the groups which appear
+        group_names (list of str): name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown.
         **kwargs: if dim_domain is 1, keyword arguments to be passed to
@@ -265,12 +258,17 @@ def plot_scatter(fdata, chart=None, *, sample_points=None, derivative=0,
 
     """
 
+    evaluated_points = None
+
     if sample_points is None:
         # This can only be done for FDataGrid
         sample_points = fdata.sample_points
-        evaluated_points = fdata.data_matrix
-    else:
-        evaluated_points = fdata(sample_points, grid=True)
+        if derivative == 0:
+            evaluated_points = fdata.data_matrix
+
+    if evaluated_points is None:
+        evaluated_points = fdata(
+            sample_points, grid=True, derivative=derivative)
 
     fig, axes = _get_figure_and_axes(chart, fig, axes)
     fig, axes = _set_figure_layout_for_fdata(fdata, fig, axes, n_rows, n_cols)
@@ -281,7 +279,7 @@ def plot_scatter(fdata, chart=None, *, sample_points=None, derivative=0,
         domain_range = _list_of_arrays(domain_range)
 
     sample_colors, patches = _get_color_info(
-        fdata, sample_labels, label_names, label_colors, kwargs)
+        fdata, group, group_names, group_colors, kwargs)
 
     if fdata.dim_domain == 1:
 

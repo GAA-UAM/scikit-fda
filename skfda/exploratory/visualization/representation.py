@@ -24,7 +24,7 @@ def _get_label_colors(n_labels, group_colors=None):
     return group_colors
 
 
-def _get_color_info(fdata, group, group_names, group_colors, kwargs):
+def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
 
     patches = None
 
@@ -32,27 +32,30 @@ def _get_color_info(fdata, group, group_names, group_colors, kwargs):
         # In this case, each curve has a label, and all curves with the same
         # label should have the same color
 
-        group = np.asarray(group)
+        group_unique, group_indexes = np.unique(group, return_inverse=True)
+        n_labels = len(group_unique)
 
-        n_labels = np.max(group) + 1
+        if group_colors is not None:
+            group_colors_array = np.array(
+                [group_colors[g] for g in group_unique])
+        else:
+            colormap = matplotlib.cm.get_cmap()
+            group_colors_array = np.asarray(
+                colormap(np.arange(n_labels) / (n_labels - 1)))
 
-        if np.any((group < 0) | (group >= n_labels)) or \
-                not np.all(np.isin(range(n_labels), group)):
-            raise ValueError("group must contain at least an "
-                             "occurence of numbers between 0 and number "
-                             "of distint sample labels.")
+        sample_colors = group_colors_array[group_indexes]
 
-        group_colors = _get_label_colors(n_labels, group_colors)
-        sample_colors = np.asarray(group_colors)[group]
+        group_names_array = None
 
         if group_names is not None:
-            if len(group_names) != n_labels:
-                raise ValueError("There must be a name in  group_names "
-                                 "for each of the labels that appear in "
-                                 "group.")
+            group_names_array = np.array(
+                [group_names[g] for g in group_unique])
+        elif legend is True:
+            group_names_array = group_unique
 
+        if group_names_array is not None:
             patches = [matplotlib.patches.Patch(color=c, label=l)
-                       for c, l in zip(group_colors, group_names)]
+                       for c, l in zip(group_colors_array, group_names_array)]
 
     else:
         # In this case, each curve has a different color unless specified
@@ -76,6 +79,7 @@ def plot_graph(fdata, chart=None, *, derivative=0, fig=None, axes=None,
                n_rows=None, n_cols=None, n_points=None,
                domain_range=None,
                group=None, group_colors=None, group_names=None,
+               legend: bool = False,
                **kwargs):
     """Plot the FDatGrid object graph as hypersurfaces.
 
@@ -125,7 +129,11 @@ def plot_graph(fdata, chart=None, *, derivative=0, fig=None, axes=None,
             group is shown with distict colors in the "Greys" colormap.
         group_names (list of str): name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
-            and the legend is not shown.
+            and the legend is not shown. Implies `legend=True`.
+        legend (bool): if `True`, show a legend with the groups. If
+            `group_names` is passed, it will be used for finding the names
+            to display in the legend. Otherwise, the values passed to
+            `group` will be used.
         **kwargs: if dim_domain is 1, keyword arguments to be passed to
             the matplotlib.pyplot.plot function; if dim_domain is 2,
             keyword arguments to be passed to the
@@ -145,7 +153,7 @@ def plot_graph(fdata, chart=None, *, derivative=0, fig=None, axes=None,
         domain_range = _list_of_arrays(domain_range)
 
     sample_colors, patches = _get_color_info(
-        fdata, group, group_names, group_colors, kwargs)
+        fdata, group, group_names, group_colors, legend, kwargs)
 
     if fdata.dim_domain == 1:
 
@@ -207,6 +215,7 @@ def plot_scatter(fdata, chart=None, *, sample_points=None, derivative=0,
                  fig=None, axes=None,
                  n_rows=None, n_cols=None, domain_range=None,
                  group=None, group_colors=None, group_names=None,
+                 legend: bool = False,
                  **kwargs):
     """Plot the FDatGrid object.
 
@@ -247,7 +256,11 @@ def plot_scatter(fdata, chart=None, *, sample_points=None, derivative=0,
             group is shown with distict colors in the "Greys" colormap.
         group_names (list of str): name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
-            and the legend is not shown.
+            and the legend is not shown. Implies `legend=True`.
+        legend (bool): if `True`, show a legend with the groups. If
+            `group_names` is passed, it will be used for finding the names
+            to display in the legend. Otherwise, the values passed to
+            `group` will be used.
         **kwargs: if dim_domain is 1, keyword arguments to be passed to
             the matplotlib.pyplot.plot function; if dim_domain is 2,
             keyword arguments to be passed to the
@@ -279,7 +292,7 @@ def plot_scatter(fdata, chart=None, *, sample_points=None, derivative=0,
         domain_range = _list_of_arrays(domain_range)
 
     sample_colors, patches = _get_color_info(
-        fdata, group, group_names, group_colors, kwargs)
+        fdata, group, group_names, group_colors, legend, kwargs)
 
     if fdata.dim_domain == 1:
 

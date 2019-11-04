@@ -39,9 +39,11 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
             group_colors_array = np.array(
                 [group_colors[g] for g in group_unique])
         else:
-            colormap = matplotlib.cm.get_cmap()
-            group_colors_array = np.asarray(
-                colormap(np.arange(n_labels) / (n_labels - 1)))
+            prop_cycle = matplotlib.rcParams['axes.prop_cycle']
+            cycle_colors = prop_cycle.by_key()['color']
+
+            group_colors_array = np.take(
+                cycle_colors, np.arange(n_labels), mode='wrap')
 
         sample_colors = group_colors_array[group_indexes]
 

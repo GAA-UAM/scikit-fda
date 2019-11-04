@@ -37,7 +37,7 @@ y = data['target']
 class_names = data['target_names']
 
 # Plot samples grouped by sex
-X.plot(group=y, group_names=class_names, group_colors=['C0', 'C1'])
+X.plot(group=y, group_names=class_names)
 
 
 ##############################################################################

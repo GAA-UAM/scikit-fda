@@ -5,10 +5,10 @@ from ..depth import modified_band_depth
 
 
 class IQROutlierDetector(BaseEstimator, OutlierMixin):
-    r"""Outlier detector using the interquartilic range.
+    r"""Outlier detector using the interquartile range.
 
     Detects as outliers functions that have one or more points outside
-    ``factor`` times the interquartilic range plus or minus the central
+    ``factor`` times the interquartile range plus or minus the central
     envelope, given a functional depth measure. This corresponds to the
     points selected as outliers by the functional boxplot.
 

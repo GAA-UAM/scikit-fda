@@ -28,7 +28,7 @@ y = dataset['target']
 
 print(repr(fd))
 
-fd.plot(sample_labels=y, label_colors=['red', 'blue'])
+fd.plot(group=y, group_colors=['red', 'blue'])
 
 ##############################################################################
 # This kind of representation is a discretized representation, in which the

@@ -32,12 +32,13 @@ fat = y[:, np.asarray(target_feature_names) == 'Fat'].ravel()
 # the rest.
 
 low_fat = fat < 20
-labels = np.zeros(fd.n_samples, dtype=int)
-labels[low_fat] = 1
-colors = ['red', 'blue']
+labels = np.full(fd.n_samples, 'high fat')
+labels[low_fat] = 'low fat'
+colors = {'high fat': 'red',
+          'low fat': 'blue'}
 
-fig = fd.plot(sample_labels=labels, label_colors=colors,
-              linewidth=0.5, alpha=0.7)
+fig = fd.plot(group=labels, group_colors=colors,
+              linewidth=0.5, alpha=0.7, legend=True)
 
 ##############################################################################
 # The means of each group are the following ones.
@@ -48,8 +49,8 @@ mean_high = skfda.exploratory.stats.mean(fd[~low_fat])
 means = mean_high.concatenate(mean_low)
 
 means.dataset_label = fd.dataset_label + ' - means'
-means.plot(sample_labels=[0, 1], label_colors=colors,
-           linewidth=0.5)
+means.plot(group=['high fat', 'low fat'], group_colors=colors,
+           linewidth=0.5, legend=True)
 
 ##############################################################################
 # In this dataset, the vertical shift in the original trajectories is not
@@ -60,11 +61,11 @@ means.plot(sample_labels=[0, 1], label_colors=colors,
 # The first derivative is shown below:
 
 fdd = fd.derivative(1)
-fig = fdd.plot(sample_labels=labels, label_colors=colors,
-               linewidth=0.5, alpha=0.7)
+fig = fdd.plot(group=labels, group_colors=colors,
+               linewidth=0.5, alpha=0.7, legend=True)
 
 ##############################################################################
 # We now show the second derivative:
 fdd = fd.derivative(2)
-fig = fdd.plot(sample_labels=labels, label_colors=colors,
-               linewidth=0.5, alpha=0.7)
+fig = fdd.plot(group=labels, group_colors=colors,
+               linewidth=0.5, alpha=0.7, legend=True)

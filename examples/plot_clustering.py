@@ -58,8 +58,8 @@ colormap = plt.cm.get_cmap('tab20b')
 n_climates = len(climates)
 climate_colors = colormap(np.arange(n_climates) / (n_climates - 1))
 
-fd.plot(sample_labels=indexer, label_colors=climate_colors,
-        label_names=climates)
+fd.plot(group=indexer, group_colors=climate_colors,
+        group_names=climates)
 
 ##############################################################################
 # The number of clusters is set with the number of climates, in order to see

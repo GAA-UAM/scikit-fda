@@ -76,8 +76,8 @@ fd = fd.concatenate(magnitude_outlier, shape_outlier_shift,
 # The data is plotted to show the curves we are working with.
 labels = [0] * n_samples + [1] * 6
 
-fd.plot(sample_labels=labels,
-        label_colors=['lightgrey', 'black'])
+fd.plot(group=labels,
+        group_colors=['lightgrey', 'black'])
 
 ##############################################################################
 # The MS-Plot is generated. In order to show the results, the
@@ -96,8 +96,8 @@ labels = [0] * n_samples + [1, 2, 3, 4, 5, 6]
 colors = ['lightgrey', 'orange', 'blue', 'black',
           'green', 'brown', 'lightblue']
 
-fd.plot(sample_labels=labels,
-        label_colors=colors)
+fd.plot(group=labels,
+        group_colors=colors)
 
 ##############################################################################
 # We now show the points in the MS-plot using the same colors

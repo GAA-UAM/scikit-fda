@@ -685,15 +685,15 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 interval; in the case of surfaces a list with 2 tuples with
                 the ranges for each dimension. Default uses the domain range
                 of the functional object.
-            sample_labels (list of int): contains integers from [0 to number of
+            group (list of int): contains integers from [0 to number of
                 labels) indicating to which group each sample belongs to. Then,
                 the samples with the same label are plotted in the same color.
                 If None, the default value, each sample is plotted in the color
                 assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-            label_colors (list of colors): colors in which groups are
+            group_colors (list of colors): colors in which groups are
                 represented, there must be one for each group. If None, each
                 group is shown with distict colors in the "Greys" colormap.
-            label_names (list of str): name of each of the groups which appear
+            group_names (list of str): name of each of the groups which appear
                 in a legend, there must be one for each one. Defaults to None
                 and the legend is not shown.
             **kwargs: if dim_domain is 1, keyword arguments to be passed to

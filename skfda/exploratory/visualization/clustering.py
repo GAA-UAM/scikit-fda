@@ -8,7 +8,7 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ...ml.clustering.base_kmeans import FuzzyKMeans
+from ...ml.clustering import FuzzyKMeans
 from ._utils import (_darken,
                      _get_figure_and_axes, _set_figure_layout_for_fdata,
                      _set_figure_layout, _set_labels)

@@ -362,7 +362,7 @@ class KMeans(BaseKMeans):
             metric=<function pairwise_distance.<locals>.pairwise at
             0x7faf3aa061e0>, # doctest:+ELLIPSIS
             n_clusters=2, random_state=0, tol=0.0001)
-    """.replace('+IGNORE_RESULT', '+ELLIPSIS\n<...>')
+    """
 
     def __init__(self, n_clusters=2, init=None,
                  metric=pairwise_distance(lp_distance),
@@ -613,8 +613,8 @@ class FuzzyKMeans(BaseKMeans):
               metric=<function pairwise_distance.<locals>.pairwise at
               0x7faf3aa06488>,  # doctest:+ELLIPSIS
               n_clusters=2, n_dec=3, random_state=0, tol=0.0001)
-    """.replace('+IGNORE_RESULT', '+ELLIPSIS\n<...>')
-
+    """
+    
     def __init__(self, n_clusters=2, init=None,
                  metric=pairwise_distance(lp_distance), n_init=1, max_iter=100,
                  tol=1e-4, random_state=0, fuzzifier=2, n_dec=3):

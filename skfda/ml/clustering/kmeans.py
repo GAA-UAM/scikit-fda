@@ -353,16 +353,25 @@ class KMeans(BaseKMeans):
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> kmeans = KMeans()
-        >>> init= np.array([[0, 0, 0, 0, 0, 0], [2, 1, -1, 0.5, 0, -0.5]])
-        >>> init_fd = FDataGrid(init, sample_points)
-        >>> kmeans.fit(fd, init=init_fd)
-        >>> kmeans
-        KMeans(max_iter=100,
-            metric=<function pairwise_distance.<locals>.pairwise at
-            0x7faf3aa061e0>, # doctest:+ELLIPSIS
-            n_clusters=2, random_state=0, tol=0.0001)
-    """.replace('+IGNORE_RESULT', '+ELLIPSIS\n<...>')
+        >>> kmeans = KMeans(random_state=0)
+        >>> kmeans.fit(fd) # doctest:+ELLIPSIS
+        KMeans(...)
+        >>> kmeans.cluster_centers_.data_matrix
+        ... # doctest:+NORMALIZE_WHITESPACE
+        array([[[ 0.16666667],
+                [ 0.16666667],
+                [ 0.83333333],
+                [ 2.        ],
+                [ 1.66666667],
+                [ 1.16666667]],
+               [[-0.5       ],
+                [-0.5       ],
+                [-0.5       ],
+                [-1.        ],
+                [-1.        ],
+                [-1.        ]]])
+
+    """
 
     def __init__(self, n_clusters=2, init=None,
                  metric=pairwise_distance(lp_distance),
@@ -603,17 +612,21 @@ class FuzzyKMeans(BaseKMeans):
         ...                [[3, 0.2], [4, 0.3], [5, 0.4], [6, 0.5]]]
         >>> sample_points = [2, 4, 6, 8]
         >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> fuzzy_kmeans = FuzzyKMeans()
-        >>> init=np.array([[[3, 0], [5, 0], [2, 0], [4, 0]],
-        ...                [[0, 0], [0, 1], [0, 0], [0, 1]]])
-        >>> init_fd = FDataGrid(init, sample_points)
-        >>> fuzzy_kmeans.fit(fd, init=init_fd)
-        >>> fuzzy_kmeans
-        FuzzyKMeans(fuzzifier=2, max_iter=100,
-              metric=<function pairwise_distance.<locals>.pairwise at
-              0x7faf3aa06488>,  # doctest:+ELLIPSIS
-              n_clusters=2, n_dec=3, random_state=0, tol=0.0001)
-    """.replace('+IGNORE_RESULT', '+ELLIPSIS\n<...>')
+        >>> fuzzy_kmeans = FuzzyKMeans(random_state=0)
+        >>> fuzzy_kmeans.fit(fd) # doctest:+ELLIPSIS
+        FuzzyKMeans(...)
+        >>> fuzzy_kmeans.cluster_centers_.data_matrix
+        ... # doctest:+NORMALIZE_WHITESPACE
+        array([[[ 2.84075812,  0.2476166 ],
+                [ 3.84075812,  0.3476166 ],
+                [ 4.84075812,  0.4476166 ],
+                [ 5.84075812,  0.53175479]],
+               [[ 1.25224668,  0.35041906],
+                [ 2.25224668,  0.45041906],
+                [ 3.25224668,  0.55041906],
+                [ 4.25224668,  0.6252065 ]]])
+
+    """
 
     def __init__(self, n_clusters=2, init=None,
                  metric=pairwise_distance(lp_distance), n_init=1, max_iter=100,

@@ -5,6 +5,7 @@ import numpy as np
 import sklearn
 from skfda.misc.metrics import lp_distance
 from statsmodels.distributions.empirical_distribution import ECDF
+from skfda.inference.anova.anova_oneway import  func_oneway
 
 def generate_samples_independent(mean, sigma, n_samples):
     return [mean + np.random.normal(0, sigma, len(mean)) for _ in range(n_samples)]
@@ -31,6 +32,9 @@ fd_2 = FDataGrid(samples2, sample_points=grid, dataset_label="Process 2")
 fd_3 = FDataGrid(samples3, sample_points=grid, dataset_label="Process 3")
 fd_total = fd_1.concatenate(fd_2.concatenate(fd_3))
 
+# print(fd_total.data_matrix[0])
+# print(np.squeeze(np.take(fd_total.data_matrix, np.array([0, 3]), axis=0)))
+
 # Anova
 
 
@@ -55,12 +59,7 @@ def f_oneway(*args):
     print(v_alpha)
 
 
-def v_n_statistic(means, sizes):
-    lp_distance(means, means)
-
-
-# f_oneway(fd_2, fd_1, fd_3)
-v_n_statistic(fd_means, [1, 2, 3])
+func_oneway(fd_total, np.array(['a' for _ in range(10)] + [ 'b' for _ in range(10)] + ['c' for _ in range(10)]), 100)
 
 
 

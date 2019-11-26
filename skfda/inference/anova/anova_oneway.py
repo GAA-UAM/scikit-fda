@@ -1,20 +1,53 @@
 import numpy as np
 from skfda.misc.metrics import lp_distance
 from skfda.representation import FDataGrid
-import matplotlib.pyplot as plt
+from skfda.datasets import make_gaussian_process
 
 
 def vn_statistic(fd_means, sizes):
     # Calculating weighted sum of L2 distances between means
-    distances_m = np.tril(lp_distance(fd_means, fd_means)) # lp_distance not working as expected
+    distances_m = np.tril(lp_distance(fd_means, fd_means))  # lp_distance not working as expected
     # Calculating square of the distances and summing by groups
     distances_group = np.sum(np.multiply(distances_m, distances_m), axis=1)
     # Weighted sum
     return sum(distances_group * sizes)
 
 
-def func_oneway(fdata, groups, n_sim):
+def anova_bootstrap(fd_grouped, n_sim):
+    if len(fd_grouped) < 1:
+        return
 
+    m = fd_grouped[0].ncol
+    k = len(fd_grouped)
+    start, stop = fd_grouped[0].domain_range[0]
+
+    # Estimating covariances
+    k_est = [np.squeeze(fd.cov().data_matrix[0]) for fd in fd_grouped]
+
+    # Simulation
+    simulation = np.empty((0, k, m))
+    for l in range(n_sim):
+        sim_l = np.empty((0, m))
+        for i, fd in enumerate(fd_grouped):
+            process = make_gaussian_process(n_samples=1, n_features=m, start=start,
+                                            stop=stop, cov=k_est[i])
+            sim_l = np.append(sim_l, [np.squeeze(process.data_matrix)], axis=0)
+        simulation = np.append(simulation, [sim_l], axis=0)
+    return simulation
+
+
+def v_gorros(simulaciones, sizes):
+    distr = []
+    for s in simulaciones:
+        v = 0
+        for i in range(len(s)):
+            for j in range(i + 1, len(s)):
+                v += np.linalg.norm(s[i] - s[j] * np.sqrt(sizes[i] / sizes[j])) ** 2
+        distr.append(v)
+    return np.array(distr)
+
+
+def func_oneway(fdata, groups, n_sim):
     # Obtaining the different group labels
     group_set = np.unique(groups)
 
@@ -33,6 +66,10 @@ def func_oneway(fdata, groups, n_sim):
             means = means.concatenate(fd.mean())
 
     # vn = vn_statistic(means, [fd.n_samples for fd in fd_groups])
+    vn = 0.01  # Temporal
 
-# func_oneway(None, np.array(['a', 'b', 'a', 'a']), 1000)
+    simulation = anova_bootstrap(fd_groups, n_sim)
+    v = v_gorros(simulation, [10, 10, 10])
+    p_value = len(np.where(v >= vn)[0]) / len(v)
 
+    return p_value, vn, v

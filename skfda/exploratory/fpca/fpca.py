@@ -85,14 +85,19 @@ class FPCADiscretized:
         self.svd = svd
 
     def fit(self, X, y=None):
-        # for now lets consider that X is a FDataBasis Object
+        # data matrix initialization
+        fd_data = np.squeeze(X.data_matrix)
+
+        # obtain the number of samples and the number of points of descretization
+        n_samples, n_points_discretization = fd_data.shape
+
 
         # if centering is True then substract the mean function to each function in FDataBasis
         if self.centering:
             meanfd = X.mean()
             # consider moving these lines to FDataBasis as a centering function
             # substract from each row the mean coefficient matrix
-            X.data_matrix -= meanfd.coefficients
+            fd_data -= np.squeeze(meanfd.data_matrix)
 
         # establish weights for each point of discretization
         if not self.weights:
@@ -101,12 +106,6 @@ class FPCADiscretized:
             self.weights = np.append(self.weights, [self.weights[-1]])
 
         weights_matrix = np.diag(self.weights)
-
-        # data matrix initialization
-        fd_data = np.squeeze(X.data_matrix)
-
-        # obtain the number of samples and the number of points of descretization
-        n_samples, n_points_discretization = fd_data.shape
 
         # k_estimated is not used for the moment
         # k_estimated = fd_data @ np.transpose(fd_data) / n_samples
@@ -117,12 +116,12 @@ class FPCADiscretized:
             # vh contains the eigenvectors transposed
             # s contains the singular values, which are square roots of eigenvalues
             u, s, vh = np.linalg.svd(final_matrix, full_matrices=True, compute_uv=True)
-            self.components = X.copy(coefficients=vh[:self.n_components, :])
+            self.components = X.copy(data_matrix=vh[:self.n_components, :])
             self.component_values = s**2
         else:
             # perform eigenvalue and eigenvector analysis on this matrix
             # eigenvectors is a numpy array, such that its columns are eigenvectors
-            eigenvalues, eigenvectors = np.linalg.eig(final_matrix)
+            eigenvalues, eigenvectors = np.linalg.eig(np.transpose(final_matrix) @ final_matrix)
 
             # sort the eigenvalues and eigenvectors from highest to lowest
             # the eigenvectors are the principal components
@@ -133,8 +132,8 @@ class FPCADiscretized:
             # we only want the first ones, determined by n_components
             principal_components_t = principal_components_t[:, :self.n_components]
 
-            self.components = X.copy(coefficients=np.transpose(principal_components_t))
-
+            # prepare the computed principal components
+            self.components = X.copy(data_matrix=np.transpose(principal_components_t))
             self.component_values = eigenvalues
 
         return self
@@ -145,7 +144,8 @@ class FPCADiscretized:
         return self.component_values[:self.n_components]
 
     def fit_transform(self, X, y=None):
-        pass
+        self.fit(X, y)
+        return self.transform(X, y)
 
 
 

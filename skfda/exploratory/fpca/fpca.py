@@ -5,13 +5,14 @@ from skfda.datasets._real_datasets import fetch_growth
 from matplotlib import pyplot
 
 class FPCABasis:
-    def __init__(self, n_components, components_basis=None, centering=True):
+    def __init__(self, n_components, components_basis=None, centering=True, svd=False):
         self.n_components = n_components
         # component_basis is the basis that we want to use for the principal components
         self.components_basis = components_basis
         self.centering = centering
         self.components = None
         self.component_values = None
+        self.svd = svd
 
     def fit(self, X, y=None):
         # for now lets consider that X is a FDataBasis Object
@@ -27,41 +28,55 @@ class FPCABasis:
         n_samples, n_basis = X.coefficients.shape
 
         # setup principal component basis if not given
-        if not self.components_basis:
+        if self.components_basis:
+            # if the principal components are in the same basis, this is essentially the gram matrix
+            g_matrix = self.components_basis.gram_matrix()
+            j_matrix = X.basis.inner_product(self.components_basis)
+        else:
             self.components_basis = X.basis.copy()
+            g_matrix = self.components_basis.gram_matrix()
+            j_matrix = g_matrix
 
-        # if the principal components are in the same basis, this is essentially the gram matrix
-        j_matrix = X.basis.inner_product(self.components_basis)
-
-        g_matrix = self.components_basis.gram_matrix()
         l_matrix = np.linalg.cholesky(g_matrix)
+
+        # L^{-1}
         l_matrix_inv = np.linalg.inv(l_matrix)
 
-        # The following matrix is needed: L^(-1)*J^T
-        l_inv_j_t = np.matmul(l_matrix_inv, np.transpose(j_matrix))
+        # The following matrix is needed: L^{-1}*J^T
+        l_inv_j_t = l_matrix_inv @ np.transpose(j_matrix)
 
-        # the final matrix (L-1Jt)-1CtC(L-1Jt)t
-        final_matrix = (l_inv_j_t @ np.transpose(X.coefficients)
-                        @ X.coefficients @ np.transpose(l_inv_j_t))/n_samples
+        # the final matrix, C(L-1Jt)t for svd or (L-1Jt)-1CtC(L-1Jt)t for eigen analysis
+        if self.svd:
+            final_matrix = X.coefficients @ np.transpose(l_inv_j_t) / np.sqrt(n_samples)
+            # vh contains the eigenvectors transposed
+            # s contains the singular values, which are square roots of eigenvalues
+            u, s, vh = np.linalg.svd(final_matrix, full_matrices=True, compute_uv=True)
+            principal_components = vh @ l_matrix_inv
+            self.components = X.copy(basis=self.components_basis,
+                                     coefficients=principal_components[:self.n_components, :])
+            self.component_values = s ** 2
+        else:
+            final_matrix = (l_inv_j_t @ np.transpose(X.coefficients)
+                            @ X.coefficients @ np.transpose(l_inv_j_t)) / n_samples
 
-        # perform eigenvalue and eigenvector analysis on this matrix
-        # eigenvectors is a numpy array, such that its columns are eigenvectors
-        eigenvalues, eigenvectors = np.linalg.eig(final_matrix)
+            # perform eigenvalue and eigenvector analysis on this matrix
+            # eigenvectors is a numpy array, such that its columns are eigenvectors
+            eigenvalues, eigenvectors = np.linalg.eig(final_matrix)
 
-        # sort the eigenvalues and eigenvectors from highest to lowest
-        idx = eigenvalues.argsort()[::-1]
-        eigenvalues = eigenvalues[idx]
-        eigenvectors = eigenvectors[:, idx]
+            # sort the eigenvalues and eigenvectors from highest to lowest
+            idx = eigenvalues.argsort()[::-1]
+            eigenvalues = eigenvalues[idx]
+            eigenvectors = eigenvectors[:, idx]
 
-        principal_components_t = np.transpose(l_matrix_inv) @ eigenvectors
+            principal_components_t = np.transpose(l_matrix_inv) @ eigenvectors
 
-        # we only want the first ones, determined by n_components
-        principal_components_t = principal_components_t[:, :self.n_components]
+            # we only want the first ones, determined by n_components
+            principal_components_t = principal_components_t[:, :self.n_components]
 
-        self.components = X.copy(basis=self.components_basis,
-                                 coefficients=np.transpose(principal_components_t))
+            self.components = X.copy(basis=self.components_basis,
+                                     coefficients=np.transpose(principal_components_t))
 
-        self.component_values = eigenvalues
+            self.component_values = eigenvalues
 
         return self
 

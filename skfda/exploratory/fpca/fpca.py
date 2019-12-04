@@ -1,20 +1,76 @@
 import numpy as np
-import skfda
+from abc import ABC, abstractmethod
 from skfda.representation.basis import FDataBasis
-from skfda.datasets._real_datasets import fetch_growth
-from matplotlib import pyplot
+from skfda.representation.grid import FDataGrid
 
-class FPCABasis:
-    def __init__(self, n_components, components_basis=None, centering=True, svd=False):
+
+class FPCA(ABC):
+    """Defines the common structure shared between classes that do functional principal component analysis
+
+    Attributes:
+        n_components (int): number of principal components to obtain from functional principal component analysis
+        centering (bool): if True then calculate the mean of the functional data object and center the data first
+        svd (bool): if True then we use svd to obtain the principal components. Otherwise we use eigenanalysis
+        components (FDataGrid or FDataBasis): this contains the principal components either in a basis form or
+            discretized form
+        component_values (array_like): this contains the values (eigenvalues) associated with the principal components
+
+    """
+
+    def __init__(self, n_components, centering=True, svd=True):
+        """ FPCA constructor
+        Args:
+            n_components (int): number of principal components to obtain from functional principal component analysis
+            centering (bool): if True then calculate the mean of the functional data object and center the data first.
+                Defaults to True
+            svd (bool): if True then we use svd to obtain the principal components. Otherwise we use eigenanalysis.
+                Defaults to True as svd is usually more efficient
+        """
         self.n_components = n_components
-        # component_basis is the basis that we want to use for the principal components
-        self.components_basis = components_basis
         self.centering = centering
+        self.svd = svd
         self.components = None
         self.component_values = None
-        self.svd = svd
 
+    @abstractmethod
     def fit(self, X, y=None):
+        """Computes the n_components first principal components and saves them inside the FPCA object.
+
+            Args:
+                X (FDataGrid or FDataBasis): the functional data object to be analysed
+                y (None, not used): only present for convention of a fit function
+
+            Returns:
+                self (object)
+        """
+        pass
+
+    @abstractmethod
+    def transform(self, X, y=None):
+        """Computes the n_components first principal components score and returns them.
+
+            Args:
+                X (FDataGrid or FDataBasis): the functional data object to be analysed
+                y (None, not used): only present for convention of a fit function
+
+            Returns:
+                (array_like): the scores of the n_components first principal components
+        """
+        pass
+
+    def fit_transform(self, X, y=None):
+        self.fit(X, y)
+        return self.transform(X, y)
+
+
+class FPCABasis(FPCA):
+
+    def __init__(self, n_components, components_basis=None, centering=True, svd=False):
+        super().__init__(n_components, centering, svd)
+        # component_basis is the basis that we want to use for the principal components
+        self.components_basis = components_basis
+
+    def fit(self, X: FDataBasis, y=None):
         # for now lets consider that X is a FDataBasis Object
 
         # if centering is True then substract the mean function to each function in FDataBasis
@@ -81,31 +137,21 @@ class FPCABasis:
         return self
 
     def transform(self, X, y=None):
-        total = sum(self.component_values)
-        self.component_values /= total
-        return self.component_values[:self.n_components]
-
-    def fit_transform(self, X, y=None):
-        pass
+        return X.inner_product(self.components)
 
 
-class FPCADiscretized:
+class FPCADiscretized(FPCA):
     def __init__(self, n_components, weights=None, centering=True, svd=True):
-        self.n_components = n_components
-        # component_basis is the basis that we want to use for the principal components
-        self.centering = centering
-        self.components = None
-        self.component_values = None
+        super().__init__(n_components, centering, svd)
         self.weights = weights
-        self.svd = svd
 
-    def fit(self, X, y=None):
+    # noinspection PyPep8Naming
+    def fit(self, X: FDataGrid, y=None):
         # data matrix initialization
         fd_data = np.squeeze(X.data_matrix)
 
         # obtain the number of samples and the number of points of descretization
         n_samples, n_points_discretization = fd_data.shape
-
 
         # if centering is True then substract the mean function to each function in FDataBasis
         if self.centering:
@@ -154,16 +200,4 @@ class FPCADiscretized:
         return self
 
     def transform(self, X, y=None):
-        total = sum(self.component_values)
-        self.component_values /= total
-        return self.component_values[:self.n_components]
-
-    def fit_transform(self, X, y=None):
-        self.fit(X, y)
-        return self.transform(X, y)
-
-
-
-
-
-
+        return np.squeeze(X.data_matrix) @ np.transpose(np.squeeze(self.components.data_matrix))

@@ -1,7 +1,6 @@
 from skfda import FDataGrid
-from skfda.datasets import make_gaussian_process
 import numpy as np
-from skfda.inference.anova.anova_oneway import  func_oneway
+from skfda.inference.anova.anova_oneway import func_oneway
 
 
 def generate_samples_independent(mean, sigma, n_samples):
@@ -29,4 +28,5 @@ fd_2 = FDataGrid(samples2, sample_points=grid, dataset_label="Process 2")
 fd_3 = FDataGrid(samples3, sample_points=grid, dataset_label="Process 3")
 fd_total = fd_1.concatenate(fd_2.concatenate(fd_3))
 
-func_oneway(fd_total, np.array(['a' for _ in range(10)] + ['b' for _ in range(10)] + ['c' for _ in range(10)]), 2000)
+p_v, vn, v = func_oneway(fd_total, np.array(['a' for _ in range(10)] + ['b' for _ in range(10)] + ['c' for _ in range(10)]), 2000)
+print(p_v, vn)

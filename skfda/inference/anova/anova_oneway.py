@@ -36,6 +36,21 @@ def anova_bootstrap(fd_grouped, n_sim):
     return simulation
 
 
+def vn_temp(fd_means, sizes):
+
+    means = []
+    for f in fd_means.data_matrix:
+        means.append(FDataGrid(np.squeeze(f), sample_points=np.squeeze(fd_means.sample_points[0])))
+
+    v = 0
+
+    for i in range(len(means)):
+        for j in range(i + 1, len(means)):
+            v += sizes[i] * lp_distance(means[i], means[j]) ** 2
+
+    return v
+
+
 def v_gorros(simulaciones, sizes):
     distr = []
     for s in simulaciones:
@@ -66,7 +81,7 @@ def func_oneway(fdata, groups, n_sim):
             means = means.concatenate(fd.mean())
 
     # vn = vn_statistic(means, [fd.n_samples for fd in fd_groups])
-    vn = 0.01  # Temporal
+    vn = vn_temp(means, [fd.n_samples for fd in fd_groups])
 
     simulation = anova_bootstrap(fd_groups, n_sim)
     v = v_gorros(simulation, [10, 10, 10])

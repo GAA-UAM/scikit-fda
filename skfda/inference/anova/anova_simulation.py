@@ -10,17 +10,18 @@ def generate_samples_independent(mean, sigma, n_samples):
 # Cuevas simulation study
 grid = np.linspace(0, 1, 25)
 n_levels = 3
-
+sigmas = np.array([0, 0.2, 1, 1.8, 2.6, 3.4, 4.2, 5])
+sigmas_star = sigmas / 25
 # Case M2
-mean1 = np.vectorize(lambda t: t*(1-t)**5)(grid)
-mean2 = np.vectorize(lambda t: t**2*(1-t)**4)(grid)
-mean3 = np.vectorize(lambda t: t**3*(1-t)**3)(grid)
+mean1 = np.vectorize(lambda t: t * (1 - t) ** 5)(grid)
+mean2 = np.vectorize(lambda t: t ** 2 * (1 - t) ** 4)(grid)
+mean3 = np.vectorize(lambda t: t ** 3 * (1 - t) ** 3)(grid)
 
 fd_means = FDataGrid([mean1, mean2, mean3])
 
-samples1 = generate_samples_independent(mean1, 0.2/25, 10)
-samples2 = generate_samples_independent(mean2, 0.2/25, 10)
-samples3 = generate_samples_independent(mean3, 0.2/25, 10)
+samples1 = generate_samples_independent(mean1, sigmas_star[4], 10)
+samples2 = generate_samples_independent(mean2, sigmas_star[4], 10)
+samples3 = generate_samples_independent(mean3, sigmas_star[4], 10)
 
 # Storing in FDataGrid
 fd_1 = FDataGrid(samples1, sample_points=grid, dataset_label="Process 1")
@@ -28,5 +29,13 @@ fd_2 = FDataGrid(samples2, sample_points=grid, dataset_label="Process 2")
 fd_3 = FDataGrid(samples3, sample_points=grid, dataset_label="Process 3")
 fd_total = fd_1.concatenate(fd_2.concatenate(fd_3))
 
-p_v, vn, v = func_oneway(fd_total, np.array(['a' for _ in range(10)] + ['b' for _ in range(10)] + ['c' for _ in range(10)]), 2000)
-print(p_v, vn)
+print(func_oneway(fd_1, fd_2, fd_3, n_sim=10000)[:-1])
+
+# pr1 = FDataGrid([[1, 1], [1.5, 1.5]])
+# pr2 = FDataGrid([[2, 2], [2.5, 2.5]])
+# # print(pr1.concatenate(pr2))
+#
+# def cosa(*args):
+#     print(args[0])
+#
+# cosa(pr1, pr2)

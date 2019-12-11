@@ -17,7 +17,7 @@ import numpy as np
 from skfda import datasets
 from skfda.exploratory.visualization.clustering import (
     plot_clusters, plot_cluster_lines, plot_cluster_bars)
-from skfda.ml.clustering.base_kmeans import KMeans, FuzzyKMeans
+from skfda.ml.clustering import KMeans, FuzzyKMeans
 
 
 ##############################################################################

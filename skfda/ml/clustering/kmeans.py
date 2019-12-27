@@ -4,8 +4,8 @@ from abc import abstractmethod
 import warnings
 
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
-from sklearn.exceptions import NotFittedError
 from sklearn.utils import check_random_state
+from sklearn.utils.validation import check_is_fitted
 
 import numpy as np
 
@@ -39,11 +39,13 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                 fdatagrid.dim_codomain). Defaults to None, and the centers are
                 initialized randomly.
             metric (optional): metric that acceps two FDataGrid objects and
-            returns a matrix with shape (fdatagrid1.n_samples,
-            fdatagrid2.n_samples). Defaults to *pairwise_distance(lp_distance)*.
+                returns a matrix with shape (fdatagrid1.n_samples,
+                fdatagrid2.n_samples). Defaults to
+                *pairwise_distance(lp_distance)*.
             n_init (int, optional): Number of time the k-means algorithm will
-            be run with different centroid seeds. The final results will be the
-            best output of n_init consecutive runs in terms of inertia.
+                be run with different centroid seeds. The final results will
+                be the best output of n_init consecutive runs in terms of
+                inertia.
             max_iter (int, optional): Maximum number of iterations of the
                 clustering algorithm for a single run. Defaults to 100.
             tol (float, optional): tolerance used to compare the centroids
@@ -96,8 +98,8 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         if self.init is not None and self.init.data_matrix.shape != (
                 self.n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain):
             raise ValueError("The init FDataGrid data_matrix should be of "
-                             "shape (n_clusters, n_features, dim_codomain) and "
-                             "gives the initial centers.")
+                             "shape (n_clusters, n_features, dim_codomain) "
+                             "and gives the initial centers.")
 
         if self.max_iter < 1:
             raise ValueError(
@@ -121,17 +123,26 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                 centroid initialization.
 
         Returns:
-            centers (ndarray): initial centers
+            centroids (ndarray): initial centroids
         """
-        comparison = True
-        while comparison:
-            indices = random_state.permutation(fdatagrid.n_samples)[
-                :self.n_clusters]
-            centers = fdatagrid.data_matrix[indices]
-            unique_centers = np.unique(centers, axis=0)
-            comparison = len(unique_centers) != self.n_clusters
 
-        return centers
+        if self.init is None:
+            _, idx = np.unique(fdatagrid.data_matrix,
+                               axis=0, return_index=True)
+            unique_data = fdatagrid.data_matrix[np.sort(idx)]
+
+            if len(unique_data) < self.n_clusters:
+                return ValueError("Not enough unique data points to "
+                                  "initialize the requested number of "
+                                  "clusters")
+
+            indices = random_state.permutation(len(unique_data))[
+                :self.n_clusters]
+            centroids = unique_data[indices]
+
+            return fdatagrid.copy(data_matrix=centroids)
+        else:
+            return self.init.copy()
 
     @abstractmethod
     def fit(self, X, y=None, sample_weight=None):
@@ -145,20 +156,6 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                 convention.
         """
         pass
-
-    def _check_is_fitted(self):
-        """Perform is_fitted validation for estimator.
-
-        Checks if the estimator is fitted by verifying the presence of
-        of the calculated attributes "labels_" and "cluster_centers_", and
-        raises a NotFittedError if that is not the case.
-        """
-        msg = ("This %(name)s instance is not fitted yet. Call 'fit' with "
-               "appropriate arguments before using this method.")
-
-        if not hasattr(self, "labels_") or \
-                not hasattr(self, "cluster_centers_"):
-            raise NotFittedError(msg % {'name': type(self).__name__})
 
     def _check_test_data(self, fdatagrid):
         """Checks that the FDataGrid object and the calculated centroids have
@@ -182,7 +179,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         Returns:
             labels_
         """
-        self._check_is_fitted()
+        check_is_fitted(self)
         self._check_test_data(X)
         return self.labels_
 
@@ -216,7 +213,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
             distances_to_centers (numpy.ndarray: (n_samples, n_clusters)):
                 distances of each sample to each cluster.
         """
-        self._check_is_fitted()
+        check_is_fitted(self)
         self._check_test_data(X)
         return self._distances_to_centers
 
@@ -252,7 +249,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                 attribute.
 
         """
-        self._check_is_fitted()
+        check_is_fitted(self)
         self._check_test_data(X)
         return -self.inertia_
 
@@ -315,8 +312,9 @@ class KMeans(BaseKMeans):
             classified. Defaults to 2.
         init (FDataGrid, optional): Contains the initial centers of the
             different clusters the algorithm starts with. Its data_marix must
-            be of the shape (n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain).
-            Defaults to None, and the centers are initialized randomly.
+            be of the shape (n_clusters, fdatagrid.ncol,
+            fdatagrid.dim_codomain). Defaults to None, and the centers are
+            initialized randomly.
         metric (optional): metric that acceps two FDataGrid objects and returns
             a matrix with shape (fdatagrid1.n_samples, fdatagrid2.n_samples).
             Defaults to *pairwise_distance(lp_distance)*.
@@ -334,8 +332,9 @@ class KMeans(BaseKMeans):
             See :term:`Glossary <random_state>`.
 
     Attributes:
-        labels_ (numpy.ndarray: (n_samples, dim_codomain)): 2-dimensional matrix
-            in which each row contains the cluster that observation belongs to.
+        labels_ (numpy.ndarray: (n_samples, dim_codomain)): 2-dimensional
+            matrix in which each row contains the cluster that observation
+            belongs to.
         cluster_centers_ (FDataGrid object): data_matrix of shape
             (n_clusters, ncol, dim_codomain) and contains the centroids for
             each cluster.
@@ -435,29 +434,34 @@ class KMeans(BaseKMeans):
                 repetitions(int): number of iterations the algorithm was run.
         """
         repetitions = 0
-        centers_old = np.zeros(
+        centroids_old_matrix = np.zeros(
             (self.n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain))
 
-        if self.init is None:
-            centers = self._init_centroids(fdatagrid, random_state)
-        else:
-            centers = np.copy(self.init.data_matrix)
+        centroids = self._init_centroids(fdatagrid, random_state)
+        centroids_old = centroids.copy(data_matrix=centroids_old_matrix)
 
-        while not np.allclose(centers, centers_old, rtol=self.tol,
+        while not np.allclose(centroids.data_matrix,
+                              centroids_old.data_matrix,
+                              rtol=self.tol,
                               atol=self.tol) and repetitions < self.max_iter:
-            centers_old = np.copy(centers)
-            centers_fd = FDataGrid(centers, fdatagrid.sample_points)
+            centroids_old.data_matrix[...] = centroids.data_matrix
+
             distances_to_centers = self.metric(fdata1=fdatagrid,
-                                               fdata2=centers_fd)
+                                               fdata2=centroids)
+
             clustering_values = np.argmin(distances_to_centers, axis=1)
+
             for i in range(self.n_clusters):
+
                 indices, = np.where(clustering_values == i)
-                if indices.size != 0:
-                    centers[i] = np.average(
+
+                if len(indices) != 0:
+                    centroids.data_matrix[i] = np.average(
                         fdatagrid.data_matrix[indices, ...], axis=0)
+
             repetitions += 1
 
-        return clustering_values, centers, distances_to_centers, repetitions
+        return clustering_values, centroids, distances_to_centers, repetitions
 
     def fit(self, X, y=None, sample_weight=None):
         """ Computes K-Means clustering calculating the attributes
@@ -475,8 +479,7 @@ class KMeans(BaseKMeans):
 
         clustering_values = np.empty(
             (self.n_init, fdatagrid.n_samples)).astype(int)
-        centers = np.empty((self.n_init, self.n_clusters,
-                            fdatagrid.ncol, fdatagrid.dim_codomain))
+        centroids = np.empty(self.n_init, dtype=object)
         distances_to_centers = np.empty(
             (self.n_init, fdatagrid.n_samples, self.n_clusters))
         distances_to_their_center = np.empty(
@@ -484,7 +487,7 @@ class KMeans(BaseKMeans):
         n_iter = np.empty((self.n_init))
 
         for j in range(self.n_init):
-            (clustering_values[j, :], centers[j, :, :, :],
+            (clustering_values[j, :], centroids[j],
              distances_to_centers[j, :, :], n_iter[j]) = (
                 self._kmeans_implementation(fdatagrid=fdatagrid,
                                             random_state=random_state))
@@ -496,9 +499,7 @@ class KMeans(BaseKMeans):
         index_best_iter = np.argmin(inertia)
 
         self.labels_ = clustering_values[index_best_iter]
-        self.cluster_centers_ = FDataGrid(data_matrix=centers[index_best_iter],
-                                          sample_points=fdatagrid.sample_points
-                                          )
+        self.cluster_centers_ = centroids[index_best_iter]
         self._distances_to_centers = distances_to_centers[index_best_iter]
         self.inertia_ = inertia[index_best_iter]
         self.n_iter_ = n_iter[index_best_iter]
@@ -630,7 +631,7 @@ class FuzzyKMeans(BaseKMeans):
 
     def __init__(self, n_clusters=2, init=None,
                  metric=pairwise_distance(lp_distance), n_init=1, max_iter=100,
-                 tol=1e-4, random_state=0, fuzzifier=2, n_dec=3):
+                 tol=1e-4, random_state=0, fuzzifier=2):
         """Initialization of the FuzzyKMeans class.
 
         Args:
@@ -659,15 +660,13 @@ class FuzzyKMeans(BaseKMeans):
                 deterministic. Defaults to 0.
             fuzzifier (int, optional): Scalar parameter used to specify the
                 degree of fuzziness in the fuzzy algorithm. Defaults to 2.
-            n_dec (int, optional): designates the number of decimals of the
-                labels  returned in the fuzzy algorithm. Defaults to 3.
+
         """
         super().__init__(n_clusters=n_clusters, init=init, metric=metric,
                          n_init=n_init,
                          max_iter=max_iter, tol=tol, random_state=random_state)
 
         self.fuzzifier = fuzzifier
-        self.n_dec = n_dec
 
     def _fuzzy_kmeans_implementation(self, fdatagrid, random_state):
         """ Implementation of the Fuzzy K-Means algorithm for FDataGrid objects
@@ -696,46 +695,53 @@ class FuzzyKMeans(BaseKMeans):
 
         """
         repetitions = 0
-        centers_old = np.zeros(
+        centroids_old_matrix = np.zeros(
             (self.n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain))
-        U = np.empty((fdatagrid.n_samples, self.n_clusters))
-        distances_to_centers = np.empty((fdatagrid.n_samples, self.n_clusters))
+        membership_matrix = np.empty((fdatagrid.n_samples, self.n_clusters))
 
-        if self.init is None:
-            centers = self._init_centroids(fdatagrid, random_state)
-        else:
-            centers = np.copy(self.init.data_matrix)
+        centroids = self._init_centroids(fdatagrid, random_state)
+        centroids_old = centroids.copy(data_matrix=centroids_old_matrix)
 
-        while not np.allclose(centers, centers_old, rtol=self.tol,
+        while not np.allclose(centroids.data_matrix,
+                              centroids_old.data_matrix,
+                              rtol=self.tol,
                               atol=self.tol) and repetitions < self.max_iter:
 
-            centers_old = np.copy(centers)
-            centers_fd = FDataGrid(centers, fdatagrid.sample_points)
-            distances_to_centers = self.metric(
-                fdata1=fdatagrid,
-                fdata2=centers_fd)
+            centroids_old.data_matrix[...] = centroids.data_matrix
+
+            distances_to_centers = self.metric(fdata1=fdatagrid,
+                                               fdata2=centroids)
+
             distances_to_centers_raised = (distances_to_centers ** (
                 2 / (self.fuzzifier - 1)))
 
-            for i in range(fdatagrid.n_samples):
-                comparison = (fdatagrid.data_matrix[i] == centers).all(
-                    axis=tuple(np.arange(fdatagrid.data_matrix.ndim)[1:]))
-                if comparison.sum() >= 1:
-                    U[i, np.where(comparison == True)] = 1
-                    U[i, np.where(comparison == False)] = 0
-                else:
-                    for j in range(self.n_clusters):
-                        U[i, j] = 1 / np.sum(
-                            distances_to_centers_raised[i, j] /
-                            distances_to_centers_raised[i])
+            membership_matrix[:, :] = 1 / np.sum(
+                distances_to_centers_raised[:, :] /
+                distances_to_centers_raised[:])
 
-            U = np.power(U, self.fuzzifier)
-            for i in range(self.n_clusters):
-                centers[i] = np.sum((U[:, i] * fdatagrid.data_matrix.T).T,
-                                    axis=0) / np.sum(U[:, i])
+#             for i in range(fdatagrid.n_samples):
+#
+#                 comparison = (fdatagrid.data_matrix[i] == centers).all(
+#                     axis=tuple(np.arange(fdatagrid.data_matrix.ndim)[1:]))
+#
+#                 if comparison.sum() >= 1:
+#                     U[i, np.where(comparison == True)] = 1
+#                     U[i, np.where(comparison == False)] = 0
+#                 else:
+#                     for j in range(self.n_clusters):
+#                         U[i, j] = 1 / np.sum(
+#                             distances_to_centers_raised[i, j] /
+#                             distances_to_centers_raised[i])
+
+            membership_matrix_raised = np.power(
+                membership_matrix, self.fuzzifier)
+
+            centroids.data_matrix[:] = np.sum(
+                (membership_matrix_raised[:, :] * fdatagrid.data_matrix.T).T,
+                axis=0) / np.sum(membership_matrix_raised[:, :])
             repetitions += 1
 
-        return (np.round(np.power(U, 1 / self.fuzzifier), self.n_dec), centers,
+        return (membership_matrix, centroids,
                 distances_to_centers, repetitions)
 
     def fit(self, X, y=None, sample_weight=None):
@@ -754,11 +760,6 @@ class FuzzyKMeans(BaseKMeans):
 
         if self.fuzzifier < 2:
             raise ValueError("The fuzzifier parameter must be greater than 1.")
-
-        if self.n_dec < 1:
-            raise ValueError(
-                "The number of decimals should be greater than 0 in order to "
-                "obtain a rational result.")
 
         membership_values = np.empty(
             (self.n_init, fdatagrid.n_samples, self.n_clusters))

@@ -713,32 +713,22 @@ class FuzzyKMeans(BaseKMeans):
                                                fdata2=centroids)
 
             distances_to_centers_raised = (distances_to_centers ** (
-                2 / (self.fuzzifier - 1)))
+                2 / (1 - self.fuzzifier)))
 
-            membership_matrix[:, :] = 1 / np.sum(
-                distances_to_centers_raised[:, :] /
-                distances_to_centers_raised[:])
+            membership_matrix[:, :] = (distances_to_centers_raised
+                                       / np.sum(distances_to_centers_raised,
+                                                axis=1, keepdims=True))
 
-#             for i in range(fdatagrid.n_samples):
-#
-#                 comparison = (fdatagrid.data_matrix[i] == centers).all(
-#                     axis=tuple(np.arange(fdatagrid.data_matrix.ndim)[1:]))
-#
-#                 if comparison.sum() >= 1:
-#                     U[i, np.where(comparison == True)] = 1
-#                     U[i, np.where(comparison == False)] = 0
-#                 else:
-#                     for j in range(self.n_clusters):
-#                         U[i, j] = 1 / np.sum(
-#                             distances_to_centers_raised[i, j] /
-#                             distances_to_centers_raised[i])
+            # 0 / 0 divisions should be 1 in this context
+            membership_matrix[np.isnan(membership_matrix)] = 1
 
             membership_matrix_raised = np.power(
                 membership_matrix, self.fuzzifier)
 
-            centroids.data_matrix[:] = np.sum(
-                (membership_matrix_raised[:, :] * fdatagrid.data_matrix.T).T,
-                axis=0) / np.sum(membership_matrix_raised[:, :])
+            centroids.data_matrix[:] = (
+                np.einsum('ij,i...->j...', membership_matrix_raised,
+                          fdatagrid.data_matrix)
+                / np.sum(membership_matrix_raised, axis=0))
             repetitions += 1
 
         return (membership_matrix, centroids,
@@ -763,9 +753,7 @@ class FuzzyKMeans(BaseKMeans):
 
         membership_values = np.empty(
             (self.n_init, fdatagrid.n_samples, self.n_clusters))
-        centers = np.empty(
-            (self.n_init, self.n_clusters, fdatagrid.ncol,
-             fdatagrid.dim_codomain))
+        centroids = np.empty(self.n_init, dtype=object)
         distances_to_centers = np.empty(
             (self.n_init, fdatagrid.n_samples, self.n_clusters))
         distances_to_their_center = np.empty(
@@ -773,7 +761,7 @@ class FuzzyKMeans(BaseKMeans):
         n_iter = np.empty((self.n_init))
 
         for j in range(self.n_init):
-            (membership_values[j, :, :], centers[j, :, :, :],
+            (membership_values[j, :, :], centroids[j],
              distances_to_centers[j, :, :], n_iter[j]) = (
                 self._fuzzy_kmeans_implementation(fdatagrid=fdatagrid,
                                                   random_state=random_state))
@@ -785,9 +773,7 @@ class FuzzyKMeans(BaseKMeans):
         index_best_iter = np.argmin(inertia)
 
         self.labels_ = membership_values[index_best_iter]
-        self.cluster_centers_ = FDataGrid(data_matrix=centers[index_best_iter],
-                                          sample_points=fdatagrid.sample_points
-                                          )
+        self.cluster_centers_ = centroids[index_best_iter]
         self._distances_to_centers = distances_to_centers[index_best_iter]
         self.inertia_ = inertia[index_best_iter]
         self.n_iter_ = n_iter[index_best_iter]

@@ -507,8 +507,8 @@ class KMeans(BaseKMeans):
         return self
 
 
-class FuzzyKMeans(BaseKMeans):
-    r""" Representation and implementation of the Fuzzy K-Means clustering
+class FuzzyCMeans(BaseKMeans):
+    r""" Representation and implementation of the Fuzzy c-Means clustering
     algorithm for the FDataGrid object.
 
     Let :math:`\mathbf{X = \left\{ x_{1}, x_{2}, ..., x_{n}\right\}}` be a
@@ -616,9 +616,9 @@ class FuzzyKMeans(BaseKMeans):
         ...                [[3, 0.2], [4, 0.3], [5, 0.4], [6, 0.5]]]
         >>> sample_points = [2, 4, 6, 8]
         >>> fd = skfda.FDataGrid(data_matrix, sample_points)
-        >>> fuzzy_kmeans = skfda.ml.clustering.FuzzyKMeans(random_state=0)
+        >>> fuzzy_kmeans = skfda.ml.clustering.FuzzyCMeans(random_state=0)
         >>> fuzzy_kmeans.fit(fd) # doctest:+ELLIPSIS
-        FuzzyKMeans(...)
+        FuzzyCMeans(...)
         >>> fuzzy_kmeans.cluster_centers_.data_matrix
         ... # doctest:+NORMALIZE_WHITESPACE
         array([[[ 2.84075812,  0.2476166 ],

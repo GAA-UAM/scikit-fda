@@ -20,7 +20,7 @@ detailed explanation.
    :toctree: autosummary
 
    skfda.ml.clustering.KMeans
-   skfda.ml.clustering.FuzzyKMeans
+   skfda.ml.clustering.FuzzyCMeans
 
 
 Nearest Neighbors

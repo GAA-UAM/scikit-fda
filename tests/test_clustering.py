@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from skfda.ml.clustering import KMeans, FuzzyKMeans
+from skfda.ml.clustering import KMeans, FuzzyCMeans
 from skfda.representation.grid import FDataGrid
 
 
@@ -70,7 +70,7 @@ class TestClustering(unittest.TestCase):
                        [-0.5, -0.5, -0.5, -1, -1, -1]]
         sample_points = [0, 2, 4, 6, 8, 10]
         fd = FDataGrid(data_matrix, sample_points)
-        fuzzy_kmeans = FuzzyKMeans()
+        fuzzy_kmeans = FuzzyCMeans()
         fuzzy_kmeans.fit(fd)
         np.testing.assert_array_equal(fuzzy_kmeans.predict(fd).round(3),
                                       np.array([[0.965, 0.035],

@@ -72,7 +72,7 @@ class TestClustering(unittest.TestCase):
         fd = FDataGrid(data_matrix, sample_points)
         fuzzy_kmeans = FuzzyKMeans()
         fuzzy_kmeans.fit(fd)
-        np.testing.assert_array_equal(fuzzy_kmeans.predict(fd),
+        np.testing.assert_array_equal(fuzzy_kmeans.predict(fd).round(3),
                                       np.array([[0.965, 0.035],
                                                 [0.94, 0.06],
                                                 [0.227, 0.773],

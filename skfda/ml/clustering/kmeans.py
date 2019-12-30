@@ -10,7 +10,6 @@ from sklearn.utils.validation import check_is_fitted
 import numpy as np
 
 from ...misc.metrics import pairwise_distance, lp_distance
-from ...representation.grid import FDataGrid
 
 
 __author__ = "Amanda Hernando Bernabé"
@@ -346,13 +345,14 @@ class KMeans(BaseKMeans):
 
     Example:
 
+        >>> import skfda
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> kmeans = KMeans(random_state=0)
+        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> kmeans = skfda.ml.clustering.KMeans(random_state=0)
         >>> kmeans.fit(fd) # doctest:+ELLIPSIS
         KMeans(...)
         >>> kmeans.cluster_centers_.data_matrix
@@ -571,8 +571,9 @@ class FuzzyKMeans(BaseKMeans):
             classified. Defaults to 2.
         init (FDataGrid, optional): Contains the initial centers of the
             different clusters the algorithm starts with. Its data_marix must
-            be of the shape (n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain).
-            Defaults to None, and the centers are initialized randomly.
+            be of the shape (n_clusters, fdatagrid.ncol,
+            fdatagrid.dim_codomain). Defaults to None, and the centers are
+            initialized randomly.
         metric (optional): metric that acceps two FDataGrid objects and returns
             a matrix with shape (fdatagrid1.n_samples, fdatagrid2.n_samples).
             Defaults to *pairwise_distance(lp_distance)*.
@@ -594,8 +595,9 @@ class FuzzyKMeans(BaseKMeans):
             returned in the fuzzy algorithm. Defaults to 3.
 
     Attributes:
-        labels_ (numpy.ndarray: (n_samples, dim_codomain)): 2-dimensional matrix
-            in which each row contains the cluster that observation belongs to.
+        labels_ (numpy.ndarray: (n_samples, dim_codomain)): 2-dimensional
+            matrix in which each row contains the cluster that observation
+            belongs to.
         cluster_centers_ (FDataGrid object): data_matrix of shape
             (n_clusters, ncol, dim_codomain) and contains the centroids for
             each cluster.
@@ -608,12 +610,13 @@ class FuzzyKMeans(BaseKMeans):
 
     Example:
 
+        >>> import skfda
         >>> data_matrix = [[[1, 0.3], [2, 0.4], [3, 0.5], [4, 0.6]],
         ...                [[2, 0.5], [3, 0.6], [4, 0.7], [5, 0.7]],
         ...                [[3, 0.2], [4, 0.3], [5, 0.4], [6, 0.5]]]
         >>> sample_points = [2, 4, 6, 8]
-        >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> fuzzy_kmeans = FuzzyKMeans(random_state=0)
+        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> fuzzy_kmeans = skfda.ml.clustering.FuzzyKMeans(random_state=0)
         >>> fuzzy_kmeans.fit(fd) # doctest:+ELLIPSIS
         FuzzyKMeans(...)
         >>> fuzzy_kmeans.cluster_centers_.data_matrix
@@ -712,23 +715,31 @@ class FuzzyKMeans(BaseKMeans):
             distances_to_centers = self.metric(fdata1=fdatagrid,
                                                fdata2=centroids)
 
-            distances_to_centers_raised = (distances_to_centers ** (
-                2 / (1 - self.fuzzifier)))
+            # Divisions by zero allowed
+            with np.errstate(divide='ignore'):
+                distances_to_centers_raised = (distances_to_centers ** (
+                    2 / (1 - self.fuzzifier)))
 
-            membership_matrix[:, :] = (distances_to_centers_raised
-                                       / np.sum(distances_to_centers_raised,
-                                                axis=1, keepdims=True))
+            # Divisions infinity by infinity allowed
+            with np.errstate(invalid='ignore'):
+                membership_matrix[:, :] = (distances_to_centers_raised
+                                           / np.sum(
+                                               distances_to_centers_raised,
+                                               axis=1, keepdims=True))
 
-            # 0 / 0 divisions should be 1 in this context
+            # inf / inf divisions should be 1 in this context
             membership_matrix[np.isnan(membership_matrix)] = 1
 
             membership_matrix_raised = np.power(
                 membership_matrix, self.fuzzifier)
 
+            slice_denominator = ((slice(None),) + (np.newaxis,) *
+                                 (fdatagrid.data_matrix.ndim - 1))
             centroids.data_matrix[:] = (
                 np.einsum('ij,i...->j...', membership_matrix_raised,
                           fdatagrid.data_matrix)
-                / np.sum(membership_matrix_raised, axis=0))
+                / np.sum(membership_matrix_raised, axis=0)[slice_denominator])
+
             repetitions += 1
 
         return (membership_matrix, centroids,

@@ -62,20 +62,20 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         self.tol = tol
         self.random_state = random_state
 
-    def _check_clustering(self, fdatagrid):
+    def _check_clustering(self, fdata):
         """Checks the arguments used in the
         :func:`fit method <skfda.ml.clustering.base_kmeans.fit>`.
 
         Args:
-            fdatagrid (FDataGrid object): Object whose samples
+            fdata (FDataGrid object): Object whose samples
                 are classified into different groups.
         """
 
-        if fdatagrid.dim_domain > 1:
+        if fdata.dim_domain > 1:
             raise NotImplementedError(
                 "Only support 1 dimension on the domain.")
 
-        if fdatagrid.n_samples < 2:
+        if fdata.n_samples < 2:
             raise ValueError(
                 "The number of observations must be greater than 1.")
 
@@ -93,7 +93,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                           "because the init parameter is set.")
 
         if self.init is not None and self.init.data_matrix.shape != (
-                self.n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain):
+                self.n_clusters, fdata.ncol, fdata.dim_codomain):
             raise ValueError("The init FDataGrid data_matrix should be of "
                              "shape (n_clusters, n_features, dim_codomain) "
                              "and gives the initial centers.")
@@ -105,7 +105,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         if self.tol < 0:
             raise ValueError("The tolerance must be positive.")
 
-        return fdatagrid
+        return fdata
 
     def _init_centroids(self, fdatagrid, random_state):
         """Compute the initial centroids
@@ -145,8 +145,69 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         pass
 
     @abstractmethod
-    def _algorithm(self):
+    def _create_membership(self, n_samples):
         pass
+
+    @abstractmethod
+    def _update(self, fdata, membership_matrix, distances_to_centroids,
+                centroids):
+        pass
+
+    def _algorithm(self, fdata, random_state):
+        """ Implementation of the Fuzzy K-Means algorithm for FDataGrid objects
+        of any dimension.
+
+        Args:
+            fdata (FDataGrid object): Object whose samples are clustered,
+                classified into different groups.
+            random_state (RandomState object): random number generation for
+                centroid initialization.
+
+        Returns:
+            (tuple): tuple containing:
+
+                membership values (numpy.ndarray):
+                    membership value that observation has to each cluster.
+
+                centroids (numpy.ndarray: (n_clusters, ncol, dim_codomain)):
+                    centroids for each cluster.
+
+                distances_to_centroids (numpy.ndarray: (n_samples,
+                    n_clusters)): distances of each sample to each cluster.
+
+                repetitions(int): number of iterations the algorithm was run.
+
+        """
+        repetitions = 0
+        centroids_old_matrix = np.zeros(
+            (self.n_clusters, fdata.ncol, fdata.dim_codomain))
+        membership_matrix = self._create_membership(fdata.n_samples)
+
+        centroids = self._init_centroids(fdata, random_state)
+        centroids_old = centroids.copy(data_matrix=centroids_old_matrix)
+
+        pairwise_metric = pairwise_distance(self.metric)
+
+        while not np.allclose(centroids.data_matrix,
+                              centroids_old.data_matrix,
+                              rtol=self.tol,
+                              atol=self.tol) and repetitions < self.max_iter:
+
+            centroids_old.data_matrix[...] = centroids.data_matrix
+
+            distances_to_centroids = pairwise_metric(fdata1=fdata,
+                                                     fdata2=centroids)
+
+            self._update(
+                fdata=fdata,
+                membership_matrix=membership_matrix,
+                distances_to_centroids=distances_to_centroids,
+                centroids=centroids)
+
+            repetitions += 1
+
+        return (membership_matrix, centroids,
+                distances_to_centroids, repetitions)
 
     @abstractmethod
     def _compute_inertia(self, membership, centroids,
@@ -164,7 +225,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
             sample_weight (Ignored): present here for API consistency by
                 convention.
         """
-        fdatagrid = self._check_clustering(fdatagrid=X)
+        fdata = self._check_clustering(X)
         random_state = check_random_state(self.random_state)
 
         self._check_params()
@@ -178,7 +239,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         for _ in range(self.n_init):
             (membership, centroids,
              distances_to_centroids, n_iter) = (
-                self._algorithm(fdatagrid=fdatagrid,
+                self._algorithm(fdata=fdata,
                                 random_state=random_state))
 
             inertia = self._compute_inertia(membership, centroids,
@@ -446,69 +507,28 @@ class KMeans(BaseKMeans):
                          n_init=n_init, max_iter=max_iter, tol=tol,
                          random_state=random_state)
 
-    def _algorithm(self, fdatagrid, random_state):
-        """ Implementation of the K-Means algorithm for FDataGrid objects
-        of any dimension.
-
-        Args:
-            fdatagrid (FDataGrid object): Object whose samples are clusered,
-                classified into different groups.
-            random_state (RandomState object): random number generation for
-                centroid initialization.
-
-        Returns:
-            (tuple): tuple containing:
-
-                clustering_values (numpy.ndarray: (n_samples,)): 1-dimensional
-                array where each row contains the cluster that observation
-                belongs to.
-
-                centers (numpy.ndarray: (n_clusters, ncol, dim_codomain)):
-                Contains the centroids for each cluster.
-
-                distances_to_centers (numpy.ndarray: (n_samples, n_clusters)):
-                distances of each sample to each cluster.
-
-                repetitions(int): number of iterations the algorithm was run.
-        """
-        repetitions = 0
-        centroids_old_matrix = np.zeros(
-            (self.n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain))
-
-        centroids = self._init_centroids(fdatagrid, random_state)
-        centroids_old = centroids.copy(data_matrix=centroids_old_matrix)
-
-        pairwise_metric = pairwise_distance(self.metric)
-
-        while not np.allclose(centroids.data_matrix,
-                              centroids_old.data_matrix,
-                              rtol=self.tol,
-                              atol=self.tol) and repetitions < self.max_iter:
-            centroids_old.data_matrix[...] = centroids.data_matrix
-
-            distances_to_centers = pairwise_metric(fdata1=fdatagrid,
-                                                   fdata2=centroids)
-
-            clustering_values = np.argmin(distances_to_centers, axis=1)
-
-            for i in range(self.n_clusters):
-
-                indices, = np.where(clustering_values == i)
-
-                if len(indices) != 0:
-                    centroids.data_matrix[i] = np.average(
-                        fdatagrid.data_matrix[indices, ...], axis=0)
-
-            repetitions += 1
-
-        return clustering_values, centroids, distances_to_centers, repetitions
-
     def _compute_inertia(self, membership, centroids,
                          distances_to_centroids):
         distances_to_their_center = np.choose(membership,
                                               distances_to_centroids.T)
 
         return np.sum(distances_to_their_center ** 2)
+
+    def _create_membership(self, n_samples):
+        return np.empty(n_samples, dtype=int)
+
+    def _update(self, fdata, membership_matrix, distances_to_centroids,
+                centroids):
+
+        membership_matrix[:] = np.argmin(distances_to_centroids, axis=1)
+
+        for i in range(self.n_clusters):
+
+            indices, = np.where(membership_matrix == i)
+
+            if len(indices) != 0:
+                centroids.data_matrix[i] = np.average(
+                    fdata.data_matrix[indices, ...], axis=0)
 
 
 class FuzzyCMeans(BaseKMeans):
@@ -669,82 +689,6 @@ class FuzzyCMeans(BaseKMeans):
 
         self.fuzzifier = fuzzifier
 
-    def _algorithm(self, fdatagrid, random_state):
-        """ Implementation of the Fuzzy K-Means algorithm for FDataGrid objects
-        of any dimension.
-
-        Args:
-            fdatagrid (FDataGrid object): Object whose samples are clusered,
-                classified into different groups.
-            random_state (RandomState object): random number generation for
-                centroid initialization.
-
-        Returns:
-            (tuple): tuple containing:
-
-                membership values (numpy.ndarray: (n_samples, n_clusters)):
-                2-dimensional matrix where each row contains the membership
-                value that observation has to each cluster.
-
-                centers (numpy.ndarray: (n_clusters, ncol, dim_codomain)):
-                Contains the centroids for each cluster.
-
-                distances_to_centers (numpy.ndarray: (n_samples, n_clusters)):
-                distances of each sample to each cluster.
-
-                repetitions(int): number of iterations the algorithm was run.
-
-        """
-        repetitions = 0
-        centroids_old_matrix = np.zeros(
-            (self.n_clusters, fdatagrid.ncol, fdatagrid.dim_codomain))
-        membership_matrix = np.empty((fdatagrid.n_samples, self.n_clusters))
-
-        centroids = self._init_centroids(fdatagrid, random_state)
-        centroids_old = centroids.copy(data_matrix=centroids_old_matrix)
-
-        pairwise_metric = pairwise_distance(self.metric)
-
-        while not np.allclose(centroids.data_matrix,
-                              centroids_old.data_matrix,
-                              rtol=self.tol,
-                              atol=self.tol) and repetitions < self.max_iter:
-
-            centroids_old.data_matrix[...] = centroids.data_matrix
-
-            distances_to_centers = pairwise_metric(fdata1=fdatagrid,
-                                                   fdata2=centroids)
-
-            # Divisions by zero allowed
-            with np.errstate(divide='ignore'):
-                distances_to_centers_raised = (distances_to_centers ** (
-                    2 / (1 - self.fuzzifier)))
-
-            # Divisions infinity by infinity allowed
-            with np.errstate(invalid='ignore'):
-                membership_matrix[:, :] = (distances_to_centers_raised
-                                           / np.sum(
-                                               distances_to_centers_raised,
-                                               axis=1, keepdims=True))
-
-            # inf / inf divisions should be 1 in this context
-            membership_matrix[np.isnan(membership_matrix)] = 1
-
-            membership_matrix_raised = np.power(
-                membership_matrix, self.fuzzifier)
-
-            slice_denominator = ((slice(None),) + (np.newaxis,) *
-                                 (fdatagrid.data_matrix.ndim - 1))
-            centroids.data_matrix[:] = (
-                np.einsum('ij,i...->j...', membership_matrix_raised,
-                          fdatagrid.data_matrix)
-                / np.sum(membership_matrix_raised, axis=0)[slice_denominator])
-
-            repetitions += 1
-
-        return (membership_matrix, centroids,
-                distances_to_centers, repetitions)
-
     def _check_params(self):
         if self.fuzzifier <= 1:
             raise ValueError("The fuzzifier parameter must be greater than 1.")
@@ -755,3 +699,33 @@ class FuzzyCMeans(BaseKMeans):
             np.arange(len(membership)), np.argmax(membership, axis=-1)]
 
         return np.sum(distances_to_their_center ** 2)
+
+    def _create_membership(self, n_samples):
+        return np.empty((n_samples, self.n_clusters))
+
+    def _update(self, fdata, membership_matrix, distances_to_centroids,
+                centroids):
+        # Divisions by zero allowed
+        with np.errstate(divide='ignore'):
+            distances_to_centers_raised = (distances_to_centroids ** (
+                2 / (1 - self.fuzzifier)))
+
+        # Divisions infinity by infinity allowed
+        with np.errstate(invalid='ignore'):
+            membership_matrix[:, :] = (distances_to_centers_raised
+                                       / np.sum(
+                                           distances_to_centers_raised,
+                                           axis=1, keepdims=True))
+
+        # inf / inf divisions should be 1 in this context
+        membership_matrix[np.isnan(membership_matrix)] = 1
+
+        membership_matrix_raised = np.power(
+            membership_matrix, self.fuzzifier)
+
+        slice_denominator = ((slice(None),) + (np.newaxis,) *
+                             (fdata.data_matrix.ndim - 1))
+        centroids.data_matrix[:] = (
+            np.einsum('ij,i...->j...', membership_matrix_raised,
+                      fdata.data_matrix)
+            / np.sum(membership_matrix_raised, axis=0)[slice_denominator])

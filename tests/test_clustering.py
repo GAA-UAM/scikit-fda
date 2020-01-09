@@ -90,7 +90,7 @@ class TestClustering(unittest.TestCase):
         np.testing.assert_allclose(fuzzy_kmeans.cluster_centers_.data_matrix,
                                    centers.data_matrix)
         np.testing.assert_allclose(fuzzy_kmeans.score(fd),
-                                   np.array([-13.928868250627902]))
+                                   np.array([-12.025179]))
         np.testing.assert_array_equal(fuzzy_kmeans.n_iter_, np.array([18.]))
 
     # def test_fuzzy_kmeans_multivariate(self):

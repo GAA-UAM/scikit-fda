@@ -37,10 +37,8 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                 must be of the shape (n_clusters, fdatagrid.ncol,
                 fdatagrid.dim_codomain). Defaults to None, and the centers are
                 initialized randomly.
-            metric (optional): metric that acceps two FDataGrid objects and
-                returns a matrix with shape (fdatagrid1.n_samples,
-                fdatagrid2.n_samples). Defaults to
-                *pairwise_distance(lp_distance)*.
+            metric (optional): functional data metric. Defaults to
+                *lp_distance*.
             n_init (int, optional): Number of time the k-means algorithm will
                 be run with different centroid seeds. The final results will
                 be the best output of n_init consecutive runs in terms of
@@ -314,9 +312,8 @@ class KMeans(BaseKMeans):
             be of the shape (n_clusters, fdatagrid.ncol,
             fdatagrid.dim_codomain). Defaults to None, and the centers are
             initialized randomly.
-        metric (optional): metric that acceps two FDataGrid objects and returns
-            a matrix with shape (fdatagrid1.n_samples, fdatagrid2.n_samples).
-            Defaults to *pairwise_distance(lp_distance)*.
+        metric (optional): functional data metric. Defaults to
+            *lp_distance*.
         n_init (int, optional): Number of time the k-means algorithm will be
             run with different centroid seeds. The final results will be the
             best output of n_init consecutive runs in terms of inertia.
@@ -331,9 +328,8 @@ class KMeans(BaseKMeans):
             See :term:`Glossary <random_state>`.
 
     Attributes:
-        labels_ (numpy.ndarray: (n_samples, dim_codomain)): 2-dimensional
-            matrix in which each row contains the cluster that observation
-            belongs to.
+        labels_ (numpy.ndarray: n_samples): vector in which each entry contains
+            the cluster each observation belongs to.
         cluster_centers_ (FDataGrid object): data_matrix of shape
             (n_clusters, ncol, dim_codomain) and contains the centroids for
             each cluster.
@@ -353,10 +349,9 @@ class KMeans(BaseKMeans):
         >>> sample_points = [0, 2, 4, 6, 8, 10]
         >>> fd = skfda.FDataGrid(data_matrix, sample_points)
         >>> kmeans = skfda.ml.clustering.KMeans(random_state=0)
-        >>> kmeans.fit(fd) # doctest:+ELLIPSIS
+        >>> kmeans.fit(fd)
         KMeans(...)
         >>> kmeans.cluster_centers_.data_matrix
-        ... # doctest:+NORMALIZE_WHITESPACE
         array([[[ 0.16666667],
                 [ 0.16666667],
                 [ 0.83333333],
@@ -373,7 +368,7 @@ class KMeans(BaseKMeans):
     """
 
     def __init__(self, n_clusters=2, init=None,
-                 metric=pairwise_distance(lp_distance),
+                 metric=lp_distance,
                  n_init=1, max_iter=100, tol=1e-4, random_state=0):
         """Initialization of the KMeans class.
 
@@ -385,10 +380,8 @@ class KMeans(BaseKMeans):
                 must be of the shape (n_clusters, fdatagrid.ncol,
                 fdatagrid.dim_codomain). Defaults to None, and the centers are
                 initialized randomly.
-            metric (optional): metric that acceps two FDataGrid objects and
-                returns a matrix with shape (fdatagrid1.n_samples,
-                fdatagrid2.n_samples).
-                Defaults to *pairwise_distance(lp_distance)*.
+            metric (optional): functional data metric. Defaults to
+                *lp_distance*.
             n_init (int, optional): Number of time the k-means algorithm will
                 be run with different centroid seeds. The final results will
                 be the best output of n_init consecutive runs in terms
@@ -440,14 +433,16 @@ class KMeans(BaseKMeans):
         centroids = self._init_centroids(fdatagrid, random_state)
         centroids_old = centroids.copy(data_matrix=centroids_old_matrix)
 
+        pairwise_metric = pairwise_distance(self.metric)
+
         while not np.allclose(centroids.data_matrix,
                               centroids_old.data_matrix,
                               rtol=self.tol,
                               atol=self.tol) and repetitions < self.max_iter:
             centroids_old.data_matrix[...] = centroids.data_matrix
 
-            distances_to_centers = self.metric(fdata1=fdatagrid,
-                                               fdata2=centroids)
+            distances_to_centers = pairwise_metric(fdata1=fdatagrid,
+                                                   fdata2=centroids)
 
             clustering_values = np.argmin(distances_to_centers, axis=1)
 
@@ -574,9 +569,8 @@ class FuzzyCMeans(BaseKMeans):
             be of the shape (n_clusters, fdatagrid.ncol,
             fdatagrid.dim_codomain). Defaults to None, and the centers are
             initialized randomly.
-        metric (optional): metric that acceps two FDataGrid objects and returns
-            a matrix with shape (fdatagrid1.n_samples, fdatagrid2.n_samples).
-            Defaults to *pairwise_distance(lp_distance)*.
+        metric (optional): functional data metric. Defaults to
+            *lp_distance*.
         n_init (int, optional): Number of time the k-means algorithm will be
             run with different centroid seeds. The final results will be the
             best output of n_init consecutive runs in terms of inertia.
@@ -591,11 +585,9 @@ class FuzzyCMeans(BaseKMeans):
             See :term:`Glossary <random_state>`.
         fuzzifier (int, optional): Scalar parameter used to specify the
             degree of fuzziness in the fuzzy algorithm. Defaults to 2.
-        n_dec (int, optional): designates the number of decimals of the labels
-            returned in the fuzzy algorithm. Defaults to 3.
 
     Attributes:
-        labels_ (numpy.ndarray: (n_samples, dim_codomain)): 2-dimensional
+        labels_ (numpy.ndarray: (n_samples, n_clusters)): 2-dimensional
             matrix in which each row contains the cluster that observation
             belongs to.
         cluster_centers_ (FDataGrid object): data_matrix of shape
@@ -617,10 +609,9 @@ class FuzzyCMeans(BaseKMeans):
         >>> sample_points = [2, 4, 6, 8]
         >>> fd = skfda.FDataGrid(data_matrix, sample_points)
         >>> fuzzy_kmeans = skfda.ml.clustering.FuzzyCMeans(random_state=0)
-        >>> fuzzy_kmeans.fit(fd) # doctest:+ELLIPSIS
+        >>> fuzzy_kmeans.fit(fd)
         FuzzyCMeans(...)
         >>> fuzzy_kmeans.cluster_centers_.data_matrix
-        ... # doctest:+NORMALIZE_WHITESPACE
         array([[[ 2.84075812,  0.2476166 ],
                 [ 3.84075812,  0.3476166 ],
                 [ 4.84075812,  0.4476166 ],
@@ -633,7 +624,7 @@ class FuzzyCMeans(BaseKMeans):
     """
 
     def __init__(self, n_clusters=2, init=None,
-                 metric=pairwise_distance(lp_distance), n_init=1, max_iter=100,
+                 metric=lp_distance, n_init=1, max_iter=100,
                  tol=1e-4, random_state=0, fuzzifier=2):
         """Initialization of the FuzzyKMeans class.
 
@@ -645,10 +636,8 @@ class FuzzyCMeans(BaseKMeans):
                 must be of the shape (n_clusters, fdatagrid.ncol,
                 fdatagrid.dim_codomain).
                 Defaults to None, and the centers are initialized randomly.
-            metric (optional): metric that acceps two FDataGrid objects and
-                returns a matrix with shape (fdatagrid1.n_samples,
-                fdatagrid2.n_samples).
-                Defaults to *pairwise_distance(lp_distance)*.
+            metric (optional): functional data metric. Defaults to
+                *lp_distance*.
             n_init (int, optional): Number of time the k-means algorithm will
                 be run with different centroid seeds. The final results will be
                 the best output of n_init consecutive runs in terms of inertia.
@@ -705,6 +694,8 @@ class FuzzyCMeans(BaseKMeans):
         centroids = self._init_centroids(fdatagrid, random_state)
         centroids_old = centroids.copy(data_matrix=centroids_old_matrix)
 
+        pairwise_metric = pairwise_distance(self.metric)
+
         while not np.allclose(centroids.data_matrix,
                               centroids_old.data_matrix,
                               rtol=self.tol,
@@ -712,8 +703,8 @@ class FuzzyCMeans(BaseKMeans):
 
             centroids_old.data_matrix[...] = centroids.data_matrix
 
-            distances_to_centers = self.metric(fdata1=fdatagrid,
-                                               fdata2=centroids)
+            distances_to_centers = pairwise_metric(fdata1=fdatagrid,
+                                                   fdata2=centroids)
 
             # Divisions by zero allowed
             with np.errstate(divide='ignore'):

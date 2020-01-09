@@ -62,7 +62,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         self.tol = tol
         self.random_state = random_state
 
-    def _generic_clustering_checks(self, fdatagrid):
+    def _check_clustering(self, fdatagrid):
         """Checks the arguments used in the
         :func:`fit method <skfda.ml.clustering.base_kmeans.fit>`.
 
@@ -141,18 +141,63 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         else:
             return self.init.copy()
 
+    def _check_params(self):
+        pass
+
     @abstractmethod
+    def _algorithm(self):
+        pass
+
+    @abstractmethod
+    def _compute_inertia(self, membership, centroids,
+                         distances_to_centroids):
+        pass
+
     def fit(self, X, y=None, sample_weight=None):
-        """ Computes clustering.
+        """ Computes Fuzzy K-Means clustering calculating the attributes
+        *labels_*, *cluster_centers_*, *inertia_* and *n_iter_*.
 
         Args:
             X (FDataGrid object): Object whose samples are clusered,
                 classified into different groups.
-             y (Ignored): present here for API consistency by convention.
+            y (Ignored): present here for API consistency by convention.
             sample_weight (Ignored): present here for API consistency by
                 convention.
         """
-        pass
+        fdatagrid = self._check_clustering(fdatagrid=X)
+        random_state = check_random_state(self.random_state)
+
+        self._check_params()
+
+        best_inertia = None
+        best_membership = None
+        best_centroids = None
+        best_distances_to_centroids = None
+        best_n_iter = None
+
+        for _ in range(self.n_init):
+            (membership, centroids,
+             distances_to_centroids, n_iter) = (
+                self._algorithm(fdatagrid=fdatagrid,
+                                random_state=random_state))
+
+            inertia = self._compute_inertia(membership, centroids,
+                                            distances_to_centroids)
+
+            if best_inertia is None or inertia < best_inertia:
+                best_inertia = inertia
+                best_membership = membership
+                best_centroids = centroids
+                best_distances_to_centroids = distances_to_centroids
+                best_n_iter = n_iter
+
+        self.labels_ = best_membership
+        self.cluster_centers_ = best_centroids
+        self._distances_to_centers = best_distances_to_centroids
+        self.inertia_ = best_inertia
+        self.n_iter_ = best_n_iter
+
+        return self
 
     def _check_test_data(self, fdatagrid):
         """Checks that the FDataGrid object and the calculated centroids have
@@ -401,7 +446,7 @@ class KMeans(BaseKMeans):
                          n_init=n_init, max_iter=max_iter, tol=tol,
                          random_state=random_state)
 
-    def _kmeans_implementation(self, fdatagrid, random_state):
+    def _algorithm(self, fdatagrid, random_state):
         """ Implementation of the K-Means algorithm for FDataGrid objects
         of any dimension.
 
@@ -458,48 +503,12 @@ class KMeans(BaseKMeans):
 
         return clustering_values, centroids, distances_to_centers, repetitions
 
-    def fit(self, X, y=None, sample_weight=None):
-        """ Computes K-Means clustering calculating the attributes
-        *labels_*, *cluster_centers_*, *inertia_* and *n_iter_*.
+    def _compute_inertia(self, membership, centroids,
+                         distances_to_centroids):
+        distances_to_their_center = np.choose(membership,
+                                              distances_to_centroids.T)
 
-        Args:
-            X (FDataGrid object): Object whose samples are clusered,
-                classified into different groups.
-            y (Ignored): present here for API consistency by convention.
-            sample_weight (Ignored): present here for API consistency by
-                convention.
-        """
-        random_state = check_random_state(self.random_state)
-        fdatagrid = super()._generic_clustering_checks(fdatagrid=X)
-
-        clustering_values = np.empty(
-            (self.n_init, fdatagrid.n_samples)).astype(int)
-        centroids = np.empty(self.n_init, dtype=object)
-        distances_to_centers = np.empty(
-            (self.n_init, fdatagrid.n_samples, self.n_clusters))
-        distances_to_their_center = np.empty(
-            (self.n_init, fdatagrid.n_samples))
-        n_iter = np.empty((self.n_init))
-
-        for j in range(self.n_init):
-            (clustering_values[j, :], centroids[j],
-             distances_to_centers[j, :, :], n_iter[j]) = (
-                self._kmeans_implementation(fdatagrid=fdatagrid,
-                                            random_state=random_state))
-            distances_to_their_center[j, :] = distances_to_centers[
-                j, np.arange(fdatagrid.n_samples),
-                clustering_values[j, :]]
-
-        inertia = np.sum(distances_to_their_center ** 2, axis=1)
-        index_best_iter = np.argmin(inertia)
-
-        self.labels_ = clustering_values[index_best_iter]
-        self.cluster_centers_ = centroids[index_best_iter]
-        self._distances_to_centers = distances_to_centers[index_best_iter]
-        self.inertia_ = inertia[index_best_iter]
-        self.n_iter_ = n_iter[index_best_iter]
-
-        return self
+        return np.sum(distances_to_their_center ** 2)
 
 
 class FuzzyCMeans(BaseKMeans):
@@ -660,7 +669,7 @@ class FuzzyCMeans(BaseKMeans):
 
         self.fuzzifier = fuzzifier
 
-    def _fuzzy_kmeans_implementation(self, fdatagrid, random_state):
+    def _algorithm(self, fdatagrid, random_state):
         """ Implementation of the Fuzzy K-Means algorithm for FDataGrid objects
         of any dimension.
 
@@ -736,48 +745,13 @@ class FuzzyCMeans(BaseKMeans):
         return (membership_matrix, centroids,
                 distances_to_centers, repetitions)
 
-    def fit(self, X, y=None, sample_weight=None):
-        """ Computes Fuzzy K-Means clustering calculating the attributes
-        *labels_*, *cluster_centers_*, *inertia_* and *n_iter_*.
-
-        Args:
-            X (FDataGrid object): Object whose samples are clusered,
-                classified into different groups.
-            y (Ignored): present here for API consistency by convention.
-            sample_weight (Ignored): present here for API consistency by
-                convention.
-        """
-        fdatagrid = super()._generic_clustering_checks(fdatagrid=X)
-        random_state = check_random_state(self.random_state)
-
-        if self.fuzzifier < 2:
+    def _check_params(self):
+        if self.fuzzifier <= 1:
             raise ValueError("The fuzzifier parameter must be greater than 1.")
 
-        membership_values = np.empty(
-            (self.n_init, fdatagrid.n_samples, self.n_clusters))
-        centroids = np.empty(self.n_init, dtype=object)
-        distances_to_centers = np.empty(
-            (self.n_init, fdatagrid.n_samples, self.n_clusters))
-        distances_to_their_center = np.empty(
-            (self.n_init, fdatagrid.n_samples))
-        n_iter = np.empty((self.n_init))
+    def _compute_inertia(self, membership, centroids,
+                         distances_to_centroids):
+        distances_to_their_center = distances_to_centroids[
+            np.arange(len(membership)), np.argmax(membership, axis=-1)]
 
-        for j in range(self.n_init):
-            (membership_values[j, :, :], centroids[j],
-             distances_to_centers[j, :, :], n_iter[j]) = (
-                self._fuzzy_kmeans_implementation(fdatagrid=fdatagrid,
-                                                  random_state=random_state))
-            distances_to_their_center[j, :] = distances_to_centers[
-                j, np.arange(fdatagrid.n_samples),
-                np.argmax(membership_values[j, :, :], axis=-1)]
-
-        inertia = np.sum(distances_to_their_center ** 2, axis=1)
-        index_best_iter = np.argmin(inertia)
-
-        self.labels_ = membership_values[index_best_iter]
-        self.cluster_centers_ = centroids[index_best_iter]
-        self._distances_to_centers = distances_to_centers[index_best_iter]
-        self.inertia_ = inertia[index_best_iter]
-        self.n_iter_ = n_iter[index_best_iter]
-
-        return self
+        return np.sum(distances_to_their_center ** 2)

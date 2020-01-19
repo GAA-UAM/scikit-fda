@@ -107,6 +107,12 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
 
         return fdata
 
+    def _tolerance(self, fdata):
+        variance = fdata.var()
+        mean_variance = np.mean(variance[0].data_matrix)
+
+        return mean_variance * self.tol
+
     def _init_centroids(self, fdatagrid, random_state):
         """Compute the initial centroids
 
@@ -188,10 +194,10 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
 
         pairwise_metric = pairwise_distance(self.metric)
 
-        while not np.allclose(centroids.data_matrix,
-                              centroids_old.data_matrix,
-                              rtol=self.tol,
-                              atol=self.tol) and repetitions < self.max_iter:
+        tolerance = self._tolerance(fdata)
+
+        while (not np.all(self.metric(centroids, centroids_old) < tolerance)
+               and repetitions < self.max_iter):
 
             centroids_old.data_matrix[...] = centroids.data_matrix
 
@@ -641,14 +647,15 @@ class FuzzyCMeans(BaseKMeans):
         >>> fuzzy_kmeans.fit(fd)
         FuzzyCMeans(...)
         >>> fuzzy_kmeans.cluster_centers_.data_matrix
-        array([[[ 2.84075812,  0.2476166 ],
-                [ 3.84075812,  0.3476166 ],
-                [ 4.84075812,  0.4476166 ],
-                [ 5.84075812,  0.53175479]],
-               [[ 1.25224668,  0.35041906],
-                [ 2.25224668,  0.45041906],
-                [ 3.25224668,  0.55041906],
-                [ 4.25224668,  0.6252065 ]]])
+        array([[[ 2.83994301,  0.24786354],
+                [ 3.83994301,  0.34786354],
+                [ 4.83994301,  0.44786354],
+                [ 5.83994301,  0.53191927]],
+               [[ 1.25134384,  0.35023779],
+                [ 2.25134384,  0.45023779],
+                [ 3.25134384,  0.55023779],
+                [ 4.25134384,  0.6251158 ]]])
+
 
     """
 

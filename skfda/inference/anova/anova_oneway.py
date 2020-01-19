@@ -5,6 +5,7 @@ from skfda.datasets import make_gaussian_process
 
 
 def vn_statistic(fd_means, sizes):
+    # fd_means es un FDataGrid
     k = fd_means.data_matrix.shape[0]
     v_n = 0
     for i in range(k):
@@ -13,40 +14,58 @@ def vn_statistic(fd_means, sizes):
     return v_n
 
 
+def v_statistic(values, sizes):
+    k = values.data_matrix.shape[0]
+    v_hat = 0
+
+    for i in range(k):
+        for j in range(i + 1, k):
+            v_hat += norm_lp(values[i] - values[j] * np.sqrt(sizes[i] / sizes[j])) ** 2
+
+    return v_hat
+
+
+# def v_statistic_2(values, sizes, std=False):
+#
+#     if std:
+#         m = values.mean()
+#
+#     k = values.data_matrix.shape[0]
+#     v_hat = 0
+#     for i in range(k):
+#         for j in range(i + 1, k):
+#             if std:
+#                 v_hat += norm_lp(np.sqrt(sizes[i]) * (values[i] - m) - np.sqrt(sizes[j]) * (values[j] - m) * np.sqrt(
+#                     sizes[i] / sizes[j])) ** 2
+#             else:
+#                 v_hat += norm_lp(values[i] - values[j] * np.sqrt(sizes[i] / sizes[j])) ** 2
+#     return v_hat
+
+
 def anova_bootstrap(fd_grouped, n_sim):
+    # fd_grouped es una lista de fdatagrids
     assert len(fd_grouped) > 0
 
-    m = fd_grouped[0].ncol
-    samples = fd_grouped[0].sample_points
-    start, stop = fd_grouped[0].domain_range[0]
-    sizes = [fd.n_samples for fd in fd_grouped]
+    m = fd_grouped[0].ncol  # Number of points in the grid
+    samples = fd_grouped[0].sample_points  # Sample points
+    start, stop = fd_grouped[0].domain_range[0]  # Domain range
+
+    sizes = [fd.n_samples for fd in fd_grouped]  # List of sizes of each group
 
     # Estimating covariances for each group
     k_est = [fd.cov().data_matrix[0, ..., 0] for fd in fd_grouped]
-    print(fd_grouped[0])
 
     l_vector = []
     for l in range(n_sim):
         sim = FDataGrid(np.empty((0, m)), sample_points=samples)
         for i, fd in enumerate(fd_grouped):
-            process = make_gaussian_process(fd.n_samples, n_features=m, start=start, stop=stop, cov=k_est[i])
-            sim = sim.concatenate(process.mean())
-        # l_vector.append(v_usc(sim))
-        l_vector.append(v_hat_statistic(sim, sizes))
+            process = make_gaussian_process(1, n_features=m, start=start, stop=stop, cov=k_est[i])
+            sim = sim.concatenate(process)
+            # process = make_gaussian_process(fd.n_samples, n_features=m, start=start, stop=stop, cov=k_est[i])
+            # sim = sim.concatenate(process.mean())
+        l_vector.append(v_statistic(sim, sizes))
 
     return l_vector
-
-
-def v_hat_statistic(values, sizes):
-    k = len(values)
-    v_hat = 0
-    for i in range(k):
-        for j in range(i + 1, k):
-            # v1 = np.squeeze(values[i].data_matrix[0])
-            # v2 = np.squeeze(values[j].data_matrix[0])
-            # v_hat += np.linalg.norm(v1 - v2 * np.sqrt(sizes[i] / sizes[j]))**2
-            v_hat += norm_lp(values[i] - values[j] * np.sqrt(sizes[i] / sizes[j])) ** 2
-    return v_hat
 
 
 def func_oneway(*args, n_sim=2000):
@@ -61,7 +80,6 @@ def func_oneway(*args, n_sim=2000):
         fd_means = fd_means.concatenate(fd.mean())
 
     vn = vn_statistic(fd_means, [fd.n_samples for fd in fd_groups])
-    # vn = v_usc(fd_means)
 
     simulation = anova_bootstrap(fd_groups, n_sim=n_sim)
     p_value = np.sum(simulation >= vn) / len(simulation)
@@ -93,8 +111,8 @@ def anova_bootstrap_usc(fd_grouped, n_sim):
     for l in range(n_sim):
         sim = FDataGrid(np.empty((0, m)), sample_points=samples)
         for i, fd in enumerate(fd_grouped):
-            process = make_gaussian_process(fd.n_samples, n_features=m, start=start, stop=stop, cov=k_est[i])
-            sim = sim.concatenate(process.mean())
+            process = make_gaussian_process(1, n_features=m, start=start, stop=stop, cov=k_est[i])
+            sim = sim.concatenate(process)
         l_vector.append(v_usc(sim))
 
     return l_vector

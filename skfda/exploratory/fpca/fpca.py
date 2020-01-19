@@ -54,11 +54,20 @@ class FPCA(ABC):
                 y (None, not used): only present for convention of a fit function
 
             Returns:
-                (array_like): the scores of the n_components first principal components
+                (array_like): the scores of the data with reference to the principal components
         """
         pass
 
     def fit_transform(self, X, y=None):
+        """Computes the n_components first principal components and their scores and returns them.
+
+            Args:
+                X (FDataGrid or FDataBasis): the functional data object to be analysed
+                y (None, not used): only present for convention of a fit function
+
+            Returns:
+                (array_like): the scores of the data with reference to the principal components
+        """
         self.fit(X, y)
         return self.transform(X, y)
 
@@ -101,6 +110,9 @@ class FPCABasis(FPCA):
         # The following matrix is needed: L^{-1}*J^T
         l_inv_j_t = l_matrix_inv @ np.transpose(j_matrix)
 
+        # TODO switch to multivariate PCA of sklearn (maybe only for discretized case) and check
+        # TODO make the final matrix symmetric
+
         # the final matrix, C(L-1Jt)t for svd or (L-1Jt)-1CtC(L-1Jt)t for eigen analysis
         if self.svd:
             final_matrix = X.coefficients @ np.transpose(l_inv_j_t) / np.sqrt(n_samples)
@@ -137,6 +149,7 @@ class FPCABasis(FPCA):
         return self
 
     def transform(self, X, y=None):
+        # in this case it is the inner product of our data with the components
         return X.inner_product(self.components)
 
 
@@ -153,11 +166,11 @@ class FPCADiscretized(FPCA):
         # obtain the number of samples and the number of points of descretization
         n_samples, n_points_discretization = fd_data.shape
 
-        # if centering is True then substract the mean function to each function in FDataBasis
+        # if centering is True then subtract the mean function to each function in FDataBasis
         if self.centering:
             meanfd = X.mean()
             # consider moving these lines to FDataBasis as a centering function
-            # substract from each row the mean coefficient matrix
+            # subtract from each row the mean coefficient matrix
             fd_data -= np.squeeze(meanfd.data_matrix)
 
         # establish weights for each point of discretization
@@ -200,4 +213,5 @@ class FPCADiscretized(FPCA):
         return self
 
     def transform(self, X, y=None):
+        # in this case its the coefficient matrix multiplied by the principal components as column vectors
         return np.squeeze(X.data_matrix) @ np.transpose(np.squeeze(self.components.data_matrix))

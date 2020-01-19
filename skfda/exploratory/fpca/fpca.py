@@ -2,6 +2,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 from skfda.representation.basis import FDataBasis
 from skfda.representation.grid import FDataGrid
+from sklearn.decomposition import PCA
 
 
 class FPCA(ABC):
@@ -78,6 +79,7 @@ class FPCABasis(FPCA):
         super().__init__(n_components, centering, svd)
         # component_basis is the basis that we want to use for the principal components
         self.components_basis = components_basis
+        self.pca = PCA(n_components=n_components)
 
     def fit(self, X: FDataBasis, y=None):
         # for now lets consider that X is a FDataBasis Object
@@ -110,12 +112,17 @@ class FPCABasis(FPCA):
         # The following matrix is needed: L^{-1}*J^T
         l_inv_j_t = l_matrix_inv @ np.transpose(j_matrix)
 
-        # TODO switch to multivariate PCA of sklearn (maybe only for discretized case) and check
         # TODO make the final matrix symmetric
 
         # the final matrix, C(L-1Jt)t for svd or (L-1Jt)-1CtC(L-1Jt)t for eigen analysis
+        final_matrix = X.coefficients @ np.transpose(l_inv_j_t) / np.sqrt(n_samples)
+
+        self.pca.fit(final_matrix)
+        self.component_values = self.pca.singular_values_ ** 2
+        self.components = X.copy(basis=self.components_basis,
+                                 coefficients=self.pca.components_ @ l_matrix_inv)
+        """
         if self.svd:
-            final_matrix = X.coefficients @ np.transpose(l_inv_j_t) / np.sqrt(n_samples)
             # vh contains the eigenvectors transposed
             # s contains the singular values, which are square roots of eigenvalues
             u, s, vh = np.linalg.svd(final_matrix, full_matrices=True, compute_uv=True)
@@ -124,8 +131,7 @@ class FPCABasis(FPCA):
                                      coefficients=principal_components[:self.n_components, :])
             self.component_values = s ** 2
         else:
-            final_matrix = (l_inv_j_t @ np.transpose(X.coefficients)
-                            @ X.coefficients @ np.transpose(l_inv_j_t)) / n_samples
+            final_matrix = np.transpose(final_matrix) @ final_matrix
 
             # perform eigenvalue and eigenvector analysis on this matrix
             # eigenvectors is a numpy array, such that its columns are eigenvectors
@@ -145,6 +151,7 @@ class FPCABasis(FPCA):
                                      coefficients=np.transpose(principal_components_t))
 
             self.component_values = eigenvalues
+        """
 
         return self
 
@@ -157,6 +164,7 @@ class FPCADiscretized(FPCA):
     def __init__(self, n_components, weights=None, centering=True, svd=True):
         super().__init__(n_components, centering, svd)
         self.weights = weights
+        self.pca = PCA(n_components=n_components)
 
     # noinspection PyPep8Naming
     def fit(self, X: FDataGrid, y=None):
@@ -176,8 +184,11 @@ class FPCADiscretized(FPCA):
         # establish weights for each point of discretization
         if not self.weights:
             # sample_points is a list with one array in the 1D case
-            self.weights = np.diff(X.sample_points[0])
-            self.weights = np.append(self.weights, [self.weights[-1]])
+            # in trapezoidal rule, suppose \deltax_k = x_k - x_{k-1}, the weight vector is as follows:
+            # [\deltax_1/2, \deltax_1/2 + \deltax_2/2, \deltax_2/2 + \deltax_3/2, ... , \deltax_n/2]
+            differences = np.diff(X.sample_points[0])
+            self.weights = [sum(differences[i:i + 2]) / 2 for i in range(len(differences))]
+            self.weights = np.concatenate(([differences[0] / 2], self.weights))
 
         weights_matrix = np.diag(self.weights)
 
@@ -185,7 +196,11 @@ class FPCADiscretized(FPCA):
         # k_estimated = fd_data @ np.transpose(fd_data) / n_samples
 
         final_matrix = fd_data @ np.sqrt(weights_matrix) / np.sqrt(n_samples)
+        self.pca.fit(final_matrix)
+        self.components = X.copy(data_matrix=self.pca.components_)
+        self.component_values = self.pca.singular_values_**2
 
+        """
         if self.svd:
             # vh contains the eigenvectors transposed
             # s contains the singular values, which are square roots of eigenvalues
@@ -209,7 +224,7 @@ class FPCADiscretized(FPCA):
             # prepare the computed principal components
             self.components = X.copy(data_matrix=np.transpose(principal_components_t))
             self.component_values = eigenvalues
-
+        """
         return self
 
     def transform(self, X, y=None):

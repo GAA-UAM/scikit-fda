@@ -3,9 +3,10 @@ from abc import ABC, abstractmethod
 from skfda.representation.basis import FDataBasis
 from skfda.representation.grid import FDataGrid
 from sklearn.decomposition import PCA
+from sklearn.base import BaseEstimator, ClassifierMixin
 
 
-class FPCA(ABC):
+class FPCA(ABC, BaseEstimator, ClassifierMixin):
     """Defines the common structure shared between classes that do functional principal component analysis
 
     Attributes:
@@ -18,7 +19,7 @@ class FPCA(ABC):
 
     """
 
-    def __init__(self, n_components, centering=True, svd=True):
+    def __init__(self, n_components=3, centering=True):
         """ FPCA constructor
         Args:
             n_components (int): number of principal components to obtain from functional principal component analysis
@@ -29,7 +30,6 @@ class FPCA(ABC):
         """
         self.n_components = n_components
         self.centering = centering
-        self.svd = svd
         self.components = None
         self.component_values = None
 
@@ -75,14 +75,14 @@ class FPCA(ABC):
 
 class FPCABasis(FPCA):
 
-    def __init__(self, n_components, components_basis=None, centering=True, svd=False):
-        super().__init__(n_components, centering, svd)
+    def __init__(self, n_components=3, components_basis=None, centering=True):
+        super().__init__(n_components, centering)
         # component_basis is the basis that we want to use for the principal components
         self.components_basis = components_basis
-        self.pca = PCA(n_components=n_components)
 
     def fit(self, X: FDataBasis, y=None):
-        # for now lets consider that X is a FDataBasis Object
+        # initialize pca
+        self.pca = PCA(n_components=self.n_components)
 
         # if centering is True then substract the mean function to each function in FDataBasis
         if self.centering:
@@ -112,7 +112,7 @@ class FPCABasis(FPCA):
         # The following matrix is needed: L^{-1}*J^T
         l_inv_j_t = l_matrix_inv @ np.transpose(j_matrix)
 
-        # TODO make the final matrix symmetric
+        # TODO make the final matrix symmetric, not necessary as the final matrix is not a square matrix?
 
         # the final matrix, C(L-1Jt)t for svd or (L-1Jt)-1CtC(L-1Jt)t for eigen analysis
         final_matrix = X.coefficients @ np.transpose(l_inv_j_t) / np.sqrt(n_samples)
@@ -161,13 +161,15 @@ class FPCABasis(FPCA):
 
 
 class FPCADiscretized(FPCA):
-    def __init__(self, n_components, weights=None, centering=True, svd=True):
-        super().__init__(n_components, centering, svd)
+    def __init__(self, n_components=3, weights=None, centering=True):
+        super().__init__(n_components, centering)
         self.weights = weights
-        self.pca = PCA(n_components=n_components)
 
     # noinspection PyPep8Naming
     def fit(self, X: FDataGrid, y=None):
+        # initialize pca module
+        self.pca = PCA(n_components=self.n_components)
+
         # data matrix initialization
         fd_data = np.squeeze(X.data_matrix)
 

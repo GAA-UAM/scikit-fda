@@ -42,7 +42,7 @@ def v_statistic(values, sizes):
 #     return v_hat
 
 
-def anova_bootstrap(fd_grouped, n_sim):
+def anova_bootstrap(fd_grouped, n_sim, f):
     # fd_grouped es una lista de fdatagrids
     assert len(fd_grouped) > 0
 
@@ -60,10 +60,13 @@ def anova_bootstrap(fd_grouped, n_sim):
         sim = FDataGrid(np.empty((0, m)), sample_points=samples)
         for i, fd in enumerate(fd_grouped):
             process = make_gaussian_process(1, n_features=m, start=start, stop=stop, cov=k_est[i])
+            #  sim = sim.concatenate(process)
+            # process = make_gaussian_process(fd.n_samples, n_features=m, start=start, stop=stop,
+            #                                cov=k_est[i])
+            # process = (f[i].mean()) * np.sqrt(f[i].n_samples)
             sim = sim.concatenate(process)
-            # process = make_gaussian_process(fd.n_samples, n_features=m, start=start, stop=stop, cov=k_est[i])
-            # sim = sim.concatenate(process.mean())
         l_vector.append(v_statistic(sim, sizes))
+
 
     return l_vector
 
@@ -81,8 +84,8 @@ def func_oneway(*args, n_sim=2000):
 
     vn = vn_statistic(fd_means, [fd.n_samples for fd in fd_groups])
 
-    simulation = anova_bootstrap(fd_groups, n_sim=n_sim)
-    p_value = np.sum(simulation >= vn) / len(simulation)
+    simulation = anova_bootstrap(fd_groups, n_sim, fd_groups)
+    p_value = np.sum(simulation > vn) / len(simulation)
 
     return p_value, vn, simulation
 

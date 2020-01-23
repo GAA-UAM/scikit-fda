@@ -3,14 +3,12 @@
 from abc import abstractmethod
 import warnings
 
+import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_is_fitted
 
-import numpy as np
-
 from ...misc.metrics import pairwise_distance, lp_distance
-
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
@@ -196,8 +194,9 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
 
         tolerance = self._tolerance(fdata)
 
-        while (not np.all(self.metric(centroids, centroids_old) < tolerance)
-               and repetitions < self.max_iter):
+        while (repetitions == 0 or
+               (not np.all(self.metric(centroids, centroids_old) < tolerance)
+                and repetitions < self.max_iter)):
 
             centroids_old.data_matrix[...] = centroids.data_matrix
 
@@ -702,7 +701,7 @@ class FuzzyCMeans(BaseKMeans):
 
     def _compute_inertia(self, membership, centroids,
                          distances_to_centroids):
-        return np.sum(membership**self.fuzzifier * distances_to_centroids**2)
+        return np.sum(membership ** self.fuzzifier * distances_to_centroids ** 2)
 
     def _create_membership(self, n_samples):
         return np.empty((n_samples, self.n_clusters))
@@ -727,7 +726,7 @@ class FuzzyCMeans(BaseKMeans):
         membership_matrix_raised = np.power(
             membership_matrix, self.fuzzifier)
 
-        slice_denominator = ((slice(None),) + (np.newaxis,) *
+        slice_denominator = ((slice(None),) + (np.newaxis,) * 
                              (fdata.data_matrix.ndim - 1))
         centroids.data_matrix[:] = (
             np.einsum('ij,i...->j...', membership_matrix_raised,

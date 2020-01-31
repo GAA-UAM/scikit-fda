@@ -31,7 +31,7 @@ fig = fd.plot(group=province)
 ################################################################################
 # TODO
 
-sel_prov = ['A CORUÑA', 'BALEARES', 'LAS PALMAS']
+sel_prov = ['BARCELONA', 'TARRAGONA', 'VALENCIA', 'ALICANTE', 'MURCIA']
 
 filt = np.logical_or.reduce([np.asarray(province) == p for p in sel_prov])
 

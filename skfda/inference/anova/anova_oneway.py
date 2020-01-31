@@ -1,79 +1,144 @@
 import numpy as np
-from skfda.misc.metrics import norm_lp, lp_distance
+from skfda.misc.metrics import norm_lp
 from skfda.representation import FDataGrid
 from skfda.datasets import make_gaussian_process
 
 
-def vn_statistic(fd_means, sizes):
-    # fd_means es un FDataGrid
-    k = fd_means.data_matrix.shape[0]
+def v_sample_stat(fd, weights, p=2):
+    """
+    Calculates a statistic that measures the variability between groups of
+    samples in a FDataGrid object.
+
+    The statistic defined as below is calculated between all the samples in a
+    FDataGrid object with a given set of weights, and the desired Lp norm.
+
+    Let :math:`\{f_i\}_{i=1}^k` be a set of samples in a FDataGrid object.
+    Let :math:`\{w_j\}_{j=1}^k` be a set of weights, where :math:`w_i` is
+    related to the sample :math:`f_i` for :math:`i=1,\dots,k`.
+    The statistic is defined as:
+
+    .. math::
+        V_n = \sum_{i<j}^kw_i\|f_i-f_j\|^p
+
+    Args:
+         fd (FDataGrid): Object containing all the samples for which we want
+            to calculate the statistic.
+         weights (list of int): Weights related to each sample. Each
+            weight is expected to appear in the same position as its
+            corresponding sample in the FDataGrid object.
+         p (int, optional): p of the lp norm. Must be greater or equal
+            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
+            Defaults to 2.
+
+    Returns:
+        The value of the statistic.
+
+    Raises:
+        TODO
+
+    References:
+        Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. An
+        anova test for functional data. *Computational Statistics  Data
+        Analysis*, 47:111-112, 02 2004
+    """
+    k = fd.n_samples
     v_n = 0
     for i in range(k):
         for j in range(i + 1, k):
-            v_n += sizes[i] * norm_lp(fd_means[i] - fd_means[j]) ** 2
+            v_n += weights[i] * norm_lp(fd[i] - fd[j], p=p) ** p
     return v_n
 
 
-def v_statistic(values, sizes):
-    k = values.data_matrix.shape[0]
-    v_hat = 0
+def v_asymptotic_stat(fd, weights, p=2):
+    """
+    Calculates a statistic that measures the variability between groups of
+    samples in a FDataGrid object.
 
+    The statistic defined as below is calculated between all the samples in a
+    FDataGrid object with a given set of weights, and the desired Lp norm.
+
+    Let :math:`\{f_i\}_{i=1}^k` be a set of samples in a FDataGrid object.
+    Let :math:`\{w_j\}_{j=1}^k` be a set of weights, where :math:`w_i` is
+    related to the sample :math:`f_i` for :math:`i=1,\dots,k`.
+    The statistic is defined as:
+
+    .. math::
+        \sum_{i<j}^k\|f_i-f_j\sqrt{\cfrac{w_i}{w_j}}\|^p
+
+    Args:
+         fd (FDataGrid): Object containing all the samples for which we want
+            to calculate the statistic.
+         weights (list of int): Weights related to each sample. Each
+            weight is expected to appear in the same position as its
+            corresponding sample in the FDataGrid object.
+         p (int, optional): p of the lp norm. Must be greater or equal
+            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
+            Defaults to 2.
+
+    Returns:
+        The value of the statistic.
+
+    Raises:
+        TODO
+
+    References:
+        Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. An
+        anova test for functional data. *Computational Statistics  Data
+        Analysis*, 47:111-112, 02 2004
+    """
+
+    k = fd.n_samples
+    v = 0
     for i in range(k):
         for j in range(i + 1, k):
-            v_hat += norm_lp(values[i] - values[j] * np.sqrt(sizes[i] / sizes[j])) ** 2
-
-    return v_hat
-
-
-# def v_statistic_2(values, sizes, std=False):
-#
-#     if std:
-#         m = values.mean()
-#
-#     k = values.data_matrix.shape[0]
-#     v_hat = 0
-#     for i in range(k):
-#         for j in range(i + 1, k):
-#             if std:
-#                 v_hat += norm_lp(np.sqrt(sizes[i]) * (values[i] - m) - np.sqrt(sizes[j]) * (values[j] - m) * np.sqrt(
-#                     sizes[i] / sizes[j])) ** 2
-#             else:
-#                 v_hat += norm_lp(values[i] - values[j] * np.sqrt(sizes[i] / sizes[j])) ** 2
-#     return v_hat
+            v += norm_lp(
+                fd[i] - fd[j] * np.sqrt(weights[i] / weights[j]), p=p) ** 2
+    return v
 
 
-def anova_bootstrap(fd_grouped, n_sim, f):
-    # fd_grouped es una lista de fdatagrids
+def _anova_bootstrap(fd_grouped, n_sim, p=2):
     assert len(fd_grouped) > 0
 
-    m = fd_grouped[0].ncol  # Number of points in the grid
-    samples = fd_grouped[0].sample_points  # Sample points
-    start, stop = fd_grouped[0].domain_range[0]  # Domain range
+    n_groups = len(fd_grouped)
+    sample_points = fd_grouped[0].sample_points
+    m = len(sample_points[0])  # Number of points in the grid
+    start, stop = fd_grouped[0].domain_range[0]
 
-    sizes = [fd.n_samples for fd in fd_grouped]  # List of sizes of each group
+    sizes = [fd.n_samples for fd in fd_grouped]  # List with sizes of each group
 
     # Estimating covariances for each group
     k_est = [fd.cov().data_matrix[0, ..., 0] for fd in fd_grouped]
 
-    l_vector = []
-    for l in range(n_sim):
-        sim = FDataGrid(np.empty((0, m)), sample_points=samples)
-        for i, fd in enumerate(fd_grouped):
-            process = make_gaussian_process(1, n_features=m, start=start, stop=stop, cov=k_est[i])
-            #  sim = sim.concatenate(process)
-            # process = make_gaussian_process(fd.n_samples, n_features=m, start=start, stop=stop,
-            #                                cov=k_est[i])
-            # process = (f[i].mean()) * np.sqrt(f[i].n_samples)
-            sim = sim.concatenate(process)
-        l_vector.append(v_statistic(sim, sizes))
+    # Simulating n_sim observations for each of the n_groups gaussian processes
+    sim = [make_gaussian_process(n_sim, n_features=m, start=start, stop=stop,
+                                 cov=k_est[i]) for i in range(n_groups)]
+    v_samples = []
+    for i in range(n_sim):
+        fd = FDataGrid([s.data_matrix[i, ..., 0] for s in sim])
+        v_samples.append(v_asymptotic_stat(fd, sizes, p=p))
+    return v_samples
 
 
-    return l_vector
+def func_oneway(*args, n_sim=2000, p=2):
+    """
+        Perform one-way functional ANOVA.
+
+        Args:
+            n_sim (int, optional): Number of simulations for the bootstrap
+                procedure.
+            
+
+        Returns:
 
 
-def func_oneway(*args, n_sim=2000):
+        Raises:
+            TODO
 
-    # TODO Check grids
+        References:
+            Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. An
+            anova test for functional data. *Computational Statistics  Data
+            Analysis*, 47:111-112, 02 2004
+    """
 
     assert len(args) > 0
 
@@ -82,9 +147,9 @@ def func_oneway(*args, n_sim=2000):
     for fd in fd_groups[1:]:
         fd_means = fd_means.concatenate(fd.mean())
 
-    vn = vn_statistic(fd_means, [fd.n_samples for fd in fd_groups])
+    vn = v_sample_stat(fd_means, [fd.n_samples for fd in fd_groups], p=p)
 
-    simulation = anova_bootstrap(fd_groups, n_sim, fd_groups)
+    simulation = _anova_bootstrap(fd_groups, n_sim, p=p)
     p_value = np.sum(simulation > vn) / len(simulation)
 
     return p_value, vn, simulation
@@ -114,7 +179,8 @@ def anova_bootstrap_usc(fd_grouped, n_sim):
     for l in range(n_sim):
         sim = FDataGrid(np.empty((0, m)), sample_points=samples)
         for i, fd in enumerate(fd_grouped):
-            process = make_gaussian_process(1, n_features=m, start=start, stop=stop, cov=k_est[i])
+            process = make_gaussian_process(1, n_features=m, start=start,
+                                            stop=stop, cov=k_est[i])
             sim = sim.concatenate(process)
         l_vector.append(v_usc(sim))
 
@@ -122,7 +188,6 @@ def anova_bootstrap_usc(fd_grouped, n_sim):
 
 
 def func_oneway_usc(*args, n_sim=2000):
-
     # TODO Check grids
 
     assert len(args) > 0

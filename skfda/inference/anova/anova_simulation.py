@@ -1,12 +1,11 @@
 from skfda import FDataGrid
 import numpy as np
-from skfda.inference.anova.anova_oneway import func_oneway, func_oneway_usc
-from skfda.datasets import make_gaussian_process
-from matplotlib import pyplot as plt
+from skfda.inference.anova.anova_oneway import func_oneway
 
 
 def generate_samples_independent(mean, sigma, n_samples):
-    return [mean + np.random.normal(0, sigma, len(mean)) for _ in range(n_samples)]
+    return [mean + np.random.normal(0, sigma, len(mean)) for _ in
+            range(n_samples)]
 
 
 scale = 25
@@ -37,11 +36,10 @@ p = []
 reps = 20
 
 for i in range(reps):
-
     print('Simulation {}...'.format(i + 1))
-    samples1 = generate_samples_independent(mean1, sigmas_star[3], n_samples)
-    samples2 = generate_samples_independent(mean2, sigmas_star[3], n_samples)
-    samples3 = generate_samples_independent(mean3, sigmas_star[3], n_samples)
+    samples1 = generate_samples_independent(mean1, sigmas_star[2], n_samples)
+    samples2 = generate_samples_independent(mean2, sigmas_star[2], n_samples)
+    samples3 = generate_samples_independent(mean3, sigmas_star[2], n_samples)
 
     # Storing in FDataGrid
     fd_1 = FDataGrid(samples1, sample_points=t, dataset_label="Process 1")
@@ -49,9 +47,8 @@ for i in range(reps):
     fd_3 = FDataGrid(samples3, sample_points=t, dataset_label="Process 3")
     fd_total = fd_1.concatenate(fd_2.concatenate(fd_3))
 
-    anova = func_oneway(fd_1, fd_2, fd_3, n_sim=2000)
+    anova = func_oneway(fd_1, fd_2, fd_3)
     print(anova)
     p.append(anova[0])
 
 print(np.mean(p))
-

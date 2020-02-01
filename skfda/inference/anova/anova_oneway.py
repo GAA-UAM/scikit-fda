@@ -7,10 +7,11 @@ from skfda.datasets import make_gaussian_process
 def v_sample_stat(fd, weights, p=2):
     """
     Calculates a statistic that measures the variability between groups of
-    samples in a FDataGrid object.
+    samples in a :class:`skfda.representation.grid.FDataGrid` object.
 
     The statistic defined as below is calculated between all the samples in a
-    FDataGrid object with a given set of weights, and the desired Lp norm.
+    :class:`skfda.representation.grid.FDataGrid` object with a given set of
+    weights, and the desired :math:`L_p` norm.
 
     Let :math:`\{f_i\}_{i=1}^k` be a set of samples in a FDataGrid object.
     Let :math:`\{w_j\}_{j=1}^k` be a set of weights, where :math:`w_i` is
@@ -38,6 +39,27 @@ def v_sample_stat(fd, weights, p=2):
     Raises:
         TODO
 
+    Examples:
+
+        >>> from skfda.inference.anova import v_sample_stat
+        >>> from skfda.representation.grid import FDataGrid
+        >>> import numpy as np
+
+        We create different trajectories to be applied in the statistic and a
+        set of weights.
+
+        >>> t = np.linspace(0, 1, 50)
+        >>> x1 = t * (1 - t) ** 5
+        >>> x2 = t ** 2 * (1 - t) ** 4
+        >>> x3 = t ** 3 * (1 - t) ** 3
+        >>> fd = FDataGrid([x1, x2, x3], sample_points=t)
+        >>> weights = [10, 20, 30]
+
+        Finally the value of the statistic is calculated:
+
+        >>> v_sample_stat(fd, weights)
+        0.01649448843348894
+
     References:
         [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
         anova test for functional data". *Computational Statistics  Data
@@ -54,10 +76,11 @@ def v_sample_stat(fd, weights, p=2):
 def v_asymptotic_stat(fd, weights, p=2):
     """
     Calculates a statistic that measures the variability between groups of
-    samples in a FDataGrid object.
+    samples in a :class:`skfda.representation.grid.FDataGrid` object.
 
     The statistic defined as below is calculated between all the samples in a
-    FDataGrid object with a given set of weights, and the desired Lp norm.
+    :class:`skfda.representation.grid.FDataGrid` object with a given set of
+    weights, and the desired :math:`L_p` norm.
 
     Let :math:`\{f_i\}_{i=1}^k` be a set of samples in a FDataGrid object.
     Let :math:`\{w_j\}_{j=1}^k` be a set of weights, where :math:`w_i` is
@@ -84,6 +107,27 @@ def v_asymptotic_stat(fd, weights, p=2):
 
     Raises:
         TODO
+
+    Examples:
+
+        >>> from skfda.inference.anova import v_asymptotic_stat
+        >>> from skfda.representation.grid import FDataGrid
+        >>> import numpy as np
+
+        We create different trajectories to be applied in the statistic and a
+        set of weights.
+
+        >>> t = np.linspace(0, 1, 50)
+        >>> x1 = t * (1 - t) ** 5
+        >>> x2 = t ** 2 * (1 - t) ** 4
+        >>> x3 = t ** 3 * (1 - t) ** 3
+        >>> fd = FDataGrid([x1, x2, x3], sample_points=t)
+        >>> weights = [10, 20, 30]
+
+        Finally the value of the statistic is calculated:
+
+        >>> v_asymptotic_stat(fd, weights)
+        0.0018159320335885969
 
     References:
         [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
@@ -125,7 +169,7 @@ def _anova_bootstrap(fd_grouped, n_sim, p=2):
 
 def func_oneway(*args, n_sim=2000, p=2):
     """
-    Perform one-way functional ANOVA.
+    Performs one-way functional ANOVA.
 
     This function implements an asymptotic method to test the following
     null hypothesis:

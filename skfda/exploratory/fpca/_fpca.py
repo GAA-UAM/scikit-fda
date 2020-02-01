@@ -102,7 +102,7 @@ class FPCA(ABC, BaseEstimator, ClassifierMixin):
 
 class FPCABasis(FPCA):
     """Defines the common structure shared between classes that do functional
-        principal component analysis
+    principal component analysis
 
     Attributes:
         n_components (int): number of principal components to obtain from
@@ -153,12 +153,9 @@ class FPCABasis(FPCA):
 
         References:
             .. [RS05-8-4-2] Ramsay, J., Silverman, B. W. (2005). Basis function
-            expansion of the functions. In *Functional Data Analysis*
+                expansion of the functions. In *Functional Data Analysis*
                 (pp. 161-164). Springer.
 
-            .. [RS05-8-4-1] Ramsay, J., Silverman, B. W. (2005). HSpline
-                smoothing as an augmented least squares problem. In *Functional
-                Data Analysis* (p. 141). Springer.
         """
         # check that the number of components is smaller than the sample size
         if self.n_components > X.n_samples:

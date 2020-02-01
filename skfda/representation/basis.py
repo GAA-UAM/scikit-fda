@@ -1482,6 +1482,17 @@ class Fourier(Basis):
             # implement using inner product
             return self._numerical_penalty(coefficients)
 
+    def gram_matrix(self):
+        r"""Return the Gram Matrix of a fourier basis
+        We already know that a fourier basis is orthonormal, so the matrix is
+        an identity matrix of dimension n_basis*n_basis
+
+        Returns:
+            numpy.array: Gram Matrix of the fourier basis.
+
+        """
+        return np.identity(self.n_basis)
+
     def basis_of_product(self, other):
         """Multiplication of two Fourier Basis"""
         if not _same_domain(self.domain_range, other.domain_range):

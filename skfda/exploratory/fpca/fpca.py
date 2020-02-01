@@ -1,3 +1,5 @@
+"""Functional Principal Component Analysis Module."""
+
 import numpy as np
 from abc import ABC, abstractmethod
 from skfda.representation.basis import FDataBasis
@@ -6,29 +8,35 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.decomposition import PCA
 
 
+__author__ = "Yujian Hong"
+__email__ = "yujian.hong@estudiante.uam.es"
+
+
 class FPCA(ABC, BaseEstimator, ClassifierMixin):
     # TODO doctring
-    # TODO doctext
+    # TODO doctest
     # TODO directory examples create test
-    """
-    Defines the common structure shared between classes that do functional
+    """Defines the common structure shared between classes that do functional
     principal component analysis
 
     Attributes:
         n_components (int): number of principal components to obtain from
-            functional principal component analysis
+            functional principal component analysis. Defaults to 3.
         centering (bool): if True then calculate the mean of the functional data
             object and center the data first
         components (FDataGrid or FDataBasis): this contains the principal
             components either in a basis form or discretized form
         component_values (array_like): this contains the values (eigenvalues)
             associated with the principal components
-
+        pca (sklearn.decomposition.PCA): object for principal component analysis.
+            In both cases (discretized FPCA and basis FPCA) the problem can be
+            reduced to a regular PCA problem and use the framework provided by
+            sklearn to continue.
     """
 
     def __init__(self, n_components=3, centering=True):
-        """
-        FPCA constructor
+        """FPCA constructor
+
         Args:
             n_components (int): number of principal components to obtain from
                 functional principal component analysis
@@ -43,36 +51,34 @@ class FPCA(ABC, BaseEstimator, ClassifierMixin):
 
     @abstractmethod
     def fit(self, X, y=None):
-        """
-        Computes the n_components first principal components and saves them
+        """Computes the n_components first principal components and saves them
         inside the FPCA object.
 
-            Args:
-                X (FDataGrid or FDataBasis):
-                    the functional data object to be analysed
-                y (None, not used):
-                    only present for convention of a fit function
+        Args:
+            X (FDataGrid or FDataBasis):
+                the functional data object to be analysed
+            y (None, not used):
+                only present for convention of a fit function
 
-            Returns:
-                self (object)
+        Returns:
+            self (object)
         """
         pass
 
     @abstractmethod
     def transform(self, X, y=None):
-        """
-        Computes the n_components first principal components score and returns
-        them.
+        """Computes the n_components first principal components score and
+        returns them.
 
-            Args:
-                X (FDataGrid or FDataBasis):
-                    the functional data object to be analysed
-                y (None, not used):
-                    only present for convention of a fit function
+        Args:
+            X (FDataGrid or FDataBasis):
+                the functional data object to be analysed
+            y (None, not used):
+                only present because of fit function convention
 
-            Returns:
-                (array_like): the scores of the data with reference to the
-                principal components
+        Returns:
+            (array_like): the scores of the data with reference to the
+            principal components
         """
         pass
 
@@ -95,14 +101,62 @@ class FPCA(ABC, BaseEstimator, ClassifierMixin):
 
 
 class FPCABasis(FPCA):
+    """Defines the common structure shared between classes that do functional
+    principal component analysis
+
+    Attributes:
+        n_components (int): number of principal components to obtain from
+            functional principal component analysis. Defaults to 3.
+        centering (bool): if True then calculate the mean of the functional data
+            object and center the data first. Defaults to True. If True the
+            passed FDataBasis object is modified.
+        components (FDataBasis): this contains the principal components either
+            in a basis form or discretized form
+        component_values (array_like): this contains the values (eigenvalues)
+            associated with the principal components
+        pca (sklearn.decomposition.PCA): object for principal component analysis.
+            In both cases (discretized FPCA and basis FPCA) the problem can be
+            reduced to a regular PCA problem and use the framework provided by
+            sklearn to continue.
+    """
 
     def __init__(self, n_components=3, components_basis=None, centering=True):
+        """FPCABasis constructor
+
+        Args:
+            n_components (int): number of principal components to obtain from
+                functional principal component analysis
+            components_basis (skfda.representation.Basis): the basis in which we
+                want the principal components. Defaults to None. If so, the
+                basis contained in the passed FDataBasis object for the fit
+                function will be used.
+            centering (bool): if True then calculate the mean of the functional
+                data object and center the data first. Defaults to True
+        """
         super().__init__(n_components, centering)
         # basis that we want to use for the principal components
         self.components_basis = components_basis
 
     def fit(self, X: FDataBasis, y=None):
+        """Computes the n_components first principal components and saves them
+            inside the FPCA object.
 
+        Args:
+            X (FDataBasis):
+                the functional data object to be analysed in basis
+                representation
+            y (None, not used):
+                only present for convention of a fit function
+
+        Returns:
+            self (object)
+
+        References:
+            .. [RS05-8-4-2] Ramsay, J., Silverman, B. W. (2005). Basis function
+                expansion of the functions. In *Functional Data Analysis*
+                (pp. 161-164). Springer.
+
+        """
         # check that the number of components is smaller than the sample size
         if self.n_components > X.n_samples:
             raise AttributeError("The sample size must be bigger than the "
@@ -212,6 +266,23 @@ class FPCADiscretized(FPCA):
 
     # noinspection PyPep8Naming
     def fit(self, X: FDataGrid, y=None):
+        """Computes the n_components first principal components and saves them
+            inside the FPCA object.
+
+        Args:
+            X (FDataBasis):
+                the functional data object to be analysed in basis
+                representation
+            y (None, not used):
+                only present for convention of a fit function
+
+        Returns:
+            self (object)
+
+        References:
+            .. [RS05-8-4-1] Ramsay, J., Silverman, B. W. (2005). Discretizing
+            the functions. In *Functional Data Analysis* (p. 161). Springer.
+        """
 
         # check that the number of components is smaller than the sample size
         if self.n_components > X.n_samples:

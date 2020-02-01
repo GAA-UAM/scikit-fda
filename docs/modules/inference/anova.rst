@@ -13,4 +13,4 @@ TODO - Description
 
    skfda.inference.anova.v_sample_stat
    skfda.inference.anova.v_asymptotic_stat
-
+   skfda.inference.anova.func_oneway

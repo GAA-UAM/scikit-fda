@@ -403,7 +403,7 @@ class Basis(ABC):
         return gram
 
     def inner_product(self, other):
-        return self.to_basis().inner_product(other)
+        return np.transpose(other.inner_product(self.to_basis()))
 
     def _add_same_basis(self, coefs1, coefs2):
         return self.copy(), coefs1 + coefs2
@@ -1484,18 +1484,14 @@ class Fourier(Basis):
 
     def gram_matrix(self):
         r"""Return the Gram Matrix of a fourier basis
-        We already know that a fourier basis is orthonormal when the period is
-        the same as the domain range so the matrix is an identity matrix of
-        dimension n_basis*n_basis. Else we compute the matrix.
+        We already know that a fourier basis is orthonormal, so the matrix is
+        an identity matrix of dimension n_basis*n_basis
 
         Returns:
             numpy.array: Gram Matrix of the fourier basis.
 
         """
-        if self.domain_range[0][1] - self.domain_range[0][0] == self.period:
-            return np.identity(self.n_basis)
-        else:
-            return super().gram_matrix()
+        return np.identity(self.n_basis)
 
     def basis_of_product(self, other):
         """Multiplication of two Fourier Basis"""
@@ -2174,7 +2170,7 @@ class FDataBasis(FData):
         .. math::
             <x, y> = \int_a^b x(t)y(t) dt
 
-        When we talk about FDataBasis objects, they have many samples, so we
+        When we talk abaout FDataBasis objects, they have many samples, so we
         talk about inner product matrix instead. So, for two FDataBasis objects
         we define the inner product matrix as
 

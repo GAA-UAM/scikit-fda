@@ -103,7 +103,20 @@ class FPCABasis(FPCA):
 
     def fit(self, X: FDataBasis, y=None):
 
-        # check that the parameter is
+        # check that the number of components is smaller than the sample size
+        if self.n_components > X.n_samples:
+            raise AttributeError("The sample size must be bigger than the "
+                                 "number of components")
+
+        # check that we do not exceed limits for n_components as it should
+        # be smaller than the number of attributes of the basis
+        n_basis = self.components_basis.n_basis if self.components_basis \
+            else X.basis.n_basis
+        if self.n_components > n_basis:
+            raise AttributeError("The number of components should be "
+                                 "smaller than the number of attributes of "
+                                 "target principal components' basis.")
+
 
         # if centering is True then subtract the mean function to each function
         # in FDataBasis
@@ -118,11 +131,16 @@ class FPCABasis(FPCA):
 
         # setup principal component basis if not given
         if self.components_basis:
-            # if the principal components are in the same basis, this is
-            # essentially the gram matrix
+            # First fix domain range if not already done
+            self.components_basis.domain_range = X.basis.domain_range
             g_matrix = self.components_basis.gram_matrix()
+            # the matrix that are in charge of changing the computed principal
+            # components to target matrix is essentially the inner product
+            # of both basis.
             j_matrix = X.basis.inner_product(self.components_basis)
         else:
+            # if no other basis is specified we use the same basis as the passed
+            # FDataBasis Object
             self.components_basis = X.basis.copy()
             g_matrix = self.components_basis.gram_matrix()
             j_matrix = g_matrix
@@ -194,6 +212,19 @@ class FPCADiscretized(FPCA):
 
     # noinspection PyPep8Naming
     def fit(self, X: FDataGrid, y=None):
+
+        # check that the number of components is smaller than the sample size
+        if self.n_components > X.n_samples:
+            raise AttributeError("The sample size must be bigger than the "
+                                 "number of components")
+
+        # check that we do not exceed limits for n_components as it should
+        # be smaller than the number of attributes of the funcional data object
+        if self.n_components > X.data_matrix.shape[1]:
+            raise AttributeError("The number of components should be "
+                                 "smaller than the number of discretization "
+                                 "points of the functional data object.")
+
 
         # data matrix initialization
         fd_data = np.squeeze(X.data_matrix)

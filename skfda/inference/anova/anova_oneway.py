@@ -20,6 +20,8 @@ def v_sample_stat(fd, weights, p=2):
     .. math::
         V_n = \sum_{i<j}^kw_i\|f_i-f_j\|^p
 
+    This statistic is defined in Cuevas[1].
+
     Args:
          fd (FDataGrid): Object containing all the samples for which we want
             to calculate the statistic.
@@ -37,8 +39,8 @@ def v_sample_stat(fd, weights, p=2):
         TODO
 
     References:
-        Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. An
-        anova test for functional data. *Computational Statistics  Data
+        [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
+        anova test for functional data". *Computational Statistics  Data
         Analysis*, 47:111-112, 02 2004
     """
     k = fd.n_samples
@@ -65,6 +67,8 @@ def v_asymptotic_stat(fd, weights, p=2):
     .. math::
         \sum_{i<j}^k\|f_i-f_j\sqrt{\cfrac{w_i}{w_j}}\|^p
 
+    This statistic is defined in Cuevas[1].
+
     Args:
          fd (FDataGrid): Object containing all the samples for which we want
             to calculate the statistic.
@@ -82,8 +86,8 @@ def v_asymptotic_stat(fd, weights, p=2):
         TODO
 
     References:
-        Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. An
-        anova test for functional data. *Computational Statistics  Data
+        [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
+        anova test for functional data". *Computational Statistics  Data
         Analysis*, 47:111-112, 02 2004
     """
 
@@ -112,32 +116,68 @@ def _anova_bootstrap(fd_grouped, n_sim, p=2):
     # Simulating n_sim observations for each of the n_groups gaussian processes
     sim = [make_gaussian_process(n_sim, n_features=m, start=start, stop=stop,
                                  cov=k_est[i]) for i in range(n_groups)]
-    v_samples = []
+    v_samples = np.array([])
     for i in range(n_sim):
         fd = FDataGrid([s.data_matrix[i, ..., 0] for s in sim])
-        v_samples.append(v_asymptotic_stat(fd, sizes, p=p))
+        np.append(v_samples, v_asymptotic_stat(fd, sizes, p=p))
     return v_samples
 
 
 def func_oneway(*args, n_sim=2000, p=2):
     """
-        Perform one-way functional ANOVA.
+    Perform one-way functional ANOVA.
 
-        Args:
-            n_sim (int, optional): Number of simulations for the bootstrap
-                procedure.
-            
+    This function implements an asymptotic method to test the following
+    null hypothesis:
 
-        Returns:
+    Let :math:`\{X_i\}_{i=1}^k` be a set of :math:`k` independent samples
+    each one with :math:`n_i` trajectories, and let :math:`E(X_i) = m_i(
+    t)`. The null hypothesis is defined as:
 
+    .. math::
+        H_0: m_1(t) = \dots = m_k(t)
 
-        Raises:
-            TODO
+    This function calculates the value of the statistic
+    :func:`~skfda.inference.anova.v_sample_stat` :math:`V_n` with the means
+    of the given samples. Under the null hypothesis this statistic is
+    asymptotically equivalent to
+    :func:`~skfda.inference.anova.v_asymptotic_stat`, where each sample
+    is replaced by a gaussian process, with mean zero and the same
+    covariance function as the original.
 
-        References:
-            Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. An
-            anova test for functional data. *Computational Statistics  Data
-            Analysis*, 47:111-112, 02 2004
+    The simulation of the distribution of the asymptotic statistic :math:`V` is
+    implemented using a bootstrap procedure. One observation of the
+    :math:`k` different gaussian processes defined above is simulated,
+    and the value of :func:`~skfda.inference.anova.v_asymptotic_stat` is
+    calculated. This procedure is repeated `n_sim` times, creating a
+    sampling distribution of the statistic.
+
+    This procedure is from Cuevas[1].
+
+    Args:
+        fd1,fd2,.... (FDataGrid): The sample measurements for each each group.
+
+        n_sim (int, optional): Number of simulations for the bootstrap
+            procedure. Defaults to 2000.
+
+        p (int, optional): p of the lp norm. Must be greater or equal
+            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
+            Defaults to 2.
+
+    Returns:
+        Value of the sample statistic, p-value and sampling distribution of
+        the simulated asymptotic statistic.
+
+    Return type:
+        (float, float, numpy.array)
+
+    Raises:
+        TODO
+
+    References:
+        [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
+        anova test for functional data". *Computational Statistics  Data
+        Analysis*, 47:111-112, 02 2004
     """
 
     assert len(args) > 0
@@ -152,7 +192,7 @@ def func_oneway(*args, n_sim=2000, p=2):
     simulation = _anova_bootstrap(fd_groups, n_sim, p=p)
     p_value = np.sum(simulation > vn) / len(simulation)
 
-    return p_value, vn, simulation
+    return vn, p_value, simulation
 
 
 def v_usc(values):

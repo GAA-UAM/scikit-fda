@@ -10,4 +10,4 @@ Functional Principal Component Analysis for basis representation
 .. autosummary::
    :toctree: autosummary
 
-   skfda.exploratory.fpca.fpca.FPCABasis
+   skfda.exploratory.fpca.FPCABasis

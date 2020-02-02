@@ -595,7 +595,45 @@ def fetch_octane(return_X_y: bool = False):
         return {"data": curves,
                 "target": target,
                 "target_names": ['inliner', 'outlier'],
-                "DESCR" : DESCR}
+                "DESCR": DESCR}
+
 
 if hasattr(fetch_octane, "__doc__"):  # docstrings can be stripped off
     fetch_octane.__doc__ += _octane_descr + _param_descr
+
+
+def fetch_gait(return_X_y: bool = False):
+    """
+    Load the GAIT dataset.
+
+    The data is obtained from the R package 'fda' from CRAN.
+
+    """
+    DESCR = ""
+
+    raw_data = _fetch_fda("gait")
+
+    data = raw_data["gait"]
+
+    data_matrix = np.asarray(data)
+    data_matrix = np.transpose(data_matrix, axes=(1, 0, 2))
+    sample_points = np.asarray(data.coords.get('dim_0'), np.float64)
+
+    curves = FDataGrid(data_matrix=data_matrix,
+                       sample_points=sample_points,
+                       dataset_label="GAIT",
+                       axes_labels=["Time (proportion of gait cycle)",
+                                    "Hip angle (degrees)", "Knee angle ("
+                                                           "degrees)"])
+
+    target_names, target = np.unique(np.asarray(data.coords.get('dim_1')),
+                                     return_inverse=True)
+
+    if return_X_y:
+        return curves, target
+    else:
+        return {"data": curves,
+                "target": target,
+                "target_names": target_names,
+                "target_feature_names": ["boy"],
+                "DESCR": DESCR}

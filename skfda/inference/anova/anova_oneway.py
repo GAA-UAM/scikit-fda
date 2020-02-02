@@ -144,7 +144,7 @@ def v_asymptotic_stat(fd, weights, p=2):
     return v
 
 
-def _anova_bootstrap(fd_grouped, n_sim, p=2):
+def _anova_bootstrap(fd_grouped, n_sim, p=2, random_state=None):
     assert len(fd_grouped) > 0
 
     n_groups = len(fd_grouped)
@@ -159,15 +159,16 @@ def _anova_bootstrap(fd_grouped, n_sim, p=2):
 
     # Simulating n_sim observations for each of the n_groups gaussian processes
     sim = [make_gaussian_process(n_sim, n_features=m, start=start, stop=stop,
-                                 cov=k_est[i]) for i in range(n_groups)]
+                                 cov=k_est[i], random_state=random_state)
+           for i in range(n_groups)]
     v_samples = np.array([])
     for i in range(n_sim):
         fd = FDataGrid([s.data_matrix[i, ..., 0] for s in sim])
-        np.append(v_samples, v_asymptotic_stat(fd, sizes, p=p))
+        v_samples = np.append(v_samples, v_asymptotic_stat(fd, sizes, p=p))
     return v_samples
 
 
-def func_oneway(*args, n_sim=2000, p=2):
+def func_oneway(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
     """
     Performs one-way functional ANOVA.
 
@@ -208,6 +209,12 @@ def func_oneway(*args, n_sim=2000, p=2):
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
 
+        return_dist (bool, optional): Flag to indicate if the function should
+        return a
+            numpy.array with the sampling distribution simulated.
+
+        random_state (optional): Random state.
+
     Returns:
         Value of the sample statistic, p-value and sampling distribution of
         the simulated asymptotic statistic.
@@ -233,13 +240,22 @@ def func_oneway(*args, n_sim=2000, p=2):
 
     vn = v_sample_stat(fd_means, [fd.n_samples for fd in fd_groups], p=p)
 
-    simulation = _anova_bootstrap(fd_groups, n_sim, p=p)
+    simulation = _anova_bootstrap(fd_groups, n_sim, p=p,
+                                  random_state=random_state)
     p_value = np.sum(simulation > vn) / len(simulation)
 
-    return vn, p_value, simulation
+    if return_dist:
+        return vn, p_value, simulation
+
+    return vn, p_value
 
 
+'''
 def v_usc(values):
+    """
+
+    :rtype: object
+    """
     k = len(values)
     v = 0
     for i in range(k):
@@ -287,3 +303,4 @@ def func_oneway_usc(*args, n_sim=2000):
     p_value = len(np.where(simulation >= vn)[0]) / len(simulation)
 
     return p_value, vn, simulation
+'''

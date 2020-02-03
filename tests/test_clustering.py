@@ -1,8 +1,8 @@
+from skfda.ml.clustering import KMeans, FuzzyCMeans
+from skfda.representation.grid import FDataGrid
 import unittest
 
 import numpy as np
-from skfda.ml.clustering import KMeans, FuzzyCMeans
-from skfda.representation.grid import FDataGrid
 
 
 class TestClustering(unittest.TestCase):
@@ -78,10 +78,10 @@ class TestClustering(unittest.TestCase):
                                                 [0.227, 0.773],
                                                 [0.049, 0.951]]))
         np.testing.assert_allclose(fuzzy_kmeans.transform(fd).round(3),
-                                   np.array([[1.492,  7.879],
-                                             [1.294,  5.127],
-                                             [4.856,  2.633],
-                                             [7.775,  1.759]]))
+                                   np.array([[1.492, 7.879],
+                                             [1.294, 5.127],
+                                             [4.856, 2.633],
+                                             [7.775, 1.759]]))
         centers = np.array([[0.707, 0.707, 1.455, 2.467, 1.981, 1.482],
                             [-0.695, -0.695, -0.494, -0.197, -0.199, -0.398]])
         np.testing.assert_allclose(
@@ -89,7 +89,7 @@ class TestClustering(unittest.TestCase):
             centers)
         np.testing.assert_allclose(fuzzy_kmeans.score(fd),
                                    np.array([-12.025179]))
-        self.assertEquals(fuzzy_kmeans.n_iter_, 19)
+        self.assertEqual(fuzzy_kmeans.n_iter_, 19)
 
     # def test_fuzzy_kmeans_multivariate(self):
     #     data_matrix = [[[1, 0.3], [2, 0.4], [3, 0.5], [4, 0.6]],

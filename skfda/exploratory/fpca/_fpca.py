@@ -1,6 +1,7 @@
 """Functional Principal Component Analysis Module."""
 
 import numpy as np
+import skfda
 from abc import ABC, abstractmethod
 from skfda.representation.basis import FDataBasis
 from skfda.representation.grid import FDataGrid
@@ -13,8 +14,6 @@ __email__ = "yujian.hong@estudiante.uam.es"
 
 
 class FPCA(ABC, BaseEstimator, ClassifierMixin):
-    # TODO doctest
-    # TODO directory examples create test
     """Defines the common structure shared between classes that do functional
     principal component analysis
 
@@ -122,8 +121,18 @@ class FPCABasis(FPCA):
             sklearn to continue.
 
     Examples:
-        Construct an artificial FDataBasis object and run FPCA with this object
-        
+        Construct an artificial FDataBasis object and run FPCA with this object.
+
+        >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
+        >>> sample_points = [0, 1]
+        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> basis = skfda.representation.basis.Monomial((0,1), n_basis=2)
+        >>> basis_fd = fd.to_basis(basis)
+        >>> fpca_basis = FPCABasis(2)
+        >>> fpca_basis = fpca_basis.fit(basis_fd)
+        >>> fpca_basis.components.coefficients
+        array([[ 1.        , -3.        ],
+               [-1.73205081,  1.73205081]])
 
     """
 
@@ -303,6 +312,26 @@ class FPCADiscretized(FPCA):
             In both cases (discretized FPCA and basis FPCA) the problem can be
             reduced to a regular PCA problem and use the framework provided by
             sklearn to continue.
+
+    Examples:
+        In this example we apply discretized functional PCA with some simple
+        data to illustrate the usage of this class. We initialize the
+        FPCADiscretized object, fit the artificial data and obtain the scores.
+
+        >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
+        >>> sample_points = [0, 1]
+        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> fpca_discretized = FPCADiscretized(2)
+        >>> fpca_discretized = fpca_discretized.fit(fd)
+        >>> fpca_discretized.components.data_matrix
+        array([[[-0.4472136 ],
+                [ 0.89442719]],
+        <BLANKLINE>
+               [[-0.89442719],
+                [-0.4472136 ]]])
+        >>> fpca_discretized.transform(fd)
+        array([[-1.11803399e+00,  5.55111512e-17],
+               [ 1.11803399e+00, -5.55111512e-17]])
     """
 
     def __init__(self, n_components=3, weights=None, centering=True):

@@ -543,15 +543,15 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
 
     def predict(self, X):
         """Predict the target for the provided data
-        Parameters
-        ----------
-        X (:class:`FDataGrid` or array-like): FDataGrid with the test
-            samples or array (n_query, n_indexed) if metric ==
-            'precomputed'.
-        Returns
-        -------
-        y : array of shape = [n_samples] or [n_samples, n_outputs]
-            or :class:`FData` containing as many samples as X.
+
+        Args:
+            X (:class:`FDataGrid` or array-like): FDataGrid with the test
+                samples or array (n_query, n_indexed) if metric ==
+                'precomputed'.
+
+        Returns:
+            y : array of shape = [n_samples] or [n_samples, n_outputs]
+                or :class:`FData` containing as many samples as X.
 
         """
         self._check_is_fitted()

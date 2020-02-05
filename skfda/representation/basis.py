@@ -165,7 +165,7 @@ class Basis(ABC):
         Args:
             chart (figure object, axe or list of axes, optional): figure over
                 with the graphs are plotted or axis over where the graphs are
-                    plotted.
+                plotted.
             derivative (int or tuple, optional): Order of derivative to be
                 plotted. Defaults 0.
             **kwargs: keyword arguments to be passed to the

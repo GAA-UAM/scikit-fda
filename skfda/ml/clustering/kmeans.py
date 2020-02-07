@@ -285,27 +285,26 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                 convention.
 
         Returns:
-            labels_
+            Label of each sample.
         """
         check_is_fitted(self)
         self._check_test_data(X)
-        return self.labels_
-
-    def fit_predict(self, X, y=None, sample_weight=None):
-        """Compute cluster centers and predict cluster index for each sample.
-
-        Args:
-            X (FDataGrid object): Object whose samples are classified into
-                different groups.
-            y (Ignored): present here for API consistency by convention.
-            sample_weight (Ignored): present here for API consistency by
-                convention.
-
-        Returns:
-            labels_
-        """
-        self.fit(X)
-        return self.labels_
+        
+        membership_matrix = self._create_membership(X.n_samples)
+        centroids = self.cluster_centers_.copy()
+        
+        pairwise_metric = pairwise_distance(self.metric)
+        
+        distances_to_centroids = pairwise_metric(fdata1=X,
+                                                 fdata2=centroids)
+        
+        self._update(
+            fdata=X,
+            membership_matrix=membership_matrix,
+            distances_to_centroids=distances_to_centroids,
+            centroids=centroids)
+        
+        return membership_matrix
 
     def transform(self, X):
         """Transform X to a cluster-distance space.

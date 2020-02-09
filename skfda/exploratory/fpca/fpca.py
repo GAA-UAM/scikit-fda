@@ -5,7 +5,7 @@ import skfda
 from abc import ABC, abstractmethod
 from skfda.representation.basis import FDataBasis
 from skfda.representation.grid import FDataGrid
-from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
 
@@ -13,7 +13,7 @@ __author__ = "Yujian Hong"
 __email__ = "yujian.hong@estudiante.uam.es"
 
 
-class FPCA(ABC, BaseEstimator, ClassifierMixin):
+class FPCA(ABC, BaseEstimator, TransformerMixin):
     """Defines the common structure shared between classes that do functional
     principal component analysis
 
@@ -136,7 +136,14 @@ class FPCABasis(FPCA):
 
     """
 
-    def __init__(self, n_components=3, components_basis=None, centering=True):
+    def __init__(self,
+                 n_components=3,
+                 components_basis=None,
+                 centering=True,
+                 regularization=False,
+                 derivative_degree=2,
+                 coefficients=None,
+                 regularization_parameter=0):
         """FPCABasis constructor
 
         Args:
@@ -152,6 +159,13 @@ class FPCABasis(FPCA):
         super().__init__(n_components, centering)
         # basis that we want to use for the principal components
         self.components_basis = components_basis
+        self.regularization = regularization
+        # lambda in the regularization / penalization process
+        self.regularization_parameter = regularization_parameter
+        self.regularization_derivative_degree = derivative_degree
+        self.regularization_coefficients = coefficients
+
+
 
     def fit(self, X: FDataBasis, y=None):
         """Computes the first n_components principal components and saves them.
@@ -220,6 +234,16 @@ class FPCABasis(FPCA):
         # make g matrix symmetric, referring to Ramsay's implementation
         g_matrix = (g_matrix + np.transpose(g_matrix))/2
 
+        # Apply regularization / penalty if applicable
+        if self.regularization:
+            # obtain regularization matrix
+            regularization_matrix = self.components_basis.penalty(
+                self.regularization_derivative_degree,
+                self.regularization_coefficients)
+            # apply regularization
+            g_matrix = g_matrix + self.regularization_parameter \
+                * regularization_matrix
+
         # obtain triangulation using cholesky
         l_matrix = np.linalg.cholesky(g_matrix)
 
@@ -238,6 +262,8 @@ class FPCABasis(FPCA):
         self.components = X.copy(basis=self.components_basis,
                                  coefficients=self.pca.components_
                                  @ l_matrix_inv)
+
+        final_matrix = np.transpose(final_matrix) @ final_matrix
         """
         if self.svd:
             # vh contains the eigenvectors transposed

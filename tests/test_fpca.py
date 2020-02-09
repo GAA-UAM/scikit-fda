@@ -53,28 +53,21 @@ class MyTestCase(unittest.TestCase):
 
     def test_basis_fpca_fit_result(self):
 
-        # initialize weather data with only the temperature. Humidity not needed
-        fd_data = fetch_weather_temp_only()
-        n_basis = 8
-        n_components = 4
+        n_basis = 3
+        n_components = 2
 
         # initialize basis data
         basis = Fourier(n_basis=n_basis)
-        fd_basis = fd_data.to_basis(basis)
-
+        fd_basis = FDataBasis(basis,
+                              [[1.0, 0.0, 0.0], [0.0, 2.0, 0.0],
+                               [0.0, 0.0, 3.0]])
         # pass functional principal component analysis to weather data
         fpca = FPCABasis(n_components)
         fpca.fit(fd_basis)
 
         # results obtained using Ramsay's R package
-        results = [[0.9231551,  0.13649663,  0.35694509, 0.0092012, -0.0244525,
-                    -0.02923873, -0.003566887, -0.009654571, -0.010006303],
-                   [-0.3315211, -0.05086430,  0.89218521, 0.1669182,  0.2453900,
-                    0.03548997,  0.037938051, -0.025777507,  0.008416904],
-                   [-0.1379108,  0.91250892,  0.00142045, 0.2657423, -0.2146497,
-                    0.16833314,  0.031509179, -0.006768189,  0.047306718],
-                   [0.1247078,  0.01579953, -0.26498643, 0.4118705,  0.7617679,
-                    0.24922635,  0.213305250, -0.180158701,  0.154863926]]
+        results = [[-0.1010156, -0.4040594, 0.9091380],
+                   [-0.5050764,  0.8081226, 0.3030441]]
         results = np.array(results)
 
         # compare results obtained using this library. There are slight
@@ -84,8 +77,7 @@ class MyTestCase(unittest.TestCase):
                 results[i, :] *= -1
             for j in range(n_basis):
                 self.assertAlmostEqual(fpca.components.coefficients[i][j],
-                                       results[i][j],
-                                       delta=0.03)
+                                       results[i][j], delta=0.00001)
 
 
 if __name__ == '__main__':

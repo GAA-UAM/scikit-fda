@@ -60,6 +60,7 @@ clean:
 	rm -rf modules/misc/autosummary
 	rm -rf modules/ml/autosummary
 	rm -rf modules/ml/clustering/autosummary
+	rm -rf modules/inference/autosummary
 	rm -rf backreferences
 
 .PHONY: html

@@ -479,6 +479,16 @@ def fetch_weather(return_X_y: bool = False):
                 "target": target,
                 "target_names": target_names,
                 "target_feature_names": ["region"],
+                "meta": list(zip(data["place"], data["province"],
+                                 np.asarray(data["coordinates"])[0],
+                                 np.asarray(data["coordinates"])[1],
+                                 data["geogindex"],
+                                 np.asarray(data["monthlyTemp"]),
+                                 np.asarray(data["monthlyPrecip"]))),
+
+                "meta_names": ["place", "province", "latitude", "longitude",
+                               "ind", "monthlyTemp", "monthlyPrecip"],
+                "meta_feature_names": ["location"],
                 "DESCR": DESCR}
 
 
@@ -513,17 +523,26 @@ def fetch_aemet(return_X_y: bool = False):
 
     data = raw_dataset["aemet"]
 
-    fd_temp = data["temp"]
-    fd_logprec = data["logprec"]
-    fd_wind = data["wind.speed"]
+    data_matrix = np.empty((73, 365, 3))
+    data_matrix[:, :, 0] = data["temp"].data_matrix[:, :, 0]
+    data_matrix[:, :, 1] = data["logprec"].data_matrix[:, :, 0]
+    data_matrix[:, :, 2] = data["wind.speed"].data_matrix[:, :, 0]
 
+    curves = data["temp"].copy(data_matrix=data_matrix,
+                               dataset_label="AEMET",
+                               axes_labels=["day",
+                                            "temperature (ºC)",
+                                            "logprecipitation",
+                                            "wind speed (m/s)"])
+
+    print(data['df'])
     if return_X_y:
-        return fd_temp, fd_logprec, fd_wind
+        return curves, None
     else:
-        return {"data": (fd_temp, fd_logprec, fd_wind),
+        return {"data": curves,
                 "meta": np.asarray(data["df"])[:,
-                                               np.array([0, 1, 2, 3, 6, 7])],
-                "meta_names": ["ind", "name", "province", "altitude",
+                        np.array([0, 1, 2, 3, 6, 7])],
+                "meta_names": ["ind", "place", "province", "altitude",
                                "longitude", "latitude"],
                 "meta_feature_names": ["location"],
                 "DESCR": DESCR}
@@ -601,6 +620,18 @@ def fetch_octane(return_X_y: bool = False):
 if hasattr(fetch_octane, "__doc__"):  # docstrings can be stripped off
     fetch_octane.__doc__ += _octane_descr + _param_descr
 
+_gait_descr = """
+    Angles formed by the hip and knee of each of 39 children over each boy 
+    gait cycle.
+
+    References:
+        Ramsay, James O., and Silverman, Bernard W. (2006),
+        Functional Data Analysis, 2nd ed. , Springer, New York.
+
+        Ramsay, James O., and Silverman, Bernard W. (2002),
+        Applied Functional Data Analysis, Springer, New York
+"""
+
 
 def fetch_gait(return_X_y: bool = False):
     """
@@ -609,7 +640,7 @@ def fetch_gait(return_X_y: bool = False):
     The data is obtained from the R package 'fda' from CRAN.
 
     """
-    DESCR = ""
+    DESCR = _gait_descr
 
     raw_data = _fetch_fda("gait")
 
@@ -623,17 +654,21 @@ def fetch_gait(return_X_y: bool = False):
                        sample_points=sample_points,
                        dataset_label="GAIT",
                        axes_labels=["Time (proportion of gait cycle)",
-                                    "Hip angle (degrees)", "Knee angle ("
-                                                           "degrees)"])
+                                    "Hip angle (degrees)",
+                                    "Knee angle (degrees)"])
 
-    target_names, target = np.unique(np.asarray(data.coords.get('dim_1')),
-                                     return_inverse=True)
+    meta_names, meta = np.unique(np.asarray(data.coords.get('dim_1')),
+                                 return_inverse=True)
 
     if return_X_y:
-        return curves, target
+        return curves, None
     else:
         return {"data": curves,
-                "target": target,
-                "target_names": target_names,
-                "target_feature_names": ["boy"],
+                "meta": meta,
+                "meta_names": meta_names,
+                "meta_feature_names": ["boys"],
                 "DESCR": DESCR}
+
+
+if hasattr(fetch_gait, "__doc__"):  # docstrings can be stripped off
+    fetch_gait.__doc__ += _gait_descr + _param_descr

@@ -8,10 +8,10 @@ This example shows how to perform a functional one-way ANOVA test.
 # Author: David García Fernández
 # License: MIT
 
-# sphinx_gallery_thumbnail_number = 3
+# sphinx_gallery_thumbnail_number = 4
 
 import skfda
-from skfda.inference.anova import func_oneway
+from skfda.inference.anova import oneway_anova
 from skfda.representation import FDataGrid
 
 ################################################################################
@@ -54,19 +54,19 @@ fig = fd_means.plot()
 
 ###############################################################################
 # At this point is time to perform the *ANOVA* test. This functionality is
-# implemented in the function :func:`~skfda.inference.anova.func_oneway`. As
+# implemented in the function :func:`~skfda.inference.anova.oneway_anova`. As
 # it consists in an asymptotic method it is possible to set the number of
 # simulations necessary to approximate the result of the statistic. It is
 # possible to set the :math:`p` of the :math:`L_p` norm used in the
 # calculations (defaults 2).
 
-v_n, p_val = func_oneway(fd_hip1, fd_hip2, fd_hip3)
+v_n, p_val = oneway_anova(fd_hip1, fd_hip2, fd_hip3)
 
 ################################################################################
 # The function returns first the statistic :func:`~skfda.inference.anova
 # .v_sample_stat` used to measure the variability between groups,
 # second the *p-value* of the test . For further information visit
-# :func:`~skfda.inference.anova.func_oneway` and [1].
+# :func:`~skfda.inference.anova.oneway_anova` and [1].
 
 print('Statistic: ', v_n)
 print('p-value: ', p_val)
@@ -93,7 +93,7 @@ fig = fd_means.plot()
 # In this case the optional arguments of the function are going to be set.
 # First, there is a `n_sim` parameter, which allows the user to select the
 # number of simulations to perform in the asymptotic procedure of the test (
-# see :func:`~skfda.inference.anova.func_oneway`), defaults to 2000.
+# see :func:`~skfda.inference.anova.oneway_anova`), defaults to 2000.
 #
 # Also there is a `p` parameter to choose the :math:`p` of the
 # :math:`L_p` norm used in the calculations (defaults 2).
@@ -103,8 +103,8 @@ fig = fd_means.plot()
 # sampling distribution of the statistic which is compared with the first
 # return to get the *p-value*.
 
-v_n, p_val, dist = func_oneway(fd_knee1, fd_knee2, fd_knee3, n_sim=1500, p=1,
-                               return_dist=True)
+v_n, p_val, dist = oneway_anova(fd_knee1, fd_knee2, fd_knee3, n_sim=1500, p=1,
+                                return_dist=True)
 
 print('Statistic: ', v_n)
 print('p-value: ', p_val)

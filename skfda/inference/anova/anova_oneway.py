@@ -168,7 +168,7 @@ def _anova_bootstrap(fd_grouped, n_sim, p=2, random_state=None):
     return v_samples
 
 
-def func_oneway(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
+def oneway_anova(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
     """
     Performs one-way functional ANOVA.
 
@@ -287,7 +287,7 @@ def anova_bootstrap_usc(fd_grouped, n_sim):
     return l_vector
 
 
-def func_oneway_usc(*args, n_sim=2000):
+def anova_oneway_usc(*args, n_sim=2000):
     # TODO Check grids
 
     assert len(args) > 0

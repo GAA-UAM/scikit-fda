@@ -10,7 +10,7 @@ TODO - Description
 .. autosummary::
    :toctree: autosummary
 
-   skfda.inference.anova.func_oneway
+   skfda.inference.anova.oneway_anova
 
 Statistics
 ----------

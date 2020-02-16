@@ -1,6 +1,6 @@
 from skfda import FDataGrid
 import numpy as np
-from skfda.inference.anova.anova_oneway import func_oneway
+from skfda.inference.anova.anova_oneway import oneway_anova
 
 
 def generate_samples_independent(mean, sigma, n_samples):
@@ -47,7 +47,7 @@ for i in range(reps):
     fd_3 = FDataGrid(samples3, sample_points=t, dataset_label="Process 3")
     fd_total = fd_1.concatenate(fd_2.concatenate(fd_3))
 
-    anova = func_oneway(fd_1, fd_2, fd_3)
+    anova = oneway_anova(fd_1, fd_2, fd_3)
     print(anova)
     p.append(anova[0])
 

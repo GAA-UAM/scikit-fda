@@ -80,7 +80,7 @@ class FPCA(ABC, BaseEstimator, TransformerMixin):
         """
         pass
 
-    def fit_transform(self, X, y=None):
+    def fit_transform(self, X, y=None, **fit_params):
         """
         Computes the n_components first principal components and their scores
         and returns them.
@@ -164,8 +164,6 @@ class FPCABasis(FPCA):
         self.regularization_parameter = regularization_parameter
         self.regularization_derivative_degree = derivative_degree
         self.regularization_coefficients = coefficients
-
-
 
     def fit(self, X: FDataBasis, y=None):
         """Computes the first n_components principal components and saves them.
@@ -490,3 +488,52 @@ class FPCADiscretized(FPCA):
         # components as column vectors
         return np.squeeze(X.data_matrix) @ np.transpose(
             np.squeeze(self.components.data_matrix))
+
+
+class FPCARegularizationParameterFinder(BaseEstimator, TransformerMixin):
+    """
+
+    """
+
+    def __init__(self, derivative_degree=2, coefficients=None):
+        self.derivative_degree = derivative_degree
+        self.coefficients = coefficients
+
+    def fit(self, X: FDataBasis, y=None):
+        """Compute cross validation scores for regularized fpca
+
+        Args:
+            X (FDataBasis):
+                The data whose points are used to compute the matrix.
+            y : Ignored
+        Returns:
+            self (object)
+
+        """
+        return self
+
+    def transform(self, X: FDataGrid, y=None):
+        """
+        Args:
+            X (FDataGrid):
+                The data to penalize.
+            y : Ignored
+        Returns:
+            FDataGrid: Functional data smoothed.
+
+        """
+        return self
+
+    def score(self, X, y):
+        """Returns the generalized cross validation (GCV) score.
+
+        Args:
+            X (FDataGrid):
+                The data to smooth.
+            y (FDataGrid):
+                The target data. Typically the same as ``X``.
+        Returns:
+            float: Generalized cross validation score.
+
+        """
+        return 1

@@ -1,11 +1,13 @@
 ANOVA
 ==============
-
-TODO - Description
+This package groups a collection of statistical models, useful for analyzing
+equality of means for different subsets of a sample.
 
 One-way functional ANOVA
 ------------------------
-TODO - Description
+Functionality to perform One-way ANOVA analysis, to compare means among
+different samples. One-way stands for one functional response variable and
+one unique variable of input.
 
 .. autosummary::
    :toctree: autosummary
@@ -14,7 +16,8 @@ TODO - Description
 
 Statistics
 ----------
-TODO - Description
+Statistics that measure the internal and external variability between
+groups, used in the models above.
 
 .. autosummary::
    :toctree: autosummary

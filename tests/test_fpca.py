@@ -53,21 +53,27 @@ class MyTestCase(unittest.TestCase):
 
     def test_basis_fpca_fit_result(self):
 
-        n_basis = 3
-        n_components = 2
+        n_basis = 9
+        n_components = 3
+
+        fd_data = fetch_weather_temp_only()
+        fd_data = FDataGrid(np.squeeze(fd_data.data_matrix),
+                            np.arange(0.5, 365, 1))
 
         # initialize basis data
-        basis = Fourier(n_basis=n_basis)
-        fd_basis = FDataBasis(basis,
-                              [[1.0, 0.0, 0.0], [0.0, 2.0, 0.0],
-                               [0.0, 0.0, 3.0]])
-        # pass functional principal component analysis to weather data
-        fpca = FPCABasis(n_components)
+        basis = Fourier(n_basis=9, domain_range=(0, 365))
+        fd_basis = fd_data.to_basis(basis)
+
+        fpca = FPCABasis(n_components=n_components)
         fpca.fit(fd_basis)
 
         # results obtained using Ramsay's R package
-        results = [[-0.1010156, -0.4040594, 0.9091380],
-                   [-0.5050764,  0.8081226, 0.3030441]]
+        results = [[0.9231551, 0.1364966, 0.3569451, 0.0092012, -0.0244525,
+                    -0.02923873, -0.003566887, -0.009654571, -0.0100063],
+                   [-0.3315211, -0.0508643, 0.89218521, 0.1669182, 0.2453900,
+                    0.03548997, 0.037938051, -0.025777507, 0.008416904],
+                   [-0.1379108,  0.9125089, 0.00142045, 0.2657423, -0.2146497,
+                    0.16833314,  0.031509179, -0.006768189, 0.047306718]]
         results = np.array(results)
 
         # compare results obtained using this library. There are slight
@@ -77,7 +83,7 @@ class MyTestCase(unittest.TestCase):
                 results[i, :] *= -1
             for j in range(n_basis):
                 self.assertAlmostEqual(fpca.components.coefficients[i][j],
-                                       results[i][j], delta=0.00001)
+                                       results[i][j], delta=0.0000001)
 
 
 if __name__ == '__main__':

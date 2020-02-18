@@ -403,7 +403,8 @@ class Basis(ABC):
         return gram
 
     def inner_product(self, other):
-        return np.transpose(other.inner_product(self.to_basis()))
+        return self.to_basis().inner_product(other)
+        #return np.transpose(other.inner_product(self.to_basis()))
 
     def _add_same_basis(self, coefs1, coefs2):
         return self.copy(), coefs1 + coefs2
@@ -2170,7 +2171,7 @@ class FDataBasis(FData):
         .. math::
             <x, y> = \int_a^b x(t)y(t) dt
 
-        When we talk abaout FDataBasis objects, they have many samples, so we
+        When we talk about FDataBasis objects, they have many samples, so we
         talk about inner product matrix instead. So, for two FDataBasis objects
         we define the inner product matrix as
 

@@ -1,8 +1,9 @@
 """
-One-way functional ANOVA
-========================
+One-way functional ANOVA with real data
+=======================================
 
-This example shows how to perform a functional one-way ANOVA test.
+This example shows how to perform a functional one-way ANOVA test usign a
+real dataset.
 """
 
 # Author: David García Fernández

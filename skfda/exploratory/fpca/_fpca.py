@@ -7,6 +7,7 @@ from skfda.representation.basis import FDataBasis
 from skfda.representation.grid import FDataGrid
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
+from sklearn.model_selection import GridSearchCV, LeaveOneOut
 
 
 __author__ = "Yujian Hong"
@@ -140,7 +141,6 @@ class FPCABasis(FPCA):
                  n_components=3,
                  components_basis=None,
                  centering=True,
-                 regularization=False,
                  derivative_degree=2,
                  coefficients=None,
                  regularization_parameter=0):
@@ -159,7 +159,6 @@ class FPCABasis(FPCA):
         super().__init__(n_components, centering)
         # basis that we want to use for the principal components
         self.components_basis = components_basis
-        self.regularization = regularization
         # lambda in the regularization / penalization process
         self.regularization_parameter = regularization_parameter
         self.regularization_derivative_degree = derivative_degree
@@ -188,6 +187,12 @@ class FPCABasis(FPCA):
 
         """
 
+        # the maximum number of components is established by the target basis
+        # if the target basis is available.
+        n_basis = self.components_basis.n_basis if self.components_basis \
+            else X.basis.n_basis
+        n_samples = X.n_samples
+
         # check that the number of components is smaller than the sample size
         if self.n_components > X.n_samples:
             raise AttributeError("The sample size must be bigger than the "
@@ -195,8 +200,6 @@ class FPCABasis(FPCA):
 
         # check that we do not exceed limits for n_components as it should
         # be smaller than the number of attributes of the basis
-        n_basis = self.components_basis.n_basis if self.components_basis \
-            else X.basis.n_basis
         if self.n_components > n_basis:
             raise AttributeError("The number of components should be "
                                  "smaller than the number of attributes of "
@@ -209,9 +212,6 @@ class FPCABasis(FPCA):
             # consider moving these lines to FDataBasis as a centering function
             # subtract from each row the mean coefficient matrix
             X.coefficients -= meanfd.coefficients
-
-        # for reference, X.coefficients is the C matrix
-        n_samples, n_basis = X.coefficients.shape
 
         # setup principal component basis if not given
         if self.components_basis:
@@ -233,7 +233,7 @@ class FPCABasis(FPCA):
         g_matrix = (g_matrix + np.transpose(g_matrix))/2
 
         # Apply regularization / penalty if applicable
-        if self.regularization:
+        if self.regularization_parameter > 0:
             # obtain regularization matrix
             regularization_matrix = self.components_basis.penalty(
                 self.regularization_derivative_degree,
@@ -313,6 +313,37 @@ class FPCABasis(FPCA):
 
         # in this case it is the inner product of our data with the components
         return X.inner_product(self.components)
+
+    def find_regularization_parameter(self, fd, grid, derivative_degree=2):
+        fd -= fd.mean()
+        # establish the basis for the coefficients
+        if not self.components_basis:
+            self.components_basis = fd.basis.copy()
+
+        # the maximum number of components only depends on the target basis
+        max_components = self.components_basis.n_basis
+
+        # and it cannot be bigger than the number of samples-1, as we are using
+        # leave one out cross validation
+        if max_components > fd.n_samples:
+            raise AttributeError("The target basis must have less n_basis"
+                                 "than the number of samples - 1")
+
+        estimator = FPCARegularizationParameterFinder(
+            max_components=max_components,
+            derivative_degree=derivative_degree)
+
+        param_grid = {'regularization_parameter': grid}
+
+        search_param = GridSearchCV(estimator,
+                                    param_grid=param_grid,
+                                    cv=LeaveOneOut(),
+                                    refit=True,
+                                    n_jobs=35,
+                                    verbose=True)
+
+        _ = search_param.fit(fd)
+        return search_param
 
 
 class FPCADiscretized(FPCA):
@@ -490,14 +521,29 @@ class FPCADiscretized(FPCA):
             np.squeeze(self.components.data_matrix))
 
 
+def inner_product_regularized(first,
+                              second,
+                              derivative_degree,
+                              regularization_parameter):
+    return first.inner_product(second) + \
+           regularization_parameter * \
+           first.derivative(derivative_degree).\
+           inner_product(second.derivative(derivative_degree))
+
+
 class FPCARegularizationParameterFinder(BaseEstimator, TransformerMixin):
     """
 
     """
 
-    def __init__(self, derivative_degree=2, coefficients=None):
+    def __init__(self,
+                 max_components,
+                 derivative_degree=2,
+                 regularization_parameter=1):
+        self.max_components = max_components
         self.derivative_degree = derivative_degree
-        self.coefficients = coefficients
+        self.regularization_parameter = regularization_parameter
+        self.components = None
 
     def fit(self, X: FDataBasis, y=None):
         """Compute cross validation scores for regularized fpca
@@ -510,30 +556,46 @@ class FPCARegularizationParameterFinder(BaseEstimator, TransformerMixin):
             self (object)
 
         """
+        # get the components using the proper regularization
+        fpca = FPCABasis(n_components=self.max_components,
+                         regularization_parameter=self.regularization_parameter,
+                         derivative_degree=self.derivative_degree)
+        fpca.fit(X, y)
+        self.components = fpca.components
+
         return self
 
     def transform(self, X: FDataGrid, y=None):
-        """
+        """ Transform function for convention
+        Not called by GridSearchCV as it only fits the data and then calls score
         Args:
             X (FDataGrid):
                 The data to penalize.
             y : Ignored
         Returns:
-            FDataGrid: Functional data smoothed.
+            self
 
         """
         return self
 
-    def score(self, X, y):
-        """Returns the generalized cross validation (GCV) score.
+    def score(self, X, y=None):
+        """Returns the generalized cross validation (GCV) score for the sample
+
 
         Args:
-            X (FDataGrid):
+            X (FDataBasis):
                 The data to smooth.
-            y (FDataGrid):
-                The target data. Typically the same as ``X``.
+            y (None):
+                convention usage.
         Returns:
             float: Generalized cross validation score.
 
         """
-        return 1
+        results = inner_product_regularized(X,
+                                            self.components,
+                                            self.derivative_degree,
+                                            self.regularization_parameter)[0]
+        results **= 2
+        for i in range(len(results)):
+            results[i] *= len(results) - i
+        return sum(results)

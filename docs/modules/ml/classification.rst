@@ -21,4 +21,4 @@ it is explained the basic usage of these estimators.
 
    skfda.ml.classification.KNeighborsClassifier
    skfda.ml.classification.RadiusNeighborsClassifier
-   skfda.ml.classification.NearestCentroids
+   skfda.ml.classification.NearestCentroid

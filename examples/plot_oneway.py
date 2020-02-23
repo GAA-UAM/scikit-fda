@@ -2,7 +2,7 @@
 One-way functional ANOVA with real data
 =======================================
 
-This example shows how to perform a functional one-way ANOVA test usign a
+This example shows how to perform a functional one-way ANOVA test using a
 real dataset.
 """
 

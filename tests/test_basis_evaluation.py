@@ -1,8 +1,26 @@
 
+from skfda.representation.basis import FDataBasis, Monomial, BSpline, Fourier, Constant
 import unittest
 
 import numpy as np
-from skfda.representation.basis import FDataBasis, Monomial, BSpline, Fourier
+
+
+class TestDerivativeFunctions(unittest.TestCase):
+
+    def _apply_test(self, basis):
+        t = np.linspace(basis.domain_range[0][0],
+                        basis.domain_range[0][1],
+                        100)
+
+        for derivative in [0, 1, 2, 3]:
+            np.testing.assert_allclose(
+                basis.evaluate(t, derivative=derivative),
+                basis._evaluate_default(t, derivative=derivative))
+
+    def test_derivative_function_constant(self):
+        constant = Constant(domain_range=(0, 1))
+
+        self._apply_test(constant)
 
 
 class TestBasisEvaluationFourier(unittest.TestCase):

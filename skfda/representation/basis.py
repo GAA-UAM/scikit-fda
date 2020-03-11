@@ -6,6 +6,7 @@ the corresponding basis classes.
 """
 from abc import ABC, abstractmethod
 import copy
+from scipy.special import binom
 
 from numpy import polyder, polyint, polymul, polyval
 import pandas.api.extensions
@@ -13,7 +14,6 @@ import scipy.integrate
 from scipy.interpolate import BSpline as SciBSpline
 from scipy.interpolate import PPoly
 import scipy.interpolate
-from scipy.special import binom
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 
@@ -100,8 +100,27 @@ class Basis(ABC):
     def domain_range(self, value):
         self._domain_range = value
 
+    def basis_functions_derivatives(self, derivative=0):
+        """Return a list with the basis functions of the derivatives.
+
+        The functions should accept an array of points at which the evaluation
+        will be performed.
+
+        Args:
+            derivative (int, optional): Order of the derivative. Defaults to 0.
+        Returns:
+            functions: Iterable of callables, one per basis.
+        """
+        pass
+
+    def _evaluate_default(self, eval_points, derivative=0):
+        """Default implementation of _evaluate"""
+        basis = self.basis_functions_derivatives(derivative=derivative)
+
+        return np.array([b(eval_points) for b in basis])
+
     @abstractmethod
-    def _compute_matrix(self, eval_points, derivative=0):
+    def _evaluate(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
 
         Args:
@@ -157,7 +176,7 @@ class Basis(ABC):
             raise ValueError("The list of points where the function is "
                              "evaluated can not contain nan values.")
 
-        return self._compute_matrix(eval_points, derivative)
+        return self._evaluate(eval_points, derivative)
 
     def plot(self, chart=None, *, derivative=0, **kwargs):
         """Plot the basis object or its derivatives.
@@ -207,9 +226,9 @@ class Basis(ABC):
             res = np.zeros(self.n_basis)
             for i, k in enumerate(coefficients):
                 if callable(k):
-                    res += k(x) * self._compute_matrix([x], i)[:, 0]
+                    res += k(x) * self._evaluate([x], i)[:, 0]
                 else:
-                    res += k * self._compute_matrix([x], i)[:, 0]
+                    res += k * self._evaluate([x], i)[:, 0]
             cache[x] = res
         return cache[x][basis_index]
 
@@ -471,6 +490,16 @@ class Constant(Basis):
         """
         super().__init__(domain_range, 1)
 
+    def basis_functions_derivatives(self, derivative=0):
+        if derivative == 0:
+            return (lambda x: np.ones(len(x)),)
+        else:
+            return (lambda x: np.zeros(len(x)),)
+
+    def _evaluate(self, eval_points, derivative=0):
+        return (np.ones((1, len(eval_points))) if derivative == 0
+                else np.zeros((1, len(eval_points))))
+
     def _ndegenerated(self, penalty_degree):
         """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
 
@@ -488,66 +517,7 @@ class Constant(Basis):
         return (self.copy(), coefs.copy() if order == 0
                 else self.copy(), np.zeros(coefs.shape))
 
-    def _compute_matrix(self, eval_points, derivative=0):
-        """Compute the basis or its derivatives given a list of values.
-
-        For each of the basis computes its value for each of the points in
-        the list passed as argument to the method.
-
-        Args:
-            eval_points (array_like): List of points where the basis is
-                evaluated.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-
-        Returns:
-            (:obj:`numpy.darray`): Matrix whose rows are the values of the each
-            basis function or its derivatives at the values specified in
-            eval_points.
-
-        """
-        return np.ones((1, len(eval_points))) if derivative == 0\
-            else np.zeros((1, len(eval_points)))
-
     def penalty(self, derivative_degree=None, coefficients=None):
-        r"""Return a penalty matrix given a differential operator.
-
-        The differential operator can be either a derivative of a certain
-        degree or a more complex operator.
-
-        The penalty matrix is defined as [RS05-5-6-2-2]_:
-
-        .. math::
-            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
-
-        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
-        functions and :math:`L` is a differential operator.
-
-        Args:
-            derivative_degree (int): Integer indicating the order of the
-                derivative or . For instance 2 means that the differential
-                operator is :math:`f''(x)`.
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`. Only used if derivative degree is None.
-
-
-        Returns:
-            numpy.array: Penalty matrix.
-
-        Examples:
-            >>> Constant((0,5)).penalty(0)
-            array([[5]])
-            >>> Constant().penalty(1)
-            array([[ 0.]])
-
-        References:
-            .. [RS05-5-6-2-2] Ramsay, J., Silverman, B. W. (2005). Specifying
-                the roughness penalty. In *Functional Data Analysis*
-                (pp. 106-107). Springer.
-
-        """
         if derivative_degree is None:
             return self._numerical_penalty(coefficients)
 
@@ -625,7 +595,7 @@ class Monomial(Basis):
         """
         return penalty_degree
 
-    def _compute_matrix(self, eval_points, derivative=0):
+    def _evaluate(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
 
         For each of the basis computes its value for each of the points in
@@ -924,7 +894,7 @@ class BSpline(Basis):
         """
         return penalty_degree
 
-    def _compute_matrix(self, eval_points, derivative=0):
+    def _evaluate(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
 
         It uses the scipy implementation of BSplines to compute the values
@@ -1326,7 +1296,7 @@ class Fourier(Basis):
     def period(self, value):
         self._period = value
 
-    def _compute_matrix(self, eval_points, derivative=0):
+    def _evaluate(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
 
         Args:

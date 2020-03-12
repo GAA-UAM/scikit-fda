@@ -12,15 +12,21 @@ class TestDerivativeFunctions(unittest.TestCase):
                         basis.domain_range[0][1],
                         100)
 
-        for derivative in [0, 1, 2, 3]:
-            np.testing.assert_allclose(
-                basis.evaluate(t, derivative=derivative),
-                basis._evaluate_default(t, derivative=derivative))
+        for derivative in range(6):
+            with self.subTest(derivative=derivative):
+                np.testing.assert_allclose(
+                    basis.evaluate(t, derivative=derivative),
+                    basis._evaluate_default(t, derivative=derivative))
 
     def test_derivative_function_constant(self):
         constant = Constant(domain_range=(0, 1))
 
         self._apply_test(constant)
+
+    def test_derivative_function_monomial(self):
+        monomial = Monomial(n_basis=6, domain_range=(0, 1))
+
+        self._apply_test(monomial)
 
 
 class TestBasisEvaluationFourier(unittest.TestCase):

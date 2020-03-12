@@ -6,7 +6,6 @@ the corresponding basis classes.
 """
 from abc import ABC, abstractmethod
 import copy
-from scipy.special import binom
 
 from numpy import polyder, polyint, polymul, polyval
 import pandas.api.extensions
@@ -14,6 +13,7 @@ import scipy.integrate
 from scipy.interpolate import BSpline as SciBSpline
 from scipy.interpolate import PPoly
 import scipy.interpolate
+from scipy.special import binom
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 
@@ -492,9 +492,9 @@ class Constant(Basis):
 
     def basis_functions_derivatives(self, derivative=0):
         if derivative == 0:
-            return (lambda x: np.ones(len(x)),)
+            return (lambda x: np.ones_like(x),)
         else:
-            return (lambda x: np.zeros(len(x)),)
+            return (lambda x: np.zeros_like(x),)
 
     def _evaluate(self, eval_points, derivative=0):
         return (np.ones((1, len(eval_points))) if derivative == 0
@@ -565,22 +565,64 @@ class Monomial(Basis):
         values.
 
         >>> bs_mon.evaluate([0, 1, 2])
-        array([[ 1.,  1.,  1.],
-               [ 0.,  1.,  2.],
-               [ 0.,  1.,  4.]])
+        array([[1, 1, 1],
+               [0, 1, 2],
+               [0, 1, 4]])
 
         And also evaluates its derivatives
 
         >>> bs_mon.evaluate([0, 1, 2], derivative=1)
-        array([[ 0.,  0.,  0.],
-               [ 1.,  1.,  1.],
-               [ 0.,  2.,  4.]])
+        array([[0, 0, 0],
+               [1, 1, 1],
+               [0, 2, 4]])
         >>> bs_mon.evaluate([0, 1, 2], derivative=2)
-        array([[ 0.,  0.,  0.],
-               [ 0.,  0.,  0.],
-               [ 2.,  2.,  2.]])
+        array([[0, 0, 0],
+               [0, 0, 0],
+               [2, 2, 2]])
 
     """
+
+    def _coefs_exps_derivatives(self, derivative):
+        """
+        Return coefficients and exponents of the derivatives.
+
+        This function is used for computing the basis functions and evaluate.
+
+        When the exponent would be negative (the coefficient in that case
+        is zero) returns 0 as the exponent (to prevent division by zero).
+        """
+
+        seq = np.arange(self.n_basis)
+
+        # Each column of coef_mat contains the numbers that must be multiplied
+        # together in order to obtain the coefficient of each basis function
+        # Thus, column i will contain i, i - 1, ..., i - derivative + 1
+        coef_mat = np.linspace(seq, seq - derivative + 1,
+                               derivative, dtype=int)
+        coefs = np.prod(coef_mat, axis=0)
+
+        exps = np.maximum(seq - derivative, 0)
+
+        return coefs, exps
+
+    def basis_functions_derivatives(self, derivative=0):
+
+        coefs, exps = self._coefs_exps_derivatives(derivative)
+
+        # Necessary to create closures by value
+        def monomial_basis(c, e):
+            return lambda x: (c * x**e)
+
+        return tuple([monomial_basis(c, e)
+                      for c, e in zip(coefs, exps)])
+
+    def _evaluate(self, eval_points, derivative=0):
+
+        coefs, exps = self._coefs_exps_derivatives(derivative)
+
+        raised = np.power.outer(eval_points, exps)
+
+        return (coefs * raised).T
 
     def _ndegenerated(self, penalty_degree):
         """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
@@ -594,40 +636,6 @@ class Monomial(Basis):
 
         """
         return penalty_degree
-
-    def _evaluate(self, eval_points, derivative=0):
-        """Compute the basis or its derivatives given a list of values.
-
-        For each of the basis computes its value for each of the points in
-        the list passed as argument to the method.
-
-        Args:
-            eval_points (array_like): List of points where the basis is
-                evaluated.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-
-        Returns:
-            (:obj:`numpy.darray`): Matrix whose rows are the values of the each
-            basis function or its derivatives at the values specified in
-            eval_points.
-
-        """
-        # Initialise empty matrix
-        mat = np.zeros((self.n_basis, len(eval_points)))
-
-        # For each basis computes its value for each evaluation
-        if derivative == 0:
-            for i in range(self.n_basis):
-                mat[i] = eval_points ** i
-        else:
-            for i in range(self.n_basis):
-                if derivative <= i:
-                    factor = i
-                    for j in range(2, derivative + 1):
-                        factor *= (i - j + 1)
-                    mat[i] = factor * eval_points ** (i - derivative)
-
-        return mat
 
     def _derivative(self, coefs, order=1):
         return (Monomial(self.domain_range, self.n_basis - order),

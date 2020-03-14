@@ -30,13 +30,6 @@ __email__ = "miguel.carbajo@estudiante.uam.es"
 # aux functions
 
 
-def _constant_basis(derivative=0, constant=1):
-    if derivative == 0:
-        return (lambda x: constant * np.ones_like(x),)
-    else:
-        return (lambda x: np.zeros_like(x),)
-
-
 def _polypow(p, n=2):
     if n > 2:
         return polymul(p, _polypow(p, n - 1))
@@ -106,25 +99,6 @@ class Basis(ABC):
     @domain_range.setter
     def domain_range(self, value):
         self._domain_range = value
-
-    def basis_functions_derivatives(self, derivative=0):
-        """Return a list with the basis functions of the derivatives.
-
-        The functions should accept an array of points at which the evaluation
-        will be performed.
-
-        Args:
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-        Returns:
-            functions: Iterable of callables, one per basis.
-        """
-        pass
-
-    def _evaluate_default(self, eval_points, derivative=0):
-        """Default implementation of _evaluate"""
-        basis = self.basis_functions_derivatives(derivative=derivative)
-
-        return np.array([b(eval_points) for b in basis])
 
     @abstractmethod
     def _evaluate(self, eval_points, derivative=0):
@@ -497,9 +471,6 @@ class Constant(Basis):
         """
         super().__init__(domain_range, 1)
 
-    def basis_functions_derivatives(self, derivative=0):
-        return _constant_basis(derivative=derivative)
-
     def _evaluate(self, eval_points, derivative=0):
         return (np.ones((1, len(eval_points))) if derivative == 0
                 else np.zeros((1, len(eval_points))))
@@ -608,17 +579,6 @@ class Monomial(Basis):
         exps = np.maximum(seq - derivative, 0)
 
         return coefs, exps
-
-    def basis_functions_derivatives(self, derivative=0):
-
-        coefs, exps = self._coefs_exps_derivatives(derivative)
-
-        # Necessary to create closures by value
-        def monomial_basis(c, e):
-            return lambda x: (c * x**e)
-
-        return tuple([monomial_basis(c, e)
-                      for c, e in zip(coefs, exps)])
 
     def _evaluate(self, eval_points, derivative=0):
 
@@ -892,43 +852,6 @@ class BSpline(Basis):
     @knots.setter
     def knots(self, value):
         self._knots = value
-
-    def basis_functions_derivatives(self, derivative=0):
-        """Return a list with the basis functions of the derivatives.
-
-        The functions should accept an array of points at which the evaluation
-        will be performed.
-
-        Args:
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-        Returns:
-            functions: Iterable of callables, one per basis.
-
-        Implementation details: In order to allow a discontinuous behaviour at
-        the boundaries of the domain it is necessary to placing m knots at the
-        boundaries [RS05]_. This is automatically done so that the user only
-        has to specify a single knot at the boundaries.
-
-        References:
-            .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
-                Analysis*. Springer. 50-51.
-
-        """
-        # Places m knots at the boundaries
-        knots = np.array([self.knots[0]] * (self.order - 1) + self.knots +
-                         [self.knots[-1]] * (self.order - 1))
-
-        identity = np.identity(self.n_basis)
-
-        # Necessary to create closures by value
-        def bspline_basis(c):
-            return lambda x: (scipy.interpolate.splev(
-                x, (knots, c, self.order - 1), der=derivative)
-                if derivative <= (self.order - 1)
-                else np.zeros_like(x))
-
-        return tuple([bspline_basis(c)
-                      for c in identity])
 
     def _ndegenerated(self, penalty_degree):
         """Return number of 0 or nearly to 0 eigenvalues of the penalty matrix.
@@ -1369,23 +1292,6 @@ class Fourier(Basis):
         phase_coef_pairs = omega * seq_pairs
 
         return deriv_functions, amplitude_coefs_pairs, phase_coef_pairs
-
-    def basis_functions_derivatives(self, derivative=0):
-
-        functions, amplitude, phase = self._functions_pairs_coefs_derivatives(
-            derivative)
-
-        normalization_denominator = np.sqrt(self.period / 2)
-
-        # Necessary to create closures by value
-        def fourier_basis(f, a, p):
-            return lambda x: a * f(p * x) / normalization_denominator
-
-        return (_constant_basis(derivative, 1 / (np.sqrt(2) * normalization_denominator))
-                + sum([
-                    (fourier_basis(functions[0], a[0], p[0]),
-                     fourier_basis(functions[1], a[1], p[1]))
-                    for a, p in zip(amplitude, phase)], ()))
 
     def _evaluate(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.

@@ -5,40 +5,6 @@ import unittest
 import numpy as np
 
 
-class TestDerivativeFunctions(unittest.TestCase):
-
-    def _apply_test(self, basis):
-        t = np.linspace(basis.domain_range[0][0],
-                        basis.domain_range[0][1],
-                        100)
-
-        for derivative in range(6):
-            with self.subTest(derivative=derivative):
-                np.testing.assert_allclose(
-                    basis.evaluate(t, derivative=derivative),
-                    basis._evaluate_default(t, derivative=derivative))
-
-    def test_derivative_function_constant(self):
-        constant = Constant(domain_range=(0, 1))
-
-        self._apply_test(constant)
-
-    def test_derivative_function_monomial(self):
-        monomial = Monomial(n_basis=6, domain_range=(0, 1))
-
-        self._apply_test(monomial)
-
-    def test_derivative_function_bspline(self):
-        bspline = BSpline(n_basis=6, order=3, domain_range=(0, 1))
-
-        self._apply_test(bspline)
-
-    def test_derivative_function_fourier(self):
-        fourier = Fourier(n_basis=6, domain_range=(0, 1))
-
-        self._apply_test(fourier)
-
-
 class TestBasisEvaluationFourier(unittest.TestCase):
 
     def test_evaluation_simple_fourier(self):

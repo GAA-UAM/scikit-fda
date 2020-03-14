@@ -236,7 +236,7 @@ class BasisSmoother(_LinearSmoother):
         ...                basis, method='qr', return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
-        array([[-0.  , 0.71, 0.71]])
+        array([[ 0.  , 0.71, 0.71]])
 
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='matrix', return_basis=True)

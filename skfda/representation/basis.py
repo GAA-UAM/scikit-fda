@@ -30,6 +30,13 @@ __email__ = "miguel.carbajo@estudiante.uam.es"
 # aux functions
 
 
+def _constant_basis(derivative=0, constant=1):
+    if derivative == 0:
+        return (lambda x: constant * np.ones_like(x),)
+    else:
+        return (lambda x: np.zeros_like(x),)
+
+
 def _polypow(p, n=2):
     if n > 2:
         return polymul(p, _polypow(p, n - 1))
@@ -491,10 +498,7 @@ class Constant(Basis):
         super().__init__(domain_range, 1)
 
     def basis_functions_derivatives(self, derivative=0):
-        if derivative == 0:
-            return (lambda x: np.ones_like(x),)
-        else:
-            return (lambda x: np.zeros_like(x),)
+        return _constant_basis(derivative=derivative)
 
     def _evaluate(self, eval_points, derivative=0):
         return (np.ones((1, len(eval_points))) if derivative == 0
@@ -863,9 +867,9 @@ class BSpline(Basis):
             n_basis = len(knots) + order - 2
 
         if (n_basis - order + 2) < 2:
-            raise ValueError(f"The number of basis ({n_basis}) minus the order "
-                             f"of the bspline ({order}) should be greater "
-                             f"than 3.")
+            raise ValueError(f"The number of basis ({n_basis}) minus the "
+                             f"order of the bspline ({order}) should be "
+                             f"greater than 3.")
 
         self.order = order
         self.knots = None if knots is None else list(knots)
@@ -888,6 +892,43 @@ class BSpline(Basis):
     @knots.setter
     def knots(self, value):
         self._knots = value
+
+    def basis_functions_derivatives(self, derivative=0):
+        """Return a list with the basis functions of the derivatives.
+
+        The functions should accept an array of points at which the evaluation
+        will be performed.
+
+        Args:
+            derivative (int, optional): Order of the derivative. Defaults to 0.
+        Returns:
+            functions: Iterable of callables, one per basis.
+
+        Implementation details: In order to allow a discontinuous behaviour at
+        the boundaries of the domain it is necessary to placing m knots at the
+        boundaries [RS05]_. This is automatically done so that the user only
+        has to specify a single knot at the boundaries.
+
+        References:
+            .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
+                Analysis*. Springer. 50-51.
+
+        """
+        # Places m knots at the boundaries
+        knots = np.array([self.knots[0]] * (self.order - 1) + self.knots +
+                         [self.knots[-1]] * (self.order - 1))
+
+        identity = np.identity(self.n_basis)
+
+        # Necessary to create closures by value
+        def bspline_basis(c):
+            return lambda x: (scipy.interpolate.splev(
+                x, (knots, c, self.order - 1), der=derivative)
+                if derivative <= (self.order - 1)
+                else np.zeros_like(x))
+
+        return tuple([bspline_basis(c)
+                      for c in identity])
 
     def _ndegenerated(self, penalty_degree):
         """Return number of 0 or nearly to 0 eigenvalues of the penalty matrix.
@@ -928,6 +969,9 @@ class BSpline(Basis):
                 Analysis*. Springer. 50-51.
 
         """
+        if derivative > (self.order - 1):
+            return np.zeros((self.n_basis, len(eval_points)))
+
         # Places m knots at the boundaries
         knots = np.array([self.knots[0]] * (self.order - 1) + self.knots +
                          [self.knots[-1]] * (self.order - 1))
@@ -1304,6 +1348,45 @@ class Fourier(Basis):
     def period(self, value):
         self._period = value
 
+    def _functions_pairs_coefs_derivatives(self, derivative=0):
+        """
+        Compute functions to use, amplitudes and phase of a derivative.
+        """
+        functions = [np.sin, np.cos]
+        signs = [1, 1, -1, -1]
+        omega = 2 * np.pi / self.period
+
+        deriv_functions = (functions[derivative % len(functions)],
+                           functions[(derivative + 1) % len(functions)])
+
+        deriv_signs = (signs[derivative % len(signs)],
+                       signs[(derivative + 1) % len(signs)])
+
+        seq = 1 + np.arange((self.n_basis - 1) // 2)
+        seq_pairs = np.array([seq, seq]).T
+        power_pairs = (omega * seq_pairs)**derivative
+        amplitude_coefs_pairs = deriv_signs * power_pairs
+        phase_coef_pairs = omega * seq_pairs
+
+        return deriv_functions, amplitude_coefs_pairs, phase_coef_pairs
+
+    def basis_functions_derivatives(self, derivative=0):
+
+        functions, amplitude, phase = self._functions_pairs_coefs_derivatives(
+            derivative)
+
+        normalization_denominator = np.sqrt(self.period / 2)
+
+        # Necessary to create closures by value
+        def fourier_basis(f, a, p):
+            return lambda x: a * f(p * x) / normalization_denominator
+
+        return (_constant_basis(derivative, 1 / (np.sqrt(2) * normalization_denominator))
+                + sum([
+                    (fourier_basis(functions[0], a[0], p[0]),
+                     fourier_basis(functions[1], a[1], p[1]))
+                    for a, p in zip(amplitude, phase)], ()))
+
     def _evaluate(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
 
@@ -1321,53 +1404,34 @@ class Fourier(Basis):
         if derivative < 0:
             raise ValueError("derivative only takes non-negative values.")
 
-        omega = 2 * np.pi / self.period
-        omega_t = omega * eval_points
-        n_basis = self.n_basis if self.n_basis % 2 != 0 else self.n_basis + 1
+        functions, amplitude_coefs, phase_coefs = self._functions_pairs_coefs_derivatives(
+            derivative)
 
-        # Initialise empty matrix
-        mat = np.empty((self.n_basis, len(eval_points)))
+        normalization_denominator = np.sqrt(self.period / 2)
+
+        # Multiply the phase coefficients elementwise
+        res = np.einsum('ij,k->ijk', phase_coefs, eval_points)
+
+        # Apply odd and even functions
+        for i in [0, 1]:
+            functions[i](res[:, i, :], out=res[:, i, :])
+
+        # Multiply the amplitude and ravel the result
+        res *= amplitude_coefs[..., np.newaxis]
+        res = res.reshape(-1, len(eval_points))
+        res /= normalization_denominator
+
+        # Add constant basis
         if derivative == 0:
-            # First base function is a constant
-            # The division by numpy.sqrt(2) is so that it has the same norm as
-            # the sine and cosine: sqrt(period / 2)
-            mat[0] = np.ones(len(eval_points)) / np.sqrt(2)
-            if n_basis > 1:
-                # 2*pi*n*x / period
-                args = np.outer(range(1, n_basis // 2 + 1), omega_t)
-                index = range(1, n_basis - 1, 2)
-                # odd indexes are sine functions
-                mat[index] = np.sin(args)
-                index = range(2, n_basis, 2)
-                # even indexes are cosine functions
-                mat[index] = np.cos(args)
-        # evaluates the derivatives
+            constant_basis = np.full(
+                shape=(1, len(eval_points)),
+                fill_value=1 / (np.sqrt(2) * normalization_denominator))
         else:
-            # First base function is a constant, so its derivative is 0.
-            mat[0] = np.zeros(len(eval_points))
-            if n_basis > 1:
-                # (2*pi*n / period) ^ n_derivative
-                factor = np.outer(
-                    (-1) ** (derivative // 2) *
-                    (np.array(range(1, n_basis // 2 + 1)) * omega) **
-                    derivative,
-                    np.ones(len(eval_points)))
-                # 2*pi*n*x / period
-                args = np.outer(range(1, n_basis // 2 + 1), omega_t)
-                # even indexes
-                index_e = range(2, n_basis, 2)
-                # odd indexes
-                index_o = range(1, n_basis - 1, 2)
-                if derivative % 2 == 0:
-                    mat[index_o] = factor * np.sin(args)
-                    mat[index_e] = factor * np.cos(args)
-                else:
-                    mat[index_o] = factor * np.cos(args)
-                    mat[index_e] = -factor * np.sin(args)
+            constant_basis = np.zeros(shape=(1, len(eval_points)))
 
-        # normalise
-        mat = mat / np.sqrt(self.period / 2)
-        return mat
+        res = np.concatenate((constant_basis, res))
+
+        return res
 
     def _ndegenerated(self, penalty_degree):
         """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.

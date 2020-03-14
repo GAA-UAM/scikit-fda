@@ -28,6 +28,16 @@ class TestDerivativeFunctions(unittest.TestCase):
 
         self._apply_test(monomial)
 
+    def test_derivative_function_bspline(self):
+        bspline = BSpline(n_basis=6, order=3, domain_range=(0, 1))
+
+        self._apply_test(bspline)
+
+    def test_derivative_function_fourier(self):
+        fourier = Fourier(n_basis=6, domain_range=(0, 1))
+
+        self._apply_test(fourier)
+
 
 class TestBasisEvaluationFourier(unittest.TestCase):
 

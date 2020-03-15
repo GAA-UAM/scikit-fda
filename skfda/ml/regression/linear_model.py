@@ -1,8 +1,10 @@
+from skfda.representation import FData
+from skfda.representation.basis import FDataBasis, Constant, Basis
+
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
 import numpy as np
-from skfda.representation.basis import FDataBasis, Constant, Basis, FData
 
 
 class LinearScalarRegression(BaseEstimator, RegressorMixin):

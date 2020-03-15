@@ -717,7 +717,7 @@ class Monomial(Basis):
     def _to_R(self):
         drange = self.domain_range[0]
         return "create.monomial.basis(rangeval = c(" + str(drange[0]) + "," +\
-               str(drange[1]) + "), n_basis = " + str(self.n_basis) + ")"
+               str(drange[1]) + "), nbasis = " + str(self.n_basis) + ")"
 
 
 class BSpline(Basis):
@@ -1158,7 +1158,7 @@ class BSpline(Basis):
     def _to_R(self):
         drange = self.domain_range[0]
         return ("create.bspline.basis(rangeval = c(" + str(drange[0]) + "," +
-                str(drange[1]) + "), n_basis = " + str(self.n_basis) +
+                str(drange[1]) + "), nbasis = " + str(self.n_basis) +
                 ", norder = " + str(self.order) + ", breaks = " +
                 self._list_to_R(self.knots) + ")")
 
@@ -1474,7 +1474,7 @@ class Fourier(Basis):
     def _to_R(self):
         drange = self.domain_range[0]
         return ("create.fourier.basis(rangeval = c(" + str(drange[0]) + "," +
-                str(drange[1]) + "), n_basis = " + str(self.n_basis) +
+                str(drange[1]) + "), nbasis = " + str(self.n_basis) +
                 ", period = " + str(self.period) + ")")
 
     def __repr__(self):

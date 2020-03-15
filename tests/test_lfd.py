@@ -1,13 +1,26 @@
+from skfda.misc import LinearDifferentialOperator
+from skfda.representation.basis import FDataBasis, Constant, Monomial
 import unittest
 
 import numpy as np
-from skfda.misc import LinearDifferentialOperator
-from skfda.representation.basis import FDataBasis, Constant, Monomial
 
 
 class TestBasis(unittest.TestCase):
 
+    def test_init_default(self):
+        """Tests default initialization (do not penalize)."""
+        lfd = LinearDifferentialOperator()
+        weightfd = [FDataBasis(Constant((0, 1)), 0)]
+
+        np.testing.assert_equal(lfd.order, 0,
+                                "Wrong deriv order of the linear operator")
+        np.testing.assert_equal(
+            lfd.weights, weightfd,
+            "Wrong list of weight functions of the linear operator")
+
     def test_init_integer(self):
+        """Tests initializations which only specify the order."""
+
         # Checks for a zero order Lfd object
         lfd_0 = LinearDifferentialOperator(order=0)
         weightfd = [FDataBasis(Constant((0, 1)), 1)]
@@ -20,7 +33,7 @@ class TestBasis(unittest.TestCase):
 
         # Checks for a non zero order Lfd object
         lfd_3 = LinearDifferentialOperator(3)
-        consfd = FDataBasis(Constant((0, 1)), np.identity(4)[3].reshape(-1, 1))
+        consfd = FDataBasis(Constant((0, 1)), [[0], [0], [0], [1]])
         bwtlist3 = consfd.to_list()
 
         np.testing.assert_equal(lfd_3.order, 3,
@@ -29,13 +42,18 @@ class TestBasis(unittest.TestCase):
             lfd_3.weights, bwtlist3,
             "Wrong list of weight functions of the linear operator")
 
-        np.testing.assert_raises(ValueError, LinearDifferentialOperator, -1)
+        # Negative order must fail
+        with np.testing.assert_raises(ValueError):
+            LinearDifferentialOperator(-1)
 
     def test_init_list_int(self):
+        """Tests initializations with integer weights."""
+
         coefficients = [1, 3, 4, 5, 6, 7]
 
         constant = Constant((0, 1))
         fd = FDataBasis(constant, np.array(coefficients).reshape(-1, 1))
+
         lfd = LinearDifferentialOperator(weights=coefficients)
 
         np.testing.assert_equal(lfd.order, 5,
@@ -45,31 +63,52 @@ class TestBasis(unittest.TestCase):
             "Wrong list of weight functions of the linear operator")
 
     def test_init_list_fdatabasis(self):
-        weights = np.arange(4 * 5).reshape((5, 4))
-        monomial = Monomial((0, 1), n_basis=4)
+        """Test initialization with functional weights."""
+
+        n_basis = 4
+        n_weights = 6
+
+        monomial = Monomial((0, 1), n_basis=n_basis)
+
+        weights = np.arange(n_basis * n_weights).reshape((n_weights, n_basis))
+
         fd = FDataBasis(monomial, weights)
 
-        fdlist = [FDataBasis(monomial, weights[i])
-                  for i in range(len(weights))]
-
+        fdlist = [FDataBasis(monomial, w) for w in weights]
         lfd = LinearDifferentialOperator(weights=fdlist)
 
-        np.testing.assert_equal(lfd.order, 4,
+        np.testing.assert_equal(lfd.order, n_weights - 1,
                                 "Wrong deriv order of the linear operator")
         np.testing.assert_equal(
             lfd.weights, fd.to_list(),
             "Wrong list of weight functions of the linear operator")
 
-        contant = Constant((0, 2))
-        fdlist.append(FDataBasis(contant, 1))
-        np.testing.assert_raises(ValueError, LinearDifferentialOperator,
-                                 None, fdlist)
+        # Check failure if intervals do not match
+        constant = Constant((0, 2))
+        fdlist.append(FDataBasis(constant, 1))
+        with np.testing.assert_raises(ValueError):
+            LinearDifferentialOperator(weights=fdlist)
 
     def test_init_wrong_params(self):
-        np.testing.assert_raises(ValueError,
-                                 LinearDifferentialOperator, 0, ['a'])
-        np.testing.assert_raises(ValueError,
-                                 LinearDifferentialOperator, 0, 'a')
+
+        # Check specifying both arguments fail
+        with np.testing.assert_raises(ValueError):
+            LinearDifferentialOperator(1, weights=[1, 1])
+
+        # Check invalid domain range
+        monomial = Monomial((0, 1), n_basis=3)
+        fdlist = [FDataBasis(monomial, [1, 2, 3])]
+
+        with np.testing.assert_raises(ValueError):
+            LinearDifferentialOperator(weights=fdlist,
+                                       domain_range=(0, 2))
+
+        # Check wrong types fail
+        with np.testing.assert_raises(ValueError):
+            LinearDifferentialOperator(weights=['a'])
+
+        with np.testing.assert_raises(ValueError):
+            LinearDifferentialOperator(weights='a')
 
 
 if __name__ == '__main__':

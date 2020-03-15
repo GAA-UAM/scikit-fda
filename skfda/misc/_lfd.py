@@ -18,9 +18,82 @@ class LinearDifferentialOperator:
 
         weights (list):  A FDataBasis objects list of length order + 1
 
+    Examples:
+
+        Create a linear differential operator that penalizes the second
+        derivative (acceleration)
+
+        >>> from skfda.misc import LinearDifferentialOperator
+        >>> from skfda.representation.basis import (FDataBasis,
+        ...                                         Monomial, Constant)
+        >>>
+        >>> LinearDifferentialOperator(2)
+        LinearDifferentialOperator(
+        nderiv=2,
+        weights=[
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[0]],
+            ...),
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[0]],
+            ...),
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[1]],
+            ...)]
+        )
+
+        Create a linear differential operator that penalizes three times
+        the second derivative (acceleration) and twice the first (velocity).
+
+        >>> LinearDifferentialOperator(weights=[0, 2, 3])
+        LinearDifferentialOperator(
+        nderiv=2,
+        weights=[
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[0]],
+            ...),
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[2]],
+            ...),
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[3]],
+            ...)]
+        )
+
+        Create a linear differential operator with non-constant weights.
+
+        >>> constant = Constant()
+        >>> monomial = Monomial((0, 1), n_basis=3)
+        >>> fdlist = [FDataBasis(constant, [0]),
+        ...           FDataBasis(constant, [0]),
+        ...           FDataBasis(monomial, [1, 2, 3])]
+        >>> LinearDifferentialOperator(weights=fdlist)
+        LinearDifferentialOperator(
+        nderiv=2,
+        weights=[
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[0]],
+            ...),
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[0]],
+            ...),
+        FDataBasis(
+            basis=Monomial(domain_range=[array([0, 1])], n_basis=3),
+            coefficients=[[1 2 3]],
+            ...)]
+        )
+
     """
 
-    def __init__(self, order=None, weights=None, domain_range=(0, 1)):
+    def __init__(self, order=None, *, weights=None, domain_range=None):
         """Lfd Constructor. You have to provide one of the two first
            parameters. It both are provided, it will raise an error
 
@@ -33,7 +106,9 @@ class LinearDifferentialOperator:
 
             domain_range (tuple or list of tuples, optional): Definition
                          of the interval where the weight functions are
-                         defined. Defaults to (0,1).
+                         defined. If the functional weights are specified
+                         and this is not, takes the domain range from them.
+                         Otherwise, defaults to (0,1).
         """
 
         from ..representation.basis import (FDataBasis, Constant,
@@ -43,28 +118,27 @@ class LinearDifferentialOperator:
             raise ValueError("You have to provide the order or the weights, "
                              "not both")
 
-        self.domain_range = domain_range
+        real_domain_range = (domain_range if domain_range is not None
+                             else (0, 1))
 
         if order is None and weights is None:
-            self.order = 0
-            self.weights = []
+            self.weights = (FDataBasis(Constant(real_domain_range), 0),)
 
         elif weights is None:
             if order < 0:
                 raise ValueError("Order should be an non-negative integer")
 
-            self.order = order
             self.weights = [
-                FDataBasis(Constant(domain_range), 0 if (i < order) else 1) for
-                i in range(order + 1)]
+                FDataBasis(Constant(real_domain_range),
+                           0 if (i < order) else 1)
+                for i in range(order + 1)]
 
         else:
             if len(weights) == 0:
                 raise ValueError("You have to provide one weight at least")
 
             if all(isinstance(n, int) for n in weights):
-                self.order = len(weights) - 1
-                self.weights = (FDataBasis(Constant(domain_range),
+                self.weights = (FDataBasis(Constant(real_domain_range),
                                            np.array(weights)
                                            .reshape(-1, 1)).to_list())
 
@@ -72,17 +146,28 @@ class LinearDifferentialOperator:
                 if all([_same_domain(weights[0].domain_range,
                                      x.domain_range) and x.n_samples == 1 for x
                         in weights]):
-                    self.order = len(weights) - 1
                     self.weights = weights
-                    self.domain_range = weights[0].domain_range
+
+                    real_domain_range = weights[0].domain_range
+                    if (domain_range is not None
+                            and real_domain_range != domain_range):
+                        raise ValueError("The domain range provided for the "
+                                         "linear operator does not match the "
+                                         "domain range of the weights")
 
                 else:
-                    raise ValueError("FDataBasis objects in the list has "
+                    raise ValueError("FDataBasis objects in the list have "
                                      "not the same domain_range")
 
             else:
                 raise ValueError("The elements of the list are neither "
                                  "integers or FDataBasis objects")
+
+        self.domain_range = real_domain_range
+
+    @property
+    def order(self):
+        return len(self.weights) - 1
 
     def __repr__(self):
         """Representation of Lfd object."""
@@ -93,7 +178,7 @@ class LinearDifferentialOperator:
 
         return (f"{self.__class__.__name__}("
                 f"\nnderiv={self.order},"
-                f"\nbwtlist=[{bwtliststr[:-1]}]"
+                f"\nweights=[{bwtliststr[:-1]}]"
                 f"\n)").replace('\n', '\n    ')
 
     def __eq__(self, other):

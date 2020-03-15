@@ -205,9 +205,9 @@ class BasisSmoother(_LinearSmoother):
         >>> import numpy as np
         >>> import skfda
         >>> t = np.linspace(0, 1, 5)
-        >>> x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
+        >>> x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t) + 2
         >>> x
-        array([ 1.,  1., -1., -1.,  1.])
+        array([ 3.,  3.,  1.,  1.,  3.])
 
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
@@ -215,11 +215,11 @@ class BasisSmoother(_LinearSmoother):
         ...                basis, method='cholesky')
         >>> fd_smooth = smoother.fit_transform(fd)
         >>> fd_smooth.data_matrix.round(2)
-        array([[[ 1.],
+        array([[[ 3.],
+                [ 3.],
                 [ 1.],
-                [-1.],
-                [-1.],
-                [ 1.]]])
+                [ 1.],
+                [ 3.]]])
 
         However, the parameter ``return_basis`` can be used to return the data
         in basis form, by default, without extra smoothing:
@@ -230,19 +230,19 @@ class BasisSmoother(_LinearSmoother):
         ...                basis, method='cholesky', return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
-        array([[ 0.  , 0.71, 0.71]])
+        array([[ 2.  , 0.71, 0.71]])
 
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='qr', return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
-        array([[ 0.  , 0.71, 0.71]])
+        array([[ 2.  , 0.71, 0.71]])
 
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='matrix', return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
-        array([[ 0.  , 0.71, 0.71]])
+        array([[ 2.  , 0.71, 0.71]])
         >>> smoother.hat_matrix().round(2)
         array([[ 0.43,  0.14, -0.14,  0.14,  0.43],
                [ 0.14,  0.71,  0.29, -0.29,  0.14],
@@ -264,7 +264,7 @@ class BasisSmoother(_LinearSmoother):
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
-        array([[ 0.18,  0.07,  0.09]])
+        array([[ 2.18,  0.07,  0.09]])
 
         >>> from skfda.misc import LinearDifferentialOperator
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
@@ -276,7 +276,7 @@ class BasisSmoother(_LinearSmoother):
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
-        array([[ 0.18,  0.07,  0.09]])
+        array([[ 2.18,  0.07,  0.09]])
 
         >>> from skfda.misc import LinearDifferentialOperator
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
@@ -288,7 +288,7 @@ class BasisSmoother(_LinearSmoother):
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
-        array([[ 0.18,  0.07,  0.09]])
+        array([[ 2.18,  0.07,  0.09]])
 
     References:
         .. [RS05-5-2-6] Ramsay, J., Silverman, B. W. (2005). How spline

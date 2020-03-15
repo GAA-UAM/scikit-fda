@@ -150,6 +150,9 @@ class Basis(ABC):
             eval_points.
 
         """
+        if derivative < 0:
+            raise ValueError("derivative only takes non-negative values.")
+
         eval_points = np.asarray(eval_points)
         if np.any(np.isnan(eval_points)):
             raise ValueError("The list of points where the function is "
@@ -1305,11 +1308,9 @@ class Fourier(Basis):
             eval_points.
 
         """
-        if derivative < 0:
-            raise ValueError("derivative only takes non-negative values.")
-
-        functions, amplitude_coefs, phase_coefs = self._functions_pairs_coefs_derivatives(
-            derivative)
+        (functions,
+         amplitude_coefs,
+         phase_coefs) = self._functions_pairs_coefs_derivatives(derivative)
 
         normalization_denominator = np.sqrt(self.period / 2)
 

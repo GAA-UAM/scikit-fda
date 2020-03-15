@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 
 
-class TestBasis(unittest.TestCase):
+class TestLfd(unittest.TestCase):
 
     def test_init_default(self):
         """Tests default initialization (do not penalize)."""

@@ -1,3 +1,5 @@
+import numbers
+
 import numpy as np
 
 
@@ -93,9 +95,12 @@ class LinearDifferentialOperator:
 
     """
 
-    def __init__(self, order=None, *, weights=None, domain_range=None):
+    def __init__(self, order_or_weights=None, *, order=None, weights=None,
+                 domain_range=None):
         """Lfd Constructor. You have to provide one of the two first
-           parameters. It both are provided, it will raise an error
+           parameters. It both are provided, it will raise an error.
+           If a positional argument is supplied it will be considered the
+           order if it is an integral type and the weights otherwise.
 
         Args:
             order (int, optional): the order of the operator. It's the highest
@@ -114,12 +119,21 @@ class LinearDifferentialOperator:
         from ..representation.basis import (FDataBasis, Constant,
                                             _same_domain)
 
-        if order is not None and weights is not None:
+        num_args = sum(
+            [a is not None for a in [order_or_weights, order, weights]])
+
+        if num_args > 1:
             raise ValueError("You have to provide the order or the weights, "
                              "not both")
 
         real_domain_range = (domain_range if domain_range is not None
                              else (0, 1))
+
+        if order_or_weights is not None:
+            if isinstance(order_or_weights, numbers.Integral):
+                order = order_or_weights
+            else:
+                weights = order_or_weights
 
         if order is None and weights is None:
             self.weights = (FDataBasis(Constant(real_domain_range), 0),)
@@ -186,3 +200,11 @@ class LinearDifferentialOperator:
         return (self.order == other.nderic and
                 all(self.weights[i] == other.bwtlist[i]
                     for i in range(self.order)))
+
+    def __call__(self, f):
+        """Return the function that results of applying the operator."""
+        def applied_lfd(t):
+            return sum(w(t) * f(t, derivative=i)
+                       for i, w in enumerate(self.weights))
+
+        return applied_lfd

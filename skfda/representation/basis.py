@@ -160,6 +160,9 @@ class Basis(ABC):
 
         return self._evaluate(eval_points, derivative)
 
+    def __call__(self, *args, **kwargs):
+        return self.evaluate(*args, **kwargs)
+
     def plot(self, chart=None, *, derivative=0, **kwargs):
         """Plot the basis object or its derivatives.
 
@@ -178,7 +181,7 @@ class Basis(ABC):
         """
         self.to_basis().plot(chart=chart, derivative=derivative, **kwargs)
 
-    def _evaluate_single_basis_coefficients(self, coefficients, basis_index, x,
+    def _evaluate_single_basis_coefficients(self, lfd, basis_index, x,
                                             cache):
         """Evaluate a differential operator over one of the basis.
 
@@ -206,15 +209,11 @@ class Basis(ABC):
         """
         if x not in cache:
             res = np.zeros(self.n_basis)
-            for i, k in enumerate(coefficients):
-                if callable(k):
-                    res += k(x) * self._evaluate([x], i)[:, 0]
-                else:
-                    res += k * self._evaluate([x], i)[:, 0]
+            res = lfd(self)([x])[:, 0]
             cache[x] = res
         return cache[x][basis_index]
 
-    def _numerical_penalty(self, coefficients):
+    def _numerical_penalty(self, lfd):
         """Return a penalty matrix using a numerical approach.
 
         See :func:`~basis.Basis.penalty`.
@@ -226,6 +225,10 @@ class Basis(ABC):
                 instance the tuple (1, 0, numpy.sin) means :math:`1
                 + sin(x)D^{2}`.
         """
+        from skfda.misc import LinearDifferentialOperator
+
+        if not isinstance(lfd, LinearDifferentialOperator):
+            lfd = LinearDifferentialOperator(lfd)
 
         # Range of first dimension
         domain_range = self.domain_range[0]
@@ -234,15 +237,15 @@ class Basis(ABC):
         for i in range(self.n_basis):
             penalty_matrix[i, i] = scipy.integrate.quad(
                 lambda x: (self._evaluate_single_basis_coefficients(
-                    coefficients, i, x, cache) ** 2),
+                    lfd, i, x, cache) ** 2),
                 domain_range[0], domain_range[1]
             )[0]
             for j in range(i + 1, self.n_basis):
                 penalty_matrix[i, j] = scipy.integrate.quad(
                     (lambda x: (self._evaluate_single_basis_coefficients(
-                                coefficients, i, x, cache) *
+                                lfd, i, x, cache) *
                                 self._evaluate_single_basis_coefficients(
-                                    coefficients, j, x, cache))),
+                                    lfd, j, x, cache))),
                     domain_range[0], domain_range[1]
                 )[0]
                 penalty_matrix[j, i] = penalty_matrix[i, j]

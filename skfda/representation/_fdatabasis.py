@@ -148,15 +148,15 @@ class FDataBasis(FData):
         Examples:
             >>> import numpy as np
             >>> t = np.linspace(0, 1, 5)
-            >>> x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
+            >>> x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t) + 2
             >>> x
-            array([ 1.,  1., -1., -1.,  1.])
+            array([ 3.,  3.,  1.,  1.,  3.])
 
             >>> from skfda.representation.basis import FDataBasis, Fourier
             >>> basis = Fourier((0, 1), n_basis=3)
             >>> fd = FDataBasis.from_data(x, t, basis)
             >>> fd.coefficients.round(2)
-            array([[ 0.  , 0.71, 0.71]])
+            array([[ 2.  , 0.71, 0.71]])
 
         References:
             .. [RS05-5-2-5] Ramsay, J., Silverman, B. W. (2005). How spline

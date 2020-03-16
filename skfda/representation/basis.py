@@ -181,38 +181,6 @@ class Basis(ABC):
         """
         self.to_basis().plot(chart=chart, derivative=derivative, **kwargs)
 
-    def _evaluate_single_basis_coefficients(self, lfd, basis_index, x,
-                                            cache):
-        """Evaluate a differential operator over one of the basis.
-
-        Computes the result of evaluating a the result of applying a
-        differential operator over one of the basis functions. It also admits a
-        "cache" dictionary to store the results for the other basis not
-        returned because they are evaluated by the function and may be needed
-        later.
-
-        Args:
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`.
-            basis_index (int): index in self.basis of the basis that is
-                evaluated.
-            x (number): Point of evaluation.
-            cache (dict): Dictionary with the values of previous evaluation
-                for all the basis function and where the results of the
-                evalaution are stored. This is done because later evaluation
-                of the same differential operator and same x may be needed
-                for other of the basis functions.
-
-        """
-        if x not in cache:
-            res = np.zeros(self.n_basis)
-            res = lfd(self)([x])[:, 0]
-            cache[x] = res
-        return cache[x][basis_index]
-
     def _numerical_penalty(self, lfd):
         """Return a penalty matrix using a numerical approach.
 
@@ -230,25 +198,29 @@ class Basis(ABC):
         if not isinstance(lfd, LinearDifferentialOperator):
             lfd = LinearDifferentialOperator(lfd)
 
+        indices = np.triu_indices(self.n_basis, 0)
+
+        def _cross_product(x):
+            """Multiply the two lfds"""
+            res = lfd(self)([x])[:, 0]
+
+            return res[indices[0]] * res[indices[1]]
+
         # Range of first dimension
         domain_range = self.domain_range[0]
-        penalty_matrix = np.zeros((self.n_basis, self.n_basis))
-        cache = {}
-        for i in range(self.n_basis):
-            penalty_matrix[i, i] = scipy.integrate.quad(
-                lambda x: (self._evaluate_single_basis_coefficients(
-                    lfd, i, x, cache) ** 2),
-                domain_range[0], domain_range[1]
-            )[0]
-            for j in range(i + 1, self.n_basis):
-                penalty_matrix[i, j] = scipy.integrate.quad(
-                    (lambda x: (self._evaluate_single_basis_coefficients(
-                                lfd, i, x, cache) *
-                                self._evaluate_single_basis_coefficients(
-                                    lfd, j, x, cache))),
-                    domain_range[0], domain_range[1]
-                )[0]
-                penalty_matrix[j, i] = penalty_matrix[i, j]
+
+        penalty_matrix = np.empty((self.n_basis, self.n_basis))
+
+        # Obtain the integrals for the upper matrix
+        triang_vec = scipy.integrate.quad_vec(
+            _cross_product, domain_range[0], domain_range[1])[0]
+
+        # Set upper matrix
+        penalty_matrix[indices] = triang_vec
+
+        # Set lower matrix
+        penalty_matrix[(indices[1], indices[0])] = triang_vec
+
         return penalty_matrix
 
     @abstractmethod

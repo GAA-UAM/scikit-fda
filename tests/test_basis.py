@@ -1,8 +1,8 @@
+from skfda.representation.basis import (Basis, FDataBasis, Constant, Monomial,
+                                        BSpline, Fourier)
 import unittest
 
 import numpy as np
-from skfda.representation.basis import (Basis, FDataBasis, Constant, Monomial,
-                                        BSpline, Fourier)
 
 
 class TestBasis(unittest.TestCase):
@@ -31,43 +31,58 @@ class TestBasis(unittest.TestCase):
 
     def test_bspline_penalty_special_case(self):
         basis = BSpline(n_basis=5)
-        np.testing.assert_array_almost_equal(
+
+        res = np.array([[1152., -2016., 1152., -288., 0.],
+                        [-2016., 3600., -2304., 1008., -288.],
+                        [1152., -2304., 2304., -2304., 1152.],
+                        [-288., 1008., -2304., 3600., -2016.],
+                        [0., -288., 1152., -2016., 1152.]])
+
+        np.testing.assert_allclose(
             basis.penalty(basis.order - 1),
-            np.array([[1152., -2016., 1152., -288., 0.],
-                      [-2016., 3600., -2304., 1008., -288.],
-                      [1152., -2304., 2304., -2304., 1152.],
-                      [-288., 1008., -2304., 3600., -2016.],
-                      [0., -288., 1152., -2016., 1152.]]))
+            res
+        )
+
+        np.testing.assert_allclose(
+            basis._numerical_penalty(basis.order - 1),
+            res
+        )
 
     def test_fourier_penalty(self):
         basis = Fourier(n_basis=5)
+
+        res = np.array([[0., 0., 0., 0., 0.],
+                        [0., 1558.55, 0., 0., 0.],
+                        [0., 0., 1558.55, 0., 0.],
+                        [0., 0., 0., 24936.73, 0.],
+                        [0., 0., 0., 0., 24936.73]])
+
         np.testing.assert_array_almost_equal(
             basis.penalty(2).round(2),
-            np.array([[0., 0., 0., 0., 0.],
-                      [0., 1558.55, 0., 0., 0.],
-                      [0., 0., 1558.55, 0., 0.],
-                      [0., 0., 0., 24936.73, 0.],
-                      [0., 0., 0., 0., 24936.73]]))
+            res
+        )
+
+        np.testing.assert_array_almost_equal(
+            basis._numerical_penalty(2).round(2),
+            res
+        )
 
     def test_bspline_penalty(self):
         basis = BSpline(n_basis=5)
+
+        res = np.array([[96., -132., 24., 12., 0.],
+                        [-132., 192., -48., -24., 12.],
+                        [24., -48., 48., -48., 24.],
+                        [12., -24., -48., 192., -132.],
+                        [0., 12., 24., -132., 96.]])
+
         np.testing.assert_array_almost_equal(
             basis.penalty(2).round(2),
-            np.array([[96., -132., 24., 12., 0.],
-                      [-132., 192., -48., -24., 12.],
-                      [24., -48., 48., -48., 24.],
-                      [12., -24., -48., 192., -132.],
-                      [0., 12., 24., -132., 96.]]))
+            res)
 
-    def test_bspline_penalty_numerical(self):
-        basis = BSpline(n_basis=5)
         np.testing.assert_array_almost_equal(
-            basis.penalty(coefficients=[0, 0, 1]).round(2),
-            np.array([[96., -132., 24., 12., 0.],
-                      [-132., 192., -48., -24., 12.],
-                      [24., -48., 48., -48., 24.],
-                      [12., -24., -48., 192., -132.],
-                      [0., 12., 24., -132., 96.]]))
+            basis._numerical_penalty(2).round(2),
+            res)
 
     def test_basis_product_generic(self):
         monomial = Monomial(n_basis=5)

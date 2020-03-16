@@ -148,7 +148,7 @@ class LinearDifferentialOperator:
             if len(weights) == 0:
                 raise ValueError("You have to provide one weight at least")
 
-            if all(isinstance(n, numbers.Integral) for n in weights):
+            if all(isinstance(n, numbers.Real) for n in weights):
                 self.weights = (FDataBasis(Constant(real_domain_range),
                                            np.array(weights)
                                            .reshape(-1, 1)).to_list())

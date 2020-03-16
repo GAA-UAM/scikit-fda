@@ -100,19 +100,7 @@ class Basis(ABC):
 
     @abstractmethod
     def _evaluate(self, eval_points, derivative=0):
-        """Compute the basis or its derivatives given a list of values.
-
-        Args:
-            eval_points (array_like): List of points where the basis is
-                evaluated.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-
-        Returns:
-            (:obj:`numpy.darray`): Matrix whose rows are the values of the each
-            basis function or its derivatives at the values specified in
-            eval_points.
-
-        """
+        """Subclasses must override this to provide basis evaluation."""
         pass
 
     @abstractmethod
@@ -187,11 +175,9 @@ class Basis(ABC):
         See :func:`~basis.Basis.penalty`.
 
         Args:
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`.
+            lfd (LinearDifferentialOperator, list or int): Linear
+            differential operator. If it is not a LinearDifferentialOperator
+            object, it will be converted to one.
         """
         from skfda.misc import LinearDifferentialOperator
 
@@ -200,7 +186,7 @@ class Basis(ABC):
 
         indices = np.triu_indices(self.n_basis, 0)
 
-        def _cross_product(x):
+        def cross_product(x):
             """Multiply the two lfds"""
             res = lfd(self)([x])[:, 0]
 
@@ -213,7 +199,7 @@ class Basis(ABC):
 
         # Obtain the integrals for the upper matrix
         triang_vec = scipy.integrate.quad_vec(
-            _cross_product, domain_range[0], domain_range[1])[0]
+            cross_product, domain_range[0], domain_range[1])[0]
 
         # Set upper matrix
         penalty_matrix[indices] = triang_vec
@@ -223,8 +209,17 @@ class Basis(ABC):
 
         return penalty_matrix
 
-    @abstractmethod
-    def penalty(self, derivative_degree=None, coefficients=None):
+    def _penalty(self, lfd):
+        """
+        Subclasses may override this for computing analytically
+        the penalty matrix in the cases when that is possible.
+
+        Returning NotImplemented will use numerical computation
+        of the penalty matrix.
+        """
+        return NotImplemented
+
+    def penalty(self, lfd):
         r"""Return a penalty matrix given a differential operator.
 
         The differential operator can be either a derivative of a certain
@@ -239,14 +234,9 @@ class Basis(ABC):
         functions and :math:`L` is a differential operator.
 
         Args:
-            derivative_degree (int): Integer indicating the order of the
-                derivative or . For instance 2 means that the differential
-                operator is :math:`f''(x)`.
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`. Only used if derivative degree is None.
+            lfd (LinearDifferentialOperator, list or int): Linear
+            differential operator. If it is not a LinearDifferentialOperator
+            object, it will be converted to one.
 
         Returns:
             numpy.array: Penalty matrix.
@@ -257,7 +247,17 @@ class Basis(ABC):
                Springer.
 
         """
-        pass
+        from skfda.misc import LinearDifferentialOperator
+
+        if not isinstance(lfd, LinearDifferentialOperator):
+            lfd = LinearDifferentialOperator(lfd)
+
+        matrix = self._penalty(lfd)
+
+        if matrix is NotImplemented:
+            return self._numerical_penalty(lfd)
+        else:
+            return matrix
 
     @abstractmethod
     def basis_of_product(self, other):
@@ -468,13 +468,14 @@ class Constant(Basis):
         return (self.copy(), coefs.copy() if order == 0
                 else self.copy(), np.zeros(coefs.shape))
 
-    def penalty(self, derivative_degree=None, coefficients=None):
-        if derivative_degree is None:
-            return self._numerical_penalty(coefficients)
+    def _penalty(self, lfd):
+        coefs = lfd.constant_weights()
+        if coefs is None:
+            return NotImplemented
 
-        return (np.full((1, 1),
-                        (self.domain_range[0][1] - self.domain_range[0][0]))
-                if derivative_degree == 0 else np.zeros((1, 1)))
+        return np.array([[coefs[0] ** 2 *
+                          (self.domain_range[0][1] -
+                           self.domain_range[0][0])]])
 
     def basis_of_product(self, other):
         """Multiplication of a Constant Basis with other Basis"""
@@ -582,50 +583,17 @@ class Monomial(Basis):
                 np.array([np.polyder(x[::-1], order)[::-1]
                           for x in coefs]))
 
-    def penalty(self, derivative_degree=None, coefficients=None):
-        r"""Return a penalty matrix given a differential operator.
+    def _penalty(self, lfd):
 
-        The differential operator can be either a derivative of a certain
-        degree or a more complex operator.
+        coefs = lfd.constant_weights()
+        if coefs is None:
+            return NotImplemented
 
-        The penalty matrix is defined as [RS05-5-6-2-1]_:
+        nonzero = np.flatnonzero(coefs)
+        if len(nonzero) != 1:
+            return NotImplemented
 
-        .. math::
-            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
-
-        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
-        functions and :math:`L` is a differential operator.
-
-        Args:
-            derivative_degree (int): Integer indicating the order of the
-                derivative or . For instance 2 means that the differential
-                operator is :math:`f''(x)`.
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`. Only used if derivative degree is None.
-
-
-        Returns:
-            numpy.array: Penalty matrix.
-
-        Examples:
-            >>> Monomial(n_basis=4).penalty(2)
-            array([[ 0.,  0.,  0.,  0.],
-                   [ 0.,  0.,  0.,  0.],
-                   [ 0.,  0.,  4.,  6.],
-                   [ 0.,  0.,  6., 12.]])
-
-        References:
-            .. [RS05-5-6-2-1] Ramsay, J., Silverman, B. W. (2005). Specifying
-                the roughness penalty. In *Functional Data Analysis*
-                (pp. 106-107). Springer.
-
-        """
-
-        if derivative_degree is None:
-            return self._numerical_penalty(coefficients)
+        derivative_degree = nonzero[0]
 
         integration_domain = self.domain_range[0]
 
@@ -904,145 +872,113 @@ class BSpline(Basis):
 
         return deriv_basis, np.array(deriv_coefs)[:, 0:deriv_basis.n_basis]
 
-    def penalty(self, derivative_degree=None, coefficients=None):
-        r"""Return a penalty matrix given a differential operator.
+    def _penalty(self, lfd):
 
-        The differential operator can be either a derivative of a certain
-        degree or a more complex operator.
+        coefs = lfd.constant_weights()
+        if coefs is None:
+            return NotImplemented
 
-        The penalty matrix is defined as [RS05-5-6-2-3]_:
+        nonzero = np.flatnonzero(coefs)
+        if len(nonzero) != 1:
+            return NotImplemented
 
-        .. math::
-            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
+        derivative_degree = nonzero[0]
 
-        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
-        functions and :math:`L` is a differential operator.
+        if derivative_degree >= self.order:
+            raise ValueError(f"Penalty matrix cannot be evaluated for "
+                             f"derivative of order {derivative_degree} for"
+                             f" B-splines of order {self.order}")
+        if derivative_degree == self.order - 1:
+            # The derivative of the bsplines are constant in the intervals
+            # defined between knots
+            knots = np.array(self.knots)
+            mid_inter = (knots[1:] + knots[:-1]) / 2
+            constants = self.evaluate(mid_inter,
+                                      derivative=derivative_degree).T
+            knots_intervals = np.diff(self.knots)
+            # Integration of product of constants
+            return constants.T @ np.diag(knots_intervals) @ constants
 
-        Args:
-            derivative_degree (int): Integer indicating the order of the
-                derivative or . For instance 2 means that the differential
-                operator is :math:`f''(x)`.
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`. Only used if derivative degree is None.
+        if np.all(np.diff(self.knots) != 0):
+            # Compute exactly using the piecewise polynomial
+            # representation of splines
 
-        Returns:
-            numpy.array: Penalty matrix.
+            # Places m knots at the boundaries
+            knots = np.array(
+                [self.knots[0]] * (self.order - 1) + self.knots
+                + [self.knots[-1]] * (self.order - 1))
+            # c is used the select which spline the function
+            # PPoly.from_spline below computes
+            c = np.zeros(len(knots))
 
-        References:
-            .. [RS05-5-6-2-3] Ramsay, J., Silverman, B. W. (2005). Specifying
-                the roughness penalty. In *Functional Data Analysis*
-                (pp. 106-107). Springer.
+            # Initialise empty list to store the piecewise polynomials
+            ppoly_lst = []
 
-        """
-        if derivative_degree is not None:
-            if derivative_degree >= self.order:
-                raise ValueError(f"Penalty matrix cannot be evaluated for "
-                                 f"derivative of order {derivative_degree} for"
-                                 f" B-splines of order {self.order}")
-            if derivative_degree == self.order - 1:
-                # The derivative of the bsplines are constant in the intervals
-                # defined between knots
-                knots = np.array(self.knots)
-                mid_inter = (knots[1:] + knots[:-1]) / 2
-                constants = self.evaluate(mid_inter,
-                                          derivative=derivative_degree).T
-                knots_intervals = np.diff(self.knots)
-                # Integration of product of constants
-                return constants.T @ np.diag(knots_intervals) @ constants
+            no_0_intervals = np.where(np.diff(knots) > 0)[0]
 
-            if np.all(np.diff(self.knots) != 0):
-                # Compute exactly using the piecewise polynomial
-                # representation of splines
+            # For each basis gets its piecewise polynomial representation
+            for i in range(self.n_basis):
+                # write a 1 in c in the position of the spline
+                # transformed in each iteration
+                c[i] = 1
+                # gets the piecewise polynomial representation and gets
+                # only the positions for no zero length intervals
+                # This polynomial are defined relatively to the knots
+                # meaning that the column i corresponds to the ith knot.
+                # Let the ith not be a
+                # Then f(x) = pp(x - a)
+                pp = (PPoly.from_spline(
+                    (knots, c, self.order - 1)).c[:, no_0_intervals])                    # We need the actual coefficients of f, not pp. So we
+                # just recursively calculate the new coefficients
+                coeffs = pp.copy()
+                for j in range(self.order - 1):
+                    coeffs[j + 1:] += (
+                        (binom(self.order - j - 1,
+                               range(1, self.order - j)) *
+                         np.vstack([(-a) **
+                                    np.array(range(1, self.order - j))
+                                    for a in self.knots[:-1]])).T *
+                        pp[j])
+                ppoly_lst.append(coeffs)
+                c[i] = 0
 
-                # Places m knots at the boundaries
-                knots = np.array(
-                    [self.knots[0]] * (self.order - 1) + self.knots
-                    + [self.knots[-1]] * (self.order - 1))
-                # c is used the select which spline the function
-                # PPoly.from_spline below computes
-                c = np.zeros(len(knots))
-
-                # Initialise empty list to store the piecewise polynomials
-                ppoly_lst = []
-
-                no_0_intervals = np.where(np.diff(knots) > 0)[0]
-
-                # For each basis gets its piecewise polynomial representation
+            # Now for each pair of basis computes the inner product after
+            # applying the linear differential operator
+            penalty_matrix = np.zeros((self.n_basis, self.n_basis))
+            for interval in range(len(no_0_intervals)):
                 for i in range(self.n_basis):
-                    # write a 1 in c in the position of the spline
-                    # transformed in each iteration
-                    c[i] = 1
-                    # gets the piecewise polynomial representation and gets
-                    # only the positions for no zero length intervals
-                    # This polynomial are defined relatively to the knots
-                    # meaning that the column i corresponds to the ith knot.
-                    # Let the ith not be a
-                    # Then f(x) = pp(x - a)
-                    pp = (PPoly.from_spline(
-                        (knots, c, self.order - 1)).c[:, no_0_intervals])                    # We need the actual coefficients of f, not pp. So we
-                    # just recursively calculate the new coefficients
-                    coeffs = pp.copy()
-                    for j in range(self.order - 1):
-                        coeffs[j + 1:] += (
-                            (binom(self.order - j - 1,
-                                   range(1, self.order - j)) *
-                             np.vstack([(-a) **
-                                        np.array(range(1, self.order - j))
-                                        for a in self.knots[:-1]])).T *
-                            pp[j])
-                    ppoly_lst.append(coeffs)
-                    c[i] = 0
+                    poly_i = np.trim_zeros(ppoly_lst[i][:,
+                                                        interval], 'f')
+                    if len(poly_i) <= derivative_degree:
+                        # if the order of the polynomial is lesser or
+                        # equal to the derivative the result of the
+                        # integral will be 0
+                        continue
+                    # indefinite integral
+                    integral = polyint(_polypow(polyder(
+                        poly_i, derivative_degree), 2))
+                    # definite integral
+                    penalty_matrix[i, i] += np.diff(polyval(
+                        integral, self.knots[interval: interval + 2]))[0]
 
-                # Now for each pair of basis computes the inner product after
-                # applying the linear differential operator
-                penalty_matrix = np.zeros((self.n_basis, self.n_basis))
-                for interval in range(len(no_0_intervals)):
-                    for i in range(self.n_basis):
-                        poly_i = np.trim_zeros(ppoly_lst[i][:,
+                    for j in range(i + 1, self.n_basis):
+                        poly_j = np.trim_zeros(ppoly_lst[j][:,
                                                             interval], 'f')
-                        if len(poly_i) <= derivative_degree:
-                            # if the order of the polynomial is lesser or
-                            # equal to the derivative the result of the
-                            # integral will be 0
+                        if len(poly_j) <= derivative_degree:
+                            # if the order of the polynomial is lesser
+                            # or equal to the derivative the result of
+                            # the integral will be 0
                             continue
-                        # indefinite integral
-                        integral = polyint(_polypow(polyder(
-                            poly_i, derivative_degree), 2))
+                            # indefinite integral
+                        integral = polyint(
+                            polymul(polyder(poly_i, derivative_degree),
+                                    polyder(poly_j, derivative_degree)))
                         # definite integral
-                        penalty_matrix[i, i] += np.diff(polyval(
-                            integral, self.knots[interval: interval + 2]))[0]
-
-                        for j in range(i + 1, self.n_basis):
-                            poly_j = np.trim_zeros(ppoly_lst[j][:,
-                                                                interval], 'f')
-                            if len(poly_j) <= derivative_degree:
-                                # if the order of the polynomial is lesser
-                                # or equal to the derivative the result of
-                                # the integral will be 0
-                                continue
-                                # indefinite integral
-                            integral = polyint(
-                                polymul(polyder(poly_i, derivative_degree),
-                                        polyder(poly_j, derivative_degree)))
-                            # definite integral
-                            penalty_matrix[i, j] += np.diff(polyval(
-                                integral, self.knots[interval: interval + 2])
-                            )[0]
-                            penalty_matrix[j, i] = penalty_matrix[i, j]
-                return penalty_matrix
-        else:
-            # if the order of the derivative is greater or equal to the order
-            # of the bspline minus 1
-            if len(coefficients) >= self.order:
-                raise ValueError(f"Penalty matrix cannot be evaluated for "
-                                 f"derivative of order {len(coefficients) - 1}"
-                                 f" for B-splines of order {self.order}")
-
-        # compute using the inner product
-        return self._numerical_penalty(coefficients)
+                        penalty_matrix[i, j] += np.diff(polyval(
+                            integral, self.knots[interval: interval + 2])
+                        )[0]
+                        penalty_matrix[j, i] = penalty_matrix[i, j]
+            return penalty_matrix
 
     def rescale(self, domain_range=None):
         r"""Return a copy of the basis with a new domain range, with the
@@ -1345,64 +1281,6 @@ class Fourier(Basis):
 
         # normalise
         return self.copy(), deriv_coefs
-
-    def penalty(self, derivative_degree=None, coefficients=None):
-        r"""Return a penalty matrix given a differential operator.
-
-        The differential operator can be either a derivative of a certain
-        degree or a more complex operator.
-
-        The penalty matrix is defined as [RS05-5-6-2-4]_:
-
-        .. math::
-            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
-
-        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
-        functions and :math:`L` is a differential operator.
-
-        Args:
-            derivative_degree (int): Integer indicating the order of the
-                derivative or . For instance 2 means that the differential
-                operator is :math:`f''(x)`.
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`. Only used if derivative degree is None.
-
-        Returns:
-            numpy.array: Penalty matrix.
-
-        References:
-            .. [RS05-5-6-2-4] Ramsay, J., Silverman, B. W. (2005). Specifying
-                the roughness penalty. In *Functional Data Analysis*
-                (pp. 106-107). Springer.
-
-        """
-        if isinstance(derivative_degree, int):
-            omega = 2 * np.pi / self.period
-            # the derivatives of the functions of the basis are also orthogonal
-            # so only the diagonal is different from 0.
-            penalty_matrix = np.zeros(self.n_basis)
-            if derivative_degree == 0:
-                penalty_matrix[0] = 1
-            else:
-                # the derivative of a constant is 0
-                # the first basis function is a constant
-                penalty_matrix[0] = 0
-            index_even = np.array(range(2, self.n_basis, 2))
-            exponents = index_even / 2
-            # factor resulting of deriving the basis function the times
-            # indcated in the derivative_degree
-            factor = (exponents * omega) ** (2 * derivative_degree)
-            # the norm of the basis functions is 1 so only the result of the
-            # integral is just the factor
-            penalty_matrix[index_even - 1] = factor
-            penalty_matrix[index_even] = factor
-            return np.diag(penalty_matrix)
-        else:
-            # implement using inner product
-            return self._numerical_penalty(coefficients)
 
     def basis_of_product(self, other):
         """Multiplication of two Fourier Basis"""

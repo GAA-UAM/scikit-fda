@@ -343,12 +343,10 @@ class BasisSmoother(_LinearSmoother):
         """Get the penalty differential operator."""
         if self.penalty is None:
             penalty = LinearDifferentialOperator(order=2)
-        elif isinstance(self.penalty, int):
-            penalty = LinearDifferentialOperator(order=self.penalty)
-        elif isinstance(self.penalty, collections.abc.Iterable):
-            penalty = LinearDifferentialOperator(weights=self.penalty)
-        else:
+        elif isinstance(self.penalty, LinearDifferentialOperator):
             penalty = self.penalty
+        else:
+            penalty = LinearDifferentialOperator(self.penalty)
 
         return penalty
 
@@ -365,8 +363,7 @@ class BasisSmoother(_LinearSmoother):
             penalty = self._penalty()
 
             if self.smoothing_parameter > 0:
-                penalty_matrix = self.basis.penalty(penalty.order,
-                                                    penalty.weights)
+                penalty_matrix = self.basis.penalty(penalty)
             else:
                 penalty_matrix = None
 
@@ -471,7 +468,8 @@ class BasisSmoother(_LinearSmoother):
            or self.smoothing_parameter > 0):
 
             # TODO: The penalty could be None (if the matrix is passed)
-            ndegenerated = self.basis._ndegenerated(self._penalty().order)
+            ndegenerated = self.basis._ndegenerated(
+                len(self._penalty().weights) - 1)
 
             method = self._method_function()
 

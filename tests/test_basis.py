@@ -48,6 +48,43 @@ class TestBasis(unittest.TestCase):
             res
         )
 
+    def test_constant_penalty(self):
+        basis = Constant(domain_range=(0, 3))
+
+        res = np.array([[12]])
+
+        lfd = [2, 3, 4]
+
+        np.testing.assert_allclose(
+            basis.penalty(lfd).round(2),
+            res
+        )
+
+        np.testing.assert_allclose(
+            basis._numerical_penalty(lfd).round(2),
+            res
+        )
+
+    def test_monomial_penalty(self):
+        basis = Monomial(n_basis=5, domain_range=(0, 3))
+
+        # Theorethical result
+        res = np.array([[0., 0., 0., 0., 0.],
+                        [0., 0., 0., 0., 0.],
+                        [0., 0., 12., 54., 216.],
+                        [0., 0., 54., 324., 1458.],
+                        [0., 0., 216., 1458., 6998.4]])
+
+        np.testing.assert_allclose(
+            basis.penalty(2).round(2),
+            res
+        )
+
+        np.testing.assert_allclose(
+            basis._numerical_penalty(2).round(2),
+            res
+        )
+
     def test_fourier_penalty(self):
         basis = Fourier(n_basis=5)
 
@@ -57,12 +94,12 @@ class TestBasis(unittest.TestCase):
                         [0., 0., 0., 24936.73, 0.],
                         [0., 0., 0., 0., 24936.73]])
 
-        np.testing.assert_array_almost_equal(
+        np.testing.assert_allclose(
             basis.penalty(2).round(2),
             res
         )
 
-        np.testing.assert_array_almost_equal(
+        np.testing.assert_allclose(
             basis._numerical_penalty(2).round(2),
             res
         )
@@ -76,11 +113,11 @@ class TestBasis(unittest.TestCase):
                         [12., -24., -48., 192., -132.],
                         [0., 12., 24., -132., 96.]])
 
-        np.testing.assert_array_almost_equal(
+        np.testing.assert_allclose(
             basis.penalty(2).round(2),
             res)
 
-        np.testing.assert_array_almost_equal(
+        np.testing.assert_allclose(
             basis._numerical_penalty(2).round(2),
             res)
 

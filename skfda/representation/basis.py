@@ -6,12 +6,14 @@ the corresponding basis classes.
 """
 from abc import ABC, abstractmethod
 import copy
+from scipy.misc.common import derivative
 
 from numpy import polyder, polyint, polymul, polyval
 import scipy.integrate
 from scipy.interpolate import BSpline as SciBSpline
 from scipy.interpolate import PPoly
 import scipy.interpolate
+from scipy.odr.models import polynomial
 from scipy.special import binom
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
@@ -534,6 +536,21 @@ class Monomial(Basis):
 
     """
 
+    def _coef_mat(self, derivative):
+        """
+        Obtain the matrix of coefficients.
+
+        Each column of coef_mat contains the numbers that must be multiplied
+        together in order to obtain the coefficient of each basis function
+        Thus, column i will contain i, i - 1, ..., i - derivative + 1.
+        """
+
+        seq = np.arange(self.n_basis)
+        coef_mat = np.linspace(seq, seq - derivative + 1,
+                               derivative, dtype=int)
+
+        return seq, coef_mat
+
     def _coefs_exps_derivatives(self, derivative):
         """
         Return coefficients and exponents of the derivatives.
@@ -543,14 +560,7 @@ class Monomial(Basis):
         When the exponent would be negative (the coefficient in that case
         is zero) returns 0 as the exponent (to prevent division by zero).
         """
-
-        seq = np.arange(self.n_basis)
-
-        # Each column of coef_mat contains the numbers that must be multiplied
-        # together in order to obtain the coefficient of each basis function
-        # Thus, column i will contain i, i - 1, ..., i - derivative + 1
-        coef_mat = np.linspace(seq, seq - derivative + 1,
-                               derivative, dtype=int)
+        seq, coef_mat = self._coef_mat(derivative)
         coefs = np.prod(coef_mat, axis=0)
 
         exps = np.maximum(seq - derivative, 0)
@@ -583,17 +593,71 @@ class Monomial(Basis):
                 np.array([np.polyder(x[::-1], order)[::-1]
                           for x in coefs]))
 
+    def _evaluate_constant_lfd(self, weights):
+        """
+        Evaluate constant weights of a linear differential operator
+        over the basis functions.
+        """
+
+        max_derivative = len(weights) - 1
+
+        _, coef_mat = self._coef_mat(max_derivative)
+
+        # Compute coefficients for each derivative
+        coefs = np.cumprod(coef_mat, axis=0)
+
+        # Add derivative 0 row
+        coefs = np.concatenate((np.ones((1, self.n_basis)), coefs))
+
+        # Now each row correspond to each basis and each column to
+        # each derivative
+        coefs_t = coefs.T
+
+        # Multiply by the weights
+        weighted_coefs = coefs_t * weights
+        assert len(weighted_coefs) == self.n_basis
+
+        # Now each row has the right weight, but the polynomials are in a
+        # decreasing order and with different exponents
+
+        # Resize the coefs so that there are as many rows as the number of
+        # basis
+        # The matrix is now triangular
+        # refcheck is False to prevent exceptions while debugging
+        weighted_coefs = np.copy(weighted_coefs.T)
+        weighted_coefs.resize(self.n_basis,
+                              self.n_basis, refcheck=False)
+        weighted_coefs = weighted_coefs.T
+
+        # Shift the coefficients so that they correspond to the right
+        # exponent
+        indexes = np.tril_indices(self.n_basis)
+        coefs_shifted = np.zeros_like(weighted_coefs)
+        coefs_shifted[indexes[0], indexes[1] -
+                      indexes[0] - 1] = weighted_coefs[indexes]
+
+        # Now flip the matrix so that the exponents are in increasing order
+        polynomials = np.fliplr(coefs_shifted)
+
+        # At this point, each row of the matrix correspond to a polynomial
+        # that is the result of applying the linear differential operator
+        # to each element of the basis
+
+        return polynomials
+
     def _penalty(self, lfd):
 
-        coefs = lfd.constant_weights()
-        if coefs is None:
+        weights = lfd.constant_weights()
+        if weights is None:
             return NotImplemented
 
-        nonzero = np.flatnonzero(coefs)
+        nonzero = np.flatnonzero(weights)
         if len(nonzero) != 1:
             return NotImplemented
 
         derivative_degree = nonzero[0]
+
+        polynomials = self._evaluate_constant_lfd(weights)
 
         integration_domain = self.domain_range[0]
 

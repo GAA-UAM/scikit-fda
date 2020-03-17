@@ -65,6 +65,43 @@ class TestBasis(unittest.TestCase):
             res
         )
 
+    def test_monomial_lfd(self):
+        n_basis = 5
+
+        basis = Monomial(n_basis=n_basis)
+
+        lfd = [3]
+        res = 3 * np.identity(n_basis)
+
+        np.testing.assert_allclose(
+            basis._evaluate_constant_lfd(lfd),
+            res
+        )
+
+        lfd = [3, 2]
+        res = np.array([[3., 0., 0., 0., 0.],
+                        [2., 3., 0., 0., 0.],
+                        [0., 4., 3., 0., 0.],
+                        [0., 0., 6., 3., 0.],
+                        [0., 0., 0., 8., 3.]])
+
+        np.testing.assert_allclose(
+            basis._evaluate_constant_lfd(lfd),
+            res
+        )
+
+        lfd = [3, 0, 5]
+        res = np.array([[3., 0., 0., 0., 0.],
+                        [0., 3., 0., 0., 0.],
+                        [10., 0., 3., 0., 0.],
+                        [0., 30., 0., 3., 0.],
+                        [0., 0., 60., 0., 3.]])
+
+        np.testing.assert_allclose(
+            basis._evaluate_constant_lfd(lfd),
+            res
+        )
+
     def test_monomial_penalty(self):
         basis = Monomial(n_basis=5, domain_range=(0, 3))
 

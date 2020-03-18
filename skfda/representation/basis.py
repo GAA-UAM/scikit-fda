@@ -647,10 +647,6 @@ class Monomial(Basis):
         if weights is None:
             return NotImplemented
 
-        nonzero = np.flatnonzero(weights)
-        if len(nonzero) != 1:
-            return NotImplemented
-
         polynomials = self._evaluate_constant_lfd(weights)
 
         # Expand the polinomials with 0, so that the multiplication fits
@@ -677,12 +673,19 @@ class Monomial(Basis):
         denom = np.arange(integrand.shape[1], 0, -1)
         integrand /= denom
 
-        # Now, apply Barrow's rule
-        powers = denom
-        x_right = integration_domain[1]**powers * integrand
-        x_left = integration_domain[0]**powers * integrand
+        # Add column of zeros at the right to increase exponent
+        integrand = np.pad(integrand,
+                           pad_width=((0, 0),
+                                      (0, 1)),
+                           mode='constant')
 
-        integral = np.sum(x_right - x_left, axis=-1)
+        # Now, apply Barrow's rule
+        # polyval applies Horner method over the first dimension,
+        # so we need to transpose
+        x_right = np.polyval(integrand.T, integration_domain[1])
+        x_left = np.polyval(integrand.T, integration_domain[0])
+
+        integral = x_right - x_left
 
         penalty_matrix = np.empty((self.n_basis, self.n_basis))
 

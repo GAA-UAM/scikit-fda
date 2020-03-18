@@ -9,6 +9,22 @@ class TestBasis(unittest.TestCase):
 
     # def setUp(self): could be defined for set up before any test
 
+    def _test_penalty(self, basis, lfd, result=None):
+
+        penalty = basis.penalty(lfd).round(2)
+        numerical_penalty = basis._numerical_penalty(lfd).round(2)
+
+        np.testing.assert_allclose(
+            penalty,
+            numerical_penalty
+        )
+
+        if result is not None:
+            np.testing.assert_allclose(
+                penalty,
+                result
+            )
+
     def test_from_data_cholesky(self):
         t = np.linspace(0, 1, 5)
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
@@ -53,17 +69,7 @@ class TestBasis(unittest.TestCase):
 
         res = np.array([[12]])
 
-        lfd = [2, 3, 4]
-
-        np.testing.assert_allclose(
-            basis.penalty(lfd).round(2),
-            res
-        )
-
-        np.testing.assert_allclose(
-            basis._numerical_penalty(lfd).round(2),
-            res
-        )
+        self._test_penalty(basis, lfd=[2, 3, 4], result=res)
 
     def test_monomial_lfd(self):
         n_basis = 5
@@ -116,15 +122,14 @@ class TestBasis(unittest.TestCase):
                         [0., 0., 54., 324., 1458.],
                         [0., 0., 216., 1458., 6998.4]])
 
-        np.testing.assert_allclose(
-            basis.penalty(2).round(2),
-            res
-        )
+        self._test_penalty(basis, lfd=2, result=res)
 
-        np.testing.assert_allclose(
-            basis._numerical_penalty(2).round(2),
-            res
-        )
+        basis = Monomial(n_basis=8, domain_range=(1, 5))
+
+        self._test_penalty(basis, lfd=[1, 2, 3])
+        self._test_penalty(basis, lfd=7)
+        self._test_penalty(basis, lfd=1)
+        self._test_penalty(basis, lfd=27)
 
     def test_fourier_penalty(self):
         basis = Fourier(n_basis=5)
@@ -135,15 +140,7 @@ class TestBasis(unittest.TestCase):
                         [0., 0., 0., 24936.73, 0.],
                         [0., 0., 0., 0., 24936.73]])
 
-        np.testing.assert_allclose(
-            basis.penalty(2).round(2),
-            res
-        )
-
-        np.testing.assert_allclose(
-            basis._numerical_penalty(2).round(2),
-            res
-        )
+        self._test_penalty(basis, lfd=2, result=res)
 
     def test_bspline_penalty(self):
         basis = BSpline(n_basis=5)
@@ -154,13 +151,7 @@ class TestBasis(unittest.TestCase):
                         [12., -24., -48., 192., -132.],
                         [0., 12., 24., -132., 96.]])
 
-        np.testing.assert_allclose(
-            basis.penalty(2).round(2),
-            res)
-
-        np.testing.assert_allclose(
-            basis._numerical_penalty(2).round(2),
-            res)
+        self._test_penalty(basis, lfd=2, result=res)
 
     def test_basis_product_generic(self):
         monomial = Monomial(n_basis=5)

@@ -6,14 +6,13 @@ the corresponding basis classes.
 """
 from abc import ABC, abstractmethod
 import copy
-from scipy.misc.common import derivative
+import scipy.signal
 
 from numpy import polyder, polyint, polymul, polyval
 import scipy.integrate
 from scipy.interpolate import BSpline as SciBSpline
 from scipy.interpolate import PPoly
 import scipy.interpolate
-from scipy.odr.models import polynomial
 from scipy.special import binom
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
@@ -186,7 +185,7 @@ class Basis(ABC):
         if not isinstance(lfd, LinearDifferentialOperator):
             lfd = LinearDifferentialOperator(lfd)
 
-        indices = np.triu_indices(self.n_basis, 0)
+        indices = np.triu_indices(self.n_basis)
 
         def cross_product(x):
             """Multiply the two lfds"""
@@ -632,12 +631,9 @@ class Monomial(Basis):
         # Shift the coefficients so that they correspond to the right
         # exponent
         indexes = np.tril_indices(self.n_basis)
-        coefs_shifted = np.zeros_like(weighted_coefs)
-        coefs_shifted[indexes[0], indexes[1] -
-                      indexes[0] - 1] = weighted_coefs[indexes]
-
-        # Now flip the matrix so that the exponents are in increasing order
-        polynomials = np.fliplr(coefs_shifted)
+        polynomials = np.zeros_like(weighted_coefs)
+        polynomials[indexes[0], indexes[1] -
+                    indexes[0] - 1] = weighted_coefs[indexes]
 
         # At this point, each row of the matrix correspond to a polynomial
         # that is the result of applying the linear differential operator
@@ -655,55 +651,46 @@ class Monomial(Basis):
         if len(nonzero) != 1:
             return NotImplemented
 
-        derivative_degree = nonzero[0]
-
         polynomials = self._evaluate_constant_lfd(weights)
+
+        # Expand the polinomials with 0, so that the multiplication fits
+        # inside. It will need the double of the degree
+        length_with_padding = polynomials.shape[1] * 2 - 1
+
+        # Multiplication of polynomials is a convolution.
+        # The convolution can be performed in parallel applying a Fourier
+        # transform and then doing a normal multiplication in that
+        # space, coverting back with the inverse Fourier transform
+        fft = np.fft.rfft(polynomials, length_with_padding)
+
+        # We compute only the upper matrix, as the penalty matrix is
+        # symmetrical
+        indices = np.triu_indices(self.n_basis)
+        fft_mul = fft[indices[0]] * fft[indices[1]]
+
+        integrand = np.fft.irfft(fft_mul, length_with_padding)
 
         integration_domain = self.domain_range[0]
 
-        # initialize penalty matrix as all zeros
-        penalty_matrix = np.zeros((self.n_basis, self.n_basis))
-        # iterate over the cartesion product of the basis system with itself
-        for ibasis in range(self.n_basis):
-            # notice that the index ibasis it is also the exponent of the
-            # monomial
-            # ifac is the factor resulting of deriving the monomial as many
-            # times as indicates de differential operator
-            if derivative_degree > 0:
-                ifac = ibasis
-                for k in range(2, derivative_degree + 1):
-                    ifac *= ibasis - k + 1
-            else:
-                ifac = 1
+        # To integrate, divide by the position and increase the exponent
+        # in the evaluation
+        denom = np.arange(integrand.shape[1], 0, -1)
+        integrand /= denom
 
-            for jbasis in range(self.n_basis):
-                # notice that the index jbasis it is also the exponent of the
-                # monomial
-                # jfac is the factor resulting of deriving the monomial as
-                # many times as indicates de differential operator
-                if derivative_degree > 0:
-                    jfac = jbasis
-                    for k in range(2, derivative_degree + 1):
-                        jfac *= jbasis - k + 1
-                else:
-                    jfac = 1
+        # Now, apply Barrow's rule
+        powers = denom
+        x_right = integration_domain[1]**powers * integrand
+        x_left = integration_domain[0]**powers * integrand
 
-                # if any of the two monomial has lower degree than the order of
-                # the derivative indicated by the differential operator that
-                # factor equals 0, so no calculation are needed
-                if (ibasis >= derivative_degree
-                        and jbasis >= derivative_degree):
-                    # Calculates exactly the result of the integral
-                    # Exponent after applying the differential operator and
-                    # integrating
-                    ipow = ibasis + jbasis - 2 * derivative_degree + 1
-                    # coefficient after integrating
-                    penalty_matrix[ibasis, jbasis] = (
-                        ((integration_domain[1] ** ipow) -
-                         (integration_domain[0] ** ipow)) *
-                        ifac * jfac / ipow)
-                    penalty_matrix[jbasis, ibasis] = penalty_matrix[ibasis,
-                                                                    jbasis]
+        integral = np.sum(x_right - x_left, axis=-1)
+
+        penalty_matrix = np.empty((self.n_basis, self.n_basis))
+
+        # Set upper matrix
+        penalty_matrix[indices] = integral
+
+        # Set lower matrix
+        penalty_matrix[(indices[1], indices[0])] = integral
 
         return penalty_matrix
 

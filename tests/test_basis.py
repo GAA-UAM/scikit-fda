@@ -71,7 +71,11 @@ class TestBasis(unittest.TestCase):
         basis = Monomial(n_basis=n_basis)
 
         lfd = [3]
-        res = 3 * np.identity(n_basis)
+        res = np.array([[0., 0., 0., 0., 3.],
+                        [0., 0., 0., 3., 0.],
+                        [0., 0., 3., 0., 0.],
+                        [0., 3., 0., 0., 0.],
+                        [3., 0., 0., 0., 0.]])
 
         np.testing.assert_allclose(
             basis._evaluate_constant_lfd(lfd),
@@ -79,11 +83,11 @@ class TestBasis(unittest.TestCase):
         )
 
         lfd = [3, 2]
-        res = np.array([[3., 0., 0., 0., 0.],
-                        [2., 3., 0., 0., 0.],
-                        [0., 4., 3., 0., 0.],
-                        [0., 0., 6., 3., 0.],
-                        [0., 0., 0., 8., 3.]])
+        res = np.array([[0., 0., 0., 0., 3.],
+                        [0., 0., 0., 3., 2.],
+                        [0., 0., 3., 4., 0.],
+                        [0., 3., 6., 0., 0.],
+                        [3., 8., 0., 0., 0.]])
 
         np.testing.assert_allclose(
             basis._evaluate_constant_lfd(lfd),
@@ -91,11 +95,11 @@ class TestBasis(unittest.TestCase):
         )
 
         lfd = [3, 0, 5]
-        res = np.array([[3., 0., 0., 0., 0.],
-                        [0., 3., 0., 0., 0.],
-                        [10., 0., 3., 0., 0.],
-                        [0., 30., 0., 3., 0.],
-                        [0., 0., 60., 0., 3.]])
+        res = np.array([[0., 0., 0., 0., 3.],
+                        [0., 0., 0., 3., 0.],
+                        [0., 0., 3., 0., 10.],
+                        [0., 3., 0., 30., 0.],
+                        [3., 0., 60., 0., 0.]])
 
         np.testing.assert_allclose(
             basis._evaluate_constant_lfd(lfd),

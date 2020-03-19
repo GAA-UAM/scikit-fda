@@ -93,7 +93,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     See also
     --------
     :class:`~skfda.ml.classification.RadiusNeighborsClassifier`
-    :class:`~skfda.ml.classification.NearestCentroids`
+    :class:`~skfda.ml.classification.NearestCentroid`
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
@@ -251,7 +251,7 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
     See also
     --------
     :class:`~skfda.ml.classification.KNeighborsClassifier`
-    :class:`~skfda.ml.classification.NearestCentroids`
+    :class:`~skfda.ml.classification.NearestCentroid`
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
@@ -303,7 +303,7 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
             outlier_label=self.outlier_label, n_jobs=self.n_jobs)
 
 
-class NearestCentroids(BaseEstimator, ClassifierMixin):
+class NearestCentroid(BaseEstimator, ClassifierMixin):
     """Nearest centroid classifier for functional data.
 
     Each class is represented by its centroid, with test samples classified to
@@ -343,10 +343,10 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
 
     We will fit a Nearest centroids classifier
 
-    >>> from skfda.ml.classification import NearestCentroids
-    >>> neigh = NearestCentroids()
+    >>> from skfda.ml.classification import NearestCentroid
+    >>> neigh = NearestCentroid()
     >>> neigh.fit(fd, y)
-    NearestCentroids(...)
+    NearestCentroid(...)
 
     We can predict the class of new samples
 

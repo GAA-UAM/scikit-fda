@@ -8,7 +8,7 @@ from skfda.exploratory.stats import mean as l2_mean
 from skfda.misc.metrics import lp_distance, pairwise_distance
 from skfda.ml.classification import (KNeighborsClassifier,
                                      RadiusNeighborsClassifier,
-                                     NearestCentroids)
+                                     NearestCentroid)
 from skfda.ml.clustering import NearestNeighbors
 from skfda.ml.regression import KNeighborsRegressor, RadiusNeighborsRegressor
 #from skfda.exploratory.outliers import LocalOutlierFactor
@@ -55,8 +55,8 @@ class TestNeighbors(unittest.TestCase):
 
         for neigh in (KNeighborsClassifier(),
                       RadiusNeighborsClassifier(radius=.1),
-                      NearestCentroids(),
-                      NearestCentroids(metric=lp_distance, mean=l2_mean)):
+                      NearestCentroid(),
+                      NearestCentroid(metric=lp_distance, mean=l2_mean)):
 
             neigh.fit(self.X, self.y)
             pred = neigh.predict(self.X)
@@ -255,12 +255,12 @@ class TestNeighbors(unittest.TestCase):
     def test_nearest_centroids_exceptions(self):
 
         # Test more than one class
-        nn = NearestCentroids()
+        nn = NearestCentroid()
         with np.testing.assert_raises(ValueError):
             nn.fit(self.X[0:3], 3 * [0])
 
         # Precomputed not supported
-        nn = NearestCentroids(metric='precomputed')
+        nn = NearestCentroid(metric='precomputed')
         with np.testing.assert_raises(ValueError):
             nn.fit(self.X[0:3], 3 * [0])
 

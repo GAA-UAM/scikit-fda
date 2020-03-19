@@ -3,7 +3,7 @@ Includes the following classes:
  - NearestNeighbors
  - KNeighborsClassifier
  - RadiusNeighborsClassifier
- - NearestCentroids
+ - NearestCentroid
  - KNeighborsRegressor
  - RadiusNeighborsRegressor
 
@@ -11,4 +11,4 @@ Includes the following classes:
 from .unsupervised import NearestNeighbors
 from .regression import KNeighborsRegressor, RadiusNeighborsRegressor
 from .classification import (KNeighborsClassifier, RadiusNeighborsClassifier,
-                             NearestCentroids)
+                             NearestCentroid)

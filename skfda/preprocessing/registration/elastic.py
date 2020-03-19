@@ -672,7 +672,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
             used to select a central mean. Defaults True.
         max_iter (int): Maximum number of iterations. Defaults to 20.
         tol (float): Convergence criterion, the algorithm will stop if
-            :math:´|mu_{(\nu)} - mu_{(\nu - 1)}|_2 / | mu_{(\nu-1)} |_2 < tol´.
+            :math:`|mu_{(\nu)} - mu_{(\nu - 1)}|_2 / | mu_{(\nu-1)} |_2 < tol`.
         initial (float): Value of the mean at the starting point. By default
             takes the average of the initial points of the samples.
         grid_dim (int, optional): Dimension of the grid used in the alignment

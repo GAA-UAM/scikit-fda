@@ -10,9 +10,11 @@ Explores the two possible ways to do functional principal component analysis.
 
 import numpy as np
 import skfda
-from skfda.preprocessing.dim_reduction.projection import FPCABasis, FPCAGrid
+from skfda.exploratory.fpca import FPCABasis, FPCADiscretized
 from skfda.representation.basis import BSpline, Fourier
 from skfda.datasets import fetch_growth
+from matplotlib import pyplot
+
 
 ##############################################################################
 # In this example we are going to use functional principal component analysis to
@@ -36,9 +38,9 @@ fd.plot()
 # obtain the first two components. By default, if we do not specify the number
 # of components, it's 3. Other parameters are weights and centering. For more
 # information please visit the documentation.
-fpca_discretized = FPCAGrid(n_components=2)
+fpca_discretized = FPCADiscretized(n_components=2)
 fpca_discretized.fit(fd)
-fpca_discretized.components_.plot()
+fpca_discretized.components.plot()
 
 ##############################################################################
 # In the second case, the data is first converted to use a basis representation
@@ -59,7 +61,7 @@ basis_fd.plot()
 # is similar to the discretized case.
 fpca = FPCABasis(n_components=2)
 fpca.fit(basis_fd)
-fpca.components_.plot()
+fpca.components.plot()
 
 ##############################################################################
 # To better illustrate the effects of the obtained two principal components,
@@ -78,10 +80,10 @@ mean_fd.plot()
 # growth between the children.
 mean_fd.coefficients = np.vstack([mean_fd.coefficients,
                                   mean_fd.coefficients[0, :] +
-                                  20 * fpca.components_.coefficients[0, :]])
+                                  20 * fpca.components.coefficients[0, :]])
 mean_fd.coefficients = np.vstack([mean_fd.coefficients,
                                   mean_fd.coefficients[0, :] -
-                                  20 * fpca.components_.coefficients[0, :]])
+                                  20 * fpca.components.coefficients[0, :]])
 mean_fd.plot()
 
 ##############################################################################
@@ -92,10 +94,10 @@ mean_fd.plot()
 mean_fd = basis_fd.mean()
 mean_fd.coefficients = np.vstack([mean_fd.coefficients,
                                   mean_fd.coefficients[0, :] +
-                                  20 * fpca.components_.coefficients[1, :]])
+                                  20 * fpca.components.coefficients[1, :]])
 mean_fd.coefficients = np.vstack([mean_fd.coefficients,
                                   mean_fd.coefficients[0, :] -
-                                  20 * fpca.components_.coefficients[1, :]])
+                                  20 * fpca.components.coefficients[1, :]])
 mean_fd.plot()
 
 ##############################################################################
@@ -109,4 +111,4 @@ fd = dataset['data']
 basis_fd = fd.to_basis(BSpline(n_basis=7))
 fpca = FPCABasis(n_components=2, components_basis=Fourier(n_basis=7))
 fpca.fit(basis_fd)
-fpca.components_.plot()
+fpca.components.plot()

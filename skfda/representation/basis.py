@@ -165,7 +165,7 @@ class Basis(ABC):
         Args:
             chart (figure object, axe or list of axes, optional): figure over
                 with the graphs are plotted or axis over where the graphs are
-                    plotted.
+                plotted.
             derivative (int or tuple, optional): Order of derivative to be
                 plotted. Defaults 0.
             **kwargs: keyword arguments to be passed to the
@@ -514,7 +514,7 @@ class Constant(Basis):
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
 
-        The penalty matrix is defined as [RS05-5-6-2-1]_:
+        The penalty matrix is defined as [RS05-5-6-2-2]_:
 
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
@@ -543,7 +543,7 @@ class Constant(Basis):
             array([[ 0.]])
 
         References:
-            .. [RS05-5-6-2-1] Ramsay, J., Silverman, B. W. (2005). Specifying
+            .. [RS05-5-6-2-2] Ramsay, J., Silverman, B. W. (2005). Specifying
                 the roughness penalty. In *Functional Data Analysis*
                 (pp. 106-107). Springer.
 
@@ -670,7 +670,7 @@ class Monomial(Basis):
         The differential operator can be either a derivative of a certain
         degree or a more complex operator.
 
-        The penalty matrix is defined as [RS05-5-6-2-2]_:
+        The penalty matrix is defined as [RS05-5-6-2-1]_:
 
         .. math::
             R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
@@ -1011,7 +1011,7 @@ class BSpline(Basis):
             numpy.array: Penalty matrix.
 
         References:
-            .. [RS05-5-6-2-1] Ramsay, J., Silverman, B. W. (2005). Specifying
+            .. [RS05-5-6-2-3] Ramsay, J., Silverman, B. W. (2005). Specifying
                 the roughness penalty. In *Functional Data Analysis*
                 (pp. 106-107). Springer.
 
@@ -1452,7 +1452,7 @@ class Fourier(Basis):
             numpy.array: Penalty matrix.
 
         References:
-            .. [RS05-5-6-2-1] Ramsay, J., Silverman, B. W. (2005). Specifying
+            .. [RS05-5-6-2-4] Ramsay, J., Silverman, B. W. (2005). Specifying
                 the roughness penalty. In *Functional Data Analysis*
                 (pp. 106-107). Springer.
 

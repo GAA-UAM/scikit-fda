@@ -9,7 +9,6 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 from sklearn.model_selection import GridSearchCV, LeaveOneOut
 
-
 __author__ = "Yujian Hong"
 __email__ = "yujian.hong@estudiante.uam.es"
 
@@ -33,7 +32,7 @@ class FPCA(ABC, BaseEstimator, TransformerMixin):
             sklearn to continue.
     """
 
-    def __init__(self, n_components=3, centering=True):
+    def     __init__(self, n_components=3, centering=True):
         """FPCA constructor
 
         Args:
@@ -141,8 +140,8 @@ class FPCABasis(FPCA):
                  n_components=3,
                  components_basis=None,
                  centering=True,
-                 derivative_degree=2,
-                 coefficients=None,
+                 regularization_derivative_degree=2,
+                 regularization_coefficients=None,
                  regularization_parameter=0):
         """FPCABasis constructor
 
@@ -161,8 +160,8 @@ class FPCABasis(FPCA):
         self.components_basis = components_basis
         # lambda in the regularization / penalization process
         self.regularization_parameter = regularization_parameter
-        self.regularization_derivative_degree = derivative_degree
-        self.regularization_coefficients = coefficients
+        self.regularization_derivative_degree = regularization_derivative_degree
+        self.regularization_coefficients = regularization_coefficients
 
     def fit(self, X: FDataBasis, y=None):
         """Computes the first n_components principal components and saves them.
@@ -230,7 +229,7 @@ class FPCABasis(FPCA):
             j_matrix = g_matrix
 
         # make g matrix symmetric, referring to Ramsay's implementation
-        g_matrix = (g_matrix + np.transpose(g_matrix))/2
+        g_matrix = (g_matrix + np.transpose(g_matrix)) / 2
 
         # Apply regularization / penalty if applicable
         if self.regularization_parameter > 0:
@@ -245,54 +244,29 @@ class FPCABasis(FPCA):
         # obtain triangulation using cholesky
         l_matrix = np.linalg.cholesky(g_matrix)
 
-        # L^{-1}
-        l_matrix_inv = np.linalg.inv(l_matrix)
-
+        # we need L^{-1} for a multiplication, there are two possible ways:
+        # using solve to get the multiplication result directly or just invert
+        # the matrix. We choose solve because it is faster and more stable.
         # The following matrix is needed: L^{-1}*J^T
-        l_inv_j_t = l_matrix_inv @ np.transpose(j_matrix)
+        l_inv_j_t = np.linalg.solve(l_matrix, np.transpose(j_matrix))
 
         # the final matrix, C(L-1Jt)t for svd or (L-1Jt)-1CtC(L-1Jt)t for PCA
         final_matrix = X.coefficients @ np.transpose(l_inv_j_t) / \
-            np.sqrt(n_samples)
+                       np.sqrt(n_samples)
 
         self.pca.fit(final_matrix)
+
+        # we choose solve to obtain the component coefficients for the
+        # same reason: it is faster and more efficient
+        component_coefficients = np.linalg.solve(np.transpose(l_matrix),
+                                                 np.transpose(self.pca.components_))
+
+        component_coefficients = np.transpose(component_coefficients)
+
+        # the singular values obtained using SVD are the squares of eigenvalues
         self.component_values = self.pca.singular_values_ ** 2
         self.components = X.copy(basis=self.components_basis,
-                                 coefficients=self.pca.components_
-                                 @ l_matrix_inv)
-
-        final_matrix = np.transpose(final_matrix) @ final_matrix
-        """
-        if self.svd:
-            # vh contains the eigenvectors transposed
-            # s contains the singular values, which are square roots of eigenvalues
-            u, s, vh = np.linalg.svd(final_matrix, full_matrices=True, compute_uv=True)
-            principal_components = vh @ l_matrix_inv
-            self.components = X.copy(basis=self.components_basis,
-                                     coefficients=principal_components[:self.n_components, :])
-            self.component_values = s ** 2
-        else:
-            final_matrix = np.transpose(final_matrix) @ final_matrix
-
-            # perform eigenvalue and eigenvector analysis on this matrix
-            # eigenvectors is a numpy array, such that its columns are eigenvectors
-            eigenvalues, eigenvectors = np.linalg.eig(final_matrix)
-
-            # sort the eigenvalues and eigenvectors from highest to lowest
-            idx = eigenvalues.argsort()[::-1]
-            eigenvalues = eigenvalues[idx]
-            eigenvectors = eigenvectors[:, idx]
-
-            principal_components_t = np.transpose(l_matrix_inv) @ eigenvectors
-
-            # we only want the first ones, determined by n_components
-            principal_components_t = principal_components_t[:, :self.n_components]
-
-            self.components = X.copy(basis=self.components_basis,
-                                     coefficients=np.transpose(principal_components_t))
-
-            self.component_values = eigenvalues
-        """
+                                 coefficients=component_coefficients)
 
         return self
 
@@ -313,37 +287,6 @@ class FPCABasis(FPCA):
 
         # in this case it is the inner product of our data with the components
         return X.inner_product(self.components)
-
-    def find_regularization_parameter(self, fd, grid, derivative_degree=2):
-        fd -= fd.mean()
-        # establish the basis for the coefficients
-        if not self.components_basis:
-            self.components_basis = fd.basis.copy()
-
-        # the maximum number of components only depends on the target basis
-        max_components = self.components_basis.n_basis
-
-        # and it cannot be bigger than the number of samples-1, as we are using
-        # leave one out cross validation
-        if max_components > fd.n_samples:
-            raise AttributeError("The target basis must have less n_basis"
-                                 "than the number of samples - 1")
-
-        estimator = FPCARegularizationParameterFinder(
-            max_components=max_components,
-            derivative_degree=derivative_degree)
-
-        param_grid = {'regularization_parameter': grid}
-
-        search_param = GridSearchCV(estimator,
-                                    param_grid=param_grid,
-                                    cv=LeaveOneOut(),
-                                    refit=True,
-                                    n_jobs=35,
-                                    verbose=True)
-
-        _ = search_param.fit(fd)
-        return search_param
 
 
 class FPCADiscretized(FPCA):
@@ -408,7 +351,7 @@ class FPCADiscretized(FPCA):
         """Computes the n_components first principal components and saves them
         inside the FPCA object.The eigenvalues associated with these principal
         components are also saved. For more details about how it is implemented
-        please view the referenced book.
+        please view the referenced book, chapter 8.
 
         Args:
             X (FDataGrid):
@@ -437,7 +380,6 @@ class FPCADiscretized(FPCA):
                                  "smaller than the number of discretization "
                                  "points of the functional data object.")
 
-
         # data matrix initialization
         fd_data = np.squeeze(X.data_matrix)
 
@@ -465,39 +407,11 @@ class FPCADiscretized(FPCA):
 
         weights_matrix = np.diag(self.weights)
 
-        # k_estimated is not used for the moment
-        # k_estimated = fd_data @ np.transpose(fd_data) / n_samples
-
         final_matrix = fd_data @ np.sqrt(weights_matrix) / np.sqrt(n_samples)
         self.pca.fit(final_matrix)
         self.components = X.copy(data_matrix=self.pca.components_)
         self.component_values = self.pca.singular_values_ ** 2
 
-        """
-        if self.svd:
-            # vh contains the eigenvectors transposed
-            # s contains the singular values, which are square roots of eigenvalues
-            u, s, vh = np.linalg.svd(final_matrix, full_matrices=True, compute_uv=True)
-            self.components = X.copy(data_matrix=vh[:self.n_components, :])
-            self.component_values = s**2
-        else:
-            # perform eigenvalue and eigenvector analysis on this matrix
-            # eigenvectors is a numpy array, such that its columns are eigenvectors
-            eigenvalues, eigenvectors = np.linalg.eig(np.transpose(final_matrix) @ final_matrix)
-
-            # sort the eigenvalues and eigenvectors from highest to lowest
-            # the eigenvectors are the principal components
-            idx = eigenvalues.argsort()[::-1]
-            eigenvalues = eigenvalues[idx]
-            principal_components_t = eigenvectors[:, idx]
-
-            # we only want the first ones, determined by n_components
-            principal_components_t = principal_components_t[:, :self.n_components]
-
-            # prepare the computed principal components
-            self.components = X.copy(data_matrix=np.transpose(principal_components_t))
-            self.component_values = eigenvalues
-        """
         return self
 
     def transform(self, X, y=None):
@@ -519,83 +433,3 @@ class FPCADiscretized(FPCA):
         # components as column vectors
         return np.squeeze(X.data_matrix) @ np.transpose(
             np.squeeze(self.components.data_matrix))
-
-
-def inner_product_regularized(first,
-                              second,
-                              derivative_degree,
-                              regularization_parameter):
-    return first.inner_product(second) + \
-           regularization_parameter * \
-           first.derivative(derivative_degree).\
-           inner_product(second.derivative(derivative_degree))
-
-
-class FPCARegularizationParameterFinder(BaseEstimator, TransformerMixin):
-    """
-
-    """
-
-    def __init__(self,
-                 max_components,
-                 derivative_degree=2,
-                 regularization_parameter=1):
-        self.max_components = max_components
-        self.derivative_degree = derivative_degree
-        self.regularization_parameter = regularization_parameter
-        self.components = None
-
-    def fit(self, X: FDataBasis, y=None):
-        """Compute cross validation scores for regularized fpca
-
-        Args:
-            X (FDataBasis):
-                The data whose points are used to compute the matrix.
-            y : Ignored
-        Returns:
-            self (object)
-
-        """
-        # get the components using the proper regularization
-        fpca = FPCABasis(n_components=self.max_components,
-                         regularization_parameter=self.regularization_parameter,
-                         derivative_degree=self.derivative_degree)
-        fpca.fit(X, y)
-        self.components = fpca.components
-
-        return self
-
-    def transform(self, X: FDataGrid, y=None):
-        """ Transform function for convention
-        Not called by GridSearchCV as it only fits the data and then calls score
-        Args:
-            X (FDataGrid):
-                The data to penalize.
-            y : Ignored
-        Returns:
-            self
-
-        """
-        return self
-
-    def score(self, X, y=None):
-        """Returns the generalized cross validation (GCV) score for the sample
-
-
-        Args:
-            X (FDataBasis):
-                The data to smooth.
-            y (None):
-                convention usage.
-        Returns:
-            float: Generalized cross validation score.
-
-        """
-        results = inner_product_regularized(X,
-                                            self.components,
-                                            self.derivative_degree,
-                                            self.regularization_parameter)[0]
-        results **= 2
-        for i in range(len(results)):
-            results[i] *= len(results) - i
-        return sum(results)

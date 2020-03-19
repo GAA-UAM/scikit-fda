@@ -44,7 +44,7 @@ class _QR():
     """Solve the linear equation using qr factorization"""
 
     def __call__(self, *, basis_values, weight_matrix, data_matrix,
-                 penalty_matrix, ndegenerated, **_):
+                 penalty_matrix, **_):
 
         if weight_matrix is not None:
             # Decompose W in U'U and calculate UW and Uy
@@ -54,15 +54,11 @@ class _QR():
 
         if penalty_matrix is not None:
             w, v = np.linalg.eigh(penalty_matrix)
-            # Reduction of the penalty matrix taking away 0 or almost
-            # zeros eigenvalues
 
-            if ndegenerated:
-                index = ndegenerated - 1
-            else:
-                index = None
-            w = w[:index:-1]
-            v = v[:, :index:-1]
+            w = w[::-1]
+            v = v[:, ::-1]
+
+            w = np.maximum(w, 0)
 
             penalty_matrix = v @ np.diag(np.sqrt(w))
             # Augment the basis matrix with the square root of the
@@ -71,9 +67,9 @@ class _QR():
                 basis_values,
                 penalty_matrix.T],
                 axis=0)
-            # Augment data matrix by n - ndegenerated zeros
+            # Augment data matrix by n zeros
             data_matrix = np.pad(data_matrix,
-                                 ((0, len(v) - ndegenerated),
+                                 ((0, len(v)),
                                   (0, 0)),
                                  mode='constant')
 
@@ -470,10 +466,6 @@ class BasisSmoother(_LinearSmoother):
         if(data_matrix.shape[0] > self.basis.n_basis
            or self.smoothing_parameter > 0):
 
-            # TODO: The penalty could be None (if the matrix is passed)
-            ndegenerated = self.basis._ndegenerated(
-                len(self._penalty().weights) - 1)
-
             method = self._method_function()
 
             # If the method provides the complete transformation use it
@@ -486,8 +478,7 @@ class BasisSmoother(_LinearSmoother):
                                   basis_values=basis_values,
                                   weight_matrix=weight_matrix,
                                   data_matrix=data_matrix,
-                                  penalty_matrix=penalty_matrix,
-                                  ndegenerated=ndegenerated)
+                                  penalty_matrix=penalty_matrix)
 
         elif data_matrix.shape[0] == self.basis.n_basis:
             # If the number of basis equals the number of points and no

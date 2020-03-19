@@ -105,20 +105,6 @@ class Basis(ABC):
         pass
 
     @abstractmethod
-    def _ndegenerated(self, penalty_degree):
-        """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
-
-        Args:
-            penalty_degree (int): Degree of the derivative used in the
-                calculation of the penalty matrix.
-
-        Returns:
-             int: number of close to 0 eigenvalues.
-
-        """
-        pass
-
-    @abstractmethod
     def _derivative(self, coefs, order=1):
         pass
 
@@ -452,19 +438,6 @@ class Constant(Basis):
         return (np.ones((1, len(eval_points))) if derivative == 0
                 else np.zeros((1, len(eval_points))))
 
-    def _ndegenerated(self, penalty_degree):
-        """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
-
-        Args:
-            penalty_degree (int): Degree of the derivative used in the
-                calculation of the penalty matrix.
-
-        Returns:
-             int: number of close to 0 eigenvalues.
-
-        """
-        return penalty_degree
-
     def _derivative(self, coefs, order=1):
         return (self.copy(), coefs.copy() if order == 0
                 else self.copy(), np.zeros(coefs.shape))
@@ -573,19 +546,6 @@ class Monomial(Basis):
         raised = np.power.outer(eval_points, exps)
 
         return (coefs * raised).T
-
-    def _ndegenerated(self, penalty_degree):
-        """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
-
-        Args:
-            penalty_degree (int): Degree of the derivative used in the
-                calculation of the penalty matrix.
-
-        Returns:
-             int: number of close to 0 eigenvalues.
-
-        """
-        return penalty_degree
 
     def _derivative(self, coefs, order=1):
         return (Monomial(self.domain_range, self.n_basis - order),
@@ -850,19 +810,6 @@ class BSpline(Basis):
     @knots.setter
     def knots(self, value):
         self._knots = value
-
-    def _ndegenerated(self, penalty_degree):
-        """Return number of 0 or nearly to 0 eigenvalues of the penalty matrix.
-
-        Args:
-            penalty_degree (int): Degree of the derivative used in the
-                calculation of the penalty matrix.
-
-        Returns:
-             int: number of close to 0 eigenvalues.
-
-        """
-        return penalty_degree
 
     def _evaluate(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
@@ -1302,19 +1249,6 @@ class Fourier(Basis):
         res = np.concatenate((constant_basis, res))
 
         return res
-
-    def _ndegenerated(self, penalty_degree):
-        """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
-
-        Args:
-            penalty_degree (int): Degree of the derivative used in the
-                calculation of the penalty matrix.
-
-        Returns:
-             int: number of close to 0 eigenvalues.
-
-        """
-        return 0 if penalty_degree == 0 else 1
 
     def _derivative(self, coefs, order=1):
 

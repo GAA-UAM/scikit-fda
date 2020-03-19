@@ -29,7 +29,6 @@ dataset = skfda.datasets.fetch_growth()
 fd = dataset['data']
 y = dataset['target']
 fd.plot()
-pyplot.show()
 
 ##############################################################################
 # FPCA can be done in two ways. The first way is to operate directly with the
@@ -42,7 +41,6 @@ pyplot.show()
 fpca_discretized = FPCADiscretized(n_components=2)
 fpca_discretized.fit(fd)
 fpca_discretized.components.plot()
-pyplot.show()
 
 ##############################################################################
 # In the second case, the data is first converted to use a basis representation
@@ -55,7 +53,6 @@ fd = dataset['data']
 basis = skfda.representation.basis.BSpline(n_basis=7)
 basis_fd = fd.to_basis(basis)
 basis_fd.plot()
-pyplot.show()
 
 ##############################################################################
 # We initialize the FPCABasis object and run the fit function to obtain the
@@ -65,7 +62,6 @@ pyplot.show()
 fpca = FPCABasis(n_components=2)
 fpca.fit(basis_fd)
 fpca.components.plot()
-pyplot.show()
 
 ##############################################################################
 # To better illustrate the effects of the obtained two principal components,
@@ -77,7 +73,6 @@ fd = dataset['data']
 basis_fd = fd.to_basis(BSpline(n_basis=7))
 mean_fd = basis_fd.mean()
 mean_fd.plot()
-pyplot.show()
 
 ##############################################################################
 # Now we add and subtract a multiple of the first principal component. We can
@@ -90,7 +85,6 @@ mean_fd.coefficients = np.vstack([mean_fd.coefficients,
                                   mean_fd.coefficients[0, :] -
                                   20 * fpca.components.coefficients[0, :]])
 mean_fd.plot()
-pyplot.show()
 
 ##############################################################################
 # The second component is more interesting. The most appropriate explanation is
@@ -105,7 +99,6 @@ mean_fd.coefficients = np.vstack([mean_fd.coefficients,
                                   mean_fd.coefficients[0, :] -
                                   20 * fpca.components.coefficients[1, :]])
 mean_fd.plot()
-pyplot.show()
 
 ##############################################################################
 # We can also specify another basis for the principal components as argument
@@ -119,4 +112,3 @@ basis_fd = fd.to_basis(BSpline(n_basis=7))
 fpca = FPCABasis(n_components=2, components_basis=Fourier(n_basis=7))
 fpca.fit(basis_fd)
 fpca.components.plot()
-pyplot.show()

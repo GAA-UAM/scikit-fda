@@ -1250,6 +1250,73 @@ class Fourier(Basis):
 
         return res
 
+    def _penalty_orthonormal(self, weights):
+        """
+        Return the penalty when the basis is orthonormal.
+        """
+
+        signs = np.array([1, 1, -1, -1])
+        signs_expanded = np.tile(signs, len(weights) // 4 + 1)
+
+        signs_odd = signs_expanded[:len(weights)]
+        signs_even = signs_expanded[1:len(weights) + 1]
+
+        phases = (np.arange(1, (self.n_basis - 1) // 2 + 1) *
+                  2 * np.pi / self.period)
+        seq_derivs = np.arange(len(weights))
+
+        coefs_no_sign = np.power.outer(phases, seq_derivs)
+
+        coefs_no_sign *= weights
+
+        coefs_odd = signs_odd * coefs_no_sign
+        coefs_even = signs_even * coefs_no_sign
+
+        # After applying the linear differential operator to a sinusoidal
+        # element of the basis e, the result can be expressed as
+        # A e + B e*, where e* is the other basis element in the pair
+        # with the same phase
+
+        odd_sin_coefs = np.sum(coefs_odd[:, ::2], axis=1)
+        odd_cos_coefs = np.sum(coefs_odd[:, 1::2], axis=1)
+
+        even_cos_coefs = np.sum(coefs_even[:, ::2], axis=1)
+        even_sin_coefs = np.sum(coefs_even[:, 1::2], axis=1)
+
+        # The diagonal is the inner product of A e + B e*
+        # with itself. As the basis is orthonormal, the cross products e e*
+        # are 0, and the products e e and e* e* are one.
+        # Thus, the diagonal is A^2 + B^2
+        # All elements outside the main diagonal are 0
+        main_diag_odd = odd_sin_coefs**2 + odd_cos_coefs**2
+        main_diag_even = even_sin_coefs**2 + even_cos_coefs**2
+
+        # The main diagonal should intercalate both diagonals
+        main_diag = np.array((main_diag_odd, main_diag_even)).T.ravel()
+
+        penalty_matrix = np.diag(main_diag)
+
+        # Add row and column for the constant
+        penalty_matrix = np.pad(penalty_matrix, pad_width=((1, 0), (1, 0)),
+                                mode='constant')
+
+        penalty_matrix[0, 0] = weights[0]**2
+
+        return penalty_matrix
+
+    def _penalty(self, lfd):
+
+        weights = lfd.constant_weights()
+        if weights is None:
+            return NotImplemented
+
+        # If the period and domain range are not the same, the basis functions
+        # are not orthogonal
+        if self.period != (self.domain_range[0][1] - self.domain_range[0][0]):
+            return NotImplemented
+
+        return self._penalty_orthonormal(weights)
+
     def _derivative(self, coefs, order=1):
 
         omega = 2 * np.pi / self.period

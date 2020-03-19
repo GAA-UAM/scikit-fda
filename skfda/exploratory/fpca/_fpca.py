@@ -115,13 +115,15 @@ class FPCABasis(FPCA):
             the passed FDataBasis object.
         component_values (array_like): this contains the values (eigenvalues)
             associated with the principal components.
-        pca (sklearn.decomposition.PCA): object for principal component analysis.
+        pca (sklearn.decomposition.PCA): object for PCA.
             In both cases (discretized FPCA and basis FPCA) the problem can be
             reduced to a regular PCA problem and use the framework provided by
             sklearn to continue.
 
     Examples:
         Construct an artificial FDataBasis object and run FPCA with this object.
+        The resulting principal components are not compared because there are
+        several equivalent possibilities.
 
         >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
         >>> sample_points = [0, 1]
@@ -130,9 +132,6 @@ class FPCABasis(FPCA):
         >>> basis_fd = fd.to_basis(basis)
         >>> fpca_basis = FPCABasis(2)
         >>> fpca_basis = fpca_basis.fit(basis_fd)
-        >>> fpca_basis.components.coefficients
-        array([[ 1.        , -3.        ],
-               [-1.73205081,  1.73205081]])
 
     """
 
@@ -315,21 +314,14 @@ class FPCADiscretized(FPCA):
         In this example we apply discretized functional PCA with some simple
         data to illustrate the usage of this class. We initialize the
         FPCADiscretized object, fit the artificial data and obtain the scores.
+        The results are not tested because there are several equivalent
+        possibilities.
 
         >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
         >>> sample_points = [0, 1]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> fpca_discretized = FPCADiscretized(2)
         >>> fpca_discretized = fpca_discretized.fit(fd)
-        >>> fpca_discretized.components.data_matrix
-        array([[[-0.4472136 ],
-                [ 0.89442719]],
-        <BLANKLINE>
-               [[-0.89442719],
-                [-0.4472136 ]]])
-        >>> fpca_discretized.transform(fd)
-        array([[-1.11803399e+00,  5.55111512e-17],
-               [ 1.11803399e+00, -5.55111512e-17]])
     """
 
     def __init__(self, n_components=3, weights=None, centering=True):

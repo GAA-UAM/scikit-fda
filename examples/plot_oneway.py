@@ -104,7 +104,7 @@ fig = fd_means.plot()
 # sampling distribution of the statistic which is compared with the first
 # return to get the *p-value*.
 
-v_n, p_val, dist = oneway_anova(fd_knee1, fd_knee2, fd_knee3, n_sim=1500, p=1,
+v_n, p_val, dist = oneway_anova(fd_knee1, fd_knee2, fd_knee3, n_sim=1500, p=2,
                                 return_dist=True)
 
 print('Statistic: ', v_n)

@@ -1,6 +1,6 @@
 import numpy as np
 from skfda.misc.metrics import norm_lp
-from skfda.representation import FDataGrid
+from skfda.representation import FData, FDataGrid, FDataBasis
 from skfda.datasets import make_gaussian_process
 
 
@@ -37,7 +37,7 @@ def v_sample_stat(fd, weights, p=2):
         The value of the statistic.
 
     Raises:
-        TODO
+        ValueError
 
     Examples:
 
@@ -65,10 +65,18 @@ def v_sample_stat(fd, weights, p=2):
         anova test for functional data". *Computational Statistics  Data
         Analysis*, 47:111-112, 02 2004
     """
-    k = fd.n_samples
+
+    if not isinstance(fd, FData):
+        raise ValueError("Argument type must inherit FData.")
+    if len(weights) != fd.n_samples:
+        raise ValueError("Number of weights must match number of samples.")
+    if isinstance(fd, FDataBasis):
+        raise NotImplementedError("Not implemented for FDataBasis objects.")
+
+    n = fd.n_samples
     v_n = 0
-    for i in range(k):
-        for j in range(i + 1, k):
+    for j in range(n):
+        for i in range(j):
             v_n += weights[i] * norm_lp(fd[i] - fd[j], p=p) ** p
     return v_n
 
@@ -106,7 +114,7 @@ def v_asymptotic_stat(fd, weights, p=2):
         The value of the statistic.
 
     Raises:
-        TODO
+        ValueError.
 
     Examples:
 
@@ -134,13 +142,19 @@ def v_asymptotic_stat(fd, weights, p=2):
         anova test for functional data". *Computational Statistics  Data
         Analysis*, 47:111-112, 02 2004
     """
+    if not isinstance(fd, FData):
+        raise ValueError("Argument type must inherit FData.")
+    if len(weights) != fd.n_samples:
+        raise ValueError("Number of weights must match number of samples.")
+    if isinstance(fd, FDataBasis):
+        raise NotImplementedError("Not implemented for FDataBasis objects.")
 
-    k = fd.n_samples
+    n = fd.n_samples
     v = 0
-    for i in range(k):
-        for j in range(i + 1, k):
+    for j in range(n):
+        for i in range(j):
             v += norm_lp(
-                fd[i] - fd[j] * np.sqrt(weights[i] / weights[j]), p=p) ** 2
+                fd[i] - fd[j] * np.sqrt(weights[i] / weights[j]), p=p) ** p
     return v
 
 
@@ -223,7 +237,26 @@ def oneway_anova(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
         (float, float, numpy.array)
 
     Raises:
-        TODO
+        ValueError: In case of bad arguments.
+
+    Examples:
+        >>> from skfda.inference.anova import oneway_anova
+        >>> from skfda.datasets import fetch_gait
+        >>> from numpy.random import RandomState
+
+        >>> fd = fetch_gait()["data"].coordinates[1]
+        >>> fd1, fd2, fd3 = fd[:13], fd[13:26], fd[26:]
+        >>> oneway_anova(fd1, fd2, fd3, random_state=RandomState(42))
+        (179.52499999999998, 0.602)
+        >>> oneway_anova(fd1, fd2, fd3, p=1, random_state=RandomState(42))
+        (67.27499999999999, 0.0)
+        >>> _, _, dist = oneway_anova(fd1, fd2, fd3, n_sim=3,
+        ...     random_state=RandomState(42),
+        ...     return_dist=True)
+        >>> print(dist)
+        [163.35765183 208.59495097 229.76780354]
+
+
 
     References:
         [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
@@ -231,7 +264,14 @@ def oneway_anova(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
         Analysis*, 47:111-112, 02 2004
     """
 
-    assert len(args) > 0
+    if len(args) < 1:
+        raise ValueError("At least one sample must be passed as parameter.")
+    if not all(isinstance(fd, FData) for fd in args):
+        raise ValueError("Argument type must inherit FData.")
+    if n_sim < 1:
+        raise ValueError("Number of simulations must be positive.")
+    if any(isinstance(fd, FDataBasis) for fd in args):
+        raise NotImplementedError("Not implemented for FDataBasis objects.")
 
     fd_groups = args
     fd_means = fd_groups[0].mean()

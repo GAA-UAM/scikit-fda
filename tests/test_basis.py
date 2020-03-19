@@ -128,6 +128,7 @@ class TestBasis(unittest.TestCase):
 
         self._test_penalty(basis, lfd=[1, 2, 3])
         self._test_penalty(basis, lfd=7)
+        self._test_penalty(basis, lfd=0)
         self._test_penalty(basis, lfd=1)
         self._test_penalty(basis, lfd=27)
 
@@ -141,6 +142,13 @@ class TestBasis(unittest.TestCase):
                         [0., 0., 0., 0., 24936.73]])
 
         self._test_penalty(basis, lfd=2, result=res)
+
+        basis = Fourier(n_basis=9, domain_range=(1, 5))
+        self._test_penalty(basis, lfd=[1, 2, 3])
+        self._test_penalty(basis, lfd=[2, 3, 0.1, 1])
+        self._test_penalty(basis, lfd=0)
+        self._test_penalty(basis, lfd=1)
+        self._test_penalty(basis, lfd=3)
 
     def test_bspline_penalty(self):
         basis = BSpline(n_basis=5)

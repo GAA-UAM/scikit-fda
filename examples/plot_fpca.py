@@ -13,8 +13,6 @@ import skfda
 from skfda.exploratory.fpca import FPCABasis, FPCADiscretized
 from skfda.representation.basis import BSpline, Fourier
 from skfda.datasets import fetch_growth
-from matplotlib import pyplot
-
 
 ##############################################################################
 # In this example we are going to use functional principal component analysis to

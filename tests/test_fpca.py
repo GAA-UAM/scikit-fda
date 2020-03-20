@@ -3,7 +3,8 @@ import unittest
 import numpy as np
 from skfda import FDataGrid, FDataBasis
 from skfda.representation.basis import Fourier
-from skfda.exploratory.fpca import FPCABasis, FPCADiscretized
+from skfda.preprocessing.dim_reduction.projection import FPCABasis, \
+    FPCADiscretized
 from skfda.datasets import fetch_weather
 
 
@@ -14,7 +15,8 @@ def fetch_weather_temp_only():
     fd_data.axes_labels = fd_data.axes_labels[:-1]
     return fd_data
 
-class MyTestCase(unittest.TestCase):
+
+class FPCATestCase(unittest.TestCase):
 
     def test_basis_fpca_fit_attributes(self):
         fpca = FPCABasis()

@@ -1492,10 +1492,10 @@ class Fourier(Basis):
             numpy.array: Gram Matrix of the fourier basis.
 
         """
-        if self.domain_range[1] - self.domain_range[0] == self.period:
+        if self.domain_range[0][1] - self.domain_range[0][0] == self.period:
             return np.identity(self.n_basis)
         else:
-            return super.gram_matrix()
+            return super().gram_matrix()
 
     def basis_of_product(self, other):
         """Multiplication of two Fourier Basis"""

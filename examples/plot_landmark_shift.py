@@ -34,7 +34,7 @@ fd.plot()
 # associate with a specific argument value t. These are typically maxima,
 # minima, or zero crossings of curves, and may be identified at the level of
 # some derivatives as well as at the level of the curves themselves
-# [RaSi2005]_.
+# [RaSi2005-2]_.
 #
 # For alignment we need to know in advance the location of the landmark of
 # each of the samples, in our case it will correspond to the maxima of each
@@ -126,6 +126,6 @@ fd_registered.plot()
 plt.show()
 
 ###############################################################################
-# .. [RaSi2005] Ramsay, J., Silverman, B. W. (2005). Functional Data Analysis.
+# .. [RaSi2005-2] Ramsay, J., Silverman, B. W. (2005). Functional Data Analysis.
 #               Springer.
 #

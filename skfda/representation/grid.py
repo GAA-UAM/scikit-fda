@@ -504,7 +504,9 @@ class FDataGrid(FData):
     def mean(self, weights=None):
         """Compute the mean of all the samples.
 
-        weights (array-like, optional): List of weights.
+        Args:
+            weights (array-like, optional): List of weights.
+
         Returns:
             FDataGrid : A FDataGrid object with just one sample representing
             the mean of all the samples in the original object.

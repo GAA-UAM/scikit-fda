@@ -1,1 +1,1 @@
-from ._fpca import fpca
+from ._fpca import FPCABasis, FPCADiscretized

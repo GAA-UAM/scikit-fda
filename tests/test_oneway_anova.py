@@ -67,6 +67,7 @@ class MyTestCase(unittest.TestCase):
         print(little_sim, big_sim)
         self.assertAlmostEqual(little_sim, big_sim, delta=0.01)
 
+
 if __name__ == '__main__':
     print()
     unittest.main()

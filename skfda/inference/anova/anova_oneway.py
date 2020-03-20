@@ -5,7 +5,7 @@ from skfda.datasets import make_gaussian_process
 
 
 def v_sample_stat(fd, weights, p=2):
-    """
+    r"""
     Calculates a statistic that measures the variability between groups of
     samples in a :class:`skfda.representation.grid.FDataGrid` object.
 
@@ -82,7 +82,7 @@ def v_sample_stat(fd, weights, p=2):
 
 
 def v_asymptotic_stat(fd, weights, p=2):
-    """
+    r"""
     Calculates a statistic that measures the variability between groups of
     samples in a :class:`skfda.representation.grid.FDataGrid` object.
 
@@ -183,7 +183,7 @@ def _anova_bootstrap(fd_grouped, n_sim, p=2, random_state=None):
 
 
 def oneway_anova(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
-    """
+    r"""
     Performs one-way functional ANOVA.
 
     This function implements an asymptotic method to test the following

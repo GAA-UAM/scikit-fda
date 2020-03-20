@@ -159,9 +159,11 @@ def v_asymptotic_stat(fd, weights, p=2):
 
 
 def _anova_bootstrap(fd_grouped, n_sim, p=2, random_state=None):
-    assert len(fd_grouped) > 0
-
     n_groups = len(fd_grouped)
+    sample_p_list = [fd.sample_points[0] for fd in fd_grouped]
+    print(sample_p_list)
+    assert n_groups > 0
+    assert sample_p_list.count(sample_p_list[0]) == n_groups
     sample_points = fd_grouped[0].sample_points
     m = len(sample_points[0])  # Number of points in the grid
     start, stop = fd_grouped[0].domain_range[0]
@@ -217,7 +219,8 @@ def oneway_anova(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
         fd1,fd2,.... (FDataGrid): The sample measurements for each each group.
 
         n_sim (int, optional): Number of simulations for the bootstrap
-            procedure. Defaults to 2000.
+            procedure. Defaults to 2000 (This value may change in future
+            versions).
 
         p (int, optional): p of the lp norm. Must be greater or equal
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.

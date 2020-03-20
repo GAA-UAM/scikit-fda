@@ -9,9 +9,9 @@ of FPCA are orthogonal functions (usually a much smaller sample than the input
 data sample) that represent the most important modes of variation in the
 original data sample.
 
-For a detailed example please view `FPCA example
-<../../auto_examples/plot_fpca.html>`_, where the process is applied to several
-datasets in both discretized and basis forms.
+For a detailed example please view :ref:`sphx_glr_auto_examples_plot_fpca.py`,
+where the process is applied to several datasets in both discretized and basis
+forms.
 
 FPCA for functional data in a basis representation
 ----------------------------------------------------------------
@@ -19,7 +19,7 @@ FPCA for functional data in a basis representation
 .. autosummary::
    :toctree: autosummary
 
-   skfda.exploratory.fpca.FPCABasis
+   skfda.preprocessing.dim_reduction.projection.FPCABasis
 
 FPCA for functional data in a discretized representation
 ----------------------------------------------------------------
@@ -27,4 +27,4 @@ FPCA for functional data in a discretized representation
 .. autosummary::
    :toctree: autosummary
 
-   skfda.exploratory.fpca.FPCADiscretized
+   skfda.preprocessing.dim_reduction.projection.FPCADiscretized

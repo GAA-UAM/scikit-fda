@@ -1484,14 +1484,18 @@ class Fourier(Basis):
 
     def gram_matrix(self):
         r"""Return the Gram Matrix of a fourier basis
-        We already know that a fourier basis is orthonormal, so the matrix is
-        an identity matrix of dimension n_basis*n_basis
+        We already know that a fourier basis is orthonormal when the period is
+        the same as the domain range so the matrix is an identity matrix of
+        dimension n_basis*n_basis. Else we compute the matrix.
 
         Returns:
             numpy.array: Gram Matrix of the fourier basis.
 
         """
-        return np.identity(self.n_basis)
+        if self.domain_range[1] - self.domain_range[0] == self.period:
+            return np.identity(self.n_basis)
+        else:
+            return super.gram_matrix()
 
     def basis_of_product(self, other):
         """Multiplication of two Fourier Basis"""

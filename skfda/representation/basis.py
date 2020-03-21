@@ -956,8 +956,7 @@ class BSpline(Basis):
             # We have the coefficients for each interval in coordinates
             # (x - a), so we will need to subtract a when computing the
             # definite integral
-            coefs = pp_coefs.copy()
-            ppoly_lst.append(coefs)
+            ppoly_lst.append(pp_coefs)
             c[i] = 0
 
         # Now for each pair of basis computes the inner product after

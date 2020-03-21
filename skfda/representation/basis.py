@@ -128,7 +128,7 @@ class Basis(ABC):
         if derivative < 0:
             raise ValueError("derivative only takes non-negative values.")
 
-        eval_points = np.asarray(eval_points)
+        eval_points = np.atleast_1d(eval_points)
         if np.any(np.isnan(eval_points)):
             raise ValueError("The list of points where the function is "
                              "evaluated can not contain nan values.")
@@ -811,6 +811,18 @@ class BSpline(Basis):
     def knots(self, value):
         self._knots = value
 
+    def _evaluation_knots(self):
+        """
+        Get the knots adding m knots to the boundary in order to allow a
+        discontinuous behaviour at the boundaries of the domain [RS05]_.
+
+        References:
+            .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
+                Analysis*. Springer. 50-51.
+        """
+        return np.array([self.knots[0]] * (self.order - 1) + self.knots +
+                        [self.knots[-1]] * (self.order - 1))
+
     def _evaluate(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
 
@@ -841,8 +853,8 @@ class BSpline(Basis):
             return np.zeros((self.n_basis, len(eval_points)))
 
         # Places m knots at the boundaries
-        knots = np.array([self.knots[0]] * (self.order - 1) + self.knots +
-                         [self.knots[-1]] * (self.order - 1))
+        knots = self._evaluation_knots()
+
         # c is used the select which spline the function splev below computes
         c = np.zeros(len(knots))
 
@@ -880,15 +892,20 @@ class BSpline(Basis):
             return NotImplemented
 
         nonzero = np.flatnonzero(coefs)
+
+        # All derivatives above the order of the spline are effectively
+        # zero
+        nonzero = nonzero[nonzero < self.order]
+
+        if len(nonzero) == 0:
+            return np.zeros((self.n_basis, self.n_basis))
+
+        # We will only deal with one nonzero coefficient right now
         if len(nonzero) != 1:
             return NotImplemented
 
         derivative_degree = nonzero[0]
 
-        if derivative_degree >= self.order:
-            raise ValueError(f"Penalty matrix cannot be evaluated for "
-                             f"derivative of order {derivative_degree} for"
-                             f" B-splines of order {self.order}")
         if derivative_degree == self.order - 1:
             # The derivative of the bsplines are constant in the intervals
             # defined between knots
@@ -900,86 +917,86 @@ class BSpline(Basis):
             # Integration of product of constants
             return constants.T @ np.diag(knots_intervals) @ constants
 
-        if np.all(np.diff(self.knots) != 0):
-            # Compute exactly using the piecewise polynomial
-            # representation of splines
+        # We only deal with the case without zero length intervals
+        # for now
+        if np.any(np.diff(self.knots) == 0):
+            return NotImplemented
 
-            # Places m knots at the boundaries
-            knots = np.array(
-                [self.knots[0]] * (self.order - 1) + self.knots
-                + [self.knots[-1]] * (self.order - 1))
-            # c is used the select which spline the function
-            # PPoly.from_spline below computes
-            c = np.zeros(len(knots))
+        # Compute exactly using the piecewise polynomial
+        # representation of splines
 
-            # Initialise empty list to store the piecewise polynomials
-            ppoly_lst = []
+        # Places m knots at the boundaries
+        knots = self._evaluation_knots()
 
-            no_0_intervals = np.where(np.diff(knots) > 0)[0]
+        # c is used the select which spline the function
+        # PPoly.from_spline below computes
+        c = np.zeros(len(knots))
 
-            # For each basis gets its piecewise polynomial representation
+        # Initialise empty list to store the piecewise polynomials
+        ppoly_lst = []
+
+        no_0_intervals = np.where(np.diff(knots) > 0)[0]
+
+        # For each basis gets its piecewise polynomial representation
+        for i in range(self.n_basis):
+
+            # Write a 1 in c in the position of the spline
+            # transformed in each iteration
+            c[i] = 1
+
+            # Gets the piecewise polynomial representation and gets
+            # only the positions for no zero length intervals
+            # This polynomial are defined relatively to the knots
+            # meaning that the column i corresponds to the ith knot.
+            # Let the ith knot be a
+            # Then f(x) = pp(x - a)
+            pp = PPoly.from_spline((knots, c, self.order - 1))
+            pp_coefs = pp.c[:, no_0_intervals]
+
+            # We have the coefficients for each interval in coordinates
+            # (x - a), so we will need to subtract a when computing the
+            # definite integral
+            coefs = pp_coefs.copy()
+            ppoly_lst.append(coefs)
+            c[i] = 0
+
+        # Now for each pair of basis computes the inner product after
+        # applying the linear differential operator
+        penalty_matrix = np.zeros((self.n_basis, self.n_basis))
+        for interval in range(len(no_0_intervals)):
             for i in range(self.n_basis):
-                # write a 1 in c in the position of the spline
-                # transformed in each iteration
-                c[i] = 1
-                # gets the piecewise polynomial representation and gets
-                # only the positions for no zero length intervals
-                # This polynomial are defined relatively to the knots
-                # meaning that the column i corresponds to the ith knot.
-                # Let the ith not be a
-                # Then f(x) = pp(x - a)
-                pp = (PPoly.from_spline(
-                    (knots, c, self.order - 1)).c[:, no_0_intervals])                    # We need the actual coefficients of f, not pp. So we
-                # just recursively calculate the new coefficients
-                coeffs = pp.copy()
-                for j in range(self.order - 1):
-                    coeffs[j + 1:] += (
-                        (binom(self.order - j - 1,
-                               range(1, self.order - j)) *
-                         np.vstack([(-a) **
-                                    np.array(range(1, self.order - j))
-                                    for a in self.knots[:-1]])).T *
-                        pp[j])
-                ppoly_lst.append(coeffs)
-                c[i] = 0
+                poly_i = np.trim_zeros(ppoly_lst[i][:,
+                                                    interval], 'f')
+                if len(poly_i) <= derivative_degree:
+                    # if the order of the polynomial is lesser or
+                    # equal to the derivative the result of the
+                    # integral will be 0
+                    continue
+                # indefinite integral
+                integral = polyint(_polypow(polyder(
+                    poly_i, derivative_degree), 2))
+                # definite integral
+                penalty_matrix[i, i] += np.diff(polyval(
+                    integral, self.knots[interval: interval + 2] - self.knots[interval]))[0]
 
-            # Now for each pair of basis computes the inner product after
-            # applying the linear differential operator
-            penalty_matrix = np.zeros((self.n_basis, self.n_basis))
-            for interval in range(len(no_0_intervals)):
-                for i in range(self.n_basis):
-                    poly_i = np.trim_zeros(ppoly_lst[i][:,
+                for j in range(i + 1, self.n_basis):
+                    poly_j = np.trim_zeros(ppoly_lst[j][:,
                                                         interval], 'f')
-                    if len(poly_i) <= derivative_degree:
-                        # if the order of the polynomial is lesser or
-                        # equal to the derivative the result of the
-                        # integral will be 0
+                    if len(poly_j) <= derivative_degree:
+                        # if the order of the polynomial is lesser
+                        # or equal to the derivative the result of
+                        # the integral will be 0
                         continue
-                    # indefinite integral
-                    integral = polyint(_polypow(polyder(
-                        poly_i, derivative_degree), 2))
+                        # indefinite integral
+                    integral = polyint(
+                        polymul(polyder(poly_i, derivative_degree),
+                                polyder(poly_j, derivative_degree)))
                     # definite integral
-                    penalty_matrix[i, i] += np.diff(polyval(
-                        integral, self.knots[interval: interval + 2]))[0]
-
-                    for j in range(i + 1, self.n_basis):
-                        poly_j = np.trim_zeros(ppoly_lst[j][:,
-                                                            interval], 'f')
-                        if len(poly_j) <= derivative_degree:
-                            # if the order of the polynomial is lesser
-                            # or equal to the derivative the result of
-                            # the integral will be 0
-                            continue
-                            # indefinite integral
-                        integral = polyint(
-                            polymul(polyder(poly_i, derivative_degree),
-                                    polyder(poly_j, derivative_degree)))
-                        # definite integral
-                        penalty_matrix[i, j] += np.diff(polyval(
-                            integral, self.knots[interval: interval + 2])
-                        )[0]
-                        penalty_matrix[j, i] = penalty_matrix[i, j]
-            return penalty_matrix
+                    penalty_matrix[i, j] += np.diff(polyval(
+                        integral, self.knots[interval: interval + 2] - self.knots[interval])
+                    )[0]
+                    penalty_matrix[j, i] = penalty_matrix[i, j]
+        return penalty_matrix
 
     def rescale(self, domain_range=None):
         r"""Return a copy of the basis with a new domain range, with the
@@ -1263,9 +1280,9 @@ class Fourier(Basis):
 
         phases = (np.arange(1, (self.n_basis - 1) // 2 + 1) *
                   2 * np.pi / self.period)
-        seq_derivs = np.arange(len(weights))
 
-        coefs_no_sign = np.power.outer(phases, seq_derivs)
+        # Compute increasing powers
+        coefs_no_sign = np.vander(phases, len(weights), increasing=True)
 
         coefs_no_sign *= weights
 

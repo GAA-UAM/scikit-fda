@@ -9,20 +9,22 @@ class TestBasis(unittest.TestCase):
 
     # def setUp(self): could be defined for set up before any test
 
-    def _test_penalty(self, basis, lfd, result=None):
+    def _test_penalty(self, basis, lfd, atol=0, result=None):
 
-        penalty = basis.penalty(lfd).round(2)
-        numerical_penalty = basis._numerical_penalty(lfd).round(2)
+        penalty = basis.penalty(lfd)
+        numerical_penalty = basis._numerical_penalty(lfd)
 
         np.testing.assert_allclose(
             penalty,
-            numerical_penalty
+            numerical_penalty,
+            atol=atol
         )
 
         if result is not None:
             np.testing.assert_allclose(
                 penalty,
-                result
+                result,
+                atol=atol
             )
 
     def test_from_data_cholesky(self):
@@ -141,14 +143,15 @@ class TestBasis(unittest.TestCase):
                         [0., 0., 0., 24936.73, 0.],
                         [0., 0., 0., 0., 24936.73]])
 
-        self._test_penalty(basis, lfd=2, result=res)
+        # Those comparisons require atol as there are zeros involved
+        self._test_penalty(basis, lfd=2, atol=0.01, result=res)
 
         basis = Fourier(n_basis=9, domain_range=(1, 5))
-        self._test_penalty(basis, lfd=[1, 2, 3])
-        self._test_penalty(basis, lfd=[2, 3, 0.1, 1])
-        self._test_penalty(basis, lfd=0)
-        self._test_penalty(basis, lfd=1)
-        self._test_penalty(basis, lfd=3)
+        self._test_penalty(basis, lfd=[1, 2, 3], atol=1e-7)
+        self._test_penalty(basis, lfd=[2, 3, 0.1, 1], atol=1e-7)
+        self._test_penalty(basis, lfd=0, atol=1e-7)
+        self._test_penalty(basis, lfd=1, atol=1e-7)
+        self._test_penalty(basis, lfd=3, atol=1e-7)
 
     def test_bspline_penalty(self):
         basis = BSpline(n_basis=5)
@@ -160,6 +163,17 @@ class TestBasis(unittest.TestCase):
                         [0., 12., 24., -132., 96.]])
 
         self._test_penalty(basis, lfd=2, result=res)
+
+        basis = BSpline(n_basis=9, domain_range=(1, 5))
+        self._test_penalty(basis, lfd=[1, 2, 3])
+        self._test_penalty(basis, lfd=[2, 3, 0.1, 1])
+        self._test_penalty(basis, lfd=0)
+        self._test_penalty(basis, lfd=1)
+        self._test_penalty(basis, lfd=3)
+        self._test_penalty(basis, lfd=4)
+
+        basis = BSpline(n_basis=16, order=8)
+        self._test_penalty(basis, lfd=0, atol=1e-7)
 
     def test_basis_product_generic(self):
         monomial = Monomial(n_basis=5)

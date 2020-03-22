@@ -2,8 +2,8 @@ import unittest
 import numpy as np
 
 from skfda.representation import FDataGrid
-from skfda.datasets import make_gaussian_process, fetch_gait
-from skfda.inference.anova import  oneway_anova, v_asymptotic_stat, \
+from skfda.datasets import fetch_gait
+from skfda.inference.anova import oneway_anova, v_asymptotic_stat, \
     v_sample_stat
 
 

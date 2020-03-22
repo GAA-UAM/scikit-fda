@@ -7,14 +7,7 @@ from skfda.inference.anova import  oneway_anova, v_asymptotic_stat, \
     v_sample_stat
 
 
-def make_process_w_noise(mean, cov, n_samples, t, random_state):
-    return FDataGrid([mean for _ in range(n_samples)], sample_points=t) \
-           + make_gaussian_process(n_samples, n_features=mean.shape[0],
-                                   cov=cov, random_state=random_state,
-                                   start=t[0], stop=t[-1])
-
-
-class MyTestCase(unittest.TestCase):
+class OnewayAnovaTests(unittest.TestCase):
 
     def test_oneway_anova_args(self):
         with self.assertRaises(ValueError):
@@ -64,7 +57,6 @@ class MyTestCase(unittest.TestCase):
                          range(n_little_sim)])
         little_sim = np.mean(sims)
         big_sim = oneway_anova(fd1, fd2, fd3, n_sim=50000)[1]
-        print(little_sim, big_sim)
         self.assertAlmostEqual(little_sim, big_sim, delta=0.01)
 
 

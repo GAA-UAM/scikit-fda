@@ -180,10 +180,10 @@ def _anova_bootstrap(fd_grouped, n_sim, p=2, random_state=None):
     sim = [make_gaussian_process(n_sim, n_features=m, start=start, stop=stop,
                                  cov=k_est[i], random_state=random_state)
            for i in range(n_groups)]
-    v_samples = np.array([])
+    v_samples = np.empty(n_sim)
     for i in range(n_sim):
         fd = FDataGrid([s.data_matrix[i, ..., 0] for s in sim])
-        v_samples = np.append(v_samples, v_asymptotic_stat(fd, sizes, p=p))
+        v_samples[i] = v_asymptotic_stat(fd, sizes, p=p)
     return v_samples
 
 

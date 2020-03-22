@@ -34,7 +34,6 @@ from skfda.representation import FDataGrid
 
 import numpy as np
 
-import skfda
 from skfda.representation import FDataGrid
 from skfda.inference.anova import oneway_anova
 from skfda.datasets import make_gaussian_process
@@ -43,29 +42,19 @@ from skfda.datasets import make_gaussian_process
 # First, the means for the future processes are drawn.
 
 n_samples = 10
-n_features = 50
+n_features = 100
 n_groups = 3
+start = 0
+stop = 1
 
-t = np.linspace(0, np.pi, n_features)
+t = np.linspace(start, stop, n_features)
 
-m1 = np.sin(t)
-m2 = 1.1 * np.sin(t)
-m3 = 1.2 * np.sin(t)
+m1 = t * (1 - t) ** 5
+m2 = t ** 2 * (1 - t) ** 4
+m3 = t ** 3 * (1 - t) ** 3
 
 _ = FDataGrid([m1, m2, m3],
               dataset_label="Means to be used in the simulation").plot()
-
-
-###############################################################################
-# Now, a function to simulate processes as described above is implemented,
-# to make code clearer.
-
-def make_process_w_noise(mean, cov, t, random_state):
-    return FDataGrid([mean for _ in range(n_samples)], sample_points=t) \
-           + make_gaussian_process(n_samples, n_features=mean.shape[0],
-                                   cov=cov, random_state=random_state,
-                                   start=t[0], stop=t[-1])
-
 
 ################################################################################
 # A total of `n_samples` trajectories will be created for each mean, so a array
@@ -83,11 +72,16 @@ groups[20:] = 'Sample 3'
 sigma = 0.01
 cov = np.identity(n_features) * sigma
 
-fd1 = make_process_w_noise(m1, cov, t, random_state=1)
-fd2 = make_process_w_noise(m2, cov, t, random_state=2)
-fd3 = make_process_w_noise(m3, cov, t, random_state=3)
-
-stat, p_val = oneway_anova(fd1, fd2, fd3, random_state=1)
+fd1 = make_gaussian_process(n_samples, mean=m1, cov=cov,
+                            n_features=n_features, random_state=1, start=start,
+                            stop=stop)
+fd2 = make_gaussian_process(n_samples, mean=m2, cov=cov,
+                            n_features=n_features, random_state=2, start=start,
+                            stop=stop)
+fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
+                            n_features=n_features, random_state=3, start=start,
+                            stop=stop)
+stat, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 print("Statistic: {:.3f}".format(stat))
 print("p-value: {:.3f}".format(p_val))
 
@@ -108,16 +102,22 @@ fd1.mean().concatenate(fd2.mean().concatenate(fd3.mean()).concatenate()).plot()
 # refuse).
 
 ################################################################################
-# Plot for :math:`\sigma = 0.1`:
+# Plot for :math:`\sigma = 1`:
 
-sigma = 0.1
+sigma = 1
 cov = np.identity(n_features) * sigma
 
-fd1 = make_process_w_noise(m1, cov, t, random_state=1)
-fd2 = make_process_w_noise(m2, cov, t, random_state=2)
-fd3 = make_process_w_noise(m3, cov, t, random_state=3)
+fd1 = make_gaussian_process(n_samples, mean=m1, cov=cov,
+                            n_features=n_features, random_state=1, start=t[0],
+                            stop=t[-1])
+fd2 = make_gaussian_process(n_samples, mean=m2, cov=cov,
+                            n_features=n_features, random_state=2, start=t[0],
+                            stop=t[-1])
+fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
+                            n_features=n_features, random_state=3, start=t[0],
+                            stop=t[-1])
 
-_, p_val = oneway_anova(fd1, fd2, fd3, random_state=1)
+_, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 
 fd = fd1.concatenate(fd2.concatenate(fd3.concatenate()))
 fd.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
@@ -126,16 +126,22 @@ fd.plot(group=groups, legend=True, alpha=0.6)
 fd1.mean().concatenate(fd2.mean().concatenate(fd3.mean()).concatenate()).plot()
 
 ################################################################################
-# Plot for :math:`\sigma = 1`:
+# Plot for :math:`\sigma = 10`:
 
-sigma = 1
+sigma = 10
 cov = np.identity(n_features) * sigma
 
-fd1 = make_process_w_noise(m1, cov, t, random_state=1)
-fd2 = make_process_w_noise(m2, cov, t, random_state=2)
-fd3 = make_process_w_noise(m3, cov, t, random_state=3)
+fd1 = make_gaussian_process(n_samples, mean=m1, cov=cov,
+                            n_features=n_features, random_state=1, start=t[0],
+                            stop=t[-1])
+fd2 = make_gaussian_process(n_samples, mean=m2, cov=cov,
+                            n_features=n_features, random_state=2, start=t[0],
+                            stop=t[-1])
+fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
+                            n_features=n_features, random_state=3, start=t[0],
+                            stop=t[-1])
 
-_, p_val = oneway_anova(fd1, fd2, fd3, random_state=1)
+_, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 
 fd = fd1.concatenate(fd2.concatenate(fd3.concatenate()))
 fd.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(

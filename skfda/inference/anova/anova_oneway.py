@@ -1,4 +1,6 @@
 import numpy as np
+from sklearn.utils import check_random_state
+
 from skfda.misc.metrics import norm_lp
 from skfda.representation import FData, FDataGrid, FDataBasis
 from skfda.datasets import make_gaussian_process
@@ -170,6 +172,9 @@ def _anova_bootstrap(fd_grouped, n_sim, p=2, random_state=None):
 
     # Estimating covariances for each group
     k_est = [fd.cov().data_matrix[0, ..., 0] for fd in fd_grouped]
+
+    # Instance a random state object in case random_state is an int
+    random_state = check_random_state(random_state)
 
     # Simulating n_sim observations for each of the n_groups gaussian processes
     sim = [make_gaussian_process(n_sim, n_features=m, start=start, stop=stop,

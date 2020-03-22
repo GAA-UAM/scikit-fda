@@ -10,7 +10,8 @@ Explores the two possible ways to do functional principal component analysis.
 
 import numpy as np
 import skfda
-from skfda.exploratory.fpca import FPCABasis, FPCADiscretized
+from skfda.preprocessing.dim_reduction.projection import FPCABasis, \
+    FPCADiscretized
 from skfda.representation.basis import BSpline, Fourier
 from skfda.datasets import fetch_growth
 

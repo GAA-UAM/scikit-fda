@@ -7,7 +7,6 @@ from skfda.representation.basis import FDataBasis
 from skfda.representation.grid import FDataGrid
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
-from sklearn.model_selection import GridSearchCV, LeaveOneOut
 
 __author__ = "Yujian Hong"
 __email__ = "yujian.hong@estudiante.uam.es"

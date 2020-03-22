@@ -161,9 +161,17 @@ def v_asymptotic_stat(fd, weights, p=2):
 
 
 def _anova_bootstrap(fd_grouped, n_sim, p=2, random_state=None):
-    assert len(fd_grouped) > 0
 
     n_groups = len(fd_grouped)
+    assert n_groups > 0
+
+    # Creating list with all the sample points
+    list_sample = [fd.sample_points[0].tolist() for fd in fd_grouped]
+    # Checking that the all the entries in the list are the same
+    if not list_sample.count(list_sample[0]) == len(list_sample):
+        raise ValueError("All FDataGrid passed must have the same sample "
+                         "points.")
+
     sample_points = fd_grouped[0].sample_points
     m = len(sample_points[0])  # Number of points in the grid
     start, stop = fd_grouped[0].domain_range[0]
@@ -280,6 +288,13 @@ def oneway_anova(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
         raise NotImplementedError("Not implemented for FDataBasis objects.")
 
     fd_groups = args
+    # Creating list with all the sample points
+    list_sample = [fd.sample_points[0].tolist() for fd in fd_groups]
+    # Checking that the all the entries in the list are the same
+    if not list_sample.count(list_sample[0]) == len(list_sample):
+        raise ValueError("All FDataGrid passed must have the same sample "
+                         "points.")
+
     fd_means = fd_groups[0].mean()
     for fd in fd_groups[1:]:
         fd_means = fd_means.concatenate(fd.mean())

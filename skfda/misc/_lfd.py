@@ -193,7 +193,8 @@ class LinearDifferentialOperator:
 
     def constant_weights(self):
         """
-        Return the weights of the weights if they are constant basis.
+        Return the scalar weights of the linear differential operator if they
+        are constant basis.
         Otherwise, return None.
 
         This function is mostly useful for basis which want to override

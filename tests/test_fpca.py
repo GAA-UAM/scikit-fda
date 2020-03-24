@@ -81,10 +81,10 @@ class FPCATestCase(unittest.TestCase):
         # compare results obtained using this library. There are slight
         # variations due to the fact that we are in two different packages
         for i in range(n_components):
-            if np.sign(fpca.components.coefficients[i][0]) != np.sign(results[i][0]):
+            if np.sign(fpca.components_.coefficients[i][0]) != np.sign(results[i][0]):
                 results[i, :] *= -1
             for j in range(n_basis):
-                self.assertAlmostEqual(fpca.components.coefficients[i][j],
+                self.assertAlmostEqual(fpca.components_.coefficients[i][j],
                                        results[i][j], delta=0.0000001)
 
 

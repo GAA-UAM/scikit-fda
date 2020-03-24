@@ -31,12 +31,12 @@ variation, we need to use *registration* methods.
 :doc:`Here <preprocessing/registration>` you can learn more about the
 registration methods available in the library.
 
-Dimension Reduction
--------------------
+Dimensionality Reduction
+------------------------
 
-The functional data may have too many samples so we cannot analyse
+The functional data may have too many features so we cannot analyse
 the data with clarity. To better understand the data, we need to use
-*dimension reduction* methods that can extract the most significant
-features while reducing the complexity of the data.
+*dimensionality reduction* methods that can reduce the number of features
+while still preserving the most relevant information.
 :doc:`Here <preprocessing/dim_reduction>` you can learn more about the
 dimension reduction methods available in the library.

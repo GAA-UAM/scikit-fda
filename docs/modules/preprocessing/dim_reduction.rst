@@ -1,5 +1,5 @@
-Dimension Reduction
-===================
+Dimensionality Reduction
+========================
 
 When dealing with data samples with high dimensionality, we often need to
 reduce the dimensions so we can better observe the data.

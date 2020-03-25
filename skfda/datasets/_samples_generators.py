@@ -18,7 +18,7 @@ def make_gaussian_process(n_samples: int = 100, n_features: int = 100, *,
 
         Args:
             n_samples: The total number of trajectories.
-            n_features: The total number of trajectories.
+            n_features: The total number of features (points of evaluation).
             start: Starting point of the trajectories.
             stop: Ending point of the trajectories.
             mean: The mean function of the process. Can be a callable accepting

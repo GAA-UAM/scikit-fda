@@ -9,90 +9,112 @@ import numpy as np
 
 class LinearScalarRegression(BaseEstimator, RegressorMixin):
 
-    def __init__(self, beta_basis):
-        self.beta_basis = beta_basis
+    def __init__(self, coef_basis):
+        self.coef_basis = coef_basis
 
     def fit(self, X, y=None, sample_weight=None):
 
-        y, X, weights = self._argcheck(y, X, sample_weight)
+        X, y, sample_weight = self._argcheck_X_y(X, y, sample_weight)
 
-        nbeta = len(self.beta_basis)
-        n_samples = X[0].n_samples
+        # X is a list of covariates
+        n_covariates = len(X)
 
-        y = np.asarray(y).reshape((n_samples, 1))
+        inner_products = [None] * n_covariates
 
-        for j in range(nbeta):
-            xcoef = X[j].coefficients
-            inner_basis_x_beta_j = X[j].basis.inner_product(self.beta_basis[j])
-            inner_x_beta = (xcoef @ inner_basis_x_beta_j
-                            if j == 0
-                            else np.concatenate((inner_x_beta,
-                                                 xcoef @ inner_basis_x_beta_j),
-                                                axis=1))
+        for i, (x, w_basis) in enumerate(zip(X, self.coef_basis)):
+            xcoef = x.coefficients
+            inner_basis = x.basis.inner_product(w_basis)
+            inner_products[i] = xcoef @ inner_basis
 
-        if any(w != 1 for w in weights):
-            inner_x_beta = inner_x_beta * np.sqrt(weights)
-            y = y * np.sqrt(weights)
+        # This is C @ J
+        inner_products = np.concatenate(inner_products, axis=1)
 
-        gram_inner_x_beta = inner_x_beta.T @ inner_x_beta
-        inner_x_beta_y = inner_x_beta.T @ y
+        if any(w != 1 for w in sample_weight):
+            inner_products = inner_products * np.sqrt(sample_weight)
+            y = y * np.sqrt(sample_weight)
 
-        gram_inner_x_beta_inv = np.linalg.inv(gram_inner_x_beta)
-        betacoefs = gram_inner_x_beta_inv @ inner_x_beta_y
+        gram_inner_x_coef = inner_products.T @ inner_products
+        inner_x_coef_y = inner_products.T @ y
 
+        coef_basiscoefs = np.linalg.solve(gram_inner_x_coef, inner_x_coef_y)
+
+        # Express the coefficients in functional form
+        coefs = [None] * n_covariates
         idx = 0
-        for j in range(0, nbeta):
-            self.beta_basis[j] = FDataBasis(
-                self.beta_basis[j],
-                betacoefs[idx:idx + self.beta_basis[j].n_basis].T)
-            idx = idx + self.beta_basis[j].n_basis
+        for i, basis in enumerate(self.coef_basis):
+            coefs[i] = FDataBasis(
+                basis,
+                coef_basiscoefs[idx:idx + basis.n_basis].T)
+            idx = idx + basis.n_basis
 
-        self.beta_ = self.beta_basis
+        self.coef_ = coefs
+        self._target_ndim = y.ndim
+
         return self
 
     def predict(self, X):
-        check_is_fitted(self, "beta_")
-        return [sum(self.beta[i].inner_product(X[i][j])[0, 0] for i in
-                    range(len(self.beta))) for j in range(X[0].n_samples)]
+        check_is_fitted(self)
+        X = self._argcheck_X(X)
 
-    def _argcheck(self, y, x, weights=None):
+        inner_products = np.sum([covariate.inner_product(
+            x) for covariate, x in zip(self.coef_, X)], axis=0)
+
+        if self._target_ndim == 1:
+            inner_products = inner_products.ravel()
+
+        return inner_products
+
+    def _argcheck_X(self, X):
+        if isinstance(X, FData):
+            X = [X]
+
+        if all(not isinstance(i, FData) for i in X):
+            raise ValueError("All the covariates are scalar.")
+
+        domain_ranges = [x.domain_range for x in X if isinstance(x, FData)]
+        domain_range = domain_ranges[0]
+
+        for i, x in enumerate(X):
+            if not isinstance(x, FData):
+                # TODO: Support multivariate data
+                coefs = np.asarray(x)
+                X[i] = FDataBasis(Constant(domain_range), coefs)
+
+        return X
+
+    def _argcheck_X_y(self, X, y, sample_weight=None):
         """Do some checks to types and shapes"""
-        if all(not isinstance(i, FData) for i in x):
-            raise ValueError("All the dependent variable are scalar.")
+
+        # TODO: Add support for Dataframes
+
+        X = self._argcheck_X(X)
+
+        y = np.asarray(y)
+
         if any(isinstance(i, FData) for i in y):
             raise ValueError(
-                "Some of the independent variables are not scalar")
+                "Some of the response variables are not scalar")
 
-        ylen = len(y)
-        xlen = len(x)
-        blen = len(self.beta_basis)
-        domain_range = ([i for i in x if isinstance(i, FData)][0]
-                        .domain_range)
-
-        if blen != xlen:
+        if len(self.coef_basis) != len(X):
             raise ValueError("Number of regression coefficients does"
                              " not match number of independent variables.")
 
-        for j in range(xlen):
-            if isinstance(x[j], list):
-                xjcoefs = np.array(x[j]).reshape((-1, 1))
-                x[j] = FDataBasis(Constant(domain_range), xjcoefs)
-
-        if any(ylen != xfd.n_samples for xfd in x):
+        if any(len(y) != len(x) for x in X):
             raise ValueError("The number of samples on independent and "
                              "dependent variables should be the same")
 
-        if any(not isinstance(b, Basis) for b in self.beta_basis):
-            raise ValueError("Betas should be a list of Basis.")
+        if any(not isinstance(b, Basis) for b in self.coef_basis):
+            raise ValueError("coefs should be a list of Basis.")
 
-        if weights is None:
-            weights = [1 for _ in range(ylen)]
+        if sample_weight is None:
+            sample_weight = np.ones(len(y))
 
-        if len(weights) != ylen:
-            raise ValueError("The number of weights should be equal to the "
-                             "independent samples.")
+        if len(sample_weight) != len(y):
+            raise ValueError("The number of sample weights should be equal to"
+                             "the number of samples.")
 
-        if np.any(np.array(weights) < 0):
-            raise ValueError("The weights should be non negative values")
+        if np.any(np.array(sample_weight) < 0):
+            raise ValueError(
+                "The sample weights should be non negative values")
 
-        return y, x, weights
+        return X, y, sample_weight

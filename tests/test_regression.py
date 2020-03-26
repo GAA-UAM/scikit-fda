@@ -33,6 +33,17 @@ class TestLinearScalarRegression(unittest.TestCase):
         y_pred = scalar.predict(x_fd)
         np.testing.assert_allclose(y_pred, y)
 
+        scalar = LinearScalarRegression(coef_basis=[beta_basis],
+                                        fit_intercept=False)
+        scalar.fit(x_fd, y)
+        np.testing.assert_allclose(scalar.coef_[0].coefficients,
+                                   beta_fd.coefficients)
+        np.testing.assert_equal(scalar.intercept_,
+                                0.0)
+
+        y_pred = scalar.predict(x_fd)
+        np.testing.assert_allclose(y_pred, y)
+
     def test_regression_predict_multiple_explanatory(self):
         y = [1, 2, 3, 4, 5, 6, 7]
 

@@ -9,19 +9,26 @@ import numpy as np
 
 class LinearScalarRegression(BaseEstimator, RegressorMixin):
 
-    def __init__(self, coef_basis):
+    def __init__(self, *, coef_basis, fit_intercept=True):
         self.coef_basis = coef_basis
+        self.fit_intercept = fit_intercept
 
     def fit(self, X, y=None, sample_weight=None):
 
         X, y, sample_weight = self._argcheck_X_y(X, y, sample_weight)
+        coef_basis = self.coef_basis
+
+        if self.fit_intercept:
+            X = [FDataBasis(Constant(X[0].domain_range),
+                            np.ones((len(y), 1)))] + X
+            coef_basis = [Constant()] + coef_basis
 
         # X is a list of covariates
         n_covariates = len(X)
 
         inner_products = [None] * n_covariates
 
-        for i, (x, w_basis) in enumerate(zip(X, self.coef_basis)):
+        for i, (x, w_basis) in enumerate(zip(X, coef_basis)):
             xcoef = x.coefficients
             inner_basis = x.basis.inner_product(w_basis)
             inner_products[i] = xcoef @ inner_basis
@@ -41,11 +48,17 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         # Express the coefficients in functional form
         coefs = [None] * n_covariates
         idx = 0
-        for i, basis in enumerate(self.coef_basis):
+        for i, basis in enumerate(coef_basis):
             coefs[i] = FDataBasis(
                 basis,
                 coef_basiscoefs[idx:idx + basis.n_basis].T)
             idx = idx + basis.n_basis
+
+        if self.fit_intercept:
+            self.intercept_ = coefs[0].coefficients[0]
+            coefs = coefs[1:]
+        else:
+            self.intercept_ = 0.0
 
         self.coef_ = coefs
         self._target_ndim = y.ndim
@@ -56,13 +69,15 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
         check_is_fitted(self)
         X = self._argcheck_X(X)
 
-        inner_products = np.sum([covariate.inner_product(
+        result = np.sum([covariate.inner_product(
             x) for covariate, x in zip(self.coef_, X)], axis=0)
 
-        if self._target_ndim == 1:
-            inner_products = inner_products.ravel()
+        result += self.intercept_
 
-        return inner_products
+        if self._target_ndim == 1:
+            result = result.ravel()
+
+        return result
 
     def _argcheck_X(self, X):
         if isinstance(X, FData):

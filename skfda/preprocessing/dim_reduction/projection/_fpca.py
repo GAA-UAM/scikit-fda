@@ -7,6 +7,7 @@ from skfda.representation.basis import FDataBasis
 from skfda.representation.grid import FDataGrid
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
+from scipy.linalg import solve_triangular
 
 __author__ = "Yujian Hong"
 __email__ = "yujian.hong@estudiante.uam.es"
@@ -86,26 +87,29 @@ class FPCA(ABC, BaseEstimator, TransformerMixin):
 
 
 class FPCABasis(FPCA):
-    """Funcional principal component analysis for functional data represented
+    """Functional principal component analysis for functional data represented
     in basis form.
 
     Attributes:
-        n_components (int): number of principal components to obtain from
-            functional principal component analysis. Defaults to 3.
-        centering (bool): if True then calculate the mean of the functional data
-            object and center the data first. Defaults to True. If True the
-            passed FDataBasis object is modified.
-        components_ (FDataBasis): this contains the principal components either
-            in a basis form.
-        components_basis (Basis): the basis in which we want the principal
-            components. We can use a different basis than the basis contained in
-            the passed FDataBasis object.
+        components_ (FDataBasis): this contains the principal components in a
+            basis representation.
         component_values_ (array_like): this contains the values (eigenvalues)
             associated with the principal components.
         pca_ (sklearn.decomposition.PCA): object for PCA.
             In both cases (discretized FPCA and basis FPCA) the problem can be
             reduced to a regular PCA problem and use the framework provided by
             sklearn to continue.
+
+    Parameters:
+        n_components (int): number of principal components to obtain from
+            functional principal component analysis. Defaults to 3.
+        centering (bool): if True then calculate the mean of the functional data
+            object and center the data first. Defaults to True. If True the
+            passed FDataBasis object is modified.
+        components_basis (Basis): the basis in which we want the principal
+            components. We can use a different basis than the basis contained in
+            the passed FDataBasis object.
+
 
     Examples:
         Construct an artificial FDataBasis object and run FPCA with this object.
@@ -143,7 +147,7 @@ class FPCABasis(FPCA):
             regularization_parameter (float): this parameter sets the degree of
                 regularization that is desired. Defaults to 0 (no
                 regularization). When this value is large, the resulting
-                principal components tends to be 0.
+                principal components tends to be constant.
 
         """
         super().__init__(n_components, centering)
@@ -179,8 +183,8 @@ class FPCABasis(FPCA):
 
         # the maximum number of components is established by the target basis
         # if the target basis is available.
-        n_basis = self.components_basis.n_basis if self.components_basis \
-            else X.basis.n_basis
+        n_basis = (self.components_basis.n_basis if self.components_basis
+                   else X.basis.n_basis)
         n_samples = X.n_samples
 
         # check that the number of components is smaller than the sample size
@@ -229,8 +233,8 @@ class FPCABasis(FPCA):
                 self.regularization_derivative_degree,
                 self.regularization_coefficients)
             # apply regularization
-            g_matrix = g_matrix + self.regularization_parameter \
-                * regularization_matrix
+            g_matrix = (g_matrix + self.regularization_parameter *
+                        regularization_matrix)
 
         # obtain triangulation using cholesky
         l_matrix = np.linalg.cholesky(g_matrix)
@@ -239,11 +243,11 @@ class FPCABasis(FPCA):
         # using solve to get the multiplication result directly or just invert
         # the matrix. We choose solve because it is faster and more stable.
         # The following matrix is needed: L^{-1}*J^T
-        l_inv_j_t = np.linalg.solve(l_matrix, np.transpose(j_matrix))
+        l_inv_j_t = solve_triangular(l_matrix, np.transpose(j_matrix))
 
         # the final matrix, C(L-1Jt)t for svd or (L-1Jt)-1CtC(L-1Jt)t for PCA
-        final_matrix = X.coefficients @ np.transpose(l_inv_j_t) / \
-                       np.sqrt(n_samples)
+        final_matrix = (X.coefficients @ np.transpose(l_inv_j_t) /
+                        np.sqrt(n_samples))
 
         # initialize the pca module provided by scikit-learn
         self.pca_ = PCA(n_components=self.n_components)
@@ -251,8 +255,8 @@ class FPCABasis(FPCA):
 
         # we choose solve to obtain the component coefficients for the
         # same reason: it is faster and more efficient
-        component_coefficients = np.linalg.solve(np.transpose(l_matrix),
-                                                 np.transpose(self.pca_.components_))
+        component_coefficients = solve_triangular(np.transpose(l_matrix),
+                                                  np.transpose(self.pca_.components_))
 
         component_coefficients = np.transpose(component_coefficients)
 
@@ -282,27 +286,29 @@ class FPCABasis(FPCA):
         return X.inner_product(self.components_)
 
 
-class FPCADiscretized(FPCA):
+class FPCAGrid(FPCA):
     """Funcional principal component analysis for functional data represented
     in discretized form.
 
     Attributes:
-        n_components (int): number of principal components to obtain from
-            functional principal component analysis. Defaults to 3.
-        centering (bool): if True then calculate the mean of the functional data
-            object and center the data first. Defaults to True. If True the
-            passed FDataBasis object is modified.
-        components (FDataBasis): this contains the principal components either
+        components_ (FDataBasis): this contains the principal components either
             in a basis form.
-        components_basis_ (Basis): the basis in which we want the principal
-            components. We can use a different basis than the basis contained in
-            the passed FDataBasis object.
         component_values_ (array_like): this contains the values (eigenvalues)
             associated with the principal components.
         pca_ (sklearn.decomposition.PCA): object for principal component analysis.
             In both cases (discretized FPCA and basis FPCA) the problem can be
             reduced to a regular PCA problem and use the framework provided by
             sklearn to continue.
+
+    Parameters:
+        n_components (int): number of principal components to obtain from
+            functional principal component analysis. Defaults to 3.
+        centering (bool): if True then calculate the mean of the functional data
+            object and center the data first. Defaults to True. If True the
+            passed FDataBasis object is modified.
+        weights (numpy.array): the weights vector used for discrete
+            integration. If none then the trapezoidal rule is used for
+            computing the weights.
 
     Examples:
         In this example we apply discretized functional PCA with some simple
@@ -314,8 +320,8 @@ class FPCADiscretized(FPCA):
         >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
         >>> sample_points = [0, 1]
         >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> fpca_discretized = FPCADiscretized(2)
-        >>> fpca_discretized = fpca_discretized.fit(fd)
+        >>> fpca_grid = FPCAGrid(2)
+        >>> fpca_grid = fpca_grid.fit(fd)
     """
 
     def __init__(self, n_components=3, weights=None, centering=True):
@@ -346,7 +352,6 @@ class FPCADiscretized(FPCA):
         matrix and :math:`\\mathbf{W}` is the weight matrix (this matrix
         defines the numerical integration). By default the weight matrix is
         obtained using the trapezoidal rule.
-
 
         Args:
             X (FDataGrid):

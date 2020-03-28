@@ -3,17 +3,8 @@ import unittest
 import numpy as np
 from skfda import FDataGrid, FDataBasis
 from skfda.representation.basis import Fourier
-from skfda.preprocessing.dim_reduction.projection import FPCABasis, \
-    FPCADiscretized
+from skfda.preprocessing.dim_reduction.projection import FPCABasis, FPCAGrid
 from skfda.datasets import fetch_weather
-
-
-def fetch_weather_temp_only():
-    weather_dataset = fetch_weather()
-    fd_data = weather_dataset['data']
-    fd_data.data_matrix = fd_data.data_matrix[:, :, :1]
-    fd_data.axes_labels = fd_data.axes_labels[:-1]
-    return fd_data
 
 
 class FPCATestCase(unittest.TestCase):
@@ -37,7 +28,7 @@ class FPCATestCase(unittest.TestCase):
             fpca.fit(fd)
 
     def test_discretized_fpca_fit_attributes(self):
-        fpca = FPCADiscretized()
+        fpca = FPCAGrid()
         with self.assertRaises(AttributeError):
             fpca.fit(None)
 
@@ -58,7 +49,7 @@ class FPCATestCase(unittest.TestCase):
         n_basis = 9
         n_components = 3
 
-        fd_data = fetch_weather_temp_only()
+        fd_data = fetch_weather()['data'].coordinates[0]
         fd_data = FDataGrid(np.squeeze(fd_data.data_matrix),
                             np.arange(0.5, 365, 1))
 
@@ -83,9 +74,8 @@ class FPCATestCase(unittest.TestCase):
         for i in range(n_components):
             if np.sign(fpca.components_.coefficients[i][0]) != np.sign(results[i][0]):
                 results[i, :] *= -1
-            for j in range(n_basis):
-                self.assertAlmostEqual(fpca.components_.coefficients[i][j],
-                                       results[i][j], delta=0.0000001)
+        np.testing.assert_allclose(fpca.components_.coefficients, results,
+                                   atol=1e-7)
 
 
 if __name__ == '__main__':

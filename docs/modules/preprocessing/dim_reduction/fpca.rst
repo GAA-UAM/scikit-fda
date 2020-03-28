@@ -29,4 +29,4 @@ FPCA for functional data in a discretized representation
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.dim_reduction.projection.FPCADiscretized
+   skfda.preprocessing.dim_reduction.projection.FPCAGrid

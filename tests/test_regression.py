@@ -44,7 +44,7 @@ class TestLinearScalarRegression(unittest.TestCase):
         y_pred = scalar.predict(x_fd)
         np.testing.assert_allclose(y_pred, y)
 
-    def test_regression_predict_multiple_explanatory(self):
+    def test_regression_multiple_explanatory(self):
         y = [1, 2, 3, 4, 5, 6, 7]
 
         X = FDataBasis(Monomial(n_basis=7), np.identity(7))
@@ -65,6 +65,42 @@ class TestLinearScalarRegression(unittest.TestCase):
                        -188.587,
                        236.5832,
                        -481.3449]]))
+
+        y_pred = scalar.predict(X)
+        np.testing.assert_allclose(y_pred, y, atol=0.01)
+
+    def test_regression_mixed(self):
+
+        multivariate = np.array([[0, 0], [2, 7], [1, 7], [3, 9],
+                                 [4, 16], [2, 14], [3, 5]])
+
+        X = [multivariate,
+             FDataBasis(Monomial(n_basis=3), [[1, 0, 0], [0, 1, 0], [0, 0, 1],
+                                              [1, 0, 1], [1, 0, 0], [0, 1, 0],
+                                              [0, 0, 1]])]
+
+        # y = 2 + sum([3, 1] * array) + int(3 * function)
+        intercept = 2
+        coefs_multivariate = np.array([3, 1])
+        coefs_functions = FDataBasis(
+            Monomial(n_basis=3), [[3, 0, 0]])
+        y_integral = np.array([3, 3 / 2, 1, 4, 3, 3 / 2, 1])
+        y_sum = multivariate @ coefs_multivariate
+        y = 2 + y_sum + y_integral
+
+        scalar = LinearScalarRegression()
+        scalar.fit(X, y)
+
+        np.testing.assert_allclose(scalar.intercept_,
+                                   intercept, atol=0.01)
+
+        np.testing.assert_allclose(
+            scalar.coef_[0],
+            coefs_multivariate, atol=0.01)
+
+        np.testing.assert_allclose(
+            scalar.coef_[1].coefficients,
+            coefs_functions.coefficients, atol=0.01)
 
         y_pred = scalar.predict(X)
         np.testing.assert_allclose(y_pred, y, atol=0.01)

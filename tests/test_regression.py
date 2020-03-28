@@ -1,4 +1,4 @@
-from skfda.ml.regression import LinearScalarRegression
+from skfda.ml.regression import MultivariateLinearRegression
 from skfda.representation.basis import (FDataBasis, Constant, Monomial,
                                         Fourier,  BSpline)
 import unittest
@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 
 
-class TestLinearScalarRegression(unittest.TestCase):
+class TestMultivariateLinearRegression(unittest.TestCase):
 
     def test_regression_single_explanatory(self):
 
@@ -23,7 +23,7 @@ class TestLinearScalarRegression(unittest.TestCase):
              0.10549625973303875,
              0.11384314859153018]
 
-        scalar = LinearScalarRegression(coef_basis=[beta_basis])
+        scalar = MultivariateLinearRegression(coef_basis=[beta_basis])
         scalar.fit(x_fd, y)
         np.testing.assert_allclose(scalar.coef_[0].coefficients,
                                    beta_fd.coefficients)
@@ -33,8 +33,8 @@ class TestLinearScalarRegression(unittest.TestCase):
         y_pred = scalar.predict(x_fd)
         np.testing.assert_allclose(y_pred, y)
 
-        scalar = LinearScalarRegression(coef_basis=[beta_basis],
-                                        fit_intercept=False)
+        scalar = MultivariateLinearRegression(coef_basis=[beta_basis],
+                                              fit_intercept=False)
         scalar.fit(x_fd, y)
         np.testing.assert_allclose(scalar.coef_[0].coefficients,
                                    beta_fd.coefficients)
@@ -51,7 +51,7 @@ class TestLinearScalarRegression(unittest.TestCase):
 
         beta1 = BSpline(domain_range=(0, 1), n_basis=5)
 
-        scalar = LinearScalarRegression(coef_basis=[beta1])
+        scalar = MultivariateLinearRegression(coef_basis=[beta1])
 
         scalar.fit(X, y)
 
@@ -88,7 +88,7 @@ class TestLinearScalarRegression(unittest.TestCase):
         y_sum = multivariate @ coefs_multivariate
         y = 2 + y_sum + y_integral
 
-        scalar = LinearScalarRegression()
+        scalar = MultivariateLinearRegression()
         scalar.fit(X, y)
 
         np.testing.assert_allclose(scalar.intercept_,
@@ -112,7 +112,7 @@ class TestLinearScalarRegression(unittest.TestCase):
         x_fd = np.identity(7)
         y = np.zeros(7)
 
-        scalar = LinearScalarRegression(coef_basis=[Fourier(n_basis=5)])
+        scalar = MultivariateLinearRegression(coef_basis=[Fourier(n_basis=5)])
 
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y)
@@ -123,7 +123,7 @@ class TestLinearScalarRegression(unittest.TestCase):
         x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
         y = list(FDataBasis(Monomial(n_basis=7), np.identity(7)))
 
-        scalar = LinearScalarRegression(coef_basis=[Fourier(n_basis=5)])
+        scalar = MultivariateLinearRegression(coef_basis=[Fourier(n_basis=5)])
 
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y)
@@ -136,11 +136,11 @@ class TestLinearScalarRegression(unittest.TestCase):
         y = [1 for _ in range(7)]
         beta = Fourier(n_basis=5)
 
-        scalar = LinearScalarRegression(coef_basis=[beta])
+        scalar = MultivariateLinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd, x_fd], y)
 
-        scalar = LinearScalarRegression(coef_basis=[beta, beta])
+        scalar = MultivariateLinearRegression(coef_basis=[beta, beta])
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y)
 
@@ -152,7 +152,7 @@ class TestLinearScalarRegression(unittest.TestCase):
         y = [1 for _ in range(8)]
         beta = Fourier(n_basis=5)
 
-        scalar = LinearScalarRegression(coef_basis=[beta])
+        scalar = MultivariateLinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y)
 
@@ -160,7 +160,7 @@ class TestLinearScalarRegression(unittest.TestCase):
         y = [1 for _ in range(7)]
         beta = Fourier(n_basis=5)
 
-        scalar = LinearScalarRegression(coef_basis=[beta])
+        scalar = MultivariateLinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y)
 
@@ -171,7 +171,7 @@ class TestLinearScalarRegression(unittest.TestCase):
         y = [1 for _ in range(7)]
         beta = FDataBasis(Monomial(n_basis=7), np.identity(7))
 
-        scalar = LinearScalarRegression(coef_basis=[beta])
+        scalar = MultivariateLinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y)
 
@@ -184,7 +184,7 @@ class TestLinearScalarRegression(unittest.TestCase):
         weights = [1 for _ in range(8)]
         beta = Monomial(n_basis=7)
 
-        scalar = LinearScalarRegression(coef_basis=[beta])
+        scalar = MultivariateLinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y, weights)
 
@@ -196,7 +196,7 @@ class TestLinearScalarRegression(unittest.TestCase):
         weights = [-1 for _ in range(7)]
         beta = Monomial(n_basis=7)
 
-        scalar = LinearScalarRegression(coef_basis=[beta])
+        scalar = MultivariateLinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y, weights)
 

@@ -8,7 +8,96 @@ from sklearn.utils.validation import check_is_fitted
 import numpy as np
 
 
-class LinearScalarRegression(BaseEstimator, RegressorMixin):
+class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
+    r"""Linear regression with multivariate response.
+
+    This is a regression algorithm equivalent to multivariate linear
+    regression, but accepting also functional data expressed in a basis
+    expansion.
+
+    The model assumed by this method is:
+
+    .. math::
+        y = w_0 + w_1 x_1 + \ldots + w_p x_p + \int w_{p+1}(t) x_{p+1}(t) dt \
+        + \ldots + \int w_r(t) x_r(t) dt
+
+    where the covariates can be either multivariate or functional and the
+    response is multivariate.
+
+    .. warning::
+        For now, only scalar responses are supported.
+
+    Args:
+        coef_basis (iterable): Basis of the coefficient functions of the
+            functional covariates. If multivariate data is supplied, their
+            corresponding entries should be ``None``. If ``None`` is provided
+            for a functional covariate, the same basis is assumed. If this
+            parameter is ``None`` (the default), it is assumed that ``None``
+            is provided for all covariates.
+        fit_intercept (bool):  Whether to calculate the intercept for this
+            model. If set to False, no intercept will be used in calculations
+            (i.e. data is expected to be centered).
+
+    Attributes:
+        coef_ (iterable): A list containing the weight coefficient for each
+            covariate. For multivariate data, the covariate is a Numpy array.
+            For functional data, the covariate is a FDataBasis object.
+        intercept_ (float): Independent term in the linear model. Set to 0.0
+            if `fit_intercept = False`.
+
+    Examples:
+
+        >>> from skfda.ml.regression import MultivariateLinearRegression
+        >>> from skfda.representation.basis import FDataBasis, Monomial
+
+        Multivariate linear regression can be used with functions expressed in
+        a basis. Also, a functional basis for the weights can be specified:
+
+        >>> x_basis = Monomial(n_basis=3)
+        >>> x_fd = FDataBasis(x_basis, [[0, 0, 1],
+        ...                             [0, 1, 0],
+        ...                             [0, 1, 1],
+        ...                             [1, 0, 1]])
+        >>> y = [2, 3, 4, 5]
+        >>> linear = MultivariateLinearRegression()
+        >>> _ = linear.fit(x_fd, y)
+        >>> linear.coef_[0]
+        FDataBasis(
+            basis=Monomial(domain_range=[array([0, 1])], n_basis=3),
+            coefficients=[[-15.  96. -90.]],
+            ...)
+        >>> linear.intercept_
+        array([ 1.])
+        >>> linear.predict(x_fd)
+        array([ 2.,  3.,  4.,  5.])
+
+        Covariates can include also multivariate data:
+
+        >>> x_basis = Monomial(n_basis=2)
+        >>> x_fd = FDataBasis(x_basis, [[0, 2],
+        ...                             [0, 4],
+        ...                             [1, 0],
+        ...                             [2, 0],
+        ...                             [1, 2],
+        ...                             [2, 2]])
+        >>> x = [[1, 7], [2, 3], [4, 2], [1, 1], [3, 1], [2, 5]]
+        >>> y = [11, 10, 12, 6, 10, 13]
+        >>> linear = MultivariateLinearRegression(
+        ...              coef_basis=[None, Constant()])
+        >>> _ = linear.fit([x, x_fd], y)
+        >>> linear.coef_[0]
+        array([ 2.,  1.])
+        >>> linear.coef_[1]
+        FDataBasis(
+        basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+        coefficients=[[ 1.]],
+        ...)
+        >>> linear.intercept_
+        array([ 1.])
+        >>> linear.predict([x, x_fd])
+        array([ 11.,  10.,  12.,   6.,  10.,  13.])
+
+    """
 
     def __init__(self, *, coef_basis=None, fit_intercept=True):
         self.coef_basis = coef_basis
@@ -109,6 +198,8 @@ class LinearScalarRegression(BaseEstimator, RegressorMixin):
     def _argcheck_X(self, X):
         if isinstance(X, FData) or isinstance(X, np.ndarray):
             X = [X]
+
+        X = [x if isinstance(x, FData) else np.asarray(x) for x in X]
 
         if all(not isinstance(i, FData) for i in X):
             raise ValueError("All the covariates are scalar.")

@@ -160,7 +160,7 @@ def v_asymptotic_stat(fd, weights, p=2):
     return v
 
 
-def _anova_bootstrap(fd_grouped, n_sim, p=2, random_state=None):
+def _anova_bootstrap(fd_grouped, n_reps, p=2, random_state=None):
 
     n_groups = len(fd_grouped)
     assert n_groups > 0
@@ -184,18 +184,18 @@ def _anova_bootstrap(fd_grouped, n_sim, p=2, random_state=None):
     # Instance a random state object in case random_state is an int
     random_state = check_random_state(random_state)
 
-    # Simulating n_sim observations for each of the n_groups gaussian processes
-    sim = [make_gaussian_process(n_sim, n_features=m, start=start, stop=stop,
+    # Simulating n_reps observations for each of the n_groups gaussian processes
+    sim = [make_gaussian_process(n_reps, n_features=m, start=start, stop=stop,
                                  cov=k_est[i], random_state=random_state)
            for i in range(n_groups)]
-    v_samples = np.empty(n_sim)
-    for i in range(n_sim):
+    v_samples = np.empty(n_reps)
+    for i in range(n_reps):
         fd = FDataGrid([s.data_matrix[i, ..., 0] for s in sim])
         v_samples[i] = v_asymptotic_stat(fd, sizes, p=p)
     return v_samples
 
 
-def oneway_anova(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
+def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
     r"""
     Performs one-way functional ANOVA.
 
@@ -221,7 +221,7 @@ def oneway_anova(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
     implemented using a bootstrap procedure. One observation of the
     :math:`k` different gaussian processes defined above is simulated,
     and the value of :func:`~skfda.inference.anova.v_asymptotic_stat` is
-    calculated. This procedure is repeated `n_sim` times, creating a
+    calculated. This procedure is repeated `n_reps` times, creating a
     sampling distribution of the statistic.
 
     This procedure is from Cuevas[1].
@@ -229,7 +229,7 @@ def oneway_anova(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
     Args:
         fd1,fd2,.... (FDataGrid): The sample measurements for each each group.
 
-        n_sim (int, optional): Number of simulations for the bootstrap
+        n_reps (int, optional): Number of simulations for the bootstrap
             procedure. Defaults to 2000 (This value may change in future
             versions).
 
@@ -264,11 +264,11 @@ def oneway_anova(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
         (179.52499999999998, 0.602)
         >>> oneway_anova(fd1, fd2, fd3, p=1, random_state=RandomState(42))
         (67.27499999999999, 0.0)
-        >>> _, _, dist = oneway_anova(fd1, fd2, fd3, n_sim=3,
+        >>> _, _, dist = oneway_anova(fd1, fd2, fd3, n_reps=3,
         ...     random_state=RandomState(42),
         ...     return_dist=True)
         >>> print(dist)
-        [163.35765183 208.59495097 229.76780354]
+        [ 163.35765183 208.59495097 229.76780354]
 
 
 
@@ -282,7 +282,7 @@ def oneway_anova(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
         raise ValueError("At least two samples must be passed as parameter.")
     if not all(isinstance(fd, FData) for fd in args):
         raise ValueError("Argument type must inherit FData.")
-    if n_sim < 1:
+    if n_reps < 1:
         raise ValueError("Number of simulations must be positive.")
     if any(isinstance(fd, FDataBasis) for fd in args):
         raise NotImplementedError("Not implemented for FDataBasis objects.")
@@ -301,7 +301,7 @@ def oneway_anova(*args, n_sim=2000, p=2, return_dist=False, random_state=None):
 
     vn = v_sample_stat(fd_means, [fd.n_samples for fd in fd_groups], p=p)
 
-    simulation = _anova_bootstrap(fd_groups, n_sim, p=p,
+    simulation = _anova_bootstrap(fd_groups, n_reps, p=p,
                                   random_state=random_state)
     p_value = np.sum(simulation > vn) / len(simulation)
 

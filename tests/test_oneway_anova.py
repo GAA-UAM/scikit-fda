@@ -15,7 +15,7 @@ class OnewayAnovaTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             oneway_anova(1, '2')
         with self.assertRaises(ValueError):
-            oneway_anova(FDataGrid([0]), n_sim=-2)
+            oneway_anova(FDataGrid([0]), n_reps=-2)
 
     def test_v_stats_args(self):
         with self.assertRaises(ValueError):
@@ -53,10 +53,10 @@ class OnewayAnovaTests(unittest.TestCase):
 
         n_little_sim = 50
 
-        sims = np.array([oneway_anova(fd1, fd2, fd3, n_sim=2000)[1] for _ in
+        sims = np.array([oneway_anova(fd1, fd2, fd3, n_reps=2000)[1] for _ in
                          range(n_little_sim)])
         little_sim = np.mean(sims)
-        big_sim = oneway_anova(fd1, fd2, fd3, n_sim=50000)[1]
+        big_sim = oneway_anova(fd1, fd2, fd3, n_reps=50000)[1]
         self.assertAlmostEqual(little_sim, big_sim, delta=0.01)
 
 

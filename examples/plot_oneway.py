@@ -92,7 +92,7 @@ fig = fd_means.plot()
 
 ################################################################################
 # In this case the optional arguments of the function are going to be set.
-# First, there is a `n_sim` parameter, which allows the user to select the
+# First, there is a `n_reps` parameter, which allows the user to select the
 # number of simulations to perform in the asymptotic procedure of the test (
 # see :func:`~skfda.inference.anova.oneway_anova`), defaults to 2000.
 #
@@ -104,7 +104,7 @@ fig = fd_means.plot()
 # sampling distribution of the statistic which is compared with the first
 # return to get the *p-value*.
 
-v_n, p_val, dist = oneway_anova(fd_knee1, fd_knee2, fd_knee3, n_sim=1500, p=2,
+v_n, p_val, dist = oneway_anova(fd_knee1, fd_knee2, fd_knee3, n_reps=1500, p=2,
                                 return_dist=True)
 
 print('Statistic: ', v_n)

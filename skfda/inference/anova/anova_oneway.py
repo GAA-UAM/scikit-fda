@@ -267,8 +267,9 @@ def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
         >>> _, _, dist = oneway_anova(fd1, fd2, fd3, n_reps=3,
         ...     random_state=RandomState(42),
         ...     return_dist=True)
-        >>> print(dist)
-        [ 163.35765183 208.59495097 229.76780354]
+        >>> np.set_printoptions(precision=6)
+        >>> dist
+        array([163.357652, 208.594951, 229.767803])
 
 
 

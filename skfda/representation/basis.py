@@ -6,9 +6,9 @@ the corresponding basis classes.
 """
 from abc import ABC, abstractmethod
 import copy
+import scipy.signal
 
 from numpy import polyder, polyint, polymul, polyval
-import pandas.api.extensions
 import scipy.integrate
 from scipy.interpolate import BSpline as SciBSpline
 from scipy.interpolate import PPoly
@@ -19,9 +19,8 @@ from sklearn.utils.validation import check_is_fitted
 
 import numpy as np
 
-from . import grid
-from .._utils import _list_of_arrays, constants
-from ._functional_data import FData
+from .._utils import _list_of_arrays
+from ._fdatabasis import FDataBasis, FDataBasisDType
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -101,34 +100,8 @@ class Basis(ABC):
         self._domain_range = value
 
     @abstractmethod
-    def _compute_matrix(self, eval_points, derivative=0):
-        """Compute the basis or its derivatives given a list of values.
-
-        Args:
-            eval_points (array_like): List of points where the basis is
-                evaluated.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-
-        Returns:
-            (:obj:`numpy.darray`): Matrix whose rows are the values of the each
-            basis function or its derivatives at the values specified in
-            eval_points.
-
-        """
-        pass
-
-    @abstractmethod
-    def _ndegenerated(self, penalty_degree):
-        """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
-
-        Args:
-            penalty_degree (int): Degree of the derivative used in the
-                calculation of the penalty matrix.
-
-        Returns:
-             int: number of close to 0 eigenvalues.
-
-        """
+    def _evaluate(self, eval_points, derivative=0):
+        """Subclasses must override this to provide basis evaluation."""
         pass
 
     @abstractmethod
@@ -152,12 +125,18 @@ class Basis(ABC):
             eval_points.
 
         """
-        eval_points = np.asarray(eval_points)
+        if derivative < 0:
+            raise ValueError("derivative only takes non-negative values.")
+
+        eval_points = np.atleast_1d(eval_points)
         if np.any(np.isnan(eval_points)):
             raise ValueError("The list of points where the function is "
                              "evaluated can not contain nan values.")
 
-        return self._compute_matrix(eval_points, derivative)
+        return self._evaluate(eval_points, derivative)
+
+    def __call__(self, *args, **kwargs):
+        return self.evaluate(*args, **kwargs)
 
     def plot(self, chart=None, *, derivative=0, **kwargs):
         """Plot the basis object or its derivatives.
@@ -177,78 +156,57 @@ class Basis(ABC):
         """
         self.to_basis().plot(chart=chart, derivative=derivative, **kwargs)
 
-    def _evaluate_single_basis_coefficients(self, coefficients, basis_index, x,
-                                            cache):
-        """Evaluate a differential operator over one of the basis.
-
-        Computes the result of evaluating a the result of applying a
-        differential operator over one of the basis functions. It also admits a
-        "cache" dictionary to store the results for the other basis not
-        returned because they are evaluated by the function and may be needed
-        later.
-
-        Args:
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`.
-            basis_index (int): index in self.basis of the basis that is
-                evaluated.
-            x (number): Point of evaluation.
-            cache (dict): Dictionary with the values of previous evaluation
-                for all the basis function and where the results of the
-                evalaution are stored. This is done because later evaluation
-                of the same differential operator and same x may be needed
-                for other of the basis functions.
-
-        """
-        if x not in cache:
-            res = np.zeros(self.n_basis)
-            for i, k in enumerate(coefficients):
-                if callable(k):
-                    res += k(x) * self._compute_matrix([x], i)[:, 0]
-                else:
-                    res += k * self._compute_matrix([x], i)[:, 0]
-            cache[x] = res
-        return cache[x][basis_index]
-
-    def _numerical_penalty(self, coefficients):
+    def _numerical_penalty(self, lfd):
         """Return a penalty matrix using a numerical approach.
 
         See :func:`~basis.Basis.penalty`.
 
         Args:
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`.
+            lfd (LinearDifferentialOperator, list or int): Linear
+            differential operator. If it is not a LinearDifferentialOperator
+            object, it will be converted to one.
         """
+        from skfda.misc import LinearDifferentialOperator
+
+        if not isinstance(lfd, LinearDifferentialOperator):
+            lfd = LinearDifferentialOperator(lfd)
+
+        indices = np.triu_indices(self.n_basis)
+
+        def cross_product(x):
+            """Multiply the two lfds"""
+            res = lfd(self)([x])[:, 0]
+
+            return res[indices[0]] * res[indices[1]]
 
         # Range of first dimension
         domain_range = self.domain_range[0]
-        penalty_matrix = np.zeros((self.n_basis, self.n_basis))
-        cache = {}
-        for i in range(self.n_basis):
-            penalty_matrix[i, i] = scipy.integrate.quad(
-                lambda x: (self._evaluate_single_basis_coefficients(
-                    coefficients, i, x, cache) ** 2),
-                domain_range[0], domain_range[1]
-            )[0]
-            for j in range(i + 1, self.n_basis):
-                penalty_matrix[i, j] = scipy.integrate.quad(
-                    (lambda x: (self._evaluate_single_basis_coefficients(
-                                coefficients, i, x, cache) *
-                                self._evaluate_single_basis_coefficients(
-                                    coefficients, j, x, cache))),
-                    domain_range[0], domain_range[1]
-                )[0]
-                penalty_matrix[j, i] = penalty_matrix[i, j]
+
+        penalty_matrix = np.empty((self.n_basis, self.n_basis))
+
+        # Obtain the integrals for the upper matrix
+        triang_vec = scipy.integrate.quad_vec(
+            cross_product, domain_range[0], domain_range[1])[0]
+
+        # Set upper matrix
+        penalty_matrix[indices] = triang_vec
+
+        # Set lower matrix
+        penalty_matrix[(indices[1], indices[0])] = triang_vec
+
         return penalty_matrix
 
-    @abstractmethod
-    def penalty(self, derivative_degree=None, coefficients=None):
+    def _penalty(self, lfd):
+        """
+        Subclasses may override this for computing analytically
+        the penalty matrix in the cases when that is possible.
+
+        Returning NotImplemented will use numerical computation
+        of the penalty matrix.
+        """
+        return NotImplemented
+
+    def penalty(self, lfd):
         r"""Return a penalty matrix given a differential operator.
 
         The differential operator can be either a derivative of a certain
@@ -263,14 +221,9 @@ class Basis(ABC):
         functions and :math:`L` is a differential operator.
 
         Args:
-            derivative_degree (int): Integer indicating the order of the
-                derivative or . For instance 2 means that the differential
-                operator is :math:`f''(x)`.
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`. Only used if derivative degree is None.
+            lfd (LinearDifferentialOperator, list or int): Linear
+            differential operator. If it is not a LinearDifferentialOperator
+            object, it will be converted to one.
 
         Returns:
             numpy.array: Penalty matrix.
@@ -281,7 +234,17 @@ class Basis(ABC):
                Springer.
 
         """
-        pass
+        from skfda.misc import LinearDifferentialOperator
+
+        if not isinstance(lfd, LinearDifferentialOperator):
+            lfd = LinearDifferentialOperator(lfd)
+
+        matrix = self._penalty(lfd)
+
+        if matrix is NotImplemented:
+            return self._numerical_penalty(lfd)
+        else:
+            return matrix
 
     @abstractmethod
     def basis_of_product(self, other):
@@ -471,89 +434,22 @@ class Constant(Basis):
         """
         super().__init__(domain_range, 1)
 
-    def _ndegenerated(self, penalty_degree):
-        """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
-
-        Args:
-            penalty_degree (int): Degree of the derivative used in the
-                calculation of the penalty matrix.
-
-        Returns:
-             int: number of close to 0 eigenvalues.
-
-        """
-        return penalty_degree
+    def _evaluate(self, eval_points, derivative=0):
+        return (np.ones((1, len(eval_points))) if derivative == 0
+                else np.zeros((1, len(eval_points))))
 
     def _derivative(self, coefs, order=1):
         return (self.copy(), coefs.copy() if order == 0
                 else self.copy(), np.zeros(coefs.shape))
 
-    def _compute_matrix(self, eval_points, derivative=0):
-        """Compute the basis or its derivatives given a list of values.
+    def _penalty(self, lfd):
+        coefs = lfd.constant_weights()
+        if coefs is None:
+            return NotImplemented
 
-        For each of the basis computes its value for each of the points in
-        the list passed as argument to the method.
-
-        Args:
-            eval_points (array_like): List of points where the basis is
-                evaluated.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-
-        Returns:
-            (:obj:`numpy.darray`): Matrix whose rows are the values of the each
-            basis function or its derivatives at the values specified in
-            eval_points.
-
-        """
-        return np.ones((1, len(eval_points))) if derivative == 0\
-            else np.zeros((1, len(eval_points)))
-
-    def penalty(self, derivative_degree=None, coefficients=None):
-        r"""Return a penalty matrix given a differential operator.
-
-        The differential operator can be either a derivative of a certain
-        degree or a more complex operator.
-
-        The penalty matrix is defined as [RS05-5-6-2-2]_:
-
-        .. math::
-            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
-
-        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
-        functions and :math:`L` is a differential operator.
-
-        Args:
-            derivative_degree (int): Integer indicating the order of the
-                derivative or . For instance 2 means that the differential
-                operator is :math:`f''(x)`.
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`. Only used if derivative degree is None.
-
-
-        Returns:
-            numpy.array: Penalty matrix.
-
-        Examples:
-            >>> Constant((0,5)).penalty(0)
-            array([[5]])
-            >>> Constant().penalty(1)
-            array([[ 0.]])
-
-        References:
-            .. [RS05-5-6-2-2] Ramsay, J., Silverman, B. W. (2005). Specifying
-                the roughness penalty. In *Functional Data Analysis*
-                (pp. 106-107). Springer.
-
-        """
-        if derivative_degree is None:
-            return self._numerical_penalty(coefficients)
-
-        return (np.full((1, 1),
-                        (self.domain_range[0][1] - self.domain_range[0][0]))
-                if derivative_degree == 0 else np.zeros((1, 1)))
+        return np.array([[coefs[0] ** 2 *
+                          (self.domain_range[0][1] -
+                           self.domain_range[0][0])]])
 
     def basis_of_product(self, other):
         """Multiplication of a Constant Basis with other Basis"""
@@ -595,165 +491,169 @@ class Monomial(Basis):
         values.
 
         >>> bs_mon.evaluate([0, 1, 2])
-        array([[ 1.,  1.,  1.],
-               [ 0.,  1.,  2.],
-               [ 0.,  1.,  4.]])
+        array([[1, 1, 1],
+               [0, 1, 2],
+               [0, 1, 4]])
 
         And also evaluates its derivatives
 
         >>> bs_mon.evaluate([0, 1, 2], derivative=1)
-        array([[ 0.,  0.,  0.],
-               [ 1.,  1.,  1.],
-               [ 0.,  2.,  4.]])
+        array([[0, 0, 0],
+               [1, 1, 1],
+               [0, 2, 4]])
         >>> bs_mon.evaluate([0, 1, 2], derivative=2)
-        array([[ 0.,  0.,  0.],
-               [ 0.,  0.,  0.],
-               [ 2.,  2.,  2.]])
+        array([[0, 0, 0],
+               [0, 0, 0],
+               [2, 2, 2]])
 
     """
 
-    def _ndegenerated(self, penalty_degree):
-        """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
-
-        Args:
-            penalty_degree (int): Degree of the derivative used in the
-                calculation of the penalty matrix.
-
-        Returns:
-             int: number of close to 0 eigenvalues.
-
+    def _coef_mat(self, derivative):
         """
-        return penalty_degree
+        Obtain the matrix of coefficients.
 
-    def _compute_matrix(self, eval_points, derivative=0):
-        """Compute the basis or its derivatives given a list of values.
-
-        For each of the basis computes its value for each of the points in
-        the list passed as argument to the method.
-
-        Args:
-            eval_points (array_like): List of points where the basis is
-                evaluated.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-
-        Returns:
-            (:obj:`numpy.darray`): Matrix whose rows are the values of the each
-            basis function or its derivatives at the values specified in
-            eval_points.
-
+        Each column of coef_mat contains the numbers that must be multiplied
+        together in order to obtain the coefficient of each basis function
+        Thus, column i will contain i, i - 1, ..., i - derivative + 1.
         """
-        # Initialise empty matrix
-        mat = np.zeros((self.n_basis, len(eval_points)))
 
-        # For each basis computes its value for each evaluation
-        if derivative == 0:
-            for i in range(self.n_basis):
-                mat[i] = eval_points ** i
-        else:
-            for i in range(self.n_basis):
-                if derivative <= i:
-                    factor = i
-                    for j in range(2, derivative + 1):
-                        factor *= (i - j + 1)
-                    mat[i] = factor * eval_points ** (i - derivative)
+        seq = np.arange(self.n_basis)
+        coef_mat = np.linspace(seq, seq - derivative + 1,
+                               derivative, dtype=int)
 
-        return mat
+        return seq, coef_mat
+
+    def _coefs_exps_derivatives(self, derivative):
+        """
+        Return coefficients and exponents of the derivatives.
+
+        This function is used for computing the basis functions and evaluate.
+
+        When the exponent would be negative (the coefficient in that case
+        is zero) returns 0 as the exponent (to prevent division by zero).
+        """
+        seq, coef_mat = self._coef_mat(derivative)
+        coefs = np.prod(coef_mat, axis=0)
+
+        exps = np.maximum(seq - derivative, 0)
+
+        return coefs, exps
+
+    def _evaluate(self, eval_points, derivative=0):
+
+        coefs, exps = self._coefs_exps_derivatives(derivative)
+
+        raised = np.power.outer(eval_points, exps)
+
+        return (coefs * raised).T
 
     def _derivative(self, coefs, order=1):
         return (Monomial(self.domain_range, self.n_basis - order),
                 np.array([np.polyder(x[::-1], order)[::-1]
                           for x in coefs]))
 
-    def penalty(self, derivative_degree=None, coefficients=None):
-        r"""Return a penalty matrix given a differential operator.
-
-        The differential operator can be either a derivative of a certain
-        degree or a more complex operator.
-
-        The penalty matrix is defined as [RS05-5-6-2-1]_:
-
-        .. math::
-            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
-
-        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
-        functions and :math:`L` is a differential operator.
-
-        Args:
-            derivative_degree (int): Integer indicating the order of the
-                derivative or . For instance 2 means that the differential
-                operator is :math:`f''(x)`.
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`. Only used if derivative degree is None.
-
-
-        Returns:
-            numpy.array: Penalty matrix.
-
-        Examples:
-            >>> Monomial(n_basis=4).penalty(2)
-            array([[ 0.,  0.,  0.,  0.],
-                   [ 0.,  0.,  0.,  0.],
-                   [ 0.,  0.,  4.,  6.],
-                   [ 0.,  0.,  6., 12.]])
-
-        References:
-            .. [RS05-5-6-2-1] Ramsay, J., Silverman, B. W. (2005). Specifying
-                the roughness penalty. In *Functional Data Analysis*
-                (pp. 106-107). Springer.
-
+    def _evaluate_constant_lfd(self, weights):
+        """
+        Evaluate constant weights of a linear differential operator
+        over the basis functions.
         """
 
-        if derivative_degree is None:
-            return self._numerical_penalty(coefficients)
+        max_derivative = len(weights) - 1
+
+        _, coef_mat = self._coef_mat(max_derivative)
+
+        # Compute coefficients for each derivative
+        coefs = np.cumprod(coef_mat, axis=0)
+
+        # Add derivative 0 row
+        coefs = np.concatenate((np.ones((1, self.n_basis)), coefs))
+
+        # Now each row correspond to each basis and each column to
+        # each derivative
+        coefs_t = coefs.T
+
+        # Multiply by the weights
+        weighted_coefs = coefs_t * weights
+        assert len(weighted_coefs) == self.n_basis
+
+        # Now each row has the right weight, but the polynomials are in a
+        # decreasing order and with different exponents
+
+        # Resize the coefs so that there are as many rows as the number of
+        # basis
+        # The matrix is now triangular
+        # refcheck is False to prevent exceptions while debugging
+        weighted_coefs = np.copy(weighted_coefs.T)
+        weighted_coefs.resize(self.n_basis,
+                              self.n_basis, refcheck=False)
+        weighted_coefs = weighted_coefs.T
+
+        # Shift the coefficients so that they correspond to the right
+        # exponent
+        indexes = np.tril_indices(self.n_basis)
+        polynomials = np.zeros_like(weighted_coefs)
+        polynomials[indexes[0], indexes[1] -
+                    indexes[0] - 1] = weighted_coefs[indexes]
+
+        # At this point, each row of the matrix correspond to a polynomial
+        # that is the result of applying the linear differential operator
+        # to each element of the basis
+
+        return polynomials
+
+    def _penalty(self, lfd):
+
+        weights = lfd.constant_weights()
+        if weights is None:
+            return NotImplemented
+
+        polynomials = self._evaluate_constant_lfd(weights)
+
+        # Expand the polinomials with 0, so that the multiplication fits
+        # inside. It will need the double of the degree
+        length_with_padding = polynomials.shape[1] * 2 - 1
+
+        # Multiplication of polynomials is a convolution.
+        # The convolution can be performed in parallel applying a Fourier
+        # transform and then doing a normal multiplication in that
+        # space, coverting back with the inverse Fourier transform
+        fft = np.fft.rfft(polynomials, length_with_padding)
+
+        # We compute only the upper matrix, as the penalty matrix is
+        # symmetrical
+        indices = np.triu_indices(self.n_basis)
+        fft_mul = fft[indices[0]] * fft[indices[1]]
+
+        integrand = np.fft.irfft(fft_mul, length_with_padding)
 
         integration_domain = self.domain_range[0]
 
-        # initialize penalty matrix as all zeros
-        penalty_matrix = np.zeros((self.n_basis, self.n_basis))
-        # iterate over the cartesion product of the basis system with itself
-        for ibasis in range(self.n_basis):
-            # notice that the index ibasis it is also the exponent of the
-            # monomial
-            # ifac is the factor resulting of deriving the monomial as many
-            # times as indicates de differential operator
-            if derivative_degree > 0:
-                ifac = ibasis
-                for k in range(2, derivative_degree + 1):
-                    ifac *= ibasis - k + 1
-            else:
-                ifac = 1
+        # To integrate, divide by the position and increase the exponent
+        # in the evaluation
+        denom = np.arange(integrand.shape[1], 0, -1)
+        integrand /= denom
 
-            for jbasis in range(self.n_basis):
-                # notice that the index jbasis it is also the exponent of the
-                # monomial
-                # jfac is the factor resulting of deriving the monomial as
-                # many times as indicates de differential operator
-                if derivative_degree > 0:
-                    jfac = jbasis
-                    for k in range(2, derivative_degree + 1):
-                        jfac *= jbasis - k + 1
-                else:
-                    jfac = 1
+        # Add column of zeros at the right to increase exponent
+        integrand = np.pad(integrand,
+                           pad_width=((0, 0),
+                                      (0, 1)),
+                           mode='constant')
 
-                # if any of the two monomial has lower degree than the order of
-                # the derivative indicated by the differential operator that
-                # factor equals 0, so no calculation are needed
-                if (ibasis >= derivative_degree
-                        and jbasis >= derivative_degree):
-                    # Calculates exactly the result of the integral
-                    # Exponent after applying the differential operator and
-                    # integrating
-                    ipow = ibasis + jbasis - 2 * derivative_degree + 1
-                    # coefficient after integrating
-                    penalty_matrix[ibasis, jbasis] = (
-                        ((integration_domain[1] ** ipow) -
-                         (integration_domain[0] ** ipow)) *
-                        ifac * jfac / ipow)
-                    penalty_matrix[jbasis, ibasis] = penalty_matrix[ibasis,
-                                                                    jbasis]
+        # Now, apply Barrow's rule
+        # polyval applies Horner method over the first dimension,
+        # so we need to transpose
+        x_right = np.polyval(integrand.T, integration_domain[1])
+        x_left = np.polyval(integrand.T, integration_domain[0])
+
+        integral = x_right - x_left
+
+        penalty_matrix = np.empty((self.n_basis, self.n_basis))
+
+        # Set upper matrix
+        penalty_matrix[indices] = integral
+
+        # Set lower matrix
+        penalty_matrix[(indices[1], indices[0])] = integral
 
         return penalty_matrix
 
@@ -774,7 +674,7 @@ class Monomial(Basis):
     def _to_R(self):
         drange = self.domain_range[0]
         return "create.monomial.basis(rangeval = c(" + str(drange[0]) + "," +\
-               str(drange[1]) + "), n_basis = " + str(self.n_basis) + ")"
+               str(drange[1]) + "), nbasis = " + str(self.n_basis) + ")"
 
 
 class BSpline(Basis):
@@ -885,9 +785,9 @@ class BSpline(Basis):
             n_basis = len(knots) + order - 2
 
         if (n_basis - order + 2) < 2:
-            raise ValueError(f"The number of basis ({n_basis}) minus the order "
-                             f"of the bspline ({order}) should be greater "
-                             f"than 3.")
+            raise ValueError(f"The number of basis ({n_basis}) minus the "
+                             f"order of the bspline ({order}) should be "
+                             f"greater than 3.")
 
         self.order = order
         self.knots = None if knots is None else list(knots)
@@ -911,20 +811,19 @@ class BSpline(Basis):
     def knots(self, value):
         self._knots = value
 
-    def _ndegenerated(self, penalty_degree):
-        """Return number of 0 or nearly to 0 eigenvalues of the penalty matrix.
-
-        Args:
-            penalty_degree (int): Degree of the derivative used in the
-                calculation of the penalty matrix.
-
-        Returns:
-             int: number of close to 0 eigenvalues.
-
+    def _evaluation_knots(self):
         """
-        return penalty_degree
+        Get the knots adding m knots to the boundary in order to allow a
+        discontinuous behaviour at the boundaries of the domain [RS05]_.
 
-    def _compute_matrix(self, eval_points, derivative=0):
+        References:
+            .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
+                Analysis*. Springer. 50-51.
+        """
+        return np.array([self.knots[0]] * (self.order - 1) + self.knots +
+                        [self.knots[-1]] * (self.order - 1))
+
+    def _evaluate(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
 
         It uses the scipy implementation of BSplines to compute the values
@@ -950,9 +849,12 @@ class BSpline(Basis):
                 Analysis*. Springer. 50-51.
 
         """
+        if derivative > (self.order - 1):
+            return np.zeros((self.n_basis, len(eval_points)))
+
         # Places m knots at the boundaries
-        knots = np.array([self.knots[0]] * (self.order - 1) + self.knots +
-                         [self.knots[-1]] * (self.order - 1))
+        knots = self._evaluation_knots()
+
         # c is used the select which spline the function splev below computes
         c = np.zeros(len(knots))
 
@@ -983,145 +885,117 @@ class BSpline(Basis):
 
         return deriv_basis, np.array(deriv_coefs)[:, 0:deriv_basis.n_basis]
 
-    def penalty(self, derivative_degree=None, coefficients=None):
-        r"""Return a penalty matrix given a differential operator.
+    def _penalty(self, lfd):
 
-        The differential operator can be either a derivative of a certain
-        degree or a more complex operator.
+        coefs = lfd.constant_weights()
+        if coefs is None:
+            return NotImplemented
 
-        The penalty matrix is defined as [RS05-5-6-2-3]_:
+        nonzero = np.flatnonzero(coefs)
 
-        .. math::
-            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
+        # All derivatives above the order of the spline are effectively
+        # zero
+        nonzero = nonzero[nonzero < self.order]
 
-        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
-        functions and :math:`L` is a differential operator.
+        if len(nonzero) == 0:
+            return np.zeros((self.n_basis, self.n_basis))
 
-        Args:
-            derivative_degree (int): Integer indicating the order of the
-                derivative or . For instance 2 means that the differential
-                operator is :math:`f''(x)`.
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`. Only used if derivative degree is None.
+        # We will only deal with one nonzero coefficient right now
+        if len(nonzero) != 1:
+            return NotImplemented
 
-        Returns:
-            numpy.array: Penalty matrix.
+        derivative_degree = nonzero[0]
 
-        References:
-            .. [RS05-5-6-2-3] Ramsay, J., Silverman, B. W. (2005). Specifying
-                the roughness penalty. In *Functional Data Analysis*
-                (pp. 106-107). Springer.
+        if derivative_degree == self.order - 1:
+            # The derivative of the bsplines are constant in the intervals
+            # defined between knots
+            knots = np.array(self.knots)
+            mid_inter = (knots[1:] + knots[:-1]) / 2
+            constants = self.evaluate(mid_inter,
+                                      derivative=derivative_degree).T
+            knots_intervals = np.diff(self.knots)
+            # Integration of product of constants
+            return constants.T @ np.diag(knots_intervals) @ constants
 
-        """
-        if derivative_degree is not None:
-            if derivative_degree >= self.order:
-                raise ValueError(f"Penalty matrix cannot be evaluated for "
-                                 f"derivative of order {derivative_degree} for"
-                                 f" B-splines of order {self.order}")
-            if derivative_degree == self.order - 1:
-                # The derivative of the bsplines are constant in the intervals
-                # defined between knots
-                knots = np.array(self.knots)
-                mid_inter = (knots[1:] + knots[:-1]) / 2
-                constants = self.evaluate(mid_inter,
-                                          derivative=derivative_degree).T
-                knots_intervals = np.diff(self.knots)
-                # Integration of product of constants
-                return constants.T @ np.diag(knots_intervals) @ constants
+        # We only deal with the case without zero length intervals
+        # for now
+        if np.any(np.diff(self.knots) == 0):
+            return NotImplemented
 
-            if np.all(np.diff(self.knots) != 0):
-                # Compute exactly using the piecewise polynomial
-                # representation of splines
+        # Compute exactly using the piecewise polynomial
+        # representation of splines
 
-                # Places m knots at the boundaries
-                knots = np.array(
-                    [self.knots[0]] * (self.order - 1) + self.knots
-                    + [self.knots[-1]] * (self.order - 1))
-                # c is used the select which spline the function
-                # PPoly.from_spline below computes
-                c = np.zeros(len(knots))
+        # Places m knots at the boundaries
+        knots = self._evaluation_knots()
 
-                # Initialise empty list to store the piecewise polynomials
-                ppoly_lst = []
+        # c is used the select which spline the function
+        # PPoly.from_spline below computes
+        c = np.zeros(len(knots))
 
-                no_0_intervals = np.where(np.diff(knots) > 0)[0]
+        # Initialise empty list to store the piecewise polynomials
+        ppoly_lst = []
 
-                # For each basis gets its piecewise polynomial representation
-                for i in range(self.n_basis):
-                    # write a 1 in c in the position of the spline
-                    # transformed in each iteration
-                    c[i] = 1
-                    # gets the piecewise polynomial representation and gets
-                    # only the positions for no zero length intervals
-                    # This polynomial are defined relatively to the knots
-                    # meaning that the column i corresponds to the ith knot.
-                    # Let the ith not be a
-                    # Then f(x) = pp(x - a)
-                    pp = (PPoly.from_spline(
-                        (knots, c, self.order - 1)).c[:, no_0_intervals])                    # We need the actual coefficients of f, not pp. So we
-                    # just recursively calculate the new coefficients
-                    coeffs = pp.copy()
-                    for j in range(self.order - 1):
-                        coeffs[j + 1:] += (
-                            (binom(self.order - j - 1,
-                                   range(1, self.order - j)) *
-                             np.vstack([(-a) **
-                                        np.array(range(1, self.order - j))
-                                        for a in self.knots[:-1]])).T *
-                            pp[j])
-                    ppoly_lst.append(coeffs)
-                    c[i] = 0
+        no_0_intervals = np.where(np.diff(knots) > 0)[0]
 
-                # Now for each pair of basis computes the inner product after
-                # applying the linear differential operator
-                penalty_matrix = np.zeros((self.n_basis, self.n_basis))
-                for interval in range(len(no_0_intervals)):
-                    for i in range(self.n_basis):
-                        poly_i = np.trim_zeros(ppoly_lst[i][:,
-                                                            interval], 'f')
-                        if len(poly_i) <= derivative_degree:
-                            # if the order of the polynomial is lesser or
-                            # equal to the derivative the result of the
-                            # integral will be 0
-                            continue
+        # For each basis gets its piecewise polynomial representation
+        for i in range(self.n_basis):
+
+            # Write a 1 in c in the position of the spline
+            # transformed in each iteration
+            c[i] = 1
+
+            # Gets the piecewise polynomial representation and gets
+            # only the positions for no zero length intervals
+            # This polynomial are defined relatively to the knots
+            # meaning that the column i corresponds to the ith knot.
+            # Let the ith knot be a
+            # Then f(x) = pp(x - a)
+            pp = PPoly.from_spline((knots, c, self.order - 1))
+            pp_coefs = pp.c[:, no_0_intervals]
+
+            # We have the coefficients for each interval in coordinates
+            # (x - a), so we will need to subtract a when computing the
+            # definite integral
+            ppoly_lst.append(pp_coefs)
+            c[i] = 0
+
+        # Now for each pair of basis computes the inner product after
+        # applying the linear differential operator
+        penalty_matrix = np.zeros((self.n_basis, self.n_basis))
+        for interval in range(len(no_0_intervals)):
+            for i in range(self.n_basis):
+                poly_i = np.trim_zeros(ppoly_lst[i][:,
+                                                    interval], 'f')
+                if len(poly_i) <= derivative_degree:
+                    # if the order of the polynomial is lesser or
+                    # equal to the derivative the result of the
+                    # integral will be 0
+                    continue
+                # indefinite integral
+                integral = polyint(_polypow(polyder(
+                    poly_i, derivative_degree), 2))
+                # definite integral
+                penalty_matrix[i, i] += np.diff(polyval(
+                    integral, self.knots[interval: interval + 2] - self.knots[interval]))[0]
+
+                for j in range(i + 1, self.n_basis):
+                    poly_j = np.trim_zeros(ppoly_lst[j][:,
+                                                        interval], 'f')
+                    if len(poly_j) <= derivative_degree:
+                        # if the order of the polynomial is lesser
+                        # or equal to the derivative the result of
+                        # the integral will be 0
+                        continue
                         # indefinite integral
-                        integral = polyint(_polypow(polyder(
-                            poly_i, derivative_degree), 2))
-                        # definite integral
-                        penalty_matrix[i, i] += np.diff(polyval(
-                            integral, self.knots[interval: interval + 2]))[0]
-
-                        for j in range(i + 1, self.n_basis):
-                            poly_j = np.trim_zeros(ppoly_lst[j][:,
-                                                                interval], 'f')
-                            if len(poly_j) <= derivative_degree:
-                                # if the order of the polynomial is lesser
-                                # or equal to the derivative the result of
-                                # the integral will be 0
-                                continue
-                                # indefinite integral
-                            integral = polyint(
-                                polymul(polyder(poly_i, derivative_degree),
-                                        polyder(poly_j, derivative_degree)))
-                            # definite integral
-                            penalty_matrix[i, j] += np.diff(polyval(
-                                integral, self.knots[interval: interval + 2])
-                            )[0]
-                            penalty_matrix[j, i] = penalty_matrix[i, j]
-                return penalty_matrix
-        else:
-            # if the order of the derivative is greater or equal to the order
-            # of the bspline minus 1
-            if len(coefficients) >= self.order:
-                raise ValueError(f"Penalty matrix cannot be evaluated for "
-                                 f"derivative of order {len(coefficients) - 1}"
-                                 f" for B-splines of order {self.order}")
-
-        # compute using the inner product
-        return self._numerical_penalty(coefficients)
+                    integral = polyint(
+                        polymul(polyder(poly_i, derivative_degree),
+                                polyder(poly_j, derivative_degree)))
+                    # definite integral
+                    penalty_matrix[i, j] += np.diff(polyval(
+                        integral, self.knots[interval: interval + 2] - self.knots[interval])
+                    )[0]
+                    penalty_matrix[j, i] = penalty_matrix[i, j]
+        return penalty_matrix
 
     def rescale(self, domain_range=None):
         r"""Return a copy of the basis with a new domain range, with the
@@ -1212,7 +1086,7 @@ class BSpline(Basis):
     def _to_R(self):
         drange = self.domain_range[0]
         return ("create.bspline.basis(rangeval = c(" + str(drange[0]) + "," +
-                str(drange[1]) + "), n_basis = " + str(self.n_basis) +
+                str(drange[1]) + "), nbasis = " + str(self.n_basis) +
                 ", norder = " + str(self.order) + ", breaks = " +
                 self._list_to_R(self.knots) + ")")
 
@@ -1326,7 +1200,29 @@ class Fourier(Basis):
     def period(self, value):
         self._period = value
 
-    def _compute_matrix(self, eval_points, derivative=0):
+    def _functions_pairs_coefs_derivatives(self, derivative=0):
+        """
+        Compute functions to use, amplitudes and phase of a derivative.
+        """
+        functions = [np.sin, np.cos]
+        signs = [1, 1, -1, -1]
+        omega = 2 * np.pi / self.period
+
+        deriv_functions = (functions[derivative % len(functions)],
+                           functions[(derivative + 1) % len(functions)])
+
+        deriv_signs = (signs[derivative % len(signs)],
+                       signs[(derivative + 1) % len(signs)])
+
+        seq = 1 + np.arange((self.n_basis - 1) // 2)
+        seq_pairs = np.array([seq, seq]).T
+        power_pairs = (omega * seq_pairs)**derivative
+        amplitude_coefs_pairs = deriv_signs * power_pairs
+        phase_coef_pairs = omega * seq_pairs
+
+        return deriv_functions, amplitude_coefs_pairs, phase_coef_pairs
+
+    def _evaluate(self, eval_points, derivative=0):
         """Compute the basis or its derivatives given a list of values.
 
         Args:
@@ -1340,69 +1236,102 @@ class Fourier(Basis):
             eval_points.
 
         """
-        if derivative < 0:
-            raise ValueError("derivative only takes non-negative values.")
+        (functions,
+         amplitude_coefs,
+         phase_coefs) = self._functions_pairs_coefs_derivatives(derivative)
 
-        omega = 2 * np.pi / self.period
-        omega_t = omega * eval_points
-        n_basis = self.n_basis if self.n_basis % 2 != 0 else self.n_basis + 1
+        normalization_denominator = np.sqrt(self.period / 2)
 
-        # Initialise empty matrix
-        mat = np.empty((self.n_basis, len(eval_points)))
+        # Multiply the phase coefficients elementwise
+        res = np.einsum('ij,k->ijk', phase_coefs, eval_points)
+
+        # Apply odd and even functions
+        for i in [0, 1]:
+            functions[i](res[:, i, :], out=res[:, i, :])
+
+        # Multiply the amplitude and ravel the result
+        res *= amplitude_coefs[..., np.newaxis]
+        res = res.reshape(-1, len(eval_points))
+        res /= normalization_denominator
+
+        # Add constant basis
         if derivative == 0:
-            # First base function is a constant
-            # The division by numpy.sqrt(2) is so that it has the same norm as
-            # the sine and cosine: sqrt(period / 2)
-            mat[0] = np.ones(len(eval_points)) / np.sqrt(2)
-            if n_basis > 1:
-                # 2*pi*n*x / period
-                args = np.outer(range(1, n_basis // 2 + 1), omega_t)
-                index = range(1, n_basis - 1, 2)
-                # odd indexes are sine functions
-                mat[index] = np.sin(args)
-                index = range(2, n_basis, 2)
-                # even indexes are cosine functions
-                mat[index] = np.cos(args)
-        # evaluates the derivatives
+            constant_basis = np.full(
+                shape=(1, len(eval_points)),
+                fill_value=1 / (np.sqrt(2) * normalization_denominator))
         else:
-            # First base function is a constant, so its derivative is 0.
-            mat[0] = np.zeros(len(eval_points))
-            if n_basis > 1:
-                # (2*pi*n / period) ^ n_derivative
-                factor = np.outer(
-                    (-1) ** (derivative // 2) *
-                    (np.array(range(1, n_basis // 2 + 1)) * omega) **
-                    derivative,
-                    np.ones(len(eval_points)))
-                # 2*pi*n*x / period
-                args = np.outer(range(1, n_basis // 2 + 1), omega_t)
-                # even indexes
-                index_e = range(2, n_basis, 2)
-                # odd indexes
-                index_o = range(1, n_basis - 1, 2)
-                if derivative % 2 == 0:
-                    mat[index_o] = factor * np.sin(args)
-                    mat[index_e] = factor * np.cos(args)
-                else:
-                    mat[index_o] = factor * np.cos(args)
-                    mat[index_e] = -factor * np.sin(args)
+            constant_basis = np.zeros(shape=(1, len(eval_points)))
 
-        # normalise
-        mat = mat / np.sqrt(self.period / 2)
-        return mat
+        res = np.concatenate((constant_basis, res))
 
-    def _ndegenerated(self, penalty_degree):
-        """Return number of 0 or nearly 0 eigenvalues of the penalty matrix.
+        return res
 
-        Args:
-            penalty_degree (int): Degree of the derivative used in the
-                calculation of the penalty matrix.
-
-        Returns:
-             int: number of close to 0 eigenvalues.
-
+    def _penalty_orthonormal(self, weights):
         """
-        return 0 if penalty_degree == 0 else 1
+        Return the penalty when the basis is orthonormal.
+        """
+
+        signs = np.array([1, 1, -1, -1])
+        signs_expanded = np.tile(signs, len(weights) // 4 + 1)
+
+        signs_odd = signs_expanded[:len(weights)]
+        signs_even = signs_expanded[1:len(weights) + 1]
+
+        phases = (np.arange(1, (self.n_basis - 1) // 2 + 1) *
+                  2 * np.pi / self.period)
+
+        # Compute increasing powers
+        coefs_no_sign = np.vander(phases, len(weights), increasing=True)
+
+        coefs_no_sign *= weights
+
+        coefs_odd = signs_odd * coefs_no_sign
+        coefs_even = signs_even * coefs_no_sign
+
+        # After applying the linear differential operator to a sinusoidal
+        # element of the basis e, the result can be expressed as
+        # A e + B e*, where e* is the other basis element in the pair
+        # with the same phase
+
+        odd_sin_coefs = np.sum(coefs_odd[:, ::2], axis=1)
+        odd_cos_coefs = np.sum(coefs_odd[:, 1::2], axis=1)
+
+        even_cos_coefs = np.sum(coefs_even[:, ::2], axis=1)
+        even_sin_coefs = np.sum(coefs_even[:, 1::2], axis=1)
+
+        # The diagonal is the inner product of A e + B e*
+        # with itself. As the basis is orthonormal, the cross products e e*
+        # are 0, and the products e e and e* e* are one.
+        # Thus, the diagonal is A^2 + B^2
+        # All elements outside the main diagonal are 0
+        main_diag_odd = odd_sin_coefs**2 + odd_cos_coefs**2
+        main_diag_even = even_sin_coefs**2 + even_cos_coefs**2
+
+        # The main diagonal should intercalate both diagonals
+        main_diag = np.array((main_diag_odd, main_diag_even)).T.ravel()
+
+        penalty_matrix = np.diag(main_diag)
+
+        # Add row and column for the constant
+        penalty_matrix = np.pad(penalty_matrix, pad_width=((1, 0), (1, 0)),
+                                mode='constant')
+
+        penalty_matrix[0, 0] = weights[0]**2
+
+        return penalty_matrix
+
+    def _penalty(self, lfd):
+
+        weights = lfd.constant_weights()
+        if weights is None:
+            return NotImplemented
+
+        # If the period and domain range are not the same, the basis functions
+        # are not orthogonal
+        if self.period != (self.domain_range[0][1] - self.domain_range[0][0]):
+            return NotImplemented
+
+        return self._penalty_orthonormal(weights)
 
     def _derivative(self, coefs, order=1):
 
@@ -1423,64 +1352,6 @@ class Fourier(Basis):
 
         # normalise
         return self.copy(), deriv_coefs
-
-    def penalty(self, derivative_degree=None, coefficients=None):
-        r"""Return a penalty matrix given a differential operator.
-
-        The differential operator can be either a derivative of a certain
-        degree or a more complex operator.
-
-        The penalty matrix is defined as [RS05-5-6-2-4]_:
-
-        .. math::
-            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
-
-        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
-        functions and :math:`L` is a differential operator.
-
-        Args:
-            derivative_degree (int): Integer indicating the order of the
-                derivative or . For instance 2 means that the differential
-                operator is :math:`f''(x)`.
-            coefficients (list): List of coefficients representing a
-                differential operator. An iterable indicating
-                coefficients of derivatives (which can be functions). For
-                instance the tuple (1, 0, numpy.sin) means :math:`1
-                + sin(x)D^{2}`. Only used if derivative degree is None.
-
-        Returns:
-            numpy.array: Penalty matrix.
-
-        References:
-            .. [RS05-5-6-2-4] Ramsay, J., Silverman, B. W. (2005). Specifying
-                the roughness penalty. In *Functional Data Analysis*
-                (pp. 106-107). Springer.
-
-        """
-        if isinstance(derivative_degree, int):
-            omega = 2 * np.pi / self.period
-            # the derivatives of the functions of the basis are also orthogonal
-            # so only the diagonal is different from 0.
-            penalty_matrix = np.zeros(self.n_basis)
-            if derivative_degree == 0:
-                penalty_matrix[0] = 1
-            else:
-                # the derivative of a constant is 0
-                # the first basis function is a constant
-                penalty_matrix[0] = 0
-            index_even = np.array(range(2, self.n_basis, 2))
-            exponents = index_even / 2
-            # factor resulting of deriving the basis function the times
-            # indcated in the derivative_degree
-            factor = (exponents * omega) ** (2 * derivative_degree)
-            # the norm of the basis functions is 1 so only the result of the
-            # integral is just the factor
-            penalty_matrix[index_even - 1] = factor
-            penalty_matrix[index_even] = factor
-            return np.diag(penalty_matrix)
-        else:
-            # implement using inner product
-            return self._numerical_penalty(coefficients)
 
     def basis_of_product(self, other):
         """Multiplication of two Fourier Basis"""
@@ -1527,7 +1398,7 @@ class Fourier(Basis):
     def _to_R(self):
         drange = self.domain_range[0]
         return ("create.fourier.basis(rangeval = c(" + str(drange[0]) + "," +
-                str(drange[1]) + "), n_basis = " + str(self.n_basis) +
+                str(drange[1]) + "), nbasis = " + str(self.n_basis) +
                 ", period = " + str(self.period) + ")")
 
     def __repr__(self):
@@ -1538,921 +1409,6 @@ class Fourier(Basis):
     def __eq__(self, other):
         """Equality of Basis"""
         return super().__eq__(other) and self.period == other.period
-
-
-class FDataBasis(FData):
-    r"""Basis representation of functional data.
-
-    Class representation for functional data in the form of a set of basis
-    functions multplied by a set of coefficients.
-
-    .. math::
-        f(x) = \sum_{k=1}{K}c_k\phi_k
-
-    Where n is the number of basis functions, :math:`c = (c_1, c_2, ...,
-    c_K)` the vector of coefficients and  :math:`\phi = (\phi_1, \phi_2,
-    ..., \phi_K)` the basis function system.
-
-    Attributes:
-        basis (:obj:`Basis`): Basis function system.
-        coefficients (numpy.darray): List or matrix of coefficients. Has to
-            have the same length or number of columns as the number of basis
-            function in the basis. If a matrix, each row contains the
-            coefficients that multiplied by the basis functions produce each
-            functional datum.
-
-    Examples:
-        >>> basis = Monomial(n_basis=4)
-        >>> coefficients = [1, 1, 3, .5]
-        >>> FDataBasis(basis, coefficients)
-        FDataBasis(
-            basis=Monomial(domain_range=[array([0, 1])], n_basis=4),
-            coefficients=[[ 1.   1.   3.   0.5]],
-            ...)
-
-    """
-    class _CoordinateIterator:
-        """Internal class to iterate through the image coordinates.
-
-        Dummy object. Should be change to support multidimensional objects.
-
-        """
-
-        def __init__(self, fdatabasis):
-            """Create an iterator through the image coordinates."""
-            self._fdatabasis = fdatabasis
-
-        def __iter__(self):
-            """Return an iterator through the image coordinates."""
-            yield self._fdatabasis.copy()
-
-        def __getitem__(self, key):
-            """Get a specific coordinate."""
-
-            if key != 0:
-                return NotImplemented
-
-            return self._fdatabasis.copy()
-
-        def __len__(self):
-            """Return the number of coordinates."""
-            return self._fdatabasis.dim_codomain
-
-    def __init__(self, basis, coefficients, *, dataset_label=None,
-                 axes_labels=None, extrapolation=None, keepdims=False):
-        """Construct a FDataBasis object.
-
-        Args:
-            basis (:obj:`Basis`): Basis function system.
-            coefficients (array_like): List or matrix of coefficients. Has to
-                have the same length or number of columns as the number of
-                basis function in the basis.
-        """
-        coefficients = np.atleast_2d(coefficients)
-        if coefficients.shape[1] != basis.n_basis:
-            raise ValueError("The length or number of columns of coefficients "
-                             "has to be the same equal to the number of "
-                             "elements of the basis.")
-        self.basis = basis
-        self.coefficients = coefficients
-
-        super().__init__(extrapolation, dataset_label, axes_labels, keepdims)
-
-    @classmethod
-    def from_data(cls, data_matrix, sample_points, basis,
-                  method='cholesky', keepdims=False):
-        r"""Transform raw data to a smooth functional form.
-
-        Takes functional data in a discrete form and makes an approximates it
-        to the closest function that can be generated by the basis. This
-        function does not attempt to smooth the original data. If smoothing
-        is desired, it is better to use :class:`BasisSmoother`.
-
-        The fit is made so as to reduce the sum of squared errors
-        [RS05-5-2-5]_:
-
-        .. math::
-
-            SSE(c) = (y - \Phi c)' (y - \Phi c)
-
-        where :math:`y` is the vector or matrix of observations, :math:`\Phi`
-        the matrix whose columns are the basis functions evaluated at the
-        sampling points and :math:`c` the coefficient vector or matrix to be
-        estimated.
-
-        By deriving the first formula we obtain the closed formed of the
-        estimated coefficients matrix:
-
-        .. math::
-
-            \hat{c} = \left( \Phi' \Phi \right)^{-1} \Phi' y
-
-        The solution of this matrix equation is done using the cholesky
-        method for the resolution of a LS problem. If this method throughs a
-        rounding error warning you may want to use the QR factorisation that
-        is more numerically stable despite being more expensive to compute.
-        [RS05-5-2-7]_
-
-        Args:
-            data_matrix (array_like): List or matrix containing the
-                observations. If a matrix each row represents a single
-                functional datum and the columns the different observations.
-            sample_points (array_like): Values of the domain where the previous
-                data were taken.
-            basis: (Basis): Basis used.
-            method (str): Algorithm used for calculating the coefficients using
-                the least squares method. The values admitted are 'cholesky'
-                and 'qr' for Cholesky and QR factorisation methods
-                respectively.
-
-        Returns:
-            FDataBasis: Represention of the data in a functional form as
-                product of coefficients by basis functions.
-
-        Examples:
-            >>> import numpy as np
-            >>> t = np.linspace(0, 1, 5)
-            >>> x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
-            >>> x
-            array([ 1.,  1., -1., -1.,  1.])
-
-            >>> basis = Fourier((0, 1), n_basis=3)
-            >>> fd = FDataBasis.from_data(x, t, basis)
-            >>> fd.coefficients.round(2)
-            array([[ 0.  , 0.71, 0.71]])
-
-        References:
-            .. [RS05-5-2-5] Ramsay, J., Silverman, B. W. (2005). How spline
-                smooths are computed. In *Functional Data Analysis*
-                (pp. 86-87). Springer.
-
-            .. [RS05-5-2-7] Ramsay, J., Silverman, B. W. (2005). HSpline
-                smoothing as an augmented least squares problem. In *Functional
-                Data Analysis* (pp. 86-87). Springer.
-
-        """
-        from ..preprocessing.smoothing import BasisSmoother
-        from .grid import FDataGrid
-
-        # n is the samples
-        # m is the observations
-        # k is the number of elements of the basis
-
-        # Each sample in a column (m x n)
-        data_matrix = np.atleast_2d(data_matrix)
-
-        fd = FDataGrid(data_matrix=data_matrix, sample_points=sample_points)
-
-        smoother = BasisSmoother(
-            basis=basis,
-            method=method,
-            return_basis=True)
-
-        return smoother.fit_transform(fd)
-
-    @property
-    def n_samples(self):
-        """Return number of samples."""
-        return self.coefficients.shape[0]
-
-    @property
-    def dim_domain(self):
-        """Return number of dimensions of the domain."""
-
-        # Only domain dimension equal to 1 is supported
-        return 1
-
-    @property
-    def dim_codomain(self):
-        """Return number of dimensions of the image."""
-
-        # Only image dimension equal to 1 is supported
-        return 1
-
-    @property
-    def coordinates(self):
-        r"""Return a component of the FDataBasis.
-
-        If the functional object contains samples
-        :math:`f: \mathbb{R}^n \rightarrow \mathbb{R}^d`, this object allows
-        a component of the vector :math:`f = (f_1, ..., f_d)`.
-
-
-        Todo:
-            By the moment, only unidimensional objects are supported in basis
-            form.
-
-        """
-
-        return FDataBasis._CoordinateIterator(self)
-
-    @property
-    def n_basis(self):
-        """Return number of basis."""
-        return self.basis.n_basis
-
-    @property
-    def domain_range(self):
-        """Definition range."""
-        return self.basis.domain_range
-
-    def _evaluate(self, eval_points, *, derivative=0):
-        """"Evaluate the object or its derivatives at a list of values.
-
-        Args:
-            eval_points (array_like): List of points where the functions are
-                evaluated. If a matrix of shape `n_samples` x eval_points is
-                given each sample is evaluated at the values in the
-                corresponding row.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-
-
-        Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            function at the values specified in eval_points.
-
-        """
-        #  Only suported 1D objects
-        eval_points = eval_points[:, 0]
-
-        # each row contains the values of one element of the basis
-        basis_values = self.basis.evaluate(eval_points, derivative)
-
-        res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
-
-        return res.reshape((self.n_samples, len(eval_points), 1))
-
-    def _evaluate_composed(self, eval_points, *, derivative=0):
-        r"""Evaluate the object or its derivatives at a list of values with a
-        different time for each sample.
-
-        Returns a numpy array with the component (i,j) equal to :math:`f_i(t_j
-        + \delta_i)`.
-
-        This method has to evaluate the basis values once per sample
-        instead of reuse the same evaluation for all the samples
-        as :func:`evaluate`.
-
-        Args:
-            eval_points (numpy.ndarray): Matrix of size `n_samples`x n_points
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-            extrapolation (str or Extrapolation, optional): Controls the
-                extrapolation mode for elements outside the domain range.
-                By default uses the method defined in fd. See extrapolation to
-                more information.
-        Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            function at the values specified in eval_points with the
-            corresponding shift.
-        """
-
-        eval_points = eval_points[..., 0]
-
-        res_matrix = np.empty((self.n_samples, eval_points.shape[1]))
-
-        _matrix = np.empty((eval_points.shape[1], self.n_basis))
-
-        for i in range(self.n_samples):
-            basis_values = self.basis.evaluate(eval_points[i], derivative).T
-
-            np.multiply(basis_values, self.coefficients[i], out=_matrix)
-            np.sum(_matrix, axis=1, out=res_matrix[i])
-
-        return res_matrix.reshape((self.n_samples, eval_points.shape[1], 1))
-
-    def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
-              eval_points=None, **kwargs):
-        r"""Perform a shift of the curves.
-
-        Args:
-            shifts (array_like or numeric): List with the the shift
-                corresponding for each sample or numeric with the shift to
-                apply to all samples.
-            restrict_domain (bool, optional): If True restricts the domain to
-                avoid evaluate points outside the domain using extrapolation.
-                Defaults uses extrapolation.
-            extrapolation (str or Extrapolation, optional): Controls the
-                extrapolation mode for elements outside the domain range.
-                By default uses the method defined in fd. See extrapolation to
-                more information.
-            eval_points (array_like, optional): Set of points where
-                the functions are evaluated to obtain the discrete
-                representation of the object to operate. If an empty list is
-                passed it calls numpy.linspace with bounds equal to the ones
-                defined in fd.domain_range and the number of points the maximum
-                between 201 and 10 times the number of basis plus 1.
-            **kwargs: Keyword arguments to be passed to :meth:`from_data`.
-
-        Returns:
-            :obj:`FDataBasis` with the shifted data.
-        """
-
-        if self.dim_codomain > 1 or self.dim_domain > 1:
-            raise ValueError
-
-        domain_range = self.domain_range[0]
-
-        if eval_points is None:  # Grid to discretize the function
-            nfine = max(self.n_basis * 10 + 1, constants.N_POINTS_COARSE_MESH)
-            eval_points = np.linspace(*domain_range, nfine)
-        else:
-            eval_points = np.asarray(eval_points)
-
-        if np.isscalar(shifts):  # Special case, all curves with same shift
-
-            _basis = self.basis.rescale((domain_range[0] + shifts,
-                                         domain_range[1] + shifts))
-
-            return FDataBasis.from_data(self.evaluate(eval_points,
-                                                      keepdims=False),
-                                        eval_points + shifts,
-                                        _basis, **kwargs)
-
-        elif len(shifts) != self.n_samples:
-            raise ValueError(f"shifts vector ({len(shifts)}) must have the "
-                             f"same length than the number of samples "
-                             f"({self.n_samples})")
-
-        if restrict_domain:
-            a = domain_range[0] - min(np.min(shifts), 0)
-            b = domain_range[1] - max(np.max(shifts), 0)
-            domain = (a, b)
-            eval_points = eval_points[
-                np.logical_and(eval_points >= a,
-                               eval_points <= b)]
-        else:
-            domain = domain_range
-
-        points_shifted = np.outer(np.ones(self.n_samples),
-                                  eval_points)
-
-        points_shifted += np.atleast_2d(shifts).T
-
-        # Matrix of shifted values
-        _data_matrix = self.evaluate(points_shifted,
-                                     aligned_evaluation=False,
-                                     extrapolation=extrapolation,
-                                     keepdims=False)
-
-        _basis = self.basis.rescale(domain)
-
-        return FDataBasis.from_data(_data_matrix, eval_points,
-                                    _basis, **kwargs)
-
-    def derivative(self, order=1):
-        r"""Differentiate a FDataBasis object.
-
-
-        Args:
-            order (int, optional): Order of the derivative. Defaults to one.
-        """
-
-        if order < 0:
-            raise ValueError("order only takes non-negative integer values.")
-
-        if order == 0:
-            return self.copy()
-
-        basis, coefficients = self.basis._derivative(self.coefficients, order)
-
-        return FDataBasis(basis, coefficients)
-
-    def mean(self, weights=None):
-        """Compute the mean of all the samples in a FDataBasis object.
-
-        Returns:
-            :obj:`FDataBasis`: A FDataBais object with just one sample
-            representing the mean of all the samples in the original
-            FDataBasis object.
-
-        Examples:
-            >>> basis = Monomial(n_basis=4)
-            >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
-            >>> FDataBasis(basis, coefficients).mean()
-            FDataBasis(
-                basis=Monomial(domain_range=[array([0, 1])], n_basis=4),
-                coefficients=[[ 1.  1.  3.  0.5]],
-                ...)
-
-        """
-
-        if weights is not None:
-            return self.copy(coefficients=np.average(self.coefficients,
-                                                     weights=weights,
-                                                     axis=0
-                                                     )[np.newaxis, ...]
-                             )
-
-        return self.copy(coefficients=np.mean(self.coefficients, axis=0))
-
-    def gmean(self, eval_points=None):
-        """Compute the geometric mean of the functional data object.
-
-        A numerical approach its used. The object its transformed into its
-        discrete representation and then the geometric mean is computed and
-        then the object is taken back to the basis representation.
-
-        Args:
-            eval_points (array_like, optional): Set of points where the
-                functions are evaluated to obtain the discrete
-                representation of the object. If none are passed it calls
-                numpy.linspace with bounds equal to the ones defined in
-                self.domain_range and the number of points the maximum
-                between 501 and 10 times the number of basis.
-
-        Returns:
-            FDataBasis: Geometric mean of the original object.
-
-        """
-        return self.to_grid(eval_points).gmean().to_basis(self.basis)
-
-    def var(self, eval_points=None):
-        """Compute the variance of the functional data object.
-
-        A numerical approach its used. The object its transformed into its
-        discrete representation and then the variance is computed and
-        then the object is taken back to the basis representation.
-
-        Args:
-            eval_points (array_like, optional): Set of points where the
-                functions are evaluated to obtain the discrete
-                representation of the object. If none are passed it calls
-                numpy.linspace with bounds equal to the ones defined in
-                self.domain_range and the number of points the maximum
-                between 501 and 10 times the number of basis.
-
-        Returns:
-            FDataBasis: Variance of the original object.
-
-        """
-        return self.to_grid(eval_points).var().to_basis(self.basis)
-
-    def cov(self, eval_points=None):
-        """Compute the covariance of the functional data object.
-
-        A numerical approach its used. The object its transformed into its
-        discrete representation and then the covariance matrix is computed.
-
-        Args:
-            eval_points (array_like, optional): Set of points where the
-                functions are evaluated to obtain the discrete
-                representation of the object. If none are passed it calls
-                numpy.linspace with bounds equal to the ones defined in
-                self.domain_range and the number of points the maximum
-                between 501 and 10 times the number of basis.
-
-        Returns:
-            numpy.darray: Matrix of covariances.
-
-        """
-        return self.to_grid(eval_points).cov()
-
-    def to_grid(self, eval_points=None):
-        """Return the discrete representation of the object.
-
-        Args:
-            eval_points (array_like, optional): Set of points where the
-                functions are evaluated. If none are passed it calls
-                numpy.linspace with bounds equal to the ones defined in
-                self.domain_range and the number of points the maximum
-                between 501 and 10 times the number of basis.
-
-        Returns:
-              FDataGrid: Discrete representation of the functional data
-              object.
-
-        Examples:
-            >>> fd = FDataBasis(coefficients=[[1, 1, 1], [1, 0, 1]],
-            ...                 basis=Monomial((0,5), n_basis=3))
-            >>> fd.to_grid([0, 1, 2])
-            FDataGrid(
-                array([[[ 1.],
-                        [ 3.],
-                        [ 7.]],
-            <BLANKLINE>
-                       [[ 1.],
-                        [ 2.],
-                        [ 5.]]]),
-                sample_points=[array([0, 1, 2])],
-                domain_range=array([[0, 5]]),
-                ...)
-
-        """
-
-        if self.dim_codomain > 1 or self.dim_domain > 1:
-            raise NotImplementedError
-
-        if eval_points is None:
-            npoints = max(constants.N_POINTS_FINE_MESH,
-                          constants.BASIS_MIN_FACTOR * self.n_basis)
-            eval_points = np.linspace(*self.domain_range[0], npoints)
-
-        return grid.FDataGrid(self.evaluate(eval_points, keepdims=False),
-                              sample_points=eval_points,
-                              domain_range=self.domain_range,
-                              keepdims=self.keepdims)
-
-    def to_basis(self, basis, eval_points=None, **kwargs):
-        """Return the basis representation of the object.
-
-        Args:
-            basis(Basis): basis object in which the functional data are
-                going to be represented.
-            **kwargs: keyword arguments to be passed to
-                FDataBasis.from_data().
-
-        Returns:
-            FDataBasis: Basis representation of the funtional data
-            object.
-        """
-
-        return self.to_grid(eval_points=eval_points).to_basis(basis, **kwargs)
-
-    def to_list(self):
-        """Splits FDataBasis samples into a list"""
-        return [self[i] for i in range(self.n_samples)]
-
-    def copy(self, *, basis=None, coefficients=None, dataset_label=None,
-             axes_labels=None, extrapolation=None, keepdims=None):
-        """FDataBasis copy"""
-
-        if basis is None:
-            basis = copy.deepcopy(self.basis)
-
-        if coefficients is None:
-            coefficients = self.coefficients
-
-        if dataset_label is None:
-            dataset_label = copy.deepcopy(dataset_label)
-
-        if axes_labels is None:
-            axes_labels = copy.deepcopy(axes_labels)
-
-        if extrapolation is None:
-            extrapolation = self.extrapolation
-
-        if keepdims is None:
-            keepdims = self.keepdims
-
-        return FDataBasis(basis, coefficients, dataset_label=dataset_label,
-                          axes_labels=axes_labels, extrapolation=extrapolation,
-                          keepdims=keepdims)
-
-    def times(self, other):
-        """"Provides a numerical approximation of the multiplication between
-            an FDataObject to other object
-
-        Args:
-            other (int, list, FDataBasis): Object to multiply with the
-                                           FDataBasis object.
-
-                * int: Multiplies all samples with the value
-                * list: multiply each values with the samples respectively.
-                    Length should match with FDataBasis samples
-                * FDataBasis: if there is one sample it multiplies this with
-                    all the samples in the object. If not, it multiplies each
-                    sample respectively. Samples should match
-
-        Returns:
-            (FDataBasis): FDataBasis object containing the multiplication
-
-        """
-        if isinstance(other, FDataBasis):
-
-            if not _same_domain(self.domain_range, other.domain_range):
-                raise ValueError("The functions domains are different.")
-
-            basisobj = self.basis.basis_of_product(other.basis)
-            neval = max(constants.BASIS_MIN_FACTOR *
-                        max(self.n_basis, other.n_basis) + 1,
-                        constants.N_POINTS_COARSE_MESH)
-            (left, right) = self.domain_range[0]
-            evalarg = np.linspace(left, right, neval)
-
-            first = self.copy(coefficients=(np.repeat(self.coefficients,
-                                                      other.n_samples, axis=0)
-                                            if (self.n_samples == 1 and
-                                                other.n_samples > 1)
-                                            else self.coefficients.copy()))
-            second = other.copy(coefficients=(np.repeat(other.coefficients,
-                                                        self.n_samples, axis=0)
-                                              if (other.n_samples == 1 and
-                                                  self.n_samples > 1)
-                                              else other.coefficients.copy()))
-
-            fdarray = first.evaluate(evalarg) * second.evaluate(evalarg)
-
-            return FDataBasis.from_data(fdarray, evalarg, basisobj)
-
-        if isinstance(other, int):
-            other = [other for _ in range(self.n_samples)]
-
-        coefs = np.transpose(np.atleast_2d(other))
-        return self.copy(coefficients=self.coefficients * coefs)
-
-    def inner_product(self, other, lfd_self=None, lfd_other=None,
-                      weights=None):
-        r"""Return an inner product matrix given a FDataBasis object.
-
-        The inner product of two functions is defined as
-
-        .. math::
-            <x, y> = \int_a^b x(t)y(t) dt
-
-        When we talk abaout FDataBasis objects, they have many samples, so we
-        talk about inner product matrix instead. So, for two FDataBasis objects
-        we define the inner product matrix as
-
-        .. math::
-            a_{ij} = <x_i, y_i> = \int_a^b x_i(s) y_j(s) ds
-
-        where :math:`f_i(s), g_j(s)` are the :math:`i^{th} j^{th}` sample of
-        each object. The return matrix has a shape of :math:`IxJ` where I and
-        J are the number of samples of each object respectively.
-
-        Args:
-            other (FDataBasis, Basis): FDataBasis object containing the second
-                    object to make the inner product
-
-            lfd_self (Lfd): LinearDifferentialOperator object for the first
-                function evaluation
-
-            lfd_other (Lfd): LinearDifferentialOperator object for the second
-                function evaluation
-
-            weights(FDataBasis): a FDataBasis object with only one sample that
-                    defines the weight to calculate the inner product
-
-        Returns:
-            numpy.array: Inner Product matrix.
-
-        """
-        from ..misc import LinearDifferentialOperator
-
-        if not _same_domain(self.domain_range, other.domain_range):
-            raise ValueError("Both Objects should have the same domain_range")
-        if isinstance(other, Basis):
-            other = other.to_basis()
-
-        # TODO this will be used when lfd evaluation is ready
-        lfd_self = (LinearDifferentialOperator(0) if lfd_self is None
-                    else lfd_self)
-        lfd_other = (LinearDifferentialOperator(0) if (lfd_other is None)
-                     else lfd_other)
-
-        if weights is not None:
-            other = other.times(weights)
-
-        if self.n_samples * other.n_samples > self.n_basis * other.n_basis:
-            return (self.coefficients @
-                    self.basis._inner_matrix(other.basis) @
-                    other.coefficients.T)
-        else:
-            return self._inner_product_integrate(other, lfd_self, lfd_other)
-
-    def _inner_product_integrate(self, other, lfd_self, lfd_other):
-
-        matrix = np.empty((self.n_samples, other.n_samples))
-        (left, right) = self.domain_range[0]
-
-        for i in range(self.n_samples):
-            for j in range(other.n_samples):
-                fd = self[i].times(other[j])
-                matrix[i, j] = scipy.integrate.quad(
-                    lambda x: fd.evaluate([x])[0], left, right)[0]
-
-        return matrix
-
-    def _to_R(self):
-        """Gives the code to build the object on fda package on R"""
-        return ("fd(coef = " + self._array_to_R(self.coefficients, True) +
-                ", basisobj = " + self.basis._to_R() + ")")
-
-    def _array_to_R(self, coefficients, transpose=False):
-        if len(coefficients.shape) == 1:
-            coefficients = coefficients.reshape((1, coefficients.shape[0]))
-
-        if len(coefficients.shape) > 2:
-            return NotImplementedError
-
-        if transpose is True:
-            coefficients = np.transpose(coefficients)
-
-        (rows, cols) = coefficients.shape
-        retstring = "matrix(c("
-        for j in range(cols):
-            for i in range(rows):
-                retstring = retstring + str(coefficients[i, j]) + ", "
-
-        return (retstring[0:len(retstring) - 2] + "), nrow = " + str(rows) +
-                ", ncol = " + str(cols) + ")")
-
-    def __repr__(self):
-        """Representation of FDataBasis object."""
-        if self.axes_labels is None:
-            axes_labels = None
-        else:
-            axes_labels = self.axes_labels.tolist()
-
-        return (f"{self.__class__.__name__}("
-                f"\nbasis={self.basis},"
-                f"\ncoefficients={self.coefficients},"
-                f"\ndataset_label={self.dataset_label},"
-                f"\naxes_labels={axes_labels},"
-                f"\nextrapolation={self.extrapolation},"
-                f"\nkeepdims={self.keepdims})").replace('\n', '\n    ')
-
-    def __str__(self):
-        """Return str(self)."""
-
-        return (f"{self.__class__.__name__}("
-                f"\n_basis={self.basis},"
-                f"\ncoefficients={self.coefficients})").replace('\n', '\n    ')
-
-    def __eq__(self, other):
-        """Equality of FDataBasis"""
-        # TODO check all other params
-        return (self.basis == other.basis and
-                np.all(self.coefficients == other.coefficients))
-
-    def concatenate(self, *others, as_coordinates=False):
-        """Join samples from a similar FDataBasis object.
-
-        Joins samples from another FDataBasis object if they have the same
-        basis.
-
-        Args:
-            others (:class:`FDataBasis`): Objects to be concatenated.
-            as_coordinates (boolean, optional):  If False concatenates as
-                new samples, else, concatenates the other functions as
-                new components of the image. Defaults to False.
-
-        Returns:
-            :class:`FDataBasis`: FDataBasis object with the samples from the
-            original objects.
-
-        Todo:
-            By the moment, only unidimensional objects are supported in basis
-            representation.
-        """
-
-        # TODO: Change to support multivariate functions
-        #  in basis representation
-        if as_coordinates:
-            return NotImplemented
-
-        for other in others:
-            if other.basis != self.basis:
-                raise ValueError("The objects should have the same basis.")
-
-        data = [self.coefficients] + [other.coefficients for other in others]
-
-        return self.copy(coefficients=np.concatenate(data, axis=0))
-
-    def compose(self, fd, *, eval_points=None, **kwargs):
-        """Composition of functions.
-
-        Performs the composition of functions. The basis is discretized to
-        compute the composition.
-
-        Args:
-            fd (:class:`FData`): FData object to make the composition. Should
-                have the same number of samples and image dimension equal to 1.
-            eval_points (array_like): Points to perform the evaluation.
-             kwargs: Named arguments to be passed to :func:`from_data`.
-        """
-
-        grid = self.to_grid().compose(fd, eval_points=eval_points)
-
-        if fd.dim_domain == 1:
-            basis = self.basis.rescale(fd.domain_range[0])
-            composition = grid.to_basis(basis, **kwargs)
-        else:
-            #  Cant be convertered to basis due to the dimensions
-            composition = grid
-
-        return composition
-
-    def __getitem__(self, key):
-        """Return self[key]."""
-
-        if isinstance(key, int):
-            return self.copy(coefficients=self.coefficients[key:key + 1])
-        else:
-            return self.copy(coefficients=self.coefficients[key])
-
-    def __add__(self, other):
-        """Addition for FDataBasis object."""
-        if isinstance(other, FDataBasis):
-            if self.basis != other.basis:
-                raise NotImplementedError
-            else:
-                basis, coefs = self.basis._add_same_basis(self.coefficients,
-                                                          other.coefficients)
-        else:
-            try:
-                basis, coefs = self.basis._add_constant(self.coefficients,
-                                                        other)
-            except TypeError:
-                return NotImplemented
-
-        return self.copy(basis=basis, coefficients=coefs)
-
-    def __radd__(self, other):
-        """Addition for FDataBasis object."""
-
-        return self.__add__(other)
-
-    def __sub__(self, other):
-        """Subtraction for FDataBasis object."""
-        if isinstance(other, FDataBasis):
-            if self.basis != other.basis:
-                raise NotImplementedError
-            else:
-                basis, coefs = self.basis._sub_same_basis(self.coefficients,
-                                                          other.coefficients)
-        else:
-            try:
-                basis, coefs = self.basis._sub_constant(self.coefficients,
-                                                        other)
-            except TypeError:
-                return NotImplemented
-
-        return self.copy(basis=basis, coefficients=coefs)
-
-    def __rsub__(self, other):
-        """Right subtraction for FDataBasis object."""
-        return (self * -1).__add__(other)
-
-    def __mul__(self, other):
-        """Multiplication for FDataBasis object."""
-        if isinstance(other, FDataBasis):
-            raise NotImplementedError
-
-        try:
-            basis, coefs = self.basis._mul_constant(self.coefficients, other)
-        except TypeError:
-            return NotImplemented
-
-        return self.copy(basis=basis, coefficients=coefs)
-
-    def __rmul__(self, other):
-        """Multiplication for FDataBasis object."""
-        return self.__mul__(other)
-
-    def __truediv__(self, other):
-        """Division for FDataBasis object."""
-
-        other = np.array(other)
-
-        try:
-            other = 1 / other
-        except TypeError:
-            return NotImplemented
-
-        return self * other
-
-    def __rtruediv__(self, other):
-        """Right division for FDataBasis object."""
-
-        raise NotImplementedError
-
-    #####################################################################
-    # Pandas ExtensionArray methods
-    #####################################################################
-    @property
-    def dtype(self):
-        """The dtype for this extension array, FDataGridDType"""
-        return FDataBasisDType
-
-    @property
-    def nbytes(self) -> int:
-        """
-        The number of bytes needed to store this object in memory.
-        """
-        return self.coefficients.nbytes()
-
-
-class FDataBasisDType(pandas.api.extensions.ExtensionDtype):
-    """
-    DType corresponding to FDataBasis in Pandas
-    """
-    name = 'functional data (basis)'
-    kind = 'O'
-    type = FDataBasis
-    na_value = None
-
-    @classmethod
-    def construct_from_string(cls, string):
-        if string == cls.name:
-            return cls()
-        else:
-            raise TypeError("Cannot construct a '{}' from "
-                            "'{}'".format(cls, string))
-
-    @classmethod
-    def construct_array_type(cls):
-        return FDataBasis
 
 
 class CoefficientsTransformer(BaseEstimator, TransformerMixin):

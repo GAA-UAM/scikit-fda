@@ -44,7 +44,7 @@ class _QR():
     """Solve the linear equation using qr factorization"""
 
     def __call__(self, *, basis_values, weight_matrix, data_matrix,
-                 penalty_matrix, ndegenerated, **_):
+                 penalty_matrix, **_):
 
         if weight_matrix is not None:
             # Decompose W in U'U and calculate UW and Uy
@@ -54,15 +54,11 @@ class _QR():
 
         if penalty_matrix is not None:
             w, v = np.linalg.eigh(penalty_matrix)
-            # Reduction of the penalty matrix taking away 0 or almost
-            # zeros eigenvalues
 
-            if ndegenerated:
-                index = ndegenerated - 1
-            else:
-                index = None
-            w = w[:index:-1]
-            v = v[:, :index:-1]
+            w = w[::-1]
+            v = v[:, ::-1]
+
+            w = np.maximum(w, 0)
 
             penalty_matrix = v @ np.diag(np.sqrt(w))
             # Augment the basis matrix with the square root of the
@@ -71,9 +67,9 @@ class _QR():
                 basis_values,
                 penalty_matrix.T],
                 axis=0)
-            # Augment data matrix by n - ndegenerated zeros
+            # Augment data matrix by n zeros
             data_matrix = np.pad(data_matrix,
-                                 ((0, len(v) - ndegenerated),
+                                 ((0, len(v)),
                                   (0, 0)),
                                  mode='constant')
 
@@ -205,9 +201,9 @@ class BasisSmoother(_LinearSmoother):
         >>> import numpy as np
         >>> import skfda
         >>> t = np.linspace(0, 1, 5)
-        >>> x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
+        >>> x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t) + 2
         >>> x
-        array([ 1.,  1., -1., -1.,  1.])
+        array([ 3.,  3.,  1.,  1.,  3.])
 
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
@@ -215,11 +211,11 @@ class BasisSmoother(_LinearSmoother):
         ...                basis, method='cholesky')
         >>> fd_smooth = smoother.fit_transform(fd)
         >>> fd_smooth.data_matrix.round(2)
-        array([[[ 1.],
+        array([[[ 3.],
+                [ 3.],
                 [ 1.],
-                [-1.],
-                [-1.],
-                [ 1.]]])
+                [ 1.],
+                [ 3.]]])
 
         However, the parameter ``return_basis`` can be used to return the data
         in basis form, by default, without extra smoothing:
@@ -230,19 +226,19 @@ class BasisSmoother(_LinearSmoother):
         ...                basis, method='cholesky', return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
-        array([[ 0.  , 0.71, 0.71]])
+        array([[ 2.  , 0.71, 0.71]])
 
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='qr', return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
-        array([[-0.  , 0.71, 0.71]])
+        array([[ 2.  , 0.71, 0.71]])
 
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='matrix', return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
-        array([[ 0.  , 0.71, 0.71]])
+        array([[ 2.  , 0.71, 0.71]])
         >>> smoother.hat_matrix().round(2)
         array([[ 0.43,  0.14, -0.14,  0.14,  0.43],
                [ 0.14,  0.71,  0.29, -0.29,  0.14],
@@ -260,11 +256,12 @@ class BasisSmoother(_LinearSmoother):
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='cholesky',
         ...                smoothing_parameter=1,
-        ...                penalty=LinearDifferentialOperator(weights=[3, 5]),
+        ...                penalty=LinearDifferentialOperator(
+        ...                            weights=[0.1, 0.2]),
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
-        array([[ 0.18,  0.07,  0.09]])
+        array([[ 2.04,  0.51,  0.55]])
 
         >>> from skfda.misc import LinearDifferentialOperator
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
@@ -272,11 +269,12 @@ class BasisSmoother(_LinearSmoother):
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='qr',
         ...                smoothing_parameter=1,
-        ...                penalty=LinearDifferentialOperator(weights=[3, 5]),
+        ...                penalty=LinearDifferentialOperator(
+        ...                            weights=[0.1, 0.2]),
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
-        array([[ 0.18,  0.07,  0.09]])
+        array([[ 2.04,  0.51,  0.55]])
 
         >>> from skfda.misc import LinearDifferentialOperator
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
@@ -284,11 +282,12 @@ class BasisSmoother(_LinearSmoother):
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='matrix',
         ...                smoothing_parameter=1,
-        ...                penalty=LinearDifferentialOperator(weights=[3, 5]),
+        ...                penalty=LinearDifferentialOperator(
+        ...                            weights=[0.1, 0.2]),
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
-        array([[ 0.18,  0.07,  0.09]])
+        array([[ 2.04,  0.51,  0.55]])
 
     References:
         .. [RS05-5-2-6] Ramsay, J., Silverman, B. W. (2005). How spline
@@ -343,12 +342,10 @@ class BasisSmoother(_LinearSmoother):
         """Get the penalty differential operator."""
         if self.penalty is None:
             penalty = LinearDifferentialOperator(order=2)
-        elif isinstance(self.penalty, int):
-            penalty = LinearDifferentialOperator(order=self.penalty)
-        elif isinstance(self.penalty, collections.abc.Iterable):
-            penalty = LinearDifferentialOperator(weights=self.penalty)
-        else:
+        elif isinstance(self.penalty, LinearDifferentialOperator):
             penalty = self.penalty
+        else:
+            penalty = LinearDifferentialOperator(self.penalty)
 
         return penalty
 
@@ -365,8 +362,7 @@ class BasisSmoother(_LinearSmoother):
             penalty = self._penalty()
 
             if self.smoothing_parameter > 0:
-                penalty_matrix = self.basis.penalty(penalty.order,
-                                                    penalty.weights)
+                penalty_matrix = self.basis.penalty(penalty)
             else:
                 penalty_matrix = None
 
@@ -470,9 +466,6 @@ class BasisSmoother(_LinearSmoother):
         if(data_matrix.shape[0] > self.basis.n_basis
            or self.smoothing_parameter > 0):
 
-            # TODO: The penalty could be None (if the matrix is passed)
-            ndegenerated = self.basis._ndegenerated(self._penalty().order)
-
             method = self._method_function()
 
             # If the method provides the complete transformation use it
@@ -485,8 +478,7 @@ class BasisSmoother(_LinearSmoother):
                                   basis_values=basis_values,
                                   weight_matrix=weight_matrix,
                                   data_matrix=data_matrix,
-                                  penalty_matrix=penalty_matrix,
-                                  ndegenerated=ndegenerated)
+                                  penalty_matrix=penalty_matrix)
 
         elif data_matrix.shape[0] == self.basis.n_basis:
             # If the number of basis equals the number of points and no

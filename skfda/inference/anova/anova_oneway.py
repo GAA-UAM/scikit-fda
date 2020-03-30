@@ -269,9 +269,7 @@ def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
         ...     random_state=RandomState(42),
         ...     return_dist=True)
         >>> dist
-        array([163.357652, 208.594951, 229.767803])
-
-
+        array([ 163.357652, 208.594951, 229.767803])
 
     References:
         [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An

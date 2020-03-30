@@ -5,15 +5,13 @@ import unittest
 import numpy as np
 
 
-class TestBasis(unittest.TestCase):
+class TestLfd(unittest.TestCase):
 
     def test_init_default(self):
         """Tests default initialization (do not penalize)."""
         lfd = LinearDifferentialOperator()
         weightfd = [FDataBasis(Constant((0, 1)), 0)]
 
-        np.testing.assert_equal(lfd.order, 0,
-                                "Wrong deriv order of the linear operator")
         np.testing.assert_equal(
             lfd.weights, weightfd,
             "Wrong list of weight functions of the linear operator")
@@ -25,8 +23,6 @@ class TestBasis(unittest.TestCase):
         lfd_0 = LinearDifferentialOperator(order=0)
         weightfd = [FDataBasis(Constant((0, 1)), 1)]
 
-        np.testing.assert_equal(lfd_0.order, 0,
-                                "Wrong deriv order of the linear operator")
         np.testing.assert_equal(
             lfd_0.weights, weightfd,
             "Wrong list of weight functions of the linear operator")
@@ -36,8 +32,6 @@ class TestBasis(unittest.TestCase):
         consfd = FDataBasis(Constant((0, 1)), [[0], [0], [0], [1]])
         bwtlist3 = consfd.to_list()
 
-        np.testing.assert_equal(lfd_3.order, 3,
-                                "Wrong deriv order of the linear operator")
         np.testing.assert_equal(
             lfd_3.weights, bwtlist3,
             "Wrong list of weight functions of the linear operator")
@@ -56,8 +50,6 @@ class TestBasis(unittest.TestCase):
 
         lfd = LinearDifferentialOperator(weights=coefficients)
 
-        np.testing.assert_equal(lfd.order, 5,
-                                "Wrong deriv order of the linear operator")
         np.testing.assert_equal(
             lfd.weights, fd.to_list(),
             "Wrong list of weight functions of the linear operator")
@@ -77,8 +69,6 @@ class TestBasis(unittest.TestCase):
         fdlist = [FDataBasis(monomial, w) for w in weights]
         lfd = LinearDifferentialOperator(weights=fdlist)
 
-        np.testing.assert_equal(lfd.order, n_weights - 1,
-                                "Wrong deriv order of the linear operator")
         np.testing.assert_equal(
             lfd.weights, fd.to_list(),
             "Wrong list of weight functions of the linear operator")

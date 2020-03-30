@@ -1,3 +1,5 @@
+import numbers
+
 import numpy as np
 
 
@@ -29,7 +31,6 @@ class LinearDifferentialOperator:
         >>>
         >>> LinearDifferentialOperator(2)
         LinearDifferentialOperator(
-        nderiv=2,
         weights=[
         FDataBasis(
             basis=Constant(domain_range=[array([0, 1])], n_basis=1),
@@ -50,7 +51,6 @@ class LinearDifferentialOperator:
 
         >>> LinearDifferentialOperator(weights=[0, 2, 3])
         LinearDifferentialOperator(
-        nderiv=2,
         weights=[
         FDataBasis(
             basis=Constant(domain_range=[array([0, 1])], n_basis=1),
@@ -75,7 +75,6 @@ class LinearDifferentialOperator:
         ...           FDataBasis(monomial, [1, 2, 3])]
         >>> LinearDifferentialOperator(weights=fdlist)
         LinearDifferentialOperator(
-        nderiv=2,
         weights=[
         FDataBasis(
             basis=Constant(domain_range=[array([0, 1])], n_basis=1),
@@ -93,9 +92,12 @@ class LinearDifferentialOperator:
 
     """
 
-    def __init__(self, order=None, *, weights=None, domain_range=None):
+    def __init__(self, order_or_weights=None, *, order=None, weights=None,
+                 domain_range=None):
         """Lfd Constructor. You have to provide one of the two first
-           parameters. It both are provided, it will raise an error
+           parameters. It both are provided, it will raise an error.
+           If a positional argument is supplied it will be considered the
+           order if it is an integral type and the weights otherwise.
 
         Args:
             order (int, optional): the order of the operator. It's the highest
@@ -114,12 +116,21 @@ class LinearDifferentialOperator:
         from ..representation.basis import (FDataBasis, Constant,
                                             _same_domain)
 
-        if order is not None and weights is not None:
+        num_args = sum(
+            [a is not None for a in [order_or_weights, order, weights]])
+
+        if num_args > 1:
             raise ValueError("You have to provide the order or the weights, "
                              "not both")
 
         real_domain_range = (domain_range if domain_range is not None
                              else (0, 1))
+
+        if order_or_weights is not None:
+            if isinstance(order_or_weights, numbers.Integral):
+                order = order_or_weights
+            else:
+                weights = order_or_weights
 
         if order is None and weights is None:
             self.weights = (FDataBasis(Constant(real_domain_range), 0),)
@@ -137,7 +148,7 @@ class LinearDifferentialOperator:
             if len(weights) == 0:
                 raise ValueError("You have to provide one weight at least")
 
-            if all(isinstance(n, int) for n in weights):
+            if all(isinstance(n, numbers.Real) for n in weights):
                 self.weights = (FDataBasis(Constant(real_domain_range),
                                            np.array(weights)
                                            .reshape(-1, 1)).to_list())
@@ -165,24 +176,43 @@ class LinearDifferentialOperator:
 
         self.domain_range = real_domain_range
 
-    @property
-    def order(self):
-        return len(self.weights) - 1
-
     def __repr__(self):
         """Representation of Lfd object."""
 
         bwtliststr = ""
-        for i in range(self.order + 1):
-            bwtliststr = bwtliststr + "\n" + self.weights[i].__repr__() + ","
+        for w in self.weights:
+            bwtliststr = bwtliststr + "\n" + repr(w) + ","
 
         return (f"{self.__class__.__name__}("
-                f"\nnderiv={self.order},"
                 f"\nweights=[{bwtliststr[:-1]}]"
                 f"\n)").replace('\n', '\n    ')
 
     def __eq__(self, other):
         """Equality of Lfd objects"""
-        return (self.order == other.nderic and
-                all(self.weights[i] == other.bwtlist[i]
-                    for i in range(self.order)))
+        return (self.weights == other.weights)
+
+    def constant_weights(self):
+        """
+        Return the scalar weights of the linear differential operator if they
+        are constant basis.
+        Otherwise, return None.
+
+        This function is mostly useful for basis which want to override
+        the _penalty method in order to use an analytical expression
+        for constant weights.
+        """
+        from ..representation.basis import Constant
+
+        coefs = [w.coefficients[0, 0] if isinstance(w.basis, Constant)
+                 else None
+                 for w in self.weights]
+
+        return np.array(coefs) if coefs.count(None) == 0 else None
+
+    def __call__(self, f):
+        """Return the function that results of applying the operator."""
+        def applied_lfd(t):
+            return sum(w(t) * f(t, derivative=i)
+                       for i, w in enumerate(self.weights))
+
+        return applied_lfd

@@ -52,7 +52,7 @@ class _QR():
             basis_values = upper @ basis_values
             data_matrix = upper @ data_matrix
 
-        if penalty_matrix is not None:
+        if not np.all(penalty_matrix == 0):
             w, v = np.linalg.eigh(penalty_matrix)
 
             w = w[::-1]
@@ -166,7 +166,7 @@ class BasisSmoother(_LinearSmoother):
         weights (array_like, optional): Matrix to weight the
             observations. Defaults to the identity matrix.
         smoothing_parameter (int or float, optional): Smoothing
-            parameter. Trying with several factors in a logarythm scale is
+            parameter. Trying with several factors in a logarithm scale is
             suggested. If 0 no smoothing is performed. Defaults to 0.
         penalty (int, iterable or :class:`LinearDifferentialOperator`): If it
             is an integer, it indicates the order of the
@@ -336,43 +336,10 @@ class BasisSmoother(_LinearSmoother):
 
         return method_function
 
-    def _penalty(self):
-        from ...misc import LinearDifferentialOperator
-
-        """Get the penalty differential operator."""
-        if self.penalty is None:
-            penalty = LinearDifferentialOperator(order=2)
-        elif isinstance(self.penalty, LinearDifferentialOperator):
-            penalty = self.penalty
-        else:
-            penalty = LinearDifferentialOperator(self.penalty)
-
-        return penalty
-
-    def _penalty_matrix(self):
-        """Get the final penalty matrix.
-
-        The smoothing parameter is already multiplied by it.
-
-        """
-
-        if self.penalty_matrix is not None:
-            penalty_matrix = self.penalty_matrix
-        else:
-            penalty = self._penalty()
-
-            if self.smoothing_parameter > 0:
-                penalty_matrix = self.basis.penalty(penalty)
-            else:
-                penalty_matrix = None
-
-        if penalty_matrix is not None:
-            penalty_matrix *= self.smoothing_parameter
-
-        return penalty_matrix
-
     def _coef_matrix(self, input_points):
         """Get the matrix that gives the coefficients"""
+        from ...misc._lfd import compute_lfd_matrix
+
         basis_values_input = self.basis.evaluate(input_points).T
 
         # If no weight matrix is given all the weights are one
@@ -381,9 +348,13 @@ class BasisSmoother(_LinearSmoother):
 
         inv = basis_values_input.T @ weight_matrix @ basis_values_input
 
-        penalty_matrix = self._penalty_matrix()
-        if penalty_matrix is not None:
-            inv += penalty_matrix
+        penalty_matrix = compute_lfd_matrix(
+            X=None, basis=self.basis,
+            regularization_parameter=self.smoothing_parameter,
+            penalty=self.penalty,
+            penalty_matrix=self.penalty_matrix)
+
+        inv += penalty_matrix
 
         inv = np.linalg.inv(inv)
 
@@ -430,6 +401,7 @@ class BasisSmoother(_LinearSmoother):
             self (object)
 
         """
+        from ...misc._lfd import compute_lfd_matrix
 
         _check_r_to_r(X)
 
@@ -438,7 +410,11 @@ class BasisSmoother(_LinearSmoother):
                                if self.output_points is not None
                                else self.input_points_)
 
-        penalty_matrix = self._penalty_matrix()
+        penalty_matrix = compute_lfd_matrix(
+            X=X, basis=self.basis,
+            regularization_parameter=self.smoothing_parameter,
+            penalty=self.penalty,
+            penalty_matrix=self.penalty_matrix)
 
         # n is the samples
         # m is the observations

@@ -37,6 +37,23 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         fit_intercept (bool):  Whether to calculate the intercept for this
             model. If set to False, no intercept will be used in calculations
             (i.e. data is expected to be centered).
+        regularization_parameter (int or float, optional): Regularization
+            parameter. Trying with several factors in a logarithm scale is
+            suggested. If 0 no regularization is performed. Defaults to 0.
+        penalty (int, iterable or :class:`LinearDifferentialOperator`): If it
+            is an integer, it indicates the order of the
+            derivative used in the computing of the penalty matrix. For
+            instance 2 means that the differential operator is
+            :math:`f''(x)`. If it is an iterable, it consists on coefficients
+            representing the differential operator used in the computing of
+            the penalty matrix. For instance the tuple (1, 0,
+            numpy.sin) means :math:`1 + sin(x)D^{2}`. It is possible to
+            supply directly the LinearDifferentialOperator object.
+            If not supplied this defaults to 2. Only used if penalty_matrix is
+            ``None``.
+        penalty_matrix (array_like, optional): Penalty matrix. If
+            supplied the differential operator is not used and instead
+            the matrix supplied by this argument is used.
 
     Attributes:
         coef_ (iterable): A list containing the weight coefficient for each
@@ -103,6 +120,43 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         self.coef_basis = coef_basis
         self.fit_intercept = fit_intercept
 
+    def _inner_product_matrix(self, x, basis):
+        """
+        Compute the inner product matrix of a variable.
+
+        The variable can be multivariate or functional.
+
+        """
+        if isinstance(x, FDataBasis):
+            # Functional inner product
+            if basis is None:
+                basis = x.basis
+            xcoef = x.coefficients
+            inner_basis = x.basis.inner_product(basis)
+            return xcoef @ inner_basis
+        else:
+            # Multivariate inner product
+            if basis is not None:
+                raise ValueError("Multivariate data coefficients "
+                                 "should not have a basis")
+            return np.atleast_2d(x)
+
+    def _convert_coefs(self, x, basis, coefs):
+        """
+        Convert to original form.
+        """
+        if isinstance(x, FDataBasis):
+            if basis is None:
+                basis = x.basis
+
+            # Functional coefs
+            return FDataBasis(
+                basis,
+                coefs.T)
+        else:
+            # Multivariate coefs
+            return coefs
+
     def fit(self, X, y=None, sample_weight=None):
 
         X, y, sample_weight, coef_basis = self._argcheck_X_y(
@@ -112,24 +166,11 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             X = [np.ones((len(y), 1))] + X
             coef_basis = [None] + coef_basis
 
-        # X is a list of covariates
-        n_covariates = len(X)
+        inner_products = [self._inner_product_matrix(x, basis)
+                          for x, basis in zip(X, coef_basis)]
 
-        inner_products = [None] * n_covariates
-
-        for i, (x, w_basis) in enumerate(zip(X, coef_basis)):
-            if isinstance(x, FDataBasis):
-                if w_basis is None:
-                    w_basis = x.basis
-                xcoef = x.coefficients
-                inner_basis = x.basis.inner_product(w_basis)
-                inner = xcoef @ inner_basis
-            else:
-                if w_basis is not None:
-                    raise ValueError("Multivariate data coefficients "
-                                     "should not have a basis")
-                inner = np.atleast_2d(x)
-            inner_products[i] = inner
+        coef_lengths = np.array([i.shape[1] for i in inner_products])
+        coef_start = np.cumsum(coef_lengths)
 
         # This is C @ J
         inner_products = np.concatenate(inner_products, axis=1)
@@ -141,26 +182,12 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         gram_inner_x_coef = inner_products.T @ inner_products
         inner_x_coef_y = inner_products.T @ y
 
-        coef_basiscoefs = np.linalg.solve(gram_inner_x_coef, inner_x_coef_y)
+        basiscoefs = np.linalg.solve(gram_inner_x_coef, inner_x_coef_y)
+        basiscoef_list = np.split(basiscoefs, coef_start)
 
         # Express the coefficients in functional form
-        coefs = [None] * n_covariates
-        idx = 0
-        for i, (x, basis) in enumerate(zip(X, coef_basis)):
-            if isinstance(x, FDataBasis):
-                if basis is None:
-                    basis = x.basis
-
-                # Functional coefs
-                used_coefs = basis.n_basis
-                coefs[i] = FDataBasis(
-                    basis,
-                    coef_basiscoefs[idx:idx + used_coefs].T)
-            else:
-                # Multivariate coefs
-                used_coefs = x.shape[1]
-                coefs[i] = coef_basiscoefs[idx:idx + used_coefs]
-            idx = idx + used_coefs
+        coefs = [self._convert_coefs(x, basis, bcoefs)
+                 for x, basis, bcoefs in zip(X, coef_basis, basiscoef_list)]
 
         if self.fit_intercept:
             self.intercept_ = coefs[0]

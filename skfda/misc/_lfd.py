@@ -224,7 +224,7 @@ def _apply_lfd(X, basis, penalty):
     """
     Apply the lfd to a single data type.
     """
-    penalty_method = getattr(basis, "penalty")
+    penalty_method = getattr(basis, "penalty", None)
 
     if penalty_method:
         return penalty_method(penalty)

@@ -105,6 +105,74 @@ class TestMultivariateLinearRegression(unittest.TestCase):
         y_pred = scalar.predict(X)
         np.testing.assert_allclose(y_pred, y, atol=0.01)
 
+    def test_regression_regularization(self):
+
+        x_basis = Monomial(n_basis=7)
+        x_fd = FDataBasis(x_basis, np.identity(7))
+
+        beta_basis = Fourier(n_basis=5)
+        beta_fd = FDataBasis(beta_basis, [1.0403, 0, 0, 0, 0])
+        y = [1.0000684777229512,
+             0.1623672257830915,
+             0.08521053851548224,
+             0.08514200869281137,
+             0.09529138749665378,
+             0.10549625973303875,
+             0.11384314859153018]
+
+        y_pred_compare = [0.890341,
+                          0.370162,
+                          0.196773,
+                          0.110079,
+                          0.058063,
+                          0.023385,
+                          -0.001384]
+
+        scalar = MultivariateLinearRegression(coef_basis=[beta_basis],
+                                              regularization_parameter=1)
+        scalar.fit(x_fd, y)
+        np.testing.assert_allclose(scalar.coef_[0].coefficients,
+                                   beta_fd.coefficients, atol=1e-3)
+        np.testing.assert_allclose(scalar.intercept_,
+                                   -0.15, atol=1e-4)
+
+        y_pred = scalar.predict(x_fd)
+        np.testing.assert_allclose(y_pred, y_pred_compare, atol=1e-4)
+
+        x_basis = Monomial(n_basis=3)
+        x_fd = FDataBasis(x_basis, [[1, 0, 0],
+                                    [0, 1, 0],
+                                    [0, 0, 1],
+                                    [2, 0, 1]])
+
+        beta_fd = FDataBasis(x_basis, [3, 2, 1])
+        y = [1 + 13 / 3, 1 + 29 / 12, 1 + 17 / 10, 1 + 311 / 30]
+
+        # Non regularized
+        scalar = MultivariateLinearRegression(regularization_parameter=0)
+        scalar.fit(x_fd, y)
+        np.testing.assert_allclose(scalar.coef_[0].coefficients,
+                                   beta_fd.coefficients)
+        np.testing.assert_allclose(scalar.intercept_,
+                                   1)
+
+        y_pred = scalar.predict(x_fd)
+        np.testing.assert_allclose(y_pred, y)
+
+        # Regularized
+        beta_fd_reg = FDataBasis(x_basis, [2.812, 3.043, 0])
+        y_reg = [5.333, 3.419, 2.697, 11.366]
+
+        scalar_reg = MultivariateLinearRegression(regularization_parameter=1)
+        scalar_reg.fit(x_fd, y)
+        np.testing.assert_allclose(scalar_reg.coef_[0].coefficients,
+                                   beta_fd_reg.coefficients, atol=0.001)
+        np.testing.assert_allclose(scalar_reg.intercept_,
+                                   0.998, atol=0.001)
+
+        y_pred = scalar_reg.predict(x_fd)
+        np.testing.assert_allclose(y_pred, y_reg, atol=0.001)
+
     def test_error_X_not_FData(self):
         """Tests that at least one of the explanatory variables
         is an FData object. """

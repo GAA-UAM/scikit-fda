@@ -116,9 +116,15 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
 
     """
 
-    def __init__(self, *, coef_basis=None, fit_intercept=True):
+    def __init__(self, *, coef_basis=None, fit_intercept=True,
+                 regularization_parameter=0,
+                 penalty=None,
+                 penalty_matrix=None):
         self.coef_basis = coef_basis
         self.fit_intercept = fit_intercept
+        self.regularization_parameter = regularization_parameter
+        self.penalty = penalty
+        self.penalty_matrix = penalty_matrix
 
     def _inner_product_matrix(self, x, basis):
         """
@@ -129,8 +135,6 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         """
         if isinstance(x, FDataBasis):
             # Functional inner product
-            if basis is None:
-                basis = x.basis
             xcoef = x.coefficients
             inner_basis = x.basis.inner_product(basis)
             return xcoef @ inner_basis
@@ -146,9 +150,6 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         Convert to original form.
         """
         if isinstance(x, FDataBasis):
-            if basis is None:
-                basis = x.basis
-
             # Functional coefs
             return FDataBasis(
                 basis,
@@ -158,6 +159,7 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             return coefs
 
     def fit(self, X, y=None, sample_weight=None):
+        from ...misc._lfd import compute_lfd_matrix
 
         X, y, sample_weight, coef_basis = self._argcheck_X_y(
             X, y, sample_weight, self.coef_basis)
@@ -179,7 +181,13 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             inner_products = inner_products * np.sqrt(sample_weight)
             y = y * np.sqrt(sample_weight)
 
-        gram_inner_x_coef = inner_products.T @ inner_products
+        penalty_matrix = compute_lfd_matrix(
+            X=X, basis=coef_basis,
+            regularization_parameter=self.regularization_parameter,
+            penalty=self.penalty,
+            penalty_matrix=self.penalty_matrix)
+
+        gram_inner_x_coef = inner_products.T @ inner_products + penalty_matrix
         inner_x_coef_y = inner_products.T @ y
 
         basiscoefs = np.linalg.solve(gram_inner_x_coef, inner_x_coef_y)
@@ -233,6 +241,15 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
 
         return X
 
+    def _get_coef_basis(self, x, basis):
+        if basis is None:
+            basis = getattr(x, 'basis', None)
+            return basis
+        else:
+            if not isinstance(basis, Basis):
+                raise ValueError("coef_basis should be a list of Basis.")
+            return basis
+
     def _argcheck_X_y(self, X, y, sample_weight=None, coef_basis=None):
         """Do some checks to types and shapes"""
 
@@ -251,16 +268,15 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             coef_basis = [None] * len(X)
 
         if len(coef_basis) != len(X):
-            raise ValueError("Number of regression coefficients does"
-                             " not match number of independent variables.")
+            raise ValueError("Number of regression coefficients does "
+                             "not match number of independent variables.")
 
         if any(len(y) != len(x) for x in X):
             raise ValueError("The number of samples on independent and "
                              "dependent variables should be the same")
 
-        if any(b is not None and not isinstance(b, Basis)
-               for b in coef_basis):
-            raise ValueError("coefs should be a list of Basis.")
+        coef_basis = [self._get_coef_basis(x, b)
+                      for x, b in zip(X, coef_basis)]
 
         if sample_weight is None:
             sample_weight = np.ones(len(y))

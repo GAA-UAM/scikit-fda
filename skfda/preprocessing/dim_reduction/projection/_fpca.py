@@ -109,7 +109,11 @@ class FPCABasis(FPCA):
         components_basis (Basis): the basis in which we want the principal
             components. We can use a different basis than the basis contained in
             the passed FDataBasis object.
-
+        regularization_lfd (LinearDifferentialOperator, list or int): Linear
+                differential operator. If it is not a LinearDifferentialOperator
+                object, it will be converted to one. If you input an integer
+                then the derivative of that degree will be used to regularize
+                the principal components.
 
     Examples:
         Construct an artificial FDataBasis object and run FPCA with this object.
@@ -130,9 +134,8 @@ class FPCABasis(FPCA):
                  n_components=3,
                  components_basis=None,
                  centering=True,
-                 regularization_derivative_degree=2,
-                 regularization_coefficients=None,
-                 regularization_parameter=0):
+                 regularization_parameter=0,
+                 regularization_lfd=2):
         """FPCABasis constructor
 
         Args:
@@ -148,6 +151,9 @@ class FPCABasis(FPCA):
                 regularization that is desired. Defaults to 0 (no
                 regularization). When this value is large, the resulting
                 principal components tends to be constant.
+            regularization_lfd (LinearDifferentialOperator, list or int): Linear
+                differential operator. If it is not a LinearDifferentialOperator
+                object, it will be converted to one.
 
         """
         super().__init__(n_components, centering)
@@ -155,8 +161,7 @@ class FPCABasis(FPCA):
         self.components_basis = components_basis
         # lambda in the regularization / penalization process
         self.regularization_parameter = regularization_parameter
-        self.regularization_derivative_degree = regularization_derivative_degree
-        self.regularization_coefficients = regularization_coefficients
+        self.regularization_lfd = regularization_lfd
 
     def fit(self, X: FDataBasis, y=None):
         """Computes the first n_components principal components and saves them.
@@ -230,8 +235,8 @@ class FPCABasis(FPCA):
         if self.regularization_parameter > 0:
             # obtain regularization matrix
             regularization_matrix = self.components_basis.penalty(
-                self.regularization_derivative_degree,
-                self.regularization_coefficients)
+                self.regularization_lfd
+            )
             # apply regularization
             g_matrix = (g_matrix + self.regularization_parameter *
                         regularization_matrix)

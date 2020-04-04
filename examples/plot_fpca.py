@@ -11,7 +11,7 @@ Explores the two possible ways to do functional principal component analysis.
 import numpy as np
 import skfda
 from skfda.preprocessing.dim_reduction.projection import FPCABasis, FPCAGrid
-from skfda.representation.basis import BSpline, Fourier
+from skfda.representation.basis import BSpline, Fourier, Monomial
 from skfda.datasets import fetch_growth
 
 ##############################################################################
@@ -108,5 +108,18 @@ dataset = fetch_growth()
 fd = dataset['data']
 basis_fd = fd.to_basis(BSpline(n_basis=7))
 fpca = FPCABasis(n_components=2, components_basis=Fourier(n_basis=7))
+fpca.fit(basis_fd)
+fpca.components_.plot()
+
+##############################################################################
+# We can observe that if we switch to the Monomial basis, we also lose the
+# key features of the first principal components because it distorts the
+# principal components, adding extra maximums and minimums. Therefore, in this
+# case the best option is to use the BSpline basis as the basis for the
+# principal components
+dataset = fetch_growth()
+fd = dataset['data']
+basis_fd = fd.to_basis(BSpline(n_basis=7))
+fpca = FPCABasis(n_components=2, components_basis=Monomial(n_basis=4))
 fpca.fit(basis_fd)
 fpca.components_.plot()

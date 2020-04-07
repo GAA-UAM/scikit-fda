@@ -248,7 +248,8 @@ class FPCABasis(FPCA):
         # using solve to get the multiplication result directly or just invert
         # the matrix. We choose solve because it is faster and more stable.
         # The following matrix is needed: L^{-1}*J^T
-        l_inv_j_t = solve_triangular(l_matrix, np.transpose(j_matrix))
+        l_inv_j_t = solve_triangular(l_matrix, np.transpose(j_matrix),
+                                     lower=True)
 
         # the final matrix, C(L-1Jt)t for svd or (L-1Jt)-1CtC(L-1Jt)t for PCA
         final_matrix = (X.coefficients @ np.transpose(l_inv_j_t) /
@@ -261,7 +262,8 @@ class FPCABasis(FPCA):
         # we choose solve to obtain the component coefficients for the
         # same reason: it is faster and more efficient
         component_coefficients = solve_triangular(np.transpose(l_matrix),
-                                                  np.transpose(self.pca_.components_))
+                                                  np.transpose(self.pca_.components_),
+                                                  lower=False)
 
         component_coefficients = np.transpose(component_coefficients)
 

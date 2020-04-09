@@ -59,7 +59,7 @@ def v_sample_stat(fd, weights, p=2):
 
         Finally the value of the statistic is calculated:
 
-        >>> v_sample_stat(fd, weights)
+        >>> stat = v_sample_stat(fd, weights)
         0.01649448843348894
 
     References:
@@ -271,7 +271,7 @@ def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
         ...     return_dist=True)
         >>> with printoptions(precision=4):
         ...     print(dist)
-        [163.3577 208.595  229.7678]
+        [ 163.3577 208.595  229.7678]
 
     References:
         [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An

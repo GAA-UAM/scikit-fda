@@ -59,7 +59,7 @@ def v_sample_stat(fd, weights, p=2):
 
         Finally the value of the statistic is calculated:
 
-        >>> stat = v_sample_stat(fd, weights)
+        >>> v_sample_stat(fd, weights)
         0.01649448843348894
 
     References:

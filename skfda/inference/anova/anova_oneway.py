@@ -258,7 +258,6 @@ def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
         >>> from skfda.datasets import fetch_gait
         >>> from numpy.random import RandomState
         >>> from numpy import printoptions
-        >>> np.set_printoptions(precision=6)
 
         >>> fd = fetch_gait()["data"].coordinates[1]
         >>> fd1, fd2, fd3 = fd[:13], fd[13:26], fd[26:]

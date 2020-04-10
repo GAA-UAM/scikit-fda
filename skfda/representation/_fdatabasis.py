@@ -793,6 +793,29 @@ class FDataBasis(FData):
 
     @staticmethod
     def concatenate_samples(objects, as_coordinates=False):
+        """Join samples from a list of similar FDataBasis objects.
+
+        Joins samples of FDataBasis objects if they have the same
+        dimensions and sampling points.
+
+        Args:
+            objects (list of :obj:`FDataBasis`): Objects to be concatenated.
+            as_coordinates (boolean, optional):  If False concatenates as
+                new samples, else, concatenates each value as new components
+                of the image. Defaults to false.
+
+        Returns:
+            :obj:`FDataGrid`: FDataGrid object with the samples from the
+            original objects.
+
+        Raises:
+            ValueError: In case the provided list of FDataBasis objects is
+            empty.
+
+        Todo:
+            By the moment, only unidimensional objects are supported in basis
+            representation.
+        """
         if len(objects) < 1:
             raise ValueError("At least one FDataBasis object must be provided "
                              "to concatenate.")

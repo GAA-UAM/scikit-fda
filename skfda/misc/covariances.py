@@ -37,6 +37,8 @@ def _execute_covariance(covariance, x, y):
     else:
         if callable(covariance):
             result = covariance(x, y)
+        elif hasattr(covariance, "shape"):
+            result = covariance
         else:
             # GPy kernel
             result = covariance.K(x, y)

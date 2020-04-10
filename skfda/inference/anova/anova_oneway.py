@@ -279,7 +279,7 @@ def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
     """
 
     if len(args) < 2:
-        raise ValueError("At least two samples must be passed as parameter.")
+        raise ValueError("At least two groups must be passed as parameter.")
     if not all(isinstance(fd, FData) for fd in args):
         raise ValueError("Argument type must inherit FData.")
     if n_reps < 1:

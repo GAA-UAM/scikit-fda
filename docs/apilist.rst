@@ -13,3 +13,4 @@ API Reference
    modules/datasets
    modules/misc
    modules/ml
+   modules/inference

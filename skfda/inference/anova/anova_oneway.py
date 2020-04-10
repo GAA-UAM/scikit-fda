@@ -295,9 +295,7 @@ def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
         raise ValueError("All FDataGrid passed must have the same sample "
                          "points.")
 
-    fd_means = fd_groups[0].mean()
-    for fd in fd_groups[1:]:
-        fd_means = fd_means.concatenate(fd.mean())
+    fd_means = FDataGrid.concatenate_samples([fd.mean() for fd in fd_groups])
 
     vn = v_sample_stat(fd_means, [fd.n_samples for fd in fd_groups], p=p)
 

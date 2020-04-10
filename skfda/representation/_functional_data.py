@@ -788,6 +788,26 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         pass
 
+    @staticmethod
+    @abstractmethod
+    def concatenate_samples(objects, as_coordinates=False):
+        """Join samples from a list of similar FData objects.
+
+        Joins samples of FData objects if they have the same dimensions and
+        sampling points.
+
+        Args:
+            objects (list of :obj:`FData`): Objects to be concatenated.
+            as_coordinates (boolean, optional):  If False concatenates as
+                new samples, else, concatenates each value as new components
+                of the image. Defaults to false.
+
+        Returns:
+            :obj:`FData`: FData object with the samples from the original
+                objects.
+        """
+        pass
+
     @abstractmethod
     def compose(self, fd, *, eval_points=None, **kwargs):
         """Composition of functions.

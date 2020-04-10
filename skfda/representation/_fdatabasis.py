@@ -791,6 +791,16 @@ class FDataBasis(FData):
 
         return self.copy(coefficients=np.concatenate(data, axis=0))
 
+    @staticmethod
+    def concatenate_samples(objects, as_coordinates=False):
+        if len(objects) < 1:
+            raise ValueError("At least one FDataBasis object must be provided "
+                             "to concatenate.")
+        if not isinstance(objects[0], FDataBasis):
+            raise ValueError("Items in list must be instances of FDataBasis.")
+        return objects[0].concatenate(*objects[1:],
+                                      as_coordinates=as_coordinates)
+
     def compose(self, fd, *, eval_points=None, **kwargs):
         """Composition of functions.
 

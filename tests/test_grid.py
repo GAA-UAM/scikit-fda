@@ -99,6 +99,47 @@ class TestFDataGrid(unittest.TestCase):
         fd = fd1.concatenate(fd2, as_coordinates=True)
         np.testing.assert_equal(None, fd.axes_labels)
 
+    def test_concatenate_samples(self):
+        fd1 = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
+        fd2 = FDataGrid([[3, 4, 5, 6, 7], [4, 5, 6, 7, 8]])
+
+        fd1.axes_labels = ["x", "y"]
+        fd = FDataGrid.concatenate_samples([fd1, fd2])
+
+        np.testing.assert_equal(fd.n_samples, 4)
+        np.testing.assert_equal(fd.dim_codomain, 1)
+        np.testing.assert_equal(fd.dim_domain, 1)
+        np.testing.assert_array_equal(fd.data_matrix[..., 0],
+                                      [[1, 2, 3, 4, 5], [2, 3, 4, 5, 6],
+                                       [3, 4, 5, 6, 7], [4, 5, 6, 7, 8]])
+        np.testing.assert_array_equal(fd1.axes_labels, fd.axes_labels)
+
+    def test_concatenate_samples_coordinates(self):
+        fd1 = FDataGrid([[1, 2, 3, 4], [2, 3, 4, 5]])
+        fd2 = FDataGrid([[3, 4, 5, 6], [4, 5, 6, 7]])
+
+        fd1.axes_labels = ["x", "y"]
+        fd2.axes_labels = ["w", "t"]
+        fd = FDataGrid.concatenate_samples([fd1, fd2], as_coordinates=True)
+
+        np.testing.assert_equal(fd.n_samples, 2)
+        np.testing.assert_equal(fd.dim_codomain, 2)
+        np.testing.assert_equal(fd.dim_domain, 1)
+
+        np.testing.assert_array_equal(fd.data_matrix,
+                                      [[[1, 3], [2, 4], [3, 5], [4, 6]],
+                                       [[2, 4], [3, 5], [4, 6], [5, 7]]])
+
+        # Testing labels
+        np.testing.assert_array_equal(["x", "y", "t"], fd.axes_labels)
+        fd1.axes_labels = ["x", "y"]
+        fd2.axes_labels = None
+        fd = fd1.concatenate(fd2, as_coordinates=True)
+        np.testing.assert_array_equal(["x", "y", None], fd.axes_labels)
+        fd1.axes_labels = None
+        fd = fd1.concatenate(fd2, as_coordinates=True)
+        np.testing.assert_equal(None, fd.axes_labels)
+
     def test_coordinates(self):
         fd1 = FDataGrid([[1, 2, 3, 4], [2, 3, 4, 5]])
         fd1.axes_labels = ["x", "y"]

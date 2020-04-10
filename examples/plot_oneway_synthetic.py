@@ -89,11 +89,10 @@ print("p-value: {:.3f}".format(p_val))
 # In the plot below we can see the simulated trajectories for each mean,
 # and the averages for each group.
 
-fd = fd1.concatenate(fd2.concatenate(fd3.concatenate()))
+fd = FDataGrid.concatenate_samples([fd1, fd2, fd3])
 fd.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
     sigma, p_val)
-fd.plot(group=groups, legend=True, alpha=0.6)
-fd1.mean().concatenate(fd2.mean().concatenate(fd3.mean()).concatenate()).plot()
+FDataGrid.concatenate_samples([fd.mean() for fd in [fd1, fd2, fd3]]).plot()
 
 ################################################################################
 # In the following, the same process will be followed incrementing sigma
@@ -122,8 +121,7 @@ _, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 fd = fd1.concatenate(fd2.concatenate(fd3.concatenate()))
 fd.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
     sigma, p_val)
-fd.plot(group=groups, legend=True, alpha=0.6)
-fd1.mean().concatenate(fd2.mean().concatenate(fd3.mean()).concatenate()).plot()
+FDataGrid.concatenate_samples([fd.mean() for fd in [fd1, fd2, fd3]]).plot()
 
 ################################################################################
 # Plot for :math:`\sigma = 10`:
@@ -146,8 +144,7 @@ _, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 fd = fd1.concatenate(fd2.concatenate(fd3.concatenate()))
 fd.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
     sigma, p_val)
-fd.plot(group=groups, legend=True, alpha=0.6)
-fd1.mean().concatenate(fd2.mean().concatenate(fd3.mean()).concatenate()).plot()
+FDataGrid.concatenate_samples([fd.mean() for fd in [fd1, fd2, fd3]]).plot()
 
 ################################################################################
 # **References:**

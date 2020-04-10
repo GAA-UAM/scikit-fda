@@ -107,3 +107,6 @@ ENV/
 .idea/
 
 pip-wheel-metadata/
+
+# macOS DS_Store
+.DS_Store

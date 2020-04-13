@@ -37,6 +37,8 @@ def _execute_covariance(covariance, x, y):
     else:
         if callable(covariance):
             result = covariance(x, y)
+        elif hasattr(covariance, "shape"):
+            result = covariance
         else:
             # GPy kernel
             result = covariance.K(x, y)
@@ -211,7 +213,7 @@ class Polynomial(Covariance):
 class Gaussian(Covariance):
     """Gaussian covariance function."""
 
-    _latex_formula = (r"K(x, y) = \sigma^2 \exp\left(\frac{||x - y||^2}{2l^2}"
+    _latex_formula = (r"K(x, y) = \sigma^2 \exp\left(-\frac{||x - y||^2}{2l^2}"
                       r"\right)")
 
     _parameters = [("variance", r"\sigma^2"),
@@ -238,7 +240,7 @@ class Gaussian(Covariance):
 class Exponential(Covariance):
     """Exponential covariance function."""
 
-    _latex_formula = (r"K(x, y) = \sigma^2 \exp\left(\frac{||x - y||}{l}"
+    _latex_formula = (r"K(x, y) = \sigma^2 \exp\left(-\frac{||x - y||}{l}"
                       r"\right)")
 
     _parameters = [("variance", r"\sigma^2"),

@@ -17,7 +17,7 @@ class FPCA(ABC, BaseEstimator, TransformerMixin):
     """Defines the common structure shared between classes that do functional
     principal component analysis
 
-    Attributes:
+    Parameters:
         n_components (int): number of principal components to obtain from
             functional principal component analysis. Defaults to 3.
         centering (bool): if True then calculate the mean of the functional data
@@ -25,14 +25,6 @@ class FPCA(ABC, BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, n_components=3, centering=True):
-        """FPCA constructor
-
-        Args:
-            n_components (int): number of principal components to obtain from
-                functional principal component analysis
-            centering (bool): if True then calculate the mean of the functional
-                data object and center the data first. Defaults to True
-        """
         self.n_components = n_components
         self.centering = centering
 
@@ -136,26 +128,6 @@ class FPCABasis(FPCA):
                  centering=True,
                  regularization_parameter=0,
                  regularization_lfd=2):
-        """FPCABasis constructor
-
-        Args:
-            n_components (int): number of principal components to obtain from
-                functional principal component analysis
-            components_basis (skfda.representation.Basis): the basis in which we
-                want the principal components. Defaults to None. If so, the
-                basis contained in the passed FDataBasis object for the fit
-                function will be used.
-            centering (bool): if True then calculate the mean of the functional
-                data object and center the data first. Defaults to True
-            regularization_parameter (float): this parameter sets the degree of
-                regularization that is desired. Defaults to 0 (no
-                regularization). When this value is large, the resulting
-                principal components tends to be constant.
-            regularization_lfd (LinearDifferentialOperator, list or int): Linear
-                differential operator. If it is not a LinearDifferentialOperator
-                object, it will be converted to one.
-
-        """
         super().__init__(n_components, centering)
         # basis that we want to use for the principal components
         self.components_basis = components_basis
@@ -332,17 +304,6 @@ class FPCAGrid(FPCA):
     """
 
     def __init__(self, n_components=3, weights=None, centering=True):
-        """FPCABasis constructor
-
-        Args:
-            n_components (int): number of principal components to obtain from
-                functional principal component analysis
-            weights (numpy.array): the weights vector used for discrete
-                integration. If none then the trapezoidal rule is used for
-                computing the weights.
-            centering (bool): if True then calculate the mean of the functional
-                data object and center the data first. Defaults to True
-        """
         super().__init__(n_components, centering)
         self.weights = weights
 

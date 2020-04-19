@@ -4,6 +4,8 @@ import scipy.linalg
 
 import numpy as np
 
+from .._utils import _same_domain
+
 
 __author__ = "Pablo Pérez Manso"
 __email__ = "92manso@gmail.com"
@@ -115,8 +117,7 @@ class LinearDifferentialOperator:
                          Otherwise, defaults to (0,1).
         """
 
-        from ..representation.basis import (FDataBasis, Constant,
-                                            _same_domain)
+        from ..representation.basis import FDataBasis, Constant
 
         num_args = sum(
             [a is not None for a in [order_or_weights, order, weights]])
@@ -156,9 +157,8 @@ class LinearDifferentialOperator:
                                            .reshape(-1, 1)).to_list())
 
             elif all(isinstance(n, FDataBasis) for n in weights):
-                if all([_same_domain(weights[0].domain_range,
-                                     x.domain_range) and x.n_samples == 1 for x
-                        in weights]):
+                if all([_same_domain(weights[0], x)
+                        and x.n_samples == 1 for x in weights]):
                     self.weights = weights
 
                     real_domain_range = weights[0].domain_range

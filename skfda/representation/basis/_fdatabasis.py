@@ -5,9 +5,9 @@ import scipy.integrate
 
 import numpy as np
 
-from . import grid
-from .._utils import constants
-from ._functional_data import FData
+from .. import grid
+from ..._utils import constants
+from .._functional_data import FData
 
 
 def _same_domain(one_domain_range, other_domain_range):
@@ -168,8 +168,8 @@ class FDataBasis(FData):
                 Data Analysis* (pp. 86-87). Springer.
 
         """
-        from ..preprocessing.smoothing import BasisSmoother
-        from .grid import FDataGrid
+        from ...preprocessing.smoothing import BasisSmoother
+        from ..grid import FDataGrid
 
         # n is the samples
         # m is the observations
@@ -668,8 +668,8 @@ class FDataBasis(FData):
             numpy.array: Inner Product matrix.
 
         """
-        from ..misc import LinearDifferentialOperator
-        from .basis import Basis
+        from ...misc import LinearDifferentialOperator
+        from ..basis import Basis
 
         if not _same_domain(self.domain_range, other.domain_range):
             raise ValueError("Both Objects should have the same domain_range")

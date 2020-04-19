@@ -38,10 +38,15 @@ class Constant(Basis):
         return (self.copy(), coefs.copy() if order == 0
                 else self.copy(), np.zeros(coefs.shape))
 
+    def _internal_representation(self):
+        return NumberRepresentation.from_basis(self)
+
     def _penalty(self, lfd):
         coefs = lfd.constant_weights()
         if coefs is None:
             return NotImplemented
+
+        internal_repr = self._internal_representation()
 
         return np.array([[coefs[0] ** 2 *
                           (self.domain_range[0][1] -

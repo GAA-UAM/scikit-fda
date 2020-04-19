@@ -11,7 +11,7 @@ import scipy.integrate
 
 import numpy as np
 
-from ..._utils import _list_of_arrays
+from ..._utils import _list_of_arrays, _same_domain
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -24,10 +24,6 @@ def _check_domain(domain_range):
     for domain in domain_range:
         if len(domain) != 2 or domain[0] >= domain[1]:
             raise ValueError(f"The interval {domain} is not well-defined.")
-
-
-def _same_domain(one_domain_range, other_domain_range):
-    return np.array_equal(one_domain_range, other_domain_range)
 
 
 class Basis(ABC):
@@ -134,17 +130,6 @@ class Basis(ABC):
         """
         self.to_basis().plot(chart=chart, derivative=derivative, **kwargs)
 
-    def _internal_representation(self):
-        """
-        Returns an internal representation of the basis.
-
-        This representation may have several operations available that return
-        objects of the same kind, and can be used to build operators in an
-        analytical, but generic, way.
-
-        """
-        return NotImplemented
-
     def _numerical_penalty(self, lfd):
         """Return a penalty matrix using a numerical approach.
 
@@ -185,10 +170,11 @@ class Basis(ABC):
 
         return penalty_matrix
 
-    def _penalty(self, lfd):
+    def _linear_diff_op_inner_product(self, lfd):
         """
         Subclasses may override this for computing analytically
-        the penalty matrix in the cases when that is possible.
+        the penalty matrix associated with a linear differential operator
+        inner product in the cases when that is possible.
 
         Returning NotImplemented will use numerical computation
         of the penalty matrix.
@@ -248,7 +234,7 @@ class Basis(ABC):
         """Default multiplication for a pair of basis"""
         from ._bspline import BSpline
 
-        if not _same_domain(one.domain_range, other.domain_range):
+        if not _same_domain(one, other):
             raise ValueError("Ranges are not equal.")
 
         norder = min(8, one.n_basis + other.n_basis)
@@ -276,7 +262,7 @@ class Basis(ABC):
             Args:
                 other (Basis): Basis to check the domain range definition
         """
-        return _same_domain(self.domain_range, other.domain_range)
+        return _same_domain(self, other)
 
     def copy(self):
         """Basis copy"""

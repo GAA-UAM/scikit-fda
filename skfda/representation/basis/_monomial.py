@@ -43,21 +43,6 @@ class Monomial(Basis):
 
     """
 
-    def _coef_mat(self, derivative):
-        """
-        Obtain the matrix of coefficients.
-
-        Each column of coef_mat contains the numbers that must be multiplied
-        together in order to obtain the coefficient of each basis function
-        Thus, column i will contain i, i - 1, ..., i - derivative + 1.
-        """
-
-        seq = np.arange(self.n_basis)
-        coef_mat = np.linspace(seq, seq - derivative + 1,
-                               derivative, dtype=int)
-
-        return seq, coef_mat
-
     def _coefs_exps_derivatives(self, derivative):
         """
         Return coefficients and exponents of the derivatives.
@@ -67,7 +52,9 @@ class Monomial(Basis):
         When the exponent would be negative (the coefficient in that case
         is zero) returns 0 as the exponent (to prevent division by zero).
         """
-        seq, coef_mat = self._coef_mat(derivative)
+        seq = np.arange(self.n_basis)
+        coef_mat = np.linspace(seq, seq - derivative + 1,
+                               derivative, dtype=int)
         coefs = np.prod(coef_mat, axis=0)
 
         exps = np.maximum(seq - derivative, 0)

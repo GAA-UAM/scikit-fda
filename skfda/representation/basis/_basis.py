@@ -131,95 +131,18 @@ class Basis(ABC):
         self.to_basis().plot(chart=chart, derivative=derivative, **kwargs)
 
     def _numerical_penalty(self, lfd):
-        """Return a penalty matrix using a numerical approach.
+        from ...misc.regularization import (
+            LinearDifferentialOperatorRegularization)
 
-        See :func:`~basis.Basis.penalty`.
-
-        Args:
-            lfd (LinearDifferentialOperator, list or int): Linear
-            differential operator. If it is not a LinearDifferentialOperator
-            object, it will be converted to one.
-        """
-        from skfda.misc import LinearDifferentialOperator
-
-        if not isinstance(lfd, LinearDifferentialOperator):
-            lfd = LinearDifferentialOperator(lfd)
-
-        indices = np.triu_indices(self.n_basis)
-
-        def cross_product(x):
-            """Multiply the two lfds"""
-            res = lfd(self)([x])[:, 0]
-
-            return res[indices[0]] * res[indices[1]]
-
-        # Range of first dimension
-        domain_range = self.domain_range[0]
-
-        penalty_matrix = np.empty((self.n_basis, self.n_basis))
-
-        # Obtain the integrals for the upper matrix
-        triang_vec = scipy.integrate.quad_vec(
-            cross_product, domain_range[0], domain_range[1])[0]
-
-        # Set upper matrix
-        penalty_matrix[indices] = triang_vec
-
-        # Set lower matrix
-        penalty_matrix[(indices[1], indices[0])] = triang_vec
-
-        return penalty_matrix
-
-    def _linear_diff_op_inner_product(self, lfd):
-        """
-        Subclasses may override this for computing analytically
-        the penalty matrix associated with a linear differential operator
-        inner product in the cases when that is possible.
-
-        Returning NotImplemented will use numerical computation
-        of the penalty matrix.
-        """
-        return NotImplemented
+        return LinearDifferentialOperatorRegularization(
+            lfd).penalty_matrix_numerical(self)
 
     def penalty(self, lfd):
-        r"""Return a penalty matrix given a differential operator.
+        from ...misc.regularization import (
+            LinearDifferentialOperatorRegularization)
 
-        The differential operator can be either a derivative of a certain
-        degree or a more complex operator.
-
-        The penalty matrix is defined as [RS05-5-6-2]_:
-
-        .. math::
-            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
-
-        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
-        functions and :math:`L` is a differential operator.
-
-        Args:
-            lfd (LinearDifferentialOperator, list or int): Linear
-            differential operator. If it is not a LinearDifferentialOperator
-            object, it will be converted to one.
-
-        Returns:
-            numpy.array: Penalty matrix.
-
-        References:
-            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
-               roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-               Springer.
-
-        """
-        from skfda.misc import LinearDifferentialOperator
-
-        if not isinstance(lfd, LinearDifferentialOperator):
-            lfd = LinearDifferentialOperator(lfd)
-
-        matrix = self._penalty(lfd)
-
-        if matrix is NotImplemented:
-            return self._numerical_penalty(lfd)
-        else:
-            return matrix
+        return LinearDifferentialOperatorRegularization(
+            lfd).penalty_matrix(self)
 
     @abstractmethod
     def basis_of_product(self, other):
@@ -381,5 +304,5 @@ class Basis(ABC):
     def __eq__(self, other):
         """Equality of Basis"""
         return (type(self) == type(other)
-                and _same_domain(self.domain_range, other.domain_range)
+                and _same_domain(self, other)
                 and self.n_basis == other.n_basis)

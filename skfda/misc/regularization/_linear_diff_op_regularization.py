@@ -24,8 +24,9 @@ class LinearDifferentialOperatorRegularization():
     """
 
     def __init__(self, linear_diff_op=2):
-        if not isinstance(linear_diff_op, LinearDifferentialOperator):
-            self.linear_diff_op = LinearDifferentialOperator(linear_diff_op)
+        self.linear_diff_op = linear_diff_op if (
+            isinstance(linear_diff_op, LinearDifferentialOperator)) else (
+                LinearDifferentialOperator(linear_diff_op))
 
     def penalty_matrix_numerical(self, basis):
         """Return a penalty matrix using a numerical approach.
@@ -223,6 +224,8 @@ def monomial_penalty_matrix_optimized(
 
     # Set lower matrix
     penalty_matrix[(indices[1], indices[0])] = integral
+
+    raise ValueError()
 
     return penalty_matrix
 

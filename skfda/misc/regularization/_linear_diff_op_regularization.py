@@ -1,4 +1,4 @@
-import functools
+from functools import singledispatch
 
 from numpy import polyder, polyint, polymul, polyval
 import scipy.integrate
@@ -6,9 +6,20 @@ from scipy.interpolate import PPoly
 
 import numpy as np
 
-from ..._utils import singledispatchmethod
 from ...representation.basis import Constant, Monomial, Fourier, BSpline
 from .._lfd import LinearDifferentialOperator
+
+
+@singledispatch
+def penalty_matrix_optimized(basis, regularization):
+    """
+    Return a penalty matrix given a basis.
+
+    This method is a singledispatch method that provides an
+    efficient analytical implementation of the computation of the
+    penalty matrix if possible.
+    """
+    return NotImplemented
 
 
 class LinearDifferentialOperatorRegularization():
@@ -27,6 +38,8 @@ class LinearDifferentialOperatorRegularization():
         self.linear_diff_op = linear_diff_op if (
             isinstance(linear_diff_op, LinearDifferentialOperator)) else (
                 LinearDifferentialOperator(linear_diff_op))
+
+    penalty_matrix_optimized = penalty_matrix_optimized
 
     def penalty_matrix_numerical(self, basis):
         """Return a penalty matrix using a numerical approach.
@@ -60,17 +73,6 @@ class LinearDifferentialOperatorRegularization():
 
         return penalty_matrix
 
-    @singledispatchmethod
-    def penalty_matrix_optimized(self, basis):
-        """
-        Return a penalty matrix given a basis.
-
-        This method is a singledispatch method that provides an
-        efficient analytical implementation of the computation of the
-        penalty matrix if possible.
-        """
-        return NotImplemented
-
     def penalty_matrix(self, basis):
         r"""Return a penalty matrix given a basis.
 
@@ -94,7 +96,7 @@ class LinearDifferentialOperatorRegularization():
                Springer.
 
         """
-        matrix = self.penalty_matrix_optimized(basis)
+        matrix = penalty_matrix_optimized(basis, self)
 
         if matrix is NotImplemented:
             return self.penalty_matrix_numerical(basis)
@@ -104,8 +106,8 @@ class LinearDifferentialOperatorRegularization():
 
 @LinearDifferentialOperatorRegularization.penalty_matrix_optimized.register
 def constant_penalty_matrix_optimized(
-        regularization: LinearDifferentialOperatorRegularization,
-        basis: Constant):
+        basis: Constant,
+        regularization: LinearDifferentialOperatorRegularization):
 
     coefs = regularization.linear_diff_op.constant_weights()
     if coefs is None:
@@ -170,8 +172,8 @@ def _monomial_evaluate_constant_linear_diff_op(basis, weights):
 
 @LinearDifferentialOperatorRegularization.penalty_matrix_optimized.register
 def monomial_penalty_matrix_optimized(
-        regularization: LinearDifferentialOperatorRegularization,
-        basis: Monomial):
+        basis: Monomial,
+        regularization: LinearDifferentialOperatorRegularization):
 
     weights = regularization.linear_diff_op.constant_weights()
     if weights is None:
@@ -224,8 +226,6 @@ def monomial_penalty_matrix_optimized(
 
     # Set lower matrix
     penalty_matrix[(indices[1], indices[0])] = integral
-
-    raise ValueError()
 
     return penalty_matrix
 
@@ -287,8 +287,8 @@ def _fourier_penalty_matrix_optimized_orthonormal(basis, weights):
 
 @LinearDifferentialOperatorRegularization.penalty_matrix_optimized.register
 def fourier_penalty_matrix_optimized(
-        regularization: LinearDifferentialOperatorRegularization,
-        basis: Fourier):
+        basis: Fourier,
+        regularization: LinearDifferentialOperatorRegularization):
 
     weights = regularization.linear_diff_op.constant_weights()
     if weights is None:
@@ -304,8 +304,8 @@ def fourier_penalty_matrix_optimized(
 
 @LinearDifferentialOperatorRegularization.penalty_matrix_optimized.register
 def bspline_penalty_matrix_optimized(
-        regularization: LinearDifferentialOperatorRegularization,
-        basis: BSpline):
+        basis: BSpline,
+        regularization: LinearDifferentialOperatorRegularization):
 
     coefs = regularization.linear_diff_op.constant_weights()
     if coefs is None:

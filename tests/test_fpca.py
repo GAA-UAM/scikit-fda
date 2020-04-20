@@ -171,9 +171,11 @@ class FPCATestCase(unittest.TestCase):
             if np.sign(fpca.components_.data_matrix[i][0]) != np.sign(
                     results[i][0]):
                 results[i, :] *= -1
-        np.testing.assert_allclose(np.squeeze(fpca.components_.data_matrix),
-                                   np.squeeze(results),
-                                   rtol=1e-6)
+        np.testing.assert_allclose(
+            fpca.components_.data_matrix.reshape(
+                fpca.components_.data_matrix.shape[:-1]),
+            results,
+            rtol=1e-6)
 
 
 if __name__ == '__main__':

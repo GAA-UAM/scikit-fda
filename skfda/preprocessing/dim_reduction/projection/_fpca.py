@@ -82,16 +82,6 @@ class FPCABasis(FPCA):
     """Functional principal component analysis for functional data represented
     in basis form.
 
-    Attributes:
-        components_ (FDataBasis): this contains the principal components in a
-            basis representation.
-        component_values_ (array_like): this contains the values (eigenvalues)
-            associated with the principal components.
-        pca_ (sklearn.decomposition.PCA): object for PCA.
-            In both cases (discretized FPCA and basis FPCA) the problem can be
-            reduced to a regular PCA problem and use the framework provided by
-            sklearn to continue.
-
     Parameters:
         n_components (int): number of principal components to obtain from
             functional principal component analysis. Defaults to 3.
@@ -106,6 +96,14 @@ class FPCABasis(FPCA):
                 object, it will be converted to one. If you input an integer
                 then the derivative of that degree will be used to regularize
                 the principal components.
+
+    Attributes:
+        components_ (FDataBasis): this contains the principal components in a
+            basis representation.
+        component_values_ (array_like): this contains the values (eigenvalues)
+            associated with the principal components.
+        explained_variance_ratio_ (array_like): this contains the percentage of
+            variance explained by each principal component.
 
     Examples:
         Construct an artificial FDataBasis object and run FPCA with this object.
@@ -228,19 +226,20 @@ class FPCABasis(FPCA):
                         np.sqrt(n_samples))
 
         # initialize the pca module provided by scikit-learn
-        self.pca_ = PCA(n_components=self.n_components)
-        self.pca_.fit(final_matrix)
+        pca = PCA(n_components=self.n_components)
+        pca.fit(final_matrix)
 
         # we choose solve to obtain the component coefficients for the
         # same reason: it is faster and more efficient
         component_coefficients = solve_triangular(np.transpose(l_matrix),
-                                                  np.transpose(self.pca_.components_),
+                                                  np.transpose(pca.components_),
                                                   lower=False)
 
         component_coefficients = np.transpose(component_coefficients)
 
         # the singular values obtained using SVD are the squares of eigenvalues
-        self.component_values_ = self.pca_.singular_values_ ** 2
+        self.component_values_ = pca.singular_values_ ** 2
+        self.explained_variance_ratio_ = pca.explained_variance_ratio_
         self.components_ = X.copy(basis=self.components_basis,
                                   coefficients=component_coefficients)
 
@@ -269,16 +268,6 @@ class FPCAGrid(FPCA):
     """Funcional principal component analysis for functional data represented
     in discretized form.
 
-    Attributes:
-        components_ (FDataBasis): this contains the principal components either
-            in a basis form.
-        component_values_ (array_like): this contains the values (eigenvalues)
-            associated with the principal components.
-        pca_ (sklearn.decomposition.PCA): object for principal component analysis.
-            In both cases (discretized FPCA and basis FPCA) the problem can be
-            reduced to a regular PCA problem and use the framework provided by
-            sklearn to continue.
-
     Parameters:
         n_components (int): number of principal components to obtain from
             functional principal component analysis. Defaults to 3.
@@ -288,6 +277,14 @@ class FPCAGrid(FPCA):
         weights (numpy.array): the weights vector used for discrete
             integration. If none then the trapezoidal rule is used for
             computing the weights.
+
+    Attributes:
+        components_ (FDataBasis): this contains the principal components either
+            in a basis form.
+        component_values_ (array_like): this contains the values (eigenvalues)
+            associated with the principal components.
+        explained_variance_ratio_ (array_like): this contains the percentage of
+            variance explained by each principal component.
 
     Examples:
         In this example we apply discretized functional PCA with some simple
@@ -378,10 +375,11 @@ class FPCAGrid(FPCA):
         # see docstring for more information
         final_matrix = fd_data @ np.sqrt(weights_matrix) / np.sqrt(n_samples)
 
-        self.pca_ = PCA(n_components=self.n_components)
-        self.pca_.fit(final_matrix)
-        self.components_ = X.copy(data_matrix=self.pca_.components_)
-        self.component_values_ = self.pca_.singular_values_ ** 2
+        pca = PCA(n_components=self.n_components)
+        pca.fit(final_matrix)
+        self.components_ = X.copy(data_matrix=pca.components_)
+        self.component_values_ = pca.singular_values_ ** 2
+        self.explained_variance_ratio_ = pca.explained_variance_ratio_
 
         return self
 

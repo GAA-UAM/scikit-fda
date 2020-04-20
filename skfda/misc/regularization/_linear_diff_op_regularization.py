@@ -8,6 +8,7 @@ import numpy as np
 
 from ...representation.basis import Constant, Monomial, Fourier, BSpline
 from .._lfd import LinearDifferentialOperator
+from ._regularization import Regularization
 
 
 @singledispatch
@@ -22,7 +23,7 @@ def penalty_matrix_optimized(basis, regularization):
     return NotImplemented
 
 
-class LinearDifferentialOperatorRegularization():
+class LinearDifferentialOperatorRegularization(Regularization):
     """
     Regularization using the integral of the square of a linear differential
     operator.

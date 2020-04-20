@@ -1,1 +1,2 @@
 from ._linear_diff_op_regularization import LinearDifferentialOperatorRegularization
+from ._regularization import Regularization, compute_penalty_matrix

@@ -130,20 +130,6 @@ class Basis(ABC):
         """
         self.to_basis().plot(chart=chart, derivative=derivative, **kwargs)
 
-    def _numerical_penalty(self, lfd):
-        from ...misc.regularization import (
-            LinearDifferentialOperatorRegularization)
-
-        return LinearDifferentialOperatorRegularization(
-            lfd).penalty_matrix_numerical(self)
-
-    def penalty(self, lfd):
-        from ...misc.regularization import (
-            LinearDifferentialOperatorRegularization)
-
-        return LinearDifferentialOperatorRegularization(
-            lfd).penalty_matrix(self)
-
     @abstractmethod
     def basis_of_product(self, other):
         pass

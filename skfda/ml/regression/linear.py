@@ -159,7 +159,7 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             return coefs
 
     def fit(self, X, y=None, sample_weight=None):
-        from ...misc._lfd import compute_lfd_matrix
+        from ...misc.regularization import compute_penalty_matrix
 
         X, y, sample_weight, coef_basis = self._argcheck_X_y(
             X, y, sample_weight, self.coef_basis)
@@ -181,10 +181,10 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             inner_products = inner_products * np.sqrt(sample_weight)
             y = y * np.sqrt(sample_weight)
 
-        penalty_matrix = compute_lfd_matrix(
+        penalty_matrix = compute_penalty_matrix(
             X=X, basis=coef_basis,
             regularization_parameter=self.regularization_parameter,
-            penalty=self.penalty,
+            regularization=self.penalty,
             penalty_matrix=self.penalty_matrix)
 
         gram_inner_x_coef = inner_products.T @ inner_products + penalty_matrix

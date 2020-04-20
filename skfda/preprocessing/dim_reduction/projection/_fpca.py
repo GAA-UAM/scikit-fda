@@ -402,5 +402,7 @@ class FPCAGrid(FPCA):
 
         # in this case its the coefficient matrix multiplied by the principal
         # components as column vectors
-        return X.copy(data_matrix=np.squeeze(X.data_matrix) @ np.transpose(
-            np.squeeze(self.components_.data_matrix)))
+        return FDataGrid(data_matrix=X.data_matrix.reshape(
+            X.data_matrix.shape[:-1]) @ np.transpose(
+            self.components_.data_matrix.reshape(
+                self.components_.data_matrix.shape[:-1])))

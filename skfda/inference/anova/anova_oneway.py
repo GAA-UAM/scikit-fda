@@ -2,38 +2,35 @@ import numpy as np
 from sklearn.utils import check_random_state
 
 from skfda.misc.metrics import norm_lp
-from skfda.representation import FData, FDataGrid, FDataBasis
+from skfda.representation import FData, FDataGrid
 from skfda.datasets import make_gaussian_process
 
 
-def v_sample_stat(fd, weights, p=2):
+def v_sample_stat(fd, weights):
     r"""
     Calculates a statistic that measures the variability between groups of
-    samples in a :class:`skfda.representation.grid.FDataGrid` object.
+    samples in a :class:`skfda.representation.FData` object.
 
     The statistic defined as below is calculated between all the samples in a
-    :class:`skfda.representation.grid.FDataGrid` object with a given set of
-    weights, and the desired :math:`L_p` norm.
+    :class:`skfda.representation.FData` object with a given set of
+    weights.
 
-    Let :math:`\{f_i\}_{i=1}^k` be a set of samples in a FDataGrid object.
+    Let :math:`\{f_i\}_{i=1}^k` be a set of samples in a FData object.
     Let :math:`\{w_j\}_{j=1}^k` be a set of weights, where :math:`w_i` is
     related to the sample :math:`f_i` for :math:`i=1,\dots,k`.
     The statistic is defined as:
 
     .. math::
-        V_n = \sum_{i<j}^kw_i\|f_i-f_j\|^p
+        V_n = \sum_{i<j}^kw_i\|f_i-f_j\|^2
 
     This statistic is defined in Cuevas[1].
 
     Args:
-         fd (FDataGrid): Object containing all the samples for which we want
+         fd (FData): Object containing all the samples for which we want
             to calculate the statistic.
          weights (list of int): Weights related to each sample. Each
             weight is expected to appear in the same position as its
-            corresponding sample in the FDataGrid object.
-         p (int, optional): p of the lp norm. Must be greater or equal
-            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
-            Defaults to 2.
+            corresponding sample in the FData object.
 
     Returns:
         The value of the statistic.
@@ -72,51 +69,47 @@ def v_sample_stat(fd, weights, p=2):
         raise ValueError("Argument type must inherit FData.")
     if len(weights) != fd.n_samples:
         raise ValueError("Number of weights must match number of samples.")
-    if isinstance(fd, FDataBasis):
-        raise NotImplementedError("Not implemented for FDataBasis objects.")
 
     n = fd.n_samples
-    v_n = 0
+    coef, ops = [], []
     for j in range(n):
         for i in range(j):
-            v_n += weights[i] * norm_lp(fd[i] - fd[j], p=p) ** p
-    return v_n
+            ops.append(fd[i] - fd[j])
+            coef.append(weights[i])
+    return np.dot(coef, norm_lp(FData.concatenate_samples(ops)) ** 2)
 
 
-def v_asymptotic_stat(fd, weights, p=2):
+def v_asymptotic_stat(fd, weights):
     r"""
     Calculates a statistic that measures the variability between groups of
-    samples in a :class:`skfda.representation.grid.FDataGrid` object.
+    samples in a :class:`skfda.representation.FData` object.
 
     The statistic defined as below is calculated between all the samples in a
-    :class:`skfda.representation.grid.FDataGrid` object with a given set of
-    weights, and the desired :math:`L_p` norm.
+    :class:`skfda.representation.FData` object with a given set of
+    weights.
 
-    Let :math:`\{f_i\}_{i=1}^k` be a set of samples in a FDataGrid object.
+    Let :math:`\{f_i\}_{i=1}^k` be a set of samples in a FData object.
     Let :math:`\{w_j\}_{j=1}^k` be a set of weights, where :math:`w_i` is
     related to the sample :math:`f_i` for :math:`i=1,\dots,k`.
     The statistic is defined as:
 
     .. math::
-        \sum_{i<j}^k\|f_i-f_j\sqrt{\cfrac{w_i}{w_j}}\|^p
+        \sum_{i<j}^k\|f_i-f_j\sqrt{\cfrac{w_i}{w_j}}\|^2
 
     This statistic is defined in Cuevas[1].
 
     Args:
-         fd (FDataGrid): Object containing all the samples for which we want
+         fd (FData): Object containing all the samples for which we want
             to calculate the statistic.
          weights (list of int): Weights related to each sample. Each
             weight is expected to appear in the same position as its
-            corresponding sample in the FDataGrid object.
-         p (int, optional): p of the lp norm. Must be greater or equal
-            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
-            Defaults to 2.
+            corresponding sample in the FData object.
 
     Returns:
         The value of the statistic.
 
     Raises:
-        ValueError.
+        ValueError
 
     Examples:
 
@@ -148,32 +141,26 @@ def v_asymptotic_stat(fd, weights, p=2):
         raise ValueError("Argument type must inherit FData.")
     if len(weights) != fd.n_samples:
         raise ValueError("Number of weights must match number of samples.")
-    if isinstance(fd, FDataBasis):
-        raise NotImplementedError("Not implemented for FDataBasis objects.")
 
     n = fd.n_samples
-    v = 0
+    ops = []
     for j in range(n):
         for i in range(j):
-            v += norm_lp(
-                fd[i] - fd[j] * np.sqrt(weights[i] / weights[j]), p=p) ** p
-    return v
+            ops.append(fd[i] - fd[j] * np.sqrt(weights[i] / weights[j]))
+    return np.sum(norm_lp(FData.concatenate_samples(ops)) ** 2)
 
 
-def _anova_bootstrap(fd_grouped, n_reps, p=2, random_state=None):
+def _anova_bootstrap(fd_grouped, n_reps, random_state=None):
 
     n_groups = len(fd_grouped)
-    assert n_groups > 0
+    if n_groups < 2:
+        raise ValueError("At least two groups must be passed in fd_grouped.")
 
-    # Creating list with all the sample points
-    list_sample = [fd.sample_points[0].tolist() for fd in fd_grouped]
-    # Checking that the all the entries in the list are the same
-    if not list_sample.count(list_sample[0]) == len(list_sample):
-        raise ValueError("All FDataGrid passed must have the same sample "
-                         "points.")
+    for fd in fd_grouped[1:]:
+        if not np.array_equal(fd.domain_range, fd_grouped[0].domain_range):
+            raise ValueError("Domain range must match for every FData in "
+                             "fd_grouped.")
 
-    sample_points = fd_grouped[0].sample_points
-    m = len(sample_points[0])  # Number of points in the grid
     start, stop = fd_grouped[0].domain_range[0]
 
     sizes = [fd.n_samples for fd in fd_grouped]  # List with sizes of each group
@@ -181,21 +168,26 @@ def _anova_bootstrap(fd_grouped, n_reps, p=2, random_state=None):
     # Estimating covariances for each group
     k_est = [fd.cov().data_matrix[0, ..., 0] for fd in fd_grouped]
 
+    # Number of sample points for gaussian processes have to match the features
+    # of the covariances.
+    n_features = k_est[0].shape[0]
+
     # Instance a random state object in case random_state is an int
     random_state = check_random_state(random_state)
 
     # Simulating n_reps observations for each of the n_groups gaussian processes
-    sim = [make_gaussian_process(n_reps, n_features=m, start=start, stop=stop,
-                                 cov=k_est[i], random_state=random_state)
+    sim = [make_gaussian_process(n_reps, n_features=n_features, start=start,
+                                 stop=stop, cov=k_est[i],
+                                 random_state=random_state)
            for i in range(n_groups)]
     v_samples = np.empty(n_reps)
     for i in range(n_reps):
         fd = FDataGrid([s.data_matrix[i, ..., 0] for s in sim])
-        v_samples[i] = v_asymptotic_stat(fd, sizes, p=p)
+        v_samples[i] = v_asymptotic_stat(fd, sizes)
     return v_samples
 
 
-def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
+def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None):
     r"""
     Performs one-way functional ANOVA.
 
@@ -233,13 +225,8 @@ def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
             procedure. Defaults to 2000 (This value may change in future
             versions).
 
-        p (int, optional): p of the lp norm. Must be greater or equal
-            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
-            Defaults to 2.
-
         return_dist (bool, optional): Flag to indicate if the function should
-        return a
-            numpy.array with the sampling distribution simulated.
+            return a numpy.array with the sampling distribution simulated.
 
         random_state (optional): Random state.
 
@@ -284,23 +271,37 @@ def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
         raise ValueError("Argument type must inherit FData.")
     if n_reps < 1:
         raise ValueError("Number of simulations must be positive.")
-    if any(isinstance(fd, FDataBasis) for fd in args):
-        raise NotImplementedError("Not implemented for FDataBasis objects.")
 
     fd_groups = args
-    # Creating list with all the sample points
-    list_sample = [fd.sample_points[0].tolist() for fd in fd_groups]
-    # Checking that the all the entries in the list are the same
-    if not list_sample.count(list_sample[0]) == len(list_sample):
-        raise ValueError("All FDataGrid passed must have the same sample "
-                         "points.")
+    if not all([isinstance(fd, type(fd_groups[0])) for fd in fd_groups[1:]]):
+        raise TypeError('Found mixed FData types in arguments.')
 
-    fd_means = FDataGrid.concatenate_samples([fd.mean() for fd in fd_groups])
+    for fd in fd_groups[1:]:
+        if not np.array_equal(fd.domain_range, fd_groups[0].domain_range):
+            raise ValueError("Domain range must match for every FData passed.")
 
-    vn = v_sample_stat(fd_means, [fd.n_samples for fd in fd_groups], p=p)
+    if isinstance(fd_groups[0], FDataGrid):
+        # Creating list with all the sample points
+        list_sample = [fd.sample_points[0].tolist() for fd in fd_groups]
+        # Checking that the all the entries in the list are the same
+        if not list_sample.count(list_sample[0]) == len(list_sample):
+            raise ValueError("All FDataGrid passed must have the same sample "
+                             "points.")
+    else:  # If type is FDataBasis, check same basis
+        list_basis = [fd.basis for fd in fd_groups]
+        if not list_basis.count(list_basis[0]) == len(list_basis):
+            raise NotImplementedError("Not implemented for FDataBasis with "
+                                      "different basis.")
 
-    simulation = _anova_bootstrap(fd_groups, n_reps, p=p,
-                                  random_state=random_state)
+    # FDataGrid where each sample is the mean of each group
+    fd_means = FData.concatenate_samples([fd.mean() for fd in fd_groups])
+
+    # Base statistic
+    vn = v_sample_stat(fd_means, [fd.n_samples for fd in fd_groups])
+
+    # Computing sampling distribution
+    simulation = _anova_bootstrap(fd_groups, n_reps, random_state=random_state)
+
     p_value = np.sum(simulation > vn) / len(simulation)
 
     if return_dist:

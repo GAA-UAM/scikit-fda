@@ -14,6 +14,7 @@ synthetic data.
 import skfda
 from skfda.inference.anova import oneway_anova
 from skfda.representation import FDataGrid
+from skfda.misc.covariances import WhiteNoise
 
 ################################################################################
 # *One-way ANOVA* (analysis of variance) is a test that can be used to
@@ -70,7 +71,7 @@ groups[20:] = 'Sample 3'
 # p-value for the test should be near to zero.
 
 sigma = 0.01
-cov = np.identity(n_features) * sigma
+cov = WhiteNoise(variance=sigma)
 
 fd1 = make_gaussian_process(n_samples, mean=m1, cov=cov,
                             n_features=n_features, random_state=1, start=start,
@@ -90,9 +91,11 @@ print("p-value: {:.3f}".format(p_val))
 # and the averages for each group.
 
 fd = FDataGrid.concatenate_samples([fd1, fd2, fd3])
-fd.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
+fd_total = FDataGrid.concatenate_samples([fd.mean() for fd in [fd1, fd2,
+                                                               fd3]])
+fd_total.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
     sigma, p_val)
-FDataGrid.concatenate_samples([fd.mean() for fd in [fd1, fd2, fd3]]).plot()
+fd_total.plot()
 
 ################################################################################
 # In the following, the same process will be followed incrementing sigma
@@ -102,9 +105,8 @@ FDataGrid.concatenate_samples([fd.mean() for fd in [fd1, fd2, fd3]]).plot()
 
 ################################################################################
 # Plot for :math:`\sigma = 1`:
-
-sigma = 1
-cov = np.identity(n_features) * sigma
+sigma = 0.1
+cov = WhiteNoise(variance=sigma)
 
 fd1 = make_gaussian_process(n_samples, mean=m1, cov=cov,
                             n_features=n_features, random_state=1, start=t[0],
@@ -118,16 +120,18 @@ fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
 
 _, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 
-fd = fd1.concatenate(fd2.concatenate(fd3.concatenate()))
-fd.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
+fd = FDataGrid.concatenate_samples([fd1, fd2, fd3])
+fd_total = FDataGrid.concatenate_samples([fd.mean() for fd in [fd1, fd2,
+                                                               fd3]])
+fd_total.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
     sigma, p_val)
-FDataGrid.concatenate_samples([fd.mean() for fd in [fd1, fd2, fd3]]).plot()
+fd_total.plot()
 
 ################################################################################
 # Plot for :math:`\sigma = 10`:
 
-sigma = 10
-cov = np.identity(n_features) * sigma
+sigma = 1
+cov = WhiteNoise(variance=sigma)
 
 fd1 = make_gaussian_process(n_samples, mean=m1, cov=cov,
                             n_features=n_features, random_state=1, start=t[0],
@@ -141,10 +145,12 @@ fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
 
 _, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 
-fd = fd1.concatenate(fd2.concatenate(fd3.concatenate()))
-fd.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
+fd = FDataGrid.concatenate_samples([fd1, fd2, fd3])
+fd_total = FDataGrid.concatenate_samples([fd.mean() for fd in [fd1, fd2,
+                                                               fd3]])
+fd_total.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
     sigma, p_val)
-FDataGrid.concatenate_samples([fd.mean() for fd in [fd1, fd2, fd3]]).plot()
+fd_total.plot()
 
 ################################################################################
 # **References:**

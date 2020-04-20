@@ -787,53 +787,6 @@ class FDataGrid(FData):
         else:
             return self.copy(data_matrix=np.concatenate(data, axis=0))
 
-    @staticmethod
-    def concatenate_samples(objects, as_coordinates=False):
-        """Join samples from a list of similar FDataGrid objects.
-
-        Joins samples of FDataGrid objects if they have the same
-        dimensions and sampling points.
-
-        Args:
-            objects (list of :obj:`FDataGrid`): Objects to be concatenated.
-            as_coordinates (boolean, optional):  If False concatenates as
-                new samples, else, concatenates each value as new components
-                of the image. Defaults to false.
-
-        Returns:
-            :obj:`FDataGrid`: FDataGrid object with the samples from the
-            original objects.
-
-        Raises:
-            ValueError: In case the provided list of FDataGrid objects is empty.
-
-        Examples:
-            >>> fd = FDataGrid([1,2,4,5,8], range(5))
-            >>> fd_2 = FDataGrid([3,4,7,9,2], range(5))
-            >>> FDataGrid.concatenate_samples([fd, fd_2])
-            FDataGrid(
-                array([[[1],
-                        [2],
-                        [4],
-                        [5],
-                        [8]],
-            <BLANKLINE>
-                       [[3],
-                        [4],
-                        [7],
-                        [9],
-                        [2]]]),
-                sample_points=[array([0, 1, 2, 3, 4])],
-                domain_range=array([[0, 4]]),
-                ...)
-        """
-        if len(objects) < 1:
-            raise ValueError("At least one FDataGrid object must be provided "
-                             "to concatenate.")
-        if not isinstance(objects[0], FDataGrid):
-            raise ValueError("Items in list must be instances of FDataGrid.")
-        return objects[0].concatenate(*objects[1:],
-                                      as_coordinates=as_coordinates)
 
     def scatter(self, *args, **kwargs):
         """Scatter plot of the FDatGrid object.

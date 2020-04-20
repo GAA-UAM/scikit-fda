@@ -338,7 +338,7 @@ class BasisSmoother(_LinearSmoother):
 
     def _coef_matrix(self, input_points):
         """Get the matrix that gives the coefficients"""
-        from ...misc._lfd import compute_lfd_matrix
+        from ...misc.regularization import compute_penalty_matrix
 
         basis_values_input = self.basis.evaluate(input_points).T
 
@@ -348,10 +348,10 @@ class BasisSmoother(_LinearSmoother):
 
         inv = basis_values_input.T @ weight_matrix @ basis_values_input
 
-        penalty_matrix = compute_lfd_matrix(
+        penalty_matrix = compute_penalty_matrix(
             X=None, basis=self.basis,
             regularization_parameter=self.smoothing_parameter,
-            penalty=self.penalty,
+            regularization=self.penalty,
             penalty_matrix=self.penalty_matrix)
 
         inv += penalty_matrix
@@ -401,7 +401,7 @@ class BasisSmoother(_LinearSmoother):
             self (object)
 
         """
-        from ...misc._lfd import compute_lfd_matrix
+        from ...misc.regularization import compute_penalty_matrix
 
         _check_r_to_r(X)
 
@@ -410,10 +410,10 @@ class BasisSmoother(_LinearSmoother):
                                if self.output_points is not None
                                else self.input_points_)
 
-        penalty_matrix = compute_lfd_matrix(
+        penalty_matrix = compute_penalty_matrix(
             X=X, basis=self.basis,
             regularization_parameter=self.smoothing_parameter,
-            penalty=self.penalty,
+            regularization=self.penalty,
             penalty_matrix=self.penalty_matrix)
 
         # n is the samples

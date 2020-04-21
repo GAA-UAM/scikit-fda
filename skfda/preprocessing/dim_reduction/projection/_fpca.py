@@ -91,11 +91,11 @@ class FPCABasis(FPCA):
         components_basis (Basis): the basis in which we want the principal
             components. We can use a different basis than the basis contained in
             the passed FDataBasis object.
-        regularization_lfd (LinearDifferentialOperator, list or int): Linear
-                differential operator. If it is not a LinearDifferentialOperator
-                object, it will be converted to one. If you input an integer
-                then the derivative of that degree will be used to regularize
-                the principal components.
+        penalty (Union[int, Iterable[float],'LinearDifferentialOperator']):
+            Linear differential operator. If it is not a
+            LinearDifferentialOperator object, it will be converted to one.
+            If you input an integerthen the derivative of that degree will be
+            used to regularize the principal components.
 
     Attributes:
         components_ (FDataBasis): this contains the principal components in a
@@ -125,13 +125,13 @@ class FPCABasis(FPCA):
                  components_basis=None,
                  centering=True,
                  regularization_parameter=0,
-                 regularization_lfd=2):
+                 penalty=2):
         super().__init__(n_components, centering)
         # basis that we want to use for the principal components
         self.components_basis = components_basis
         # lambda in the regularization / penalization process
         self.regularization_parameter = regularization_parameter
-        self.regularization_lfd = regularization_lfd
+        self.penalty = penalty
 
     def fit(self, X: FDataBasis, y=None):
         """Computes the first n_components principal components and saves them.
@@ -205,7 +205,7 @@ class FPCABasis(FPCA):
         if self.regularization_parameter > 0:
             # obtain regularization matrix
             regularization_matrix = self.components_basis.penalty(
-                self.regularization_lfd
+                self.penalty
             )
             # apply regularization
             g_matrix = (g_matrix + self.regularization_parameter *

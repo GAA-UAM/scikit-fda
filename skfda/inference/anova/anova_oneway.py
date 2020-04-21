@@ -71,11 +71,17 @@ def v_sample_stat(fd, weights):
         raise ValueError("Number of weights must match number of samples.")
 
     n = fd.n_samples
-    coef, ops = [], []
+    size = (n * n - n) // 2
+    ops = np.empty(size, dtype='object')
+    coef = np.empty(size)
+
+    index = 0
     for j in range(n):
         for i in range(j):
-            ops.append(fd[i] - fd[j])
-            coef.append(weights[i])
+            coef[index] = weights[i]
+            ops[index] = fd[i] - fd[j]
+            index += 1
+
     return np.dot(coef, norm_lp(FData.concatenate_samples(ops)) ** 2)
 
 
@@ -143,10 +149,13 @@ def v_asymptotic_stat(fd, weights):
         raise ValueError("Number of weights must match number of samples.")
 
     n = fd.n_samples
-    ops = []
+    size = (n * n - n) // 2
+    ops = np.empty(size, dtype='object')
+    index = 0
     for j in range(n):
         for i in range(j):
-            ops.append(fd[i] - fd[j] * np.sqrt(weights[i] / weights[j]))
+            ops[index] = fd[i] - fd[j] * np.sqrt(weights[i] / weights[j])
+            index += 1
     return np.sum(norm_lp(FData.concatenate_samples(ops)) ** 2)
 
 
@@ -291,7 +300,7 @@ def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None):
             raise NotImplementedError("Not implemented for FDataBasis with "
                                       "different basis.")
 
-    # FDataGrid where each sample is the mean of each group
+    # FData where each sample is the mean of each group
     fd_means = FData.concatenate_samples([fd.mean() for fd in fd_groups])
 
     # Base statistic

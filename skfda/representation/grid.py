@@ -787,7 +787,6 @@ class FDataGrid(FData):
         else:
             return self.copy(data_matrix=np.concatenate(data, axis=0))
 
-
     def scatter(self, *args, **kwargs):
         """Scatter plot of the FDatGrid object.
 

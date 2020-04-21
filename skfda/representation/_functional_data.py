@@ -814,7 +814,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             raise ValueError("At least one FData object must be provided "
                              "to concatenate.")
 
-        return first.concatenate(*list(objects))
+        return first.concatenate(*objects)
 
     @abstractmethod
     def compose(self, fd, *, eval_points=None, **kwargs):

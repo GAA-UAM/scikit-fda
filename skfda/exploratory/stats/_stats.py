@@ -90,4 +90,4 @@ def depth_based_median(fdatagrid, depth_method=modified_band_depth):
     indices_descending_depth = (-depth).argsort(axis=0)
 
     # The median is the deepest curve
-    return fdatagrid[indices_descending_depth[0]].data_matrix[0, ...]
+    return fdatagrid[indices_descending_depth[0]]

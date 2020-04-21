@@ -116,8 +116,8 @@ def trimmed_means(fdatagrid,
         FDataGrid: object containing the computed trimmed mean.
 
     """
-    n_samples_to_keep = (fdatagrid.n_samples -
-                         fdatagrid.n_samples * trimmed_percentage)
+    n_samples_to_keep = int((fdatagrid.n_samples -
+                            fdatagrid.n_samples * trimmed_percentage))
 
     # compute the depth of each curve and store the indexes in descending order
     depth = depth_method(fdatagrid)

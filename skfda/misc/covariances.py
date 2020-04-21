@@ -255,8 +255,6 @@ class Exponential(Covariance):
         y = _transform_to_2d(y)
 
         x_y = _squared_norms(x, y)
-        print((self.variance * np.exp(-np.sqrt(x_y) / (
-            self.length_scale))).shape)
         return self.variance * np.exp(-np.sqrt(x_y) / (self.length_scale))
 
     def to_sklearn(self):

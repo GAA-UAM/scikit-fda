@@ -72,7 +72,7 @@ def cov(fdatagrid):
 def depth_based_median(fdatagrid, depth_method=modified_band_depth):
     """Compute the median based on a depth measure.
 
-    The depth based median is basically the deepest curve given a certain
+    The depth based median is the deepest curve given a certain
     depth measure
 
     Args:

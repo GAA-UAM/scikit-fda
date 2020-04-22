@@ -69,7 +69,7 @@ class CoefficientInfoFDataBasis(CoefficientInfo):
         return FDataBasis(self.basis, coefs.T)
 
 
-@coefficient_info_from_covariate.register
+@coefficient_info_from_covariate.register(FDataBasis)
 def coefficient_info_from_covariate_fdatabasis(
         X: FDataBasis, y, **kwargs) -> CoefficientInfoFDataBasis:
     basis = kwargs['basis']

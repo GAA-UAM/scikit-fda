@@ -350,7 +350,6 @@ class BasisSmoother(_LinearSmoother):
         inv = basis_values_input.T @ weight_matrix @ basis_values_input
 
         penalty_matrix = compute_penalty_matrix(
-            X=None,
             coef_info=CoefficientInfoFDataBasis(None, self.basis),
             regularization_parameter=self.smoothing_parameter,
             regularization=self.penalty,
@@ -413,7 +412,6 @@ class BasisSmoother(_LinearSmoother):
                                else self.input_points_)
 
         penalty_matrix = compute_penalty_matrix(
-            X=X,
             coef_info=CoefficientInfoFDataBasis(None, self.basis),
             regularization_parameter=self.smoothing_parameter,
             regularization=self.penalty,

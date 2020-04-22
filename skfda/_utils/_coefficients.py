@@ -5,15 +5,6 @@ import numpy as np
 from ..representation.basis import Basis, FDataBasis
 
 
-@singledispatch
-def coefficient_info_from_covariate(X, y, **kwargs):
-    """
-    Make a coefficient info object from a covariate.
-
-    """
-    return CoefficientInfo(type(X), shape=None)
-
-
 class CoefficientInfo():
     """
     Information about an estimated coefficient.
@@ -53,6 +44,15 @@ class CoefficientInfo():
         return coefs
 
 
+@singledispatch
+def coefficient_info_from_covariate(X, y, **kwargs) -> CoefficientInfo:
+    """
+    Make a coefficient info object from a covariate.
+
+    """
+    return CoefficientInfo(type(X), shape=X.shape)
+
+
 class CoefficientInfoFDataBasis(CoefficientInfo):
 
     def __init__(self, shape, basis):
@@ -70,7 +70,8 @@ class CoefficientInfoFDataBasis(CoefficientInfo):
 
 
 @coefficient_info_from_covariate.register
-def coefficient_info_from_covariate_fdatabasis(X: FDataBasis, y, **kwargs):
+def coefficient_info_from_covariate_fdatabasis(
+        X: FDataBasis, y, **kwargs) -> CoefficientInfoFDataBasis:
     basis = kwargs['basis']
     if basis is None:
         basis = X.basis
@@ -78,4 +79,4 @@ def coefficient_info_from_covariate_fdatabasis(X: FDataBasis, y, **kwargs):
     if not isinstance(basis, Basis):
         raise TypeError(f"basis must be a Basis object, not {type(basis)}")
 
-    return CoefficientInfoFDataBasis(shape=None, basis=basis)
+    return CoefficientInfoFDataBasis(shape=(len(X),), basis=basis)

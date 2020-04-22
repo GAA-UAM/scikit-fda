@@ -16,8 +16,9 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
         regularization = LinearDifferentialOperatorRegularization(
             linear_diff_op)
 
-        penalty = regularization.penalty_matrix(basis)
-        numerical_penalty = regularization.penalty_matrix_numerical(basis)
+        penalty = regularization.penalty_matrix_basis(basis)
+        numerical_penalty = regularization.penalty_matrix_basis_numerical(
+            basis)
 
         np.testing.assert_allclose(
             penalty,
@@ -152,8 +153,9 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
 
         regularization = LinearDifferentialOperatorRegularization(
             basis.order - 1)
-        penalty = regularization.penalty_matrix(basis)
-        numerical_penalty = regularization.penalty_matrix_numerical(basis)
+        penalty = regularization.penalty_matrix_basis(basis)
+        numerical_penalty = regularization.penalty_matrix_basis_numerical(
+            basis)
 
         np.testing.assert_allclose(
             penalty,

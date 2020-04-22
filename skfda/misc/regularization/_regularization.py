@@ -13,27 +13,14 @@ class Regularization(abc.ABC):
     """
 
     @abc.abstractmethod
-    def penalty_matrix(self, basis):
-        r"""Return a penalty matrix given a basis.
+    def penalty_matrix(self, coef_info):
+        r"""Return a penalty matrix given the coefficient information.
 
         """
         pass
 
 
-def _apply_regularization(X, coef_info, regularization: Regularization):
-    """
-    Apply the lfd to a single data type.
-    """
-
-    if isinstance(X, np.ndarray):
-        # Multivariate objects have no penalty
-        return np.zeros((X.shape[1], X.shape[1]))
-
-    else:
-        return regularization.penalty_matrix(coef_info.basis)
-
-
-def compute_penalty_matrix(X, coef_info, regularization_parameter,
+def compute_penalty_matrix(coef_info, regularization_parameter,
                            regularization, penalty_matrix):
     """
     Computes the regularization matrix for a linear differential operator.
@@ -58,13 +45,12 @@ def compute_penalty_matrix(X, coef_info, regularization_parameter,
                 regularization)
 
         if isinstance(coef_info, CoefficientInfo):
-            penalty_matrix = _apply_regularization(
-                X, coef_info, regularization)
+            penalty_matrix = regularization.penalty_matrix(coef_info)
         else:
             # If X and basis are lists
 
-            penalty_blocks = [_apply_regularization(x, c, regularization)
-                              for x, c in zip(X, coef_info)]
+            penalty_blocks = [regularization.penalty_matrix(c)
+                              for c in coef_info]
             penalty_matrix = scipy.linalg.block_diag(*penalty_blocks)
 
     return regularization_parameter * penalty_matrix

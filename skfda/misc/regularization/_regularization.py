@@ -3,6 +3,7 @@ import abc
 import scipy.linalg
 
 import numpy as np
+from ..._utils._coefficients import CoefficientInfo
 
 
 class Regularization(abc.ABC):
@@ -19,7 +20,7 @@ class Regularization(abc.ABC):
         pass
 
 
-def _apply_regularization(X, basis, regularization: Regularization):
+def _apply_regularization(X, coef_info, regularization: Regularization):
     """
     Apply the lfd to a single data type.
     """
@@ -29,17 +30,16 @@ def _apply_regularization(X, basis, regularization: Regularization):
         return np.zeros((X.shape[1], X.shape[1]))
 
     else:
-        return regularization.penalty_matrix(basis)
+        return regularization.penalty_matrix(coef_info.basis)
 
 
-def compute_penalty_matrix(X, basis, regularization_parameter,
+def compute_penalty_matrix(X, coef_info, regularization_parameter,
                            regularization, penalty_matrix):
     """
     Computes the regularization matrix for a linear differential operator.
 
     X can be a list of mixed data.
     """
-    from ...representation.basis import Basis
     from ._linear_diff_op_regularization import (
         LinearDifferentialOperatorRegularization)
 
@@ -57,13 +57,14 @@ def compute_penalty_matrix(X, basis, regularization_parameter,
             regularization = LinearDifferentialOperatorRegularization(
                 regularization)
 
-        if isinstance(basis, Basis):
-            penalty_matrix = _apply_regularization(X, basis, regularization)
+        if isinstance(coef_info, CoefficientInfo):
+            penalty_matrix = _apply_regularization(
+                X, coef_info, regularization)
         else:
             # If X and basis are lists
 
-            penalty_blocks = [_apply_regularization(x, b, regularization)
-                              for x, b in zip(X, basis)]
+            penalty_blocks = [_apply_regularization(x, c, regularization)
+                              for x, c in zip(X, coef_info)]
             penalty_matrix = scipy.linalg.block_diag(*penalty_blocks)
 
     return regularization_parameter * penalty_matrix

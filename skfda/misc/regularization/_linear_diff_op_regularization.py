@@ -1,4 +1,5 @@
 from functools import singledispatch
+from skfda._utils._coefficients import CoefficientInfoFDataBasis
 
 from numpy import polyder, polyint, polymul, polyval
 import scipy.integrate
@@ -6,13 +7,15 @@ from scipy.interpolate import PPoly
 
 import numpy as np
 
-from ...representation.basis import Constant, Monomial, Fourier, BSpline
+from ..._utils._coefficients import CoefficientInfo
+from ...representation.basis import Basis, Constant, Monomial, Fourier, BSpline
 from .._lfd import LinearDifferentialOperator
 from ._regularization import Regularization
 
 
 @singledispatch
-def penalty_matrix_optimized(basis, regularization):
+def penalty_matrix_basis_opt(basis: Basis,
+                             regularization):
     """
     Return a penalty matrix given a basis.
 
@@ -21,6 +24,19 @@ def penalty_matrix_optimized(basis, regularization):
     penalty matrix if possible.
     """
     return NotImplemented
+
+
+@singledispatch
+def penalty_matrix_coef_info(coef_info: CoefficientInfo,
+                             regularization):
+    """
+    Return a penalty matrix given the coefficient information.
+
+    This method is a singledispatch method that provides an
+    implementation of the computation of the penalty matrix
+    for a particular coefficient type.
+    """
+    return np.zeros((coef_info.shape[1], coef_info.shape[1]))
 
 
 class LinearDifferentialOperatorRegularization(Regularization):
@@ -40,9 +56,13 @@ class LinearDifferentialOperatorRegularization(Regularization):
             isinstance(linear_diff_op, LinearDifferentialOperator)) else (
                 LinearDifferentialOperator(linear_diff_op))
 
-    penalty_matrix_optimized = penalty_matrix_optimized
+    penalty_matrix_basis_opt = penalty_matrix_basis_opt
+    penalty_matrix_coef_info = penalty_matrix_coef_info
 
-    def penalty_matrix_numerical(self, basis):
+    def penalty_matrix(self, coef_info):
+        return penalty_matrix_coef_info(coef_info, self)
+
+    def penalty_matrix_basis_numerical(self, basis):
         """Return a penalty matrix using a numerical approach.
 
         Args:
@@ -74,7 +94,7 @@ class LinearDifferentialOperatorRegularization(Regularization):
 
         return penalty_matrix
 
-    def penalty_matrix(self, basis):
+    def penalty_matrix_basis(self, basis):
         r"""Return a penalty matrix given a basis.
 
         The penalty matrix is defined as [RS05-5-6-2]_:
@@ -97,15 +117,35 @@ class LinearDifferentialOperatorRegularization(Regularization):
                Springer.
 
         """
-        matrix = penalty_matrix_optimized(basis, self)
+        matrix = penalty_matrix_basis_opt(basis, self)
 
         if matrix is NotImplemented:
-            return self.penalty_matrix_numerical(basis)
+            return self.penalty_matrix_basis_numerical(basis)
         else:
             return matrix
 
+###########################################
+#
+# Implementations for each coefficient type
+#
+###########################################
 
-@LinearDifferentialOperatorRegularization.penalty_matrix_optimized.register
+
+@LinearDifferentialOperatorRegularization.penalty_matrix_coef_info.register
+def penalty_matrix_coef_info_fdatabasis(
+        coef_info: CoefficientInfoFDataBasis,
+        regularization: LinearDifferentialOperatorRegularization):
+    return regularization.penalty_matrix_basis(coef_info.basis)
+
+
+###########################################
+#
+# Optimized implementations for each basis.
+#
+###########################################
+
+
+@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register
 def constant_penalty_matrix_optimized(
         basis: Constant,
         regularization: LinearDifferentialOperatorRegularization):
@@ -171,7 +211,7 @@ def _monomial_evaluate_constant_linear_diff_op(basis, weights):
     return polynomials
 
 
-@LinearDifferentialOperatorRegularization.penalty_matrix_optimized.register
+@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register
 def monomial_penalty_matrix_optimized(
         basis: Monomial,
         regularization: LinearDifferentialOperatorRegularization):
@@ -286,7 +326,7 @@ def _fourier_penalty_matrix_optimized_orthonormal(basis, weights):
     return penalty_matrix
 
 
-@LinearDifferentialOperatorRegularization.penalty_matrix_optimized.register
+@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register
 def fourier_penalty_matrix_optimized(
         basis: Fourier,
         regularization: LinearDifferentialOperatorRegularization):
@@ -303,7 +343,7 @@ def fourier_penalty_matrix_optimized(
     return _fourier_penalty_matrix_optimized_orthonormal(basis, weights)
 
 
-@LinearDifferentialOperatorRegularization.penalty_matrix_optimized.register
+@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register
 def bspline_penalty_matrix_optimized(
         basis: BSpline,
         regularization: LinearDifferentialOperatorRegularization):

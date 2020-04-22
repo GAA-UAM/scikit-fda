@@ -152,7 +152,7 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             y = y * np.sqrt(sample_weight)
 
         penalty_matrix = compute_penalty_matrix(
-            X=X, coef_info=coef_info,
+            coef_info=coef_info,
             regularization_parameter=self.regularization_parameter,
             regularization=self.penalty,
             penalty_matrix=self.penalty_matrix)

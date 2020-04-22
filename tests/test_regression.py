@@ -240,7 +240,7 @@ class TestMultivariateLinearRegression(unittest.TestCase):
         beta = FDataBasis(Monomial(n_basis=7), np.identity(7))
 
         scalar = MultivariateLinearRegression(coef_basis=[beta])
-        with np.testing.assert_raises(ValueError):
+        with np.testing.assert_raises(TypeError):
             scalar.fit([x_fd], y)
 
     def test_error_weights_lenght(self):

@@ -14,6 +14,7 @@ import numpy as np
 
 from ... import FDataBasis
 from ... import FDataGrid
+from ..._utils._coefficients import CoefficientInfoFDataBasis
 from ._linear import _LinearSmoother, _check_r_to_r
 
 
@@ -349,7 +350,8 @@ class BasisSmoother(_LinearSmoother):
         inv = basis_values_input.T @ weight_matrix @ basis_values_input
 
         penalty_matrix = compute_penalty_matrix(
-            X=None, basis=self.basis,
+            X=None,
+            coef_info=CoefficientInfoFDataBasis(None, self.basis),
             regularization_parameter=self.smoothing_parameter,
             regularization=self.penalty,
             penalty_matrix=self.penalty_matrix)
@@ -411,7 +413,8 @@ class BasisSmoother(_LinearSmoother):
                                else self.input_points_)
 
         penalty_matrix = compute_penalty_matrix(
-            X=X, basis=self.basis,
+            X=X,
+            coef_info=CoefficientInfoFDataBasis(None, self.basis),
             regularization_parameter=self.smoothing_parameter,
             regularization=self.penalty,
             penalty_matrix=self.penalty_matrix)

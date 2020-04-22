@@ -6,6 +6,7 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
 import numpy as np
+from ..._utils._coefficients import coefficient_info_from_covariate
 
 
 class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
@@ -126,50 +127,19 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         self.penalty = penalty
         self.penalty_matrix = penalty_matrix
 
-    def _inner_product_matrix(self, x, basis):
-        """
-        Compute the inner product matrix of a variable.
-
-        The variable can be multivariate or functional.
-
-        """
-        if isinstance(x, FDataBasis):
-            # Functional inner product
-            xcoef = x.coefficients
-            inner_basis = x.basis.inner_product(basis)
-            return xcoef @ inner_basis
-        else:
-            # Multivariate inner product
-            if basis is not None:
-                raise ValueError("Multivariate data coefficients "
-                                 "should not have a basis")
-            return np.atleast_2d(x)
-
-    def _convert_coefs(self, x, basis, coefs):
-        """
-        Convert to original form.
-        """
-        if isinstance(x, FDataBasis):
-            # Functional coefs
-            return FDataBasis(
-                basis,
-                coefs.T)
-        else:
-            # Multivariate coefs
-            return coefs
-
     def fit(self, X, y=None, sample_weight=None):
         from ...misc.regularization import compute_penalty_matrix
 
-        X, y, sample_weight, coef_basis = self._argcheck_X_y(
+        X, y, sample_weight, coef_info = self._argcheck_X_y(
             X, y, sample_weight, self.coef_basis)
 
         if self.fit_intercept:
-            X = [np.ones((len(y), 1))] + X
-            coef_basis = [None] + coef_basis
+            new_x = np.ones((len(y), 1))
+            X = [new_x] + X
+            coef_info = [coefficient_info_from_covariate(new_x, y)] + coef_info
 
-        inner_products = [self._inner_product_matrix(x, basis)
-                          for x, basis in zip(X, coef_basis)]
+        inner_products = [c.regression_matrix(x, y)
+                          for x, c in zip(X, coef_info)]
 
         coef_lengths = np.array([i.shape[1] for i in inner_products])
         coef_start = np.cumsum(coef_lengths)
@@ -182,7 +152,7 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             y = y * np.sqrt(sample_weight)
 
         penalty_matrix = compute_penalty_matrix(
-            X=X, basis=coef_basis,
+            X=X, coef_info=coef_info,
             regularization_parameter=self.regularization_parameter,
             regularization=self.penalty,
             penalty_matrix=self.penalty_matrix)
@@ -194,8 +164,8 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         basiscoef_list = np.split(basiscoefs, coef_start)
 
         # Express the coefficients in functional form
-        coefs = [self._convert_coefs(x, basis, bcoefs)
-                 for x, basis, bcoefs in zip(X, coef_basis, basiscoef_list)]
+        coefs = [c.convert_from_constant_coefs(bcoefs)
+                 for c, bcoefs in zip(coef_info, basiscoef_list)]
 
         if self.fit_intercept:
             self.intercept_ = coefs[0]
@@ -241,15 +211,6 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
 
         return X
 
-    def _get_coef_basis(self, x, basis):
-        if basis is None:
-            basis = getattr(x, 'basis', None)
-            return basis
-        else:
-            if not isinstance(basis, Basis):
-                raise ValueError("coef_basis should be a list of Basis.")
-            return basis
-
     def _argcheck_X_y(self, X, y, sample_weight=None, coef_basis=None):
         """Do some checks to types and shapes"""
 
@@ -275,8 +236,8 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             raise ValueError("The number of samples on independent and "
                              "dependent variables should be the same")
 
-        coef_basis = [self._get_coef_basis(x, b)
-                      for x, b in zip(X, coef_basis)]
+        coef_info = [coefficient_info_from_covariate(x, y, basis=b)
+                     for x, b in zip(X, coef_basis)]
 
         if sample_weight is None:
             sample_weight = np.ones(len(y))
@@ -289,4 +250,4 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             raise ValueError(
                 "The sample weights should be non negative values")
 
-        return X, y, sample_weight, coef_basis
+        return X, y, sample_weight, coef_info

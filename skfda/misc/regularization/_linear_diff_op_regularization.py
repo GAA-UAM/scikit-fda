@@ -131,7 +131,8 @@ class LinearDifferentialOperatorRegularization(Regularization):
 ###########################################
 
 
-@LinearDifferentialOperatorRegularization.penalty_matrix_coef_info.register
+@LinearDifferentialOperatorRegularization.penalty_matrix_coef_info.register(
+    CoefficientInfoFDataBasis)
 def penalty_matrix_coef_info_fdatabasis(
         coef_info: CoefficientInfoFDataBasis,
         regularization: LinearDifferentialOperatorRegularization):
@@ -145,7 +146,8 @@ def penalty_matrix_coef_info_fdatabasis(
 ###########################################
 
 
-@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register
+@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register(
+    Constant)
 def constant_penalty_matrix_optimized(
         basis: Constant,
         regularization: LinearDifferentialOperatorRegularization):
@@ -211,7 +213,8 @@ def _monomial_evaluate_constant_linear_diff_op(basis, weights):
     return polynomials
 
 
-@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register
+@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register(
+    Monomial)
 def monomial_penalty_matrix_optimized(
         basis: Monomial,
         regularization: LinearDifferentialOperatorRegularization):
@@ -326,7 +329,8 @@ def _fourier_penalty_matrix_optimized_orthonormal(basis, weights):
     return penalty_matrix
 
 
-@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register
+@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register(
+    Fourier)
 def fourier_penalty_matrix_optimized(
         basis: Fourier,
         regularization: LinearDifferentialOperatorRegularization):
@@ -343,7 +347,8 @@ def fourier_penalty_matrix_optimized(
     return _fourier_penalty_matrix_optimized_orthonormal(basis, weights)
 
 
-@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register
+@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register(
+    BSpline)
 def bspline_penalty_matrix_optimized(
         basis: BSpline,
         regularization: LinearDifferentialOperatorRegularization):

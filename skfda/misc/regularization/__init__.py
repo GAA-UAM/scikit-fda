@@ -1,2 +1,4 @@
+from ._endpoints_difference_regularization import EndpointsDifferenceRegularization
+from ._l2_regularization import L2Regularization
 from ._linear_diff_op_regularization import LinearDifferentialOperatorRegularization
 from ._regularization import Regularization, compute_penalty_matrix

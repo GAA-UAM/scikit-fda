@@ -1,11 +1,13 @@
+import warnings
+
 from skfda.misc._math import inner_product
 from skfda.representation import FData
 from skfda.representation.basis import FDataBasis, Constant, Basis
-
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
 import numpy as np
+
 from ..._utils._coefficients import coefficient_info_from_covariate
 
 
@@ -157,6 +159,10 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             regularization=self.penalty,
             penalty_matrix=self.penalty_matrix)
 
+        if self.fit_intercept and hasattr(penalty_matrix, "shape"):
+            # Intercept is not penalized
+            penalty_matrix[0, 0] = 0
+
         gram_inner_x_coef = inner_products.T @ inner_products + penalty_matrix
         inner_x_coef_y = inner_products.T @ y
 
@@ -207,7 +213,7 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         X = [x if isinstance(x, FData) else np.asarray(x) for x in X]
 
         if all(not isinstance(i, FData) for i in X):
-            raise ValueError("All the covariates are scalar.")
+            warnings.warn("All the covariates are scalar.")
 
         return X
 

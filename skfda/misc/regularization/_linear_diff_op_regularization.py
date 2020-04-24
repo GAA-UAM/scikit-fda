@@ -1,9 +1,9 @@
 from functools import singledispatch
-from skfda._utils._coefficients import CoefficientInfoFDataBasis
 
 from numpy import polyder, polyint, polymul, polyval
 import scipy.integrate
 from scipy.interpolate import PPoly
+from skfda._utils._coefficients import CoefficientInfoFDataBasis
 
 import numpy as np
 
@@ -36,7 +36,7 @@ def penalty_matrix_coef_info(coef_info: CoefficientInfo,
     implementation of the computation of the penalty matrix
     for a particular coefficient type.
     """
-    return np.zeros((coef_info.shape[1], coef_info.shape[1]))
+    return np.zeros((coef_info.shape[0], coef_info.shape[0]))
 
 
 class LinearDifferentialOperatorRegularization(Regularization):

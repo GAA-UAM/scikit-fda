@@ -14,7 +14,7 @@ class CoefficientInfo():
 
     Parameters:
         coef_type: Class of the coefficient.
-        shape: Shape of the coefficient.
+        shape: Shape of the constant coefficients form.
 
     """
 
@@ -50,13 +50,13 @@ def coefficient_info_from_covariate(X, y, **kwargs) -> CoefficientInfo:
     Make a coefficient info object from a covariate.
 
     """
-    return CoefficientInfo(type(X), shape=X.shape)
+    return CoefficientInfo(type(X), shape=X.shape[1:])
 
 
 class CoefficientInfoFDataBasis(CoefficientInfo):
 
-    def __init__(self, shape, basis):
-        super().__init__(coef_type=FDataBasis, shape=shape)
+    def __init__(self, basis):
+        super().__init__(coef_type=FDataBasis, shape=(basis.n_basis,))
 
         self.basis = basis
 
@@ -79,4 +79,4 @@ def coefficient_info_from_covariate_fdatabasis(
     if not isinstance(basis, Basis):
         raise TypeError(f"basis must be a Basis object, not {type(basis)}")
 
-    return CoefficientInfoFDataBasis(shape=(len(X),), basis=basis)
+    return CoefficientInfoFDataBasis(basis=basis)

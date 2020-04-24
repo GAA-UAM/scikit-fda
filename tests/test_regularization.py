@@ -1,8 +1,17 @@
-from skfda.misc.regularization import LinearDifferentialOperatorRegularization
+import unittest
+import warnings
+
+import skfda
+from skfda.misc.regularization import (LinearDifferentialOperatorRegularization,
+                                       EndpointsDifferenceRegularization,
+                                       L2Regularization)
 from skfda.misc.regularization._linear_diff_op_regularization import (
     _monomial_evaluate_constant_linear_diff_op)
+from skfda.ml.regression.linear import MultivariateLinearRegression
 from skfda.representation.basis import Constant, Monomial, BSpline, Fourier
-import unittest
+from sklearn.datasets import make_regression
+from sklearn.linear_model import Ridge
+from sklearn.model_selection._split import train_test_split
 
 import numpy as np
 
@@ -166,3 +175,71 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
             numerical_penalty,
             res
         )
+
+
+class TestEndpointsDifferenceRegularization(unittest.TestCase):
+
+    def test_basis_conversion(self):
+
+        data_matrix = np.linspace([0, 1, 2, 3], [1, 2, 3, 4], 100)
+
+        fd = skfda.FDataGrid(data_matrix.T)
+
+        smoother = skfda.preprocessing.smoothing.BasisSmoother(
+            basis=skfda.representation.basis.BSpline(
+                n_basis=10, domain_range=fd.domain_range),
+            penalty=EndpointsDifferenceRegularization(),
+            smoothing_parameter=10000)
+
+        fd_basis = smoother.fit_transform(fd)
+
+        np.testing.assert_allclose(
+            fd_basis(0),
+            fd_basis(1),
+            atol=0.001
+        )
+
+
+class TestL2Regularization(unittest.TestCase):
+
+    def test_multivariate(self):
+
+        def ignore_scalar_warning():
+            warnings.filterwarnings(
+                "ignore", category=UserWarning,
+                message="All the covariates are scalar.")
+
+        X, y = make_regression(n_samples=20, n_features=10,
+                               random_state=1, bias=3.5)
+
+        X_train, X_test, y_train, _ = train_test_split(
+            X, y, random_state=2)
+
+        for regularization_parameter in [0, 1, 10, 100]:
+
+            with self.subTest(
+                    regularization_parameter=regularization_parameter):
+
+                sklearn_l2 = Ridge(alpha=regularization_parameter)
+                skfda_l2 = MultivariateLinearRegression(
+                    penalty=L2Regularization(),
+                    regularization_parameter=regularization_parameter)
+
+                sklearn_l2.fit(X_train, y_train)
+                with warnings.catch_warnings():
+                    ignore_scalar_warning()
+                    skfda_l2.fit(X_train, y_train)
+
+                sklearn_y_pred = sklearn_l2.predict(X_test)
+                with warnings.catch_warnings():
+                    ignore_scalar_warning()
+                    skfda_y_pred = skfda_l2.predict(X_test)
+
+                np.testing.assert_allclose(
+                    sklearn_l2.coef_, skfda_l2.coef_[0])
+
+                np.testing.assert_allclose(
+                    sklearn_l2.intercept_, skfda_l2.intercept_)
+
+                np.testing.assert_allclose(
+                    sklearn_y_pred, skfda_y_pred)

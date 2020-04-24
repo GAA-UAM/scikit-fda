@@ -1127,8 +1127,8 @@ class FDataGrid(FData):
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
 
         for i in inputs:
-            if isinstance(i, FDataGrid) and not np.all(i.sample_points ==
-                                                       self.sample_points):
+            if isinstance(i, FDataGrid) and not np.array_equal(
+                    i.sample_points, self.sample_points):
                 return NotImplemented
 
         new_inputs = [i.data_matrix if isinstance(i, FDataGrid)

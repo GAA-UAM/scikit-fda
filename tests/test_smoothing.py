@@ -1,15 +1,15 @@
 import unittest
 
+import skfda
+from skfda._utils import _check_estimator
+from skfda.representation.basis import BSpline, Monomial
+from skfda.representation.grid import FDataGrid
 import sklearn
 
 import numpy as np
-import skfda
-from skfda._utils import _check_estimator
 import skfda.preprocessing.smoothing as smoothing
 import skfda.preprocessing.smoothing.kernel_smoothers as kernel_smoothers
 import skfda.preprocessing.smoothing.validation as validation
-from skfda.representation.basis import BSpline, Monomial
-from skfda.representation.grid import FDataGrid
 
 
 class TestSklearnEstimators(unittest.TestCase):
@@ -79,7 +79,7 @@ class TestBasisSmoother(unittest.TestCase):
         fd = FDataGrid(data_matrix=x, sample_points=t)
         smoother = smoothing.BasisSmoother(basis=basis,
                                            smoothing_parameter=10,
-                                           penalty=2, method='cholesky',
+                                           regularization=2, method='cholesky',
                                            return_basis=True)
         fd_basis = smoother.fit_transform(fd)
         np.testing.assert_array_almost_equal(
@@ -94,7 +94,7 @@ class TestBasisSmoother(unittest.TestCase):
         fd = FDataGrid(data_matrix=x, sample_points=t)
         smoother = smoothing.BasisSmoother(basis=basis,
                                            smoothing_parameter=10,
-                                           penalty=2, method='qr',
+                                           regularization=2, method='qr',
                                            return_basis=True)
         fd_basis = smoother.fit_transform(fd)
         np.testing.assert_array_almost_equal(
@@ -111,7 +111,7 @@ class TestBasisSmoother(unittest.TestCase):
         fd = FDataGrid(data_matrix=x, sample_points=t)
         smoother = smoothing.BasisSmoother(basis=basis,
                                            smoothing_parameter=1,
-                                           penalty=2,
+                                           regularization=2,
                                            return_basis=True)
         fd_basis = smoother.fit_transform(fd)
         # These results where extracted from the R package fda

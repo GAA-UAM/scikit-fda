@@ -1,7 +1,8 @@
+import unittest
+
 from skfda.ml.regression import MultivariateLinearRegression
 from skfda.representation.basis import (FDataBasis, Constant, Monomial,
                                         Fourier,  BSpline)
-import unittest
 
 import numpy as np
 
@@ -182,7 +183,7 @@ class TestMultivariateLinearRegression(unittest.TestCase):
 
         scalar = MultivariateLinearRegression(coef_basis=[Fourier(n_basis=5)])
 
-        with np.testing.assert_raises(ValueError):
+        with np.testing.assert_warns(UserWarning):
             scalar.fit([x_fd], y)
 
     def test_error_y_is_FData(self):

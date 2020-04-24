@@ -9,6 +9,7 @@ from sklearn.utils.validation import check_is_fitted
 import numpy as np
 
 from ..._utils._coefficients import coefficient_info_from_covariate
+from ...misc.regularization import compute_penalty_matrix
 
 
 class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
@@ -43,16 +44,17 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         regularization_parameter (int or float, optional): Regularization
             parameter. Trying with several factors in a logarithm scale is
             suggested. If 0 no regularization is performed. Defaults to 0.
-        penalty (int, iterable or :class:`LinearDifferentialOperator`): If it
+        regularization (int, iterable or :class:`Regularization`): If it is
+            not a :class:`Regularization` object, linear differential
+            operator regularization is assumed. If it
             is an integer, it indicates the order of the
             derivative used in the computing of the penalty matrix. For
             instance 2 means that the differential operator is
             :math:`f''(x)`. If it is an iterable, it consists on coefficients
             representing the differential operator used in the computing of
             the penalty matrix. For instance the tuple (1, 0,
-            numpy.sin) means :math:`1 + sin(x)D^{2}`. It is possible to
-            supply directly the LinearDifferentialOperator object.
-            If not supplied this defaults to 2. Only used if penalty_matrix is
+            numpy.sin) means :math:`1 + sin(x)D^{2}`. If not supplied this
+            defaults to 2. Only used if penalty_matrix is
             ``None``.
         penalty_matrix (array_like, optional): Penalty matrix. If
             supplied the differential operator is not used and instead
@@ -121,16 +123,15 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
 
     def __init__(self, *, coef_basis=None, fit_intercept=True,
                  regularization_parameter=0,
-                 penalty=None,
+                 regularization=None,
                  penalty_matrix=None):
         self.coef_basis = coef_basis
         self.fit_intercept = fit_intercept
         self.regularization_parameter = regularization_parameter
-        self.penalty = penalty
+        self.regularization = regularization
         self.penalty_matrix = penalty_matrix
 
     def fit(self, X, y=None, sample_weight=None):
-        from ...misc.regularization import compute_penalty_matrix
 
         X, y, sample_weight, coef_info = self._argcheck_X_y(
             X, y, sample_weight, self.coef_basis)
@@ -156,7 +157,7 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         penalty_matrix = compute_penalty_matrix(
             coef_info=coef_info,
             regularization_parameter=self.regularization_parameter,
-            regularization=self.penalty,
+            regularization=self.regularization,
             penalty_matrix=self.penalty_matrix)
 
         if self.fit_intercept and hasattr(penalty_matrix, "shape"):

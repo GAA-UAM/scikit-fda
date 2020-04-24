@@ -169,16 +169,17 @@ class BasisSmoother(_LinearSmoother):
         smoothing_parameter (int or float, optional): Smoothing
             parameter. Trying with several factors in a logarithm scale is
             suggested. If 0 no smoothing is performed. Defaults to 0.
-        penalty (int, iterable or :class:`LinearDifferentialOperator`): If it
+        regularization (int, iterable or :class:`Regularization`): If it is
+            not a :class:`Regularization` object, linear differential
+            operator regularization is assumed. If it
             is an integer, it indicates the order of the
             derivative used in the computing of the penalty matrix. For
             instance 2 means that the differential operator is
             :math:`f''(x)`. If it is an iterable, it consists on coefficients
             representing the differential operator used in the computing of
             the penalty matrix. For instance the tuple (1, 0,
-            numpy.sin) means :math:`1 + sin(x)D^{2}`. It is possible to
-            supply directly the LinearDifferentialOperator object.
-            If not supplied this defaults to 2. Only used if penalty_matrix is
+            numpy.sin) means :math:`1 + sin(x)D^{2}`. If not supplied this
+            defaults to 2. Only used if penalty_matrix is
             ``None``.
         penalty_matrix (array_like, optional): Penalty matrix. If
             supplied the differential operator is not used and instead
@@ -257,7 +258,7 @@ class BasisSmoother(_LinearSmoother):
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='cholesky',
         ...                smoothing_parameter=1,
-        ...                penalty=LinearDifferentialOperator(
+        ...                regularization=LinearDifferentialOperator(
         ...                            weights=[0.1, 0.2]),
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
@@ -270,7 +271,7 @@ class BasisSmoother(_LinearSmoother):
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='qr',
         ...                smoothing_parameter=1,
-        ...                penalty=LinearDifferentialOperator(
+        ...                regularization=LinearDifferentialOperator(
         ...                            weights=[0.1, 0.2]),
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
@@ -283,7 +284,7 @@ class BasisSmoother(_LinearSmoother):
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='matrix',
         ...                smoothing_parameter=1,
-        ...                penalty=LinearDifferentialOperator(
+        ...                regularization=LinearDifferentialOperator(
         ...                            weights=[0.1, 0.2]),
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
@@ -313,8 +314,8 @@ class BasisSmoother(_LinearSmoother):
                  *,
                  smoothing_parameter: float = 0,
                  weights=None,
-                 penalty: Union[int, Iterable[float],
-                                'LinearDifferentialOperator'] = None,
+                 regularization: Union[int, Iterable[float],
+                                       'LinearDifferentialOperator'] = None,
                  penalty_matrix=None,
                  output_points=None,
                  method='cholesky',
@@ -322,7 +323,7 @@ class BasisSmoother(_LinearSmoother):
         self.basis = basis
         self.smoothing_parameter = smoothing_parameter
         self.weights = weights
-        self.penalty = penalty
+        self.regularization = regularization
         self.penalty_matrix = penalty_matrix
         self.output_points = output_points
         self.method = method
@@ -352,7 +353,7 @@ class BasisSmoother(_LinearSmoother):
         penalty_matrix = compute_penalty_matrix(
             coef_info=CoefficientInfoFDataBasis(self.basis),
             regularization_parameter=self.smoothing_parameter,
-            regularization=self.penalty,
+            regularization=self.regularization,
             penalty_matrix=self.penalty_matrix)
 
         inv += penalty_matrix
@@ -414,7 +415,7 @@ class BasisSmoother(_LinearSmoother):
         penalty_matrix = compute_penalty_matrix(
             coef_info=CoefficientInfoFDataBasis(self.basis),
             regularization_parameter=self.smoothing_parameter,
-            regularization=self.penalty,
+            regularization=self.regularization,
             penalty_matrix=self.penalty_matrix)
 
         # n is the samples

@@ -188,7 +188,7 @@ class TestEndpointsDifferenceRegularization(unittest.TestCase):
         smoother = skfda.preprocessing.smoothing.BasisSmoother(
             basis=skfda.representation.basis.BSpline(
                 n_basis=10, domain_range=fd.domain_range),
-            penalty=EndpointsDifferenceRegularization(),
+            regularization=EndpointsDifferenceRegularization(),
             smoothing_parameter=10000)
 
         fd_basis = smoother.fit_transform(fd)
@@ -222,7 +222,7 @@ class TestL2Regularization(unittest.TestCase):
 
                 sklearn_l2 = Ridge(alpha=regularization_parameter)
                 skfda_l2 = MultivariateLinearRegression(
-                    penalty=L2Regularization(),
+                    regularization=L2Regularization(),
                     regularization_parameter=regularization_parameter)
 
                 sklearn_l2.fit(X_train, y_train)

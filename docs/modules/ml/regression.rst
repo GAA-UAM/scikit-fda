@@ -8,12 +8,14 @@ Module with classes to perform regression of functional data.
 Linear regression
 -----------------
 
-Todo: Add documentation of linear regression models.
+A linear regression model is one in which the response variable can be
+expressed as a linear combination of the covariates (which could be
+multivariate or functional).
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.ml.regression.LinearScalarRegression
+   skfda.ml.regression.MultivariateLinearRegression
 
 Nearest Neighbors
 -----------------

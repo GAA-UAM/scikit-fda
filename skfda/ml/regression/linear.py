@@ -2,9 +2,7 @@ from collections.abc import Iterable
 import itertools
 import warnings
 
-from skfda.misc._math import inner_product
 from skfda.representation import FData
-from skfda.representation.basis import FDataBasis, Constant, Basis
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 

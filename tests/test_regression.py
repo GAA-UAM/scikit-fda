@@ -1,7 +1,8 @@
 import unittest
 
+from skfda.misc.regularization import L2Regularization
 from skfda.ml.regression import MultivariateLinearRegression
-from skfda.representation.basis import (FDataBasis, Constant, Monomial,
+from skfda.representation.basis import (FDataBasis, Monomial,
                                         Fourier,  BSpline)
 
 import numpy as np
@@ -105,6 +106,46 @@ class TestMultivariateLinearRegression(unittest.TestCase):
 
         y_pred = scalar.predict(X)
         np.testing.assert_allclose(y_pred, y, atol=0.01)
+
+    def test_regression_mixed_regularization(self):
+
+        multivariate = np.array([[0, 0], [2, 7], [1, 7], [3, 9],
+                                 [4, 16], [2, 14], [3, 5]])
+
+        X = [multivariate,
+             FDataBasis(Monomial(n_basis=3), [[1, 0, 0], [0, 1, 0], [0, 0, 1],
+                                              [1, 0, 1], [1, 0, 0], [0, 1, 0],
+                                              [0, 0, 1]])]
+
+        # y = 2 + sum([3, 1] * array) + int(3 * function)
+        intercept = 2
+        coefs_multivariate = np.array([3, 1])
+        y_integral = np.array([3, 3 / 2, 1, 4, 3, 3 / 2, 1])
+        y_sum = multivariate @ coefs_multivariate
+        y = 2 + y_sum + y_integral
+
+        scalar = MultivariateLinearRegression(
+            regularization_parameter=1,
+            regularization=[L2Regularization(), 2])
+        scalar.fit(X, y)
+
+        np.testing.assert_allclose(scalar.intercept_,
+                                   intercept, atol=0.01)
+
+        np.testing.assert_allclose(
+            scalar.coef_[0],
+            [2.536739, 1.072186], atol=0.01)
+
+        np.testing.assert_allclose(
+            scalar.coef_[1].coefficients,
+            [[2.125676, 2.450782, 5.808745e-4]], atol=0.01)
+
+        y_pred = scalar.predict(X)
+        np.testing.assert_allclose(
+            y_pred,
+            [5.349035, 16.456464, 13.361185, 23.930295,
+                32.650965, 23.961766, 16.29029],
+            atol=0.01)
 
     def test_regression_regularization(self):
 

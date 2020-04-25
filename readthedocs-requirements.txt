@@ -1,7 +1,6 @@
 matplotlib
 numpy
 scipy
-setuptools
 Cython
 sklearn
 Sphinx

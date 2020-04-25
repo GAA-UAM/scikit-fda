@@ -5,3 +5,4 @@ sphinx-gallery
 pillow
 matplotlib
 mpldatacursor
+setuptools>=41.2

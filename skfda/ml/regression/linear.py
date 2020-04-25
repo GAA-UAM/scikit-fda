@@ -70,7 +70,8 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
     Examples:
 
         >>> from skfda.ml.regression import MultivariateLinearRegression
-        >>> from skfda.representation.basis import FDataBasis, Monomial
+        >>> from skfda.representation.basis import (FDataBasis, Monomial,
+        ...                                         Constant)
 
         Multivariate linear regression can be used with functions expressed in
         a basis. Also, a functional basis for the weights can be specified:

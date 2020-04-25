@@ -1,4 +1,9 @@
--r requirements.txt
+matplotlib
+numpy
+scipy
+setuptools
+Cython
+sklearn
 Sphinx
 sphinx_rtd_theme
 sphinx-gallery

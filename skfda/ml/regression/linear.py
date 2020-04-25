@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+import itertools
 import warnings
 
 from skfda.misc._math import inner_product
@@ -136,10 +138,20 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         X, y, sample_weight, coef_info = self._argcheck_X_y(
             X, y, sample_weight, self.coef_basis)
 
+        regularization = self.regularization
+        regularization_parameter = self.regularization_parameter
+
         if self.fit_intercept:
             new_x = np.ones((len(y), 1))
             X = [new_x] + X
             coef_info = [coefficient_info_from_covariate(new_x, y)] + coef_info
+
+            if isinstance(regularization, Iterable):
+                regularization = itertools.chain([None], regularization)
+
+            if isinstance(regularization_parameter, Iterable):
+                regularization_parameter = itertools.chain(
+                    [0], regularization_parameter)
 
         inner_products = [c.regression_matrix(x, y)
                           for x, c in zip(X, coef_info)]
@@ -156,8 +168,8 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
 
         penalty_matrix = compute_penalty_matrix(
             coef_info=coef_info,
-            regularization_parameter=self.regularization_parameter,
-            regularization=self.regularization,
+            regularization_parameter=regularization_parameter,
+            regularization=regularization,
             penalty_matrix=self.penalty_matrix)
 
         if self.fit_intercept and hasattr(penalty_matrix, "shape"):

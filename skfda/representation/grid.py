@@ -52,19 +52,22 @@ class FDataGrid(FData):
 
     Examples:
         Representation of a functional data object with 2 samples
-        representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
+        representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`,
+        with 3 discretization points.
 
-        >>> data_matrix = [[1, 2], [2, 3]]
-        >>> sample_points = [2, 4]
+        >>> data_matrix = [[1, 2, 3], [4, 5, 6]]
+        >>> sample_points = [2, 4, 5]
         >>> FDataGrid(data_matrix, sample_points)
         FDataGrid(
             array([[[1],
-                    [2]],
+                    [2],
+                    [3]],
         <BLANKLINE>
-                   [[2],
-                    [3]]]),
-            sample_points=[array([2, 4])],
-            domain_range=array([[2, 4]]),
+                   [[4],
+                    [5],
+                    [6]]]),
+            sample_points=[array([2, 4, 5])],
+            domain_range=array([[2, 5]]),
             ...)
 
         The number of columns of data_matrix have to be the length of

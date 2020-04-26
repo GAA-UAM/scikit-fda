@@ -1,7 +1,12 @@
--r requirements.txt
+matplotlib
+numpy
+scipy
+Cython
+sklearn
 Sphinx
 sphinx_rtd_theme
 sphinx-gallery
 pillow
 matplotlib
 mpldatacursor
+setuptools>=41.2

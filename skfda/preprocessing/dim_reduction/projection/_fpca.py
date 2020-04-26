@@ -24,9 +24,16 @@ class FPCA(ABC, BaseEstimator, TransformerMixin):
             object and center the data first
     """
 
-    def __init__(self, n_components=3, centering=True):
+    def __init__(self,
+                 n_components=3,
+                 centering=True,
+                 regularization_parameter=0,
+                 penalty=2):
         self.n_components = n_components
         self.centering = centering
+        # lambda in the regularization / penalization process
+        self.regularization_parameter = regularization_parameter
+        self.penalty = penalty
 
     @abstractmethod
     def fit(self, X, y=None):
@@ -91,6 +98,8 @@ class FPCABasis(FPCA):
         components_basis (Basis): the basis in which we want the principal
             components. We can use a different basis than the basis contained in
             the passed FDataBasis object.
+        regularization_parameter (float): this parameter determines the amount
+            of smoothing applied. Defaults to 0
         penalty (Union[int, Iterable[float],'LinearDifferentialOperator']):
             Linear differential operator. If it is not a
             LinearDifferentialOperator object, it will be converted to one.
@@ -126,12 +135,10 @@ class FPCABasis(FPCA):
                  centering=True,
                  regularization_parameter=0,
                  penalty=2):
-        super().__init__(n_components, centering)
+        super().__init__(n_components, centering,
+                         regularization_parameter, penalty)
         # basis that we want to use for the principal components
         self.components_basis = components_basis
-        # lambda in the regularization / penalization process
-        self.regularization_parameter = regularization_parameter
-        self.penalty = penalty
 
     def fit(self, X: FDataBasis, y=None):
         """Computes the first n_components principal components and saves them.
@@ -264,6 +271,46 @@ class FPCABasis(FPCA):
         return X.inner_product(self.components_)
 
 
+def _auxiliary_penalty_matrix(sample_points):
+    diff_values = np.diff(sample_points)
+    hh = -(1 / np.mean(1 / diff_values)) / diff_values
+    aux_diff_matrix = np.diag(hh)
+
+    n_points = len(sample_points)
+
+    aux_matrix_1 = np.zeros((n_points - 1, n_points))
+    aux_matrix_1[:, :-1] = aux_diff_matrix
+    aux_matrix_2 = np.zeros((n_points - 1, n_points))
+    aux_matrix_2[:, 1:] = -aux_diff_matrix
+
+    diff_matrix = aux_matrix_1 + aux_matrix_2
+
+    return diff_matrix
+
+
+def regularization_penalty_matrix(sample_points, penalty):
+    penalty = np.array(penalty)
+    n_points = len(sample_points)
+    penalty_matrix = np.zeros((n_points, n_points))
+    if (np.sum(penalty) != 0):
+        # independent term
+        penalty_matrix = penalty_matrix + penalty[0] * np.diag(
+            np.ones(n_points))
+        if len(penalty) > 1:
+            for i in range(1, len(penalty)):
+                aux_penalty_1 = _auxiliary_penalty_matrix(sample_points)
+                aux_penalty_2 = _auxiliary_penalty_matrix(sample_points)
+                if i > 1:
+                    for k in range(2, i + 1):
+                        aux_penalty_1 = (aux_penalty_2[:(n_points - k),
+                                         :(n_points - k + 1)]
+                                         @ aux_penalty_1)
+                penalty_matrix = (penalty_matrix +
+                                  penalty[i] * (np.transpose(
+                                    aux_penalty_1) @ aux_penalty_1))
+    return penalty_matrix
+
+
 class FPCAGrid(FPCA):
     """Funcional principal component analysis for functional data represented
     in discretized form.
@@ -277,6 +324,15 @@ class FPCAGrid(FPCA):
         weights (numpy.array): the weights vector used for discrete
             integration. If none then the trapezoidal rule is used for
             computing the weights.
+        regularization_parameter (float): this parameter determines the amount
+            of smoothing applied. Defaults to 0
+        penalty (Union[int, Iterable[float]): the coefficients that will be
+            used to calculate the penalty matrix for regularization.
+            If you input an integer then the derivative of that degree will be
+            used to regularize the principal components. If you input a vector
+            then it is considered as a differential operator. For example,
+            [0,1,2] penalizes first derivative and two times the second
+            derivative.
 
     Attributes:
         components_ (FDataBasis): this contains the principal components either
@@ -300,8 +356,14 @@ class FPCAGrid(FPCA):
         >>> fpca_grid = fpca_grid.fit(fd)
     """
 
-    def __init__(self, n_components=3, weights=None, centering=True):
-        super().__init__(n_components, centering)
+    def __init__(self,
+                 n_components=3,
+                 weights=None,
+                 centering=True,
+                 regularization_parameter=0,
+                 penalty=2):
+        super().__init__(n_components, centering,
+                         regularization_parameter, penalty)
         self.weights = weights
 
     def fit(self, X: FDataGrid, y=None):
@@ -346,7 +408,7 @@ class FPCAGrid(FPCA):
                                  "points of the functional data object.")
 
         # data matrix initialization
-        fd_data = np.squeeze(X.data_matrix)
+        fd_data = X.data_matrix.reshape(X.data_matrix.shape[:-1])
 
         # get the number of samples and the number of points of descretization
         n_samples, n_points_discretization = fd_data.shape
@@ -355,9 +417,18 @@ class FPCAGrid(FPCA):
         # in FDataBasis
         if self.centering:
             meanfd = X.mean()
-            # consider moving these lines to FDataBasis as a centering function
+            # consider moving these lines to FDataGrid as a centering function
             # subtract from each row the mean coefficient matrix
-            fd_data -= np.squeeze(meanfd.data_matrix)
+            fd_data -= meanfd.data_matrix.reshape(meanfd.data_matrix.shape[:-1])
+
+        if self.regularization_parameter > 0:
+            if isinstance(self.penalty, int):
+                self.penalty = np.append(np.zeros(self.penalty), 1)
+            penalty_matrix = regularization_penalty_matrix(X.sample_points[0],
+                                                           self.penalty)
+            fd_data = fd_data @ np.linalg.inv(
+                np.diag(np.ones(n_points_discretization)) +
+                self.regularization_parameter * penalty_matrix)
 
         # establish weights for each point of discretization
         if not self.weights:
@@ -366,9 +437,8 @@ class FPCAGrid(FPCA):
             # vector is as follows: [\deltax_1/2, \deltax_1/2 + \deltax_2/2,
             # \deltax_2/2 + \deltax_3/2, ... , \deltax_n/2]
             differences = np.diff(X.sample_points[0])
-            self.weights = [sum(differences[i:i + 2]) / 2 for i in
-                            range(len(differences))]
-            self.weights = np.concatenate(([differences[0] / 2], self.weights))
+            differences = np.concatenate(((0,), differences, (0,)))
+            self.weights = (differences[:-1] + differences[1:]) / 2
 
         weights_matrix = np.diag(self.weights)
 

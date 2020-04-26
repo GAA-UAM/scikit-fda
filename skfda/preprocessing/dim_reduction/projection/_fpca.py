@@ -421,15 +421,6 @@ class FPCAGrid(FPCA):
             # subtract from each row the mean coefficient matrix
             fd_data -= meanfd.data_matrix.reshape(meanfd.data_matrix.shape[:-1])
 
-        if self.regularization_parameter > 0:
-            if isinstance(self.penalty, int):
-                self.penalty = np.append(np.zeros(self.penalty), 1)
-            penalty_matrix = regularization_penalty_matrix(X.sample_points[0],
-                                                           self.penalty)
-            fd_data = fd_data @ np.linalg.inv(
-                np.diag(np.ones(n_points_discretization)) +
-                self.regularization_parameter * penalty_matrix)
-
         # establish weights for each point of discretization
         if not self.weights:
             # sample_points is a list with one array in the 1D case
@@ -442,12 +433,29 @@ class FPCAGrid(FPCA):
 
         weights_matrix = np.diag(self.weights)
 
+        if self.regularization_parameter > 0:
+            if isinstance(self.penalty, int):
+                self.penalty = np.append(np.zeros(self.penalty), 1)
+            penalty_matrix = regularization_penalty_matrix(X.sample_points[0],
+                                                           self.penalty)
+
+            # we need to invert aux matrix and multiply it to the data matrix
+            aux_matrix = (np.diag(np.ones(n_points_discretization)) +
+                          self.regularization_parameter * penalty_matrix)
+            # we use solve for better stability, P=aux matrix, X=data_matrix
+            # we need X*P^-1 = ((P^T)^-1*X^T)^T, and np.solve gives (P^T)^-1*X^T
+            fd_data = np.transpose(np.linalg.solve(np.transpose(aux_matrix),
+                                                   np.transpose(fd_data)))
+
+
         # see docstring for more information
         final_matrix = fd_data @ np.sqrt(weights_matrix) / np.sqrt(n_samples)
 
         pca = PCA(n_components=self.n_components)
         pca.fit(final_matrix)
-        self.components_ = X.copy(data_matrix=pca.components_)
+        self.components_ = X.copy(data_matrix=np.transpose(
+            np.linalg.solve(np.sqrt(weights_matrix),
+                            np.transpose(pca.components_))))
         self.component_values_ = pca.singular_values_ ** 2
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
 

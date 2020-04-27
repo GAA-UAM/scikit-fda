@@ -272,7 +272,7 @@ class FPCABasis(FPCA):
 
 
 def _auxiliary_penalty_matrix(sample_points):
-    """ Computes the auxiliary matrix needed for the computation of the panalty
+    """ Computes the auxiliary matrix needed for the computation of the penalty
     matrix. For more details please view the module fdata2pc of the library
     fda.usc in R, and the referenced paper.
 

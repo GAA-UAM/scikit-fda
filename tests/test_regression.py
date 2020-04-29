@@ -1,6 +1,7 @@
 import unittest
 
 from skfda.misc.regularization import L2Regularization
+from skfda.misc.regularization import LinearDifferentialOperatorRegularization
 from skfda.ml.regression import MultivariateLinearRegression
 from skfda.representation.basis import (FDataBasis, Monomial,
                                         Fourier,  BSpline)
@@ -126,7 +127,8 @@ class TestMultivariateLinearRegression(unittest.TestCase):
 
         scalar = MultivariateLinearRegression(
             regularization_parameter=1,
-            regularization=[L2Regularization(), 2])
+            regularization=[L2Regularization(),
+                            LinearDifferentialOperatorRegularization(2)])
         scalar.fit(X, y)
 
         np.testing.assert_allclose(scalar.intercept_,
@@ -170,8 +172,10 @@ class TestMultivariateLinearRegression(unittest.TestCase):
                           0.023385,
                           -0.001384]
 
-        scalar = MultivariateLinearRegression(coef_basis=[beta_basis],
-                                              regularization_parameter=1)
+        scalar = MultivariateLinearRegression(
+            coef_basis=[beta_basis],
+            regularization_parameter=1,
+            regularization=LinearDifferentialOperatorRegularization())
         scalar.fit(x_fd, y)
         np.testing.assert_allclose(scalar.coef_[0].coefficients,
                                    beta_fd.coefficients, atol=1e-3)
@@ -205,7 +209,9 @@ class TestMultivariateLinearRegression(unittest.TestCase):
         beta_fd_reg = FDataBasis(x_basis, [2.812, 3.043, 0])
         y_reg = [5.333, 3.419, 2.697, 11.366]
 
-        scalar_reg = MultivariateLinearRegression(regularization_parameter=1)
+        scalar_reg = MultivariateLinearRegression(
+            regularization_parameter=1,
+            regularization=LinearDifferentialOperatorRegularization())
         scalar_reg.fit(x_fd, y)
         np.testing.assert_allclose(scalar_reg.coef_[0].coefficients,
                                    beta_fd_reg.coefficients, atol=0.001)

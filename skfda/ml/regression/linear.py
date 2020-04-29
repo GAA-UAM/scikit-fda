@@ -147,6 +147,8 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
 
             if isinstance(regularization, Iterable):
                 regularization = itertools.chain([None], regularization)
+            elif regularization is not None:
+                regularization = (None, regularization)
 
             if isinstance(regularization_parameter, Iterable):
                 regularization_parameter = itertools.chain(

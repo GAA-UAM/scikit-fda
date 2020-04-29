@@ -252,27 +252,25 @@ class BasisSmoother(_LinearSmoother):
         penalize approximations that are not smooth enough using a linear
         differential operator:
 
-        >>> from skfda.misc import LinearDifferentialOperator
+        >>> from skfda.misc.regularization import (
+        ...     LinearDifferentialOperatorRegularization as LDiffReg)
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='cholesky',
         ...                smoothing_parameter=1,
-        ...                regularization=LinearDifferentialOperator(
-        ...                            weights=[0.1, 0.2]),
+        ...                regularization=LDiffReg([0.1, 0.2]),
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
         array([[ 2.04,  0.51,  0.55]])
 
-        >>> from skfda.misc import LinearDifferentialOperator
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='qr',
         ...                smoothing_parameter=1,
-        ...                regularization=LinearDifferentialOperator(
-        ...                            weights=[0.1, 0.2]),
+        ...                regularization=LDiffReg([0.1, 0.2]),
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
@@ -284,8 +282,7 @@ class BasisSmoother(_LinearSmoother):
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='matrix',
         ...                smoothing_parameter=1,
-        ...                regularization=LinearDifferentialOperator(
-        ...                            weights=[0.1, 0.2]),
+        ...                regularization=LDiffReg([0.1, 0.2]),
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)

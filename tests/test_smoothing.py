@@ -2,6 +2,8 @@ import unittest
 
 import skfda
 from skfda._utils import _check_estimator
+from skfda.misc import LinearDifferentialOperator
+from skfda.misc.regularization import LinearDifferentialOperatorRegularization
 from skfda.representation.basis import BSpline, Monomial
 from skfda.representation.grid import FDataGrid
 import sklearn
@@ -77,10 +79,13 @@ class TestBasisSmoother(unittest.TestCase):
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = BSpline((0, 1), n_basis=5)
         fd = FDataGrid(data_matrix=x, sample_points=t)
-        smoother = smoothing.BasisSmoother(basis=basis,
-                                           smoothing_parameter=10,
-                                           regularization=2, method='cholesky',
-                                           return_basis=True)
+        smoother = smoothing.BasisSmoother(
+            basis=basis,
+            smoothing_parameter=10,
+            regularization=LinearDifferentialOperatorRegularization(
+                LinearDifferentialOperator(2)),
+            method='cholesky',
+            return_basis=True)
         fd_basis = smoother.fit_transform(fd)
         np.testing.assert_array_almost_equal(
             fd_basis.coefficients.round(2),
@@ -92,10 +97,13 @@ class TestBasisSmoother(unittest.TestCase):
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = BSpline((0, 1), n_basis=5)
         fd = FDataGrid(data_matrix=x, sample_points=t)
-        smoother = smoothing.BasisSmoother(basis=basis,
-                                           smoothing_parameter=10,
-                                           regularization=2, method='qr',
-                                           return_basis=True)
+        smoother = smoothing.BasisSmoother(
+            basis=basis,
+            smoothing_parameter=10,
+            regularization=LinearDifferentialOperatorRegularization(
+                LinearDifferentialOperator(2)),
+            method='qr',
+            return_basis=True)
         fd_basis = smoother.fit_transform(fd)
         np.testing.assert_array_almost_equal(
             fd_basis.coefficients.round(2),
@@ -109,10 +117,12 @@ class TestBasisSmoother(unittest.TestCase):
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = Monomial(n_basis=4)
         fd = FDataGrid(data_matrix=x, sample_points=t)
-        smoother = smoothing.BasisSmoother(basis=basis,
-                                           smoothing_parameter=1,
-                                           regularization=2,
-                                           return_basis=True)
+        smoother = smoothing.BasisSmoother(
+            basis=basis,
+            smoothing_parameter=1,
+            regularization=LinearDifferentialOperatorRegularization(
+                LinearDifferentialOperator(2)),
+            return_basis=True)
         fd_basis = smoother.fit_transform(fd)
         # These results where extracted from the R package fda
         np.testing.assert_array_almost_equal(

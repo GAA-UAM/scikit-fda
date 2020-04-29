@@ -359,9 +359,11 @@ class FPCAGrid(FPCA):
         centering (bool): if True then calculate the mean of the functional data
             object and center the data first. Defaults to True. If True the
             passed FDataBasis object is modified.
-        weights (numpy.array): the weights vector used for discrete
-            integration. If none then the trapezoidal rule is used for
-            computing the weights.
+        weights (numpy.array Union callable): the weights vector used for
+            discrete integration. If none then the trapezoidal rule is used for
+            computing the weights. If a callable object is passed, then the
+            weight vector will be obtained by evaluating the object at the
+            sample points of the passed FDataGrid object in the fit method.
         regularization_parameter (float): this parameter determines the amount
             of smoothing applied. Defaults to 0
         penalty (Union[int, Iterable[float]): the coefficients that will be
@@ -468,6 +470,8 @@ class FPCAGrid(FPCA):
             differences = np.diff(X.sample_points[0])
             differences = np.concatenate(((0,), differences, (0,)))
             self.weights = (differences[:-1] + differences[1:]) / 2
+        elif callable(self.weights):
+            self.weights = self.weights(X.sample_points[0])
 
         weights_matrix = np.diag(self.weights)
 

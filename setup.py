@@ -24,7 +24,6 @@ import os
 import sys
 
 from Cython.Build import cythonize
-from Cython.Distutils import build_ext
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
 
@@ -80,7 +79,7 @@ setup(name='scikit-fda',
           'Topic :: Scientific/Engineering :: Mathematics',
           'Topic :: Software Development :: Libraries :: Python Modules',
       ],
-      install_requires=['numpy',
+      install_requires=['numpy>=1.16',
                         'scipy>=1.3.0',
                         'scikit-learn>=0.20',
                         'matplotlib',
@@ -89,7 +88,6 @@ setup(name='scikit-fda',
                         'cython',
                         'mpldatacursor'],
       setup_requires=pytest_runner,
-      tests_require=['pytest',
-                     'numpy>=1.14'],
+      tests_require=['pytest'],
       test_suite='tests',
       zip_safe=False)

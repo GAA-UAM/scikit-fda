@@ -472,6 +472,10 @@ class FPCAGrid(FPCA):
             self.weights = (differences[:-1] + differences[1:]) / 2
         elif callable(self.weights):
             self.weights = self.weights(X.sample_points[0])
+            # if its a FDataGrid then we need to reduce the dimension to 1-D
+            # array
+            if isinstance(self.weights, FDataGrid):
+                self.weights = np.squeeze(self.weights.data_matrix)
 
         weights_matrix = np.diag(self.weights)
 

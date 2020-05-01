@@ -359,7 +359,7 @@ class FPCAGrid(FPCA):
         centering (bool): if True then calculate the mean of the functional data
             object and center the data first. Defaults to True. If True the
             passed FDataBasis object is modified.
-        weights (numpy.array Union callable): the weights vector used for
+        weights (numpy.array or callable): the weights vector used for
             discrete integration. If none then the trapezoidal rule is used for
             computing the weights. If a callable object is passed, then the
             weight vector will be obtained by evaluating the object at the

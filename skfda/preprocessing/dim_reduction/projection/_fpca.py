@@ -366,7 +366,7 @@ class FPCAGrid(FPCA):
             sample points of the passed FDataGrid object in the fit method.
         regularization_parameter (float): this parameter determines the amount
             of smoothing applied. Defaults to 0
-        penalty (Union[int, Iterable[float]): the coefficients that will be
+        penalty (Union[int, Iterable[float]]): the coefficients that will be
             used to calculate the penalty matrix for regularization.
             If you input an integer then the derivative of that degree will be
             used to regularize the principal components. If you input a vector

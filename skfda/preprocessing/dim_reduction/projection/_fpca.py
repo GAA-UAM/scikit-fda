@@ -111,6 +111,8 @@ class FPCABasis(FPCA):
             basis representation.
         component_values_ (array_like): this contains the values (eigenvalues)
             associated with the principal components.
+        explained_variance_ (array_like): The amount of variance explained by
+            each of the selected components.
         explained_variance_ratio_ (array_like): this contains the percentage of
             variance explained by each principal component.
 
@@ -247,6 +249,7 @@ class FPCABasis(FPCA):
         # the singular values obtained using SVD are the squares of eigenvalues
         self.component_values_ = pca.singular_values_ ** 2
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
+        self.explained_variance_ = pca.explained_variance_
         self.components_ = X.copy(basis=self.components_basis,
                                   coefficients=component_coefficients)
 
@@ -375,12 +378,15 @@ class FPCAGrid(FPCA):
             derivative.
 
     Attributes:
-        components_ (FDataBasis): this contains the principal components either
-            in a basis form.
+        components_ (FDataBasis): this contains the eigenvectors in a basis
+            form.
         component_values_ (array_like): this contains the values (eigenvalues)
             associated with the principal components.
+        explained_variance_ (array_like): The amount of variance explained by
+            each of the selected components.
         explained_variance_ratio_ (array_like): this contains the percentage of
             variance explained by each principal component.
+
 
     Examples:
         In this example we apply discretized functional PCA with some simple
@@ -506,6 +512,7 @@ class FPCAGrid(FPCA):
                             np.transpose(pca.components_))))
         self.component_values_ = pca.singular_values_ ** 2
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
+        self.explained_variance_ = pca.explained_variance_
 
         return self
 

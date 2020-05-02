@@ -10,3 +10,4 @@ pillow
 matplotlib
 mpldatacursor
 setuptools>=41.2
+multimethod>=1.2

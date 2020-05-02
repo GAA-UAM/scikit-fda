@@ -1,13 +1,16 @@
 """Functional Principal Component Analysis Module."""
 
-import numpy as np
-import skfda
 from abc import ABC, abstractmethod
+import skfda
 from skfda.representation.basis import FDataBasis
 from skfda.representation.grid import FDataGrid
+
+from scipy.linalg import solve_triangular
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
-from scipy.linalg import solve_triangular
+
+import numpy as np
+
 
 __author__ = "Yujian Hong"
 __email__ = "yujian.hong@estudiante.uam.es"
@@ -239,7 +242,8 @@ class FPCABasis(FPCA):
         # we choose solve to obtain the component coefficients for the
         # same reason: it is faster and more efficient
         component_coefficients = solve_triangular(np.transpose(l_matrix),
-                                                  np.transpose(pca.components_),
+                                                  np.transpose(
+                                                      pca.components_),
                                                   lower=False)
 
         component_coefficients = np.transpose(component_coefficients)
@@ -338,13 +342,13 @@ def regularization_penalty_matrix(sample_points, penalty):
             for i in range(1, len(penalty)):
                 if i > 1:
                     aux_penalty_1 = (aux_penalty_2[:(n_points - i),
-                                     :(n_points - i + 1)]
+                                                   :(n_points - i + 1)]
                                      @ aux_penalty_1)
                 # applying the differential operator, as in each step the
                 # derivative degree increases by 1.
                 penalty_matrix = (penalty_matrix +
                                   penalty[i] * (np.transpose(
-                                    aux_penalty_1) @ aux_penalty_1))
+                                      aux_penalty_1) @ aux_penalty_1))
     return penalty_matrix
 
 
@@ -407,16 +411,16 @@ class FPCAGrid(FPCA):
         self.weights = weights
 
     def fit(self, X: FDataGrid, y=None):
-        """Computes the n_components first principal components and saves them.
+        r"""Computes the n_components first principal components and saves them.
 
         The eigenvalues associated with these principal
         components are also saved. For more details about how it is implemented
         please view the referenced book, chapter 8.
 
         In summary, we are performing standard multivariate PCA over
-        :math:`\\frac{1}{\sqrt{N}} \mathbf{X} \mathbf{W}^{1/2}` where :math:`N`
-        is the number of samples in the dataset, :math:`\\mathbf{X}` is the data
-        matrix and :math:`\\mathbf{W}` is the weight matrix (this matrix
+        :math:`\frac{1}{\sqrt{N}} \mathbf{X} \mathbf{W}^{1/2}` where :math:`N`
+        is the number of samples in the dataset, :math:`\mathbf{X}` is the data
+        matrix and :math:`\mathbf{W}` is the weight matrix (this matrix
         defines the numerical integration). By default the weight matrix is
         obtained using the trapezoidal rule.
 
@@ -459,7 +463,8 @@ class FPCAGrid(FPCA):
             meanfd = X.mean()
             # consider moving these lines to FDataGrid as a centering function
             # subtract from each row the mean coefficient matrix
-            fd_data -= meanfd.data_matrix.reshape(meanfd.data_matrix.shape[:-1])
+            fd_data -= meanfd.data_matrix.reshape(
+                meanfd.data_matrix.shape[:-1])
 
         # establish weights for each point of discretization
         if not self.weights:
@@ -491,10 +496,10 @@ class FPCAGrid(FPCA):
             aux_matrix = (np.diag(np.ones(n_points_discretization)) +
                           self.regularization_parameter * penalty_matrix)
             # we use solve for better stability, P=aux matrix, X=data_matrix
-            # we need X*P^-1 = ((P^T)^-1*X^T)^T, and np.solve gives (P^T)^-1*X^T
+            # we need X*P^-1 = ((P^T)^-1*X^T)^T, and np.solve gives
+            # (P^T)^-1*X^T
             fd_data = np.transpose(np.linalg.solve(np.transpose(aux_matrix),
                                                    np.transpose(fd_data)))
-
 
         # see docstring for more information
         final_matrix = fd_data @ np.sqrt(weights_matrix) / np.sqrt(n_samples)

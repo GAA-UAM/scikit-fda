@@ -1,10 +1,9 @@
-import unittest
-
-from skfda.misc.regularization import L2Regularization
-from skfda.misc.regularization import LinearDifferentialOperatorRegularization
+from skfda.misc.operators import LinearDifferentialOperator
+from skfda.misc.regularization import TikhonovRegularization
 from skfda.ml.regression import MultivariateLinearRegression
 from skfda.representation.basis import (FDataBasis, Monomial,
                                         Fourier,  BSpline)
+import unittest
 
 import numpy as np
 
@@ -127,8 +126,9 @@ class TestMultivariateLinearRegression(unittest.TestCase):
 
         scalar = MultivariateLinearRegression(
             regularization_parameter=1,
-            regularization=[L2Regularization(),
-                            LinearDifferentialOperatorRegularization(2)])
+            regularization=[TikhonovRegularization(lambda x: x),
+                            TikhonovRegularization(
+                                LinearDifferentialOperator(2))])
         scalar.fit(X, y)
 
         np.testing.assert_allclose(scalar.intercept_,
@@ -175,7 +175,8 @@ class TestMultivariateLinearRegression(unittest.TestCase):
         scalar = MultivariateLinearRegression(
             coef_basis=[beta_basis],
             regularization_parameter=1,
-            regularization=LinearDifferentialOperatorRegularization())
+            regularization=TikhonovRegularization(
+                LinearDifferentialOperator(2)))
         scalar.fit(x_fd, y)
         np.testing.assert_allclose(scalar.coef_[0].coefficients,
                                    beta_fd.coefficients, atol=1e-3)
@@ -211,7 +212,8 @@ class TestMultivariateLinearRegression(unittest.TestCase):
 
         scalar_reg = MultivariateLinearRegression(
             regularization_parameter=1,
-            regularization=LinearDifferentialOperatorRegularization())
+            regularization=TikhonovRegularization(
+                LinearDifferentialOperator(2)))
         scalar_reg.fit(x_fd, y)
         np.testing.assert_allclose(scalar_reg.coef_[0].coefficients,
                                    beta_fd_reg.coefficients, atol=0.001)

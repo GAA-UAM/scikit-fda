@@ -1,15 +1,15 @@
 from collections.abc import Iterable
 import itertools
+from skfda.representation import FData
 import warnings
 
-from skfda.representation import FData
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
 import numpy as np
 
-from ..._utils._coefficients import coefficient_info_from_covariate
 from ...misc.regularization import compute_penalty_matrix
+from ._coefficients import coefficient_info_from_covariate
 
 
 class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
@@ -168,7 +168,7 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             y = y * np.sqrt(sample_weight)
 
         penalty_matrix = compute_penalty_matrix(
-            coef_info=coef_info,
+            basis_iterable=(c.basis for c in coef_info),
             regularization_parameter=regularization_parameter,
             regularization=regularization,
             penalty_matrix=self.penalty_matrix)

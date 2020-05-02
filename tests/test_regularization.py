@@ -1,14 +1,14 @@
+import skfda
+from skfda.misc.operators import LinearDifferentialOperator, gramian_matrix
+from skfda.misc.operators._linear_differential_operator import (
+    _monomial_evaluate_constant_linear_diff_op)
+from skfda.misc.operators._operators import gramian_matrix_numerical
+from skfda.misc.regularization import TikhonovRegularization
+from skfda.ml.regression.linear import MultivariateLinearRegression
+from skfda.representation.basis import Constant, Monomial, BSpline, Fourier
 import unittest
 import warnings
 
-import skfda
-from skfda.misc.regularization import (LinearDifferentialOperatorRegularization,
-                                       EndpointsDifferenceRegularization,
-                                       L2Regularization)
-from skfda.misc.regularization._linear_diff_op_regularization import (
-    _monomial_evaluate_constant_linear_diff_op)
-from skfda.ml.regression.linear import MultivariateLinearRegression
-from skfda.representation.basis import Constant, Monomial, BSpline, Fourier
 from sklearn.datasets import make_regression
 from sklearn.linear_model import Ridge
 from sklearn.model_selection._split import train_test_split
@@ -22,12 +22,10 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
 
     def _test_penalty(self, basis, linear_diff_op, atol=0, result=None):
 
-        regularization = LinearDifferentialOperatorRegularization(
-            linear_diff_op)
+        operator = LinearDifferentialOperator(linear_diff_op)
 
-        penalty = regularization.penalty_matrix_basis(basis)
-        numerical_penalty = regularization.penalty_matrix_basis_numerical(
-            basis)
+        penalty = gramian_matrix(operator, basis)
+        numerical_penalty = gramian_matrix_numerical(operator, basis)
 
         np.testing.assert_allclose(
             penalty,
@@ -160,11 +158,9 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
                         [-288., 1008., -2304., 3600., -2016.],
                         [0., -288., 1152., -2016., 1152.]])
 
-        regularization = LinearDifferentialOperatorRegularization(
-            basis.order - 1)
-        penalty = regularization.penalty_matrix_basis(basis)
-        numerical_penalty = regularization.penalty_matrix_basis_numerical(
-            basis)
+        operator = LinearDifferentialOperator(basis.order - 1)
+        penalty = gramian_matrix(operator, basis)
+        numerical_penalty = gramian_matrix_numerical(operator, basis)
 
         np.testing.assert_allclose(
             penalty,
@@ -188,7 +184,7 @@ class TestEndpointsDifferenceRegularization(unittest.TestCase):
         smoother = skfda.preprocessing.smoothing.BasisSmoother(
             basis=skfda.representation.basis.BSpline(
                 n_basis=10, domain_range=fd.domain_range),
-            regularization=EndpointsDifferenceRegularization(),
+            regularization=TikhonovRegularization(lambda x: x(1) - x(0)),
             smoothing_parameter=10000)
 
         fd_basis = smoother.fit_transform(fd)
@@ -222,7 +218,7 @@ class TestL2Regularization(unittest.TestCase):
 
                 sklearn_l2 = Ridge(alpha=regularization_parameter)
                 skfda_l2 = MultivariateLinearRegression(
-                    regularization=L2Regularization(),
+                    regularization=TikhonovRegularization(lambda x: x),
                     regularization_parameter=regularization_parameter)
 
                 sklearn_l2.fit(X_train, y_train)

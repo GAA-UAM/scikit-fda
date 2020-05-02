@@ -1,27 +1,44 @@
-import abc
 from collections.abc import Iterable
 import itertools
+from skfda.misc.operators import gramian_matrix
 
 import scipy.linalg
+from sklearn.base import BaseEstimator
 
-from ..._utils._coefficients import CoefficientInfo
+import numpy as np
+
+from ..operators._operators import get_n_basis
 
 
-class Regularization(abc.ABC):
+class TikhonovRegularization(BaseEstimator):
+    r"""
+    Implements Tikhonov regularization.
+
+    The penalization term in this type of regularization is
+
+    .. math::
+            \| \Gamma x \|_2^2
+
+    where :math:`\Gamma``is the so called Tikhonov operator
+    (matrix for finite vectors).
+
+    Parameters:
+        operator: linear operator used for regularization.
+
     """
-    Abstract base class for different kinds of regularization.
 
-    """
+    def __init__(self, linear_operator):
+        self.linear_operator = linear_operator
 
-    @abc.abstractmethod
-    def penalty_matrix(self, coef_info):
-        r"""Return a penalty matrix given the coefficient information.
+    def penalty_matrix(self, basis):
+        r"""
+        Return a penalty matrix for ordinary least squares.
 
         """
-        pass
+        return gramian_matrix(self.linear_operator, basis)
 
 
-def compute_penalty_matrix(coef_info, regularization_parameter,
+def compute_penalty_matrix(basis_iterable, regularization_parameter,
                            regularization, penalty_matrix):
     """
     Computes the regularization matrix for a linear differential operator.
@@ -41,25 +58,18 @@ def compute_penalty_matrix(coef_info, regularization_parameter,
                              f"{regularization_parameter} != 0 "
                              "and no regularization is specified")
 
-        if isinstance(coef_info, Iterable):
+        if not isinstance(regularization, Iterable):
+            regularization = (regularization,)
 
-            if not isinstance(regularization, Iterable):
-                regularization = (regularization,)
+        if not isinstance(regularization_parameter, Iterable):
+            regularization_parameter = itertools.repeat(
+                regularization_parameter)
 
-            if not isinstance(regularization_parameter, Iterable):
-                regularization_parameter = itertools.repeat(
-                    regularization_parameter)
-
-            penalty_blocks = [
-                0 if r is None else
-                a * r.penalty_matrix(c)
-                for c, r, a in zip(coef_info, regularization,
-                                   regularization_parameter)]
-            penalty_matrix = scipy.linalg.block_diag(*penalty_blocks)
-
-        else:
-
-            penalty_matrix = regularization.penalty_matrix(coef_info)
-            penalty_matrix *= regularization_parameter
+        penalty_blocks = [
+            np.zeros((get_n_basis(b), get_n_basis(b))) if r is None else
+            a * r.penalty_matrix(b)
+            for b, r, a in zip(basis_iterable, regularization,
+                               regularization_parameter)]
+        penalty_matrix = scipy.linalg.block_diag(*penalty_blocks)
 
     return penalty_matrix

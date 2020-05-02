@@ -1,158 +1,237 @@
-from functools import singledispatch
+import numbers
 
 from numpy import polyder, polyint, polymul, polyval
-import scipy.integrate
 from scipy.interpolate import PPoly
-from skfda._utils._coefficients import CoefficientInfoFDataBasis
 
 import numpy as np
 
-from ..._utils._coefficients import CoefficientInfo
-from ...representation.basis import Basis, Constant, Monomial, Fourier, BSpline
-from .._lfd import LinearDifferentialOperator
-from ._regularization import Regularization
+from ..._utils import _same_domain
+from ...representation.basis import Constant, Monomial, Fourier, BSpline
+from ._operators import Operator, gramian_matrix_optimization
 
 
-@singledispatch
-def penalty_matrix_basis_opt(basis: Basis,
-                             regularization):
+__author__ = "Pablo Pérez Manso"
+__email__ = "92manso@gmail.com"
+
+
+class LinearDifferentialOperator(Operator):
+    """Defines the structure of a linear differential operator function system
+
+    .. math::
+        Lx(t) = b_0(t) x(t) + b_1(t) x'(x) +
+                \\dots + b_{n-1}(t) d^{n-1}(x(t)) + b_n(t) d^n(x(t))
+
+    Attributes:
+        weights (list):  A list of callables.
+
+    Examples:
+
+        Create a linear differential operator that penalizes the second
+        derivative (acceleration)
+
+        >>> from skfda.misc.operators import LinearDifferentialOperator
+        >>> from skfda.representation.basis import (FDataBasis,
+        ...                                         Monomial, Constant)
+        >>>
+        >>> LinearDifferentialOperator(2)
+        LinearDifferentialOperator(
+        weights=[
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[0]],
+            ...),
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[0]],
+            ...),
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[1]],
+            ...)]
+        )
+
+        Create a linear differential operator that penalizes three times
+        the second derivative (acceleration) and twice the first (velocity).
+
+        >>> LinearDifferentialOperator(weights=[0, 2, 3])
+        LinearDifferentialOperator(
+        weights=[
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[0]],
+            ...),
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[2]],
+            ...),
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[3]],
+            ...)]
+        )
+
+        Create a linear differential operator with non-constant weights.
+
+        >>> constant = Constant()
+        >>> monomial = Monomial((0, 1), n_basis=3)
+        >>> fdlist = [FDataBasis(constant, [0]),
+        ...           FDataBasis(constant, [0]),
+        ...           FDataBasis(monomial, [1, 2, 3])]
+        >>> LinearDifferentialOperator(weights=fdlist)
+        LinearDifferentialOperator(
+        weights=[
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[0]],
+            ...),
+        FDataBasis(
+            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+            coefficients=[[0]],
+            ...),
+        FDataBasis(
+            basis=Monomial(domain_range=[array([0, 1])], n_basis=3),
+            coefficients=[[1 2 3]],
+            ...)]
+        )
+
     """
-    Return a penalty matrix given a basis.
 
-    This method is a singledispatch method that provides an
-    efficient analytical implementation of the computation of the
-    penalty matrix if possible.
-    """
-    return NotImplemented
-
-
-@singledispatch
-def penalty_matrix_coef_info(coef_info: CoefficientInfo,
-                             regularization):
-    """
-    Return a penalty matrix given the coefficient information.
-
-    This method is a singledispatch method that provides an
-    implementation of the computation of the penalty matrix
-    for a particular coefficient type.
-    """
-    return np.zeros((coef_info.shape[0], coef_info.shape[0]))
-
-
-class LinearDifferentialOperatorRegularization(Regularization):
-    """
-    Regularization using the integral of the square of a linear differential
-    operator.
-
-    Args:
-        lfd (LinearDifferentialOperator, list or int): Linear
-        differential operator. If it is not a LinearDifferentialOperator
-        object, it will be converted to one.
-
-    """
-
-    def __init__(self, linear_diff_op=2):
-        self.linear_diff_op = linear_diff_op if (
-            isinstance(linear_diff_op, LinearDifferentialOperator)) else (
-                LinearDifferentialOperator(linear_diff_op))
-
-    penalty_matrix_basis_opt = penalty_matrix_basis_opt
-    penalty_matrix_coef_info = penalty_matrix_coef_info
-
-    def penalty_matrix(self, coef_info):
-        return penalty_matrix_coef_info(coef_info, self)
-
-    def penalty_matrix_basis_numerical(self, basis):
-        """Return a penalty matrix using a numerical approach.
+    def __init__(self, order_or_weights=None, *, order=None, weights=None,
+                 domain_range=None):
+        """Constructor. You have to provide either order or weights.
+           If both are provided, it will raise an error.
+           If a positional argument is supplied it will be considered the
+           order if it is an integral type and the weights otherwise.
 
         Args:
-            basis (Basis): basis to compute the penalty for.
+            order (int, optional): the order of the operator. It's the highest
+                    derivative order of the operator
 
+            weights (list, optional): A FDataBasis objects list of length
+                    order + 1 items
+
+            domain_range (tuple or list of tuples, optional): Definition
+                         of the interval where the weight functions are
+                         defined. If the functional weights are specified
+                         and this is not, takes the domain range from them.
+                         Otherwise, defaults to (0,1).
         """
-        indices = np.triu_indices(basis.n_basis)
 
-        def cross_product(x):
-            """Multiply the two lfds"""
-            res = self.linear_diff_op(basis)([x])[:, 0]
+        from ...representation.basis import FDataBasis
 
-            return res[indices[0]] * res[indices[1]]
+        num_args = sum(
+            [a is not None for a in [order_or_weights, order, weights]])
 
-        # Range of first dimension
-        domain_range = basis.domain_range[0]
+        if num_args > 1:
+            raise ValueError("You have to provide the order or the weights, "
+                             "not both")
 
-        penalty_matrix = np.empty((basis.n_basis, basis.n_basis))
+        real_domain_range = (domain_range if domain_range is not None
+                             else (0, 1))
 
-        # Obtain the integrals for the upper matrix
-        triang_vec = scipy.integrate.quad_vec(
-            cross_product, domain_range[0], domain_range[1])[0]
+        if order_or_weights is not None:
+            if isinstance(order_or_weights, numbers.Integral):
+                order = order_or_weights
+            else:
+                weights = order_or_weights
 
-        # Set upper matrix
-        penalty_matrix[indices] = triang_vec
+        if order is None and weights is None:
+            self.weights = (FDataBasis(Constant(real_domain_range), 0),)
 
-        # Set lower matrix
-        penalty_matrix[(indices[1], indices[0])] = triang_vec
+        elif weights is None:
+            if order < 0:
+                raise ValueError("Order should be an non-negative integer")
 
-        return penalty_matrix
+            self.weights = [
+                FDataBasis(Constant(real_domain_range),
+                           0 if (i < order) else 1)
+                for i in range(order + 1)]
 
-    def penalty_matrix_basis(self, basis):
-        r"""Return a penalty matrix given a basis.
-
-        The penalty matrix is defined as [RS05-5-6-2]_:
-
-        .. math::
-            R_{ij} = \int L\phi_i(s) L\phi_j(s) ds
-
-        where :math:`\phi_i(s)` for :math:`i=1, 2, ..., n` are the basis
-        functions and :math:`L` is a differential operator.
-
-        Args:
-            basis (Basis): basis to compute the penalty for.
-
-        Returns:
-            numpy.array: Penalty matrix.
-
-        References:
-            .. [RS05-5-6-2] Ramsay, J., Silverman, B. W. (2005). Specifying the
-               roughness penalty. In *Functional Data Analysis* (pp. 106-107).
-               Springer.
-
-        """
-        matrix = penalty_matrix_basis_opt(basis, self)
-
-        if matrix is NotImplemented:
-            return self.penalty_matrix_basis_numerical(basis)
         else:
-            return matrix
+            if len(weights) == 0:
+                raise ValueError("You have to provide one weight at least")
 
-###########################################
+            if all(isinstance(n, numbers.Real) for n in weights):
+                self.weights = (FDataBasis(Constant(real_domain_range),
+                                           np.array(weights)
+                                           .reshape(-1, 1)).to_list())
+
+            elif all(isinstance(n, FDataBasis) for n in weights):
+                if all([_same_domain(weights[0], x)
+                        and x.n_samples == 1 for x in weights]):
+                    self.weights = weights
+
+                    real_domain_range = weights[0].domain_range
+                    if (domain_range is not None
+                            and real_domain_range != domain_range):
+                        raise ValueError("The domain range provided for the "
+                                         "linear operator does not match the "
+                                         "domain range of the weights")
+
+                else:
+                    raise ValueError("FDataBasis objects in the list have "
+                                     "not the same domain_range")
+
+            else:
+                raise ValueError("The elements of the list are neither "
+                                 "integers or FDataBasis objects")
+
+        self.domain_range = real_domain_range
+
+    def __repr__(self):
+        """Representation of linear differential operator object."""
+
+        bwtliststr = ""
+        for w in self.weights:
+            bwtliststr = bwtliststr + "\n" + repr(w) + ","
+
+        return (f"{self.__class__.__name__}("
+                f"\nweights=[{bwtliststr[:-1]}]"
+                f"\n)").replace('\n', '\n    ')
+
+    def __eq__(self, other):
+        """Equality of linear differential operator objects"""
+        return (self.weights == other.weights)
+
+    def constant_weights(self):
+        """
+        Return the scalar weights of the linear differential operator if they
+        are constant basis.
+        Otherwise, return None.
+
+        This function is mostly useful for basis which want to override
+        the _penalty method in order to use an analytical expression
+        for constant weights.
+
+        """
+        coefs = [w.coefficients[0, 0] if isinstance(w.basis, Constant)
+                 else None
+                 for w in self.weights]
+
+        return np.array(coefs) if coefs.count(None) == 0 else None
+
+    def __call__(self, f):
+        """Return the function that results of applying the operator."""
+        def applied_linear_diff_op(t):
+            return sum(w(t) * f(t, derivative=i)
+                       for i, w in enumerate(self.weights))
+
+        return applied_linear_diff_op
+
+
+#############################################################
 #
-# Implementations for each coefficient type
+# Optimized implementations of gramian matrix for each basis.
 #
-###########################################
+#############################################################
 
 
-@LinearDifferentialOperatorRegularization.penalty_matrix_coef_info.register(
-    CoefficientInfoFDataBasis)
-def penalty_matrix_coef_info_fdatabasis(
-        coef_info: CoefficientInfoFDataBasis,
-        regularization: LinearDifferentialOperatorRegularization):
-    return regularization.penalty_matrix_basis(coef_info.basis)
-
-
-###########################################
-#
-# Optimized implementations for each basis.
-#
-###########################################
-
-
-@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register(
-    Constant)
+@gramian_matrix_optimization.register
 def constant_penalty_matrix_optimized(
-        basis: Constant,
-        regularization: LinearDifferentialOperatorRegularization):
+        linear_operator: LinearDifferentialOperator,
+        basis: Constant):
 
-    coefs = regularization.linear_diff_op.constant_weights()
+    coefs = linear_operator.constant_weights()
     if coefs is None:
         return NotImplemented
 
@@ -213,13 +292,12 @@ def _monomial_evaluate_constant_linear_diff_op(basis, weights):
     return polynomials
 
 
-@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register(
-    Monomial)
+@gramian_matrix_optimization.register
 def monomial_penalty_matrix_optimized(
-        basis: Monomial,
-        regularization: LinearDifferentialOperatorRegularization):
+        linear_operator: LinearDifferentialOperator,
+        basis: Monomial):
 
-    weights = regularization.linear_diff_op.constant_weights()
+    weights = linear_operator.constant_weights()
     if weights is None:
         return NotImplemented
 
@@ -329,13 +407,12 @@ def _fourier_penalty_matrix_optimized_orthonormal(basis, weights):
     return penalty_matrix
 
 
-@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register(
-    Fourier)
+@gramian_matrix_optimization.register
 def fourier_penalty_matrix_optimized(
-        basis: Fourier,
-        regularization: LinearDifferentialOperatorRegularization):
+        linear_operator: LinearDifferentialOperator,
+        basis: Fourier):
 
-    weights = regularization.linear_diff_op.constant_weights()
+    weights = linear_operator.constant_weights()
     if weights is None:
         return NotImplemented
 
@@ -347,13 +424,12 @@ def fourier_penalty_matrix_optimized(
     return _fourier_penalty_matrix_optimized_orthonormal(basis, weights)
 
 
-@LinearDifferentialOperatorRegularization.penalty_matrix_basis_opt.register(
-    BSpline)
+@gramian_matrix_optimization.register
 def bspline_penalty_matrix_optimized(
-        basis: BSpline,
-        regularization: LinearDifferentialOperatorRegularization):
+        linear_operator: LinearDifferentialOperator,
+        basis: BSpline):
 
-    coefs = regularization.linear_diff_op.constant_weights()
+    coefs = linear_operator.constant_weights()
     if coefs is None:
         return NotImplemented
 

@@ -2,7 +2,7 @@ from functools import singledispatch
 
 import numpy as np
 
-from ..representation.basis import Basis, FDataBasis
+from ...representation.basis import Basis, FDataBasis
 
 
 class CoefficientInfo():
@@ -18,9 +18,8 @@ class CoefficientInfo():
 
     """
 
-    def __init__(self, coef_type, shape):
-        self.coef_type = coef_type
-        self.shape = shape
+    def __init__(self, basis):
+        self.basis = basis
 
     def regression_matrix(self, X, y):
         """
@@ -50,15 +49,10 @@ def coefficient_info_from_covariate(X, y, **kwargs) -> CoefficientInfo:
     Make a coefficient info object from a covariate.
 
     """
-    return CoefficientInfo(type(X), shape=X.shape[1:])
+    return CoefficientInfo(basis=np.identity(X.shape[1], dtype=X.dtype))
 
 
 class CoefficientInfoFDataBasis(CoefficientInfo):
-
-    def __init__(self, basis):
-        super().__init__(coef_type=FDataBasis, shape=(basis.n_basis,))
-
-        self.basis = basis
 
     def regression_matrix(self, X, y):
         xcoef = X.coefficients

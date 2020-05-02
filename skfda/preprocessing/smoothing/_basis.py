@@ -4,7 +4,6 @@
 This module contains the class for the basis smoothing.
 
 """
-import collections
 from enum import Enum
 from typing import Union, Iterable
 
@@ -14,7 +13,6 @@ import numpy as np
 
 from ... import FDataBasis
 from ... import FDataGrid
-from ..._utils._coefficients import CoefficientInfoFDataBasis
 from ._linear import _LinearSmoother, _check_r_to_r
 
 
@@ -249,17 +247,19 @@ class BasisSmoother(_LinearSmoother):
                [ 0.43,  0.14, -0.14,  0.14,  0.43]])
 
         If the smoothing parameter is set to something else than zero, we can
-        penalize approximations that are not smooth enough using a linear
-        differential operator:
+        penalize approximations that are not smooth enough using some kind
+        of regularization:
 
-        >>> from skfda.misc.regularization import (
-        ...     LinearDifferentialOperatorRegularization as LDiffReg)
+        >>> from skfda.misc.regularization import TikhonovRegularization
+        >>> from skfda.misc.operators import LinearDifferentialOperator
+        >>>
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='cholesky',
         ...                smoothing_parameter=1,
-        ...                regularization=LDiffReg([0.1, 0.2]),
+        ...                regularization=TikhonovRegularization(
+        ...                    LinearDifferentialOperator([0.1, 0.2])),
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
@@ -270,19 +270,20 @@ class BasisSmoother(_LinearSmoother):
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='qr',
         ...                smoothing_parameter=1,
-        ...                regularization=LDiffReg([0.1, 0.2]),
+        ...                regularization=TikhonovRegularization(
+        ...                    LinearDifferentialOperator([0.1, 0.2])),
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
         array([[ 2.04,  0.51,  0.55]])
 
-        >>> from skfda.misc import LinearDifferentialOperator
         >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='matrix',
         ...                smoothing_parameter=1,
-        ...                regularization=LDiffReg([0.1, 0.2]),
+        ...                regularization=TikhonovRegularization(
+        ...                    LinearDifferentialOperator([0.1, 0.2])),
         ...                return_basis=True)
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
@@ -348,7 +349,7 @@ class BasisSmoother(_LinearSmoother):
         inv = basis_values_input.T @ weight_matrix @ basis_values_input
 
         penalty_matrix = compute_penalty_matrix(
-            coef_info=CoefficientInfoFDataBasis(self.basis),
+            basis_iterable=(self.basis,),
             regularization_parameter=self.smoothing_parameter,
             regularization=self.regularization,
             penalty_matrix=self.penalty_matrix)
@@ -410,7 +411,7 @@ class BasisSmoother(_LinearSmoother):
                                else self.input_points_)
 
         penalty_matrix = compute_penalty_matrix(
-            coef_info=CoefficientInfoFDataBasis(self.basis),
+            basis_iterable=(self.basis,),
             regularization_parameter=self.smoothing_parameter,
             regularization=self.regularization,
             penalty_matrix=self.penalty_matrix)

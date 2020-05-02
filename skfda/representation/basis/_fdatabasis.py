@@ -668,7 +668,7 @@ class FDataBasis(FData):
             numpy.array: Inner Product matrix.
 
         """
-        from ...misc import LinearDifferentialOperator
+        from ...misc.operators import LinearDifferentialOperator
         from ..basis import Basis
 
         if not _same_domain(self.domain_range, other.domain_range):

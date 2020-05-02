@@ -1,11 +1,11 @@
-import unittest
-
 import skfda
 from skfda._utils import _check_estimator
-from skfda.misc import LinearDifferentialOperator
-from skfda.misc.regularization import LinearDifferentialOperatorRegularization
+from skfda.misc.operators import LinearDifferentialOperator
+from skfda.misc.regularization import TikhonovRegularization
 from skfda.representation.basis import BSpline, Monomial
 from skfda.representation.grid import FDataGrid
+import unittest
+
 import sklearn
 
 import numpy as np
@@ -82,7 +82,7 @@ class TestBasisSmoother(unittest.TestCase):
         smoother = smoothing.BasisSmoother(
             basis=basis,
             smoothing_parameter=10,
-            regularization=LinearDifferentialOperatorRegularization(
+            regularization=TikhonovRegularization(
                 LinearDifferentialOperator(2)),
             method='cholesky',
             return_basis=True)
@@ -100,7 +100,7 @@ class TestBasisSmoother(unittest.TestCase):
         smoother = smoothing.BasisSmoother(
             basis=basis,
             smoothing_parameter=10,
-            regularization=LinearDifferentialOperatorRegularization(
+            regularization=TikhonovRegularization(
                 LinearDifferentialOperator(2)),
             method='qr',
             return_basis=True)
@@ -120,7 +120,7 @@ class TestBasisSmoother(unittest.TestCase):
         smoother = smoothing.BasisSmoother(
             basis=basis,
             smoothing_parameter=1,
-            regularization=LinearDifferentialOperatorRegularization(
+            regularization=TikhonovRegularization(
                 LinearDifferentialOperator(2)),
             return_basis=True)
         fd_basis = smoother.fit_transform(fd)

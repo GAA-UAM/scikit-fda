@@ -252,8 +252,8 @@ class Basis(ABC):
 
         return gram
 
-    def inner_product(self, other):
-        return np.transpose(other.inner_product(self.to_basis()))
+        def inner_product(self, other):
+            return self.to_basis().inner_product(other)
 
     def _add_same_basis(self, coefs1, coefs2):
         return self.copy(), coefs1 + coefs2

@@ -788,34 +788,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         pass
 
-    @staticmethod
-    def concatenate_samples(objects):
-        """
-        Join samples from an iterable of similar FDataBasis objects.
-
-        Joins samples of FDataBasis objects if they have the same
-        dimensions and sampling points.
-        Args:
-            objects (list of :obj:`FDataBasis`): Objects to be concatenated.
-        Returns:
-            :obj:`FDataGrid`: FDataGrid object with the samples from the
-            original objects.
-        Raises:
-            ValueError: In case the provided list of FDataBasis objects is
-            empty.
-        Todo:
-            By the moment, only unidimensional objects are supported in basis
-            representation.
-        """
-        objects = iter(objects)
-        first = next(objects, None)
-
-        if not first:
-            raise ValueError("At least one FData object must be provided "
-                             "to concatenate.")
-
-        return first.concatenate(*objects)
-
     @abstractmethod
     def compose(self, fd, *, eval_points=None, **kwargs):
         """Composition of functions.
@@ -1037,3 +1009,31 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         first, *others = to_concat
 
         return first.concatenate(*others)
+
+
+def concatenate_samples(objects):
+    """
+    Join samples from an iterable of similar FDataBasis objects.
+
+    Joins samples of FDataBasis objects if they have the same
+    dimensions and sampling points.
+    Args:
+        objects (list of :obj:`FDataBasis`): Objects to be concatenated.
+    Returns:
+        :obj:`FDataGrid`: FDataGrid object with the samples from the
+        original objects.
+    Raises:
+        ValueError: In case the provided list of FDataBasis objects is
+        empty.
+    Todo:
+        By the moment, only unidimensional objects are supported in basis
+        representation.
+    """
+    objects = iter(objects)
+    first = next(objects, None)
+
+    if not first:
+        raise ValueError("At least one FData object must be provided "
+                         "to concatenate.")
+
+    return first.concatenate(*objects)

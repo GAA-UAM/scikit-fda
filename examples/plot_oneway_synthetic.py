@@ -11,9 +11,12 @@ synthetic data.
 
 # sphinx_gallery_thumbnail_number = 2
 
+import numpy as np
+
 import skfda
-from skfda.inference.anova import oneway_anova
 from skfda.representation import FDataGrid
+from skfda.inference.anova import oneway_anova
+from skfda.datasets import make_gaussian_process
 from skfda.misc.covariances import WhiteNoise
 
 ################################################################################
@@ -32,12 +35,6 @@ from skfda.misc.covariances import WhiteNoise
 # process by adding to them white noise. The main objective of the
 # test is to illustrate the differences in the results of the ANOVA method
 # when the covariance function of the brownian processes changes.
-
-import numpy as np
-
-from skfda.representation import FDataGrid
-from skfda.inference.anova import oneway_anova
-from skfda.datasets import make_gaussian_process
 
 ################################################################################
 # First, the means for the future processes are drawn.
@@ -90,8 +87,8 @@ print("p-value: {:.3f}".format(p_val))
 # In the plot below we can see the simulated trajectories for each mean,
 # and the averages for each group.
 
-fd = FDataGrid.concatenate_samples([fd1, fd2, fd3])
-fd_total = FDataGrid.concatenate_samples([fd.mean() for fd in [fd1, fd2,
+fd = skfda.concatenate_samples([fd1, fd2, fd3])
+fd_total = skfda.concatenate_samples([fd.mean() for fd in [fd1, fd2,
                                                                fd3]])
 fd_total.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
     sigma, p_val)
@@ -120,8 +117,8 @@ fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
 
 _, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 
-fd = FDataGrid.concatenate_samples([fd1, fd2, fd3])
-fd_total = FDataGrid.concatenate_samples([fd.mean() for fd in [fd1, fd2,
+fd = skfda.concatenate_samples([fd1, fd2, fd3])
+fd_total = skfda.concatenate_samples([fd.mean() for fd in [fd1, fd2,
                                                                fd3]])
 fd_total.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
     sigma, p_val)
@@ -145,8 +142,8 @@ fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
 
 _, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 
-fd = FDataGrid.concatenate_samples([fd1, fd2, fd3])
-fd_total = FDataGrid.concatenate_samples([fd.mean() for fd in [fd1, fd2,
+fd = skfda.concatenate_samples([fd1, fd2, fd3])
+fd_total = skfda.concatenate_samples([fd.mean() for fd in [fd1, fd2,
                                                                fd3]])
 fd_total.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
     sigma, p_val)

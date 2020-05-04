@@ -1011,19 +1011,22 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         return first.concatenate(*others)
 
 
-def concatenate_samples(objects):
+def concatenate(objects, as_coordinates=False):
     """
-    Join samples from an iterable of similar FDataBasis objects.
+    Join samples from an iterable of similar FData objects.
 
-    Joins samples of FDataBasis objects if they have the same
+    Joins samples of FData objects if they have the same
     dimensions and sampling points.
     Args:
         objects (list of :obj:`FDataBasis`): Objects to be concatenated.
+        as_coordinates (boolean, optional):  If False concatenates as
+                new samples, else, concatenates the other functions as
+                new components of the image. Defaults to False.
     Returns:
-        :obj:`FDataGrid`: FDataGrid object with the samples from the
+        :obj:`FData`: FData object with the samples from the
         original objects.
     Raises:
-        ValueError: In case the provided list of FDataBasis objects is
+        ValueError: In case the provided list of FData objects is
         empty.
     Todo:
         By the moment, only unidimensional objects are supported in basis
@@ -1036,4 +1039,4 @@ def concatenate_samples(objects):
         raise ValueError("At least one FData object must be provided "
                          "to concatenate.")
 
-    return first.concatenate(*objects)
+    return first.concatenate(*objects, as_coordinates=as_coordinates)

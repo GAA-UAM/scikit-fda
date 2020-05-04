@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+import pytest
 
 from skfda.representation import FDataGrid
 from skfda.representation.basis import Fourier
@@ -45,6 +46,7 @@ class OnewayAnovaTests(unittest.TestCase):
         self.assertAlmostEqual(v_asymptotic_stat(fd.to_basis(Fourier(
             n_basis=5)), weights), res)
 
+    @pytest.mark.slow
     def test_asymptotic_behaviour(self):
         dataset = fetch_gait()
         fd = dataset['data'].coordinates[1]

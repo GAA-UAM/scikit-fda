@@ -1,12 +1,13 @@
 import numpy as np
 from sklearn.utils import check_random_state
 
+from skfda import concatenate_samples
 from skfda.misc.metrics import norm_lp
 from skfda.representation import FData, FDataGrid
 from skfda.datasets import make_gaussian_process
 
 
-def v_sample_stat(fd, weights):
+def v_sample_stat(fd, weights, p=2):
     r"""
     Calculates a statistic that measures the variability between groups of
     samples in a :class:`skfda.representation.FData` object.
@@ -31,6 +32,9 @@ def v_sample_stat(fd, weights):
          weights (list of int): Weights related to each sample. Each
             weight is expected to appear in the same position as its
             corresponding sample in the FData object.
+        p (int, optional): p of the lp norm. Must be greater or equal
+            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
+            Defaults to 2.
 
     Returns:
         The value of the statistic.
@@ -82,10 +86,10 @@ def v_sample_stat(fd, weights):
             ops[index] = fd[i] - fd[j]
             index += 1
 
-    return np.dot(coef, norm_lp(FData.concatenate_samples(ops)) ** 2)
+    return np.dot(coef, norm_lp(concatenate_samples(ops), p=p) ** p)
 
 
-def v_asymptotic_stat(fd, weights):
+def v_asymptotic_stat(fd, weights, p=2):
     r"""
     Calculates a statistic that measures the variability between groups of
     samples in a :class:`skfda.representation.FData` object.
@@ -110,6 +114,9 @@ def v_asymptotic_stat(fd, weights):
          weights (list of int): Weights related to each sample. Each
             weight is expected to appear in the same position as its
             corresponding sample in the FData object.
+        p (int, optional): p of the lp norm. Must be greater or equal
+            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
+            Defaults to 2.
 
     Returns:
         The value of the statistic.
@@ -156,10 +163,10 @@ def v_asymptotic_stat(fd, weights):
         for i in range(j):
             ops[index] = fd[i] - fd[j] * np.sqrt(weights[i] / weights[j])
             index += 1
-    return np.sum(norm_lp(FData.concatenate_samples(ops)) ** 2)
+    return np.sum(norm_lp(concatenate_samples(ops), p=p) ** p)
 
 
-def _anova_bootstrap(fd_grouped, n_reps, random_state=None):
+def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=p):
 
     n_groups = len(fd_grouped)
     if n_groups < 2:
@@ -192,11 +199,11 @@ def _anova_bootstrap(fd_grouped, n_reps, random_state=None):
     v_samples = np.empty(n_reps)
     for i in range(n_reps):
         fd = FDataGrid([s.data_matrix[i, ..., 0] for s in sim])
-        v_samples[i] = v_asymptotic_stat(fd, sizes)
+        v_samples[i] = v_asymptotic_stat(fd, sizes, p=p)
     return v_samples
 
 
-def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None):
+def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None, p=2):
     r"""
     Performs one-way functional ANOVA.
 
@@ -238,6 +245,10 @@ def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None):
             return a numpy.array with the sampling distribution simulated.
 
         random_state (optional): Random state.
+
+        p (int, optional): p of the lp norm. Must be greater or equal
+            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
+            Defaults to 2.
 
     Returns:
         Value of the sample statistic, p-value and sampling distribution of
@@ -301,13 +312,14 @@ def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None):
                                       "different basis.")
 
     # FData where each sample is the mean of each group
-    fd_means = FData.concatenate_samples([fd.mean() for fd in fd_groups])
+    fd_means = concatenate_samples([fd.mean() for fd in fd_groups])
 
     # Base statistic
-    vn = v_sample_stat(fd_means, [fd.n_samples for fd in fd_groups])
+    vn = v_sample_stat(fd_means, [fd.n_samples for fd in fd_groups], p=p)
 
     # Computing sampling distribution
-    simulation = _anova_bootstrap(fd_groups, n_reps, random_state=random_state)
+    simulation = _anova_bootstrap(fd_groups, n_reps,
+                                  random_state=random_state, p=p)
 
     p_value = np.sum(simulation > vn) / len(simulation)
 

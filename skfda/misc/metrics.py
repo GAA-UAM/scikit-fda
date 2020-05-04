@@ -283,26 +283,10 @@ def norm_lp(fdata, p=2, p2=2):
         if fdata.dim_codomain > 1 or p != 2:
             raise NotImplementedError
 
-        res = np.empty(fdata.n_samples)
-
-        # Gram matrix contains the inner product of the basis components taken
-        # by pairs. Let \phi_i be a basis element and \c_i its coefficient:
-        #            <x, x> = \sum_i\sum_j\c_i\c_j<\phi_i, \phi_j>
-        # To compute this value it is possible to sum the diagonal and the lower
-        # triangular matrix multiplied by two.
-
-        gram = fdata.basis.gram_matrix()  # Obtaining Gram Matrix
-
-        for k, coefs in enumerate(fdata.coefficients):
-            l_triang = 0  # Computing lower triangular matrix
-            for i in range(fdata.n_basis):
-                for j in range(i):
-                    l_triang += coefs[i] * coefs[j] * gram[i][j]
-
-            diag = np.dot(coefs ** 2, np.diag(gram))  # Computing diagonal
-            res[k] = 2 * l_triang + diag
-
-        res = np.sqrt(res)  # Norm is the square root of the inner product
+        start, end = fdata.domain_range[0]
+        integral = scipy.integrate.quad_vec(
+            lambda x: np.power(np.abs(fdata(x)), p), start, end)
+        res = np.sqrt(integral[0]).flatten()
 
     else:
         if fdata.dim_codomain > 1:

@@ -32,6 +32,7 @@ import errno as _errno
 from .representation import FData
 from .representation import FDataBasis
 from .representation import FDataGrid
+from .representation._functional_data import concatenate_samples
 
 from . import representation, datasets, preprocessing, exploratory, misc, ml
 

@@ -1,6 +1,7 @@
 from skfda.representation.basis import (Basis, FDataBasis, Constant, Monomial,
                                         BSpline, Fourier)
 from skfda.representation.grid import FDataGrid
+from skfda import concatenate_samples
 import unittest
 
 import numpy as np
@@ -585,7 +586,7 @@ class TestBasis(unittest.TestCase):
         fd1 = FDataGrid([sample1]).to_basis(Fourier(n_basis=5))
         fd2 = FDataGrid([sample2]).to_basis(Fourier(n_basis=5))
 
-        fd = FDataBasis.concatenate_samples([fd1, fd2])
+        fd = concatenate_samples([fd1, fd2])
 
         np.testing.assert_equal(fd.n_samples, 2)
         np.testing.assert_equal(fd.dim_codomain, 1)

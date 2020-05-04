@@ -166,7 +166,7 @@ def v_asymptotic_stat(fd, weights, p=2):
     return np.sum(norm_lp(concatenate_samples(ops), p=p) ** p)
 
 
-def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=p):
+def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=2):
 
     n_groups = len(fd_grouped)
     if n_groups < 2:

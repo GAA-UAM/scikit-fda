@@ -50,7 +50,7 @@ fd_hip3 = fd_hip[26:39]
 fd_hip.plot(group=[0 if i < 13 else 1 if i < 26 else 39 for i in range(39)])
 
 means = [fd_hip1.mean(), fd_hip2.mean(), fd_hip3.mean()]
-fd_means = skfda.concatenate_samples(means)
+fd_means = skfda.concatenate(means)
 fig = fd_means.plot()
 
 ###############################################################################
@@ -86,7 +86,7 @@ fd_knee3 = fd_knee[26:39]
 fd_knee.plot(group=[0 if i < 13 else 1 if i < 26 else 39 for i in range(39)])
 
 means = [fd_knee1.mean(), fd_knee2.mean(), fd_knee3.mean()]
-fd_means = skfda.concatenate_samples(means)
+fd_means = skfda.concatenate(means)
 fig = fd_means.plot()
 
 ################################################################################

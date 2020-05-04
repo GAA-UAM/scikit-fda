@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.utils import check_random_state
 
-from skfda import concatenate_samples
+from skfda import concatenate
 from skfda.misc.metrics import norm_lp
 from skfda.representation import FData, FDataGrid
 from skfda.datasets import make_gaussian_process
@@ -86,7 +86,7 @@ def v_sample_stat(fd, weights, p=2):
             ops[index] = fd[i] - fd[j]
             index += 1
 
-    return np.dot(coef, norm_lp(concatenate_samples(ops), p=p) ** p)
+    return np.dot(coef, norm_lp(concatenate(ops), p=p) ** p)
 
 
 def v_asymptotic_stat(fd, weights, p=2):
@@ -163,7 +163,7 @@ def v_asymptotic_stat(fd, weights, p=2):
         for i in range(j):
             ops[index] = fd[i] - fd[j] * np.sqrt(weights[i] / weights[j])
             index += 1
-    return np.sum(norm_lp(concatenate_samples(ops), p=p) ** p)
+    return np.sum(norm_lp(concatenate(ops), p=p) ** p)
 
 
 def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=2):
@@ -312,7 +312,7 @@ def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None, p=2):
                                       "different basis.")
 
     # FData where each sample is the mean of each group
-    fd_means = concatenate_samples([fd.mean() for fd in fd_groups])
+    fd_means = concatenate([fd.mean() for fd in fd_groups])
 
     # Base statistic
     vn = v_sample_stat(fd_means, [fd.n_samples for fd in fd_groups], p=p)

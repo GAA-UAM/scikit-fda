@@ -87,8 +87,8 @@ print("p-value: {:.3f}".format(p_val))
 # In the plot below we can see the simulated trajectories for each mean,
 # and the averages for each group.
 
-fd = skfda.concatenate_samples([fd1, fd2, fd3])
-fd_total = skfda.concatenate_samples([fd.mean() for fd in [fd1, fd2,
+fd = skfda.concatenate([fd1, fd2, fd3])
+fd_total = skfda.concatenate([fd.mean() for fd in [fd1, fd2,
                                                                fd3]])
 fd_total.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
     sigma, p_val)
@@ -117,8 +117,8 @@ fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
 
 _, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 
-fd = skfda.concatenate_samples([fd1, fd2, fd3])
-fd_total = skfda.concatenate_samples([fd.mean() for fd in [fd1, fd2,
+fd = skfda.concatenate([fd1, fd2, fd3])
+fd_total = skfda.concatenate([fd.mean() for fd in [fd1, fd2,
                                                                fd3]])
 fd_total.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
     sigma, p_val)
@@ -142,8 +142,8 @@ fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
 
 _, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 
-fd = skfda.concatenate_samples([fd1, fd2, fd3])
-fd_total = skfda.concatenate_samples([fd.mean() for fd in [fd1, fd2,
+fd = skfda.concatenate([fd1, fd2, fd3])
+fd_total = skfda.concatenate([fd.mean() for fd in [fd1, fd2,
                                                                fd3]])
 fd_total.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
     sigma, p_val)

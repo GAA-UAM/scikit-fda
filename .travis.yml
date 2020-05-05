@@ -41,7 +41,7 @@ script:
         flake8 --exit-zero skfda;
         coverage run --source=skfda/ setup.py test;
       else
-        py.test;
+        py.test
       fi
 
 

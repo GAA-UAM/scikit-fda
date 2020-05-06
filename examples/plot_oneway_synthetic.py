@@ -67,8 +67,8 @@ groups[20:] = 'Sample 3'
 # differences between the means of each group should be clear, and the
 # p-value for the test should be near to zero.
 
-sigma = 0.01
-cov = WhiteNoise(variance=sigma)
+sigma2 = 0.01
+cov = WhiteNoise(variance=sigma2)
 
 fd1 = make_gaussian_process(n_samples, mean=m1, cov=cov,
                             n_features=n_features, random_state=1, start=start,
@@ -90,8 +90,8 @@ print("p-value: {:.3f}".format(p_val))
 fd = skfda.concatenate([fd1, fd2, fd3])
 fd_total = skfda.concatenate([fd.mean() for fd in [fd1, fd2,
                                                                fd3]])
-fd_total.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
-    sigma, p_val)
+fd_total.dataset_label = "Sample with $\sigma^2$ = {}, p-value = {:.3f}".format(
+    sigma2, p_val)
 fd_total.plot()
 
 ################################################################################
@@ -102,8 +102,8 @@ fd_total.plot()
 
 ################################################################################
 # Plot for :math:`\sigma = 1`:
-sigma = 0.1
-cov = WhiteNoise(variance=sigma)
+sigma2 = 0.1
+cov = WhiteNoise(variance=sigma2)
 
 fd1 = make_gaussian_process(n_samples, mean=m1, cov=cov,
                             n_features=n_features, random_state=1, start=t[0],
@@ -120,15 +120,15 @@ _, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 fd = skfda.concatenate([fd1, fd2, fd3])
 fd_total = skfda.concatenate([fd.mean() for fd in [fd1, fd2,
                                                                fd3]])
-fd_total.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
-    sigma, p_val)
+fd_total.dataset_label = "Sample with $\sigma^2$ = {}, p-value = {:.3f}".format(
+    sigma2, p_val)
 fd_total.plot()
 
 ################################################################################
 # Plot for :math:`\sigma = 10`:
 
-sigma = 1
-cov = WhiteNoise(variance=sigma)
+sigma2 = 1
+cov = WhiteNoise(variance=sigma2)
 
 fd1 = make_gaussian_process(n_samples, mean=m1, cov=cov,
                             n_features=n_features, random_state=1, start=t[0],
@@ -145,8 +145,8 @@ _, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 fd = skfda.concatenate([fd1, fd2, fd3])
 fd_total = skfda.concatenate([fd.mean() for fd in [fd1, fd2,
                                                                fd3]])
-fd_total.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
-    sigma, p_val)
+fd_total.dataset_label = "Sample with $\sigma^2$ = {}, p-value = {:.3f}".format(
+    sigma2, p_val)
 fd_total.plot()
 
 ################################################################################

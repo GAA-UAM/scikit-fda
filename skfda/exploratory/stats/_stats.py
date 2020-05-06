@@ -1,6 +1,6 @@
 """Functional data descriptive statistics.
 """
-
+from ..depth import modified_band_depth
 
 def mean(fdata, weights=None):
     """Compute the mean of all the samples in a FData object.
@@ -67,3 +67,27 @@ def cov(fdatagrid):
 
     """
     return fdatagrid.cov()
+
+
+def depth_based_median(fdatagrid, depth_method=modified_band_depth):
+    """Compute the median based on a depth measure.
+
+    The depth based median is the deepest curve given a certain
+    depth measure
+
+    Args:
+        fdatagrid (FDataGrid): Object containing different samples of a
+            functional variable.
+        depth_method (:ref:`depth measure <depth-measures>`, optional):
+                Method used to order the data. Defaults to :func:`modified
+                band depth <fda.depth_measures.modified_band_depth>`.
+
+    Returns:
+        FDataGrid: object containing the computed depth_based median.
+
+    """
+    depth = depth_method(fdatagrid)
+    indices_descending_depth = (-depth).argsort(axis=0)
+
+    # The median is the deepest curve
+    return fdatagrid[indices_descending_depth[0]]

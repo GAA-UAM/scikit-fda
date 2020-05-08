@@ -12,6 +12,7 @@ this category deal with this problem.
 
    preprocessing/smoothing
    preprocessing/registration
+   preprocessing/dim_reduction
 
 Smoothing
 ---------
@@ -29,3 +30,13 @@ should be ignored in the analysis. To align the data and eliminate the phase
 variation, we need to use *registration* methods. 
 :doc:`Here <preprocessing/registration>` you can learn more about the
 registration methods available in the library.
+
+Dimensionality Reduction
+------------------------
+
+The functional data may have too many features so we cannot analyse
+the data with clarity. To better understand the data, we need to use
+*dimensionality reduction* methods that can reduce the number of features
+while still preserving the most relevant information.
+:doc:`Here <preprocessing/dim_reduction>` you can learn more about the
+dimension reduction methods available in the library.

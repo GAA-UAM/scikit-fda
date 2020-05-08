@@ -93,9 +93,9 @@ def depth_based_median(fdatagrid, depth_method=modified_band_depth):
     return fdatagrid[indices_descending_depth[0]]
 
 
-def trimmed_means(fdatagrid,
-                  trimmed_percentage,
-                  depth_method=modified_band_depth):
+def trim_mean(fdatagrid,
+              proportiontocut,
+              depth_method=modified_band_depth):
     """Compute the trimmed means based on a depth measure.
 
     The trimmed means consists in computing the mean function without a
@@ -105,7 +105,7 @@ def trimmed_means(fdatagrid,
     Args:
         fdatagrid (FDataGrid): Object containing different samples of a
             functional variable.
-        trimmed_percentage (float): indicates the percentage of functions to
+        proportiontocut (float): indicates the percentage of functions to
             remove. It is not easy to determine as it varies from dataset to
             dataset.
         depth_method (:ref:`depth measure <depth-measures>`, optional):
@@ -117,7 +117,7 @@ def trimmed_means(fdatagrid,
 
     """
     n_samples_to_keep = int((fdatagrid.n_samples -
-                            fdatagrid.n_samples * trimmed_percentage))
+                             fdatagrid.n_samples * proportiontocut))
 
     # compute the depth of each curve and store the indexes in descending order
     depth = depth_method(fdatagrid)

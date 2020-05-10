@@ -3,6 +3,6 @@ numpy
 scipy
 setuptools
 Cython
-sklearn==0.20.1
+sklearn
 mpldatacursor
 

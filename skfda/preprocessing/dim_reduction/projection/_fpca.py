@@ -11,6 +11,8 @@ from sklearn.decomposition import PCA
 
 import numpy as np
 
+from ....misc.regularization import compute_penalty_matrix
+
 
 __author__ = "Yujian Hong"
 __email__ = "yujian.hong@estudiante.uam.es"
@@ -31,12 +33,12 @@ class FPCA(ABC, BaseEstimator, TransformerMixin):
                  n_components=3,
                  centering=True,
                  regularization_parameter=0,
-                 penalty=2):
+                 regularization=None):
         self.n_components = n_components
         self.centering = centering
         # lambda in the regularization / penalization process
         self.regularization_parameter = regularization_parameter
-        self.penalty = penalty
+        self.regularization = regularization
 
     @abstractmethod
     def fit(self, X, y=None):
@@ -103,7 +105,7 @@ class FPCABasis(FPCA):
             the passed FDataBasis object.
         regularization_parameter (float): this parameter determines the amount
             of smoothing applied. Defaults to 0
-        penalty (Union[int, Iterable[float],'LinearDifferentialOperator']):
+        regularization (Union[int, Iterable[float],'LinearDifferentialOperator']):
             Linear differential operator. If it is not a
             LinearDifferentialOperator object, it will be converted to one.
             If you input an integerthen the derivative of that degree will be
@@ -137,9 +139,9 @@ class FPCABasis(FPCA):
                  components_basis=None,
                  centering=True,
                  regularization_parameter=0,
-                 penalty=2):
+                 regularization=None):
         super().__init__(n_components, centering,
-                         regularization_parameter, penalty)
+                         regularization_parameter, regularization)
         # basis that we want to use for the principal components
         self.components_basis = components_basis
 
@@ -193,33 +195,34 @@ class FPCABasis(FPCA):
             X.coefficients -= meanfd.coefficients
 
         # setup principal component basis if not given
-        if self.components_basis:
+        components_basis = self.components_basis
+        if components_basis is not None:
             # First fix domain range if not already done
-            self.components_basis.domain_range = X.basis.domain_range
-            g_matrix = self.components_basis.gram_matrix()
+            components_basis.domain_range = X.basis.domain_range
+            g_matrix = components_basis.gram_matrix()
             # the matrix that are in charge of changing the computed principal
             # components to target matrix is essentially the inner product
             # of both basis.
-            j_matrix = X.basis.inner_product(self.components_basis)
+            j_matrix = X.basis.inner_product(components_basis)
         else:
             # if no other basis is specified we use the same basis as the passed
             # FDataBasis Object
-            self.components_basis = X.basis.copy()
-            g_matrix = self.components_basis.gram_matrix()
+            components_basis = X.basis.copy()
+            g_matrix = components_basis.gram_matrix()
             j_matrix = g_matrix
 
         # make g matrix symmetric, referring to Ramsay's implementation
         g_matrix = (g_matrix + np.transpose(g_matrix)) / 2
 
         # Apply regularization / penalty if applicable
-        if self.regularization_parameter > 0:
-            # obtain regularization matrix
-            regularization_matrix = self.components_basis.penalty(
-                self.penalty
-            )
-            # apply regularization
-            g_matrix = (g_matrix + self.regularization_parameter *
-                        regularization_matrix)
+        regularization_matrix = compute_penalty_matrix(
+            basis_iterable=(components_basis,),
+            regularization_parameter=self.regularization_parameter,
+            regularization=self.regularization,
+            penalty_matrix=None)
+
+        # apply regularization
+        g_matrix = (g_matrix + regularization_matrix)
 
         # obtain triangulation using cholesky
         l_matrix = np.linalg.cholesky(g_matrix)
@@ -250,7 +253,7 @@ class FPCABasis(FPCA):
 
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
         self.explained_variance_ = pca.explained_variance_
-        self.components_ = X.copy(basis=self.components_basis,
+        self.components_ = X.copy(basis=components_basis,
                                   coefficients=component_coefficients)
 
         return self
@@ -405,9 +408,9 @@ class FPCAGrid(FPCA):
                  weights=None,
                  centering=True,
                  regularization_parameter=0,
-                 penalty=2):
+                 regularization=2):
         super().__init__(n_components, centering,
-                         regularization_parameter, penalty)
+                         regularization_parameter, regularization)
         self.weights = weights
 
     def fit(self, X: FDataGrid, y=None):
@@ -487,10 +490,11 @@ class FPCAGrid(FPCA):
         if self.regularization_parameter > 0:
             # if its an integer, we transform it to an array representing the
             # linear differential operator of that order
-            if isinstance(self.penalty, int):
-                self.penalty = np.append(np.zeros(self.penalty), 1)
+            if isinstance(self.regularization, int):
+                self.regularization = np.append(
+                    np.zeros(self.regularization), 1)
             penalty_matrix = regularization_penalty_matrix(X.sample_points[0],
-                                                           self.penalty)
+                                                           self.regularization)
 
             # we need to invert aux matrix and multiply it to the data matrix
             aux_matrix = (np.diag(np.ones(n_points_discretization)) +

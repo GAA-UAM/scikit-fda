@@ -1,10 +1,12 @@
+from skfda import FDataGrid, FDataBasis
+from skfda.datasets import fetch_weather
+from skfda.misc.operators import LinearDifferentialOperator
+from skfda.misc.regularization import TikhonovRegularization
+from skfda.preprocessing.dim_reduction.projection import FPCABasis, FPCAGrid
+from skfda.representation.basis import Fourier
 import unittest
 
 import numpy as np
-from skfda import FDataGrid, FDataBasis
-from skfda.representation.basis import Fourier
-from skfda.preprocessing.dim_reduction.projection import FPCABasis, FPCAGrid
-from skfda.datasets import fetch_weather
 
 
 class FPCATestCase(unittest.TestCase):
@@ -58,7 +60,9 @@ class FPCATestCase(unittest.TestCase):
         fd_basis = fd_data.to_basis(basis)
 
         fpca = FPCABasis(n_components=n_components,
-                         regularization_parameter=1e5)
+                         regularization_parameter=1e5,
+                         regularization=TikhonovRegularization(
+                             LinearDifferentialOperator(2)))
         fpca.fit(fd_basis)
 
         # results obtained using Ramsay's R package
@@ -114,7 +118,6 @@ class FPCATestCase(unittest.TestCase):
                 results[i, :] *= -1
         np.testing.assert_allclose(fpca.components_.coefficients, results,
                                    atol=1e-7)
-
 
     def test_grid_fpca_fit_result(self):
 

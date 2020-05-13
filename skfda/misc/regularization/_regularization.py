@@ -23,19 +23,23 @@ class TikhonovRegularization(BaseEstimator):
     (matrix for finite vectors).
 
     Parameters:
-        operator: linear operator used for regularization.
+        linear_operator: linear operator used for regularization.
+        regularization_parameter: scaling parameter of the penalization.
 
     """
 
-    def __init__(self, linear_operator):
+    def __init__(self, linear_operator,
+                 regularization_parameter=1):
         self.linear_operator = linear_operator
+        self.regularization_parameter = regularization_parameter
 
     def penalty_matrix(self, basis):
         r"""
         Return a penalty matrix for ordinary least squares.
 
         """
-        return gramian_matrix(self.linear_operator, basis)
+        return self.regularization_parameter * gramian_matrix(
+            self.linear_operator, basis)
 
 
 def compute_penalty_matrix(basis_iterable, regularization_parameter,
@@ -47,16 +51,11 @@ def compute_penalty_matrix(basis_iterable, regularization_parameter,
 
     """
     # If there is no regularization, return 0 and rely on broadcasting
-    if regularization_parameter == 0:
+    if regularization_parameter == 0 or regularization is None:
         return 0
 
     # Compute penalty matrix if not provided
     if penalty_matrix is None:
-
-        if regularization is None:
-            raise ValueError("The regularization parameter is "
-                             f"{regularization_parameter} != 0 "
-                             "and no regularization is specified")
 
         if not isinstance(regularization, Iterable):
             regularization = (regularization,)

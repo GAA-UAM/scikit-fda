@@ -60,9 +60,9 @@ class FPCATestCase(unittest.TestCase):
         fd_basis = fd_data.to_basis(basis)
 
         fpca = FPCABasis(n_components=n_components,
-                         regularization_parameter=1e5,
                          regularization=TikhonovRegularization(
-                             LinearDifferentialOperator(2)))
+                             LinearDifferentialOperator(2),
+                             regularization_parameter=1e5))
         fpca.fit(fd_basis)
 
         # results obtained using Ramsay's R package
@@ -229,7 +229,6 @@ class FPCATestCase(unittest.TestCase):
 
         fpca = FPCAGrid(
             n_components=n_components, weights=[1] * 365,
-            regularization_parameter=1,
             regularization=TikhonovRegularization(
                 LinearDifferentialOperator(
                     2,

@@ -227,8 +227,15 @@ class FPCATestCase(unittest.TestCase):
         fd_data = FDataGrid(np.squeeze(fd_data.data_matrix),
                             np.arange(0.5, 365, 1))
 
-        fpca = FPCAGrid(n_components=n_components, weights=[1] * 365,
-                        regularization_parameter=1)
+        fpca = FPCAGrid(
+            n_components=n_components, weights=[1] * 365,
+            regularization_parameter=1,
+            regularization=TikhonovRegularization(
+                LinearDifferentialOperator(
+                    2,
+                    derivative_function=(
+                        lambda function, points, derivative:
+                        function.derivative(order=derivative)(points)))))
         fpca.fit(fd_data)
 
         # results obtained using fda.usc for the first component

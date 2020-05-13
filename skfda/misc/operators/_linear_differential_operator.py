@@ -1,12 +1,15 @@
 import numbers
 
 from numpy import polyder, polyint, polymul, polyval
+import scipy.integrate
 from scipy.interpolate import PPoly
 
 import numpy as np
 
 from ..._utils import _same_domain
+from ...representation import FDataGrid
 from ...representation.basis import Constant, Monomial, Fourier, BSpline
+from ...representation.interpolation import SplineInterpolator
 from ._operators import Operator, gramian_matrix_optimization
 
 
@@ -96,8 +99,10 @@ class LinearDifferentialOperator(Operator):
 
     """
 
-    def __init__(self, order_or_weights=None, *, order=None, weights=None,
-                 domain_range=None):
+    def __init__(
+            self, order_or_weights=None, *, order=None, weights=None,
+            domain_range=None,
+            derivative_function=None):
         """Constructor. You have to provide either order or weights.
            If both are provided, it will raise an error.
            If a positional argument is supplied it will be considered the
@@ -115,6 +120,10 @@ class LinearDifferentialOperator(Operator):
                          defined. If the functional weights are specified
                          and this is not, takes the domain range from them.
                          Otherwise, defaults to (0,1).
+
+            derivative_function (callable): function used to evaluate the
+                                derivatives.
+
         """
 
         from ...representation.basis import FDataBasis
@@ -177,6 +186,9 @@ class LinearDifferentialOperator(Operator):
                                  "integers or FDataBasis objects")
 
         self.domain_range = real_domain_range
+        self.derivative_function = (
+            LinearDifferentialOperator.evaluate_derivative
+            if derivative_function is None else derivative_function)
 
     def __repr__(self):
         """Representation of linear differential operator object."""
@@ -213,10 +225,18 @@ class LinearDifferentialOperator(Operator):
     def __call__(self, f):
         """Return the function that results of applying the operator."""
         def applied_linear_diff_op(t):
-            return sum(w(t) * f(t, derivative=i)
-                       for i, w in enumerate(self.weights))
+            return sum(w(t) * self.derivative_function(
+                function=f, points=t, derivative=i)
+                for i, w in enumerate(self.weights))
 
         return applied_linear_diff_op
+
+    @staticmethod
+    def evaluate_derivative(function, points, derivative):
+        """
+        Default function for evaluating derivatives.
+        """
+        return function(points, derivative=derivative)
 
 
 #############################################################
@@ -542,3 +562,117 @@ def bspline_penalty_matrix_optimized(
                 )[0]
                 penalty_matrix[j, i] = penalty_matrix[i, j]
     return penalty_matrix
+
+
+def _auxiliary_penalty_matrix(sample_points):
+    """ Computes the auxiliary matrix needed for the computation of the penalty
+    matrix. For more details please view the module fdata2pc of the library
+    fda.usc in R, and the referenced paper.
+
+    Args:
+        sample_points: the points of discretization of the data matrix.
+    Returns:
+        (array_like): the auxiliary matrix used to compute the penalty matrix
+
+    References.
+        [1] Nicole Krämer, Anne-Laure Boulesteix, and Gerhard Tutz. Penalized
+        partial least squares with applications to b-spline transformations
+        and functional data. Chemometrics and Intelligent Laboratory Systems,
+        94:60–69, 11 2008.
+
+    """
+    diff_values = np.diff(sample_points)
+    hh = -(1 / np.mean(1 / diff_values)) / diff_values
+    aux_diff_matrix = np.diag(hh)
+
+    n_points = len(sample_points)
+
+    aux_matrix_1 = np.zeros((n_points - 1, n_points))
+    aux_matrix_1[:, :-1] = aux_diff_matrix
+    aux_matrix_2 = np.zeros((n_points - 1, n_points))
+    aux_matrix_2[:, 1:] = -aux_diff_matrix
+
+    diff_matrix = aux_matrix_1 + aux_matrix_2
+
+    return diff_matrix
+
+
+def regularization_penalty_matrix(sample_points, penalty):
+    """ Computes the penalty matrix for regularization of the principal
+    components in a grid representation. For more details please view the module
+    fdata2pc of the library fda.usc in R, and the referenced paper.
+
+    Args:
+        sample_points: the points of discretization of the data matrix.
+        penalty (array_like): coefficients representing the differential
+            operator used in the computation of the penalty matrix. For example,
+            the array (1, 0, 1) means :math:`1 + D^{2}`
+    Returns:
+        (array_like): the penalty matrix used to regularize the components
+
+    References.
+        [1] Nicole Krämer, Anne-Laure Boulesteix, and Gerhard Tutz. Penalized
+        partial least squares with applications to b-spline transformations
+        and functional data. Chemometrics and Intelligent Laboratory Systems,
+        94:60–69, 11 2008.
+
+    """
+    penalty = np.array(penalty)
+    n_points = len(sample_points)
+    penalty_matrix = np.zeros((n_points, n_points))
+    if np.sum(penalty) != 0:
+        # independent term
+        penalty_matrix = penalty_matrix + penalty[0] * np.diag(
+            np.ones(n_points))
+        if len(penalty) > 1:
+            # for each term of the differential operator, we compute the penalty
+            # matrix of that order and then add it to the final penalty matrix
+            aux_penalty_1 = _auxiliary_penalty_matrix(sample_points)
+            aux_penalty_2 = _auxiliary_penalty_matrix(sample_points)
+            for i in range(1, len(penalty)):
+                if i > 1:
+                    aux_penalty_1 = (aux_penalty_2[:(n_points - i),
+                                                   :(n_points - i + 1)]
+                                     @ aux_penalty_1)
+                # applying the differential operator, as in each step the
+                # derivative degree increases by 1.
+                penalty_matrix = (penalty_matrix +
+                                  penalty[i] * (np.transpose(
+                                      aux_penalty_1) @ aux_penalty_1))
+    return penalty_matrix
+
+
+@gramian_matrix_optimization.register
+def fdatagrid_penalty_matrix_optimized(
+        linear_operator: LinearDifferentialOperator,
+        basis: FDataGrid):
+
+    if (not isinstance(basis.interpolator, SplineInterpolator)
+            or basis.interpolator.interpolation_order != 1):
+        return NotImplemented
+
+    coefs = linear_operator.constant_weights()
+    if coefs is None:
+        return NotImplemented
+
+    return regularization_penalty_matrix(basis.sample_points[0], coefs)
+
+    evaluated_basis = sum(
+        w(basis.sample_points[0]) * linear_operator.derivative_function(
+            function=basis, points=basis.sample_points[0], derivative=i)
+        for i, w in enumerate(linear_operator.weights))
+
+    indices = np.triu_indices(basis.n_samples)
+    product = evaluated_basis[indices[0]] * evaluated_basis[indices[1]]
+
+    triang_vec = scipy.integrate.simps(product, x=basis.sample_points)
+
+    matrix = np.empty((basis.n_samples, basis.n_samples))
+
+    # Set upper matrix
+    matrix[indices] = triang_vec
+
+    # Set lower matrix
+    matrix[(indices[1], indices[0])] = triang_vec
+
+    return matrix

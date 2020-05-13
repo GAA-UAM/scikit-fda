@@ -1,21 +1,21 @@
-import unittest
-
-import numpy as np
-
 from skfda import FDataGrid
-from skfda.representation.interpolation import SplineInterpolator
-from skfda.representation.basis import Fourier
+from skfda._utils import _check_estimator
 from skfda.datasets import (make_multimodal_samples, make_multimodal_landmarks,
                             make_sinusoidal_process)
+from skfda.exploratory.stats import mean
 from skfda.preprocessing.registration import (
     normalize_warping, invert_warping, landmark_shift_deltas, landmark_shift,
     landmark_registration_warping, landmark_registration, ShiftRegistration)
-from skfda.exploratory.stats import mean
+from skfda.preprocessing.registration.validation import (
+    AmplitudePhaseDecomposition, LeastSquares,
+    SobolevLeastSquares, PairwiseCorrelation)
+from skfda.representation.basis import Fourier
+from skfda.representation.interpolation import SplineInterpolator
+import unittest
+
 from sklearn.exceptions import NotFittedError
-from skfda._utils import _check_estimator
-from skfda.preprocessing.registration.validation import \
-    (AmplitudePhaseDecomposition, LeastSquares,
-     SobolevLeastSquares, PairwiseCorrelation)
+
+import numpy as np
 
 
 class TestWarping(unittest.TestCase):
@@ -166,6 +166,7 @@ class TestWarping(unittest.TestCase):
         fd_reg = landmark_registration(fd, landmarks, location=center)
         np.testing.assert_array_almost_equal(fd_reg(center), original_values,
                                              decimal=2)
+
 
 class TestShiftRegistration(unittest.TestCase):
     """Test shift registration"""
@@ -357,7 +358,7 @@ class TestRegistrationValidation(unittest.TestCase):
     def test_sobolev_least_squares_score(self):
         scorer = SobolevLeastSquares()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_almost_equal(score, 0.762240135)
+        np.testing.assert_almost_equal(score, 0.7621990)
 
     def test_pairwise_correlation(self):
         scorer = PairwiseCorrelation()
@@ -388,7 +389,6 @@ class TestRegistrationValidation(unittest.TestCase):
         # Inconsistent number of functions registered
         with np.testing.assert_raises(ValueError):
             scorer.score_function(self.X, self.X, warping=self.X[:2])
-
 
 
 if __name__ == '__main__':

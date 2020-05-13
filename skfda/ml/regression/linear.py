@@ -123,12 +123,10 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
     """
 
     def __init__(self, *, coef_basis=None, fit_intercept=True,
-                 regularization_parameter=0,
                  regularization=None,
                  penalty_matrix=None):
         self.coef_basis = coef_basis
         self.fit_intercept = fit_intercept
-        self.regularization_parameter = regularization_parameter
         self.regularization = regularization
         self.penalty_matrix = penalty_matrix
 
@@ -138,7 +136,6 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             X, y, sample_weight, self.coef_basis)
 
         regularization = self.regularization
-        regularization_parameter = self.regularization_parameter
 
         if self.fit_intercept:
             new_x = np.ones((len(y), 1))
@@ -149,10 +146,6 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
                 regularization = itertools.chain([None], regularization)
             elif regularization is not None:
                 regularization = (None, regularization)
-
-            if isinstance(regularization_parameter, Iterable):
-                regularization_parameter = itertools.chain(
-                    [0], regularization_parameter)
 
         inner_products = [c.regression_matrix(x, y)
                           for x, c in zip(X, coef_info)]
@@ -169,7 +162,7 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
 
         penalty_matrix = compute_penalty_matrix(
             basis_iterable=(c.basis for c in coef_info),
-            regularization_parameter=regularization_parameter,
+            regularization_parameter=1,
             regularization=regularization,
             penalty_matrix=self.penalty_matrix)
 

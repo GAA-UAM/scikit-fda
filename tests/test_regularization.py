@@ -218,8 +218,10 @@ class TestL2Regularization(unittest.TestCase):
 
                 sklearn_l2 = Ridge(alpha=regularization_parameter)
                 skfda_l2 = MultivariateLinearRegression(
-                    regularization=TikhonovRegularization(lambda x: x),
-                    regularization_parameter=regularization_parameter)
+                    regularization=TikhonovRegularization(
+                        lambda x: x,
+                        regularization_parameter=regularization_parameter),
+                )
 
                 sklearn_l2.fit(X_train, y_train)
                 with warnings.catch_warnings():

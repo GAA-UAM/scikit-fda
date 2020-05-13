@@ -32,12 +32,9 @@ class FPCA(ABC, BaseEstimator, TransformerMixin):
     def __init__(self,
                  n_components=3,
                  centering=True,
-                 regularization_parameter=0,
                  regularization=None):
         self.n_components = n_components
         self.centering = centering
-        # lambda in the regularization / penalization process
-        self.regularization_parameter = regularization_parameter
         self.regularization = regularization
 
     @abstractmethod
@@ -103,8 +100,6 @@ class FPCABasis(FPCA):
         components_basis (Basis): the basis in which we want the principal
             components. We can use a different basis than the basis contained in
             the passed FDataBasis object.
-        regularization_parameter (float): this parameter determines the amount
-            of smoothing applied. Defaults to 0
         regularization (Union[int, Iterable[float],'LinearDifferentialOperator']):
             Linear differential operator. If it is not a
             LinearDifferentialOperator object, it will be converted to one.
@@ -138,10 +133,9 @@ class FPCABasis(FPCA):
                  n_components=3,
                  components_basis=None,
                  centering=True,
-                 regularization_parameter=0,
                  regularization=None):
         super().__init__(n_components, centering,
-                         regularization_parameter, regularization)
+                         regularization)
         # basis that we want to use for the principal components
         self.components_basis = components_basis
 
@@ -214,7 +208,7 @@ class FPCABasis(FPCA):
         # Apply regularization / penalty if applicable
         regularization_matrix = compute_penalty_matrix(
             basis_iterable=(components_basis,),
-            regularization_parameter=self.regularization_parameter,
+            regularization_parameter=1,
             regularization=self.regularization,
             penalty_matrix=None)
 
@@ -289,8 +283,6 @@ class FPCAGrid(FPCA):
             computing the weights. If a callable object is passed, then the
             weight vector will be obtained by evaluating the object at the
             sample points of the passed FDataGrid object in the fit method.
-        regularization_parameter (float): this parameter determines the amount
-            of smoothing applied. Defaults to 0
         penalty (Union[int, Iterable[float]]): the coefficients that will be
             used to calculate the penalty matrix for regularization.
             If you input an integer then the derivative of that degree will be
@@ -326,10 +318,9 @@ class FPCAGrid(FPCA):
                  n_components=3,
                  weights=None,
                  centering=True,
-                 regularization_parameter=0,
-                 regularization=2):
+                 regularization=None):
         super().__init__(n_components, centering,
-                         regularization_parameter, regularization)
+                         regularization)
         self.weights = weights
 
     def fit(self, X: FDataGrid, y=None):
@@ -431,7 +422,7 @@ class FPCAGrid(FPCA):
 
         regularization_matrix = compute_penalty_matrix(
             basis_iterable=(basis,),
-            regularization_parameter=self.regularization_parameter,
+            regularization_parameter=1,
             regularization=self.regularization,
             penalty_matrix=None)
 

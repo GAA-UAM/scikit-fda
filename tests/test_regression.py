@@ -125,7 +125,6 @@ class TestMultivariateLinearRegression(unittest.TestCase):
         y = 2 + y_sum + y_integral
 
         scalar = MultivariateLinearRegression(
-            regularization_parameter=1,
             regularization=[TikhonovRegularization(lambda x: x),
                             TikhonovRegularization(
                                 LinearDifferentialOperator(2))])
@@ -174,7 +173,6 @@ class TestMultivariateLinearRegression(unittest.TestCase):
 
         scalar = MultivariateLinearRegression(
             coef_basis=[beta_basis],
-            regularization_parameter=1,
             regularization=TikhonovRegularization(
                 LinearDifferentialOperator(2)))
         scalar.fit(x_fd, y)
@@ -196,7 +194,7 @@ class TestMultivariateLinearRegression(unittest.TestCase):
         y = [1 + 13 / 3, 1 + 29 / 12, 1 + 17 / 10, 1 + 311 / 30]
 
         # Non regularized
-        scalar = MultivariateLinearRegression(regularization_parameter=0)
+        scalar = MultivariateLinearRegression()
         scalar.fit(x_fd, y)
         np.testing.assert_allclose(scalar.coef_[0].coefficients,
                                    beta_fd.coefficients)
@@ -211,7 +209,6 @@ class TestMultivariateLinearRegression(unittest.TestCase):
         y_reg = [5.333, 3.419, 2.697, 11.366]
 
         scalar_reg = MultivariateLinearRegression(
-            regularization_parameter=1,
             regularization=TikhonovRegularization(
                 LinearDifferentialOperator(2)))
         scalar_reg.fit(x_fd, y)

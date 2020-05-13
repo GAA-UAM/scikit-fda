@@ -647,6 +647,7 @@ def fdatagrid_penalty_matrix_optimized(
         linear_operator: LinearDifferentialOperator,
         basis: FDataGrid):
 
+    # If using the default interpolation, finite differences are used
     if (not isinstance(basis.interpolator, SplineInterpolator)
             or basis.interpolator.interpolation_order != 1):
         return NotImplemented

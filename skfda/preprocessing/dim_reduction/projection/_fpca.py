@@ -211,9 +211,6 @@ class FPCABasis(FPCA):
             g_matrix = components_basis.gram_matrix()
             j_matrix = g_matrix
 
-        # make g matrix symmetric, referring to Ramsay's implementation
-        g_matrix = (g_matrix + np.transpose(g_matrix)) / 2
-
         # Apply regularization / penalty if applicable
         regularization_matrix = compute_penalty_matrix(
             basis_iterable=(components_basis,),
@@ -275,84 +272,6 @@ class FPCABasis(FPCA):
 
         # in this case it is the inner product of our data with the components
         return X.inner_product(self.components_)
-
-
-def _auxiliary_penalty_matrix(sample_points):
-    """ Computes the auxiliary matrix needed for the computation of the penalty
-    matrix. For more details please view the module fdata2pc of the library
-    fda.usc in R, and the referenced paper.
-
-    Args:
-        sample_points: the points of discretization of the data matrix.
-    Returns:
-        (array_like): the auxiliary matrix used to compute the penalty matrix
-
-    References.
-        [1] Nicole Krämer, Anne-Laure Boulesteix, and Gerhard Tutz. Penalized
-        partial least squares with applications to b-spline transformations
-        and functional data. Chemometrics and Intelligent Laboratory Systems,
-        94:60–69, 11 2008.
-
-    """
-    diff_values = np.diff(sample_points)
-    hh = -(1 / np.mean(1 / diff_values)) / diff_values
-    aux_diff_matrix = np.diag(hh)
-
-    n_points = len(sample_points)
-
-    aux_matrix_1 = np.zeros((n_points - 1, n_points))
-    aux_matrix_1[:, :-1] = aux_diff_matrix
-    aux_matrix_2 = np.zeros((n_points - 1, n_points))
-    aux_matrix_2[:, 1:] = -aux_diff_matrix
-
-    diff_matrix = aux_matrix_1 + aux_matrix_2
-
-    return diff_matrix
-
-
-def regularization_penalty_matrix(sample_points, penalty):
-    """ Computes the penalty matrix for regularization of the principal
-    components in a grid representation. For more details please view the module
-    fdata2pc of the library fda.usc in R, and the referenced paper.
-
-    Args:
-        sample_points: the points of discretization of the data matrix.
-        penalty (array_like): coefficients representing the differential
-            operator used in the computation of the penalty matrix. For example,
-            the array (1, 0, 1) means :math:`1 + D^{2}`
-    Returns:
-        (array_like): the penalty matrix used to regularize the components
-
-    References.
-        [1] Nicole Krämer, Anne-Laure Boulesteix, and Gerhard Tutz. Penalized
-        partial least squares with applications to b-spline transformations
-        and functional data. Chemometrics and Intelligent Laboratory Systems,
-        94:60–69, 11 2008.
-
-    """
-    penalty = np.array(penalty)
-    n_points = len(sample_points)
-    penalty_matrix = np.zeros((n_points, n_points))
-    if np.sum(penalty) != 0:
-        # independent term
-        penalty_matrix = penalty_matrix + penalty[0] * np.diag(
-            np.ones(n_points))
-        if len(penalty) > 1:
-            # for each term of the differential operator, we compute the penalty
-            # matrix of that order and then add it to the final penalty matrix
-            aux_penalty_1 = _auxiliary_penalty_matrix(sample_points)
-            aux_penalty_2 = _auxiliary_penalty_matrix(sample_points)
-            for i in range(1, len(penalty)):
-                if i > 1:
-                    aux_penalty_1 = (aux_penalty_2[:(n_points - i),
-                                                   :(n_points - i + 1)]
-                                     @ aux_penalty_1)
-                # applying the differential operator, as in each step the
-                # derivative degree increases by 1.
-                penalty_matrix = (penalty_matrix +
-                                  penalty[i] * (np.transpose(
-                                      aux_penalty_1) @ aux_penalty_1))
-    return penalty_matrix
 
 
 class FPCAGrid(FPCA):
@@ -487,23 +406,38 @@ class FPCAGrid(FPCA):
 
         weights_matrix = np.diag(self.weights)
 
-        if self.regularization_parameter > 0:
-            # if its an integer, we transform it to an array representing the
-            # linear differential operator of that order
-            if isinstance(self.regularization, int):
-                self.regularization = np.append(
-                    np.zeros(self.regularization), 1)
-            penalty_matrix = regularization_penalty_matrix(X.sample_points[0],
-                                                           self.regularization)
+#         if self.regularization_parameter > 0:
+#             # if its an integer, we transform it to an array representing the
+#             # linear differential operator of that order
+#             if isinstance(self.regularization, int):
+#                 self.regularization = np.append(
+#                     np.zeros(self.regularization), 1)
+#             penalty_matrix = regularization_penalty_matrix(X.sample_points[0],
+#                                                            self.regularization)
+#
+#             # we need to invert aux matrix and multiply it to the data matrix
+#             aux_matrix = (np.diag(np.ones(n_points_discretization)) +
+#                           self.regularization_parameter * penalty_matrix)
+#             # we use solve for better stability, P=aux matrix, X=data_matrix
+#             # we need X*P^-1 = ((P^T)^-1*X^T)^T, and np.solve gives
+#             # (P^T)^-1*X^T
+#             fd_data = np.transpose(np.linalg.solve(np.transpose(aux_matrix),
+#                                                    np.transpose(fd_data)))
 
-            # we need to invert aux matrix and multiply it to the data matrix
-            aux_matrix = (np.diag(np.ones(n_points_discretization)) +
-                          self.regularization_parameter * penalty_matrix)
-            # we use solve for better stability, P=aux matrix, X=data_matrix
-            # we need X*P^-1 = ((P^T)^-1*X^T)^T, and np.solve gives
-            # (P^T)^-1*X^T
-            fd_data = np.transpose(np.linalg.solve(np.transpose(aux_matrix),
-                                                   np.transpose(fd_data)))
+        basis = FDataGrid(
+            data_matrix=np.identity(n_points_discretization),
+            sample_points=X.sample_points
+        )
+
+        regularization_matrix = compute_penalty_matrix(
+            basis_iterable=(basis,),
+            regularization_parameter=self.regularization_parameter,
+            regularization=self.regularization,
+            penalty_matrix=None)
+
+        fd_data = np.transpose(np.linalg.solve(
+            np.transpose(basis.data_matrix[..., 0] + regularization_matrix),
+            np.transpose(fd_data)))
 
         # see docstring for more information
         final_matrix = fd_data @ np.sqrt(weights_matrix) / np.sqrt(n_samples)

@@ -463,9 +463,9 @@ class FDataGrid(FData):
                 "This method only works when the dimension "
                 "of the domain of the FDatagrid object is "
                 "one.")
-        if order < 1:
+        if order < 0:
             raise ValueError("The order of a derivative has to be greater "
-                             "or equal than 1.")
+                             "or equal than 0.")
         if self.dim_domain > 1 or self.dim_codomain > 1:
             raise NotImplementedError("Not implemented for 2 or more"
                                       " dimensional data.")

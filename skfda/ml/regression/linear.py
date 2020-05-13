@@ -41,9 +41,6 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         fit_intercept (bool):  Whether to calculate the intercept for this
             model. If set to False, no intercept will be used in calculations
             (i.e. data is expected to be centered).
-        regularization_parameter (int or float, optional): Regularization
-            parameter. Trying with several factors in a logarithm scale is
-            suggested. If 0 no regularization is performed. Defaults to 0.
         regularization (int, iterable or :class:`Regularization`): If it is
             not a :class:`Regularization` object, linear differential
             operator regularization is assumed. If it
@@ -56,9 +53,6 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
             numpy.sin) means :math:`1 + sin(x)D^{2}`. If not supplied this
             defaults to 2. Only used if penalty_matrix is
             ``None``.
-        penalty_matrix (array_like, optional): Penalty matrix. If
-            supplied the differential operator is not used and instead
-            the matrix supplied by this argument is used.
 
     Attributes:
         coef_ (iterable): A list containing the weight coefficient for each
@@ -123,12 +117,10 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
     """
 
     def __init__(self, *, coef_basis=None, fit_intercept=True,
-                 regularization=None,
-                 penalty_matrix=None):
+                 regularization=None):
         self.coef_basis = coef_basis
         self.fit_intercept = fit_intercept
         self.regularization = regularization
-        self.penalty_matrix = penalty_matrix
 
     def fit(self, X, y=None, sample_weight=None):
 
@@ -163,8 +155,7 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         penalty_matrix = compute_penalty_matrix(
             basis_iterable=(c.basis for c in coef_info),
             regularization_parameter=1,
-            regularization=regularization,
-            penalty_matrix=self.penalty_matrix)
+            regularization=regularization)
 
         if self.fit_intercept and hasattr(penalty_matrix, "shape"):
             # Intercept is not penalized

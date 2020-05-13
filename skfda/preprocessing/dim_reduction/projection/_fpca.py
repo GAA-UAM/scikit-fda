@@ -209,8 +209,7 @@ class FPCABasis(FPCA):
         regularization_matrix = compute_penalty_matrix(
             basis_iterable=(components_basis,),
             regularization_parameter=1,
-            regularization=self.regularization,
-            penalty_matrix=None)
+            regularization=self.regularization)
 
         # apply regularization
         g_matrix = (g_matrix + regularization_matrix)
@@ -397,24 +396,6 @@ class FPCAGrid(FPCA):
 
         weights_matrix = np.diag(self.weights)
 
-#         if self.regularization_parameter > 0:
-#             # if its an integer, we transform it to an array representing the
-#             # linear differential operator of that order
-#             if isinstance(self.regularization, int):
-#                 self.regularization = np.append(
-#                     np.zeros(self.regularization), 1)
-#             penalty_matrix = regularization_penalty_matrix(X.sample_points[0],
-#                                                            self.regularization)
-#
-#             # we need to invert aux matrix and multiply it to the data matrix
-#             aux_matrix = (np.diag(np.ones(n_points_discretization)) +
-#                           self.regularization_parameter * penalty_matrix)
-#             # we use solve for better stability, P=aux matrix, X=data_matrix
-#             # we need X*P^-1 = ((P^T)^-1*X^T)^T, and np.solve gives
-#             # (P^T)^-1*X^T
-#             fd_data = np.transpose(np.linalg.solve(np.transpose(aux_matrix),
-#                                                    np.transpose(fd_data)))
-
         basis = FDataGrid(
             data_matrix=np.identity(n_points_discretization),
             sample_points=X.sample_points
@@ -423,8 +404,7 @@ class FPCAGrid(FPCA):
         regularization_matrix = compute_penalty_matrix(
             basis_iterable=(basis,),
             regularization_parameter=1,
-            regularization=self.regularization,
-            penalty_matrix=None)
+            regularization=self.regularization)
 
         fd_data = np.transpose(np.linalg.solve(
             np.transpose(basis.data_matrix[..., 0] + regularization_matrix),

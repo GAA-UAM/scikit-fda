@@ -43,7 +43,7 @@ class TikhonovRegularization(BaseEstimator):
 
 
 def compute_penalty_matrix(basis_iterable, regularization_parameter,
-                           regularization, penalty_matrix):
+                           regularization):
     """
     Computes the regularization matrix for a linear differential operator.
 
@@ -55,20 +55,18 @@ def compute_penalty_matrix(basis_iterable, regularization_parameter,
         return 0
 
     # Compute penalty matrix if not provided
-    if penalty_matrix is None:
+    if not isinstance(regularization, Iterable):
+        regularization = (regularization,)
 
-        if not isinstance(regularization, Iterable):
-            regularization = (regularization,)
+    if not isinstance(regularization_parameter, Iterable):
+        regularization_parameter = itertools.repeat(
+            regularization_parameter)
 
-        if not isinstance(regularization_parameter, Iterable):
-            regularization_parameter = itertools.repeat(
-                regularization_parameter)
-
-        penalty_blocks = [
-            np.zeros((get_n_basis(b), get_n_basis(b))) if r is None else
-            a * r.penalty_matrix(b)
-            for b, r, a in zip(basis_iterable, regularization,
-                               regularization_parameter)]
-        penalty_matrix = scipy.linalg.block_diag(*penalty_blocks)
+    penalty_blocks = [
+        np.zeros((get_n_basis(b), get_n_basis(b))) if r is None else
+        a * r.penalty_matrix(b)
+        for b, r, a in zip(basis_iterable, regularization,
+                           regularization_parameter)]
+    penalty_matrix = scipy.linalg.block_diag(*penalty_blocks)
 
     return penalty_matrix

@@ -179,9 +179,6 @@ class BasisSmoother(_LinearSmoother):
             numpy.sin) means :math:`1 + sin(x)D^{2}`. If not supplied this
             defaults to 2. Only used if penalty_matrix is
             ``None``.
-        penalty_matrix (array_like, optional): Penalty matrix. If
-            supplied the differential operator is not used and instead
-            the matrix supplied by this argument is used.
         method (str): Algorithm used for calculating the coefficients using
             the least squares method. The values admitted are 'cholesky', 'qr'
             and 'matrix' for Cholesky and QR factorisation methods, and matrix
@@ -314,7 +311,6 @@ class BasisSmoother(_LinearSmoother):
                  weights=None,
                  regularization: Union[int, Iterable[float],
                                        'LinearDifferentialOperator'] = None,
-                 penalty_matrix=None,
                  output_points=None,
                  method='cholesky',
                  return_basis=False):
@@ -322,7 +318,6 @@ class BasisSmoother(_LinearSmoother):
         self.smoothing_parameter = smoothing_parameter
         self.weights = weights
         self.regularization = regularization
-        self.penalty_matrix = penalty_matrix
         self.output_points = output_points
         self.method = method
         self.return_basis = return_basis
@@ -351,8 +346,7 @@ class BasisSmoother(_LinearSmoother):
         penalty_matrix = compute_penalty_matrix(
             basis_iterable=(self.basis,),
             regularization_parameter=self.smoothing_parameter,
-            regularization=self.regularization,
-            penalty_matrix=self.penalty_matrix)
+            regularization=self.regularization)
 
         inv += penalty_matrix
 
@@ -413,8 +407,7 @@ class BasisSmoother(_LinearSmoother):
         penalty_matrix = compute_penalty_matrix(
             basis_iterable=(self.basis,),
             regularization_parameter=self.smoothing_parameter,
-            regularization=self.regularization,
-            penalty_matrix=self.penalty_matrix)
+            regularization=self.regularization)
 
         # n is the samples
         # m is the observations

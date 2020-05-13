@@ -326,7 +326,7 @@ class FPCATestCase(unittest.TestCase):
             fpca.components_.data_matrix.reshape(
                 fpca.components_.data_matrix.shape[:-1]),
             results,
-            rtol=1e-6)
+            rtol=1e-2)
 
 
 if __name__ == '__main__':

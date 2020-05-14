@@ -1,13 +1,13 @@
 """Neighbor models for supervised classification."""
 
 
-from sklearn.utils.multiclass import check_classification_targets
-from sklearn.preprocessing import LabelEncoder
 from sklearn.base import ClassifierMixin, BaseEstimator
+from sklearn.preprocessing import LabelEncoder
+from sklearn.utils.multiclass import check_classification_targets
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ..misc.metrics import lp_distance, pairwise_distance
 from ..exploratory.stats import mean as l2_mean
+from ..misc.metrics import lp_distance, pairwise_distance
 from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
                    NeighborsClassifierMixin, RadiusNeighborsMixin)
 
@@ -78,7 +78,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     >>> from skfda.ml.classification import KNeighborsClassifier
     >>> neigh = KNeighborsClassifier()
     >>> neigh.fit(fd, y)
-    KNeighborsClassifier(algorithm='auto', leaf_size=30,...)
+    KNeighborsClassifier(...)
 
     We can predict the class of new samples
 
@@ -97,7 +97,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
-    
+
 
     Notes
     -----
@@ -241,7 +241,7 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
     >>> from skfda.ml.classification import RadiusNeighborsClassifier
     >>> neigh = RadiusNeighborsClassifier(radius=.3)
     >>> neigh.fit(fd, y)
-    RadiusNeighborsClassifier(algorithm='auto', leaf_size=30,...)
+    RadiusNeighborsClassifier(...radius=0.3...)
 
     We can predict the class of new samples.
 

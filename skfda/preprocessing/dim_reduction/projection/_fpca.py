@@ -26,7 +26,9 @@ class FPCA(ABC, BaseEstimator, TransformerMixin):
         n_components (int): number of principal components to obtain from
             functional principal component analysis. Defaults to 3.
         centering (bool): if True then calculate the mean of the functional data
-            object and center the data first
+            object and center the data first.
+        regularization (Regularization):
+            Regularization object to be applied.
     """
 
     def __init__(self,
@@ -100,11 +102,8 @@ class FPCABasis(FPCA):
         components_basis (Basis): the basis in which we want the principal
             components. We can use a different basis than the basis contained in
             the passed FDataBasis object.
-        regularization (Union[int, Iterable[float],'LinearDifferentialOperator']):
-            Linear differential operator. If it is not a
-            LinearDifferentialOperator object, it will be converted to one.
-            If you input an integerthen the derivative of that degree will be
-            used to regularize the principal components.
+        regularization (Regularization):
+            Regularization object to be applied.
 
     Attributes:
         components_ (FDataBasis): this contains the principal components in a
@@ -282,13 +281,8 @@ class FPCAGrid(FPCA):
             computing the weights. If a callable object is passed, then the
             weight vector will be obtained by evaluating the object at the
             sample points of the passed FDataGrid object in the fit method.
-        penalty (Union[int, Iterable[float]]): the coefficients that will be
-            used to calculate the penalty matrix for regularization.
-            If you input an integer then the derivative of that degree will be
-            used to regularize the principal components. If you input a vector
-            then it is considered as a differential operator. For example,
-            [0,1,2] penalizes first derivative and two times the second
-            derivative.
+        regularization (Regularization):
+            Regularization object to be applied.
 
     Attributes:
         components_ (FDataBasis): this contains the eigenvectors in a basis

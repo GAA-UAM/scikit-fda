@@ -3,8 +3,8 @@
 from abc import ABC, abstractmethod
 
 from sklearn.base import BaseEstimator
-from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 from sklearn.base import RegressorMixin
+from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 import numpy as np
 
@@ -217,7 +217,7 @@ class KNeighborsMixin:
             >>> from skfda.ml.clustering import NearestNeighbors
             >>> neigh = NearestNeighbors()
             >>> neigh.fit(fd)
-            NearestNeighbors(algorithm='auto', leaf_size=30,...)
+            NearestNeighbors(...)
 
             Now we can query the k-nearest neighbors.
 
@@ -274,7 +274,7 @@ class KNeighborsMixin:
             >>> from skfda.ml.clustering import NearestNeighbors
             >>> neigh = NearestNeighbors()
             >>> neigh.fit(fd)
-            NearestNeighbors(algorithm='auto', leaf_size=30,...)
+            NearestNeighbors(...)
 
             Now we can obtain the graph of k-neighbors of a sample.
 
@@ -343,7 +343,7 @@ class RadiusNeighborsMixin:
             >>> from skfda.ml.clustering import NearestNeighbors
             >>> neigh = NearestNeighbors(radius=.3)
             >>> neigh.fit(fd)
-            NearestNeighbors(algorithm='auto', leaf_size=30,...)
+            NearestNeighbors(...radius=0.3...)
 
             Now we can query the neighbors in the radius.
 

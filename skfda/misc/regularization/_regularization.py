@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 import itertools
-from skfda.misc.operators import gramian_matrix
+from skfda.misc.operators import gramian_matrix, Identity
 
 import scipy.linalg
 from sklearn.base import BaseEstimator
@@ -29,7 +29,7 @@ class TikhonovRegularization(BaseEstimator):
     """
 
     def __init__(self, linear_operator,
-                 regularization_parameter=1):
+                 *, regularization_parameter=1):
         self.linear_operator = linear_operator
         self.regularization_parameter = regularization_parameter
 
@@ -40,6 +40,20 @@ class TikhonovRegularization(BaseEstimator):
         """
         return self.regularization_parameter * gramian_matrix(
             self.linear_operator, basis)
+
+
+class L2Regularization(TikhonovRegularization):
+    r"""
+    Implements Tikhonov regularization.
+
+    This is equivalent to Tikhonov regularization using the identity operator.
+
+    """
+
+    def __init__(self, *, regularization_parameter=1):
+        return super().__init__(
+            linear_operator=Identity(),
+            regularization_parameter=regularization_parameter)
 
 
 def compute_penalty_matrix(basis_iterable, regularization_parameter,

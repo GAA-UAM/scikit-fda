@@ -78,7 +78,7 @@ class SRSF(BaseEstimator, TransformerMixin):
         >>> fd = make_sinusoidal_process(error_std=0, random_state=0)
         >>> srsf = SRSF()
         >>> srsf
-        SRSF(initial_value=None, output_points=None)
+        SRSF(...)
 
         Fits the estimator (to apply the inverse transform) and apply the SRSF
 

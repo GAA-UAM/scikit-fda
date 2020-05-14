@@ -79,7 +79,7 @@ class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
 
     >>> neigh = KNeighborsRegressor()
     >>> neigh.fit(X_train, y_train)
-    KNeighborsRegressor(algorithm='auto', leaf_size=30,...)
+    KNeighborsRegressor(...)
 
     We can predict the modes of new samples
 
@@ -96,7 +96,7 @@ class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
     We train the estimator with the functional response
 
     >>> neigh.fit(X_train, y_train)
-    KNeighborsRegressor(algorithm='auto', leaf_size=30,...)
+    KNeighborsRegressor(...)
 
     And predict the responses as in the first case.
 
@@ -249,7 +249,7 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
 
     >>> neigh = RadiusNeighborsRegressor(radius=0.2)
     >>> neigh.fit(X_train, y_train)
-    RadiusNeighborsRegressor(algorithm='auto', leaf_size=30,...)
+    RadiusNeighborsRegressor(...radius=0.2...)
 
     We can predict the modes of new samples
 
@@ -266,7 +266,7 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
     We train the estimator with the functional response
 
     >>> neigh.fit(X_train, y_train)
-    RadiusNeighborsRegressor(algorithm='auto', leaf_size=30,...)
+    RadiusNeighborsRegressor(...radius=0.2...)
 
     And predict the responses as in the first case.
 

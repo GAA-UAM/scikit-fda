@@ -1,10 +1,10 @@
 
 
 from sklearn.base import OutlierMixin
-from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
-                   _to_multivariate_metric)
 
 from ..misc.metrics import lp_distance
+from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
+                   _to_multivariate_metric)
 
 
 class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
@@ -136,7 +136,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
         >>> lof = LocalOutlierFactor(novelty=True)
         >>> lof.fit(fd_train)
-        LocalOutlierFactor(algorithm='auto', ..., novelty=True)
+        LocalOutlierFactor(...novelty=True)
 
         Detection of annomalies for new samples.
 

@@ -1,19 +1,18 @@
 
-import scipy.integrate
-from sklearn.utils.validation import check_is_fitted
-from sklearn.base import BaseEstimator, TransformerMixin
-
-
-import numpy as np
 import optimum_reparam
 
+import scipy.integrate
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.utils.validation import check_is_fitted
+
+import numpy as np
 
 from . import invert_warping
-from .base import RegistrationTransformer
-from ._warping import _normalize_scale
 from ... import FDataGrid
 from ..._utils import check_is_univariate
 from ...representation.interpolation import SplineInterpolator
+from ._warping import _normalize_scale
+from .base import RegistrationTransformer
 
 
 __author__ = "Pablo Marcos Manchón"
@@ -24,6 +23,7 @@ __email__ = "pablo.marcosm@estudiante.uam.es"
 # *fdasrsf_python* (https://github.com/jdtuck/fdasrsf_python)                 #
 # and *ElasticFDA.jl* (https://github.com/jdtuck/ElasticFDA.jl).              #
 ###############################################################################
+
 
 class SRSF(BaseEstimator, TransformerMixin):
     r"""Square-Root Slope Function (SRSF) transform.
@@ -78,7 +78,7 @@ class SRSF(BaseEstimator, TransformerMixin):
         >>> fd = make_sinusoidal_process(error_std=0, random_state=0)
         >>> srsf = SRSF()
         >>> srsf
-        SRSF(initial_value=None, output_points=None)
+        SRSF(...)
 
         Fits the estimator (to apply the inverse transform) and apply the SRSF
 
@@ -95,6 +95,7 @@ class SRSF(BaseEstimator, TransformerMixin):
         array([ 0. ,  0. ,  0. , ... ])
 
     """
+
     def __init__(self, output_points=None, initial_value=None):
         """Initializes the transformer.
 
@@ -111,7 +112,6 @@ class SRSF(BaseEstimator, TransformerMixin):
         self.output_points = output_points
         self.initial_value = initial_value
 
-
     def fit(self, X=None, y=None):
         """This transformer do not need to be fitted.
 
@@ -124,8 +124,6 @@ class SRSF(BaseEstimator, TransformerMixin):
 
         """
         return self
-
-
 
     def transform(self, X: FDataGrid, y=None):
         r"""Computes the square-root slope function (SRSF) transform.
@@ -177,7 +175,6 @@ class SRSF(BaseEstimator, TransformerMixin):
             self.initial_value_ = X(a).reshape(X.n_samples, 1, X.dim_codomain)
 
         return X.copy(data_matrix=data_matrix, sample_points=output_points)
-
 
     def inverse_transform(self, X: FDataGrid, y=None):
         r"""Computes the inverse SRSF transform.
@@ -277,7 +274,6 @@ def _elastic_alignment_array(template_data, q_data,
                    penalty, grid_dim).T
 
 
-
 class ElasticRegistration(RegistrationTransformer):
     r"""Align a FDatagrid using the SRSF framework.
 
@@ -363,6 +359,7 @@ class ElasticRegistration(RegistrationTransformer):
         FDataGrid(...)
 
     """
+
     def __init__(self, template="elastic mean", penalty=0., output_points=None,
                  grid_dim=7):
         """Initializes the registration transformer"""
@@ -389,7 +386,7 @@ class ElasticRegistration(RegistrationTransformer):
 
         """
         if isinstance(self.template, FDataGrid):
-            self.template_ = self.template # Template already constructed
+            self.template_ = self.template  # Template already constructed
         elif X is None:
             raise ValueError("Must be provided a dataset X to construct the "
                              "template.")
@@ -403,7 +400,6 @@ class ElasticRegistration(RegistrationTransformer):
         self._template_srsf = srsf.fit_transform(self.template_)
 
         return self
-
 
     def transform(self, X: FDataGrid, y=None):
         """Apply elastic registration to the data.
@@ -420,7 +416,7 @@ class ElasticRegistration(RegistrationTransformer):
         check_is_univariate(X)
 
         if (len(self._template_srsf) != 1 and
-            len(X) != len(self._template_srsf)):
+                len(X) != len(self._template_srsf)):
 
             raise ValueError("The template should contain one sample to align "
                              "all the curves to the same function or the "
@@ -459,7 +455,6 @@ class ElasticRegistration(RegistrationTransformer):
 
         self.warping_ = FDataGrid(gamma, output_points,
                                   interpolator=interpolator)
-
 
         return X.compose(self.warping_, eval_points=output_points)
 
@@ -568,7 +563,6 @@ def warping_mean(warping, *, max_iter=100, tol=1e-6, step_size=.3):
             arXiv:1103.3817v2.
     """
 
-
     eval_points = warping.sample_points[0]
     original_eval_points = eval_points
 
@@ -590,7 +584,7 @@ def warping_mean(warping, *, max_iter=100, tol=1e-6, step_size=.3):
     d = psi_data.sum(axis=1).argmin()
 
     # Get raw values to calculate
-    mu = psi[d].data_matrix[0,..., 0]
+    mu = psi[d].data_matrix[0, ..., 0]
     psi = psi.data_matrix[..., 0]
     vmean = np.empty((1, len(eval_points)))
 
@@ -602,13 +596,13 @@ def warping_mean(warping, *, max_iter=100, tol=1e-6, step_size=.3):
         for i in range(len(warping)):
             psi_i = psi[i]
 
-            inner = scipy.integrate.simps(mu*psi_i, x=eval_points)
+            inner = scipy.integrate.simps(mu * psi_i, x=eval_points)
             inner = max(min(inner, 1), -1)
 
             theta = np.arccos(inner)
 
             if theta > 1e-10:
-                vmean += theta / np.sin(theta) * (psi_i - np.cos(theta)*mu)
+                vmean += theta / np.sin(theta) * (psi_i - np.cos(theta) * mu)
 
         # Mean of shooting vectors
         vmean /= warping.n_samples
@@ -619,9 +613,9 @@ def warping_mean(warping, *, max_iter=100, tol=1e-6, step_size=.3):
             break
 
         # Calculate exponential map of mu
-        a = np.cos(step_size*v_norm)
-        b = np.sin(step_size*v_norm) / v_norm
-        mu =  a * mu +  b * vmean
+        a = np.cos(step_size * v_norm)
+        b = np.sin(step_size * v_norm) / v_norm
+        mu = a * mu + b * vmean
 
     # Recover mean in original gamma space
     warping_mean = scipy.integrate.cumtrapz(np.square(mu, out=mu)[0],
@@ -752,12 +746,10 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
 
         mu = mu_1
 
-
     if initial is None:
         initial = fdatagrid.data_matrix[:, 0].mean()
 
     srsf_transformer.set_params(initial_value=initial)
-
 
     # Karcher mean orbit in space L2/Gamma
     karcher_mean = srsf_transformer.inverse_transform(

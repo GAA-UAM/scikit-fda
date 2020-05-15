@@ -483,12 +483,10 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
                          domain_range=(0, 1))
 
-
     elastic_registration = ElasticRegistration(template=fdata2,
                                                penalty=lam,
                                                output_points=eval_points_normalized,
                                                **kwargs)
-
 
     fdata1_reg = elastic_registration.fit_transform(fdata1)
 
@@ -570,7 +568,6 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
 
     elastic_registration.fit_transform(fdata1)
 
-
     derivative_warping = elastic_registration.warping_(eval_points_normalized,
                                                        keepdims=False,
                                                        derivative=1)[0]
@@ -628,11 +625,18 @@ def warping_distance(warping1, warping2, *, eval_points=None, _check=True):
     warping1_data = warping1.derivative().data_matrix[0, ..., 0]
     warping2_data = warping2.derivative().data_matrix[0, ..., 0]
 
+    # Derivative approximations can have negatives, specially in the
+    # borders.
+    warping1_data[warping1_data < 0] = 0
+    warping2_data[warping2_data < 0] = 0
+
     # In this case the srsf is the sqrt(gamma')
     srsf_warping1 = np.sqrt(warping1_data, out=warping1_data)
     srsf_warping2 = np.sqrt(warping2_data, out=warping2_data)
 
     product = np.multiply(srsf_warping1, srsf_warping2, out=srsf_warping1)
+
     d = scipy.integrate.simps(product, x=warping1.sample_points[0])
+    d = np.clip(d, -1, 1)
 
     return np.arccos(d)

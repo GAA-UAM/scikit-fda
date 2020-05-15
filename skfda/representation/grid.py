@@ -8,6 +8,7 @@ list of discretisation points.
 
 import copy
 import numbers
+import findiff
 
 import pandas.api.extensions
 import scipy.stats.mstats
@@ -409,24 +410,9 @@ class FDataGrid(FData):
     def derivative(self, order=1):
         r"""Differentiate a FDataGrid object.
 
-        It is calculated using lagged differences. If we call :math:`D` the
-        data_matrix, :math:`D^1` the derivative of order 1 and :math:`T` the
-        vector contaning the points of discretisation; :math:`D^1` is
-        calculated as it follows:
-
-        .. math::
-
-            D^{1}_{ij} = \begin{cases}
-            \frac{D_{i1} - D_{i2}}{ T_{1} - T_{2}}  & \mbox{if } j = 1 \\
-            \frac{D_{i(m-1)} - D_{im}}{ T_{m-1} - T_m}  & \mbox{if }
-                j = m \\
-            \frac{D_{i(j-1)} - D_{i(j+1)}}{ T_{j-1} - T_{j+1}} & \mbox{if }
-            1 < j < m
-            \end{cases}
-
-        Where m is the number of columns of the matrix :math:`D`.
-
-        Order > 1 derivatives are calculated by using derivative recursively.
+        It is calculated using central finite differences when possible. In
+        the extremes, forward and backward finite differences with accuracy
+        2 are used.
 
         Args:
             order (int, optional): Order of the derivative. Defaults to one.
@@ -437,11 +423,11 @@ class FDataGrid(FData):
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative()
             FDataGrid(
-                array([[[ 1. ],
+                array([[[ 0.5],
                         [ 1.5],
                         [ 1.5],
                         [ 2. ],
-                        [ 3. ]]]),
+                        [ 4. ]]]),
                 sample_points=[array([0, 1, 2, 3, 4])],
                 domain_range=array([[0, 4]]),
                 ...)
@@ -451,11 +437,11 @@ class FDataGrid(FData):
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.derivative(2)
             FDataGrid(
-                array([[[ 0.5 ],
-                        [ 0.25],
-                        [ 0.25],
-                        [ 0.75],
-                        [ 1.  ]]]),
+                array([[[ 3.],
+                        [ 1.],
+                        [-1.],
+                        [ 2.],
+                        [ 5.]]]),
                 sample_points=[array([0, 1, 2, 3, 4])],
                 domain_range=array([[0, 4]]),
                 ...)
@@ -466,28 +452,18 @@ class FDataGrid(FData):
                 "This method only works when the dimension "
                 "of the domain of the FDatagrid object is "
                 "one.")
-        if order < 1:
+        if order < 0:
             raise ValueError("The order of a derivative has to be greater "
-                             "or equal than 1.")
+                             "or equal than 0.")
         if self.dim_domain > 1 or self.dim_codomain > 1:
             raise NotImplementedError("Not implemented for 2 or more"
                                       " dimensional data.")
         if np.isnan(self.data_matrix).any():
             raise ValueError("The FDataGrid object cannot contain nan "
                              "elements.")
-        data_matrix = self.data_matrix[..., 0]
-        sample_points = self.sample_points[0]
-        for _ in range(order):
-            mdata = []
-            for i in range(self.n_samples):
-                arr = (np.diff(data_matrix[i]) /
-                       (sample_points[1:]
-                        - sample_points[:-1]))
-                arr = np.append(arr, arr[-1])
-                arr[1:-1] += arr[:-2]
-                arr[1:-1] /= 2
-                mdata.append(arr)
-            data_matrix = np.array(mdata)
+
+        operator = findiff.FinDiff(1, self.sample_points[0], order)
+        data_matrix = operator(self.data_matrix.astype(float))
 
         if self.dataset_label:
             dataset_label = "{} - {} derivative".format(self.dataset_label,
@@ -495,7 +471,7 @@ class FDataGrid(FData):
         else:
             dataset_label = None
 
-        return self.copy(data_matrix=data_matrix, sample_points=sample_points,
+        return self.copy(data_matrix=data_matrix,
                          dataset_label=dataset_label)
 
     def __check_same_dimensions(self, other):

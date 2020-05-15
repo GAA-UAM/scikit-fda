@@ -1,10 +1,12 @@
+from skfda import FDataGrid, FDataBasis
+from skfda.datasets import fetch_weather
+from skfda.misc.operators import LinearDifferentialOperator
+from skfda.misc.regularization import TikhonovRegularization
+from skfda.preprocessing.dim_reduction.projection import FPCABasis, FPCAGrid
+from skfda.representation.basis import Fourier
 import unittest
 
 import numpy as np
-from skfda import FDataGrid, FDataBasis
-from skfda.representation.basis import Fourier
-from skfda.preprocessing.dim_reduction.projection import FPCABasis, FPCAGrid
-from skfda.datasets import fetch_weather
 
 
 class FPCATestCase(unittest.TestCase):
@@ -58,7 +60,9 @@ class FPCATestCase(unittest.TestCase):
         fd_basis = fd_data.to_basis(basis)
 
         fpca = FPCABasis(n_components=n_components,
-                         regularization_parameter=1e5)
+                         regularization=TikhonovRegularization(
+                             LinearDifferentialOperator(2),
+                             regularization_parameter=1e5))
         fpca.fit(fd_basis)
 
         # results obtained using Ramsay's R package
@@ -114,7 +118,6 @@ class FPCATestCase(unittest.TestCase):
                 results[i, :] *= -1
         np.testing.assert_allclose(fpca.components_.coefficients, results,
                                    atol=1e-7)
-
 
     def test_grid_fpca_fit_result(self):
 
@@ -224,8 +227,14 @@ class FPCATestCase(unittest.TestCase):
         fd_data = FDataGrid(np.squeeze(fd_data.data_matrix),
                             np.arange(0.5, 365, 1))
 
-        fpca = FPCAGrid(n_components=n_components, weights=[1] * 365,
-                        regularization_parameter=1)
+        fpca = FPCAGrid(
+            n_components=n_components, weights=[1] * 365,
+            regularization=TikhonovRegularization(
+                LinearDifferentialOperator(
+                    2,
+                    derivative_function=(
+                        lambda function, points, derivative:
+                        function.derivative(order=derivative)(points)))))
         fpca.fit(fd_data)
 
         # results obtained using fda.usc for the first component
@@ -316,7 +325,7 @@ class FPCATestCase(unittest.TestCase):
             fpca.components_.data_matrix.reshape(
                 fpca.components_.data_matrix.shape[:-1]),
             results,
-            rtol=1e-6)
+            rtol=1e-2)
 
 
 if __name__ == '__main__':

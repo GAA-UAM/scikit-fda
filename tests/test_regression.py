@@ -1,5 +1,7 @@
+from skfda.misc.operators import LinearDifferentialOperator
+from skfda.misc.regularization import TikhonovRegularization
 from skfda.ml.regression import MultivariateLinearRegression
-from skfda.representation.basis import (FDataBasis, Constant, Monomial,
+from skfda.representation.basis import (FDataBasis, Monomial,
                                         Fourier,  BSpline)
 import unittest
 
@@ -105,6 +107,47 @@ class TestMultivariateLinearRegression(unittest.TestCase):
         y_pred = scalar.predict(X)
         np.testing.assert_allclose(y_pred, y, atol=0.01)
 
+    def test_regression_mixed_regularization(self):
+
+        multivariate = np.array([[0, 0], [2, 7], [1, 7], [3, 9],
+                                 [4, 16], [2, 14], [3, 5]])
+
+        X = [multivariate,
+             FDataBasis(Monomial(n_basis=3), [[1, 0, 0], [0, 1, 0], [0, 0, 1],
+                                              [1, 0, 1], [1, 0, 0], [0, 1, 0],
+                                              [0, 0, 1]])]
+
+        # y = 2 + sum([3, 1] * array) + int(3 * function)
+        intercept = 2
+        coefs_multivariate = np.array([3, 1])
+        y_integral = np.array([3, 3 / 2, 1, 4, 3, 3 / 2, 1])
+        y_sum = multivariate @ coefs_multivariate
+        y = 2 + y_sum + y_integral
+
+        scalar = MultivariateLinearRegression(
+            regularization=[TikhonovRegularization(lambda x: x),
+                            TikhonovRegularization(
+                                LinearDifferentialOperator(2))])
+        scalar.fit(X, y)
+
+        np.testing.assert_allclose(scalar.intercept_,
+                                   intercept, atol=0.01)
+
+        np.testing.assert_allclose(
+            scalar.coef_[0],
+            [2.536739, 1.072186], atol=0.01)
+
+        np.testing.assert_allclose(
+            scalar.coef_[1].coefficients,
+            [[2.125676, 2.450782, 5.808745e-4]], atol=0.01)
+
+        y_pred = scalar.predict(X)
+        np.testing.assert_allclose(
+            y_pred,
+            [5.349035, 16.456464, 13.361185, 23.930295,
+                32.650965, 23.961766, 16.29029],
+            atol=0.01)
+
     def test_regression_regularization(self):
 
         x_basis = Monomial(n_basis=7)
@@ -128,8 +171,10 @@ class TestMultivariateLinearRegression(unittest.TestCase):
                           0.023385,
                           -0.001384]
 
-        scalar = MultivariateLinearRegression(coef_basis=[beta_basis],
-                                              regularization_parameter=1)
+        scalar = MultivariateLinearRegression(
+            coef_basis=[beta_basis],
+            regularization=TikhonovRegularization(
+                LinearDifferentialOperator(2)))
         scalar.fit(x_fd, y)
         np.testing.assert_allclose(scalar.coef_[0].coefficients,
                                    beta_fd.coefficients, atol=1e-3)
@@ -149,7 +194,7 @@ class TestMultivariateLinearRegression(unittest.TestCase):
         y = [1 + 13 / 3, 1 + 29 / 12, 1 + 17 / 10, 1 + 311 / 30]
 
         # Non regularized
-        scalar = MultivariateLinearRegression(regularization_parameter=0)
+        scalar = MultivariateLinearRegression()
         scalar.fit(x_fd, y)
         np.testing.assert_allclose(scalar.coef_[0].coefficients,
                                    beta_fd.coefficients)
@@ -163,7 +208,9 @@ class TestMultivariateLinearRegression(unittest.TestCase):
         beta_fd_reg = FDataBasis(x_basis, [2.812, 3.043, 0])
         y_reg = [5.333, 3.419, 2.697, 11.366]
 
-        scalar_reg = MultivariateLinearRegression(regularization_parameter=1)
+        scalar_reg = MultivariateLinearRegression(
+            regularization=TikhonovRegularization(
+                LinearDifferentialOperator(2)))
         scalar_reg.fit(x_fd, y)
         np.testing.assert_allclose(scalar_reg.coef_[0].coefficients,
                                    beta_fd_reg.coefficients, atol=0.001)
@@ -182,7 +229,7 @@ class TestMultivariateLinearRegression(unittest.TestCase):
 
         scalar = MultivariateLinearRegression(coef_basis=[Fourier(n_basis=5)])
 
-        with np.testing.assert_raises(ValueError):
+        with np.testing.assert_warns(UserWarning):
             scalar.fit([x_fd], y)
 
     def test_error_y_is_FData(self):
@@ -240,7 +287,7 @@ class TestMultivariateLinearRegression(unittest.TestCase):
         beta = FDataBasis(Monomial(n_basis=7), np.identity(7))
 
         scalar = MultivariateLinearRegression(coef_basis=[beta])
-        with np.testing.assert_raises(ValueError):
+        with np.testing.assert_raises(TypeError):
             scalar.fit([x_fd], y)
 
     def test_error_weights_lenght(self):

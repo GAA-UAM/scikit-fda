@@ -1,10 +1,10 @@
 """Module with generic methods"""
 
 import functools
-
 import types
 
 import numpy as np
+
 
 def check_is_univariate(fd):
     """Checks if an FData is univariate and raises an error
@@ -21,11 +21,12 @@ def check_is_univariate(fd):
     if fd.dim_domain != 1 or fd.dim_codomain != 1:
         raise ValueError(f"The functional data must be univariate, i.e., " +
                          f"with dim_domain=1 " +
-                         (f"" if fd.dim_domain==1
+                         (f"" if fd.dim_domain == 1
                           else f"(currently is {fd.dim_domain}) ") +
                          f"and dim_codomain=1 " +
-                         (f"" if fd.dim_codomain==1 else
+                         (f"" if fd.dim_codomain == 1 else
                           f"(currently is  {fd.dim_codomain})"))
+
 
 def _to_grid(X, y, eval_points=None):
     """Transform a pair of FDatas in grids to perform calculations."""
@@ -110,6 +111,11 @@ def _coordinate_list(axes):
 
     """
     return np.vstack(list(map(np.ravel, np.meshgrid(*axes, indexing='ij')))).T
+
+
+def _same_domain(fd, fd2):
+    """Check if the domain range of two objects is the same."""
+    return np.array_equal(fd.domain_range, fd2.domain_range)
 
 
 def parameter_aliases(**alias_assignments):

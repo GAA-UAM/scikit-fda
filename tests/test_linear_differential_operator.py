@@ -1,4 +1,4 @@
-from skfda.misc import LinearDifferentialOperator
+from skfda.misc.operators import LinearDifferentialOperator
 from skfda.representation.basis import FDataBasis, Constant, Monomial
 import unittest
 

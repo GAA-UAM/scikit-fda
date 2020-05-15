@@ -1,7 +1,3 @@
-import unittest
-
-import numpy as np
-
 from skfda import FDataGrid
 from skfda.datasets import make_multimodal_samples, make_random_warping
 from skfda.misc.metrics import (fisher_rao_distance, amplitude_distance,
@@ -12,6 +8,10 @@ from skfda.preprocessing.registration import (ElasticRegistration,
                                               normalize_warping)
 from skfda.preprocessing.registration.elastic import (SRSF, elastic_mean,
                                                       warping_mean)
+import unittest
+
+import numpy as np
+
 
 metric = pairwise_distance(lp_distance)
 pairwise_fisher_rao = pairwise_distance(fisher_rao_distance)
@@ -38,9 +38,9 @@ class TestElasticRegistration(unittest.TestCase):
 
         srsf = SRSF().fit_transform(self.dummy_sample)
 
-        data_matrix = [[[-0.92155896], [-0.75559027], [0.25355399],
+        data_matrix = [[[-1.061897], [-0.75559027], [0.25355399],
                         [0.81547327], [0.95333713], [0.81547327],
-                        [0.25355399], [-0.75559027], [-0.92155896]]]
+                        [0.25355399], [-0.75559027], [-1.06189697]]]
 
         np.testing.assert_almost_equal(data_matrix, srsf.data_matrix)
 
@@ -70,7 +70,6 @@ class TestElasticRegistration(unittest.TestCase):
                         [-0.83464009], [-0.23449228], [0.]]]
 
         np.testing.assert_almost_equal(data_matrix, srsf.data_matrix)
-
 
     def test_srsf_conversion(self):
         """Converts to srsf and pull backs"""
@@ -117,9 +116,10 @@ class TestElasticRegistration(unittest.TestCase):
         register = reg.fit_transform(self.unimodal_samples)
 
         values = register([-.25, -.1, 0, .1, .25])
-        expected = [[0.623701, 0.997427, 0.772248, 0.390317, 0.064725],
-                    [0.639201, 0.997155, 0.791649, 0.382181, 0.050098],
-                    [0.63332 , 0.997369, 0.785886, 0.376556, 0.048804]]
+
+        expected = [[0.599058,  0.997427,  0.772248,  0.412342,  0.064725],
+                    [0.626875,  0.997155,  0.791649,  0.382181,  0.050098],
+                    [0.620992,  0.997369,  0.785886,  0.376556,  0.048804]]
 
         np.testing.assert_allclose(values, expected, atol=1e-4)
 
@@ -130,9 +130,9 @@ class TestElasticRegistration(unittest.TestCase):
         register = reg.fit_transform(self.unimodal_samples)
 
         values = register([-.25, -.1, 0, .1, .25])
-        expected = [[0.623701, 0.997427, 0.772248, 0.390317, 0.064725],
-                    [0.639201, 0.997155, 0.791649, 0.382181, 0.050098],
-                    [0.63332 , 0.997369, 0.785886, 0.376556, 0.048804]]
+        expected = [[0.599058,  0.997427,  0.772248,  0.412342,  0.064725],
+                    [0.626875,  0.997155,  0.791649,  0.382181,  0.050098],
+                    [0.620992,  0.997369,  0.785886,  0.376556,  0.048804]]
 
         np.testing.assert_allclose(values, expected, atol=1e-4)
 
@@ -172,15 +172,16 @@ class TestElasticRegistration(unittest.TestCase):
         """Test score method of the transformer"""
         reg = ElasticRegistration()
         reg.fit(self.unimodal_samples)
-        score =reg.score(self.unimodal_samples)
-        np.testing.assert_almost_equal(score, 0.999666175)
+        score = reg.score(self.unimodal_samples)
+        np.testing.assert_almost_equal(score,  0.9994225)
 
     def test_warping_mean(self):
         warping = make_random_warping(start=-1, random_state=0)
         mean = warping_mean(warping)
         values = mean([-1, -.5, 0, .5, 1])
-        expected = [[-1., -0.3762928 , 0.13613892, 0.59923733,  1. ]]
+        expected = [[-1., -0.376241,  0.136193,  0.599291,  1.]]
         np.testing.assert_array_almost_equal(values, expected)
+
 
 class TestElasticDistances(unittest.TestCase):
     """Test elastic distances"""
@@ -193,7 +194,7 @@ class TestElasticDistances(unittest.TestCase):
         f = np.square(sample)
         g = np.power(sample, 0.5)
 
-        distance = [[0.62825868, 1.98009242], [1.98009242, 0.62825868]]
+        distance = [[0.64, 1.984], [1.984, 0.64]]
         res = pairwise_fisher_rao(f, g)
 
         np.testing.assert_almost_equal(res, distance, decimal=3)
@@ -201,7 +202,7 @@ class TestElasticDistances(unittest.TestCase):
     def test_fisher_rao_invariance(self):
         """Test invariance of fisher rao metric: d(f,g)= d(foh, goh)"""
 
-        t = np.linspace(0, np.pi)
+        t = np.linspace(0, np.pi, 1000)
         id = FDataGrid([t], t)
         cos = np.cos(id)
         sin = np.sin(id)
@@ -217,11 +218,11 @@ class TestElasticDistances(unittest.TestCase):
                                                 sin.compose(gamma2))
 
         # The error ~0.001 due to the derivation
-        np.testing.assert_almost_equal(distance_original, distance_warping,
-                                       decimal=2)
+        np.testing.assert_allclose(distance_original, distance_warping,
+                                   atol=0.01)
 
-        np.testing.assert_almost_equal(distance_original, distance_warping2,
-                                       decimal=2)
+        np.testing.assert_allclose(distance_original, distance_warping2,
+                                   atol=0.01)
 
     def test_amplitude_distance_limit(self):
         """Test limit of amplitude distance penalty"""
@@ -244,7 +245,7 @@ class TestElasticDistances(unittest.TestCase):
 
     def test_warping_distance(self):
         """Test of warping distance"""
-        t = np.linspace(0, 1)
+        t = np.linspace(0, 1, 1000)
         w1 = FDataGrid([t**5], t)
         w2 = FDataGrid([t**3], t)
 

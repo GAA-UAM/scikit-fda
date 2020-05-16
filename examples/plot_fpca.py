@@ -76,27 +76,14 @@ mean_fd.plot()
 # Now we add and subtract a multiple of the first principal component. We can
 # then observe now that this principal component represents the variation in
 # growth between the children.
-mean_fd.coefficients = np.vstack([mean_fd.coefficients,
-                                  mean_fd.coefficients[0, :] +
-                                  20 * fpca.components_.coefficients[0, :]])
-mean_fd.coefficients = np.vstack([mean_fd.coefficients,
-                                  mean_fd.coefficients[0, :] -
-                                  20 * fpca.components_.coefficients[0, :]])
-mean_fd.plot()
+fpca.get_component_perturbations(basis_fd, index=0).plot()
 
 ##############################################################################
 # The second component is more interesting. The most appropriate explanation is
 # that it represents the differences between girls and boys. Girls tend to grow
 # faster at an early age and boys tend to start puberty later, therefore, their
 # growth is more significant later. Girls also stop growing early
-mean_fd = basis_fd.mean()
-mean_fd.coefficients = np.vstack([mean_fd.coefficients,
-                                  mean_fd.coefficients[0, :] +
-                                  20 * fpca.components_.coefficients[1, :]])
-mean_fd.coefficients = np.vstack([mean_fd.coefficients,
-                                  mean_fd.coefficients[0, :] -
-                                  20 * fpca.components_.coefficients[1, :]])
-mean_fd.plot()
+fpca.get_component_perturbations(basis_fd, index=1).plot()
 
 ##############################################################################
 # We can also specify another basis for the principal components as argument

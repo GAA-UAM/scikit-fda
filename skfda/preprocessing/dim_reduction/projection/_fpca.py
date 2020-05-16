@@ -397,3 +397,39 @@ class FPCA(BaseEstimator, TransformerMixin):
         """
         self.fit(X, y)
         return self.transform(X, y)
+
+    def get_component_perturbations(self, X, index=0, multiple=30):
+        """ Computes the perturbations over the mean function of a principal
+        component at a certain index. The perturbations are defined as
+        variations over the mean. Adding a multiple of the principal component
+        curve to the mean function results in the positive perturbation and
+        subtracting a multiple of the principal component curve results in the
+        negative perturbation.
+
+        Args:
+            X (FDataGrid or FDataBasis):
+                the functional data object from which we obtain the mean
+            index (int):
+                index of the component for which we want to compute the
+                perturbations
+            multiple (float):
+                multiple of the principal component curve to be added or
+                subtracted.
+
+        Returns:
+            (FDataGrid or FDataBasis): this contains the mean function followed
+            by the positive perturbation and the negative perturbation.
+        """
+        if not isinstance(X, FDataBasis) and not isinstance(X, FDataGrid):
+            raise AttributeError("X must be either FDataGrid or FDataBasis")
+        if self.components_ is None:
+            raise ValueError("The estimator must be fitted before calling "
+                             "this method")
+        if index >= self.n_components:
+            raise AttributeError("Index out of range")
+        mean_fd = X.mean()
+        mean_fd = mean_fd.concatenate(
+            mean_fd[0] + multiple * self.components_[index])
+        mean_fd = mean_fd.concatenate(
+            mean_fd[0] - multiple * self.components_[index])
+        return mean_fd

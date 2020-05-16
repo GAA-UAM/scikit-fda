@@ -10,7 +10,7 @@ Explores the two possible ways to do functional principal component analysis.
 
 import numpy as np
 import skfda
-from skfda.preprocessing.dim_reduction.projection import FPCABasis, FPCAGrid
+from skfda.preprocessing.dim_reduction.projection import FPCA
 from skfda.representation.basis import BSpline, Fourier, Monomial
 from skfda.datasets import fetch_growth
 
@@ -36,7 +36,7 @@ fd.plot()
 # obtain the first two components. By default, if we do not specify the number
 # of components, it's 3. Other parameters are weights and centering. For more
 # information please visit the documentation.
-fpca_discretized = FPCAGrid(n_components=2)
+fpca_discretized = FPCA(n_components=2)
 fpca_discretized.fit(fd)
 fpca_discretized.components_.plot()
 
@@ -57,7 +57,7 @@ basis_fd.plot()
 # first 2 principal components. By default the principal components are
 # expressed in the same basis as the data. We can see that the obtained result
 # is similar to the discretized case.
-fpca = FPCABasis(n_components=2)
+fpca = FPCA(n_components=2)
 fpca.fit(basis_fd)
 fpca.components_.plot()
 
@@ -107,7 +107,7 @@ mean_fd.plot()
 dataset = fetch_growth()
 fd = dataset['data']
 basis_fd = fd.to_basis(BSpline(n_basis=7))
-fpca = FPCABasis(n_components=2, components_basis=Fourier(n_basis=7))
+fpca = FPCA(n_components=2, components_basis=Fourier(n_basis=7))
 fpca.fit(basis_fd)
 fpca.components_.plot()
 
@@ -120,6 +120,6 @@ fpca.components_.plot()
 dataset = fetch_growth()
 fd = dataset['data']
 basis_fd = fd.to_basis(BSpline(n_basis=7))
-fpca = FPCABasis(n_components=2, components_basis=Monomial(n_basis=4))
+fpca = FPCA(n_components=2, components_basis=Monomial(n_basis=4))
 fpca.fit(basis_fd)
 fpca.components_.plot()

@@ -102,10 +102,9 @@ def trim_mean(fdatagrid,
     percentage of least deep curves. That is, we first remove the least deep
     curves and then we compute the mean as usual.
 
-    Note that the difference with the trim_mean method of scipy is that there is
-    no axis argument. This is because of the nature of the data that we are
-    dealing with. The data are functions, therefore there is only one possible
-    axis.
+    Note that in scipy the leftmost and rightmost proportiontocut data are
+    removed. In this case, as we order the data by the depth, we only remove
+    those that have the least depth values.
 
     Args:
         fdatagrid (FDataGrid): Object containing different samples of a

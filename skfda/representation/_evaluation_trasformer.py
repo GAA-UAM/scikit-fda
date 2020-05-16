@@ -83,14 +83,14 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
 
         Evaluating derivative of a FDataGrid at all points.
 
-        >>> data_matrix = [[1, 2], [2, 3]]
-        >>> sample_points = [2, 4]
+        >>> data_matrix = [[1, 2, 3], [2, 3, 4]]
+        >>> sample_points = [2, 4, 6]
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>>
         >>> transformer = EvaluationTransformer(derivative=1)
         >>> transformer.fit_transform(fd)
-        array([[ 0.5,  0.5],
-               [ 0.5,  0.5]])
+        array([[ 0.5,  0.5,  0.5],
+               [ 0.5,  0.5,  0.5]])
 
         Evaluation of the derivative of a functional data object at several
         points.

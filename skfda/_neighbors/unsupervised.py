@@ -59,7 +59,7 @@ class NearestNeighbors(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     >>> from skfda.ml.clustering import NearestNeighbors
     >>> neigh = NearestNeighbors(radius=.3)
     >>> neigh.fit(fd)
-    NearestNeighbors(algorithm='auto', leaf_size=30,...)
+    NearestNeighbors(...radius=0.3...)
 
     Now we can query the k-nearest neighbors.
 

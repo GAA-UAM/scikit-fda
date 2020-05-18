@@ -11,14 +11,10 @@ class TestsSklearn(unittest.TestCase):
 
         self.x = np.linspace(-1, 1, 1000)[:, np.newaxis]
 
-    def _test_compare_sklearn(self, cov: skfda.misc.covariances.Covariance,
-                              eval_y=True):
+    def _test_compare_sklearn(self, cov: skfda.misc.covariances.Covariance):
         cov_sklearn = cov.to_sklearn()
         cov_matrix = cov(self.x, self.x)
-        if eval_y:
-            cov_sklearn_matrix = cov_sklearn(self.x, self.x)
-        else:
-            cov_sklearn_matrix = cov_sklearn(self.x)
+        cov_sklearn_matrix = cov_sklearn(self.x)
 
         np.testing.assert_array_almost_equal(cov_matrix, cov_sklearn_matrix)
 
@@ -71,4 +67,4 @@ class TestsSklearn(unittest.TestCase):
         for variance in [1, 2]:
             with self.subTest(variance=variance):
                 cov = skfda.misc.covariances.WhiteNoise(variance=variance)
-                self._test_compare_sklearn(cov, eval_y=False)
+                self._test_compare_sklearn(cov)

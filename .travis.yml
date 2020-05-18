@@ -26,7 +26,6 @@ matrix:
         - PEP8COVERAGE=true    # coverage test are only 
 install:
   - pip3 install --upgrade pip cython numpy || pip3 install --upgrade --user pip cython numpy # all three OSes agree about 'pip3'
-  - pip3 install -r requirements.txt
   - |
       if [[ $PEP8COVERAGE == true ]]; then
         pip3 install flake8 || pip3 install --user flake8

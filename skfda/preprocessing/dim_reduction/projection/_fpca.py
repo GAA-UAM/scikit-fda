@@ -376,9 +376,9 @@ class FPCA(BaseEstimator, TransformerMixin):
             principal components
         """
         if isinstance(X, FDataGrid):
-            return self.fit_grid(X, y)
+            return self.transform_grid(X, y)
         elif isinstance(X, FDataBasis):
-            return self.fit_basis(X, y)
+            return self.transform_basis(X, y)
         else:
             raise AttributeError("X must be either FDataGrid or FDataBasis")
 

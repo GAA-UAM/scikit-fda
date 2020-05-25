@@ -260,9 +260,9 @@ class Basis(ABC):
 
         """
 
-        cached = getattr(self, "_gram_matrix_cached", None)
+        gram = getattr(self, "_gram_matrix_cached", None)
 
-        if cached is None:
+        if gram is None:
             gram = self._gram_matrix()
             self._gram_matrix_cached = gram
 

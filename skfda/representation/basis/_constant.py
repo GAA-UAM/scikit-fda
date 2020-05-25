@@ -38,6 +38,10 @@ class Constant(Basis):
         return (self.copy(), coefs.copy() if order == 0
                 else self.copy(), np.zeros(coefs.shape))
 
+    def _gram_matrix(self):
+        return np.array([[self.domain_range[0][1] -
+                          self.domain_range[0][0]]])
+
     def basis_of_product(self, other):
         """Multiplication of a Constant Basis with other Basis"""
         if not _same_domain(self, other):

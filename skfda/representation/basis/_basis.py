@@ -226,6 +226,24 @@ class Basis(ABC):
 
         return inner
 
+    def _gram_matrix(self):
+        """
+        Compute the Gram matrix.
+
+        Subclasses may override this method for improving computation
+        of the Gram matrix.
+        """
+        fbasis = self.to_basis()
+
+        gram = np.zeros((self.n_basis, self.n_basis))
+
+        for i in range(fbasis.n_basis):
+            for j in range(i, fbasis.n_basis):
+                gram[i, j] = fbasis[i].inner_product(fbasis[j], None, None)
+                gram[j, i] = gram[i, j]
+
+        return gram
+
     def gram_matrix(self):
         r"""Return the Gram Matrix of a basis
 
@@ -241,14 +259,12 @@ class Basis(ABC):
             numpy.array: Gram Matrix of the basis.
 
         """
-        fbasis = self.to_basis()
 
-        gram = np.zeros((self.n_basis, self.n_basis))
+        cached = getattr(self, "_gram_matrix_cached", None)
 
-        for i in range(fbasis.n_basis):
-            for j in range(i, fbasis.n_basis):
-                gram[i, j] = fbasis[i].inner_product(fbasis[j], None, None)
-                gram[j, i] = gram[i, j]
+        if cached is None:
+            gram = self._gram_matrix()
+            self._gram_matrix_cached = gram
 
         return gram
 

@@ -10,7 +10,7 @@ from skfda.preprocessing.registration.validation import (
     AmplitudePhaseDecomposition, LeastSquares,
     SobolevLeastSquares, PairwiseCorrelation)
 from skfda.representation.basis import Fourier
-from skfda.representation.interpolation import SplineInterpolator
+from skfda.representation.interpolation import SplineInterpolation
 import unittest
 
 from sklearn.exceptions import NotFittedError
@@ -25,7 +25,7 @@ class TestWarping(unittest.TestCase):
         """Initialization of samples"""
 
         self.time = np.linspace(-1, 1, 50)
-        interpolator = SplineInterpolator(3, monotone=True)
+        interpolator = SplineInterpolation(3, monotone=True)
         self.polynomial = FDataGrid([self.time**3, self.time**5],
                                     self.time, interpolator=interpolator)
 

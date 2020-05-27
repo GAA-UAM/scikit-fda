@@ -25,9 +25,9 @@ class TestWarping(unittest.TestCase):
         """Initialization of samples"""
 
         self.time = np.linspace(-1, 1, 50)
-        interpolator = SplineInterpolation(3, monotone=True)
+        interpolation = SplineInterpolation(3, monotone=True)
         self.polynomial = FDataGrid([self.time**3, self.time**5],
-                                    self.time, interpolator=interpolator)
+                                    self.time, interpolation=interpolation)
 
     def test_invert_warping(self):
 

@@ -11,12 +11,13 @@ FDataGrids.
 
 # sphinx_gallery_thumbnail_number = 3
 
+import skfda
+from skfda.representation.interpolation import SplineInterpolation
+
 from mpl_toolkits.mplot3d import axes3d
 
 import matplotlib.pyplot as plt
 import numpy as np
-import skfda
-from skfda.representation.interpolation import SplineInterpolator
 
 
 ##############################################################################
@@ -48,10 +49,10 @@ fd.scatter(fig=fig)
 # the evaluation of the object.
 #
 # Polynomial spline interpolation could be performed using the interpolator
-# :class:`~skfda.representation.interpolation.SplineInterpolator`. In the
+# :class:`~skfda.representation.interpolation.SplineInterpolation. In the
 # following example a cubic interpolator is set.
 
-fd.interpolator = SplineInterpolator(interpolation_order=3)
+fd.interpolator = SplineInterpolation(interpolation_order=3)
 
 fig = fd.plot()
 fd.scatter(fig=fig)
@@ -67,13 +68,13 @@ fd_smooth = skfda.datasets.make_sinusoidal_process(n_samples=1, n_features=30,
                                                    random_state=1, error_std=.3)
 
 # Cubic interpolator
-fd_smooth.interpolator = SplineInterpolator(interpolation_order=3)
+fd_smooth.interpolator = SplineInterpolation(interpolation_order=3)
 
 fig = fd_smooth.plot(label="Cubic")
 
 # Smooth interpolation
-fd_smooth.interpolator = SplineInterpolator(interpolation_order=3,
-                                            smoothness_parameter=1.5)
+fd_smooth.interpolator = SplineInterpolation(interpolation_order=3,
+                                             smoothness_parameter=1.5)
 
 fd_smooth.plot(fig=fig, label="Cubic smoothed")
 
@@ -95,7 +96,7 @@ fig = plt.figure()
 fig.add_subplot(1, 1, 1)
 
 for i in range(1, 4):
-    fd.interpolator = SplineInterpolator(interpolation_order=i)
+    fd.interpolator = SplineInterpolation(interpolation_order=i)
     fd.plot(fig=fig, derivative=1, label=f"Degree {i}")
 
 fig.legend()
@@ -130,8 +131,8 @@ fd_monotone = fd.copy(data_matrix=np.sort(fd.data_matrix, axis=1))
 fig = fd_monotone.plot(linestyle='--', label="cubic")
 
 
-fd_monotone.interpolator = SplineInterpolator(interpolation_order=3,
-                                              monotone=True)
+fd_monotone.interpolator = SplineInterpolation(interpolation_order=3,
+                                               monotone=True)
 fd_monotone.plot(fig=fig, label="PCHIP")
 
 fd_monotone.scatter(fig=fig, c='C1')
@@ -167,7 +168,7 @@ fd.scatter(fig=fig)
 #
 
 
-fd.interpolator = SplineInterpolator(interpolation_order=3)
+fd.interpolator = SplineInterpolation(interpolation_order=3)
 
 fig = fd.plot()
 fd.scatter(fig=fig)
@@ -183,7 +184,7 @@ fd.plot(derivative=(0, 1))
 
 ##############################################################################
 # The following table shows the interpolation methods available by the class
-# :class:`SplineInterpolator` depending on the domain dimension.
+# :class:`SplineInterpolation` depending on the domain dimension.
 #
 # +------------------+--------+----------------+----------+-------------+-------------+
 # | Domain dimension | Linear | Up to degree 5 | Monotone | Derivatives |  Smoothing  |

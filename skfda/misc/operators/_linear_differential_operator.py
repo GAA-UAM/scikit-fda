@@ -9,7 +9,7 @@ import numpy as np
 from ..._utils import _same_domain
 from ...representation import FDataGrid
 from ...representation.basis import Constant, Monomial, Fourier, BSpline
-from ...representation.interpolation import SplineInterpolator
+from ...representation.interpolation import SplineInterpolation
 from ._operators import Operator, gramian_matrix_optimization
 
 

@@ -10,8 +10,7 @@ Explores the different representations of functional data.
 
 import skfda
 import skfda.representation.basis as basis
-from skfda.representation.interpolation import SplineInterpolator
-
+from skfda.representation.interpolation import SplineInterpolation
 
 ##############################################################################
 # In this example we are going to show the different representations of
@@ -51,7 +50,7 @@ first_curve.plot()
 ##############################################################################
 # The interpolation used can however be changed. Here, we will use an
 # interpolation with degree 3 splines.
-first_curve.interpolator = SplineInterpolator(3)
+first_curve.interpolator = SplineInterpolation(3)
 first_curve.plot()
 
 ##############################################################################

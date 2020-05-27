@@ -45,14 +45,14 @@ fd.scatter(fig=fig)
 
 ##############################################################################
 # The interpolation method of the FDataGrid could be changed setting the
-# attribute ``interpolator``. Once we have set an interpolator it is used for
+# attribute ``interpolation``. Once we have set an interpolation it is used for
 # the evaluation of the object.
 #
-# Polynomial spline interpolation could be performed using the interpolator
+# Polynomial spline interpolation could be performed using the interpolation
 # :class:`~skfda.representation.interpolation.SplineInterpolation. In the
-# following example a cubic interpolator is set.
+# following example a cubic interpolation is set.
 
-fd.interpolator = SplineInterpolation(interpolation_order=3)
+fd.interpolation = SplineInterpolation(interpolation_order=3)
 
 fig = fd.plot()
 fd.scatter(fig=fig)
@@ -60,21 +60,21 @@ fd.scatter(fig=fig)
 
 ##############################################################################
 # Smooth interpolation could be performed with the attribute
-# ``smoothness_parameter`` of the spline interpolator.
+# ``smoothness_parameter`` of the spline interpolation.
 #
 
 # Sample with noise
 fd_smooth = skfda.datasets.make_sinusoidal_process(n_samples=1, n_features=30,
                                                    random_state=1, error_std=.3)
 
-# Cubic interpolator
-fd_smooth.interpolator = SplineInterpolation(interpolation_order=3)
+# Cubic interpolation
+fd_smooth.interpolation = SplineInterpolation(interpolation_order=3)
 
 fig = fd_smooth.plot(label="Cubic")
 
 # Smooth interpolation
-fd_smooth.interpolator = SplineInterpolation(interpolation_order=3,
-                                             smoothness_parameter=1.5)
+fd_smooth.interpolation = SplineInterpolation(interpolation_order=3,
+                                              smoothness_parameter=1.5)
 
 fd_smooth.plot(fig=fig, label="Cubic smoothed")
 
@@ -96,7 +96,7 @@ fig = plt.figure()
 fig.add_subplot(1, 1, 1)
 
 for i in range(1, 4):
-    fd.interpolator = SplineInterpolation(interpolation_order=i)
+    fd.interpolation = SplineInterpolation(interpolation_order=i)
     fd.plot(fig=fig, derivative=1, label=f"Degree {i}")
 
 fig.legend()
@@ -131,15 +131,15 @@ fd_monotone = fd.copy(data_matrix=np.sort(fd.data_matrix, axis=1))
 fig = fd_monotone.plot(linestyle='--', label="cubic")
 
 
-fd_monotone.interpolator = SplineInterpolation(interpolation_order=3,
-                                               monotone=True)
+fd_monotone.interpolation = SplineInterpolation(interpolation_order=3,
+                                                monotone=True)
 fd_monotone.plot(fig=fig, label="PCHIP")
 
 fd_monotone.scatter(fig=fig, c='C1')
 fig.legend()
 
 ##############################################################################
-# All the interpolators will work regardless of the dimension of the image, but
+# All the interpolations will work regardless of the dimension of the image, but
 # depending on the domain dimension some methods will not be available.
 #
 # For the next examples it is constructed a surface, :math:`x_i: \mathbb{R}^2
@@ -161,14 +161,14 @@ fd.scatter(fig=fig)
 # In the following figure it is shown the result of the cubic interpolation
 # applied to the surface.
 #
-# The degree of the interpolator polynomial does not have to coincide in both
+# The degree of the interpolation polynomial does not have to coincide in both
 # directions, for example, cubic interpolation in the first
 # component and quadratic in the second one could be defined  using a tuple with
 # the values (3,2).
 #
 
 
-fd.interpolator = SplineInterpolation(interpolation_order=3)
+fd.interpolation = SplineInterpolation(interpolation_order=3)
 
 fig = fd.plot()
 fd.scatter(fig=fig)

@@ -348,7 +348,7 @@ def make_random_warping(n_samples: int = 15, n_features: int = 100, *,
                                            axis=0)
     warping = FDataGrid(data_matrix.T, sample_points=time[:, 0])
     warping = normalize_warping(warping, domain_range=(start, stop))
-    warping.interpolator = SplineInterpolation(interpolation_order=3,
-                                              monotone=True)
+    warping.interpolation = SplineInterpolation(interpolation_order=3,
+                                                monotone=True)
 
     return warping

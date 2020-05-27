@@ -9,8 +9,10 @@ Explores the different representations of functional data.
 # License: MIT
 
 import skfda
-import skfda.representation.basis as basis
 from skfda.representation.interpolation import SplineInterpolation
+
+import skfda.representation.basis as basis
+
 
 ##############################################################################
 # In this example we are going to show the different representations of
@@ -20,7 +22,6 @@ from skfda.representation.interpolation import SplineInterpolation
 # Growth Study. This dataset correspond to the height of several boys and
 # girls measured until the 18 years of age. The number and times of the
 # measurements are the same for each individual.
-
 dataset = skfda.datasets.fetch_growth()
 fd = dataset['data']
 y = dataset['target']
@@ -50,7 +51,7 @@ first_curve.plot()
 ##############################################################################
 # The interpolation used can however be changed. Here, we will use an
 # interpolation with degree 3 splines.
-first_curve.interpolator = SplineInterpolation(3)
+first_curve.interpolation = SplineInterpolation(3)
 first_curve.plot()
 
 ##############################################################################

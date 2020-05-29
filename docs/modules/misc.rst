@@ -8,4 +8,5 @@ Miscellaneous functions and objects.
    :caption: Modules:
 
    misc/metrics
+   misc/operators
    misc/regularization

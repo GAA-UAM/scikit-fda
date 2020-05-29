@@ -24,7 +24,11 @@ class LinearDifferentialOperator(Operator):
         Lx(t) = b_0(t) x(t) + b_1(t) x'(x) +
                 \\dots + b_{n-1}(t) d^{n-1}(x(t)) + b_n(t) d^n(x(t))
 
+    Can only be applied to functional data, as multivariate data has no
+    derivatives.
+
     Attributes:
+
         weights (list):  A list of callables.
 
     Examples:

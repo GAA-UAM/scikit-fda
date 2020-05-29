@@ -8,10 +8,14 @@ from ._operators import Operator, gramian_matrix_optimization
 class Identity(Operator):
     """Identity operator.
 
+    Linear operator that returns its input.
+
     .. math::
         Ix = x
 
-        """
+    Can be applied to both functional and multivariate data.
+
+    """
 
     def __call__(self, f):
         return f

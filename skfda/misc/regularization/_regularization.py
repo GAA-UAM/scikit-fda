@@ -19,18 +19,20 @@ class TikhonovRegularization(BaseEstimator):
     or vector
 
     .. math::
-            \| \Gamma x \|_2^2
+            \lambda \| \Gamma x \|_2^2
 
     where :math:`\Gamma` is the so called Tikhonov operator
-    (matrix for finite vectors).
+    (matrix for finite vectors) and :math:`\lambda` is a positive real number.
 
     This linear operator can be an arbitrary Python callable that correspond
-    to a linear transformation. However, the :doc:`operators` module
+    to a linear transformation. However, the
+    :doc:`operators </modules/misc/operators>` module
     provides several common linear operators.
 
     Parameters:
         linear_operator: linear operator used for regularization.
-        regularization_parameter: scaling parameter of the penalization.
+        regularization_parameter: scaling parameter (:math:`\lambda`) of the
+                                  penalization.
 
     Examples:
 
@@ -99,11 +101,17 @@ class L2Regularization(TikhonovRegularization):
     :math:`L_2` (Euclidean) norm of the function or vector
 
     .. math::
-            \| x \|_2^2
+            \lambda \| x \|_2^2
+
+    where :math:`\lambda` is a positive real number.
 
     This is equivalent to Tikhonov regularization (
     :class:`TikhonovRegularization`) using the identity operator (
     :class:`Identity`).
+
+    Parameters:
+        regularization_parameter: scaling parameter (:math:`\lambda`) of the
+                                  penalization.
 
     """
 

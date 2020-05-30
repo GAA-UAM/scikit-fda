@@ -7,6 +7,7 @@ Miscellaneous functions and objects.
    :maxdepth: 4
    :caption: Modules:
 
+   misc/covariances
    misc/metrics
    misc/operators
    misc/regularization

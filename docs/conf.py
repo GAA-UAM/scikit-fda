@@ -52,7 +52,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx_rtd_theme',
               'sphinx_gallery.gen_gallery',
               'sphinx.ext.intersphinx',
-              'sphinx.ext.doctest']
+              'sphinx.ext.doctest',
+              'matplotlib.sphinxext.plot_directive']
 
 autodoc_default_flags = ['members', 'inherited-members']
 

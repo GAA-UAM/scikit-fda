@@ -1,5 +1,6 @@
 from matplotlib import pyplot as plt
 from skfda.representation import FDataGrid, FDataBasis, FData
+from skfda.exploratory.visualization._utils import _get_figure_and_axes
 
 
 def plot_fpca_perturbation_graphs(mean, components, multiple,
@@ -13,7 +14,8 @@ def plot_fpca_perturbation_graphs(mean, components, multiple,
 
     Args:
         mean (FDataGrid or FDataBasis):
-            the functional data object containing the mean function
+            the functional data object containing the mean function.
+            If len(mean) > 1, the mean is computed.
         components (FDataGrid or FDataBasis):
             the principal components
         multiple (float):
@@ -27,9 +29,14 @@ def plot_fpca_perturbation_graphs(mean, components, multiple,
         (FDataGrid or FDataBasis): this contains the mean function followed
         by the positive perturbation and the negative perturbation.
     """
-    if fig is None:
-        fig = plt.figure(figsize=(6, 4 * len(components)))
-    axes = fig.subplots(nrows=len(components))
+
+    if len(mean) > 1:
+        mean = mean.mean()
+
+    fig, axes = _get_figure_and_axes(fig=fig)
+
+    if not axes:
+        axes = fig.subplots(nrows=len(components))
 
     for i in range(len(axes)):
         aux = _get_component_perturbations(mean, components, i, multiple)

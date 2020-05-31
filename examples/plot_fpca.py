@@ -14,6 +14,7 @@ from skfda.preprocessing.dim_reduction.projection import FPCA
 from skfda.representation.basis import BSpline, Fourier, Monomial
 from skfda.datasets import fetch_growth
 from skfda.exploratory.visualization import plot_fpca_perturbation_graphs
+import matplotlib.pyplot as plt
 
 ##############################################################################
 # In this example we are going to use functional principal component analysis to
@@ -82,7 +83,10 @@ mean_fd.plot()
 # faster at an early age and boys tend to start puberty later, therefore, their
 # growth is more significant later. Girls also stop growing early
 
-plot_fpca_perturbation_graphs(basis_fd.mean(), fpca.components_, 30)
+plot_fpca_perturbation_graphs(basis_fd.mean(),
+                              fpca.components_,
+                              30,
+                              fig=plt.figure(figsize=(6, 2*4)))
 
 ##############################################################################
 # We can also specify another basis for the principal components as argument

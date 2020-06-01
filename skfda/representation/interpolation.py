@@ -242,7 +242,10 @@ class SplineInterpolatorEvaluator(Evaluator):
 
         def _spline_evaluator_1_m(spl, t, der):
 
-            return spl(t, der)
+            try:
+                return spl(t, der)
+            except ValueError:
+                return np.zeros_like(t)
 
         def _process_derivative_1_m(derivative):
 

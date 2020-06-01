@@ -15,18 +15,10 @@ For a detailed example please view :ref:`sphx_glr_auto_examples_plot_fpca.py`,
 where the process is applied to several datasets in both discretized and basis
 forms.
 
-FPCA for functional data in a basis representation
+FPCA for functional data in both representations
 ----------------------------------------------------------------
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.dim_reduction.projection.FPCABasis
-
-FPCA for functional data in a discretized representation
-----------------------------------------------------------------
-
-.. autosummary::
-   :toctree: autosummary
-
-   skfda.preprocessing.dim_reduction.projection.FPCAGrid
+   skfda.preprocessing.dim_reduction.projection.FPCA

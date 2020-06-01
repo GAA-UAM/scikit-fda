@@ -91,3 +91,42 @@ def depth_based_median(fdatagrid, depth_method=modified_band_depth):
 
     # The median is the deepest curve
     return fdatagrid[indices_descending_depth[0]]
+
+
+def trim_mean(fdatagrid,
+              proportiontocut,
+              depth_method=modified_band_depth):
+    """Compute the trimmed means based on a depth measure.
+
+    The trimmed means consists in computing the mean function without a
+    percentage of least deep curves. That is, we first remove the least deep
+    curves and then we compute the mean as usual.
+
+    Note that in scipy the leftmost and rightmost proportiontocut data are
+    removed. In this case, as we order the data by the depth, we only remove
+    those that have the least depth values.
+
+    Args:
+        fdatagrid (FDataGrid): Object containing different samples of a
+            functional variable.
+        proportiontocut (float): indicates the percentage of functions to
+            remove. It is not easy to determine as it varies from dataset to
+            dataset.
+        depth_method (:ref:`depth measure <depth-measures>`, optional):
+            Method used to order the data. Defaults to :func:`modified
+            band depth <fda.depth_measures.modified_band_depth>`.
+
+    Returns:
+        FDataGrid: object containing the computed trimmed mean.
+
+    """
+    n_samples_to_keep = (fdatagrid.n_samples -
+                         int(fdatagrid.n_samples * proportiontocut))
+
+    # compute the depth of each curve and store the indexes in descending order
+    depth = depth_method(fdatagrid)
+    indices_descending_depth = (-depth).argsort(axis=0)
+
+    trimmed_curves = fdatagrid[indices_descending_depth[:n_samples_to_keep]]
+
+    return trimmed_curves.mean()

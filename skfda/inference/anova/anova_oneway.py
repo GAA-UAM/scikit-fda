@@ -69,24 +69,19 @@ def v_sample_stat(fd, weights, p=2):
         Analysis*, 47:111-112, 02 2004
     """
 
+    weights = np.asarray(weights)
     if not isinstance(fd, FData):
         raise ValueError("Argument type must inherit FData.")
     if len(weights) != fd.n_samples:
         raise ValueError("Number of weights must match number of samples.")
 
-    n = fd.n_samples
-    size = (n * n - n) // 2
-    ops = np.empty(size, dtype='object')
-    coef = np.empty(size)
+    fds = np.array([f for f in fd], dtype=FData).ravel()
+    t_ind = np.tril_indices(fd.n_samples, -1)
 
-    index = 0
-    for j in range(n):
-        for i in range(j):
-            coef[index] = weights[i]
-            ops[index] = fd[i] - fd[j]
-            index += 1
+    coef = (weights - 0 * weights[:, None])[t_ind]
+    ops = (fds - fds[:, None])[t_ind]
 
-    return np.dot(coef, norm_lp(concatenate(ops), p=p) ** p)
+    return np.sum(coef * norm_lp(concatenate(ops), p=p) ** p)
 
 
 def v_asymptotic_stat(fd, weights, p=2):
@@ -150,19 +145,20 @@ def v_asymptotic_stat(fd, weights, p=2):
         anova test for functional data". *Computational Statistics  Data
         Analysis*, 47:111-112, 02 2004
     """
+    weights = np.asarray(weights)
     if not isinstance(fd, FData):
         raise ValueError("Argument type must inherit FData.")
     if len(weights) != fd.n_samples:
         raise ValueError("Number of weights must match number of samples.")
+    if np.count_nonzero(weights) != len(weights):
+        raise ValueError("All weights must be non-zero.")
 
-    n = fd.n_samples
-    size = (n * n - n) // 2
-    ops = np.empty(size, dtype='object')
-    index = 0
-    for j in range(n):
-        for i in range(j):
-            ops[index] = fd[i] - fd[j] * np.sqrt(weights[i] / weights[j])
-            index += 1
+    fds = np.array([f for f in fd], dtype=FData).ravel()
+    t_ind = np.tril_indices(fd.n_samples, -1)
+
+    w = np.sqrt(weights / weights[:, None])
+    ops = (fds - w * fds[:, None])[t_ind]
+
     return np.sum(norm_lp(concatenate(ops), p=p) ** p)
 
 

@@ -1,16 +1,18 @@
+from skfda import FDataGrid, FDataBasis
+from skfda.datasets import fetch_weather
+from skfda.misc.operators import LinearDifferentialOperator
+from skfda.misc.regularization import TikhonovRegularization
+from skfda.preprocessing.dim_reduction.projection import FPCA
+from skfda.representation.basis import Fourier
 import unittest
 
 import numpy as np
-from skfda import FDataGrid, FDataBasis
-from skfda.representation.basis import Fourier
-from skfda.preprocessing.dim_reduction.projection import FPCABasis, FPCAGrid
-from skfda.datasets import fetch_weather
 
 
 class FPCATestCase(unittest.TestCase):
 
     def test_basis_fpca_fit_attributes(self):
-        fpca = FPCABasis()
+        fpca = FPCA()
         with self.assertRaises(AttributeError):
             fpca.fit(None)
 
@@ -28,7 +30,7 @@ class FPCATestCase(unittest.TestCase):
             fpca.fit(fd)
 
     def test_discretized_fpca_fit_attributes(self):
-        fpca = FPCAGrid()
+        fpca = FPCA()
         with self.assertRaises(AttributeError):
             fpca.fit(None)
 
@@ -54,11 +56,13 @@ class FPCATestCase(unittest.TestCase):
                             np.arange(0.5, 365, 1))
 
         # initialize basis data
-        basis = Fourier(n_basis=9, domain_range=(0, 365))
+        basis = Fourier(n_basis=n_basis, domain_range=(0, 365))
         fd_basis = fd_data.to_basis(basis)
 
-        fpca = FPCABasis(n_components=n_components,
-                         regularization_parameter=1e5)
+        fpca = FPCA(n_components=n_components,
+                    regularization=TikhonovRegularization(
+                         LinearDifferentialOperator(2),
+                         regularization_parameter=1e5))
         fpca.fit(fd_basis)
 
         # results obtained using Ramsay's R package
@@ -81,6 +85,67 @@ class FPCATestCase(unittest.TestCase):
         np.testing.assert_allclose(fpca.components_.coefficients, results,
                                    atol=1e-7)
 
+    def test_basis_fpca_transform_result(self):
+
+        n_basis = 9
+        n_components = 3
+
+        fd_data = fetch_weather()['data'].coordinates[0]
+        fd_data = FDataGrid(np.squeeze(fd_data.data_matrix),
+                            np.arange(0.5, 365, 1))
+
+        # initialize basis data
+        basis = Fourier(n_basis=n_basis, domain_range=(0, 365))
+        fd_basis = fd_data.to_basis(basis)
+
+        fpca = FPCA(n_components=n_components,
+                    regularization=TikhonovRegularization(
+                         LinearDifferentialOperator(2),
+                         regularization_parameter=1e5))
+        fpca.fit(fd_basis)
+        scores = fpca.transform(fd_basis)
+
+        # results obtained using Ramsay's R package
+        results = [[-7.68307641e+01, 5.69034443e+01, -1.22440149e+01],
+                   [-9.02873996e+01, 1.46262257e+01, -1.78574536e+01],
+                   [-8.21155683e+01, 3.19159491e+01, -2.56212328e+01],
+                   [-1.14163637e+02, 3.66425562e+01, -1.00810836e+01],
+                   [-6.97263223e+01, 1.22817168e+01, -2.39417618e+01],
+                   [-6.41886364e+01, -1.07261045e+01, -1.10587407e+01],
+                   [1.35824412e+02, 2.03484658e+01, -9.04815324e+00],
+                   [-1.46816399e+01, -2.66867491e+01, -1.20233465e+01],
+                   [1.02507511e+00, -2.29840736e+01, -9.06081296e+00],
+                   [-3.62936903e+01, -2.09520442e+01, -1.14799951e+01],
+                   [-4.20649313e+01, -1.13618094e+01, -6.24909009e+00],
+                   [-7.38115985e+01, -3.18423866e+01, -1.50298626e+01],
+                   [-6.69822456e+01, -3.35518632e+01, -1.25167352e+01],
+                   [-1.03534763e+02, -1.29513941e+01, -1.49103879e+01],
+                   [-1.04542036e+02, -1.36794907e+01, -1.41555965e+01],
+                   [-7.35863347e+00, -1.41171956e+01, -2.97562788e+00],
+                   [7.28804530e+00, -5.34421830e+01, -3.39823418e+00],
+                   [5.59974094e+01, -4.02154080e+01, 3.78800103e-01],
+                   [1.80778702e+02, 1.87798201e+01, -1.99043247e+01],
+                   [-3.69700617e+00, -4.19441020e+01, 6.45820740e+00],
+                   [3.76527216e+01, -4.23056953e+01, 1.04221757e+01],
+                   [1.23850646e+02, -4.24648130e+01, -2.22336786e-01],
+                   [-7.23588457e+00, -1.20579536e+01, 2.07502089e+01],
+                   [-4.96871011e+01, 8.88483448e+00, 2.02882768e+01],
+                   [-1.36726355e+02, -1.86472599e+01, 1.89076217e+01],
+                   [-1.83878661e+02, 4.12118550e+01, 1.78960356e+01],
+                   [-1.81568820e+02, 5.20817910e+01, 2.01078870e+01],
+                   [-5.08775852e+01, 1.34600555e+01, 3.18602712e+01],
+                   [-1.37633866e+02, 7.50809631e+01, 2.42320782e+01],
+                   [4.98276375e+01, 1.33401270e+00, 3.50611066e+01],
+                   [1.51149934e+02, -5.47417776e+01, 3.97592325e+01],
+                   [1.58366096e+02, -3.80762686e+01, -5.62415023e+00],
+                   [2.17139548e+02, 6.34055987e+01, -1.98853635e+01],
+                   [2.33615480e+02, -7.90787574e-02, 2.69069525e+00],
+                   [3.45371437e+02, 9.58703622e+01, 8.47570770e+00]]
+        results = np.array(results)
+
+        # compare results
+        np.testing.assert_allclose(scores, results, atol=1e-7)
+
     def test_basis_fpca_regularization_fit_result(self):
 
         n_basis = 9
@@ -94,7 +159,7 @@ class FPCATestCase(unittest.TestCase):
         basis = Fourier(n_basis=9, domain_range=(0, 365))
         fd_basis = fd_data.to_basis(basis)
 
-        fpca = FPCABasis(n_components=n_components)
+        fpca = FPCA(n_components=n_components)
         fpca.fit(fd_basis)
 
         # results obtained using Ramsay's R package
@@ -115,14 +180,13 @@ class FPCATestCase(unittest.TestCase):
         np.testing.assert_allclose(fpca.components_.coefficients, results,
                                    atol=1e-7)
 
-
     def test_grid_fpca_fit_result(self):
 
         n_components = 1
 
         fd_data = fetch_weather()['data'].coordinates[0]
 
-        fpca = FPCAGrid(n_components=n_components, weights=[1] * 365)
+        fpca = FPCA(n_components=n_components, weights=[1] * 365)
         fpca.fit(fd_data)
 
         # results obtained using fda.usc for the first component
@@ -215,6 +279,33 @@ class FPCATestCase(unittest.TestCase):
             results,
             rtol=1e-6)
 
+    def test_grid_fpca_transform_result(self):
+
+        n_components = 1
+
+        fd_data = fetch_weather()['data'].coordinates[0]
+
+        fpca = FPCA(n_components=n_components, weights=[1] * 365)
+        fpca.fit(fd_data)
+        scores = fpca.transform(fd_data)
+
+        # results obtained
+        results = [[[-77.05020176]], [[-90.56072204]], [[-82.39565947]],
+                   [[-114.45375934]], [[-69.99735931]], [[-64.44894047]],
+                   [[135.58336775]], [[-14.93460852]], [[0.75024737]],
+                   [[-36.4781038]], [[-42.35637749]], [[-73.98910492]],
+                   [[-67.11253749]], [[-103.68269798]], [[-104.65948079]],
+                   [[-7.42817782]], [[7.48125036]], [[56.29792942]],
+                   [[181.00258791]], [[-3.53294736]], [[37.94673912]],
+                   [[124.43819913]], [[-7.04274676]], [[-49.61134859]],
+                   [[-136.86256785]], [[-184.03502398]], [[-181.72835749]],
+                   [[-51.06323208]], [[-137.85606731]], [[50.10941466]],
+                   [[151.68118097]], [[159.01360046]], [[217.17981302]],
+                   [[234.40195237]], [[345.39374006]]]
+        results = np.array(results)
+
+        np.testing.assert_allclose(scores.data_matrix, results, rtol=1e-6)
+
     def test_grid_fpca_regularization_fit_result(self):
 
         n_components = 1
@@ -224,8 +315,14 @@ class FPCATestCase(unittest.TestCase):
         fd_data = FDataGrid(np.squeeze(fd_data.data_matrix),
                             np.arange(0.5, 365, 1))
 
-        fpca = FPCAGrid(n_components=n_components, weights=[1] * 365,
-                        regularization_parameter=1)
+        fpca = FPCA(
+            n_components=n_components, weights=[1] * 365,
+            regularization=TikhonovRegularization(
+                LinearDifferentialOperator(
+                    2,
+                    derivative_function=(
+                        lambda function, points, derivative:
+                        function.derivative(order=derivative)(points)))))
         fpca.fit(fd_data)
 
         # results obtained using fda.usc for the first component
@@ -316,7 +413,7 @@ class FPCATestCase(unittest.TestCase):
             fpca.components_.data_matrix.reshape(
                 fpca.components_.data_matrix.shape[:-1]),
             results,
-            rtol=1e-6)
+            rtol=1e-2)
 
 
 if __name__ == '__main__':

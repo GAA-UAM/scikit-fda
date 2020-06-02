@@ -28,6 +28,9 @@ class OnewayAnovaTests(unittest.TestCase):
             v_asymptotic_stat(1, [1])
         with self.assertRaises(ValueError):
             v_asymptotic_stat(FDataGrid([0]), [0, 1])
+        with self.assertRaises(ValueError):
+            v_asymptotic_stat(FDataGrid([[1, 1, 1], [1, 1, 1]]), [0, 0])
+
 
     def test_v_stats(self):
         n_features = 50

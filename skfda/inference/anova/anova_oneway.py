@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.utils import check_random_state
 
 from skfda import concatenate
-from skfda.misc.metrics import norm_lp
+from skfda.misc.metrics import lp_distance
 from skfda.representation import FData, FDataGrid
 from skfda.datasets import make_gaussian_process
 
@@ -75,13 +75,9 @@ def v_sample_stat(fd, weights, p=2):
     if len(weights) != fd.n_samples:
         raise ValueError("Number of weights must match number of samples.")
 
-    fds = np.array([f for f in fd], dtype=FData).ravel()
     t_ind = np.tril_indices(fd.n_samples, -1)
-
-    coef = (weights - 0 * weights[:, None])[t_ind]
-    ops = (fds - fds[:, None])[t_ind]
-
-    return np.sum(coef * norm_lp(concatenate(ops), p=p) ** p)
+    coef = weights[t_ind[1]]
+    return np.sum(coef * lp_distance(fd[t_ind[0]], fd[t_ind[1]], p=p) ** p)
 
 
 def v_asymptotic_stat(fd, weights, p=2):
@@ -145,20 +141,22 @@ def v_asymptotic_stat(fd, weights, p=2):
         anova test for functional data". *Computational Statistics  Data
         Analysis*, 47:111-112, 02 2004
     """
+    weights = np.asarray(weights)
     if not isinstance(fd, FData):
         raise ValueError("Argument type must inherit FData.")
     if len(weights) != fd.n_samples:
         raise ValueError("Number of weights must match number of samples.")
+    if np.count_nonzero(weights) != len(weights):
+        raise ValueError("All weights must be non-zero.")
 
-    n = fd.n_samples
-    size = (n * n - n) // 2
-    ops = np.empty(size, dtype='object')
-    index = 0
-    for j in range(n):
-        for i in range(j):
-            ops[index] = fd[i] - fd[j] * np.sqrt(weights[i] / weights[j])
-            index += 1
-    return np.sum(norm_lp(concatenate(ops), p=p) ** p)
+    t_ind = np.tril_indices(fd.n_samples, -1)
+    coef = np.sqrt(weights[t_ind[1]] / weights[t_ind[0]])
+    left_fd = fd[t_ind[1]]
+    if isinstance(fd, FDataGrid):
+        right_fd = coef[:, None, np.newaxis] * fd[t_ind[0]]
+    else:
+        right_fd = fd[t_ind[0]].times(coef)
+    return np.sum(lp_distance(left_fd, right_fd, p=p) ** p)
 
 
 def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=2):

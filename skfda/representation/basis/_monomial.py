@@ -1,4 +1,7 @@
+import scipy.linalg
+
 import numpy as np
+
 from ..._utils import _same_domain
 from ._basis import Basis
 
@@ -73,6 +76,29 @@ class Monomial(Basis):
         return (Monomial(self.domain_range, self.n_basis - order),
                 np.array([np.polyder(x[::-1], order)[::-1]
                           for x in coefs]))
+
+    def _gram_matrix(self):
+        integral_coefs = np.polyint(np.ones(2 * self.n_basis - 1))
+
+        # We obtain the powers of both extremes in the domain range
+        power_domain_limits = np.vander(
+            self.domain_range[0], 2 * self.n_basis)
+
+        # Subtract the powers (Barrow's rule)
+        power_domain_limits_diff = (
+            power_domain_limits[1] - power_domain_limits[0])
+
+        # Multiply the constants that appear in the integration
+        evaluated_points = integral_coefs * power_domain_limits_diff
+
+        # Order the powers, lower to higher, discarding the constant
+        # (it does not appear in the integral)
+        ordered_evaluated_points = evaluated_points[-2::-1]
+
+        # Build the matrix
+        return scipy.linalg.hankel(
+            ordered_evaluated_points[:self.n_basis],
+            ordered_evaluated_points[self.n_basis - 1:])
 
     def basis_of_product(self, other):
         """Multiplication of a Monomial Basis with other Basis"""

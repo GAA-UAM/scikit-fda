@@ -13,7 +13,8 @@ real dataset.
 
 import skfda
 from skfda.inference.anova import oneway_anova
-from skfda.representation import FDataGrid
+from skfda.representation import FDataGrid, FDataBasis
+from skfda.representation.basis import Fourier
 
 ################################################################################
 # *One-way ANOVA* (analysis of variance) is a test that can be used to
@@ -30,7 +31,7 @@ from skfda.representation import FDataGrid
 # of hips and knees from 39 different boys in a 20 point movement cycle.
 dataset = skfda.datasets.fetch_gait()
 fd_hip = dataset['data'].coordinates[0]
-fd_knee = dataset['data'].coordinates[1]
+fd_knee = dataset['data'].coordinates[1].to_basis(Fourier(n_basis=10))
 
 ################################################################################
 # Let's start with the first feature, the angle of the hip. The sample
@@ -49,8 +50,7 @@ fd_hip3 = fd_hip[26:39]
 fd_hip.plot(group=[0 if i < 13 else 1 if i < 26 else 39 for i in range(39)])
 
 means = [fd_hip1.mean(), fd_hip2.mean(), fd_hip3.mean()]
-fd_means = fd_hip.copy(data_matrix=[mean.data_matrix[0] for mean in means],
-                       dataset_label='Hip angle (means)')
+fd_means = skfda.concatenate(means)
 fig = fd_means.plot()
 
 ###############################################################################
@@ -74,7 +74,7 @@ print('p-value: ', p_val)
 
 ################################################################################
 # This was the simplest way to call this function. Let's see another example,
-# this time using knee angles.
+# this time using knee angles, this time with data in basis representation.
 fig = fd_knee.plot()
 
 ################################################################################
@@ -86,8 +86,7 @@ fd_knee3 = fd_knee[26:39]
 fd_knee.plot(group=[0 if i < 13 else 1 if i < 26 else 39 for i in range(39)])
 
 means = [fd_knee1.mean(), fd_knee2.mean(), fd_knee3.mean()]
-fd_means = fd_knee.copy(data_matrix=[mean.data_matrix[0] for mean in means],
-                        dataset_label='Knee angle (means)')
+fd_means = skfda.concatenate(means)
 fig = fd_means.plot()
 
 ################################################################################
@@ -104,7 +103,7 @@ fig = fd_means.plot()
 # sampling distribution of the statistic which is compared with the first
 # return to get the *p-value*.
 
-v_n, p_val, dist = oneway_anova(fd_knee1, fd_knee2, fd_knee3, n_reps=1500, p=2,
+v_n, p_val, dist = oneway_anova(fd_knee1, fd_knee2, fd_knee3, n_reps=1500,
                                 return_dist=True)
 
 print('Statistic: ', v_n)

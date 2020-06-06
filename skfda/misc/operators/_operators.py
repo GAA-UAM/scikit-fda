@@ -113,3 +113,22 @@ def gramian_matrix(linear_operator, basis):
         return matrix
 
     return gramian_matrix_numerical(linear_operator, basis)
+
+
+class MatrixOperator(Operator):
+    """Linear operator for finite spaces.
+
+    Between finite dimensional spaces, every linear operator can be expressed
+    as a product by a matrix.
+
+    Attributes:
+        matrix (array-like object):  The matrix containing the linear
+               transformation.
+
+    """
+
+    def __init__(self, matrix):
+        self.matrix = matrix
+
+    def __call__(self, f):
+        return self.matrix @ f

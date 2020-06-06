@@ -41,7 +41,7 @@ class Evaluator(ABC):
 
     An evaluator defines how to evaluate points of a functional object, it
     can be used as extrapolator to evaluate points outside the domain range or
-    as interpolator in a :class:`FDataGrid`. The corresponding examples of
+    as interpolation in a :class:`FDataGrid`. The corresponding examples of
     Interpolation and Extrapolation shows the basic usage of this class.
 
     The evaluator is called internally by :func:`evaluate`.

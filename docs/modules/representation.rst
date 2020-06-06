@@ -30,7 +30,7 @@ following class allows interpolation with different splines.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.representation.interpolation.SplineInterpolator
+   skfda.representation.interpolation.SplineInterpolation
 
 
 Basis representation

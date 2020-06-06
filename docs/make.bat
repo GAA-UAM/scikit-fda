@@ -5,7 +5,7 @@ REM Command file for Sphinx documentation
 pushd %~dp0
 
 if "%SPHINXBUILD%" == "" (
-	set SPHINXBUILD=python -msphinx
+	set SPHINXBUILD=sphinx-build
 )
 set BUILDDIR=_build
 set ALLSPHINXOPTS=-d %BUILDDIR%/doctrees %SPHINXOPTS% .
@@ -54,7 +54,7 @@ if "%1" == "clean" (
 
 REM Check if sphinx-build is available
 %SPHINXBUILD% 1>NUL 2>NUL
-if errorlevel 1 (
+if errorlevel 9009 (
 	echo.
 	echo.The Sphinx module was not found. Make sure you have Sphinx installed,
 	echo.then set the SPHINXBUILD environment variable to point to the full

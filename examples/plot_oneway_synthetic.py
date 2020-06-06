@@ -11,9 +11,13 @@ synthetic data.
 
 # sphinx_gallery_thumbnail_number = 2
 
+import numpy as np
+
 import skfda
-from skfda.inference.anova import oneway_anova
 from skfda.representation import FDataGrid
+from skfda.inference.anova import oneway_anova
+from skfda.datasets import make_gaussian_process
+from skfda.misc.covariances import WhiteNoise
 
 ################################################################################
 # *One-way ANOVA* (analysis of variance) is a test that can be used to
@@ -31,12 +35,6 @@ from skfda.representation import FDataGrid
 # process by adding to them white noise. The main objective of the
 # test is to illustrate the differences in the results of the ANOVA method
 # when the covariance function of the brownian processes changes.
-
-import numpy as np
-
-from skfda.representation import FDataGrid
-from skfda.inference.anova import oneway_anova
-from skfda.datasets import make_gaussian_process
 
 ################################################################################
 # First, the means for the future processes are drawn.
@@ -69,8 +67,8 @@ groups[20:] = 'Sample 3'
 # differences between the means of each group should be clear, and the
 # p-value for the test should be near to zero.
 
-sigma = 0.01
-cov = np.identity(n_features) * sigma
+sigma2 = 0.01
+cov = WhiteNoise(variance=sigma2)
 
 fd1 = make_gaussian_process(n_samples, mean=m1, cov=cov,
                             n_features=n_features, random_state=1, start=start,
@@ -89,11 +87,12 @@ print("p-value: {:.3f}".format(p_val))
 # In the plot below we can see the simulated trajectories for each mean,
 # and the averages for each group.
 
-fd = fd1.concatenate(fd2.concatenate(fd3.concatenate()))
-fd.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
-    sigma, p_val)
-fd.plot(group=groups, legend=True, alpha=0.6)
-fd1.mean().concatenate(fd2.mean().concatenate(fd3.mean()).concatenate()).plot()
+fd = skfda.concatenate([fd1, fd2, fd3])
+fd_total = skfda.concatenate([fd.mean() for fd in [fd1, fd2,
+                                                               fd3]])
+fd_total.dataset_label = "Sample with $\sigma^2$ = {}, p-value = {:.3f}".format(
+    sigma2, p_val)
+fd_total.plot()
 
 ################################################################################
 # In the following, the same process will be followed incrementing sigma
@@ -103,9 +102,8 @@ fd1.mean().concatenate(fd2.mean().concatenate(fd3.mean()).concatenate()).plot()
 
 ################################################################################
 # Plot for :math:`\sigma = 1`:
-
-sigma = 1
-cov = np.identity(n_features) * sigma
+sigma2 = 0.1
+cov = WhiteNoise(variance=sigma2)
 
 fd1 = make_gaussian_process(n_samples, mean=m1, cov=cov,
                             n_features=n_features, random_state=1, start=t[0],
@@ -119,17 +117,18 @@ fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
 
 _, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 
-fd = fd1.concatenate(fd2.concatenate(fd3.concatenate()))
-fd.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
-    sigma, p_val)
-fd.plot(group=groups, legend=True, alpha=0.6)
-fd1.mean().concatenate(fd2.mean().concatenate(fd3.mean()).concatenate()).plot()
+fd = skfda.concatenate([fd1, fd2, fd3])
+fd_total = skfda.concatenate([fd.mean() for fd in [fd1, fd2,
+                                                               fd3]])
+fd_total.dataset_label = "Sample with $\sigma^2$ = {}, p-value = {:.3f}".format(
+    sigma2, p_val)
+fd_total.plot()
 
 ################################################################################
 # Plot for :math:`\sigma = 10`:
 
-sigma = 10
-cov = np.identity(n_features) * sigma
+sigma2 = 1
+cov = WhiteNoise(variance=sigma2)
 
 fd1 = make_gaussian_process(n_samples, mean=m1, cov=cov,
                             n_features=n_features, random_state=1, start=t[0],
@@ -143,11 +142,12 @@ fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
 
 _, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 
-fd = fd1.concatenate(fd2.concatenate(fd3.concatenate()))
-fd.dataset_label = "Sample with $\sigma$ = {}, p-value = {:.3f}".format(
-    sigma, p_val)
-fd.plot(group=groups, legend=True, alpha=0.6)
-fd1.mean().concatenate(fd2.mean().concatenate(fd3.mean()).concatenate()).plot()
+fd = skfda.concatenate([fd1, fd2, fd3])
+fd_total = skfda.concatenate([fd.mean() for fd in [fd1, fd2,
+                                                               fd3]])
+fd_total.dataset_label = "Sample with $\sigma^2$ = {}, p-value = {:.3f}".format(
+    sigma2, p_val)
+fd_total.plot()
 
 ################################################################################
 # **References:**

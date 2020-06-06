@@ -1,6 +1,5 @@
 """Functional Principal Component Analysis Module."""
 
-from abc import ABC, abstractmethod
 import skfda
 from skfda.representation.basis import FDataBasis
 from skfda.representation.grid import FDataGrid
@@ -11,87 +10,17 @@ from sklearn.decomposition import PCA
 
 import numpy as np
 
-from ....misc.regularization import compute_penalty_matrix
+from skfda.misc.regularization import compute_penalty_matrix
 
 
 __author__ = "Yujian Hong"
 __email__ = "yujian.hong@estudiante.uam.es"
 
 
-class FPCA(ABC, BaseEstimator, TransformerMixin):
-    """Defines the common structure shared between classes that do functional
-    principal component analysis
-
-    Parameters:
-        n_components (int): number of principal components to obtain from
-            functional principal component analysis. Defaults to 3.
-        centering (bool): if True then calculate the mean of the functional data
-            object and center the data first.
-        regularization (Regularization):
-            Regularization object to be applied.
-    """
-
-    def __init__(self,
-                 n_components=3,
-                 centering=True,
-                 regularization=None):
-        self.n_components = n_components
-        self.centering = centering
-        self.regularization = regularization
-
-    @abstractmethod
-    def fit(self, X, y=None):
-        """Computes the n_components first principal components and saves them
-        inside the FPCA object.
-
-        Args:
-            X (FDataGrid or FDataBasis):
-                the functional data object to be analysed
-            y (None, not used):
-                only present for convention of a fit function
-
-        Returns:
-            self (object)
-        """
-        pass
-
-    @abstractmethod
-    def transform(self, X, y=None):
-        """Computes the n_components first principal components score and
-        returns them.
-
-        Args:
-            X (FDataGrid or FDataBasis):
-                the functional data object to be analysed
-            y (None, not used):
-                only present because of fit function convention
-
-        Returns:
-            (array_like): the scores of the data with reference to the
-            principal components
-        """
-        pass
-
-    def fit_transform(self, X, y=None, **fit_params):
-        """Computes the n_components first principal components and their scores
-        and returns them.
-        Args:
-            X (FDataGrid or FDataBasis):
-                the functional data object to be analysed
-            y (None, not used):
-                only present for convention of a fit function
-
-        Returns:
-            (array_like): the scores of the data with reference to the
-            principal components
-        """
-        self.fit(X, y)
-        return self.transform(X, y)
-
-
-class FPCABasis(FPCA):
-    """Functional principal component analysis for functional data represented
-    in basis form.
+class FPCA(BaseEstimator, TransformerMixin):
+    """Class that implements functional principal component analysis for both
+    basis and grid representations of the data. Most parameters are shared
+    when fitting a FDataBasis or FDataGrid, except weights and components_basis.
 
     Parameters:
         n_components (int): number of principal components to obtain from
@@ -99,11 +28,18 @@ class FPCABasis(FPCA):
         centering (bool): if True then calculate the mean of the functional data
             object and center the data first. Defaults to True. If True the
             passed FDataBasis object is modified.
-        components_basis (Basis): the basis in which we want the principal
-            components. We can use a different basis than the basis contained in
-            the passed FDataBasis object.
         regularization (Regularization):
             Regularization object to be applied.
+        components_basis (Basis): the basis in which we want the principal
+            components. We can use a different basis than the basis contained in
+            the passed FDataBasis object. This parameter is only used when
+            fitting a FDataBasis.
+        weights (numpy.array or callable): the weights vector used for
+            discrete integration. If none then the trapezoidal rule is used for
+            computing the weights. If a callable object is passed, then the
+            weight vector will be obtained by evaluating the object at the
+            sample points of the passed FDataGrid object in the fit method.
+            This parameter is only used when fitting a FDataGrid.
 
     Attributes:
         components_ (FDataBasis): this contains the principal components in a
@@ -112,6 +48,7 @@ class FPCABasis(FPCA):
             each of the selected components.
         explained_variance_ratio_ (array_like): this contains the percentage of
             variance explained by each principal component.
+
 
     Examples:
         Construct an artificial FDataBasis object and run FPCA with this object.
@@ -123,22 +60,38 @@ class FPCABasis(FPCA):
         >>> fd = FDataGrid(data_matrix, sample_points)
         >>> basis = skfda.representation.basis.Monomial((0,1), n_basis=2)
         >>> basis_fd = fd.to_basis(basis)
-        >>> fpca_basis = FPCABasis(2)
+        >>> fpca_basis = FPCA(2)
         >>> fpca_basis = fpca_basis.fit(basis_fd)
+
+        In this example we apply discretized functional PCA with some simple
+        data to illustrate the usage of this class. We initialize the
+        FPCA object, fit the artificial data and obtain the scores.
+        The results are not tested because there are several equivalent
+        possibilities.
+
+        >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
+        >>> sample_points = [0, 1]
+        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> fpca_grid = FPCA(2)
+        >>> fpca_grid = fpca_grid.fit(fd)
+
 
     """
 
     def __init__(self,
                  n_components=3,
-                 components_basis=None,
                  centering=True,
-                 regularization=None):
-        super().__init__(n_components, centering,
-                         regularization)
-        # basis that we want to use for the principal components
+                 regularization=None,
+                 weights=None,
+                 components_basis=None
+                 ):
+        self.n_components = n_components
+        self.centering = centering
+        self.regularization = regularization
+        self.weights = weights
         self.components_basis = components_basis
 
-    def fit(self, X: FDataBasis, y=None):
+    def fit_basis(self, X: FDataBasis, y=None):
         """Computes the first n_components principal components and saves them.
         The eigenvalues associated with these principal components are also
         saved. For more details about how it is implemented please view the
@@ -247,7 +200,7 @@ class FPCABasis(FPCA):
 
         return self
 
-    def transform(self, X, y=None):
+    def transform_basis(self, X, y=None):
         """Computes the n_components first principal components score and
         returns them.
 
@@ -265,58 +218,7 @@ class FPCABasis(FPCA):
         # in this case it is the inner product of our data with the components
         return X.inner_product(self.components_)
 
-
-class FPCAGrid(FPCA):
-    """Funcional principal component analysis for functional data represented
-    in discretized form.
-
-    Parameters:
-        n_components (int): number of principal components to obtain from
-            functional principal component analysis. Defaults to 3.
-        centering (bool): if True then calculate the mean of the functional data
-            object and center the data first. Defaults to True. If True the
-            passed FDataBasis object is modified.
-        weights (numpy.array or callable): the weights vector used for
-            discrete integration. If none then the trapezoidal rule is used for
-            computing the weights. If a callable object is passed, then the
-            weight vector will be obtained by evaluating the object at the
-            sample points of the passed FDataGrid object in the fit method.
-        regularization (Regularization):
-            Regularization object to be applied.
-
-    Attributes:
-        components_ (FDataBasis): this contains the eigenvectors in a basis
-            form.
-        explained_variance_ (array_like): The amount of variance explained by
-            each of the selected components.
-        explained_variance_ratio_ (array_like): this contains the percentage of
-            variance explained by each principal component.
-
-
-    Examples:
-        In this example we apply discretized functional PCA with some simple
-        data to illustrate the usage of this class. We initialize the
-        FPCADiscretized object, fit the artificial data and obtain the scores.
-        The results are not tested because there are several equivalent
-        possibilities.
-
-        >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
-        >>> sample_points = [0, 1]
-        >>> fd = FDataGrid(data_matrix, sample_points)
-        >>> fpca_grid = FPCAGrid(2)
-        >>> fpca_grid = fpca_grid.fit(fd)
-    """
-
-    def __init__(self,
-                 n_components=3,
-                 weights=None,
-                 centering=True,
-                 regularization=None):
-        super().__init__(n_components, centering,
-                         regularization)
-        self.weights = weights
-
-    def fit(self, X: FDataGrid, y=None):
+    def fit_grid(self, X: FDataGrid, y=None):
         r"""Computes the n_components first principal components and saves them.
 
         The eigenvalues associated with these principal
@@ -417,7 +319,7 @@ class FPCAGrid(FPCA):
 
         return self
 
-    def transform(self, X, y=None):
+    def transform_grid(self, X : FDataGrid, y=None):
         """Computes the n_components first principal components score and
         returns them.
 
@@ -438,3 +340,60 @@ class FPCAGrid(FPCA):
             X.data_matrix.shape[:-1]) @ np.transpose(
             self.components_.data_matrix.reshape(
                 self.components_.data_matrix.shape[:-1])))
+
+    def fit(self, X, y=None):
+        """Computes the n_components first principal components and saves them
+        inside the FPCA object, both FDataGrid and FDataBasis are accepted
+
+        Args:
+            X (FDataGrid or FDataBasis):
+                the functional data object to be analysed
+            y (None, not used):
+                only present for convention of a fit function
+
+        Returns:
+            self (object)
+        """
+        if isinstance(X, FDataGrid):
+            return self.fit_grid(X, y)
+        elif isinstance(X, FDataBasis):
+            return self.fit_basis(X, y)
+        else:
+            raise AttributeError("X must be either FDataGrid or FDataBasis")
+
+    def transform(self, X, y=None):
+        """Computes the n_components first principal components score and
+        returns them.
+
+        Args:
+            X (FDataGrid or FDataBasis):
+                the functional data object to be analysed
+            y (None, not used):
+                only present because of fit function convention
+
+        Returns:
+            (array_like): the scores of the data with reference to the
+            principal components
+        """
+        if isinstance(X, FDataGrid):
+            return self.transform_grid(X, y)
+        elif isinstance(X, FDataBasis):
+            return self.transform_basis(X, y)
+        else:
+            raise AttributeError("X must be either FDataGrid or FDataBasis")
+
+    def fit_transform(self, X, y=None, **fit_params):
+        """Computes the n_components first principal components and their scores
+        and returns them.
+        Args:
+            X (FDataGrid or FDataBasis):
+                the functional data object to be analysed
+            y (None, not used):
+                only present for convention of a fit function
+
+        Returns:
+            (array_like): the scores of the data with reference to the
+            principal components
+        """
+        self.fit(X, y)
+        return self.transform(X, y)

@@ -55,15 +55,21 @@ class Covariance(abc.ABC):
     def __call__(self, x, y):
         pass
 
-    def heatmap(self):
-        x = np.linspace(-1, 1, 1000)
+    def heatmap(self, limits=(-1, 1)):
+        """
+        Return a heatmap plot of the covariance function.
+
+        """
+
+        x = np.linspace(*limits, 1000)
 
         cov_matrix = self(x, x)
 
         fig = _create_figure()
         ax = fig.add_subplot(1, 1, 1)
-        ax.imshow(cov_matrix, extent=[-1, 1, 1, -1])
-        ax.set_title("Covariance function in [-1, 1]")
+        ax.imshow(cov_matrix, extent=[limits[0], limits[1],
+                                      limits[1], limits[0]])
+        ax.set_title(f"Covariance function in [{limits[0]}, {limits[1]}]")
 
         return fig
 
@@ -135,8 +141,41 @@ class Covariance(abc.ABC):
 
 
 class Brownian(Covariance):
-    """Brownian covariance function."""
+    r"""
+    Brownian covariance function.
 
+    The covariance function is
+
+    .. math::
+        K(x, y) = \sigma^2 \frac{|x - \mathcal{O}| + |y - \mathcal{O}|
+        - |x-y|}{2}
+
+    where :math:`\sigma^2` is the variance at distance 1 from
+    :math:`\mathcal{O}` and :math:`\mathcal{O}` is the origin point.
+    If :math:`\mathcal{O} = 0` (the default) and we only
+    consider positive values, the formula can be simplified as
+
+    .. math::
+        K(x, y) = \sigma^2 \min(x, y).
+
+    Heatmap plot of the covariance function:
+
+    .. plot::
+
+       from skfda.misc.covariances import Brownian
+
+       Brownian().heatmap(limits=(0, 1))
+
+    Example of Gaussian process trajectories using this covariance:
+
+    .. plot::
+
+       from skfda.misc.covariances import Brownian
+       from skfda.datasets import make_gaussian_process
+
+       make_gaussian_process(n_samples=10, cov=Brownian()).plot()
+
+    """
     _latex_formula = (r"K(x, y) = \sigma^2 \frac{|x - \mathcal{O}| + "
                       r"|y - \mathcal{O}| - |x-y|}{2}")
 
@@ -155,8 +194,35 @@ class Brownian(Covariance):
 
 
 class Linear(Covariance):
-    """Linear covariance function."""
+    r"""
+    Linear covariance function.
 
+    The covariance function is
+
+    .. math::
+        K(x, y) = \sigma^2 (x^T y + c)
+
+    where :math:`\sigma^2` is the scale of the variance and
+    :math:`c` is the intercept.
+
+    Heatmap plot of the covariance function:
+
+    .. plot::
+
+       from skfda.misc.covariances import Linear
+
+       Linear().heatmap(limits=(0, 1))
+
+    Example of Gaussian process trajectories using this covariance:
+
+    .. plot::
+
+       from skfda.misc.covariances import Linear
+       from skfda.datasets import make_gaussian_process
+
+       make_gaussian_process(n_samples=10, cov=Linear()).plot()
+
+    """
     _latex_formula = r"K(x, y) = \sigma^2 (x^T y + c)"
 
     _parameters = [("variance", r"\sigma^2"),
@@ -179,8 +245,36 @@ class Linear(Covariance):
 
 
 class Polynomial(Covariance):
-    """Polynomial covariance function."""
+    r"""
+    Polynomial covariance function.
 
+    The covariance function is
+
+    .. math::
+        K(x, y) = \sigma^2 (\alpha x^T y + c)^d
+
+    where :math:`\sigma^2` is the scale of the variance,
+    :math:`\alpha` is the slope, :math:`d` the degree of the
+    polynomial and :math:`c` is the intercept.
+
+    Heatmap plot of the covariance function:
+
+    .. plot::
+
+       from skfda.misc.covariances import Polynomial
+
+       Polynomial().heatmap(limits=(0, 1))
+
+    Example of Gaussian process trajectories using this covariance:
+
+    .. plot::
+
+       from skfda.misc.covariances import Polynomial
+       from skfda.datasets import make_gaussian_process
+
+       make_gaussian_process(n_samples=10, cov=Polynomial()).plot()
+
+    """
     _latex_formula = r"K(x, y) = \sigma^2 (\alpha x^T y + c)^d"
 
     _parameters = [("variance", r"\sigma^2"),
@@ -211,9 +305,35 @@ class Polynomial(Covariance):
 
 
 class Gaussian(Covariance):
-    """Gaussian covariance function."""
+    r"""
+    Gaussian covariance function.
 
-    _latex_formula = (r"K(x, y) = \sigma^2 \exp\left(-\frac{||x - y||^2}{2l^2}"
+    The covariance function is
+
+    .. math::
+        K(x, y) = \sigma^2 \exp\left(-\frac{||x - y||^2}{2l^2}\right)
+
+    where :math:`\sigma^2` is the variance and :math:`l` is the length scale.
+
+    Heatmap plot of the covariance function:
+
+    .. plot::
+
+       from skfda.misc.covariances import Gaussian
+
+       Gaussian().heatmap(limits=(0, 1))
+
+    Example of Gaussian process trajectories using this covariance:
+
+    .. plot::
+
+       from skfda.misc.covariances import Gaussian
+       from skfda.datasets import make_gaussian_process
+
+       make_gaussian_process(n_samples=10, cov=Gaussian()).plot()
+
+    """
+    _latex_formula = (r"K(x, y) = \sigma^2 \exp\left(-\frac{\|x - y\|^2}{2l^2}"
                       r"\right)")
 
     _parameters = [("variance", r"\sigma^2"),
@@ -238,8 +358,34 @@ class Gaussian(Covariance):
 
 
 class Exponential(Covariance):
-    """Exponential covariance function."""
+    r"""
+    Exponential covariance function.
 
+    The covariance function is
+
+    .. math::
+        K(x, y) = \sigma^2 \exp\left(-\frac{\|x - y\|}{l}\right)
+
+    where :math:`\sigma^2` is the variance and :math:`l` is the length scale.
+
+    Heatmap plot of the covariance function:
+
+    .. plot::
+
+       from skfda.misc.covariances import Exponential
+
+       Exponential().heatmap(limits=(0, 1))
+
+    Example of Gaussian process trajectories using this covariance:
+
+    .. plot::
+
+       from skfda.misc.covariances import Exponential
+       from skfda.datasets import make_gaussian_process
+
+       make_gaussian_process(n_samples=10, cov=Exponential()).plot()
+
+    """
     _latex_formula = (r"K(x, y) = \sigma^2 \exp\left(-\frac{||x - y||}{l}"
                       r"\right)")
 
@@ -255,10 +401,29 @@ class Exponential(Covariance):
         y = _transform_to_2d(y)
 
         x_y = _squared_norms(x, y)
-
         return self.variance * np.exp(-np.sqrt(x_y) / (self.length_scale))
 
     def to_sklearn(self):
         """Convert it to a sklearn kernel, if there is one"""
         return (self.variance *
                 sklearn_kern.Matern(length_scale=self.length_scale, nu=0.5))
+
+
+class WhiteNoise(Covariance):
+    """Gaussian covariance function."""
+
+    _latex_formula = (r"K(x,y)= \left\{ \begin{array}{lc} \sigma^2, & x = y "
+                      r"\\ 0, & x \neq y\\ \end{array} \right.")
+
+    _parameters = [("variance", r"\sigma^2")]
+
+    def __init__(self, *, variance: float = 1.):
+        self.variance = variance
+
+    def __call__(self, x, y):
+        x = _transform_to_2d(x)
+        return self.variance * np.eye(x.shape[0])
+
+    def to_sklearn(self):
+        """Convert it to a sklearn kernel, if there is one"""
+        return sklearn_kern.WhiteKernel(noise_level=self.variance)

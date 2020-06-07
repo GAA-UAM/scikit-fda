@@ -18,7 +18,7 @@ import numpy as np
 from . import basis as fdbasis
 from .._utils import _list_of_arrays, constants
 from ._functional_data import FData
-from .interpolation import SplineInterpolation
+from .interpolation import LinearInterpolation
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -356,7 +356,7 @@ class FDataGrid(FData):
     def interpolation(self, new_interpolation):
         """Sets the interpolation of the FDataGrid."""
         if new_interpolation is None:
-            new_interpolation = SplineInterpolation()
+            new_interpolation = LinearInterpolation()
 
         self._interpolation = new_interpolation
         self._interpolation_evaluator = None

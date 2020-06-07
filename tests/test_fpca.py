@@ -61,8 +61,8 @@ class FPCATestCase(unittest.TestCase):
 
         fpca = FPCA(n_components=n_components,
                     regularization=TikhonovRegularization(
-                         LinearDifferentialOperator(2),
-                         regularization_parameter=1e5))
+                        LinearDifferentialOperator(2),
+                        regularization_parameter=1e5))
         fpca.fit(fd_basis)
 
         # results obtained using Ramsay's R package
@@ -100,8 +100,8 @@ class FPCATestCase(unittest.TestCase):
 
         fpca = FPCA(n_components=n_components,
                     regularization=TikhonovRegularization(
-                         LinearDifferentialOperator(2),
-                         regularization_parameter=1e5))
+                        LinearDifferentialOperator(2),
+                        regularization_parameter=1e5))
         fpca.fit(fd_basis)
         scores = fpca.transform(fd_basis)
 
@@ -318,11 +318,7 @@ class FPCATestCase(unittest.TestCase):
         fpca = FPCA(
             n_components=n_components, weights=[1] * 365,
             regularization=TikhonovRegularization(
-                LinearDifferentialOperator(
-                    2,
-                    derivative_function=(
-                        lambda function, points, derivative:
-                        function.derivative(order=derivative)(points)))))
+                LinearDifferentialOperator(2)))
         fpca.fit(fd_data)
 
         # results obtained using fda.usc for the first component

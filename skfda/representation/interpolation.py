@@ -4,7 +4,8 @@ Module to interpolate functional data objects.
 
 
 from scipy.interpolate import (PchipInterpolator, UnivariateSpline,
-                               RectBivariateSpline, RegularGridInterpolator)
+                               RectBivariateSpline, RegularGridInterpolator,
+                               interpn)
 
 import numpy as np
 
@@ -492,5 +493,56 @@ class SplineInterpolationEvaluator(Evaluator):
 
             for i in range(self._n_samples):
                 res[i] = evaluator(eval_points[i], self._splines[i])
+
+        return res
+
+
+class LinearInterpolation(EvaluatorConstructor):
+
+    def evaluator(self, fdatagrid):
+        return LinearInterpolationEvaluator(fdatagrid)
+
+    def __repr__(self):
+        """repr method of the interpolation"""
+        return (f"{type(self).__name__}()")
+
+
+class LinearInterpolationEvaluator(Evaluator):
+    r"""Linear interpolation.
+
+    Computes linear interpolation between the sample points. For derivatives
+    it performs linear interpolation between the finite differences.
+
+    """
+
+    def __init__(self, fdatagrid):
+        self.fdatagrid = fdatagrid
+
+    def evaluate(self, eval_points, *, derivative=0):
+
+        interpolation_values = self.fdatagrid.derivative(
+            order=derivative).data_matrix
+
+        evaluation = interpn(self.fdatagrid.sample_points,
+                             np.moveaxis(interpolation_values, 0, -1),
+                             eval_points,
+                             bounds_error=False,
+                             fill_value=None)
+
+        return np.moveaxis(evaluation, -1, 0)
+
+    def evaluate_composed(self, eval_points, *, derivative=0):
+
+        interpolation_values = self.fdatagrid.derivative(
+            order=derivative).data_matrix
+
+        shape = (self.fdatagrid.n_samples,
+                 eval_points.shape[1], self.fdatagrid.dim_codomain)
+        res = np.empty(shape)
+
+        for i, (values, points) in enumerate(
+                zip(interpolation_values, eval_points)):
+            res[i] = interpn(self.fdatagrid.sample_points, values, points,
+                             bounds_error=False, fill_value=None)
 
         return res

@@ -8,9 +8,9 @@ from sklearn.utils.validation import check_is_fitted
 
 import numpy as np
 
+from ... import FData, FDataGrid
 from ..._utils import constants, check_is_univariate
 from .base import RegistrationTransformer
-from ... import FData, FDataGrid
 
 
 class ShiftRegistration(RegistrationTransformer):
@@ -101,7 +101,7 @@ class ShiftRegistration(RegistrationTransformer):
         Shifts applied during the transformation
 
         >>> reg.deltas_.round(3)
-        array([-0.126,  0.19 ,  0.029,  0.036, -0.104,  0.116,  ..., -0.058])
+        array([-0.128,  0.187,  0.027,  0.034, -0.106,  0.114, ..., -0.06 ])
 
 
         Registration and creation of a dataset in basis form using the

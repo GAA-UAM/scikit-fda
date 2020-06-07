@@ -213,7 +213,7 @@ class TestShiftRegistration(unittest.TestCase):
 
         fd_registered = reg.transform(fd)
         deltas = reg.deltas_.round(3)
-        np.testing.assert_array_almost_equal(deltas, [0.071, -0.071])
+        np.testing.assert_allclose(deltas, [0.071, -0.072])
 
     def test_inverse_transform(self):
 
@@ -331,39 +331,39 @@ class TestRegistrationValidation(unittest.TestCase):
     def test_amplitude_phase_score(self):
         scorer = AmplitudePhaseDecomposition()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_almost_equal(score, 0.972000160)
+        np.testing.assert_allclose(score, 0.972095, rtol=1e-6)
 
     def test_amplitude_phase_score_with_output_points(self):
         eval_points = self.X.sample_points[0]
         scorer = AmplitudePhaseDecomposition(eval_points=eval_points)
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_almost_equal(score, 0.972000160)
+        np.testing.assert_allclose(score, 0.972095, rtol=1e-6)
 
     def test_amplitude_phase_score_with_basis(self):
         scorer = AmplitudePhaseDecomposition()
         X = self.X.to_basis(Fourier())
         score = scorer(self.shift_registration, X)
-        np.testing.assert_almost_equal(score, 0.9950259588)
+        np.testing.assert_allclose(score, 0.995087, rtol=1e-6)
 
     def test_default_score(self):
 
         score = self.shift_registration.score(self.X)
-        np.testing.assert_almost_equal(score, 0.972000160)
+        np.testing.assert_allclose(score, 0.972095, rtol=1e-6)
 
     def test_least_squares_score(self):
         scorer = LeastSquares()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_almost_equal(score, 0.795742349)
+        np.testing.assert_allclose(score, 0.795933, rtol=1e-6)
 
     def test_sobolev_least_squares_score(self):
         scorer = SobolevLeastSquares()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_almost_equal(score, 0.7621990)
+        np.testing.assert_allclose(score, 0.76124, rtol=1e-6)
 
     def test_pairwise_correlation(self):
         scorer = PairwiseCorrelation()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_almost_equal(score, 1.816298653)
+        np.testing.assert_allclose(score, 1.816228, rtol=1e-6)
 
     def test_mse_decomposition(self):
 

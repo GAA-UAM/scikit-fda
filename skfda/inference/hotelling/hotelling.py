@@ -165,7 +165,7 @@ def hotelling_test_ind(fd1, fd2, n_reps=None, random_state=None,
         '0.00'
         >>> with printoptions(precision=4):
         ...     print(dist)
-        [2. 2. 0. 0. 2. 2.]
+        [ 2. 2. 0. 0. 2. 2.]
 
     References:
         [1] A. Pini, A. Stamm and S. Vantini, "Hotelling's t2 in

@@ -259,6 +259,76 @@ class BSpline(Basis):
                 and self.order == other.order
                 and self.knots == other.knots)
 
+    def _gram_matrix(self):
+        # Places m knots at the boundaries
+        knots = self._evaluation_knots()
+
+        # c is used the select which spline the function
+        # PPoly.from_spline below computes
+        c = np.zeros(len(knots))
+
+        # Initialise empty list to store the piecewise polynomials
+        ppoly_lst = []
+
+        no_0_intervals = np.where(np.diff(knots) > 0)[0]
+
+        # For each basis gets its piecewise polynomial representation
+        for i in range(self.n_basis):
+
+            # Write a 1 in c in the position of the spline
+            # transformed in each iteration
+            c[i] = 1
+
+            # Gets the piecewise polynomial representation and gets
+            # only the positions for no zero length intervals
+            # This polynomial are defined relatively to the knots
+            # meaning that the column i corresponds to the ith knot.
+            # Let the ith knot be a
+            # Then f(x) = pp(x - a)
+            pp = PPoly.from_spline((knots, c, self.order - 1))
+            pp_coefs = pp.c[:, no_0_intervals]
+
+            # We have the coefficients for each interval in coordinates
+            # (x - a), so we will need to subtract a when computing the
+            # definite integral
+            ppoly_lst.append(pp_coefs)
+            c[i] = 0
+
+        # Now for each pair of basis computes the inner product after
+        # applying the linear differential operator
+        matrix = np.zeros((self.n_basis, self.n_basis))
+
+        for interval in range(len(no_0_intervals)):
+            for i in range(self.n_basis):
+                poly_i = np.trim_zeros(ppoly_lst[i][:,
+                                                    interval], 'f')
+                # Indefinite integral
+                square = polymul(poly_i, poly_i)
+                integral = polyint(square)
+
+                # Definite integral
+                matrix[i, i] += np.diff(polyval(
+                    integral, self.knots[interval: interval + 2]
+                    - self.knots[interval]))[0]
+
+                # The Gram matrix is banded, so not all intervals are used
+                for j in range(i + 1, min(i + self.order, self.n_basis)):
+                    poly_j = np.trim_zeros(ppoly_lst[j][:, interval], 'f')
+
+                    # Indefinite integral
+                    integral = polyint(polymul(poly_i, poly_j))
+
+                    # Definite integral
+                    matrix[i, j] += np.diff(polyval(
+                        integral, self.knots[interval: interval + 2]
+                        - self.knots[interval])
+                    )[0]
+
+                    # The matrix is symmetric
+                    matrix[j, i] = matrix[i, j]
+
+        return matrix
+
     def basis_of_product(self, other):
         from ._constant import Constant
 

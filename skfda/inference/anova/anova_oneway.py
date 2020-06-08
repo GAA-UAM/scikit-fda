@@ -1,37 +1,38 @@
 import numpy as np
 from sklearn.utils import check_random_state
 
-from skfda.misc.metrics import norm_lp
-from skfda.representation import FData, FDataGrid, FDataBasis
+from skfda import concatenate
+from skfda.misc.metrics import lp_distance
+from skfda.representation import FData, FDataGrid
 from skfda.datasets import make_gaussian_process
 
 
 def v_sample_stat(fd, weights, p=2):
     r"""
     Calculates a statistic that measures the variability between groups of
-    samples in a :class:`skfda.representation.grid.FDataGrid` object.
+    samples in a :class:`skfda.representation.FData` object.
 
     The statistic defined as below is calculated between all the samples in a
-    :class:`skfda.representation.grid.FDataGrid` object with a given set of
-    weights, and the desired :math:`L_p` norm.
+    :class:`skfda.representation.FData` object with a given set of
+    weights.
 
-    Let :math:`\{f_i\}_{i=1}^k` be a set of samples in a FDataGrid object.
+    Let :math:`\{f_i\}_{i=1}^k` be a set of samples in a FData object.
     Let :math:`\{w_j\}_{j=1}^k` be a set of weights, where :math:`w_i` is
     related to the sample :math:`f_i` for :math:`i=1,\dots,k`.
     The statistic is defined as:
 
     .. math::
-        V_n = \sum_{i<j}^kw_i\|f_i-f_j\|^p
+        V_n = \sum_{i<j}^kw_i\|f_i-f_j\|^2
 
     This statistic is defined in Cuevas[1].
 
     Args:
-         fd (FDataGrid): Object containing all the samples for which we want
+         fd (FData): Object containing all the samples for which we want
             to calculate the statistic.
          weights (list of int): Weights related to each sample. Each
             weight is expected to appear in the same position as its
-            corresponding sample in the FDataGrid object.
-         p (int, optional): p of the lp norm. Must be greater or equal
+            corresponding sample in the FData object.
+        p (int, optional): p of the lp norm. Must be greater or equal
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
 
@@ -68,47 +69,43 @@ def v_sample_stat(fd, weights, p=2):
         Analysis*, 47:111-112, 02 2004
     """
 
+    weights = np.asarray(weights)
     if not isinstance(fd, FData):
         raise ValueError("Argument type must inherit FData.")
     if len(weights) != fd.n_samples:
         raise ValueError("Number of weights must match number of samples.")
-    if isinstance(fd, FDataBasis):
-        raise NotImplementedError("Not implemented for FDataBasis objects.")
 
-    n = fd.n_samples
-    v_n = 0
-    for j in range(n):
-        for i in range(j):
-            v_n += weights[i] * norm_lp(fd[i] - fd[j], p=p) ** p
-    return v_n
+    t_ind = np.tril_indices(fd.n_samples, -1)
+    coef = weights[t_ind[1]]
+    return np.sum(coef * lp_distance(fd[t_ind[0]], fd[t_ind[1]], p=p) ** p)
 
 
 def v_asymptotic_stat(fd, weights, p=2):
     r"""
     Calculates a statistic that measures the variability between groups of
-    samples in a :class:`skfda.representation.grid.FDataGrid` object.
+    samples in a :class:`skfda.representation.FData` object.
 
     The statistic defined as below is calculated between all the samples in a
-    :class:`skfda.representation.grid.FDataGrid` object with a given set of
-    weights, and the desired :math:`L_p` norm.
+    :class:`skfda.representation.FData` object with a given set of
+    weights.
 
-    Let :math:`\{f_i\}_{i=1}^k` be a set of samples in a FDataGrid object.
+    Let :math:`\{f_i\}_{i=1}^k` be a set of samples in a FData object.
     Let :math:`\{w_j\}_{j=1}^k` be a set of weights, where :math:`w_i` is
     related to the sample :math:`f_i` for :math:`i=1,\dots,k`.
     The statistic is defined as:
 
     .. math::
-        \sum_{i<j}^k\|f_i-f_j\sqrt{\cfrac{w_i}{w_j}}\|^p
+        \sum_{i<j}^k\|f_i-f_j\sqrt{\cfrac{w_i}{w_j}}\|^2
 
     This statistic is defined in Cuevas[1].
 
     Args:
-         fd (FDataGrid): Object containing all the samples for which we want
+         fd (FData): Object containing all the samples for which we want
             to calculate the statistic.
          weights (list of int): Weights related to each sample. Each
             weight is expected to appear in the same position as its
-            corresponding sample in the FDataGrid object.
-         p (int, optional): p of the lp norm. Must be greater or equal
+            corresponding sample in the FData object.
+        p (int, optional): p of the lp norm. Must be greater or equal
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
 
@@ -116,7 +113,7 @@ def v_asymptotic_stat(fd, weights, p=2):
         The value of the statistic.
 
     Raises:
-        ValueError.
+        ValueError
 
     Examples:
 
@@ -144,36 +141,35 @@ def v_asymptotic_stat(fd, weights, p=2):
         anova test for functional data". *Computational Statistics  Data
         Analysis*, 47:111-112, 02 2004
     """
+    weights = np.asarray(weights)
     if not isinstance(fd, FData):
         raise ValueError("Argument type must inherit FData.")
     if len(weights) != fd.n_samples:
         raise ValueError("Number of weights must match number of samples.")
-    if isinstance(fd, FDataBasis):
-        raise NotImplementedError("Not implemented for FDataBasis objects.")
+    if np.count_nonzero(weights) != len(weights):
+        raise ValueError("All weights must be non-zero.")
 
-    n = fd.n_samples
-    v = 0
-    for j in range(n):
-        for i in range(j):
-            v += norm_lp(
-                fd[i] - fd[j] * np.sqrt(weights[i] / weights[j]), p=p) ** p
-    return v
+    t_ind = np.tril_indices(fd.n_samples, -1)
+    coef = np.sqrt(weights[t_ind[1]] / weights[t_ind[0]])
+    left_fd = fd[t_ind[1]]
+    if isinstance(fd, FDataGrid):
+        right_fd = coef[:, None, np.newaxis] * fd[t_ind[0]]
+    else:
+        right_fd = fd[t_ind[0]].times(coef)
+    return np.sum(lp_distance(left_fd, right_fd, p=p) ** p)
 
 
-def _anova_bootstrap(fd_grouped, n_reps, p=2, random_state=None):
+def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=2):
 
     n_groups = len(fd_grouped)
-    assert n_groups > 0
+    if n_groups < 2:
+        raise ValueError("At least two groups must be passed in fd_grouped.")
 
-    # Creating list with all the sample points
-    list_sample = [fd.sample_points[0].tolist() for fd in fd_grouped]
-    # Checking that the all the entries in the list are the same
-    if not list_sample.count(list_sample[0]) == len(list_sample):
-        raise ValueError("All FDataGrid passed must have the same sample "
-                         "points.")
+    for fd in fd_grouped[1:]:
+        if not np.array_equal(fd.domain_range, fd_grouped[0].domain_range):
+            raise ValueError("Domain range must match for every FData in "
+                             "fd_grouped.")
 
-    sample_points = fd_grouped[0].sample_points
-    m = len(sample_points[0])  # Number of points in the grid
     start, stop = fd_grouped[0].domain_range[0]
 
     sizes = [fd.n_samples for fd in fd_grouped]  # List with sizes of each group
@@ -181,12 +177,17 @@ def _anova_bootstrap(fd_grouped, n_reps, p=2, random_state=None):
     # Estimating covariances for each group
     k_est = [fd.cov().data_matrix[0, ..., 0] for fd in fd_grouped]
 
+    # Number of sample points for gaussian processes have to match the features
+    # of the covariances.
+    n_features = k_est[0].shape[0]
+
     # Instance a random state object in case random_state is an int
     random_state = check_random_state(random_state)
 
     # Simulating n_reps observations for each of the n_groups gaussian processes
-    sim = [make_gaussian_process(n_reps, n_features=m, start=start, stop=stop,
-                                 cov=k_est[i], random_state=random_state)
+    sim = [make_gaussian_process(n_reps, n_features=n_features, start=start,
+                                 stop=stop, cov=k_est[i],
+                                 random_state=random_state)
            for i in range(n_groups)]
     v_samples = np.empty(n_reps)
     for i in range(n_reps):
@@ -195,7 +196,7 @@ def _anova_bootstrap(fd_grouped, n_reps, p=2, random_state=None):
     return v_samples
 
 
-def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
+def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None, p=2):
     r"""
     Performs one-way functional ANOVA.
 
@@ -233,15 +234,14 @@ def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
             procedure. Defaults to 2000 (This value may change in future
             versions).
 
+        return_dist (bool, optional): Flag to indicate if the function should
+            return a numpy.array with the sampling distribution simulated.
+
+        random_state (optional): Random state.
+
         p (int, optional): p of the lp norm. Must be greater or equal
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
-
-        return_dist (bool, optional): Flag to indicate if the function should
-        return a
-            numpy.array with the sampling distribution simulated.
-
-        random_state (optional): Random state.
 
     Returns:
         Value of the sample statistic, p-value and sampling distribution of
@@ -263,8 +263,6 @@ def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
         >>> fd1, fd2, fd3 = fd[:13], fd[13:26], fd[26:]
         >>> oneway_anova(fd1, fd2, fd3, random_state=RandomState(42))
         (179.52499999999998, 0.602)
-        >>> oneway_anova(fd1, fd2, fd3, p=1, random_state=RandomState(42))
-        (67.27499999999999, 0.0)
         >>> _, _, dist = oneway_anova(fd1, fd2, fd3, n_reps=3,
         ...     random_state=RandomState(42),
         ...     return_dist=True)
@@ -284,25 +282,38 @@ def oneway_anova(*args, n_reps=2000, p=2, return_dist=False, random_state=None):
         raise ValueError("Argument type must inherit FData.")
     if n_reps < 1:
         raise ValueError("Number of simulations must be positive.")
-    if any(isinstance(fd, FDataBasis) for fd in args):
-        raise NotImplementedError("Not implemented for FDataBasis objects.")
 
     fd_groups = args
-    # Creating list with all the sample points
-    list_sample = [fd.sample_points[0].tolist() for fd in fd_groups]
-    # Checking that the all the entries in the list are the same
-    if not list_sample.count(list_sample[0]) == len(list_sample):
-        raise ValueError("All FDataGrid passed must have the same sample "
-                         "points.")
+    if not all([isinstance(fd, type(fd_groups[0])) for fd in fd_groups[1:]]):
+        raise TypeError('Found mixed FData types in arguments.')
 
-    fd_means = fd_groups[0].mean()
     for fd in fd_groups[1:]:
-        fd_means = fd_means.concatenate(fd.mean())
+        if not np.array_equal(fd.domain_range, fd_groups[0].domain_range):
+            raise ValueError("Domain range must match for every FData passed.")
 
+    if isinstance(fd_groups[0], FDataGrid):
+        # Creating list with all the sample points
+        list_sample = [fd.sample_points[0].tolist() for fd in fd_groups]
+        # Checking that the all the entries in the list are the same
+        if not list_sample.count(list_sample[0]) == len(list_sample):
+            raise ValueError("All FDataGrid passed must have the same sample "
+                             "points.")
+    else:  # If type is FDataBasis, check same basis
+        list_basis = [fd.basis for fd in fd_groups]
+        if not list_basis.count(list_basis[0]) == len(list_basis):
+            raise NotImplementedError("Not implemented for FDataBasis with "
+                                      "different basis.")
+
+    # FData where each sample is the mean of each group
+    fd_means = concatenate([fd.mean() for fd in fd_groups])
+
+    # Base statistic
     vn = v_sample_stat(fd_means, [fd.n_samples for fd in fd_groups], p=p)
 
-    simulation = _anova_bootstrap(fd_groups, n_reps, p=p,
-                                  random_state=random_state)
+    # Computing sampling distribution
+    simulation = _anova_bootstrap(fd_groups, n_reps,
+                                  random_state=random_state, p=p)
+
     p_value = np.sum(simulation > vn) / len(simulation)
 
     if return_dist:

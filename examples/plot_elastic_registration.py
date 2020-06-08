@@ -10,12 +10,12 @@ Shows the usage of the elastic registration to perform a groupwise alignment.
 
 # sphinx_gallery_thumbnail_number = 5
 
-import numpy as np
 import skfda
-
 from skfda.datasets import make_multimodal_samples, fetch_growth
 from skfda.preprocessing.registration import ElasticRegistration
 from skfda.preprocessing.registration.elastic import elastic_mean
+
+import numpy as np
 
 
 ##############################################################################
@@ -44,7 +44,6 @@ fd.plot()
 # It can be seen how the elastic mean better captures the geometry of the
 # curves compared to the standard mean, since it is not affected by the
 # deformations of the curves.
-
 
 
 fig = fd.mean().plot(label="L2 mean")
@@ -78,7 +77,7 @@ growth = fetch_growth()
 fd = growth['data'][growth['target'] == 0]
 
 # Obtain velocity curves
-fd.interpolator = skfda.representation.interpolation.SplineInterpolator(3)
+fd.interpolation = skfda.representation.interpolation.SplineInterpolation(3)
 fd = fd.to_grid(np.linspace(*fd.domain_range[0], 200)).derivative()
 fd = fd.to_grid(np.linspace(*fd.domain_range[0], 50))
 fd.plot()

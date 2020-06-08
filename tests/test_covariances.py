@@ -13,9 +13,8 @@ class TestsSklearn(unittest.TestCase):
 
     def _test_compare_sklearn(self, cov: skfda.misc.covariances.Covariance):
         cov_sklearn = cov.to_sklearn()
-
         cov_matrix = cov(self.x, self.x)
-        cov_sklearn_matrix = cov_sklearn(self.x, self.x)
+        cov_sklearn_matrix = cov_sklearn(self.x)
 
         np.testing.assert_array_almost_equal(cov_matrix, cov_sklearn_matrix)
 
@@ -62,3 +61,10 @@ class TestsSklearn(unittest.TestCase):
                     cov = skfda.misc.covariances.Exponential(
                         variance=variance, length_scale=length_scale)
                     self._test_compare_sklearn(cov)
+
+    def test_white_noise(self):
+
+        for variance in [1, 2]:
+            with self.subTest(variance=variance):
+                cov = skfda.misc.covariances.WhiteNoise(variance=variance)
+                self._test_compare_sklearn(cov)

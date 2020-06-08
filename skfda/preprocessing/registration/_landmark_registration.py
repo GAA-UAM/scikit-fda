@@ -6,7 +6,7 @@ This module contains methods to perform the landmark registration.
 import numpy as np
 
 from ... import FDataGrid
-from ...representation.interpolation import SplineInterpolator
+from ...representation.interpolation import SplineInterpolation
 
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"
@@ -251,11 +251,11 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
         sample_points[-1] = fd.domain_range[0][1]
         sample_points[1:-1] = location
 
-    interpolator = SplineInterpolator(interpolation_order=3, monotone=True)
+    interpolation = SplineInterpolation(interpolation_order=3, monotone=True)
 
     warping = FDataGrid(data_matrix=data_matrix,
                         sample_points=sample_points,
-                        interpolator=interpolator,
+                        interpolation=interpolation,
                         extrapolation='bounds')
 
     try:

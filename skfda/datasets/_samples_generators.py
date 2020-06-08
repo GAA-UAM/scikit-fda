@@ -7,7 +7,7 @@ import numpy as np
 from .. import FDataGrid
 from ..misc import covariances
 from ..preprocessing.registration import normalize_warping
-from ..representation.interpolation import SplineInterpolator
+from ..representation.interpolation import SplineInterpolation
 
 
 def make_gaussian_process(n_samples: int = 100, n_features: int = 100, *,
@@ -348,7 +348,7 @@ def make_random_warping(n_samples: int = 15, n_features: int = 100, *,
                                            axis=0)
     warping = FDataGrid(data_matrix.T, sample_points=time[:, 0])
     warping = normalize_warping(warping, domain_range=(start, stop))
-    warping.interpolator = SplineInterpolator(interpolation_order=3,
-                                              monotone=True)
+    warping.interpolation = SplineInterpolation(interpolation_order=3,
+                                                monotone=True)
 
     return warping

@@ -45,8 +45,7 @@ def hotelling_t2(fd1, fd2, weights=None):
             The value of the statistic.
 
         Raises:
-            TypeError. If fd1 and fd2 types do not match or do not inherit
-            :class:`skfda.representation.FData`.
+            TypeError.
 
         Examples:
 
@@ -169,9 +168,9 @@ def hotelling_test_ind(fd1, fd2, n_reps=None, random_state=None,
         [2. 2. 0. 0. 2. 2.]
 
     References:
-        [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
-        anova test for functional data". *Computational Statistics  Data
-        Analysis*, 47:111-112, 02 2004
+        [1] A. Pini, A. Stamm and S. Vantini, "Hotelling's t2 in
+        separable hilbert spaces", *Jounal of Multivariate Analysis*,
+        167 (2018), pp.284-305.
     """
     if not isinstance(fd1, FData):
         raise TypeError("Argument type must inherit FData.")

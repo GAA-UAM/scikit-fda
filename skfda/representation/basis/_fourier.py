@@ -177,6 +177,14 @@ class Fourier(Basis):
         # normalise
         return self.copy(), deriv_coefs
 
+    def _gram_matrix(self):
+
+        # Orthogonal in this case
+        if self.period == (self.domain_range[0][1] - self.domain_range[0][0]):
+            return np.identity(self.n_basis)
+        else:
+            return super()._gram_matrix()
+
     def basis_of_product(self, other):
         """Multiplication of two Fourier Basis"""
         if not _same_domain(self, other):

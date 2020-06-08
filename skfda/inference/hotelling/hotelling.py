@@ -56,8 +56,8 @@ def hotelling_t2(fd1, fd2, weights=None):
             >>> fd2 = FDataGrid([[3, 3, 3], [5, 5, 5]])
             >>> '%.2f' % hotelling_t2(fd1, fd2)
             '2.00'
-            >>> fd1 = fd1.to_basis(basis.Fourier(n_basis=2))
-            >>> fd2 = fd2.to_basis(basis.Fourier(n_basis=2))
+            >>> fd1 = fd1.to_basis(basis.Fourier(n_basis=3))
+            >>> fd2 = fd2.to_basis(basis.Fourier(n_basis=3))
             >>> '%.2f' % hotelling_t2(fd1, fd2)
             '2.00'
 

@@ -18,7 +18,7 @@ import numpy as np
 from . import basis as fdbasis
 from .._utils import _list_of_arrays, constants
 from ._functional_data import FData
-from .interpolation import SplineInterpolator
+from .interpolation import SplineInterpolation
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -47,7 +47,7 @@ class FDataGrid(FData):
             extrapolation. By default None, which does not apply any type of
             extrapolation. See `Extrapolation` for detailled information of the
             types of extrapolation.
-        interpolator (GridInterpolator): Defines the type of interpolation
+        interpolation (GridInterpolation): Defines the type of interpolation
             applied in `evaluate`.
         keepdims (bool):
 
@@ -129,7 +129,7 @@ class FDataGrid(FData):
     def __init__(self, data_matrix, sample_points=None,
                  domain_range=None, dataset_label=None,
                  axes_labels=None, extrapolation=None,
-                 interpolator=None, keepdims=False):
+                 interpolation=None, keepdims=False):
         """Construct a FDataGrid object.
 
         Args:
@@ -200,7 +200,7 @@ class FDataGrid(FData):
         if self.data_matrix.ndim == 1 + self.dim_domain:
             self.data_matrix = self.data_matrix[..., np.newaxis]
 
-        self.interpolator = interpolator
+        self.interpolation = interpolation
 
         super().__init__(extrapolation, dataset_label, axes_labels, keepdims)
 
@@ -348,27 +348,27 @@ class FDataGrid(FData):
         return self._domain_range
 
     @property
-    def interpolator(self):
+    def interpolation(self):
         """Defines the type of interpolation applied in `evaluate`."""
-        return self._interpolator
+        return self._interpolation
 
-    @interpolator.setter
-    def interpolator(self, new_interpolator):
-        """Sets the interpolator of the FDataGrid."""
-        if new_interpolator is None:
-            new_interpolator = SplineInterpolator()
+    @interpolation.setter
+    def interpolation(self, new_interpolation):
+        """Sets the interpolation of the FDataGrid."""
+        if new_interpolation is None:
+            new_interpolation = SplineInterpolation()
 
-        self._interpolator = new_interpolator
-        self._interpolator_evaluator = None
+        self._interpolation = new_interpolation
+        self._interpolation_evaluator = None
 
     @property
     def _evaluator(self):
-        """Return the evaluator constructed by the interpolator."""
+        """Return the evaluator constructed by the interpolation."""
 
-        if self._interpolator_evaluator is None:
-            self._interpolator_evaluator = self._interpolator.evaluator(self)
+        if self._interpolation_evaluator is None:
+            self._interpolation_evaluator = self._interpolation.evaluator(self)
 
-        return self._interpolator_evaluator
+        return self._interpolation_evaluator
 
     def _evaluate(self, eval_points, *, derivative=0):
         """"Evaluate the object or its derivatives at a list of values.
@@ -586,7 +586,7 @@ class FDataGrid(FData):
         if self.extrapolation != other.extrapolation:
             return False
 
-        if self.interpolator != other.interpolator:
+        if self.interpolation != other.interpolation:
             return False
 
         return True
@@ -863,7 +863,7 @@ class FDataGrid(FData):
              data_matrix=None, sample_points=None,
              domain_range=None, dataset_label=None,
              axes_labels=None, extrapolation=None,
-             interpolator=None, keepdims=None):
+             interpolation=None, keepdims=None):
         """Returns a copy of the FDataGrid.
 
         If an argument is provided the corresponding attribute in the new copy
@@ -891,8 +891,8 @@ class FDataGrid(FData):
         if extrapolation is None:
             extrapolation = self.extrapolation
 
-        if interpolator is None:
-            interpolator = self.interpolator
+        if interpolation is None:
+            interpolation = self.interpolation
 
         if keepdims is None:
             keepdims = self.keepdims
@@ -901,7 +901,7 @@ class FDataGrid(FData):
                          domain_range=domain_range,
                          dataset_label=dataset_label,
                          axes_labels=axes_labels, extrapolation=extrapolation,
-                         interpolator=interpolator, keepdims=keepdims)
+                         interpolation=interpolation, keepdims=keepdims)
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               eval_points=None):
@@ -1075,7 +1075,7 @@ class FDataGrid(FData):
                 f"\ndataset_label={repr(self.dataset_label)},"
                 f"\naxes_labels={repr(axes_labels)},"
                 f"\nextrapolation={repr(self.extrapolation)},"
-                f"\ninterpolator={repr(self.interpolator)},"
+                f"\ninterpolation={repr(self.interpolation)},"
                 f"\nkeepdims={repr(self.keepdims)})").replace('\n', '\n    ')
 
     def __getitem__(self, key):

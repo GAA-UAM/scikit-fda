@@ -7,6 +7,6 @@ statistic.
    :toctree: autosummary
 
    skfda.inference.hotelling.hotelling_t2
-   skfda.inference.hotelling.test_hotelling_ind
+   skfda.inference.hotelling.hotelling_test_ind
 
 

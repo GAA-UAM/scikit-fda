@@ -9,7 +9,7 @@ def hotelling_t2(fd1, fd2, weights=None):
     r"""
         Calculates Hotelling's :math:`T^2` over two samples in
         :class:`skfda.representation.FData` objects with sizes :math:`n_1`
-        and :math:`n_2` as defined below:
+        and :math:`n_2`.
 
         .. math::
             T^2 = n(\mathbf{m}_1 - \mathbf{m}_2)^\top \mathbf{W}^{1/2}(

@@ -279,7 +279,7 @@ def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None,
         >>> fd = fetch_gait()["data"].coordinates[1]
         >>> fd1, fd2, fd3 = fd[:13], fd[13:26], fd[26:]
         >>> oneway_anova(fd1, fd2, fd3, random_state=RandomState(42))
-        (179.52499999999998, 0.602)
+        (179.52499999999998, 0.5945)
         >>> _, _, dist = oneway_anova(fd1, fd2, fd3, n_reps=3,
         ...     random_state=RandomState(42),
         ...     return_dist=True)

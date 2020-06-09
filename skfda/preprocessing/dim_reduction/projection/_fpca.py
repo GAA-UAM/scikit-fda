@@ -336,10 +336,10 @@ class FPCA(BaseEstimator, TransformerMixin):
 
         # in this case its the coefficient matrix multiplied by the principal
         # components as column vectors
-        return FDataGrid(data_matrix=X.data_matrix.reshape(
+        return X.data_matrix.reshape(
             X.data_matrix.shape[:-1]) @ np.transpose(
             self.components_.data_matrix.reshape(
-                self.components_.data_matrix.shape[:-1])))
+                self.components_.data_matrix.shape[:-1]))
 
     def fit(self, X, y=None):
         """Computes the n_components first principal components and saves them

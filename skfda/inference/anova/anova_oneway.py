@@ -285,7 +285,7 @@ def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None,
         ...     return_dist=True)
         >>> with printoptions(precision=4):
         ...     print(dist)
-        [ 163.3577 208.595  229.7678]
+        [ 184.0698 212.7395  195.3663]
 
     References:
         [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An

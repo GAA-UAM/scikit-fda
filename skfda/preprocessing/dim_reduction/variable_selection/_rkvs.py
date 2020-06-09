@@ -105,6 +105,9 @@ class RKVS(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
     In practice, however, the points are selected one at a time, using
     a greedy approach, so this optimality is not always guaranteed.
 
+    Parameters:
+        n_components (int): number of variables to select.
+
     Examples:
 
         >>> from skfda.preprocessing.dim_reduction import variable_selection
@@ -149,8 +152,8 @@ class RKVS(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
         >>> X_dimred = rkvs.transform(X)
         >>> len(X.sample_points[0])
         1000
-        >>> len(X_dimred.sample_points[0])
-        3
+        >>> X_dimred.shape
+        (10000, 3)
 
     References:
         [1] J. R. Berrendero, A. Cuevas, y J. L. Torrecilla, «On the Use of
@@ -176,9 +179,9 @@ class RKVS(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
 
         X, y = sklearn.utils.validation.check_X_y(X.data_matrix[..., 0], y)
 
-        self.features_shape_ = X.shape[1:]
+        self._features_shape_ = X.shape[1:]
 
-        self.results_ = _rkvs(
+        self._features_, self._scores_ = _rkvs(
             X=X,
             Y=y,
             n_components=self.n_components)
@@ -191,18 +194,17 @@ class RKVS(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
 
         X_matrix = sklearn.utils.validation.check_array(X.data_matrix[..., 0])
 
-        if X_matrix.shape[1:] != self.features_shape_:
+        if X_matrix.shape[1:] != self._features_shape_:
             raise ValueError("The trajectories have a different number of "
                              "points than the ones fitted")
 
-        return X.copy(data_matrix=X_matrix[:, self.results_[0]],
-                      sample_points=X.sample_points[0][self.results_[0]])
+        return X_matrix[:, self._features_]
 
     def get_support(self, indices: bool=False):
-        indexes_unraveled = self.results_[0]
+        features = self._features_
         if indices:
-            return indexes_unraveled
+            return features
         else:
-            mask = np.zeros(self.features_shape_[0], dtype=bool)
-            mask[self.results_[0]] = True
+            mask = np.zeros(self._features_shape_[0], dtype=bool)
+            mask[features] = True
             return mask

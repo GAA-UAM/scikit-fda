@@ -46,7 +46,7 @@ class Monomial(Basis):
 
     """
 
-    def _coefs_exps_derivatives(self, derivative):
+    def _coefs_exps_derivatives(self, order):
         """
         Return coefficients and exponents of the derivatives.
 
@@ -56,23 +56,24 @@ class Monomial(Basis):
         is zero) returns 0 as the exponent (to prevent division by zero).
         """
         seq = np.arange(self.n_basis)
-        coef_mat = np.linspace(seq, seq - derivative + 1,
-                               derivative, dtype=int)
+        coef_mat = np.linspace(seq, seq - order + 1,
+                               order, dtype=int)
         coefs = np.prod(coef_mat, axis=0)
 
-        exps = np.maximum(seq - derivative, 0)
+        exps = np.maximum(seq - order, 0)
 
         return coefs, exps
 
-    def _evaluate(self, eval_points, derivative=0):
+    def _evaluate(self, eval_points):
+        # The derivative method already works for 0 order.
+        return self._derivative(eval_points, 0)
 
-        coefs, exps = self._coefs_exps_derivatives(derivative)
-
+    def _derivative(self, eval_points, order=1):
+        coefs, exps = self._coefs_exps_derivatives(order)
         raised = np.power.outer(eval_points, exps)
-
         return (coefs * raised).T
 
-    def _derivative(self, coefs, order=1):
+    def _derivative_basis_and_coefs(self, coefs, order=1):
         return (Monomial(self.domain_range, self.n_basis - order),
                 np.array([np.polyder(x[::-1], order)[::-1]
                           for x in coefs]))

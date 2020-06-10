@@ -113,23 +113,14 @@ class Fourier(Basis):
 
         return deriv_functions, amplitude_coefs_pairs, phase_coef_pairs
 
-    def _evaluate(self, eval_points, derivative=0):
-        """Compute the basis or its derivatives given a list of values.
+    def _evaluate(self, eval_points):
+        # The derivative method already works for 0 order.
+        return self._derivative(eval_points, 0)
 
-        Args:
-            eval_points (array_like): List of points where the basis is
-                evaluated.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-
-        Returns:
-            (:obj:`numpy.darray`): Matrix whose rows are the values of the each
-            basis function or its derivatives at the values specified in
-            eval_points.
-
-        """
+    def _derivative(self, eval_points, order=1):
         (functions,
          amplitude_coefs,
-         phase_coefs) = self._functions_pairs_coefs_derivatives(derivative)
+         phase_coefs) = self._functions_pairs_coefs_derivatives(order)
 
         normalization_denominator = np.sqrt(self.period / 2)
 
@@ -146,7 +137,7 @@ class Fourier(Basis):
         res /= normalization_denominator
 
         # Add constant basis
-        if derivative == 0:
+        if order == 0:
             constant_basis = np.full(
                 shape=(1, len(eval_points)),
                 fill_value=1 / (np.sqrt(2) * normalization_denominator))
@@ -157,7 +148,7 @@ class Fourier(Basis):
 
         return res
 
-    def _derivative(self, coefs, order=1):
+    def _derivative_basis_and_coefs(self, coefs, order=1):
 
         omega = 2 * np.pi / self.period
         deriv_factor = (np.arange(1, (self.n_basis + 1) / 2) * omega) ** order

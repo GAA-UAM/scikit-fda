@@ -189,7 +189,7 @@ def hotelling_test_ind(fd1, fd2, n_reps=None, random_state=None,
     sample = fd1.concatenate(fd2)
     indices = np.arange(n)
 
-    if n_reps:  # Computing n_reps random permutations
+    if n_reps is not None:  # Computing n_reps random permutations
         random_state = check_random_state(random_state)
         dist = np.empty(n_reps)
         for i in range(n_reps):

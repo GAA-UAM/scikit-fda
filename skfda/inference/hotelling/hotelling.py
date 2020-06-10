@@ -84,7 +84,7 @@ def hotelling_t2(fd1, fd2):
         k2 = np.cov(fd2.coefficients, rowvar=False)
         # If no weight matrix is passed, then we compute the Gram Matrix
         weights = fd1.basis.gram_matrix()
-        weights = np.sqrt(np.abs(weights))  # TODO
+        weights = np.sqrt(weights)
     else:
         # Working with standard discretized data
         m = m.data_matrix[0, ..., 0]

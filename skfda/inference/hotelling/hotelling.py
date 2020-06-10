@@ -5,7 +5,7 @@ import scipy
 from sklearn.utils import check_random_state
 
 
-def hotelling_t2(fd1, fd2, weights=None):
+def hotelling_t2(fd1, fd2):
     r"""
         Calculates Hotelling's :math:`T^2` over two samples in
         :class:`skfda.representation.FData` objects with sizes :math:`n_1`
@@ -18,9 +18,9 @@ def hotelling_t2(fd1, fd2, weights=None):
             \mathbf{W}^{1/2} (\mathbf{m}_1 - \mathbf{m}_2),
 
         where :math:`(\cdot)^{+}` indicates the Moore-Penrose pseudo-inverse
-        operator, :math:`n=n_1+n_2`, `W` is a matrix of weights
-        (usually Gram matrix), and  :math:`\mathbf{m}_1, \mathbf{m}_2` are the
-        means of each ample, :math:`\mathbf{K}_{\operatorname{pooled}}`
+        operator, :math:`n=n_1+n_2`, `W` is Gram matrix (identity in case of
+        discretized data), :math:`\mathbf{m}_1, \mathbf{m}_2` are the
+        means of each ample and :math:`\mathbf{K}_{\operatorname{pooled}}`
         matrix is defined as
 
         .. math::
@@ -37,9 +37,6 @@ def hotelling_t2(fd1, fd2, weights=None):
         Args:
             fd1 (FData): Object with the first sample.
             fd2 (FData): Object containing second sample.
-            weights (numpy.array, optional): Weights matrix. If no value
-                is passed then uses Gram matrix if data is in basis
-                representation. Identity matrix is used for discretized data.
 
         Returns:
             The value of the statistic.
@@ -86,8 +83,7 @@ def hotelling_t2(fd1, fd2, weights=None):
         k1 = np.cov(fd1.coefficients, rowvar=False)
         k2 = np.cov(fd2.coefficients, rowvar=False)
         # If no weight matrix is passed, then we compute the Gram Matrix
-        if weights is None:
-            weights = fd1.basis.gram_matrix()
+        weights = fd1.basis.gram_matrix()
         weights = np.sqrt(np.abs(weights))  # TODO
     else:
         # Working with standard discretized data
@@ -181,10 +177,8 @@ def hotelling_test_ind(fd1, fd2, n_reps=None, random_state=None,
     if n_reps is not None and n_reps < 1:
         raise ValueError("Number of repetitions must be positive.")
 
-    gram = fd1.basis.gram_matrix() if isinstance(fd1, FDataBasis) else None
-
     n1, n2 = fd1.n_samples, fd2.n_samples
-    t2_0 = hotelling_t2(fd1, fd2, gram)
+    t2_0 = hotelling_t2(fd1, fd2)
     n = n1 + n2
     sample = fd1.concatenate(fd2)
     indices = np.arange(n)
@@ -194,8 +188,7 @@ def hotelling_test_ind(fd1, fd2, n_reps=None, random_state=None,
         dist = np.empty(n_reps)
         for i in range(n_reps):
             random_state.shuffle(indices)
-            dist[i] = hotelling_t2(sample[indices[:n1]], sample[indices[n1:]],
-                                   gram)
+            dist[i] = hotelling_t2(sample[indices[:n1]], sample[indices[n1:]])
 
     else:  # Full permutation test
         combinations = itertools.combinations(indices, n1)
@@ -204,7 +197,7 @@ def hotelling_test_ind(fd1, fd2, n_reps=None, random_state=None,
             sample1_i = np.asarray(comb)  # Comb is a selection of n1 indices
             sample2_i = np.setdiff1d(indices, sample1_i)  # Remaining n2 ind.
             sample1, sample2 = sample[sample1_i], sample[sample2_i]
-            dist[i] = hotelling_t2(sample1, sample2, gram)
+            dist[i] = hotelling_t2(sample1, sample2)
 
     p_value = np.sum(dist > t2_0) / len(dist)
 

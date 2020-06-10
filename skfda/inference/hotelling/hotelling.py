@@ -201,8 +201,8 @@ def hotelling_test_ind(fd1, fd2, n_reps=None, random_state=None,
         combinations = itertools.combinations(indices, n1)
         dist = np.empty(int(scipy.special.comb(n, n1)))
         for i, comb in enumerate(combinations):
-            sample1_i = np.asarray(comb)
-            sample2_i = np.setdiff1d(indices, sample1_i)
+            sample1_i = np.asarray(comb)  # Comb is a selection of n1 indices
+            sample2_i = np.setdiff1d(indices, sample1_i)  # Remaining n2 ind.
             sample1, sample2 = sample[sample1_i], sample[sample2_i]
             dist[i] = hotelling_t2(sample1, sample2, gram)
 

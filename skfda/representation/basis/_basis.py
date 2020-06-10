@@ -6,6 +6,7 @@ the corresponding basis classes.
 """
 from abc import ABC, abstractmethod
 import copy
+import warnings
 
 import scipy.integrate
 
@@ -74,12 +75,8 @@ class Basis(ABC):
         self._domain_range = value
 
     @abstractmethod
-    def _evaluate(self, eval_points, derivative=0):
+    def _evaluate(self, eval_points):
         """Subclasses must override this to provide basis evaluation."""
-        pass
-
-    @abstractmethod
-    def _derivative(self, coefs, order=1):
         pass
 
     def evaluate(self, eval_points, derivative=0):
@@ -101,16 +98,68 @@ class Basis(ABC):
         """
         if derivative < 0:
             raise ValueError("derivative only takes non-negative values.")
+        elif derivative != 0:
+            warnings.warn("Parameter derivative is deprecated. Use the "
+                          "derivative function instead.", DeprecationWarning)
+            return self.derivative(eval_points, order=derivative)
 
         eval_points = np.atleast_1d(eval_points)
         if np.any(np.isnan(eval_points)):
             raise ValueError("The list of points where the function is "
                              "evaluated can not contain nan values.")
 
-        return self._evaluate(eval_points, derivative)
+        return self._evaluate(eval_points)
 
     def __call__(self, *args, **kwargs):
         return self.evaluate(*args, **kwargs)
+
+    def _derivative(self, eval_points, order=1):
+        """
+        Subclasses must override this to provide evaluation of derivatives.
+
+        Order 0 derivatives (original function) are automatically
+        implemented. Subclasses can assume that the order passed is
+        nonzero.
+
+        A basis can provide derivative evaluation at given points
+        without providing a basis representation for its derivatives,
+        although is recommended to provide both if possible.
+
+        """
+        return NotImplementedError(f"{type(self)} basis is not "
+                                   "differentiable.")
+
+    def derivative(self, eval_points, order=1):
+        """Evaluate the basis derivative at given points.
+
+        Args:
+            eval_points (array_like): List of points where the derivative of
+                the basis is evaluated.
+            order (int, optional): Order of the derivative. Defaults to 1.
+
+        Returns:
+            (numpy.darray): Matrix whose rows are the values of the derivatives
+            of each basis function or its derivatives at the values specified
+            in eval_points.
+
+        """
+        if order == 0:
+            return self(eval_points)
+        else:
+            return self._derivative(eval_points, order=order)
+
+    def _derivative_basis_and_coefs(self, coefs, order=1):
+        """
+        Subclasses can override this to provide derivative construction.
+
+        A basis can provide derivative evaluation at given points
+        without providing a basis representation for its derivatives,
+        although is recommended to provide both if possible.
+
+        """
+        return NotImplementedError(f"{type(self)} basis does not support "
+                                   "the construction of a basis of the "
+                                   "derivatives.")
 
     def plot(self, chart=None, *, derivative=0, **kwargs):
         """Plot the basis object or its derivatives.

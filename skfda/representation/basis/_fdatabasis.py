@@ -376,7 +376,7 @@ class FDataBasis(FData):
         return FDataBasis.from_data(_data_matrix, eval_points,
                                     _basis, **kwargs)
 
-    def derivative(self, order=1):
+    def derivative(self, eval_points=None, *, order=1):
         r"""Differentiate a FDataBasis object.
 
 
@@ -387,12 +387,18 @@ class FDataBasis(FData):
         if order < 0:
             raise ValueError("order only takes non-negative integer values.")
 
-        if order == 0:
-            return self.copy()
+        if eval_points is not None:
+            return np.sum(
+                self.basis.derivative(eval_points, order=order), axis=0)
 
-        basis, coefficients = self.basis._derivative(self.coefficients, order)
+        else:
+            if order == 0:
+                return self.copy()
 
-        return FDataBasis(basis, coefficients)
+            basis, coefficients = self.basis._derivative_basis_and_coefs(
+                self.coefficients, order)
+
+            return FDataBasis(basis, coefficients)
 
     def mean(self, weights=None):
         """Compute the mean of all the samples in a FDataBasis object.

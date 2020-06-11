@@ -80,35 +80,24 @@ class SplineInterpolation(Evaluator):
         return self._monotone
 
     def _build_interpolator(self, fdatagrid):
-        sample_points = fdatagrid.sample_points
-        data_matrix = fdatagrid.data_matrix
 
         if fdatagrid.dim_domain == 1:
-            return self._construct_spline_1_m(
-                sample_points,
-                data_matrix)
+            return self._construct_spline_1_m(fdatagrid)
         elif self.monotone:
             raise ValueError("Monotone interpolation is only supported with "
                              "domain dimension equal to 1.")
 
         elif fdatagrid.dim_domain == 2:
-            return self._construct_spline_2_m(
-                sample_points,
-                data_matrix,
-                self.interpolation_order,
-                self.smoothness_parameter)
+            return self._construct_spline_2_m(fdatagrid)
 
         elif self.smoothness_parameter != 0:
             raise ValueError("Smoothing interpolation is only supported with "
                              "domain dimension up to 2, s should be 0.")
 
         else:
-            return self._construct_spline_n_m(
-                sample_points,
-                data_matrix,
-                self.interpolation_order)
+            return self._construct_spline_n_m(fdatagrid)
 
-    def _construct_spline_1_m(self, sample_points, data_matrix):
+    def _construct_spline_1_m(self, fdatagrid):
         r"""Construct the matrix of interpolations for curves.
 
         Constructs the matrix of interpolations for objects with domain
@@ -154,18 +143,14 @@ class SplineInterpolation(Evaluator):
             monotone = False
 
         # Evaluator of splines called in evaluate
-        def _spline_evaluator_1_m(spl, t, der):
+        def _spline_evaluator_1_m(spl, t, derivative):
 
             try:
-                return spl(t, der)
+                return spl(t, derivative)
             except ValueError:
                 return np.zeros_like(t)
 
-        def _process_derivative_1_m(derivative):
-
-            return derivative
-
-        sample_points = sample_points[0]
+        sample_points = fdatagrid.sample_points[0]
 
         if monotone:
             def constructor(data):
@@ -181,13 +166,12 @@ class SplineInterpolation(Evaluator):
                     s=self.smoothness_parameter,
                     k=self.interpolation_order)
 
-        splines = np.apply_along_axis(constructor, 1, data_matrix)
+        splines = np.apply_along_axis(constructor, 1, fdatagrid.data_matrix)
         evaluator = _spline_evaluator_1_m
-        derivative = _process_derivative_1_m
 
-        return (splines, evaluator, derivative)
+        return (splines, evaluator)
 
-    def _construct_spline_2_m(self, sample_points, data_matrix):
+    def _construct_spline_2_m(self, fdatagrid):
         r"""Construct the matrix of interpolations for surfaces.
 
         Constructs the matrix of interpolations for objects with domain
@@ -223,37 +207,34 @@ class SplineInterpolation(Evaluator):
                              f"Must be an integer greater than 0 and lower or "
                              f"equal than 5.")
 
-        def _spline_evaluator_2_m(spl, t, der):
-
-            return spl(t[:, 0], t[:, 1], dx=der[0], dy=der[1], grid=False)
-
-        def _process_derivative_2_m(derivative):
+        def _spline_evaluator_2_m(spl, t, derivative):
             if np.isscalar(derivative):
                 derivative = 2 * [derivative]
             elif len(derivative) != 2:
                 raise ValueError("derivative should be a numeric value "
                                  "or a tuple of length 2 with (dx,dy).")
 
-            return derivative
+            return spl(t[:, 0], t[:, 1], dx=derivative[0], dy=derivative[1],
+                       grid=False)
 
         # Matrix of splines
-        splines = np.empty((self._n_samples, self._dim_codomain), dtype=object)
+        splines = np.empty(
+            (fdatagrid.n_samples, fdatagrid.dim_codomain), dtype=object)
 
-        for i in range(self._n_samples):
-            for j in range(self._dim_codomain):
+        for i in range(fdatagrid.n_samples):
+            for j in range(fdatagrid.dim_codomain):
                 splines[i, j] = RectBivariateSpline(
-                    sample_points[0],
-                    sample_points[1],
-                    data_matrix[i, :, :, j],
+                    fdatagrid.sample_points[0],
+                    fdatagrid.sample_points[1],
+                    fdatagrid.data_matrix[i, :, :, j],
                     kx=kx, ky=ky,
                     s=self.smoothness_parameter)
 
         evaluator = _spline_evaluator_2_m
-        derivative = _process_derivative_2_m
 
-        return (splines, evaluator, derivative)
+        return (splines, evaluator)
 
-    def _construct_spline_n_m(self, sample_points, data_matrix):
+    def _construct_spline_n_m(self, fdatagrid):
         r"""Construct the matrix of interpolations.
 
         Constructs the matrix of interpolations for objects with domain
@@ -287,28 +268,26 @@ class SplineInterpolation(Evaluator):
             raise ValueError("interpolation order should be 0 (nearest) or 1 "
                              "(linear).")
 
-        def _process_derivative_n_m(derivative):
+        def _spline_evaluator_n_m(spl, t, derivative):
+
             if derivative != 0:
                 raise ValueError("derivates not suported for functional data "
                                  " with domain dimension greater than 2.")
 
-            return derivative
-
-        def _spline_evaluator_n_m(spl, t, derivative):
-
             return spl(t)
 
-        splines = np.empty((self._n_samples, self._dim_codomain), dtype=object)
+        splines = np.empty(
+            (fdatagrid.n_samples, fdatagrid.dim_codomain), dtype=object)
 
-        for i in range(self._n_samples):
-            for j in range(self._dim_codomain):
+        for i in range(fdatagrid.n_samples):
+            for j in range(fdatagrid.dim_codomain):
                 splines[i, j] = RegularGridInterpolator(
-                    sample_points, data_matrix[i, ..., j], method, False)
+                    fdatagrid.sample_points, fdatagrid.data_matrix[i, ..., j],
+                    method, False)
 
         evaluator = _spline_evaluator_n_m
-        derivative = _process_derivative_n_m
 
-        return (splines, evaluator, derivative)
+        return (splines, evaluator)
 
     def evaluate(self, fdata, eval_points, *, derivative=0):
         r"""Evaluation method.
@@ -338,21 +317,13 @@ class SplineInterpolation(Evaluator):
 
         """
 
-        (splines, spline_evaluator,
-         process_derivative) = self._build_interpolator(fdata)
-        derivative = process_derivative(derivative)
+        (splines, spline_evaluator) = self._build_interpolator(fdata)
 
-        # Constructs the evaluator for t_eval
-        if fdata.dim_codomain == 1:
-            def evaluator(spl):
-                """Evaluator of object with image dimension equal to 1."""
-                return spline_evaluator(spl[0], eval_points, derivative)
-        else:
-            def evaluator(spl_m):
-                """Evaluator of multimensional object"""
-                return np.dstack(
-                    [spline_evaluator(spl, eval_points, derivative)
-                     for spl in spl_m]).flatten()
+        def evaluator(spl_m):
+            """Evaluator of multimensional object"""
+            return np.dstack(
+                [spline_evaluator(spl, eval_points, derivative)
+                 for spl in spl_m]).flatten()
 
         # Points evaluated inside the domain
         res = np.apply_along_axis(evaluator, 1, splines)
@@ -392,28 +363,15 @@ class SplineInterpolation(Evaluator):
         res = np.empty(shape)
 
         (splines,
-         spline_evaluator,
-         process_derivative) = self._build_interpolator(fdata)
+         spline_evaluator) = self._build_interpolator(fdata)
 
-        derivative = process_derivative(derivative)
+        def evaluator(t, spl_m):
+            """Evaluator of multidimensional sample"""
+            return np.array([spline_evaluator(spl, t, derivative)
+                             for spl in spl_m]).T
 
-        if fdata.dim_codomain == 1:
-            def evaluator(t, spl):
-                """Evaluator of sample with image dimension equal to 1"""
-                return spline_evaluator(spl[0], t, derivative)
-
-            for i in range(fdata.n_samples):
-                res[i] = evaluator(eval_points[i], splines[i]).reshape(
-                    (eval_points.shape[1], fdata.dim_codomain))
-
-        else:
-            def evaluator(t, spl_m):
-                """Evaluator of multidimensional sample"""
-                return np.array([spline_evaluator(spl, t, derivative)
-                                 for spl in spl_m]).T
-
-            for i in range(fdata.n_samples):
-                res[i] = evaluator(eval_points[i], splines[i])
+        for i in range(fdata.n_samples):
+            res[i] = evaluator(eval_points[i], splines[i])
 
         return res
 

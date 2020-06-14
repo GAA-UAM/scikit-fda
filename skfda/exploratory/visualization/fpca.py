@@ -4,7 +4,10 @@ from skfda.exploratory.visualization._utils import _get_figure_and_axes
 
 
 def plot_fpca_perturbation_graphs(mean, components, multiple,
-                                  fig: plt.figure = None, **kwargs):
+                                  chart = None,
+                                  fig=None,
+                                  axes=None,
+                                  **kwargs):
     """ Plots the perturbation graphs for the principal components.
     The perturbations are defined as variations over the mean. Adding a multiple
     of the principal component curve to the mean function results in the
@@ -24,6 +27,8 @@ def plot_fpca_perturbation_graphs(mean, components, multiple,
         fig (figure object, optional):
             figure over which the graph is plotted. If not specified it will
             be initialized
+        axes (axes object, optional): axis over where the graph is  plotted.
+            If None, see param fig.
 
     Returns:
         (FDataGrid or FDataBasis): this contains the mean function followed
@@ -33,7 +38,7 @@ def plot_fpca_perturbation_graphs(mean, components, multiple,
     if len(mean) > 1:
         mean = mean.mean()
 
-    fig, axes = _get_figure_and_axes(fig=fig)
+    fig, axes = _get_figure_and_axes(chart, fig, axes)
 
     if not axes:
         axes = fig.subplots(nrows=len(components))

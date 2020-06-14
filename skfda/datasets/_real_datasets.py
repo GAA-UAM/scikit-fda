@@ -535,13 +535,12 @@ def fetch_aemet(return_X_y: bool = False):
                                             "logprecipitation",
                                             "wind speed (m/s)"])
 
-    print(data['df'])
     if return_X_y:
         return curves, None
     else:
         return {"data": curves,
                 "meta": np.asarray(data["df"])[:,
-                        np.array([0, 1, 2, 3, 6, 7])],
+                                               np.array([0, 1, 2, 3, 6, 7])],
                 "meta_names": ["ind", "place", "province", "altitude",
                                "longitude", "latitude"],
                 "meta_feature_names": ["location"],
@@ -576,6 +575,7 @@ _octane_descr = """
 
 """
 
+
 def fetch_octane(return_X_y: bool = False):
     """Load near infrared spectra of gasoline samples.
 
@@ -599,7 +599,7 @@ def fetch_octane(return_X_y: bool = False):
     # "The octane data set contains six outliers (25, 26, 36–39) to which
     # alcohol was added".
     target = np.zeros(len(data), dtype=int)
-    target[24] = target[25] = target [35:39] = 1 # Outliers 1
+    target[24] = target[25] = target[35:39] = 1  # Outliers 1
 
     axes_labels = ["wavelength (nm)", "absorbances"]
 

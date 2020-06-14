@@ -1,5 +1,7 @@
 from skfda.representation.basis import (Basis, FDataBasis, Constant, Monomial,
                                         BSpline, Fourier)
+from skfda.representation.grid import FDataGrid
+from skfda import concatenate
 import unittest
 
 import numpy as np
@@ -87,21 +89,23 @@ class TestBasis(unittest.TestCase):
         # TODO testing with other basis
 
     def test_basis_gram_matrix(self):
-        np.testing.assert_array_almost_equal(Monomial(n_basis=3).gram_matrix(),
-                                             [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
-        np.testing.assert_almost_equal(Fourier(n_basis=3).gram_matrix(),
-                                       np.identity(3))
-        np.testing.assert_almost_equal(BSpline(n_basis=6).gram_matrix().round(4),
-                                       np.array([[4.760e-02, 2.920e-02, 6.200e-03, 4.000e-04, 0.000e+00, 0.000e+00],
-                                                 [2.920e-02, 7.380e-02, 5.210e-02,
-                                                  1.150e-02, 1.000e-04, 0.000e+00],
-                                                 [6.200e-03, 5.210e-02, 1.090e-01,
-                                                  7.100e-02, 1.150e-02, 4.000e-04],
-                                                 [4.000e-04, 1.150e-02, 7.100e-02,
-                                                  1.090e-01, 5.210e-02, 6.200e-03],
-                                                 [0.000e+00, 1.000e-04, 1.150e-02,
-                                                  5.210e-02, 7.380e-02, 2.920e-02],
-                                                 [0.000e+00, 0.000e+00, 4.000e-04, 6.200e-03, 2.920e-02, 4.760e-02]]))
+        np.testing.assert_allclose(Monomial(n_basis=3).gram_matrix(),
+                                   [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
+        np.testing.assert_allclose(Fourier(n_basis=3).gram_matrix(),
+                                   np.identity(3))
+        np.testing.assert_allclose(BSpline(n_basis=6).gram_matrix().round(4),
+                                   np.array([[4.760e-02, 2.920e-02, 6.200e-03,
+                                              4.000e-04, 0.000e+00, 0.000e+00],
+                                             [2.920e-02, 7.380e-02, 5.210e-02,
+                                              1.150e-02, 1.000e-04, 0.000e+00],
+                                             [6.200e-03, 5.210e-02, 1.089e-01,
+                                              7.100e-02, 1.150e-02, 4.000e-04],
+                                             [4.000e-04, 1.150e-02, 7.100e-02,
+                                              1.089e-01, 5.210e-02, 6.200e-03],
+                                             [0.000e+00, 1.000e-04, 1.150e-02,
+                                              5.210e-02, 7.380e-02, 2.920e-02],
+                                             [0.000e+00, 0.000e+00, 4.000e-04,
+                                              6.200e-03, 2.920e-02, 4.760e-02]]))
 
     def test_basis_basis_inprod(self):
         monomial = Monomial(n_basis=4)
@@ -432,6 +436,19 @@ class TestBasis(unittest.TestCase):
                                         [-120, -18, -60],
                                         [-48, 0, 48]])
 
+    def test_concatenate(self):
+        sample1 = np.arange(0, 10)
+        sample2 = np.arange(10, 20)
+        fd1 = FDataGrid([sample1]).to_basis(Fourier(n_basis=5))
+        fd2 = FDataGrid([sample2]).to_basis(Fourier(n_basis=5))
+
+        fd = concatenate([fd1, fd2])
+
+        np.testing.assert_equal(fd.n_samples, 2)
+        np.testing.assert_equal(fd.dim_codomain, 1)
+        np.testing.assert_equal(fd.dim_domain, 1)
+        np.testing.assert_array_equal(fd.coefficients, np.concatenate(
+            [fd1.coefficients, fd2.coefficients]))
 
 if __name__ == '__main__':
     print()

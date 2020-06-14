@@ -401,10 +401,29 @@ class Exponential(Covariance):
         y = _transform_to_2d(y)
 
         x_y = _squared_norms(x, y)
-
         return self.variance * np.exp(-np.sqrt(x_y) / (self.length_scale))
 
     def to_sklearn(self):
         """Convert it to a sklearn kernel, if there is one"""
         return (self.variance *
                 sklearn_kern.Matern(length_scale=self.length_scale, nu=0.5))
+
+
+class WhiteNoise(Covariance):
+    """Gaussian covariance function."""
+
+    _latex_formula = (r"K(x,y)= \left\{ \begin{array}{lc} \sigma^2, & x = y "
+                      r"\\ 0, & x \neq y\\ \end{array} \right.")
+
+    _parameters = [("variance", r"\sigma^2")]
+
+    def __init__(self, *, variance: float = 1.):
+        self.variance = variance
+
+    def __call__(self, x, y):
+        x = _transform_to_2d(x)
+        return self.variance * np.eye(x.shape[0])
+
+    def to_sklearn(self):
+        """Convert it to a sklearn kernel, if there is one"""
+        return sklearn_kern.WhiteKernel(noise_level=self.variance)

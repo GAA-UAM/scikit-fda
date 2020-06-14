@@ -3,7 +3,7 @@ import unittest
 import scipy.stats.mstats
 
 import numpy as np
-from skfda import FDataGrid
+from skfda import FDataGrid, concatenate
 from skfda.exploratory import stats
 
 
@@ -98,6 +98,22 @@ class TestFDataGrid(unittest.TestCase):
         fd1.axes_labels = None
         fd = fd1.concatenate(fd2, as_coordinates=True)
         np.testing.assert_equal(None, fd.axes_labels)
+
+    def test_concatenate(self):
+        sample1 = np.arange(0, 10)
+        sample2 = np.arange(10, 20)
+        fd1 = FDataGrid([sample1])
+        fd2 = FDataGrid([sample2])
+
+        fd1.axes_labels = ["x", "y"]
+        fd = concatenate([fd1, fd2])
+
+        np.testing.assert_equal(fd.n_samples, 2)
+        np.testing.assert_equal(fd.dim_codomain, 1)
+        np.testing.assert_equal(fd.dim_domain, 1)
+        np.testing.assert_array_equal(fd.data_matrix[..., 0], [sample1,
+                                                               sample2])
+        np.testing.assert_array_equal(fd1.axes_labels, fd.axes_labels)
 
     def test_coordinates(self):
         fd1 = FDataGrid([[1, 2, 3, 4], [2, 3, 4, 5]])

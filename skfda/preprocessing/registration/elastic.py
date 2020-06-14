@@ -10,7 +10,7 @@ import numpy as np
 from . import invert_warping
 from ... import FDataGrid
 from ..._utils import check_is_univariate
-from ...representation.interpolation import SplineInterpolator
+from ...representation.interpolation import SplineInterpolation
 from ._warping import _normalize_scale
 from .base import RegistrationTransformer
 
@@ -450,11 +450,12 @@ class ElasticRegistration(RegistrationTransformer):
         gamma = _normalize_scale(
             gamma, a=output_points[0], b=output_points[-1])
 
-        # Interpolator
-        interpolator = SplineInterpolator(interpolation_order=3, monotone=True)
+        # Interpolation
+        interpolation = SplineInterpolation(
+            interpolation_order=3, monotone=True)
 
         self.warping_ = FDataGrid(gamma, output_points,
-                                  interpolator=interpolator)
+                                  interpolation=interpolation)
 
         return X.compose(self.warping_, eval_points=output_points)
 
@@ -626,11 +627,11 @@ def warping_mean(warping, *, max_iter=100, tol=1e-6, step_size=.3):
                                     a=original_eval_points[0],
                                     b=original_eval_points[-1])
 
-    monotone_interpolator = SplineInterpolator(interpolation_order=3,
-                                               monotone=True)
+    monotone_interpolation = SplineInterpolation(interpolation_order=3,
+                                                 monotone=True)
 
     mean = FDataGrid([warping_mean], sample_points=original_eval_points,
-                     interpolator=monotone_interpolator)
+                     interpolation=monotone_interpolation)
 
     return mean
 
@@ -699,7 +700,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
     eval_points_normalized = _normalize_scale(eval_points)
     y_scale = eval_points[-1] - eval_points[0]
 
-    interpolator = SplineInterpolator(interpolation_order=3, monotone=True)
+    interpolation = SplineInterpolation(interpolation_order=3, monotone=True)
 
     # Discretisation points
     fdatagrid_normalized = FDataGrid(fdatagrid(eval_points) / y_scale,
@@ -724,7 +725,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
         gammas = _elastic_alignment_array(
             mu, srsf, eval_points_normalized, penalty, grid_dim)
         gammas = FDataGrid(gammas, sample_points=eval_points_normalized,
-                           interpolator=interpolator)
+                           interpolation=interpolation)
 
         fdatagrid_normalized = fdatagrid_normalized.compose(gammas)
         srsf = srsf_transformer.transform(

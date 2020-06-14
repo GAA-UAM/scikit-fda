@@ -4,7 +4,7 @@ from skfda.misc.operators._linear_differential_operator import (
     _monomial_evaluate_constant_linear_diff_op)
 from skfda.misc.operators._operators import gramian_matrix_numerical
 from skfda.misc.regularization import TikhonovRegularization, L2Regularization
-from skfda.ml.regression.linear import MultivariateLinearRegression
+from skfda.ml.regression.linear import LinearRegression
 from skfda.representation.basis import Constant, Monomial, BSpline, Fourier
 import unittest
 import warnings
@@ -217,7 +217,7 @@ class TestL2Regularization(unittest.TestCase):
                     regularization_parameter=regularization_parameter):
 
                 sklearn_l2 = Ridge(alpha=regularization_parameter)
-                skfda_l2 = MultivariateLinearRegression(
+                skfda_l2 = LinearRegression(
                     regularization=L2Regularization(
                         regularization_parameter=regularization_parameter),
                 )

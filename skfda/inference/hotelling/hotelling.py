@@ -105,7 +105,7 @@ def hotelling_t2(fd1, fd2):
     return n1 * n2 / n * m.T.dot(k_inv).dot(m)[0][0]
 
 
-def hotelling_test_ind(fd1, fd2, n_reps=None, random_state=None,
+def hotelling_test_ind(fd1, fd2, *, n_reps=None, random_state=None,
                        return_dist=False):
     r"""
     Calculate the :math:`T^2`-test for the means of two independent samples of
@@ -128,7 +128,6 @@ def hotelling_test_ind(fd1, fd2, n_reps=None, random_state=None,
 
         n_reps (int, optional): Maximum number of repetitions to compute
             p-value. Default value is None.
-
 
         random_state (optional): Random state.
 

@@ -91,7 +91,7 @@ class FPCA(BaseEstimator, TransformerMixin):
         self.weights = weights
         self.components_basis = components_basis
 
-    def fit_basis(self, X: FDataBasis, y=None):
+    def _fit_basis(self, X: FDataBasis, y=None):
         """Computes the first n_components principal components and saves them.
         The eigenvalues associated with these principal components are also
         saved. For more details about how it is implemented please view the
@@ -200,7 +200,7 @@ class FPCA(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform_basis(self, X, y=None):
+    def _transform_basis(self, X, y=None):
         """Computes the n_components first principal components score and
         returns them.
 
@@ -218,7 +218,7 @@ class FPCA(BaseEstimator, TransformerMixin):
         # in this case it is the inner product of our data with the components
         return X.inner_product(self.components_)
 
-    def fit_grid(self, X: FDataGrid, y=None):
+    def _fit_grid(self, X: FDataGrid, y=None):
         r"""Computes the n_components first principal components and saves them.
 
         The eigenvalues associated with these principal
@@ -319,7 +319,7 @@ class FPCA(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform_grid(self, X : FDataGrid, y=None):
+    def _transform_grid(self, X : FDataGrid, y=None):
         """Computes the n_components first principal components score and
         returns them.
 
@@ -336,10 +336,10 @@ class FPCA(BaseEstimator, TransformerMixin):
 
         # in this case its the coefficient matrix multiplied by the principal
         # components as column vectors
-        return FDataGrid(data_matrix=X.data_matrix.reshape(
+        return X.data_matrix.reshape(
             X.data_matrix.shape[:-1]) @ np.transpose(
             self.components_.data_matrix.reshape(
-                self.components_.data_matrix.shape[:-1])))
+                self.components_.data_matrix.shape[:-1]))
 
     def fit(self, X, y=None):
         """Computes the n_components first principal components and saves them
@@ -355,9 +355,9 @@ class FPCA(BaseEstimator, TransformerMixin):
             self (object)
         """
         if isinstance(X, FDataGrid):
-            return self.fit_grid(X, y)
+            return self._fit_grid(X, y)
         elif isinstance(X, FDataBasis):
-            return self.fit_basis(X, y)
+            return self._fit_basis(X, y)
         else:
             raise AttributeError("X must be either FDataGrid or FDataBasis")
 
@@ -376,9 +376,9 @@ class FPCA(BaseEstimator, TransformerMixin):
             principal components
         """
         if isinstance(X, FDataGrid):
-            return self.transform_grid(X, y)
+            return self._transform_grid(X, y)
         elif isinstance(X, FDataBasis):
-            return self.transform_basis(X, y)
+            return self._transform_basis(X, y)
         else:
             raise AttributeError("X must be either FDataGrid or FDataBasis")
 

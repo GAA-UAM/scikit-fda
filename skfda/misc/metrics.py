@@ -6,7 +6,7 @@ from ..preprocessing.registration import normalize_warping, ElasticRegistration
 from ..preprocessing.registration._warping import _normalize_scale
 from ..preprocessing.registration.elastic import SRSF
 from ..representation import FData
-from ..representation import FDataGrid
+from ..representation import FDataGrid, FDataBasis
 
 
 def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
@@ -209,7 +209,7 @@ def pairwise_distance(distance, **kwargs):
     return pairwise
 
 
-def norm_lp(fdatagrid, p=2, p2=2):
+def norm_lp(fdata, p=2, p2=2):
     r"""Calculate the norm of all the samples in a FDataGrid object.
 
     For each sample sample f the Lp norm is defined as:
@@ -244,7 +244,7 @@ def norm_lp(fdatagrid, p=2, p2=2):
 
 
     Args:
-        fdatagrid (FDataGrid): FDataGrid object.
+        fdata (FData): FData object.
         p (int, optional): p of the lp norm. Must be greater or equal
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
@@ -279,30 +279,40 @@ def norm_lp(fdatagrid, p=2, p2=2):
     if not (p == 'inf' or np.isinf(p)) and p < 1:
         raise ValueError(f"p must be equal or greater than 1.")
 
-    if fdatagrid.dim_codomain > 1:
-        if p2 == 'inf':
-            p2 = np.inf
-        data_matrix = np.linalg.norm(fdatagrid.data_matrix, ord=p2, axis=-1,
-                                     keepdims=True)
+    if isinstance(fdata, FDataBasis):
+        if fdata.dim_codomain > 1 or p != 2:
+            raise NotImplementedError
+
+        start, end = fdata.domain_range[0]
+        integral = scipy.integrate.quad_vec(
+            lambda x: np.power(np.abs(fdata(x)), p), start, end)
+        res = np.sqrt(integral[0]).flatten()
+
     else:
-        data_matrix = np.abs(fdatagrid.data_matrix)
-
-    if p == 'inf' or np.isinf(p):
-
-        if fdatagrid.dim_domain == 1:
-            res = np.max(data_matrix[..., 0], axis=1)
+        if fdata.dim_codomain > 1:
+            if p2 == 'inf':
+                p2 = np.inf
+            data_matrix = np.linalg.norm(fdata.data_matrix, ord=p2, axis=-1,
+                                         keepdims=True)
         else:
-            res = np.array([np.max(sample) for sample in data_matrix])
+            data_matrix = np.abs(fdata.data_matrix)
 
-    elif fdatagrid.dim_domain == 1:
+        if p == 'inf' or np.isinf(p):
 
-        # Computes the norm, approximating the integral with Simpson's rule.
-        res = scipy.integrate.simps(data_matrix[..., 0] ** p,
-                                    x=fdatagrid.sample_points) ** (1 / p)
+            if fdata.dim_domain == 1:
+                res = np.max(data_matrix[..., 0], axis=1)
+            else:
+                res = np.array([np.max(sample) for sample in data_matrix])
 
-    else:
-        # Needed to perform surface integration
-        return NotImplemented
+        elif fdata.dim_domain == 1:
+
+            # Computes the norm, approximating the integral with Simpson's rule.
+            res = scipy.integrate.simps(data_matrix[..., 0] ** p,
+                                        x=fdata.sample_points) ** (1 / p)
+
+        else:
+            # Needed to perform surface integration
+            return NotImplemented
 
     if len(res) == 1:
         return res[0]

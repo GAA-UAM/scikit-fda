@@ -1,1 +1,1 @@
-from . import anova
+from . import anova, hotelling

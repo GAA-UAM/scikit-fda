@@ -10,3 +10,4 @@ reliability of this results.
    :caption: Modules:
 
    inference/anova
+   inference/hotelling

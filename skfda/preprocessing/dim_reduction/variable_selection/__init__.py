@@ -1,1 +1,1 @@
-from ._rkvs import RKVS
+from ._rkvs import RKHSVariableSelection

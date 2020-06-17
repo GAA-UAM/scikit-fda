@@ -218,7 +218,8 @@ def fetch_phoneme(return_X_y: bool = False):
     speaker = data["speaker"].values
 
     curves = FDataGrid(data_matrix=curve_data.values,
-                       sample_points=np.array(range(0, 256)) * 8 / 255,
+                       sample_points=np.linspace(0, 8, 256),
+                       domain_range=[0, 8],
                        dataset_label="Phoneme",
                        axes_labels=["frequency (kHz)", "log-periodogram"])
 

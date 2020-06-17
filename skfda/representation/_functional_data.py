@@ -118,19 +118,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         else:
             self._extrapolation = _parse_extrapolation(value)
 
-        self._extrapolator_evaluator = None
-
-    @property
-    def extrapolator_evaluator(self):
-        """Return the evaluator constructed by the extrapolator."""
-        if self.extrapolation is None:
-            return None
-
-        elif self._extrapolator_evaluator is None:
-            self._extrapolator_evaluator = self._extrapolation.evaluator(self)
-
-        return self._extrapolator_evaluator
-
     @property
     @abstractmethod
     def domain_range(self):
@@ -434,11 +421,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         if extrapolation is None:
             extrapolation = self.extrapolation
-            extrapolator_evaluator = self.extrapolator_evaluator
         else:
             # Gets the function to perform extrapolation or None
             extrapolation = _parse_extrapolation(extrapolation)
-            extrapolator_evaluator = None
 
         if grid:  # Evaluation of a grid performed in auxiliar function
             return self._evaluate_grid(eval_points,
@@ -468,10 +453,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                                               derivative=derivative)
 
         else:
-            # Evaluation using extrapolation
-            if extrapolator_evaluator is None:
-                extrapolator_evaluator = extrapolation.evaluator(self)
-
             # Partition of eval points
             if aligned_evaluation:
 
@@ -484,7 +465,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 # Direct evaluation
                 res_evaluation = self._evaluate(eval_points_evaluation,
                                                 derivative=derivative)
-                res_extrapolation = extrapolator_evaluator.evaluate(
+                res_extrapolation = extrapolation.evaluate(
+                    self,
                     eval_points_extrapolation,
                     derivative=derivative)
 
@@ -501,7 +483,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                     derivative=derivative
                 )
 
-                res_extrapolation = extrapolator_evaluator.evaluate_composed(
+                res_extrapolation = extrapolation.evaluate_composed(
+                    self,
                     eval_points_extrapolation,
                     derivative=derivative)
 

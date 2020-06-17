@@ -18,7 +18,7 @@ following:
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.dim_reduction.variable_selection.RKVS
+   skfda.preprocessing.dim_reduction.variable_selection.RKHSVariableSelection
 
 Projection
 ----------

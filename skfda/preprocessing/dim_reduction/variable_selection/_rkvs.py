@@ -6,7 +6,7 @@ import numpy.linalg as linalg
 from ....representation import FDataGrid
 
 
-def _rkvs(X, Y, n_components: int=1):
+def _rkhs_vs(X, Y, n_components: int=1):
     '''
     Parameters
     ----------
@@ -78,7 +78,8 @@ def _rkvs(X, Y, n_components: int=1):
     return selected_features, score
 
 
-class RKVS(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
+class RKHSVariableSelection(sklearn.base.BaseEstimator,
+                            sklearn.base.TransformerMixin):
     r'''
     Reproducing kernel variable selection.
 
@@ -140,7 +141,7 @@ class RKVS(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
 
         Select the relevant points to distinguish the two classes
 
-        >>> rkvs = variable_selection.RKVS(n_components=3)
+        >>> rkvs = variable_selection.RKHSVariableSelection(n_components=3)
         >>> _ = rkvs.fit(X, y)
         >>> point_mask = rkvs.get_support()
         >>> points = X.sample_points[0][point_mask]
@@ -181,7 +182,7 @@ class RKVS(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
 
         self._features_shape_ = X.shape[1:]
 
-        self._features_, self._scores_ = _rkvs(
+        self._features_, self._scores_ = _rkhs_vs(
             X=X,
             Y=y,
             n_components=self.n_components)

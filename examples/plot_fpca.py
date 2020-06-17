@@ -13,6 +13,8 @@ import skfda
 from skfda.preprocessing.dim_reduction.projection import FPCA
 from skfda.representation.basis import BSpline, Fourier, Monomial
 from skfda.datasets import fetch_growth
+from skfda.exploratory.visualization import plot_fpca_perturbation_graphs
+import matplotlib.pyplot as plt
 
 ##############################################################################
 # In this example we are going to use functional principal component analysis to
@@ -73,30 +75,18 @@ mean_fd = basis_fd.mean()
 mean_fd.plot()
 
 ##############################################################################
-# Now we add and subtract a multiple of the first principal component. We can
-# then observe now that this principal component represents the variation in
-# growth between the children.
-mean_fd.coefficients = np.vstack([mean_fd.coefficients,
-                                  mean_fd.coefficients[0, :] +
-                                  20 * fpca.components_.coefficients[0, :]])
-mean_fd.coefficients = np.vstack([mean_fd.coefficients,
-                                  mean_fd.coefficients[0, :] -
-                                  20 * fpca.components_.coefficients[0, :]])
-mean_fd.plot()
-
-##############################################################################
+# Now we add and subtract a multiple of the principal components. We can
+# then observe now that this principal component represents the variation in the
+# mean growth between the children.
 # The second component is more interesting. The most appropriate explanation is
 # that it represents the differences between girls and boys. Girls tend to grow
 # faster at an early age and boys tend to start puberty later, therefore, their
 # growth is more significant later. Girls also stop growing early
-mean_fd = basis_fd.mean()
-mean_fd.coefficients = np.vstack([mean_fd.coefficients,
-                                  mean_fd.coefficients[0, :] +
-                                  20 * fpca.components_.coefficients[1, :]])
-mean_fd.coefficients = np.vstack([mean_fd.coefficients,
-                                  mean_fd.coefficients[0, :] -
-                                  20 * fpca.components_.coefficients[1, :]])
-mean_fd.plot()
+
+plot_fpca_perturbation_graphs(basis_fd.mean(),
+                              fpca.components_,
+                              30,
+                              fig=plt.figure(figsize=(6, 2*4)))
 
 ##############################################################################
 # We can also specify another basis for the principal components as argument

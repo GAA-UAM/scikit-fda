@@ -64,8 +64,9 @@ class TestBasisEvaluationFourier(unittest.TestCase):
                         -4.81336320468984, -1.7123673353027, 6.52573053999253]
                        ).reshape((2, 4)).round(3)
 
+        f_deriv = f.derivative()
         np.testing.assert_array_almost_equal(
-            f(t, derivative=1).round(3), res
+            f_deriv(t).round(3), res
         )
 
     def test_evaluation_grid_fourier(self):
@@ -317,8 +318,9 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
 
         t = np.linspace(0, 1, 4)
 
+        f_deriv = f.derivative()
         np.testing.assert_array_almost_equal(
-            f(t, derivative=1).round(3),
+            f_deriv(t).round(3),
             np.array([[2.927,  0.453, -1.229,  0.6],
                       [4.3, -1.599,  1.016, -2.52]])
         )
@@ -570,8 +572,9 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
 
         t = np.linspace(0, 1, 4)
 
+        f_deriv = f.derivative()
         np.testing.assert_array_almost_equal(
-            f(t, derivative=1).round(3),
+            f_deriv(t).round(3),
             np.array([[2., 4., 6., 8.],
                       [1.4, 2.267, 3.133, 4.]])
         )

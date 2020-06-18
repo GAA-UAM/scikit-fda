@@ -374,10 +374,10 @@ class TestRegistrationValidation(unittest.TestCase):
         fd_registered = fd.compose(warping)
         scorer = AmplitudePhaseDecomposition(return_stats=True)
         ret = scorer.score_function(fd, fd_registered, warping=warping)
-        np.testing.assert_almost_equal(ret.mse_amp, 0.0009866997121476962)
-        np.testing.assert_almost_equal(ret.mse_pha, 0.11576861468435257)
-        np.testing.assert_almost_equal(ret.r_squared, 0.9915489952877273)
-        np.testing.assert_almost_equal(ret.c_r, 0.9999963424653829)
+        np.testing.assert_allclose(ret.mse_amp, 0.0009866997121476962)
+        np.testing.assert_allclose(ret.mse_pha, 0.11576935495450151)
+        np.testing.assert_allclose(ret.r_squared, 0.9915489952877273)
+        np.testing.assert_allclose(ret.c_r, 0.999999, rtol=1e-6)
 
     def test_raises_amplitude_phase(self):
         scorer = AmplitudePhaseDecomposition()

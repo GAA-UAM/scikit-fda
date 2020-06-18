@@ -360,7 +360,7 @@ class FDataGrid(FData):
 
         self._interpolation = new_interpolation
 
-    def _evaluate(self, eval_points, *, derivative=0):
+    def _evaluate(self, eval_points):
         """"Evaluate the object or its derivatives at a list of values.
 
         Args:
@@ -368,7 +368,6 @@ class FDataGrid(FData):
                 evaluated. If a matrix of shape nsample x eval_points is given
                 each sample is evaluated at the values in the corresponding row
                 in eval_points.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
@@ -376,9 +375,9 @@ class FDataGrid(FData):
 
         """
 
-        return self.interpolation.evaluate(self, eval_points, derivative=derivative)
+        return self.interpolation.evaluate(self, eval_points)
 
-    def _evaluate_composed(self, eval_points, *, derivative=0):
+    def _evaluate_composed(self, eval_points):
         """"Evaluate the object or its derivatives at a list of values.
 
         Args:
@@ -386,7 +385,6 @@ class FDataGrid(FData):
                 evaluated. If a matrix of shape nsample x eval_points is given
                 each sample is evaluated at the values in the corresponding row
                 in eval_points.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
@@ -394,8 +392,7 @@ class FDataGrid(FData):
 
         """
 
-        return self.interpolation.evaluate_composed(self, eval_points,
-                                                    derivative=derivative)
+        return self.interpolation.evaluate_composed(self, eval_points)
 
     def derivative(self, *, order=1):
         r"""Differentiate a FDataGrid object.
@@ -445,9 +442,7 @@ class FDataGrid(FData):
         if order < 0:
             raise ValueError("The order of a derivative has to be greater "
                              "or equal than 0.")
-        if self.dim_domain > 1 or self.dim_codomain > 1:
-            raise NotImplementedError("Not implemented for 2 or more"
-                                      " dimensional data.")
+
         if np.isnan(self.data_matrix).any():
             raise ValueError("The FDataGrid object cannot contain nan "
                              "elements.")

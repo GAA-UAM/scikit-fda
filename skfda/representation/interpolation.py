@@ -396,7 +396,7 @@ class SplineInterpolation(Evaluator):
                 interpolation_order=self.interpolation_order,
                 smoothness_parameter=self.smoothness_parameter)
 
-    def evaluate(self, fdata, eval_points, *, derivative=0):
+    def evaluate(self, fdata, eval_points):
         r"""Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
@@ -410,7 +410,6 @@ class SplineInterpolation(Evaluator):
             eval_points (np.ndarray): Numpy array with shape
                 `(n_samples, number_eval_points, dim_domain)` with the
                  evaluation points for each sample.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (np.darray): Numpy 3d array with shape `(n_samples,
@@ -426,9 +425,9 @@ class SplineInterpolation(Evaluator):
 
         spline_list = self._build_interpolator(fdata)
 
-        return spline_list.evaluate(fdata, eval_points, derivative=derivative)
+        return spline_list.evaluate(fdata, eval_points)
 
-    def evaluate_composed(self, fdata, eval_points, *, derivative=0):
+    def evaluate_composed(self, fdata, eval_points):
         """Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
@@ -442,7 +441,6 @@ class SplineInterpolation(Evaluator):
             eval_points (np.ndarray): Numpy array with shape
                 `(n_samples, number_eval_points, dim_domain)` with the
                  evaluation points for each sample.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (np.darray): Numpy 3d array with shape `(n_samples,
@@ -457,8 +455,7 @@ class SplineInterpolation(Evaluator):
         """
         spline_list = self._build_interpolator(fdata)
 
-        return spline_list.evaluate_composed(fdata, eval_points,
-                                             derivative=derivative)
+        return spline_list.evaluate_composed(fdata, eval_points)
 
     def __repr__(self):
         """repr method of the interpolation"""

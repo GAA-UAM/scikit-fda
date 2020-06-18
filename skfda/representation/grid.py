@@ -407,7 +407,7 @@ class FDataGrid(FData):
         return self._evaluator.evaluate_composed(eval_points,
                                                  derivative=derivative)
 
-    def derivative(self, eval_points=None, *, order=1):
+    def derivative(self, *, order=1):
         r"""Differentiate a FDataGrid object.
 
         It is calculated using central finite differences when possible. In
@@ -474,10 +474,7 @@ class FDataGrid(FData):
         fdatagrid = self.copy(data_matrix=data_matrix,
                               dataset_label=dataset_label)
 
-        if eval_points is None:
-            return fdatagrid
-        else:
-            return fdatagrid(eval_points)
+        return fdatagrid
 
     def __check_same_dimensions(self, other):
         if self.data_matrix.shape[1:-1] != other.data_matrix.shape[1:-1]:

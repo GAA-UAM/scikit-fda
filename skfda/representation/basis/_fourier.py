@@ -35,17 +35,17 @@ class Fourier(Basis):
         Constructs specifying number of basis, definition interval and period.
 
         >>> fb = Fourier((0, np.pi), n_basis=3, period=1)
-        >>> fb.evaluate([0, np.pi / 4, np.pi / 2, np.pi]).round(2)
+        >>> fb([0, np.pi / 4, np.pi / 2, np.pi]).round(2)
         array([[ 1.  ,  1.  ,  1.  ,  1.  ],
                [ 0.  , -1.38, -0.61,  1.1 ],
                [ 1.41,  0.31, -1.28,  0.89]])
 
         And evaluate second derivative
 
-        >>> fb.evaluate([0, np.pi / 4, np.pi / 2, np.pi],
-        ...             derivative = 2).round(2)
+        >>> deriv2 = fb.derivative(order=2)
+        >>> deriv2([0, np.pi / 4, np.pi / 2, np.pi]).round(2)
         array([[  0.  ,   0.  ,   0.  ,   0.  ],
-               [ -0.  ,  54.46,  24.02, -43.37],
+               [  0.  ,  54.46,  24.02, -43.37],
                [-55.83, -12.32,  50.4 , -35.16]])
 
 
@@ -91,38 +91,15 @@ class Fourier(Basis):
     def period(self, value):
         self._period = value
 
-    def _functions_pairs_coefs_derivatives(self, derivative=0):
-        """
-        Compute functions to use, amplitudes and phase of a derivative.
-        """
+    def _evaluate(self, eval_points):
         functions = [np.sin, np.cos]
-        signs = [1, 1, -1, -1]
         omega = 2 * np.pi / self.period
 
-        deriv_functions = (functions[derivative % len(functions)],
-                           functions[(derivative + 1) % len(functions)])
-
-        deriv_signs = (signs[derivative % len(signs)],
-                       signs[(derivative + 1) % len(signs)])
+        normalization_denominator = np.sqrt(self.period / 2)
 
         seq = 1 + np.arange((self.n_basis - 1) // 2)
         seq_pairs = np.array([seq, seq]).T
-        power_pairs = (omega * seq_pairs)**derivative
-        amplitude_coefs_pairs = deriv_signs * power_pairs
-        phase_coef_pairs = omega * seq_pairs
-
-        return deriv_functions, amplitude_coefs_pairs, phase_coef_pairs
-
-    def _evaluate(self, eval_points):
-        # The derivative method already works for 0 order.
-        return self._derivative(eval_points, 0)
-
-    def _derivative(self, eval_points, order=1):
-        (functions,
-         amplitude_coefs,
-         phase_coefs) = self._functions_pairs_coefs_derivatives(order)
-
-        normalization_denominator = np.sqrt(self.period / 2)
+        phase_coefs = omega * seq_pairs
 
         # Multiply the phase coefficients elementwise
         res = np.einsum('ij,k->ijk', phase_coefs, eval_points)
@@ -131,18 +108,12 @@ class Fourier(Basis):
         for i in [0, 1]:
             functions[i](res[:, i, :], out=res[:, i, :])
 
-        # Multiply the amplitude and ravel the result
-        res *= amplitude_coefs[..., np.newaxis]
         res = res.reshape(-1, len(eval_points))
         res /= normalization_denominator
 
-        # Add constant basis
-        if order == 0:
-            constant_basis = np.full(
-                shape=(1, len(eval_points)),
-                fill_value=1 / (np.sqrt(2) * normalization_denominator))
-        else:
-            constant_basis = np.zeros(shape=(1, len(eval_points)))
+        constant_basis = np.full(
+            shape=(1, len(eval_points)),
+            fill_value=1 / (np.sqrt(2) * normalization_denominator))
 
         res = np.concatenate((constant_basis, res))
 

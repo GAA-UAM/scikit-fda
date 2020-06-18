@@ -227,10 +227,13 @@ class LinearDifferentialOperator(Operator):
 
     def __call__(self, f):
         """Return the function that results of applying the operator."""
+
+        function_derivatives = [
+            f.derivative(order=i) for i, _ in enumerate(self.weights)]
+
         def applied_linear_diff_op(t):
-            return sum(w(t) * self.derivative_function(
-                function=f, points=t, derivative=i)
-                for i, w in enumerate(self.weights))
+            return sum(w(t) * function_derivatives[i](t)
+                       for i, w in enumerate(self.weights))
 
         return applied_linear_diff_op
 

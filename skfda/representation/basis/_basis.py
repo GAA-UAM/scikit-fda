@@ -101,7 +101,7 @@ class Basis(ABC):
         elif derivative != 0:
             warnings.warn("Parameter derivative is deprecated. Use the "
                           "derivative function instead.", DeprecationWarning)
-            return self.derivative(eval_points, order=derivative)
+            return self.derivative(order=derivative)(eval_points)
 
         eval_points = np.atleast_1d(eval_points)
         if np.any(np.isnan(eval_points)):
@@ -113,40 +113,18 @@ class Basis(ABC):
     def __call__(self, *args, **kwargs):
         return self.evaluate(*args, **kwargs)
 
-    def _derivative(self, eval_points, order=1):
-        """
-        Subclasses must override this to provide evaluation of derivatives.
-
-        Order 0 derivatives (original function) are automatically
-        implemented. Subclasses can assume that the order passed is
-        nonzero.
-
-        A basis can provide derivative evaluation at given points
-        without providing a basis representation for its derivatives,
-        although is recommended to provide both if possible.
-
-        """
-        return NotImplementedError(f"{type(self)} basis is not "
-                                   "differentiable.")
-
-    def derivative(self, eval_points, order=1):
-        """Evaluate the basis derivative at given points.
+    def derivative(self, *, order=1):
+        """Construct a FDataBasis object containing the derivative.
 
         Args:
-            eval_points (array_like): List of points where the derivative of
-                the basis is evaluated.
             order (int, optional): Order of the derivative. Defaults to 1.
 
         Returns:
-            (numpy.darray): Matrix whose rows are the values of the derivatives
-            of each basis function or its derivatives at the values specified
-            in eval_points.
+            (FDataBasis): Derivative object.
 
         """
-        if order == 0:
-            return self(eval_points)
-        else:
-            return self._derivative(eval_points, order=order)
+
+        return self.to_basis().derivative(order=order)
 
     def _derivative_basis_and_coefs(self, coefs, order=1):
         """
@@ -157,9 +135,9 @@ class Basis(ABC):
         although is recommended to provide both if possible.
 
         """
-        return NotImplementedError(f"{type(self)} basis does not support "
-                                   "the construction of a basis of the "
-                                   "derivatives.")
+        raise NotImplementedError(f"{type(self)} basis does not support "
+                                  "the construction of a basis of the "
+                                  "derivatives.")
 
     def plot(self, chart=None, *, derivative=0, **kwargs):
         """Plot the basis object or its derivatives.

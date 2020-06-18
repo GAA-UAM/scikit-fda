@@ -61,12 +61,13 @@ class FPCATestCase(unittest.TestCase):
 
         fpca = FPCA(n_components=n_components,
                     regularization=TikhonovRegularization(
-                         LinearDifferentialOperator(2),
-                         regularization_parameter=1e5))
+                        LinearDifferentialOperator(2),
+                        regularization_parameter=1e5))
         fpca.fit(fd_basis)
 
         # results obtained using Ramsay's R package
-        results = [[0.92407552, 0.13544888, 0.35399023, 0.00805966, -0.02148108,
+        results = [[0.92407552, 0.13544888, 0.35399023, 0.00805966,
+                    -0.02148108,
                     -0.01709549, -0.00208469, -0.00297439, -0.00308224],
                    [-0.33314436, -0.05116842, 0.89443418, 0.14673902,
                     0.21559073,
@@ -100,8 +101,8 @@ class FPCATestCase(unittest.TestCase):
 
         fpca = FPCA(n_components=n_components,
                     regularization=TikhonovRegularization(
-                         LinearDifferentialOperator(2),
-                         regularization_parameter=1e5))
+                        LinearDifferentialOperator(2),
+                        regularization_parameter=1e5))
         fpca.fit(fd_basis)
         scores = fpca.transform(fd_basis)
 
@@ -156,7 +157,7 @@ class FPCATestCase(unittest.TestCase):
                             np.arange(0.5, 365, 1))
 
         # initialize basis data
-        basis = Fourier(n_basis=9, domain_range=(0, 365))
+        basis = Fourier(n_basis=n_basis, domain_range=(0, 365))
         fd_basis = fd_data.to_basis(basis)
 
         fpca = FPCA(n_components=n_components)
@@ -318,11 +319,7 @@ class FPCATestCase(unittest.TestCase):
         fpca = FPCA(
             n_components=n_components, weights=[1] * 365,
             regularization=TikhonovRegularization(
-                LinearDifferentialOperator(
-                    2,
-                    derivative_function=(
-                        lambda function, points, derivative:
-                        function.derivative(order=derivative)(points)))))
+                LinearDifferentialOperator(2)))
         fpca.fit(fd_data)
 
         # results obtained using fda.usc for the first component

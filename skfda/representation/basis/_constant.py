@@ -33,12 +33,9 @@ class Constant(Basis):
     def _evaluate(self, eval_points):
         return np.ones((1, len(eval_points)))
 
-    def _derivative(self, eval_points, order=1):
-        return np.zeros((1, len(eval_points)))
-
     def _derivative_basis_and_coefs(self, coefs, order=1):
-        return (self.copy(), coefs.copy() if order == 0
-                else self.copy(), np.zeros(coefs.shape))
+        return ((self.copy(), coefs.copy()) if order == 0
+                else (self.copy(), np.zeros(coefs.shape)))
 
     def _gram_matrix(self):
         return np.array([[self.domain_range[0][1] -

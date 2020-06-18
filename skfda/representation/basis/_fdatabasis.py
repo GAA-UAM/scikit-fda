@@ -233,7 +233,7 @@ class FDataBasis(FData):
         """Definition range."""
         return self.basis.domain_range
 
-    def _evaluate(self, eval_points, *, derivative=0):
+    def _evaluate(self, eval_points):
         """"Evaluate the object or its derivatives at a list of values.
 
         Args:
@@ -241,7 +241,6 @@ class FDataBasis(FData):
                 evaluated. If a matrix of shape `n_samples` x eval_points is
                 given each sample is evaluated at the values in the
                 corresponding row.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
 
         Returns:
@@ -253,13 +252,13 @@ class FDataBasis(FData):
         eval_points = eval_points[:, 0]
 
         # each row contains the values of one element of the basis
-        basis_values = self.basis.evaluate(eval_points, derivative)
+        basis_values = self.basis.evaluate(eval_points)
 
         res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
 
         return res.reshape((self.n_samples, len(eval_points), 1))
 
-    def _evaluate_composed(self, eval_points, *, derivative=0):
+    def _evaluate_composed(self, eval_points):
         r"""Evaluate the object or its derivatives at a list of values with a
         different time for each sample.
 
@@ -272,7 +271,6 @@ class FDataBasis(FData):
 
         Args:
             eval_points (numpy.ndarray): Matrix of size `n_samples`x n_points
-            derivative (int, optional): Order of the derivative. Defaults to 0.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range.
                 By default uses the method defined in fd. See extrapolation to
@@ -290,7 +288,7 @@ class FDataBasis(FData):
         _matrix = np.empty((eval_points.shape[1], self.n_basis))
 
         for i in range(self.n_samples):
-            basis_values = self.basis.evaluate(eval_points[i], derivative).T
+            basis_values = self.basis.evaluate(eval_points[i]).T
 
             np.multiply(basis_values, self.coefficients[i], out=_matrix)
             np.sum(_matrix, axis=1, out=res_matrix[i])

@@ -311,8 +311,9 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         # If the warping functions are not provided, are suppose independent
         if warping is not None:
             # Derivates warping functions
-            dh_fine = warping.evaluate(eval_points, derivative=1,
-                                       keepdims=False)
+            warping_deriv = warping.derivative()
+            dh_fine = warping_deriv(eval_points,
+                                    keepdims=False)
             dh_fine_mean = dh_fine.mean(axis=0)
             dh_fine_center = dh_fine - dh_fine_mean
 

@@ -45,16 +45,6 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         np.testing.assert_array_almost_equal(f([3]), np.array([[9.], [36.]]))
         np.testing.assert_array_almost_equal(f((2,)), np.array([[4.], [49.]]))
 
-    def test_evaluation_linear_derivative(self):
-        """Test derivative"""
-        f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10))
-
-        # Derivate = [2*x, 2*(9-x)]
-        np.testing.assert_array_almost_equal(
-            f([0.5, 1.5, 2.5], derivative=1).round(3),
-            np.array([[1.,   3.,   5.],
-                      [-17., -15., -13.]]))
-
     def test_evaluation_linear_grid(self):
         """Test grid evaluation. With domain dimension = 1"""
 
@@ -229,17 +219,6 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             f((2,)).round(3), np.array([[4.], [49.]]))
 
-    def test_evaluation_cubic_derivative(self):
-        """Test derivative"""
-        f = FDataGrid(self.data_matrix_1_1, sample_points=np.arange(10),
-                      interpolation=SplineInterpolation(3))
-
-        # Derivate = [2*x, 2*(9-x)]
-        np.testing.assert_array_almost_equal(
-            f([0.5, 1.5, 2.5], derivative=1).round(3),
-            np.array([[1.,   3.,   5.],
-                      [-17., -15., -13.]]))
-
     def test_evaluation_cubic_grid(self):
         """Test grid evaluation. With domain dimension = 1"""
 
@@ -363,20 +342,6 @@ class TestEvaluationSpline1_n(unittest.TestCase):
                                                        [[13.69,  0.50697]]]
                                                       )
                                              )
-
-    def test_evaluation_derivative(self):
-        """Test derivative"""
-        f = FDataGrid(self.data_matrix_1_n, sample_points=self.t,
-                      interpolation=self.interpolation)
-
-        # [(2*x, d/dx sin(pi/81*x**2)), (2*(9-x), d/dx sin(pi/81*(9-x)**2))]
-        np.testing.assert_array_almost_equal(f([1.5, 2.5, 3.5], derivative=1),
-                                             np.array([[[3., 0.1162381],
-                                                        [5., 0.1897434],
-                                                        [7., 0.2453124]],
-                                                       [[-15., 0.3385772],
-                                                        [-13., 0.0243172],
-                                                        [-11., -0.1752035]]]))
 
     def test_evaluation_grid(self):
         """Test grid evaluation. With domain dimension = 1"""

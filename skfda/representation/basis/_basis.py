@@ -88,7 +88,6 @@ class Basis(ABC):
         Args:
             eval_points (array_like): List of points where the basis is
                 evaluated.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each

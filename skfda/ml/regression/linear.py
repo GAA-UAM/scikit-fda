@@ -12,7 +12,7 @@ from ...misc.regularization import compute_penalty_matrix
 from ._coefficients import coefficient_info_from_covariate
 
 
-class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
+class LinearRegression(BaseEstimator, RegressorMixin):
     r"""Linear regression with multivariate response.
 
     This is a regression algorithm equivalent to multivariate linear
@@ -63,7 +63,7 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
 
     Examples:
 
-        >>> from skfda.ml.regression import MultivariateLinearRegression
+        >>> from skfda.ml.regression import LinearRegression
         >>> from skfda.representation.basis import (FDataBasis, Monomial,
         ...                                         Constant)
 
@@ -76,7 +76,7 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         ...                             [0, 1, 1],
         ...                             [1, 0, 1]])
         >>> y = [2, 3, 4, 5]
-        >>> linear = MultivariateLinearRegression()
+        >>> linear = LinearRegression()
         >>> _ = linear.fit(x_fd, y)
         >>> linear.coef_[0]
         FDataBasis(
@@ -99,7 +99,7 @@ class MultivariateLinearRegression(BaseEstimator, RegressorMixin):
         ...                             [2, 2]])
         >>> x = [[1, 7], [2, 3], [4, 2], [1, 1], [3, 1], [2, 5]]
         >>> y = [11, 10, 12, 6, 10, 13]
-        >>> linear = MultivariateLinearRegression(
+        >>> linear = LinearRegression(
         ...              coef_basis=[None, Constant()])
         >>> _ = linear.fit([x, x_fd], y)
         >>> linear.coef_[0]

@@ -15,7 +15,7 @@ multivariate or functional).
 .. autosummary::
    :toctree: autosummary
 
-   skfda.ml.regression.MultivariateLinearRegression
+   skfda.ml.regression.LinearRegression
 
 Nearest Neighbors
 -----------------

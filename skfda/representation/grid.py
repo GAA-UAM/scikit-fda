@@ -359,16 +359,6 @@ class FDataGrid(FData):
             new_interpolation = SplineInterpolation()
 
         self._interpolation = new_interpolation
-        self._interpolation_evaluator = None
-
-    @property
-    def _evaluator(self):
-        """Return the evaluator constructed by the interpolation."""
-
-        if self._interpolation_evaluator is None:
-            self._interpolation_evaluator = self._interpolation.evaluator(self)
-
-        return self._interpolation_evaluator
 
     def _evaluate(self, eval_points, *, derivative=0):
         """"Evaluate the object or its derivatives at a list of values.
@@ -386,7 +376,7 @@ class FDataGrid(FData):
 
         """
 
-        return self._evaluator.evaluate(eval_points, derivative=derivative)
+        return self.interpolation.evaluate(self, eval_points, derivative=derivative)
 
     def _evaluate_composed(self, eval_points, *, derivative=0):
         """"Evaluate the object or its derivatives at a list of values.
@@ -404,8 +394,8 @@ class FDataGrid(FData):
 
         """
 
-        return self._evaluator.evaluate_composed(eval_points,
-                                                 derivative=derivative)
+        return self.interpolation.evaluate_composed(self, eval_points,
+                                                    derivative=derivative)
 
     def derivative(self, order=1):
         r"""Differentiate a FDataGrid object.

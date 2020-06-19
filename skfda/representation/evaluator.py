@@ -4,38 +4,6 @@ object for extrapolation and evaluation of FDataGrids"""
 from abc import ABC, abstractmethod
 
 
-class EvaluatorConstructor(ABC):
-    """Constructor of an evaluator.
-
-    A constructor builds an Evaluator from a :class:`FData`, which is
-    used to the evaluation in the functional data object.
-
-    The evaluator constructor should have a method :func:`evaluator` which
-    receives an fdata object and returns an :class:`Evaluator`.
-
-    """
-
-    @abstractmethod
-    def evaluator(self, fdata):
-        """Construct an evaluator.
-
-        Builds the evaluator from an functional data object.
-
-        Args:
-            fdata (:class:`FData`): Functional object where the evaluator will
-                be used.
-
-        Returns:
-            (:class:`Evaluator`): Evaluator of the fdata.
-
-        """
-        pass
-
-    def __eq__(self, other):
-        """Equality operator between evaluators constructors"""
-        return type(self) == type(other)
-
-
 class Evaluator(ABC):
     """Structure of an evaluator.
 
@@ -52,7 +20,7 @@ class Evaluator(ABC):
 
     """
     @abstractmethod
-    def evaluate(self, eval_points, *, derivative=0):
+    def evaluate(self, fdata, eval_points, *, derivative=0):
         """Evaluation method.
 
         Evaluates the samples at the same evaluation points. The evaluation
@@ -77,7 +45,7 @@ class Evaluator(ABC):
         pass
 
     @abstractmethod
-    def evaluate_composed(self, eval_points, *, derivative=0):
+    def evaluate_composed(self, fdata, eval_points, *, derivative=0):
         """Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
@@ -101,6 +69,13 @@ class Evaluator(ABC):
         """
         pass
 
+    def __repr__(self):
+        return f"{type(self)}()"
+
+    def __eq__(self, other):
+        """Equality operator between evaluators."""
+        return type(self) == type(other)
+
 
 class GenericEvaluator(Evaluator):
     """Generic Evaluator.
@@ -111,8 +86,7 @@ class GenericEvaluator(Evaluator):
 
     """
 
-    def __init__(self, fdata, evaluate_func, evaluate_composed_func=None):
-        self.fdata = fdata
+    def __init__(self, evaluate_func, evaluate_composed_func=None):
         self.evaluate_func = evaluate_func
 
         if evaluate_composed_func is None:
@@ -120,7 +94,7 @@ class GenericEvaluator(Evaluator):
         else:
             self.evaluate_composed_func = evaluate_composed_func
 
-    def evaluate(self, eval_points, *, derivative=0):
+    def evaluate(self, fdata, eval_points, *, derivative=0):
         """Evaluation method.
 
         Evaluates the samples at the same evaluation points. The evaluation
@@ -143,10 +117,10 @@ class GenericEvaluator(Evaluator):
                 point.
 
         """
-        return self.evaluate_func(self.fdata, eval_points,
+        return self.evaluate_func(fdata, eval_points,
                                   derivative=derivative)
 
-    def evaluate_composed(self, eval_points, *, derivative=0):
+    def evaluate_composed(self, fdata, eval_points, *, derivative=0):
         """Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
@@ -169,5 +143,5 @@ class GenericEvaluator(Evaluator):
                 dimension of the i-th sample, at the j-th evaluation point.
 
         """
-        return self.evaluate_composed_func(self.fdata, eval_points,
+        return self.evaluate_composed_func(fdata, eval_points,
                                            derivative=derivative)

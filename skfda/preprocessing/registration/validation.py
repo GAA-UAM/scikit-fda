@@ -1,7 +1,8 @@
 """Methods and classes for validation of the registration procedures"""
 
-import numpy as np
 from typing import NamedTuple
+
+import numpy as np
 
 from ..._utils import check_is_univariate, _to_grid
 
@@ -38,6 +39,7 @@ class RegistrationScorer():
         :class:`~PairwiseCorrelation`
 
     """
+
     def __init__(self, eval_points=None):
         """Initialize the transformer"""
         self.eval_points = eval_points
@@ -224,10 +226,11 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         :class:`~PairwiseCorrelation`
 
     """
+
     def __init__(self, return_stats=False, eval_points=None):
         """Initialize the transformer"""
         super().__init__(eval_points)
-        self.return_stats=return_stats
+        self.return_stats = return_stats
 
     def __call__(self, estimator, X, y=None):
         """Compute the score of the transformation.
@@ -308,8 +311,9 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         # If the warping functions are not provided, are suppose independent
         if warping is not None:
             # Derivates warping functions
-            dh_fine = warping.evaluate(eval_points, derivative=1,
-                                       keepdims=False)
+            warping_deriv = warping.derivative()
+            dh_fine = warping_deriv(eval_points,
+                                    keepdims=False)
             dh_fine_mean = dh_fine.mean(axis=0)
             dh_fine_center = dh_fine - dh_fine_mean
 
@@ -420,6 +424,7 @@ class LeastSquares(AmplitudePhaseDecomposition):
         :class:`~PairwiseCorrelation`
 
     """
+
     def score_function(self, X, y):
         """Compute the score of the transformation performed.
 
@@ -526,7 +531,7 @@ class SobolevLeastSquares(RegistrationScorer):
         >>> scorer = SobolevLeastSquares()
         >>> score = scorer(shift_registration, X)
         >>> round(score, 3)
-        0.762
+        0.761
 
     See also:
         :class:`~AmplitudePhaseDecomposition`
@@ -534,6 +539,7 @@ class SobolevLeastSquares(RegistrationScorer):
         :class:`~PairwiseCorrelation`
 
     """
+
     def score_function(self, X, y):
         """Compute the score of the transformation performed.
 

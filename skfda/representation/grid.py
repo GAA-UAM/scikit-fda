@@ -360,7 +360,7 @@ class FDataGrid(FData):
 
         self._interpolation = new_interpolation
 
-    def _evaluate(self, eval_points, *, derivative=0):
+    def _evaluate(self, eval_points):
         """"Evaluate the object or its derivatives at a list of values.
 
         Args:
@@ -368,7 +368,6 @@ class FDataGrid(FData):
                 evaluated. If a matrix of shape nsample x eval_points is given
                 each sample is evaluated at the values in the corresponding row
                 in eval_points.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
@@ -376,9 +375,9 @@ class FDataGrid(FData):
 
         """
 
-        return self.interpolation.evaluate(self, eval_points, derivative=derivative)
+        return self.interpolation.evaluate(self, eval_points)
 
-    def _evaluate_composed(self, eval_points, *, derivative=0):
+    def _evaluate_composed(self, eval_points):
         """"Evaluate the object or its derivatives at a list of values.
 
         Args:
@@ -386,7 +385,6 @@ class FDataGrid(FData):
                 evaluated. If a matrix of shape nsample x eval_points is given
                 each sample is evaluated at the values in the corresponding row
                 in eval_points.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
@@ -394,10 +392,9 @@ class FDataGrid(FData):
 
         """
 
-        return self.interpolation.evaluate_composed(self, eval_points,
-                                                    derivative=derivative)
+        return self.interpolation.evaluate_composed(self, eval_points)
 
-    def derivative(self, order=1):
+    def derivative(self, *, order=1):
         r"""Differentiate a FDataGrid object.
 
         It is calculated using central finite differences when possible. In
@@ -425,7 +422,7 @@ class FDataGrid(FData):
             Second order derivative
 
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
-            >>> fdata.derivative(2)
+            >>> fdata.derivative(order=2)
             FDataGrid(
                 array([[[ 3.],
                         [ 1.],
@@ -437,22 +434,13 @@ class FDataGrid(FData):
                 ...)
 
         """
-        if self.dim_domain != 1:
-            raise NotImplementedError(
-                "This method only works when the dimension "
-                "of the domain of the FDatagrid object is "
-                "one.")
-        if order < 0:
-            raise ValueError("The order of a derivative has to be greater "
-                             "or equal than 0.")
-        if self.dim_domain > 1 or self.dim_codomain > 1:
-            raise NotImplementedError("Not implemented for 2 or more"
-                                      " dimensional data.")
-        if np.isnan(self.data_matrix).any():
-            raise ValueError("The FDataGrid object cannot contain nan "
-                             "elements.")
+        order_list = np.atleast_1d(order)
+        if order_list.ndim != 1 or len(order_list) != self.dim_domain:
+            raise ValueError("The order for each partial should be specified.")
 
-        operator = findiff.FinDiff(1, self.sample_points[0], order)
+        operator = findiff.FinDiff(*[(1 + i, p, o)
+                                     for i, (p, o) in enumerate(
+                                         zip(self.sample_points, order_list))])
         data_matrix = operator(self.data_matrix.astype(float))
 
         if self.dataset_label:
@@ -461,8 +449,10 @@ class FDataGrid(FData):
         else:
             dataset_label = None
 
-        return self.copy(data_matrix=data_matrix,
-                         dataset_label=dataset_label)
+        fdatagrid = self.copy(data_matrix=data_matrix,
+                              dataset_label=dataset_label)
+
+        return fdatagrid
 
     def __check_same_dimensions(self, other):
         if self.data_matrix.shape[1:-1] != other.data_matrix.shape[1:-1]:

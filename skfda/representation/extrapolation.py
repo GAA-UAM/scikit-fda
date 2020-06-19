@@ -34,7 +34,7 @@ class PeriodicExtrapolation(Evaluator):
                [-1.086,  0.759, -1.086]])
     """
 
-    def evaluate(self, fdata, eval_points, *, derivative=0):
+    def evaluate(self, fdata, eval_points):
         """Evaluate points outside the domain range.
 
         Args:
@@ -43,7 +43,6 @@ class PeriodicExtrapolation(Evaluator):
                 points outside the domain range. The shape of the array may be
                 `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
                 x `dim_codomain`.
-            derivate (numeric, optional): Order of derivative to be evaluated.
 
         Returns:
             (numpy.ndarray): numpy array with the evaluation of the points in
@@ -58,9 +57,9 @@ class PeriodicExtrapolation(Evaluator):
         eval_points += domain_range[:, 0]
 
         if eval_points.ndim == 3:
-            res = fdata._evaluate_composed(eval_points, derivative=derivative)
+            res = fdata._evaluate_composed(eval_points)
         else:
-            res = fdata._evaluate(eval_points, derivative=derivative)
+            res = fdata._evaluate(eval_points)
 
         return res
 
@@ -93,7 +92,7 @@ class BoundaryExtrapolation(Evaluator):
                [ 0.759,  0.759,  1.125]])
     """
 
-    def evaluate(self, fdata, eval_points, *, derivative=0):
+    def evaluate(self, fdata, eval_points):
         """Evaluate points outside the domain range.
 
         Args:
@@ -102,7 +101,6 @@ class BoundaryExtrapolation(Evaluator):
                 points outside the domain range. The shape of the array may be
                 `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
                 x `dim_codomain`.
-            derivate (numeric, optional): Order of derivative to be evaluated.
 
         Returns:
             (numpy.ndarray): numpy array with the evaluation of the points in
@@ -118,10 +116,10 @@ class BoundaryExtrapolation(Evaluator):
 
         if eval_points.ndim == 3:
 
-            res = fdata._evaluate_composed(eval_points, derivative=derivative)
+            res = fdata._evaluate_composed(eval_points)
         else:
 
-            res = fdata._evaluate(eval_points, derivative=derivative)
+            res = fdata._evaluate(eval_points)
 
         return res
 
@@ -159,7 +157,7 @@ class ExceptionExtrapolation(Evaluator):
 
     """
 
-    def evaluate(self, fdata, eval_points, *, derivative=0):
+    def evaluate(self, fdata, eval_points):
         """Evaluate points outside the domain range.
 
         Args:
@@ -168,7 +166,6 @@ class ExceptionExtrapolation(Evaluator):
                 points outside the domain range. The shape of the array may be
                 `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
                 x `dim_codomain`.
-            derivate (numeric, optional): Order of derivative to be evaluated.
 
         Raises:
             ValueError: when the extrapolation method is called.
@@ -216,7 +213,7 @@ class FillExtrapolation(Evaluator):
                  fdata.dim_codomain)
         return np.full(shape, self.fill_value)
 
-    def evaluate(self, fdata, eval_points, *, derivative=0):
+    def evaluate(self, fdata, eval_points):
         """
         Evaluate points outside the domain range.
 
@@ -226,7 +223,6 @@ class FillExtrapolation(Evaluator):
                 points outside the domain range. The shape of the array may be
                 `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
                 x `dim_codomain`.
-            derivate (numeric, optional): Order of derivative to be evaluated.
 
         Returns:
             (numpy.ndarray): numpy array with the evaluation of the points in
@@ -235,7 +231,7 @@ class FillExtrapolation(Evaluator):
         """
         return self._fill(fdata, eval_points)
 
-    def evaluate_composed(self, fdata, eval_points, *, derivative=0):
+    def evaluate_composed(self, fdata, eval_points):
         """Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
@@ -249,7 +245,6 @@ class FillExtrapolation(Evaluator):
             eval_points (numpy.ndarray): Numpy array with shape
                 `(n_samples, number_eval_points, dim_domain)` with the
                  evaluation points for each sample.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape `(n_samples,

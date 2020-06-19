@@ -12,7 +12,6 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
         eval_points (array_like): List of points where the functions are
             evaluated. If `None`, the functions must be `FDatagrid` objects
             and all points will be returned.
-        derivative (int, optional): Order of the derivative. Defaults to 0.
         extrapolation (str or Extrapolation, optional): Controls the
             extrapolation mode for elements outside the domain range. By
             default it is used the mode defined during the instance of the
@@ -81,35 +80,11 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
         array([[ 0.5   ,  0.784 ,  1.5625,  2.3515,  4.    ],
                [ 1.5   ,  1.864 ,  3.0625,  4.3315,  7.    ]])
 
-        Evaluating derivative of a FDataGrid at all points.
-
-        >>> data_matrix = [[1, 2, 3], [2, 3, 4]]
-        >>> sample_points = [2, 4, 6]
-        >>> fd = FDataGrid(data_matrix, sample_points)
-        >>>
-        >>> transformer = EvaluationTransformer(derivative=1)
-        >>> transformer.fit_transform(fd)
-        array([[ 0.5,  0.5,  0.5],
-               [ 0.5,  0.5,  0.5]])
-
-        Evaluation of the derivative of a functional data object at several
-        points.
-
-        >>> basis = Monomial(n_basis=4)
-        >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
-        >>> fd = FDataBasis(basis, coefficients)
-        >>>
-        >>> transformer = EvaluationTransformer([0, 0.2, 0.5, 0.7, 1],
-        ...                                     derivative=1)
-        >>> transformer.fit_transform(fd)
-        array([[  1.   ,   1.86 ,   3.375,   4.535,   6.5  ],
-               [  1.   ,   2.66 ,   5.375,   7.335,  10.5  ]])
     """
 
-    def __init__(self, eval_points=None, *, derivative=0,
+    def __init__(self, eval_points=None, *,
                  extrapolation=None, grid=False):
         self.eval_points = eval_points
-        self.derivative = derivative
         self.extrapolation = extrapolation
         self.grid = grid
 
@@ -128,11 +103,9 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
         check_is_fitted(self, '_is_fitted')
 
         if self.eval_points is None:
-            if self.derivative != 0:
-                X = X.derivative(self.derivative)
             evaluation = X.data_matrix.copy()
         else:
-            evaluation = X(self.eval_points, derivative=self.derivative,
+            evaluation = X(self.eval_points,
                            extrapolation=self.extrapolation, grid=self.grid)
 
         evaluation = evaluation.reshape((X.n_samples, -1))

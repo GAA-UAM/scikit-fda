@@ -20,7 +20,7 @@ class Evaluator(ABC):
 
     """
     @abstractmethod
-    def evaluate(self, fdata, eval_points, *, derivative=0):
+    def evaluate(self, fdata, eval_points):
         """Evaluation method.
 
         Evaluates the samples at the same evaluation points. The evaluation
@@ -32,7 +32,6 @@ class Evaluator(ABC):
             eval_points (numpy.ndarray): Numpy array with shape
                 ``(number_eval_points, dim_domain)`` with the
                 evaluation points.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape
@@ -45,7 +44,7 @@ class Evaluator(ABC):
         pass
 
     @abstractmethod
-    def evaluate_composed(self, fdata, eval_points, *, derivative=0):
+    def evaluate_composed(self, fdata, eval_points):
         """Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
@@ -57,7 +56,6 @@ class Evaluator(ABC):
             eval_points (numpy.ndarray): Numpy array with shape
                 ``(n_samples, number_eval_points, dim_domain)`` with the
                 evaluation points for each sample.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape
@@ -94,7 +92,7 @@ class GenericEvaluator(Evaluator):
         else:
             self.evaluate_composed_func = evaluate_composed_func
 
-    def evaluate(self, fdata, eval_points, *, derivative=0):
+    def evaluate(self, fdata, eval_points):
         """Evaluation method.
 
         Evaluates the samples at the same evaluation points. The evaluation
@@ -107,7 +105,6 @@ class GenericEvaluator(Evaluator):
             eval_points (numpy.ndarray): Numpy array with shape
                 `(len(eval_points), dim_domain)` with the evaluation points.
                 Each entry represents the coordinate of a point.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3-d array with shape `(n_samples,
@@ -117,10 +114,9 @@ class GenericEvaluator(Evaluator):
                 point.
 
         """
-        return self.evaluate_func(fdata, eval_points,
-                                  derivative=derivative)
+        return self.evaluate_func(fdata, eval_points)
 
-    def evaluate_composed(self, fdata, eval_points, *, derivative=0):
+    def evaluate_composed(self, fdata, eval_points):
         """Evaluation method.
 
         Evaluates the samples at different evaluation points. The evaluation
@@ -134,7 +130,6 @@ class GenericEvaluator(Evaluator):
             eval_points (numpy.ndarray): Numpy array with shape
                 `(n_samples, number_eval_points, dim_domain)` with the
                  evaluation points for each sample.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape `(n_samples,
@@ -143,5 +138,4 @@ class GenericEvaluator(Evaluator):
                 dimension of the i-th sample, at the j-th evaluation point.
 
         """
-        return self.evaluate_composed_func(fdata, eval_points,
-                                           derivative=derivative)
+        return self.evaluate_composed_func(fdata, eval_points)

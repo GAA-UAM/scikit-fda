@@ -5,8 +5,10 @@ objects of the package and contains some commons methods.
 """
 
 from abc import ABC, abstractmethod
+import warnings
 
 import pandas.api.extensions
+
 import numpy as np
 
 from .._utils import _coordinate_list, _list_of_arrays
@@ -197,7 +199,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         return index
 
-    def _evaluate_grid(self, axes, *, derivative=0, extrapolation=None,
+    def _evaluate_grid(self, axes, *, extrapolation=None,
                        aligned_evaluation=True, keepdims=None):
         """Evaluate the functional object in the cartesian grid.
 
@@ -224,7 +226,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         Args:
             axes (array_like): List of axes to generated the grid where the
                 object will be evaluated.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range. By
                 default it is used the mode defined during the instance of the
@@ -258,7 +259,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
             eval_points = _coordinate_list(axes)
 
-            res = self.evaluate(eval_points, derivative=derivative,
+            res = self.evaluate(eval_points,
                                 extrapolation=extrapolation, keepdims=True)
 
         elif self.dim_domain == 1:
@@ -266,7 +267,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             eval_points = [ax.squeeze(0) for ax in axes]
 
             return self.evaluate(eval_points,
-                                 derivative=derivative,
                                  extrapolation=extrapolation,
                                  keepdims=keepdims,
                                  aligned_evaluation=False)
@@ -287,7 +287,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             for i in range(self.n_samples):
                 eval_points[i] = _coordinate_list(axes[i])
 
-            res = self.evaluate(eval_points, derivative=derivative,
+            res = self.evaluate(eval_points,
                                 extrapolation=extrapolation,
                                 keepdims=True, aligned_evaluation=False)
 
@@ -339,7 +339,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         return res
 
     @abstractmethod
-    def _evaluate(self, eval_points, *, derivative=0):
+    def _evaluate(self, eval_points):
         """Internal evaluation method, defines the evaluation of the FData.
 
         Evaluates the samples of an FData object at the same eval_points.
@@ -351,7 +351,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             eval_points (numpy.ndarray): Numpy array with shape
                 `(len(eval_points), dim_domain)` with the evaluation points.
                 Each entry represents the coordinate of a point.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape `(n_samples,
@@ -363,7 +362,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         pass
 
     @abstractmethod
-    def _evaluate_composed(self, eval_points, *, derivative=0):
+    def _evaluate_composed(self, eval_points):
         """Internal evaluation method, defines the evaluation of a FData.
 
         Evaluates the samples of an FData object at different eval_points.
@@ -375,7 +374,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             eval_points (numpy.ndarray): Numpy array with shape
                 `(n_samples, len(eval_points), dim_domain)` with the
                 evaluation points for each sample.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape `(n_samples,
@@ -396,7 +394,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 evaluated. If a matrix of shape nsample x eval_points is given
                 each sample is evaluated at the values in the corresponding row
                 in eval_points.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range. By
                 default it is used the mode defined during the instance of the
@@ -419,6 +416,16 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             function at the values specified in eval_points.
 
         """
+        if derivative != 0:
+            warnings.warn("Parameter derivative is deprecated. Use the "
+                          "derivative function instead.", DeprecationWarning)
+            return self.derivative(order=derivative)(
+                eval_points,
+                extrapolation=extrapolation,
+                grid=grid,
+                aligned_evaluation=aligned_evaluation,
+                keepdims=keepdims)
+
         if extrapolation is None:
             extrapolation = self.extrapolation
         else:
@@ -427,7 +434,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         if grid:  # Evaluation of a grid performed in auxiliar function
             return self._evaluate_grid(eval_points,
-                                       derivative=derivative,
                                        extrapolation=extrapolation,
                                        aligned_evaluation=aligned_evaluation,
                                        keepdims=keepdims)
@@ -447,10 +453,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         if not extrapolate:  # Direct evaluation
 
             if aligned_evaluation:
-                res = self._evaluate(eval_points, derivative=derivative)
+                res = self._evaluate(eval_points)
             else:
-                res = self._evaluate_composed(eval_points,
-                                              derivative=derivative)
+                res = self._evaluate_composed(eval_points)
 
         else:
             # Partition of eval points
@@ -463,12 +468,10 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 eval_points_evaluation = eval_points[index_ev]
 
                 # Direct evaluation
-                res_evaluation = self._evaluate(eval_points_evaluation,
-                                                derivative=derivative)
+                res_evaluation = self._evaluate(eval_points_evaluation)
                 res_extrapolation = extrapolation.evaluate(
                     self,
-                    eval_points_extrapolation,
-                    derivative=derivative)
+                    eval_points_extrapolation)
 
             else:
                 index_ext = np.logical_or.reduce(index_matrix, axis=0)
@@ -479,14 +482,11 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
                 # Direct evaluation
                 res_evaluation = self._evaluate_composed(
-                    eval_points_evaluation,
-                    derivative=derivative
-                )
+                    eval_points_evaluation)
 
                 res_extrapolation = extrapolation.evaluate_composed(
                     self,
-                    eval_points_extrapolation,
-                    derivative=derivative)
+                    eval_points_extrapolation)
 
             res = self._join_evaluation(index_matrix, index_ext, index_ev,
                                         res_extrapolation, res_evaluation)

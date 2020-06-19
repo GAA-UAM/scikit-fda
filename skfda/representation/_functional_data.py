@@ -199,7 +199,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         return index
 
-    def _evaluate_grid(self, axes, *, derivative=0, extrapolation=None,
+    def _evaluate_grid(self, axes, *, extrapolation=None,
                        aligned_evaluation=True, keepdims=None):
         """Evaluate the functional object in the cartesian grid.
 
@@ -226,7 +226,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         Args:
             axes (array_like): List of axes to generated the grid where the
                 object will be evaluated.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range. By
                 default it is used the mode defined during the instance of the
@@ -260,7 +259,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
             eval_points = _coordinate_list(axes)
 
-            res = self.evaluate(eval_points, derivative=derivative,
+            res = self.evaluate(eval_points,
                                 extrapolation=extrapolation, keepdims=True)
 
         elif self.dim_domain == 1:
@@ -268,7 +267,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             eval_points = [ax.squeeze(0) for ax in axes]
 
             return self.evaluate(eval_points,
-                                 derivative=derivative,
                                  extrapolation=extrapolation,
                                  keepdims=keepdims,
                                  aligned_evaluation=False)
@@ -289,7 +287,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             for i in range(self.n_samples):
                 eval_points[i] = _coordinate_list(axes[i])
 
-            res = self.evaluate(eval_points, derivative=derivative,
+            res = self.evaluate(eval_points,
                                 extrapolation=extrapolation,
                                 keepdims=True, aligned_evaluation=False)
 
@@ -396,7 +394,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 evaluated. If a matrix of shape nsample x eval_points is given
                 each sample is evaluated at the values in the corresponding row
                 in eval_points.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range. By
                 default it is used the mode defined during the instance of the
@@ -419,12 +416,15 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             function at the values specified in eval_points.
 
         """
-        if derivative < 0:
-            raise ValueError("derivative only takes non-negative values.")
-        elif derivative != 0:
+        if derivative != 0:
             warnings.warn("Parameter derivative is deprecated. Use the "
                           "derivative function instead.", DeprecationWarning)
-            return self.derivative(order=derivative)(eval_points)
+            return self.derivative(order=derivative)(
+                eval_points,
+                extrapolation=extrapolation,
+                grid=grid,
+                aligned_evaluation=aligned_evaluation,
+                keepdims=keepdims)
 
         if extrapolation is None:
             extrapolation = self.extrapolation

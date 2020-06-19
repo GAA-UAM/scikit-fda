@@ -9,8 +9,9 @@ means and derivatives.
 # Author: Miguel Carbajo Berrocal
 # License: MIT
 
-import numpy as np
 import skfda
+
+import numpy as np
 
 
 ##############################################################################
@@ -60,12 +61,12 @@ means.plot(group=['high fat', 'low fat'], group_colors=colors,
 #
 # The first derivative is shown below:
 
-fdd = fd.derivative(1)
+fdd = fd.derivative()
 fig = fdd.plot(group=labels, group_colors=colors,
                linewidth=0.5, alpha=0.7, legend=True)
 
 ##############################################################################
 # We now show the second derivative:
-fdd = fd.derivative(2)
+fdd = fd.derivative(order=2)
 fig = fdd.plot(group=labels, group_colors=colors,
                linewidth=0.5, alpha=0.7, legend=True)

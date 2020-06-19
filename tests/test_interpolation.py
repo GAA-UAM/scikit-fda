@@ -16,7 +16,7 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         # Data matrix of a datagrid with a dimension of domain and image equal
         # to 1.
 
-        # Matrix of functions (x**2, (9-x)**2)
+        # Matrix of functions (x**2, (9-x)**2)
         self.data_matrix_1_1 = [np.arange(10)**2,
                                 np.arange(start=9, stop=-1, step=-1)**2]
 
@@ -71,7 +71,7 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         np.testing.assert_array_almost_equal(f(t, grid=True), res)
         np.testing.assert_array_almost_equal(f((t,), grid=True), res)
         np.testing.assert_array_almost_equal(f([t], grid=True), res)
-        # Single point with grid
+        # Single point with grid
         np.testing.assert_array_almost_equal(f(3, grid=True),
                                              np.array([[9.], [36.]]))
 
@@ -193,7 +193,8 @@ class TestEvaluationSpline1_1(unittest.TestCase):
             f([t], grid=True, keepdims=False), res)
 
         np.testing.assert_array_almost_equal(fk(t, grid=True), res_keepdims)
-        np.testing.assert_array_almost_equal(fk((t,), grid=True, keepdims=True),
+        np.testing.assert_array_almost_equal(fk((t,), grid=True,
+                                                keepdims=True),
                                              res_keepdims)
         np.testing.assert_array_almost_equal(
             fk([t], grid=True, keepdims=False), res)
@@ -220,8 +221,8 @@ class TestEvaluationSpline1_1(unittest.TestCase):
                       interpolation=SplineInterpolation(3))
 
         # Test a single point
-        np.testing.assert_array_almost_equal(f(5.3).round(3), np.array([[28.09],
-                                                                        [13.69]]))
+        np.testing.assert_array_almost_equal(f(5.3).round(3),
+                                             np.array([[28.09], [13.69]]))
 
         np.testing.assert_array_almost_equal(
             f([3]).round(3), np.array([[9.], [36.]]))
@@ -234,9 +235,10 @@ class TestEvaluationSpline1_1(unittest.TestCase):
                       interpolation=SplineInterpolation(3))
 
         # Derivate = [2*x, 2*(9-x)]
-        np.testing.assert_array_almost_equal(f([0.5, 1.5, 2.5], derivative=1).round(3),
-                                             np.array([[1.,   3.,   5.],
-                                                       [-17., -15., -13.]]))
+        np.testing.assert_array_almost_equal(
+            f([0.5, 1.5, 2.5], derivative=1).round(3),
+            np.array([[1.,   3.,   5.],
+                      [-17., -15., -13.]]))
 
     def test_evaluation_cubic_grid(self):
         """Test grid evaluation. With domain dimension = 1"""
@@ -251,7 +253,7 @@ class TestEvaluationSpline1_1(unittest.TestCase):
         np.testing.assert_array_almost_equal(f(t, grid=True).round(3), res)
         np.testing.assert_array_almost_equal(f((t,), grid=True).round(3), res)
         np.testing.assert_array_almost_equal(f([t], grid=True).round(3), res)
-        # Single point with grid
+        # Single point with grid
         np.testing.assert_array_almost_equal(
             f(3, grid=True), np.array([[9.], [36.]]))
 
@@ -266,17 +268,20 @@ class TestEvaluationSpline1_1(unittest.TestCase):
 
         # Evaluate (x**2, (9-x)**2) in (1,8)
         np.testing.assert_array_almost_equal(
-            f([[1], [8]], aligned_evaluation=False).round(3), np.array([[1.], [1.]]))
+            f([[1], [8]], aligned_evaluation=False).round(3),
+            np.array([[1.], [1.]]))
 
         t = np.linspace(4, 6, 4)
-        np.testing.assert_array_almost_equal(f([t, 9 - t], aligned_evaluation=False).round(2),
-                                             np.array([[16., 21.78, 28.44, 36.],
-                                                       [16., 21.78, 28.44, 36.]]))
+        np.testing.assert_array_almost_equal(
+            f([t, 9 - t], aligned_evaluation=False).round(2),
+            np.array([[16., 21.78, 28.44, 36.],
+                      [16., 21.78, 28.44, 36.]]))
 
         # Same length than nsample
         t = np.linspace(4, 6, 2)
-        np.testing.assert_array_almost_equal(f([t, 9 - t], aligned_evaluation=False).round(3),
-                                             np.array([[16., 36.], [16., 36.]]))
+        np.testing.assert_array_almost_equal(
+            f([t, 9 - t], aligned_evaluation=False).round(3),
+            np.array([[16., 36.], [16., 36.]]))
 
     def test_evaluation_nodes(self):
         """Test interpolation in nodes for all dimensions"""
@@ -315,7 +320,7 @@ class TestEvaluationSpline1_n(unittest.TestCase):
         # Data matrix of a datagrid with a dimension of domain and image equal
         # to 1.
 
-        # Matrix of functions (x**2, (9-x)**2)
+        # Matrix of functions (x**2, (9-x)**2)
 
         self.t = np.arange(10)
 
@@ -438,6 +443,42 @@ class TestEvaluationSpline1_n(unittest.TestCase):
             # Test interpolation in nodes
             np.testing.assert_array_almost_equal(f(np.arange(10)),
                                                  self.data_matrix_1_n)
+
+
+class TestEvaluationSplinem_n(unittest.TestCase):
+    """Test the evaluation of a grid spline interpolation with
+    arbitrary domain dimension and arbitary image dimension.
+    """
+
+    def test_evaluation_center_and_extreme_points_linear(self):
+        """Test linear interpolation in the middle point of a grid square."""
+
+        dim_codomain = 4
+        n_samples = 2
+
+        @np.vectorize
+        def coordinate_function(*args):
+            _, *domain_indexes, _ = args
+            return np.sum(domain_indexes)
+
+        for dim_domain in range(1, 6):
+            sample_points = [np.array([0, 1]) for _ in range(dim_domain)]
+            data_matrix = np.fromfunction(
+                function=coordinate_function,
+                shape=(n_samples,) + (2,) * dim_domain + (dim_codomain,))
+
+            f = FDataGrid(data_matrix, sample_points=sample_points)
+
+            evaluation = f([[0.] * dim_domain, [0.5] *
+                            dim_domain, [1.] * dim_domain])
+
+            self.assertEqual(evaluation.shape, (n_samples, 3, dim_codomain))
+
+            for i in range(n_samples):
+                for j in range(dim_codomain):
+                    np.testing.assert_array_almost_equal(
+                        evaluation[i, ..., j],
+                        [0, dim_domain * 0.5, dim_domain])
 
 
 if __name__ == '__main__':

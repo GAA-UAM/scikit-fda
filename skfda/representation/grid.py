@@ -434,20 +434,13 @@ class FDataGrid(FData):
                 ...)
 
         """
-        if self.dim_domain != 1:
-            raise NotImplementedError(
-                "This method only works when the dimension "
-                "of the domain of the FDatagrid object is "
-                "one.")
-        if order < 0:
-            raise ValueError("The order of a derivative has to be greater "
-                             "or equal than 0.")
+        order_list = np.atleast_1d(order)
+        if order_list.ndim != 1 or len(order_list) != self.dim_domain:
+            raise ValueError("The order for each partial should be specified.")
 
-        if np.isnan(self.data_matrix).any():
-            raise ValueError("The FDataGrid object cannot contain nan "
-                             "elements.")
-
-        operator = findiff.FinDiff(1, self.sample_points[0], order)
+        operator = findiff.FinDiff(*[(1 + i, p, o)
+                                     for i, (p, o) in enumerate(
+                                         zip(self.sample_points, order_list))])
         data_matrix = operator(self.data_matrix.astype(float))
 
         if self.dataset_label:

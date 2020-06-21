@@ -34,8 +34,7 @@ from .representation import FDataBasis
 from .representation import FDataGrid
 from .representation._functional_data import concatenate
 
-from . import representation, datasets, preprocessing, exploratory, misc, ml, \
-    inference
+from . import representation, datasets, preprocessing, exploratory, misc, ml
 
 import os as _os
 

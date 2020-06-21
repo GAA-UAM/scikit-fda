@@ -129,7 +129,7 @@ class FDataGrid(FData):
     def __init__(self, data_matrix, sample_points=None,
                  domain_range=None, dataset_label=None,
                  axes_labels=None, extrapolation=None,
-                 interpolation=None, keepdims=False):
+                 interpolation=None):
         """Construct a FDataGrid object.
 
         Args:
@@ -202,7 +202,7 @@ class FDataGrid(FData):
 
         self.interpolation = interpolation
 
-        super().__init__(extrapolation, dataset_label, axes_labels, keepdims)
+        super().__init__(extrapolation, dataset_label, axes_labels)
 
         return
 
@@ -816,7 +816,6 @@ class FDataGrid(FData):
         return fdbasis.FDataBasis.from_data(self.data_matrix[..., 0],
                                             self.sample_points[0],
                                             basis,
-                                            keepdims=self.keepdims,
                                             **kwargs)
 
     def to_grid(self, sample_points=None):
@@ -843,7 +842,7 @@ class FDataGrid(FData):
              data_matrix=None, sample_points=None,
              domain_range=None, dataset_label=None,
              axes_labels=None, extrapolation=None,
-             interpolation=None, keepdims=None):
+             interpolation=None):
         """Returns a copy of the FDataGrid.
 
         If an argument is provided the corresponding attribute in the new copy
@@ -874,14 +873,11 @@ class FDataGrid(FData):
         if interpolation is None:
             interpolation = self.interpolation
 
-        if keepdims is None:
-            keepdims = self.keepdims
-
         return FDataGrid(data_matrix, sample_points=sample_points,
                          domain_range=domain_range,
                          dataset_label=dataset_label,
                          axes_labels=axes_labels, extrapolation=extrapolation,
-                         interpolation=interpolation, keepdims=keepdims)
+                         interpolation=interpolation)
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               eval_points=None):
@@ -1055,8 +1051,8 @@ class FDataGrid(FData):
                 f"\ndataset_label={repr(self.dataset_label)},"
                 f"\naxes_labels={repr(axes_labels)},"
                 f"\nextrapolation={repr(self.extrapolation)},"
-                f"\ninterpolation={repr(self.interpolation)},"
-                f"\nkeepdims={repr(self.keepdims)})").replace('\n', '\n    ')
+                f"\ninterpolation={repr(self.interpolation)})").replace(
+                    '\n', '\n    ')
 
     def __getitem__(self, key):
         """Return self[key]."""

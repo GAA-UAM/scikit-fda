@@ -27,17 +27,14 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         axes_labels (list): list containing the labels of the different
             axis. The first element is the x label, the second the y label
             and so on.
-        keepdims (bool): Default value of argument keepdims in
-            :func:`evaluate`.
 
     """
 
-    def __init__(self, extrapolation, dataset_label, axes_labels, keepdims):
+    def __init__(self, extrapolation, dataset_label, axes_labels):
 
         self.extrapolation = extrapolation
         self.dataset_label = dataset_label
         self.axes_labels = axes_labels
-        self.keepdims = keepdims
 
     @property
     def axes_labels(self):
@@ -200,7 +197,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         return index
 
     def _evaluate_grid(self, axes, *, extrapolation=None,
-                       aligned_evaluation=True, keepdims=None):
+                       aligned_evaluation=True, keepdims=True):
         """Evaluate the functional object in the cartesian grid.
 
         This method is called internally by :meth:`evaluate` when the argument
@@ -293,9 +290,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         shape = [self.n_samples] + lengths
 
-        if keepdims is None:
-            keepdims = self.keepdims
-
         if self.dim_codomain != 1 or keepdims:
             shape += [self.dim_codomain]
 
@@ -385,7 +379,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         pass
 
     def evaluate(self, eval_points, *, derivative=0, extrapolation=None,
-                 grid=False, aligned_evaluation=True, keepdims=None):
+                 grid=False, aligned_evaluation=True, keepdims=True):
         """Evaluate the object or its derivatives at a list of values or
         a grid.
 
@@ -491,10 +485,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             res = self._join_evaluation(index_matrix, index_ext, index_ev,
                                         res_extrapolation, res_evaluation)
 
-        # If not provided gets default value of keepdims
-        if keepdims is None:
-            keepdims = self.keepdims
-
         # Delete last axis if not keepdims and
         if self.dim_codomain == 1 and not keepdims:
             res = res.reshape(res.shape[:-1])
@@ -502,7 +492,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         return res
 
     def __call__(self, eval_points, *, derivative=0, extrapolation=None,
-                 grid=False, aligned_evaluation=True, keepdims=None):
+                 grid=False, aligned_evaluation=True, keepdims=True):
         """Evaluate the object or its derivatives at a list of values or a
         grid. This method is a wrapper of :meth:`evaluate`.
 

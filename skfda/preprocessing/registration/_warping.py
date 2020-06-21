@@ -64,7 +64,11 @@ def invert_warping(fdatagrid, *, output_points=None):
 
         >>> identity = gamma.compose(inverse)
         >>> identity([0, 0.25, 0.5, 0.75, 1]).round(3)
-        array([[ 0.  ,  0.25,  0.5 ,  0.75,  1.  ]])
+        array([[[ 0.  ],
+                [ 0.25],
+                [ 0.5 ],
+                [ 0.75],
+                [ 1.  ]]])
 
     """
 

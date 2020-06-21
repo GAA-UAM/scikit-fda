@@ -75,7 +75,7 @@ class FDataBasis(FData):
             return self._fdatabasis.dim_codomain
 
     def __init__(self, basis, coefficients, *, dataset_label=None,
-                 axes_labels=None, extrapolation=None, keepdims=False):
+                 axes_labels=None, extrapolation=None):
         """Construct a FDataBasis object.
 
         Args:
@@ -92,11 +92,11 @@ class FDataBasis(FData):
         self.basis = basis
         self.coefficients = coefficients
 
-        super().__init__(extrapolation, dataset_label, axes_labels, keepdims)
+        super().__init__(extrapolation, dataset_label, axes_labels)
 
     @classmethod
     def from_data(cls, data_matrix, sample_points, basis,
-                  method='cholesky', keepdims=False):
+                  method='cholesky'):
         r"""Transform raw data to a smooth functional form.
 
         Takes functional data in a discrete form and makes an approximates it
@@ -338,8 +338,7 @@ class FDataBasis(FData):
             _basis = self.basis.rescale((domain_range[0] + shifts,
                                          domain_range[1] + shifts))
 
-            return FDataBasis.from_data(self.evaluate(eval_points,
-                                                      keepdims=False),
+            return FDataBasis.from_data(self.evaluate(eval_points),
                                         eval_points + shifts,
                                         _basis, **kwargs)
 
@@ -529,8 +528,7 @@ class FDataBasis(FData):
 
         return grid.FDataGrid(self.evaluate(eval_points, keepdims=False),
                               sample_points=eval_points,
-                              domain_range=self.domain_range,
-                              keepdims=self.keepdims)
+                              domain_range=self.domain_range)
 
     def to_basis(self, basis, eval_points=None, **kwargs):
         """Return the basis representation of the object.
@@ -553,7 +551,7 @@ class FDataBasis(FData):
         return [self[i] for i in range(self.n_samples)]
 
     def copy(self, *, basis=None, coefficients=None, dataset_label=None,
-             axes_labels=None, extrapolation=None, keepdims=None):
+             axes_labels=None, extrapolation=None):
         """FDataBasis copy"""
 
         if basis is None:
@@ -571,12 +569,8 @@ class FDataBasis(FData):
         if extrapolation is None:
             extrapolation = self.extrapolation
 
-        if keepdims is None:
-            keepdims = self.keepdims
-
         return FDataBasis(basis, coefficients, dataset_label=dataset_label,
-                          axes_labels=axes_labels, extrapolation=extrapolation,
-                          keepdims=keepdims)
+                          axes_labels=axes_labels, extrapolation=extrapolation)
 
     def times(self, other):
         """"Provides a numerical approximation of the multiplication between
@@ -740,8 +734,8 @@ class FDataBasis(FData):
                 f"\ncoefficients={self.coefficients},"
                 f"\ndataset_label={self.dataset_label},"
                 f"\naxes_labels={axes_labels},"
-                f"\nextrapolation={self.extrapolation},"
-                f"\nkeepdims={self.keepdims})").replace('\n', '\n    ')
+                f"\nextrapolation={self.extrapolation})").replace(
+                    '\n', '\n    ')
 
     def __str__(self):
         """Return str(self)."""

@@ -11,3 +11,4 @@ the functional data, that highlight several important aspects of it.
    visualization/boxplot
    visualization/magnitude_shape_plot
    visualization/clustering
+   visualization/fpca

@@ -22,11 +22,10 @@ The following classes are used to define common methods of extrapolation.
 Custom Extrapolation
 --------------------
 
-Custom extrapolators could be done subclassing :class:`EvaluatorConstructor
-<skfda.EvaluatorConstructor>`.
+Custom extrapolators could be done subclassing :class:`Evaluator
+<skfda.Evaluator>`.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.representation.evaluator.EvaluatorConstructor
    skfda.representation.evaluator.Evaluator

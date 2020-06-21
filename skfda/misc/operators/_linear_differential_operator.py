@@ -104,8 +104,7 @@ class LinearDifferentialOperator(Operator):
 
     def __init__(
             self, order_or_weights=None, *, order=None, weights=None,
-            domain_range=None,
-            derivative_function=None):
+            domain_range=None):
         """Constructor. You have to provide either order or weights.
            If both are provided, it will raise an error.
            If a positional argument is supplied it will be considered the
@@ -123,9 +122,6 @@ class LinearDifferentialOperator(Operator):
                          defined. If the functional weights are specified
                          and this is not, takes the domain range from them.
                          Otherwise, defaults to (0,1).
-
-            derivative_function (callable): function used to evaluate the
-                                derivatives.
 
         """
 
@@ -189,9 +185,6 @@ class LinearDifferentialOperator(Operator):
                                  "integers or FDataBasis objects")
 
         self.domain_range = real_domain_range
-        self.derivative_function = (
-            LinearDifferentialOperator.evaluate_derivative
-            if derivative_function is None else derivative_function)
 
     def __repr__(self):
         """Representation of linear differential operator object."""
@@ -227,19 +220,15 @@ class LinearDifferentialOperator(Operator):
 
     def __call__(self, f):
         """Return the function that results of applying the operator."""
+
+        function_derivatives = [
+            f.derivative(order=i) for i, _ in enumerate(self.weights)]
+
         def applied_linear_diff_op(t):
-            return sum(w(t) * self.derivative_function(
-                function=f, points=t, derivative=i)
-                for i, w in enumerate(self.weights))
+            return sum(w(t) * function_derivatives[i](t)
+                       for i, w in enumerate(self.weights))
 
         return applied_linear_diff_op
-
-    @staticmethod
-    def evaluate_derivative(function, points, derivative):
-        """
-        Default function for evaluating derivatives.
-        """
-        return function(points, derivative=derivative)
 
 
 #############################################################
@@ -476,8 +465,8 @@ def bspline_penalty_matrix_optimized(
         # defined between knots
         knots = np.array(basis.knots)
         mid_inter = (knots[1:] + knots[:-1]) / 2
-        constants = basis.evaluate(mid_inter,
-                                   derivative=derivative_degree).T
+        basis_deriv = basis.derivative(order=derivative_degree)
+        constants = basis_deriv(mid_inter).T
         knots_intervals = np.diff(basis.knots)
         # Integration of product of constants
         return constants.T @ np.diag(knots_intervals) @ constants
@@ -573,8 +562,8 @@ def fdatagrid_penalty_matrix_optimized(
         basis: FDataGrid):
 
     evaluated_basis = sum(
-        w(basis.sample_points[0]) * linear_operator.derivative_function(
-            function=basis, points=basis.sample_points[0], derivative=i)
+        w(basis.sample_points[0]) *
+        basis.derivative(order=i)(basis.sample_points[0])
         for i, w in enumerate(linear_operator.weights))
 
     indices = np.triu_indices(basis.n_samples)

@@ -202,7 +202,7 @@ class LinearRegression(BaseEstimator, RegressorMixin):
         if inner_product is None:
             return y @ x
         else:
-            return inner_product(y)
+            return inner_product(y)[0]
 
     def _argcheck_X(self, X):
         if isinstance(X, FData) or isinstance(X, np.ndarray):

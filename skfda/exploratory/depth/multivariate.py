@@ -15,7 +15,7 @@ def _stagel_donoho_outlyingness(X, *, pointwise=False):
         m = X.data_matrix[..., 0]
 
         return (np.abs(m - np.median(m, axis=0)) /
-                scipy.stats.median_absolute_deviation(m, axis=0))
+                scipy.stats.median_abs_deviation(m, axis=0, scale=1 / 1.4826))
 
     else:
         raise NotImplementedError("Only implemented for one dimension")

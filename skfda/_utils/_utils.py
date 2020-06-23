@@ -57,20 +57,28 @@ def _list_of_arrays(original_array):
 
     If the original list is two-dimensional (e.g. [[1, 2, 3], [4, 5]]), return
     a list containing other one-dimensional arrays (in this case
-    [array([1, 2, 3]), array([4, 5, 6])]).
+    [array([1, 2, 3]), array([4, 5])]).
 
     In any other case the behaviour is unespecified.
 
     """
-    new_array = np.array([np.asarray(i) for i in
-                          np.atleast_1d(original_array)])
 
-    # Special case: Only one array, expand dimension
-    if len(new_array.shape) == 1 and not any(isinstance(s, np.ndarray)
-                                             for s in new_array):
-        new_array = np.atleast_2d(new_array)
+    unidimensional = False
 
-    return list(new_array)
+    try:
+        iter(original_array)
+    except TypeError:
+        original_array = [original_array]
+
+    try:
+        iter(original_array[0])
+    except TypeError:
+        unidimensional = True
+
+    if unidimensional:
+        return [np.asarray(original_array)]
+    else:
+        return [np.asarray(i) for i in original_array]
 
 
 def _coordinate_list(axes):

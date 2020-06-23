@@ -868,10 +868,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         return array
 
-    def __array__(self, dtype=None):
-        """Automatic conversion to numpy array"""
-        return self.to_numpy()
-
     #####################################################################
     # Pandas ExtensionArray methods
     #####################################################################
@@ -964,7 +960,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         # If the ExtensionArray is backed by an ndarray, then
         # just pass that here instead of coercing to object.
-        data = self.astype(object)
+        data = self.to_numpy()
         if allow_fill and fill_value is None:
             fill_value = self.dtype.na_value
         # fill value should always be translated from the scalar

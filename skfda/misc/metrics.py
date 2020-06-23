@@ -587,6 +587,7 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
     derivative_warping = np.sqrt(derivative_warping, out=derivative_warping)
 
     d = scipy.integrate.simps(derivative_warping, x=eval_points_normalized)
+    d = np.clip(d, -1, 1)
 
     return np.arccos(d)
 

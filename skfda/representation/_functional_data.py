@@ -229,11 +229,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 object.
             aligned_evaluation (bool, optional): If False evaluates each sample
                 in a different grid.
-            keepdims (bool, optional): If the image dimension is equal to 1 and
-                keepdims is True the return matrix has shape
-                n_samples x eval_points x 1 else n_samples x eval_points.
-                By default is used the value given during the instance of the
-                object.
 
         Returns:
             (numpy.darray): Numpy array with dim_domain + 1 dimensions with
@@ -395,11 +390,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 return matrix has shape n_samples x len(t1) x len(t2) x ... x
                 len(t_dim_domain) x dim_codomain. If the domain dimension is 1
                 the parameter has no efect. Defaults to False.
-            keepdims (bool, optional): If the image dimension is equal to 1 and
-                keepdims is True the return matrix has shape
-                n_samples x eval_points x 1 else n_samples x eval_points.
-                By default is used the value given during the instance of the
-                object.
 
         Returns:
             (np.darray): Matrix whose rows are the values of the each
@@ -503,11 +493,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 return matrix has shape n_samples x len(t1) x len(t2) x ... x
                 len(t_dim_domain) x dim_codomain. If the domain dimension is 1
                 the parameter has no efect. Defaults to False.
-            keepdims (bool, optional): If the image dimension is equal to 1 and
-                keepdims is True the return matrix has shape
-                n_samples x eval_points x 1 else n_samples x eval_points.
-                By default is used the value given during the instance of the
-                object.
 
         Returns:
             (np.ndarray): Matrix whose rows are the values of the each

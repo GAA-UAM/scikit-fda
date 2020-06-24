@@ -49,7 +49,6 @@ class FDataGrid(FData):
             types of extrapolation.
         interpolation (GridInterpolation): Defines the type of interpolation
             applied in `evaluate`.
-        keepdims (bool):
 
     Examples:
         Representation of a functional data object with 2 samples

@@ -1000,7 +1000,7 @@ class FDataGrid(FData):
                     eval_points = np.linspace(*fd.domain_range[0],
                                               constants.N_POINTS_COARSE_MESH)
 
-            eval_points_transformation = fd(eval_points)[..., 0]
+            eval_points_transformation = fd(eval_points)
             data_matrix = self(eval_points_transformation,
                                aligned_evaluation=False)
         else:
@@ -1020,11 +1020,8 @@ class FDataGrid(FData):
                     list(map(np.ravel, grid_transformation[i].T))
                 ).T
 
-            data_flatten = self(eval_points_transformation,
-                                aligned_evaluation=False)
-
-            data_matrix = data_flatten.reshape((self.n_samples, *lengths,
-                                                self.dim_codomain))
+            data_matrix = self(eval_points_transformation,
+                               aligned_evaluation=False)
 
         return self.copy(data_matrix=data_matrix,
                          sample_points=eval_points,

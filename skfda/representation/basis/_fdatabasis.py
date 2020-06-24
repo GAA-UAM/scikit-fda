@@ -363,10 +363,9 @@ class FDataBasis(FData):
         points_shifted += np.atleast_2d(shifts).T
 
         # Matrix of shifted values
-        _data_matrix = self.evaluate(points_shifted,
-                                     aligned_evaluation=False,
-                                     extrapolation=extrapolation,
-                                     keepdims=False)
+        _data_matrix = self(points_shifted,
+                            aligned_evaluation=False,
+                            extrapolation=extrapolation)[..., 0]
 
         _basis = self.basis.rescale(domain)
 
@@ -526,7 +525,7 @@ class FDataBasis(FData):
                           constants.BASIS_MIN_FACTOR * self.n_basis)
             eval_points = np.linspace(*self.domain_range[0], npoints)
 
-        return grid.FDataGrid(self.evaluate(eval_points, keepdims=False),
+        return grid.FDataGrid(self.evaluate(eval_points),
                               sample_points=eval_points,
                               domain_range=self.domain_range)
 

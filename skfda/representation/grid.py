@@ -1000,14 +1000,14 @@ class FDataGrid(FData):
                     eval_points = np.linspace(*fd.domain_range[0],
                                               constants.N_POINTS_COARSE_MESH)
 
-            eval_points_transformation = fd(eval_points, keepdims=False)
+            eval_points_transformation = fd(eval_points)[..., 0]
             data_matrix = self(eval_points_transformation,
                                aligned_evaluation=False)
         else:
             if eval_points is None:
                 eval_points = fd.sample_points
 
-            grid_transformation = fd(eval_points, grid=True, keepdims=True)
+            grid_transformation = fd(eval_points, grid=True)
 
             lengths = [len(ax) for ax in eval_points]
 

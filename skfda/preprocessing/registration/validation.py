@@ -293,8 +293,8 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         else:
             eval_points = np.asarray(self.eval_points)
 
-        x_fine = X.evaluate(eval_points, keepdims=False)
-        y_fine = y.evaluate(eval_points, keepdims=False)
+        x_fine = X.evaluate(eval_points)[..., 0]
+        y_fine = y.evaluate(eval_points)[..., 0]
         mu_fine = x_fine.mean(axis=0)  # Mean unregistered function
         eta_fine = y_fine.mean(axis=0)  # Mean registered function
         mu_fine_sq = np.square(mu_fine)
@@ -312,8 +312,7 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         if warping is not None:
             # Derivates warping functions
             warping_deriv = warping.derivative()
-            dh_fine = warping_deriv(eval_points,
-                                    keepdims=False)
+            dh_fine = warping_deriv(eval_points)[..., 0]
             dh_fine_mean = dh_fine.mean(axis=0)
             dh_fine_center = dh_fine - dh_fine_mean
 

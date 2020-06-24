@@ -197,7 +197,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         return index
 
     def _evaluate_grid(self, axes, *, extrapolation=None,
-                       aligned_evaluation=True, keepdims=True):
+                       aligned_evaluation=True):
         """Evaluate the functional object in the cartesian grid.
 
         This method is called internally by :meth:`evaluate` when the argument
@@ -257,7 +257,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             eval_points = _coordinate_list(axes)
 
             res = self.evaluate(eval_points,
-                                extrapolation=extrapolation, keepdims=True)
+                                extrapolation=extrapolation)
 
         elif self.dim_domain == 1:
 
@@ -265,7 +265,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
             return self.evaluate(eval_points,
                                  extrapolation=extrapolation,
-                                 keepdims=keepdims,
                                  aligned_evaluation=False)
         else:
 
@@ -286,12 +285,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
             res = self.evaluate(eval_points,
                                 extrapolation=extrapolation,
-                                keepdims=True, aligned_evaluation=False)
+                                aligned_evaluation=False)
 
-        shape = [self.n_samples] + lengths
-
-        if self.dim_codomain != 1 or keepdims:
-            shape += [self.dim_codomain]
+        shape = [self.n_samples] + lengths + [self.dim_codomain]
 
         # Roll the list of result in a list
         return res.reshape(shape)
@@ -379,7 +375,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         pass
 
     def evaluate(self, eval_points, *, derivative=0, extrapolation=None,
-                 grid=False, aligned_evaluation=True, keepdims=True):
+                 grid=False, aligned_evaluation=True):
         """Evaluate the object or its derivatives at a list of values or
         a grid.
 
@@ -417,8 +413,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 eval_points,
                 extrapolation=extrapolation,
                 grid=grid,
-                aligned_evaluation=aligned_evaluation,
-                keepdims=keepdims)
+                aligned_evaluation=aligned_evaluation)
 
         if extrapolation is None:
             extrapolation = self.extrapolation
@@ -429,8 +424,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         if grid:  # Evaluation of a grid performed in auxiliar function
             return self._evaluate_grid(eval_points,
                                        extrapolation=extrapolation,
-                                       aligned_evaluation=aligned_evaluation,
-                                       keepdims=keepdims)
+                                       aligned_evaluation=aligned_evaluation)
 
         # Convert to array and check dimensions of eval points
         eval_points = self._reshape_eval_points(eval_points,
@@ -485,14 +479,10 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             res = self._join_evaluation(index_matrix, index_ext, index_ev,
                                         res_extrapolation, res_evaluation)
 
-        # Delete last axis if not keepdims and
-        if self.dim_codomain == 1 and not keepdims:
-            res = res.reshape(res.shape[:-1])
-
         return res
 
     def __call__(self, eval_points, *, derivative=0, extrapolation=None,
-                 grid=False, aligned_evaluation=True, keepdims=True):
+                 grid=False, aligned_evaluation=True):
         """Evaluate the object or its derivatives at a list of values or a
         grid. This method is a wrapper of :meth:`evaluate`.
 
@@ -526,8 +516,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         return self.evaluate(eval_points, derivative=derivative,
                              extrapolation=extrapolation, grid=grid,
-                             aligned_evaluation=aligned_evaluation,
-                             keepdims=keepdims)
+                             aligned_evaluation=aligned_evaluation)
 
     @abstractmethod
     def derivative(self, order=1):

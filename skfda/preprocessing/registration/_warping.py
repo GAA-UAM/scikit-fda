@@ -77,7 +77,7 @@ def invert_warping(fdatagrid, *, output_points=None):
     if output_points is None:
         output_points = fdatagrid.sample_points[0]
 
-    y = fdatagrid(output_points, keepdims=False)
+    y = fdatagrid(output_points)[..., 0]
 
     data_matrix = np.empty((fdatagrid.n_samples, len(output_points)))
 

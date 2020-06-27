@@ -185,7 +185,7 @@ class ShiftRegistration(RegistrationTransformer):
 
         # Computes the derivate of originals curves in the mesh points
         fd_deriv = fd.derivative(order=1)
-        D1x = fd_deriv(output_points, keepdims=False)
+        D1x = fd_deriv(output_points)[..., 0]
 
         # Second term of the second derivate estimation of REGSSE. The
         # first term has been dropped to improve convergence (see references)
@@ -197,7 +197,7 @@ class ShiftRegistration(RegistrationTransformer):
         # Case template fixed
         if isinstance(template, FData):
             original_template = template
-            tfine_aux = template.evaluate(output_points, keepdims=False)[0]
+            tfine_aux = template.evaluate(output_points)[0, ..., 0]
 
             if self.restrict_domain:
                 template_points_aux = tfine_aux
@@ -239,10 +239,9 @@ class ShiftRegistration(RegistrationTransformer):
                 output_points_rep = np.outer(ones, output_points)
 
             # Computes the new values shifted
-            x = fd.evaluate(output_points_rep + np.atleast_2d(delta).T,
-                            aligned_evaluation=False,
-                            extrapolation=self.extrapolation,
-                            keepdims=False)
+            x = fd(output_points_rep + np.atleast_2d(delta).T,
+                   aligned_evaluation=False,
+                   extrapolation=self.extrapolation)[..., 0]
 
             if template == "mean":
                 x.mean(axis=0, out=tfine_aux)

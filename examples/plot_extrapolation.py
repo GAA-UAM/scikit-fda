@@ -10,11 +10,12 @@ Shows the usage of the different types of extrapolation.
 
 # sphinx_gallery_thumbnail_number = 2
 
+import skfda
+
 import mpl_toolkits.mplot3d
 
 import matplotlib.pyplot as plt
 import numpy as np
-import skfda
 
 
 ##############################################################################
@@ -124,7 +125,7 @@ fdgrid.dataset_label = "Periodic extrapolation"
 
 # Evaluation of the grid
 # Extrapolation supplied in the evaluation
-values = fdgrid(t, extrapolation="periodic")
+values = fdgrid(t, extrapolation="periodic")[..., 0]
 
 plt.plot(t, values.T, linestyle='--')
 
@@ -146,7 +147,7 @@ fdgrid.dataset_label = "Boundary extrapolation"
 fdgrid.extrapolation = "bounds"
 
 # Evaluation of the grid
-values = fdgrid(t)
+values = fdgrid(t)[..., 0]
 plt.plot(t, values.T, linestyle='--')
 
 plt.gca().set_prop_cycle(None)  # Reset color cycle
@@ -218,7 +219,7 @@ values = fd_surface((t, t), grid=True, extrapolation="periodic")
 T, S = np.meshgrid(t, t)
 
 
-ax.plot_wireframe(T, S, values[0], alpha=.3, color="C0")
+ax.plot_wireframe(T, S, values[0, ..., 0], alpha=.3, color="C0")
 ax.plot_surface(X, Y, Z, color="C0")
 
 ###############################################################################
@@ -231,7 +232,7 @@ values = fd_surface((t, t), grid=True, extrapolation="bounds")
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot_wireframe(T, S, values[0], alpha=.3, color="C0")
+ax.plot_wireframe(T, S, values[0, ..., 0], alpha=.3, color="C0")
 ax.plot_surface(X, Y, Z, color="C0")
 
 ###############################################################################
@@ -243,5 +244,5 @@ values = fd_surface((t, t), grid=True, extrapolation="zeros")
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot_wireframe(T, S, values[0], alpha=.3, color="C0")
+ax.plot_wireframe(T, S, values[0, ..., 0], alpha=.3, color="C0")
 ax.plot_surface(X, Y, Z, color="C0")

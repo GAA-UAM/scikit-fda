@@ -161,7 +161,7 @@ class SRSF(BaseEstimator, TransformerMixin):
         g = X.derivative()
 
         # Evaluation with the corresponding interpolation
-        data_matrix = g(output_points, keepdims=False)
+        data_matrix = g(output_points)[..., 0]
 
         # SRSF(f) = sign(f) * sqrt|Df| (avoiding multiple allocation)
         sign_g = np.sign(data_matrix)
@@ -222,7 +222,7 @@ class SRSF(BaseEstimator, TransformerMixin):
         else:
             output_points = self.output_points
 
-        data_matrix = X(output_points, keepdims=True)
+        data_matrix = X(output_points)
 
         data_matrix *= np.abs(data_matrix)
 
@@ -432,8 +432,8 @@ class ElasticRegistration(RegistrationTransformer):
             output_points = self.output_points
 
         # Discretizacion in evaluation points
-        q_data = fdatagrid_srsf(output_points, keepdims=False)
-        template_data = self._template_srsf(output_points, keepdims=False)
+        q_data = fdatagrid_srsf(output_points)[..., 0]
+        template_data = self._template_srsf(output_points)[..., 0]
 
         if q_data.shape[0] == 1:
             q_data = q_data[0]
@@ -706,7 +706,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
     fdatagrid_normalized = FDataGrid(fdatagrid(eval_points) / y_scale,
                                      sample_points=eval_points_normalized)
 
-    srsf = fdatagrid_srsf(eval_points, keepdims=False)
+    srsf = fdatagrid_srsf(eval_points)[..., 0]
 
     # Initialize with function closest to the L2 mean with the L2 distance
     centered = (srsf.T - srsf.mean(axis=0, keepdims=True).T).T

@@ -23,15 +23,23 @@ class PeriodicExtrapolation(Evaluator):
 
         >>> fd.extrapolation = PeriodicExtrapolation()
         >>> fd([-.5, 0, 1.5]).round(3)
-        array([[-0.724,  0.976, -0.724],
-               [-1.086,  0.759, -1.086]])
+        array([[[-0.724],
+                [ 0.976],
+                [-0.724]],
+               [[-1.086],
+                [ 0.759],
+                [-1.086]]])
 
         This extrapolator is equivalent to the string `"periodic"`
 
         >>> fd.extrapolation = 'periodic'
         >>> fd([-.5, 0, 1.5]).round(3)
-        array([[-0.724,  0.976, -0.724],
-               [-1.086,  0.759, -1.086]])
+        array([[[-0.724],
+                [ 0.976],
+                [-0.724]],
+               [[-1.086],
+                [ 0.759],
+                [-1.086]]])
     """
 
     def evaluate(self, fdata, eval_points):
@@ -81,15 +89,23 @@ class BoundaryExtrapolation(Evaluator):
 
         >>> fd.extrapolation = BoundaryExtrapolation()
         >>> fd([-.5, 0, 1.5]).round(3)
-        array([[ 0.976,  0.976,  0.797],
-               [ 0.759,  0.759,  1.125]])
+        array([[[ 0.976],
+                [ 0.976],
+                [ 0.797]],
+               [[ 0.759],
+                [ 0.759],
+                [ 1.125]]])
 
         This extrapolator is equivalent to the string `"bounds"`.
 
         >>> fd.extrapolation = 'bounds'
         >>> fd([-.5, 0, 1.5]).round(3)
-        array([[ 0.976,  0.976,  0.797],
-               [ 0.759,  0.759,  1.125]])
+        array([[[ 0.976],
+                [ 0.976],
+                [ 0.797]],
+               [[ 0.759],
+                [ 0.759],
+                [ 1.125]]])
     """
 
     def evaluate(self, fdata, eval_points):
@@ -193,16 +209,24 @@ class FillExtrapolation(Evaluator):
 
         >>> fd.extrapolation = FillExtrapolation(0)
         >>> fd([-.5, 0, 1.5]).round(3)
-        array([[ 0.   ,  0.976,  0.   ],
-               [ 0.   ,  0.759,  0.   ]])
+        array([[[ 0.   ],
+                [ 0.976],
+                [ 0.   ]],
+               [[ 0.   ],
+                [ 0.759],
+                [ 0.   ]]])
 
         The previous extrapolator is equivalent to the string `"zeros"`.
         In the same way FillExtrapolation(np.nan) is equivalent to `"nan"`.
 
         >>> fd.extrapolation = "nan"
         >>> fd([-.5, 0, 1.5]).round(3)
-        array([[   nan,  0.976,    nan],
-               [   nan,  0.759,    nan]])
+        array([[[   nan],
+                [ 0.976],
+                [   nan]],
+               [[   nan],
+                [ 0.759],
+                [   nan]]])
     """
 
     def __init__(self, fill_value):

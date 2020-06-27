@@ -51,9 +51,11 @@ class TestWarping(unittest.TestCase):
         np.testing.assert_array_almost_equal(normalized.sample_points[0],
                                              np.linspace(0, 1, 50))
 
-        np.testing.assert_array_almost_equal(normalized(0), [[0.], [0.]])
+        np.testing.assert_array_almost_equal(
+            normalized(0)[..., 0], [[0.], [0.]])
 
-        np.testing.assert_array_almost_equal(normalized(1), [[1.], [1.]])
+        np.testing.assert_array_almost_equal(
+            normalized(1)[..., 0], [[1.], [1.]])
 
     def test_standard_normalize_warping_default_value(self):
         """Test normalization """
@@ -66,11 +68,13 @@ class TestWarping(unittest.TestCase):
         np.testing.assert_array_almost_equal(normalized.sample_points[0],
                                              np.linspace(-1, 1, 50))
 
-        np.testing.assert_array_almost_equal(normalized(-1), [[-1], [-1]])
+        np.testing.assert_array_almost_equal(
+            normalized(-1)[..., 0], [[-1], [-1]])
 
-        np.testing.assert_array_almost_equal(normalized(1), [[1.], [1.]])
+        np.testing.assert_array_almost_equal(
+            normalized(1)[..., 0], [[1.], [1.]])
 
-    def test_normalize_warpig(self):
+    def test_normalize_warping(self):
         """Test normalization to (a, b)"""
         a = -4
         b = 3
@@ -83,9 +87,9 @@ class TestWarping(unittest.TestCase):
         np.testing.assert_array_almost_equal(normalized.sample_points[0],
                                              np.linspace(*domain, 50))
 
-        np.testing.assert_array_equal(normalized(a), [[a], [a]])
+        np.testing.assert_array_equal(normalized(a)[..., 0], [[a], [a]])
 
-        np.testing.assert_array_equal(normalized(b), [[b], [b]])
+        np.testing.assert_array_equal(normalized(b)[..., 0], [[b], [b]])
 
     def test_landmark_shift_deltas(self):
 
@@ -104,12 +108,12 @@ class TestWarping(unittest.TestCase):
 
         original_modes = fd(landmarks.reshape((3, 1, 1)),
                             aligned_evaluation=False)
-        # Test default location
+        # Test default location
         fd_registered = landmark_shift(fd, landmarks)
         center = (landmarks.max() + landmarks.min()) / 2
         reg_modes = fd_registered(center)
 
-        # Test callable location
+        # Test callable location
         np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
 
         fd_registered = landmark_shift(fd, landmarks, location=np.mean)
@@ -125,7 +129,7 @@ class TestWarping(unittest.TestCase):
 
         np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
 
-        # Test array location
+        # Test array location
         fd_registered = landmark_shift(fd, landmarks, location=[0, 0.1, 0.2])
         reg_modes = fd_registered([[0], [.1], [.2]], aligned_evaluation=False)
 
@@ -140,12 +144,14 @@ class TestWarping(unittest.TestCase):
         # Default location
         warping = landmark_registration_warping(fd, landmarks)
         center = (landmarks.max(axis=0) + landmarks.min(axis=0)) / 2
-        np.testing.assert_almost_equal(warping(center), landmarks, decimal=1)
+        np.testing.assert_almost_equal(
+            warping(center)[..., 0], landmarks, decimal=1)
 
         # Fixed location
         center = [.3, .6]
         warping = landmark_registration_warping(fd, landmarks, location=center)
-        np.testing.assert_almost_equal(warping(center), landmarks, decimal=3)
+        np.testing.assert_almost_equal(
+            warping(center)[..., 0], landmarks, decimal=3)
 
     def test_landmark_registration(self):
         fd = make_multimodal_samples(n_samples=3, n_modes=2, random_state=9)

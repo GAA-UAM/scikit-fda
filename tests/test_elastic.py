@@ -117,9 +117,12 @@ class TestElasticRegistration(unittest.TestCase):
 
         values = register([-.25, -.1, 0, .1, .25])
 
-        expected = [[0.599058,  0.997427,  0.772248,  0.412342,  0.064725],
-                    [0.626875,  0.997155,  0.791649,  0.382181,  0.050098],
-                    [0.620992,  0.997369,  0.785886,  0.376556,  0.048804]]
+        expected = [[[0.599058],  [0.997427],  [0.772248],
+                     [0.412342],  [0.064725]],
+                    [[0.626875],  [0.997155],  [0.791649],
+                     [0.382181],  [0.050098]],
+                    [[0.620992],  [0.997369],  [0.785886],
+                     [0.376556],  [0.048804]]]
 
         np.testing.assert_allclose(values, expected, atol=1e-4)
 
@@ -130,13 +133,16 @@ class TestElasticRegistration(unittest.TestCase):
         register = reg.fit_transform(self.unimodal_samples)
 
         values = register([-.25, -.1, 0, .1, .25])
-        expected = [[0.599058,  0.997427,  0.772248,  0.412342,  0.064725],
-                    [0.626875,  0.997155,  0.791649,  0.382181,  0.050098],
-                    [0.620992,  0.997369,  0.785886,  0.376556,  0.048804]]
+        expected = [[[0.599058],  [0.997427],  [0.772248],
+                     [0.412342],  [0.064725]],
+                    [[0.626875],  [0.997155],  [0.791649],
+                     [0.382181],  [0.050098]],
+                    [[0.620992],  [0.997369],  [0.785886],
+                     [0.376556],  [0.048804]]]
 
         np.testing.assert_allclose(values, expected, atol=1e-4)
 
-    def test_simetry_of_aligment(self):
+    def test_simmetry_of_aligment(self):
         """Check registration using inverse composition"""
         reg = ElasticRegistration(template=self.template)
         reg.fit_transform(self.unimodal_samples)
@@ -179,7 +185,7 @@ class TestElasticRegistration(unittest.TestCase):
         warping = make_random_warping(start=-1, random_state=0)
         mean = warping_mean(warping)
         values = mean([-1, -.5, 0, .5, 1])
-        expected = [[-1., -0.376241,  0.136193,  0.599291,  1.]]
+        expected = [[[-1.], [-0.376241],  [0.136193],  [0.599291],  [1.]]]
         np.testing.assert_array_almost_equal(values, expected)
 
 

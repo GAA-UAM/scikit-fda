@@ -466,7 +466,7 @@ def bspline_penalty_matrix_optimized(
         knots = np.array(basis.knots)
         mid_inter = (knots[1:] + knots[:-1]) / 2
         basis_deriv = basis.derivative(order=derivative_degree)
-        constants = basis_deriv(mid_inter).T
+        constants = basis_deriv(mid_inter)[..., 0].T
         knots_intervals = np.diff(basis.knots)
         # Integration of product of constants
         return constants.T @ np.diag(knots_intervals) @ constants
@@ -569,7 +569,7 @@ def fdatagrid_penalty_matrix_optimized(
     indices = np.triu_indices(basis.n_samples)
     product = evaluated_basis[indices[0]] * evaluated_basis[indices[1]]
 
-    triang_vec = scipy.integrate.simps(product, x=basis.sample_points)
+    triang_vec = scipy.integrate.simps(product[..., 0], x=basis.sample_points)
 
     matrix = np.empty((basis.n_samples, basis.n_samples))
 

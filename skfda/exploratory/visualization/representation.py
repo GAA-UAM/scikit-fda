@@ -160,7 +160,7 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
 
         # Evaluates the object in a linspace
         eval_points = np.linspace(*domain_range[0], n_points)
-        mat = fdata(eval_points, keepdims=True)
+        mat = fdata(eval_points)
 
         color_dict = {}
 
@@ -189,7 +189,7 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
         y = np.linspace(*domain_range[1], npoints[1])
 
         # Evaluation of the functional object
-        Z = fdata((x, y), grid=True, keepdims=True)
+        Z = fdata((x, y), grid=True)
 
         X, Y = np.meshgrid(x, y, indexing='ij')
 

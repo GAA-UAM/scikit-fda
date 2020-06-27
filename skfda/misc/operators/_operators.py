@@ -48,8 +48,10 @@ def compute_triang_functional(evaluated_basis,
     domain_range = basis.domain_range[0]
 
     # Obtain the integrals for the upper matrix
-    return scipy.integrate.quad_vec(
+    integral = scipy.integrate.quad_vec(
         cross_product, domain_range[0], domain_range[1])[0]
+
+    return integral[..., 0]
 
 
 def compute_triang_multivariate(evaluated_basis,

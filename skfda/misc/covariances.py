@@ -1,7 +1,7 @@
 import abc
 import numbers
 
-import matplotlib
+import matplotlib.pyplot as plt
 
 import numpy as np
 import sklearn.gaussian_process.kernels as sklearn_kern
@@ -76,7 +76,8 @@ class Covariance(abc.ABC):
     def _sample_trajectories_plot(self):
         from ..datasets import make_gaussian_process
 
-        fd = make_gaussian_process(start=-1, cov=self)
+        fd = make_gaussian_process(
+            start=-1, n_samples=10, cov=self, random_state=0)
         fig = fd.plot()
         fig.axes[0].set_title("Sample trajectories")
         return fig
@@ -106,27 +107,33 @@ class Covariance(abc.ABC):
     def _repr_html_(self):
         fig = self.heatmap()
         heatmap = _figure_to_svg(fig)
+        plt.close(fig)
 
         fig = self._sample_trajectories_plot()
         sample_trajectories = _figure_to_svg(fig)
+        plt.close(fig)
 
-        row_style = 'style="position:relative; display:table-row"'
+        row_style = ''
 
-        def column_style(percent):
-            return (f'style="width: {percent}%; display: table-cell; '
+        def column_style(percent, margin_top=0):
+            return (f'style="display: inline-block; '
+                    f'margin:0; '
+                    f'margin-top: {margin_top}; '
+                    f'width:{percent}%; '
+                    f'height:auto;'
                     f'vertical-align: middle"')
 
         html = f"""
         <div {row_style}>
-            <div {column_style(50)}>
+            <div {column_style(100, margin_top='25px')}>
             \\[{self._latex_content()}\\]
             </div>
         </div>
         <div {row_style}>
-            <div {column_style(50)}>
+            <div {column_style(48)}>
             {sample_trajectories}
             </div>
-            <div {column_style(50)}>
+            <div {column_style(48)}>
             {heatmap}
             </div>
         </div>
@@ -147,8 +154,8 @@ class Brownian(Covariance):
     The covariance function is
 
     .. math::
-        K(x, y) = \sigma^2 \frac{|x - \mathcal{O}| + |y - \mathcal{O}|
-        - |x-y|}{2}
+        K(x, x') = \sigma^2 \frac{|x - \mathcal{O}| + |x' - \mathcal{O}|
+        - |x - x'|}{2}
 
     where :math:`\sigma^2` is the variance at distance 1 from
     :math:`\mathcal{O}` and :math:`\mathcal{O}` is the origin point.
@@ -160,24 +167,38 @@ class Brownian(Covariance):
 
     Heatmap plot of the covariance function:
 
-    .. plot::
+    .. jupyter-execute::
 
-       from skfda.misc.covariances import Brownian
+        from skfda.misc.covariances import Brownian
+        import matplotlib.pyplot as plt
 
-       Brownian().heatmap(limits=(0, 1))
+        Brownian().heatmap(limits=(0, 1))
+        plt.show()
 
     Example of Gaussian process trajectories using this covariance:
 
-    .. plot::
+    .. jupyter-execute::
 
-       from skfda.misc.covariances import Brownian
-       from skfda.datasets import make_gaussian_process
+        from skfda.misc.covariances import Brownian
+        from skfda.datasets import make_gaussian_process
+        import matplotlib.pyplot as plt
 
-       make_gaussian_process(n_samples=10, cov=Brownian()).plot()
+        gp = make_gaussian_process(
+                n_samples=10, cov=Brownian(), random_state=0)
+        gp.plot()
+        plt.show()
+
+    Default representation in a Jupyter notebook:
+
+    .. jupyter-execute::
+
+        from skfda.misc.covariances import Brownian
+
+        Brownian()
 
     """
-    _latex_formula = (r"K(x, y) = \sigma^2 \frac{|x - \mathcal{O}| + "
-                      r"|y - \mathcal{O}| - |x-y|}{2}")
+    _latex_formula = (r"K(x, x') = \sigma^2 \frac{|x - \mathcal{O}| + "
+                      r"|x' - \mathcal{O}| - |x - x'|}{2}")
 
     _parameters = [("variance", r"\sigma^2"),
                    ("origin", r"\mathcal{O}")]
@@ -200,30 +221,44 @@ class Linear(Covariance):
     The covariance function is
 
     .. math::
-        K(x, y) = \sigma^2 (x^T y + c)
+        K(x, x') = \sigma^2 (x^T x' + c)
 
     where :math:`\sigma^2` is the scale of the variance and
     :math:`c` is the intercept.
 
     Heatmap plot of the covariance function:
 
-    .. plot::
+    .. jupyter-execute::
 
-       from skfda.misc.covariances import Linear
+        from skfda.misc.covariances import Linear
+        import matplotlib.pyplot as plt
 
-       Linear().heatmap(limits=(0, 1))
+        Linear().heatmap(limits=(0, 1))
+        plt.show()
 
     Example of Gaussian process trajectories using this covariance:
 
-    .. plot::
+    .. jupyter-execute::
 
-       from skfda.misc.covariances import Linear
-       from skfda.datasets import make_gaussian_process
+        from skfda.misc.covariances import Linear
+        from skfda.datasets import make_gaussian_process
+        import matplotlib.pyplot as plt
 
-       make_gaussian_process(n_samples=10, cov=Linear()).plot()
+        gp = make_gaussian_process(
+                n_samples=10, cov=Linear(), random_state=0)
+        gp.plot()
+        plt.show()
+
+    Default representation in a Jupyter notebook:
+
+    .. jupyter-execute::
+
+        from skfda.misc.covariances import Linear
+
+        Linear()
 
     """
-    _latex_formula = r"K(x, y) = \sigma^2 (x^T y + c)"
+    _latex_formula = r"K(x, x') = \sigma^2 (x^T x' + c)"
 
     _parameters = [("variance", r"\sigma^2"),
                    ("intercept", r"c")]
@@ -251,7 +286,7 @@ class Polynomial(Covariance):
     The covariance function is
 
     .. math::
-        K(x, y) = \sigma^2 (\alpha x^T y + c)^d
+        K(x, x') = \sigma^2 (\alpha x^T x' + c)^d
 
     where :math:`\sigma^2` is the scale of the variance,
     :math:`\alpha` is the slope, :math:`d` the degree of the
@@ -259,23 +294,37 @@ class Polynomial(Covariance):
 
     Heatmap plot of the covariance function:
 
-    .. plot::
+    .. jupyter-execute::
 
-       from skfda.misc.covariances import Polynomial
+        from skfda.misc.covariances import Polynomial
+        import matplotlib.pyplot as plt
 
-       Polynomial().heatmap(limits=(0, 1))
+        Polynomial().heatmap(limits=(0, 1))
+        plt.show()
 
     Example of Gaussian process trajectories using this covariance:
 
-    .. plot::
+    .. jupyter-execute::
 
-       from skfda.misc.covariances import Polynomial
-       from skfda.datasets import make_gaussian_process
+        from skfda.misc.covariances import Polynomial
+        from skfda.datasets import make_gaussian_process
+        import matplotlib.pyplot as plt
 
-       make_gaussian_process(n_samples=10, cov=Polynomial()).plot()
+        gp = make_gaussian_process(
+                n_samples=10, cov=Polynomial(), random_state=0)
+        gp.plot()
+        plt.show()
+
+    Default representation in a Jupyter notebook:
+
+    .. jupyter-execute::
+
+        from skfda.misc.covariances import Polynomial
+
+        Polynomial()
 
     """
-    _latex_formula = r"K(x, y) = \sigma^2 (\alpha x^T y + c)^d"
+    _latex_formula = r"K(x, x') = \sigma^2 (\alpha x^T x' + c)^d"
 
     _parameters = [("variance", r"\sigma^2"),
                    ("intercept", r"c"),
@@ -311,29 +360,43 @@ class Gaussian(Covariance):
     The covariance function is
 
     .. math::
-        K(x, y) = \sigma^2 \exp\left(-\frac{||x - y||^2}{2l^2}\right)
+        K(x, x') = \sigma^2 \exp\left(-\frac{||x - x'||^2}{2l^2}\right)
 
     where :math:`\sigma^2` is the variance and :math:`l` is the length scale.
 
     Heatmap plot of the covariance function:
 
-    .. plot::
+    .. jupyter-execute::
 
-       from skfda.misc.covariances import Gaussian
+        from skfda.misc.covariances import Gaussian
+        import matplotlib.pyplot as plt
 
-       Gaussian().heatmap(limits=(0, 1))
+        Gaussian().heatmap(limits=(0, 1))
+        plt.show()
 
     Example of Gaussian process trajectories using this covariance:
 
-    .. plot::
+    .. jupyter-execute::
 
-       from skfda.misc.covariances import Gaussian
-       from skfda.datasets import make_gaussian_process
+        from skfda.misc.covariances import Gaussian
+        from skfda.datasets import make_gaussian_process
+        import matplotlib.pyplot as plt
 
-       make_gaussian_process(n_samples=10, cov=Gaussian()).plot()
+        gp = make_gaussian_process(
+                n_samples=10, cov=Gaussian(), random_state=0)
+        gp.plot()
+        plt.show()
+
+    Default representation in a Jupyter notebook:
+
+    .. jupyter-execute::
+
+        from skfda.misc.covariances import Gaussian
+
+        Gaussian()
 
     """
-    _latex_formula = (r"K(x, y) = \sigma^2 \exp\left(-\frac{\|x - y\|^2}{2l^2}"
+    _latex_formula = (r"K(x, x') = \sigma^2 \exp\left(-\frac{\|x - x'\|^2}{2l^2}"
                       r"\right)")
 
     _parameters = [("variance", r"\sigma^2"),
@@ -364,29 +427,43 @@ class Exponential(Covariance):
     The covariance function is
 
     .. math::
-        K(x, y) = \sigma^2 \exp\left(-\frac{\|x - y\|}{l}\right)
+        K(x, x') = \sigma^2 \exp\left(-\frac{\|x - x'\|}{l}\right)
 
     where :math:`\sigma^2` is the variance and :math:`l` is the length scale.
 
     Heatmap plot of the covariance function:
 
-    .. plot::
+    .. jupyter-execute::
 
-       from skfda.misc.covariances import Exponential
+        from skfda.misc.covariances import Exponential
+        import matplotlib.pyplot as plt
 
-       Exponential().heatmap(limits=(0, 1))
+        Exponential().heatmap(limits=(0, 1))
+        plt.show()
 
     Example of Gaussian process trajectories using this covariance:
 
-    .. plot::
+    .. jupyter-execute::
 
-       from skfda.misc.covariances import Exponential
-       from skfda.datasets import make_gaussian_process
+        from skfda.misc.covariances import Exponential
+        from skfda.datasets import make_gaussian_process
+        import matplotlib.pyplot as plt
 
-       make_gaussian_process(n_samples=10, cov=Exponential()).plot()
+        gp = make_gaussian_process(
+                n_samples=10, cov=Exponential(), random_state=0)
+        gp.plot()
+        plt.show()
+
+    Default representation in a Jupyter notebook:
+
+    .. jupyter-execute::
+
+        from skfda.misc.covariances import Exponential
+
+        Exponential()
 
     """
-    _latex_formula = (r"K(x, y) = \sigma^2 \exp\left(-\frac{||x - y||}{l}"
+    _latex_formula = (r"K(x, x') = \sigma^2 \exp\left(-\frac{||x - x'||}{l}"
                       r"\right)")
 
     _parameters = [("variance", r"\sigma^2"),
@@ -410,10 +487,54 @@ class Exponential(Covariance):
 
 
 class WhiteNoise(Covariance):
-    """Gaussian covariance function."""
+    r"""
+    Gaussian covariance function.
 
-    _latex_formula = (r"K(x,y)= \left\{ \begin{array}{lc} \sigma^2, & x = y "
-                      r"\\ 0, & x \neq y\\ \end{array} \right.")
+    The covariance function is
+
+    .. math::
+        K(x, x')= \begin{cases}
+                    \sigma^2, \quad x = x' \\
+                    0, \quad x \neq x'\\
+                  \end{cases}
+
+    where :math:`\sigma^2` is the variance.
+
+    Heatmap plot of the covariance function:
+
+    .. jupyter-execute::
+
+        from skfda.misc.covariances import WhiteNoise
+        import matplotlib.pyplot as plt
+
+        WhiteNoise().heatmap(limits=(0, 1))
+        plt.show()
+
+    Example of Gaussian process trajectories using this covariance:
+
+    .. jupyter-execute::
+
+        from skfda.misc.covariances import WhiteNoise
+        from skfda.datasets import make_gaussian_process
+        import matplotlib.pyplot as plt
+
+        gp = make_gaussian_process(
+                n_samples=10, cov=WhiteNoise(), random_state=0)
+        gp.plot()
+        plt.show()
+
+    Default representation in a Jupyter notebook:
+
+    .. jupyter-execute::
+
+        from skfda.misc.covariances import WhiteNoise
+
+        WhiteNoise()
+
+    """
+
+    _latex_formula = (r"K(x, x')= \begin{cases} \sigma^2, \quad x = x' \\"
+                      r"0, \quad x \neq x'\\ \end{cases}")
 
     _parameters = [("variance", r"\sigma^2")]
 

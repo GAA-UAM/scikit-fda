@@ -35,7 +35,39 @@ class MagnitudeShapePlot:
     The outliers are detected using an instance of
     :class:`DirectionalOutlierDetector`.
 
+    Args:
+
+        fdatagrid (FDataGrid): Object containing the data.
+        depth_method (:ref:`depth measure <depth-measures>`, optional):
+            Method used to order the data. Defaults to :func:`projection
+            depth <fda.depth_measures.multivariate.projection_depth>`.
+        pointwise_weights (array_like, optional): an array containing the
+            weights of each points of discretisati on where values have
+            been recorded.
+        alpha (float, optional): Denotes the quantile to choose the cutoff
+            value for detecting outliers Defaults to 0.993, which is used
+            in the classical boxplot.
+        assume_centered (boolean, optional): If True, the support of the
+            robust location and the covariance estimates is computed, and a
+            covariance estimate is recomputed from it, without centering
+            the data. Useful to work with data whose mean is significantly
+            equal to zero but is not exactly zero. If False, default value,
+            the robust location and covariance are directly computed with
+            the FastMCD algorithm without additional treatment.
+        support_fraction (float, 0 < support_fraction < 1, optional): The
+            proportion of points to be included in the support of the
+            raw MCD estimate.
+            Default is None, which implies that the minimum value of
+            support_fraction will be used within the algorithm:
+            [n_sample + n_features + 1] / 2
+        random_state (int, RandomState instance or None, optional): If int,
+            random_state is the seed used by the random number generator;
+            If RandomState instance, random_state is the random number
+            generator; If None, the random number generator is the
+            RandomState instance used by np.random. By default, it is 0.
+
     Attributes:
+
         fdatagrid (FDataGrid): Object to be visualized.
         depth_method (:ref:`depth measure <depth-measures>`, optional): Method
             used to order the data. Defaults to :func:`modified band depth
@@ -62,6 +94,19 @@ class MagnitudeShapePlot:
         ylabel (string, optional): Label of the y-axis. Defaults to 'VO',
             variation of the  directional outlyingness.
         title (string, optional): Title of the plot. defaults to 'MS-Plot'.
+
+    Representation in a Jupyter notebook:
+
+    .. jupyter-execute::
+
+        from skfda.datasets import make_gaussian_process
+        from skfda.misc.covariances import Exponential
+        from skfda.exploratory.visualization import MagnitudeShapePlot
+
+        fd = make_gaussian_process(
+                n_samples=20, cov=Exponential(), random_state=1)
+
+        MagnitudeShapePlot(fd)
 
     Example:
 
@@ -120,6 +165,14 @@ class MagnitudeShapePlot:
             xlabel='MO',
             ylabel='VO',
             title='MS-Plot')
+
+    References:
+
+    Dai, W., & Genton, M. G. (2018). Multivariate Functional Data
+    Visualization and Outlier Detection. Journal of Computational
+    and Graphical Statistics, 27(4), 923-934.
+    https://doi.org/10.1080/10618600.2018.1473781
+
     """
 
     def __init__(self, fdatagrid, **kwargs):
@@ -281,4 +334,5 @@ class MagnitudeShapePlot:
 
     def _repr_svg_(self):
         fig = self.plot()
+        plt.close(fig)
         return _figure_to_svg(fig)

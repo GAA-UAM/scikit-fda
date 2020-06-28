@@ -233,67 +233,33 @@ class FDataBasis(FData):
         """Definition range."""
         return self.basis.domain_range
 
-    def _evaluate(self, eval_points):
-        """"Evaluate the object or its derivatives at a list of values.
+    def _evaluate(self, eval_points,  *, aligned_evaluation=True):
 
-        Args:
-            eval_points (array_like): List of points where the functions are
-                evaluated. If a matrix of shape `n_samples` x eval_points is
-                given each sample is evaluated at the values in the
-                corresponding row.
-
-
-        Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            function at the values specified in eval_points.
-
-        """
         #  Only suported 1D objects
-        eval_points = eval_points[:, 0]
-
-        # each row contains the values of one element of the basis
-        basis_values = self.basis.evaluate(eval_points)
-
-        res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
-
-        return res.reshape((self.n_samples, len(eval_points), 1))
-
-    def _evaluate_composed(self, eval_points):
-        r"""Evaluate the object or its derivatives at a list of values with a
-        different time for each sample.
-
-        Returns a numpy array with the component (i,j) equal to :math:`f_i(t_j
-        + \delta_i)`.
-
-        This method has to evaluate the basis values once per sample
-        instead of reuse the same evaluation for all the samples
-        as :func:`evaluate`.
-
-        Args:
-            eval_points (numpy.ndarray): Matrix of size `n_samples`x n_points
-            extrapolation (str or Extrapolation, optional): Controls the
-                extrapolation mode for elements outside the domain range.
-                By default uses the method defined in fd. See extrapolation to
-                more information.
-        Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            function at the values specified in eval_points with the
-            corresponding shift.
-        """
-
         eval_points = eval_points[..., 0]
 
-        res_matrix = np.empty((self.n_samples, eval_points.shape[1]))
+        if aligned_evaluation:
 
-        _matrix = np.empty((eval_points.shape[1], self.n_basis))
+            # Each row contains the values of one element of the basis
+            basis_values = self.basis.evaluate(eval_points)
 
-        for i in range(self.n_samples):
-            basis_values = self.basis.evaluate(eval_points[i]).T
+            res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
 
-            np.multiply(basis_values, self.coefficients[i], out=_matrix)
-            np.sum(_matrix, axis=1, out=res_matrix[i])
+            return res.reshape((self.n_samples, len(eval_points), 1))
 
-        return res_matrix.reshape((self.n_samples, eval_points.shape[1], 1))
+        else:
+
+            res_matrix = np.empty((self.n_samples, eval_points.shape[1]))
+
+            _matrix = np.empty((eval_points.shape[1], self.n_basis))
+
+            for i in range(self.n_samples):
+                basis_values = self.basis.evaluate(eval_points[i]).T
+
+                np.multiply(basis_values, self.coefficients[i], out=_matrix)
+                np.sum(_matrix, axis=1, out=res_matrix[i])
+
+            return res_matrix.reshape((self.n_samples, eval_points.shape[1], 1))
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               eval_points=None, **kwargs):

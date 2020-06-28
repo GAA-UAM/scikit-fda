@@ -65,9 +65,9 @@ class PeriodicExtrapolation(Evaluator):
         eval_points += domain_range[:, 0]
 
         if eval_points.ndim == 3:
-            res = fdata._evaluate_composed(eval_points)
+            res = fdata(eval_points, aligned_evaluation=False)
         else:
-            res = fdata._evaluate(eval_points)
+            res = fdata(eval_points)
 
         return res
 
@@ -132,10 +132,10 @@ class BoundaryExtrapolation(Evaluator):
 
         if eval_points.ndim == 3:
 
-            res = fdata._evaluate_composed(eval_points)
+            res = fdata(eval_points, aligned_evaluation=False)
         else:
 
-            res = fdata._evaluate(eval_points)
+            res = fdata(eval_points)
 
         return res
 

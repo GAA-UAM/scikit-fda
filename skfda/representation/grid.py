@@ -361,10 +361,8 @@ class FDataGrid(FData):
 
     def _evaluate(self, eval_points, *, aligned_evaluation=True):
 
-        if aligned_evaluation:
-            return self.interpolation.evaluate(self, eval_points)
-        else:
-            return self.interpolation.evaluate_composed(self, eval_points)
+        return self.interpolation.evaluate(self, eval_points,
+                                           aligned=aligned_evaluation)
 
     def derivative(self, *, order=1):
         r"""Differentiate a FDataGrid object.

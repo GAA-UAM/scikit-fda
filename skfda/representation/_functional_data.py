@@ -372,9 +372,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         Args:
             eval_points (array_like): List of points where the functions are
-                evaluated. If `grid` is `True`, a list of axes, one per domain
-                dimension, must be passed instead. If `aligned_evaluation` is
-                `True`, then a list of lists (of points or axes, as explained)
+                evaluated. If ``grid`` is ``True``, a list of axes, one per domain
+                dimension, must be passed instead. If ``aligned_evaluation`` is
+                ``True``, then a list of lists (of points or axes, as explained)
                 must be passed, with one list per sample.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range. By
@@ -443,15 +443,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 eval_points_extrapolation = eval_points[index_ext]
                 eval_points_evaluation = eval_points[index_ev]
 
-                # Direct evaluation
-                res_evaluation = self._evaluate(
-                    eval_points_evaluation,
-                    aligned_evaluation=aligned_evaluation)
-
-                res_extrapolation = extrapolation.evaluate(
-                    self,
-                    eval_points_extrapolation)
-
             else:
                 index_ext = np.logical_or.reduce(index_matrix, axis=0)
                 eval_points_extrapolation = eval_points[:, index_ext]
@@ -459,14 +450,15 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 index_ev = np.logical_or.reduce(~index_matrix, axis=0)
                 eval_points_evaluation = eval_points[:, index_ev]
 
-                # Direct evaluation
-                res_evaluation = self._evaluate(
-                    eval_points_evaluation,
-                    aligned_evaluation=aligned_evaluation)
+            # Direct evaluation
+            res_evaluation = self._evaluate(
+                eval_points_evaluation,
+                aligned_evaluation=aligned_evaluation)
 
-                res_extrapolation = extrapolation.evaluate_composed(
-                    self,
-                    eval_points_extrapolation)
+            res_extrapolation = extrapolation.evaluate(
+                self,
+                eval_points_extrapolation,
+                aligned=aligned_evaluation)
 
             res = self._join_evaluation(index_matrix, index_ext, index_ev,
                                         res_extrapolation, res_evaluation)

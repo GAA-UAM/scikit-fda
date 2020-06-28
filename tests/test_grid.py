@@ -233,7 +233,7 @@ class TestEvaluateFDataGrid(unittest.TestCase):
 
         res = self.fd([[(0, 0), (1, 1), (2, 2), (3, 3)],
                        [(1, 7), (5, 2), (3, 4), (6, 1)]],
-                      aligned_evaluation=False)
+                      aligned=False)
         expected = np.array([[[0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2]],
                              [[3, 4, 5], [3, 4, 5], [3, 4, 5], [3, 4, 5]]])
 
@@ -250,7 +250,7 @@ class TestEvaluateFDataGrid(unittest.TestCase):
     def test_evaluate_grid_unaligned(self):
 
         res = self.fd([[[0, 1], [1, 2]], [[3, 4], [5, 6]]],
-                      grid=True, aligned_evaluation=False)
+                      grid=True, aligned=False)
         expected = np.array([[[[0, 1, 2], [0, 1, 2]], [[0, 1, 2], [0, 1, 2]]],
                              [[[3, 4, 5], [3, 4, 5]], [[3, 4, 5], [3, 4, 5]]]])
 

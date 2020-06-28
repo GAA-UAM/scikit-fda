@@ -107,7 +107,7 @@ class TestWarping(unittest.TestCase):
         landmarks = landmarks.squeeze()
 
         original_modes = fd(landmarks.reshape((3, 1, 1)),
-                            aligned_evaluation=False)
+                            aligned=False)
         # Test default location
         fd_registered = landmark_shift(fd, landmarks)
         center = (landmarks.max() + landmarks.min()) / 2
@@ -131,7 +131,7 @@ class TestWarping(unittest.TestCase):
 
         # Test array location
         fd_registered = landmark_shift(fd, landmarks, location=[0, 0.1, 0.2])
-        reg_modes = fd_registered([[0], [.1], [.2]], aligned_evaluation=False)
+        reg_modes = fd_registered([[0], [.1], [.2]], aligned=False)
 
         np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
 
@@ -159,7 +159,7 @@ class TestWarping(unittest.TestCase):
                                               random_state=9)
         landmarks = landmarks.squeeze()
 
-        original_values = fd(landmarks.reshape(3, 2), aligned_evaluation=False)
+        original_values = fd(landmarks.reshape(3, 2), aligned=False)
 
         # Default location
         fd_reg = landmark_registration(fd, landmarks)

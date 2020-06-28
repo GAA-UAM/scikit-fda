@@ -233,12 +233,12 @@ class FDataBasis(FData):
         """Definition range."""
         return self.basis.domain_range
 
-    def _evaluate(self, eval_points,  *, aligned_evaluation=True):
+    def _evaluate(self, eval_points,  *, aligned=True):
 
         #  Only suported 1D objects
         eval_points = eval_points[..., 0]
 
-        if aligned_evaluation:
+        if aligned:
 
             # Each row contains the values of one element of the basis
             basis_values = self.basis.evaluate(eval_points)
@@ -330,7 +330,7 @@ class FDataBasis(FData):
 
         # Matrix of shifted values
         _data_matrix = self(points_shifted,
-                            aligned_evaluation=False,
+                            aligned=False,
                             extrapolation=extrapolation)[..., 0]
 
         _basis = self.basis.rescale(domain)

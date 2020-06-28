@@ -359,10 +359,10 @@ class FDataGrid(FData):
 
         self._interpolation = new_interpolation
 
-    def _evaluate(self, eval_points, *, aligned_evaluation=True):
+    def _evaluate(self, eval_points, *, aligned=True):
 
         return self.interpolation.evaluate(self, eval_points,
-                                           aligned=aligned_evaluation)
+                                           aligned=aligned)
 
     def derivative(self, *, order=1):
         r"""Differentiate a FDataGrid object.
@@ -935,7 +935,7 @@ class FDataGrid(FData):
 
         data_matrix = self.evaluate(eval_points_shifted,
                                     extrapolation=extrapolation,
-                                    aligned_evaluation=False,
+                                    aligned=False,
                                     grid=True)
 
         return self.copy(data_matrix=data_matrix, sample_points=eval_points,
@@ -972,7 +972,7 @@ class FDataGrid(FData):
 
             eval_points_transformation = fd(eval_points)
             data_matrix = self(eval_points_transformation,
-                               aligned_evaluation=False)
+                               aligned=False)
         else:
             if eval_points is None:
                 eval_points = fd.sample_points
@@ -991,7 +991,7 @@ class FDataGrid(FData):
                 ).T
 
             data_matrix = self(eval_points_transformation,
-                               aligned_evaluation=False)
+                               aligned=False)
 
         return self.copy(data_matrix=data_matrix,
                          sample_points=eval_points,

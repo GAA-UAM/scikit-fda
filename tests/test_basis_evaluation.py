@@ -108,18 +108,18 @@ class TestBasisEvaluationFourier(unittest.TestCase):
         # Test same result than evaluation standart
         np.testing.assert_array_almost_equal(f([1]),
                                              f([[1], [1]],
-                                               aligned_evaluation=False))
+                                               aligned=False))
         np.testing.assert_array_almost_equal(f(t), f(np.vstack((t, t)),
-                                                     aligned_evaluation=False))
+                                                     aligned=False))
 
         # Different evaluation times
         t_multiple = [[0, 0.5], [0.2, 0.7]]
         np.testing.assert_array_almost_equal(f(t_multiple[0])[0],
                                              f(t_multiple,
-                                               aligned_evaluation=False)[0])
+                                               aligned=False)[0])
         np.testing.assert_array_almost_equal(f(t_multiple[1])[1],
                                              f(t_multiple,
-                                               aligned_evaluation=False)[1])
+                                               aligned=False)[1])
 
     def test_domain_in_list_fourier(self):
         """Test the evaluation of FDataBasis"""
@@ -241,18 +241,18 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
         # Test same result than evaluation standart
         np.testing.assert_array_almost_equal(f([1]),
                                              f([[1], [1]],
-                                               aligned_evaluation=False))
+                                               aligned=False))
         np.testing.assert_array_almost_equal(f(t), f(np.vstack((t, t)),
-                                                     aligned_evaluation=False))
+                                                     aligned=False))
 
         # Different evaluation times
         t_multiple = [[0, 0.5], [0.2, 0.7]]
         np.testing.assert_array_almost_equal(f(t_multiple[0])[0],
                                              f(t_multiple,
-                                               aligned_evaluation=False)[0])
+                                               aligned=False)[0])
         np.testing.assert_array_almost_equal(f(t_multiple[1])[1],
                                              f(t_multiple,
-                                               aligned_evaluation=False)[1])
+                                               aligned=False)[1])
 
     def test_domain_in_list_bspline(self):
         """Test the evaluation of FDataBasis"""
@@ -380,18 +380,18 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
         # Test same result than evaluation standart
         np.testing.assert_array_almost_equal(f([1]),
                                              f([[1], [1]],
-                                               aligned_evaluation=False))
+                                               aligned=False))
         np.testing.assert_array_almost_equal(f(t), f(np.vstack((t, t)),
-                                                     aligned_evaluation=False))
+                                                     aligned=False))
 
         # Different evaluation times
         t_multiple = [[0, 0.5], [0.2, 0.7]]
         np.testing.assert_array_almost_equal(f(t_multiple[0])[0],
                                              f(t_multiple,
-                                               aligned_evaluation=False)[0])
+                                               aligned=False)[0])
         np.testing.assert_array_almost_equal(f(t_multiple[1])[1],
                                              f(t_multiple,
-                                               aligned_evaluation=False)[1])
+                                               aligned=False)[1])
 
     def test_domain_in_list_monomial(self):
         """Test the evaluation of FDataBasis"""

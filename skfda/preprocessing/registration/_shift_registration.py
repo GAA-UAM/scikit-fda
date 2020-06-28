@@ -240,7 +240,7 @@ class ShiftRegistration(RegistrationTransformer):
 
             # Computes the new values shifted
             x = fd(output_points_rep + np.atleast_2d(delta).T,
-                   aligned_evaluation=False,
+                   aligned=False,
                    extrapolation=self.extrapolation)[..., 0]
 
             if template == "mean":

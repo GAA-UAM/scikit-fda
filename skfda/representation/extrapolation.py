@@ -51,7 +51,7 @@ class PeriodicExtrapolation(Evaluator):
         eval_points %= domain_range[:, 1] - domain_range[:, 0]
         eval_points += domain_range[:, 0]
 
-        res = fdata(eval_points, aligned_evaluation=aligned)
+        res = fdata(eval_points, aligned=aligned)
 
         return res
 
@@ -98,7 +98,7 @@ class BoundaryExtrapolation(Evaluator):
             eval_points[eval_points[..., i] < a, i] = a
             eval_points[eval_points[..., i] > b, i] = b
 
-        res = fdata(eval_points, aligned_evaluation=aligned)
+        res = fdata(eval_points, aligned=aligned)
 
         return res
 

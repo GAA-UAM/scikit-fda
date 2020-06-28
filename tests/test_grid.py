@@ -239,6 +239,19 @@ class TestEvaluateFDataGrid(unittest.TestCase):
 
         np.testing.assert_allclose(res, expected)
 
+    def test_evaluate_unaligned_ragged(self):
+
+        res = self.fd([[(0, 0), (1, 1), (2, 2), (3, 3)],
+                       [(1, 7), (5, 2), (3, 4)]],
+                      aligned=False)
+        expected = ([[[0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2]],
+                     [[3, 4, 5], [3, 4, 5], [3, 4, 5]]])
+
+        self.assertEqual(len(res), self.fd.n_samples)
+
+        for r, e in zip(res, expected):
+            np.testing.assert_allclose(r, e)
+
     def test_evaluate_grid_aligned(self):
 
         res = self.fd([[0, 1], [1, 2]], grid=True)
@@ -255,6 +268,16 @@ class TestEvaluateFDataGrid(unittest.TestCase):
                              [[[3, 4, 5], [3, 4, 5]], [[3, 4, 5], [3, 4, 5]]]])
 
         np.testing.assert_allclose(res, expected)
+
+    def test_evaluate_grid_unaligned_ragged(self):
+
+        res = self.fd([[[0, 1], [1, 2]], [[3, 4], [5]]],
+                      grid=True, aligned=False)
+        expected = ([[[[0, 1, 2], [0, 1, 2]], [[0, 1, 2], [0, 1, 2]]],
+                     [[[3, 4, 5]], [[3, 4, 5]]]])
+
+        for r, e in zip(res, expected):
+            np.testing.assert_allclose(r, e)
 
 
 if __name__ == '__main__':

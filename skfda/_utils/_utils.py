@@ -81,6 +81,36 @@ def _list_of_arrays(original_array):
         return [np.asarray(i) for i in original_array]
 
 
+def _to_array_maybe_ragged(array, *, row_shape=None):
+    """
+    Convert to an array where each element may or may not be of equal length.
+
+    If each element is of equal length the array is multidimensional.
+    Otherwise it is a ragged array.
+
+    """
+    def convert_row(row):
+        r = np.array(row)
+
+        if row_shape is not None:
+            r = r.reshape(row_shape)
+
+        return r
+
+    array_list = [convert_row(a) for a in array]
+    shapes = [a.shape for a in array_list]
+
+    if all(s == shapes[0] for s in shapes):
+        return np.array(array_list)
+    else:
+        res = np.empty(len(array_list), dtype=np.object_)
+
+        for i, a in enumerate(array_list):
+            res[i] = a
+
+        return res
+
+
 def _cartesian_product(axes, flatten=True, return_shape=False):
     """Computes the cartesian product of the axes.
 

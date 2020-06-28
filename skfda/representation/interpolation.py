@@ -47,12 +47,9 @@ class _SplineList(abc.ABC):
                               fdata.dim_codomain)
 
         else:
-            shape = (fdata.n_samples, eval_points.shape[1], fdata.dim_codomain)
-            res = np.empty(shape)
-
-            for i in range(fdata.n_samples):
-                res[i] = self._evaluate_codomain(
-                    self.splines[i], eval_points[i], derivative=derivative)
+            res = np.array([self._evaluate_codomain(
+                s, e, derivative=derivative)
+                for s, e in zip(self.splines, eval_points)])
 
         return res
 
@@ -148,7 +145,7 @@ class _SplineList1D(_SplineList):
 
     def _evaluate_one(self, spl, t, derivative=0):
         try:
-            return spl(t, derivative)
+            return spl(t, derivative)[:, 0]
         except ValueError:
             return np.zeros_like(t)
 

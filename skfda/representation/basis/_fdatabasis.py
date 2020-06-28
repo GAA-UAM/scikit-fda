@@ -470,13 +470,12 @@ class FDataBasis(FData):
             ...                 basis=Monomial((0,5), n_basis=3))
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
-                array([[[ 1.],
-                        [ 3.],
-                        [ 7.]],
-            <BLANKLINE>
-                       [[ 1.],
-                        [ 2.],
-                        [ 5.]]]),
+                array([[[1],
+                        [3],
+                        [7]],
+                       [[1],
+                        [2],
+                        [5]]]),
                 sample_points=[array([0, 1, 2])],
                 domain_range=array([[0, 5]]),
                 ...)

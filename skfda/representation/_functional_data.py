@@ -11,7 +11,8 @@ import pandas.api.extensions
 
 import numpy as np
 
-from .._utils import _cartesian_product, _list_of_arrays
+from .._utils import (_cartesian_product, _list_of_arrays,
+                      _to_array_maybe_ragged)
 from .extrapolation import _parse_extrapolation
 
 
@@ -127,13 +128,13 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         pass
 
-    def _reshape_eval_points(self, eval_points, evaluation_aligned):
+    def _reshape_eval_points(self, eval_points, aligned):
         """Convert and reshape the eval_points to ndarray with the
         corresponding shape.
 
         Args:
             eval_points (array_like): Evaluation points to be reshaped.
-            evaluation_aligned (bool): Boolean flag. True if all the samples
+            aligned (bool): Boolean flag. True if all the samples
                 will be evaluated at the same evaluation_points.
 
         Returns:
@@ -145,29 +146,30 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         """
 
-        # Case evaluation of a scalar value, i.e., f(0)
-        if np.isscalar(eval_points):
-            eval_points = [eval_points]
+        if aligned:
+            eval_points = np.asarray(eval_points)
+        else:
+            eval_points = _to_array_maybe_ragged(
+                eval_points, row_shape=(-1, self.dim_domain))
 
-        # Creates a copy of the eval points, and convert to np.array
-        eval_points = np.array(eval_points, dtype=float)
+        # Case evaluation of a single value, i.e., f(0)
+        # Only allowed for aligned evaluation
+        if aligned and (eval_points.shape == (self.dim_domain,)
+                        or (eval_points.ndim == 0 and self.dim_domain == 1)):
+            eval_points = np.array([eval_points])
 
-        if evaluation_aligned:  # Samples evaluated at same eval points
+        if aligned:  # Samples evaluated at same eval points
 
             eval_points = eval_points.reshape((eval_points.shape[0],
                                                self.dim_domain))
 
         else:  # Different eval_points for each sample
 
-            if eval_points.ndim < 2 or eval_points.shape[0] != self.n_samples:
+            if eval_points.shape[0] != self.n_samples:
 
                 raise ValueError(f"eval_points should be a list "
                                  f"of length {self.n_samples} with the "
                                  f"evaluation points for each sample.")
-
-            eval_points = eval_points.reshape((eval_points.shape[0],
-                                               eval_points.shape[1],
-                                               self.dim_domain))
 
         return eval_points
 
@@ -260,10 +262,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         """
 
-        # If a numpy array is a ragged array (in unaligned evaluation, if there
-        # are different points per sample) we have to add the object dtype
-        additional_numpy_params = {}
-
         # Compute intersection points and resulting shapes
         if aligned:
 
@@ -280,10 +278,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             eval_points, shape = zip(
                 *[self._one_grid_to_points(a) for a in axes])
 
-            if not all(s == shape[0] for s in shape):
-                additional_numpy_params['dtype'] = np.object_
-
-        eval_points = np.array(eval_points, **additional_numpy_params)
+        eval_points = np.array(eval_points)
 
         # Evaluate the points
         res = self.evaluate(eval_points,
@@ -298,9 +293,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         else:
 
-            res = np.array([
+            res = _to_array_maybe_ragged([
                 r.reshape(list(s) + [self.dim_codomain])
-                for r, s in zip(res, shape)], **additional_numpy_params)
+                for r, s in zip(res, shape)])
 
         return res
 
@@ -372,10 +367,10 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         Args:
             eval_points (array_like): List of points where the functions are
-                evaluated. If ``grid`` is ``True``, a list of axes, one per domain
-                dimension, must be passed instead. If ``aligned`` is
-                ``True``, then a list of lists (of points or axes, as explained)
-                must be passed, with one list per sample.
+                evaluated. If ``grid`` is ``True``, a list of axes, one per
+                domain dimension, must be passed instead. If ``aligned`` is
+                ``True``, then a list of lists (of points or axes, as
+                explained) must be passed, with one list per sample.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range. By
                 default it is used the mode defined during the instance of the
@@ -418,7 +413,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         # Convert to array and check dimensions of eval points
         eval_points = self._reshape_eval_points(eval_points,
-                                                aligned)
+                                                aligned=aligned)
 
         # Check if extrapolation should be applied
         if extrapolation is not None:

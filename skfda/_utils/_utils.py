@@ -81,8 +81,8 @@ def _list_of_arrays(original_array):
         return [np.asarray(i) for i in original_array]
 
 
-def _coordinate_list(axes):
-    """Convert a list with axes in a list with coordinates.
+def _cartesian_product(axes, flatten=True, return_shape=False):
+    """Computes the cartesian product of the axes.
 
     Computes the cartesian product of the axes and returns a numpy array of
     1 dimension with all the possible combinations, for an arbitrary number of
@@ -97,28 +97,38 @@ def _coordinate_list(axes):
 
     Examples:
 
-        >>> from skfda.representation._functional_data import _coordinate_list
+        >>> from skfda.representation._functional_data import _cartesian_product
         >>> axes = [[0,1],[2,3]]
-        >>> _coordinate_list(axes)
+        >>> _cartesian_product(axes)
         array([[0, 2],
                [0, 3],
                [1, 2],
                [1, 3]])
 
         >>> axes = [[0,1],[2,3],[4]]
-        >>> _coordinate_list(axes)
+        >>> _cartesian_product(axes)
         array([[0, 2, 4],
                [0, 3, 4],
                [1, 2, 4],
                [1, 3, 4]])
 
         >>> axes = [[0,1]]
-        >>> _coordinate_list(axes)
+        >>> _cartesian_product(axes)
         array([[0],
                [1]])
 
     """
-    return np.vstack(list(map(np.ravel, np.meshgrid(*axes, indexing='ij')))).T
+    cartesian = np.stack(np.meshgrid(*axes, indexing='ij'), -1)
+
+    shape = cartesian.shape
+
+    if flatten:
+        cartesian = cartesian.reshape(-1, len(axes))
+
+    if return_shape:
+        return cartesian, shape
+    else:
+        return cartesian
 
 
 def _same_domain(fd, fd2):

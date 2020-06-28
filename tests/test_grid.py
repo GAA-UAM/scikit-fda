@@ -197,6 +197,66 @@ class TestFDataGrid(unittest.TestCase):
         self.assertEqual(gof.dim_codomain, 1)
 
 
+class TestEvaluateFDataGrid(unittest.TestCase):
+
+    def setUp(self):
+        data_matrix = np.array(
+            [
+                [
+                    [[0, 1, 2], [0, 1, 2]],
+                    [[0, 1, 2], [0, 1, 2]]
+                ],
+                [
+                    [[3, 4, 5], [3, 4, 5]],
+                    [[3, 4, 5], [3, 4, 5]]
+                ]
+            ])
+
+        sample_points = [[0, 1], [0, 1]]
+
+        fd = FDataGrid(data_matrix, sample_points=sample_points)
+        self.assertEqual(fd.n_samples, 2)
+        self.assertEqual(fd.dim_domain, 2)
+        self.assertEqual(fd.dim_codomain, 3)
+
+        self.fd = fd
+
+    def test_evaluate_aligned(self):
+
+        res = self.fd([(0, 0), (1, 1), (2, 2), (3, 3)])
+        expected = np.array([[[0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2]],
+                             [[3, 4, 5], [3, 4, 5], [3, 4, 5], [3, 4, 5]]])
+
+        np.testing.assert_allclose(res, expected)
+
+    def test_evaluate_unaligned(self):
+
+        res = self.fd([[(0, 0), (1, 1), (2, 2), (3, 3)],
+                       [(1, 7), (5, 2), (3, 4), (6, 1)]],
+                      aligned_evaluation=False)
+        expected = np.array([[[0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2]],
+                             [[3, 4, 5], [3, 4, 5], [3, 4, 5], [3, 4, 5]]])
+
+        np.testing.assert_allclose(res, expected)
+
+    def test_evaluate_grid_aligned(self):
+
+        res = self.fd([[0, 1], [1, 2]], grid=True)
+        expected = np.array([[[[0, 1, 2], [0, 1, 2]], [[0, 1, 2], [0, 1, 2]]],
+                             [[[3, 4, 5], [3, 4, 5]], [[3, 4, 5], [3, 4, 5]]]])
+
+        np.testing.assert_allclose(res, expected)
+
+    def test_evaluate_grid_unaligned(self):
+
+        res = self.fd([[[0, 1], [1, 2]], [[3, 4], [5, 6]]],
+                      grid=True, aligned_evaluation=False)
+        expected = np.array([[[[0, 1, 2], [0, 1, 2]], [[0, 1, 2], [0, 1, 2]]],
+                             [[[3, 4, 5], [3, 4, 5]], [[3, 4, 5], [3, 4, 5]]]])
+
+        np.testing.assert_allclose(res, expected)
+
+
 if __name__ == '__main__':
     print()
     unittest.main()

@@ -11,7 +11,7 @@ import pandas.api.extensions
 
 import numpy as np
 
-from .._utils import _coordinate_list, _list_of_arrays
+from .._utils import _cartesian_product, _list_of_arrays
 from .extrapolation import _parse_extrapolation
 
 
@@ -196,6 +196,26 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         return index
 
+    def _one_grid_to_points(self, axes):
+        """
+        Convert a list of ndarrays, one per domain dimension, in the points.
+
+        Returns also the shape containing the information of how each point
+        is formed.
+        """
+        axes = _list_of_arrays(axes)
+
+        if len(axes) != self.dim_domain:
+            raise ValueError(f"Length of axes should be "
+                             f"{self.dim_domain}")
+
+        cartesian, shape = _cartesian_product(axes, return_shape=True)
+
+        # Drop domain size dimension, as it is not needed to reshape the output
+        shape = shape[:-1]
+
+        return cartesian, shape
+
     def _evaluate_grid(self, axes, *, extrapolation=None,
                        aligned_evaluation=True):
         """Evaluate the functional object in the cartesian grid.
@@ -239,53 +259,50 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 dimension.
 
         """
-        axes = _list_of_arrays(axes)
 
+        # If a numpy array is a ragged array (in unaligned_evaluation, if there
+        # are different points per sample) we have to add the object dtype
+        additional_numpy_params = {}
+
+        # Compute intersection points and resulting shapes
         if aligned_evaluation:
 
-            lengths = [len(ax) for ax in axes]
+            eval_points, shape = self._one_grid_to_points(axes)
 
-            if len(axes) != self.dim_domain:
-                raise ValueError(f"Length of axes should be "
-                                 f"{self.dim_domain}")
-
-            eval_points = _coordinate_list(axes)
-
-            res = self.evaluate(eval_points,
-                                extrapolation=extrapolation)
-
-        elif self.dim_domain == 1:
-
-            eval_points = [ax.squeeze(0) for ax in axes]
-
-            return self.evaluate(eval_points,
-                                 extrapolation=extrapolation,
-                                 aligned_evaluation=False)
         else:
+
+            axes = list(axes)
 
             if len(axes) != self.n_samples:
                 raise ValueError("Should be provided a list of axis per "
                                  "sample")
-            elif len(axes[0]) != self.dim_domain:
-                raise ValueError(f"Incorrect length of axes. "
-                                 f"({self.dim_domain}) != {len(axes[0])}")
 
-            lengths = [len(ax) for ax in axes[0]]
-            eval_points = np.empty((self.n_samples,
-                                    np.prod(lengths),
-                                    self.dim_domain))
+            eval_points, shape = zip(
+                *[self._one_grid_to_points(a) for a in axes])
 
-            for i in range(self.n_samples):
-                eval_points[i] = _coordinate_list(axes[i])
+            if not all(s == shape[0] for s in shape):
+                additional_numpy_params['dtype'] = np.object_
 
-            res = self.evaluate(eval_points,
-                                extrapolation=extrapolation,
-                                aligned_evaluation=False)
+        eval_points = np.array(eval_points, **additional_numpy_params)
 
-        shape = [self.n_samples] + lengths + [self.dim_codomain]
+        # Evaluate the points
+        res = self.evaluate(eval_points,
+                            extrapolation=extrapolation,
+                            aligned_evaluation=aligned_evaluation)
 
-        # Roll the list of result in a list
-        return res.reshape(shape)
+        # Reshape the result
+        if aligned_evaluation:
+
+            res = res.reshape([self.n_samples] +
+                              list(shape) + [self.dim_codomain])
+
+        else:
+
+            res = np.array([
+                r.reshape(list(s) + [self.dim_codomain])
+                for r, s in zip(res, shape)], **additional_numpy_params)
+
+        return res
 
     def _join_evaluation(self, index_matrix, index_ext, index_ev,
                          res_extrapolation, res_evaluation):

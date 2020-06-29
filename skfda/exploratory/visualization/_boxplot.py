@@ -78,6 +78,8 @@ class FDataBoxplot(ABC):
 
     def _repr_svg_(self):
         fig = self.plot()
+        plt.close(fig)
+
         return _figure_to_svg(fig)
 
 
@@ -96,7 +98,21 @@ class Boxplot(FDataBoxplot):
     detected in a functional boxplot by the 1.5 times the 50% central region
     empirical rule, analogous to the rule for classical boxplots.
 
+    Args:
+
+        fdatagrid (FDataGrid): Object containing the data.
+        depth_method (:ref:`depth measure <depth-measures>`, optional):
+            Method used to order the data. Defaults to :func:`modified
+            band depth
+            <fda.depth_measures.modified_band_depth>`.
+        prob (list of float, optional): List with float numbers (in the
+            range from 1 to 0) that indicate which central regions to
+            represent.
+            Defaults to [0.5] which represents the 50% central region.
+        factor (double): Number used to calculate the outlying envelope.
+
     Attributes:
+
         fdatagrid (FDataGrid): Object containing the data.
         median (array, (fdatagrid.dim_codomain, nsample_points)): contains
             the median/s.
@@ -118,10 +134,27 @@ class Boxplot(FDataBoxplot):
             outside the box is plotted. If True, complete outling curves are
             plotted.
 
-    Example:
+    Representation in a Jupyter notebook:
+
+    .. jupyter-execute::
+
+        from skfda.datasets import make_gaussian_process
+        from skfda.misc.covariances import Exponential
+        from skfda.exploratory.visualization import Boxplot
+
+        fd = make_gaussian_process(
+                n_samples=20, cov=Exponential(), random_state=3)
+
+        Boxplot(fd)
+
+
+    Examples:
+
         Function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
 
         >>> from skfda import FDataGrid
+        >>> from skfda.exploratory.visualization import Boxplot
+        >>>
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
@@ -201,6 +234,13 @@ class Boxplot(FDataBoxplot):
                                [ 1.5],
                                [ 1. ]]))],
             outliers=array([ True, False, False,  True]))
+
+    References:
+
+        Sun, Y., & Genton, M. G. (2011). Functional Boxplots. Journal of
+        Computational and Graphical Statistics, 20(2), 316-334.
+        https://doi.org/10.1198/jcgs.2011.09224
+
 
     """
 
@@ -419,7 +459,20 @@ class SurfaceBoxplot(FDataBoxplot):
     50% central region, the median curve, and the maximum non-outlying
     envelope.
 
+    Args:
+
+        fdatagrid (FDataGrid): Object containing the data.
+        method (:ref:`depth measure <depth-measures>`, optional): Method
+            used to order the data. Defaults to :func:`modified band depth
+            <fda.depth_measures.modified_band_depth>`.
+        prob (list of float, optional): List with float numbers (in the
+            range from 1 to 0) that indicate which central regions to
+            represent.
+            Defaults to [0.5] which represents the 50% central region.
+        factor (double): Number used to calculate the outlying envelope.
+
     Attributes:
+
         fdatagrid (FDataGrid): Object containing the data.
         median (array, (fdatagrid.dim_codomain, lx, ly)): contains
             the median/s.
@@ -433,7 +486,8 @@ class SurfaceBoxplot(FDataBoxplot):
             envelope.
         outcol (string): Color of the outlying envelope.
 
-    Example:
+    Examples:
+
         Function :math:`f : \mathbb{R^2}\longmapsto\mathbb{R}`.
 
         >>> from skfda import FDataGrid
@@ -496,6 +550,12 @@ class SurfaceBoxplot(FDataBoxplot):
                                       [[ 4. ],
                                        [ 0.4],
                                        [ 5. ]]])))
+
+    References:
+
+        Sun, Y., & Genton, M. G. (2011). Functional Boxplots. Journal of
+        Computational and Graphical Statistics, 20(2), 316-334.
+        https://doi.org/10.1198/jcgs.2011.09224
 
     """
 

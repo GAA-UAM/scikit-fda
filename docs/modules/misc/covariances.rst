@@ -8,9 +8,10 @@ processes. These functions can be used as covariances in
 .. autosummary::
    :toctree: autosummary
 
-   skfda.misc.covariances.Covariance
    skfda.misc.covariances.Brownian
+   skfda.misc.covariances.Covariance
+   skfda.misc.covariances.Exponential
+   skfda.misc.covariances.Gaussian
    skfda.misc.covariances.Linear
    skfda.misc.covariances.Polynomial
-   skfda.misc.covariances.Gaussian
-   skfda.misc.covariances.Exponential
+   skfda.misc.covariances.WhiteNoise

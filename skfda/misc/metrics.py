@@ -509,8 +509,7 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
     if lam != 0.0:
         # L2 norm || sqrt(Dh) - 1 ||^2
         warping_deriv = elastic_registration.warping_.derivative()
-        penalty = warping_deriv(eval_points_normalized,
-                                keepdims=False)[0]
+        penalty = warping_deriv(eval_points_normalized)[0, ..., 0]
         penalty = np.sqrt(penalty, out=penalty)
         penalty -= 1
         penalty = np.square(penalty, out=penalty)
@@ -581,8 +580,7 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
     elastic_registration.fit_transform(fdata1)
 
     warping_deriv = elastic_registration.warping_.derivative()
-    derivative_warping = warping_deriv(eval_points_normalized,
-                                       keepdims=False)[0]
+    derivative_warping = warping_deriv(eval_points_normalized)[0, ..., 0]
 
     derivative_warping = np.sqrt(derivative_warping, out=derivative_warping)
 

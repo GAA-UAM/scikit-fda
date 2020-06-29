@@ -64,9 +64,15 @@ class BSpline(Basis):
 
         >>> deriv = bss.derivative()
         >>> deriv([0, 0.5, 1])
-        array([[-2., -1.,  0.],
-               [ 2.,  0., -2.],
-               [ 0.,  1.,  2.]])
+        array([[[-2.],
+                [-1.],
+                [ 0.]],
+               [[ 2.],
+                [ 0.],
+                [-2.]],
+               [[ 0.],
+                [ 1.],
+                [ 2.]]])
 
     References:
         .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data

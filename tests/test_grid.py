@@ -1,10 +1,11 @@
+from skfda import FDataGrid, concatenate
+from skfda.exploratory import stats
 import unittest
 
+from mpl_toolkits.mplot3d import axes3d
 import scipy.stats.mstats
 
 import numpy as np
-from skfda import FDataGrid, concatenate
-from skfda.exploratory import stats
 
 
 class TestFDataGrid(unittest.TestCase):
@@ -99,7 +100,7 @@ class TestFDataGrid(unittest.TestCase):
         fd = fd1.concatenate(fd2, as_coordinates=True)
         np.testing.assert_equal(None, fd.axes_labels)
 
-    def test_concatenate(self):
+    def test_concatenate2(self):
         sample1 = np.arange(0, 10)
         sample2 = np.arange(10, 20)
         fd1 = FDataGrid([sample1])
@@ -173,6 +174,27 @@ class TestFDataGrid(unittest.TestCase):
         fd2 = fd1 + fd1.data_matrix[..., 0]
         np.testing.assert_array_equal(fd2.data_matrix[..., 0],
                                       [[2, 4, 6, 8], [4, 6, 8, 10]])
+
+    def test_composition(self):
+        X, Y, Z = axes3d.get_test_data(1.2)
+
+        data_matrix = [Z.T]
+        sample_points = [X[0, :], Y[:, 0]]
+
+        g = FDataGrid(data_matrix, sample_points)
+        self.assertEqual(g.dim_domain, 2)
+        self.assertEqual(g.dim_codomain, 1)
+
+        t = np.linspace(0, 2 * np.pi, 100)
+
+        data_matrix = [10 * np.array([np.cos(t), np.sin(t)]).T]
+        f = FDataGrid(data_matrix, t)
+        self.assertEqual(f.dim_domain, 1)
+        self.assertEqual(f.dim_codomain, 2)
+
+        gof = g.compose(f)
+        self.assertEqual(gof.dim_domain, 1)
+        self.assertEqual(gof.dim_codomain, 1)
 
 
 if __name__ == '__main__':

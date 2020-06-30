@@ -36,25 +36,20 @@ class _SplineList(abc.ABC):
         return np.array([self._evaluate_one(spl, t, derivative)
                          for spl in spl_m]).T
 
-    def evaluate(self, fdata, eval_points, *, derivative=0):
+    def evaluate(self, fdata, eval_points, *, derivative=0, aligned=True):
 
-        # Points evaluated inside the domain
-        res = np.apply_along_axis(
-            self._evaluate_codomain, 1,
-            self.splines, eval_points, derivative)
-        res = res.reshape(fdata.n_samples, eval_points.shape[0],
-                          fdata.dim_codomain)
+        if aligned:
+            # Points evaluated inside the domain
+            res = np.apply_along_axis(
+                self._evaluate_codomain, 1,
+                self.splines, eval_points, derivative)
+            res = res.reshape(fdata.n_samples, eval_points.shape[0],
+                              fdata.dim_codomain)
 
-        return res
-
-    def evaluate_composed(self, fdata, eval_points, *, derivative=0):
-
-        shape = (fdata.n_samples, eval_points.shape[1], fdata.dim_codomain)
-        res = np.empty(shape)
-
-        for i in range(fdata.n_samples):
-            res[i] = self._evaluate_codomain(
-                self.splines[i], eval_points[i], derivative=derivative)
+        else:
+            res = np.array([self._evaluate_codomain(
+                s, e, derivative=derivative)
+                for s, e in zip(self.splines, eval_points)])
 
         return res
 
@@ -150,7 +145,7 @@ class _SplineList1D(_SplineList):
 
     def _evaluate_one(self, spl, t, derivative=0):
         try:
-            return spl(t, derivative)
+            return spl(t, derivative)[:, 0]
         except ValueError:
             return np.zeros_like(t)
 
@@ -396,66 +391,11 @@ class SplineInterpolation(Evaluator):
                 interpolation_order=self.interpolation_order,
                 smoothness_parameter=self.smoothness_parameter)
 
-    def evaluate(self, fdata, eval_points):
-        r"""Evaluation method.
-
-        Evaluates the samples at different evaluation points. The evaluation
-        call will receive a 3-d array with the evaluation points for
-        each sample.
-
-        This method is called internally by :meth:`evaluate` when the argument
-        `aligned_evaluation` is False.
-
-        Args:
-            eval_points (np.ndarray): Numpy array with shape
-                `(n_samples, number_eval_points, dim_domain)` with the
-                 evaluation points for each sample.
-
-        Returns:
-            (np.darray): Numpy 3d array with shape `(n_samples,
-                number_eval_points, dim_codomain)` with the result of the
-                evaluation. The entry (i,j,k) will contain the value k-th image
-                dimension of the i-th sample, at the j-th evaluation point.
-
-        Raises:
-            ValueError: In case of an incorrect value of the derivative
-                argument.
-
-        """
+    def evaluate(self, fdata, eval_points, *, aligned=True):
 
         spline_list = self._build_interpolator(fdata)
 
-        return spline_list.evaluate(fdata, eval_points)
-
-    def evaluate_composed(self, fdata, eval_points):
-        """Evaluation method.
-
-        Evaluates the samples at different evaluation points. The evaluation
-        call will receive a 3-d array with the evaluation points for
-        each sample.
-
-        This method is called internally by :meth:`evaluate` when the argument
-        `aligned_evaluation` is False.
-
-        Args:
-            eval_points (np.ndarray): Numpy array with shape
-                `(n_samples, number_eval_points, dim_domain)` with the
-                 evaluation points for each sample.
-
-        Returns:
-            (np.darray): Numpy 3d array with shape `(n_samples,
-                number_eval_points, dim_codomain)` with the result of the
-                evaluation. The entry (i,j,k) will contain the value k-th image
-                dimension of the i-th sample, at the j-th evaluation point.
-
-        Raises:
-            ValueError: In case of an incorrect value of the derivative
-                argument.
-
-        """
-        spline_list = self._build_interpolator(fdata)
-
-        return spline_list.evaluate_composed(fdata, eval_points)
+        return spline_list.evaluate(fdata, eval_points, aligned=aligned)
 
     def __repr__(self):
         """repr method of the interpolation"""

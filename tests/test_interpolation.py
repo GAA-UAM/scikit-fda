@@ -78,19 +78,19 @@ class TestEvaluationSpline1_1(unittest.TestCase):
 
         # Evaluate (x**2, (9-x)**2) in (1,8)
         np.testing.assert_array_almost_equal(f([[1], [8]],
-                                               aligned_evaluation=False),
+                                               aligned=False),
                                              np.array([[[1.]], [[1.]]]))
 
         t = np.linspace(4, 6, 4)
         np.testing.assert_array_almost_equal(
-            f([t, 9 - t], aligned_evaluation=False).round(2),
+            f([t, 9 - t], aligned=False).round(2),
             np.array([[[16.], [22.], [28.67], [36.]],
                       [[16.], [22.], [28.67], [36.]]]))
 
         # Same length than nsample
         t = np.linspace(4, 6, 2)
         np.testing.assert_array_almost_equal(
-            f([t, 9 - t], aligned_evaluation=False).round(2),
+            f([t, 9 - t], aligned=False).round(2),
             np.array([[[16.], [36.]], [[16.], [36.]]]))
 
     def test_evaluation_cubic_simple(self):
@@ -153,19 +153,19 @@ class TestEvaluationSpline1_1(unittest.TestCase):
 
         # Evaluate (x**2, (9-x)**2) in (1,8)
         np.testing.assert_array_almost_equal(
-            f([[1], [8]], aligned_evaluation=False).round(3),
+            f([[1], [8]], aligned=False).round(3),
             np.array([[[1.]], [[1.]]]))
 
         t = np.linspace(4, 6, 4)
         np.testing.assert_array_almost_equal(
-            f([t, 9 - t], aligned_evaluation=False).round(2),
+            f([t, 9 - t], aligned=False).round(2),
             np.array([[[16.], [21.78], [28.44], [36.]],
                       [[16.], [21.78], [28.44], [36.]]]))
 
         # Same length than nsample
         t = np.linspace(4, 6, 2)
         np.testing.assert_array_almost_equal(
-            f([t, 9 - t], aligned_evaluation=False).round(3),
+            f([t, 9 - t], aligned=False).round(3),
             np.array([[[16.], [36.]], [[16.], [36.]]]))
 
     def test_evaluation_nodes(self):
@@ -280,10 +280,10 @@ class TestEvaluationSpline1_n(unittest.TestCase):
 
         # Evaluate (x**2, (9-x)**2) in (1,8)
         np.testing.assert_array_almost_equal(f([[1], [4]],
-                                               aligned_evaluation=False)[0],
+                                               aligned=False)[0],
                                              f(1)[0])
         np.testing.assert_array_almost_equal(f([[1], [4]],
-                                               aligned_evaluation=False)[1],
+                                               aligned=False)[1],
                                              f(4)[1])
 
     def test_evaluation_nodes(self):

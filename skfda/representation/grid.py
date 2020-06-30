@@ -359,39 +359,10 @@ class FDataGrid(FData):
 
         self._interpolation = new_interpolation
 
-    def _evaluate(self, eval_points):
-        """"Evaluate the object or its derivatives at a list of values.
+    def _evaluate(self, eval_points, *, aligned=True):
 
-        Args:
-            eval_points (array_like): List of points where the functions are
-                evaluated. If a matrix of shape nsample x eval_points is given
-                each sample is evaluated at the values in the corresponding row
-                in eval_points.
-
-        Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            function at the values specified in eval_points.
-
-        """
-
-        return self.interpolation.evaluate(self, eval_points)
-
-    def _evaluate_composed(self, eval_points):
-        """"Evaluate the object or its derivatives at a list of values.
-
-        Args:
-            eval_points (array_like): List of points where the functions are
-                evaluated. If a matrix of shape nsample x eval_points is given
-                each sample is evaluated at the values in the corresponding row
-                in eval_points.
-
-        Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            function at the values specified in eval_points.
-
-        """
-
-        return self.interpolation.evaluate_composed(self, eval_points)
+        return self.interpolation.evaluate(self, eval_points,
+                                           aligned=aligned)
 
     def derivative(self, *, order=1):
         r"""Differentiate a FDataGrid object.
@@ -964,7 +935,7 @@ class FDataGrid(FData):
 
         data_matrix = self.evaluate(eval_points_shifted,
                                     extrapolation=extrapolation,
-                                    aligned_evaluation=False,
+                                    aligned=False,
                                     grid=True)
 
         return self.copy(data_matrix=data_matrix, sample_points=eval_points,
@@ -1001,7 +972,7 @@ class FDataGrid(FData):
 
             eval_points_transformation = fd(eval_points)
             data_matrix = self(eval_points_transformation,
-                               aligned_evaluation=False)
+                               aligned=False)
         else:
             if eval_points is None:
                 eval_points = fd.sample_points
@@ -1020,7 +991,7 @@ class FDataGrid(FData):
                 ).T
 
             data_matrix = self(eval_points_transformation,
-                               aligned_evaluation=False)
+                               aligned=False)
 
         return self.copy(data_matrix=data_matrix,
                          sample_points=eval_points,

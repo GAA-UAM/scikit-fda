@@ -11,7 +11,8 @@ import pandas.api.extensions
 
 import numpy as np
 
-from .._utils import _coordinate_list, _list_of_arrays
+from .._utils import (_cartesian_product, _list_of_arrays,
+                      _to_array_maybe_ragged)
 from .extrapolation import _parse_extrapolation
 
 
@@ -127,13 +128,13 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         pass
 
-    def _reshape_eval_points(self, eval_points, evaluation_aligned):
+    def _reshape_eval_points(self, eval_points, aligned):
         """Convert and reshape the eval_points to ndarray with the
         corresponding shape.
 
         Args:
             eval_points (array_like): Evaluation points to be reshaped.
-            evaluation_aligned (bool): Boolean flag. True if all the samples
+            aligned (bool): Boolean flag. True if all the samples
                 will be evaluated at the same evaluation_points.
 
         Returns:
@@ -145,29 +146,30 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         """
 
-        # Case evaluation of a scalar value, i.e., f(0)
-        if np.isscalar(eval_points):
-            eval_points = [eval_points]
+        if aligned:
+            eval_points = np.asarray(eval_points)
+        else:
+            eval_points = _to_array_maybe_ragged(
+                eval_points, row_shape=(-1, self.dim_domain))
 
-        # Creates a copy of the eval points, and convert to np.array
-        eval_points = np.array(eval_points, dtype=float)
+        # Case evaluation of a single value, i.e., f(0)
+        # Only allowed for aligned evaluation
+        if aligned and (eval_points.shape == (self.dim_domain,)
+                        or (eval_points.ndim == 0 and self.dim_domain == 1)):
+            eval_points = np.array([eval_points])
 
-        if evaluation_aligned:  # Samples evaluated at same eval points
+        if aligned:  # Samples evaluated at same eval points
 
             eval_points = eval_points.reshape((eval_points.shape[0],
                                                self.dim_domain))
 
         else:  # Different eval_points for each sample
 
-            if eval_points.ndim < 2 or eval_points.shape[0] != self.n_samples:
+            if eval_points.shape[0] != self.n_samples:
 
                 raise ValueError(f"eval_points should be a list "
                                  f"of length {self.n_samples} with the "
                                  f"evaluation points for each sample.")
-
-            eval_points = eval_points.reshape((eval_points.shape[0],
-                                               eval_points.shape[1],
-                                               self.dim_domain))
 
         return eval_points
 
@@ -196,8 +198,28 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         return index
 
+    def _one_grid_to_points(self, axes):
+        """
+        Convert a list of ndarrays, one per domain dimension, in the points.
+
+        Returns also the shape containing the information of how each point
+        is formed.
+        """
+        axes = _list_of_arrays(axes)
+
+        if len(axes) != self.dim_domain:
+            raise ValueError(f"Length of axes should be "
+                             f"{self.dim_domain}")
+
+        cartesian, shape = _cartesian_product(axes, return_shape=True)
+
+        # Drop domain size dimension, as it is not needed to reshape the output
+        shape = shape[:-1]
+
+        return cartesian, shape
+
     def _evaluate_grid(self, axes, *, extrapolation=None,
-                       aligned_evaluation=True):
+                       aligned=True):
         """Evaluate the functional object in the cartesian grid.
 
         This method is called internally by :meth:`evaluate` when the argument
@@ -212,7 +234,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         evaluation in the grid will be a matrix with :math:`m+1` dimensions and
         shape :math:`n_{samples} x n_1 x n_2 x ... x n_m`.
 
-        If `aligned_evaluation` is false each sample is evaluated in a
+        If `aligned` is false each sample is evaluated in a
         different grid, and the list of axes should contain a list of axes for
         each sample.
 
@@ -227,7 +249,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 extrapolation mode for elements outside the domain range. By
                 default it is used the mode defined during the instance of the
                 object.
-            aligned_evaluation (bool, optional): If False evaluates each sample
+            aligned (bool, optional): If False evaluates each sample
                 in a different grid.
 
         Returns:
@@ -239,53 +261,43 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 dimension.
 
         """
-        axes = _list_of_arrays(axes)
 
-        if aligned_evaluation:
+        # Compute intersection points and resulting shapes
+        if aligned:
 
-            lengths = [len(ax) for ax in axes]
+            eval_points, shape = self._one_grid_to_points(axes)
 
-            if len(axes) != self.dim_domain:
-                raise ValueError(f"Length of axes should be "
-                                 f"{self.dim_domain}")
-
-            eval_points = _coordinate_list(axes)
-
-            res = self.evaluate(eval_points,
-                                extrapolation=extrapolation)
-
-        elif self.dim_domain == 1:
-
-            eval_points = [ax.squeeze(0) for ax in axes]
-
-            return self.evaluate(eval_points,
-                                 extrapolation=extrapolation,
-                                 aligned_evaluation=False)
         else:
+
+            axes = list(axes)
 
             if len(axes) != self.n_samples:
                 raise ValueError("Should be provided a list of axis per "
                                  "sample")
-            elif len(axes[0]) != self.dim_domain:
-                raise ValueError(f"Incorrect length of axes. "
-                                 f"({self.dim_domain}) != {len(axes[0])}")
 
-            lengths = [len(ax) for ax in axes[0]]
-            eval_points = np.empty((self.n_samples,
-                                    np.prod(lengths),
-                                    self.dim_domain))
+            eval_points, shape = zip(
+                *[self._one_grid_to_points(a) for a in axes])
 
-            for i in range(self.n_samples):
-                eval_points[i] = _coordinate_list(axes[i])
+        eval_points = np.array(eval_points)
 
-            res = self.evaluate(eval_points,
-                                extrapolation=extrapolation,
-                                aligned_evaluation=False)
+        # Evaluate the points
+        res = self.evaluate(eval_points,
+                            extrapolation=extrapolation,
+                            aligned=aligned)
 
-        shape = [self.n_samples] + lengths + [self.dim_codomain]
+        # Reshape the result
+        if aligned:
 
-        # Roll the list of result in a list
-        return res.reshape(shape)
+            res = res.reshape([self.n_samples] +
+                              list(shape) + [self.dim_codomain])
+
+        else:
+
+            res = _to_array_maybe_ragged([
+                r.reshape(list(s) + [self.dim_codomain])
+                for r, s in zip(res, shape)])
+
+        return res
 
     def _join_evaluation(self, index_matrix, index_ext, index_ev,
                          res_extrapolation, res_evaluation):
@@ -324,41 +336,20 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         return res
 
     @abstractmethod
-    def _evaluate(self, eval_points):
+    def _evaluate(self, eval_points, *, aligned=True):
         """Internal evaluation method, defines the evaluation of the FData.
 
-        Evaluates the samples of an FData object at the same eval_points.
+        Evaluates the samples of an FData object at several points.
 
-        This method is called internally by :meth:`evaluate` when the argument
-        `aligned_evaluation` is True.
-
-        Args:
-            eval_points (numpy.ndarray): Numpy array with shape
-                `(len(eval_points), dim_domain)` with the evaluation points.
-                Each entry represents the coordinate of a point.
-
-        Returns:
-            (numpy.darray): Numpy 3d array with shape `(n_samples,
-                len(eval_points), dim_codomain)` with the result of the
-                evaluation. The entry (i,j,k) will contain the value k-th image
-                dimension of the i-th sample, at the j-th evaluation point.
-
-        """
-        pass
-
-    @abstractmethod
-    def _evaluate_composed(self, eval_points):
-        """Internal evaluation method, defines the evaluation of a FData.
-
-        Evaluates the samples of an FData object at different eval_points.
-
-        This method is called internally by :meth:`evaluate` when the argument
-        `aligned_evaluation` is False.
+        Subclasses must override this method to implement evaluation.
 
         Args:
-            eval_points (numpy.ndarray): Numpy array with shape
-                `(n_samples, len(eval_points), dim_domain)` with the
-                evaluation points for each sample.
+            eval_points (array_like): List of points where the functions are
+                evaluated. If `aligned` is `True`, then a list of
+                lists of points must be passed, with one list per sample.
+            aligned (bool, optional): Whether the input points are
+                the same for each sample, or an array of points per sample is
+                passed.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape `(n_samples,
@@ -370,15 +361,16 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         pass
 
     def evaluate(self, eval_points, *, derivative=0, extrapolation=None,
-                 grid=False, aligned_evaluation=True):
+                 grid=False, aligned=True):
         """Evaluate the object or its derivatives at a list of values or
         a grid.
 
         Args:
             eval_points (array_like): List of points where the functions are
-                evaluated. If a matrix of shape nsample x eval_points is given
-                each sample is evaluated at the values in the corresponding row
-                in eval_points.
+                evaluated. If ``grid`` is ``True``, a list of axes, one per
+                domain dimension, must be passed instead. If ``aligned`` is
+                ``True``, then a list of lists (of points or axes, as
+                explained) must be passed, with one list per sample.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range. By
                 default it is used the mode defined during the instance of the
@@ -390,6 +382,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 return matrix has shape n_samples x len(t1) x len(t2) x ... x
                 len(t_dim_domain) x dim_codomain. If the domain dimension is 1
                 the parameter has no efect. Defaults to False.
+            aligned (bool, optional): Whether the input points are
+                the same for each sample, or an array of points per sample is
+                passed.
 
         Returns:
             (np.darray): Matrix whose rows are the values of the each
@@ -403,7 +398,12 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 eval_points,
                 extrapolation=extrapolation,
                 grid=grid,
-                aligned_evaluation=aligned_evaluation)
+                aligned=aligned)
+
+        if grid:  # Evaluation of a grid performed in auxiliar function
+            return self._evaluate_grid(eval_points,
+                                       extrapolation=extrapolation,
+                                       aligned=aligned)
 
         if extrapolation is None:
             extrapolation = self.extrapolation
@@ -411,14 +411,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             # Gets the function to perform extrapolation or None
             extrapolation = _parse_extrapolation(extrapolation)
 
-        if grid:  # Evaluation of a grid performed in auxiliar function
-            return self._evaluate_grid(eval_points,
-                                       extrapolation=extrapolation,
-                                       aligned_evaluation=aligned_evaluation)
-
         # Convert to array and check dimensions of eval points
         eval_points = self._reshape_eval_points(eval_points,
-                                                aligned_evaluation)
+                                                aligned=aligned)
 
         # Check if extrapolation should be applied
         if extrapolation is not None:
@@ -430,26 +425,18 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         if not extrapolate:  # Direct evaluation
 
-            if aligned_evaluation:
-                res = self._evaluate(eval_points)
-            else:
-                res = self._evaluate_composed(eval_points)
+            res = self._evaluate(
+                eval_points, aligned=aligned)
 
         else:
             # Partition of eval points
-            if aligned_evaluation:
+            if aligned:
 
                 index_ext = index_matrix
                 index_ev = ~index_matrix
 
                 eval_points_extrapolation = eval_points[index_ext]
                 eval_points_evaluation = eval_points[index_ev]
-
-                # Direct evaluation
-                res_evaluation = self._evaluate(eval_points_evaluation)
-                res_extrapolation = extrapolation.evaluate(
-                    self,
-                    eval_points_extrapolation)
 
             else:
                 index_ext = np.logical_or.reduce(index_matrix, axis=0)
@@ -458,13 +445,15 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 index_ev = np.logical_or.reduce(~index_matrix, axis=0)
                 eval_points_evaluation = eval_points[:, index_ev]
 
-                # Direct evaluation
-                res_evaluation = self._evaluate_composed(
-                    eval_points_evaluation)
+            # Direct evaluation
+            res_evaluation = self._evaluate(
+                eval_points_evaluation,
+                aligned=aligned)
 
-                res_extrapolation = extrapolation.evaluate_composed(
-                    self,
-                    eval_points_extrapolation)
+            res_extrapolation = extrapolation.evaluate(
+                self,
+                eval_points_extrapolation,
+                aligned=aligned)
 
             res = self._join_evaluation(index_matrix, index_ext, index_ev,
                                         res_extrapolation, res_evaluation)
@@ -472,7 +461,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         return res
 
     def __call__(self, eval_points, *, derivative=0, extrapolation=None,
-                 grid=False, aligned_evaluation=True):
+                 grid=False, aligned=True):
         """Evaluate the object or its derivatives at a list of values or a
         grid. This method is a wrapper of :meth:`evaluate`.
 
@@ -501,7 +490,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         return self.evaluate(eval_points, derivative=derivative,
                              extrapolation=extrapolation, grid=grid,
-                             aligned_evaluation=aligned_evaluation)
+                             aligned=aligned)
 
     @abstractmethod
     def derivative(self, order=1):

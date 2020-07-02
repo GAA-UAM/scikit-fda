@@ -56,9 +56,15 @@ class BSpline(Basis):
 
         >>> bss = BSpline(n_basis=3, order=3)
         >>> bss([0, 0.5, 1])
-        array([[ 1.  ,  0.25,  0.  ],
-               [ 0.  ,  0.5 ,  0.  ],
-               [ 0.  ,  0.25,  1.  ]])
+        array([[[ 1.  ],
+                [ 0.25],
+                [ 0.  ]],
+               [[ 0.  ],
+                [ 0.5 ],
+                [ 0.  ]],
+               [[ 0.  ],
+                [ 0.25],
+                [ 1.  ]]])
 
         And evaluates first derivative
 

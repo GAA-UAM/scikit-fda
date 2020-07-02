@@ -771,12 +771,16 @@ class FDataGrid(FData):
             array([[ 2.  , 0.71, 0.71]])
 
         """
-        if self.dim_domain > 1:
-            raise NotImplementedError("Only support 1 dimension on the "
-                                      "domain.")
-        elif self.dim_codomain > 1:
-            raise NotImplementedError("Only support 1 dimension on the "
-                                      "image.")
+        if self.dim_domain != basis.dim_domain:
+            raise ValueError(f"The domain of the function has "
+                             f"dimension {self.dim_domain} "
+                             f"but the domain of the basis has "
+                             f"dimension {basis.dim_domain}")
+        elif self.dim_codomain != basis.dim_codomain:
+            raise ValueError(f"The codomain of the function has "
+                             f"dimension {self.dim_codomain} "
+                             f"but the codomain of the basis has "
+                             f"dimension {basis.dim_codomain}")
 
         # Readjust the domain range if there was not an explicit one
         if basis._domain_range is None:

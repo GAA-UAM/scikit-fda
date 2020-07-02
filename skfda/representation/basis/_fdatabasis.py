@@ -248,18 +248,16 @@ class FDataBasis(FData):
 
         else:
 
-            res_matrix = np.empty((self.n_samples, eval_points.shape[1]))
-
-            _matrix = np.empty((eval_points.shape[1], self.n_basis))
+            res_matrix = np.empty(
+                (self.n_samples, eval_points.shape[1], self.dim_codomain))
 
             for i in range(self.n_samples):
-                basis_values = self.basis.evaluate(eval_points[i]).T
+                basis_values = self.basis.evaluate(eval_points[i])
 
-                np.multiply(basis_values, self.coefficients[i], out=_matrix)
-                np.sum(_matrix, axis=1, out=res_matrix[i])
+                values = self.coefficients[i] * basis_values.T
+                np.sum(values.T, axis=0, out=res_matrix[i])
 
-            return res_matrix.reshape(
-                (self.n_samples, eval_points.shape[1], self.dim_codomain))
+            return res_matrix
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               eval_points=None, **kwargs):

@@ -29,9 +29,15 @@ class Monomial(Basis):
         values.
 
         >>> bs_mon([0., 1., 2.])
-        array([[ 1., 1., 1.],
-               [ 0., 1., 2.],
-               [ 0., 1., 4.]])
+        array([[[ 1.],
+                [ 1.],
+                [ 1.]],
+               [[ 0.],
+                [ 1.],
+                [ 2.]],
+               [[ 0.],
+                [ 1.],
+                [ 4.]]])
 
         And also evaluates its derivatives
 

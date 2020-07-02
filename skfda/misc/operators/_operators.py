@@ -40,7 +40,9 @@ def compute_triang_functional(evaluated_basis,
                               basis):
     def cross_product(x):
         """Multiply the two evaluations."""
-        res = evaluated_basis([x])[:, 0]
+        res = evaluated_basis([x])
+
+        res = res.reshape((res.shape[0], -1))
 
         return res[indices[0]] * res[indices[1]]
 

@@ -114,7 +114,8 @@ class Basis(ABC):
             raise ValueError("The list of points where the function is "
                              "evaluated can not contain nan values.")
 
-        return self._evaluate(eval_points)
+        return self._evaluate(eval_points).reshape(
+            (self.n_basis, len(eval_points), self.dim_codomain))
 
     def __call__(self, *args, **kwargs):
         return self.evaluate(*args, **kwargs)

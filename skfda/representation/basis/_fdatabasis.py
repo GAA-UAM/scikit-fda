@@ -196,15 +196,13 @@ class FDataBasis(FData):
     def dim_domain(self):
         """Return number of dimensions of the domain."""
 
-        # Only domain dimension equal to 1 is supported
-        return 1
+        return self.basis.dim_domain
 
     @property
     def dim_codomain(self):
         """Return number of dimensions of the image."""
 
-        # Only image dimension equal to 1 is supported
-        return 1
+        return self.basis.dim_codomain
 
     @property
     def coordinates(self):
@@ -230,7 +228,7 @@ class FDataBasis(FData):
 
     @property
     def domain_range(self):
-        """Definition range."""
+
         return self.basis.domain_range
 
     def _evaluate(self, eval_points,  *, aligned=True):
@@ -245,7 +243,8 @@ class FDataBasis(FData):
 
             res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
 
-            return res.reshape((self.n_samples, len(eval_points), 1))
+            return res.reshape(
+                (self.n_samples, len(eval_points), self.dim_codomain))
 
         else:
 
@@ -259,7 +258,8 @@ class FDataBasis(FData):
                 np.multiply(basis_values, self.coefficients[i], out=_matrix)
                 np.sum(_matrix, axis=1, out=res_matrix[i])
 
-            return res_matrix.reshape((self.n_samples, eval_points.shape[1], 1))
+            return res_matrix.reshape(
+                (self.n_samples, eval_points.shape[1], self.dim_codomain))
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               eval_points=None, **kwargs):

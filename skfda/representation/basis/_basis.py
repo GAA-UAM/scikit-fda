@@ -59,9 +59,16 @@ class Basis(ABC):
 
         self._domain_range = domain_range
         self.n_basis = n_basis
-        self._drop_index_lst = []
 
         super().__init__()
+
+    @property
+    def dim_domain(self):
+        return 1
+
+    @property
+    def dim_codomain(self):
+        return 1
 
     @property
     def domain_range(self):
@@ -188,14 +195,6 @@ class Basis(ABC):
             domain_range = self.domain_range
 
         return type(self)(domain_range, self.n_basis)
-
-    def same_domain(self, other):
-        r"""Returns if two basis are defined on the same domain range.
-
-            Args:
-                other (Basis): Basis to check the domain range definition
-        """
-        return _same_domain(self, other)
 
     def copy(self):
         """Basis copy"""

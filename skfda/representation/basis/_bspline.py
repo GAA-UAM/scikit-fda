@@ -171,6 +171,9 @@ class BSpline(Basis):
 
     def _evaluate(self, eval_points):
 
+        # Input is scalar
+        eval_points = eval_points[..., 0]
+
         # Places m knots at the boundaries
         knots = self._evaluation_knots()
 

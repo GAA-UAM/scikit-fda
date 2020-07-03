@@ -233,9 +233,6 @@ class FDataBasis(FData):
 
     def _evaluate(self, eval_points,  *, aligned=True):
 
-        #  Only suported 1D objects
-        eval_points = eval_points[..., 0]
-
         if aligned:
 
             # Each row contains the values of one element of the basis

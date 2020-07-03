@@ -12,7 +12,7 @@ import scipy.integrate
 
 import numpy as np
 
-from ..._utils import _list_of_arrays, _same_domain
+from ..._utils import _list_of_arrays, _same_domain, _reshape_eval_points
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -109,10 +109,10 @@ class Basis(ABC):
                           "derivative function instead.", DeprecationWarning)
             return self.derivative(order=derivative)(eval_points)
 
-        eval_points = np.atleast_1d(eval_points)
-        if np.any(np.isnan(eval_points)):
-            raise ValueError("The list of points where the function is "
-                             "evaluated can not contain nan values.")
+        eval_points = _reshape_eval_points(eval_points,
+                                           aligned=True,
+                                           n_samples=self.n_basis,
+                                           dim_domain=self.dim_domain)
 
         return self._evaluate(eval_points).reshape(
             (self.n_basis, len(eval_points), self.dim_codomain))

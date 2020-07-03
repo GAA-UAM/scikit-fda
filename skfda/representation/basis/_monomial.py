@@ -66,6 +66,10 @@ class Monomial(Basis):
     """
 
     def _evaluate(self, eval_points):
+
+        # Input is scalar
+        eval_points = eval_points[..., 0]
+
         exps = np.arange(self.n_basis)
         raised = np.power.outer(eval_points, exps)
 

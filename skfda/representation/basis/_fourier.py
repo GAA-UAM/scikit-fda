@@ -108,6 +108,10 @@ class Fourier(Basis):
         self._period = value
 
     def _evaluate(self, eval_points):
+
+        # Input is scalar
+        eval_points = eval_points[..., 0]
+
         functions = [np.sin, np.cos]
         omega = 2 * np.pi / self.period
 

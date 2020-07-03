@@ -1,6 +1,6 @@
 from skfda import concatenate
 from skfda.representation.basis import (Basis, FDataBasis, Constant, Monomial,
-                                        BSpline, Fourier, VectorValued)
+                                        BSpline, Fourier)
 from skfda.representation.grid import FDataGrid
 import unittest
 
@@ -449,38 +449,6 @@ class TestBasis(unittest.TestCase):
         np.testing.assert_equal(fd.dim_domain, 1)
         np.testing.assert_array_equal(fd.coefficients, np.concatenate(
             [fd1.coefficients, fd2.coefficients]))
-
-    def test_vector_valued_constant(self):
-
-        basis_first = Constant()
-        basis_second = Constant()
-
-        basis = VectorValued([basis_first, basis_second])
-
-        fd = FDataBasis(basis=basis, coefficients=[[1, 2], [3, 4]])
-
-        self.assertEqual(fd.dim_codomain, 2)
-
-        res = np.array([[[1, 2]], [[3, 4]]])
-
-        np.testing.assert_allclose(fd(0), res)
-
-    def test_vector_valued_constant_monomial(self):
-
-        basis_first = Constant(domain_range=(0, 5))
-        basis_second = Monomial(n_basis=3, domain_range=(0, 5))
-
-        basis = VectorValued([basis_first, basis_second])
-
-        fd = FDataBasis(basis=basis, coefficients=[[1, 2, 3, 4], [3, 4, 5, 6]])
-
-        self.assertEqual(fd.dim_codomain, 2)
-
-        np.testing.assert_allclose(fd.domain_range[0], (0, 5))
-
-        res = np.array([[[1, 2], [1, 9], [1, 24]], [[3, 4], [3, 15], [3, 38]]])
-
-        np.testing.assert_allclose(fd([0, 1, 2]), res)
 
 
 if __name__ == '__main__':

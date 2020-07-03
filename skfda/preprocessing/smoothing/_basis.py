@@ -398,8 +398,6 @@ class BasisSmoother(_LinearSmoother):
         """
         from ...misc.regularization import compute_penalty_matrix
 
-        _check_r_to_r(X)
-
         self.input_points_ = X.sample_points[0]
         self.output_points_ = (self.output_points
                                if self.output_points is not None

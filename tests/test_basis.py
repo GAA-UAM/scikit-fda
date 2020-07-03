@@ -1,4 +1,5 @@
 from skfda import concatenate
+import skfda
 from skfda.representation.basis import (Basis, FDataBasis, Constant, Monomial,
                                         BSpline, Fourier)
 from skfda.representation.grid import FDataGrid
@@ -449,6 +450,18 @@ class TestBasis(unittest.TestCase):
         np.testing.assert_equal(fd.dim_domain, 1)
         np.testing.assert_array_equal(fd.coefficients, np.concatenate(
             [fd1.coefficients, fd2.coefficients]))
+
+    def test_vector_valued(self):
+        X, y = skfda.datasets.fetch_weather(return_X_y=True)
+
+        basis = skfda.representation.basis.VectorValued(
+            [skfda.representation.basis.Fourier(
+                n_basis=7, domain_range=X.domain_range)] * 2
+        )
+
+        X_basis = X.to_basis(basis)
+
+        self.assertEqual(X_basis.dim_codomain, 2)
 
 
 if __name__ == '__main__':

@@ -787,8 +787,8 @@ class FDataGrid(FData):
             basis = basis.copy()
             basis.domain_range = self.domain_range
 
-        return fdbasis.FDataBasis.from_data(self.data_matrix[..., 0],
-                                            self.sample_points[0],
+        return fdbasis.FDataBasis.from_data(self.data_matrix,
+                                            self.sample_points,
                                             basis,
                                             **kwargs)
 

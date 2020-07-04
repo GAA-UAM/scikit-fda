@@ -105,6 +105,29 @@ class VectorValued(Basis):
     def _derivative_basis_and_coefs(self, coefs, order=1):
         pass
 
+    def _coordinate_nonfull(self, fdatabasis, key):
+
+        r_key = key
+        if isinstance(r_key, int):
+            r_key = range(r_key, r_key + 1)
+
+        coef_indexes = np.concatenate([
+            np.ones(b.n_basis, dtype=np.bool_) if i in r_key
+            else np.zeros(b.n_basis, dtype=np.bool_)
+            for i, b in enumerate(self.basis_list)])
+
+        new_basis_list = self.basis_list[key]
+
+        basis = (new_basis_list if isinstance(new_basis_list, Basis)
+                 else VectorValued(new_basis_list))
+
+        coefs = fdatabasis.coefficients[:, coef_indexes]
+
+        axes_labels = fdatabasis._get_labels_coordinates(key)
+
+        return fdatabasis.copy(basis=basis, coefficients=coefs,
+                               axes_labels=axes_labels)
+
     def basis_of_product(self, other):
         pass
 

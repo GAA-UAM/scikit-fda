@@ -60,15 +60,14 @@ class FDataBasis(FData):
 
         def __iter__(self):
             """Return an iterator through the image coordinates."""
-            yield self._fdatabasis.copy()
+
+            for i in range(len(self)):
+                yield self[i]
 
         def __getitem__(self, key):
             """Get a specific coordinate."""
 
-            if key != 0:
-                return NotImplemented
-
-            return self._fdatabasis.copy()
+            return self._fdatabasis.basis._coordinate(self._fdatabasis, key)
 
         def __len__(self):
             """Return the number of coordinates."""

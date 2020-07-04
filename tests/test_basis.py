@@ -454,14 +454,25 @@ class TestBasis(unittest.TestCase):
     def test_vector_valued(self):
         X, y = skfda.datasets.fetch_weather(return_X_y=True)
 
+        basis_dim = skfda.representation.basis.Fourier(
+            n_basis=7, domain_range=X.domain_range)
         basis = skfda.representation.basis.VectorValued(
-            [skfda.representation.basis.Fourier(
-                n_basis=7, domain_range=X.domain_range)] * 2
+            [basis_dim] * 2
         )
 
         X_basis = X.to_basis(basis)
 
         self.assertEqual(X_basis.dim_codomain, 2)
+
+        self.assertEqual(X_basis.coordinates[0].basis, basis_dim)
+        np.testing.assert_allclose(
+            X_basis.coordinates[0].coefficients,
+            X.coordinates[0].to_basis(basis_dim).coefficients)
+
+        self.assertEqual(X_basis.coordinates[1].basis, basis_dim)
+        np.testing.assert_allclose(
+            X_basis.coordinates[1].coefficients,
+            X.coordinates[1].to_basis(basis_dim).coefficients)
 
 
 if __name__ == '__main__':

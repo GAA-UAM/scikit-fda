@@ -162,6 +162,37 @@ class Basis(ABC):
         """
         self.to_basis().plot(chart=chart, **kwargs)
 
+    def _coordinate_nonfull(self, fdatabasis, key):
+        """
+        Returns a fdatagrid for the coordinate functions indexed by key.
+
+        Subclasses can override this to provide coordinate indexing.
+
+        The key parameter has been already validated and is an integer or
+        slice in the range [0, self.dim_codomain.
+
+        """
+        raise NotImplementedError("Coordinate indexing not implemented")
+
+    def _coordinate(self, fdatabasis, key):
+        """Returns a fdatagrid for the coordinate functions indexed by key."""
+
+        # Raises error if not in range and normalize key
+        r_key = range(self.dim_codomain)[key]
+
+        if isinstance(r_key, range) and len(r_key) == 0:
+            raise IndexError("Empty number of coordinates selected")
+
+        # Full fdatabasis case
+        if (self.dim_codomain == 1 and r_key == 0) or (
+                isinstance(r_key, range) and len(r_key) == self.dim_codomain):
+
+            return fdatabasis.copy()
+
+        else:
+
+            return self._coordinate_nonfull(fdatabasis=fdatabasis, key=r_key)
+
     @abstractmethod
     def basis_of_product(self, other):
         pass

@@ -108,7 +108,7 @@ class _Matrix():
 
     def transform(self, estimator, X, y=None):
         if estimator.return_basis:
-            coefficients = (X.data_matrix[..., 0]
+            coefficients = (X.data_matrix.reshape((X.n_samples, -1))
                             @ estimator._cached_coef_matrix.T)
 
             fdatabasis = FDataBasis(
@@ -325,11 +325,11 @@ class BasisSmoother(_LinearSmoother):
     def _method_function(self):
         """ Return the method function"""
         method_function = self.method
-        if not callable(method_function):
+        if not isinstance(method_function, self.SolverMethod):
             method_function = self.SolverMethod[
-                method_function.lower()].value
+                method_function.lower()]
 
-        return method_function
+        return method_function.value
 
     def _coef_matrix(self, input_points):
         """Get the matrix that gives the coefficients"""
@@ -371,7 +371,6 @@ class BasisSmoother(_LinearSmoother):
             self (object)
 
         """
-        _check_r_to_r(X)
 
         self.input_points_ = X.sample_points[0]
         self.output_points_ = (self.output_points

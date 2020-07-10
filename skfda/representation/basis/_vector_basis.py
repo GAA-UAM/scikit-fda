@@ -103,7 +103,21 @@ class VectorValued(Basis):
         return matrix
 
     def _derivative_basis_and_coefs(self, coefs, order=1):
-        pass
+
+        n_basis_list = [b.n_basis for b in self.basis_list]
+        indexes = np.cumsum(n_basis_list)
+
+        coefs_per_basis = np.hsplit(coefs, indexes[:-1])
+
+        basis_and_coefs = [b._derivative_basis_and_coefs(
+            c, order=order) for b, c in zip(self.basis_list, coefs_per_basis)]
+
+        new_basis_list, new_coefs_list = zip(*basis_and_coefs)
+
+        new_basis = VectorValued(new_basis_list)
+        new_coefs = np.hstack(new_coefs_list)
+
+        return new_basis, new_coefs
 
     def _coordinate_nonfull(self, fdatabasis, key):
 

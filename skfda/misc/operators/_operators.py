@@ -42,7 +42,8 @@ def compute_triang_functional(evaluated_basis,
         """Multiply the two evaluations."""
         res = evaluated_basis([x])
 
-        res = res.reshape((res.shape[0], -1))
+        # Remove n_points dimension
+        res = res[:, 0, :]
 
         return res[indices[0]] * res[indices[1]]
 
@@ -53,7 +54,10 @@ def compute_triang_functional(evaluated_basis,
     integral = scipy.integrate.quad_vec(
         cross_product, domain_range[0], domain_range[1])[0]
 
-    return integral[..., 0]
+    # Sum the integrals of each codomain dimension
+    integral_sum = np.sum(integral, axis=-1)
+
+    return integral_sum
 
 
 def compute_triang_multivariate(evaluated_basis,

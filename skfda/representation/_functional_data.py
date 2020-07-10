@@ -12,7 +12,7 @@ import pandas.api.extensions
 import numpy as np
 
 from .._utils import (_cartesian_product, _list_of_arrays,
-                      _to_array_maybe_ragged)
+                      _to_array_maybe_ragged, _reshape_eval_points)
 from .extrapolation import _parse_extrapolation
 
 
@@ -127,51 +127,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             List of tuples with the ranges for each domain dimension.
         """
         pass
-
-    def _reshape_eval_points(self, eval_points, aligned):
-        """Convert and reshape the eval_points to ndarray with the
-        corresponding shape.
-
-        Args:
-            eval_points (array_like): Evaluation points to be reshaped.
-            aligned (bool): Boolean flag. True if all the samples
-                will be evaluated at the same evaluation_points.
-
-        Returns:
-            (np.ndarray): Numpy array with the eval_points, if
-            evaluation_aligned is True with shape `number of evaluation points`
-            x `dim_domain`. If the points are not aligned the shape of the
-            points will be `n_samples` x `number of evaluation points`
-            x `dim_domain`.
-
-        """
-
-        if aligned:
-            eval_points = np.asarray(eval_points)
-        else:
-            eval_points = _to_array_maybe_ragged(
-                eval_points, row_shape=(-1, self.dim_domain))
-
-        # Case evaluation of a single value, i.e., f(0)
-        # Only allowed for aligned evaluation
-        if aligned and (eval_points.shape == (self.dim_domain,)
-                        or (eval_points.ndim == 0 and self.dim_domain == 1)):
-            eval_points = np.array([eval_points])
-
-        if aligned:  # Samples evaluated at same eval points
-
-            eval_points = eval_points.reshape((eval_points.shape[0],
-                                               self.dim_domain))
-
-        else:  # Different eval_points for each sample
-
-            if eval_points.shape[0] != self.n_samples:
-
-                raise ValueError(f"eval_points should be a list "
-                                 f"of length {self.n_samples} with the "
-                                 f"evaluation points for each sample.")
-
-        return eval_points
 
     def _extrapolation_index(self, eval_points):
         """Checks the points that need to be extrapolated.
@@ -412,8 +367,10 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             extrapolation = _parse_extrapolation(extrapolation)
 
         # Convert to array and check dimensions of eval points
-        eval_points = self._reshape_eval_points(eval_points,
-                                                aligned=aligned)
+        eval_points = _reshape_eval_points(eval_points,
+                                           aligned=aligned,
+                                           n_samples=self.n_samples,
+                                           dim_domain=self.dim_domain)
 
         # Check if extrapolation should be applied
         if extrapolation is not None:

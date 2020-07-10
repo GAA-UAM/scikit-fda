@@ -56,9 +56,15 @@ class BSpline(Basis):
 
         >>> bss = BSpline(n_basis=3, order=3)
         >>> bss([0, 0.5, 1])
-        array([[ 1.  ,  0.25,  0.  ],
-               [ 0.  ,  0.5 ,  0.  ],
-               [ 0.  ,  0.25,  1.  ]])
+        array([[[ 1.  ],
+                [ 0.25],
+                [ 0.  ]],
+               [[ 0.  ],
+                [ 0.5 ],
+                [ 0.  ]],
+               [[ 0.  ],
+                [ 0.25],
+                [ 1.  ]]])
 
         And evaluates first derivative
 
@@ -164,6 +170,9 @@ class BSpline(Basis):
                         [self.knots[-1]] * (self.order - 1))
 
     def _evaluate(self, eval_points):
+
+        # Input is scalar
+        eval_points = eval_points[..., 0]
 
         # Places m knots at the boundaries
         knots = self._evaluation_knots()

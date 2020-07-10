@@ -184,7 +184,8 @@ class TestEndpointsDifferenceRegularization(unittest.TestCase):
         smoother = skfda.preprocessing.smoothing.BasisSmoother(
             basis=skfda.representation.basis.BSpline(
                 n_basis=10, domain_range=fd.domain_range),
-            regularization=TikhonovRegularization(lambda x: x(1) - x(0)),
+            regularization=TikhonovRegularization(
+                lambda x: x(1)[:, 0] - x(0)[:, 0]),
             smoothing_parameter=10000)
 
         fd_basis = smoother.fit_transform(fd)

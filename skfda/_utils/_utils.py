@@ -166,6 +166,53 @@ def _same_domain(fd, fd2):
     return np.array_equal(fd.domain_range, fd2.domain_range)
 
 
+def _reshape_eval_points(eval_points, *, aligned, n_samples, dim_domain):
+    """Convert and reshape the eval_points to ndarray with the
+    corresponding shape.
+
+    Args:
+        eval_points (array_like): Evaluation points to be reshaped.
+        aligned (bool): Boolean flag. True if all the samples
+            will be evaluated at the same evaluation_points.
+        dim_domain (int): Dimension of the domain.
+
+    Returns:
+        (np.ndarray): Numpy array with the eval_points, if
+        evaluation_aligned is True with shape `number of evaluation points`
+        x `dim_domain`. If the points are not aligned the shape of the
+        points will be `n_samples` x `number of evaluation points`
+        x `dim_domain`.
+
+    """
+
+    if aligned:
+        eval_points = np.asarray(eval_points)
+    else:
+        eval_points = _to_array_maybe_ragged(
+            eval_points, row_shape=(-1, dim_domain))
+
+    # Case evaluation of a single value, i.e., f(0)
+    # Only allowed for aligned evaluation
+    if aligned and (eval_points.shape == (dim_domain,)
+                    or (eval_points.ndim == 0 and dim_domain == 1)):
+        eval_points = np.array([eval_points])
+
+    if aligned:  # Samples evaluated at same eval points
+
+        eval_points = eval_points.reshape((eval_points.shape[0],
+                                           dim_domain))
+
+    else:  # Different eval_points for each sample
+
+        if eval_points.shape[0] != n_samples:
+
+            raise ValueError(f"eval_points should be a list "
+                             f"of length {n_samples} with the "
+                             f"evaluation points for each sample.")
+
+    return eval_points
+
+
 def parameter_aliases(**alias_assignments):
     """Allows using aliases for parameters"""
     def decorator(f):

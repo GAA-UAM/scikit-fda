@@ -60,15 +60,14 @@ class FDataBasis(FData):
 
         def __iter__(self):
             """Return an iterator through the image coordinates."""
-            yield self._fdatabasis.copy()
+
+            for i in range(len(self)):
+                yield self[i]
 
         def __getitem__(self, key):
             """Get a specific coordinate."""
 
-            if key != 0:
-                return NotImplemented
-
-            return self._fdatabasis.copy()
+            return self._fdatabasis.basis._coordinate(self._fdatabasis, key)
 
         def __len__(self):
             """Return the number of coordinates."""
@@ -196,15 +195,13 @@ class FDataBasis(FData):
     def dim_domain(self):
         """Return number of dimensions of the domain."""
 
-        # Only domain dimension equal to 1 is supported
-        return 1
+        return self.basis.dim_domain
 
     @property
     def dim_codomain(self):
         """Return number of dimensions of the image."""
 
-        # Only image dimension equal to 1 is supported
-        return 1
+        return self.basis.dim_codomain
 
     @property
     def coordinates(self):
@@ -230,13 +227,10 @@ class FDataBasis(FData):
 
     @property
     def domain_range(self):
-        """Definition range."""
+
         return self.basis.domain_range
 
     def _evaluate(self, eval_points,  *, aligned=True):
-
-        #  Only suported 1D objects
-        eval_points = eval_points[..., 0]
 
         if aligned:
 
@@ -245,21 +239,21 @@ class FDataBasis(FData):
 
             res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
 
-            return res.reshape((self.n_samples, len(eval_points), 1))
+            return res.reshape(
+                (self.n_samples, len(eval_points), self.dim_codomain))
 
         else:
 
-            res_matrix = np.empty((self.n_samples, eval_points.shape[1]))
-
-            _matrix = np.empty((eval_points.shape[1], self.n_basis))
+            res_matrix = np.empty(
+                (self.n_samples, eval_points.shape[1], self.dim_codomain))
 
             for i in range(self.n_samples):
-                basis_values = self.basis.evaluate(eval_points[i]).T
+                basis_values = self.basis.evaluate(eval_points[i])
 
-                np.multiply(basis_values, self.coefficients[i], out=_matrix)
-                np.sum(_matrix, axis=1, out=res_matrix[i])
+                values = self.coefficients[i] * basis_values.T
+                np.sum(values.T, axis=0, out=res_matrix[i])
 
-            return res_matrix.reshape((self.n_samples, eval_points.shape[1], 1))
+            return res_matrix
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               eval_points=None, **kwargs):

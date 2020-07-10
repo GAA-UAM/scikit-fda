@@ -108,7 +108,7 @@ class _Matrix():
 
     def transform(self, estimator, X, y=None):
         if estimator.return_basis:
-            coefficients = (X.data_matrix[..., 0]
+            coefficients = (X.data_matrix.reshape((X.n_samples, -1))
                             @ estimator._cached_coef_matrix.T)
 
             fdatabasis = FDataBasis(
@@ -325,37 +325,38 @@ class BasisSmoother(_LinearSmoother):
     def _method_function(self):
         """ Return the method function"""
         method_function = self.method
-        if not callable(method_function):
+        if not isinstance(method_function, self.SolverMethod):
             method_function = self.SolverMethod[
-                method_function.lower()].value
+                method_function.lower()]
 
-        return method_function
+        return method_function.value
 
     def _coef_matrix(self, input_points):
         """Get the matrix that gives the coefficients"""
         from ...misc.regularization import compute_penalty_matrix
 
-        basis_values_input = self.basis.evaluate(input_points).T
+        basis_values_input = self.basis.evaluate(input_points).reshape(
+            (self.basis.n_basis, -1)).T
 
         # If no weight matrix is given all the weights are one
         weight_matrix = (self.weights if self.weights is not None
                          else np.identity(basis_values_input.shape[0]))
 
-        inv = basis_values_input.T @ weight_matrix @ basis_values_input
+        ols_matrix = basis_values_input.T @ weight_matrix @ basis_values_input
 
         penalty_matrix = compute_penalty_matrix(
             basis_iterable=(self.basis,),
             regularization_parameter=self.smoothing_parameter,
             regularization=self.regularization)
 
-        inv += penalty_matrix
+        ols_matrix += penalty_matrix
 
-        inv = np.linalg.inv(inv)
-
-        return inv @ basis_values_input.T @ weight_matrix
+        return np.linalg.solve(
+            ols_matrix, basis_values_input.T @ weight_matrix)
 
     def _hat_matrix(self, input_points, output_points):
-        basis_values_output = self.basis.evaluate(output_points).T
+        basis_values_output = self.basis.evaluate(output_points).reshape(
+            (self.basis.n_basis, -1)).T
 
         return basis_values_output @ self._coef_matrix(input_points)
 
@@ -370,7 +371,6 @@ class BasisSmoother(_LinearSmoother):
             self (object)
 
         """
-        _check_r_to_r(X)
 
         self.input_points_ = X.sample_points[0]
         self.output_points_ = (self.output_points
@@ -397,8 +397,6 @@ class BasisSmoother(_LinearSmoother):
         """
         from ...misc.regularization import compute_penalty_matrix
 
-        _check_r_to_r(X)
-
         self.input_points_ = X.sample_points[0]
         self.output_points_ = (self.output_points
                                if self.output_points is not None
@@ -414,10 +412,11 @@ class BasisSmoother(_LinearSmoother):
         # k is the number of elements of the basis
 
         # Each sample in a column (m x n)
-        data_matrix = X.data_matrix[..., 0].T
+        data_matrix = X.data_matrix.reshape((X.n_samples, -1)).T
 
         # Each basis in a column
-        basis_values = self.basis.evaluate(self.input_points_).T
+        basis_values = self.basis.evaluate(self.input_points_).reshape(
+            (self.basis.n_basis, -1)).T
 
         # If no weight matrix is given all the weights are one
         weight_matrix = (self.weights if self.weights is not None

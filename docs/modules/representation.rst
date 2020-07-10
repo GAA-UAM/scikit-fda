@@ -45,7 +45,8 @@ of elements of a basis function system.
    skfda.representation.basis.FDataBasis
 
 
-The following classes are used to define different basis systems.
+The following classes are used to define different basis for
+:math:`\mathbb{R} \to \mathbb{R}` functions.
 
 .. autosummary::
    :toctree: autosummary
@@ -54,6 +55,15 @@ The following classes are used to define different basis systems.
    skfda.representation.basis.Fourier
    skfda.representation.basis.Monomial
    skfda.representation.basis.Constant
+
+The following class, allows the construction of a basis for
+:math:`\mathbb{R}^n \to \mathbb{R}^m` functions from
+several :math:`\mathbb{R}^n \to \mathbb{R}` bases.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.representation.basis.VectorValued
 
 Generic representation
 ----------------------

@@ -166,19 +166,12 @@ class BasisSmoother(_LinearSmoother):
             observations. Defaults to the identity matrix.
         smoothing_parameter (int or float, optional): Smoothing
             parameter. Trying with several factors in a logarithm scale is
-            suggested. If 0 no smoothing is performed. Defaults to 0.
-        regularization (int, iterable or :class:`Regularization`): If it is
-            not a :class:`Regularization` object, linear differential
-            operator regularization is assumed. If it
-            is an integer, it indicates the order of the
-            derivative used in the computing of the penalty matrix. For
-            instance 2 means that the differential operator is
-            :math:`f''(x)`. If it is an iterable, it consists on coefficients
-            representing the differential operator used in the computing of
-            the penalty matrix. For instance the tuple (1, 0,
-            numpy.sin) means :math:`1 + sin(x)D^{2}`. If not supplied this
-            defaults to 2. Only used if penalty_matrix is
-            ``None``.
+            suggested. If 0 no smoothing is performed. Defaults to 1.
+        regularization (int, iterable or :class:`Regularization`):
+            Regularization object. This allows the penalization of
+            complicated models, which applies additional smoothing. By default
+            is ``None`` meaning that no additional smoothing has to take
+            place.
         method (str): Algorithm used for calculating the coefficients using
             the least squares method. The values admitted are 'cholesky', 'qr'
             and 'matrix' for Cholesky and QR factorisation methods, and matrix
@@ -243,9 +236,8 @@ class BasisSmoother(_LinearSmoother):
                [ 0.14, -0.29,  0.29,  0.71,  0.14],
                [ 0.43,  0.14, -0.14,  0.14,  0.43]])
 
-        If the smoothing parameter is set to something else than zero, we can
-        penalize approximations that are not smooth enough using some kind
-        of regularization:
+        We can penalize approximations that are not smooth enough using some
+        kind of regularization:
 
         >>> from skfda.misc.regularization import TikhonovRegularization
         >>> from skfda.misc.operators import LinearDifferentialOperator
@@ -254,7 +246,6 @@ class BasisSmoother(_LinearSmoother):
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='cholesky',
-        ...                smoothing_parameter=1,
         ...                regularization=TikhonovRegularization(
         ...                    LinearDifferentialOperator([0.1, 0.2])),
         ...                return_basis=True)
@@ -266,7 +257,6 @@ class BasisSmoother(_LinearSmoother):
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='qr',
-        ...                smoothing_parameter=1,
         ...                regularization=TikhonovRegularization(
         ...                    LinearDifferentialOperator([0.1, 0.2])),
         ...                return_basis=True)
@@ -278,7 +268,6 @@ class BasisSmoother(_LinearSmoother):
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='matrix',
-        ...                smoothing_parameter=1,
         ...                regularization=TikhonovRegularization(
         ...                    LinearDifferentialOperator([0.1, 0.2])),
         ...                return_basis=True)
@@ -307,7 +296,7 @@ class BasisSmoother(_LinearSmoother):
     def __init__(self,
                  basis,
                  *,
-                 smoothing_parameter: float = 0,
+                 smoothing_parameter: float = 1.,
                  weights=None,
                  regularization: Union[int, Iterable[float],
                                        'LinearDifferentialOperator'] = None,

@@ -443,11 +443,11 @@ class FDataBasis(FData):
         """
         return self.to_grid(eval_points).cov()
 
-    def to_grid(self, eval_points=None):
+    def to_grid(self, sample_points=None):
         """Return the discrete representation of the object.
 
         Args:
-            eval_points (array_like, optional): Set of points where the
+            sample_points (array_like, optional): Points per axis where the
                 functions are evaluated. If none are passed it calls
                 numpy.linspace with bounds equal to the ones defined in
                 self.domain_range and the number of points the maximum
@@ -479,13 +479,14 @@ class FDataBasis(FData):
         if self.dim_codomain > 1 or self.dim_domain > 1:
             raise NotImplementedError
 
-        if eval_points is None:
+        if sample_points is None:
             npoints = max(constants.N_POINTS_FINE_MESH,
                           constants.BASIS_MIN_FACTOR * self.n_basis)
-            eval_points = np.linspace(*self.domain_range[0], npoints)
+            sample_points = [np.linspace(*r, npoints)
+                             for r in self.domain_range]
 
-        return grid.FDataGrid(self.evaluate(eval_points),
-                              sample_points=eval_points,
+        return grid.FDataGrid(self.evaluate(sample_points, grid=True),
+                              sample_points=sample_points,
                               domain_range=self.domain_range)
 
     def to_basis(self, basis, eval_points=None, **kwargs):

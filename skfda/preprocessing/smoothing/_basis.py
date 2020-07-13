@@ -13,7 +13,8 @@ import numpy as np
 
 from ... import FDataBasis
 from ... import FDataGrid
-from ._linear import _LinearSmoother, _check_r_to_r
+from ..._utils import _cartesian_product
+from ._linear import _LinearSmoother
 
 
 class _Cholesky():
@@ -324,7 +325,8 @@ class BasisSmoother(_LinearSmoother):
         """Get the matrix that gives the coefficients"""
         from ...misc.regularization import compute_penalty_matrix
 
-        basis_values_input = self.basis.evaluate(input_points).reshape(
+        basis_values_input = self.basis.evaluate(
+            _cartesian_product(input_points)).reshape(
             (self.basis.n_basis, -1)).T
 
         # If no weight matrix is given all the weights are one
@@ -344,7 +346,8 @@ class BasisSmoother(_LinearSmoother):
             ols_matrix, basis_values_input.T @ weight_matrix)
 
     def _hat_matrix(self, input_points, output_points):
-        basis_values_output = self.basis.evaluate(output_points).reshape(
+        basis_values_output = self.basis.evaluate(_cartesian_product(
+            output_points)).reshape(
             (self.basis.n_basis, -1)).T
 
         return basis_values_output @ self._coef_matrix(input_points)
@@ -361,7 +364,7 @@ class BasisSmoother(_LinearSmoother):
 
         """
 
-        self.input_points_ = X.sample_points[0]
+        self.input_points_ = X.sample_points
         self.output_points_ = (self.output_points
                                if self.output_points is not None
                                else self.input_points_)
@@ -386,7 +389,7 @@ class BasisSmoother(_LinearSmoother):
         """
         from ...misc.regularization import compute_penalty_matrix
 
-        self.input_points_ = X.sample_points[0]
+        self.input_points_ = X.sample_points
         self.output_points_ = (self.output_points
                                if self.output_points is not None
                                else self.input_points_)
@@ -404,7 +407,8 @@ class BasisSmoother(_LinearSmoother):
         data_matrix = X.data_matrix.reshape((X.n_samples, -1)).T
 
         # Each basis in a column
-        basis_values = self.basis.evaluate(self.input_points_).reshape(
+        basis_values = self.basis.evaluate(
+            _cartesian_product(self.input_points_)).reshape(
             (self.basis.n_basis, -1)).T
 
         # If no weight matrix is given all the weights are one
@@ -454,7 +458,7 @@ class BasisSmoother(_LinearSmoother):
         if self.return_basis:
             return fdatabasis
         else:
-            return fdatabasis.to_grid(eval_points=self.output_points_)
+            return fdatabasis.to_grid(sample_points=self.output_points_)
 
         return self
 
@@ -470,7 +474,8 @@ class BasisSmoother(_LinearSmoother):
 
         """
 
-        assert all(self.input_points_ == X.sample_points[0])
+        assert all([all(i == s)
+                    for i, s in zip(self.input_points_, X.sample_points)])
 
         method = self._method_function()
 

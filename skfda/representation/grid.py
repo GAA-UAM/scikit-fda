@@ -793,18 +793,7 @@ class FDataGrid(FData):
                                             **kwargs)
 
     def to_grid(self, sample_points=None):
-        """Return the discrete representation of the object.
 
-        Args:
-            sample_points (array_like, optional):  2 dimension matrix where
-            each row contains the points of dicretisation for each axis of
-            data_matrix.
-
-        Returns:
-              FDataGrid: Discrete representation of the functional data
-              object.
-
-        """
         if sample_points is None:
             sample_points = self.sample_points
 

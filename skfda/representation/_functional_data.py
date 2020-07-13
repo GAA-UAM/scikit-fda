@@ -532,12 +532,12 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         pass
 
     @abstractmethod
-    def to_grid(self, eval_points=None):
+    def to_grid(self, sample_points=None):
         """Return the discrete representation of the object.
 
         Args:
-            eval_points (array_like, optional): Set of points where the
-                functions are evaluated.
+            sample_points (array_like, optional): Points per axis
+            where the function is going to be evaluated.
 
         Returns:
               FDataGrid: Discrete representation of the functional data

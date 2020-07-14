@@ -19,40 +19,44 @@ class Tensor(Basis):
         n_basis (int): number of functions in the basis.
 
     Examples:
-        Defines a vector-valued base over the interval :math:`[0, 5]`
+
+        Defines a tensor basis over the interval :math:`[0, 5] \times [0, 3]`
         consisting on the functions
 
         .. math::
 
-            1 \vec{i}, t \vec{i}, t^2 \vec{i}, 1 \vec{j}, t \vec{j}
+            1, v, u, uv, u^2, u^2v
 
-        >>> from skfda.representation.basis import VectorValued, Monomial
+        >>> from skfda.representation.basis import Tensor, Monomial
         >>>
         >>> basis_x = Monomial((0,5), n_basis=3)
-        >>> basis_y = Monomial((0,5), n_basis=2)
+        >>> basis_y = Monomial((0,3), n_basis=2)
         >>>
-        >>> basis = VectorValued([basis_x, basis_y])
+        >>> basis = Tensor([basis_x, basis_y])
 
 
         And evaluates all the functions in the basis in a list of descrete
         values.
 
-        >>> basis([0., 1., 2.])
-        array([[[ 1.,  0.],
-                [ 1.,  0.],
-                [ 1.,  0.]],
-               [[ 0.,  0.],
-                [ 1.,  0.],
-                [ 2.,  0.]],
-               [[ 0.,  0.],
-                [ 1.,  0.],
-                [ 4.,  0.]],
-               [[ 0.,  1.],
-                [ 0.,  1.],
-                [ 0.,  1.]],
-               [[ 0.,  0.],
-                [ 0.,  1.],
-                [ 0.,  2.]]])
+        >>> basis([(0., 2.), (3., 0), (2., 3.)])
+        array([[[  1.],
+                [  1.],
+                [  1.]],
+               [[  2.],
+                [  0.],
+                [  3.]],
+               [[  0.],
+                [  3.],
+                [  2.]],
+               [[  0.],
+                [  0.],
+                [  6.]],
+               [[  0.],
+                [  9.],
+                [  4.]],
+               [[  0.],
+                [  0.],
+                [ 12.]]])
 
     """
 

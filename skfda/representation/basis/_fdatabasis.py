@@ -476,9 +476,6 @@ class FDataBasis(FData):
 
         """
 
-        if self.dim_codomain > 1 or self.dim_domain > 1:
-            raise NotImplementedError
-
         if sample_points is None:
             npoints = max(constants.N_POINTS_FINE_MESH,
                           constants.BASIS_MIN_FACTOR * self.n_basis)

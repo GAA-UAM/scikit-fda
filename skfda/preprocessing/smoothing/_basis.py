@@ -23,8 +23,13 @@ class _Cholesky():
     def __call__(self, *, basis_values, weight_matrix, data_matrix,
                  penalty_matrix, **_):
 
-        right_matrix = basis_values.T @ weight_matrix @ data_matrix
-        left_matrix = basis_values.T @ weight_matrix @ basis_values
+        common_matrix = basis_values.T
+
+        if weight_matrix is not None:
+            common_matrix @= weight_matrix
+
+        right_matrix = common_matrix @ data_matrix
+        left_matrix = common_matrix @ basis_values
 
         # Adds the roughness penalty to the equation
         if penalty_matrix is not None:
@@ -330,10 +335,11 @@ class BasisSmoother(_LinearSmoother):
             (self.basis.n_basis, -1)).T
 
         # If no weight matrix is given all the weights are one
-        weight_matrix = (self.weights if self.weights is not None
-                         else np.identity(basis_values_input.shape[0]))
-
-        ols_matrix = basis_values_input.T @ weight_matrix @ basis_values_input
+        if self.weights is not None:
+            ols_matrix = (basis_values_input.T @ self.weights
+                          @ basis_values_input)
+        else:
+            ols_matrix = basis_values_input.T @ basis_values_input
 
         penalty_matrix = compute_penalty_matrix(
             basis_iterable=(self.basis,),
@@ -342,8 +348,12 @@ class BasisSmoother(_LinearSmoother):
 
         ols_matrix += penalty_matrix
 
+        right_side = basis_values_input.T
+        if self.weights is not None:
+            right_side @= self.weights
+
         return np.linalg.solve(
-            ols_matrix, basis_values_input.T @ weight_matrix)
+            ols_matrix, right_side)
 
     def _hat_matrix(self, input_points, output_points):
         basis_values_output = self.basis.evaluate(_cartesian_product(
@@ -412,8 +422,7 @@ class BasisSmoother(_LinearSmoother):
             (self.basis.n_basis, -1)).T
 
         # If no weight matrix is given all the weights are one
-        weight_matrix = (self.weights if self.weights is not None
-                         else np.identity(basis_values.shape[0]))
+        weight_matrix = self.weights
 
         # We need to solve the equation
         # (phi' W phi + lambda * R) C = phi' W Y

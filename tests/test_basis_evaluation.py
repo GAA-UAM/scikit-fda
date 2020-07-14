@@ -470,6 +470,12 @@ class TestBasisEvaluationTensor(unittest.TestCase):
         np.testing.assert_allclose(
             fd([(0., 0.), (0.5, 0.5)]), [[[1.0], [1.5]]])
 
+        fd_grid = fd.to_grid()
+
+        fd2 = fd_grid.to_basis(basis)
+
+        np.testing.assert_allclose(fd.coefficients, fd2.coefficients)
+
 
 if __name__ == '__main__':
     print()

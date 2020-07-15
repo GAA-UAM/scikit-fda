@@ -9,11 +9,9 @@ synthetic data.
 # Author: David García Fernández
 # License: MIT
 
-# sphinx_gallery_thumbnail_number = 2
 
 import numpy as np
 
-import skfda
 from skfda.representation import FDataGrid
 from skfda.inference.anova import oneway_anova
 from skfda.datasets import make_gaussian_process
@@ -63,7 +61,7 @@ groups[10:20] = 'Sample 2'
 groups[20:] = 'Sample 3'
 
 ###############################################################################
-# First simulation uses a low :math:`\sigma = 0.01` value. In this case the
+# First simulation uses a low :math:`\sigma^2 = 0.01` value. In this case the
 # differences between the means of each group should be clear, and the
 # p-value for the test should be near to zero.
 
@@ -83,16 +81,6 @@ stat, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 print("Statistic: {:.3f}".format(stat))
 print("p-value: {:.3f}".format(p_val))
 
-################################################################################
-# In the plot below we can see the simulated trajectories for each mean,
-# and the averages for each group.
-
-fd = skfda.concatenate([fd1, fd2, fd3])
-fd_total = skfda.concatenate([fd.mean() for fd in [fd1, fd2,
-                                                               fd3]])
-fd_total.dataset_label = "Sample with $\sigma^2$ = {}, p-value = {:.3f}".format(
-    sigma2, p_val)
-fd_total.plot()
 
 ################################################################################
 # In the following, the same process will be followed incrementing sigma
@@ -101,7 +89,7 @@ fd_total.plot()
 # refuse).
 
 ################################################################################
-# Plot for :math:`\sigma = 1`:
+# Plot for :math:`\sigma^2 = 0.1`:
 sigma2 = 0.1
 cov = WhiteNoise(variance=sigma2)
 
@@ -115,17 +103,13 @@ fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
                             n_features=n_features, random_state=3, start=t[0],
                             stop=t[-1])
 
-_, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
+stat, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
+print("Statistic: {:.3f}".format(stat))
+print("p-value: {:.3f}".format(p_val))
 
-fd = skfda.concatenate([fd1, fd2, fd3])
-fd_total = skfda.concatenate([fd.mean() for fd in [fd1, fd2,
-                                                               fd3]])
-fd_total.dataset_label = "Sample with $\sigma^2$ = {}, p-value = {:.3f}".format(
-    sigma2, p_val)
-fd_total.plot()
 
 ################################################################################
-# Plot for :math:`\sigma = 10`:
+# Plot for :math:`\sigma^2 = 1`:
 
 sigma2 = 1
 cov = WhiteNoise(variance=sigma2)
@@ -140,14 +124,9 @@ fd3 = make_gaussian_process(n_samples, mean=m3, cov=cov,
                             n_features=n_features, random_state=3, start=t[0],
                             stop=t[-1])
 
-_, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
-
-fd = skfda.concatenate([fd1, fd2, fd3])
-fd_total = skfda.concatenate([fd.mean() for fd in [fd1, fd2,
-                                                               fd3]])
-fd_total.dataset_label = "Sample with $\sigma^2$ = {}, p-value = {:.3f}".format(
-    sigma2, p_val)
-fd_total.plot()
+stat, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
+print("Statistic: {:.3f}".format(stat))
+print("p-value: {:.3f}".format(p_val))
 
 ################################################################################
 # **References:**

@@ -8,11 +8,10 @@ from abc import ABC, abstractmethod
 import copy
 import warnings
 
-import scipy.integrate
-
 import numpy as np
 
-from ..._utils import _list_of_arrays, _same_domain, _reshape_eval_points
+from ..._utils import (_list_of_arrays, _same_domain,
+                       _reshape_eval_points, _evaluate_grid)
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -86,7 +85,7 @@ class Basis(ABC):
         """Subclasses must override this to provide basis evaluation."""
         pass
 
-    def evaluate(self, eval_points, derivative=0):
+    def evaluate(self, eval_points, *, derivative=0):
         """Evaluate Basis objects and its derivatives.
 
         Evaluates the basis function system or its derivatives at a list of

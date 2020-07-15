@@ -1,10 +1,3 @@
-'''
-Created on 2 jul. 2020
-
-@author: Carlos
-'''
-import scipy.linalg
-
 import numpy as np
 
 from ..._utils import _same_domain

@@ -1,6 +1,6 @@
 
 from skfda.representation.basis import (
-    FDataBasis, Monomial, BSpline, Fourier, Constant, VectorValued)
+    FDataBasis, Monomial, BSpline, Fourier, Constant, VectorValued, Tensor)
 import unittest
 
 import numpy as np
@@ -450,6 +450,31 @@ class TestBasisEvaluationVectorValued(unittest.TestCase):
                         [[3, 4], [3, 15], [3, 38]]])
 
         np.testing.assert_allclose(fd([0, 1, 2]), res)
+
+
+class TestBasisEvaluationTensor(unittest.TestCase):
+
+    def test_tensor_monomial_constant(self):
+
+        basis = Tensor([Monomial(n_basis=2), Constant()])
+
+        fd = FDataBasis(basis=basis, coefficients=[1, 1])
+
+        self.assertEqual(fd.dim_domain, 2)
+        self.assertEqual(fd.dim_codomain, 1)
+
+        np.testing.assert_allclose(fd([0., 0.]), [[[1.]]])
+
+        np.testing.assert_allclose(fd([0.5, 0.5]), [[[1.5]]])
+
+        np.testing.assert_allclose(
+            fd([(0., 0.), (0.5, 0.5)]), [[[1.0], [1.5]]])
+
+        fd_grid = fd.to_grid()
+
+        fd2 = fd_grid.to_basis(basis)
+
+        np.testing.assert_allclose(fd.coefficients, fd2.coefficients)
 
 
 if __name__ == '__main__':

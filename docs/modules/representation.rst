@@ -55,6 +55,15 @@ The following classes are used to define different basis for
    skfda.representation.basis.Fourier
    skfda.representation.basis.Monomial
    skfda.representation.basis.Constant
+   
+The following class, allows the construction of a basis for
+:math:`\mathbb{R}^n \to \mathbb{R}` functions from
+several :math:`\mathbb{R} \to \mathbb{R}` bases.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.representation.basis.Tensor
 
 The following class, allows the construction of a basis for
 :math:`\mathbb{R}^n \to \mathbb{R}^m` functions from

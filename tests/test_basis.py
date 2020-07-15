@@ -159,7 +159,7 @@ class TestBasis(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(
             monomialfd._inner_product_integrate(
-                bsplinefd, None, None).round(3),
+                bsplinefd).round(3),
             np.array([[16.14797697, 52.81464364, 89.4813103],
                       [11.55565285, 38.22211951, 64.88878618],
                       [18.14698361, 55.64698361, 93.14698361],

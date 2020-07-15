@@ -276,7 +276,7 @@ class Basis(ABC):
 
         for i in range(self.n_basis):
             for j in range(other.n_basis):
-                inner[i, j] = first[i].inner_product(second[j], None, None)
+                inner[i, j] = first[i].inner_product(second[j])
 
         return inner
 

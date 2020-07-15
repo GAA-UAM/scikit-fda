@@ -1,3 +1,4 @@
+from builtins import isinstance
 import copy
 
 import pandas.api.extensions
@@ -500,6 +501,9 @@ class FDataBasis(FData):
             object.
         """
 
+        if basis == self.basis:
+            return self.copy()
+
         return self.to_grid(eval_points=eval_points).to_basis(basis, **kwargs)
 
     def to_list(self):
@@ -580,8 +584,7 @@ class FDataBasis(FData):
         coefs = np.transpose(np.atleast_2d(other))
         return self.copy(coefficients=self.coefficients * coefs)
 
-    def inner_product(self, other, lfd_self=None, lfd_other=None,
-                      weights=None):
+    def inner_product(self, other, weights=None):
         r"""Return an inner product matrix given a FDataBasis object.
 
         The inner product of two functions is defined as
@@ -604,12 +607,6 @@ class FDataBasis(FData):
             other (FDataBasis, Basis): FDataBasis object containing the second
                     object to make the inner product
 
-            lfd_self (Lfd): LinearDifferentialOperator object for the first
-                function evaluation
-
-            lfd_other (Lfd): LinearDifferentialOperator object for the second
-                function evaluation
-
             weights(FDataBasis): a FDataBasis object with only one sample that
                     defines the weight to calculate the inner product
 
@@ -617,19 +614,11 @@ class FDataBasis(FData):
             numpy.array: Inner Product matrix.
 
         """
-        from ...misc.operators import LinearDifferentialOperator
-        from ..basis import Basis
-
         if not _same_domain(self.domain_range, other.domain_range):
             raise ValueError("Both Objects should have the same domain_range")
-        if isinstance(other, Basis):
-            other = other.to_basis()
 
-        # TODO this will be used when lfd evaluation is ready
-        lfd_self = (LinearDifferentialOperator(0) if lfd_self is None
-                    else lfd_self)
-        lfd_other = (LinearDifferentialOperator(0) if (lfd_other is None)
-                     else lfd_other)
+        if not isinstance(other, FDataBasis):
+            other = other.to_basis()
 
         if weights is not None:
             other = other.times(weights)
@@ -639,9 +628,9 @@ class FDataBasis(FData):
                     self.basis._inner_matrix(other.basis) @
                     other.coefficients.T)
         else:
-            return self._inner_product_integrate(other, lfd_self, lfd_other)
+            return self._inner_product_integrate(other)
 
-    def _inner_product_integrate(self, other, lfd_self, lfd_other):
+    def _inner_product_integrate(self, other):
 
         matrix = np.empty((self.n_samples, other.n_samples))
         (left, right) = self.domain_range[0]

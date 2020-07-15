@@ -12,7 +12,7 @@ import scipy.integrate
 
 import numpy as np
 
-from ..._utils import _list_of_arrays, _same_domain
+from ..._utils import _list_of_arrays, _same_domain, _reshape_eval_points
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -59,9 +59,16 @@ class Basis(ABC):
 
         self._domain_range = domain_range
         self.n_basis = n_basis
-        self._drop_index_lst = []
 
         super().__init__()
+
+    @property
+    def dim_domain(self):
+        return 1
+
+    @property
+    def dim_codomain(self):
+        return 1
 
     @property
     def domain_range(self):
@@ -102,12 +109,13 @@ class Basis(ABC):
                           "derivative function instead.", DeprecationWarning)
             return self.derivative(order=derivative)(eval_points)
 
-        eval_points = np.atleast_1d(eval_points)
-        if np.any(np.isnan(eval_points)):
-            raise ValueError("The list of points where the function is "
-                             "evaluated can not contain nan values.")
+        eval_points = _reshape_eval_points(eval_points,
+                                           aligned=True,
+                                           n_samples=self.n_basis,
+                                           dim_domain=self.dim_domain)
 
-        return self._evaluate(eval_points)
+        return self._evaluate(eval_points).reshape(
+            (self.n_basis, len(eval_points), self.dim_codomain))
 
     def __call__(self, *args, **kwargs):
         return self.evaluate(*args, **kwargs)
@@ -154,6 +162,37 @@ class Basis(ABC):
         """
         self.to_basis().plot(chart=chart, **kwargs)
 
+    def _coordinate_nonfull(self, fdatabasis, key):
+        """
+        Returns a fdatagrid for the coordinate functions indexed by key.
+
+        Subclasses can override this to provide coordinate indexing.
+
+        The key parameter has been already validated and is an integer or
+        slice in the range [0, self.dim_codomain.
+
+        """
+        raise NotImplementedError("Coordinate indexing not implemented")
+
+    def _coordinate(self, fdatabasis, key):
+        """Returns a fdatagrid for the coordinate functions indexed by key."""
+
+        # Raises error if not in range and normalize key
+        r_key = range(self.dim_codomain)[key]
+
+        if isinstance(r_key, range) and len(r_key) == 0:
+            raise IndexError("Empty number of coordinates selected")
+
+        # Full fdatabasis case
+        if (self.dim_codomain == 1 and r_key == 0) or (
+                isinstance(r_key, range) and len(r_key) == self.dim_codomain):
+
+            return fdatabasis.copy()
+
+        else:
+
+            return self._coordinate_nonfull(fdatabasis=fdatabasis, key=r_key)
+
     @abstractmethod
     def basis_of_product(self, other):
         pass
@@ -188,14 +227,6 @@ class Basis(ABC):
             domain_range = self.domain_range
 
         return type(self)(domain_range, self.n_basis)
-
-    def same_domain(self, other):
-        r"""Returns if two basis are defined on the same domain range.
-
-            Args:
-                other (Basis): Basis to check the domain range definition
-        """
-        return _same_domain(self, other)
 
     def copy(self):
         """Basis copy"""

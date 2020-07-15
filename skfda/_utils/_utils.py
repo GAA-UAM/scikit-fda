@@ -81,8 +81,38 @@ def _list_of_arrays(original_array):
         return [np.asarray(i) for i in original_array]
 
 
-def _coordinate_list(axes):
-    """Convert a list with axes in a list with coordinates.
+def _to_array_maybe_ragged(array, *, row_shape=None):
+    """
+    Convert to an array where each element may or may not be of equal length.
+
+    If each element is of equal length the array is multidimensional.
+    Otherwise it is a ragged array.
+
+    """
+    def convert_row(row):
+        r = np.array(row)
+
+        if row_shape is not None:
+            r = r.reshape(row_shape)
+
+        return r
+
+    array_list = [convert_row(a) for a in array]
+    shapes = [a.shape for a in array_list]
+
+    if all(s == shapes[0] for s in shapes):
+        return np.array(array_list)
+    else:
+        res = np.empty(len(array_list), dtype=np.object_)
+
+        for i, a in enumerate(array_list):
+            res[i] = a
+
+        return res
+
+
+def _cartesian_product(axes, flatten=True, return_shape=False):
+    """Computes the cartesian product of the axes.
 
     Computes the cartesian product of the axes and returns a numpy array of
     1 dimension with all the possible combinations, for an arbitrary number of
@@ -97,33 +127,90 @@ def _coordinate_list(axes):
 
     Examples:
 
-        >>> from skfda.representation._functional_data import _coordinate_list
+        >>> from skfda.representation._functional_data import _cartesian_product
         >>> axes = [[0,1],[2,3]]
-        >>> _coordinate_list(axes)
+        >>> _cartesian_product(axes)
         array([[0, 2],
                [0, 3],
                [1, 2],
                [1, 3]])
 
         >>> axes = [[0,1],[2,3],[4]]
-        >>> _coordinate_list(axes)
+        >>> _cartesian_product(axes)
         array([[0, 2, 4],
                [0, 3, 4],
                [1, 2, 4],
                [1, 3, 4]])
 
         >>> axes = [[0,1]]
-        >>> _coordinate_list(axes)
+        >>> _cartesian_product(axes)
         array([[0],
                [1]])
 
     """
-    return np.vstack(list(map(np.ravel, np.meshgrid(*axes, indexing='ij')))).T
+    cartesian = np.stack(np.meshgrid(*axes, indexing='ij'), -1)
+
+    shape = cartesian.shape
+
+    if flatten:
+        cartesian = cartesian.reshape(-1, len(axes))
+
+    if return_shape:
+        return cartesian, shape
+    else:
+        return cartesian
 
 
 def _same_domain(fd, fd2):
     """Check if the domain range of two objects is the same."""
     return np.array_equal(fd.domain_range, fd2.domain_range)
+
+
+def _reshape_eval_points(eval_points, *, aligned, n_samples, dim_domain):
+    """Convert and reshape the eval_points to ndarray with the
+    corresponding shape.
+
+    Args:
+        eval_points (array_like): Evaluation points to be reshaped.
+        aligned (bool): Boolean flag. True if all the samples
+            will be evaluated at the same evaluation_points.
+        dim_domain (int): Dimension of the domain.
+
+    Returns:
+        (np.ndarray): Numpy array with the eval_points, if
+        evaluation_aligned is True with shape `number of evaluation points`
+        x `dim_domain`. If the points are not aligned the shape of the
+        points will be `n_samples` x `number of evaluation points`
+        x `dim_domain`.
+
+    """
+
+    if aligned:
+        eval_points = np.asarray(eval_points)
+    else:
+        eval_points = _to_array_maybe_ragged(
+            eval_points, row_shape=(-1, dim_domain))
+
+    # Case evaluation of a single value, i.e., f(0)
+    # Only allowed for aligned evaluation
+    if aligned and (eval_points.shape == (dim_domain,)
+                    or (eval_points.ndim == 0 and dim_domain == 1)):
+        eval_points = np.array([eval_points])
+
+    if aligned:  # Samples evaluated at same eval points
+
+        eval_points = eval_points.reshape((eval_points.shape[0],
+                                           dim_domain))
+
+    else:  # Different eval_points for each sample
+
+        if eval_points.shape[0] != n_samples:
+
+            raise ValueError(f"eval_points should be a list "
+                             f"of length {n_samples} with the "
+                             f"evaluation points for each sample.")
+
+    return eval_points
 
 
 def parameter_aliases(**alias_assignments):

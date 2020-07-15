@@ -60,15 +60,14 @@ class FDataBasis(FData):
 
         def __iter__(self):
             """Return an iterator through the image coordinates."""
-            yield self._fdatabasis.copy()
+
+            for i in range(len(self)):
+                yield self[i]
 
         def __getitem__(self, key):
             """Get a specific coordinate."""
 
-            if key != 0:
-                return NotImplemented
-
-            return self._fdatabasis.copy()
+            return self._fdatabasis.basis._coordinate(self._fdatabasis, key)
 
         def __len__(self):
             """Return the number of coordinates."""
@@ -196,15 +195,13 @@ class FDataBasis(FData):
     def dim_domain(self):
         """Return number of dimensions of the domain."""
 
-        # Only domain dimension equal to 1 is supported
-        return 1
+        return self.basis.dim_domain
 
     @property
     def dim_codomain(self):
         """Return number of dimensions of the image."""
 
-        # Only image dimension equal to 1 is supported
-        return 1
+        return self.basis.dim_codomain
 
     @property
     def coordinates(self):
@@ -230,70 +227,33 @@ class FDataBasis(FData):
 
     @property
     def domain_range(self):
-        """Definition range."""
+
         return self.basis.domain_range
 
-    def _evaluate(self, eval_points):
-        """"Evaluate the object or its derivatives at a list of values.
+    def _evaluate(self, eval_points,  *, aligned=True):
 
-        Args:
-            eval_points (array_like): List of points where the functions are
-                evaluated. If a matrix of shape `n_samples` x eval_points is
-                given each sample is evaluated at the values in the
-                corresponding row.
+        if aligned:
 
+            # Each row contains the values of one element of the basis
+            basis_values = self.basis.evaluate(eval_points)
 
-        Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            function at the values specified in eval_points.
+            res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
 
-        """
-        #  Only suported 1D objects
-        eval_points = eval_points[:, 0]
+            return res.reshape(
+                (self.n_samples, len(eval_points), self.dim_codomain))
 
-        # each row contains the values of one element of the basis
-        basis_values = self.basis.evaluate(eval_points)
+        else:
 
-        res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
+            res_matrix = np.empty(
+                (self.n_samples, eval_points.shape[1], self.dim_codomain))
 
-        return res.reshape((self.n_samples, len(eval_points), 1))
+            for i in range(self.n_samples):
+                basis_values = self.basis.evaluate(eval_points[i])
 
-    def _evaluate_composed(self, eval_points):
-        r"""Evaluate the object or its derivatives at a list of values with a
-        different time for each sample.
+                values = self.coefficients[i] * basis_values.T
+                np.sum(values.T, axis=0, out=res_matrix[i])
 
-        Returns a numpy array with the component (i,j) equal to :math:`f_i(t_j
-        + \delta_i)`.
-
-        This method has to evaluate the basis values once per sample
-        instead of reuse the same evaluation for all the samples
-        as :func:`evaluate`.
-
-        Args:
-            eval_points (numpy.ndarray): Matrix of size `n_samples`x n_points
-            extrapolation (str or Extrapolation, optional): Controls the
-                extrapolation mode for elements outside the domain range.
-                By default uses the method defined in fd. See extrapolation to
-                more information.
-        Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            function at the values specified in eval_points with the
-            corresponding shift.
-        """
-
-        eval_points = eval_points[..., 0]
-
-        res_matrix = np.empty((self.n_samples, eval_points.shape[1]))
-
-        _matrix = np.empty((eval_points.shape[1], self.n_basis))
-
-        for i in range(self.n_samples):
-            basis_values = self.basis.evaluate(eval_points[i]).T
-
-            np.multiply(basis_values, self.coefficients[i], out=_matrix)
-            np.sum(_matrix, axis=1, out=res_matrix[i])
-
-        return res_matrix.reshape((self.n_samples, eval_points.shape[1], 1))
+            return res_matrix
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               eval_points=None, **kwargs):
@@ -364,7 +324,7 @@ class FDataBasis(FData):
 
         # Matrix of shifted values
         _data_matrix = self(points_shifted,
-                            aligned_evaluation=False,
+                            aligned=False,
                             extrapolation=extrapolation)[..., 0]
 
         _basis = self.basis.rescale(domain)
@@ -504,13 +464,12 @@ class FDataBasis(FData):
             ...                 basis=Monomial((0,5), n_basis=3))
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
-                array([[[ 1.],
-                        [ 3.],
-                        [ 7.]],
-            <BLANKLINE>
-                       [[ 1.],
-                        [ 2.],
-                        [ 5.]]]),
+                array([[[1],
+                        [3],
+                        [7]],
+                       [[1],
+                        [2],
+                        [5]]]),
                 sample_points=[array([0, 1, 2])],
                 domain_range=array([[0, 5]]),
                 ...)

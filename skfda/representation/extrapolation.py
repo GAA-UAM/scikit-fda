@@ -42,20 +42,7 @@ class PeriodicExtrapolation(Evaluator):
                 [-1.086]]])
     """
 
-    def evaluate(self, fdata, eval_points):
-        """Evaluate points outside the domain range.
-
-        Args:
-            fdata (:class:´FData´): Object where the evaluation is taken place.
-            eval_points (:class: numpy.ndarray): Numpy array with the evalation
-                points outside the domain range. The shape of the array may be
-                `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
-                x `dim_codomain`.
-
-        Returns:
-            (numpy.ndarray): numpy array with the evaluation of the points in
-            a matrix with shape `n_samples` x `n_eval_points`x `dim_codomain`.
-        """
+    def evaluate(self, fdata, eval_points, *, aligned=True):
 
         domain_range = np.asarray(fdata.domain_range)
 
@@ -64,15 +51,9 @@ class PeriodicExtrapolation(Evaluator):
         eval_points %= domain_range[:, 1] - domain_range[:, 0]
         eval_points += domain_range[:, 0]
 
-        if eval_points.ndim == 3:
-            res = fdata._evaluate_composed(eval_points)
-        else:
-            res = fdata._evaluate(eval_points)
+        res = fdata(eval_points, aligned=aligned)
 
         return res
-
-    def evaluate_composed(self, *args, **kwargs):
-        return self.evaluate(*args, **kwargs)
 
 
 class BoundaryExtrapolation(Evaluator):
@@ -108,20 +89,7 @@ class BoundaryExtrapolation(Evaluator):
                 [ 1.125]]])
     """
 
-    def evaluate(self, fdata, eval_points):
-        """Evaluate points outside the domain range.
-
-        Args:
-            fdata (:class:´FData´): Object where the evaluation is taken place.
-            eval_points (:class: numpy.ndarray): Numpy array with the evalation
-                points outside the domain range. The shape of the array may be
-                `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
-                x `dim_codomain`.
-
-        Returns:
-            (numpy.ndarray): numpy array with the evaluation of the points in
-            a matrix with shape `n_samples` x `n_eval_points`x `dim_codomain`.
-        """
+    def evaluate(self, fdata, eval_points, *, aligned=True):
 
         domain_range = fdata.domain_range
 
@@ -130,17 +98,9 @@ class BoundaryExtrapolation(Evaluator):
             eval_points[eval_points[..., i] < a, i] = a
             eval_points[eval_points[..., i] > b, i] = b
 
-        if eval_points.ndim == 3:
-
-            res = fdata._evaluate_composed(eval_points)
-        else:
-
-            res = fdata._evaluate(eval_points)
+        res = fdata(eval_points, aligned=aligned)
 
         return res
-
-    def evaluate_composed(self, *args, **kwargs):
-        return self.evaluate(*args, **kwargs)
 
 
 class ExceptionExtrapolation(Evaluator):
@@ -173,27 +133,12 @@ class ExceptionExtrapolation(Evaluator):
 
     """
 
-    def evaluate(self, fdata, eval_points):
-        """Evaluate points outside the domain range.
-
-        Args:
-            fdata (:class:´FData´): Object where the evaluation is taken place.
-            eval_points (:class: numpy.ndarray): Numpy array with the evalation
-                points outside the domain range. The shape of the array may be
-                `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
-                x `dim_codomain`.
-
-        Raises:
-            ValueError: when the extrapolation method is called.
-        """
+    def evaluate(self, fdata, eval_points, *, aligned=True):
 
         n_points = eval_points.shape[-2]
 
         raise ValueError(f"Attempt to evaluate {n_points} points outside the "
                          f"domain range.")
-
-    def evaluate_composed(self, *args, **kwargs):
-        return self.evaluate(*args, **kwargs)
 
 
 class FillExtrapolation(Evaluator):
@@ -237,46 +182,8 @@ class FillExtrapolation(Evaluator):
                  fdata.dim_codomain)
         return np.full(shape, self.fill_value)
 
-    def evaluate(self, fdata, eval_points):
-        """
-        Evaluate points outside the domain range.
+    def evaluate(self, fdata, eval_points, *, aligned=True):
 
-        Args:
-            fdata (:class:´FData´): Object where the evaluation is taken place.
-            eval_points (:class: numpy.ndarray): Numpy array with the evalation
-                points outside the domain range. The shape of the array may be
-                `n_eval_points` x `dim_codomain` or `n_samples` x `n_eval_points`
-                x `dim_codomain`.
-
-        Returns:
-            (numpy.ndarray): numpy array with the evaluation of the points in
-            a matrix with shape `n_samples` x `n_eval_points`x `dim_codomain`.
-
-        """
-        return self._fill(fdata, eval_points)
-
-    def evaluate_composed(self, fdata, eval_points):
-        """Evaluation method.
-
-        Evaluates the samples at different evaluation points. The evaluation
-        call will receive a 3-d array with the evaluation points for
-        each sample.
-
-        This method is called internally by :meth:`evaluate` when the argument
-        `aligned_evaluation` is False.
-
-        Args:
-            eval_points (numpy.ndarray): Numpy array with shape
-                `(n_samples, number_eval_points, dim_domain)` with the
-                 evaluation points for each sample.
-
-        Returns:
-            (numpy.darray): Numpy 3d array with shape `(n_samples,
-                number_eval_points, dim_codomain)` with the result of the
-                evaluation. The entry (i,j,k) will contain the value k-th image
-                dimension of the i-th sample, at the j-th evaluation point.
-
-        """
         return self._fill(fdata, eval_points)
 
     def __repr__(self):

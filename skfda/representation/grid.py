@@ -359,39 +359,10 @@ class FDataGrid(FData):
 
         self._interpolation = new_interpolation
 
-    def _evaluate(self, eval_points):
-        """"Evaluate the object or its derivatives at a list of values.
+    def _evaluate(self, eval_points, *, aligned=True):
 
-        Args:
-            eval_points (array_like): List of points where the functions are
-                evaluated. If a matrix of shape nsample x eval_points is given
-                each sample is evaluated at the values in the corresponding row
-                in eval_points.
-
-        Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            function at the values specified in eval_points.
-
-        """
-
-        return self.interpolation.evaluate(self, eval_points)
-
-    def _evaluate_composed(self, eval_points):
-        """"Evaluate the object or its derivatives at a list of values.
-
-        Args:
-            eval_points (array_like): List of points where the functions are
-                evaluated. If a matrix of shape nsample x eval_points is given
-                each sample is evaluated at the values in the corresponding row
-                in eval_points.
-
-        Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            function at the values specified in eval_points.
-
-        """
-
-        return self.interpolation.evaluate_composed(self, eval_points)
+        return self.interpolation.evaluate(self, eval_points,
+                                           aligned=aligned)
 
     def derivative(self, *, order=1):
         r"""Differentiate a FDataGrid object.
@@ -800,20 +771,24 @@ class FDataGrid(FData):
             array([[ 2.  , 0.71, 0.71]])
 
         """
-        if self.dim_domain > 1:
-            raise NotImplementedError("Only support 1 dimension on the "
-                                      "domain.")
-        elif self.dim_codomain > 1:
-            raise NotImplementedError("Only support 1 dimension on the "
-                                      "image.")
+        if self.dim_domain != basis.dim_domain:
+            raise ValueError(f"The domain of the function has "
+                             f"dimension {self.dim_domain} "
+                             f"but the domain of the basis has "
+                             f"dimension {basis.dim_domain}")
+        elif self.dim_codomain != basis.dim_codomain:
+            raise ValueError(f"The codomain of the function has "
+                             f"dimension {self.dim_codomain} "
+                             f"but the codomain of the basis has "
+                             f"dimension {basis.dim_codomain}")
 
         # Readjust the domain range if there was not an explicit one
         if basis._domain_range is None:
             basis = basis.copy()
             basis.domain_range = self.domain_range
 
-        return fdbasis.FDataBasis.from_data(self.data_matrix[..., 0],
-                                            self.sample_points[0],
+        return fdbasis.FDataBasis.from_data(self.data_matrix,
+                                            self.sample_points,
                                             basis,
                                             **kwargs)
 
@@ -964,7 +939,7 @@ class FDataGrid(FData):
 
         data_matrix = self.evaluate(eval_points_shifted,
                                     extrapolation=extrapolation,
-                                    aligned_evaluation=False,
+                                    aligned=False,
                                     grid=True)
 
         return self.copy(data_matrix=data_matrix, sample_points=eval_points,
@@ -1001,7 +976,7 @@ class FDataGrid(FData):
 
             eval_points_transformation = fd(eval_points)
             data_matrix = self(eval_points_transformation,
-                               aligned_evaluation=False)
+                               aligned=False)
         else:
             if eval_points is None:
                 eval_points = fd.sample_points
@@ -1020,7 +995,7 @@ class FDataGrid(FData):
                 ).T
 
             data_matrix = self(eval_points_transformation,
-                               aligned_evaluation=False)
+                               aligned=False)
 
         return self.copy(data_matrix=data_matrix,
                          sample_points=eval_points,

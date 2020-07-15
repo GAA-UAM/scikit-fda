@@ -8,13 +8,15 @@ Explores the two possible ways to do functional principal component analysis.
 # Author: Yujian Hong
 # License: MIT
 
-import numpy as np
 import skfda
-from skfda.preprocessing.dim_reduction.projection import FPCA
-from skfda.representation.basis import BSpline, Fourier, Monomial
 from skfda.datasets import fetch_growth
 from skfda.exploratory.visualization import plot_fpca_perturbation_graphs
+from skfda.preprocessing.dim_reduction.projection import FPCA
+from skfda.representation.basis import BSpline, Fourier, Monomial
+
 import matplotlib.pyplot as plt
+import numpy as np
+
 
 ##############################################################################
 # In this example we are going to use functional principal component analysis to
@@ -66,18 +68,8 @@ fpca.components_.plot()
 ##############################################################################
 # To better illustrate the effects of the obtained two principal components,
 # we add and subtract a multiple of the components to the mean function.
-# As the module modifies the original data, we have to fetch the data again.
-# And then we get the mean function and plot it.
-dataset = fetch_growth()
-fd = dataset['data']
-basis_fd = fd.to_basis(BSpline(n_basis=7))
-mean_fd = basis_fd.mean()
-mean_fd.plot()
-
-##############################################################################
-# Now we add and subtract a multiple of the principal components. We can
-# then observe now that this principal component represents the variation in the
-# mean growth between the children.
+# We can then observe now that this principal component represents the
+# variation in the mean growth between the children.
 # The second component is more interesting. The most appropriate explanation is
 # that it represents the differences between girls and boys. Girls tend to grow
 # faster at an early age and boys tend to start puberty later, therefore, their
@@ -86,14 +78,15 @@ mean_fd.plot()
 plot_fpca_perturbation_graphs(basis_fd.mean(),
                               fpca.components_,
                               30,
-                              fig=plt.figure(figsize=(6, 2*4)))
+                              fig=plt.figure(figsize=(6, 2 * 4)))
 
 ##############################################################################
 # We can also specify another basis for the principal components as argument
 # when creating the FPCABasis object. For example, if we use the Fourier basis
 # for the obtained principal components we can see that the components are
 # periodic. This example is only to illustrate the effect. In this dataset, as
-# the functions are not periodic it does not make sense to use the Fourier basis
+# the functions are not periodic it does not make sense to use the Fourier
+# basis
 dataset = fetch_growth()
 fd = dataset['data']
 basis_fd = fd.to_basis(BSpline(n_basis=7))

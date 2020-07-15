@@ -36,9 +36,18 @@ class Fourier(Basis):
 
         >>> fb = Fourier((0, np.pi), n_basis=3, period=1)
         >>> fb([0, np.pi / 4, np.pi / 2, np.pi]).round(2)
-        array([[ 1.  ,  1.  ,  1.  ,  1.  ],
-               [ 0.  , -1.38, -0.61,  1.1 ],
-               [ 1.41,  0.31, -1.28,  0.89]])
+        array([[[ 1.  ],
+                [ 1.  ],
+                [ 1.  ],
+                [ 1.  ]],
+               [[ 0.  ],
+                [-1.38],
+                [-0.61],
+                [ 1.1 ]],
+               [[ 1.41],
+                [ 0.31],
+                [-1.28],
+                [ 0.89]]])
 
         And evaluate second derivative
 
@@ -99,6 +108,10 @@ class Fourier(Basis):
         self._period = value
 
     def _evaluate(self, eval_points):
+
+        # Input is scalar
+        eval_points = eval_points[..., 0]
+
         functions = [np.sin, np.cos]
         omega = 2 * np.pi / self.period
 

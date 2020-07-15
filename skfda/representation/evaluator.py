@@ -20,42 +20,18 @@ class Evaluator(ABC):
 
     """
     @abstractmethod
-    def evaluate(self, fdata, eval_points):
+    def evaluate(self, fdata, eval_points, *, aligned=True):
         """Evaluation method.
 
-        Evaluates the samples at the same evaluation points. The evaluation
-        call will receive a 2-d array with the evaluation points.
-        This method is called internally by :meth:`evaluate` when the
-        argument ``aligned_evaluation`` is True.
+        Evaluates the samples at evaluation points. The evaluation
+        call will receive a 2-d array with the evaluation points, or
+        a 3-d array with the evaluation points per sample if ``aligned``
+        is ``False``.
 
         Args:
             eval_points (numpy.ndarray): Numpy array with shape
                 ``(number_eval_points, dim_domain)`` with the
                 evaluation points.
-
-        Returns:
-            (numpy.darray): Numpy 3d array with shape
-                ``(n_samples, number_eval_points, dim_codomain)`` with the
-                result of the evaluation. The entry ``(i,j,k)`` will contain
-                the value k-th image dimension of the i-th sample, at the
-                j-th evaluation point.
-
-        """
-        pass
-
-    @abstractmethod
-    def evaluate_composed(self, fdata, eval_points):
-        """Evaluation method.
-
-        Evaluates the samples at different evaluation points. The evaluation
-        call will receive a 3-d array with the evaluation points for each
-        sample. This method is called internally by :func:`evaluate` when
-        the argument ``aligned_evaluation`` is False.
-
-        Args:
-            eval_points (numpy.ndarray): Numpy array with shape
-                ``(n_samples, number_eval_points, dim_domain)`` with the
-                evaluation points for each sample.
 
         Returns:
             (numpy.darray): Numpy 3d array with shape
@@ -78,64 +54,14 @@ class Evaluator(ABC):
 class GenericEvaluator(Evaluator):
     """Generic Evaluator.
 
-    Generic evaluator that recibes two functions to construct the evaluator.
-    The functions will recieve an :class:`FData` as first argument, a numpy
-    array with the eval_points and a named argument derivative.
+    Generic evaluator that recibes a functions to construct the evaluator.
+    The function will recieve an :class:`FData` as first argument, a numpy
+    array with the eval_points and the ``aligned`` parameter.
 
     """
 
-    def __init__(self, evaluate_func, evaluate_composed_func=None):
-        self.evaluate_func = evaluate_func
+    def __init__(self, evaluate_function):
+        self.evaluate_function = evaluate_function
 
-        if evaluate_composed_func is None:
-            self.evaluate_composed_func = evaluate_func
-        else:
-            self.evaluate_composed_func = evaluate_composed_func
-
-    def evaluate(self, fdata, eval_points):
-        """Evaluation method.
-
-        Evaluates the samples at the same evaluation points. The evaluation
-        call will receive a 2-d array with the evaluation points.
-
-        This method is called internally by :meth:`evaluate` when the argument
-        `aligned_evaluation` is True.
-
-        Args:
-            eval_points (numpy.ndarray): Numpy array with shape
-                `(len(eval_points), dim_domain)` with the evaluation points.
-                Each entry represents the coordinate of a point.
-
-        Returns:
-            (numpy.darray): Numpy 3-d array with shape `(n_samples,
-                len(eval_points), dim_codomain)` with the result of the
-                evaluation. The entry (i,j,k) will contain the value k-th
-                image dimension of the i-th sample, at the j-th evaluation
-                point.
-
-        """
-        return self.evaluate_func(fdata, eval_points)
-
-    def evaluate_composed(self, fdata, eval_points):
-        """Evaluation method.
-
-        Evaluates the samples at different evaluation points. The evaluation
-        call will receive a 3-d array with the evaluation points for each
-        sample.
-
-        This method is called internally by :meth:`evaluate` when the argument
-        `aligned_evaluation` is False.
-
-        Args:
-            eval_points (numpy.ndarray): Numpy array with shape
-                `(n_samples, number_eval_points, dim_domain)` with the
-                 evaluation points for each sample.
-
-        Returns:
-            (numpy.darray): Numpy 3d array with shape `(n_samples,
-                number_eval_points, dim_codomain)` with the result of the
-                evaluation. The entry (i,j,k) will contain the value k-th image
-                dimension of the i-th sample, at the j-th evaluation point.
-
-        """
-        return self.evaluate_composed_func(fdata, eval_points)
+    def evaluate(self, fdata, eval_points, *, aligned=True):
+        return self.evaluate_function(fdata, eval_points, aligned=aligned)

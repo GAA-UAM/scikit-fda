@@ -128,3 +128,47 @@ class TestBasisSmoother(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             fd_basis.coefficients.round(2),
             np.array([[0.61, -0.88, 0.06, 0.02]]))
+
+    def test_vector_valued_smoothing(self):
+        X, _ = skfda.datasets.fetch_weather(return_X_y=True)
+
+        basis_dim = skfda.representation.basis.Fourier(
+            n_basis=7, domain_range=X.domain_range)
+        basis = skfda.representation.basis.VectorValued(
+            [basis_dim] * 2
+        )
+
+        for method in smoothing.BasisSmoother.SolverMethod:
+            with self.subTest(method=method):
+
+                basis_smoother = smoothing.BasisSmoother(
+                    basis,
+                    regularization=TikhonovRegularization(
+                        LinearDifferentialOperator(2)),
+                    return_basis=True,
+                    smoothing_parameter=1,
+                    method=method)
+
+                basis_smoother_dim = smoothing.BasisSmoother(
+                    basis_dim,
+                    regularization=TikhonovRegularization(
+                        LinearDifferentialOperator(2)),
+                    return_basis=True,
+                    smoothing_parameter=1,
+                    method=method)
+
+                X_basis = basis_smoother.fit_transform(X)
+
+                self.assertEqual(X_basis.dim_codomain, 2)
+
+                self.assertEqual(X_basis.coordinates[0].basis, basis_dim)
+                np.testing.assert_allclose(
+                    X_basis.coordinates[0].coefficients,
+                    basis_smoother_dim.fit_transform(
+                        X.coordinates[0]).coefficients)
+
+                self.assertEqual(X_basis.coordinates[1].basis, basis_dim)
+                np.testing.assert_allclose(
+                    X_basis.coordinates[1].coefficients,
+                    basis_smoother_dim.fit_transform(
+                        X.coordinates[1]).coefficients)

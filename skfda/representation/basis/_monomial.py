@@ -29,9 +29,15 @@ class Monomial(Basis):
         values.
 
         >>> bs_mon([0., 1., 2.])
-        array([[ 1., 1., 1.],
-               [ 0., 1., 2.],
-               [ 0., 1., 4.]])
+        array([[[ 1.],
+                [ 1.],
+                [ 1.]],
+               [[ 0.],
+                [ 1.],
+                [ 2.]],
+               [[ 0.],
+                [ 1.],
+                [ 4.]]])
 
         And also evaluates its derivatives
 
@@ -60,6 +66,10 @@ class Monomial(Basis):
     """
 
     def _evaluate(self, eval_points):
+
+        # Input is scalar
+        eval_points = eval_points[..., 0]
+
         exps = np.arange(self.n_basis)
         raised = np.power.outer(eval_points, exps)
 

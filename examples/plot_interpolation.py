@@ -81,42 +81,6 @@ fd_smooth.plot(fig=fig, label="Cubic smoothed")
 fd_smooth.scatter(fig=fig)
 fig.legend()
 
-
-##############################################################################
-# It is possible to evaluate derivatives of the FDatagrid,
-# but due to the fact that interpolation is performed first, the interpolation
-# loses one degree for each order of derivation. In the next example, it is
-# shown the first derivative of a sample using interpolation with different
-# degrees.
-#
-
-fd = fd[1]
-
-fig = plt.figure()
-fig.add_subplot(1, 1, 1)
-
-for i in range(1, 4):
-    fd.interpolation = SplineInterpolation(interpolation_order=i)
-    fd.plot(fig=fig, derivative=1, label=f"Degree {i}")
-
-fig.legend()
-
-##############################################################################
-# FDataGrids can be differentiate using lagged differences with the
-# method :func:`~skfda.representation.grid.FDataGrid.derivative`, creating
-# another FDataGrid which could be interpolated in order to avoid
-# interpolating before differentiating.
-#
-
-fd_derivative = fd.derivative()
-
-fig = fd_derivative.plot(label="Differentiation first")
-fd_derivative.scatter(fig=fig)
-
-fd.plot(fig=fig, derivative=1, label="Interpolation first")
-
-fig.legend()
-
 ##############################################################################
 # Sometimes our samples are required to be monotone, in these cases it is
 # possible to use monotone cubic interpolation with the attribute
@@ -124,6 +88,7 @@ fig.legend()
 # will be used.
 #
 
+fd = fd[1]
 
 fd_monotone = fd.copy(data_matrix=np.sort(fd.data_matrix, axis=1))
 
@@ -167,32 +132,22 @@ fd.scatter(fig=fig)
 # the values (3,2).
 #
 
-
 fd.interpolation = SplineInterpolation(interpolation_order=3)
 
 fig = fd.plot()
 fd.scatter(fig=fig)
 
 ##############################################################################
-# In case of surface derivatives could be taked in two directions, for this
-# reason a tuple with the order of derivates in each direction could be passed.
-# Let :math:`x(t,s)` be the surface, in the following example it is shown the
-# derivative with respect to the second coordinate, :math:`\frac{\partial}
-# {\partial s}x(t,s)`.
-
-fd.plot(derivative=(0, 1))
-
-##############################################################################
 # The following table shows the interpolation methods available by the class
 # :class:`SplineInterpolation` depending on the domain dimension.
 #
-# +------------------+--------+----------------+----------+-------------+-------------+
-# | Domain dimension | Linear | Up to degree 5 | Monotone | Derivatives |  Smoothing  |
-# +==================+========+================+==========+=============+=============+
-# |         1        |   ✔    |       ✔        |    ✔     |      ✔      |      ✔      |
-# +------------------+--------+----------------+----------+-------------+-------------+
-# |         2        |   ✔    |       ✔        |    ✖     |      ✔      |      ✔      |
-# +------------------+--------+----------------+----------+-------------+-------------+
-# |     3 or more    |   ✔    |       ✖        |    ✖     |      ✖      |      ✖      |
-# +------------------+--------+----------------+----------+-------------+-------------+
+# +------------------+--------+----------------+----------+-------------+
+# | Domain dimension | Linear | Up to degree 5 | Monotone |  Smoothing  |
+# +==================+========+================+==========+=============+
+# |         1        |   ✔    |       ✔        |    ✔     |      ✔      |
+# +------------------+--------+----------------+----------+-------------+
+# |         2        |   ✔    |       ✔        |    ✖     |      ✔      |
+# +------------------+--------+----------------+----------+-------------+
+# |     3 or more    |   ✔    |       ✖        |    ✖     |      ✖      |
+# +------------------+--------+----------------+----------+-------------+
 #

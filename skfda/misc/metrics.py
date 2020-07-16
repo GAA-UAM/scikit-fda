@@ -5,7 +5,6 @@ import numpy as np
 from ..preprocessing.registration import normalize_warping, ElasticRegistration
 from ..preprocessing.registration._warping import _normalize_scale
 from ..preprocessing.registration.elastic import SRSF
-from ..representation import FData
 from ..representation import FDataGrid, FDataBasis
 
 
@@ -306,7 +305,8 @@ def norm_lp(fdata, p=2, p2=2):
 
         elif fdata.dim_domain == 1:
 
-            # Computes the norm, approximating the integral with Simpson's rule.
+            # Computes the norm, approximating the integral with Simpson's
+            # rule.
             res = scipy.integrate.simps(data_matrix[..., 0] ** p,
                                         x=fdata.sample_points) ** (1 / p)
 
@@ -493,10 +493,11 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
                          domain_range=(0, 1))
 
-    elastic_registration = ElasticRegistration(template=fdata2,
-                                               penalty=lam,
-                                               output_points=eval_points_normalized,
-                                               **kwargs)
+    elastic_registration = ElasticRegistration(
+        template=fdata2,
+        penalty=lam,
+        output_points=eval_points_normalized,
+        **kwargs)
 
     fdata1_reg = elastic_registration.fit_transform(fdata1)
 
@@ -507,9 +508,8 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
 
     if lam != 0.0:
         # L2 norm || sqrt(Dh) - 1 ||^2
-        warping = elastic_registration.warping_
-        penalty = warping(eval_points_normalized, derivative=1,
-                          keepdims=False)[0]
+        warping_deriv = elastic_registration.warping_.derivative()
+        penalty = warping_deriv(eval_points_normalized)[0, ..., 0]
         penalty = np.sqrt(penalty, out=penalty)
         penalty -= 1
         penalty = np.square(penalty, out=penalty)
@@ -573,18 +573,19 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
                          domain_range=(0, 1))
 
-    elastic_registration = ElasticRegistration(penalty=lam, template=fdata2,
-                                               output_points=eval_points_normalized)
+    elastic_registration = ElasticRegistration(
+        penalty=lam, template=fdata2,
+        output_points=eval_points_normalized)
 
     elastic_registration.fit_transform(fdata1)
 
-    derivative_warping = elastic_registration.warping_(eval_points_normalized,
-                                                       keepdims=False,
-                                                       derivative=1)[0]
+    warping_deriv = elastic_registration.warping_.derivative()
+    derivative_warping = warping_deriv(eval_points_normalized)[0, ..., 0]
 
     derivative_warping = np.sqrt(derivative_warping, out=derivative_warping)
 
     d = scipy.integrate.simps(derivative_warping, x=eval_points_normalized)
+    d = np.clip(d, -1, 1)
 
     return np.arccos(d)
 

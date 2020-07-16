@@ -77,7 +77,7 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
     return sample_colors, patches
 
 
-def plot_graph(fdata, chart=None, *, derivative=0, fig=None, axes=None,
+def plot_graph(fdata, chart=None, *, fig=None, axes=None,
                n_rows=None, n_cols=None, n_points=None,
                domain_range=None,
                group=None, group_colors=None, group_names=None,
@@ -93,10 +93,6 @@ def plot_graph(fdata, chart=None, *, derivative=0, fig=None, axes=None,
             with the graphs are plotted or axis over where the graphs are
             plotted. If None and ax is also None, the figure is
             initialized.
-        derivative (int or tuple, optional): Order of derivative to be
-            plotted. In case of surfaces a tuple with the order of
-            derivation in each direction can be passed. See
-            :func:`evaluate` to obtain more information. Defaults 0.
         fig (figure object, optional): figure over with the graphs are
             plotted in case ax is not specified. If None and ax is also
             None, the figure is initialized.
@@ -164,7 +160,7 @@ def plot_graph(fdata, chart=None, *, derivative=0, fig=None, axes=None,
 
         # Evaluates the object in a linspace
         eval_points = np.linspace(*domain_range[0], n_points)
-        mat = fdata(eval_points, derivative=derivative, keepdims=True)
+        mat = fdata(eval_points)
 
         color_dict = {}
 
@@ -193,7 +189,7 @@ def plot_graph(fdata, chart=None, *, derivative=0, fig=None, axes=None,
         y = np.linspace(*domain_range[1], npoints[1])
 
         # Evaluation of the functional object
-        Z = fdata((x, y), derivative=derivative, grid=True, keepdims=True)
+        Z = fdata((x, y), grid=True)
 
         X, Y = np.meshgrid(x, y, indexing='ij')
 
@@ -213,7 +209,7 @@ def plot_graph(fdata, chart=None, *, derivative=0, fig=None, axes=None,
     return fig
 
 
-def plot_scatter(fdata, chart=None, *, sample_points=None, derivative=0,
+def plot_scatter(fdata, chart=None, *, sample_points=None,
                  fig=None, axes=None,
                  n_rows=None, n_cols=None, domain_range=None,
                  group=None, group_colors=None, group_names=None,
@@ -227,10 +223,6 @@ def plot_scatter(fdata, chart=None, *, sample_points=None, derivative=0,
             plotted. If None and ax is also None, the figure is
             initialized.
         sample_points (ndarray): points to plot.
-        derivative (int or tuple, optional): Order of derivative to be
-            plotted. In case of surfaces a tuple with the order of
-            derivation in each direction can be passed. See
-            :func:`evaluate` to obtain more information. Defaults 0.
         fig (figure object, optional): figure over with the graphs are
             plotted in case ax is not specified. If None and ax is also
             None, the figure is initialized.
@@ -278,12 +270,11 @@ def plot_scatter(fdata, chart=None, *, sample_points=None, derivative=0,
     if sample_points is None:
         # This can only be done for FDataGrid
         sample_points = fdata.sample_points
-        if derivative == 0:
-            evaluated_points = fdata.data_matrix
+        evaluated_points = fdata.data_matrix
 
     if evaluated_points is None:
         evaluated_points = fdata(
-            sample_points, grid=True, derivative=derivative)
+            sample_points, grid=True)
 
     fig, axes = _get_figure_and_axes(chart, fig, axes)
     fig, axes = _set_figure_layout_for_fdata(fdata, fig, axes, n_rows, n_cols)

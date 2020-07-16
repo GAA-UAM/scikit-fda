@@ -1,11 +1,20 @@
 import io
 import math
+import re
 
 import matplotlib.axes
 import matplotlib.backends.backend_svg
 import matplotlib.figure
 
 import matplotlib.pyplot as plt
+
+non_close_text = '[^>]*?'
+svg_width_regex = re.compile(
+    f'(<svg {non_close_text}width="){non_close_text}("{non_close_text}>)')
+svg_width_replacement = r'\g<1>100%\g<2>'
+svg_height_regex = re.compile(
+    f'(<svg {non_close_text})height="{non_close_text}"({non_close_text}>)')
+svg_height_replacement = r'\g<1>\g<2>'
 
 
 def _create_figure():
@@ -24,7 +33,14 @@ def _figure_to_svg(figure):
     figure.savefig(output, format='svg')
     figure.set_canvas(old_canvas)
     data = output.getvalue()
-    return data.decode('utf-8')
+    decoded_data = data.decode('utf-8')
+
+    new_data = svg_width_regex.sub(
+        svg_width_replacement, decoded_data, count=1)
+    new_data = svg_height_regex.sub(
+        svg_height_replacement, new_data, count=1)
+
+    return new_data
 
 
 def _get_figure_and_axes(chart=None, fig=None, axes=None):

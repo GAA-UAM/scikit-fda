@@ -1,6 +1,7 @@
 """Functional Principal Component Analysis Module."""
 
 import skfda
+from skfda.misc.regularization import compute_penalty_matrix
 from skfda.representation.basis import FDataBasis
 from skfda.representation.grid import FDataGrid
 
@@ -9,8 +10,6 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
 import numpy as np
-
-from skfda.misc.regularization import compute_penalty_matrix
 
 
 __author__ = "Yujian Hong"
@@ -42,12 +41,13 @@ class FPCA(BaseEstimator, TransformerMixin):
             This parameter is only used when fitting a FDataGrid.
 
     Attributes:
-        components_ (FDataBasis): this contains the principal components in a
+        components_ (FData): this contains the principal components in a
             basis representation.
         explained_variance_ (array_like): The amount of variance explained by
             each of the selected components.
         explained_variance_ratio_ (array_like): this contains the percentage of
             variance explained by each principal component.
+        mean_ (FData): mean of the train data.
 
 
     Examples:
@@ -91,7 +91,14 @@ class FPCA(BaseEstimator, TransformerMixin):
         self.weights = weights
         self.components_basis = components_basis
 
-    def fit_basis(self, X: FDataBasis, y=None):
+    def _center_if_necessary(self, X, *, learn_mean=True):
+
+        if learn_mean:
+            self.mean_ = X.mean()
+
+        return X - self.mean_ if self.centering else X
+
+    def _fit_basis(self, X: FDataBasis, y=None):
         """Computes the first n_components principal components and saves them.
         The eigenvalues associated with these principal components are also
         saved. For more details about how it is implemented please view the
@@ -134,11 +141,7 @@ class FPCA(BaseEstimator, TransformerMixin):
 
         # if centering is True then subtract the mean function to each function
         # in FDataBasis
-        if self.centering:
-            meanfd = X.mean()
-            # consider moving these lines to FDataBasis as a centering function
-            # subtract from each row the mean coefficient matrix
-            X.coefficients -= meanfd.coefficients
+        X = self._center_if_necessary(X)
 
         # setup principal component basis if not given
         components_basis = self.components_basis
@@ -200,7 +203,7 @@ class FPCA(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform_basis(self, X, y=None):
+    def _transform_basis(self, X, y=None):
         """Computes the n_components first principal components score and
         returns them.
 
@@ -218,7 +221,7 @@ class FPCA(BaseEstimator, TransformerMixin):
         # in this case it is the inner product of our data with the components
         return X.inner_product(self.components_)
 
-    def fit_grid(self, X: FDataGrid, y=None):
+    def _fit_grid(self, X: FDataGrid, y=None):
         r"""Computes the n_components first principal components and saves them.
 
         The eigenvalues associated with these principal
@@ -267,12 +270,7 @@ class FPCA(BaseEstimator, TransformerMixin):
 
         # if centering is True then subtract the mean function to each function
         # in FDataBasis
-        if self.centering:
-            meanfd = X.mean()
-            # consider moving these lines to FDataGrid as a centering function
-            # subtract from each row the mean coefficient matrix
-            fd_data -= meanfd.data_matrix.reshape(
-                meanfd.data_matrix.shape[:-1])
+        X = self._center_if_necessary(X)
 
         # establish weights for each point of discretization
         if not self.weights:
@@ -319,7 +317,7 @@ class FPCA(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform_grid(self, X : FDataGrid, y=None):
+    def _transform_grid(self, X: FDataGrid, y=None):
         """Computes the n_components first principal components score and
         returns them.
 
@@ -336,10 +334,11 @@ class FPCA(BaseEstimator, TransformerMixin):
 
         # in this case its the coefficient matrix multiplied by the principal
         # components as column vectors
-        return FDataGrid(data_matrix=X.data_matrix.reshape(
+
+        return X.data_matrix.reshape(
             X.data_matrix.shape[:-1]) @ np.transpose(
             self.components_.data_matrix.reshape(
-                self.components_.data_matrix.shape[:-1])))
+                self.components_.data_matrix.shape[:-1]))
 
     def fit(self, X, y=None):
         """Computes the n_components first principal components and saves them
@@ -355,9 +354,9 @@ class FPCA(BaseEstimator, TransformerMixin):
             self (object)
         """
         if isinstance(X, FDataGrid):
-            return self.fit_grid(X, y)
+            return self._fit_grid(X, y)
         elif isinstance(X, FDataBasis):
-            return self.fit_basis(X, y)
+            return self._fit_basis(X, y)
         else:
             raise AttributeError("X must be either FDataGrid or FDataBasis")
 
@@ -375,10 +374,12 @@ class FPCA(BaseEstimator, TransformerMixin):
             (array_like): the scores of the data with reference to the
             principal components
         """
+        X = self._center_if_necessary(X, learn_mean=False)
+
         if isinstance(X, FDataGrid):
-            return self.transform_grid(X, y)
+            return self._transform_grid(X, y)
         elif isinstance(X, FDataBasis):
-            return self.transform_basis(X, y)
+            return self._transform_basis(X, y)
         else:
             raise AttributeError("X must be either FDataGrid or FDataBasis")
 

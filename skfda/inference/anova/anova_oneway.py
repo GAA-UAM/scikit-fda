@@ -159,7 +159,8 @@ def v_asymptotic_stat(fd, weights, p=2):
     return np.sum(lp_distance(left_fd, right_fd, p=p) ** p)
 
 
-def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=2):
+def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=2,
+                     equal_var=True):
 
     n_groups = len(fd_grouped)
     if n_groups < 2:
@@ -174,21 +175,27 @@ def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=2):
 
     sizes = [fd.n_samples for fd in fd_grouped]  # List with sizes of each group
 
-    # Estimating covariances for each group
-    k_est = [fd.cov().data_matrix[0, ..., 0] for fd in fd_grouped]
-
-    # Number of sample points for gaussian processes have to match the features
-    # of the covariances.
-    n_features = k_est[0].shape[0]
-
     # Instance a random state object in case random_state is an int
     random_state = check_random_state(random_state)
 
-    # Simulating n_reps observations for each of the n_groups gaussian processes
+    if equal_var:
+        k_est = concatenate(fd_grouped).cov().data_matrix[0, ..., 0]
+        k_est = [k_est] * len(fd_grouped)
+    else:
+        # Estimating covariances for each group
+        k_est = [fd.cov().data_matrix[0, ..., 0] for fd in fd_grouped]
+
+    # Number of sample points for gaussian processes have to match
+    # the features of the covariances.
+    n_features = k_est[0].shape[0]
+
+    # Simulating n_reps observations for each of the n_groups gaussian
+    # processes
     sim = [make_gaussian_process(n_reps, n_features=n_features, start=start,
                                  stop=stop, cov=k_est[i],
                                  random_state=random_state)
            for i in range(n_groups)]
+
     v_samples = np.empty(n_reps)
     for i in range(n_reps):
         fd = FDataGrid([s.data_matrix[i, ..., 0] for s in sim])
@@ -196,7 +203,8 @@ def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=2):
     return v_samples
 
 
-def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None, p=2):
+def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None,
+                 p=2, equal_var=True):
     r"""
     Performs one-way functional ANOVA.
 
@@ -243,6 +251,10 @@ def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None, p=2):
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
 
+        equal_var (bool, optional): If True (default), perform a One-way
+            ANOVA assuming the same covariance operator for all the groups,
+            else considers an independent covariance operator for each group.
+
     Returns:
         Value of the sample statistic, p-value and sampling distribution of
         the simulated asymptotic statistic.
@@ -262,13 +274,13 @@ def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None, p=2):
         >>> fd = fetch_gait()["data"].coordinates[1]
         >>> fd1, fd2, fd3 = fd[:13], fd[13:26], fd[26:]
         >>> oneway_anova(fd1, fd2, fd3, random_state=RandomState(42))
-        (179.52499999999998, 0.602)
+        (179.52499999999998, 0.5945)
         >>> _, _, dist = oneway_anova(fd1, fd2, fd3, n_reps=3,
         ...     random_state=RandomState(42),
         ...     return_dist=True)
         >>> with printoptions(precision=4):
         ...     print(dist)
-        [ 163.3577 208.595  229.7678]
+        [ 184.0698 212.7395  195.3663]
 
     References:
         [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
@@ -312,7 +324,8 @@ def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None, p=2):
 
     # Computing sampling distribution
     simulation = _anova_bootstrap(fd_groups, n_reps,
-                                  random_state=random_state, p=p)
+                                  random_state=random_state, p=p,
+                                  equal_var=equal_var)
 
     p_value = np.sum(simulation > vn) / len(simulation)
 

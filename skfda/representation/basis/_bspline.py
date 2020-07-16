@@ -55,17 +55,30 @@ class BSpline(Basis):
         set of points.
 
         >>> bss = BSpline(n_basis=3, order=3)
-        >>> bss.evaluate([0, 0.5, 1])
-        array([[ 1.  ,  0.25,  0.  ],
-               [ 0.  ,  0.5 ,  0.  ],
-               [ 0.  ,  0.25,  1.  ]])
+        >>> bss([0, 0.5, 1])
+        array([[[ 1.  ],
+                [ 0.25],
+                [ 0.  ]],
+               [[ 0.  ],
+                [ 0.5 ],
+                [ 0.  ]],
+               [[ 0.  ],
+                [ 0.25],
+                [ 1.  ]]])
 
         And evaluates first derivative
 
-        >>> bss.evaluate([0, 0.5, 1], derivative=1)
-        array([[-2., -1.,  0.],
-               [ 2.,  0., -2.],
-               [ 0.,  1.,  2.]])
+        >>> deriv = bss.derivative()
+        >>> deriv([0, 0.5, 1])
+        array([[[-2.],
+                [-1.],
+                [ 0.]],
+               [[ 2.],
+                [ 0.],
+                [-2.]],
+               [[ 0.],
+                [ 1.],
+                [ 2.]]])
 
     References:
         .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
@@ -156,34 +169,10 @@ class BSpline(Basis):
         return np.array([self.knots[0]] * (self.order - 1) + self.knots +
                         [self.knots[-1]] * (self.order - 1))
 
-    def _evaluate(self, eval_points, derivative=0):
-        """Compute the basis or its derivatives given a list of values.
+    def _evaluate(self, eval_points):
 
-        It uses the scipy implementation of BSplines to compute the values
-        for each element of the basis.
-
-        Args:
-            eval_points (array_like): List of points where the basis system is
-                evaluated.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-
-        Returns:
-            (:obj:`numpy.darray`): Matrix whose rows are the values of the each
-            basis function or its derivatives at the values specified in
-            eval_points.
-
-        Implementation details: In order to allow a discontinuous behaviour at
-        the boundaries of the domain it is necessary to placing m knots at the
-        boundaries [RS05]_. This is automatically done so that the user only
-        has to specify a single knot at the boundaries.
-
-        References:
-            .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
-                Analysis*. Springer. 50-51.
-
-        """
-        if derivative > (self.order - 1):
-            return np.zeros((self.n_basis, len(eval_points)))
+        # Input is scalar
+        eval_points = eval_points[..., 0]
 
         # Places m knots at the boundaries
         knots = self._evaluation_knots()
@@ -200,14 +189,18 @@ class BSpline(Basis):
             # iteration
             c[i] = 1
             # compute the spline
-            mat[i] = scipy.interpolate.splev(eval_points, (knots, c,
-                                                           self.order - 1),
-                                             der=derivative)
+            mat[i] = scipy.interpolate.splev(eval_points,
+                                             (knots, c, self.order - 1))
             c[i] = 0
 
         return mat
 
-    def _derivative(self, coefs, order=1):
+    def _derivative_basis_and_coefs(self, coefs, order=1):
+        if order >= self.order:
+            return (
+                BSpline(n_basis=1, domain_range=self.domain_range, order=1),
+                np.zeros((len(coefs), 1)))
+
         deriv_splines = [self._to_scipy_BSpline(coefs[i]).derivative(order)
                          for i in range(coefs.shape[0])]
 
@@ -395,7 +388,12 @@ class BSpline(Basis):
     @staticmethod
     def _from_scipy_BSpline(bspline):
         order = bspline.k
-        knots = bspline.t[order: -order]
+        knots = bspline.t
+
+        # Remove additional knots at the borders
+        if order != 0:
+            knots = knots[order: -order]
+
         coefs = bspline.c
         domain_range = [knots[0], knots[-1]]
 

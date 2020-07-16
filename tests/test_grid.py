@@ -1,10 +1,11 @@
+from skfda import FDataGrid, concatenate
+from skfda.exploratory import stats
 import unittest
 
+from mpl_toolkits.mplot3d import axes3d
 import scipy.stats.mstats
 
 import numpy as np
-from skfda import FDataGrid, concatenate
-from skfda.exploratory import stats
 
 
 class TestFDataGrid(unittest.TestCase):
@@ -99,7 +100,7 @@ class TestFDataGrid(unittest.TestCase):
         fd = fd1.concatenate(fd2, as_coordinates=True)
         np.testing.assert_equal(None, fd.axes_labels)
 
-    def test_concatenate(self):
+    def test_concatenate2(self):
         sample1 = np.arange(0, 10)
         sample2 = np.arange(10, 20)
         fd1 = FDataGrid([sample1])
@@ -173,6 +174,110 @@ class TestFDataGrid(unittest.TestCase):
         fd2 = fd1 + fd1.data_matrix[..., 0]
         np.testing.assert_array_equal(fd2.data_matrix[..., 0],
                                       [[2, 4, 6, 8], [4, 6, 8, 10]])
+
+    def test_composition(self):
+        X, Y, Z = axes3d.get_test_data(1.2)
+
+        data_matrix = [Z.T]
+        sample_points = [X[0, :], Y[:, 0]]
+
+        g = FDataGrid(data_matrix, sample_points)
+        self.assertEqual(g.dim_domain, 2)
+        self.assertEqual(g.dim_codomain, 1)
+
+        t = np.linspace(0, 2 * np.pi, 100)
+
+        data_matrix = [10 * np.array([np.cos(t), np.sin(t)]).T]
+        f = FDataGrid(data_matrix, t)
+        self.assertEqual(f.dim_domain, 1)
+        self.assertEqual(f.dim_codomain, 2)
+
+        gof = g.compose(f)
+        self.assertEqual(gof.dim_domain, 1)
+        self.assertEqual(gof.dim_codomain, 1)
+
+
+class TestEvaluateFDataGrid(unittest.TestCase):
+
+    def setUp(self):
+        data_matrix = np.array(
+            [
+                [
+                    [[0, 1, 2], [0, 1, 2]],
+                    [[0, 1, 2], [0, 1, 2]]
+                ],
+                [
+                    [[3, 4, 5], [3, 4, 5]],
+                    [[3, 4, 5], [3, 4, 5]]
+                ]
+            ])
+
+        sample_points = [[0, 1], [0, 1]]
+
+        fd = FDataGrid(data_matrix, sample_points=sample_points)
+        self.assertEqual(fd.n_samples, 2)
+        self.assertEqual(fd.dim_domain, 2)
+        self.assertEqual(fd.dim_codomain, 3)
+
+        self.fd = fd
+
+    def test_evaluate_aligned(self):
+
+        res = self.fd([(0, 0), (1, 1), (2, 2), (3, 3)])
+        expected = np.array([[[0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2]],
+                             [[3, 4, 5], [3, 4, 5], [3, 4, 5], [3, 4, 5]]])
+
+        np.testing.assert_allclose(res, expected)
+
+    def test_evaluate_unaligned(self):
+
+        res = self.fd([[(0, 0), (1, 1), (2, 2), (3, 3)],
+                       [(1, 7), (5, 2), (3, 4), (6, 1)]],
+                      aligned=False)
+        expected = np.array([[[0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2]],
+                             [[3, 4, 5], [3, 4, 5], [3, 4, 5], [3, 4, 5]]])
+
+        np.testing.assert_allclose(res, expected)
+
+    def test_evaluate_unaligned_ragged(self):
+
+        res = self.fd([[(0, 0), (1, 1), (2, 2), (3, 3)],
+                       [(1, 7), (5, 2), (3, 4)]],
+                      aligned=False)
+        expected = ([[[0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2]],
+                     [[3, 4, 5], [3, 4, 5], [3, 4, 5]]])
+
+        self.assertEqual(len(res), self.fd.n_samples)
+
+        for r, e in zip(res, expected):
+            np.testing.assert_allclose(r, e)
+
+    def test_evaluate_grid_aligned(self):
+
+        res = self.fd([[0, 1], [1, 2]], grid=True)
+        expected = np.array([[[[0, 1, 2], [0, 1, 2]], [[0, 1, 2], [0, 1, 2]]],
+                             [[[3, 4, 5], [3, 4, 5]], [[3, 4, 5], [3, 4, 5]]]])
+
+        np.testing.assert_allclose(res, expected)
+
+    def test_evaluate_grid_unaligned(self):
+
+        res = self.fd([[[0, 1], [1, 2]], [[3, 4], [5, 6]]],
+                      grid=True, aligned=False)
+        expected = np.array([[[[0, 1, 2], [0, 1, 2]], [[0, 1, 2], [0, 1, 2]]],
+                             [[[3, 4, 5], [3, 4, 5]], [[3, 4, 5], [3, 4, 5]]]])
+
+        np.testing.assert_allclose(res, expected)
+
+    def test_evaluate_grid_unaligned_ragged(self):
+
+        res = self.fd([[[0, 1], [1, 2]], [[3, 4], [5]]],
+                      grid=True, aligned=False)
+        expected = ([[[[0, 1, 2], [0, 1, 2]], [[0, 1, 2], [0, 1, 2]]],
+                     [[[3, 4, 5]], [[3, 4, 5]]]])
+
+        for r, e in zip(res, expected):
+            np.testing.assert_allclose(r, e)
 
 
 if __name__ == '__main__':

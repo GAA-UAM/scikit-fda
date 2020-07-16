@@ -13,7 +13,8 @@ import numpy as np
 
 from ... import FDataBasis
 from ... import FDataGrid
-from ._linear import _LinearSmoother, _check_r_to_r
+from ..._utils import _cartesian_product
+from ._linear import _LinearSmoother
 
 
 class _Cholesky():
@@ -22,8 +23,13 @@ class _Cholesky():
     def __call__(self, *, basis_values, weight_matrix, data_matrix,
                  penalty_matrix, **_):
 
-        right_matrix = basis_values.T @ weight_matrix @ data_matrix
-        left_matrix = basis_values.T @ weight_matrix @ basis_values
+        common_matrix = basis_values.T
+
+        if weight_matrix is not None:
+            common_matrix @= weight_matrix
+
+        right_matrix = common_matrix @ data_matrix
+        left_matrix = common_matrix @ basis_values
 
         # Adds the roughness penalty to the equation
         if penalty_matrix is not None:
@@ -108,7 +114,7 @@ class _Matrix():
 
     def transform(self, estimator, X, y=None):
         if estimator.return_basis:
-            coefficients = (X.data_matrix[..., 0]
+            coefficients = (X.data_matrix.reshape((X.n_samples, -1))
                             @ estimator._cached_coef_matrix.T)
 
             fdatabasis = FDataBasis(
@@ -166,19 +172,12 @@ class BasisSmoother(_LinearSmoother):
             observations. Defaults to the identity matrix.
         smoothing_parameter (int or float, optional): Smoothing
             parameter. Trying with several factors in a logarithm scale is
-            suggested. If 0 no smoothing is performed. Defaults to 0.
-        regularization (int, iterable or :class:`Regularization`): If it is
-            not a :class:`Regularization` object, linear differential
-            operator regularization is assumed. If it
-            is an integer, it indicates the order of the
-            derivative used in the computing of the penalty matrix. For
-            instance 2 means that the differential operator is
-            :math:`f''(x)`. If it is an iterable, it consists on coefficients
-            representing the differential operator used in the computing of
-            the penalty matrix. For instance the tuple (1, 0,
-            numpy.sin) means :math:`1 + sin(x)D^{2}`. If not supplied this
-            defaults to 2. Only used if penalty_matrix is
-            ``None``.
+            suggested. If 0 no smoothing is performed. Defaults to 1.
+        regularization (int, iterable or :class:`Regularization`):
+            Regularization object. This allows the penalization of
+            complicated models, which applies additional smoothing. By default
+            is ``None`` meaning that no additional smoothing has to take
+            place.
         method (str): Algorithm used for calculating the coefficients using
             the least squares method. The values admitted are 'cholesky', 'qr'
             and 'matrix' for Cholesky and QR factorisation methods, and matrix
@@ -243,9 +242,8 @@ class BasisSmoother(_LinearSmoother):
                [ 0.14, -0.29,  0.29,  0.71,  0.14],
                [ 0.43,  0.14, -0.14,  0.14,  0.43]])
 
-        If the smoothing parameter is set to something else than zero, we can
-        penalize approximations that are not smooth enough using some kind
-        of regularization:
+        We can penalize approximations that are not smooth enough using some
+        kind of regularization:
 
         >>> from skfda.misc.regularization import TikhonovRegularization
         >>> from skfda.misc.operators import LinearDifferentialOperator
@@ -254,7 +252,6 @@ class BasisSmoother(_LinearSmoother):
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='cholesky',
-        ...                smoothing_parameter=1,
         ...                regularization=TikhonovRegularization(
         ...                    LinearDifferentialOperator([0.1, 0.2])),
         ...                return_basis=True)
@@ -266,7 +263,6 @@ class BasisSmoother(_LinearSmoother):
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='qr',
-        ...                smoothing_parameter=1,
         ...                regularization=TikhonovRegularization(
         ...                    LinearDifferentialOperator([0.1, 0.2])),
         ...                return_basis=True)
@@ -278,7 +274,6 @@ class BasisSmoother(_LinearSmoother):
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='matrix',
-        ...                smoothing_parameter=1,
         ...                regularization=TikhonovRegularization(
         ...                    LinearDifferentialOperator([0.1, 0.2])),
         ...                return_basis=True)
@@ -307,7 +302,7 @@ class BasisSmoother(_LinearSmoother):
     def __init__(self,
                  basis,
                  *,
-                 smoothing_parameter: float = 0,
+                 smoothing_parameter: float = 1.,
                  weights=None,
                  regularization: Union[int, Iterable[float],
                                        'LinearDifferentialOperator'] = None,
@@ -325,37 +320,45 @@ class BasisSmoother(_LinearSmoother):
     def _method_function(self):
         """ Return the method function"""
         method_function = self.method
-        if not callable(method_function):
+        if not isinstance(method_function, self.SolverMethod):
             method_function = self.SolverMethod[
-                method_function.lower()].value
+                method_function.lower()]
 
-        return method_function
+        return method_function.value
 
     def _coef_matrix(self, input_points):
         """Get the matrix that gives the coefficients"""
         from ...misc.regularization import compute_penalty_matrix
 
-        basis_values_input = self.basis.evaluate(input_points).T
+        basis_values_input = self.basis.evaluate(
+            _cartesian_product(input_points)).reshape(
+            (self.basis.n_basis, -1)).T
 
         # If no weight matrix is given all the weights are one
-        weight_matrix = (self.weights if self.weights is not None
-                         else np.identity(basis_values_input.shape[0]))
-
-        inv = basis_values_input.T @ weight_matrix @ basis_values_input
+        if self.weights is not None:
+            ols_matrix = (basis_values_input.T @ self.weights
+                          @ basis_values_input)
+        else:
+            ols_matrix = basis_values_input.T @ basis_values_input
 
         penalty_matrix = compute_penalty_matrix(
             basis_iterable=(self.basis,),
             regularization_parameter=self.smoothing_parameter,
             regularization=self.regularization)
 
-        inv += penalty_matrix
+        ols_matrix += penalty_matrix
 
-        inv = np.linalg.inv(inv)
+        right_side = basis_values_input.T
+        if self.weights is not None:
+            right_side @= self.weights
 
-        return inv @ basis_values_input.T @ weight_matrix
+        return np.linalg.solve(
+            ols_matrix, right_side)
 
     def _hat_matrix(self, input_points, output_points):
-        basis_values_output = self.basis.evaluate(output_points).T
+        basis_values_output = self.basis.evaluate(_cartesian_product(
+            output_points)).reshape(
+            (self.basis.n_basis, -1)).T
 
         return basis_values_output @ self._coef_matrix(input_points)
 
@@ -370,9 +373,8 @@ class BasisSmoother(_LinearSmoother):
             self (object)
 
         """
-        _check_r_to_r(X)
 
-        self.input_points_ = X.sample_points[0]
+        self.input_points_ = X.sample_points
         self.output_points_ = (self.output_points
                                if self.output_points is not None
                                else self.input_points_)
@@ -397,9 +399,7 @@ class BasisSmoother(_LinearSmoother):
         """
         from ...misc.regularization import compute_penalty_matrix
 
-        _check_r_to_r(X)
-
-        self.input_points_ = X.sample_points[0]
+        self.input_points_ = X.sample_points
         self.output_points_ = (self.output_points
                                if self.output_points is not None
                                else self.input_points_)
@@ -414,14 +414,15 @@ class BasisSmoother(_LinearSmoother):
         # k is the number of elements of the basis
 
         # Each sample in a column (m x n)
-        data_matrix = X.data_matrix[..., 0].T
+        data_matrix = X.data_matrix.reshape((X.n_samples, -1)).T
 
         # Each basis in a column
-        basis_values = self.basis.evaluate(self.input_points_).T
+        basis_values = self.basis.evaluate(
+            _cartesian_product(self.input_points_)).reshape(
+            (self.basis.n_basis, -1)).T
 
         # If no weight matrix is given all the weights are one
-        weight_matrix = (self.weights if self.weights is not None
-                         else np.identity(basis_values.shape[0]))
+        weight_matrix = self.weights
 
         # We need to solve the equation
         # (phi' W phi + lambda * R) C = phi' W Y
@@ -466,7 +467,7 @@ class BasisSmoother(_LinearSmoother):
         if self.return_basis:
             return fdatabasis
         else:
-            return fdatabasis.to_grid(eval_points=self.output_points_)
+            return fdatabasis.to_grid(sample_points=self.output_points_)
 
         return self
 
@@ -482,7 +483,8 @@ class BasisSmoother(_LinearSmoother):
 
         """
 
-        assert all(self.input_points_ == X.sample_points[0])
+        assert all([all(i == s)
+                    for i, s in zip(self.input_points_, X.sample_points)])
 
         method = self._method_function()
 

@@ -28,54 +28,61 @@ class Monomial(Basis):
         And evaluates all the functions in the basis in a list of descrete
         values.
 
-        >>> bs_mon.evaluate([0, 1, 2])
-        array([[1, 1, 1],
-               [0, 1, 2],
-               [0, 1, 4]])
+        >>> bs_mon([0., 1., 2.])
+        array([[[ 1.],
+                [ 1.],
+                [ 1.]],
+               [[ 0.],
+                [ 1.],
+                [ 2.]],
+               [[ 0.],
+                [ 1.],
+                [ 4.]]])
 
         And also evaluates its derivatives
 
-        >>> bs_mon.evaluate([0, 1, 2], derivative=1)
-        array([[0, 0, 0],
-               [1, 1, 1],
-               [0, 2, 4]])
-        >>> bs_mon.evaluate([0, 1, 2], derivative=2)
-        array([[0, 0, 0],
-               [0, 0, 0],
-               [2, 2, 2]])
-
+        >>> deriv = bs_mon.derivative()
+        >>> deriv([0, 1, 2])
+        array([[[ 0.],
+                [ 0.],
+                [ 0.]],
+               [[ 1.],
+                [ 1.],
+                [ 1.]],
+               [[ 0.],
+                [ 2.],
+                [ 4.]]])
+        >>> deriv2 = bs_mon.derivative(order=2)
+        >>> deriv2([0, 1, 2])
+        array([[[ 0.],
+                [ 0.],
+                [ 0.]],
+               [[ 0.],
+                [ 0.],
+                [ 0.]],
+               [[ 2.],
+                [ 2.],
+                [ 2.]]])
     """
 
-    def _coefs_exps_derivatives(self, derivative):
-        """
-        Return coefficients and exponents of the derivatives.
+    def _evaluate(self, eval_points):
 
-        This function is used for computing the basis functions and evaluate.
+        # Input is scalar
+        eval_points = eval_points[..., 0]
 
-        When the exponent would be negative (the coefficient in that case
-        is zero) returns 0 as the exponent (to prevent division by zero).
-        """
-        seq = np.arange(self.n_basis)
-        coef_mat = np.linspace(seq, seq - derivative + 1,
-                               derivative, dtype=int)
-        coefs = np.prod(coef_mat, axis=0)
-
-        exps = np.maximum(seq - derivative, 0)
-
-        return coefs, exps
-
-    def _evaluate(self, eval_points, derivative=0):
-
-        coefs, exps = self._coefs_exps_derivatives(derivative)
-
+        exps = np.arange(self.n_basis)
         raised = np.power.outer(eval_points, exps)
 
-        return (coefs * raised).T
+        return raised.T
 
-    def _derivative(self, coefs, order=1):
-        return (Monomial(self.domain_range, self.n_basis - order),
-                np.array([np.polyder(x[::-1], order)[::-1]
-                          for x in coefs]))
+    def _derivative_basis_and_coefs(self, coefs, order=1):
+        if order >= self.n_basis:
+            return (Monomial(self.domain_range, 1),
+                    np.zeros((len(coefs), 1)))
+        else:
+            return (Monomial(self.domain_range, self.n_basis - order),
+                    np.array([np.polyder(x[::-1], order)[::-1]
+                              for x in coefs]))
 
     def _gram_matrix(self):
         integral_coefs = np.polyint(np.ones(2 * self.n_basis - 1))

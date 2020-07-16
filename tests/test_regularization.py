@@ -4,7 +4,7 @@ from skfda.misc.operators._linear_differential_operator import (
     _monomial_evaluate_constant_linear_diff_op)
 from skfda.misc.operators._operators import gramian_matrix_numerical
 from skfda.misc.regularization import TikhonovRegularization, L2Regularization
-from skfda.ml.regression.linear import MultivariateLinearRegression
+from skfda.ml.regression.linear import LinearRegression
 from skfda.representation.basis import Constant, Monomial, BSpline, Fourier
 import unittest
 import warnings
@@ -184,7 +184,8 @@ class TestEndpointsDifferenceRegularization(unittest.TestCase):
         smoother = skfda.preprocessing.smoothing.BasisSmoother(
             basis=skfda.representation.basis.BSpline(
                 n_basis=10, domain_range=fd.domain_range),
-            regularization=TikhonovRegularization(lambda x: x(1) - x(0)),
+            regularization=TikhonovRegularization(
+                lambda x: x(1)[:, 0] - x(0)[:, 0]),
             smoothing_parameter=10000)
 
         fd_basis = smoother.fit_transform(fd)
@@ -217,7 +218,7 @@ class TestL2Regularization(unittest.TestCase):
                     regularization_parameter=regularization_parameter):
 
                 sklearn_l2 = Ridge(alpha=regularization_parameter)
-                skfda_l2 = MultivariateLinearRegression(
+                skfda_l2 = LinearRegression(
                     regularization=L2Regularization(
                         regularization_parameter=regularization_parameter),
                 )

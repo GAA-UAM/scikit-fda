@@ -6,12 +6,12 @@ the corresponding basis classes.
 """
 from abc import ABC, abstractmethod
 import copy
-
-import scipy.integrate
+import warnings
 
 import numpy as np
 
-from ..._utils import _list_of_arrays, _same_domain
+from ..._utils import (_list_of_arrays, _same_domain,
+                       _reshape_eval_points, _evaluate_grid)
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -58,9 +58,16 @@ class Basis(ABC):
 
         self._domain_range = domain_range
         self.n_basis = n_basis
-        self._drop_index_lst = []
 
         super().__init__()
+
+    @property
+    def dim_domain(self):
+        return 1
+
+    @property
+    def dim_codomain(self):
+        return 1
 
     @property
     def domain_range(self):
@@ -74,15 +81,11 @@ class Basis(ABC):
         self._domain_range = value
 
     @abstractmethod
-    def _evaluate(self, eval_points, derivative=0):
+    def _evaluate(self, eval_points):
         """Subclasses must override this to provide basis evaluation."""
         pass
 
-    @abstractmethod
-    def _derivative(self, coefs, order=1):
-        pass
-
-    def evaluate(self, eval_points, derivative=0):
+    def evaluate(self, eval_points, *, derivative=0):
         """Evaluate Basis objects and its derivatives.
 
         Evaluates the basis function system or its derivatives at a list of
@@ -91,7 +94,6 @@ class Basis(ABC):
         Args:
             eval_points (array_like): List of points where the basis is
                 evaluated.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
 
         Returns:
             (numpy.darray): Matrix whose rows are the values of the each
@@ -101,26 +103,55 @@ class Basis(ABC):
         """
         if derivative < 0:
             raise ValueError("derivative only takes non-negative values.")
+        elif derivative != 0:
+            warnings.warn("Parameter derivative is deprecated. Use the "
+                          "derivative function instead.", DeprecationWarning)
+            return self.derivative(order=derivative)(eval_points)
 
-        eval_points = np.atleast_1d(eval_points)
-        if np.any(np.isnan(eval_points)):
-            raise ValueError("The list of points where the function is "
-                             "evaluated can not contain nan values.")
+        eval_points = _reshape_eval_points(eval_points,
+                                           aligned=True,
+                                           n_samples=self.n_basis,
+                                           dim_domain=self.dim_domain)
 
-        return self._evaluate(eval_points, derivative)
+        return self._evaluate(eval_points).reshape(
+            (self.n_basis, len(eval_points), self.dim_codomain))
 
     def __call__(self, *args, **kwargs):
         return self.evaluate(*args, **kwargs)
 
-    def plot(self, chart=None, *, derivative=0, **kwargs):
+    def derivative(self, *, order=1):
+        """Construct a FDataBasis object containing the derivative.
+
+        Args:
+            order (int, optional): Order of the derivative. Defaults to 1.
+
+        Returns:
+            (FDataBasis): Derivative object.
+
+        """
+
+        return self.to_basis().derivative(order=order)
+
+    def _derivative_basis_and_coefs(self, coefs, order=1):
+        """
+        Subclasses can override this to provide derivative construction.
+
+        A basis can provide derivative evaluation at given points
+        without providing a basis representation for its derivatives,
+        although is recommended to provide both if possible.
+
+        """
+        raise NotImplementedError(f"{type(self)} basis does not support "
+                                  "the construction of a basis of the "
+                                  "derivatives.")
+
+    def plot(self, chart=None, **kwargs):
         """Plot the basis object or its derivatives.
 
         Args:
             chart (figure object, axe or list of axes, optional): figure over
                 with the graphs are plotted or axis over where the graphs are
                 plotted.
-            derivative (int or tuple, optional): Order of derivative to be
-                plotted. Defaults 0.
             **kwargs: keyword arguments to be passed to the
                 fdata.plot function.
 
@@ -128,7 +159,38 @@ class Basis(ABC):
             fig (figure): figure object in which the graphs are plotted.
 
         """
-        self.to_basis().plot(chart=chart, derivative=derivative, **kwargs)
+        self.to_basis().plot(chart=chart, **kwargs)
+
+    def _coordinate_nonfull(self, fdatabasis, key):
+        """
+        Returns a fdatagrid for the coordinate functions indexed by key.
+
+        Subclasses can override this to provide coordinate indexing.
+
+        The key parameter has been already validated and is an integer or
+        slice in the range [0, self.dim_codomain.
+
+        """
+        raise NotImplementedError("Coordinate indexing not implemented")
+
+    def _coordinate(self, fdatabasis, key):
+        """Returns a fdatagrid for the coordinate functions indexed by key."""
+
+        # Raises error if not in range and normalize key
+        r_key = range(self.dim_codomain)[key]
+
+        if isinstance(r_key, range) and len(r_key) == 0:
+            raise IndexError("Empty number of coordinates selected")
+
+        # Full fdatabasis case
+        if (self.dim_codomain == 1 and r_key == 0) or (
+                isinstance(r_key, range) and len(r_key) == self.dim_codomain):
+
+            return fdatabasis.copy()
+
+        else:
+
+            return self._coordinate_nonfull(fdatabasis=fdatabasis, key=r_key)
 
     @abstractmethod
     def basis_of_product(self, other):
@@ -164,14 +226,6 @@ class Basis(ABC):
             domain_range = self.domain_range
 
         return type(self)(domain_range, self.n_basis)
-
-    def same_domain(self, other):
-        r"""Returns if two basis are defined on the same domain range.
-
-            Args:
-                other (Basis): Basis to check the domain range definition
-        """
-        return _same_domain(self, other)
 
     def copy(self):
         """Basis copy"""

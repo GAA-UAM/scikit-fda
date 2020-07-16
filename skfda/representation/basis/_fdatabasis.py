@@ -60,22 +60,21 @@ class FDataBasis(FData):
 
         def __iter__(self):
             """Return an iterator through the image coordinates."""
-            yield self._fdatabasis.copy()
+
+            for i in range(len(self)):
+                yield self[i]
 
         def __getitem__(self, key):
             """Get a specific coordinate."""
 
-            if key != 0:
-                return NotImplemented
-
-            return self._fdatabasis.copy()
+            return self._fdatabasis.basis._coordinate(self._fdatabasis, key)
 
         def __len__(self):
             """Return the number of coordinates."""
             return self._fdatabasis.dim_codomain
 
     def __init__(self, basis, coefficients, *, dataset_label=None,
-                 axes_labels=None, extrapolation=None, keepdims=False):
+                 axes_labels=None, extrapolation=None):
         """Construct a FDataBasis object.
 
         Args:
@@ -92,11 +91,11 @@ class FDataBasis(FData):
         self.basis = basis
         self.coefficients = coefficients
 
-        super().__init__(extrapolation, dataset_label, axes_labels, keepdims)
+        super().__init__(extrapolation, dataset_label, axes_labels)
 
     @classmethod
     def from_data(cls, data_matrix, sample_points, basis,
-                  method='cholesky', keepdims=False):
+                  method='cholesky'):
         r"""Transform raw data to a smooth functional form.
 
         Takes functional data in a discrete form and makes an approximates it
@@ -196,15 +195,13 @@ class FDataBasis(FData):
     def dim_domain(self):
         """Return number of dimensions of the domain."""
 
-        # Only domain dimension equal to 1 is supported
-        return 1
+        return self.basis.dim_domain
 
     @property
     def dim_codomain(self):
         """Return number of dimensions of the image."""
 
-        # Only image dimension equal to 1 is supported
-        return 1
+        return self.basis.dim_codomain
 
     @property
     def coordinates(self):
@@ -230,72 +227,33 @@ class FDataBasis(FData):
 
     @property
     def domain_range(self):
-        """Definition range."""
+
         return self.basis.domain_range
 
-    def _evaluate(self, eval_points, *, derivative=0):
-        """"Evaluate the object or its derivatives at a list of values.
+    def _evaluate(self, eval_points,  *, aligned=True):
 
-        Args:
-            eval_points (array_like): List of points where the functions are
-                evaluated. If a matrix of shape `n_samples` x eval_points is
-                given each sample is evaluated at the values in the
-                corresponding row.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
+        if aligned:
 
+            # Each row contains the values of one element of the basis
+            basis_values = self.basis.evaluate(eval_points)
 
-        Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            function at the values specified in eval_points.
+            res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
 
-        """
-        #  Only suported 1D objects
-        eval_points = eval_points[:, 0]
+            return res.reshape(
+                (self.n_samples, len(eval_points), self.dim_codomain))
 
-        # each row contains the values of one element of the basis
-        basis_values = self.basis.evaluate(eval_points, derivative)
+        else:
 
-        res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
+            res_matrix = np.empty(
+                (self.n_samples, eval_points.shape[1], self.dim_codomain))
 
-        return res.reshape((self.n_samples, len(eval_points), 1))
+            for i in range(self.n_samples):
+                basis_values = self.basis.evaluate(eval_points[i])
 
-    def _evaluate_composed(self, eval_points, *, derivative=0):
-        r"""Evaluate the object or its derivatives at a list of values with a
-        different time for each sample.
+                values = self.coefficients[i] * basis_values.T
+                np.sum(values.T, axis=0, out=res_matrix[i])
 
-        Returns a numpy array with the component (i,j) equal to :math:`f_i(t_j
-        + \delta_i)`.
-
-        This method has to evaluate the basis values once per sample
-        instead of reuse the same evaluation for all the samples
-        as :func:`evaluate`.
-
-        Args:
-            eval_points (numpy.ndarray): Matrix of size `n_samples`x n_points
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-            extrapolation (str or Extrapolation, optional): Controls the
-                extrapolation mode for elements outside the domain range.
-                By default uses the method defined in fd. See extrapolation to
-                more information.
-        Returns:
-            (numpy.darray): Matrix whose rows are the values of the each
-            function at the values specified in eval_points with the
-            corresponding shift.
-        """
-
-        eval_points = eval_points[..., 0]
-
-        res_matrix = np.empty((self.n_samples, eval_points.shape[1]))
-
-        _matrix = np.empty((eval_points.shape[1], self.n_basis))
-
-        for i in range(self.n_samples):
-            basis_values = self.basis.evaluate(eval_points[i], derivative).T
-
-            np.multiply(basis_values, self.coefficients[i], out=_matrix)
-            np.sum(_matrix, axis=1, out=res_matrix[i])
-
-        return res_matrix.reshape((self.n_samples, eval_points.shape[1], 1))
+            return res_matrix
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               eval_points=None, **kwargs):
@@ -340,8 +298,7 @@ class FDataBasis(FData):
             _basis = self.basis.rescale((domain_range[0] + shifts,
                                          domain_range[1] + shifts))
 
-            return FDataBasis.from_data(self.evaluate(eval_points,
-                                                      keepdims=False),
+            return FDataBasis.from_data(self.evaluate(eval_points),
                                         eval_points + shifts,
                                         _basis, **kwargs)
 
@@ -366,17 +323,16 @@ class FDataBasis(FData):
         points_shifted += np.atleast_2d(shifts).T
 
         # Matrix of shifted values
-        _data_matrix = self.evaluate(points_shifted,
-                                     aligned_evaluation=False,
-                                     extrapolation=extrapolation,
-                                     keepdims=False)
+        _data_matrix = self(points_shifted,
+                            aligned=False,
+                            extrapolation=extrapolation)[..., 0]
 
         _basis = self.basis.rescale(domain)
 
         return FDataBasis.from_data(_data_matrix, eval_points,
                                     _basis, **kwargs)
 
-    def derivative(self, order=1):
+    def derivative(self, *, order=1):
         r"""Differentiate a FDataBasis object.
 
 
@@ -390,7 +346,8 @@ class FDataBasis(FData):
         if order == 0:
             return self.copy()
 
-        basis, coefficients = self.basis._derivative(self.coefficients, order)
+        basis, coefficients = self.basis._derivative_basis_and_coefs(
+            self.coefficients, order)
 
         return FDataBasis(basis, coefficients)
 
@@ -486,11 +443,11 @@ class FDataBasis(FData):
         """
         return self.to_grid(eval_points).cov()
 
-    def to_grid(self, eval_points=None):
+    def to_grid(self, sample_points=None):
         """Return the discrete representation of the object.
 
         Args:
-            eval_points (array_like, optional): Set of points where the
+            sample_points (array_like, optional): Points per axis where the
                 functions are evaluated. If none are passed it calls
                 numpy.linspace with bounds equal to the ones defined in
                 self.domain_range and the number of points the maximum
@@ -507,31 +464,27 @@ class FDataBasis(FData):
             ...                 basis=Monomial((0,5), n_basis=3))
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
-                array([[[ 1.],
-                        [ 3.],
-                        [ 7.]],
-            <BLANKLINE>
-                       [[ 1.],
-                        [ 2.],
-                        [ 5.]]]),
+                array([[[1],
+                        [3],
+                        [7]],
+                       [[1],
+                        [2],
+                        [5]]]),
                 sample_points=[array([0, 1, 2])],
                 domain_range=array([[0, 5]]),
                 ...)
 
         """
 
-        if self.dim_codomain > 1 or self.dim_domain > 1:
-            raise NotImplementedError
-
-        if eval_points is None:
+        if sample_points is None:
             npoints = max(constants.N_POINTS_FINE_MESH,
                           constants.BASIS_MIN_FACTOR * self.n_basis)
-            eval_points = np.linspace(*self.domain_range[0], npoints)
+            sample_points = [np.linspace(*r, npoints)
+                             for r in self.domain_range]
 
-        return grid.FDataGrid(self.evaluate(eval_points, keepdims=False),
-                              sample_points=eval_points,
-                              domain_range=self.domain_range,
-                              keepdims=self.keepdims)
+        return grid.FDataGrid(self.evaluate(sample_points, grid=True),
+                              sample_points=sample_points,
+                              domain_range=self.domain_range)
 
     def to_basis(self, basis, eval_points=None, **kwargs):
         """Return the basis representation of the object.
@@ -554,7 +507,7 @@ class FDataBasis(FData):
         return [self[i] for i in range(self.n_samples)]
 
     def copy(self, *, basis=None, coefficients=None, dataset_label=None,
-             axes_labels=None, extrapolation=None, keepdims=None):
+             axes_labels=None, extrapolation=None):
         """FDataBasis copy"""
 
         if basis is None:
@@ -572,12 +525,8 @@ class FDataBasis(FData):
         if extrapolation is None:
             extrapolation = self.extrapolation
 
-        if keepdims is None:
-            keepdims = self.keepdims
-
         return FDataBasis(basis, coefficients, dataset_label=dataset_label,
-                          axes_labels=axes_labels, extrapolation=extrapolation,
-                          keepdims=keepdims)
+                          axes_labels=axes_labels, extrapolation=extrapolation)
 
     def times(self, other):
         """"Provides a numerical approximation of the multiplication between
@@ -741,8 +690,8 @@ class FDataBasis(FData):
                 f"\ncoefficients={self.coefficients},"
                 f"\ndataset_label={self.dataset_label},"
                 f"\naxes_labels={axes_labels},"
-                f"\nextrapolation={self.extrapolation},"
-                f"\nkeepdims={self.keepdims})").replace('\n', '\n    ')
+                f"\nextrapolation={self.extrapolation})").replace(
+                    '\n', '\n    ')
 
     def __str__(self):
         """Return str(self)."""

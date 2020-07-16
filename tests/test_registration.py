@@ -51,9 +51,11 @@ class TestWarping(unittest.TestCase):
         np.testing.assert_array_almost_equal(normalized.sample_points[0],
                                              np.linspace(0, 1, 50))
 
-        np.testing.assert_array_almost_equal(normalized(0), [[0.], [0.]])
+        np.testing.assert_array_almost_equal(
+            normalized(0)[..., 0], [[0.], [0.]])
 
-        np.testing.assert_array_almost_equal(normalized(1), [[1.], [1.]])
+        np.testing.assert_array_almost_equal(
+            normalized(1)[..., 0], [[1.], [1.]])
 
     def test_standard_normalize_warping_default_value(self):
         """Test normalization """
@@ -66,11 +68,13 @@ class TestWarping(unittest.TestCase):
         np.testing.assert_array_almost_equal(normalized.sample_points[0],
                                              np.linspace(-1, 1, 50))
 
-        np.testing.assert_array_almost_equal(normalized(-1), [[-1], [-1]])
+        np.testing.assert_array_almost_equal(
+            normalized(-1)[..., 0], [[-1], [-1]])
 
-        np.testing.assert_array_almost_equal(normalized(1), [[1.], [1.]])
+        np.testing.assert_array_almost_equal(
+            normalized(1)[..., 0], [[1.], [1.]])
 
-    def test_normalize_warpig(self):
+    def test_normalize_warping(self):
         """Test normalization to (a, b)"""
         a = -4
         b = 3
@@ -83,9 +87,9 @@ class TestWarping(unittest.TestCase):
         np.testing.assert_array_almost_equal(normalized.sample_points[0],
                                              np.linspace(*domain, 50))
 
-        np.testing.assert_array_equal(normalized(a), [[a], [a]])
+        np.testing.assert_array_equal(normalized(a)[..., 0], [[a], [a]])
 
-        np.testing.assert_array_equal(normalized(b), [[b], [b]])
+        np.testing.assert_array_equal(normalized(b)[..., 0], [[b], [b]])
 
     def test_landmark_shift_deltas(self):
 
@@ -103,13 +107,13 @@ class TestWarping(unittest.TestCase):
         landmarks = landmarks.squeeze()
 
         original_modes = fd(landmarks.reshape((3, 1, 1)),
-                            aligned_evaluation=False)
-        # Test default location
+                            aligned=False)
+        # Test default location
         fd_registered = landmark_shift(fd, landmarks)
         center = (landmarks.max() + landmarks.min()) / 2
         reg_modes = fd_registered(center)
 
-        # Test callable location
+        # Test callable location
         np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
 
         fd_registered = landmark_shift(fd, landmarks, location=np.mean)
@@ -125,9 +129,9 @@ class TestWarping(unittest.TestCase):
 
         np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
 
-        # Test array location
+        # Test array location
         fd_registered = landmark_shift(fd, landmarks, location=[0, 0.1, 0.2])
-        reg_modes = fd_registered([[0], [.1], [.2]], aligned_evaluation=False)
+        reg_modes = fd_registered([[0], [.1], [.2]], aligned=False)
 
         np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
 
@@ -140,12 +144,14 @@ class TestWarping(unittest.TestCase):
         # Default location
         warping = landmark_registration_warping(fd, landmarks)
         center = (landmarks.max(axis=0) + landmarks.min(axis=0)) / 2
-        np.testing.assert_almost_equal(warping(center), landmarks, decimal=1)
+        np.testing.assert_almost_equal(
+            warping(center)[..., 0], landmarks, decimal=1)
 
         # Fixed location
         center = [.3, .6]
         warping = landmark_registration_warping(fd, landmarks, location=center)
-        np.testing.assert_almost_equal(warping(center), landmarks, decimal=3)
+        np.testing.assert_almost_equal(
+            warping(center)[..., 0], landmarks, decimal=3)
 
     def test_landmark_registration(self):
         fd = make_multimodal_samples(n_samples=3, n_modes=2, random_state=9)
@@ -153,7 +159,7 @@ class TestWarping(unittest.TestCase):
                                               random_state=9)
         landmarks = landmarks.squeeze()
 
-        original_values = fd(landmarks.reshape(3, 2), aligned_evaluation=False)
+        original_values = fd(landmarks.reshape(3, 2), aligned=False)
 
         # Default location
         fd_reg = landmark_registration(fd, landmarks)
@@ -213,7 +219,7 @@ class TestShiftRegistration(unittest.TestCase):
 
         fd_registered = reg.transform(fd)
         deltas = reg.deltas_.round(3)
-        np.testing.assert_array_almost_equal(deltas, [0.071, -0.071])
+        np.testing.assert_allclose(deltas, [0.071, -0.072])
 
     def test_inverse_transform(self):
 
@@ -331,39 +337,39 @@ class TestRegistrationValidation(unittest.TestCase):
     def test_amplitude_phase_score(self):
         scorer = AmplitudePhaseDecomposition()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_almost_equal(score, 0.972000160)
+        np.testing.assert_allclose(score, 0.972095, rtol=1e-6)
 
     def test_amplitude_phase_score_with_output_points(self):
         eval_points = self.X.sample_points[0]
         scorer = AmplitudePhaseDecomposition(eval_points=eval_points)
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_almost_equal(score, 0.972000160)
+        np.testing.assert_allclose(score, 0.972095, rtol=1e-6)
 
     def test_amplitude_phase_score_with_basis(self):
         scorer = AmplitudePhaseDecomposition()
         X = self.X.to_basis(Fourier())
         score = scorer(self.shift_registration, X)
-        np.testing.assert_almost_equal(score, 0.9950259588)
+        np.testing.assert_allclose(score, 0.995087, rtol=1e-6)
 
     def test_default_score(self):
 
         score = self.shift_registration.score(self.X)
-        np.testing.assert_almost_equal(score, 0.972000160)
+        np.testing.assert_allclose(score, 0.972095, rtol=1e-6)
 
     def test_least_squares_score(self):
         scorer = LeastSquares()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_almost_equal(score, 0.795742349)
+        np.testing.assert_allclose(score, 0.795933, rtol=1e-6)
 
     def test_sobolev_least_squares_score(self):
         scorer = SobolevLeastSquares()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_almost_equal(score, 0.7621990)
+        np.testing.assert_allclose(score, 0.76124, rtol=1e-6)
 
     def test_pairwise_correlation(self):
         scorer = PairwiseCorrelation()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_almost_equal(score, 1.816298653)
+        np.testing.assert_allclose(score, 1.816228, rtol=1e-6)
 
     def test_mse_decomposition(self):
 
@@ -374,10 +380,10 @@ class TestRegistrationValidation(unittest.TestCase):
         fd_registered = fd.compose(warping)
         scorer = AmplitudePhaseDecomposition(return_stats=True)
         ret = scorer.score_function(fd, fd_registered, warping=warping)
-        np.testing.assert_almost_equal(ret.mse_amp, 0.0009866997121476962)
-        np.testing.assert_almost_equal(ret.mse_pha, 0.11576861468435257)
-        np.testing.assert_almost_equal(ret.r_squared, 0.9915489952877273)
-        np.testing.assert_almost_equal(ret.c_r, 0.9999963424653829)
+        np.testing.assert_allclose(ret.mse_amp, 0.0009866997121476962)
+        np.testing.assert_allclose(ret.mse_pha, 0.11576935495450151)
+        np.testing.assert_allclose(ret.r_squared, 0.9915489952877273)
+        np.testing.assert_allclose(ret.c_r, 0.999999, rtol=1e-6)
 
     def test_raises_amplitude_phase(self):
         scorer = AmplitudePhaseDecomposition()

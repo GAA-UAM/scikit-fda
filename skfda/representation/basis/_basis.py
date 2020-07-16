@@ -244,7 +244,7 @@ class Basis(ABC):
     def _to_R(self):
         raise NotImplementedError
 
-    def _inner_matrix(self, other=None):
+    def inner_product_matrix(self, other=None):
         r"""Return the Inner Product Matrix of a pair of basis.
 
         The Inner Product Matrix is defined as

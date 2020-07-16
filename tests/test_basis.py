@@ -78,14 +78,19 @@ class TestBasis(unittest.TestCase):
         self.assertEqual(bspline.basis_of_product(bspline2), prod)
 
     def test_basis_inner_matrix(self):
-        np.testing.assert_array_almost_equal(Monomial(n_basis=3)._inner_matrix(),
-                                             [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
+        np.testing.assert_array_almost_equal(
+            Monomial(n_basis=3).inner_product_matrix(),
+            [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
 
-        np.testing.assert_array_almost_equal(Monomial(n_basis=3)._inner_matrix(Monomial(n_basis=3)),
-                                             [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
+        np.testing.assert_array_almost_equal(
+            Monomial(n_basis=3).inner_product_matrix(Monomial(n_basis=3)),
+            [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
 
-        np.testing.assert_array_almost_equal(Monomial(n_basis=3)._inner_matrix(Monomial(n_basis=4)),
-                                             [[1, 1 / 2, 1 / 3, 1 / 4], [1 / 2, 1 / 3, 1 / 4, 1 / 5], [1 / 3, 1 / 4, 1 / 5, 1 / 6]])
+        np.testing.assert_array_almost_equal(
+            Monomial(n_basis=3).inner_product_matrix(Monomial(n_basis=4)),
+            [[1, 1 / 2, 1 / 3, 1 / 4],
+             [1 / 2, 1 / 3, 1 / 4, 1 / 5],
+             [1 / 3, 1 / 4, 1 / 5, 1 / 6]])
 
         # TODO testing with other basis
 

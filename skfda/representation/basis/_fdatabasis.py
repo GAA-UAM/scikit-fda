@@ -622,7 +622,7 @@ class FDataBasis(FData):
 
         if self.n_samples * other.n_samples > self.n_basis * other.n_basis:
             return (self.coefficients @
-                    self.basis._inner_matrix(other.basis) @
+                    self.basis.inner_product_matrix(other.basis) @
                     other.coefficients.T)
         else:
             return self._inner_product_integrate(other)

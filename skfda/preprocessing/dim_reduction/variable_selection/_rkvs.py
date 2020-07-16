@@ -212,6 +212,26 @@ class RKHSVariableSelection(sklearn.base.BaseEstimator,
         return X_matrix[:, self._features_]
 
     def get_support(self, indices: bool=False):
+        """
+        Get a mask, or integer index, of the features selected
+
+        Parameters:
+
+            indices : boolean (default False)
+                If True, the return value will be an array of integers, rather
+                than a boolean mask.
+
+        Returns:
+            support : array
+                An index that selects the retained features from a `FDataGrid`
+                object.
+                If `indices` is False, this is a boolean array of shape
+                [# input features], in which an element is True iff its
+                corresponding feature is selected for retention. If `indices`
+                is True, this is an integer array of shape [# output features]
+                whose values are indices into the input feature vector.
+
+        """
         features = self._features_
         if indices:
             return features

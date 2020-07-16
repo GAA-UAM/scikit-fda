@@ -584,7 +584,7 @@ class FDataBasis(FData):
         coefs = np.transpose(np.atleast_2d(other))
         return self.copy(coefficients=self.coefficients * coefs)
 
-    def inner_product(self, other, weights=None):
+    def inner_product(self, other):
         r"""Return an inner product matrix given a FDataBasis object.
 
         The inner product of two functions is defined as
@@ -620,9 +620,6 @@ class FDataBasis(FData):
         if not isinstance(other, FDataBasis):
             other = other.to_basis()
 
-        if weights is not None:
-            other = other.times(weights)
-
         if self.n_samples * other.n_samples > self.n_basis * other.n_basis:
             return (self.coefficients @
                     self.basis._inner_matrix(other.basis) @
@@ -637,9 +634,8 @@ class FDataBasis(FData):
 
         for i in range(self.n_samples):
             for j in range(other.n_samples):
-                fd = self[i].times(other[j])
                 matrix[i, j] = scipy.integrate.quad(
-                    lambda x: fd.evaluate([x])[0], left, right)[0]
+                    lambda x: self[i]([x]) * other[j]([x])[0], left, right)[0]
 
         return matrix
 

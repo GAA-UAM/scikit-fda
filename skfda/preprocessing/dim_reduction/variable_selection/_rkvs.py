@@ -83,9 +83,12 @@ class RKHSVariableSelection(sklearn.base.BaseEstimator,
     r'''
     Reproducing kernel variable selection.
 
-    This is a variable selection method for homoscedastic binary
-    classification problems. It aims to select the variables
-    :math:`t_1, \ldots, t_d` which maximize the following quantity
+    This is a filter variable selection method for binary classification
+    problems. With a fixed number :math:`d` of variables to select, it aims to
+    find the variables :math:`X(t_1), \ldots, X(t_d)` for the values
+    :math:`t_1, \ldots, t_d` that maximize the separation of
+    the class means in the reduced space, measured using the Mahalanobis
+    distance
 
     .. math::
         \phi(t_1, \ldots, t_d) = m_{t_1, \ldots, t_d}^T
@@ -96,17 +99,22 @@ class RKHSVariableSelection(sklearn.base.BaseEstimator,
     and :math:`K_{t_1, \ldots, t_d}` is the common covariance function
     evaluated at the same points.
 
-    This method is optimal for variable selection in homoscedastic binary
-    classification problems when all possible combinations of points are
-    taken into account. That means that for all possible selections of
-    :math:`t_1, \ldots, t_d`, the one in which :math:`\phi(t_1, \ldots, t_d)`
-    is greater minimizes the optimal misclassification error of all the
-    classification problems with the reduced dimensionality.
+    This method is optimal, with a fixed value of :math:`d`, for variable
+    selection in Gaussian binary classification problems with the same
+    covariance in both classes (homoscedasticity), when all possible
+    combinations of points are taken into account. That means that for all
+    possible selections of :math:`t_1, \ldots, t_d`, the one in which
+    :math:`\phi(t_1, \ldots, t_d)` is greater minimizes the optimal
+    misclassification error of all the classification problems with the
+    reduced dimensionality. For a longer discussion about the optimality and
+    consistence of this method, we refer the reader to the original
+    article [1]_.
 
-    In practice, however, the points are selected one at a time, using
+    In practice the points are selected one at a time, using
     a greedy approach, so this optimality is not always guaranteed.
 
     Parameters:
+
         n_components (int): number of variables to select.
 
     Examples:
@@ -157,10 +165,12 @@ class RKHSVariableSelection(sklearn.base.BaseEstimator,
         (10000, 3)
 
     References:
-        [1] J. R. Berrendero, A. Cuevas, y J. L. Torrecilla, «On the Use of
-        Reproducing Kernel Hilbert Spaces in Functional Classification»,
-        Journal of the American Statistical Association, vol. 113, n.º 523,
-        pp. 1210-1218, jul. 2018, doi: 10.1080/01621459.2017.1320287.
+
+        .. [1] J. R. Berrendero, A. Cuevas, y J. L. Torrecilla, «On the Use
+               of Reproducing Kernel Hilbert Spaces in Functional
+               Classification», Journal of the American Statistical
+               Association, vol. 113, n.º 523, pp. 1210-1218, jul. 2018,
+               doi: 10.1080/01621459.2017.1320287.
 
     '''
 

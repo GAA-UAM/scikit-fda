@@ -1,5 +1,6 @@
 from skfda import concatenate
 import skfda
+from skfda.misc._math import inner_product, _inner_product_matrix
 from skfda.representation.basis import (Basis, FDataBasis, Constant, Monomial,
                                         BSpline, Fourier)
 from skfda.representation.grid import FDataGrid
@@ -117,7 +118,7 @@ class TestBasis(unittest.TestCase):
         monomial = Monomial(n_basis=4)
         bspline = BSpline(n_basis=5, order=4)
         np.testing.assert_allclose(
-            monomial.inner_product(bspline),
+            monomial.inner_product_matrix(bspline),
             np.array(
                 [[0.12499983, 0.25000035, 0.24999965, 0.25000035, 0.12499983],
                  [0.01249991, 0.07500017, 0.12499983, 0.17500017, 0.11249991],
@@ -125,8 +126,8 @@ class TestBasis(unittest.TestCase):
                  [0.00044654, 0.01339264, 0.04375022, 0.09910693, 0.09330368]
                  ]), rtol=1e-3)
         np.testing.assert_array_almost_equal(
-            monomial.inner_product(bspline),
-            bspline.inner_product(monomial).T
+            monomial.inner_product_matrix(bspline),
+            bspline.inner_product_matrix(monomial).T
         )
 
     def test_basis_fdatabasis_inprod(self):
@@ -135,7 +136,7 @@ class TestBasis(unittest.TestCase):
         bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
 
         np.testing.assert_allclose(
-            monomial.inner_product(bsplinefd),
+            _inner_product_matrix(monomial, bsplinefd),
             np.array([[2., 7., 12.],
                       [1.29626206, 3.79626206, 6.29626206],
                       [0.96292873, 2.62959539, 4.29626206],
@@ -152,16 +153,7 @@ class TestBasis(unittest.TestCase):
         bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
 
         np.testing.assert_allclose(
-            monomialfd.inner_product(bsplinefd),
-            np.array([[16.14797697, 52.81464364, 89.4813103],
-                      [11.55565285, 38.22211951, 64.88878618],
-                      [18.14698361, 55.64698361, 93.14698361],
-                      [15.2495976, 48.9995976, 82.7495976],
-                      [19.70392982, 63.03676315, 106.37009648]]),
-            rtol=1e-4)
-
-        np.testing.assert_allclose(
-            monomialfd._inner_product_integrate(bsplinefd),
+            _inner_product_matrix(monomialfd, bsplinefd),
             np.array([[16.14797697, 52.81464364, 89.4813103],
                       [11.55565285, 38.22211951, 64.88878618],
                       [18.14698361, 55.64698361, 93.14698361],
@@ -175,8 +167,8 @@ class TestBasis(unittest.TestCase):
         bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
 
         np.testing.assert_allclose(
-            bsplinefd.inner_product(monomial),
-            np.transpose(monomial.inner_product(bsplinefd))
+            _inner_product_matrix(bsplinefd, monomial),
+            np.transpose(_inner_product_matrix(monomial, bsplinefd))
         )
 
     def test_fdatabasis_times_fdatabasis_fdatabasis(self):

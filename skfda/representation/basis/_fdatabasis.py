@@ -584,61 +584,6 @@ class FDataBasis(FData):
         coefs = np.transpose(np.atleast_2d(other))
         return self.copy(coefficients=self.coefficients * coefs)
 
-    def inner_product(self, other):
-        r"""Return an inner product matrix given a FDataBasis object.
-
-        The inner product of two functions is defined as
-
-        .. math::
-            <x, y> = \int_a^b x(t)y(t) dt
-
-        When we talk abaout FDataBasis objects, they have many samples, so we
-        talk about inner product matrix instead. So, for two FDataBasis objects
-        we define the inner product matrix as
-
-        .. math::
-            a_{ij} = <x_i, y_i> = \int_a^b x_i(s) y_j(s) ds
-
-        where :math:`f_i(s), g_j(s)` are the :math:`i^{th} j^{th}` sample of
-        each object. The return matrix has a shape of :math:`IxJ` where I and
-        J are the number of samples of each object respectively.
-
-        Args:
-            other (FDataBasis, Basis): FDataBasis object containing the second
-                    object to make the inner product
-
-            weights(FDataBasis): a FDataBasis object with only one sample that
-                    defines the weight to calculate the inner product
-
-        Returns:
-            numpy.array: Inner Product matrix.
-
-        """
-        if not _same_domain(self.domain_range, other.domain_range):
-            raise ValueError("Both Objects should have the same domain_range")
-
-        if not isinstance(other, FDataBasis):
-            other = other.to_basis()
-
-        if self.n_samples * other.n_samples > self.n_basis * other.n_basis:
-            return (self.coefficients @
-                    self.basis.inner_product_matrix(other.basis) @
-                    other.coefficients.T)
-        else:
-            return self._inner_product_integrate(other)
-
-    def _inner_product_integrate(self, other):
-
-        matrix = np.empty((self.n_samples, other.n_samples))
-        (left, right) = self.domain_range[0]
-
-        for i in range(self.n_samples):
-            for j in range(other.n_samples):
-                matrix[i, j] = scipy.integrate.quad(
-                    lambda x: self[i]([x]) * other[j]([x])[0], left, right)[0]
-
-        return matrix
-
     def _to_R(self):
         """Gives the code to build the object on fda package on R"""
         return ("fd(coef = " + self._array_to_R(self.coefficients, True) +

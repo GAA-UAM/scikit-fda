@@ -152,13 +152,16 @@ class FPCA(BaseEstimator, TransformerMixin):
             # the matrix that are in charge of changing the computed principal
             # components to target matrix is essentially the inner product
             # of both basis.
-            j_matrix = X.basis.inner_product(components_basis)
+            j_matrix = X.basis.inner_product_matrix(components_basis)
         else:
             # if no other basis is specified we use the same basis as the passed
             # FDataBasis Object
             components_basis = X.basis.copy()
             g_matrix = components_basis.gram_matrix()
             j_matrix = g_matrix
+
+        self._X_basis = X.basis
+        self._j_matrix = j_matrix
 
         # Apply regularization / penalty if applicable
         regularization_matrix = compute_penalty_matrix(
@@ -218,8 +221,13 @@ class FPCA(BaseEstimator, TransformerMixin):
             principal components
         """
 
+        if X.basis != self._X_basis:
+            raise ValueError("The basis used in fit is different from "
+                             "the basis used in transform.")
+
         # in this case it is the inner product of our data with the components
-        return X.inner_product(self.components_)
+        return (X.coefficients @ self._j_matrix
+                @ self.components_.coefficients.T)
 
     def _fit_grid(self, X: FDataGrid, y=None):
         r"""Computes the n_components first principal components and saves them.

@@ -56,7 +56,7 @@ class CoefficientInfoFDataBasis(CoefficientInfo):
 
     def regression_matrix(self, X, y):
         xcoef = X.coefficients
-        inner_basis = X.basis.inner_product(self.basis)
+        inner_basis = X.basis.inner_product_matrix(self.basis)
         return xcoef @ inner_basis
 
     def convert_from_constant_coefs(self, coefs):

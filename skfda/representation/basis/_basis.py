@@ -266,19 +266,19 @@ class Basis(ABC):
             numpy.array: Inner Product Matrix of two basis
 
         """
+        from ...misc import inner_product
+
         if other is None or self == other:
             return self.gram_matrix()
 
         first = self.to_basis()
         second = other.to_basis()
 
-        inner = np.zeros((self.n_basis, other.n_basis))
+        indices = np.indices((self.n_basis, other.n_basis))
 
-        for i in range(self.n_basis):
-            for j in range(other.n_basis):
-                inner[i, j] = first[i].inner_product(second[j])
-
-        return inner
+        return inner_product(
+            first[indices[0].ravel()], second[indices[1].ravel()]).reshape(
+                (self.n_basis, other.n_basis))
 
     def _gram_matrix(self):
         """
@@ -287,13 +287,15 @@ class Basis(ABC):
         Subclasses may override this method for improving computation
         of the Gram matrix.
         """
+        from ...misc import inner_product
+
         fbasis = self.to_basis()
 
         gram = np.zeros((self.n_basis, self.n_basis))
 
         for i in range(fbasis.n_basis):
             for j in range(i, fbasis.n_basis):
-                gram[i, j] = fbasis[i].inner_product(fbasis[j], None, None)
+                gram[i, j] = inner_product(fbasis[i], fbasis[j])
                 gram[j, i] = gram[i, j]
 
         return gram
@@ -321,9 +323,6 @@ class Basis(ABC):
             self._gram_matrix_cached = gram
 
         return gram
-
-    def inner_product(self, other):
-        return self.to_basis().inner_product(other)
 
     def _add_same_basis(self, coefs1, coefs2):
         return self.copy(), coefs1 + coefs2

@@ -1,6 +1,5 @@
 from collections.abc import Iterable
 import itertools
-from skfda.representation import FData
 import warnings
 
 from sklearn.base import BaseEstimator, RegressorMixin
@@ -9,6 +8,7 @@ from sklearn.utils.validation import check_is_fitted
 import numpy as np
 
 from ...misc.regularization import compute_penalty_matrix
+from ...representation import FData
 from ._coefficients import coefficient_info_from_covariate
 
 
@@ -183,10 +183,12 @@ class LinearRegression(BaseEstimator, RegressorMixin):
         return self
 
     def predict(self, X):
+        from ...misc import inner_product
+
         check_is_fitted(self)
         X = self._argcheck_X(X)
 
-        result = np.sum([self._inner_product_mixed(
+        result = np.sum([inner_product(
             coef, x) for coef, x in zip(self.coef_, X)], axis=0)
 
         result += self.intercept_
@@ -195,14 +197,6 @@ class LinearRegression(BaseEstimator, RegressorMixin):
             result = result.ravel()
 
         return result
-
-    def _inner_product_mixed(self, x, y):
-        inner_product = getattr(x, "inner_product", None)
-
-        if inner_product is None:
-            return y @ x
-        else:
-            return inner_product(y)[0]
 
     def _argcheck_X(self, X):
         if isinstance(X, FData) or isinstance(X, np.ndarray):

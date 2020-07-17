@@ -95,24 +95,55 @@ class TestBasis(unittest.TestCase):
 
         # TODO testing with other basis
 
-    def test_basis_gram_matrix(self):
-        np.testing.assert_allclose(Monomial(n_basis=3).gram_matrix(),
-                                   [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
-        np.testing.assert_allclose(Fourier(n_basis=3).gram_matrix(),
-                                   np.identity(3))
-        np.testing.assert_allclose(BSpline(n_basis=6).gram_matrix().round(4),
-                                   np.array([[4.760e-02, 2.920e-02, 6.200e-03,
-                                              4.000e-04, 0.000e+00, 0.000e+00],
-                                             [2.920e-02, 7.380e-02, 5.210e-02,
-                                              1.150e-02, 1.000e-04, 0.000e+00],
-                                             [6.200e-03, 5.210e-02, 1.089e-01,
-                                              7.100e-02, 1.150e-02, 4.000e-04],
-                                             [4.000e-04, 1.150e-02, 7.100e-02,
-                                              1.089e-01, 5.210e-02, 6.200e-03],
-                                             [0.000e+00, 1.000e-04, 1.150e-02,
-                                              5.210e-02, 7.380e-02, 2.920e-02],
-                                             [0.000e+00, 0.000e+00, 4.000e-04,
-                                              6.200e-03, 2.920e-02, 4.760e-02]]))
+    def test_basis_gram_matrix_monomial(self):
+
+        basis = Monomial(n_basis=3)
+        gram_matrix = basis.gram_matrix()
+        gram_matrix_numerical = basis._gram_matrix_numerical()
+        gram_matrix_res = np.array([[1, 1 / 2, 1 / 3],
+                                    [1 / 2, 1 / 3, 1 / 4],
+                                    [1 / 3, 1 / 4, 1 / 5]])
+
+        np.testing.assert_allclose(
+            gram_matrix, gram_matrix_res)
+        np.testing.assert_allclose(
+            gram_matrix_numerical, gram_matrix_res)
+
+    def test_basis_gram_matrix_fourier(self):
+
+        basis = Fourier(n_basis=3)
+        gram_matrix = basis.gram_matrix()
+        gram_matrix_numerical = basis._gram_matrix_numerical()
+        gram_matrix_res = np.identity(3)
+
+        np.testing.assert_allclose(
+            gram_matrix, gram_matrix_res)
+        np.testing.assert_allclose(
+            gram_matrix_numerical, gram_matrix_res, atol=1e-15, rtol=1e-15)
+
+    def test_basis_gram_matrix_bspline(self):
+
+        basis = BSpline(n_basis=6)
+        gram_matrix = basis.gram_matrix()
+        gram_matrix_numerical = basis._gram_matrix_numerical()
+        gram_matrix_res = np.array(
+            [[0.04761905, 0.02916667, 0.00615079,
+              0.00039683, 0., 0.],
+             [0.02916667, 0.07380952, 0.05208333,
+              0.01145833, 0.00014881, 0.],
+             [0.00615079, 0.05208333, 0.10892857, 0.07098214,
+              0.01145833, 0.00039683],
+             [0.00039683, 0.01145833, 0.07098214, 0.10892857,
+              0.05208333, 0.00615079],
+             [0., 0.00014881, 0.01145833, 0.05208333,
+              0.07380952, 0.02916667],
+             [0., 0., 0.00039683, 0.00615079,
+              0.02916667, 0.04761905]])
+
+        np.testing.assert_allclose(
+            gram_matrix, gram_matrix_res, rtol=1e-4)
+        np.testing.assert_allclose(
+            gram_matrix_numerical, gram_matrix_res, rtol=1e-4)
 
     def test_basis_basis_inprod(self):
         monomial = Monomial(n_basis=4)
@@ -227,9 +258,9 @@ class TestBasis(unittest.TestCase):
                                 FDataBasis(Monomial(n_basis=3),
                                            [[2, 2, 3], [5, 4, 5]]))
 
-        np.testing.assert_raises(NotImplementedError, monomial2.__add__,
-                                 FDataBasis(Fourier(n_basis=3),
-                                            [[2, 2, 3], [5, 4, 5]]))
+        with np.testing.assert_raises(TypeError):
+            monomial2 + FDataBasis(Fourier(n_basis=3),
+                                   [[2, 2, 3], [5, 4, 5]])
 
     def test_fdatabasis__sub__(self):
         monomial1 = FDataBasis(Monomial(n_basis=3), [1, 2, 3])
@@ -251,9 +282,9 @@ class TestBasis(unittest.TestCase):
                                 FDataBasis(Monomial(n_basis=3),
                                            [[0, -2, -3], [-1, -4, -5]]))
 
-        np.testing.assert_raises(NotImplementedError, monomial2.__sub__,
-                                 FDataBasis(Fourier(n_basis=3),
-                                            [[2, 2, 3], [5, 4, 5]]))
+        with np.testing.assert_raises(TypeError):
+            monomial2 - FDataBasis(Fourier(n_basis=3),
+                                   [[2, 2, 3], [5, 4, 5]])
 
     def test_fdatabasis__mul__(self):
         monomial1 = FDataBasis(Monomial(n_basis=3), [1, 2, 3])
@@ -275,11 +306,12 @@ class TestBasis(unittest.TestCase):
                                 FDataBasis(Monomial(n_basis=3),
                                            [[1, 2, 3], [6, 8, 10]]))
 
-        np.testing.assert_raises(NotImplementedError, monomial2.__mul__,
-                                 FDataBasis(Fourier(n_basis=3),
-                                            [[2, 2, 3], [5, 4, 5]]))
-        np.testing.assert_raises(NotImplementedError, monomial2.__mul__,
-                                 monomial2)
+        with np.testing.assert_raises(TypeError):
+            monomial2 * FDataBasis(Fourier(n_basis=3),
+                                   [[2, 2, 3], [5, 4, 5]])
+
+        with np.testing.assert_raises(TypeError):
+            monomial2 * monomial2
 
     def test_fdatabasis__mul__2(self):
         monomial1 = FDataBasis(Monomial(n_basis=3), [1, 2, 3])

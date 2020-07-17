@@ -280,25 +280,39 @@ class Basis(ABC):
             first[indices[0].ravel()], second[indices[1].ravel()]).reshape(
                 (self.n_basis, other.n_basis))
 
+    def _gram_matrix_numerical(self):
+        """
+        Compute the Gram matrix numerically.
+
+        """
+        from ...misc import inner_product
+
+        fbasis = self.to_basis()
+
+        indices = np.triu_indices(self.n_basis)
+
+        gram = np.empty((self.n_basis, self.n_basis))
+
+        triang_vec = inner_product(
+            fbasis[indices[0]], fbasis[indices[1]])
+
+        # Set upper matrix
+        gram[indices] = triang_vec
+
+        # Set lower matrix
+        gram[(indices[1], indices[0])] = triang_vec
+
+        return gram
+
     def _gram_matrix(self):
         """
         Compute the Gram matrix.
 
         Subclasses may override this method for improving computation
         of the Gram matrix.
+
         """
-        from ...misc import inner_product
-
-        fbasis = self.to_basis()
-
-        gram = np.zeros((self.n_basis, self.n_basis))
-
-        for i in range(fbasis.n_basis):
-            for j in range(i, fbasis.n_basis):
-                gram[i, j] = inner_product(fbasis[i], fbasis[j])
-                gram[j, i] = gram[i, j]
-
-        return gram
+        return self._gram_matrix_numerical()
 
     def gram_matrix(self):
         r"""Return the Gram Matrix of a basis

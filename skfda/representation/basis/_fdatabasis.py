@@ -706,7 +706,7 @@ class FDataBasis(FData):
         """Addition for FDataBasis object."""
         if isinstance(other, FDataBasis):
             if self.basis != other.basis:
-                raise NotImplementedError
+                return NotImplemented
             else:
                 basis, coefs = self.basis._add_same_basis(self.coefficients,
                                                           other.coefficients)
@@ -728,7 +728,7 @@ class FDataBasis(FData):
         """Subtraction for FDataBasis object."""
         if isinstance(other, FDataBasis):
             if self.basis != other.basis:
-                raise NotImplementedError
+                return NotImplemented
             else:
                 basis, coefs = self.basis._sub_same_basis(self.coefficients,
                                                           other.coefficients)
@@ -748,7 +748,7 @@ class FDataBasis(FData):
     def __mul__(self, other):
         """Multiplication for FDataBasis object."""
         if isinstance(other, FDataBasis):
-            raise NotImplementedError
+            return NotImplemented
 
         try:
             basis, coefs = self.basis._mul_constant(self.coefficients, other)
@@ -776,7 +776,7 @@ class FDataBasis(FData):
     def __rtruediv__(self, other):
         """Right division for FDataBasis object."""
 
-        raise NotImplementedError
+        return NotImplemented
 
     #####################################################################
     # Pandas ExtensionArray methods

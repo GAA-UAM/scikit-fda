@@ -253,22 +253,18 @@ def inner_product(arg1, arg2, **kwargs):
 @inner_product.register
 def inner_product_fdatagrid(arg1: FDataGrid, arg2: FDataGrid):
 
-    if arg1.dim_domain != 1:
-        raise NotImplementedError("This method only works when the dimension "
-                                  "of the domain of the FDatagrid object is "
-                                  "one.")
-
     if not np.array_equal(arg1.sample_points,
                           arg2.sample_points):
         raise ValueError("Sample points for both objects must be equal")
 
     integrand = arg1.data_matrix * arg2.data_matrix
 
-    integral = scipy.integrate.simps(integrand,
-                                     x=arg1.sample_points[0],
-                                     axis=1)
+    for s in arg1.sample_points:
+        integrand = scipy.integrate.simps(integrand,
+                                          x=s,
+                                          axis=1)
 
-    return np.sum(integral, axis=-1)
+    return np.sum(integrand, axis=-1)
 
 
 @inner_product.register(FDataBasis, FDataBasis)

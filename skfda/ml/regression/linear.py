@@ -139,16 +139,13 @@ class LinearRegression(BaseEstimator, RegressorMixin):
             elif regularization is not None:
                 regularization = (None, regularization)
 
-        inner_products = [c.regression_matrix(x, y)
-                          for x, c in zip(X, coef_info)]
-
-        coef_lengths = np.array([i.shape[1] for i in inner_products])
-        coef_start = np.cumsum(coef_lengths)
+        inner_products_list = [c.regression_matrix(x, y)
+                               for x, c in zip(X, coef_info)]
 
         # This is C @ J
-        inner_products = np.concatenate(inner_products, axis=1)
+        inner_products = np.concatenate(inner_products_list, axis=1)
 
-        if any(w != 1 for w in sample_weight):
+        if sample_weight is not None:
             inner_products = inner_products * np.sqrt(sample_weight)
             y = y * np.sqrt(sample_weight)
 
@@ -164,6 +161,9 @@ class LinearRegression(BaseEstimator, RegressorMixin):
         gram_inner_x_coef = inner_products.T @ inner_products + penalty_matrix
         inner_x_coef_y = inner_products.T @ y
 
+        coef_lengths = np.array([i.shape[1] for i in inner_products_list])
+        coef_start = np.cumsum(coef_lengths)
+
         basiscoefs = np.linalg.solve(gram_inner_x_coef, inner_x_coef_y)
         basiscoef_list = np.split(basiscoefs, coef_start)
 
@@ -178,6 +178,7 @@ class LinearRegression(BaseEstimator, RegressorMixin):
             self.intercept_ = 0.0
 
         self.coef_ = coefs
+        self._coef_info = coef_info
         self._target_ndim = y.ndim
 
         return self
@@ -188,8 +189,9 @@ class LinearRegression(BaseEstimator, RegressorMixin):
         check_is_fitted(self)
         X = self._argcheck_X(X)
 
-        result = np.sum([inner_product(
-            coef, x) for coef, x in zip(self.coef_, X)], axis=0)
+        result = np.sum([coef_info.inner_product(coef, x)
+                         for coef, x, coef_info
+                         in zip(self.coef_, X, self._coef_info)], axis=0)
 
         result += self.intercept_
 
@@ -237,15 +239,14 @@ class LinearRegression(BaseEstimator, RegressorMixin):
         coef_info = [coefficient_info_from_covariate(x, y, basis=b)
                      for x, b in zip(X, coef_basis)]
 
-        if sample_weight is None:
-            sample_weight = np.ones(len(y))
+        if sample_weight is not None:
 
-        if len(sample_weight) != len(y):
-            raise ValueError("The number of sample weights should be equal to"
-                             "the number of samples.")
+            if len(sample_weight) != len(y):
+                raise ValueError("The number of sample weights should be "
+                                 "equal to the number of samples.")
 
-        if np.any(np.array(sample_weight) < 0):
-            raise ValueError(
-                "The sample weights should be non negative values")
+            if np.any(np.array(sample_weight) < 0):
+                raise ValueError(
+                    "The sample weights should be non negative values")
 
         return X, y, sample_weight, coef_info

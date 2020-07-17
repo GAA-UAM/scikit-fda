@@ -144,7 +144,7 @@ def cumsum(fdatagrid):
 
 
 @multimethod.multidispatch
-def inner_product(arg1, arg2):
+def inner_product(arg1, arg2, **kwargs):
     r"""Return the usual (:math:`L_2`) inner product.
 
     Calculates the inner product between matching samples in two
@@ -276,7 +276,9 @@ def inner_product_fdatagrid(arg1: FDataGrid, arg2: FDataGrid):
 @inner_product.register(Basis, FDataBasis)
 @inner_product.register(Basis, Basis)
 def inner_product_fdatabasis(arg1: Union[FDataBasis, Basis],
-                             arg2: Union[FDataBasis, Basis]):
+                             arg2: Union[FDataBasis, Basis],
+                             *,
+                             inner_product_matrix=None):
 
     if not _same_domain(arg1, arg2):
         raise ValueError("Both Objects should have the same domain_range")
@@ -287,9 +289,14 @@ def inner_product_fdatabasis(arg1: Union[FDataBasis, Basis],
     if isinstance(arg2, Basis):
         arg2 = arg2.to_basis()
 
-    if max(arg1.n_samples, arg2.n_samples) > arg1.n_basis * arg2.n_basis:
+    if inner_product_matrix is not None or (
+            max(arg1.n_samples, arg2.n_samples) > arg1.n_basis * arg2.n_basis):
+
+        if inner_product_matrix is None:
+            inner_product_matrix = arg1.basis.inner_product_matrix(arg2.basis)
+
         return (arg1.coefficients @
-                arg1.basis.inner_product_matrix(arg2.basis) *
+                inner_product_matrix *
                 arg2.coefficients).sum(axis=-1)
     else:
         return _inner_product_integrate(arg1, arg2)

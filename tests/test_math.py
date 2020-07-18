@@ -1,5 +1,5 @@
 import skfda
-from skfda.representation.basis import Monomial, Tensor
+from skfda.representation.basis import Monomial, Tensor, VectorValued
 import unittest
 import numpy as np
 
@@ -25,7 +25,7 @@ class InnerProductTest(unittest.TestCase):
         sample_points = [t, 2 * t, 3 * t]
 
         fd = skfda.FDataGrid(
-            data_matrix[None, ...], sample_points=sample_points)
+            data_matrix[np.newaxis, ...], sample_points=sample_points)
 
         basis = Tensor([Monomial(n_basis=5, domain_range=(0, 1)),
                         Monomial(n_basis=5, domain_range=(0, 2)),
@@ -34,6 +34,35 @@ class InnerProductTest(unittest.TestCase):
         fd_basis = fd.to_basis(basis)
 
         res = 8
+
+        np.testing.assert_allclose(
+            skfda.misc.inner_product(fd, fd), res, rtol=1e-5)
+        np.testing.assert_allclose(
+            skfda.misc.inner_product(fd_basis, fd_basis), res, rtol=1e-5)
+
+    def test_vector_valued(self):
+
+        def f(x):
+            return x**2
+
+        def g(y):
+            return 3 * y
+
+        t = np.linspace(0, 1, 100)
+
+        data_matrix = np.array([np.array([f(t), g(t)]).T])
+
+        sample_points = [t]
+
+        fd = skfda.FDataGrid(
+            data_matrix, sample_points=sample_points)
+
+        basis = VectorValued([Monomial(n_basis=5),
+                              Monomial(n_basis=5)])
+
+        fd_basis = fd.to_basis(basis)
+
+        res = 1 / 5 + 3
 
         np.testing.assert_allclose(
             skfda.misc.inner_product(fd, fd), res, rtol=1e-5)

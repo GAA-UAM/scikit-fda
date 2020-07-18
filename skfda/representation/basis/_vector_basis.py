@@ -1,3 +1,5 @@
+import scipy.linalg
+
 import numpy as np
 
 from ..._utils import _same_domain
@@ -111,6 +113,12 @@ class VectorValued(Basis):
         new_coefs = np.hstack(new_coefs_list)
 
         return new_basis, new_coefs
+
+    def _gram_matrix(self):
+
+        gram_matrices = [b.gram_matrix() for b in self.basis_list]
+
+        return scipy.linalg.block_diag(*gram_matrices)
 
     def _coordinate_nonfull(self, fdatabasis, key):
 

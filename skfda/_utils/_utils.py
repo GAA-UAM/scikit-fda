@@ -3,6 +3,8 @@
 import functools
 import types
 
+import scipy.integrate
+
 import numpy as np
 
 
@@ -316,6 +318,22 @@ def _evaluate_grid(axes, *, evaluate_method,
             for r, s in zip(res, shape)])
 
     return res
+
+
+def nquad_vec(func, ranges):
+
+    initial_depth = len(ranges) - 1
+
+    def integrate(*args, depth):
+
+        if depth == 0:
+            f = functools.partial(func, *args)
+        else:
+            f = functools.partial(integrate, *args, depth=depth - 1)
+
+        return scipy.integrate.quad_vec(f, *ranges[initial_depth - depth])[0]
+
+    return integrate(depth=initial_depth)
 
 
 def parameter_aliases(**alias_assignments):

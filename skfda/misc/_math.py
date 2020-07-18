@@ -12,7 +12,7 @@ import scipy.integrate
 
 import numpy as np
 
-from .._utils import _same_domain
+from .._utils import _same_domain, nquad_vec
 from ..representation import FDataGrid, FDataBasis
 from ..representation.basis import Basis
 
@@ -274,7 +274,8 @@ def inner_product_fdatagrid(arg1: FDataGrid, arg2: FDataGrid):
 def inner_product_fdatabasis(arg1: Union[FDataBasis, Basis],
                              arg2: Union[FDataBasis, Basis],
                              *,
-                             inner_product_matrix=None):
+                             inner_product_matrix=None,
+                             force_numerical=False):
 
     if not _same_domain(arg1, arg2):
         raise ValueError("Both Objects should have the same domain_range")
@@ -285,8 +286,25 @@ def inner_product_fdatabasis(arg1: Union[FDataBasis, Basis],
     if isinstance(arg2, Basis):
         arg2 = arg2.to_basis()
 
-    if inner_product_matrix is not None or (
-            max(arg1.n_samples, arg2.n_samples) > arg1.n_basis * arg2.n_basis):
+    # Now several cases where computing the matrix is preferrable
+    #
+    # First, if force_numerical is True, the matrix is NOT used
+    # Otherwise, if the matrix is given, it is used
+    # Two other cases follow
+
+    # The basis is the same: most basis can optimize this case,
+    # and also the Gram matrix is cached the first time, so computing
+    # it is usually worthwhile
+    same_basis = arg1.basis == arg2.basis
+
+    # The number of operations is less usinf the matrix
+    n_ops_best_with_matrix = max(
+        arg1.n_samples, arg2.n_samples) > arg1.n_basis * arg2.n_basis
+
+    if not force_numerical and (
+            inner_product_matrix is not None
+            or same_basis
+            or n_ops_best_with_matrix):
 
         if inner_product_matrix is None:
             inner_product_matrix = arg1.basis.inner_product_matrix(arg2.basis)
@@ -304,16 +322,9 @@ def _inner_product_integrate(arg1, arg2):
                           arg2.domain_range):
         raise ValueError("Domain range for both objects must be equal")
 
-    if arg1.dim_domain != 1:
-        raise NotImplementedError("This method only works when the dimension "
-                                  "of the domain of the FDatagrid object is "
-                                  "one.")
-
-    (left, right) = arg1.domain_range[0]
-
-    integral = scipy.integrate.quad_vec(
-        lambda x: arg1([x])[:, 0, :] * arg2([x])[:, 0, :],
-        left, right)[0]
+    integral = nquad_vec(
+        lambda *args: arg1([*args])[:, 0, :] * arg2([*args])[:, 0, :],
+        arg1.domain_range)
 
     return np.sum(integral, axis=-1)
 

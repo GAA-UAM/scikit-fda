@@ -277,7 +277,8 @@ class Basis(ABC):
         indices = np.indices((self.n_basis, other.n_basis))
 
         return inner_product(
-            first[indices[0].ravel()], second[indices[1].ravel()]).reshape(
+            first[indices[0].ravel()], second[indices[1].ravel()],
+            force_numerical=True).reshape(
                 (self.n_basis, other.n_basis))
 
     def _gram_matrix_numerical(self):
@@ -294,7 +295,8 @@ class Basis(ABC):
         gram = np.empty((self.n_basis, self.n_basis))
 
         triang_vec = inner_product(
-            fbasis[indices[0]], fbasis[indices[1]])
+            fbasis[indices[0]], fbasis[indices[1]],
+            force_numerical=True)
 
         # Set upper matrix
         gram[indices] = triang_vec

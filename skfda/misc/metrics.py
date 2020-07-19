@@ -150,7 +150,7 @@ def distance_from_norm(norm, **kwargs):
         To construct the :math:`\mathbb{L}^2` distance it is used the
         :math:`\mathbb{L}^2` norm wich it is used to compute the distance.
 
-        >>> l2_distance = distance_from_norm(norm_lp, p=2)
+        >>> l2_distance = distance_from_norm(lp_norm, p=2)
         >>> d = l2_distance(fd, fd2)
         >>> float('%.3f'% d)
         0.289
@@ -208,7 +208,7 @@ def pairwise_distance(distance, **kwargs):
     return pairwise
 
 
-def norm_lp(fdata, p=2, p2=2):
+def lp_norm(fdata, p=2, p2=2):
     r"""Calculate the norm of all the samples in a FDataGrid object.
 
     For each sample sample f the Lp norm is defined as:
@@ -263,12 +263,12 @@ def norm_lp(fdata, p=2, p2=2):
 
         >>> x = np.linspace(0,1,1001)
         >>> fd = FDataGrid([np.ones(len(x)), x] ,x)
-        >>> norm_lp(fd).round(2)
+        >>> lp_norm(fd).round(2)
         array([ 1.  ,  0.58])
 
         The lp norm is only defined if p >= 1.
 
-        >>> norm_lp(fd, p = 0.5)
+        >>> lp_norm(fd, p = 0.5)
         Traceback (most recent call last):
             ....
         ValueError: p must be equal or greater than 1.
@@ -339,7 +339,7 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
         p2 (int, optional): p index of the vectorial norm applied in case of
-            multivariate objects. Defaults to 2. See :func:`norm_lp`.
+            multivariate objects. Defaults to 2. See :func:`lp_norm`.
 
     Examples:
         Computes the distances between an object containing functional data
@@ -371,7 +371,7 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
                                    _check=_check)
 
-    return norm_lp(fdata1 - fdata2, p=p, p2=p2)
+    return lp_norm(fdata1 - fdata2, p=p, p2=p2)
 
 
 def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):

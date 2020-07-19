@@ -1,13 +1,13 @@
+from skfda import FDataGrid, FDataBasis
+from skfda.datasets import make_multimodal_samples
+from skfda.exploratory import stats
+from skfda.misc.metrics import lp_distance, lp_norm, vectorial_norm
+from skfda.representation.basis import Monomial
 import unittest
 
 import scipy.stats.mstats
 
 import numpy as np
-from skfda import FDataGrid, FDataBasis
-from skfda.datasets import make_multimodal_samples
-from skfda.exploratory import stats
-from skfda.misc.metrics import lp_distance, norm_lp, vectorial_norm
-from skfda.representation.basis import Monomial
 
 
 class TestLpMetrics(unittest.TestCase):
@@ -44,26 +44,26 @@ class TestLpMetrics(unittest.TestCase):
         np.testing.assert_array_almost_equal(vec.data_matrix,
                                              self.fd_surface.data_matrix)
 
-    def test_norm_lp(self):
+    def test_lp_norm(self):
 
-        np.testing.assert_allclose(norm_lp(self.fd, p=1), [16., 41.33333333])
-        np.testing.assert_allclose(norm_lp(self.fd, p='inf'), [6, 25])
+        np.testing.assert_allclose(lp_norm(self.fd, p=1), [16., 41.33333333])
+        np.testing.assert_allclose(lp_norm(self.fd, p='inf'), [6, 25])
 
-    def test_norm_lp_curve(self):
+    def test_lp_norm_curve(self):
 
-        np.testing.assert_allclose(norm_lp(self.fd_curve, p=1, p2=1),
+        np.testing.assert_allclose(lp_norm(self.fd_curve, p=1, p2=1),
                                    [32., 82.666667])
-        np.testing.assert_allclose(norm_lp(self.fd_curve, p='inf', p2='inf'),
+        np.testing.assert_allclose(lp_norm(self.fd_curve, p='inf', p2='inf'),
                                    [6, 25])
 
-    def test_norm_lp_surface_inf(self):
-        np.testing.assert_allclose(norm_lp(self.fd_surface, p='inf').round(5),
+    def test_lp_norm_surface_inf(self):
+        np.testing.assert_allclose(lp_norm(self.fd_surface, p='inf').round(5),
                                    [0.99994, 0.99793, 0.99868])
 
-    def test_norm_lp_surface(self):
+    def test_lp_norm_surface(self):
         # Integration of surfaces not implemented, add test case after
         # implementation
-        self.assertEqual(norm_lp(self.fd_surface), NotImplemented)
+        self.assertEqual(lp_norm(self.fd_surface), NotImplemented)
 
     def test_lp_error_dimensions(self):
         # Case internal arrays

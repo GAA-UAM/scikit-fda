@@ -208,7 +208,7 @@ def pairwise_distance(distance, **kwargs):
     return pairwise
 
 
-def lp_norm(fdata, p=2, p2=2):
+def lp_norm(fdata, p=2, p2=None):
     r"""Calculate the norm of all the samples in a FDataGrid object.
 
     For each sample sample f the Lp norm is defined as:
@@ -274,6 +274,15 @@ def lp_norm(fdata, p=2, p2=2):
         ValueError: p must be equal or greater than 1.
 
     """
+    from ..misc import inner_product
+
+    if p2 is None:
+        p2 = p
+
+    # Special case, the inner product is heavily optimized
+    if p == p2 == 2:
+        return np.sqrt(inner_product(fdata, fdata))
+
     # Checks that the lp normed is well defined
     if not (p == 'inf' or np.isinf(p)) and p < 1:
         raise ValueError(f"p must be equal or greater than 1.")
@@ -352,7 +361,7 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
         >>> fd = FDataGrid([np.ones(len(x))], x)
         >>> fd2 =  FDataGrid([np.zeros(len(x))], x)
         >>> lp_distance(fd, fd2).round(2)
-        1.0
+        array([ 1.])
 
 
         If the functional data are defined over a different set of points of

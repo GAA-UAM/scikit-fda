@@ -63,7 +63,7 @@ class TestLpMetrics(unittest.TestCase):
     def test_lp_norm_surface(self):
         # Integration of surfaces not implemented, add test case after
         # implementation
-        self.assertEqual(lp_norm(self.fd_surface), NotImplemented)
+        self.assertEqual(lp_norm(self.fd_surface, p=1), NotImplemented)
 
     def test_lp_error_dimensions(self):
         # Case internal arrays

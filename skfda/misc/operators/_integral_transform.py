@@ -1,9 +1,6 @@
 import scipy.integrate
 
-import numpy as np
-
-from ...representation import FData
-from ._operators import Operator, get_n_basis, gramian_matrix_optimization
+from ._operators import Operator
 
 
 class IntegralTransform(Operator):

@@ -8,6 +8,35 @@ import scipy.integrate
 import numpy as np
 
 
+class _FDataCallable():
+
+    def __init__(self, function, *, domain_range, n_samples=1):
+
+        self.function = function
+        self.domain_range = domain_range
+        self.n_samples = n_samples
+
+    def __call__(self, *args, **kwargs):
+
+        return self.function(*args, **kwargs)
+
+    def __len__(self):
+
+        return self.n_samples
+
+    def __getitem__(self, key):
+
+        def new_function(*args, **kwargs):
+            return self.function(*args, **kwargs)[key]
+
+        tmp = np.empty(self.n_samples)
+        new_nsamples = len(tmp[key])
+
+        return _FDataCallable(new_function,
+                              domain_range=self.domain_range,
+                              n_samples=new_nsamples)
+
+
 def check_is_univariate(fd):
     """Checks if an FData is univariate and raises an error
 

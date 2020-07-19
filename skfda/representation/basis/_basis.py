@@ -119,6 +119,9 @@ class Basis(ABC):
     def __call__(self, *args, **kwargs):
         return self.evaluate(*args, **kwargs)
 
+    def __len__(self):
+        return self.n_basis
+
     def derivative(self, *, order=1):
         """Construct a FDataBasis object containing the derivative.
 

@@ -6,7 +6,7 @@ from scipy.interpolate import PPoly
 
 import numpy as np
 
-from ..._utils import _same_domain
+from ..._utils import _same_domain, _FDataCallable
 from ...representation import FDataGrid
 from ...representation.basis import Constant, Monomial, Fourier, BSpline
 from ._operators import Operator, gramian_matrix_optimization
@@ -228,7 +228,9 @@ class LinearDifferentialOperator(Operator):
             return sum(w(t) * function_derivatives[i](t)
                        for i, w in enumerate(self.weights))
 
-        return applied_linear_diff_op
+        return _FDataCallable(applied_linear_diff_op,
+                              domain_range=f.domain_range,
+                              n_samples=len(f))
 
 
 #############################################################

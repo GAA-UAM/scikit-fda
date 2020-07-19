@@ -1,3 +1,4 @@
+from builtins import isinstance
 import copy
 
 import pandas.api.extensions
@@ -500,6 +501,9 @@ class FDataBasis(FData):
             object.
         """
 
+        if basis == self.basis:
+            return self.copy()
+
         return self.to_grid(eval_points=eval_points).to_basis(basis, **kwargs)
 
     def to_list(self):
@@ -579,80 +583,6 @@ class FDataBasis(FData):
 
         coefs = np.transpose(np.atleast_2d(other))
         return self.copy(coefficients=self.coefficients * coefs)
-
-    def inner_product(self, other, lfd_self=None, lfd_other=None,
-                      weights=None):
-        r"""Return an inner product matrix given a FDataBasis object.
-
-        The inner product of two functions is defined as
-
-        .. math::
-            <x, y> = \int_a^b x(t)y(t) dt
-
-        When we talk abaout FDataBasis objects, they have many samples, so we
-        talk about inner product matrix instead. So, for two FDataBasis objects
-        we define the inner product matrix as
-
-        .. math::
-            a_{ij} = <x_i, y_i> = \int_a^b x_i(s) y_j(s) ds
-
-        where :math:`f_i(s), g_j(s)` are the :math:`i^{th} j^{th}` sample of
-        each object. The return matrix has a shape of :math:`IxJ` where I and
-        J are the number of samples of each object respectively.
-
-        Args:
-            other (FDataBasis, Basis): FDataBasis object containing the second
-                    object to make the inner product
-
-            lfd_self (Lfd): LinearDifferentialOperator object for the first
-                function evaluation
-
-            lfd_other (Lfd): LinearDifferentialOperator object for the second
-                function evaluation
-
-            weights(FDataBasis): a FDataBasis object with only one sample that
-                    defines the weight to calculate the inner product
-
-        Returns:
-            numpy.array: Inner Product matrix.
-
-        """
-        from ...misc.operators import LinearDifferentialOperator
-        from ..basis import Basis
-
-        if not _same_domain(self.domain_range, other.domain_range):
-            raise ValueError("Both Objects should have the same domain_range")
-        if isinstance(other, Basis):
-            other = other.to_basis()
-
-        # TODO this will be used when lfd evaluation is ready
-        lfd_self = (LinearDifferentialOperator(0) if lfd_self is None
-                    else lfd_self)
-        lfd_other = (LinearDifferentialOperator(0) if (lfd_other is None)
-                     else lfd_other)
-
-        if weights is not None:
-            other = other.times(weights)
-
-        if self.n_samples * other.n_samples > self.n_basis * other.n_basis:
-            return (self.coefficients @
-                    self.basis._inner_matrix(other.basis) @
-                    other.coefficients.T)
-        else:
-            return self._inner_product_integrate(other, lfd_self, lfd_other)
-
-    def _inner_product_integrate(self, other, lfd_self, lfd_other):
-
-        matrix = np.empty((self.n_samples, other.n_samples))
-        (left, right) = self.domain_range[0]
-
-        for i in range(self.n_samples):
-            for j in range(other.n_samples):
-                fd = self[i].times(other[j])
-                matrix[i, j] = scipy.integrate.quad(
-                    lambda x: fd.evaluate([x])[0], left, right)[0]
-
-        return matrix
 
     def _to_R(self):
         """Gives the code to build the object on fda package on R"""
@@ -776,7 +706,7 @@ class FDataBasis(FData):
         """Addition for FDataBasis object."""
         if isinstance(other, FDataBasis):
             if self.basis != other.basis:
-                raise NotImplementedError
+                return NotImplemented
             else:
                 basis, coefs = self.basis._add_same_basis(self.coefficients,
                                                           other.coefficients)
@@ -798,7 +728,7 @@ class FDataBasis(FData):
         """Subtraction for FDataBasis object."""
         if isinstance(other, FDataBasis):
             if self.basis != other.basis:
-                raise NotImplementedError
+                return NotImplemented
             else:
                 basis, coefs = self.basis._sub_same_basis(self.coefficients,
                                                           other.coefficients)
@@ -818,7 +748,7 @@ class FDataBasis(FData):
     def __mul__(self, other):
         """Multiplication for FDataBasis object."""
         if isinstance(other, FDataBasis):
-            raise NotImplementedError
+            return NotImplemented
 
         try:
             basis, coefs = self.basis._mul_constant(self.coefficients, other)
@@ -846,7 +776,7 @@ class FDataBasis(FData):
     def __rtruediv__(self, other):
         """Right division for FDataBasis object."""
 
-        raise NotImplementedError
+        return NotImplemented
 
     #####################################################################
     # Pandas ExtensionArray methods

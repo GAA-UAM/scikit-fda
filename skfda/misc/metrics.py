@@ -2,10 +2,21 @@ import scipy.integrate
 
 import numpy as np
 
+from .._utils import _pairwise_commutative
 from ..preprocessing.registration import normalize_warping, ElasticRegistration
 from ..preprocessing.registration._warping import _normalize_scale
 from ..preprocessing.registration.elastic import SRSF
 from ..representation import FDataGrid, FDataBasis
+
+
+def _check_compatible(fdata1, fdata2):
+
+    if (fdata2.dim_codomain != fdata1.dim_codomain or
+            fdata2.dim_domain != fdata1.dim_domain):
+        raise ValueError("Objects should have the same dimensions")
+
+    if not np.array_equal(fdata1.domain_range, fdata2.domain_range):
+        raise ValueError("Domain ranges for both objects must be equal")
 
 
 def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
@@ -24,16 +35,10 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
     if not _check:
         return fdata1, fdata2
 
-    elif (fdata2.dim_codomain != fdata1.dim_codomain or
-          fdata2.dim_domain != fdata1.dim_domain):
-        raise ValueError("Objects should have the same dimensions")
-
-    # Case different domain ranges
-    elif not np.array_equal(fdata1.domain_range, fdata2.domain_range):
-        raise ValueError("Domain ranges for both objects must be equal")
+    _check_compatible(fdata1, fdata2)
 
     # Case new evaluation points specified
-    elif eval_points is not None:
+    if eval_points is not None:
         fdata1 = fdata1.to_grid(eval_points)
         fdata2 = fdata2.to_grid(eval_points)
 
@@ -150,7 +155,7 @@ def distance_from_norm(norm, **kwargs):
         To construct the :math:`\mathbb{L}^2` distance it is used the
         :math:`\mathbb{L}^2` norm wich it is used to compute the distance.
 
-        >>> l2_distance = distance_from_norm(norm_lp, p=2)
+        >>> l2_distance = distance_from_norm(lp_norm, p=2)
         >>> d = l2_distance(fd, fd2)
         >>> float('%.3f'% d)
         0.289
@@ -188,27 +193,16 @@ def pairwise_distance(distance, **kwargs):
         :obj:`Function`: Pairwise distance function, wich accepts two
             functional data objects and returns the pairwise distance matrix.
     """
-    def pairwise(fdata1, fdata2):
+    def pairwise(fdata1, fdata2=None):
 
-        fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, **kwargs)
-
-        # Creates an empty matrix with the desired size to store the results.
-        matrix = np.empty((fdata1.n_samples, fdata2.n_samples))
-
-        # Iterates over the different samples of both objects.
-        for i in range(fdata1.n_samples):
-            for j in range(fdata2.n_samples):
-                matrix[i, j] = distance(fdata1[i], fdata2[j], _check=False,
-                                        **kwargs)
-        # Computes the metric between all piars of x and y.
-        return matrix
+        return _pairwise_commutative(distance, fdata1, fdata2)
 
     pairwise.__name__ = f"pairwise_{distance.__name__}"
 
     return pairwise
 
 
-def norm_lp(fdata, p=2, p2=2):
+def lp_norm(fdata, p=2, p2=None):
     r"""Calculate the norm of all the samples in a FDataGrid object.
 
     For each sample sample f the Lp norm is defined as:
@@ -263,17 +257,26 @@ def norm_lp(fdata, p=2, p2=2):
 
         >>> x = np.linspace(0,1,1001)
         >>> fd = FDataGrid([np.ones(len(x)), x] ,x)
-        >>> norm_lp(fd).round(2)
+        >>> lp_norm(fd).round(2)
         array([ 1.  ,  0.58])
 
         The lp norm is only defined if p >= 1.
 
-        >>> norm_lp(fd, p = 0.5)
+        >>> lp_norm(fd, p = 0.5)
         Traceback (most recent call last):
             ....
         ValueError: p must be equal or greater than 1.
 
     """
+    from ..misc import inner_product
+
+    if p2 is None:
+        p2 = p
+
+    # Special case, the inner product is heavily optimized
+    if p == p2 == 2:
+        return np.sqrt(inner_product(fdata, fdata))
+
     # Checks that the lp normed is well defined
     if not (p == 'inf' or np.isinf(p)) and p < 1:
         raise ValueError(f"p must be equal or greater than 1.")
@@ -339,7 +342,7 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
         p2 (int, optional): p index of the vectorial norm applied in case of
-            multivariate objects. Defaults to 2. See :func:`norm_lp`.
+            multivariate objects. Defaults to 2. See :func:`lp_norm`.
 
     Examples:
         Computes the distances between an object containing functional data
@@ -352,7 +355,7 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
         >>> fd = FDataGrid([np.ones(len(x))], x)
         >>> fd2 =  FDataGrid([np.zeros(len(x))], x)
         >>> lp_distance(fd, fd2).round(2)
-        1.0
+        array([ 1.])
 
 
         If the functional data are defined over a different set of points of
@@ -363,15 +366,12 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
         >>> lp_distance(fd, fd2)
         Traceback (most recent call last):
             ....
-        ValueError: Domain ranges for both objects must be equal
+        ValueError: ...
 
     """
-    # Checks
+    _check_compatible(fdata1, fdata2)
 
-    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
-                                   _check=_check)
-
-    return norm_lp(fdata1 - fdata2, p=p, p2=p2)
+    return lp_norm(fdata1 - fdata2, p=p, p2=p2)
 
 
 def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):

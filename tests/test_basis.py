@@ -1,5 +1,6 @@
 from skfda import concatenate
 import skfda
+from skfda.misc import inner_product, inner_product_matrix
 from skfda.representation.basis import (Basis, FDataBasis, Constant, Monomial,
                                         BSpline, Fourier)
 from skfda.representation.grid import FDataGrid
@@ -78,51 +79,86 @@ class TestBasis(unittest.TestCase):
         self.assertEqual(bspline.basis_of_product(bspline2), prod)
 
     def test_basis_inner_matrix(self):
-        np.testing.assert_array_almost_equal(Monomial(n_basis=3)._inner_matrix(),
-                                             [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
+        np.testing.assert_array_almost_equal(
+            Monomial(n_basis=3).inner_product_matrix(),
+            [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
 
-        np.testing.assert_array_almost_equal(Monomial(n_basis=3)._inner_matrix(Monomial(n_basis=3)),
-                                             [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
+        np.testing.assert_array_almost_equal(
+            Monomial(n_basis=3).inner_product_matrix(Monomial(n_basis=3)),
+            [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
 
-        np.testing.assert_array_almost_equal(Monomial(n_basis=3)._inner_matrix(Monomial(n_basis=4)),
-                                             [[1, 1 / 2, 1 / 3, 1 / 4], [1 / 2, 1 / 3, 1 / 4, 1 / 5], [1 / 3, 1 / 4, 1 / 5, 1 / 6]])
+        np.testing.assert_array_almost_equal(
+            Monomial(n_basis=3).inner_product_matrix(Monomial(n_basis=4)),
+            [[1, 1 / 2, 1 / 3, 1 / 4],
+             [1 / 2, 1 / 3, 1 / 4, 1 / 5],
+             [1 / 3, 1 / 4, 1 / 5, 1 / 6]])
 
         # TODO testing with other basis
 
-    def test_basis_gram_matrix(self):
-        np.testing.assert_allclose(Monomial(n_basis=3).gram_matrix(),
-                                   [[1, 1 / 2, 1 / 3], [1 / 2, 1 / 3, 1 / 4], [1 / 3, 1 / 4, 1 / 5]])
-        np.testing.assert_allclose(Fourier(n_basis=3).gram_matrix(),
-                                   np.identity(3))
-        np.testing.assert_allclose(BSpline(n_basis=6).gram_matrix().round(4),
-                                   np.array([[4.760e-02, 2.920e-02, 6.200e-03,
-                                              4.000e-04, 0.000e+00, 0.000e+00],
-                                             [2.920e-02, 7.380e-02, 5.210e-02,
-                                              1.150e-02, 1.000e-04, 0.000e+00],
-                                             [6.200e-03, 5.210e-02, 1.089e-01,
-                                              7.100e-02, 1.150e-02, 4.000e-04],
-                                             [4.000e-04, 1.150e-02, 7.100e-02,
-                                              1.089e-01, 5.210e-02, 6.200e-03],
-                                             [0.000e+00, 1.000e-04, 1.150e-02,
-                                              5.210e-02, 7.380e-02, 2.920e-02],
-                                             [0.000e+00, 0.000e+00, 4.000e-04,
-                                              6.200e-03, 2.920e-02, 4.760e-02]]))
+    def test_basis_gram_matrix_monomial(self):
+
+        basis = Monomial(n_basis=3)
+        gram_matrix = basis.gram_matrix()
+        gram_matrix_numerical = basis._gram_matrix_numerical()
+        gram_matrix_res = np.array([[1, 1 / 2, 1 / 3],
+                                    [1 / 2, 1 / 3, 1 / 4],
+                                    [1 / 3, 1 / 4, 1 / 5]])
+
+        np.testing.assert_allclose(
+            gram_matrix, gram_matrix_res)
+        np.testing.assert_allclose(
+            gram_matrix_numerical, gram_matrix_res)
+
+    def test_basis_gram_matrix_fourier(self):
+
+        basis = Fourier(n_basis=3)
+        gram_matrix = basis.gram_matrix()
+        gram_matrix_numerical = basis._gram_matrix_numerical()
+        gram_matrix_res = np.identity(3)
+
+        np.testing.assert_allclose(
+            gram_matrix, gram_matrix_res)
+        np.testing.assert_allclose(
+            gram_matrix_numerical, gram_matrix_res, atol=1e-15, rtol=1e-15)
+
+    def test_basis_gram_matrix_bspline(self):
+
+        basis = BSpline(n_basis=6)
+        gram_matrix = basis.gram_matrix()
+        gram_matrix_numerical = basis._gram_matrix_numerical()
+        gram_matrix_res = np.array(
+            [[0.04761905, 0.02916667, 0.00615079,
+              0.00039683, 0., 0.],
+             [0.02916667, 0.07380952, 0.05208333,
+              0.01145833, 0.00014881, 0.],
+             [0.00615079, 0.05208333, 0.10892857, 0.07098214,
+              0.01145833, 0.00039683],
+             [0.00039683, 0.01145833, 0.07098214, 0.10892857,
+              0.05208333, 0.00615079],
+             [0., 0.00014881, 0.01145833, 0.05208333,
+              0.07380952, 0.02916667],
+             [0., 0., 0.00039683, 0.00615079,
+              0.02916667, 0.04761905]])
+
+        np.testing.assert_allclose(
+            gram_matrix, gram_matrix_res, rtol=1e-4)
+        np.testing.assert_allclose(
+            gram_matrix_numerical, gram_matrix_res, rtol=1e-4)
 
     def test_basis_basis_inprod(self):
         monomial = Monomial(n_basis=4)
         bspline = BSpline(n_basis=5, order=4)
-        np.testing.assert_array_almost_equal(
-            monomial.inner_product(bspline).round(3),
+        np.testing.assert_allclose(
+            monomial.inner_product_matrix(bspline),
             np.array(
                 [[0.12499983, 0.25000035, 0.24999965, 0.25000035, 0.12499983],
                  [0.01249991, 0.07500017, 0.12499983, 0.17500017, 0.11249991],
                  [0.00208338, 0.02916658, 0.07083342, 0.12916658, 0.10208338],
-                 [0.00044654, 0.01339264, 0.04375022, 0.09910693, 0.09330368]])
-            .round(3)
-        )
+                 [0.00044654, 0.01339264, 0.04375022, 0.09910693, 0.09330368]
+                 ]), rtol=1e-3)
         np.testing.assert_array_almost_equal(
-            monomial.inner_product(bspline),
-            bspline.inner_product(monomial).T
+            monomial.inner_product_matrix(bspline),
+            bspline.inner_product_matrix(monomial).T
         )
 
     def test_basis_fdatabasis_inprod(self):
@@ -130,13 +166,12 @@ class TestBasis(unittest.TestCase):
         bspline = BSpline(n_basis=5, order=3)
         bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
 
-        np.testing.assert_array_almost_equal(
-            monomial.inner_product(bsplinefd).round(3),
+        np.testing.assert_allclose(
+            inner_product_matrix(monomial, bsplinefd),
             np.array([[2., 7., 12.],
                       [1.29626206, 3.79626206, 6.29626206],
                       [0.96292873, 2.62959539, 4.29626206],
-                      [0.7682873, 2.0182873, 3.2682873]]).round(3)
-        )
+                      [0.7682873, 2.0182873, 3.2682873]]), rtol=1e-4)
 
     def test_fdatabasis_fdatabasis_inprod(self):
         monomial = Monomial(n_basis=4)
@@ -148,33 +183,23 @@ class TestBasis(unittest.TestCase):
         bspline = BSpline(n_basis=5, order=3)
         bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
 
-        np.testing.assert_array_almost_equal(
-            monomialfd.inner_product(bsplinefd).round(3),
+        np.testing.assert_allclose(
+            inner_product_matrix(monomialfd, bsplinefd),
             np.array([[16.14797697, 52.81464364, 89.4813103],
                       [11.55565285, 38.22211951, 64.88878618],
                       [18.14698361, 55.64698361, 93.14698361],
                       [15.2495976, 48.9995976, 82.7495976],
-                      [19.70392982, 63.03676315, 106.37009648]]).round(3)
-        )
-
-        np.testing.assert_array_almost_equal(
-            monomialfd._inner_product_integrate(
-                bsplinefd, None, None).round(3),
-            np.array([[16.14797697, 52.81464364, 89.4813103],
-                      [11.55565285, 38.22211951, 64.88878618],
-                      [18.14698361, 55.64698361, 93.14698361],
-                      [15.2495976, 48.9995976, 82.7495976],
-                      [19.70392982, 63.03676315, 106.37009648]]).round(3)
-        )
+                      [19.70392982, 63.03676315, 106.37009648]]),
+            rtol=1e-4)
 
     def test_comutativity_inprod(self):
         monomial = Monomial(n_basis=4)
         bspline = BSpline(n_basis=5, order=3)
         bsplinefd = FDataBasis(bspline, np.arange(0, 15).reshape(3, 5))
 
-        np.testing.assert_array_almost_equal(
-            bsplinefd.inner_product(monomial).round(3),
-            np.transpose(monomial.inner_product(bsplinefd).round(3))
+        np.testing.assert_allclose(
+            inner_product_matrix(bsplinefd, monomial),
+            np.transpose(inner_product_matrix(monomial, bsplinefd))
         )
 
     def test_fdatabasis_times_fdatabasis_fdatabasis(self):
@@ -233,9 +258,9 @@ class TestBasis(unittest.TestCase):
                                 FDataBasis(Monomial(n_basis=3),
                                            [[2, 2, 3], [5, 4, 5]]))
 
-        np.testing.assert_raises(NotImplementedError, monomial2.__add__,
-                                 FDataBasis(Fourier(n_basis=3),
-                                            [[2, 2, 3], [5, 4, 5]]))
+        with np.testing.assert_raises(TypeError):
+            monomial2 + FDataBasis(Fourier(n_basis=3),
+                                   [[2, 2, 3], [5, 4, 5]])
 
     def test_fdatabasis__sub__(self):
         monomial1 = FDataBasis(Monomial(n_basis=3), [1, 2, 3])
@@ -257,9 +282,9 @@ class TestBasis(unittest.TestCase):
                                 FDataBasis(Monomial(n_basis=3),
                                            [[0, -2, -3], [-1, -4, -5]]))
 
-        np.testing.assert_raises(NotImplementedError, monomial2.__sub__,
-                                 FDataBasis(Fourier(n_basis=3),
-                                            [[2, 2, 3], [5, 4, 5]]))
+        with np.testing.assert_raises(TypeError):
+            monomial2 - FDataBasis(Fourier(n_basis=3),
+                                   [[2, 2, 3], [5, 4, 5]])
 
     def test_fdatabasis__mul__(self):
         monomial1 = FDataBasis(Monomial(n_basis=3), [1, 2, 3])
@@ -281,11 +306,12 @@ class TestBasis(unittest.TestCase):
                                 FDataBasis(Monomial(n_basis=3),
                                            [[1, 2, 3], [6, 8, 10]]))
 
-        np.testing.assert_raises(NotImplementedError, monomial2.__mul__,
-                                 FDataBasis(Fourier(n_basis=3),
-                                            [[2, 2, 3], [5, 4, 5]]))
-        np.testing.assert_raises(NotImplementedError, monomial2.__mul__,
-                                 monomial2)
+        with np.testing.assert_raises(TypeError):
+            monomial2 * FDataBasis(Fourier(n_basis=3),
+                                   [[2, 2, 3], [5, 4, 5]])
+
+        with np.testing.assert_raises(TypeError):
+            monomial2 * monomial2
 
     def test_fdatabasis__mul__2(self):
         monomial1 = FDataBasis(Monomial(n_basis=3), [1, 2, 3])

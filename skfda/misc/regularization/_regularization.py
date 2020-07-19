@@ -7,8 +7,6 @@ from sklearn.base import BaseEstimator
 
 import numpy as np
 
-from ..operators._operators import get_n_basis
-
 
 class TikhonovRegularization(BaseEstimator):
     r"""
@@ -142,7 +140,7 @@ def compute_penalty_matrix(basis_iterable, regularization_parameter,
             regularization_parameter)
 
     penalty_blocks = [
-        np.zeros((get_n_basis(b), get_n_basis(b))) if r is None else
+        np.zeros((len(b), len(b))) if r is None else
         a * r.penalty_matrix(b)
         for b, r, a in zip(basis_iterable, regularization,
                            regularization_parameter)]

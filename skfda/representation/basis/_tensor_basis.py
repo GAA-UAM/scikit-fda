@@ -94,6 +94,17 @@ class Tensor(Basis):
 
         pass
 
+    def _gram_matrix(self):
+
+        gram_matrices = [b.gram_matrix().ravel() for b in self.basis_list]
+
+        gram = gram_matrices[0]
+
+        for g in gram_matrices[1:]:
+            gram = np.outer(gram, g).ravel()
+
+        return gram.reshape((self.n_basis, self.n_basis))
+
     def basis_of_product(self, other):
         pass
 

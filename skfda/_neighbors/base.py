@@ -73,13 +73,13 @@ def _to_multivariate_metric(metric, sample_points):
         >>> fd = FDataGrid([np.ones(len(x))], x)
         >>> fd2 =  FDataGrid([np.zeros(len(x))], x)
         >>> lp_distance(fd, fd2).round(2)
-        1.0
+        array([ 1.])
 
         Creation of the sklearn-style metric.
 
         >>> sklearn_lp_distance = _to_multivariate_metric(lp_distance, [x])
         >>> sklearn_lp_distance(np.ones(len(x)), np.zeros(len(x))).round(2)
-        1.0
+        array([ 1.])
 
     """
     # Shape -> (n_samples = 1, domain_dims...., image_dimension (-1))

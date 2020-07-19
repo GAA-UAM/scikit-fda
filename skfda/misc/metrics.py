@@ -2,6 +2,7 @@ import scipy.integrate
 
 import numpy as np
 
+from .._utils import _pairwise_commutative
 from ..preprocessing.registration import normalize_warping, ElasticRegistration
 from ..preprocessing.registration._warping import _normalize_scale
 from ..preprocessing.registration.elastic import SRSF
@@ -192,20 +193,9 @@ def pairwise_distance(distance, **kwargs):
         :obj:`Function`: Pairwise distance function, wich accepts two
             functional data objects and returns the pairwise distance matrix.
     """
-    def pairwise(fdata1, fdata2):
+    def pairwise(fdata1, fdata2=None):
 
-        fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, **kwargs)
-
-        # Creates an empty matrix with the desired size to store the results.
-        matrix = np.empty((fdata1.n_samples, fdata2.n_samples))
-
-        # Iterates over the different samples of both objects.
-        for i in range(fdata1.n_samples):
-            for j in range(fdata2.n_samples):
-                matrix[i, j] = distance(fdata1[i], fdata2[j], _check=False,
-                                        **kwargs)
-        # Computes the metric between all piars of x and y.
-        return matrix
+        return _pairwise_commutative(distance, fdata1, fdata2)
 
     pairwise.__name__ = f"pairwise_{distance.__name__}"
 

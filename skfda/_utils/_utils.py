@@ -365,6 +365,39 @@ def nquad_vec(func, ranges):
     return integrate(depth=initial_depth)
 
 
+def _pairwise_commutative(function, arg1, arg2=None, **kwargs):
+    """
+    Compute pairwise a commutative function.
+
+    """
+    if arg2 is None:
+
+        indices = np.triu_indices(len(arg1))
+
+        matrix = np.empty((len(arg1), len(arg1)))
+
+        triang_vec = function(
+            arg1[indices[0]], arg1[indices[1]],
+            **kwargs)
+
+        # Set upper matrix
+        matrix[indices] = triang_vec
+
+        # Set lower matrix
+        matrix[(indices[1], indices[0])] = triang_vec
+
+        return matrix
+
+    else:
+
+        indices = np.indices((len(arg1), len(arg2)))
+
+        return function(
+            arg1[indices[0].ravel()], arg2[indices[1].ravel()],
+            **kwargs).reshape(
+                (len(arg1), len(arg2)))
+
+
 def parameter_aliases(**alias_assignments):
     """Allows using aliases for parameters"""
     def decorator(f):

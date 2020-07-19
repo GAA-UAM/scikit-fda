@@ -6,4 +6,4 @@ from ._utils import (_list_of_arrays, _cartesian_product,
                      _same_domain, _to_array_maybe_ragged,
                      _reshape_eval_points,
                      _evaluate_grid, nquad_vec,
-                     _FDataCallable)
+                     _FDataCallable, _pairwise_commutative)

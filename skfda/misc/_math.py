@@ -12,7 +12,7 @@ import scipy.integrate
 
 import numpy as np
 
-from .._utils import _same_domain, nquad_vec
+from .._utils import _same_domain, nquad_vec, _pairwise_commutative
 from ..representation import FDataGrid, FDataBasis
 from ..representation.basis import Basis
 
@@ -350,29 +350,4 @@ def inner_product_matrix(arg1, arg2=None, **kwargs):
     if isinstance(arg2, Basis):
         arg2 = arg2.to_basis()
 
-    if arg2 is None:
-
-        indices = np.triu_indices(len(arg1))
-
-        matrix = np.empty((len(arg1), len(arg1)))
-
-        triang_vec = inner_product(
-            arg1[indices[0]], arg1[indices[1]],
-            **kwargs)
-
-        # Set upper matrix
-        matrix[indices] = triang_vec
-
-        # Set lower matrix
-        matrix[(indices[1], indices[0])] = triang_vec
-
-        return matrix
-
-    else:
-
-        indices = np.indices((len(arg1), len(arg2)))
-
-        return inner_product(
-            arg1[indices[0].ravel()], arg2[indices[1].ravel()],
-            **kwargs).reshape(
-                (len(arg1), len(arg2)))
+    return _pairwise_commutative(inner_product, arg1, arg2, **kwargs)

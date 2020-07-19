@@ -92,16 +92,6 @@ class TestLpMetrics(unittest.TestCase):
         with np.testing.assert_raises(ValueError):
             lp_distance(self.fd, fd2)
 
-    def test_lp_grid_basis(self):
-
-        np.testing.assert_allclose(lp_distance(self.fd, self.fd_basis), 0)
-        np.testing.assert_allclose(lp_distance(self.fd_basis, self.fd), 0)
-        np.testing.assert_allclose(
-            lp_distance(self.fd_basis,
-                        self.fd_basis, eval_points=[1, 2, 3, 4, 5]), 0)
-        np.testing.assert_allclose(lp_distance(self.fd_basis, self.fd_basis),
-                                   0)
-
 
 if __name__ == '__main__':
     print()

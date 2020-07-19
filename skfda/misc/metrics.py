@@ -8,6 +8,16 @@ from ..preprocessing.registration.elastic import SRSF
 from ..representation import FDataGrid, FDataBasis
 
 
+def _check_compatible(fdata1, fdata2):
+
+    if (fdata2.dim_codomain != fdata1.dim_codomain or
+            fdata2.dim_domain != fdata1.dim_domain):
+        raise ValueError("Objects should have the same dimensions")
+
+    if not np.array_equal(fdata1.domain_range, fdata2.domain_range):
+        raise ValueError("Domain ranges for both objects must be equal")
+
+
 def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
     """Checks if the fdatas passed as argument are unidimensional and
     compatible and converts them to FDatagrid to compute their distances.
@@ -24,16 +34,10 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
     if not _check:
         return fdata1, fdata2
 
-    elif (fdata2.dim_codomain != fdata1.dim_codomain or
-          fdata2.dim_domain != fdata1.dim_domain):
-        raise ValueError("Objects should have the same dimensions")
-
-    # Case different domain ranges
-    elif not np.array_equal(fdata1.domain_range, fdata2.domain_range):
-        raise ValueError("Domain ranges for both objects must be equal")
+    _check_compatible(fdata1, fdata2)
 
     # Case new evaluation points specified
-    elif eval_points is not None:
+    if eval_points is not None:
         fdata1 = fdata1.to_grid(eval_points)
         fdata2 = fdata2.to_grid(eval_points)
 
@@ -372,13 +376,10 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
         >>> lp_distance(fd, fd2)
         Traceback (most recent call last):
             ....
-        ValueError: Domain ranges for both objects must be equal
+        ValueError: ...
 
     """
-    # Checks
-
-    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
-                                   _check=_check)
+    _check_compatible(fdata1, fdata2)
 
     return lp_norm(fdata1 - fdata2, p=p, p2=p2)
 

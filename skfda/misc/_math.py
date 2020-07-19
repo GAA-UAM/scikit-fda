@@ -12,7 +12,7 @@ import scipy.integrate
 
 import numpy as np
 
-from .._utils import _same_domain, nquad_vec, _FDataCallable
+from .._utils import _same_domain, nquad_vec
 from ..representation import FDataGrid, FDataBasis
 from ..representation.basis import Basis
 
@@ -247,7 +247,10 @@ def inner_product(arg1, arg2, **kwargs):
 
     """
 
-    return (arg1 * arg2).sum(axis=-1)
+    if callable(arg1):
+        return _inner_product_integrate(arg1, arg2)
+    else:
+        return (arg1 * arg2).sum(axis=-1)
 
 
 @inner_product.register
@@ -314,11 +317,6 @@ def inner_product_fdatabasis(arg1: Union[FDataBasis, Basis],
                 arg2.coefficients).sum(axis=-1)
     else:
         return _inner_product_integrate(arg1, arg2)
-
-
-@inner_product.register
-def inner_product_fdatacallable(arg1: _FDataCallable, arg2: _FDataCallable):
-    return _inner_product_integrate(arg1, arg2)
 
 
 def _inner_product_integrate(arg1, arg2):

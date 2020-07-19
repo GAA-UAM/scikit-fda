@@ -329,9 +329,17 @@ def _inner_product_integrate(arg1, arg2):
     return np.sum(integral, axis=-1)
 
 
-def _inner_product_matrix(arg1, arg2):
+def inner_product_matrix(arg1, arg2=None, **kwargs):
     """
-    Currently only used for testing purposes.
+    Returns the inner product matrix between is arguments.
+
+    If arg2 is ``None`` returns the Gram matrix.
+
+    Args:
+
+        arg1: First sample.
+        arg2: Second sample.
+
     """
 
     if isinstance(arg1, Basis):
@@ -339,10 +347,29 @@ def _inner_product_matrix(arg1, arg2):
     if isinstance(arg2, Basis):
         arg2 = arg2.to_basis()
 
-    matrix = np.empty((arg1.n_samples, arg2.n_samples))
+    if arg2 is None:
 
-    for i in range(arg1.n_samples):
-        for j in range(arg2.n_samples):
-            matrix[i, j] = inner_product(arg1[i], arg2[j])
+        indices = np.triu_indices(len(arg1))
 
-    return matrix
+        matrix = np.empty((len(arg1), len(arg1)))
+
+        triang_vec = inner_product(
+            arg1[indices[0]], arg1[indices[1]],
+            **kwargs)
+
+        # Set upper matrix
+        matrix[indices] = triang_vec
+
+        # Set lower matrix
+        matrix[(indices[1], indices[0])] = triang_vec
+
+        return matrix
+
+    else:
+
+        indices = np.indices((len(arg1), len(arg2)))
+
+        return inner_product(
+            arg1[indices[0].ravel()], arg2[indices[1].ravel()],
+            **kwargs).reshape(
+                (len(arg1), len(arg2)))

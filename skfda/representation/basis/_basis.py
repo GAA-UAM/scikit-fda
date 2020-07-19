@@ -266,45 +266,21 @@ class Basis(ABC):
             numpy.array: Inner Product Matrix of two basis
 
         """
-        from ...misc import inner_product
+        from ...misc import inner_product_matrix
 
         if other is None or self == other:
             return self.gram_matrix()
 
-        first = self.to_basis()
-        second = other.to_basis()
-
-        indices = np.indices((self.n_basis, other.n_basis))
-
-        return inner_product(
-            first[indices[0].ravel()], second[indices[1].ravel()],
-            force_numerical=True).reshape(
-                (self.n_basis, other.n_basis))
+        return inner_product_matrix(self, other)
 
     def _gram_matrix_numerical(self):
         """
         Compute the Gram matrix numerically.
 
         """
-        from ...misc import inner_product
+        from ...misc import inner_product_matrix
 
-        fbasis = self.to_basis()
-
-        indices = np.triu_indices(self.n_basis)
-
-        gram = np.empty((self.n_basis, self.n_basis))
-
-        triang_vec = inner_product(
-            fbasis[indices[0]], fbasis[indices[1]],
-            force_numerical=True)
-
-        # Set upper matrix
-        gram[indices] = triang_vec
-
-        # Set lower matrix
-        gram[(indices[1], indices[0])] = triang_vec
-
-        return gram
+        return inner_product_matrix(self, force_numerical=True)
 
     def _gram_matrix(self):
         """

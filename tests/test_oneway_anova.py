@@ -1,12 +1,13 @@
-import unittest
-import numpy as np
-import pytest
-
-from skfda.representation import FDataGrid
-from skfda.representation.basis import Fourier
 from skfda.datasets import fetch_gait
 from skfda.inference.anova import oneway_anova, v_asymptotic_stat, \
     v_sample_stat
+from skfda.representation import FDataGrid
+from skfda.representation.basis import Fourier
+import unittest
+
+import pytest
+
+import numpy as np
 
 
 class OnewayAnovaTests(unittest.TestCase):
@@ -30,7 +31,6 @@ class OnewayAnovaTests(unittest.TestCase):
             v_asymptotic_stat(FDataGrid([0]), [0, 1])
         with self.assertRaises(ValueError):
             v_asymptotic_stat(FDataGrid([[1, 1, 1], [1, 1, 1]]), [0, 0])
-
 
     def test_v_stats(self):
         n_features = 50
@@ -58,20 +58,22 @@ class OnewayAnovaTests(unittest.TestCase):
 
         n_little_sim = 10
 
-        sims = np.array([oneway_anova(fd1, fd2, fd3, n_reps=500)[1] for _ in
-                         range(n_little_sim)])
+        sims = np.array([oneway_anova(
+            fd1, fd2, fd3, n_reps=500, random_state=i)[1]
+            for i in range(n_little_sim)])
         little_sim = np.mean(sims)
-        big_sim = oneway_anova(fd1, fd2, fd3, n_reps=2000)[1]
+        big_sim = oneway_anova(fd1, fd2, fd3, n_reps=2000, random_state=100)[1]
         self.assertAlmostEqual(little_sim, big_sim, delta=0.05)
 
         fd = fd.to_basis(Fourier(n_basis=5))
         fd1 = fd[0:5]
         fd2 = fd[5:10]
 
-        sims = np.array([oneway_anova(fd1, fd2, n_reps=500)[1] for _ in
-                         range(n_little_sim)])
+        sims = np.array([oneway_anova(
+            fd1, fd2, n_reps=500, random_state=i)[1]
+            for i in range(n_little_sim)])
         little_sim = np.mean(sims)
-        big_sim = oneway_anova(fd1, fd2, n_reps=2000)[1]
+        big_sim = oneway_anova(fd1, fd2, n_reps=2000, random_state=100)[1]
         self.assertAlmostEqual(little_sim, big_sim, delta=0.05)
 
 

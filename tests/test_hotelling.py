@@ -1,9 +1,9 @@
-import unittest
-import pytest
-
+from skfda.inference.hotelling import hotelling_t2, hotelling_test_ind
 from skfda.representation import FDataGrid
 from skfda.representation.basis import Fourier
-from skfda.inference.hotelling import hotelling_t2, hotelling_test_ind
+import unittest
+
+import pytest
 
 
 class HotellingTests(unittest.TestCase):
@@ -46,13 +46,14 @@ class HotellingTests(unittest.TestCase):
     def test_hotelling_test(self):
         fd1 = FDataGrid([[1, 1, 1], [1, 1, 1]])
         fd2 = FDataGrid([[3, 3, 3], [2, 2, 2]])
-        t2, pval, dist = hotelling_test_ind(fd1, fd2, return_dist=True)
+        t2, pval, dist = hotelling_test_ind(fd1, fd2, return_dist=True,
+                                            random_state=0)
         self.assertAlmostEqual(t2, 9)
         self.assertAlmostEqual(pval, 0)
         self.assertEqual(len(dist), 6)
         reps = 5
         t2, pval, dist = hotelling_test_ind(fd1, fd2, return_dist=True,
-                                            n_reps=reps)
+                                            n_reps=reps, random_state=1)
         self.assertEqual(len(dist), reps)
 
 

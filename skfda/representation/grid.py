@@ -1016,17 +1016,6 @@ class FDataGrid(FData):
 
     def __getitem__(self, key):
         """Return self[key]."""
-        if isinstance(key, tuple):
-            # If there are not values for every dimension, the remaining ones
-            # are kept
-            key += (slice(None),) * (self.dim_domain + 1 - len(key))
-
-            sample_points = [self.sample_points[i][subkey]
-                             for i, subkey in enumerate(
-                                 key[1:1 + self.dim_domain])]
-
-            return self.copy(data_matrix=self.data_matrix[key],
-                             sample_points=sample_points)
 
         if isinstance(key, numbers.Integral):  # To accept also numpy ints
             key = int(key)

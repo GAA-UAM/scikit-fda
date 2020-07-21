@@ -61,16 +61,18 @@ Requirements
 ------------
 *scikit-fda* depends on the following packages:
 
-* `setuptools <https://github.com/pypa/setuptools>`_ - Python Packaging
 * `cython <https://github.com/cython/cython>`_ - Python to C compiler
-* `numpy <https://github.com/numpy/numpy>`_ - The fundamental package for scientific computing with Python
-* `pandas <https://github.com/pandas-dev/pandas>`_ - Powerful Python data analysis toolkit
-* `scipy <https://github.com/scipy/scipy>`_ - Scientific computation in Python
-* `scikit-learn <https://github.com/scikit-learn/scikit-learn>`_ - Machine learning in Python
+* `findiff <https://github.com/maroba/findiff>`_ - Finite differences
 * `matplotlib <https://github.com/matplotlib/matplotlib>`_ - Plotting with Python
 * `mpldatacursor <https://github.com/joferkington/mpldatacursor/>`_ - Interactive data cursors for matplotlib
+* `multimethod <https://github.com/coady/multimethod>`_ - Multiple dispatch
+* `numpy <https://github.com/numpy/numpy>`_ - The fundamental package for scientific computing with Python
+* `pandas <https://github.com/pandas-dev/pandas>`_ - Powerful Python data analysis toolkit
 * `rdata <https://github.com/vnmabus/rdata>`_ - Reader of R datasets in .rda format in Python
 * `scikit-datasets <https://github.com/daviddiazvico/scikit-datasets>`_ - Scikit-learn compatible datasets
+* `scikit-learn <https://github.com/scikit-learn/scikit-learn>`_ - Machine learning in Python
+* `scipy <https://github.com/scipy/scipy>`_ - Scientific computation in Python
+* `setuptools <https://github.com/pypa/setuptools>`_ - Python Packaging
 
 The dependencies are automatically installed.
 
@@ -105,7 +107,7 @@ license_ can be found along with the code.
 .. |build-status| image:: https://travis-ci.org/GAA-UAM/scikit-fda.svg?branch=develop
     :alt: build status
     :scale: 100%
-    :target: https://travis-ci.org/GAA-UAM/scikit-fda
+    :target: https://travis-ci.com/GAA-UAM/scikit-fda
 
 .. |docs| image:: https://readthedocs.org/projects/fda/badge/?version=latest
     :alt: Documentation Status

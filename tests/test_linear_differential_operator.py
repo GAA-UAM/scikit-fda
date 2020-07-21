@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 
 
-class TestLfd(unittest.TestCase):
+class TestLinearDifferentialOperator(unittest.TestCase):
 
     def test_init_default(self):
         """Tests default initialization (do not penalize)."""
@@ -30,7 +30,7 @@ class TestLfd(unittest.TestCase):
         # Checks for a non zero order Lfd object
         lfd_3 = LinearDifferentialOperator(3)
         consfd = FDataBasis(Constant((0, 1)), [[0], [0], [0], [1]])
-        bwtlist3 = consfd.to_list()
+        bwtlist3 = list(consfd)
 
         np.testing.assert_equal(
             lfd_3.weights, bwtlist3,
@@ -51,7 +51,7 @@ class TestLfd(unittest.TestCase):
         lfd = LinearDifferentialOperator(weights=coefficients)
 
         np.testing.assert_equal(
-            lfd.weights, fd.to_list(),
+            lfd.weights, list(fd),
             "Wrong list of weight functions of the linear operator")
 
     def test_init_list_fdatabasis(self):
@@ -70,7 +70,7 @@ class TestLfd(unittest.TestCase):
         lfd = LinearDifferentialOperator(weights=fdlist)
 
         np.testing.assert_equal(
-            lfd.weights, fd.to_list(),
+            lfd.weights, list(fd),
             "Wrong list of weight functions of the linear operator")
 
         # Check failure if intervals do not match

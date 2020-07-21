@@ -160,9 +160,9 @@ class LinearDifferentialOperator(Operator):
                 raise ValueError("You have to provide one weight at least")
 
             if all(isinstance(n, numbers.Real) for n in weights):
-                self.weights = (FDataBasis(Constant(real_domain_range),
-                                           np.array(weights)
-                                           .reshape(-1, 1)).to_list())
+                self.weights = list(FDataBasis(Constant(real_domain_range),
+                                               np.array(weights)
+                                               .reshape(-1, 1)))
 
             elif all(isinstance(n, FDataBasis) for n in weights):
                 if all([_same_domain(weights[0], x)

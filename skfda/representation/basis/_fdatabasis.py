@@ -506,10 +506,6 @@ class FDataBasis(FData):
 
         return self.to_grid(eval_points=eval_points).to_basis(basis, **kwargs)
 
-    def to_list(self):
-        """Splits FDataBasis samples into a list"""
-        return [self[i] for i in range(self.n_samples)]
-
     def copy(self, *, basis=None, coefficients=None, dataset_label=None,
              axes_labels=None, extrapolation=None):
         """FDataBasis copy"""

@@ -49,15 +49,12 @@ class TestFDataGrid(unittest.TestCase):
             np.array([[0., 0.25, 0.5, 0.75, 1.]]))
 
     def test_slice(self):
-        t = 10
+        t = (5, 3)
         fd = FDataGrid(data_matrix=np.ones(t))
-        fd = fd[:, 0]
+        fd = fd[1:3]
         np.testing.assert_array_equal(
             fd.data_matrix[..., 0],
-            np.array([[1]]))
-        np.testing.assert_array_equal(
-            fd.sample_points,
-            np.array([[0]]))
+            np.array([[1, 1, 1], [1, 1, 1]]))
 
     def test_concatenate(self):
         fd1 = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])

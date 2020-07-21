@@ -105,7 +105,7 @@ license_ can be found along with the code.
 .. |build-status| image:: https://travis-ci.org/GAA-UAM/scikit-fda.svg?branch=develop
     :alt: build status
     :scale: 100%
-    :target: https://travis-ci.org/GAA-UAM/scikit-fda
+    :target: https://travis-ci.com/GAA-UAM/scikit-fda
 
 .. |docs| image:: https://readthedocs.org/projects/fda/badge/?version=latest
     :alt: Documentation Status

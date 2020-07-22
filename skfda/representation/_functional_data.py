@@ -23,10 +23,11 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         dim_domain (int): Dimension of the domain.
         dim_codomain (int): Dimension of the image.
         extrapolation (Extrapolation): Default extrapolation mode.
-        dataset_label (str): name of the dataset.
-        axes_labels (list): list containing the labels of the different
-            axis. The first element is the x label, the second the y label
-            and so on.
+        dataset_name (str): name of the dataset.
+        argument_names (tuple): tuple containing the names of the different
+            arguments.
+        coordinate_names (tuple): tuple containing the names of the different
+            coordinate functions.
 
     """
 

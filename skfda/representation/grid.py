@@ -40,9 +40,11 @@ class FDataGrid(FData):
         domain_range (numpy.ndarray): 2 dimension matrix where each row
             contains the bounds of the interval in which the functional data
             is considered to exist for each one of the axies.
-        dataset_label (str): name of the dataset.
-        axes_labels (list): list containing the labels of the different
-            axis.
+        dataset_name (str): name of the dataset.
+        argument_names (tuple): tuple containing the names of the different
+            arguments.
+        coordinate_names (tuple): tuple containing the names of the different
+            coordinate functions.
         extrapolation (str or Extrapolation): defines the default type of
             extrapolation. By default None, which does not apply any type of
             extrapolation. See `Extrapolation` for detailled information of the

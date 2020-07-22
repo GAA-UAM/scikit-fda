@@ -2,7 +2,6 @@ from builtins import isinstance
 import copy
 
 import pandas.api.extensions
-import scipy.integrate
 
 import numpy as np
 
@@ -35,9 +34,21 @@ class FDataBasis(FData):
             function in the basis. If a matrix, each row contains the
             coefficients that multiplied by the basis functions produce each
             functional datum.
+        domain_range (numpy.ndarray): 2 dimension matrix where each row
+            contains the bounds of the interval in which the functional data
+            is considered to exist for each one of the axies.
+        dataset_name (str): name of the dataset.
+        argument_names (tuple): tuple containing the names of the different
+            arguments.
+        coordinate_names (tuple): tuple containing the names of the different
+            coordinate functions.
+        extrapolation (str or Extrapolation): defines the default type of
+            extrapolation. By default None, which does not apply any type of
+            extrapolation. See `Extrapolation` for detailled information of the
+            types of extrapolation.
 
     Examples:
-        >>> from skfda.representation.basis import FDataBasis, Monomial 
+        >>> from skfda.representation.basis import FDataBasis, Monomial
         >>>
         >>> basis = Monomial(n_basis=4)
         >>> coefficients = [1, 1, 3, .5]

@@ -75,6 +75,7 @@ class FDataBasis(FData):
             return self._fdatabasis.dim_codomain
 
     def __init__(self, basis, coefficients, *, dataset_label=None,
+                 dataset_name=None,
                  axes_labels=None, argument_names=None,
                  coordinate_names=None, extrapolation=None):
         """Construct a FDataBasis object.
@@ -95,6 +96,7 @@ class FDataBasis(FData):
 
         super().__init__(extrapolation=extrapolation,
                          dataset_label=dataset_label,
+                         dataset_name=dataset_name,
                          axes_labels=axes_labels,
                          argument_names=argument_names,
                          coordinate_names=coordinate_names)
@@ -511,7 +513,8 @@ class FDataBasis(FData):
 
         return self.to_grid(eval_points=eval_points).to_basis(basis, **kwargs)
 
-    def copy(self, *, basis=None, coefficients=None, dataset_label=None,
+    def copy(self, *, basis=None, coefficients=None,
+             dataset_name=None,
              argument_names=None,
              coordinate_names=None,
              extrapolation=None):
@@ -523,8 +526,8 @@ class FDataBasis(FData):
         if coefficients is None:
             coefficients = self.coefficients
 
-        if dataset_label is None:
-            dataset_label = copy.deepcopy(dataset_label)
+        if dataset_name is None:
+            dataset_name = self.dataset_name
 
         if argument_names is None:
             argument_names = self.argument_names
@@ -535,7 +538,8 @@ class FDataBasis(FData):
         if extrapolation is None:
             extrapolation = self.extrapolation
 
-        return FDataBasis(basis, coefficients, dataset_label=dataset_label,
+        return FDataBasis(basis, coefficients,
+                          dataset_name=dataset_name,
                           argument_names=argument_names,
                           coordinate_names=coordinate_names,
                           extrapolation=extrapolation)
@@ -622,7 +626,7 @@ class FDataBasis(FData):
         return (f"{self.__class__.__name__}("
                 f"\nbasis={self.basis},"
                 f"\ncoefficients={self.coefficients},"
-                f"\ndataset_label={self.dataset_label},"
+                f"\ndataset_name={self.dataset_name},"
                 f"\nargument_names={repr(self.argument_names)},"
                 f"\ncoordinate_names={repr(self.coordinate_names)},"
                 f"\nextrapolation={self.extrapolation})").replace(

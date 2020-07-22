@@ -208,8 +208,8 @@ def _set_labels(fdata, fig=None, axes=None, patches=None):
     """
 
     # Dataset name
-    if fdata.dataset_label is not None:
-        fig.suptitle(fdata.dataset_label)
+    if fdata.dataset_name is not None:
+        fig.suptitle(fdata.dataset_name)
 
     # Legend
     if patches is not None:

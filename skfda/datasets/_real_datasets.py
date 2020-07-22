@@ -23,7 +23,7 @@ def fdata_constructor(obj, attrs):
     return FDataGrid(data_matrix=obj["data"],
                      sample_points=obj["argvals"],
                      domain_range=obj["rangeval"],
-                     dataset_label=names['main'][0],
+                     dataset_name=names['main'][0],
                      argument_names=(names['xlab'][0],),
                      coordinate_names=(names['ylab'][0],))
 
@@ -52,7 +52,7 @@ def functional_constructor(obj, attrs):
     return (FDataGrid(data_matrix=data_matrix,
                       sample_points=sample_points,
                       domain_range=(args_init, args_end),
-                      dataset_label=name[0],
+                      dataset_name=name[0],
                       argument_names=(args_label[0],),
                       coordinate_names=(values_label[0],)), target)
 
@@ -222,7 +222,7 @@ def fetch_phoneme(return_X_y: bool = False):
     curves = FDataGrid(data_matrix=curve_data.values,
                        sample_points=np.linspace(0, 8, 256),
                        domain_range=[0, 8],
-                       dataset_label="Phoneme",
+                       dataset_name="Phoneme",
                        argument_names=("frequency (kHz)",),
                        coordinate_names=("log-periodogram",))
 
@@ -276,7 +276,7 @@ def fetch_growth(return_X_y: bool = False):
 
     curves = FDataGrid(data_matrix=np.concatenate((males, females), axis=0),
                        sample_points=ages,
-                       dataset_label="Berkeley Growth Study",
+                       dataset_name="Berkeley Growth Study",
                        argument_names=("age",),
                        coordinate_names=("height",))
 
@@ -471,7 +471,7 @@ def fetch_weather(return_X_y: bool = False):
 
     curves = FDataGrid(data_matrix=temp_prec_daily,
                        sample_points=range(1, 366),
-                       dataset_label="Canadian Weather",
+                       dataset_name="Canadian Weather",
                        argument_names=("day",),
                        coordinate_names=("temperature (ºC)",
                                          "precipitation (mm.)"))
@@ -535,7 +535,7 @@ def fetch_aemet(return_X_y: bool = False):
     data_matrix[:, :, 2] = data["wind.speed"].data_matrix[:, :, 0]
 
     curves = data["temp"].copy(data_matrix=data_matrix,
-                               dataset_label="AEMET",
+                               dataset_name="AEMET",
                                argument_names=("day",),
                                coordinate_names=("temperature (ºC)",
                                                  "logprecipitation",
@@ -609,7 +609,7 @@ def fetch_octane(return_X_y: bool = False):
 
     curves = FDataGrid(data,
                        sample_points=sample_points,
-                       dataset_label="Octane",
+                       dataset_name="Octane",
                        argument_names=("wavelength (nm)",),
                        coordinate_names=("absorbances",))
 
@@ -657,7 +657,7 @@ def fetch_gait(return_X_y: bool = False):
 
     curves = FDataGrid(data_matrix=data_matrix,
                        sample_points=sample_points,
-                       dataset_label="GAIT",
+                       dataset_name="GAIT",
                        argument_names=("Time (proportion of gait cycle)",),
                        coordinate_names=("Hip angle (degrees)",
                                          "Knee angle (degrees)"))

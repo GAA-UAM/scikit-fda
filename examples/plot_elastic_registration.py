@@ -86,7 +86,7 @@ fd.plot()
 # We now show the aligned curves:
 
 fd_align = elastic_registration.fit_transform(fd)
-fd_align.dataset_label += " - aligned"
+fd_align.dataset_name += " - aligned"
 
 fd_align.plot()
 

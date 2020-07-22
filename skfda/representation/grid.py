@@ -132,7 +132,9 @@ class FDataGrid(FData):
             return self._fdatagrid.dim_codomain
 
     def __init__(self, data_matrix, sample_points=None,
-                 domain_range=None, dataset_label=None,
+                 domain_range=None,
+                 dataset_label=None,
+                 dataset_name=None,
                  argument_names=None,
                  coordinate_names=None,
                  axes_labels=None, extrapolation=None,
@@ -211,6 +213,7 @@ class FDataGrid(FData):
 
         super().__init__(extrapolation=extrapolation,
                          dataset_label=dataset_label,
+                         dataset_name=dataset_name,
                          axes_labels=axes_labels,
                          argument_names=argument_names,
                          coordinate_names=coordinate_names)
@@ -423,14 +426,14 @@ class FDataGrid(FData):
                                          zip(self.sample_points, order_list))])
         data_matrix = operator(self.data_matrix.astype(float))
 
-        if self.dataset_label:
-            dataset_label = "{} - {} derivative".format(self.dataset_label,
-                                                        order)
+        if self.dataset_name:
+            dataset_name = "{} - {} derivative".format(self.dataset_name,
+                                                       order)
         else:
-            dataset_label = None
+            dataset_name = None
 
         fdatagrid = self.copy(data_matrix=data_matrix,
-                              dataset_label=dataset_label)
+                              dataset_name=dataset_name)
 
         return fdatagrid
 
@@ -481,10 +484,10 @@ class FDataGrid(FData):
 
         """
 
-        if self.dataset_label is not None:
-            dataset_label = self.dataset_label + ' - covariance'
+        if self.dataset_name is not None:
+            dataset_name = self.dataset_name + ' - covariance'
         else:
-            dataset_label = None
+            dataset_name = None
 
         if self.dim_domain != 1 or self.dim_codomain != 1:
             raise NotImplementedError("Covariance only implemented "
@@ -496,7 +499,7 @@ class FDataGrid(FData):
                                         self.sample_points[0]],
                          domain_range=[self.domain_range[0],
                                        self.domain_range[0]],
-                         dataset_label=dataset_label,
+                         dataset_name=dataset_name,
                          argument_names=self.argument_names * 2)
 
     def gmean(self):
@@ -802,7 +805,8 @@ class FDataGrid(FData):
     def copy(self, *,
              deep=False,  # For Pandas compatibility
              data_matrix=None, sample_points=None,
-             domain_range=None, dataset_label=None,
+             domain_range=None,
+             dataset_name=None,
              argument_names=None,
              coordinate_names=None,
              extrapolation=None,
@@ -825,8 +829,8 @@ class FDataGrid(FData):
         if domain_range is None:
             domain_range = copy.deepcopy(self.domain_range)
 
-        if dataset_label is None:
-            dataset_label = copy.copy(self.dataset_label)
+        if dataset_name is None:
+            dataset_name = self.dataset_name
 
         if argument_names is None:
             # Tuple, immutable
@@ -844,7 +848,7 @@ class FDataGrid(FData):
 
         return FDataGrid(data_matrix, sample_points=sample_points,
                          domain_range=domain_range,
-                         dataset_label=dataset_label,
+                         dataset_name=dataset_name,
                          argument_names=argument_names,
                          coordinate_names=coordinate_names,
                          extrapolation=extrapolation,
@@ -1012,7 +1016,7 @@ class FDataGrid(FData):
                 f"\n{repr(self.data_matrix)},"
                 f"\nsample_points={repr(self.sample_points)},"
                 f"\ndomain_range={repr(self.domain_range)},"
-                f"\ndataset_label={repr(self.dataset_label)},"
+                f"\ndataset_name={repr(self.dataset_name)},"
                 f"\nargument_names={repr(self.argument_names)},"
                 f"\ncoordinate_names={repr(self.coordinate_names)},"
                 f"\nextrapolation={repr(self.extrapolation)},"

@@ -30,46 +30,68 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
     """
 
-    def __init__(self, *, extrapolation, dataset_label, axes_labels=None,
-                 argument_names=None, coordinate_names=None):
+    def __init__(self, *, extrapolation,
+                 dataset_name=None,
+                 dataset_label=None,
+                 axes_labels=None,
+                 argument_names=None,
+                 coordinate_names=None):
 
         self.extrapolation = extrapolation
-        self.dataset_label = dataset_label
+        self.dataset_name = dataset_name
+
+        if dataset_label is not None:
+            self.dataset_label = dataset_label
+
         self.argument_names = argument_names
         self.coordinate_names = coordinate_names
         self.axes_labels = axes_labels
+
+    @property
+    def dataset_label(self):
+        warnings.warn("Parameter dataset_label is deprecated. Use the "
+                      "parameter dataset_name instead.",
+                      DeprecationWarning)
+        return self.dataset_name
+
+    @dataset_label.setter
+    def dataset_label(self, name):
+        warnings.warn("Parameter dataset_label is deprecated. Use the "
+                      "parameter dataset_name instead.",
+                      DeprecationWarning)
+        self.dataset_name = name
 
     @property
     def argument_names(self):
         return self._argument_names
 
     @argument_names.setter
-    def argument_names(self, labels):
-        if labels is None:
-            labels = (None,) * self.dim_domain
+    def argument_names(self, names):
+        if names is None:
+            names = (None,) * self.dim_domain
         else:
-            labels = tuple(labels)
-            if len(labels) != self.dim_domain:
-                raise ValueError("There must be a label for each of the "
+            names = tuple(names)
+            if len(names) != self.dim_domain:
+                raise ValueError("There must be a name for each of the "
                                  "dimensions of the domain.")
 
-        self._argument_names = labels
+        self._argument_names = names
 
     @property
     def coordinate_names(self):
         return self._coordinate_names
 
     @coordinate_names.setter
-    def coordinate_names(self, labels):
-        if labels is None:
-            labels = (None,) * self.dim_codomain
+    def coordinate_names(self, names):
+        if names is None:
+            names = (None,) * self.dim_codomain
         else:
-            labels = tuple(labels)
-            if len(labels) != self.dim_codomain:
-                raise ValueError("There must be a label for each of the "
+            names = tuple(names)
+            if len(names) != self.dim_codomain:
+                raise ValueError("There must be a name for each of the "
                                  "dimensions of the codomain.")
 
-        self._coordinate_names = labels
+        self._coordinate_names = names
 
     @property
     def axes_labels(self):
@@ -600,7 +622,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     def __eq__(self, other):
         return (
             self.extrapolation == other.extrapolation
-            and self.dataset_label == other.dataset_label
+            and self.dataset_name == other.dataset_name
             and self.argument_names == other.argument_names
             and self.coordinate_names == other.coordinate_names
         )

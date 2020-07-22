@@ -29,7 +29,7 @@ data = np.array([np.sin((sample_points + random_state.randn())
 # that are measured at the same points.
 
 fd = FDataGrid(data, sample_points,
-               dataset_label='Sinusoidal curves',
+               dataset_name='Sinusoidal curves',
                argument_names=['t'],
                coordinate_names=['x(t)'])
 

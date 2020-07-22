@@ -24,7 +24,8 @@ def fdata_constructor(obj, attrs):
                      sample_points=obj["argvals"],
                      domain_range=obj["rangeval"],
                      dataset_label=names['main'][0],
-                     axes_labels=[names['xlab'][0], names['ylab'][0]])
+                     argument_names=(names['xlab'][0],),
+                     coordinate_names=(names['ylab'][0],))
 
 
 def functional_constructor(obj, attrs):
@@ -52,7 +53,8 @@ def functional_constructor(obj, attrs):
                       sample_points=sample_points,
                       domain_range=(args_init, args_end),
                       dataset_label=name[0],
-                      axes_labels=[args_label[0], values_label[0]]), target)
+                      argument_names=(args_label[0],),
+                      coordinate_names=(values_label[0],)), target)
 
 
 def fetch_cran(name, package_name, *, converter=None,
@@ -221,7 +223,8 @@ def fetch_phoneme(return_X_y: bool = False):
                        sample_points=np.linspace(0, 8, 256),
                        domain_range=[0, 8],
                        dataset_label="Phoneme",
-                       axes_labels=["frequency (kHz)", "log-periodogram"])
+                       argument_names=("frequency (kHz)",),
+                       coordinate_names=("log-periodogram",))
 
     if return_X_y:
         return curves, sound
@@ -274,7 +277,8 @@ def fetch_growth(return_X_y: bool = False):
     curves = FDataGrid(data_matrix=np.concatenate((males, females), axis=0),
                        sample_points=ages,
                        dataset_label="Berkeley Growth Study",
-                       axes_labels=["age", "height"])
+                       argument_names=("age",),
+                       coordinate_names=("height",))
 
     sex = np.array([0] * males.shape[0] + [1] * females.shape[0])
 
@@ -468,8 +472,9 @@ def fetch_weather(return_X_y: bool = False):
     curves = FDataGrid(data_matrix=temp_prec_daily,
                        sample_points=range(1, 366),
                        dataset_label="Canadian Weather",
-                       axes_labels=["day", "temperature (ºC)",
-                                    "precipitation (mm.)"])
+                       argument_names=("day",),
+                       coordinate_names=("temperature (ºC)",
+                                         "precipitation (mm.)"))
 
     target_names, target = np.unique(data["region"], return_inverse=True)
 
@@ -531,10 +536,10 @@ def fetch_aemet(return_X_y: bool = False):
 
     curves = data["temp"].copy(data_matrix=data_matrix,
                                dataset_label="AEMET",
-                               axes_labels=["day",
-                                            "temperature (ºC)",
-                                            "logprecipitation",
-                                            "wind speed (m/s)"])
+                               argument_names=("day",),
+                               coordinate_names=("temperature (ºC)",
+                                                 "logprecipitation",
+                                                 "wind speed (m/s)"))
 
     if return_X_y:
         return curves, None
@@ -602,12 +607,11 @@ def fetch_octane(return_X_y: bool = False):
     target = np.zeros(len(data), dtype=int)
     target[24] = target[25] = target[35:39] = 1  # Outliers 1
 
-    axes_labels = ["wavelength (nm)", "absorbances"]
-
     curves = FDataGrid(data,
                        sample_points=sample_points,
                        dataset_label="Octane",
-                       axes_labels=axes_labels)
+                       argument_names=("wavelength (nm)",),
+                       coordinate_names=("absorbances",))
 
     if return_X_y:
         return curves, target
@@ -654,9 +658,9 @@ def fetch_gait(return_X_y: bool = False):
     curves = FDataGrid(data_matrix=data_matrix,
                        sample_points=sample_points,
                        dataset_label="GAIT",
-                       axes_labels=["Time (proportion of gait cycle)",
-                                    "Hip angle (degrees)",
-                                    "Knee angle (degrees)"])
+                       argument_names=("Time (proportion of gait cycle)",),
+                       coordinate_names=("Hip angle (degrees)",
+                                         "Knee angle (degrees)"))
 
     meta_names, meta = np.unique(np.asarray(data.coords.get('dim_1')),
                                  return_inverse=True)

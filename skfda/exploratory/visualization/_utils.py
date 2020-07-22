@@ -218,21 +218,20 @@ def _set_labels(fdata, fig=None, axes=None, patches=None):
         axes[0].legend(handles=patches)
 
     # Axis labels
-    if fdata.axes_labels is not None:
-        if axes[0].name == '3d':
-            for i in range(fdata.dim_codomain):
-                if fdata.axes_labels[0] is not None:
-                    axes[i].set_xlabel(fdata.axes_labels[0])
-                if fdata.axes_labels[1] is not None:
-                    axes[i].set_ylabel(fdata.axes_labels[1])
-                if fdata.axes_labels[i + 2] is not None:
-                    axes[i].set_zlabel(fdata.axes_labels[i + 2])
-        else:
-            for i in range(fdata.dim_codomain):
-                if fdata.axes_labels[0] is not None:
-                    axes[i].set_xlabel(fdata.axes_labels[0])
-                if fdata.axes_labels[i + 1] is not None:
-                    axes[i].set_ylabel(fdata.axes_labels[i + 1])
+    if axes[0].name == '3d':
+        for i in range(fdata.dim_codomain):
+            if fdata.argument_names[0] is not None:
+                axes[i].set_xlabel(fdata.argument_names[0])
+            if fdata.argument_names[1] is not None:
+                axes[i].set_ylabel(fdata.argument_names[1])
+            if fdata.coordinate_names[i] is not None:
+                axes[i].set_zlabel(fdata.coordinate_names[i])
+    else:
+        for i in range(fdata.dim_codomain):
+            if fdata.argument_names[0] is not None:
+                axes[i].set_xlabel(fdata.argument_names[0])
+            if fdata.coordinate_names[i] is not None:
+                axes[i].set_ylabel(fdata.coordinate_names[i])
 
 
 def _change_luminosity(color, amount=0.5):

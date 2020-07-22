@@ -38,6 +38,5 @@ Utils
 .. autosummary::
    :toctree: autosummary
 
-   skfda.misc.metrics.vectorial_norm
    skfda.misc.metrics.distance_from_norm
    skfda.misc.metrics.pairwise_distance

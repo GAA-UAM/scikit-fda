@@ -125,6 +125,7 @@ class VectorValued(Basis):
         r_key = key
         if isinstance(r_key, int):
             r_key = range(r_key, r_key + 1)
+            s_key = slice(r_key.start, r_key.stop, r_key.step)
 
         coef_indexes = np.concatenate([
             np.ones(b.n_basis, dtype=np.bool_) if i in r_key
@@ -138,10 +139,10 @@ class VectorValued(Basis):
 
         coefs = fdatabasis.coefficients[:, coef_indexes]
 
-        axes_labels = fdatabasis._get_labels_coordinates(key)
+        coordinate_names = np.array(fdatabasis.coordinate_names)[s_key]
 
         return fdatabasis.copy(basis=basis, coefficients=coefs,
-                               axes_labels=axes_labels)
+                               coordinate_names=coordinate_names)
 
     def basis_of_product(self, other):
         pass

@@ -11,11 +11,12 @@ functional boxplot for FDataGrid whose domain dimension is 2.
 
 # sphinx_gallery_thumbnail_number = 3
 
-import matplotlib.pyplot as plt
-import numpy as np
 from skfda import FDataGrid
 from skfda.datasets import make_gaussian_process
 from skfda.exploratory.visualization import SurfaceBoxplot, Boxplot
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 ##############################################################################
@@ -35,7 +36,7 @@ n_features = 10
 
 fd = make_gaussian_process(n_samples=n_samples, n_features=n_features,
                            random_state=1)
-fd.dataset_label = "Brownian process"
+fd.dataset_name = "Brownian process"
 
 ##############################################################################
 # After, those values generated for one dimension on the domain are extruded
@@ -50,7 +51,7 @@ cube = np.repeat(fd.data_matrix, n_features).reshape(
 
 fd_2 = FDataGrid(data_matrix=cube,
                  sample_points=np.tile(fd.sample_points, (2, 1)),
-                 dataset_label="Extruded Brownian process")
+                 dataset_name="Extruded Brownian process")
 
 fd_2.plot()
 

@@ -23,29 +23,94 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         dim_domain (int): Dimension of the domain.
         dim_codomain (int): Dimension of the image.
         extrapolation (Extrapolation): Default extrapolation mode.
-        dataset_label (str): name of the dataset.
-        axes_labels (list): list containing the labels of the different
-            axis. The first element is the x label, the second the y label
-            and so on.
+        dataset_name (str): name of the dataset.
+        argument_names (tuple): tuple containing the names of the different
+            arguments.
+        coordinate_names (tuple): tuple containing the names of the different
+            coordinate functions.
 
     """
 
-    def __init__(self, extrapolation, dataset_label, axes_labels):
+    def __init__(self, *, extrapolation,
+                 dataset_name=None,
+                 dataset_label=None,
+                 axes_labels=None,
+                 argument_names=None,
+                 coordinate_names=None):
 
         self.extrapolation = extrapolation
-        self.dataset_label = dataset_label
+        self.dataset_name = dataset_name
+
+        if dataset_label is not None:
+            self.dataset_label = dataset_label
+
+        self.argument_names = argument_names
+        self.coordinate_names = coordinate_names
         self.axes_labels = axes_labels
 
     @property
+    def dataset_label(self):
+        warnings.warn("Parameter dataset_label is deprecated. Use the "
+                      "parameter dataset_name instead.",
+                      DeprecationWarning)
+        return self.dataset_name
+
+    @dataset_label.setter
+    def dataset_label(self, name):
+        warnings.warn("Parameter dataset_label is deprecated. Use the "
+                      "parameter dataset_name instead.",
+                      DeprecationWarning)
+        self.dataset_name = name
+
+    @property
+    def argument_names(self):
+        return self._argument_names
+
+    @argument_names.setter
+    def argument_names(self, names):
+        if names is None:
+            names = (None,) * self.dim_domain
+        else:
+            names = tuple(names)
+            if len(names) != self.dim_domain:
+                raise ValueError("There must be a name for each of the "
+                                 "dimensions of the domain.")
+
+        self._argument_names = names
+
+    @property
+    def coordinate_names(self):
+        return self._coordinate_names
+
+    @coordinate_names.setter
+    def coordinate_names(self, names):
+        if names is None:
+            names = (None,) * self.dim_codomain
+        else:
+            names = tuple(names)
+            if len(names) != self.dim_codomain:
+                raise ValueError("There must be a name for each of the "
+                                 "dimensions of the codomain.")
+
+        self._coordinate_names = names
+
+    @property
     def axes_labels(self):
-        """Return the list of axes labels"""
-        return self._axes_labels
+        warnings.warn("Parameter axes_labels is deprecated. Use the "
+                      "parameters argument_names and "
+                      "coordinate_names instead.", DeprecationWarning)
+
+        return self.argument_names + self.coordinate_names
 
     @axes_labels.setter
     def axes_labels(self, labels):
         """Sets the list of labels"""
 
         if labels is not None:
+
+            warnings.warn("Parameter axes_labels is deprecated. Use the "
+                          "parameters argument_names and "
+                          "coordinate_names instead.", DeprecationWarning)
 
             labels = np.asarray(labels)
             if len(labels) > (self.dim_domain + self.dim_codomain):
@@ -55,7 +120,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 diff = (self.dim_domain + self.dim_codomain) - len(labels)
                 labels = np.concatenate((labels, diff * [None]))
 
-        self._axes_labels = labels
+            self.argument_names = labels[:self.dim_domain]
+            self.coordinate_names = labels[self.dim_domain:]
 
     @property
     @abstractmethod
@@ -392,58 +458,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         pass
 
-    def _get_labels_coordinates(self, key):
-        """Return the labels of a function when it is indexed by its components.
-
-        Args:
-            key (int, tuple, slice): Key used to index the coordinates.
-
-        Returns:
-            (list): labels of the object fd.coordinates[key.
-
-        """
-        if self.axes_labels is None:
-            labels = None
-        else:
-
-            labels = self.axes_labels[:self.dim_domain].tolist()
-            image_label = np.atleast_1d(
-                self.axes_labels[self.dim_domain:][key])
-            labels.extend(image_label.tolist())
-
-        return labels
-
-    def _join_labels_coordinates(self, *others):
-        """Return the labels of the concatenation as new coordinates of multiple
-        functional objects.
-
-        Args:
-            others (:obj:`FData`) Objects to be concatenated.
-
-        Returns:
-            (list): labels of the object
-            self.concatenate(*others, as_coordinates=True).
-
-        """
-        # Labels should be None or a list of length self.dim_domain +
-        # self.dim_codomain.
-
-        if self.axes_labels is None:
-            labels = (self.dim_domain + self.dim_codomain) * [None]
-        else:
-            labels = self.axes_labels.tolist()
-
-        for other in others:
-            if other.axes_labels is None:
-                labels.extend(other.dim_codomain * [None])
-            else:
-                labels.extend(list(other.axes_labels[self.dim_domain:]))
-
-        if all(label is None for label in labels):
-            labels = None
-
-        return labels
-
     def plot(self, *args, **kwargs):
         """Plot the FDatGrid object.
 
@@ -605,6 +619,14 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """Return self[key]."""
 
         pass
+
+    def __eq__(self, other):
+        return (
+            self.extrapolation == other.extrapolation
+            and self.dataset_name == other.dataset_name
+            and self.argument_names == other.argument_names
+            and self.coordinate_names == other.coordinate_names
+        )
 
     @abstractmethod
     def __add__(self, other):

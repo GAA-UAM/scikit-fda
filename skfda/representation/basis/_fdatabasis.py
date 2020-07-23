@@ -2,7 +2,6 @@ from builtins import isinstance
 import copy
 
 import pandas.api.extensions
-import scipy.integrate
 
 import numpy as np
 
@@ -35,9 +34,21 @@ class FDataBasis(FData):
             function in the basis. If a matrix, each row contains the
             coefficients that multiplied by the basis functions produce each
             functional datum.
+        domain_range (numpy.ndarray): 2 dimension matrix where each row
+            contains the bounds of the interval in which the functional data
+            is considered to exist for each one of the axies.
+        dataset_name (str): name of the dataset.
+        argument_names (tuple): tuple containing the names of the different
+            arguments.
+        coordinate_names (tuple): tuple containing the names of the different
+            coordinate functions.
+        extrapolation (str or Extrapolation): defines the default type of
+            extrapolation. By default None, which does not apply any type of
+            extrapolation. See `Extrapolation` for detailled information of the
+            types of extrapolation.
 
     Examples:
-        >>> from skfda.representation.basis import FDataBasis, Monomial 
+        >>> from skfda.representation.basis import FDataBasis, Monomial
         >>>
         >>> basis = Monomial(n_basis=4)
         >>> coefficients = [1, 1, 3, .5]
@@ -75,7 +86,9 @@ class FDataBasis(FData):
             return self._fdatabasis.dim_codomain
 
     def __init__(self, basis, coefficients, *, dataset_label=None,
-                 axes_labels=None, extrapolation=None):
+                 dataset_name=None,
+                 axes_labels=None, argument_names=None,
+                 coordinate_names=None, extrapolation=None):
         """Construct a FDataBasis object.
 
         Args:
@@ -92,7 +105,12 @@ class FDataBasis(FData):
         self.basis = basis
         self.coefficients = coefficients
 
-        super().__init__(extrapolation, dataset_label, axes_labels)
+        super().__init__(extrapolation=extrapolation,
+                         dataset_label=dataset_label,
+                         dataset_name=dataset_name,
+                         axes_labels=axes_labels,
+                         argument_names=argument_names,
+                         coordinate_names=coordinate_names)
 
     @classmethod
     def from_data(cls, data_matrix, sample_points, basis,
@@ -506,8 +524,11 @@ class FDataBasis(FData):
 
         return self.to_grid(eval_points=eval_points).to_basis(basis, **kwargs)
 
-    def copy(self, *, basis=None, coefficients=None, dataset_label=None,
-             axes_labels=None, extrapolation=None):
+    def copy(self, *, basis=None, coefficients=None,
+             dataset_name=None,
+             argument_names=None,
+             coordinate_names=None,
+             extrapolation=None):
         """FDataBasis copy"""
 
         if basis is None:
@@ -516,17 +537,23 @@ class FDataBasis(FData):
         if coefficients is None:
             coefficients = self.coefficients
 
-        if dataset_label is None:
-            dataset_label = copy.deepcopy(dataset_label)
+        if dataset_name is None:
+            dataset_name = self.dataset_name
 
-        if axes_labels is None:
-            axes_labels = copy.deepcopy(axes_labels)
+        if argument_names is None:
+            argument_names = self.argument_names
+
+        if coordinate_names is None:
+            coordinate_names = self.coordinate_names
 
         if extrapolation is None:
             extrapolation = self.extrapolation
 
-        return FDataBasis(basis, coefficients, dataset_label=dataset_label,
-                          axes_labels=axes_labels, extrapolation=extrapolation)
+        return FDataBasis(basis, coefficients,
+                          dataset_name=dataset_name,
+                          argument_names=argument_names,
+                          coordinate_names=coordinate_names,
+                          extrapolation=extrapolation)
 
     def times(self, other):
         """"Provides a numerical approximation of the multiplication between
@@ -606,16 +633,13 @@ class FDataBasis(FData):
 
     def __repr__(self):
         """Representation of FDataBasis object."""
-        if self.axes_labels is None:
-            axes_labels = None
-        else:
-            axes_labels = self.axes_labels.tolist()
 
         return (f"{self.__class__.__name__}("
                 f"\nbasis={self.basis},"
                 f"\ncoefficients={self.coefficients},"
-                f"\ndataset_label={self.dataset_label},"
-                f"\naxes_labels={axes_labels},"
+                f"\ndataset_name={self.dataset_name},"
+                f"\nargument_names={repr(self.argument_names)},"
+                f"\ncoordinate_names={repr(self.coordinate_names)},"
                 f"\nextrapolation={self.extrapolation})").replace(
                     '\n', '\n    ')
 
@@ -629,8 +653,9 @@ class FDataBasis(FData):
     def __eq__(self, other):
         """Equality of FDataBasis"""
         # TODO check all other params
-        return (self.basis == other.basis and
-                np.all(self.coefficients == other.coefficients))
+        return (super().__eq__(other)
+                and self.basis == other.basis
+                and np.all(self.coefficients == other.coefficients))
 
     def concatenate(self, *others, as_coordinates=False):
         """Join samples from a similar FDataBasis object.

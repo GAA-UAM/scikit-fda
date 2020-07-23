@@ -40,9 +40,11 @@ class FDataGrid(FData):
         domain_range (numpy.ndarray): 2 dimension matrix where each row
             contains the bounds of the interval in which the functional data
             is considered to exist for each one of the axies.
-        dataset_label (str): name of the dataset.
-        axes_labels (list): list containing the labels of the different
-            axis.
+        dataset_name (str): name of the dataset.
+        argument_names (tuple): tuple containing the names of the different
+            arguments.
+        coordinate_names (tuple): tuple containing the names of the different
+            coordinate functions.
         extrapolation (str or Extrapolation): defines the default type of
             extrapolation. By default None, which does not apply any type of
             extrapolation. See `Extrapolation` for detailled information of the
@@ -115,18 +117,28 @@ class FDataGrid(FData):
 
         def __getitem__(self, key):
             """Get a specific coordinate."""
-            axes_labels = self._fdatagrid._get_labels_coordinates(key)
+
+            s_key = key
+            if isinstance(s_key, int):
+                s_key = slice(s_key, s_key + 1)
+
+            coordinate_names = np.array(
+                self._fdatagrid.coordinate_names)[s_key]
 
             return self._fdatagrid.copy(
                 data_matrix=self._fdatagrid.data_matrix[..., key],
-                axes_labels=axes_labels)
+                coordinate_names=coordinate_names)
 
         def __len__(self):
             """Return the number of coordinates."""
             return self._fdatagrid.dim_codomain
 
     def __init__(self, data_matrix, sample_points=None,
-                 domain_range=None, dataset_label=None,
+                 domain_range=None,
+                 dataset_label=None,
+                 dataset_name=None,
+                 argument_names=None,
+                 coordinate_names=None,
                  axes_labels=None, extrapolation=None,
                  interpolation=None):
         """Construct a FDataGrid object.
@@ -201,9 +213,12 @@ class FDataGrid(FData):
 
         self.interpolation = interpolation
 
-        super().__init__(extrapolation, dataset_label, axes_labels)
-
-        return
+        super().__init__(extrapolation=extrapolation,
+                         dataset_label=dataset_label,
+                         dataset_name=dataset_name,
+                         axes_labels=axes_labels,
+                         argument_names=argument_names,
+                         coordinate_names=coordinate_names)
 
     def round(self, decimals=0):
         """Evenly round to the given number of decimals.
@@ -413,14 +428,14 @@ class FDataGrid(FData):
                                          zip(self.sample_points, order_list))])
         data_matrix = operator(self.data_matrix.astype(float))
 
-        if self.dataset_label:
-            dataset_label = "{} - {} derivative".format(self.dataset_label,
-                                                        order)
+        if self.dataset_name:
+            dataset_name = "{} - {} derivative".format(self.dataset_name,
+                                                       order)
         else:
-            dataset_label = None
+            dataset_name = None
 
         fdatagrid = self.copy(data_matrix=data_matrix,
-                              dataset_label=dataset_label)
+                              dataset_name=dataset_name)
 
         return fdatagrid
 
@@ -471,10 +486,10 @@ class FDataGrid(FData):
 
         """
 
-        if self.dataset_label is not None:
-            dataset_label = self.dataset_label + ' - covariance'
+        if self.dataset_name is not None:
+            dataset_name = self.dataset_name + ' - covariance'
         else:
-            dataset_label = None
+            dataset_name = None
 
         if self.dim_domain != 1 or self.dim_codomain != 1:
             raise NotImplementedError("Covariance only implemented "
@@ -486,7 +501,8 @@ class FDataGrid(FData):
                                         self.sample_points[0]],
                          domain_range=[self.domain_range[0],
                                        self.domain_range[0]],
-                         dataset_label=dataset_label)
+                         dataset_name=dataset_name,
+                         argument_names=self.argument_names * 2)
 
     def gmean(self):
         """Compute the geometric mean of all samples in the FDataGrid object.
@@ -505,6 +521,9 @@ class FDataGrid(FData):
         if not isinstance(other, FDataGrid):
             return NotImplemented
 
+        if not super().__eq__(other):
+            return False
+
         if not np.array_equal(self.data_matrix, other.data_matrix):
             return False
 
@@ -516,24 +535,6 @@ class FDataGrid(FData):
                 return False
 
         if not np.array_equal(self.domain_range, other.domain_range):
-            return False
-
-        if self.dataset_label != other.dataset_label:
-            return False
-
-        if self.axes_labels is None or other.axes_labels is None:
-            # Both must be None
-            if self.axes_labels is not other.axes_labels:
-                return False
-        else:
-            if len(self.axes_labels) != len(other.axes_labels):
-                return False
-
-            for a, b in zip(self.axes_labels, other.axes_labels):
-                if a != b:
-                    return False
-
-        if self.extrapolation != other.extrapolation:
             return False
 
         if self.interpolation != other.interpolation:
@@ -709,9 +710,12 @@ class FDataGrid(FData):
         data = [self.data_matrix] + [other.data_matrix for other in others]
 
         if as_coordinates:
+
+            coordinate_names = [
+                fd.coordinate_names for fd in [self, *others]]
+
             return self.copy(data_matrix=np.concatenate(data, axis=-1),
-                             axes_labels=(
-                                 self._join_labels_coordinates(*others)))
+                             coordinate_names=sum(coordinate_names, ()))
 
         else:
             return self.copy(data_matrix=np.concatenate(data, axis=0))
@@ -803,8 +807,11 @@ class FDataGrid(FData):
     def copy(self, *,
              deep=False,  # For Pandas compatibility
              data_matrix=None, sample_points=None,
-             domain_range=None, dataset_label=None,
-             axes_labels=None, extrapolation=None,
+             domain_range=None,
+             dataset_name=None,
+             argument_names=None,
+             coordinate_names=None,
+             extrapolation=None,
              interpolation=None):
         """Returns a copy of the FDataGrid.
 
@@ -824,11 +831,16 @@ class FDataGrid(FData):
         if domain_range is None:
             domain_range = copy.deepcopy(self.domain_range)
 
-        if dataset_label is None:
-            dataset_label = copy.copy(self.dataset_label)
+        if dataset_name is None:
+            dataset_name = self.dataset_name
 
-        if axes_labels is None:
-            axes_labels = copy.copy(self.axes_labels)
+        if argument_names is None:
+            # Tuple, immutable
+            argument_names = self.argument_names
+
+        if coordinate_names is None:
+            # Tuple, immutable
+            coordinate_names = self.coordinate_names
 
         if extrapolation is None:
             extrapolation = self.extrapolation
@@ -838,8 +850,10 @@ class FDataGrid(FData):
 
         return FDataGrid(data_matrix, sample_points=sample_points,
                          domain_range=domain_range,
-                         dataset_label=dataset_label,
-                         axes_labels=axes_labels, extrapolation=extrapolation,
+                         dataset_name=dataset_name,
+                         argument_names=argument_names,
+                         coordinate_names=coordinate_names,
+                         extrapolation=extrapolation,
                          interpolation=interpolation)
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
@@ -988,7 +1002,8 @@ class FDataGrid(FData):
 
         return self.copy(data_matrix=data_matrix,
                          sample_points=eval_points,
-                         domain_range=fd.domain_range)
+                         domain_range=fd.domain_range,
+                         argument_names=fd.argument_names)
 
     def __str__(self):
         """Return str(self)."""
@@ -999,17 +1014,13 @@ class FDataGrid(FData):
     def __repr__(self):
         """Return repr(self)."""
 
-        if self.axes_labels is None:
-            axes_labels = None
-        else:
-            axes_labels = self.axes_labels.tolist()
-
         return (f"FDataGrid("
                 f"\n{repr(self.data_matrix)},"
                 f"\nsample_points={repr(self.sample_points)},"
                 f"\ndomain_range={repr(self.domain_range)},"
-                f"\ndataset_label={repr(self.dataset_label)},"
-                f"\naxes_labels={repr(axes_labels)},"
+                f"\ndataset_name={repr(self.dataset_name)},"
+                f"\nargument_names={repr(self.argument_names)},"
+                f"\ncoordinate_names={repr(self.coordinate_names)},"
                 f"\nextrapolation={repr(self.extrapolation)},"
                 f"\ninterpolation={repr(self.interpolation)})").replace(
                     '\n', '\n    ')

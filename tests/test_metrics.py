@@ -1,7 +1,7 @@
 from skfda import FDataGrid, FDataBasis
 from skfda.datasets import make_multimodal_samples
 from skfda.exploratory import stats
-from skfda.misc.metrics import lp_distance, lp_norm, vectorial_norm
+from skfda.misc.metrics import lp_distance, lp_norm
 from skfda.representation.basis import Monomial
 import unittest
 
@@ -21,28 +21,6 @@ class TestLpMetrics(unittest.TestCase):
         self.fd_curve = self.fd.concatenate(self.fd, as_coordinates=True)
         self.fd_surface = make_multimodal_samples(n_samples=3, dim_domain=2,
                                                   random_state=0)
-
-    def test_vectorial_norm(self):
-
-        vec = vectorial_norm(self.fd_curve, p=2)
-        np.testing.assert_array_almost_equal(vec.data_matrix,
-                                             np.sqrt(2) * self.fd.data_matrix)
-
-        vec = vectorial_norm(self.fd_curve, p='inf')
-        np.testing.assert_array_almost_equal(vec.data_matrix,
-                                             self.fd.data_matrix)
-
-    def test_vectorial_norm_surface(self):
-
-        fd_surface_curve = self.fd_surface.concatenate(self.fd_surface,
-                                                       as_coordinates=True)
-        vec = vectorial_norm(fd_surface_curve, p=2)
-        np.testing.assert_array_almost_equal(
-            vec.data_matrix, np.sqrt(2) * self.fd_surface.data_matrix)
-
-        vec = vectorial_norm(fd_surface_curve, p='inf')
-        np.testing.assert_array_almost_equal(vec.data_matrix,
-                                             self.fd_surface.data_matrix)
 
     def test_lp_norm(self):
 

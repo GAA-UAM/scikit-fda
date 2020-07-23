@@ -3,12 +3,14 @@
 from abc import abstractmethod
 import warnings
 
-import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_is_fitted
 
+import numpy as np
+
 from ...misc.metrics import pairwise_distance, lp_distance
+
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
@@ -130,7 +132,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         if self.init is None:
             _, idx = np.unique(fdatagrid.data_matrix,
                                axis=0, return_index=True)
-            unique_data = fdatagrid.data_matrix[np.sort(idx)]
+            unique_data = fdatagrid[np.sort(idx)]
 
             if len(unique_data) < self.n_clusters:
                 return ValueError("Not enough unique data points to "
@@ -141,7 +143,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                 :self.n_clusters]
             centroids = unique_data[indices]
 
-            return fdatagrid.copy(data_matrix=centroids)
+            return centroids.copy()
         else:
             return self.init.copy()
 
@@ -289,21 +291,21 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         """
         check_is_fitted(self)
         self._check_test_data(X)
-        
+
         membership_matrix = self._create_membership(X.n_samples)
         centroids = self.cluster_centers_.copy()
-        
+
         pairwise_metric = pairwise_distance(self.metric)
-        
+
         distances_to_centroids = pairwise_metric(fdata1=X,
                                                  fdata2=centroids)
-        
+
         self._update(
             fdata=X,
             membership_matrix=membership_matrix,
             distances_to_centroids=distances_to_centroids,
             centroids=centroids)
-        
+
         return membership_matrix
 
     def transform(self, X):
@@ -725,7 +727,7 @@ class FuzzyCMeans(BaseKMeans):
         membership_matrix_raised = np.power(
             membership_matrix, self.fuzzifier)
 
-        slice_denominator = ((slice(None),) + (np.newaxis,) * 
+        slice_denominator = ((slice(None),) + (np.newaxis,) *
                              (fdata.data_matrix.ndim - 1))
         centroids.data_matrix[:] = (
             np.einsum('ij,i...->j...', membership_matrix_raised,

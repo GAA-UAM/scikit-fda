@@ -202,7 +202,8 @@ class FPCA(BaseEstimator, TransformerMixin):
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
         self.explained_variance_ = pca.explained_variance_
         self.components_ = X.copy(basis=components_basis,
-                                  coefficients=component_coefficients)
+                                  coefficients=component_coefficients,
+                                  sample_names=(None,) * self.n_components)
 
         return self
 
@@ -319,7 +320,8 @@ class FPCA(BaseEstimator, TransformerMixin):
         pca.fit(final_matrix)
         self.components_ = X.copy(data_matrix=np.transpose(
             np.linalg.solve(np.sqrt(weights_matrix),
-                            np.transpose(pca.components_))))
+                            np.transpose(pca.components_))),
+            sample_names=(None,) * self.n_components)
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
         self.explained_variance_ = pca.explained_variance_
 

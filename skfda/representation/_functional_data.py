@@ -36,7 +36,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                  dataset_label=None,
                  axes_labels=None,
                  argument_names=None,
-                 coordinate_names=None):
+                 coordinate_names=None,
+                 sample_names=None):
 
         self.extrapolation = extrapolation
         self.dataset_name = dataset_name
@@ -47,6 +48,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         self.argument_names = argument_names
         self.coordinate_names = coordinate_names
         self.axes_labels = axes_labels
+        self.sample_names = sample_names
 
     @property
     def dataset_label(self):
@@ -122,6 +124,22 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
             self.argument_names = labels[:self.dim_domain]
             self.coordinate_names = labels[self.dim_domain:]
+
+    @property
+    def sample_names(self):
+        return self._sample_names
+
+    @sample_names.setter
+    def sample_names(self, names):
+        if names is None:
+            names = (None,) * self.n_samples
+        else:
+            names = tuple(names)
+            if len(names) != self.n_samples:
+                raise ValueError("There must be a name for each of the "
+                                 "samples.")
+
+        self._sample_names = names
 
     @property
     @abstractmethod
@@ -627,6 +645,14 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             and self.argument_names == other.argument_names
             and self.coordinate_names == other.coordinate_names
         )
+
+    def _copy_op(self, other, **kwargs):
+
+        base_copy = (other if isinstance(other, type(self))
+                     and self.n_samples == 1 and other.n_samples != 1
+                     else self)
+
+        return base_copy.copy(**kwargs)
 
     @abstractmethod
     def __add__(self, other):

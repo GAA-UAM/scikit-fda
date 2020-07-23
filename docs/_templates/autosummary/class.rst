@@ -1,12 +1,10 @@
-{{ fullname | escape | underline}}
+{{ objname | escape | underline}}
 
 .. currentmodule:: {{ module }}
 
 .. autoclass:: {{ objname }}
 
    {% block methods %}
-   .. automethod:: __init__
-
    {% if methods %}
    .. rubric:: Methods
 
@@ -15,6 +13,8 @@
       ~{{ name }}.{{ item }}
    {%- endfor %}
    {% endif %}
+   
+   .. automethod:: __init__
    {% endblock %}
 
    {% block attributes %}

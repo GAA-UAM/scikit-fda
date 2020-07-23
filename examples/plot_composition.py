@@ -10,10 +10,11 @@ This example shows the composition of multidimensional FDataGrids.
 
 # sphinx_gallery_thumbnail_number = 3
 
+import skfda
+
 from mpl_toolkits.mplot3d import axes3d
 
 import numpy as np
-import skfda
 
 
 ##############################################################################
@@ -42,7 +43,7 @@ sample_points = [X[0, :], Y[:, 0]]
 g = skfda.FDataGrid(data_matrix, sample_points)
 
 # Sets cubic interpolation
-g.interpolator = skfda.representation.interpolation.SplineInterpolator(
+g.interpolation = skfda.representation.interpolation.SplineInterpolation(
     interpolation_order=3)
 
 # Plots the surface
@@ -77,7 +78,7 @@ fig = g.plot(alpha=.8)
 
 # Plots path along the surface
 path = f(t)[0]
-fig.axes[0].plot(path[:, 0], path[:, 1], gof(t)[0], color="orange")
+fig.axes[0].plot(path[:, 0], path[:, 1], gof(t)[0, ..., 0], color="orange")
 
 fig
 

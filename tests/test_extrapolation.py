@@ -1,14 +1,14 @@
 """Test to check the extrapolation module"""
 
-import unittest
-
-import numpy as np
 from skfda import FDataGrid, FDataBasis
 from skfda.datasets import make_sinusoidal_process
 from skfda.representation.basis import Fourier
 from skfda.representation.extrapolation import (
     PeriodicExtrapolation, BoundaryExtrapolation, ExceptionExtrapolation,
     FillExtrapolation)
+import unittest
+
+import numpy as np
 
 
 class TestBasis(unittest.TestCase):
@@ -106,27 +106,31 @@ class TestBasis(unittest.TestCase):
         self.grid.extrapolation = PeriodicExtrapolation()
         data = self.grid([-.5, 0, 1.5]).round(3)
 
-        np.testing.assert_almost_equal(data, [[-0.724,  0.976, -0.724],
-                                              [-1.086,  0.759, -1.086]])
+        np.testing.assert_almost_equal(data[..., 0],
+                                       [[-0.724,  0.976, -0.724],
+                                        [-1.086,  0.759, -1.086]])
 
         self.basis.extrapolation = "periodic"
         data = self.basis([-.5, 0, 1.5]).round(3)
 
-        np.testing.assert_almost_equal(data, [[-0.69,  0.692, -0.69],
-                                              [-1.021,  1.056, -1.021]])
+        np.testing.assert_almost_equal(data[..., 0],
+                                       [[-0.69,  0.692, -0.69],
+                                        [-1.021,  1.056, -1.021]])
 
     def test_boundary(self):
         self.grid.extrapolation = "bounds"
         data = self.grid([-.5, 0, 1.5]).round(3)
 
-        np.testing.assert_almost_equal(data, [[0.976,  0.976,  0.797],
-                                              [0.759,  0.759,  1.125]])
+        np.testing.assert_almost_equal(data[..., 0],
+                                       [[0.976,  0.976,  0.797],
+                                        [0.759,  0.759,  1.125]])
 
         self.basis.extrapolation = "bounds"
         data = self.basis([-.5, 0, 1.5]).round(3)
 
-        np.testing.assert_almost_equal(data, [[0.692, 0.692, 0.692],
-                                              [1.056, 1.056, 1.056]])
+        np.testing.assert_almost_equal(data[..., 0],
+                                       [[0.692, 0.692, 0.692],
+                                        [1.056, 1.056, 1.056]])
 
     def test_exception(self):
         self.grid.extrapolation = "exception"
@@ -143,27 +147,31 @@ class TestBasis(unittest.TestCase):
         self.grid.extrapolation = "zeros"
         data = self.grid([-.5, 0, 1.5]).round(3)
 
-        np.testing.assert_almost_equal(data, [[0.,  0.976,  0.],
-                                              [0.,  0.759,  0.]])
+        np.testing.assert_almost_equal(data[..., 0],
+                                       [[0.,  0.976,  0.],
+                                        [0.,  0.759,  0.]])
 
         self.basis.extrapolation = "zeros"
         data = self.basis([-.5, 0, 1.5]).round(3)
 
-        np.testing.assert_almost_equal(data, [[0, 0.692, 0],
-                                              [0, 1.056, 0]])
+        np.testing.assert_almost_equal(data[..., 0],
+                                       [[0, 0.692, 0],
+                                        [0, 1.056, 0]])
 
     def test_nan(self):
         self.grid.extrapolation = "nan"
         data = self.grid([-.5, 0, 1.5]).round(3)
 
-        np.testing.assert_almost_equal(data, [[np.nan,  0.976,  np.nan],
-                                              [np.nan,  0.759,  np.nan]])
+        np.testing.assert_almost_equal(data[..., 0],
+                                       [[np.nan,  0.976,  np.nan],
+                                        [np.nan,  0.759,  np.nan]])
 
         self.basis.extrapolation = "nan"
         data = self.basis([-.5, 0, 1.5]).round(3)
 
-        np.testing.assert_almost_equal(data, [[np.nan, 0.692, np.nan],
-                                              [np.nan, 1.056, np.nan]])
+        np.testing.assert_almost_equal(data[..., 0],
+                                       [[np.nan, 0.692, np.nan],
+                                        [np.nan, 1.056, np.nan]])
 
 
 if __name__ == '__main__':

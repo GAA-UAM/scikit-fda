@@ -4,11 +4,12 @@ from matplotlib.ticker import MaxNLocator
 from mpldatacursor import datacursor
 from sklearn.exceptions import NotFittedError
 
+from sklearn.utils.validation import check_is_fitted
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ...ml.clustering.base_kmeans import FuzzyKMeans
+from ...ml.clustering import FuzzyCMeans
 from ._utils import (_darken,
                      _get_figure_and_axes, _set_figure_layout_for_fdata,
                      _set_figure_layout, _set_labels)
@@ -249,12 +250,12 @@ def plot_clusters(estimator, X, chart=None, fig=None, axes=None,
     """
     _check_if_estimator(estimator)
     try:
-        estimator._check_is_fitted()
+        check_is_fitted(estimator)
         estimator._check_test_data(X)
     except NotFittedError:
         estimator.fit(X)
 
-    if isinstance(estimator, FuzzyKMeans):
+    if isinstance(estimator, FuzzyCMeans):
         labels = np.argmax(estimator.labels_, axis=1)
     else:
         labels = estimator.labels_
@@ -355,11 +356,11 @@ def plot_cluster_lines(estimator, X, chart=None, fig=None, axes=None,
     fdata = X
     _check_if_estimator(estimator)
 
-    if not isinstance(estimator, FuzzyKMeans):
-        raise ValueError("The estimator must be a FuzzyKMeans object.")
+    if not isinstance(estimator, FuzzyCMeans):
+        raise ValueError("The estimator must be a FuzzyCMeans object.")
 
     try:
-        estimator._check_is_fitted()
+        check_is_fitted(estimator)
         estimator._check_test_data(X)
     except NotFittedError:
         estimator.fit(X)
@@ -456,11 +457,11 @@ def plot_cluster_bars(estimator, X, chart=None, fig=None, axes=None, sort=-1,
     fdata = X
     _check_if_estimator(estimator)
 
-    if not isinstance(estimator, FuzzyKMeans):
-        raise ValueError("The estimator must be a FuzzyKMeans object.")
+    if not isinstance(estimator, FuzzyCMeans):
+        raise ValueError("The estimator must be a FuzzyCMeans object.")
 
     try:
-        estimator._check_is_fitted()
+        check_is_fitted(estimator)
         estimator._check_test_data(X)
     except NotFittedError:
         estimator.fit(X)

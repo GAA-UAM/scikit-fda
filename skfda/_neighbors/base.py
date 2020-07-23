@@ -3,8 +3,8 @@
 from abc import ABC, abstractmethod
 
 from sklearn.base import BaseEstimator
-from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 from sklearn.base import RegressorMixin
+from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 import numpy as np
 
@@ -73,13 +73,13 @@ def _to_multivariate_metric(metric, sample_points):
         >>> fd = FDataGrid([np.ones(len(x))], x)
         >>> fd2 =  FDataGrid([np.zeros(len(x))], x)
         >>> lp_distance(fd, fd2).round(2)
-        1.0
+        array([ 1.])
 
         Creation of the sklearn-style metric.
 
         >>> sklearn_lp_distance = _to_multivariate_metric(lp_distance, [x])
         >>> sklearn_lp_distance(np.ones(len(x)), np.zeros(len(x))).round(2)
-        1.0
+        array([ 1.])
 
     """
     # Shape -> (n_samples = 1, domain_dims...., image_dimension (-1))
@@ -97,11 +97,11 @@ def _to_multivariate_metric(metric, sample_points):
 class NeighborsBase(ABC, BaseEstimator):
     """Base class for nearest neighbors estimators."""
 
-    @abstractmethod
     def __init__(self, n_neighbors=None, radius=None,
                  weights='uniform', algorithm='auto',
                  leaf_size=30, metric='l2', metric_params=None,
                  n_jobs=None, multivariate_metric=False):
+        """Initializes the nearest neighbors estimator"""
 
         self.n_neighbors = n_neighbors
         self.radius = radius
@@ -166,6 +166,7 @@ class NeighborsMixin:
                     metric = lp_distance
                 else:
                     metric = self.metric
+
                 sklearn_metric = _to_multivariate_metric(metric,
                                                          self._sample_points)
             else:
@@ -203,7 +204,7 @@ class KNeighborsMixin:
                 Indices of the nearest points in the population matrix.
 
         Examples:
-            Firstly, we will create a toy dataset with 2 classes
+            Firstly, we will create a toy dataset.
 
             >>> from skfda.datasets import make_sinusoidal_process
             >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
@@ -216,7 +217,7 @@ class KNeighborsMixin:
             >>> from skfda.ml.clustering import NearestNeighbors
             >>> neigh = NearestNeighbors()
             >>> neigh.fit(fd)
-            NearestNeighbors(algorithm='auto', leaf_size=30,...)
+            NearestNeighbors(...)
 
             Now we can query the k-nearest neighbors.
 
@@ -260,7 +261,7 @@ class KNeighborsMixin:
             A[i, j] is assigned the weight of edge that connects i to j.
 
         Examples:
-            Firstly, we will create a toy dataset with 2 classes.
+            Firstly, we will create a toy dataset.
 
             >>> from skfda.datasets import make_sinusoidal_process
             >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
@@ -273,7 +274,7 @@ class KNeighborsMixin:
             >>> from skfda.ml.clustering import NearestNeighbors
             >>> neigh = NearestNeighbors()
             >>> neigh.fit(fd)
-            NearestNeighbors(algorithm='auto', leaf_size=30,...)
+            NearestNeighbors(...)
 
             Now we can obtain the graph of k-neighbors of a sample.
 
@@ -329,7 +330,7 @@ class RadiusNeighborsMixin:
                 within a ball of size ``radius`` around the query points.
 
         Examples:
-            Firstly, we will create a toy dataset with 2 classes.
+            Firstly, we will create a toy dataset.
 
             >>> from skfda.datasets import make_sinusoidal_process
             >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
@@ -342,7 +343,7 @@ class RadiusNeighborsMixin:
             >>> from skfda.ml.clustering import NearestNeighbors
             >>> neigh = NearestNeighbors(radius=.3)
             >>> neigh.fit(fd)
-            NearestNeighbors(algorithm='auto', leaf_size=30,...)
+            NearestNeighbors(...radius=0.3...)
 
             Now we can query the neighbors in the radius.
 
@@ -542,15 +543,15 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
 
     def predict(self, X):
         """Predict the target for the provided data
-        Parameters
-        ----------
-        X (:class:`FDataGrid` or array-like): FDataGrid with the test
-            samples or array (n_query, n_indexed) if metric ==
-            'precomputed'.
-        Returns
-        -------
-        y : array of shape = [n_samples] or [n_samples, n_outputs]
-            or :class:`FData` containing as many samples as X.
+
+        Args:
+            X (:class:`FDataGrid` or array-like): FDataGrid with the test
+                samples or array (n_query, n_indexed) if metric ==
+                'precomputed'.
+
+        Returns:
+            y : array of shape = [n_samples] or [n_samples, n_outputs]
+                or :class:`FData` containing as many samples as X.
 
         """
         self._check_is_fitted()

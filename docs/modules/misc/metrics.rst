@@ -12,7 +12,7 @@ The following functions computes the norms and distances used in Lp spaces.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.misc.metrics.norm_lp
+   skfda.misc.metrics.lp_norm
    skfda.misc.metrics.lp_distance
 
 
@@ -38,6 +38,5 @@ Utils
 .. autosummary::
    :toctree: autosummary
 
-   skfda.misc.metrics.vectorial_norm
    skfda.misc.metrics.distance_from_norm
    skfda.misc.metrics.pairwise_distance

@@ -40,7 +40,7 @@ X = fd1.concatenate(fd2)
 y = np.array(15 * [0] + 15 * [1])
 
 # Plot toy dataset
-X.plot(sample_labels=y, label_colors=['C0', 'C1'])
+X.plot(group=y, group_colors=['C0', 'C1'])
 
 ##############################################################################
 #
@@ -69,7 +69,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25,
 radius = 0.3
 sample = X_test[0]  # Center of the ball
 
-fig = X_train.plot(sample_labels=y_train, label_colors=['C0', 'C1'])
+fig = X_train.plot(group=y_train, group_colors=['C0', 'C1'])
 
 # Plot ball
 sample.plot(fig=fig, color='red', linewidth=3)

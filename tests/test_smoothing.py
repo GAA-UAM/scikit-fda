@@ -1,15 +1,17 @@
+import skfda
+from skfda._utils import _check_estimator
+from skfda.misc.operators import LinearDifferentialOperator
+from skfda.misc.regularization import TikhonovRegularization
+from skfda.representation.basis import BSpline, Monomial
+from skfda.representation.grid import FDataGrid
 import unittest
 
 import sklearn
 
 import numpy as np
-import skfda
-from skfda._utils import _check_estimator
 import skfda.preprocessing.smoothing as smoothing
 import skfda.preprocessing.smoothing.kernel_smoothers as kernel_smoothers
 import skfda.preprocessing.smoothing.validation as validation
-from skfda.representation.basis import BSpline, Monomial
-from skfda.representation.grid import FDataGrid
 
 
 class TestSklearnEstimators(unittest.TestCase):
@@ -77,10 +79,13 @@ class TestBasisSmoother(unittest.TestCase):
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = BSpline((0, 1), n_basis=5)
         fd = FDataGrid(data_matrix=x, sample_points=t)
-        smoother = smoothing.BasisSmoother(basis=basis,
-                                           smoothing_parameter=10,
-                                           penalty=2, method='cholesky',
-                                           return_basis=True)
+        smoother = smoothing.BasisSmoother(
+            basis=basis,
+            smoothing_parameter=10,
+            regularization=TikhonovRegularization(
+                LinearDifferentialOperator(2)),
+            method='cholesky',
+            return_basis=True)
         fd_basis = smoother.fit_transform(fd)
         np.testing.assert_array_almost_equal(
             fd_basis.coefficients.round(2),
@@ -92,10 +97,13 @@ class TestBasisSmoother(unittest.TestCase):
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = BSpline((0, 1), n_basis=5)
         fd = FDataGrid(data_matrix=x, sample_points=t)
-        smoother = smoothing.BasisSmoother(basis=basis,
-                                           smoothing_parameter=10,
-                                           penalty=2, method='qr',
-                                           return_basis=True)
+        smoother = smoothing.BasisSmoother(
+            basis=basis,
+            smoothing_parameter=10,
+            regularization=TikhonovRegularization(
+                LinearDifferentialOperator(2)),
+            method='qr',
+            return_basis=True)
         fd_basis = smoother.fit_transform(fd)
         np.testing.assert_array_almost_equal(
             fd_basis.coefficients.round(2),
@@ -109,12 +117,58 @@ class TestBasisSmoother(unittest.TestCase):
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = Monomial(n_basis=4)
         fd = FDataGrid(data_matrix=x, sample_points=t)
-        smoother = smoothing.BasisSmoother(basis=basis,
-                                           smoothing_parameter=1,
-                                           penalty=2,
-                                           return_basis=True)
+        smoother = smoothing.BasisSmoother(
+            basis=basis,
+            smoothing_parameter=1,
+            regularization=TikhonovRegularization(
+                LinearDifferentialOperator(2)),
+            return_basis=True)
         fd_basis = smoother.fit_transform(fd)
         # These results where extracted from the R package fda
         np.testing.assert_array_almost_equal(
             fd_basis.coefficients.round(2),
             np.array([[0.61, -0.88, 0.06, 0.02]]))
+
+    def test_vector_valued_smoothing(self):
+        X, _ = skfda.datasets.fetch_weather(return_X_y=True)
+
+        basis_dim = skfda.representation.basis.Fourier(
+            n_basis=7, domain_range=X.domain_range)
+        basis = skfda.representation.basis.VectorValued(
+            [basis_dim] * 2
+        )
+
+        for method in smoothing.BasisSmoother.SolverMethod:
+            with self.subTest(method=method):
+
+                basis_smoother = smoothing.BasisSmoother(
+                    basis,
+                    regularization=TikhonovRegularization(
+                        LinearDifferentialOperator(2)),
+                    return_basis=True,
+                    smoothing_parameter=1,
+                    method=method)
+
+                basis_smoother_dim = smoothing.BasisSmoother(
+                    basis_dim,
+                    regularization=TikhonovRegularization(
+                        LinearDifferentialOperator(2)),
+                    return_basis=True,
+                    smoothing_parameter=1,
+                    method=method)
+
+                X_basis = basis_smoother.fit_transform(X)
+
+                self.assertEqual(X_basis.dim_codomain, 2)
+
+                self.assertEqual(X_basis.coordinates[0].basis, basis_dim)
+                np.testing.assert_allclose(
+                    X_basis.coordinates[0].coefficients,
+                    basis_smoother_dim.fit_transform(
+                        X.coordinates[0]).coefficients)
+
+                self.assertEqual(X_basis.coordinates[1].basis, basis_dim)
+                np.testing.assert_allclose(
+                    X_basis.coordinates[1].coefficients,
+                    basis_smoother_dim.fit_transform(
+                        X.coordinates[1]).coefficients)

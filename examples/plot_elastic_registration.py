@@ -10,13 +10,17 @@ Shows the usage of the elastic registration to perform a groupwise alignment.
 
 # sphinx_gallery_thumbnail_number = 5
 
-import numpy as np
 import skfda
+from skfda.datasets import make_multimodal_samples, fetch_growth
+from skfda.preprocessing.registration import ElasticRegistration
+from skfda.preprocessing.registration.elastic import elastic_mean
+
+import numpy as np
 
 
 ##############################################################################
 # In the example of pairwise alignment was shown the usage of
-# :func:`~skfda.preprocessing.registration.elastic_registration` to align
+# :class:`~skfda.preprocessing.registration.ElasticRegistration` to align
 # a set of functional observations to a given template or a set of templates.
 #
 # In the groupwise alignment all the samples are aligned to the same template,
@@ -28,12 +32,12 @@ import skfda
 # We will create a synthetic dataset to show the basic usage of the
 # registration.
 #
-fd = skfda.datasets.make_multimodal_samples(n_modes=2, stop=4, random_state=1)
+fd = make_multimodal_samples(n_modes=2, stop=4, random_state=1)
 fd.plot()
 
 ###############################################################################
 # The following figure shows the
-# :func:`~skfda.preprocessing.registration.elastic_mean` of the
+# :func:`~skfda.preprocessing.registration.elastic.elastic_mean` of the
 # dataset and the cross-sectional mean, which correspond to the karcher-mean
 # under the :math:`\mathbb{L}^2` distance.
 #
@@ -41,17 +45,18 @@ fd.plot()
 # curves compared to the standard mean, since it is not affected by the
 # deformations of the curves.
 
+
 fig = fd.mean().plot(label="L2 mean")
-skfda.preprocessing.registration.elastic_mean(
-    fd).plot(fig=fig, label="Elastic mean")
+elastic_mean(fd).plot(fig=fig, label="Elastic mean")
 fig.legend()
-fig
 
 ##############################################################################
 # In this case, the alignment completely reduces the amplitude variability
 # between the samples, aligning the maximum points correctly.
 
-fd_align = skfda.preprocessing.registration.elastic_registration(fd)
+elastic_registration = ElasticRegistration()
+
+fd_align = elastic_registration.fit_transform(fd)
 
 fd_align.plot()
 
@@ -66,13 +71,13 @@ fd_align.plot()
 #
 # First we show the original curves:
 
-growth = skfda.datasets.fetch_growth()
+growth = fetch_growth()
 
 # Select only one sex
 fd = growth['data'][growth['target'] == 0]
 
 # Obtain velocity curves
-fd.interpolator = skfda.representation.interpolation.SplineInterpolator(3)
+fd.interpolation = skfda.representation.interpolation.SplineInterpolation(3)
 fd = fd.to_grid(np.linspace(*fd.domain_range[0], 200)).derivative()
 fd = fd.to_grid(np.linspace(*fd.domain_range[0], 50))
 fd.plot()
@@ -80,8 +85,8 @@ fd.plot()
 ##############################################################################
 # We now show the aligned curves:
 
-fd_align = skfda.preprocessing.registration.elastic_registration(fd)
-fd_align.dataset_label += " - aligned"
+fd_align = elastic_registration.fit_transform(fd)
+fd_align.dataset_name += " - aligned"
 
 fd_align.plot()
 

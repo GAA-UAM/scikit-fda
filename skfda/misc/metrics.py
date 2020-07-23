@@ -2,11 +2,21 @@ import scipy.integrate
 
 import numpy as np
 
-from ..preprocessing.registration import (
-    normalize_warping, _normalize_scale, to_srsf,
-    elastic_registration_warping)
-from ..representation import FData
-from ..representation import FDataGrid
+from .._utils import _pairwise_commutative
+from ..preprocessing.registration import normalize_warping, ElasticRegistration
+from ..preprocessing.registration._warping import _normalize_scale
+from ..preprocessing.registration.elastic import SRSF
+from ..representation import FDataGrid, FDataBasis
+
+
+def _check_compatible(fdata1, fdata2):
+
+    if (fdata2.dim_codomain != fdata1.dim_codomain or
+            fdata2.dim_domain != fdata1.dim_domain):
+        raise ValueError("Objects should have the same dimensions")
+
+    if not np.array_equal(fdata1.domain_range, fdata2.domain_range):
+        raise ValueError("Domain ranges for both objects must be equal")
 
 
 def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
@@ -25,16 +35,10 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
     if not _check:
         return fdata1, fdata2
 
-    elif (fdata2.dim_codomain != fdata1.dim_codomain or
-          fdata2.dim_domain != fdata1.dim_domain):
-        raise ValueError("Objects should have the same dimensions")
-
-    # Case different domain ranges
-    elif not np.array_equal(fdata1.domain_range, fdata2.domain_range):
-        raise ValueError("Domain ranges for both objects must be equal")
+    _check_compatible(fdata1, fdata2)
 
     # Case new evaluation points specified
-    elif eval_points is not None:
+    if eval_points is not None:
         fdata1 = fdata1.to_grid(eval_points)
         fdata2 = fdata2.to_grid(eval_points)
 
@@ -57,65 +61,6 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
                          "a new list evaluation points must be specified")
 
     return fdata1, fdata2
-
-
-def vectorial_norm(fdatagrid, p=2):
-    r"""Apply a vectorial norm to a multivariate function.
-
-    Given a multivariate function :math:`f:\mathbb{R}^n\rightarrow
-    \mathbb{R}^d` applies a vectorial norm :math:`\| \cdot \|` to produce a
-    function :math:`\|f\|:\mathbb{R}^n\rightarrow \mathbb{R}`.
-
-    For example, let :math:`f:\mathbb{R} \rightarrow \mathbb{R}^2` be
-    :math:`f(t)=(f_1(t), f_2(t))` and :math:`\| \cdot \|_2` the euclidian norm.
-
-    .. math::
-        \|f\|_2(t) = \sqrt { |f_1(t)|^2 + |f_2(t)|^2 }
-
-    In general if :math:`p \neq \pm \infty` and :math:`f:\mathbb{R}^n
-    \rightarrow \mathbb{R}^d`
-
-    .. math::
-        \|f\|_p(x_1, ... x_n) = \left ( \sum_{k=1}^{d} |f_k(x_1, ..., x_n)|^p
-        \right )^{(1/p)}
-
-    Args:
-        fdatagrid (:class:`FDatagrid`): Functional object to be transformed.
-        p (int, optional): Exponent in the lp norm. If p is a number then
-            it is applied sum(abs(x)**p)**(1./p), if p is inf then max(abs(x)),
-            and if p is -inf it is applied min(abs(x)). See numpy.linalg.norm
-            to more information. Defaults to 2.
-
-    Returns:
-        (:class:`FDatagrid`): FDatagrid with image dimension equal to 1.
-
-    Examples:
-
-        >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.misc.metrics import vectorial_norm
-
-        First we will construct an example dataset with curves in
-        :math:`\mathbb{R}^2`.
-
-        >>> fd = make_multimodal_samples(dim_codomain=2, random_state=0)
-        >>> fd.dim_codomain
-        2
-
-        We will apply the euclidean norm
-
-        >>> fd = vectorial_norm(fd, p=2)
-        >>> fd.dim_codomain
-        1
-
-    """
-
-    if p == 'inf':
-        p = np.inf
-
-    data_matrix = np.linalg.norm(fdatagrid.data_matrix, ord=p, axis=-1,
-                                 keepdims=True)
-
-    return fdatagrid.copy(data_matrix=data_matrix)
 
 
 def distance_from_norm(norm, **kwargs):
@@ -151,7 +96,7 @@ def distance_from_norm(norm, **kwargs):
         To construct the :math:`\mathbb{L}^2` distance it is used the
         :math:`\mathbb{L}^2` norm wich it is used to compute the distance.
 
-        >>> l2_distance = distance_from_norm(norm_lp, p=2)
+        >>> l2_distance = distance_from_norm(lp_norm, p=2)
         >>> d = l2_distance(fd, fd2)
         >>> float('%.3f'% d)
         0.289
@@ -189,27 +134,16 @@ def pairwise_distance(distance, **kwargs):
         :obj:`Function`: Pairwise distance function, wich accepts two
             functional data objects and returns the pairwise distance matrix.
     """
-    def pairwise(fdata1, fdata2):
+    def pairwise(fdata1, fdata2=None):
 
-        fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, **kwargs)
-
-        # Creates an empty matrix with the desired size to store the results.
-        matrix = np.empty((fdata1.n_samples, fdata2.n_samples))
-
-        # Iterates over the different samples of both objects.
-        for i in range(fdata1.n_samples):
-            for j in range(fdata2.n_samples):
-                matrix[i, j] = distance(fdata1[i], fdata2[j], _check=False,
-                                        **kwargs)
-        # Computes the metric between all piars of x and y.
-        return matrix
+        return _pairwise_commutative(distance, fdata1, fdata2)
 
     pairwise.__name__ = f"pairwise_{distance.__name__}"
 
     return pairwise
 
 
-def norm_lp(fdatagrid, p=2, p2=2):
+def lp_norm(fdata, p=2, p2=None):
     r"""Calculate the norm of all the samples in a FDataGrid object.
 
     For each sample sample f the Lp norm is defined as:
@@ -244,7 +178,7 @@ def norm_lp(fdatagrid, p=2, p2=2):
 
 
     Args:
-        fdatagrid (FDataGrid): FDataGrid object.
+        fdata (FData): FData object.
         p (int, optional): p of the lp norm. Must be greater or equal
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
@@ -264,45 +198,65 @@ def norm_lp(fdatagrid, p=2, p2=2):
 
         >>> x = np.linspace(0,1,1001)
         >>> fd = FDataGrid([np.ones(len(x)), x] ,x)
-        >>> norm_lp(fd).round(2)
+        >>> lp_norm(fd).round(2)
         array([ 1.  ,  0.58])
 
         The lp norm is only defined if p >= 1.
 
-        >>> norm_lp(fd, p = 0.5)
+        >>> lp_norm(fd, p = 0.5)
         Traceback (most recent call last):
             ....
         ValueError: p must be equal or greater than 1.
 
     """
+    from ..misc import inner_product
+
+    if p2 is None:
+        p2 = p
+
+    # Special case, the inner product is heavily optimized
+    if p == p2 == 2:
+        return np.sqrt(inner_product(fdata, fdata))
+
     # Checks that the lp normed is well defined
     if not (p == 'inf' or np.isinf(p)) and p < 1:
         raise ValueError(f"p must be equal or greater than 1.")
 
-    if fdatagrid.dim_codomain > 1:
-        if p2 == 'inf':
-            p2 = np.inf
-        data_matrix = np.linalg.norm(fdatagrid.data_matrix, ord=p2, axis=-1,
-                                     keepdims=True)
+    if isinstance(fdata, FDataBasis):
+        if fdata.dim_codomain > 1 or p != 2:
+            raise NotImplementedError
+
+        start, end = fdata.domain_range[0]
+        integral = scipy.integrate.quad_vec(
+            lambda x: np.power(np.abs(fdata(x)), p), start, end)
+        res = np.sqrt(integral[0]).flatten()
+
     else:
-        data_matrix = np.abs(fdatagrid.data_matrix)
-
-    if p == 'inf' or np.isinf(p):
-
-        if fdatagrid.dim_domain == 1:
-            res = np.max(data_matrix[..., 0], axis=1)
+        if fdata.dim_codomain > 1:
+            if p2 == 'inf':
+                p2 = np.inf
+            data_matrix = np.linalg.norm(fdata.data_matrix, ord=p2, axis=-1,
+                                         keepdims=True)
         else:
-            res = np.array([np.max(sample) for sample in data_matrix])
+            data_matrix = np.abs(fdata.data_matrix)
 
-    elif fdatagrid.dim_domain == 1:
+        if p == 'inf' or np.isinf(p):
 
-        # Computes the norm, approximating the integral with Simpson's rule.
-        res = scipy.integrate.simps(data_matrix[..., 0] ** p,
-                                    x=fdatagrid.sample_points) ** (1 / p)
+            if fdata.dim_domain == 1:
+                res = np.max(data_matrix[..., 0], axis=1)
+            else:
+                res = np.array([np.max(sample) for sample in data_matrix])
 
-    else:
-        # Needed to perform surface integration
-        return NotImplemented
+        elif fdata.dim_domain == 1:
+
+            # Computes the norm, approximating the integral with Simpson's
+            # rule.
+            res = scipy.integrate.simps(data_matrix[..., 0] ** p,
+                                        x=fdata.sample_points) ** (1 / p)
+
+        else:
+            # Needed to perform surface integration
+            return NotImplemented
 
     if len(res) == 1:
         return res[0]
@@ -329,7 +283,7 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
         p2 (int, optional): p index of the vectorial norm applied in case of
-            multivariate objects. Defaults to 2. See :func:`norm_lp`.
+            multivariate objects. Defaults to 2. See :func:`lp_norm`.
 
     Examples:
         Computes the distances between an object containing functional data
@@ -342,7 +296,7 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
         >>> fd = FDataGrid([np.ones(len(x))], x)
         >>> fd2 =  FDataGrid([np.zeros(len(x))], x)
         >>> lp_distance(fd, fd2).round(2)
-        1.0
+        array([ 1.])
 
 
         If the functional data are defined over a different set of points of
@@ -353,15 +307,12 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
         >>> lp_distance(fd, fd2)
         Traceback (most recent call last):
             ....
-        ValueError: Domain ranges for both objects must be equal
+        ValueError: ...
 
     """
-    # Checks
+    _check_compatible(fdata1, fdata2)
 
-    fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
-                                   _check=_check)
-
-    return norm_lp(fdata1 - fdata2, p=p, p2=p2)
+    return lp_norm(fdata1 - fdata2, p=p, p2=p2)
 
 
 def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
@@ -369,7 +320,7 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
     :math:`q_i` and :math:`q_j` be the corresponding SRSF
-    (see :func:`to_srsf`), the fisher rao distance is defined as
+    (see :class:`SRSF`), the fisher rao distance is defined as
 
     .. math::
         d_{FR}(f_i, f_j) = \| q_i - q_j \|_2 =
@@ -413,8 +364,9 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
                          domain_range=(0, 1))
 
-    fdata1_srsf = to_srsf(fdata1)
-    fdata2_srsf = to_srsf(fdata2)
+    srsf = SRSF(initial_value=0)
+    fdata1_srsf = srsf.fit_transform(fdata1)
+    fdata2_srsf = srsf.transform(fdata2)
 
     # Return the L2 distance of the SRSF
     return lp_distance(fdata1_srsf, fdata2_srsf, p=2)
@@ -426,7 +378,7 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
     :math:`q_i` and :math:`q_j` be the corresponding SRSF
-    (see :func:`to_srsf`), the amplitude distance is defined as
+    (see :class:`SRSF`), the amplitude distance is defined as
 
     .. math::
         d_{A}(f_i, f_j)=min_{\gamma \in \Gamma}d_{FR}(f_i \circ \gamma,f_j)
@@ -482,25 +434,23 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
                          domain_range=(0, 1))
 
-    fdata1_srsf = to_srsf(fdata1)
-    fdata2_srsf = to_srsf(fdata2)
+    elastic_registration = ElasticRegistration(
+        template=fdata2,
+        penalty=lam,
+        output_points=eval_points_normalized,
+        **kwargs)
 
-    warping = elastic_registration_warping(fdata1,
-                                           template=fdata2,
-                                           lam=lam,
-                                           val_points=eval_points_normalized,
-                                           fdatagrid_srsf=fdata1_srsf,
-                                           template_srsf=fdata2_srsf,
-                                           **kwargs)
+    fdata1_reg = elastic_registration.fit_transform(fdata1)
 
-    fdata1_reg = fdata1.compose(warping)
-
-    distance = lp_distance(to_srsf(fdata1_reg), fdata2_srsf)
+    srsf = SRSF(initial_value=0)
+    fdata1_reg_srsf = srsf.fit_transform(fdata1_reg)
+    fdata2_srsf = srsf.transform(fdata2)
+    distance = lp_distance(fdata1_reg_srsf, fdata2_srsf)
 
     if lam != 0.0:
         # L2 norm || sqrt(Dh) - 1 ||^2
-        penalty = warping(eval_points_normalized, derivative=1,
-                          keepdims=False)[0]
+        warping_deriv = elastic_registration.warping_.derivative()
+        penalty = warping_deriv(eval_points_normalized)[0, ..., 0]
         penalty = np.sqrt(penalty, out=penalty)
         penalty -= 1
         penalty = np.square(penalty, out=penalty)
@@ -564,18 +514,19 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
     fdata2 = fdata2.copy(sample_points=eval_points_normalized,
                          domain_range=(0, 1))
 
-    warping = elastic_registration_warping(fdata1,
-                                           template=fdata2,
-                                           lam=lam,
-                                           eval_points=eval_points_normalized,
-                                           **kwargs)
+    elastic_registration = ElasticRegistration(
+        penalty=lam, template=fdata2,
+        output_points=eval_points_normalized)
 
-    derivative_warping = warping(eval_points_normalized, keepdims=False,
-                                 derivative=1)[0]
+    elastic_registration.fit_transform(fdata1)
+
+    warping_deriv = elastic_registration.warping_.derivative()
+    derivative_warping = warping_deriv(eval_points_normalized)[0, ..., 0]
 
     derivative_warping = np.sqrt(derivative_warping, out=derivative_warping)
 
     d = scipy.integrate.simps(derivative_warping, x=eval_points_normalized)
+    d = np.clip(d, -1, 1)
 
     return np.arccos(d)
 
@@ -626,11 +577,18 @@ def warping_distance(warping1, warping2, *, eval_points=None, _check=True):
     warping1_data = warping1.derivative().data_matrix[0, ..., 0]
     warping2_data = warping2.derivative().data_matrix[0, ..., 0]
 
+    # Derivative approximations can have negatives, specially in the
+    # borders.
+    warping1_data[warping1_data < 0] = 0
+    warping2_data[warping2_data < 0] = 0
+
     # In this case the srsf is the sqrt(gamma')
     srsf_warping1 = np.sqrt(warping1_data, out=warping1_data)
     srsf_warping2 = np.sqrt(warping2_data, out=warping2_data)
 
     product = np.multiply(srsf_warping1, srsf_warping2, out=srsf_warping1)
+
     d = scipy.integrate.simps(product, x=warping1.sample_points[0])
+    d = np.clip(d, -1, 1)
 
     return np.arccos(d)

@@ -1,13 +1,13 @@
 """Neighbor models for supervised classification."""
 
 
-from sklearn.utils.multiclass import check_classification_targets
-from sklearn.preprocessing import LabelEncoder
 from sklearn.base import ClassifierMixin, BaseEstimator
+from sklearn.preprocessing import LabelEncoder
+from sklearn.utils.multiclass import check_classification_targets
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ..misc.metrics import lp_distance, pairwise_distance
 from ..exploratory.stats import mean as l2_mean
+from ..misc.metrics import lp_distance, pairwise_distance
 from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
                    NeighborsClassifierMixin, RadiusNeighborsMixin)
 
@@ -59,8 +59,9 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         Doesn't affect :meth:`fit` method.
     multivariate_metric : boolean, optional (default = False)
         Indicates if the metric used is a sklearn distance between vectors (see
-        :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
-        the module :mod:`skfda.misc.metrics`.
+        :class:`~sklearn.neighbors.DistanceMetric`) or a functional metric of
+        the module `skfda.misc.metrics` if ``False``.
+
     Examples
     --------
     Firstly, we will create a toy dataset with 2 classes
@@ -77,7 +78,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     >>> from skfda.ml.classification import KNeighborsClassifier
     >>> neigh = KNeighborsClassifier()
     >>> neigh.fit(fd, y)
-    KNeighborsClassifier(algorithm='auto', leaf_size=30,...)
+    KNeighborsClassifier(...)
 
     We can predict the class of new samples
 
@@ -92,10 +93,11 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
     See also
     --------
     :class:`~skfda.ml.classification.RadiusNeighborsClassifier`
-    :class:`~skfda.ml.classification.NearestCentroids`
+    :class:`~skfda.ml.classification.NearestCentroid`
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
+
 
     Notes
     -----
@@ -239,7 +241,7 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
     >>> from skfda.ml.classification import RadiusNeighborsClassifier
     >>> neigh = RadiusNeighborsClassifier(radius=.3)
     >>> neigh.fit(fd, y)
-    RadiusNeighborsClassifier(algorithm='auto', leaf_size=30,...)
+    RadiusNeighborsClassifier(...radius=0.3...)
 
     We can predict the class of new samples.
 
@@ -249,10 +251,11 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
     See also
     --------
     :class:`~skfda.ml.classification.KNeighborsClassifier`
-    :class:`~skfda.ml.classification.NearestCentroids`
+    :class:`~skfda.ml.classification.NearestCentroid`
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
+
 
     Notes
     -----
@@ -300,7 +303,7 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
             outlier_label=self.outlier_label, n_jobs=self.n_jobs)
 
 
-class NearestCentroids(BaseEstimator, ClassifierMixin):
+class NearestCentroid(BaseEstimator, ClassifierMixin):
     """Nearest centroid classifier for functional data.
 
     Each class is represented by its centroid, with test samples classified to
@@ -340,10 +343,10 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
 
     We will fit a Nearest centroids classifier
 
-    >>> from skfda.ml.classification import NearestCentroids
-    >>> neigh = NearestCentroids()
+    >>> from skfda.ml.classification import NearestCentroid
+    >>> neigh = NearestCentroid()
     >>> neigh.fit(fd, y)
-    NearestCentroids(...)
+    NearestCentroid(...)
 
     We can predict the class of new samples
 
@@ -357,6 +360,7 @@ class NearestCentroids(BaseEstimator, ClassifierMixin):
     :class:`~skfda.ml.regression.KNeighborsRegressor`
     :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
     :class:`~skfda.ml.clustering.NearestNeighbors`
+
 
     """
 

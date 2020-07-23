@@ -14,14 +14,13 @@ Many of the issues involved in registration can be solved by considering
 the simplest case, a simple shift in the time scale. This often happens because
 the time at which the recording process begins is arbitrary, and is unrelated
 to the beginning of the interesting segment of the data. In the
-`Shift Registration Example <../auto_examples/plot_shift_registration_basis.html>`_
-it is shown the basic usage of this methods applied to periodic data.
+:ref:`sphx_glr_auto_examples_plot_shift_registration.py` example
+is shown the basic usage of this method.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.shift_registration
-   skfda.preprocessing.registration.shift_registration_deltas
+   skfda.preprocessing.registration.ShiftRegistration
 
 
 Landmark Registration
@@ -32,7 +31,7 @@ takes all the times of a given feature into a common value.
 
 The simplest case in which each sample presents a unique landmark can be solved
 by performing a translation in the time scale. See the
-`Landmark Shift Example <../auto_examples/plot_landmark_shift.html>`_.
+:ref:`sphx_glr_auto_examples_plot_landmark_shift.py` example..
 
 .. autosummary::
    :toctree: autosummary
@@ -43,8 +42,7 @@ by performing a translation in the time scale. See the
 
 The general case of landmark registration may present multiple landmarks for
 each sample and a non-linear transformation in the time scale should be applied.
-See the `Landmark Registration Example
-<../auto_examples/plot_landmark_registration.html>`_
+See the :ref:`sphx_glr_auto_examples_plot_landmark_registration.py` example.
 
 .. autosummary::
    :toctree: autosummary
@@ -58,16 +56,15 @@ Elastic Registration
 
 The elastic registration is a novel approach to this problem that uses the
 properties of the Fisher-Rao metric to perform the alignment of the curves.
-In the examples of `pairwise alignment
-<../auto_examples/plot_pairwise_alignment.html>`_ and `elastic registration
-<../auto_examples/plot_elastic_registration.html>`_ is shown a brief
+In the examples of
+:ref:`sphx_glr_auto_examples_plot_pairwise_alignment.py` and
+:ref:`sphx_glr_auto_examples_plot_elastic_registration.py` is shown a brief
 introduction to this topic along the usage of the corresponding functions.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.elastic_registration
-   skfda.preprocessing.registration.elastic_registration_warping
+   skfda.preprocessing.registration.ElasticRegistration
 
 
 The module contains some routines related with the elastic registration, making
@@ -77,31 +74,32 @@ on the elastic framework.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.elastic_mean
-   skfda.preprocessing.registration.warping_mean
-   skfda.preprocessing.registration.to_srsf
-   skfda.preprocessing.registration.from_srsf
+   skfda.preprocessing.registration.elastic.elastic_mean
+   skfda.preprocessing.registration.elastic.warping_mean
+   skfda.preprocessing.registration.elastic.SRSF
 
 
+Validation
+----------
 
-Amplitude and Phase Decomposition
----------------------------------
-
-The amplitude and phase variation may be quantified by comparing a sample before
-and after registration. The package contains an implementation of the
-decomposition procedure developed by *Kneip and Ramsay (2008)*.
+This module contains several classes methods for the quantification and
+validation of the registration procedure.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.mse_decomposition
+
+   skfda.preprocessing.registration.validation.AmplitudePhaseDecomposition
+   skfda.preprocessing.registration.validation.LeastSquares
+   skfda.preprocessing.registration.validation.SobolevLeastSquares
+   skfda.preprocessing.registration.validation.PairwiseCorrelation
 
 
-Utility functions
+Warping utils
 -----------------
 
-There are some other method related with the registration problem in this
-module.
+This module contains some functions related with the warping of functional
+data.
 
 .. autosummary::
    :toctree: autosummary

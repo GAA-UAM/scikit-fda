@@ -17,7 +17,7 @@ import numpy as np
 from skfda import datasets
 from skfda.exploratory.visualization.clustering import (
     plot_clusters, plot_cluster_lines, plot_cluster_bars)
-from skfda.ml.clustering.base_kmeans import KMeans, FuzzyKMeans
+from skfda.ml.clustering import KMeans, FuzzyCMeans
 
 
 ##############################################################################
@@ -58,8 +58,8 @@ colormap = plt.cm.get_cmap('tab20b')
 n_climates = len(climates)
 climate_colors = colormap(np.arange(n_climates) / (n_climates - 1))
 
-fd.plot(sample_labels=indexer, label_colors=climate_colors,
-        label_names=climates)
+fd.plot(group=indexer, group_colors=climate_colors,
+        group_names=climates)
 
 ##############################################################################
 # The number of clusters is set with the number of climates, in order to see
@@ -96,17 +96,17 @@ plot_clusters(kmeans, fd, cluster_colors=cluster_colors,
 
 ##############################################################################
 # Other clustering algorithm implemented is the Fuzzy K-Means found in the
-# class :class:`~skfda.ml.clustering.FuzzyKMeans`. Following the
+# class :class:`~skfda.ml.clustering.FuzzyCMeans`. Following the
 # above procedure, an object of this type is instantiated  with the desired
 # data and then, the
-# :func:`~skfda.ml.clustering.FuzzyKMeans.fit` method is called.
+# :func:`~skfda.ml.clustering.FuzzyCMeans.fit` method is called.
 # Internally, the attribute ``labels_`` is calculated, which contains
 # ´n_clusters´ elements for each sample and dimension, denoting the degree of
 # membership of each sample to each cluster. They are obtained calling the
-# method :func:`~skfda.ml.clustering.FuzzyKMeans.predict`. Also, the centroids
+# method :func:`~skfda.ml.clustering.FuzzyCMeans.predict`. Also, the centroids
 # of each cluster are obtained.
 
-fuzzy_kmeans = FuzzyKMeans(n_clusters=n_clusters, random_state=seed)
+fuzzy_kmeans = FuzzyCMeans(n_clusters=n_clusters, random_state=seed)
 fuzzy_kmeans.fit(fd)
 print(fuzzy_kmeans.predict(fd))
 
@@ -121,7 +121,7 @@ plot_clusters(fuzzy_kmeans, fd, cluster_colors=cluster_colors,
 
 ##############################################################################
 # Another plot implemented to show the results in the class
-# :class:`~skfda.ml.clustering.FuzzyKMeans` is
+# :class:`~skfda.ml.clustering.FuzzyCMeans` is
 # :func:`~skfda.exploratory.visualization.clustering_plots.plot_cluster_lines`
 # which is similar to parallel coordinates. It is recommended to assign colors
 # to each of the samples in order to identify them. In this example, the

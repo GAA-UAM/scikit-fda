@@ -23,8 +23,9 @@ def fdata_constructor(obj, attrs):
     return FDataGrid(data_matrix=obj["data"],
                      sample_points=obj["argvals"],
                      domain_range=obj["rangeval"],
-                     dataset_label=names['main'][0],
-                     axes_labels=[names['xlab'][0], names['ylab'][0]])
+                     dataset_name=names['main'][0],
+                     argument_names=(names['xlab'][0],),
+                     coordinate_names=(names['ylab'][0],))
 
 
 def functional_constructor(obj, attrs):
@@ -51,8 +52,9 @@ def functional_constructor(obj, attrs):
     return (FDataGrid(data_matrix=data_matrix,
                       sample_points=sample_points,
                       domain_range=(args_init, args_end),
-                      dataset_label=name[0],
-                      axes_labels=[args_label[0], values_label[0]]), target)
+                      dataset_name=name[0],
+                      argument_names=(args_label[0],),
+                      coordinate_names=(values_label[0],)), target)
 
 
 def fetch_cran(name, package_name, *, converter=None,
@@ -218,9 +220,11 @@ def fetch_phoneme(return_X_y: bool = False):
     speaker = data["speaker"].values
 
     curves = FDataGrid(data_matrix=curve_data.values,
-                       sample_points=range(0, 256),
-                       dataset_label="Phoneme",
-                       axes_labels=["frequency", "log-periodogram"])
+                       sample_points=np.linspace(0, 8, 256),
+                       domain_range=[0, 8],
+                       dataset_name="Phoneme",
+                       argument_names=("frequency (kHz)",),
+                       coordinate_names=("log-periodogram",))
 
     if return_X_y:
         return curves, sound
@@ -272,8 +276,9 @@ def fetch_growth(return_X_y: bool = False):
 
     curves = FDataGrid(data_matrix=np.concatenate((males, females), axis=0),
                        sample_points=ages,
-                       dataset_label="Berkeley Growth Study",
-                       axes_labels=["age", "height"])
+                       dataset_name="Berkeley Growth Study",
+                       argument_names=("age",),
+                       coordinate_names=("height",))
 
     sex = np.array([0] * males.shape[0] + [1] * females.shape[0])
 
@@ -466,9 +471,10 @@ def fetch_weather(return_X_y: bool = False):
 
     curves = FDataGrid(data_matrix=temp_prec_daily,
                        sample_points=range(1, 366),
-                       dataset_label="Canadian Weather",
-                       axes_labels=["day", "temperature (ºC)",
-                                    "precipitation (mm.)"])
+                       dataset_name="Canadian Weather",
+                       argument_names=("day",),
+                       coordinate_names=("temperature (ºC)",
+                                         "precipitation (mm.)"))
 
     target_names, target = np.unique(data["region"], return_inverse=True)
 
@@ -479,6 +485,16 @@ def fetch_weather(return_X_y: bool = False):
                 "target": target,
                 "target_names": target_names,
                 "target_feature_names": ["region"],
+                "meta": list(zip(data["place"], data["province"],
+                                 np.asarray(data["coordinates"])[0],
+                                 np.asarray(data["coordinates"])[1],
+                                 data["geogindex"],
+                                 np.asarray(data["monthlyTemp"]),
+                                 np.asarray(data["monthlyPrecip"]))),
+
+                "meta_names": ["place", "province", "latitude", "longitude",
+                               "ind", "monthlyTemp", "monthlyPrecip"],
+                "meta_feature_names": ["location"],
                 "DESCR": DESCR}
 
 
@@ -513,17 +529,25 @@ def fetch_aemet(return_X_y: bool = False):
 
     data = raw_dataset["aemet"]
 
-    fd_temp = data["temp"]
-    fd_logprec = data["logprec"]
-    fd_wind = data["wind.speed"]
+    data_matrix = np.empty((73, 365, 3))
+    data_matrix[:, :, 0] = data["temp"].data_matrix[:, :, 0]
+    data_matrix[:, :, 1] = data["logprec"].data_matrix[:, :, 0]
+    data_matrix[:, :, 2] = data["wind.speed"].data_matrix[:, :, 0]
+
+    curves = data["temp"].copy(data_matrix=data_matrix,
+                               dataset_name="AEMET",
+                               argument_names=("day",),
+                               coordinate_names=("temperature (ºC)",
+                                                 "logprecipitation",
+                                                 "wind speed (m/s)"))
 
     if return_X_y:
-        return fd_temp, fd_logprec, fd_wind
+        return curves, None
     else:
-        return {"data": (fd_temp, fd_logprec, fd_wind),
+        return {"data": curves,
                 "meta": np.asarray(data["df"])[:,
                                                np.array([0, 1, 2, 3, 6, 7])],
-                "meta_names": ["ind", "name", "province", "altitude",
+                "meta_names": ["ind", "place", "province", "altitude",
                                "longitude", "latitude"],
                 "meta_feature_names": ["location"],
                 "DESCR": DESCR}
@@ -531,3 +555,125 @@ def fetch_aemet(return_X_y: bool = False):
 
 if hasattr(fetch_aemet, "__doc__"):  # docstrings can be stripped off
     fetch_aemet.__doc__ += _aemet_descr + _param_descr
+
+
+_octane_descr = """
+    Near infrared (NIR) spectra of gasoline samples, with wavelengths ranging
+    from 1102nm to 1552nm with measurements every two nm.
+    This dataset contains six outliers to which ethanol was added, which is
+    required in some states. See [RDEH2006]_ and [HuRS2015]_ for further
+    details.
+
+    The data is labeled according to this different composition.
+
+    Source:
+        Esbensen K. (2001). Multivariate data analysis in practice. 5th edn.
+        Camo Software, Trondheim, Norway.
+
+    References:
+        ..  [RDEH2006] Rousseeuw, Peter & Debruyne, Michiel & Engelen, Sanne &
+            Hubert, Mia. (2006). Robustness and Outlier Detection in
+            Chemometrics. Critical Reviews in Analytical Chemistry. 36.
+            221-242. 10.1080/10408340600969403.
+        ..  [HuRS2015] Hubert, Mia & Rousseeuw, Peter & Segaert, Pieter. (2015).
+            Multivariate functional outlier detection. Statistical Methods and
+            Applications. 24. 177-202. 10.1007/s10260-015-0297-8.
+
+"""
+
+
+def fetch_octane(return_X_y: bool = False):
+    """Load near infrared spectra of gasoline samples.
+
+    This function fetchs the octane dataset from the R package 'mrfDepth'
+    from CRAN.
+
+    """
+    DESCR = _octane_descr
+
+    # octane file from mrfDepth R package
+    raw_dataset = fetch_cran("octane", "mrfDepth", version="1.0.11")
+    data = raw_dataset['octane'][..., 0].T
+
+    # The R package only stores the values of the curves, but the paper
+    # describes the rest of the data. According to [RDEH2006], Section 5.4:
+
+    # "wavelengths ranging from 1102nm to 1552nm with measurements every two
+    # nm.""
+    sample_points = np.linspace(1102, 1552, 226)
+
+    # "The octane data set contains six outliers (25, 26, 36–39) to which
+    # alcohol was added".
+    target = np.zeros(len(data), dtype=int)
+    target[24] = target[25] = target[35:39] = 1  # Outliers 1
+
+    curves = FDataGrid(data,
+                       sample_points=sample_points,
+                       dataset_name="Octane",
+                       argument_names=("wavelength (nm)",),
+                       coordinate_names=("absorbances",))
+
+    if return_X_y:
+        return curves, target
+    else:
+        return {"data": curves,
+                "target": target,
+                "target_names": ['inliner', 'outlier'],
+                "DESCR": DESCR}
+
+
+if hasattr(fetch_octane, "__doc__"):  # docstrings can be stripped off
+    fetch_octane.__doc__ += _octane_descr + _param_descr
+
+_gait_descr = """
+    Angles formed by the hip and knee of each of 39 children over each boy 
+    gait cycle.
+
+    References:
+        Ramsay, James O., and Silverman, Bernard W. (2006),
+        Functional Data Analysis, 2nd ed. , Springer, New York.
+
+        Ramsay, James O., and Silverman, Bernard W. (2002),
+        Applied Functional Data Analysis, Springer, New York
+"""
+
+
+def fetch_gait(return_X_y: bool = False):
+    """
+    Load the GAIT dataset.
+
+    The data is obtained from the R package 'fda' from CRAN.
+
+    """
+    DESCR = _gait_descr
+
+    raw_data = _fetch_fda("gait")
+
+    data = raw_data["gait"]
+
+    data_matrix = np.asarray(data)
+    data_matrix = np.transpose(data_matrix, axes=(1, 0, 2))
+    sample_points = np.asarray(data.coords.get('dim_0'), np.float64)
+
+    curves = FDataGrid(data_matrix=data_matrix,
+                       sample_points=sample_points,
+                       dataset_name="GAIT",
+                       argument_names=("Time (proportion of gait cycle)",),
+                       coordinate_names=("Hip angle (degrees)",
+                                         "Knee angle (degrees)"))
+
+    meta_names, meta = np.unique(np.asarray(data.coords.get('dim_1')),
+                                 return_inverse=True)
+
+    if return_X_y:
+        return curves, None
+    else:
+        return {"data": curves,
+                "meta": meta,
+                "meta_names": meta_names,
+                "meta_feature_names": ["boys"],
+                "DESCR": DESCR}
+
+
+if hasattr(fetch_gait, "__doc__"):  # docstrings can be stripped off
+    fetch_gait.__doc__ += _gait_descr + _param_descr

@@ -1,11 +1,20 @@
 import io
 import math
+import re
 
 import matplotlib.axes
 import matplotlib.backends.backend_svg
 import matplotlib.figure
 
 import matplotlib.pyplot as plt
+
+non_close_text = '[^>]*?'
+svg_width_regex = re.compile(
+    f'(<svg {non_close_text}width="){non_close_text}("{non_close_text}>)')
+svg_width_replacement = r'\g<1>100%\g<2>'
+svg_height_regex = re.compile(
+    f'(<svg {non_close_text})height="{non_close_text}"({non_close_text}>)')
+svg_height_replacement = r'\g<1>\g<2>'
 
 
 def _create_figure():
@@ -24,7 +33,14 @@ def _figure_to_svg(figure):
     figure.savefig(output, format='svg')
     figure.set_canvas(old_canvas)
     data = output.getvalue()
-    return data.decode('utf-8')
+    decoded_data = data.decode('utf-8')
+
+    new_data = svg_width_regex.sub(
+        svg_width_replacement, decoded_data, count=1)
+    new_data = svg_height_regex.sub(
+        svg_height_replacement, new_data, count=1)
+
+    return new_data
 
 
 def _get_figure_and_axes(chart=None, fig=None, axes=None):
@@ -192,8 +208,8 @@ def _set_labels(fdata, fig=None, axes=None, patches=None):
     """
 
     # Dataset name
-    if fdata.dataset_label is not None:
-        fig.suptitle(fdata.dataset_label)
+    if fdata.dataset_name is not None:
+        fig.suptitle(fdata.dataset_name)
 
     # Legend
     if patches is not None:
@@ -202,21 +218,20 @@ def _set_labels(fdata, fig=None, axes=None, patches=None):
         axes[0].legend(handles=patches)
 
     # Axis labels
-    if fdata.axes_labels is not None:
-        if axes[0].name == '3d':
-            for i in range(fdata.dim_codomain):
-                if fdata.axes_labels[0] is not None:
-                    axes[i].set_xlabel(fdata.axes_labels[0])
-                if fdata.axes_labels[1] is not None:
-                    axes[i].set_ylabel(fdata.axes_labels[1])
-                if fdata.axes_labels[i + 2] is not None:
-                    axes[i].set_zlabel(fdata.axes_labels[i + 2])
-        else:
-            for i in range(fdata.dim_codomain):
-                if fdata.axes_labels[0] is not None:
-                    axes[i].set_xlabel(fdata.axes_labels[0])
-                if fdata.axes_labels[i + 1] is not None:
-                    axes[i].set_ylabel(fdata.axes_labels[i + 1])
+    if axes[0].name == '3d':
+        for i in range(fdata.dim_codomain):
+            if fdata.argument_names[0] is not None:
+                axes[i].set_xlabel(fdata.argument_names[0])
+            if fdata.argument_names[1] is not None:
+                axes[i].set_ylabel(fdata.argument_names[1])
+            if fdata.coordinate_names[i] is not None:
+                axes[i].set_zlabel(fdata.coordinate_names[i])
+    else:
+        for i in range(fdata.dim_codomain):
+            if fdata.argument_names[0] is not None:
+                axes[i].set_xlabel(fdata.argument_names[0])
+            if fdata.coordinate_names[i] is not None:
+                axes[i].set_ylabel(fdata.coordinate_names[i])
 
 
 def _change_luminosity(color, amount=0.5):

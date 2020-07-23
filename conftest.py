@@ -7,6 +7,6 @@ try:
 except TypeError:
     pass
 
-collect_ignore = ['setup.py']
+collect_ignore = ['setup.py', 'docs/conf.py']
 
 pytest.register_assert_rewrite("skfda")

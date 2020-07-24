@@ -827,6 +827,13 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         return concatenate(to_concat)
 
+    def astype(self, dtype, copy=True):
+        if isinstance(dtype, type(self.dtype)):
+            if copy:
+                self = self.copy()
+            return self
+        return super().astype(dtype)
+
 
 def concatenate(objects, as_coordinates=False):
     """

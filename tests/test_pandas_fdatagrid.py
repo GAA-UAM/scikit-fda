@@ -13,7 +13,7 @@ import numpy as np
 @pytest.fixture
 def dtype():
     """A fixture providing the ExtensionDtype to validate."""
-    return skfda.representation.grid.FDataGridDType
+    return skfda.representation.grid.FDataGridDType()
 
 
 @pytest.fixture
@@ -187,4 +187,8 @@ def as_array(request):
 
 
 class TestConstructors(base.BaseConstructorsTests):
+    pass
+
+
+class TestDtype(base.BaseDtypeTests):
     pass

@@ -327,7 +327,7 @@ def _evaluate_grid(axes, *, evaluate_method,
         eval_points, shape = zip(
             *[_one_grid_to_points(a, dim_domain=dim_domain) for a in axes])
 
-    eval_points = np.array(eval_points)
+    eval_points = _to_array_maybe_ragged(eval_points)
 
     # Evaluate the points
     res = evaluate_method(eval_points,

@@ -218,12 +218,11 @@ class LinearRegression(BaseEstimator, RegressorMixin):
 
         X = self._argcheck_X(X)
 
-        y = np.asarray(y)
-
-        if (np.issubdtype(y.dtype, np.object_)
-                and any(isinstance(i, FData) for i in y)):
+        if any(isinstance(i, FData) for i in y):
             raise ValueError(
                 "Some of the response variables are not scalar")
+
+        y = np.asarray(y)
 
         if coef_basis is None:
             coef_basis = [None] * len(X)

@@ -691,7 +691,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     # Numpy methods
     #####################################################################
 
-    def to_numpy(self):
+    def __array__(self, *args, **kwargs):
         """Returns a numpy array with the objects"""
 
         # This is to prevent numpy to access inner dimensions
@@ -719,6 +719,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
     @classmethod
     def _from_sequence(cls, scalars, dtype=None, copy=False):
+        if isinstance(scalars, cls):
+            scalars = [scalars]
+
         if copy:
             scalars = [f.copy() for f in scalars]
 
@@ -794,7 +797,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         # If the ExtensionArray is backed by an ndarray, then
         # just pass that here instead of coercing to object.
-        data = self.to_numpy()
+        data = np.asarray(self)
         if allow_fill and fill_value is None:
             fill_value = self.dtype.na_value
         # fill value should always be translated from the scalar
@@ -817,11 +820,19 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         Returns:
             FData
+
         """
+        if isinstance(to_concat, cls):
+            return to_concat
 
-        first, *others = to_concat
+        return concatenate(to_concat)
 
-        return first.concatenate(*others)
+    def astype(self, dtype, copy=True):
+        if isinstance(dtype, type(self.dtype)):
+            if copy:
+                self = self.copy()
+            return self
+        return super().astype(dtype)
 
 
 def concatenate(objects, as_coordinates=False):
@@ -848,7 +859,7 @@ def concatenate(objects, as_coordinates=False):
     objects = iter(objects)
     first = next(objects, None)
 
-    if not first:
+    if first is None:
         raise ValueError("At least one FData object must be provided "
                          "to concatenate.")
 

@@ -462,7 +462,10 @@ class BasisSmoother(_LinearSmoother):
                              f"({data_matrix.shape[0]}).")
 
         fdatabasis = FDataBasis(
-            basis=self.basis, coefficients=coefficients)
+            basis=self.basis, coefficients=coefficients,
+            dataset_name=X.dataset_name,
+            argument_names=X.argument_names,
+            coordinate_names=X.coordinate_names)
 
         if self.return_basis:
             return fdatabasis

@@ -791,10 +791,16 @@ class FDataGrid(FData):
             basis = basis.copy()
             basis.domain_range = self.domain_range
 
-        return fdbasis.FDataBasis.from_data(self.data_matrix,
-                                            self.sample_points,
-                                            basis,
-                                            **kwargs)
+        fdatabasis = fdbasis.FDataBasis.from_data(self.data_matrix,
+                                                  self.sample_points,
+                                                  basis,
+                                                  **kwargs)
+
+        fdatabasis.dataset_name = self.dataset_name
+        fdatabasis.argument_names = self.argument_names
+        fdatabasis.coordinate_names = self.coordinate_names
+
+        return fdatabasis
 
     def to_grid(self, sample_points=None):
 

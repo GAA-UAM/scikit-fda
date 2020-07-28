@@ -827,7 +827,7 @@ class FDataBasis(FData):
     @property
     def dtype(self):
         """The dtype for this extension array, FDataGridDType"""
-        return FDataBasisDType
+        return FDataBasisDType()
 
     @property
     def nbytes(self) -> int:
@@ -837,11 +837,12 @@ class FDataBasis(FData):
         return self.coefficients.nbytes()
 
 
+@pandas.api.extensions.register_extension_dtype
 class FDataBasisDType(pandas.api.extensions.ExtensionDtype):
     """
     DType corresponding to FDataBasis in Pandas
     """
-    name = 'functional data (basis)'
+    name = 'FDataBasis'
     kind = 'O'
     type = FDataBasis
     na_value = None
@@ -851,8 +852,8 @@ class FDataBasisDType(pandas.api.extensions.ExtensionDtype):
         if string == cls.name:
             return cls()
         else:
-            raise TypeError("Cannot construct a '{}' from "
-                            "'{}'".format(cls, string))
+            raise TypeError(
+                f"Cannot construct a '{cls.__name__}' from '{string}'")
 
     @classmethod
     def construct_array_type(cls):

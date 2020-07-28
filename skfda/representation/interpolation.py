@@ -10,6 +10,7 @@ from scipy.interpolate import (PchipInterpolator, UnivariateSpline,
 
 import numpy as np
 
+from .._utils import _to_array_maybe_ragged
 from .evaluator import Evaluator
 
 
@@ -47,7 +48,7 @@ class _SplineList(abc.ABC):
                               fdata.dim_codomain)
 
         else:
-            res = np.array([self._evaluate_codomain(
+            res = _to_array_maybe_ragged([self._evaluate_codomain(
                 s, e, derivative=derivative)
                 for s, e in zip(self.splines, eval_points)])
 

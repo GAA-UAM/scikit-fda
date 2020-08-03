@@ -186,7 +186,6 @@ class FDataBasis(FData):
                 Data Analysis* (pp. 86-87). Springer.
 
         """
-        from ...preprocessing.smoothing import BasisSmoother
         from ..grid import FDataGrid
 
         # n is the samples
@@ -198,12 +197,7 @@ class FDataBasis(FData):
 
         fd = FDataGrid(data_matrix=data_matrix, sample_points=sample_points)
 
-        smoother = BasisSmoother(
-            basis=basis,
-            method=method,
-            return_basis=True)
-
-        return smoother.fit_transform(fd)
+        return fd.to_basis(basis=basis, method=method)
 
     @property
     def n_samples(self):

@@ -1,5 +1,6 @@
 from builtins import isinstance
 import copy
+import numbers
 
 import pandas.api.extensions
 
@@ -88,7 +89,9 @@ class FDataBasis(FData):
     def __init__(self, basis, coefficients, *, dataset_label=None,
                  dataset_name=None,
                  axes_labels=None, argument_names=None,
-                 coordinate_names=None, extrapolation=None):
+                 coordinate_names=None,
+                 sample_names=None,
+                 extrapolation=None):
         """Construct a FDataBasis object.
 
         Args:
@@ -110,7 +113,8 @@ class FDataBasis(FData):
                          dataset_name=dataset_name,
                          axes_labels=axes_labels,
                          argument_names=argument_names,
-                         coordinate_names=coordinate_names)
+                         coordinate_names=coordinate_names,
+                         sample_names=sample_names)
 
     @classmethod
     def from_data(cls, data_matrix, sample_points, basis,
@@ -389,10 +393,12 @@ class FDataBasis(FData):
             return self.copy(coefficients=np.average(self.coefficients,
                                                      weights=weights,
                                                      axis=0
-                                                     )[np.newaxis, ...]
+                                                     )[np.newaxis, ...],
+                             sample_names=("mean",)
                              )
 
-        return self.copy(coefficients=np.mean(self.coefficients, axis=0))
+        return self.copy(coefficients=np.mean(self.coefficients, axis=0),
+                         sample_names=("mean",))
 
     def gmean(self, eval_points=None):
         """Compute the geometric mean of the functional data object.
@@ -522,6 +528,7 @@ class FDataBasis(FData):
              dataset_name=None,
              argument_names=None,
              coordinate_names=None,
+             sample_names=None,
              extrapolation=None):
         """FDataBasis copy"""
 
@@ -535,10 +542,16 @@ class FDataBasis(FData):
             dataset_name = self.dataset_name
 
         if argument_names is None:
+            # Tuple, immutable
             argument_names = self.argument_names
 
         if coordinate_names is None:
+            # Tuple, immutable
             coordinate_names = self.coordinate_names
+
+        if sample_names is None:
+            # Tuple, immutable
+            sample_names = self.sample_names
 
         if extrapolation is None:
             extrapolation = self.extrapolation
@@ -547,6 +560,7 @@ class FDataBasis(FData):
                           dataset_name=dataset_name,
                           argument_names=argument_names,
                           coordinate_names=coordinate_names,
+                          sample_names=sample_names,
                           extrapolation=extrapolation)
 
     def times(self, other):
@@ -683,7 +697,10 @@ class FDataBasis(FData):
 
         data = [self.coefficients] + [other.coefficients for other in others]
 
-        return self.copy(coefficients=np.concatenate(data, axis=0))
+        sample_names = [fd.sample_names for fd in [self, *others]]
+
+        return self.copy(coefficients=np.concatenate(data, axis=0),
+                         sample_names=sum(sample_names, ()))
 
     def compose(self, fd, *, eval_points=None, **kwargs):
         """Composition of functions.
@@ -712,19 +729,24 @@ class FDataBasis(FData):
     def __getitem__(self, key):
         """Return self[key]."""
 
-        if isinstance(key, int):
-            return self.copy(coefficients=self.coefficients[key:key + 1])
+        if isinstance(key, numbers.Integral):  # To accept also numpy ints
+            key = int(key)
+            return self.copy(coefficients=self.coefficients[key:key + 1],
+                             sample_names=self.sample_names[key:key + 1])
         else:
-            return self.copy(coefficients=self.coefficients[key])
+            return self.copy(coefficients=self.coefficients[key],
+                             sample_names=np.array(self.sample_names)[key])
 
     def __add__(self, other):
         """Addition for FDataBasis object."""
+
         if isinstance(other, FDataBasis):
             if self.basis != other.basis:
                 return NotImplemented
             else:
                 basis, coefs = self.basis._add_same_basis(self.coefficients,
                                                           other.coefficients)
+
         else:
             try:
                 basis, coefs = self.basis._add_constant(self.coefficients,
@@ -732,7 +754,7 @@ class FDataBasis(FData):
             except TypeError:
                 return NotImplemented
 
-        return self.copy(basis=basis, coefficients=coefs)
+        return self._copy_op(other, basis=basis, coefficients=coefs)
 
     def __radd__(self, other):
         """Addition for FDataBasis object."""
@@ -754,7 +776,7 @@ class FDataBasis(FData):
             except TypeError:
                 return NotImplemented
 
-        return self.copy(basis=basis, coefficients=coefs)
+        return self._copy_op(other, basis=basis, coefficients=coefs)
 
     def __rsub__(self, other):
         """Right subtraction for FDataBasis object."""
@@ -770,7 +792,7 @@ class FDataBasis(FData):
         except TypeError:
             return NotImplemented
 
-        return self.copy(basis=basis, coefficients=coefs)
+        return self._copy_op(other, basis=basis, coefficients=coefs)
 
     def __rmul__(self, other):
         """Multiplication for FDataBasis object."""

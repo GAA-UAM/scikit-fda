@@ -112,6 +112,21 @@ def _tuple_of_arrays(original_array):
         return tuple(np.asarray(i) for i in original_array)
 
 
+def _domain_range(sequence):
+
+    try:
+        iter(sequence[0])
+    except TypeError:
+        sequence = (sequence,)
+
+    sequence = tuple(tuple(s) for s in sequence)
+
+    if not all(len(s) == 2 for s in sequence):
+        raise ValueError("Domain intervals should have 2 bounds each")
+
+    return sequence
+
+
 def _to_array_maybe_ragged(array, *, row_shape=None):
     """
     Convert to an array where each element may or may not be of equal length.

@@ -10,8 +10,8 @@ import warnings
 
 import numpy as np
 
-from ..._utils import (_tuple_of_arrays, _same_domain,
-                       _reshape_eval_points, _evaluate_grid)
+from ..._utils import (_domain_range, _same_domain,
+                       _reshape_eval_points)
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -47,7 +47,7 @@ class Basis(ABC):
 
         if domain_range is not None:
 
-            domain_range = _tuple_of_arrays(domain_range)
+            domain_range = _domain_range(domain_range)
 
             # Some checks
             _check_domain(domain_range)
@@ -72,7 +72,7 @@ class Basis(ABC):
     @property
     def domain_range(self):
         if self._domain_range is None:
-            return (np.array([0, 1]),) * self.dim_domain
+            return ((0, 1),) * self.dim_domain
         else:
             return self._domain_range
 
@@ -233,7 +233,7 @@ class Basis(ABC):
         new_copy = copy.deepcopy(self)
 
         if domain_range is not None:
-            domain_range = _tuple_of_arrays(domain_range)
+            domain_range = _domain_range(domain_range)
 
             # Some checks
             _check_domain(domain_range)

@@ -299,7 +299,7 @@ class TestShiftRegistration(unittest.TestCase):
         fd_registered_1 = reg.fit_transform(self.fd)
 
         np.testing.assert_array_almost_equal(
-            fd_registered_1.domain_range.round(3), [[0.022, 0.969]])
+            np.array(fd_registered_1.domain_range).round(3), [[0.022, 0.969]])
 
         reg2 = ShiftRegistration(restrict_domain=True, template=reg.template_)
         fd_registered_2 = reg2.fit_transform(self.fd)

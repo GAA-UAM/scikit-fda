@@ -16,7 +16,7 @@ import scipy.stats.mstats
 import numpy as np
 
 from . import basis as fdbasis
-from .._utils import _tuple_of_arrays, constants
+from .._utils import _tuple_of_arrays, constants, _domain_range
 from ._functional_data import FData
 from .interpolation import SplineInterpolation
 
@@ -69,7 +69,7 @@ class FDataGrid(FData):
                     [5],
                     [6]]]),
             sample_points=(array([2, 4, 5]),),
-            domain_range=array([[2, 5]]),
+            domain_range=((2, 5),),
             ...)
 
         The number of columns of data_matrix have to be the length of
@@ -190,23 +190,21 @@ class FDataGrid(FData):
              for i in range(self.dim_domain)])
 
         if domain_range is None:
-            self._domain_range = self.sample_range
+            domain_range = self.sample_range
             # Default value for domain_range is a list of tuples with
             # the first and last element of each list ofthe sample_points.
-        else:
-            self._domain_range = np.atleast_2d(domain_range)
-            # sample range must by a 2 dimension matrix with as many rows as
-            # dimensions in the domain and 2 columns
-            if (self._domain_range.ndim != 2
-                    or self._domain_range.shape[1] != 2
-                    or self._domain_range.shape[0] != self.dim_domain):
-                raise ValueError("Incorrect shape of domain_range.")
-            for i in range(self.dim_domain):
-                if (self._domain_range[i, 0] > self.sample_points[i][0]
-                        or self._domain_range[i, -1] < self.sample_points[i]
-                        [-1]):
-                    raise ValueError("Sample points must be within the domain "
-                                     "range.")
+
+        self._domain_range = _domain_range(domain_range)
+
+        if len(self._domain_range) != self.dim_domain:
+            raise ValueError("Incorrect shape of domain_range.")
+
+        for i in range(self.dim_domain):
+            if (self._domain_range[i][0] > self.sample_points[i][0]
+                    or self._domain_range[i][-1] < self.sample_points[i]
+                    [-1]):
+                raise ValueError("Sample points must be within the domain "
+                                 "range.")
 
         # Adjust the data matrix if the dimension of the image is one
         if self.data_matrix.ndim == 1 + self.dim_domain:
@@ -403,7 +401,7 @@ class FDataGrid(FData):
                         [ 2. ],
                         [ 4. ]]]),
                 sample_points=(array([0, 1, 2, 3, 4]),),
-                domain_range=array([[0, 4]]),
+                domain_range=((0, 4),),
                 ...)
 
             Second order derivative
@@ -417,7 +415,7 @@ class FDataGrid(FData):
                         [ 2.],
                         [ 5.]]]),
                 sample_points=(array([0, 1, 2, 3, 4]),),
-                domain_range=array([[0, 4]]),
+                domain_range=((0, 4),),
                 ...)
 
         """
@@ -694,7 +692,7 @@ class FDataGrid(FData):
                         [9],
                         [2]]]),
                 sample_points=(array([0, 1, 2, 3, 4]),),
-                domain_range=array([[0, 4]]),
+                domain_range=((0, 4),),
                 ...)
 
         """

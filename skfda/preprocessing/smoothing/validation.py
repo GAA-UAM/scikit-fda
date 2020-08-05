@@ -190,7 +190,7 @@ class SmoothingParameterSearch(GridSearchCV):
                     [ 1.67],
                     [ 2.5 ]]]),
             sample_points=(array([-2., -1.,  0.,  1.,  2.]),),
-            domain_range=array([[-2.,  2.]]),
+            domain_range=((-2.0, 2.0),),
             ...)
 
         Other validation methods can be used such as cross-validation or

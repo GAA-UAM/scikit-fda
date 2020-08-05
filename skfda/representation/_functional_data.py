@@ -640,7 +640,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
     def __eq__(self, other):
         return (
-            self.extrapolation == other.extrapolation
+            type(self) == type(other)
+            and self.extrapolation == other.extrapolation
             and self.dataset_name == other.dataset_name
             and self.argument_names == other.argument_names
             and self.coordinate_names == other.coordinate_names
@@ -751,8 +752,15 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         if copy:
             scalars = [f.copy() for f in scalars]
 
-        if dtype is not None and dtype != cls.dtype.fget(None):
-            raise ValueError(f"Invalid dtype {dtype}")
+        if dtype is None:
+            first_element = next(s for s in scalars if s is not pandas.NA)
+            dtype = first_element.dtype
+
+        scalars = [s if s is not pandas.NA else dtype._na_repr()
+                   for s in scalars]
+
+        if len(scalars) == 0:
+            scalars = [dtype._na_repr()[0:0]]
 
         return cls._concat_same_type(scalars)
 

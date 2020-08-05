@@ -8,7 +8,7 @@ import pandas.api.extensions
 import numpy as np
 
 from .. import grid
-from ..._utils import constants
+from ..._utils import constants, _nanequals
 from .._functional_data import FData
 
 
@@ -670,7 +670,7 @@ class FDataBasis(FData):
         # TODO check all other params
         return (super().__eq__(other)
                 and self.basis == other.basis
-                and np.all(self.coefficients == other.coefficients))
+                and np.all(_nanequals(self.coefficients, other.coefficients)))
 
     def concatenate(self, *others, as_coordinates=False):
         """Join samples from a similar FDataBasis object.
@@ -855,6 +855,11 @@ class FDataBasisDType(pandas.api.extensions.ExtensionDtype):
     @classmethod
     def construct_array_type(cls) -> type:
         return FDataBasis
+
+    def _na_repr(self):
+        return FDataBasis(
+            basis=self.basis,
+            coefficients=((np.NaN,) * self.basis.n_basis,))
 
     def __eq__(self, other: Any) -> bool:
         """

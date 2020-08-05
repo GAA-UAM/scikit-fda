@@ -7,4 +7,4 @@ from ._utils import (_tuple_of_arrays, _cartesian_product,
                      _reshape_eval_points,
                      _evaluate_grid, nquad_vec,
                      _FDataCallable, _pairwise_commutative,
-                     _domain_range)
+                     _domain_range, _nanequals)

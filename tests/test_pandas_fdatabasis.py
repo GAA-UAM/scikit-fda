@@ -1,15 +1,17 @@
+import operator
 import skfda
 
 from pandas import Series
+import pandas
 from pandas.tests.extension import base
 import pytest
+
 import numpy as np
+
 
 ##############################################################################
 # Fixtures
 ##############################################################################
-
-
 @pytest.fixture
 def dtype():
     """A fixture providing the ExtensionDtype to validate."""
@@ -27,7 +29,7 @@ def data():
     * data[0] and data[1] should not be equal
     """
 
-    basis = skfda.representation.basis.Monomial(n_basis=5)
+    basis = skfda.representation.basis.BSpline(n_basis=5)
     coef_matrix = np.arange(100 * 5).reshape(100, 5)
 
     return skfda.FDataBasis(basis=basis, coefficients=coef_matrix)
@@ -109,7 +111,7 @@ def na_cmp():
 @pytest.fixture
 def na_value():
     """The scalar missing value for this type. Default 'None'"""
-    return None
+    return pandas.NA
 
 
 @pytest.fixture
@@ -190,24 +192,32 @@ def as_array(request):
 ##############################################################################
 
 
-# class TestConstructors(base.BaseConstructorsTests):
-#     pass
-#
-#
-# class TestDtype(base.BaseDtypeTests):
-#
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_construct_from_string_own_name(self):
-#         pass
-#
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_is_dtype_from_name(self):
-#         pass
-#
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_eq_with_str(self):
-#         pass
-#
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_construct_from_string(self, dtype):
-#         pass
+class TestConstructors(base.BaseConstructorsTests):
+
+    # Does not support scalars which are also ExtensionArrays
+    @pytest.mark.skip(reason="Unsupported")
+    def test_series_constructor_scalar_with_index(self):
+        pass
+
+    @pytest.mark.skip(reason="Unsupported")
+    def test_from_dtype(self):
+        pass
+
+
+class TestDtype(base.BaseDtypeTests):
+
+    @pytest.mark.skip(reason="Unsupported")
+    def test_construct_from_string_own_name(self):
+        pass
+
+    @pytest.mark.skip(reason="Unsupported")
+    def test_is_dtype_from_name(self):
+        pass
+
+    @pytest.mark.skip(reason="Unsupported")
+    def test_eq_with_str(self):
+        pass
+
+    @pytest.mark.skip(reason="Unsupported")
+    def test_construct_from_string(self, dtype):
+        pass

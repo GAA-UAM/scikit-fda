@@ -117,7 +117,7 @@ class BSpline(Basis):
                 raise ValueError("Must provide either a list of knots or the"
                                  "number of basis.")
         else:
-            knots = list(knots)
+            knots = tuple(knots)
             knots.sort()
             if domain_range is None:
                 domain_range = (knots[0], knots[-1])
@@ -136,7 +136,7 @@ class BSpline(Basis):
                              f"greater than 3.")
 
         self._order = order
-        self._knots = None if knots is None else list(knots)
+        self._knots = None if knots is None else tuple(knots)
         super().__init__(domain_range, n_basis)
 
         # Checks
@@ -148,8 +148,8 @@ class BSpline(Basis):
     @property
     def knots(self):
         if self._knots is None:
-            return list(np.linspace(*self.domain_range[0],
-                                    self.n_basis - self.order + 2))
+            return tuple(np.linspace(*self.domain_range[0],
+                                     self.n_basis - self.order + 2))
         else:
             return self._knots
 
@@ -166,8 +166,8 @@ class BSpline(Basis):
             .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
                 Analysis*. Springer. 50-51.
         """
-        return np.array([self.knots[0]] * (self.order - 1) + self.knots +
-                        [self.knots[-1]] * (self.order - 1))
+        return np.array((self.knots[0],) * (self.order - 1) + self.knots +
+                        (self.knots[-1],) * (self.order - 1))
 
     def _evaluate(self, eval_points):
 

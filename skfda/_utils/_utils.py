@@ -413,6 +413,13 @@ def _pairwise_commutative(function, arg1, arg2=None, **kwargs):
                 (len(arg1), len(arg2)))
 
 
+def _nanequals(a, b):
+    """
+    Compare two arrays considering that NaNs are equal.
+    """
+    return (a == b) | (np.isnan(a) & np.isnan(b))
+
+
 def parameter_aliases(**alias_assignments):
     """Allows using aliases for parameters"""
     def decorator(f):

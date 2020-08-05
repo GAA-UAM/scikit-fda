@@ -118,7 +118,7 @@ class BSpline(Basis):
                                  "number of basis.")
         else:
             knots = tuple(knots)
-            knots.sort()
+            knots = sorted(knots)
             if domain_range is None:
                 domain_range = (knots[0], knots[-1])
             else:

@@ -1,7 +1,7 @@
 import numpy as np
 
-from ..._utils import _list_of_arrays
 from ..._utils import _same_domain
+from ..._utils import _tuple_of_arrays
 from ._basis import Basis
 
 
@@ -84,14 +84,14 @@ class Fourier(Basis):
         """
 
         if domain_range is not None:
-            domain_range = _list_of_arrays(domain_range)
+            domain_range = _tuple_of_arrays(domain_range)
 
             if len(domain_range) != 1:
                 raise ValueError("Domain range should be unidimensional.")
 
             domain_range = domain_range[0]
 
-        self.period = period
+        self._period = period
         # If number of basis is even, add 1
         n_basis += 1 - n_basis % 2
         super().__init__(domain_range, n_basis)
@@ -102,10 +102,6 @@ class Fourier(Basis):
             return self.domain_range[0][1] - self.domain_range[0][0]
         else:
             return self._period
-
-    @period.setter
-    def period(self, value):
-        self._period = value
 
     def _evaluate(self, eval_points):
 
@@ -197,15 +193,15 @@ class Fourier(Basis):
 
         rescale_basis = super().rescale(domain_range)
 
-        if rescale_period is False:
-            rescale_basis.period = self.period
-        else:
+        if rescale_period is True:
+
             domain_rescaled = rescale_basis.domain_range[0]
             domain = self.domain_range[0]
 
-            rescale_basis.period = (self.period *
-                                    (domain_rescaled[1] - domain_rescaled[0]) /
-                                    (domain[1] - domain[0]))
+            rescale_basis._period = (
+                self.period *
+                (domain_rescaled[1] - domain_rescaled[0]) /
+                (domain[1] - domain[0]))
 
         return rescale_basis
 
@@ -221,5 +217,7 @@ class Fourier(Basis):
                 f"n_basis={self.n_basis}, period={self.period})")
 
     def __eq__(self, other):
-        """Equality of Basis"""
         return super().__eq__(other) and self.period == other.period
+
+    def __hash__(self):
+        return hash((super().__hash__(), self.period))

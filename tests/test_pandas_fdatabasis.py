@@ -13,7 +13,10 @@ import numpy as np
 @pytest.fixture
 def dtype():
     """A fixture providing the ExtensionDtype to validate."""
-    return skfda.representation.basis.FDataBasisDType()
+
+    basis = skfda.representation.basis.BSpline(n_basis=5)
+
+    return skfda.representation.basis.FDataBasisDType(basis=basis)
 
 
 @pytest.fixture
@@ -192,4 +195,19 @@ class TestConstructors(base.BaseConstructorsTests):
 
 
 class TestDtype(base.BaseDtypeTests):
-    pass
+
+    @pytest.mark.skip(reason="Unsupported")
+    def test_construct_from_string_own_name(self):
+        pass
+
+    @pytest.mark.skip(reason="Unsupported")
+    def test_is_dtype_from_name(self):
+        pass
+
+    @pytest.mark.skip(reason="Unsupported")
+    def test_eq_with_str(self):
+        pass
+
+    @pytest.mark.skip(reason="Unsupported")
+    def test_construct_from_string(self, dtype):
+        pass

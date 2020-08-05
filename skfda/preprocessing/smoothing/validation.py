@@ -189,7 +189,7 @@ class SmoothingParameterSearch(GridSearchCV):
                     [ 0.67],
                     [ 1.67],
                     [ 2.5 ]]]),
-            sample_points=[array([-2., -1.,  0.,  1.,  2.])],
+            sample_points=(array([-2., -1.,  0.,  1.,  2.]),),
             domain_range=array([[-2.,  2.]]),
             ...)
 

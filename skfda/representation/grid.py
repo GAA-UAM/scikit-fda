@@ -16,7 +16,7 @@ import scipy.stats.mstats
 import numpy as np
 
 from . import basis as fdbasis
-from .._utils import _list_of_arrays, constants
+from .._utils import _tuple_of_arrays, constants
 from ._functional_data import FData
 from .interpolation import SplineInterpolation
 
@@ -68,7 +68,7 @@ class FDataGrid(FData):
                    [[4],
                     [5],
                     [6]]]),
-            sample_points=[array([2, 4, 5])],
+            sample_points=(array([2, 4, 5]),),
             domain_range=array([[2, 5]]),
             ...)
 
@@ -166,7 +166,7 @@ class FDataGrid(FData):
         self.data_matrix = np.atleast_2d(data_matrix)
 
         if sample_points is None:
-            self.sample_points = _list_of_arrays(
+            self.sample_points = _tuple_of_arrays(
                 [np.linspace(0, 1, self.data_matrix.shape[i]) for i in
                  range(1, self.data_matrix.ndim)])
 
@@ -174,7 +174,7 @@ class FDataGrid(FData):
             # Check that the dimension of the data matches the sample_points
             # list
 
-            self.sample_points = _list_of_arrays(sample_points)
+            self.sample_points = _tuple_of_arrays(sample_points)
 
             data_shape = self.data_matrix.shape[1: 1 + self.dim_domain]
             sample_points_shape = [len(i) for i in self.sample_points]
@@ -402,7 +402,7 @@ class FDataGrid(FData):
                         [ 1.5],
                         [ 2. ],
                         [ 4. ]]]),
-                sample_points=[array([0, 1, 2, 3, 4])],
+                sample_points=(array([0, 1, 2, 3, 4]),),
                 domain_range=array([[0, 4]]),
                 ...)
 
@@ -416,7 +416,7 @@ class FDataGrid(FData):
                         [-1.],
                         [ 2.],
                         [ 5.]]]),
-                sample_points=[array([0, 1, 2, 3, 4])],
+                sample_points=(array([0, 1, 2, 3, 4]),),
                 domain_range=array([[0, 4]]),
                 ...)
 
@@ -693,7 +693,7 @@ class FDataGrid(FData):
                         [7],
                         [9],
                         [2]]]),
-                sample_points=[array([0, 1, 2, 3, 4])],
+                sample_points=(array([0, 1, 2, 3, 4]),),
                 domain_range=array([[0, 4]]),
                 ...)
 
@@ -798,8 +798,7 @@ class FDataGrid(FData):
 
         # Readjust the domain range if there was not an explicit one
         if basis._domain_range is None:
-            basis = basis.copy()
-            basis.domain_range = self.domain_range
+            basis = basis.copy(domain_range=self.domain_range)
 
         return fdbasis.FDataBasis.from_data(self.data_matrix,
                                             self.sample_points,
@@ -1115,7 +1114,7 @@ class FDataGridDType(pandas.api.extensions.ExtensionDtype):
     name = 'FDataGrid'
     kind = 'O'
     type = FDataGrid
-    na_value = None
+    na_value = pandas.NA
 
     @classmethod
     def construct_from_string(cls, string):

@@ -145,7 +145,7 @@ class MagnitudeShapePlot:
                         [-1. ],
                         [-1. ],
                         [-1. ]]]),
-                sample_points=[array([ 0,  2,  4,  6,  8, 10])],
+                sample_points=(array([ 0,  2,  4,  6,  8, 10]),),
                 domain_range=array([[ 0, 10]]),
                 ...),
             depth_method=projection_depth,

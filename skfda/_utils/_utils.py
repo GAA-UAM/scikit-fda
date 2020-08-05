@@ -80,7 +80,7 @@ def _to_grid(X, y, eval_points=None):
     return X, y
 
 
-def _list_of_arrays(original_array):
+def _tuple_of_arrays(original_array):
     """Convert to a list of arrays.
 
     If the original list is one-dimensional (e.g. [1, 2, 3]), return list to
@@ -107,9 +107,9 @@ def _list_of_arrays(original_array):
         unidimensional = True
 
     if unidimensional:
-        return [np.asarray(original_array)]
+        return (np.asarray(original_array),)
     else:
-        return [np.asarray(i) for i in original_array]
+        return tuple(np.asarray(i) for i in original_array)
 
 
 def _to_array_maybe_ragged(array, *, row_shape=None):
@@ -251,7 +251,7 @@ def _one_grid_to_points(axes, *, dim_domain):
     Returns also the shape containing the information of how each point
     is formed.
     """
-    axes = _list_of_arrays(axes)
+    axes = _tuple_of_arrays(axes)
 
     if len(axes) != dim_domain:
         raise ValueError(f"Length of axes should be "

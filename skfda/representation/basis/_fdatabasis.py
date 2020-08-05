@@ -1,6 +1,7 @@
 from builtins import isinstance
 import copy
 import numbers
+from typing import Any
 
 import pandas.api.extensions
 
@@ -55,7 +56,7 @@ class FDataBasis(FData):
         >>> coefficients = [1, 1, 3, .5]
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
-            basis=Monomial(domain_range=[array([0, 1])], n_basis=4),
+            basis=Monomial(domain_range=(array([0, 1]),), n_basis=4),
             coefficients=[[ 1.   1.   3.   0.5]],
             ...)
 
@@ -389,7 +390,7 @@ class FDataBasis(FData):
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
             >>> FDataBasis(basis, coefficients).mean()
             FDataBasis(
-                basis=Monomial(domain_range=[array([0, 1])], n_basis=4),
+                basis=Monomial(domain_range=(array([0, 1]),), n_basis=4),
                 coefficients=[[ 1.  1.  3.  0.5]],
                 ...)
 
@@ -495,7 +496,7 @@ class FDataBasis(FData):
                        [[1],
                         [2],
                         [5]]]),
-                sample_points=[array([0, 1, 2])],
+                sample_points=(array([0, 1, 2]),),
                 domain_range=array([[0, 5]]),
                 ...)
 
@@ -827,7 +828,7 @@ class FDataBasis(FData):
     @property
     def dtype(self):
         """The dtype for this extension array, FDataGridDType"""
-        return FDataBasisDType()
+        return FDataBasisDType(basis=self.basis)
 
     @property
     def nbytes(self) -> int:
@@ -837,24 +838,39 @@ class FDataBasis(FData):
         return self.coefficients.nbytes()
 
 
-@pandas.api.extensions.register_extension_dtype
 class FDataBasisDType(pandas.api.extensions.ExtensionDtype):
     """
     DType corresponding to FDataBasis in Pandas
     """
-    name = 'FDataBasis'
     kind = 'O'
     type = FDataBasis
-    na_value = None
+    name = 'FDataBasis'
+    na_value = pandas.NA
+
+    _metadata = ("basis")
+
+    def __init__(self, basis) -> None:
+        self.basis = basis
 
     @classmethod
-    def construct_from_string(cls, string):
-        if string == cls.name:
-            return cls()
-        else:
-            raise TypeError(
-                f"Cannot construct a '{cls.__name__}' from '{string}'")
-
-    @classmethod
-    def construct_array_type(cls):
+    def construct_array_type(cls) -> type:
         return FDataBasis
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Rules for equality (similar to categorical):
+        1) Any FData is equal to the string 'category'
+        2) Any FData is equal to itself
+        3) Otherwise, they are equal if the arguments are equal.
+        6) Any other comparison returns False
+        """
+        if isinstance(other, str):
+            return other == self.name
+        elif other is self:
+            return True
+        else:
+            return (isinstance(other, FDataBasisDType)
+                    and self.basis == other.basis)
+
+    def __hash__(self):
+        return hash(self.basis)

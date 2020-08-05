@@ -5,8 +5,8 @@ import scipy.interpolate
 
 import numpy as np
 
-from ..._utils import _list_of_arrays
 from ..._utils import _same_domain
+from ..._utils import _tuple_of_arrays
 from ._basis import Basis
 
 
@@ -104,7 +104,7 @@ class BSpline(Basis):
         """
 
         if domain_range is not None:
-            domain_range = _list_of_arrays(domain_range)
+            domain_range = _tuple_of_arrays(domain_range)
 
             if len(domain_range) != 1:
                 raise ValueError("Domain range should be unidimensional.")
@@ -135,8 +135,8 @@ class BSpline(Basis):
                              f"order of the bspline ({order}) should be "
                              f"greater than 3.")
 
-        self.order = order
-        self.knots = None if knots is None else list(knots)
+        self._order = order
+        self._knots = None if knots is None else list(knots)
         super().__init__(domain_range, n_basis)
 
         # Checks
@@ -153,9 +153,9 @@ class BSpline(Basis):
         else:
             return self._knots
 
-    @knots.setter
-    def knots(self, value):
-        self._knots = value
+    @property
+    def order(self):
+        return self._order
 
     def _evaluation_knots(self):
         """
@@ -245,12 +245,6 @@ class BSpline(Basis):
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
                 f"n_basis={self.n_basis}, order={self.order}, "
                 f"knots={self.knots})")
-
-    def __eq__(self, other):
-        """Equality of Basis"""
-        return (super().__eq__(other)
-                and self.order == other.order
-                and self.knots == other.knots)
 
     def _gram_matrix(self):
         # Places m knots at the boundaries
@@ -403,3 +397,11 @@ class BSpline(Basis):
     def inknots(self):
         """Return number of basis."""
         return self.knots[1:len(self.knots) - 1]
+
+    def __eq__(self, other):
+        return (super().__eq__(other)
+                and self.order == other.order
+                and self.knots == other.knots)
+
+    def __hash__(self):
+        return hash((super().__hash__(), self.order, self.knots))

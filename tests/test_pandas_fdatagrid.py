@@ -186,9 +186,9 @@ def as_array(request):
 ##############################################################################
 
 
-class TestConstructors(base.BaseConstructorsTests):
-    pass
-
-
-class TestDtype(base.BaseDtypeTests):
-    pass
+# class TestConstructors(base.BaseConstructorsTests):
+#     pass
+#
+#
+# class TestDtype(base.BaseDtypeTests):
+#     pass

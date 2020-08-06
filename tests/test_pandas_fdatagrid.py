@@ -49,7 +49,8 @@ def data_for_twos():
 def data_missing():
     """Length-2 array with [NA, Valid]"""
 
-    data_matrix = np.arange(2 * 10 * 10 * 3).reshape(2, 10, 10, 3)
+    data_matrix = np.arange(
+        2 * 10 * 10 * 3, dtype=np.float_).reshape(2, 10, 10, 3)
     data_matrix[0, ...] = np.NaN
     sample_points = [
         np.arange(10),
@@ -116,7 +117,11 @@ def na_cmp():
     True if both arguments are (scalar) NA for your type.
     By default, uses ``operator.is_``
     """
-    return operator.is_
+    def isna(x, y):
+        return ((x is pandas.NA or all(x.isna()))
+                and (y is pandas.NA or all(y.isna())))
+
+    return isna
 
 
 @pytest.fixture
@@ -250,3 +255,7 @@ class TestDtype(base.BaseDtypeTests):
     @pytest.mark.skip(reason="Unsupported")
     def test_construct_from_string(self, dtype):
         pass
+
+
+class TestGetitem(base.BaseGetitemTests):
+    pass

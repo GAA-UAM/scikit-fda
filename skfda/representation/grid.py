@@ -17,7 +17,8 @@ import scipy.stats.mstats
 import numpy as np
 
 from . import basis as fdbasis
-from .._utils import _tuple_of_arrays, constants, _domain_range, _int_to_real
+from .._utils import (_tuple_of_arrays, constants,
+                      _domain_range, _int_to_real, _check_array_key)
 from ._functional_data import FData
 from .interpolation import SplineInterpolation
 
@@ -1052,14 +1053,10 @@ class FDataGrid(FData):
     def __getitem__(self, key):
         """Return self[key]."""
 
-        if isinstance(key, numbers.Integral):  # To accept also numpy ints
-            key = int(key)
-            return self.copy(data_matrix=self.data_matrix[key:key + 1],
-                             sample_names=self.sample_names[key:key + 1])
+        key = _check_array_key(self.data_matrix, key)
 
-        else:
-            return self.copy(data_matrix=self.data_matrix[key],
-                             sample_names=np.array(self.sample_names)[key])
+        return self.copy(data_matrix=self.data_matrix[key],
+                         sample_names=np.array(self.sample_names)[key])
 
     #####################################################################
     # Numpy methods

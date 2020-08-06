@@ -48,7 +48,14 @@ def data_for_twos():
 @pytest.fixture
 def data_missing():
     """Length-2 array with [NA, Valid]"""
-    raise NotImplementedError
+
+    data_matrix = np.arange(2 * 10 * 10 * 3).reshape(2, 10, 10, 3)
+    data_matrix[0, ...] = np.NaN
+    sample_points = [
+        np.arange(10),
+        np.arange(10) / 10]
+
+    return skfda.FDataGrid(data_matrix, sample_points=sample_points)
 
 
 @pytest.fixture(params=["data", "data_missing"])
@@ -194,6 +201,19 @@ def as_array(request):
 ##############################################################################
 # Tests
 ##############################################################################
+
+
+class TestCasting(base.BaseCastingTests):
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_astype_str(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_astype_string(self):
+        pass
 
 
 class TestConstructors(base.BaseConstructorsTests):

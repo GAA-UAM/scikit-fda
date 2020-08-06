@@ -670,8 +670,7 @@ class FDataBasis(FData):
         # TODO check all other params
         return (super().equals(other)
                 and self.basis == other.basis
-                and np.array_equal(self.coefficients, other.coefficients,
-                                   equal_nan=True))
+                and np.array_equal(self.coefficients, other.coefficients))
 
     def __eq__(self, other):
         """Elementwise equality of FDataBasis"""
@@ -850,6 +849,15 @@ class FDataBasis(FData):
         The number of bytes needed to store this object in memory.
         """
         return self.coefficients.nbytes()
+
+    def isna(self):
+        """
+        A 1-D array indicating if each value is missing.
+
+        Returns:
+            na_values (np.ndarray): Positions of NA.
+        """
+        return np.all(np.isnan(self.coefficients), axis=1)
 
 
 class FDataBasisDType(pandas.api.extensions.ExtensionDtype):

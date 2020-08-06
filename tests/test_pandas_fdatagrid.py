@@ -15,7 +15,12 @@ import numpy as np
 @pytest.fixture
 def dtype():
     """A fixture providing the ExtensionDtype to validate."""
-    return skfda.representation.grid.FDataGridDType()
+    return skfda.representation.grid.FDataGridDType(
+        sample_points=[
+            np.arange(10),
+            np.arange(10) / 10],
+        dim_codomain=3
+    )
 
 
 @pytest.fixture
@@ -26,9 +31,12 @@ def data():
     * data[0] and data[1] should not be equal
     """
 
-    data_matrix = np.arange(100 * 10).reshape(100, 10)
+    data_matrix = np.arange(100 * 10 * 10 * 3).reshape(100, 10, 10, 3)
+    sample_points = [
+        np.arange(10),
+        np.arange(10) / 10]
 
-    return skfda.FDataGrid(data_matrix)
+    return skfda.FDataGrid(data_matrix, sample_points=sample_points)
 
 
 @pytest.fixture
@@ -188,37 +196,37 @@ def as_array(request):
 ##############################################################################
 
 
-# class TestConstructors(base.BaseConstructorsTests):
-#
-#     # Does not support scalars which are also ExtensionArrays
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_series_constructor_scalar_with_index(self):
-#         pass
-#
-#     # Tries to construct dtype from string
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_from_dtype(self):
-#         pass
-#
-#
-# class TestDtype(base.BaseDtypeTests):
-#
-#     # Tries to construct dtype from string
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_construct_from_string_own_name(self):
-#         pass
-#
-#     # Tries to construct dtype from string
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_is_dtype_from_name(self):
-#         pass
-#
-#     # Tries to construct dtype from string
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_eq_with_str(self):
-#         pass
-#
-#     # Tries to construct dtype from string
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_construct_from_string(self, dtype):
-#         pass
+class TestConstructors(base.BaseConstructorsTests):
+
+    # Does not support scalars which are also ExtensionArrays
+    @pytest.mark.skip(reason="Unsupported")
+    def test_series_constructor_scalar_with_index(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_from_dtype(self):
+        pass
+
+
+class TestDtype(base.BaseDtypeTests):
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_construct_from_string_own_name(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_is_dtype_from_name(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_eq_with_str(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_construct_from_string(self, dtype):
+        pass

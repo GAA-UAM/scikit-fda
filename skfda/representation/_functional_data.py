@@ -769,15 +769,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         raise NotImplementedError("Factorization does not make sense for "
                                   "functional data")
 
-    def isna(self):
-        """
-        A 1-D array indicating if each value is missing.
-
-        Returns:
-            na_values (np.ndarray): Array full of False values.
-        """
-        return np.zeros(self.n_samples, dtype=bool)
-
     def take(self, indices, allow_fill=False, fill_value=None, axis=0):
         """Take elements from an array.
 

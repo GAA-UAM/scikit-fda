@@ -187,8 +187,7 @@ class FDataGrid(FData):
                                  .format(data_shape, sample_points_shape))
 
         self._sample_range = np.array(
-            [(self.sample_points[i][0], self.sample_points[i][-1])
-             for i in range(self.dim_domain)])
+            [(s[0], s[-1]) for s in self.sample_points])
 
         if domain_range is None:
             domain_range = self.sample_range
@@ -527,8 +526,7 @@ class FDataGrid(FData):
         if not super().equals(other):
             return False
 
-        if not np.array_equal(self.data_matrix, other.data_matrix,
-                              equal_nan=True):
+        if not np.array_equal(self.data_matrix, other.data_matrix):
             return False
 
         if len(self.sample_points) != len(other.sample_points):
@@ -557,7 +555,8 @@ class FDataGrid(FData):
                              f"len(self)={len(self)} and "
                              f"len(other)={len(other)}")
 
-        return np.all(self.coefficients == other.coefficients, axis=1)
+        return np.all(self.data_matrix == other.data_matrix,
+                      axis=tuple(range(1, self.data_matrix.ndim)))
 
     def _get_op_matrix(self, other):
         if isinstance(other, numbers.Number):
@@ -1118,6 +1117,16 @@ class FDataGrid(FData):
         return self.data_matrix.nbytes() + sum(
             p.nbytes() for p in self.sample_points)
 
+    def isna(self):
+        """
+        A 1-D array indicating if each value is missing.
+
+        Returns:
+            na_values (np.ndarray): Positions of NA.
+        """
+        return np.all(np.isnan(self.data_matrix),
+                      axis=tuple(range(1, self.data_matrix.ndim)))
+
 
 class FDataGridDType(pandas.api.extensions.ExtensionDtype):
     """
@@ -1135,8 +1144,7 @@ class FDataGridDType(pandas.api.extensions.ExtensionDtype):
 
         if domain_range is None:
             domain_range = np.array(
-                [(self.sample_points[i][0], self.sample_points[i][-1])
-                 for i in range(self.dim_domain)])
+                [(s[0], s[-1]) for s in self.sample_points])
 
         self.domain_range = _domain_range(domain_range)
         self.dim_codomain = dim_codomain

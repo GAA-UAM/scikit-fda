@@ -192,37 +192,37 @@ def as_array(request):
 ##############################################################################
 
 
-# class TestConstructors(base.BaseConstructorsTests):
-#
-#     # Does not support scalars which are also ExtensionArrays
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_series_constructor_scalar_with_index(self):
-#         pass
-#
-#     # Tries to construct dtype from string
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_from_dtype(self):
-#         pass
-#
-#
-# class TestDtype(base.BaseDtypeTests):
-#
-#     # Tries to construct dtype from string
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_construct_from_string_own_name(self):
-#         pass
-#
-#     # Tries to construct dtype from string
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_is_dtype_from_name(self):
-#         pass
-#
-#     # Tries to construct dtype from string
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_eq_with_str(self):
-#         pass
-#
-#     # Tries to construct dtype from string
-#     @pytest.mark.skip(reason="Unsupported")
-#     def test_construct_from_string(self, dtype):
-#         pass
+class TestConstructors(base.BaseConstructorsTests):
+
+    # Does not support scalars which are also ExtensionArrays
+    @pytest.mark.skip(reason="Unsupported")
+    def test_series_constructor_scalar_with_index(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_from_dtype(self):
+        pass
+
+
+class TestDtype(base.BaseDtypeTests):
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_construct_from_string_own_name(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_is_dtype_from_name(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_eq_with_str(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_construct_from_string(self, dtype):
+        pass

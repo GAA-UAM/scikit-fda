@@ -46,7 +46,7 @@ def data_missing():
     """Length-2 array with [NA, Valid]"""
 
     basis = skfda.representation.basis.BSpline(n_basis=5)
-    coef_matrix = np.arange(2 * 5).reshape(2, 5)
+    coef_matrix = np.arange(2 * 5, dtype=np.float_).reshape(2, 5)
     coef_matrix[0, :] = np.NaN
 
     return skfda.FDataBasis(basis=basis, coefficients=coef_matrix)
@@ -250,5 +250,5 @@ class TestDtype(base.BaseDtypeTests):
         pass
 
 
-# class TestGetitem(base.BaseGetitemTests):
-#     pass
+class TestGetitem(base.BaseGetitemTests):
+    pass

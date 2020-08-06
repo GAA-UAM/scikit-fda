@@ -1,8 +1,10 @@
 """Module with generic methods"""
 
 import functools
+import numbers
 import types
 
+from pandas.api.indexers import check_array_indexer
 import scipy.integrate
 
 import numpy as np
@@ -414,8 +416,26 @@ def _pairwise_commutative(function, arg1, arg2=None, **kwargs):
 
 
 def _int_to_real(array):
-
+    """
+    Convert integer arrays to floating point.
+    """
     return array + 0.0
+
+
+def _check_array_key(array, key):
+    """
+    Checks a getitem key.
+    """
+
+    key = check_array_indexer(array, key)
+
+    if isinstance(key, numbers.Integral):  # To accept also numpy ints
+        key = int(key)
+        key = range(len(array))[key]
+
+        return slice(key, key + 1)
+    else:
+        return key
 
 
 def _check_estimator(estimator):

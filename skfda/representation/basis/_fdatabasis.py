@@ -8,7 +8,7 @@ import pandas.api.extensions
 import numpy as np
 
 from .. import grid
-from ..._utils import constants, _int_to_real
+from ..._utils import constants, _int_to_real, _check_array_key
 from .._functional_data import FData
 
 
@@ -749,16 +749,10 @@ class FDataBasis(FData):
     def __getitem__(self, key):
         """Return self[key]."""
 
-        if isinstance(key, numbers.Integral):  # To accept also numpy ints
-            key = int(key)
-            if key < 0:
-                key = range(len(self))[key]
+        key = _check_array_key(self.coefficients, key)
 
-            return self.copy(coefficients=self.coefficients[key:key + 1],
-                             sample_names=self.sample_names[key:key + 1])
-        else:
-            return self.copy(coefficients=self.coefficients[key],
-                             sample_names=np.array(self.sample_names)[key])
+        return self.copy(coefficients=self.coefficients[key],
+                         sample_names=np.array(self.sample_names)[key])
 
     def __add__(self, other):
         """Addition for FDataBasis object."""

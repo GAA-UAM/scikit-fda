@@ -17,7 +17,7 @@ import scipy.stats.mstats
 import numpy as np
 
 from . import basis as fdbasis
-from .._utils import _tuple_of_arrays, constants, _domain_range
+from .._utils import _tuple_of_arrays, constants, _domain_range, _int_to_real
 from ._functional_data import FData
 from .interpolation import SplineInterpolation
 
@@ -62,15 +62,15 @@ class FDataGrid(FData):
         >>> sample_points = [2, 4, 5]
         >>> FDataGrid(data_matrix, sample_points)
         FDataGrid(
-            array([[[1],
-                    [2],
-                    [3]],
+            array([[[ 1.],
+                    [ 2.],
+                    [ 3.]],
         <BLANKLINE>
-                   [[4],
-                    [5],
-                    [6]]]),
-            sample_points=(array([2, 4, 5]),),
-            domain_range=((2, 5),),
+                   [[ 4.],
+                    [ 5.],
+                    [ 6.]]]),
+            sample_points=(array([ 2., 4., 5.]),),
+            domain_range=((2.0, 5.0),),
             ...)
 
         The number of columns of data_matrix have to be the length of
@@ -164,11 +164,11 @@ class FDataGrid(FData):
                 of the number of dimensions of the domain plus the number of
                 dimensions of the image.
         """
-        self.data_matrix = np.atleast_2d(data_matrix)
+        self.data_matrix = _int_to_real(np.atleast_2d(data_matrix))
 
         if sample_points is None:
             self.sample_points = _tuple_of_arrays(
-                [np.linspace(0, 1, self.data_matrix.shape[i]) for i in
+                [np.linspace(0., 1., self.data_matrix.shape[i]) for i in
                  range(1, self.data_matrix.ndim)])
 
         else:
@@ -400,8 +400,8 @@ class FDataGrid(FData):
                         [ 1.5],
                         [ 2. ],
                         [ 4. ]]]),
-                sample_points=(array([0, 1, 2, 3, 4]),),
-                domain_range=((0, 4),),
+                sample_points=(array([ 0., 1., 2., 3., 4.]),),
+                domain_range=((0.0, 4.0),),
                 ...)
 
             Second order derivative
@@ -414,8 +414,8 @@ class FDataGrid(FData):
                         [-1.],
                         [ 2.],
                         [ 5.]]]),
-                sample_points=(array([0, 1, 2, 3, 4]),),
-                domain_range=((0, 4),),
+                sample_points=(array([ 0., 1., 2., 3., 4.]),),
+                domain_range=((0.0, 4.0),),
                 ...)
 
         """
@@ -691,19 +691,19 @@ class FDataGrid(FData):
             >>> fd_2 = FDataGrid([3,4,7,9,2], range(5))
             >>> fd.concatenate(fd_2)
             FDataGrid(
-                array([[[1],
-                        [2],
-                        [4],
-                        [5],
-                        [8]],
+                array([[[ 1.],
+                        [ 2.],
+                        [ 4.],
+                        [ 5.],
+                        [ 8.]],
             <BLANKLINE>
-                       [[3],
-                        [4],
-                        [7],
-                        [9],
-                        [2]]]),
-                sample_points=(array([0, 1, 2, 3, 4]),),
-                domain_range=((0, 4),),
+                       [[ 3.],
+                        [ 4.],
+                        [ 7.],
+                        [ 9.],
+                        [ 2.]]]),
+                sample_points=(array([ 0., 1., 2., 3., 4.]),),
+                domain_range=((0.0, 4.0),),
                 ...)
 
         """

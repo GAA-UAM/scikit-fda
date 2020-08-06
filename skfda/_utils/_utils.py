@@ -109,9 +109,9 @@ def _tuple_of_arrays(original_array):
         unidimensional = True
 
     if unidimensional:
-        return (np.asarray(original_array),)
+        return (_int_to_real(np.asarray(original_array)),)
     else:
-        return tuple(np.asarray(i) for i in original_array)
+        return tuple(_int_to_real(np.asarray(i)) for i in original_array)
 
 
 def _domain_range(sequence):

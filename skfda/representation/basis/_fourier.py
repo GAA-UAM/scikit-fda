@@ -1,7 +1,7 @@
 import numpy as np
 
+from ..._utils import _domain_range
 from ..._utils import _same_domain
-from ..._utils import _tuple_of_arrays
 from ._basis import Basis
 
 
@@ -84,7 +84,7 @@ class Fourier(Basis):
         """
 
         if domain_range is not None:
-            domain_range = _tuple_of_arrays(domain_range)
+            domain_range = _domain_range(domain_range)
 
             if len(domain_range) != 1:
                 raise ValueError("Domain range should be unidimensional.")

@@ -496,7 +496,7 @@ class FDataBasis(FData):
                        [[ 1.],
                         [ 2.],
                         [ 5.]]]),
-                sample_points=(array([0, 1, 2]),),
+                sample_points=(array([ 0., 1., 2.]),),
                 domain_range=((0, 5),),
                 ...)
 

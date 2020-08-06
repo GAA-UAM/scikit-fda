@@ -1111,8 +1111,8 @@ class FDataGrid(FData):
         """
         The number of bytes needed to store this object in memory.
         """
-        return self.data_matrix.nbytes() + sum(
-            p.nbytes() for p in self.sample_points)
+        return self.data_matrix.nbytes + sum(
+            p.nbytes for p in self.sample_points)
 
     def isna(self):
         """

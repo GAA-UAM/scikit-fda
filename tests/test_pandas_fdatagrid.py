@@ -259,3 +259,21 @@ class TestDtype(base.BaseDtypeTests):
 
 class TestGetitem(base.BaseGetitemTests):
     pass
+
+
+class TestInterface(base.BaseInterfaceTests):
+
+    # Does not support scalars which are also array_like
+    @pytest.mark.skip(reason="Unsupported")
+    def test_array_interface(self):
+        pass
+
+    # We do not implement setitem
+    @pytest.mark.skip(reason="Unsupported")
+    def test_copy(self, dtype):
+        pass
+
+    # We do not implement setitem
+    @pytest.mark.skip(reason="Unsupported")
+    def test_view(self, dtype):
+        pass

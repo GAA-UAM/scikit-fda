@@ -845,7 +845,7 @@ class FDataBasis(FData):
         """
         The number of bytes needed to store this object in memory.
         """
-        return self.coefficients.nbytes()
+        return self.coefficients.nbytes
 
     def isna(self):
         """

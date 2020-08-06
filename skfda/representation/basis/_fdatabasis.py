@@ -8,7 +8,7 @@ import pandas.api.extensions
 import numpy as np
 
 from .. import grid
-from ..._utils import constants
+from ..._utils import constants, _int_to_real
 from .._functional_data import FData
 
 
@@ -101,7 +101,7 @@ class FDataBasis(FData):
                 have the same length or number of columns as the number of
                 basis function in the basis.
         """
-        coefficients = np.atleast_2d(coefficients)
+        coefficients = _int_to_real(np.atleast_2d(coefficients))
         if coefficients.shape[1] != basis.n_basis:
             raise ValueError("The length or number of columns of coefficients "
                              "has to be the same equal to the number of "
@@ -490,12 +490,12 @@ class FDataBasis(FData):
             ...                 basis=Monomial((0,5), n_basis=3))
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
-                array([[[1],
-                        [3],
-                        [7]],
-                       [[1],
-                        [2],
-                        [5]]]),
+                array([[[ 1.],
+                        [ 3.],
+                        [ 7.]],
+                       [[ 1.],
+                        [ 2.],
+                        [ 5.]]]),
                 sample_points=(array([0, 1, 2]),),
                 domain_range=((0, 5),),
                 ...)
@@ -751,6 +751,9 @@ class FDataBasis(FData):
 
         if isinstance(key, numbers.Integral):  # To accept also numpy ints
             key = int(key)
+            if key < 0:
+                key = range(len(self))[key]
+
             return self.copy(coefficients=self.coefficients[key:key + 1],
                              sample_names=self.sample_names[key:key + 1])
         else:

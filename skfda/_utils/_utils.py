@@ -413,63 +413,9 @@ def _pairwise_commutative(function, arg1, arg2=None, **kwargs):
                 (len(arg1), len(arg2)))
 
 
-def parameter_aliases(**alias_assignments):
-    """Allows using aliases for parameters"""
-    def decorator(f):
+def _int_to_real(array):
 
-        if isinstance(f, (types.FunctionType, types.LambdaType)):
-            # f is a function
-            @functools.wraps(f)
-            def aliasing_function(*args, **kwargs):
-                nonlocal alias_assignments
-                for parameter_name, aliases in alias_assignments.items():
-                    aliases = tuple(aliases)
-                    aliases_used = [a for a in kwargs
-                                    if a in aliases + (parameter_name,)]
-                    if len(aliases_used) > 1:
-                        raise ValueError(
-                            f"Several arguments with the same meaning used: " +
-                            str(aliases_used))
-
-                    elif len(aliases_used) == 1:
-                        arg = kwargs.pop(aliases_used[0])
-                        kwargs[parameter_name] = arg
-
-                return f(*args, **kwargs)
-            return aliasing_function
-
-        else:
-            # f is a class
-
-            class cls(f):
-                pass
-
-            nonlocal alias_assignments
-            init = cls.__init__
-            cls.__init__ = parameter_aliases(**alias_assignments)(init)
-
-            set_params = getattr(cls, "set_params", None)
-            if set_params is not None:  # For estimators
-                cls.set_params = parameter_aliases(
-                    **alias_assignments)(set_params)
-
-            for key, value in alias_assignments.items():
-                def getter(self):
-                    return getattr(self, key)
-
-                def setter(self, new_value):
-                    return setattr(self, key, new_value)
-
-                for alias in value:
-                    setattr(cls, alias, property(getter, setter))
-
-            cls.__name__ = f.__name__
-            cls.__doc__ = f.__doc__
-            cls.__module__ = f.__module__
-
-            return cls
-
-    return decorator
+    return array + 0.0
 
 
 def _check_estimator(estimator):

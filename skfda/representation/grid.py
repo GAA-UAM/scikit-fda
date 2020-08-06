@@ -8,8 +8,9 @@ list of discretisation points.
 
 import copy
 import numbers
-import findiff
+from typing import Any
 
+import findiff
 import pandas.api.extensions
 import scipy.stats.mstats
 
@@ -521,15 +522,13 @@ class FDataGrid(FData):
             scipy.stats.mstats.gmean(self.data_matrix, 0)],
             sample_names=("geometric mean",))
 
-    def __eq__(self, other):
+    def equals(self, other):
         """Comparison of FDataGrid objects"""
-        if not isinstance(other, FDataGrid):
-            return NotImplemented
-
-        if not super().__eq__(other):
+        if not super().equals(other):
             return False
 
-        if not np.array_equal(self.data_matrix, other.data_matrix):
+        if not np.array_equal(self.data_matrix, other.data_matrix,
+                              equal_nan=True):
             return False
 
         if len(self.sample_points) != len(other.sample_points):
@@ -546,6 +545,19 @@ class FDataGrid(FData):
             return False
 
         return True
+
+    def __eq__(self, other):
+        """Elementwise equality of FDataGrid"""
+
+        if type(self) != type(other) or self.dtype != other.dtype:
+            raise TypeError("Types are not equal")
+
+        if len(self) != len(other):
+            raise ValueError(f"Different lengths: "
+                             f"len(self)={len(self)} and "
+                             f"len(other)={len(other)}")
+
+        return np.all(self.coefficients == other.coefficients, axis=1)
 
     def _get_op_matrix(self, other):
         if isinstance(other, numbers.Number):
@@ -1093,7 +1105,10 @@ class FDataGrid(FData):
     @property
     def dtype(self):
         """The dtype for this extension array, FDataGridDType"""
-        return FDataGridDType()
+        return FDataGridDType(
+            sample_points=self.sample_points,
+            domain_range=self.domain_range,
+            dim_codomain=self.dim_codomain)
 
     @property
     def nbytes(self) -> int:
@@ -1104,7 +1119,6 @@ class FDataGrid(FData):
             p.nbytes() for p in self.sample_points)
 
 
-@pandas.api.extensions.register_extension_dtype
 class FDataGridDType(pandas.api.extensions.ExtensionDtype):
     """
     DType corresponding to FDataGrid in Pandas
@@ -1114,14 +1128,54 @@ class FDataGridDType(pandas.api.extensions.ExtensionDtype):
     type = FDataGrid
     na_value = pandas.NA
 
-    @classmethod
-    def construct_from_string(cls, string):
-        if string == cls.name:
-            return cls()
-        else:
-            raise TypeError(
-                f"Cannot construct a '{cls.__name__}' from '{string}'")
+    def __init__(self, sample_points, dim_codomain, domain_range=None) -> None:
+        sample_points = _tuple_of_arrays(sample_points)
+
+        self.sample_points = tuple(tuple(s) for s in sample_points)
+
+        if domain_range is None:
+            domain_range = np.array(
+                [(self.sample_points[i][0], self.sample_points[i][-1])
+                 for i in range(self.dim_domain)])
+
+        self.domain_range = _domain_range(domain_range)
+        self.dim_codomain = dim_codomain
 
     @classmethod
     def construct_array_type(cls):
         return FDataGrid
+
+    def _na_repr(self) -> FDataGrid:
+
+        shape = ((1,)
+                 + tuple(len(s) for s in self.sample_points)
+                 + (self.dim_codomain,))
+
+        data_matrix = np.full(shape=shape, fill_value=np.NaN)
+
+        return FDataGrid(
+            sample_points=self.sample_points,
+            domain_range=self.domain_range,
+            data_matrix=data_matrix)
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Rules for equality (similar to categorical):
+        1) Any FData is equal to the string 'category'
+        2) Any FData is equal to itself
+        3) Otherwise, they are equal if the arguments are equal.
+        6) Any other comparison returns False
+        """
+        if isinstance(other, str):
+            return other == self.name
+        elif other is self:
+            return True
+        else:
+            return (isinstance(other, FDataGridDType)
+                    and self.dim_codomain == other.dim_codomain
+                    and self.domain_range == other.domain_range
+                    and self.sample_points == other.sample_points)
+
+    def __hash__(self) -> int:
+        return hash((self.sample_points,
+                     self.domain_range, self.dim_codomain))

@@ -8,7 +8,7 @@ import pandas.api.extensions
 import numpy as np
 
 from .. import grid
-from ..._utils import constants, _nanequals
+from ..._utils import constants
 from .._functional_data import FData
 
 
@@ -665,12 +665,26 @@ class FDataBasis(FData):
                 f"\n_basis={self.basis},"
                 f"\ncoefficients={self.coefficients})").replace('\n', '\n    ')
 
-    def __eq__(self, other):
+    def equals(self, other):
         """Equality of FDataBasis"""
         # TODO check all other params
-        return (super().__eq__(other)
+        return (super().equals(other)
                 and self.basis == other.basis
-                and np.all(_nanequals(self.coefficients, other.coefficients)))
+                and np.array_equal(self.coefficients, other.coefficients,
+                                   equal_nan=True))
+
+    def __eq__(self, other):
+        """Elementwise equality of FDataBasis"""
+
+        if type(self) != type(other) or self.dtype != other.dtype:
+            raise TypeError("Types are not equal")
+
+        if len(self) != len(other):
+            raise ValueError(f"Different lengths: "
+                             f"len(self)={len(self)} and "
+                             f"len(other)={len(other)}")
+
+        return np.all(self.coefficients == other.coefficients, axis=1)
 
     def concatenate(self, *others, as_coordinates=False):
         """Join samples from a similar FDataBasis object.
@@ -856,7 +870,7 @@ class FDataBasisDType(pandas.api.extensions.ExtensionDtype):
     def construct_array_type(cls) -> type:
         return FDataBasis
 
-    def _na_repr(self):
+    def _na_repr(self) -> FDataBasis:
         return FDataBasis(
             basis=self.basis,
             coefficients=((np.NaN,) * self.basis.n_basis,))
@@ -877,5 +891,5 @@ class FDataBasisDType(pandas.api.extensions.ExtensionDtype):
             return (isinstance(other, FDataBasisDType)
                     and self.basis == other.basis)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.basis)

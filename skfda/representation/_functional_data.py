@@ -638,7 +638,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         pass
 
-    def __eq__(self, other):
+    def equals(self, other):
         return (
             type(self) == type(other)
             and self.extrapolation == other.extrapolation

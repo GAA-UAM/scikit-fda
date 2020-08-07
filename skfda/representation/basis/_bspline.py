@@ -5,7 +5,7 @@ import scipy.interpolate
 
 import numpy as np
 
-from ..._utils import _list_of_arrays
+from ..._utils import _domain_range
 from ..._utils import _same_domain
 from ._basis import Basis
 
@@ -104,7 +104,7 @@ class BSpline(Basis):
         """
 
         if domain_range is not None:
-            domain_range = _list_of_arrays(domain_range)
+            domain_range = _domain_range(domain_range)
 
             if len(domain_range) != 1:
                 raise ValueError("Domain range should be unidimensional.")
@@ -117,8 +117,8 @@ class BSpline(Basis):
                 raise ValueError("Must provide either a list of knots or the"
                                  "number of basis.")
         else:
-            knots = list(knots)
-            knots.sort()
+            knots = tuple(knots)
+            knots = sorted(knots)
             if domain_range is None:
                 domain_range = (knots[0], knots[-1])
             else:
@@ -135,8 +135,8 @@ class BSpline(Basis):
                              f"order of the bspline ({order}) should be "
                              f"greater than 3.")
 
-        self.order = order
-        self.knots = None if knots is None else list(knots)
+        self._order = order
+        self._knots = None if knots is None else tuple(knots)
         super().__init__(domain_range, n_basis)
 
         # Checks
@@ -148,14 +148,14 @@ class BSpline(Basis):
     @property
     def knots(self):
         if self._knots is None:
-            return list(np.linspace(*self.domain_range[0],
-                                    self.n_basis - self.order + 2))
+            return tuple(np.linspace(*self.domain_range[0],
+                                     self.n_basis - self.order + 2))
         else:
             return self._knots
 
-    @knots.setter
-    def knots(self, value):
-        self._knots = value
+    @property
+    def order(self):
+        return self._order
 
     def _evaluation_knots(self):
         """
@@ -166,8 +166,8 @@ class BSpline(Basis):
             .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
                 Analysis*. Springer. 50-51.
         """
-        return np.array([self.knots[0]] * (self.order - 1) + self.knots +
-                        [self.knots[-1]] * (self.order - 1))
+        return np.array((self.knots[0],) * (self.order - 1) + self.knots +
+                        (self.knots[-1],) * (self.order - 1))
 
     def _evaluate(self, eval_points):
 
@@ -245,12 +245,6 @@ class BSpline(Basis):
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
                 f"n_basis={self.n_basis}, order={self.order}, "
                 f"knots={self.knots})")
-
-    def __eq__(self, other):
-        """Equality of Basis"""
-        return (super().__eq__(other)
-                and self.order == other.order
-                and self.knots == other.knots)
 
     def _gram_matrix(self):
         # Places m knots at the boundaries
@@ -403,3 +397,11 @@ class BSpline(Basis):
     def inknots(self):
         """Return number of basis."""
         return self.knots[1:len(self.knots) - 1]
+
+    def __eq__(self, other):
+        return (super().__eq__(other)
+                and self.order == other.order
+                and self.knots == other.knots)
+
+    def __hash__(self):
+        return hash((super().__hash__(), self.order, self.knots))

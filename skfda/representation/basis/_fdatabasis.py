@@ -1,13 +1,14 @@
 from builtins import isinstance
 import copy
 import numbers
+from typing import Any
 
 import pandas.api.extensions
 
 import numpy as np
 
 from .. import grid
-from ..._utils import constants
+from ..._utils import constants, _int_to_real, _check_array_key
 from .._functional_data import FData
 
 
@@ -55,7 +56,7 @@ class FDataBasis(FData):
         >>> coefficients = [1, 1, 3, .5]
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
-            basis=Monomial(domain_range=[array([0, 1])], n_basis=4),
+            basis=Monomial(domain_range=((0, 1),), n_basis=4),
             coefficients=[[ 1.   1.   3.   0.5]],
             ...)
 
@@ -100,7 +101,7 @@ class FDataBasis(FData):
                 have the same length or number of columns as the number of
                 basis function in the basis.
         """
-        coefficients = np.atleast_2d(coefficients)
+        coefficients = _int_to_real(np.atleast_2d(coefficients))
         if coefficients.shape[1] != basis.n_basis:
             raise ValueError("The length or number of columns of coefficients "
                              "has to be the same equal to the number of "
@@ -389,7 +390,7 @@ class FDataBasis(FData):
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
             >>> FDataBasis(basis, coefficients).mean()
             FDataBasis(
-                basis=Monomial(domain_range=[array([0, 1])], n_basis=4),
+                basis=Monomial(domain_range=((0, 1),), n_basis=4),
                 coefficients=[[ 1.  1.  3.  0.5]],
                 ...)
 
@@ -489,14 +490,14 @@ class FDataBasis(FData):
             ...                 basis=Monomial((0,5), n_basis=3))
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
-                array([[[1],
-                        [3],
-                        [7]],
-                       [[1],
-                        [2],
-                        [5]]]),
-                sample_points=[array([0, 1, 2])],
-                domain_range=array([[0, 5]]),
+                array([[[ 1.],
+                        [ 3.],
+                        [ 7.]],
+                       [[ 1.],
+                        [ 2.],
+                        [ 5.]]]),
+                sample_points=(array([ 0., 1., 2.]),),
+                domain_range=((0, 5),),
                 ...)
 
         """
@@ -664,12 +665,25 @@ class FDataBasis(FData):
                 f"\n_basis={self.basis},"
                 f"\ncoefficients={self.coefficients})").replace('\n', '\n    ')
 
-    def __eq__(self, other):
+    def equals(self, other):
         """Equality of FDataBasis"""
         # TODO check all other params
-        return (super().__eq__(other)
+        return (super().equals(other)
                 and self.basis == other.basis
-                and np.all(self.coefficients == other.coefficients))
+                and np.array_equal(self.coefficients, other.coefficients))
+
+    def __eq__(self, other):
+        """Elementwise equality of FDataBasis"""
+
+        if type(self) != type(other) or self.dtype != other.dtype:
+            raise TypeError("Types are not equal")
+
+        if len(self) != len(other):
+            raise ValueError(f"Different lengths: "
+                             f"len(self)={len(self)} and "
+                             f"len(other)={len(other)}")
+
+        return np.all(self.coefficients == other.coefficients, axis=1)
 
     def concatenate(self, *others, as_coordinates=False):
         """Join samples from a similar FDataBasis object.
@@ -735,13 +749,10 @@ class FDataBasis(FData):
     def __getitem__(self, key):
         """Return self[key]."""
 
-        if isinstance(key, numbers.Integral):  # To accept also numpy ints
-            key = int(key)
-            return self.copy(coefficients=self.coefficients[key:key + 1],
-                             sample_names=self.sample_names[key:key + 1])
-        else:
-            return self.copy(coefficients=self.coefficients[key],
-                             sample_names=np.array(self.sample_names)[key])
+        key = _check_array_key(self.coefficients, key)
+
+        return self.copy(coefficients=self.coefficients[key],
+                         sample_names=np.array(self.sample_names)[key])
 
     def __add__(self, other):
         """Addition for FDataBasis object."""
@@ -827,34 +838,63 @@ class FDataBasis(FData):
     @property
     def dtype(self):
         """The dtype for this extension array, FDataGridDType"""
-        return FDataBasisDType()
+        return FDataBasisDType(basis=self.basis)
 
     @property
     def nbytes(self) -> int:
         """
         The number of bytes needed to store this object in memory.
         """
-        return self.coefficients.nbytes()
+        return self.coefficients.nbytes
+
+    def isna(self):
+        """
+        A 1-D array indicating if each value is missing.
+
+        Returns:
+            na_values (np.ndarray): Positions of NA.
+        """
+        return np.all(np.isnan(self.coefficients), axis=1)
 
 
-@pandas.api.extensions.register_extension_dtype
 class FDataBasisDType(pandas.api.extensions.ExtensionDtype):
     """
     DType corresponding to FDataBasis in Pandas
     """
-    name = 'FDataBasis'
     kind = 'O'
     type = FDataBasis
-    na_value = None
+    name = 'FDataBasis'
+    na_value = pandas.NA
+
+    _metadata = ("basis")
+
+    def __init__(self, basis) -> None:
+        self.basis = basis
 
     @classmethod
-    def construct_from_string(cls, string):
-        if string == cls.name:
-            return cls()
-        else:
-            raise TypeError(
-                f"Cannot construct a '{cls.__name__}' from '{string}'")
-
-    @classmethod
-    def construct_array_type(cls):
+    def construct_array_type(cls) -> type:
         return FDataBasis
+
+    def _na_repr(self) -> FDataBasis:
+        return FDataBasis(
+            basis=self.basis,
+            coefficients=((np.NaN,) * self.basis.n_basis,))
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Rules for equality (similar to categorical):
+        1) Any FData is equal to the string 'category'
+        2) Any FData is equal to itself
+        3) Otherwise, they are equal if the arguments are equal.
+        6) Any other comparison returns False
+        """
+        if isinstance(other, str):
+            return other == self.name
+        elif other is self:
+            return True
+        else:
+            return (isinstance(other, FDataBasisDType)
+                    and self.basis == other.basis)
+
+    def __hash__(self) -> int:
+        return hash(self.basis)

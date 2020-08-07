@@ -23,7 +23,7 @@ class TestFDataGrid(unittest.TestCase):
 
     def test_copy_equals(self):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
-        self.assertEqual(fd, fd.copy())
+        self.assertTrue(fd.equals(fd.copy()))
 
     def test_mean(self):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])

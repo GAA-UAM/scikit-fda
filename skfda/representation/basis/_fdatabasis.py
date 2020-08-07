@@ -762,7 +762,7 @@ class FDataBasis(FData):
             try:
                 basis, coefs = self.basis._add_constant(self.coefficients,
                                                         other)
-            except TypeError:
+            except Exception:
                 return NotImplemented
 
         return self._copy_op(other, basis=basis, coefficients=coefs)
@@ -784,7 +784,7 @@ class FDataBasis(FData):
             try:
                 basis, coefs = self.basis._sub_constant(self.coefficients,
                                                         other)
-            except TypeError:
+            except Exception:
                 return NotImplemented
 
         return self._copy_op(other, basis=basis, coefficients=coefs)
@@ -800,7 +800,7 @@ class FDataBasis(FData):
 
         try:
             basis, coefs = self.basis._mul_constant(self.coefficients, other)
-        except TypeError:
+        except Exception:
             return NotImplemented
 
         return self._copy_op(other, basis=basis, coefficients=coefs)
@@ -816,7 +816,7 @@ class FDataBasis(FData):
 
         try:
             other = 1 / other
-        except TypeError:
+        except Exception:
             return NotImplemented
 
         return self * other

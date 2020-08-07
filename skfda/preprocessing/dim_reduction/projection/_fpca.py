@@ -147,7 +147,8 @@ class FPCA(BaseEstimator, TransformerMixin):
         components_basis = self.components_basis
         if components_basis is not None:
             # First fix domain range if not already done
-            components_basis.domain_range = X.basis.domain_range
+            components_basis = components_basis.copy(
+                domain_range=X.basis.domain_range)
             g_matrix = components_basis.gram_matrix()
             # the matrix that are in charge of changing the computed principal
             # components to target matrix is essentially the inner product

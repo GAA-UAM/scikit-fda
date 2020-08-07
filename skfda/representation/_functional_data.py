@@ -647,6 +647,20 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             and self.coordinate_names == other.coordinate_names
         )
 
+    @abstractmethod
+    def __eq__(self, key):
+        pass
+
+    def __ne__(self, other):
+        """
+        Return for `self != other` (element-wise in-equality).
+        """
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return NotImplemented
+
+        return ~result
+
     def _copy_op(self, other, **kwargs):
 
         base_copy = (other if isinstance(other, type(self))

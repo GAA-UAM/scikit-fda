@@ -236,6 +236,16 @@ def all_arithmetic_operators(request):
     """
     return request.param
 
+
+@pytest.fixture(params=["__eq__", "__ne__",
+                        # "__le__", "__lt__", "__ge__", "__gt__"
+                        ])
+def all_compare_operators(request):
+    """
+    Fixture for dunder names for common compare operations
+    """
+    return request.param
+
 ##############################################################################
 # Tests
 ##############################################################################
@@ -324,4 +334,17 @@ class TestArithmeticOps(base.BaseArithmeticOpsTests):
     # Does not error on operations
     @pytest.mark.skip(reason="Unsupported")
     def test_error(self, dtype):
+        pass
+
+
+class TestComparisonOps(base.BaseComparisonOpsTests):
+
+    # Cannot be compared with 0
+    @pytest.mark.skip(reason="Unsupported")
+    def test_compare_scalar(self, data, all_compare_operators):
+        pass
+
+    # Not sure how to pass it. Should it be reimplemented?
+    @pytest.mark.skip(reason="Unsupported")
+    def test_compare_array(self, data, all_compare_operators):
         pass

@@ -670,7 +670,11 @@ class FDataBasis(FData):
         """Elementwise equality of FDataBasis"""
 
         if type(self) != type(other) or self.dtype != other.dtype:
-            raise TypeError("Types are not equal")
+            if pandas.api.types.is_list_like(other) and not isinstance(
+                    other, (pandas.Series, pandas.Index)):
+                return np.concatenate([x == y for x, y in zip(self, other)])
+            else:
+                return NotImplemented
 
         if len(self) != len(other):
             raise ValueError(f"Different lengths: "

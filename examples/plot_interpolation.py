@@ -16,7 +16,6 @@ from skfda.representation.interpolation import SplineInterpolation
 
 from mpl_toolkits.mplot3d import axes3d
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -64,8 +63,9 @@ fd.scatter(fig=fig)
 #
 
 # Sample with noise
-fd_smooth = skfda.datasets.make_sinusoidal_process(n_samples=1, n_features=30,
-                                                   random_state=1, error_std=.3)
+fd_smooth = skfda.datasets.make_sinusoidal_process(
+    n_samples=1, n_features=30,
+    random_state=1, error_std=.3)
 
 # Cubic interpolation
 fd_smooth.interpolation = SplineInterpolation(interpolation_order=3)
@@ -104,12 +104,12 @@ fd_monotone.scatter(fig=fig, c='C1')
 fig.legend()
 
 ##############################################################################
-# All the interpolations will work regardless of the dimension of the image, but
-# depending on the domain dimension some methods will not be available.
+# All the interpolations will work regardless of the dimension of the image,
+# but depending on the domain dimension some methods will not be available.
 #
-# For the next examples it is constructed a surface, :math:`x_i: \mathbb{R}^2
-# \longmapsto \mathbb{R}`. By default, as in unidimensional samples, it is used
-# linear interpolation.
+# For the next examples it is constructed a surface,
+# :math:`x_i: \mathbb{R}^2 \longmapsto \mathbb{R}`. By default, as in
+# unidimensional samples, it is used linear interpolation.
 #
 
 X, Y, Z = axes3d.get_test_data(1.2)
@@ -128,8 +128,8 @@ fd.scatter(fig=fig)
 #
 # The degree of the interpolation polynomial does not have to coincide in both
 # directions, for example, cubic interpolation in the first
-# component and quadratic in the second one could be defined  using a tuple with
-# the values (3,2).
+# component and quadratic in the second one could be defined  using a tuple
+# with the values (3,2).
 #
 
 fd.interpolation = SplineInterpolation(interpolation_order=3)

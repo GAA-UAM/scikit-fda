@@ -795,6 +795,8 @@ class FDataGrid(FData):
             array([[ 2.  , 0.71, 0.71]])
 
         """
+        from ..preprocessing.smoothing import BasisSmoother
+
         if self.dim_domain != basis.dim_domain:
             raise ValueError(f"The domain of the function has "
                              f"dimension {self.dim_domain} "
@@ -810,10 +812,12 @@ class FDataGrid(FData):
         if basis._domain_range is None:
             basis = basis.copy(domain_range=self.domain_range)
 
-        return fdbasis.FDataBasis.from_data(self.data_matrix,
-                                            self.sample_points,
-                                            basis,
-                                            **kwargs)
+        smoother = BasisSmoother(
+            basis=basis,
+            **kwargs,
+            return_basis=True)
+
+        return smoother.fit_transform(self)
 
     def to_grid(self, sample_points=None):
 

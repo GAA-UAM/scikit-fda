@@ -43,16 +43,16 @@ class LinearDifferentialOperator(Operator):
         LinearDifferentialOperator(
         weights=[
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[1]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 1.]],
             ...)]
         )
 
@@ -63,16 +63,16 @@ class LinearDifferentialOperator(Operator):
         LinearDifferentialOperator(
         weights=[
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[2]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 2.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[3]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 3.]],
             ...)]
         )
 
@@ -80,23 +80,23 @@ class LinearDifferentialOperator(Operator):
 
         >>> constant = Constant()
         >>> monomial = Monomial((0, 1), n_basis=3)
-        >>> fdlist = [FDataBasis(constant, [0]),
-        ...           FDataBasis(constant, [0]),
-        ...           FDataBasis(monomial, [1, 2, 3])]
+        >>> fdlist = [FDataBasis(constant, [0.]),
+        ...           FDataBasis(constant, [0.]),
+        ...           FDataBasis(monomial, [1., 2., 3.])]
         >>> LinearDifferentialOperator(weights=fdlist)
         LinearDifferentialOperator(
         weights=[
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Monomial(domain_range=[array([0, 1])], n_basis=3),
-            coefficients=[[1 2 3]],
+            basis=Monomial(domain_range=((0, 1),), n_basis=3),
+            coefficients=[[ 1. 2. 3.]],
             ...)]
         )
 

@@ -42,8 +42,8 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
         >>>
         >>> transformer = EvaluationTransformer()
         >>> transformer.fit_transform(fd)
-        array([[1, 2],
-               [2, 3]])
+        array([[ 1., 2.],
+               [ 2., 3.]])
 
         Functional data object with 2 samples
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}^2`.

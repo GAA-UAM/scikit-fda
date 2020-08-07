@@ -1,19 +1,24 @@
+import operator
 import skfda
 
 from pandas import Series
+import pandas
 from pandas.tests.extension import base
 import pytest
+
 import numpy as np
+
 
 ##############################################################################
 # Fixtures
 ##############################################################################
-
-
 @pytest.fixture
 def dtype():
     """A fixture providing the ExtensionDtype to validate."""
-    return skfda.representation.basis.FDataBasisDType()
+
+    basis = skfda.representation.basis.BSpline(n_basis=5)
+
+    return skfda.representation.basis.FDataBasisDType(basis=basis)
 
 
 @pytest.fixture
@@ -24,7 +29,7 @@ def data():
     * data[0] and data[1] should not be equal
     """
 
-    basis = skfda.representation.basis.Monomial(n_basis=5)
+    basis = skfda.representation.basis.BSpline(n_basis=5)
     coef_matrix = np.arange(100 * 5).reshape(100, 5)
 
     return skfda.FDataBasis(basis=basis, coefficients=coef_matrix)
@@ -39,7 +44,12 @@ def data_for_twos():
 @pytest.fixture
 def data_missing():
     """Length-2 array with [NA, Valid]"""
-    raise NotImplementedError
+
+    basis = skfda.representation.basis.BSpline(n_basis=5)
+    coef_matrix = np.arange(2 * 5, dtype=np.float_).reshape(2, 5)
+    coef_matrix[0, :] = np.NaN
+
+    return skfda.FDataBasis(basis=basis, coefficients=coef_matrix)
 
 
 @pytest.fixture(params=["data", "data_missing"])
@@ -100,13 +110,17 @@ def na_cmp():
     True if both arguments are (scalar) NA for your type.
     By default, uses ``operator.is_``
     """
-    return operator.is_
+    def isna(x, y):
+        return ((x is pandas.NA or all(x.isna()))
+                and (y is pandas.NA or all(y.isna())))
+
+    return isna
 
 
 @pytest.fixture
 def na_value():
     """The scalar missing value for this type. Default 'None'"""
-    return None
+    return pandas.NA
 
 
 @pytest.fixture
@@ -187,9 +201,72 @@ def as_array(request):
 ##############################################################################
 
 
+class TestCasting(base.BaseCastingTests):
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_astype_str(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_astype_string(self):
+        pass
+
+
 class TestConstructors(base.BaseConstructorsTests):
-    pass
+
+    # Does not support scalars which are also ExtensionArrays
+    @pytest.mark.skip(reason="Unsupported")
+    def test_series_constructor_scalar_with_index(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_from_dtype(self):
+        pass
 
 
 class TestDtype(base.BaseDtypeTests):
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_construct_from_string_own_name(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_is_dtype_from_name(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_eq_with_str(self):
+        pass
+
+    # Tries to construct dtype from string
+    @pytest.mark.skip(reason="Unsupported")
+    def test_construct_from_string(self, dtype):
+        pass
+
+
+class TestGetitem(base.BaseGetitemTests):
     pass
+
+
+class TestInterface(base.BaseInterfaceTests):
+
+    # Does not support scalars which are also array_like
+    @pytest.mark.skip(reason="Unsupported")
+    def test_array_interface(self):
+        pass
+
+    # We do not implement setitem
+    @pytest.mark.skip(reason="Unsupported")
+    def test_copy(self, dtype):
+        pass
+
+    # We do not implement setitem
+    @pytest.mark.skip(reason="Unsupported")
+    def test_view(self, dtype):
+        pass

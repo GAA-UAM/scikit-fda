@@ -59,6 +59,8 @@ class VectorValued(Basis):
 
     def __init__(self, basis_list):
 
+        basis_list = tuple(basis_list)
+
         if not all(b.dim_codomain == 1 for b in basis_list):
             raise ValueError("The basis functions must be "
                              "scalar valued")
@@ -69,11 +71,15 @@ class VectorValued(Basis):
             raise ValueError("The basis must all have the same domain "
                              "dimension an range")
 
-        self.basis_list = basis_list
+        self._basis_list = basis_list
 
         super().__init__(
             domain_range=basis_list[0].domain_range,
             n_basis=sum(b.n_basis for b in basis_list))
+
+    @property
+    def basis_list(self):
+        return self._basis_list
 
     @property
     def dim_domain(self):
@@ -149,3 +155,9 @@ class VectorValued(Basis):
 
     def rbasis_of_product(self, other):
         pass
+
+    def __eq__(self, other):
+        return super().__eq__(other) and self.basis_list == other.basis_list
+
+    def __hash__(self):
+        return hash((super().__hash__(), self.basis_list))

@@ -242,21 +242,21 @@ class TestBasis(unittest.TestCase):
         monomial1 = FDataBasis(Monomial(n_basis=3), [1, 2, 3])
         monomial2 = FDataBasis(Monomial(n_basis=3), [[1, 2, 3], [3, 4, 5]])
 
-        np.testing.assert_equal(monomial1 + monomial2,
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[2, 4, 6], [4, 6, 8]]))
-        np.testing.assert_equal(monomial2 + 1,
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[2, 2, 3], [4, 4, 5]]))
-        np.testing.assert_equal(1 + monomial2,
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[2, 2, 3], [4, 4, 5]]))
-        np.testing.assert_equal(monomial2 + [1, 2],
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[2, 2, 3], [5, 4, 5]]))
-        np.testing.assert_equal([1, 2] + monomial2,
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[2, 2, 3], [5, 4, 5]]))
+        self.assertTrue((monomial1 + monomial2).equals(
+                        FDataBasis(Monomial(n_basis=3),
+                                   [[2, 4, 6], [4, 6, 8]])))
+        self.assertTrue((monomial2 + 1).equals(
+            FDataBasis(Monomial(n_basis=3),
+                       [[2, 2, 3], [4, 4, 5]])))
+        self.assertTrue((1 + monomial2).equals(
+            FDataBasis(Monomial(n_basis=3),
+                       [[2, 2, 3], [4, 4, 5]])))
+        self.assertTrue((monomial2 + [1, 2]).equals(
+            FDataBasis(Monomial(n_basis=3),
+                       [[2, 2, 3], [5, 4, 5]])))
+        self.assertTrue(([1, 2] + monomial2).equals(
+                        FDataBasis(Monomial(n_basis=3),
+                                   [[2, 2, 3], [5, 4, 5]])))
 
         with np.testing.assert_raises(TypeError):
             monomial2 + FDataBasis(Fourier(n_basis=3),
@@ -266,21 +266,21 @@ class TestBasis(unittest.TestCase):
         monomial1 = FDataBasis(Monomial(n_basis=3), [1, 2, 3])
         monomial2 = FDataBasis(Monomial(n_basis=3), [[1, 2, 3], [3, 4, 5]])
 
-        np.testing.assert_equal(monomial1 - monomial2,
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[0, 0, 0], [-2, -2, -2]]))
-        np.testing.assert_equal(monomial2 - 1,
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[0, 2, 3], [2, 4, 5]]))
-        np.testing.assert_equal(1 - monomial2,
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[0, -2, -3], [-2, -4, -5]]))
-        np.testing.assert_equal(monomial2 - [1, 2],
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[0, 2, 3], [1, 4, 5]]))
-        np.testing.assert_equal([1, 2] - monomial2,
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[0, -2, -3], [-1, -4, -5]]))
+        self.assertTrue((monomial1 - monomial2).equals(
+                        FDataBasis(Monomial(n_basis=3),
+                                   [[0, 0, 0], [-2, -2, -2]])))
+        self.assertTrue((monomial2 - 1).equals(
+                        FDataBasis(Monomial(n_basis=3),
+                                   [[0, 2, 3], [2, 4, 5]])))
+        self.assertTrue((1 - monomial2).equals(
+                        FDataBasis(Monomial(n_basis=3),
+                                   [[0, -2, -3], [-2, -4, -5]])))
+        self.assertTrue((monomial2 - [1, 2]).equals(
+                        FDataBasis(Monomial(n_basis=3),
+                                   [[0, 2, 3], [1, 4, 5]])))
+        self.assertTrue(([1, 2] - monomial2).equals(
+                        FDataBasis(Monomial(n_basis=3),
+                                   [[0, -2, -3], [-1, -4, -5]])))
 
         with np.testing.assert_raises(TypeError):
             monomial2 - FDataBasis(Fourier(n_basis=3),
@@ -290,21 +290,21 @@ class TestBasis(unittest.TestCase):
         monomial1 = FDataBasis(Monomial(n_basis=3), [1, 2, 3])
         monomial2 = FDataBasis(Monomial(n_basis=3), [[1, 2, 3], [3, 4, 5]])
 
-        np.testing.assert_equal(monomial1 * 2,
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[2, 4, 6]]))
-        np.testing.assert_equal(3 * monomial2,
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[3, 6, 9], [9, 12, 15]]))
-        np.testing.assert_equal(3 * monomial2,
-                                monomial2 * 3)
+        self.assertTrue((monomial1 * 2).equals(
+            FDataBasis(Monomial(n_basis=3),
+                       [[2, 4, 6]])))
+        self.assertTrue((3 * monomial2).equals(
+                        FDataBasis(Monomial(n_basis=3),
+                                   [[3, 6, 9], [9, 12, 15]])))
+        self.assertTrue((3 * monomial2).equals(
+                        monomial2 * 3))
 
-        np.testing.assert_equal(monomial2 * [1, 2],
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[1, 2, 3], [6, 8, 10]]))
-        np.testing.assert_equal([1, 2] * monomial2,
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[1, 2, 3], [6, 8, 10]]))
+        self.assertTrue((monomial2 * [1, 2]).equals(
+                        FDataBasis(Monomial(n_basis=3),
+                                   [[1, 2, 3], [6, 8, 10]])))
+        self.assertTrue(([1, 2] * monomial2).equals(
+                        FDataBasis(Monomial(n_basis=3),
+                                   [[1, 2, 3], [6, 8, 10]])))
 
         with np.testing.assert_raises(TypeError):
             monomial2 * FDataBasis(Fourier(n_basis=3),
@@ -313,48 +313,31 @@ class TestBasis(unittest.TestCase):
         with np.testing.assert_raises(TypeError):
             monomial2 * monomial2
 
-    def test_fdatabasis__mul__2(self):
+    def test_fdatabasis__div__(self):
         monomial1 = FDataBasis(Monomial(n_basis=3), [1, 2, 3])
         monomial2 = FDataBasis(Monomial(n_basis=3), [[1, 2, 3], [3, 4, 5]])
 
-        np.testing.assert_equal(monomial1 / 2,
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[1 / 2, 1, 3 / 2]]))
-        np.testing.assert_equal(monomial2 / 2,
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[1 / 2, 1, 3 / 2], [3 / 2, 2, 5 / 2]]))
+        self.assertTrue((monomial1 / 2).equals(
+            FDataBasis(Monomial(n_basis=3),
+                       [[1 / 2, 1, 3 / 2]])))
+        self.assertTrue((monomial2 / 2).equals(
+                        FDataBasis(Monomial(n_basis=3),
+                                   [[1 / 2, 1, 3 / 2], [3 / 2, 2, 5 / 2]])))
 
-        np.testing.assert_equal(monomial2 / [1, 2],
-                                FDataBasis(Monomial(n_basis=3),
-                                           [[1, 2, 3], [3 / 2, 2, 5 / 2]]))
+        self.assertTrue((monomial2 / [1, 2]).equals(
+                        FDataBasis(Monomial(n_basis=3),
+                                   [[1, 2, 3], [3 / 2, 2, 5 / 2]])))
 
     def test_fdatabasis_derivative_constant(self):
-        monomial = FDataBasis(Monomial(n_basis=8),
-                              [1, 5, 8, 9, 7, 8, 4, 5])
-        monomial2 = FDataBasis(Monomial(n_basis=5),
-                               [[4, 9, 7, 4, 3],
-                                [1, 7, 9, 8, 5],
-                                [4, 6, 6, 6, 8]])
+        constant = FDataBasis(Constant(),
+                              [[1], [2], [3], [4]])
 
-        np.testing.assert_equal(monomial.derivative(),
-                                FDataBasis(Monomial(n_basis=7),
-                                           [5, 16, 27, 28, 40, 24, 35]))
-        np.testing.assert_equal(monomial.derivative(order=0), monomial)
-        np.testing.assert_equal(monomial.derivative(order=6),
-                                FDataBasis(Monomial(n_basis=2),
-                                           [2880, 25200]))
-
-        np.testing.assert_equal(monomial2.derivative(),
-                                FDataBasis(Monomial(n_basis=4),
-                                           [[9, 14, 12, 12],
-                                            [7, 18, 24, 20],
-                                            [6, 12, 18, 32]]))
-        np.testing.assert_equal(monomial2.derivative(order=0), monomial2)
-        np.testing.assert_equal(monomial2.derivative(order=3),
-                                FDataBasis(Monomial(n_basis=2),
-                                           [[24, 72],
-                                            [48, 120],
-                                            [36, 192]]))
+        self.assertTrue(constant.derivative().equals(
+                        FDataBasis(Constant(),
+                                   [[0], [0], [0], [0]])))
+        self.assertTrue(constant.derivative(order=0).equals(
+                        FDataBasis(Constant(),
+                                   [[1], [2], [3], [4]])))
 
     def test_fdatabasis_derivative_monomial(self):
         monomial = FDataBasis(Monomial(n_basis=8),
@@ -364,25 +347,24 @@ class TestBasis(unittest.TestCase):
                                 [1, 7, 9, 8, 5],
                                 [4, 6, 6, 6, 8]])
 
-        np.testing.assert_equal(monomial.derivative(),
-                                FDataBasis(Monomial(n_basis=7),
-                                           [5, 16, 27, 28, 40, 24, 35]))
-        np.testing.assert_equal(monomial.derivative(order=0), monomial)
-        np.testing.assert_equal(monomial.derivative(order=6),
-                                FDataBasis(Monomial(n_basis=2),
-                                           [2880, 25200]))
-
-        np.testing.assert_equal(monomial2.derivative(),
-                                FDataBasis(Monomial(n_basis=4),
-                                           [[9, 14, 12, 12],
-                                            [7, 18, 24, 20],
-                                            [6, 12, 18, 32]]))
-        np.testing.assert_equal(monomial2.derivative(order=0), monomial2)
-        np.testing.assert_equal(monomial2.derivative(order=3),
-                                FDataBasis(Monomial(n_basis=2),
-                                           [[24, 72],
-                                            [48, 120],
-                                            [36, 192]]))
+        self.assertTrue(monomial.derivative().equals(
+            FDataBasis(Monomial(n_basis=7),
+                       [5, 16, 27, 28, 40, 24, 35])))
+        self.assertTrue(monomial.derivative(order=0).equals(monomial))
+        self.assertTrue(monomial.derivative(order=6).equals(
+            FDataBasis(Monomial(n_basis=2),
+                       [2880, 25200])))
+        self.assertTrue(monomial2.derivative().equals(
+            FDataBasis(Monomial(n_basis=4),
+                       [[9, 14, 12, 12],
+                        [7, 18, 24, 20],
+                        [6, 12, 18, 32]])))
+        self.assertTrue(monomial2.derivative(order=0).equals(monomial2))
+        self.assertTrue(monomial2.derivative(order=3).equals(
+            FDataBasis(Monomial(n_basis=2),
+                       [[24, 72],
+                        [48, 120],
+                        [36, 192]])))
 
     def test_fdatabasis_derivative_fourier(self):
         fourier = FDataBasis(Fourier(n_basis=7),
@@ -397,34 +379,38 @@ class TestBasis(unittest.TestCase):
         fou2 = fourier.derivative(order=2)
 
         np.testing.assert_equal(fou1.basis, fourier.basis)
-        np.testing.assert_almost_equal(fou1.coefficients.round(5),
-                                       np.atleast_2d([0, -50.26548, 31.41593,
-                                                      -100.53096, 113.09734,
-                                                      -94.24778, 75.39822]))
-        np.testing.assert_equal(fou0, fourier)
+        np.testing.assert_almost_equal(
+            fou1.coefficients.round(5),
+            np.atleast_2d([0, -50.26548, 31.41593,
+                           -100.53096, 113.09734,
+                           -94.24778, 75.39822]))
+        self.assertTrue(fou0.equals(fourier))
         np.testing.assert_equal(fou2.basis, fourier.basis)
-        np.testing.assert_almost_equal(fou2.coefficients.round(5),
-                                       np.atleast_2d([0, -197.39209, -315.82734,
-                                                      -1421.22303, -1263.30936,
-                                                      -1421.22303, -1776.52879]))
+        np.testing.assert_almost_equal(
+            fou2.coefficients.round(5),
+            np.atleast_2d([0, -197.39209, -315.82734,
+                           -1421.22303, -1263.30936,
+                           -1421.22303, -1776.52879]))
 
         fou0 = fourier2.derivative(order=0)
         fou1 = fourier2.derivative()
         fou2 = fourier2.derivative(order=2)
 
         np.testing.assert_equal(fou1.basis, fourier2.basis)
-        np.testing.assert_almost_equal(fou1.coefficients.round(5),
-                                       [[0, -43.98230, 56.54867, -37.69911, 50.26548],
-                                        [0, -56.54867, 43.98230, -
-                                            62.83185, 100.53096],
-                                        [0, -37.69911, 37.69911, -100.53096, 75.39822]])
-        np.testing.assert_equal(fou0, fourier2)
+        np.testing.assert_almost_equal(
+            fou1.coefficients.round(5),
+            [[0, -43.98230, 56.54867, -37.69911, 50.26548],
+             [0, -56.54867, 43.98230, -
+              62.83185, 100.53096],
+             [0, -37.69911, 37.69911, -100.53096, 75.39822]])
+        self.assertTrue(fou0.equals(fourier2))
         np.testing.assert_equal(fou2.basis, fourier2.basis)
-        np.testing.assert_almost_equal(fou2.coefficients.round(5),
-                                       [[0, -355.30576, -276.34892, -631.65468, -473.74101],
-                                        [0, -276.34892, -355.30576, -
-                                            1263.30936, -789.56835],
-                                        [0, -236.87051, -236.87051, -947.48202, -1263.30936]])
+        np.testing.assert_almost_equal(
+            fou2.coefficients.round(5),
+            [[0, -355.30576, -276.34892, -631.65468, -473.74101],
+             [0, -276.34892, -355.30576, -
+              1263.30936, -789.56835],
+             [0, -236.87051, -236.87051, -947.48202, -1263.30936]])
 
     def test_fdatabasis_derivative_bspline(self):
         bspline = FDataBasis(BSpline(n_basis=8),
@@ -441,7 +427,7 @@ class TestBasis(unittest.TestCase):
         np.testing.assert_almost_equal(bs1.coefficients,
                                        np.atleast_2d([60, 22.5, 5,
                                                       -10, 5, -30, 15]))
-        np.testing.assert_equal(bs0, bspline)
+        self.assertTrue(bs0.equals(bspline))
         np.testing.assert_equal(bs2.basis, BSpline(n_basis=6, order=2))
         np.testing.assert_almost_equal(bs2.coefficients,
                                        np.atleast_2d([-375, -87.5, -75,
@@ -456,7 +442,7 @@ class TestBasis(unittest.TestCase):
                                        [[30, -6, -9, -6],
                                         [36, 6, -3, -18],
                                         [12, 0, 0, 12]])
-        np.testing.assert_equal(bs0, bspline2)
+        self.assertTrue(bs0.equals(bspline2))
         np.testing.assert_equal(bs2.basis, BSpline(n_basis=3, order=2))
         np.testing.assert_almost_equal(bs2.coefficients,
                                        [[-144, -6, 12],
@@ -478,7 +464,7 @@ class TestBasis(unittest.TestCase):
             [fd1.coefficients, fd2.coefficients]))
 
     def test_vector_valued(self):
-        X, y = skfda.datasets.fetch_weather(return_X_y=True)
+        X, _ = skfda.datasets.fetch_weather(return_X_y=True)
 
         basis_dim = skfda.representation.basis.Fourier(
             n_basis=7, domain_range=X.domain_range)

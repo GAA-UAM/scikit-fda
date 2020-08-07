@@ -8,15 +8,17 @@ list of discretisation points.
 
 import copy
 import numbers
-import findiff
+from typing import Any
 
+import findiff
 import pandas.api.extensions
 import scipy.stats.mstats
 
 import numpy as np
 
 from . import basis as fdbasis
-from .._utils import _list_of_arrays, constants
+from .._utils import (_tuple_of_arrays, constants,
+                      _domain_range, _int_to_real, _check_array_key)
 from ._functional_data import FData
 from .interpolation import SplineInterpolation
 
@@ -61,15 +63,15 @@ class FDataGrid(FData):
         >>> sample_points = [2, 4, 5]
         >>> FDataGrid(data_matrix, sample_points)
         FDataGrid(
-            array([[[1],
-                    [2],
-                    [3]],
+            array([[[ 1.],
+                    [ 2.],
+                    [ 3.]],
         <BLANKLINE>
-                   [[4],
-                    [5],
-                    [6]]]),
-            sample_points=[array([2, 4, 5])],
-            domain_range=array([[2, 5]]),
+                   [[ 4.],
+                    [ 5.],
+                    [ 6.]]]),
+            sample_points=(array([ 2., 4., 5.]),),
+            domain_range=((2.0, 5.0),),
             ...)
 
         The number of columns of data_matrix have to be the length of
@@ -163,18 +165,18 @@ class FDataGrid(FData):
                 of the number of dimensions of the domain plus the number of
                 dimensions of the image.
         """
-        self.data_matrix = np.atleast_2d(data_matrix)
+        self.data_matrix = _int_to_real(np.atleast_2d(data_matrix))
 
         if sample_points is None:
-            self.sample_points = _list_of_arrays(
-                [np.linspace(0, 1, self.data_matrix.shape[i]) for i in
+            self.sample_points = _tuple_of_arrays(
+                [np.linspace(0., 1., self.data_matrix.shape[i]) for i in
                  range(1, self.data_matrix.ndim)])
 
         else:
             # Check that the dimension of the data matches the sample_points
             # list
 
-            self.sample_points = _list_of_arrays(sample_points)
+            self.sample_points = _tuple_of_arrays(sample_points)
 
             data_shape = self.data_matrix.shape[1: 1 + self.dim_domain]
             sample_points_shape = [len(i) for i in self.sample_points]
@@ -186,27 +188,24 @@ class FDataGrid(FData):
                                  .format(data_shape, sample_points_shape))
 
         self._sample_range = np.array(
-            [(self.sample_points[i][0], self.sample_points[i][-1])
-             for i in range(self.dim_domain)])
+            [(s[0], s[-1]) for s in self.sample_points])
 
         if domain_range is None:
-            self._domain_range = self.sample_range
+            domain_range = self.sample_range
             # Default value for domain_range is a list of tuples with
             # the first and last element of each list ofthe sample_points.
-        else:
-            self._domain_range = np.atleast_2d(domain_range)
-            # sample range must by a 2 dimension matrix with as many rows as
-            # dimensions in the domain and 2 columns
-            if (self._domain_range.ndim != 2
-                    or self._domain_range.shape[1] != 2
-                    or self._domain_range.shape[0] != self.dim_domain):
-                raise ValueError("Incorrect shape of domain_range.")
-            for i in range(self.dim_domain):
-                if (self._domain_range[i, 0] > self.sample_points[i][0]
-                        or self._domain_range[i, -1] < self.sample_points[i]
-                        [-1]):
-                    raise ValueError("Sample points must be within the domain "
-                                     "range.")
+
+        self._domain_range = _domain_range(domain_range)
+
+        if len(self._domain_range) != self.dim_domain:
+            raise ValueError("Incorrect shape of domain_range.")
+
+        for i in range(self.dim_domain):
+            if (self._domain_range[i][0] > self.sample_points[i][0]
+                    or self._domain_range[i][-1] < self.sample_points[i]
+                    [-1]):
+                raise ValueError("Sample points must be within the domain "
+                                 "range.")
 
         # Adjust the data matrix if the dimension of the image is one
         if self.data_matrix.ndim == 1 + self.dim_domain:
@@ -402,8 +401,8 @@ class FDataGrid(FData):
                         [ 1.5],
                         [ 2. ],
                         [ 4. ]]]),
-                sample_points=[array([0, 1, 2, 3, 4])],
-                domain_range=array([[0, 4]]),
+                sample_points=(array([ 0., 1., 2., 3., 4.]),),
+                domain_range=((0.0, 4.0),),
                 ...)
 
             Second order derivative
@@ -416,8 +415,8 @@ class FDataGrid(FData):
                         [-1.],
                         [ 2.],
                         [ 5.]]]),
-                sample_points=[array([0, 1, 2, 3, 4])],
-                domain_range=array([[0, 4]]),
+                sample_points=(array([ 0., 1., 2., 3., 4.]),),
+                domain_range=((0.0, 4.0),),
                 ...)
 
         """
@@ -523,12 +522,9 @@ class FDataGrid(FData):
             scipy.stats.mstats.gmean(self.data_matrix, 0)],
             sample_names=("geometric mean",))
 
-    def __eq__(self, other):
+    def equals(self, other):
         """Comparison of FDataGrid objects"""
-        if not isinstance(other, FDataGrid):
-            return NotImplemented
-
-        if not super().__eq__(other):
+        if not super().equals(other):
             return False
 
         if not np.array_equal(self.data_matrix, other.data_matrix):
@@ -548,6 +544,20 @@ class FDataGrid(FData):
             return False
 
         return True
+
+    def __eq__(self, other):
+        """Elementwise equality of FDataGrid"""
+
+        if type(self) != type(other) or self.dtype != other.dtype:
+            raise TypeError("Types are not equal")
+
+        if len(self) != len(other):
+            raise ValueError(f"Different lengths: "
+                             f"len(self)={len(self)} and "
+                             f"len(other)={len(other)}")
+
+        return np.all(self.data_matrix == other.data_matrix,
+                      axis=tuple(range(1, self.data_matrix.ndim)))
 
     def _get_op_matrix(self, other):
         if isinstance(other, numbers.Number):
@@ -682,19 +692,19 @@ class FDataGrid(FData):
             >>> fd_2 = FDataGrid([3,4,7,9,2], range(5))
             >>> fd.concatenate(fd_2)
             FDataGrid(
-                array([[[1],
-                        [2],
-                        [4],
-                        [5],
-                        [8]],
+                array([[[ 1.],
+                        [ 2.],
+                        [ 4.],
+                        [ 5.],
+                        [ 8.]],
             <BLANKLINE>
-                       [[3],
-                        [4],
-                        [7],
-                        [9],
-                        [2]]]),
-                sample_points=[array([0, 1, 2, 3, 4])],
-                domain_range=array([[0, 4]]),
+                       [[ 3.],
+                        [ 4.],
+                        [ 7.],
+                        [ 9.],
+                        [ 2.]]]),
+                sample_points=(array([ 0., 1., 2., 3., 4.]),),
+                domain_range=((0.0, 4.0),),
                 ...)
 
         """
@@ -800,8 +810,7 @@ class FDataGrid(FData):
 
         # Readjust the domain range if there was not an explicit one
         if basis._domain_range is None:
-            basis = basis.copy()
-            basis.domain_range = self.domain_range
+            basis = basis.copy(domain_range=self.domain_range)
 
         smoother = BasisSmoother(
             basis=basis,
@@ -1048,14 +1057,10 @@ class FDataGrid(FData):
     def __getitem__(self, key):
         """Return self[key]."""
 
-        if isinstance(key, numbers.Integral):  # To accept also numpy ints
-            key = int(key)
-            return self.copy(data_matrix=self.data_matrix[key:key + 1],
-                             sample_names=self.sample_names[key:key + 1])
+        key = _check_array_key(self.data_matrix, key)
 
-        else:
-            return self.copy(data_matrix=self.data_matrix[key],
-                             sample_names=np.array(self.sample_names)[key])
+        return self.copy(data_matrix=self.data_matrix[key],
+                         sample_names=np.array(self.sample_names)[key])
 
     #####################################################################
     # Numpy methods
@@ -1100,18 +1105,30 @@ class FDataGrid(FData):
     @property
     def dtype(self):
         """The dtype for this extension array, FDataGridDType"""
-        return FDataGridDType()
+        return FDataGridDType(
+            sample_points=self.sample_points,
+            domain_range=self.domain_range,
+            dim_codomain=self.dim_codomain)
 
     @property
     def nbytes(self) -> int:
         """
         The number of bytes needed to store this object in memory.
         """
-        return self.data_matrix.nbytes() + sum(
-            p.nbytes() for p in self.sample_points)
+        return self.data_matrix.nbytes + sum(
+            p.nbytes for p in self.sample_points)
+
+    def isna(self):
+        """
+        A 1-D array indicating if each value is missing.
+
+        Returns:
+            na_values (np.ndarray): Positions of NA.
+        """
+        return np.all(np.isnan(self.data_matrix),
+                      axis=tuple(range(1, self.data_matrix.ndim)))
 
 
-@pandas.api.extensions.register_extension_dtype
 class FDataGridDType(pandas.api.extensions.ExtensionDtype):
     """
     DType corresponding to FDataGrid in Pandas
@@ -1119,16 +1136,55 @@ class FDataGridDType(pandas.api.extensions.ExtensionDtype):
     name = 'FDataGrid'
     kind = 'O'
     type = FDataGrid
-    na_value = None
+    na_value = pandas.NA
 
-    @classmethod
-    def construct_from_string(cls, string):
-        if string == cls.name:
-            return cls()
-        else:
-            raise TypeError(
-                f"Cannot construct a '{cls.__name__}' from '{string}'")
+    def __init__(self, sample_points, dim_codomain, domain_range=None) -> None:
+        sample_points = _tuple_of_arrays(sample_points)
+
+        self.sample_points = tuple(tuple(s) for s in sample_points)
+
+        if domain_range is None:
+            domain_range = np.array(
+                [(s[0], s[-1]) for s in self.sample_points])
+
+        self.domain_range = _domain_range(domain_range)
+        self.dim_codomain = dim_codomain
 
     @classmethod
     def construct_array_type(cls):
         return FDataGrid
+
+    def _na_repr(self) -> FDataGrid:
+
+        shape = ((1,)
+                 + tuple(len(s) for s in self.sample_points)
+                 + (self.dim_codomain,))
+
+        data_matrix = np.full(shape=shape, fill_value=np.NaN)
+
+        return FDataGrid(
+            sample_points=self.sample_points,
+            domain_range=self.domain_range,
+            data_matrix=data_matrix)
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Rules for equality (similar to categorical):
+        1) Any FData is equal to the string 'category'
+        2) Any FData is equal to itself
+        3) Otherwise, they are equal if the arguments are equal.
+        6) Any other comparison returns False
+        """
+        if isinstance(other, str):
+            return other == self.name
+        elif other is self:
+            return True
+        else:
+            return (isinstance(other, FDataGridDType)
+                    and self.dim_codomain == other.dim_codomain
+                    and self.domain_range == other.domain_range
+                    and self.sample_points == other.sample_points)
+
+    def __hash__(self) -> int:
+        return hash((self.sample_points,
+                     self.domain_range, self.dim_codomain))

@@ -1,8 +1,10 @@
 """Module with generic methods"""
 
 import functools
+import numbers
 import types
 
+from pandas.api.indexers import check_array_indexer
 import scipy.integrate
 
 import numpy as np
@@ -80,7 +82,7 @@ def _to_grid(X, y, eval_points=None):
     return X, y
 
 
-def _list_of_arrays(original_array):
+def _tuple_of_arrays(original_array):
     """Convert to a list of arrays.
 
     If the original list is one-dimensional (e.g. [1, 2, 3]), return list to
@@ -107,9 +109,24 @@ def _list_of_arrays(original_array):
         unidimensional = True
 
     if unidimensional:
-        return [np.asarray(original_array)]
+        return (_int_to_real(np.asarray(original_array)),)
     else:
-        return [np.asarray(i) for i in original_array]
+        return tuple(_int_to_real(np.asarray(i)) for i in original_array)
+
+
+def _domain_range(sequence):
+
+    try:
+        iter(sequence[0])
+    except TypeError:
+        sequence = (sequence,)
+
+    sequence = tuple(tuple(s) for s in sequence)
+
+    if not all(len(s) == 2 for s in sequence):
+        raise ValueError("Domain intervals should have 2 bounds each")
+
+    return sequence
 
 
 def _to_array_maybe_ragged(array, *, row_shape=None):
@@ -251,7 +268,7 @@ def _one_grid_to_points(axes, *, dim_domain):
     Returns also the shape containing the information of how each point
     is formed.
     """
-    axes = _list_of_arrays(axes)
+    axes = _tuple_of_arrays(axes)
 
     if len(axes) != dim_domain:
         raise ValueError(f"Length of axes should be "
@@ -398,63 +415,27 @@ def _pairwise_commutative(function, arg1, arg2=None, **kwargs):
                 (len(arg1), len(arg2)))
 
 
-def parameter_aliases(**alias_assignments):
-    """Allows using aliases for parameters"""
-    def decorator(f):
+def _int_to_real(array):
+    """
+    Convert integer arrays to floating point.
+    """
+    return array + 0.0
 
-        if isinstance(f, (types.FunctionType, types.LambdaType)):
-            # f is a function
-            @functools.wraps(f)
-            def aliasing_function(*args, **kwargs):
-                nonlocal alias_assignments
-                for parameter_name, aliases in alias_assignments.items():
-                    aliases = tuple(aliases)
-                    aliases_used = [a for a in kwargs
-                                    if a in aliases + (parameter_name,)]
-                    if len(aliases_used) > 1:
-                        raise ValueError(
-                            f"Several arguments with the same meaning used: " +
-                            str(aliases_used))
 
-                    elif len(aliases_used) == 1:
-                        arg = kwargs.pop(aliases_used[0])
-                        kwargs[parameter_name] = arg
+def _check_array_key(array, key):
+    """
+    Checks a getitem key.
+    """
 
-                return f(*args, **kwargs)
-            return aliasing_function
+    key = check_array_indexer(array, key)
 
-        else:
-            # f is a class
+    if isinstance(key, numbers.Integral):  # To accept also numpy ints
+        key = int(key)
+        key = range(len(array))[key]
 
-            class cls(f):
-                pass
-
-            nonlocal alias_assignments
-            init = cls.__init__
-            cls.__init__ = parameter_aliases(**alias_assignments)(init)
-
-            set_params = getattr(cls, "set_params", None)
-            if set_params is not None:  # For estimators
-                cls.set_params = parameter_aliases(
-                    **alias_assignments)(set_params)
-
-            for key, value in alias_assignments.items():
-                def getter(self):
-                    return getattr(self, key)
-
-                def setter(self, new_value):
-                    return setattr(self, key, new_value)
-
-                for alias in value:
-                    setattr(cls, alias, property(getter, setter))
-
-            cls.__name__ = f.__name__
-            cls.__doc__ = f.__doc__
-            cls.__module__ = f.__module__
-
-            return cls
-
-    return decorator
+        return slice(key, key + 1)
+    else:
+        return key
 
 
 def _check_estimator(estimator):

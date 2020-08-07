@@ -10,8 +10,8 @@ import warnings
 
 import numpy as np
 
-from ..._utils import (_list_of_arrays, _same_domain,
-                       _reshape_eval_points, _evaluate_grid)
+from ..._utils import (_domain_range, _same_domain,
+                       _reshape_eval_points)
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -46,8 +46,8 @@ class Basis(ABC):
         """
 
         if domain_range is not None:
-            # TODO: Allow multiple dimensions
-            domain_range = _list_of_arrays(domain_range)
+
+            domain_range = _domain_range(domain_range)
 
             # Some checks
             _check_domain(domain_range)
@@ -57,7 +57,7 @@ class Basis(ABC):
                              "possitive.")
 
         self._domain_range = domain_range
-        self.n_basis = n_basis
+        self._n_basis = n_basis
 
         super().__init__()
 
@@ -72,13 +72,13 @@ class Basis(ABC):
     @property
     def domain_range(self):
         if self._domain_range is None:
-            return [np.array([0, 1])]
+            return ((0, 1),) * self.dim_domain
         else:
             return self._domain_range
 
-    @domain_range.setter
-    def domain_range(self, value):
-        self._domain_range = value
+    @property
+    def n_basis(self):
+        return self._n_basis
 
     @abstractmethod
     def _evaluate(self, eval_points):
@@ -225,14 +225,22 @@ class Basis(ABC):
                     the original basis.
         """
 
-        if domain_range is None:
-            domain_range = self.domain_range
+        return self.copy(domain_range=domain_range)
 
-        return type(self)(domain_range, self.n_basis)
-
-    def copy(self):
+    def copy(self, domain_range=None):
         """Basis copy"""
-        return copy.deepcopy(self)
+
+        new_copy = copy.deepcopy(self)
+
+        if domain_range is not None:
+            domain_range = _domain_range(domain_range)
+
+            # Some checks
+            _check_domain(domain_range)
+
+            new_copy._domain_range = domain_range
+
+        return new_copy
 
     def to_basis(self):
         from . import FDataBasis
@@ -356,3 +364,7 @@ class Basis(ABC):
         return (type(self) == type(other)
                 and _same_domain(self, other)
                 and self.n_basis == other.n_basis)
+
+    def __hash__(self):
+        """Hash of Basis"""
+        return hash((self.domain_range, self.n_basis))

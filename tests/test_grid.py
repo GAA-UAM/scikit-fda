@@ -169,17 +169,9 @@ class TestFDataGrid(unittest.TestCase):
         np.testing.assert_array_equal(fd2.data_matrix[..., 0],
                                       [[3, 4, 5, 6], [4, 5, 6, 7]])
 
-        fd2 = fd1 + np.array([1, 2, 3, 4])
+        fd2 = fd1 + np.array([1, 2])
         np.testing.assert_array_equal(fd2.data_matrix[..., 0],
-                                      [[2, 4, 6, 8], [3, 5, 7, 9]])
-
-        fd2 = fd1 + fd1.data_matrix
-        np.testing.assert_array_equal(fd2.data_matrix[..., 0],
-                                      [[2, 4, 6, 8], [4, 6, 8, 10]])
-
-        fd2 = fd1 + fd1.data_matrix[..., 0]
-        np.testing.assert_array_equal(fd2.data_matrix[..., 0],
-                                      [[2, 4, 6, 8], [4, 6, 8, 10]])
+                                      [[2, 3, 4, 5], [4, 5, 6, 7]])
 
     def test_composition(self):
         X, Y, Z = axes3d.get_test_data(1.2)

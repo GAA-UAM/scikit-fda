@@ -238,6 +238,28 @@ def all_compare_operators(request):
     """
     return request.param
 
+
+_all_numeric_reductions = [
+    "sum",
+    #     "max",
+    #     "min",
+    #     "mean",
+    #     "prod",
+    #     "std",
+    #     "var",
+    #     "median",
+    #     "kurt",
+    #     "skew",
+]
+
+
+@pytest.fixture(params=_all_numeric_reductions)
+def all_numeric_reductions(request):
+    """
+    Fixture for numeric reduction names.
+    """
+    return request.param
+
 ##############################################################################
 # Tests
 ##############################################################################

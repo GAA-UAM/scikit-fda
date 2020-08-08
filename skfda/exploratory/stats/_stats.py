@@ -2,7 +2,8 @@
 """
 from ..depth import modified_band_depth
 
-def mean(fdata, weights=None):
+
+def mean(fdata):
     """Compute the mean of all the samples in a FData object.
 
     Computes the mean of all the samples in a FDataGrid or FDataBasis object.
@@ -10,7 +11,6 @@ def mean(fdata, weights=None):
     Args:
         fdata (FDataGrid or FDataBasis): Object containing all the samples
             whose mean is wanted.
-        weight (array-like, optional): List of weights.
 
 
     Returns:
@@ -19,7 +19,7 @@ def mean(fdata, weights=None):
         object.
 
     """
-    return fdata.mean(weights)
+    return fdata.mean()
 
 
 def var(fdatagrid):

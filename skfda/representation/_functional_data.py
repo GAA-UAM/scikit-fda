@@ -551,17 +551,26 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         pass
 
     @abstractmethod
-    def mean(self, weights=None):
-        """Compute the mean of all the samples.
-
-        weights (array-like, optional): List of weights.
+    def sum(self, *, axis=None, out=None, keepdims=False):
+        """Compute the sum of all the samples.
 
         Returns:
             FData : A FData object with just one sample representing
-            the mean of all the samples in the original object.
+            the sum of all the samples in the original object.
 
         """
-        pass
+        if ((axis is not None and axis != 0) or
+                out is not None or keepdims is not False):
+            raise NotImplementedError(
+                "Not implemented for that parameter combination")
+
+    def mean(self, *, axis=None, dtype=None, out=None, keepdims=False):
+
+        if dtype is not None:
+            raise NotImplementedError(
+                "Not implemented for that parameter combination")
+
+        return self.sum(axis=axis, out=out, keepdims=keepdims) / self.n_samples
 
     @abstractmethod
     def to_grid(self, sample_points=None):

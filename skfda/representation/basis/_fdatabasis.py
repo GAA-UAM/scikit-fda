@@ -369,12 +369,12 @@ class FDataBasis(FData):
 
         return FDataBasis(basis, coefficients)
 
-    def mean(self, weights=None):
-        """Compute the mean of all the samples in a FDataBasis object.
+    def sum(self, *, axis=None, out=None, keepdims=False):
+        """Compute the sum of all the samples in a FDataBasis object.
 
         Returns:
             :obj:`FDataBasis`: A FDataBais object with just one sample
-            representing the mean of all the samples in the original
+            representing the sum of all the samples in the original
             FDataBasis object.
 
         Examples:
@@ -382,24 +382,17 @@ class FDataBasis(FData):
             >>> from skfda.representation.basis import FDataBasis, Monomial
             >>> basis = Monomial(n_basis=4)
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
-            >>> FDataBasis(basis, coefficients).mean()
+            >>> FDataBasis(basis, coefficients).sum()
             FDataBasis(
                 basis=Monomial(domain_range=((0, 1),), n_basis=4),
-                coefficients=[[ 1.  1.  3.  0.5]],
+                coefficients=[[ 2.  2.  6.  1.]],
                 ...)
 
         """
+        super().sum(axis=axis, out=out, keepdims=keepdims)
 
-        if weights is not None:
-            return self.copy(coefficients=np.average(self.coefficients,
-                                                     weights=weights,
-                                                     axis=0
-                                                     )[np.newaxis, ...],
-                             sample_names=("mean",)
-                             )
-
-        return self.copy(coefficients=np.mean(self.coefficients, axis=0),
-                         sample_names=("mean",))
+        return self.copy(coefficients=np.sum(self.coefficients, axis=0),
+                         sample_names=(None,))
 
     def gmean(self, eval_points=None):
         """Compute the geometric mean of the functional data object.

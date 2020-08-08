@@ -446,27 +446,31 @@ class FDataGrid(FData):
         if not np.array_equal(self.sample_points, other.sample_points):
             raise ValueError("Sample points for both objects must be equal")
 
-    def mean(self, weights=None):
-        """Compute the mean of all the samples.
-
-        Args:
-            weights (array-like, optional): List of weights.
+    def sum(self, *, axis=None, out=None, keepdims=False):
+        """Compute the sum of all the samples.
 
         Returns:
             FDataGrid : A FDataGrid object with just one sample representing
-            the mean of all the samples in the original object.
+            the sum of all the samples in the original object.
+
+        Examples:
+
+            >>> from skfda import FDataGrid
+            >>> data_matrix = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
+            >>> FDataGrid(data_matrix).sum()
+            FDataGrid(
+                array([[[ 2.],
+                        [ 2.],
+                        [ 6.],
+                        [ 1.]]]),
+                ...)
 
         """
-        if weights is not None:
+        super().sum(axis=axis, out=out, keepdims=keepdims)
 
-            return self.copy(data_matrix=np.average(
-                self.data_matrix, weights=weights, axis=0)[np.newaxis, ...],
-                sample_names=("mean",)
-            )
-
-        return self.copy(data_matrix=self.data_matrix.mean(axis=0,
-                                                           keepdims=True),
-                         sample_names=("mean",))
+        return self.copy(data_matrix=self.data_matrix.sum(axis=0,
+                                                          keepdims=True),
+                         sample_names=(None,))
 
     def var(self):
         """Compute the variance of a set of samples in a FDataGrid object.
@@ -567,18 +571,17 @@ class FDataGrid(FData):
         if isinstance(other, numbers.Number):
             return other
         elif isinstance(other, np.ndarray):
-            # Product by number or matrix with equal dimensions, or
-            # matrix with same shape but only one sample
-            if(other.shape == () or other.shape == (1)
-               or other.shape == self.data_matrix.shape
-               or other.shape == self.data_matrix.shape[1:]):
+
+            if other.shape == () or other.shape == (1,):
                 return other
-            # Missing last dimension (codomain dimension)
-            elif (other.shape == self.data_matrix.shape[:-1]
-                  or other.shape == self.data_matrix.shape[1:-1]):
-                return other[..., np.newaxis]
+            elif other.shape == (self.n_samples,):
+                other_index = ((slice(None),) + (np.newaxis,) *
+                               (self.data_matrix.ndim - 1))
+
+                return other[other_index]
             else:
                 return None
+
         elif isinstance(other, FDataGrid):
             self.__check_same_dimensions(other)
             return other.data_matrix

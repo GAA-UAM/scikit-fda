@@ -551,7 +551,8 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         pass
 
     @abstractmethod
-    def sum(self, *, axis=None, out=None, keepdims=False):
+    def sum(self, *, axis=None, out=None, keepdims=False, skipna=False,
+            min_count=0):
         """Compute the sum of all the samples.
 
         Returns:
@@ -564,13 +565,15 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             raise NotImplementedError(
                 "Not implemented for that parameter combination")
 
-    def mean(self, *, axis=None, dtype=None, out=None, keepdims=False):
+    def mean(self, *, axis=None, dtype=None, out=None, keepdims=False,
+             skipna=False):
 
         if dtype is not None:
             raise NotImplementedError(
                 "Not implemented for that parameter combination")
 
-        return self.sum(axis=axis, out=out, keepdims=keepdims) / self.n_samples
+        return (self.sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
+                / self.n_samples)
 
     @abstractmethod
     def to_grid(self, sample_points=None):
@@ -881,6 +884,15 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 self = self.copy()
             return self
         return super().astype(dtype)
+
+    def _reduce(self, name, skipna=True, **kwargs):
+        meth = getattr(self, name, None)
+        if meth:
+            return meth(skipna=skipna, **kwargs)
+        else:
+            msg = (f"'{type(self).__name__}' does not implement "
+                   f"reduction '{name}'")
+            raise TypeError(msg)
 
 
 def concatenate(objects, as_coordinates=False):

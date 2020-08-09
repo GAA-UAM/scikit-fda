@@ -243,7 +243,7 @@ _all_numeric_reductions = [
     "sum",
     #     "max",
     #     "min",
-    #     "mean",
+    "mean",
     #     "prod",
     #     "std",
     #     "var",
@@ -367,3 +367,10 @@ class TestComparisonOps(base.BaseComparisonOpsTests):
     @pytest.mark.skip(reason="Unsupported")
     def test_compare_array(self, data, all_compare_operators):
         pass
+
+
+class TestNumericReduce(base.BaseNumericReduceTests):
+
+    def check_reduce(self, s, op_name, skipna):
+        result = getattr(s, op_name)(skipna=skipna)
+        assert result.n_samples == 1

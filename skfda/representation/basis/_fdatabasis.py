@@ -369,7 +369,8 @@ class FDataBasis(FData):
 
         return FDataBasis(basis, coefficients)
 
-    def sum(self, *, axis=None, out=None, keepdims=False):
+    def sum(self, *, axis=None, out=None, keepdims=False, skipna=False,
+            min_count=0):
         """Compute the sum of all the samples in a FDataBasis object.
 
         Returns:
@@ -389,9 +390,17 @@ class FDataBasis(FData):
                 ...)
 
         """
-        super().sum(axis=axis, out=out, keepdims=keepdims)
+        super().sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
 
-        return self.copy(coefficients=np.sum(self.coefficients, axis=0),
+        coefs = (np.nansum(self.coefficients, axis=0) if skipna
+                 else np.sum(self.coefficients, axis=0))
+
+        if min_count > 0:
+            valid = ~np.isnan(self.coefficients)
+            n_valid = np.sum(valid, axis=0)
+            coefs[n_valid < min_count] = np.NaN
+
+        return self.copy(coefficients=coefs,
                          sample_names=(None,))
 
     def gmean(self, eval_points=None):

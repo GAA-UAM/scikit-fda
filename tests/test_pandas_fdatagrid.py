@@ -246,6 +246,28 @@ def all_compare_operators(request):
     """
     return request.param
 
+
+_all_numeric_reductions = [
+    "sum",
+    #     "max",
+    #     "min",
+    "mean",
+    #     "prod",
+    #     "std",
+    #     "var",
+    #     "median",
+    #     "kurt",
+    #     "skew",
+]
+
+
+@pytest.fixture(params=_all_numeric_reductions)
+def all_numeric_reductions(request):
+    """
+    Fixture for numeric reduction names.
+    """
+    return request.param
+
 ##############################################################################
 # Tests
 ##############################################################################
@@ -348,3 +370,10 @@ class TestComparisonOps(base.BaseComparisonOpsTests):
     @pytest.mark.skip(reason="Unsupported")
     def test_compare_array(self, data, all_compare_operators):
         pass
+
+
+class TestNumericReduce(base.BaseNumericReduceTests):
+
+    def check_reduce(self, s, op_name, skipna):
+        result = getattr(s, op_name)(skipna=skipna)
+        assert result.n_samples == 1

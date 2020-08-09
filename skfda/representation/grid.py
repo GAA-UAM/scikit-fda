@@ -12,6 +12,7 @@ from typing import Any
 
 import findiff
 import pandas.api.extensions
+from pandas.tests.test_nanops import skipna
 import scipy.stats.mstats
 
 import numpy as np
@@ -446,7 +447,8 @@ class FDataGrid(FData):
         if not np.array_equal(self.sample_points, other.sample_points):
             raise ValueError("Sample points for both objects must be equal")
 
-    def sum(self, *, axis=None, out=None, keepdims=False):
+    def sum(self, *, axis=None, out=None, keepdims=False, skipna=False,
+            min_count=0):
         """Compute the sum of all the samples.
 
         Returns:
@@ -466,10 +468,17 @@ class FDataGrid(FData):
                 ...)
 
         """
-        super().sum(axis=axis, out=out, keepdims=keepdims)
+        super().sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
 
-        return self.copy(data_matrix=self.data_matrix.sum(axis=0,
-                                                          keepdims=True),
+        data = (np.nansum(self.data_matrix, axis=0, keepdims=True) if skipna
+                else np.sum(self.data_matrix, axis=0, keepdims=True))
+
+        if min_count > 0:
+            valid = ~np.isnan(self.data_matrix)
+            n_valid = np.sum(valid, axis=0)
+            data[n_valid < min_count] = np.NaN
+
+        return self.copy(data_matrix=data,
                          sample_names=(None,))
 
     def var(self):

@@ -166,10 +166,10 @@ class RKHSVariableSelection(sklearn.base.BaseEstimator,
 
     References:
 
-        .. [1] J. R. Berrendero, A. Cuevas, y J. L. Torrecilla, «On the Use
+        .. [1] J. R. Berrendero, A. Cuevas, and J. L. Torrecilla, «On the Use
                of Reproducing Kernel Hilbert Spaces in Functional
                Classification», Journal of the American Statistical
-               Association, vol. 113, n.º 523, pp. 1210-1218, jul. 2018,
+               Association, vol. 113, no. 523, pp. 1210-1218, jul. 2018,
                doi: 10.1080/01621459.2017.1320287.
 
     '''

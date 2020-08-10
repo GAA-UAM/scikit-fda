@@ -1,10 +1,11 @@
-import numpy as np
-from sklearn.utils import check_random_state
-
 from skfda import concatenate
+from skfda.datasets import make_gaussian_process
 from skfda.misc.metrics import lp_distance
 from skfda.representation import FData, FDataGrid
-from skfda.datasets import make_gaussian_process
+
+from sklearn.utils import check_random_state
+
+import numpy as np
 
 
 def v_sample_stat(fd, weights, p=2):
@@ -152,10 +153,7 @@ def v_asymptotic_stat(fd, weights, p=2):
     t_ind = np.tril_indices(fd.n_samples, -1)
     coef = np.sqrt(weights[t_ind[1]] / weights[t_ind[0]])
     left_fd = fd[t_ind[1]]
-    if isinstance(fd, FDataGrid):
-        right_fd = coef[:, None, np.newaxis] * fd[t_ind[0]]
-    else:
-        right_fd = fd[t_ind[0]].times(coef)
+    right_fd = fd[t_ind[0]] * coef
     return np.sum(lp_distance(left_fd, right_fd, p=p) ** p)
 
 
@@ -173,7 +171,8 @@ def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=2,
 
     start, stop = fd_grouped[0].domain_range[0]
 
-    sizes = [fd.n_samples for fd in fd_grouped]  # List with sizes of each group
+    # List with sizes of each group
+    sizes = [fd.n_samples for fd in fd_grouped]
 
     # Instance a random state object in case random_state is an int
     random_state = check_random_state(random_state)

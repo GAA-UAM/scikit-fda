@@ -33,51 +33,6 @@ class TestBasis(unittest.TestCase):
             np.array([[1., 2.78, -3., -0.78, 1.]])
         )
 
-    def test_basis_product_generic(self):
-        monomial = Monomial(n_basis=5)
-        fourier = Fourier(n_basis=3)
-        prod = BSpline(n_basis=9, order=8)
-        self.assertEqual(Basis.default_basis_of_product(
-            monomial, fourier), prod)
-
-    def test_basis_constant_product(self):
-        constant = Constant()
-        monomial = Monomial()
-        fourier = Fourier()
-        bspline = BSpline(n_basis=5, order=3)
-        self.assertEqual(constant.basis_of_product(monomial), monomial)
-        self.assertEqual(constant.basis_of_product(fourier), fourier)
-        self.assertEqual(constant.basis_of_product(bspline), bspline)
-        self.assertEqual(monomial.basis_of_product(constant), monomial)
-        self.assertEqual(fourier.basis_of_product(constant), fourier)
-        self.assertEqual(bspline.basis_of_product(constant), bspline)
-
-    def test_basis_fourier_product(self):
-        # Test when periods are the same
-        fourier = Fourier(n_basis=5)
-        fourier2 = Fourier(n_basis=3)
-        prod = Fourier(n_basis=7)
-        self.assertEqual(fourier.basis_of_product(fourier2), prod)
-
-        # Test when periods are different
-        fourier2 = Fourier(n_basis=3, period=2)
-        prod = BSpline(n_basis=9, order=8)
-        self.assertEqual(fourier.basis_of_product(fourier2), prod)
-
-    def test_basis_monomial_product(self):
-        monomial = Monomial(n_basis=5)
-        monomial2 = Monomial(n_basis=3)
-        prod = Monomial(n_basis=8)
-        self.assertEqual(monomial.basis_of_product(monomial2), prod)
-
-    def test_basis_bspline_product(self):
-        bspline = BSpline(n_basis=6, order=4)
-        bspline2 = BSpline(domain_range=(0, 1), n_basis=6,
-                           order=4, knots=[0, 0.3, 1 / 3, 1])
-        prod = BSpline(domain_range=(0, 1), n_basis=10, order=7,
-                       knots=[0, 0.3, 1 / 3, 2 / 3, 1])
-        self.assertEqual(bspline.basis_of_product(bspline2), prod)
-
     def test_basis_inner_matrix(self):
         np.testing.assert_array_almost_equal(
             Monomial(n_basis=3).inner_product_matrix(),
@@ -201,42 +156,6 @@ class TestBasis(unittest.TestCase):
             inner_product_matrix(bsplinefd, monomial),
             np.transpose(inner_product_matrix(monomial, bsplinefd))
         )
-
-    def test_fdatabasis_times_fdatabasis_fdatabasis(self):
-        monomial = FDataBasis(Monomial(n_basis=3), [1, 2, 3])
-        bspline = FDataBasis(BSpline(n_basis=6, order=4), [1, 2, 4, 1, 0, 1])
-        times_fdar = monomial.times(bspline)
-
-        prod_basis = BSpline(n_basis=9, order=6, knots=[0, 0.25, 0.5, 0.75, 1])
-        prod_coefs = np.array([[0.9788352,  1.6289955,  2.7004969,  6.2678739,
-                                8.7636441,  4.0069960,  0.7126961,  2.8826708,
-                                6.0052311]])
-
-        self.assertEqual(prod_basis, times_fdar.basis)
-        np.testing.assert_array_almost_equal(
-            prod_coefs, times_fdar.coefficients)
-
-    def test_fdatabasis_times_fdatabasis_list(self):
-        monomial = FDataBasis(Monomial(n_basis=3),
-                              [[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-        result = monomial.times([3, 2, 1])
-
-        expec_basis = Monomial(n_basis=3)
-        expec_coefs = np.array([[3, 6, 9], [8, 10, 12], [7, 8, 9]])
-
-        self.assertEqual(expec_basis, result.basis)
-        np.testing.assert_array_almost_equal(expec_coefs, result.coefficients)
-
-    def test_fdatabasis_times_fdatabasis_int(self):
-        monomial = FDataBasis(Monomial(n_basis=3),
-                              [[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-        result = monomial.times(3)
-
-        expec_basis = Monomial(n_basis=3)
-        expec_coefs = np.array([[3, 6, 9], [12, 15, 18], [21, 24, 27]])
-
-        self.assertEqual(expec_basis, result.basis)
-        np.testing.assert_array_almost_equal(expec_coefs, result.coefficients)
 
     def test_fdatabasis__add__(self):
         monomial1 = FDataBasis(Monomial(n_basis=3), [1, 2, 3])

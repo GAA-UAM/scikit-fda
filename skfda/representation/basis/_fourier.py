@@ -163,21 +163,6 @@ class Fourier(Basis):
         else:
             return super()._gram_matrix()
 
-    def basis_of_product(self, other):
-        """Multiplication of two Fourier Basis"""
-        if not _same_domain(self, other):
-            raise ValueError("Ranges are not equal.")
-
-        if isinstance(other, Fourier) and self.period == other.period:
-            return Fourier(self.domain_range, self.n_basis + other.n_basis - 1,
-                           self.period)
-        else:
-            return other.rbasis_of_product(self)
-
-    def rbasis_of_product(self, other):
-        """Multiplication of a Fourier Basis with other Basis"""
-        return Basis.default_basis_of_product(other, self)
-
     def rescale(self, domain_range=None, *, rescale_period=False):
         r"""Return a copy of the basis with a new domain range, with the
             corresponding values rescaled to the new bounds.

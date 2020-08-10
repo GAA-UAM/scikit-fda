@@ -41,17 +41,6 @@ class Constant(Basis):
         return np.array([[self.domain_range[0][1] -
                           self.domain_range[0][0]]])
 
-    def basis_of_product(self, other):
-        """Multiplication of a Constant Basis with other Basis"""
-        if not _same_domain(self, other):
-            raise ValueError("Ranges are not equal.")
-
-        return other.copy()
-
-    def rbasis_of_product(self, other):
-        """Multiplication of a Constant Basis with other Basis"""
-        return other.copy()
-
     def _to_R(self):
         drange = self.domain_range[0]
         return "create.constant.basis(rangeval = c(" + str(drange[0]) + "," +\

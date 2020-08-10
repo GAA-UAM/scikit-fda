@@ -150,12 +150,6 @@ class VectorValued(Basis):
         return fdatabasis.copy(basis=basis, coefficients=coefs,
                                coordinate_names=coordinate_names)
 
-    def basis_of_product(self, other):
-        pass
-
-    def rbasis_of_product(self, other):
-        pass
-
     def __eq__(self, other):
         return super().__eq__(other) and self.basis_list == other.basis_list
 

@@ -566,58 +566,6 @@ class FDataBasis(FData):
                           sample_names=sample_names,
                           extrapolation=extrapolation)
 
-    def times(self, other):
-        """"Provides a numerical approximation of the multiplication between
-            an FDataObject to other object
-
-        Args:
-            other (int, list, FDataBasis): Object to multiply with the
-                                           FDataBasis object.
-
-                * int: Multiplies all samples with the value
-                * list: multiply each values with the samples respectively.
-                    Length should match with FDataBasis samples
-                * FDataBasis: if there is one sample it multiplies this with
-                    all the samples in the object. If not, it multiplies each
-                    sample respectively. Samples should match
-
-        Returns:
-            (FDataBasis): FDataBasis object containing the multiplication
-
-        """
-        if isinstance(other, FDataBasis):
-
-            if not _same_domain(self.domain_range, other.domain_range):
-                raise ValueError("The functions domains are different.")
-
-            basisobj = self.basis.basis_of_product(other.basis)
-            neval = max(constants.BASIS_MIN_FACTOR *
-                        max(self.n_basis, other.n_basis) + 1,
-                        constants.N_POINTS_COARSE_MESH)
-            (left, right) = self.domain_range[0]
-            evalarg = np.linspace(left, right, neval)
-
-            first = self.copy(coefficients=(np.repeat(self.coefficients,
-                                                      other.n_samples, axis=0)
-                                            if (self.n_samples == 1 and
-                                                other.n_samples > 1)
-                                            else self.coefficients.copy()))
-            second = other.copy(coefficients=(np.repeat(other.coefficients,
-                                                        self.n_samples, axis=0)
-                                              if (other.n_samples == 1 and
-                                                  self.n_samples > 1)
-                                              else other.coefficients.copy()))
-
-            fdarray = first.evaluate(evalarg) * second.evaluate(evalarg)
-
-            return FDataBasis.from_data(fdarray, evalarg, basisobj)
-
-        if isinstance(other, int):
-            other = [other for _ in range(self.n_samples)]
-
-        coefs = np.transpose(np.atleast_2d(other))
-        return self.copy(coefficients=self.coefficients * coefs)
-
     def _to_R(self):
         """Gives the code to build the object on fda package on R"""
         return ("fd(coef = " + self._array_to_R(self.coefficients, True) +

@@ -107,20 +107,6 @@ class Monomial(Basis):
             ordered_evaluated_points[:self.n_basis],
             ordered_evaluated_points[self.n_basis - 1:])
 
-    def basis_of_product(self, other):
-        """Multiplication of a Monomial Basis with other Basis"""
-        if not _same_domain(self, other):
-            raise ValueError("Ranges are not equal.")
-
-        if isinstance(other, Monomial):
-            return Monomial(self.domain_range, self.n_basis + other.n_basis)
-
-        return other.rbasis_of_product(self)
-
-    def rbasis_of_product(self, other):
-        """Multiplication of a Monomial Basis with other Basis"""
-        return Basis.default_basis_of_product(self, other)
-
     def _to_R(self):
         drange = self.domain_range[0]
         return "create.monomial.basis(rangeval = c(" + str(drange[0]) + "," +\

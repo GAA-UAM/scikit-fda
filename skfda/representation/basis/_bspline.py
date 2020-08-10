@@ -316,60 +316,6 @@ class BSpline(Basis):
 
         return matrix
 
-    def basis_of_product(self, other):
-        from ._constant import Constant
-
-        """Multiplication of two Bspline Basis"""
-        if not _same_domain(self, other):
-            raise ValueError("Ranges are not equal.")
-
-        if isinstance(other, Constant):
-            return other.rbasis_of_product(self)
-
-        if isinstance(other, BSpline):
-            uniqueknots = np.union1d(self.inknots, other.inknots)
-
-            multunique = np.zeros(len(uniqueknots), dtype=np.int32)
-            for i in range(len(uniqueknots)):
-                mult1 = np.count_nonzero(self.inknots == uniqueknots[i])
-                mult2 = np.count_nonzero(other.inknots == uniqueknots[i])
-                multunique[i] = max(mult1, mult2)
-
-            m2 = 0
-            allknots = np.zeros(np.sum(multunique))
-            for i in range(len(uniqueknots)):
-                m1 = m2
-                m2 = m2 + multunique[i]
-                allknots[m1:m2] = uniqueknots[i]
-
-            norder1 = self.n_basis - len(self.inknots)
-            norder2 = other.n_basis - len(other.inknots)
-            norder = min(norder1 + norder2 - 1, 20)
-
-            allbreaks = ([self.domain_range[0][0]] +
-                         np.ndarray.tolist(allknots) +
-                         [self.domain_range[0][1]])
-            n_basis = len(allbreaks) + norder - 2
-            return BSpline(self.domain_range, n_basis, norder, allbreaks)
-        else:
-            norder = min(self.n_basis - len(self.inknots) + 2, 8)
-            n_basis = max(self.n_basis + other.n_basis, norder + 1)
-            return BSpline(self.domain_range, n_basis, norder)
-
-    def rbasis_of_product(self, other):
-        """Multiplication of a Bspline Basis with other basis"""
-
-        norder = min(self.n_basis - len(self.inknots) + 2, 8)
-        n_basis = max(self.n_basis + other.n_basis, norder + 1)
-        return BSpline(self.domain_range, n_basis, norder)
-
-    def _to_R(self):
-        drange = self.domain_range[0]
-        return ("create.bspline.basis(rangeval = c(" + str(drange[0]) + "," +
-                str(drange[1]) + "), nbasis = " + str(self.n_basis) +
-                ", norder = " + str(self.order) + ", breaks = " +
-                self._list_to_R(self.knots) + ")")
-
     def _to_scipy_BSpline(self, coefs):
 
         knots = np.concatenate((

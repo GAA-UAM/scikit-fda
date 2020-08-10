@@ -551,17 +551,29 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         pass
 
     @abstractmethod
-    def mean(self, weights=None):
-        """Compute the mean of all the samples.
-
-        weights (array-like, optional): List of weights.
+    def sum(self, *, axis=None, out=None, keepdims=False, skipna=False,
+            min_count=0):
+        """Compute the sum of all the samples.
 
         Returns:
             FData : A FData object with just one sample representing
-            the mean of all the samples in the original object.
+            the sum of all the samples in the original object.
 
         """
-        pass
+        if ((axis is not None and axis != 0) or
+                out is not None or keepdims is not False):
+            raise NotImplementedError(
+                "Not implemented for that parameter combination")
+
+    def mean(self, *, axis=None, dtype=None, out=None, keepdims=False,
+             skipna=False):
+
+        if dtype is not None:
+            raise NotImplementedError(
+                "Not implemented for that parameter combination")
+
+        return (self.sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
+                / self.n_samples)
 
     @abstractmethod
     def to_grid(self, sample_points=None):
@@ -646,6 +658,20 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             and self.argument_names == other.argument_names
             and self.coordinate_names == other.coordinate_names
         )
+
+    @abstractmethod
+    def __eq__(self, key):
+        pass
+
+    def __ne__(self, other):
+        """
+        Return for `self != other` (element-wise in-equality).
+        """
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return NotImplemented
+
+        return ~result
 
     def _copy_op(self, other, **kwargs):
 
@@ -858,6 +884,15 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 self = self.copy()
             return self
         return super().astype(dtype)
+
+    def _reduce(self, name, skipna=True, **kwargs):
+        meth = getattr(self, name, None)
+        if meth:
+            return meth(skipna=skipna, **kwargs)
+        else:
+            msg = (f"'{type(self).__name__}' does not implement "
+                   f"reduction '{name}'")
+            raise TypeError(msg)
 
 
 def concatenate(objects, as_coordinates=False):

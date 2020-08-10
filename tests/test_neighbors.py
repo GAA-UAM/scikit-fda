@@ -1,8 +1,6 @@
 """Test neighbors classifiers and regressors"""
 
-import unittest
-
-import numpy as np
+from skfda._neighbors.outlier import LocalOutlierFactor  # Pending theory
 from skfda.datasets import make_multimodal_samples, make_sinusoidal_process
 from skfda.exploratory.stats import mean as l2_mean
 from skfda.misc.metrics import lp_distance, pairwise_distance
@@ -11,11 +9,13 @@ from skfda.ml.classification import (KNeighborsClassifier,
                                      NearestCentroid)
 from skfda.ml.clustering import NearestNeighbors
 from skfda.ml.regression import KNeighborsRegressor, RadiusNeighborsRegressor
-#from skfda.exploratory.outliers import LocalOutlierFactor
-from skfda._neighbors.outlier import LocalOutlierFactor # Pending theory
 from skfda.representation.basis import Fourier
+import unittest
+
+import numpy as np
 
 
+#from skfda.exploratory.outliers import LocalOutlierFactor
 class TestNeighbors(unittest.TestCase):
 
     def setUp(self):
@@ -186,8 +186,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_radius_functional_response(self):
         knnr = RadiusNeighborsRegressor(metric=lp_distance,
-                                        weights='distance',
-                                        regressor=l2_mean)
+                                        weights='distance')
 
         knnr.fit(self.X, self.X)
 
@@ -222,7 +221,7 @@ class TestNeighbors(unittest.TestCase):
         weights = 1 / distances
         weights /= weights.sum()
 
-        response = self.X[:10].mean(weights=weights)
+        response = (self.X[:10] * weights).sum()
         np.testing.assert_array_almost_equal(res.data_matrix,
                                              response.data_matrix)
 

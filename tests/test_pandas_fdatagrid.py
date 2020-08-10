@@ -31,7 +31,7 @@ def data():
     * data[0] and data[1] should not be equal
     """
 
-    data_matrix = np.arange(100 * 10 * 10 * 3).reshape(100, 10, 10, 3)
+    data_matrix = np.arange(1, 100 * 10 * 10 * 3 + 1).reshape(100, 10, 10, 3)
     sample_points = [
         np.arange(10),
         np.arange(10) / 10]
@@ -42,7 +42,14 @@ def data():
 @pytest.fixture
 def data_for_twos():
     """Length-100 array in which all the elements are two."""
-    raise NotImplementedError
+
+    data_matrix = np.full(
+        100 * 10 * 10 * 3, fill_value=2).reshape(100, 10, 10, 3)
+    sample_points = [
+        np.arange(10),
+        np.arange(10) / 10]
+
+    return skfda.FDataGrid(data_matrix, sample_points=sample_points)
 
 
 @pytest.fixture
@@ -203,6 +210,64 @@ def as_array(request):
     """
     return request.param
 
+
+_all_arithmetic_operators = [
+    "__add__",
+    "__radd__",
+    "__sub__",
+    "__rsub__",
+    "__mul__",
+    "__rmul__",
+    #     "__floordiv__",
+    #     "__rfloordiv__",
+    "__truediv__",
+    "__rtruediv__",
+    #     "__pow__",
+    #     "__rpow__",
+    #     "__mod__",
+    #     "__rmod__",
+]
+
+
+@pytest.fixture(params=_all_arithmetic_operators)
+def all_arithmetic_operators(request):
+    """
+    Fixture for dunder names for common arithmetic operations.
+    """
+    return request.param
+
+
+@pytest.fixture(params=["__eq__", "__ne__",
+                        # "__le__", "__lt__", "__ge__", "__gt__"
+                        ])
+def all_compare_operators(request):
+    """
+    Fixture for dunder names for common compare operations
+    """
+    return request.param
+
+
+_all_numeric_reductions = [
+    "sum",
+    #     "max",
+    #     "min",
+    "mean",
+    #     "prod",
+    #     "std",
+    #     "var",
+    #     "median",
+    #     "kurt",
+    #     "skew",
+]
+
+
+@pytest.fixture(params=_all_numeric_reductions)
+def all_numeric_reductions(request):
+    """
+    Fixture for numeric reduction names.
+    """
+    return request.param
+
 ##############################################################################
 # Tests
 ##############################################################################
@@ -277,3 +342,38 @@ class TestInterface(base.BaseInterfaceTests):
     @pytest.mark.skip(reason="Unsupported")
     def test_view(self, dtype):
         pass
+
+
+class TestArithmeticOps(base.BaseArithmeticOpsTests):
+
+    series_scalar_exc = None
+
+    # Does not convert properly a list of FData to a FData
+    @pytest.mark.skip(reason="Unsupported")
+    def test_arith_series_with_array(self, dtype):
+        pass
+
+    # Does not error on operations
+    @pytest.mark.skip(reason="Unsupported")
+    def test_error(self, dtype):
+        pass
+
+
+class TestComparisonOps(base.BaseComparisonOpsTests):
+
+    # Cannot be compared with 0
+    @pytest.mark.skip(reason="Unsupported")
+    def test_compare_scalar(self, data, all_compare_operators):
+        pass
+
+    # Not sure how to pass it. Should it be reimplemented?
+    @pytest.mark.skip(reason="Unsupported")
+    def test_compare_array(self, data, all_compare_operators):
+        pass
+
+
+class TestNumericReduce(base.BaseNumericReduceTests):
+
+    def check_reduce(self, s, op_name, skipna):
+        result = getattr(s, op_name)(skipna=skipna)
+        assert result.n_samples == 1

@@ -369,12 +369,13 @@ class FDataBasis(FData):
 
         return FDataBasis(basis, coefficients)
 
-    def mean(self, weights=None):
-        """Compute the mean of all the samples in a FDataBasis object.
+    def sum(self, *, axis=None, out=None, keepdims=False, skipna=False,
+            min_count=0):
+        """Compute the sum of all the samples in a FDataBasis object.
 
         Returns:
             :obj:`FDataBasis`: A FDataBais object with just one sample
-            representing the mean of all the samples in the original
+            representing the sum of all the samples in the original
             FDataBasis object.
 
         Examples:
@@ -382,24 +383,25 @@ class FDataBasis(FData):
             >>> from skfda.representation.basis import FDataBasis, Monomial
             >>> basis = Monomial(n_basis=4)
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
-            >>> FDataBasis(basis, coefficients).mean()
+            >>> FDataBasis(basis, coefficients).sum()
             FDataBasis(
                 basis=Monomial(domain_range=((0, 1),), n_basis=4),
-                coefficients=[[ 1.  1.  3.  0.5]],
+                coefficients=[[ 2.  2.  6.  1.]],
                 ...)
 
         """
+        super().sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
 
-        if weights is not None:
-            return self.copy(coefficients=np.average(self.coefficients,
-                                                     weights=weights,
-                                                     axis=0
-                                                     )[np.newaxis, ...],
-                             sample_names=("mean",)
-                             )
+        coefs = (np.nansum(self.coefficients, axis=0) if skipna
+                 else np.sum(self.coefficients, axis=0))
 
-        return self.copy(coefficients=np.mean(self.coefficients, axis=0),
-                         sample_names=("mean",))
+        if min_count > 0:
+            valid = ~np.isnan(self.coefficients)
+            n_valid = np.sum(valid, axis=0)
+            coefs[n_valid < min_count] = np.NaN
+
+        return self.copy(coefficients=coefs,
+                         sample_names=(None,))
 
     def gmean(self, eval_points=None):
         """Compute the geometric mean of the functional data object.
@@ -670,7 +672,11 @@ class FDataBasis(FData):
         """Elementwise equality of FDataBasis"""
 
         if type(self) != type(other) or self.dtype != other.dtype:
-            raise TypeError("Types are not equal")
+            if pandas.api.types.is_list_like(other) and not isinstance(
+                    other, (pandas.Series, pandas.Index)):
+                return np.concatenate([x == y for x, y in zip(self, other)])
+            else:
+                return NotImplemented
 
         if len(self) != len(other):
             raise ValueError(f"Different lengths: "
@@ -762,7 +768,7 @@ class FDataBasis(FData):
             try:
                 basis, coefs = self.basis._add_constant(self.coefficients,
                                                         other)
-            except TypeError:
+            except Exception:
                 return NotImplemented
 
         return self._copy_op(other, basis=basis, coefficients=coefs)
@@ -784,7 +790,7 @@ class FDataBasis(FData):
             try:
                 basis, coefs = self.basis._sub_constant(self.coefficients,
                                                         other)
-            except TypeError:
+            except Exception:
                 return NotImplemented
 
         return self._copy_op(other, basis=basis, coefficients=coefs)
@@ -800,7 +806,7 @@ class FDataBasis(FData):
 
         try:
             basis, coefs = self.basis._mul_constant(self.coefficients, other)
-        except TypeError:
+        except Exception:
             return NotImplemented
 
         return self._copy_op(other, basis=basis, coefficients=coefs)
@@ -816,7 +822,7 @@ class FDataBasis(FData):
 
         try:
             other = 1 / other
-        except TypeError:
+        except Exception:
             return NotImplemented
 
         return self * other

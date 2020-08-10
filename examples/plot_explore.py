@@ -49,7 +49,7 @@ mean_high = skfda.exploratory.stats.mean(fd[~low_fat])
 
 means = mean_high.concatenate(mean_low)
 
-means.dataset_label = fd.dataset_label + ' - means'
+means.dataset_name = fd.dataset_name + ' - means'
 means.plot(group=['high fat', 'low fat'], group_colors=colors,
            linewidth=0.5, legend=True)
 

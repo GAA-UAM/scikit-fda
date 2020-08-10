@@ -10,8 +10,8 @@ import warnings
 
 import numpy as np
 
-from ..._utils import (_list_of_arrays, _same_domain,
-                       _reshape_eval_points, _evaluate_grid)
+from ..._utils import (_domain_range, _same_domain,
+                       _reshape_eval_points)
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -46,8 +46,8 @@ class Basis(ABC):
         """
 
         if domain_range is not None:
-            # TODO: Allow multiple dimensions
-            domain_range = _list_of_arrays(domain_range)
+
+            domain_range = _domain_range(domain_range)
 
             # Some checks
             _check_domain(domain_range)
@@ -57,7 +57,7 @@ class Basis(ABC):
                              "possitive.")
 
         self._domain_range = domain_range
-        self.n_basis = n_basis
+        self._n_basis = n_basis
 
         super().__init__()
 
@@ -72,13 +72,13 @@ class Basis(ABC):
     @property
     def domain_range(self):
         if self._domain_range is None:
-            return [np.array([0, 1])]
+            return ((0, 1),) * self.dim_domain
         else:
             return self._domain_range
 
-    @domain_range.setter
-    def domain_range(self, value):
-        self._domain_range = value
+    @property
+    def n_basis(self):
+        return self._n_basis
 
     @abstractmethod
     def _evaluate(self, eval_points):
@@ -118,6 +118,9 @@ class Basis(ABC):
 
     def __call__(self, *args, **kwargs):
         return self.evaluate(*args, **kwargs)
+
+    def __len__(self):
+        return self.n_basis
 
     def derivative(self, *, order=1):
         """Construct a FDataBasis object containing the derivative.
@@ -222,14 +225,22 @@ class Basis(ABC):
                     the original basis.
         """
 
-        if domain_range is None:
-            domain_range = self.domain_range
+        return self.copy(domain_range=domain_range)
 
-        return type(self)(domain_range, self.n_basis)
-
-    def copy(self):
+    def copy(self, domain_range=None):
         """Basis copy"""
-        return copy.deepcopy(self)
+
+        new_copy = copy.deepcopy(self)
+
+        if domain_range is not None:
+            domain_range = _domain_range(domain_range)
+
+            # Some checks
+            _check_domain(domain_range)
+
+            new_copy._domain_range = domain_range
+
+        return new_copy
 
     def to_basis(self):
         from . import FDataBasis
@@ -244,7 +255,7 @@ class Basis(ABC):
     def _to_R(self):
         raise NotImplementedError
 
-    def _inner_matrix(self, other=None):
+    def inner_product_matrix(self, other=None):
         r"""Return the Inner Product Matrix of a pair of basis.
 
         The Inner Product Matrix is defined as
@@ -266,19 +277,21 @@ class Basis(ABC):
             numpy.array: Inner Product Matrix of two basis
 
         """
+        from ...misc import inner_product_matrix
+
         if other is None or self == other:
             return self.gram_matrix()
 
-        first = self.to_basis()
-        second = other.to_basis()
+        return inner_product_matrix(self, other)
 
-        inner = np.zeros((self.n_basis, other.n_basis))
+    def _gram_matrix_numerical(self):
+        """
+        Compute the Gram matrix numerically.
 
-        for i in range(self.n_basis):
-            for j in range(other.n_basis):
-                inner[i, j] = first[i].inner_product(second[j], None, None)
+        """
+        from ...misc import inner_product_matrix
 
-        return inner
+        return inner_product_matrix(self, force_numerical=True)
 
     def _gram_matrix(self):
         """
@@ -286,17 +299,9 @@ class Basis(ABC):
 
         Subclasses may override this method for improving computation
         of the Gram matrix.
+
         """
-        fbasis = self.to_basis()
-
-        gram = np.zeros((self.n_basis, self.n_basis))
-
-        for i in range(fbasis.n_basis):
-            for j in range(i, fbasis.n_basis):
-                gram[i, j] = fbasis[i].inner_product(fbasis[j], None, None)
-                gram[j, i] = gram[i, j]
-
-        return gram
+        return self._gram_matrix_numerical()
 
     def gram_matrix(self):
         r"""Return the Gram Matrix of a basis
@@ -321,9 +326,6 @@ class Basis(ABC):
             self._gram_matrix_cached = gram
 
         return gram
-
-    def inner_product(self, other):
-        return self.to_basis().inner_product(other)
 
     def _add_same_basis(self, coefs1, coefs2):
         return self.copy(), coefs1 + coefs2
@@ -362,3 +364,7 @@ class Basis(ABC):
         return (type(self) == type(other)
                 and _same_domain(self, other)
                 and self.n_basis == other.n_basis)
+
+    def __hash__(self):
+        """Hash of Basis"""
+        return hash((self.domain_range, self.n_basis))

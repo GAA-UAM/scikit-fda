@@ -4,9 +4,17 @@ Defines the basic mathematical operations for classes defined in this
 package. FDataBasis and FDataGrid.
 
 """
+from builtins import isinstance
+from typing import Union
+
+import multimethod
 import scipy.integrate
 
 import numpy as np
+
+from .._utils import _same_domain, nquad_vec, _pairwise_commutative
+from ..representation import FDataGrid, FDataBasis
+from ..representation.basis import Basis
 
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -135,68 +143,211 @@ def cumsum(fdatagrid):
                                                 axis=0))
 
 
-def inner_product(fdatagrid, fdatagrid2):
-    r"""Return inner product for FDataGrid.
+@multimethod.multidispatch
+def inner_product(arg1, arg2, **kwargs):
+    r"""Return the usual (:math:`L_2`) inner product.
 
-    Calculates the inner product amongst all the samples in two
+    Calculates the inner product between matching samples in two
     FDataGrid objects.
 
-    For each pair of samples f and g the inner product is defined as:
+    For two samples x and y the inner product is defined as:
 
     .. math::
-        <f, g> = \int_a^bf(x)g(x)dx
+        <x, y> = \sum_i x_i y_i
 
-    The integral is approximated using Simpson's rule.
+    for multivariate data and
+
+    .. math::
+        <x, y> = \int_a^b x(t)y(t)dt
+
+    for functional data.
+
+    The two arguments must have the same number of samples, or one should
+    contain only one sample (and will be broadcasted).
 
     Args:
-        fdatagrid (FDataGrid): First FDataGrid object.
-        fdatagrid2 (FDataGrid): Second FDataGrid object.
+
+        arg1: First sample.
+        arg2: Second sample.
 
     Returns:
-        numpy.darray: Matrix with as many rows as samples in the first
-        object and as many columns as samples in the second one. Each
-        element (i, j) of the matrix is the inner product of the ith sample
-        of the first object and the jth sample of the second one.
+
+        numpy.darray: Vector with the inner products of each pair of
+            samples.
 
     Examples:
+
+        This function can compute the multivariate inner product.
+
+        >>> import numpy as np
+        >>> from skfda.misc import inner_product
+        >>>
+        >>> array1 = np.array([1, 2, 3])
+        >>> array2 = np.array([4, 5, 6])
+        >>> inner_product(array1, array2)
+        32
+
+        If the arrays contain more than one sample
+
+        >>> array1 = np.array([[1, 2, 3], [2, 3, 4]])
+        >>> array2 = np.array([[4, 5, 6], [1, 1, 1]])
+        >>> inner_product(array1, array2)
+        array([32, 9])
+
         The inner product of the :math:'f(x) = x` and the constant
         :math:`y=1` defined over the interval [0,1] is the area of the
         triangle delimited by the the lines y = 0, x = 1 and y = x; 0.5.
 
         >>> import skfda
-        >>> x = np.linspace(0,1,1001)
+        >>>
+        >>> x = np.linspace(0,1,1000)
+        >>>
         >>> fd1 = skfda.FDataGrid(x,x)
         >>> fd2 = skfda.FDataGrid(np.ones(len(x)),x)
         >>> inner_product(fd1, fd2)
-        array([[ 0.5]])
+        array([ 0.5])
 
         If the FDataGrid object contains more than one sample
 
         >>> fd1 = skfda.FDataGrid([x, np.ones(len(x))], x)
         >>> fd2 = skfda.FDataGrid([np.ones(len(x)), x] ,x)
         >>> inner_product(fd1, fd2).round(2)
-        array([[ 0.5 , 0.33],
-               [ 1.  , 0.5 ]])
+        array([ 0.5, 0.5])
+
+        If one argument contains only one sample it is
+        broadcasted.
+
+        >>> fd1 = skfda.FDataGrid([x, np.ones(len(x))], x)
+        >>> fd2 = skfda.FDataGrid([np.ones(len(x))] ,x)
+        >>> inner_product(fd1, fd2).round(2)
+        array([ 0.5, 1. ])
+
+        It also work with basis objects
+
+        >>> basis = skfda.representation.basis.Monomial(n_basis=3)
+        >>>
+        >>> fd1 = skfda.FDataBasis(basis, [0, 1, 0])
+        >>> fd2 = skfda.FDataBasis(basis, [1, 0, 0])
+        >>> inner_product(fd1, fd2)
+        array([ 0.5])
+
+        >>> basis = skfda.representation.basis.Monomial(n_basis=3)
+        >>>
+        >>> fd1 = skfda.FDataBasis(basis, [[0, 1, 0], [0, 0, 1]])
+        >>> fd2 = skfda.FDataBasis(basis, [1, 0, 0])
+        >>> inner_product(fd1, fd2)
+        array([ 0.5       , 0.33333333])
+
+        >>> basis = skfda.representation.basis.Monomial(n_basis=3)
+        >>>
+        >>> fd1 = skfda.FDataBasis(basis, [[0, 1, 0], [0, 0, 1]])
+        >>> fd2 = skfda.FDataBasis(basis, [[1, 0, 0], [0, 1, 0]])
+        >>> inner_product(fd1, fd2)
+        array([ 0.5 , 0.25])
 
     """
-    if fdatagrid.dim_domain != 1:
-        raise NotImplementedError("This method only works when the dimension "
-                                  "of the domain of the FDatagrid object is "
-                                  "one.")
-    # Checks
-    if not np.array_equal(fdatagrid.sample_points,
-                          fdatagrid2.sample_points):
+
+    if callable(arg1):
+        return _inner_product_integrate(arg1, arg2)
+    else:
+        return (arg1 * arg2).sum(axis=-1)
+
+
+@inner_product.register
+def inner_product_fdatagrid(arg1: FDataGrid, arg2: FDataGrid):
+
+    if not np.array_equal(arg1.sample_points,
+                          arg2.sample_points):
         raise ValueError("Sample points for both objects must be equal")
 
-    # Creates an empty matrix with the desired size to store the results.
-    matrix = np.empty([fdatagrid.n_samples, fdatagrid2.n_samples])
-    # Iterates over the different samples of both objects.
-    for i in range(fdatagrid.n_samples):
-        for j in range(fdatagrid2.n_samples):
-            # Calculates the inner product using Simpson's rule.
-            matrix[i, j] = (scipy.integrate.simps(
-                fdatagrid.data_matrix[i, ..., 0] *
-                fdatagrid2.data_matrix[j, ..., 0],
-                x=fdatagrid.sample_points[0]
-            ))
-    return matrix
+    integrand = arg1.data_matrix * arg2.data_matrix
+
+    for s in arg1.sample_points:
+        integrand = scipy.integrate.simps(integrand,
+                                          x=s,
+                                          axis=1)
+
+    return np.sum(integrand, axis=-1)
+
+
+@inner_product.register(FDataBasis, FDataBasis)
+@inner_product.register(FDataBasis, Basis)
+@inner_product.register(Basis, FDataBasis)
+@inner_product.register(Basis, Basis)
+def inner_product_fdatabasis(arg1: Union[FDataBasis, Basis],
+                             arg2: Union[FDataBasis, Basis],
+                             *,
+                             inner_product_matrix=None,
+                             force_numerical=False):
+
+    if not _same_domain(arg1, arg2):
+        raise ValueError("Both Objects should have the same domain_range")
+
+    if isinstance(arg1, Basis):
+        arg1 = arg1.to_basis()
+
+    if isinstance(arg2, Basis):
+        arg2 = arg2.to_basis()
+
+    # Now several cases where computing the matrix is preferrable
+    #
+    # First, if force_numerical is True, the matrix is NOT used
+    # Otherwise, if the matrix is given, it is used
+    # Two other cases follow
+
+    # The basis is the same: most basis can optimize this case,
+    # and also the Gram matrix is cached the first time, so computing
+    # it is usually worthwhile
+    same_basis = arg1.basis == arg2.basis
+
+    # The number of operations is less usinf the matrix
+    n_ops_best_with_matrix = max(
+        arg1.n_samples, arg2.n_samples) > arg1.n_basis * arg2.n_basis
+
+    if not force_numerical and (
+            inner_product_matrix is not None
+            or same_basis
+            or n_ops_best_with_matrix):
+
+        if inner_product_matrix is None:
+            inner_product_matrix = arg1.basis.inner_product_matrix(arg2.basis)
+
+        return (arg1.coefficients @
+                inner_product_matrix *
+                arg2.coefficients).sum(axis=-1)
+    else:
+        return _inner_product_integrate(arg1, arg2)
+
+
+def _inner_product_integrate(arg1, arg2):
+
+    if not np.array_equal(arg1.domain_range,
+                          arg2.domain_range):
+        raise ValueError("Domain range for both objects must be equal")
+
+    integral = nquad_vec(
+        lambda *args: arg1([*args])[:, 0, :] * arg2([*args])[:, 0, :],
+        arg1.domain_range)
+
+    return np.sum(integral, axis=-1)
+
+
+def inner_product_matrix(arg1, arg2=None, **kwargs):
+    """
+    Returns the inner product matrix between is arguments.
+
+    If arg2 is ``None`` returns the Gram matrix.
+
+    Args:
+
+        arg1: First sample.
+        arg2: Second sample.
+
+    """
+
+    if isinstance(arg1, Basis):
+        arg1 = arg1.to_basis()
+    if isinstance(arg2, Basis):
+        arg2 = arg2.to_basis()
+
+    return _pairwise_commutative(inner_product, arg1, arg2, **kwargs)

@@ -10,8 +10,9 @@ Shows how to make a discretized representation of a function.
 
 # sphinx_gallery_thumbnail_number = 2
 
-import numpy as np
 from skfda import FDataGrid
+
+import numpy as np
 
 
 ##############################################################################
@@ -28,8 +29,9 @@ data = np.array([np.sin((sample_points + random_state.randn())
 # that are measured at the same points.
 
 fd = FDataGrid(data, sample_points,
-               dataset_label='Sinusoidal curves',
-               axes_labels=['t', 'x(t)'])
+               dataset_name='Sinusoidal curves',
+               argument_names=['t'],
+               coordinate_names=['x(t)'])
 
 fd = fd[:5]
 

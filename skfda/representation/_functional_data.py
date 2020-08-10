@@ -23,29 +23,96 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         dim_domain (int): Dimension of the domain.
         dim_codomain (int): Dimension of the image.
         extrapolation (Extrapolation): Default extrapolation mode.
-        dataset_label (str): name of the dataset.
-        axes_labels (list): list containing the labels of the different
-            axis. The first element is the x label, the second the y label
-            and so on.
+        dataset_name (str): name of the dataset.
+        argument_names (tuple): tuple containing the names of the different
+            arguments.
+        coordinate_names (tuple): tuple containing the names of the different
+            coordinate functions.
 
     """
 
-    def __init__(self, extrapolation, dataset_label, axes_labels):
+    def __init__(self, *, extrapolation,
+                 dataset_name=None,
+                 dataset_label=None,
+                 axes_labels=None,
+                 argument_names=None,
+                 coordinate_names=None,
+                 sample_names=None):
 
         self.extrapolation = extrapolation
-        self.dataset_label = dataset_label
+        self.dataset_name = dataset_name
+
+        if dataset_label is not None:
+            self.dataset_label = dataset_label
+
+        self.argument_names = argument_names
+        self.coordinate_names = coordinate_names
         self.axes_labels = axes_labels
+        self.sample_names = sample_names
+
+    @property
+    def dataset_label(self):
+        warnings.warn("Parameter dataset_label is deprecated. Use the "
+                      "parameter dataset_name instead.",
+                      DeprecationWarning)
+        return self.dataset_name
+
+    @dataset_label.setter
+    def dataset_label(self, name):
+        warnings.warn("Parameter dataset_label is deprecated. Use the "
+                      "parameter dataset_name instead.",
+                      DeprecationWarning)
+        self.dataset_name = name
+
+    @property
+    def argument_names(self):
+        return self._argument_names
+
+    @argument_names.setter
+    def argument_names(self, names):
+        if names is None:
+            names = (None,) * self.dim_domain
+        else:
+            names = tuple(names)
+            if len(names) != self.dim_domain:
+                raise ValueError("There must be a name for each of the "
+                                 "dimensions of the domain.")
+
+        self._argument_names = names
+
+    @property
+    def coordinate_names(self):
+        return self._coordinate_names
+
+    @coordinate_names.setter
+    def coordinate_names(self, names):
+        if names is None:
+            names = (None,) * self.dim_codomain
+        else:
+            names = tuple(names)
+            if len(names) != self.dim_codomain:
+                raise ValueError("There must be a name for each of the "
+                                 "dimensions of the codomain.")
+
+        self._coordinate_names = names
 
     @property
     def axes_labels(self):
-        """Return the list of axes labels"""
-        return self._axes_labels
+        warnings.warn("Parameter axes_labels is deprecated. Use the "
+                      "parameters argument_names and "
+                      "coordinate_names instead.", DeprecationWarning)
+
+        return self.argument_names + self.coordinate_names
 
     @axes_labels.setter
     def axes_labels(self, labels):
         """Sets the list of labels"""
 
         if labels is not None:
+
+            warnings.warn("Parameter axes_labels is deprecated. Use the "
+                          "parameters argument_names and "
+                          "coordinate_names instead.", DeprecationWarning)
 
             labels = np.asarray(labels)
             if len(labels) > (self.dim_domain + self.dim_codomain):
@@ -55,7 +122,24 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 diff = (self.dim_domain + self.dim_codomain) - len(labels)
                 labels = np.concatenate((labels, diff * [None]))
 
-        self._axes_labels = labels
+            self.argument_names = labels[:self.dim_domain]
+            self.coordinate_names = labels[self.dim_domain:]
+
+    @property
+    def sample_names(self):
+        return self._sample_names
+
+    @sample_names.setter
+    def sample_names(self, names):
+        if names is None:
+            names = (None,) * self.n_samples
+        else:
+            names = tuple(names)
+            if len(names) != self.n_samples:
+                raise ValueError("There must be a name for each of the "
+                                 "samples.")
+
+        self._sample_names = names
 
     @property
     @abstractmethod
@@ -392,58 +476,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         """
         pass
 
-    def _get_labels_coordinates(self, key):
-        """Return the labels of a function when it is indexed by its components.
-
-        Args:
-            key (int, tuple, slice): Key used to index the coordinates.
-
-        Returns:
-            (list): labels of the object fd.coordinates[key.
-
-        """
-        if self.axes_labels is None:
-            labels = None
-        else:
-
-            labels = self.axes_labels[:self.dim_domain].tolist()
-            image_label = np.atleast_1d(
-                self.axes_labels[self.dim_domain:][key])
-            labels.extend(image_label.tolist())
-
-        return labels
-
-    def _join_labels_coordinates(self, *others):
-        """Return the labels of the concatenation as new coordinates of multiple
-        functional objects.
-
-        Args:
-            others (:obj:`FData`) Objects to be concatenated.
-
-        Returns:
-            (list): labels of the object
-            self.concatenate(*others, as_coordinates=True).
-
-        """
-        # Labels should be None or a list of length self.dim_domain +
-        # self.dim_codomain.
-
-        if self.axes_labels is None:
-            labels = (self.dim_domain + self.dim_codomain) * [None]
-        else:
-            labels = self.axes_labels.tolist()
-
-        for other in others:
-            if other.axes_labels is None:
-                labels.extend(other.dim_codomain * [None])
-            else:
-                labels.extend(list(other.axes_labels[self.dim_domain:]))
-
-        if all(label is None for label in labels):
-            labels = None
-
-        return labels
-
     def plot(self, *args, **kwargs):
         """Plot the FDatGrid object.
 
@@ -519,17 +551,29 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         pass
 
     @abstractmethod
-    def mean(self, weights=None):
-        """Compute the mean of all the samples.
-
-        weights (array-like, optional): List of weights.
+    def sum(self, *, axis=None, out=None, keepdims=False, skipna=False,
+            min_count=0):
+        """Compute the sum of all the samples.
 
         Returns:
             FData : A FData object with just one sample representing
-            the mean of all the samples in the original object.
+            the sum of all the samples in the original object.
 
         """
-        pass
+        if ((axis is not None and axis != 0) or
+                out is not None or keepdims is not False):
+            raise NotImplementedError(
+                "Not implemented for that parameter combination")
+
+    def mean(self, *, axis=None, dtype=None, out=None, keepdims=False,
+             skipna=False):
+
+        if dtype is not None:
+            raise NotImplementedError(
+                "Not implemented for that parameter combination")
+
+        return (self.sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
+                / self.n_samples)
 
     @abstractmethod
     def to_grid(self, sample_points=None):
@@ -606,6 +650,37 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         pass
 
+    def equals(self, other):
+        return (
+            type(self) == type(other)
+            and self.extrapolation == other.extrapolation
+            and self.dataset_name == other.dataset_name
+            and self.argument_names == other.argument_names
+            and self.coordinate_names == other.coordinate_names
+        )
+
+    @abstractmethod
+    def __eq__(self, key):
+        pass
+
+    def __ne__(self, other):
+        """
+        Return for `self != other` (element-wise in-equality).
+        """
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return NotImplemented
+
+        return ~result
+
+    def _copy_op(self, other, **kwargs):
+
+        base_copy = (other if isinstance(other, type(self))
+                     and self.n_samples == 1 and other.n_samples != 1
+                     else self)
+
+        return base_copy.copy(**kwargs)
+
     @abstractmethod
     def __add__(self, other):
         """Addition for FData object."""
@@ -669,7 +744,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     # Numpy methods
     #####################################################################
 
-    def to_numpy(self):
+    def __array__(self, *args, **kwargs):
         """Returns a numpy array with the objects"""
 
         # This is to prevent numpy to access inner dimensions
@@ -697,11 +772,21 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
     @classmethod
     def _from_sequence(cls, scalars, dtype=None, copy=False):
+        if isinstance(scalars, cls):
+            scalars = [scalars]
+
         if copy:
             scalars = [f.copy() for f in scalars]
 
-        if dtype is not None and dtype != cls.dtype.fget(None):
-            raise ValueError(f"Invalid dtype {dtype}")
+        if dtype is None:
+            first_element = next(s for s in scalars if s is not pandas.NA)
+            dtype = first_element.dtype
+
+        scalars = [s if s is not pandas.NA else dtype._na_repr()
+                   for s in scalars]
+
+        if len(scalars) == 0:
+            scalars = [dtype._na_repr()[0:0]]
 
         return cls._concat_same_type(scalars)
 
@@ -709,15 +794,6 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     def _from_factorized(cls, values, original):
         raise NotImplementedError("Factorization does not make sense for "
                                   "functional data")
-
-    def isna(self):
-        """
-        A 1-D array indicating if each value is missing.
-
-        Returns:
-            na_values (np.ndarray): Array full of False values.
-        """
-        return np.zeros(self.n_samples, dtype=bool)
 
     def take(self, indices, allow_fill=False, fill_value=None, axis=0):
         """Take elements from an array.
@@ -772,7 +848,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         # If the ExtensionArray is backed by an ndarray, then
         # just pass that here instead of coercing to object.
-        data = self.to_numpy()
+        data = np.asarray(self)
         if allow_fill and fill_value is None:
             fill_value = self.dtype.na_value
         # fill value should always be translated from the scalar
@@ -795,11 +871,28 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         Returns:
             FData
+
         """
+        if isinstance(to_concat, cls):
+            return to_concat
 
-        first, *others = to_concat
+        return concatenate(to_concat)
 
-        return first.concatenate(*others)
+    def astype(self, dtype, copy=True):
+        if isinstance(dtype, type(self.dtype)):
+            if copy:
+                self = self.copy()
+            return self
+        return super().astype(dtype)
+
+    def _reduce(self, name, skipna=True, **kwargs):
+        meth = getattr(self, name, None)
+        if meth:
+            return meth(skipna=skipna, **kwargs)
+        else:
+            msg = (f"'{type(self).__name__}' does not implement "
+                   f"reduction '{name}'")
+            raise TypeError(msg)
 
 
 def concatenate(objects, as_coordinates=False):
@@ -826,7 +919,7 @@ def concatenate(objects, as_coordinates=False):
     objects = iter(objects)
     first = next(objects, None)
 
-    if not first:
+    if first is None:
         raise ValueError("At least one FData object must be provided "
                          "to concatenate.")
 

@@ -62,16 +62,22 @@ class Tensor(Basis):
 
     def __init__(self, basis_list):
 
+        basis_list = tuple(basis_list)
+
         if not all(b.dim_domain == 1 and b.dim_codomain == 1
                    for b in basis_list):
             raise ValueError("The basis functions must be "
                              "univariate and scalar valued")
 
-        self.basis_list = basis_list
+        self._basis_list = basis_list
 
         super().__init__(
             domain_range=[b.domain_range[0] for b in basis_list],
             n_basis=np.prod([b.n_basis for b in basis_list]))
+
+    @property
+    def basis_list(self):
+        return self._basis_list
 
     @property
     def dim_domain(self):
@@ -94,8 +100,25 @@ class Tensor(Basis):
 
         pass
 
+    def _gram_matrix(self):
+
+        gram_matrices = [b.gram_matrix().ravel() for b in self.basis_list]
+
+        gram = gram_matrices[0]
+
+        for g in gram_matrices[1:]:
+            gram = np.outer(gram, g).ravel()
+
+        return gram.reshape((self.n_basis, self.n_basis))
+
     def basis_of_product(self, other):
         pass
 
     def rbasis_of_product(self, other):
         pass
+
+    def __eq__(self, other):
+        return super().__eq__(other) and self.basis_list == other.basis_list
+
+    def __hash__(self):
+        return hash((super().__hash__(), self.basis_list))

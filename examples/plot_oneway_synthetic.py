@@ -10,22 +10,25 @@ synthetic data.
 # License: MIT
 
 
+from skfda.datasets import make_gaussian_process
+from skfda.inference.anova import oneway_anova
+from skfda.misc.covariances import WhiteNoise
+from skfda.representation import FDataGrid
+
 import numpy as np
 
-from skfda.representation import FDataGrid
-from skfda.inference.anova import oneway_anova
-from skfda.datasets import make_gaussian_process
-from skfda.misc.covariances import WhiteNoise
 
-################################################################################
-# *One-way ANOVA* (analysis of variance) is a test that can be used to
+##########################################################################
+# **One-way ANOVA** (analysis of variance) is a test that can be used to
 # compare the means of different samples of data.
 # Let :math:`X_{ij}(t), j=1, \dots, n_i` be trajectories corresponding to
-# :math:`k` independent samples :math:`(i=1,\dots,k)` and let :math:`E(X_i(t)) =
-# m_i(t)`. Thus, the null hypothesis in the statistical test is:
+# :math:`k` independent samples :math:`(i=1,\dots,k)` and let
+# :math:`E(X_i(t)) = m_i(t)`. Thus, the null hypothesis in the statistical
+# test is:
 #
 # .. math::
-#   H_0: m_1(t) = \dots = m_k(t)
+#
+#     H_0: m_1(t) = \dots = m_k(t)
 #
 # In this example we will explain the nature of ANOVA method and its behavior
 # under certain conditions simulating data. Specifically, we will generate
@@ -34,9 +37,9 @@ from skfda.misc.covariances import WhiteNoise
 # test is to illustrate the differences in the results of the ANOVA method
 # when the covariance function of the brownian processes changes.
 
-################################################################################
-# First, the means for the future processes are drawn.
 
+##########################################################################
+# First, the means for the future processes are drawn.
 n_samples = 10
 n_features = 100
 n_groups = 3
@@ -50,11 +53,11 @@ m2 = t ** 2 * (1 - t) ** 4
 m3 = t ** 3 * (1 - t) ** 3
 
 _ = FDataGrid([m1, m2, m3],
-              dataset_label="Means to be used in the simulation").plot()
+              dataset_name="Means to be used in the simulation").plot()
 
-################################################################################
-# A total of `n_samples` trajectories will be created for each mean, so a array
-# of labels is created to identify them when plotting.
+##########################################################################
+# A total of ``n_samples`` trajectories will be created for each mean, so an
+# array of labels is created to identify them when plotting.
 
 groups = np.full(n_samples * n_groups, 'Sample 1')
 groups[10:20] = 'Sample 2'
@@ -82,13 +85,13 @@ print("Statistic: {:.3f}".format(stat))
 print("p-value: {:.3f}".format(p_val))
 
 
-################################################################################
+##########################################################################
 # In the following, the same process will be followed incrementing sigma
 # value, this way the differences between the averages of each group will be
 # lower and the p-values will increase (the null hypothesis will be harder to
 # refuse).
 
-################################################################################
+##########################################################################
 # Plot for :math:`\sigma^2 = 0.1`:
 sigma2 = 0.1
 cov = WhiteNoise(variance=sigma2)
@@ -108,7 +111,7 @@ print("Statistic: {:.3f}".format(stat))
 print("p-value: {:.3f}".format(p_val))
 
 
-################################################################################
+##########################################################################
 # Plot for :math:`\sigma^2 = 1`:
 
 sigma2 = 1
@@ -128,7 +131,7 @@ stat, p_val = oneway_anova(fd1, fd2, fd3, random_state=4)
 print("Statistic: {:.3f}".format(stat))
 print("p-value: {:.3f}".format(p_val))
 
-################################################################################
+##########################################################################
 # **References:**
 #
 #  [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An anova test

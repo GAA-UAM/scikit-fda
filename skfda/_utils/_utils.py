@@ -1,9 +1,42 @@
 """Module with generic methods"""
 
 import functools
+import numbers
 import types
 
+from pandas.api.indexers import check_array_indexer
+import scipy.integrate
+
 import numpy as np
+
+
+class _FDataCallable():
+
+    def __init__(self, function, *, domain_range, n_samples=1):
+
+        self.function = function
+        self.domain_range = domain_range
+        self.n_samples = n_samples
+
+    def __call__(self, *args, **kwargs):
+
+        return self.function(*args, **kwargs)
+
+    def __len__(self):
+
+        return self.n_samples
+
+    def __getitem__(self, key):
+
+        def new_function(*args, **kwargs):
+            return self.function(*args, **kwargs)[key]
+
+        tmp = np.empty(self.n_samples)
+        new_nsamples = len(tmp[key])
+
+        return _FDataCallable(new_function,
+                              domain_range=self.domain_range,
+                              n_samples=new_nsamples)
 
 
 def check_is_univariate(fd):
@@ -49,7 +82,7 @@ def _to_grid(X, y, eval_points=None):
     return X, y
 
 
-def _list_of_arrays(original_array):
+def _tuple_of_arrays(original_array):
     """Convert to a list of arrays.
 
     If the original list is one-dimensional (e.g. [1, 2, 3]), return list to
@@ -76,9 +109,24 @@ def _list_of_arrays(original_array):
         unidimensional = True
 
     if unidimensional:
-        return [np.asarray(original_array)]
+        return (_int_to_real(np.asarray(original_array)),)
     else:
-        return [np.asarray(i) for i in original_array]
+        return tuple(_int_to_real(np.asarray(i)) for i in original_array)
+
+
+def _domain_range(sequence):
+
+    try:
+        iter(sequence[0])
+    except TypeError:
+        sequence = (sequence,)
+
+    sequence = tuple(tuple(s) for s in sequence)
+
+    if not all(len(s) == 2 for s in sequence):
+        raise ValueError("Domain intervals should have 2 bounds each")
+
+    return sequence
 
 
 def _to_array_maybe_ragged(array, *, row_shape=None):
@@ -220,7 +268,7 @@ def _one_grid_to_points(axes, *, dim_domain):
     Returns also the shape containing the information of how each point
     is formed.
     """
-    axes = _list_of_arrays(axes)
+    axes = _tuple_of_arrays(axes)
 
     if len(axes) != dim_domain:
         raise ValueError(f"Length of axes should be "
@@ -296,7 +344,7 @@ def _evaluate_grid(axes, *, evaluate_method,
         eval_points, shape = zip(
             *[_one_grid_to_points(a, dim_domain=dim_domain) for a in axes])
 
-    eval_points = np.array(eval_points)
+    eval_points = _to_array_maybe_ragged(eval_points)
 
     # Evaluate the points
     res = evaluate_method(eval_points,
@@ -318,63 +366,76 @@ def _evaluate_grid(axes, *, evaluate_method,
     return res
 
 
-def parameter_aliases(**alias_assignments):
-    """Allows using aliases for parameters"""
-    def decorator(f):
+def nquad_vec(func, ranges):
 
-        if isinstance(f, (types.FunctionType, types.LambdaType)):
-            # f is a function
-            @functools.wraps(f)
-            def aliasing_function(*args, **kwargs):
-                nonlocal alias_assignments
-                for parameter_name, aliases in alias_assignments.items():
-                    aliases = tuple(aliases)
-                    aliases_used = [a for a in kwargs
-                                    if a in aliases + (parameter_name,)]
-                    if len(aliases_used) > 1:
-                        raise ValueError(
-                            f"Several arguments with the same meaning used: " +
-                            str(aliases_used))
+    initial_depth = len(ranges) - 1
 
-                    elif len(aliases_used) == 1:
-                        arg = kwargs.pop(aliases_used[0])
-                        kwargs[parameter_name] = arg
+    def integrate(*args, depth):
 
-                return f(*args, **kwargs)
-            return aliasing_function
-
+        if depth == 0:
+            f = functools.partial(func, *args)
         else:
-            # f is a class
+            f = functools.partial(integrate, *args, depth=depth - 1)
 
-            class cls(f):
-                pass
+        return scipy.integrate.quad_vec(f, *ranges[initial_depth - depth])[0]
 
-            nonlocal alias_assignments
-            init = cls.__init__
-            cls.__init__ = parameter_aliases(**alias_assignments)(init)
+    return integrate(depth=initial_depth)
 
-            set_params = getattr(cls, "set_params", None)
-            if set_params is not None:  # For estimators
-                cls.set_params = parameter_aliases(
-                    **alias_assignments)(set_params)
 
-            for key, value in alias_assignments.items():
-                def getter(self):
-                    return getattr(self, key)
+def _pairwise_commutative(function, arg1, arg2=None, **kwargs):
+    """
+    Compute pairwise a commutative function.
 
-                def setter(self, new_value):
-                    return setattr(self, key, new_value)
+    """
+    if arg2 is None:
 
-                for alias in value:
-                    setattr(cls, alias, property(getter, setter))
+        indices = np.triu_indices(len(arg1))
 
-            cls.__name__ = f.__name__
-            cls.__doc__ = f.__doc__
-            cls.__module__ = f.__module__
+        matrix = np.empty((len(arg1), len(arg1)))
 
-            return cls
+        triang_vec = function(
+            arg1[indices[0]], arg1[indices[1]],
+            **kwargs)
 
-    return decorator
+        # Set upper matrix
+        matrix[indices] = triang_vec
+
+        # Set lower matrix
+        matrix[(indices[1], indices[0])] = triang_vec
+
+        return matrix
+
+    else:
+
+        indices = np.indices((len(arg1), len(arg2)))
+
+        return function(
+            arg1[indices[0].ravel()], arg2[indices[1].ravel()],
+            **kwargs).reshape(
+                (len(arg1), len(arg2)))
+
+
+def _int_to_real(array):
+    """
+    Convert integer arrays to floating point.
+    """
+    return array + 0.0
+
+
+def _check_array_key(array, key):
+    """
+    Checks a getitem key.
+    """
+
+    key = check_array_indexer(array, key)
+
+    if isinstance(key, numbers.Integral):  # To accept also numpy ints
+        key = int(key)
+        key = range(len(array))[key]
+
+        return slice(key, key + 1)
+    else:
+        return key
 
 
 def _check_estimator(estimator):

@@ -1,3 +1,5 @@
+import scipy.linalg
+
 import numpy as np
 
 from ..._utils import _same_domain
@@ -57,6 +59,8 @@ class VectorValued(Basis):
 
     def __init__(self, basis_list):
 
+        basis_list = tuple(basis_list)
+
         if not all(b.dim_codomain == 1 for b in basis_list):
             raise ValueError("The basis functions must be "
                              "scalar valued")
@@ -67,11 +71,15 @@ class VectorValued(Basis):
             raise ValueError("The basis must all have the same domain "
                              "dimension an range")
 
-        self.basis_list = basis_list
+        self._basis_list = basis_list
 
         super().__init__(
             domain_range=basis_list[0].domain_range,
             n_basis=sum(b.n_basis for b in basis_list))
+
+    @property
+    def basis_list(self):
+        return self._basis_list
 
     @property
     def dim_domain(self):
@@ -112,11 +120,18 @@ class VectorValued(Basis):
 
         return new_basis, new_coefs
 
+    def _gram_matrix(self):
+
+        gram_matrices = [b.gram_matrix() for b in self.basis_list]
+
+        return scipy.linalg.block_diag(*gram_matrices)
+
     def _coordinate_nonfull(self, fdatabasis, key):
 
         r_key = key
         if isinstance(r_key, int):
             r_key = range(r_key, r_key + 1)
+            s_key = slice(r_key.start, r_key.stop, r_key.step)
 
         coef_indexes = np.concatenate([
             np.ones(b.n_basis, dtype=np.bool_) if i in r_key
@@ -130,13 +145,19 @@ class VectorValued(Basis):
 
         coefs = fdatabasis.coefficients[:, coef_indexes]
 
-        axes_labels = fdatabasis._get_labels_coordinates(key)
+        coordinate_names = np.array(fdatabasis.coordinate_names)[s_key]
 
         return fdatabasis.copy(basis=basis, coefficients=coefs,
-                               axes_labels=axes_labels)
+                               coordinate_names=coordinate_names)
 
     def basis_of_product(self, other):
         pass
 
     def rbasis_of_product(self, other):
         pass
+
+    def __eq__(self, other):
+        return super().__eq__(other) and self.basis_list == other.basis_list
+
+    def __hash__(self):
+        return hash((super().__hash__(), self.basis_list))

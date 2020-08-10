@@ -754,7 +754,8 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
 
     # Karcher mean orbit in space L2/Gamma
     karcher_mean = srsf_transformer.inverse_transform(
-        fdatagrid.copy(data_matrix=[mu], sample_points=eval_points))
+        fdatagrid.copy(data_matrix=[mu], sample_points=eval_points,
+                       sample_names=("Karcher mean",)))
 
     if center:
         # Gamma mean in Hilbert Sphere

@@ -5,14 +5,26 @@ import unittest
 import numpy as np
 
 
-class TestLfd(unittest.TestCase):
+class TestLinearDifferentialOperator(unittest.TestCase):
+
+    def _assert_equal_weights(self, weights, weights2, msg):
+        self.assertEqual(len(weights), len(weights2), msg)
+
+        for w, w2 in zip(weights, weights2):
+
+            eq = getattr(w, "equals", None)
+
+            if eq is None:
+                self.assertEqual(w, w2, msg)
+            else:
+                self.assertTrue(eq(w2), msg)
 
     def test_init_default(self):
         """Tests default initialization (do not penalize)."""
         lfd = LinearDifferentialOperator()
         weightfd = [FDataBasis(Constant((0, 1)), 0)]
 
-        np.testing.assert_equal(
+        self._assert_equal_weights(
             lfd.weights, weightfd,
             "Wrong list of weight functions of the linear operator")
 
@@ -23,16 +35,16 @@ class TestLfd(unittest.TestCase):
         lfd_0 = LinearDifferentialOperator(order=0)
         weightfd = [FDataBasis(Constant((0, 1)), 1)]
 
-        np.testing.assert_equal(
+        self._assert_equal_weights(
             lfd_0.weights, weightfd,
             "Wrong list of weight functions of the linear operator")
 
         # Checks for a non zero order Lfd object
         lfd_3 = LinearDifferentialOperator(3)
         consfd = FDataBasis(Constant((0, 1)), [[0], [0], [0], [1]])
-        bwtlist3 = consfd.to_list()
+        bwtlist3 = list(consfd)
 
-        np.testing.assert_equal(
+        self._assert_equal_weights(
             lfd_3.weights, bwtlist3,
             "Wrong list of weight functions of the linear operator")
 
@@ -50,8 +62,8 @@ class TestLfd(unittest.TestCase):
 
         lfd = LinearDifferentialOperator(weights=coefficients)
 
-        np.testing.assert_equal(
-            lfd.weights, fd.to_list(),
+        self._assert_equal_weights(
+            lfd.weights, list(fd),
             "Wrong list of weight functions of the linear operator")
 
     def test_init_list_fdatabasis(self):
@@ -69,8 +81,8 @@ class TestLfd(unittest.TestCase):
         fdlist = [FDataBasis(monomial, w) for w in weights]
         lfd = LinearDifferentialOperator(weights=fdlist)
 
-        np.testing.assert_equal(
-            lfd.weights, fd.to_list(),
+        self._assert_equal_weights(
+            lfd.weights, list(fd),
             "Wrong list of weight functions of the linear operator")
 
         # Check failure if intervals do not match

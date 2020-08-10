@@ -6,7 +6,7 @@ from scipy.interpolate import PPoly
 
 import numpy as np
 
-from ..._utils import _same_domain
+from ..._utils import _same_domain, _FDataCallable
 from ...representation import FDataGrid
 from ...representation.basis import Constant, Monomial, Fourier, BSpline
 from ._operators import Operator, gramian_matrix_optimization
@@ -43,16 +43,16 @@ class LinearDifferentialOperator(Operator):
         LinearDifferentialOperator(
         weights=[
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[1]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 1.]],
             ...)]
         )
 
@@ -63,16 +63,16 @@ class LinearDifferentialOperator(Operator):
         LinearDifferentialOperator(
         weights=[
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[2]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 2.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[3]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 3.]],
             ...)]
         )
 
@@ -80,23 +80,23 @@ class LinearDifferentialOperator(Operator):
 
         >>> constant = Constant()
         >>> monomial = Monomial((0, 1), n_basis=3)
-        >>> fdlist = [FDataBasis(constant, [0]),
-        ...           FDataBasis(constant, [0]),
-        ...           FDataBasis(monomial, [1, 2, 3])]
+        >>> fdlist = [FDataBasis(constant, [0.]),
+        ...           FDataBasis(constant, [0.]),
+        ...           FDataBasis(monomial, [1., 2., 3.])]
         >>> LinearDifferentialOperator(weights=fdlist)
         LinearDifferentialOperator(
         weights=[
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Monomial(domain_range=[array([0, 1])], n_basis=3),
-            coefficients=[[1 2 3]],
+            basis=Monomial(domain_range=((0, 1),), n_basis=3),
+            coefficients=[[ 1. 2. 3.]],
             ...)]
         )
 
@@ -160,9 +160,9 @@ class LinearDifferentialOperator(Operator):
                 raise ValueError("You have to provide one weight at least")
 
             if all(isinstance(n, numbers.Real) for n in weights):
-                self.weights = (FDataBasis(Constant(real_domain_range),
-                                           np.array(weights)
-                                           .reshape(-1, 1)).to_list())
+                self.weights = list(FDataBasis(Constant(real_domain_range),
+                                               np.array(weights)
+                                               .reshape(-1, 1)))
 
             elif all(isinstance(n, FDataBasis) for n in weights):
                 if all([_same_domain(weights[0], x)
@@ -228,7 +228,9 @@ class LinearDifferentialOperator(Operator):
             return sum(w(t) * function_derivatives[i](t)
                        for i, w in enumerate(self.weights))
 
-        return applied_linear_diff_op
+        return _FDataCallable(applied_linear_diff_op,
+                              domain_range=f.domain_range,
+                              n_samples=len(f))
 
 
 #############################################################

@@ -14,7 +14,7 @@ class TestFDataGridNumpy(unittest.TestCase):
 
         fd_sqrt_build = FDataGrid(np.sqrt(data_matrix))
 
-        self.assertEqual(fd_sqrt, fd_sqrt_build)
+        self.assertTrue(fd_sqrt.equals(fd_sqrt_build))
 
     def test_binary_ufunc(self):
         data_matrix = np.arange(15).reshape(3, 5)
@@ -27,7 +27,7 @@ class TestFDataGridNumpy(unittest.TestCase):
 
         fd_mul_build = FDataGrid(data_matrix * data_matrix2)
 
-        self.assertEqual(fd_mul, fd_mul_build)
+        self.assertTrue(fd_mul.equals(fd_mul_build))
 
     def test_out_ufunc(self):
         data_matrix = np.arange(15.).reshape(3, 5)
@@ -39,7 +39,7 @@ class TestFDataGridNumpy(unittest.TestCase):
 
         fd_sqrt_build = FDataGrid(np.sqrt(data_matrix_copy))
 
-        self.assertEqual(fd, fd_sqrt_build)
+        self.assertTrue(fd.equals(fd_sqrt_build))
 
 
 if __name__ == '__main__':

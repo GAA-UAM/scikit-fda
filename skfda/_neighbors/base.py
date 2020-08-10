@@ -9,7 +9,6 @@ from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 import numpy as np
 
 from .. import FDataGrid, FData
-from ..exploratory.stats import mean as l2_mean
 from ..misc.metrics import lp_distance
 
 
@@ -73,13 +72,13 @@ def _to_multivariate_metric(metric, sample_points):
         >>> fd = FDataGrid([np.ones(len(x))], x)
         >>> fd2 =  FDataGrid([np.zeros(len(x))], x)
         >>> lp_distance(fd, fd2).round(2)
-        1.0
+        array([ 1.])
 
         Creation of the sklearn-style metric.
 
         >>> sklearn_lp_distance = _to_multivariate_metric(lp_distance, [x])
         >>> sklearn_lp_distance(np.ones(len(x)), np.zeros(len(x))).round(2)
-        1.0
+        array([ 1.])
 
     """
     # Shape -> (n_samples = 1, domain_dims...., image_dimension (-1))
@@ -440,6 +439,19 @@ class NeighborsClassifierMixin:
 class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
     """Mixin class for the regressors based on neighbors"""
 
+    def _mean_regressor(self, X, weights=None):
+        """
+        Default regressor using weighted average.
+
+        """
+
+        if weights is None:
+            return X.mean()
+        else:
+            weights /= np.sum(weights)
+
+            return (X * weights).sum()
+
     def fit(self, X, y):
         """Fit the model using X as training data and y as responses.
 
@@ -500,7 +512,7 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
             self.estimator_.fit(self._transform_to_multivariate(X))
 
         if self.regressor == 'mean':
-            self._regressor = l2_mean
+            self._regressor = self._mean_regressor
         else:
             self._regressor = self.regressor
 

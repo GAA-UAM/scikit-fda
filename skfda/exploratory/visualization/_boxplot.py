@@ -160,8 +160,9 @@ class Boxplot(FDataBoxplot):
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = FDataGrid(data_matrix, sample_points, dataset_label="dataset",
-        ...                axes_labels=["x_label", "y_label"])
+        >>> fd = FDataGrid(data_matrix, sample_points, dataset_name="dataset",
+        ...                argument_names=["x_label"],
+        ...                coordinate_names=["y_label"])
         >>> Boxplot(fd)
         Boxplot(
             FDataGrid=FDataGrid(
@@ -189,10 +190,11 @@ class Boxplot(FDataBoxplot):
                         [-1. ],
                         [-1. ],
                         [-1. ]]]),
-                sample_points=[array([ 0,  2,  4,  6,  8, 10])],
-                domain_range=array([[ 0, 10]]),
-                dataset_label='dataset',
-                axes_labels=['x_label', 'y_label'],
+                sample_points=(array([ 0.,  2.,  4.,  6.,  8., 10.]),),
+                domain_range=((0.0, 10.0),),
+                dataset_name='dataset',
+                argument_names=('x_label',),
+                coordinate_names=('y_label',),
                 ...),
             median=array([[ 0.5],
                           [ 0.5],
@@ -496,8 +498,9 @@ class SurfaceBoxplot(FDataBoxplot):
         ...                [[[2], [0.5], [2]],
         ...                 [[3], [0.6], [3]]]]
         >>> sample_points = [[2, 4], [3, 6, 8]]
-        >>> fd = FDataGrid(data_matrix, sample_points, dataset_label="dataset",
-        ...                axes_labels=["x1_label", "x2_label", "y_label"])
+        >>> fd = FDataGrid(data_matrix, sample_points, dataset_name="dataset",
+        ...                argument_names=["x1_label", "x2_label"],
+        ...                coordinate_names=["y_label"])
         >>> SurfaceBoxplot(fd)
         SurfaceBoxplot(
             FDataGrid=FDataGrid(
@@ -513,11 +516,11 @@ class SurfaceBoxplot(FDataBoxplot):
                         [[ 3. ],
                          [ 0.6],
                          [ 3. ]]]]),
-                sample_points=[array([2, 4]), array([3, 6, 8])],
-                domain_range=array([[2, 4],
-                       [3, 8]]),
-                dataset_label='dataset',
-                axes_labels=['x1_label', 'x2_label', 'y_label'],
+                sample_points=(array([ 2., 4.]), array([ 3., 6., 8.])),
+                domain_range=((2.0, 4.0), (3.0, 8.0)),
+                dataset_name='dataset',
+                argument_names=('x1_label', 'x2_label'),
+                coordinate_names=('y_label',),
                 extrapolation=None,
                 ...),
             median=array([[[ 1. ],

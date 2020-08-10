@@ -195,26 +195,6 @@ class Basis(ABC):
 
             return self._coordinate_nonfull(fdatabasis=fdatabasis, key=r_key)
 
-    @abstractmethod
-    def basis_of_product(self, other):
-        pass
-
-    @abstractmethod
-    def rbasis_of_product(self, other):
-        pass
-
-    @staticmethod
-    def default_basis_of_product(one, other):
-        """Default multiplication for a pair of basis"""
-        from ._bspline import BSpline
-
-        if not _same_domain(one, other):
-            raise ValueError("Ranges are not equal.")
-
-        norder = min(8, one.n_basis + other.n_basis)
-        n_basis = max(one.n_basis + other.n_basis, norder + 1)
-        return BSpline(one.domain_range, n_basis, norder)
-
     def rescale(self, domain_range=None):
         r"""Return a copy of the basis with a new domain range, with the
             corresponding values rescaled to the new bounds.

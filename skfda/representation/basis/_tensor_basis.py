@@ -111,12 +111,6 @@ class Tensor(Basis):
 
         return gram.reshape((self.n_basis, self.n_basis))
 
-    def basis_of_product(self, other):
-        pass
-
-    def rbasis_of_product(self, other):
-        pass
-
     def __eq__(self, other):
         return super().__eq__(other) and self.basis_list == other.basis_list
 

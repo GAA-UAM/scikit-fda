@@ -81,8 +81,8 @@ setup(name='scikit-fda',
       ],
       install_requires=[
           'cython',
-          'dcor,'
-          'findiff'
+          'dcor',
+          'findiff',
           'matplotlib',
           'mpldatacursor',
           'multimethod>=1.2',
@@ -91,7 +91,7 @@ setup(name='scikit-fda',
           'rdata',
           'scikit-datasets[cran]>=0.1.24',
           'scikit-learn>=0.20',
-          'scipy>=1.3.0',
+          'scipy>=1.3.0'
       ],
       setup_requires=pytest_runner,
       tests_require=['pytest'],

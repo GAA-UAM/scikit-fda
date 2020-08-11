@@ -12,7 +12,6 @@ from typing import Any
 
 import findiff
 import pandas.api.extensions
-from pandas.tests.test_nanops import skipna
 import scipy.stats.mstats
 
 import numpy as np

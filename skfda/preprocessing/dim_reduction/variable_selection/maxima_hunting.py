@@ -9,7 +9,7 @@ import numpy as np
 from ....representation import FDataGrid
 
 
-def compute_dependence(X, Y, *, dependence_measure):
+def _compute_dependence(X, Y, *, dependence_measure):
     '''
     Computes the dependence of each point in each trajectory in X with the
     corresponding class label in Y.
@@ -31,9 +31,9 @@ def compute_dependence(X, Y, *, dependence_measure):
     return vectorial_dependence_measure(X_view)
 
 
-def select_local_maxima(X, order: int=1):
+def select_local_maxima(X, *, order: int=1):
     r'''
-    Compute local maxima of a function.
+    Compute local maxima of an array.
 
     Points near the boundary are considered maxima looking only at one side.
 
@@ -47,9 +47,8 @@ def select_local_maxima(X, order: int=1):
 
     Examples:
 
-        >>> from skfda.preprocessing.dim_reduction import variable_selection
-        >>> from skfda.datasets import make_gaussian_process
-        >>> import skfda
+        >>> from skfda.preprocessing.dim_reduction.variable_selection.\
+        ...     maxima_hunting import select_local_maxima
         >>> import numpy as np
 
         >>> x = np.array([2, 1, 1, 1, 2, 3, 3, 3, 2, 3, 4, 3, 2])
@@ -107,7 +106,10 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
     Examples:
 
         >>> from skfda.preprocessing.dim_reduction import variable_selection
+        >>> from skfda.preprocessing.dim_reduction.variable_selection.\
+        ...     maxima_hunting import select_local_maxima
         >>> from skfda.datasets import make_gaussian_process
+        >>> from functools import partial
         >>> import skfda
         >>> import numpy as np
 
@@ -136,7 +138,9 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
 
         Select the relevant points to distinguish the two classes
 
-        >>> rkvs = variable_selection.MaximaHunting(smoothing=10)
+        >>> local_maxima_selector = partial(select_local_maxima, order=10)
+        >>> rkvs = variable_selection.MaximaHunting(
+        ...            local_maxima_selector=local_maxima_selector)
         >>> _ = rkvs.fit(X, y)
         >>> point_mask = rkvs.get_support()
         >>> points = X.sample_points[0][point_mask]
@@ -162,21 +166,20 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
 
     def __init__(self,
                  dependence_measure=dcor.u_distance_correlation_sqr,
-                 smoothing=1):
+                 local_maxima_selector=select_local_maxima):
         self.dependence_measure = dependence_measure
-        self.smoothing = smoothing
+        self.local_maxima_selector = local_maxima_selector
 
     def fit(self, X: FDataGrid, y):
 
         X, y = sklearn.utils.validation.check_X_y(X.data_matrix[..., 0], y)
 
         self.features_shape_ = X.shape[1:]
-        self.dependence_ = compute_dependence(
+        self.dependence_ = _compute_dependence(
             X[..., np.newaxis], y,
             dependence_measure=self.dependence_measure)
 
-        self.indexes_ = select_local_maxima(self.dependence_,
-                                            self.smoothing)
+        self.indexes_ = self.local_maxima_selector(self.dependence_)
 
         sorting_indexes = np.argsort(self.dependence_[self.indexes_])[::-1]
         self.sorted_indexes_ = self.indexes_[sorting_indexes]

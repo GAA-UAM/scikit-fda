@@ -53,16 +53,16 @@ def select_local_maxima(X, order: int=1):
         >>> import numpy as np
 
         >>> x = np.array([2, 1, 1, 1, 2, 3, 3, 3, 2, 3, 4, 3, 2])
-        >>> select_local_maxima(x)
-        array([ 0,  5,  7, 10], dtype=int64)
+        >>> select_local_maxima(x).astype(np.int_)
+        array([ 0,  5,  7, 10])
 
         The ``order`` parameter can be used to check a larger interval to see
         if a point is still a maxima, effectively eliminating small local
         maxima.
 
         >>> x = np.array([2, 1, 1, 1, 2, 3, 3, 3, 2, 3, 4, 3, 2])
-        >>> select_local_maxima(x, order=3)
-        array([ 0,  5, 10], dtype=int64)
+        >>> select_local_maxima(x, order=3).astype(np.int_)
+        array([ 0,  5, 10])
 
     '''
     indexes = scipy.signal.argrelextrema(

@@ -102,6 +102,10 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
 
         dependence_measure (callable): Dependence measure to use. By default,
             it uses the bias corrected squared distance correlation.
+        local_maxima_selector (callable): Function to detect local maxima. The
+            default is :func:`select_local_maxima` with ``order`` parameter
+            equal to one. The original article used a similar function testing
+            different values of ``order``.
 
     Examples:
 

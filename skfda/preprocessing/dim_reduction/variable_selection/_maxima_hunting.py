@@ -1,76 +1,96 @@
 import dcor
 
+import scipy.signal
 import sklearn.base
 import sklearn.utils
+
 import numpy as np
+
 from ....representation import FDataGrid
 
 
-def dependency(X, Y, dependency_measure=dcor.u_distance_correlation_sqr):
+def compute_dependence(X, Y, *, dependence_measure):
     '''
-    Computes the dependency of each point in each trajectory in X with the
+    Computes the dependence of each point in each trajectory in X with the
     corresponding class label in Y.
     '''
 
-    def vectorial_dependency_measure(x):
+    def vectorial_dependence_measure(x):
         x = np.atleast_2d(x).transpose()
 
-        return dependency_measure(x, Y)
+        return dependence_measure(x, Y)
 
-    vectorial_dependency_measure = np.vectorize(
-        vectorial_dependency_measure,
+    vectorial_dependence_measure = np.vectorize(
+        vectorial_dependence_measure,
         otypes=[float],
         signature="(m,n)->()"
     )
 
     X_view = np.rollaxis(X, 0, len(X.shape))
 
-    return vectorial_dependency_measure(X_view)
+    return vectorial_dependence_measure(X_view)
 
 
-def select_local_maxima(curve, smoothing: int=1):
+def select_local_maxima(X, order: int=1):
+    r'''
+    Compute local maxima of a function.
 
-    selected_features = []
-    scores = []
+    Points near the boundary are considered maxima looking only at one side.
 
-    # Grow the curve at left and right with non maxima points so that points
-    # near the extremes can be processed in the same way.
-    extra_1 = np.repeat(curve[0], smoothing)
-    extra_2 = np.repeat(curve[-1], smoothing)
-    new_curve = np.concatenate([extra_1, curve, extra_2])
+    For flat regions only the boundary points of the flat region could be
+    considered maxima.
 
-    for i in range(0, len(curve)):
-        interval = new_curve[i:i + 2 * smoothing + 1]
-        candidate_maximum = interval[smoothing]
-        assert candidate_maximum == curve[i]
+    Parameters:
 
-        is_maxima_in_interval = np.all(interval <= candidate_maximum)
-        is_not_flat = (candidate_maximum > interval[smoothing - 1] or
-                       candidate_maximum > interval[smoothing + 1])
+        order (callable): How many points on each side to look, to check if
+            a point is a maximum in that interval.
 
-        # If the maximum is the point in the middle of the interval, it is
-        # selected.
-        if is_maxima_in_interval and is_not_flat:
-            selected_features.append(i)
-            scores.append(candidate_maximum)
+    Examples:
 
-    return np.array(selected_features), np.array(scores)
+        >>> from skfda.preprocessing.dim_reduction import variable_selection
+        >>> from skfda.datasets import make_gaussian_process
+        >>> import skfda
+        >>> import numpy as np
+
+        >>> x = np.array([2, 1, 1, 1, 2, 3, 3, 3, 2, 3, 4, 3, 2])
+        >>> select_local_maxima(x)
+        array([ 0,  5,  7, 10], dtype=int64)
+
+        The ``order`` parameter can be used to check a larger interval to see
+        if a point is still a maxima, effectively eliminating small local
+        maxima.
+
+        >>> x = np.array([2, 1, 1, 1, 2, 3, 3, 3, 2, 3, 4, 3, 2])
+        >>> select_local_maxima(x, order=3)
+        array([ 0,  5, 10], dtype=int64)
+
+    '''
+    indexes = scipy.signal.argrelextrema(
+        X, comparator=np.greater_equal, order=order)[0]
+
+    # Discard flat
+    maxima = X[indexes]
+
+    left_points = np.take(X, indexes - 1, mode='clip')
+    right_points = np.take(X, indexes + 1, mode='clip')
+
+    is_not_flat = (maxima > left_points) | (maxima > right_points)
+
+    return indexes[is_not_flat]
 
 
-def maxima_hunting(X, y,
-                   dependency_measure=dcor.u_distance_correlation_sqr,
-                   smoothing=1):
+class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
     r'''
     Maxima Hunting variable selection.
 
     This is a filter variable selection method for problems with a target
-    variable. It evaluates a dependency measure between each point of the
+    variable. It evaluates a dependence measure between each point of the
     function and the target variable, and keeps those points in which this
-    dependency is a local maximum.
+    dependence is a local maximum.
 
     Selecting the local maxima serves two purposes. First, it ensures that
     the points that are relevant in isolation are selected, as they must
-    maximice their dependency with the target variable. Second, the points
+    maximice their dependence with the target variable. Second, the points
     that are relevant only because they are near a relevant point (and are
     thus highly correlated with it) are NOT selected, as only local maxima
     are selected, minimizing the redundancy of the selected variables.
@@ -81,7 +101,7 @@ def maxima_hunting(X, y,
 
     Parameters:
 
-        dependency_measure (callable): dependency measure to use. By default,
+        dependence_measure (callable): Dependence measure to use. By default,
             it uses the bias corrected squared distance correlation.
 
     Examples:
@@ -140,17 +160,10 @@ def maxima_hunting(X, y,
 
     '''
 
-    curve = dependency(X[..., None], y, dependency_measure)
-
-    return select_local_maxima(curve, smoothing)
-
-
-class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
-
     def __init__(self,
-                 dependency_measure=dcor.u_distance_correlation_sqr,
+                 dependence_measure=dcor.u_distance_correlation_sqr,
                  smoothing=1):
-        self.dependency_measure = dependency_measure
+        self.dependence_measure = dependence_measure
         self.smoothing = smoothing
 
     def fit(self, X: FDataGrid, y):
@@ -158,25 +171,24 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
         X, y = sklearn.utils.validation.check_X_y(X.data_matrix[..., 0], y)
 
         self.features_shape_ = X.shape[1:]
+        self.dependence_ = compute_dependence(
+            X[..., np.newaxis], y,
+            dependence_measure=self.dependence_measure)
 
-        self.results_ = maxima_hunting(
-            X=X,
-            y=y,
-            dependency_measure=self.dependency_measure,
-            smoothing=self.smoothing)
+        self.indexes_ = select_local_maxima(self.dependence_,
+                                            self.smoothing)
 
-        indexes = np.argsort(self.results_[1])[::-1]
-        self.sorted_indexes_ = self.results_[0][indexes]
+        sorting_indexes = np.argsort(self.dependence_[self.indexes_])[::-1]
+        self.sorted_indexes_ = self.indexes_[sorting_indexes]
 
         return self
 
     def get_support(self, indices: bool=False):
-        indexes_unraveled = self.results_[0]
         if indices:
-            return indexes_unraveled
+            return self.indexes_
         else:
             mask = np.zeros(self.features_shape_[0], dtype=bool)
-            mask[self.results_[0]] = True
+            mask[self.indexes_] = True
             return mask
 
     def transform(self, X, y=None):

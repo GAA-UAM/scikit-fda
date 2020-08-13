@@ -470,7 +470,8 @@ def fetch_weather(return_X_y: bool = False):
     temp_prec_daily = np.transpose(weather_daily[:, :, 0:2], axes=(1, 0, 2))
 
     curves = FDataGrid(data_matrix=temp_prec_daily,
-                       sample_points=range(1, 366),
+                       sample_points=np.arange(0, 365) + 0.5,
+                       domain_range=(0, 365),
                        dataset_name="Canadian Weather",
                        argument_names=("day",),
                        coordinate_names=("temperature (ºC)",

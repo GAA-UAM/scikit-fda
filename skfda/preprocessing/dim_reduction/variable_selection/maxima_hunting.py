@@ -1,9 +1,8 @@
-import dcor
-
 import scipy.signal
 import sklearn.base
 import sklearn.utils
 
+import dcor
 import numpy as np
 
 from ....representation import FDataGrid
@@ -143,17 +142,17 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
         Select the relevant points to distinguish the two classes
 
         >>> local_maxima_selector = partial(select_local_maxima, order=10)
-        >>> rkvs = variable_selection.MaximaHunting(
+        >>> mh = variable_selection.MaximaHunting(
         ...            local_maxima_selector=local_maxima_selector)
-        >>> _ = rkvs.fit(X, y)
-        >>> point_mask = rkvs.get_support()
+        >>> _ = mh.fit(X, y)
+        >>> point_mask = mh.get_support()
         >>> points = X.sample_points[0][point_mask]
         >>> np.allclose(points, [0.5], rtol=0.1)
         True
 
         Apply the learned dimensionality reduction
 
-        >>> X_dimred = rkvs.transform(X)
+        >>> X_dimred = mh.transform(X)
         >>> len(X.sample_points[0])
         100
         >>> X_dimred.shape

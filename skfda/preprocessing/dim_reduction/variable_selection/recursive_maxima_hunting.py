@@ -12,7 +12,6 @@ import numpy as np
 import numpy.linalg as linalg
 import numpy.ma as ma
 
-from ....misc.covariances import Brownian
 from ....representation import FDataGrid
 from .maxima_hunting import _compute_dependence
 
@@ -243,6 +242,8 @@ class UniformCorrection(Correction):
         pass
 
     def conditioned(self, X, t_0, **kwargs):
+        from ....misc.covariances import Brownian
+
         return GaussianCorrection(kernel=Brownian(origin=t_0))
 
     def correct(self, X, selected_index):
@@ -657,7 +658,7 @@ def rec_maxima_hunting_gen_no_copy(
         mask = np.zeros([len(t) for t in X.sample_points], dtype=bool)
 
     if stopping_condition is None:
-        stopping_condition = ScoreThresholdStop()
+        stopping_condition = Chi2BoundStop()
 
     first_pass = True
 
@@ -798,7 +799,7 @@ class RecursiveMaximaHunting(
         >>> _ = rmh.fit(X, y)
         >>> point_mask = rmh.get_support()
         >>> points = X.sample_points[0][point_mask]
-        >>> np.allclose(points, [0.25, 0.5, 0.75], rtol=1e-2)
+        >>> np.allclose(points, [0.25, 0.5, 0.75], rtol=1e-1)
         True
 
         Apply the learned dimensionality reduction
@@ -819,7 +820,6 @@ class RecursiveMaximaHunting(
     '''
 
     def __init__(self,
-                 T=None,
                  min_redundancy=0.9,
                  min_relevance=0.2,
                  dependence_measure=dcor.u_distance_correlation_sqr,
@@ -827,39 +827,26 @@ class RecursiveMaximaHunting(
                  n_components=None,
                  correction=None,
                  stopping_condition=None,
-                 return_matrix=False,
                  num_extra_features=0):
         self.min_redundancy = min_redundancy
         self.min_relevance = min_relevance
-        self.T = T
         self.dependence_measure = dependence_measure
         self.redundancy_dependence_measure = redundancy_dependence_measure
         self.n_components = n_components
         self.correction = correction
         self.stopping_condition = stopping_condition
-        self.return_matrix = return_matrix
         self.num_extra_features = num_extra_features
 
     def fit(self, X, y):
 
-        if isinstance(X, FDataGrid):
-            T = X.sample_points[0]
-            X_all = X.data_matrix
-            X = X.data_matrix[..., 0]
-        else:
-            T = self.T
-            X_all = X
-
-        X, y = sklearn.utils.validation.check_X_y(X, y)
-
-        self.features_shape_ = X.shape[1:]
+        self.features_shape_ = X.data_matrix.shape[1:]
 
         red_dep_measure = self.redundancy_dependence_measure
 
         indexes = []
         for i, result in enumerate(
             rec_maxima_hunting_gen(
-                X=FDataGrid(data_matrix=np.copy(X_all), sample_points=T),
+                X=X.copy(),
                 Y=y,
                 min_redundancy=self.min_redundancy,
                 min_relevance=self.min_relevance,
@@ -868,8 +855,6 @@ class RecursiveMaximaHunting(
                 correction=self.correction,
                 stopping_condition=self.stopping_condition,
                 get_intermediate_results=(self.num_extra_features != 0))):
-
-            # print(f'{i+1}...', end='', flush=True)
 
             if self.n_components is None or i < self.n_components:
                 indexes.append(result.index)
@@ -892,30 +877,17 @@ class RecursiveMaximaHunting(
 
     def transform(self, X):
 
-        if isinstance(X, FDataGrid):
-            sample_points = X.sample_points[0]
-            X_all = X.data_matrix[...]
-            X = X.data_matrix[..., 0]
-        else:
-            X_all = X
+        X_matrix = X.data_matrix
 
-        sklearn.utils.validation.check_is_fitted(self, ['features_shape_',
-                                                        'indexes_'])
+        sklearn.utils.validation.check_is_fitted(self)
 
-        X = sklearn.utils.validation.check_array(X)
-
-        if X.shape[1:] != self.features_shape_:
+        if X_matrix.shape[1:] != self.features_shape_:
             raise ValueError("The trajectories have a different number of "
                              "points than the ones fitted")
 
-        matrix = X_all[(slice(None),) + self.indexes_]
+        output = X_matrix[(slice(None),) + self.indexes_]
 
-        if self.return_matrix:
-            return matrix
-        else:
-            sample_points_new = sample_points[self.indexes_]
-            return FDataGrid(data_matrix=matrix,
-                             sample_points=sample_points_new)
+        return output.reshape(X.n_samples, -1)
 
     def get_support(self, indices: bool=False):
         indexes_unraveled = self.indexes_

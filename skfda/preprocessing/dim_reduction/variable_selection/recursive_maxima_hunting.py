@@ -29,21 +29,9 @@ def _transform_to_2d(t):
 
 
 def _execute_kernel(kernel, t_0, t_1):
-    t_0 = _transform_to_2d(t_0)
-    t_1 = _transform_to_2d(t_1)
+    from ....misc.covariances import _execute_covariance
 
-    if isinstance(kernel, numbers.Number):
-        return kernel
-    else:
-        if callable(kernel):
-            result = kernel(t_0, t_1)
-        else:
-            # GPy kernel
-            result = kernel.K(t_0, t_1)
-
-        assert result.shape[0] == len(t_0)
-        assert result.shape[1] == len(t_1)
-        return result
+    return _execute_covariance(kernel, t_0, t_1)
 
 
 def _absolute_argmax(function, *, mask):
@@ -237,9 +225,6 @@ class UniformCorrection(Correction):
     Correction assuming that the underlying process is an Ornstein-Uhlenbeck
     process with infinite lengthscale.
     '''
-
-    def __init__(self):
-        pass
 
     def conditioned(self, X, t_0, **kwargs):
         from ....misc.covariances import Brownian
@@ -622,7 +607,7 @@ def redundancy_distance_covariance(x, y):
     return dcov / dvar
 
 
-def rec_maxima_hunting_gen_no_copy(
+def _rec_maxima_hunting_gen_no_copy(
         X: FDataGrid, Y, min_redundancy=0.9, min_relevance=0.2,
         dependence_measure=dcor.u_distance_correlation_sqr,
         redundancy_dependence_measure=None,
@@ -725,13 +710,9 @@ def rec_maxima_hunting_gen_no_copy(
         first_pass = False
 
 
-def rec_maxima_hunting_gen(X, *args, **kwargs):
-    yield from rec_maxima_hunting_gen_no_copy(copy.copy(X),
-                                              *args, **kwargs)
-
-
-def rec_maxima_hunting(*args, **kwargs):
-    return list(rec_maxima_hunting_gen(*args, **kwargs))
+def _rec_maxima_hunting_gen(X, *args, **kwargs):
+    yield from _rec_maxima_hunting_gen_no_copy(copy.copy(X),
+                                               *args, **kwargs)
 
 
 class RecursiveMaximaHunting(
@@ -845,7 +826,7 @@ class RecursiveMaximaHunting(
 
         indexes = []
         for i, result in enumerate(
-            rec_maxima_hunting_gen(
+            _rec_maxima_hunting_gen(
                 X=X.copy(),
                 Y=y,
                 min_redundancy=self.min_redundancy,
@@ -890,46 +871,10 @@ class RecursiveMaximaHunting(
         return output.reshape(X.n_samples, -1)
 
     def get_support(self, indices: bool=False):
-        indexes_unraveled = self.indexes_
+
         if indices:
-            return indexes_unraveled
+            return self.indexes_
         else:
             mask = np.zeros(self.features_shape_[0], dtype=bool)
             mask[self.indexes_] = True
             return mask
-
-    def fit_all(self, param_grid, X_train, y_train):
-
-        # We can fit at the same time all n_components, but nothing else
-
-        if len(param_grid) == 0:
-            return NotImplemented
-
-        n_components_max = 1
-
-        for param in param_grid:
-            if len(param) != 1:
-                return NotImplemented
-
-            n_components = param.get("n_components", None)
-
-            if n_components is None:
-                return NotImplemented
-
-            n_components_max = max(n_components_max, n_components)
-
-        print(f'Fitting RMH with n_components={n_components_max}')
-
-        cloned = sklearn.base.clone(self)
-        cloned.set_params(n_components=n_components_max)
-        cloned.fit(X_train, y_train)
-
-        fitted_estimators = [None] * len(param_grid)
-
-        for i, param in enumerate(param_grid):
-            n_components = param["n_components"]
-            fitted_estimators[i] = copy.copy(cloned)
-            fitted_estimators[i].set_params(n_components=n_components)
-            fitted_estimators[i].indexes_ = cloned.indexes_[:n_components]
-
-        return fitted_estimators

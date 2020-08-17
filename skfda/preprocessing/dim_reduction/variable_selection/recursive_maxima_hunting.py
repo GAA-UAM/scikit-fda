@@ -1,5 +1,6 @@
 import abc
 import copy
+import dcor
 import numbers
 import random
 
@@ -7,7 +8,6 @@ import scipy.stats
 import sklearn.base
 import sklearn.utils
 
-import dcor
 import numpy as np
 import numpy.linalg as linalg
 import numpy.ma as ma
@@ -35,7 +35,7 @@ def _execute_kernel(kernel, t_0, t_1):
 
 
 def _absolute_argmax(function, *, mask):
-    '''
+    """
     Computes the absolute maximum of a discretized function.
 
     Some values of the function may be masked in order not to consider them
@@ -48,7 +48,7 @@ def _absolute_argmax(function, *, mask):
     Returns:
         int: Index of the absolute maximum.
 
-    '''
+    """
     masked_function = ma.array(function, mask=mask)
 
     t_max = ma.argmax(masked_function)
@@ -59,33 +59,34 @@ def _absolute_argmax(function, *, mask):
 
 
 class Correction(abc.ABC):
-    '''
+    """
     Base class for applying a correction after a point is taken, eliminating
-    its influence over the rest
-    '''
+    its influence over the rest.
+
+    """
 
     def begin(self, X: FDataGrid, Y):
-        '''
-        Initialization
-        '''
+        """
+        Initialization.
+
+        The initial parameters of Recursive Maxima Hunting can be used there.
+
+        """
         pass
 
     def conditioned(self, **kwargs):
-        '''
-        Returns a correction object that is conditioned to the value of a point
-        '''
+        """
+        Returns a correction object that is conditioned to the value of a point.
+
+        """
         return self
 
     @abc.abstractmethod
     def correct(self, X, selected_index):
-        '''
+        """
         Correct the trajectories.
 
-        Arguments:
-            X: Matrix with one trajectory per row
-            T: Times of each measure
-            selected_index: index of the selected value
-        '''
+        """
         pass
 
     def __call__(self, *args, **kwargs):
@@ -115,10 +116,11 @@ class ConditionalExpectationCorrection(Correction):
 
 
 class SampleGPCorrection(ConditionalExpectationCorrection):
-    '''
+    """
     Correction assuming that the process is Gaussian and using as the kernel
     the sample covariance.
-    '''
+
+    """
 
     def __init__(self, markov=False):
         self.gaussian_correction = None
@@ -221,10 +223,11 @@ def make_kernel(k):
 
 
 class UniformCorrection(Correction):
-    '''
+    """
     Correction assuming that the underlying process is an Ornstein-Uhlenbeck
     process with infinite lengthscale.
-    '''
+
+    """
 
     def conditioned(self, X, t_0, **kwargs):
         from ....misc.covariances import Brownian
@@ -242,9 +245,10 @@ class UniformCorrection(Correction):
 
 
 class GaussianCorrection(ConditionalExpectationCorrection):
-    '''
+    """
     Correction assuming that the underlying process is Gaussian.
-    '''
+
+    """
 
     def __init__(self, expectation=0, kernel=1, optimize_kernel=False):
         super(GaussianCorrection, self).__init__()
@@ -328,10 +332,11 @@ class GaussianCorrection(ConditionalExpectationCorrection):
 
 
 class GaussianConditionedCorrection(GaussianCorrection):
-    '''
+    """
     Correction assuming that the underlying process is a Gaussian conditioned
     to several points with value 0.
-    '''
+
+    """
 
     def __init__(self, point_list, expectation=0,
                  kernel=1, **kwargs):
@@ -377,8 +382,6 @@ class GaussianConditionedCorrection(GaussianCorrection):
         A_inv = self.__covariance_matrix_inv
 
         b_T = self.gaussian_kernel(t, self.point_list)
-        # assert b_T.shape[0] == np.shape(t)[-1]
-        # assert b_T.shape[1] == np.shape(point_list)[-1]
 
         c = -self.gaussian_expectation(self.point_list)
         assert c.shape == np.shape(self.point_list)
@@ -426,13 +429,13 @@ class RMHResult(object):
                 .format(index=self.index, score=self.score))
 
 
-def get_influence_mask(X, t_max_index, min_redundancy, dependence_measure,
-                       old_mask):
-    '''
+def _get_influence_mask(X, t_max_index, min_redundancy, dependence_measure,
+                        old_mask):
+    """
     Get the mask of the points that have much dependence with the
     selected point.
-    '''
 
+    """
     sl = slice(None)
 
     def get_index(index):
@@ -483,11 +486,14 @@ def get_influence_mask(X, t_max_index, min_redundancy, dependence_measure,
     return new_mask
 
 
-class StoppingCondition(abc.ABC):
-    '''Stopping condition for RMH.'''
+class StoppingCondition(abc.ABC, sklearn.base.BaseEstimator):
+    """
+    Stopping condition for RMH.
 
-    def begin(self, **kwargs):
-        pass
+    This is a callable that should return ``True`` if the algorithm must stop
+    and the current point should not be selected.
+
+    """
 
     @abc.abstractmethod
     def __call__(self, **kwargs):
@@ -495,120 +501,94 @@ class StoppingCondition(abc.ABC):
 
 
 class ScoreThresholdStop(StoppingCondition):
-    '''Stop when the score is under a threshold.'''
+    """
+    Stop when the score is under a threshold.
 
-    def __init__(self, threshold=None):
+    This stopping condition requires that the score has a known bound, for
+    example that it takes values in the interval :math:`[0, 1]`.
+
+    This is one of the simplest stopping criterions, but it requires that
+    the user chose a threshold parameter, which controls the number of
+    points chosen and can vary per problem.
+
+    Parameters:
+
+        threshold (float): Value compared with the score. If the score
+                           of the selected point is not higher than that,
+                           the point will not be selected (unless it is
+                           the first iteration) and RMH will end.
+
+    """
+
+    def __init__(self, threshold=0.2):
+
         super().__init__()
         self.threshold = threshold
-        self.threshold_specified = threshold is not None
 
-    def begin(self, min_relevance, **kwargs):
-        if not self.threshold_specified:
-            self.threshold = min_relevance
+    def __call__(self, *, selected_index, dependences, **kwargs):
 
-    def __call__(self, *, score, **kwargs):
+        score = dependences[selected_index]
+
         return score < self.threshold
 
 
-def chi_bound(x, y, significance):
+class AsymptoticIndependenceTestStop(StoppingCondition):
+    r"""
+    Stop when the selected point is independent from the target.
 
-    x_dist = dcor.distances.pairwise_distances(x)
-    y_dist = dcor.distances.pairwise_distances(y)
+    It uses an asymptotic test based on the chi-squared distribution described
+    in [1]_. The test rejects independence if
 
-    t2 = np.mean(x_dist) * np.mean(y_dist)
+    .. math::
 
-    chi_quant = scipy.stats.chi2.ppf(1 - significance, df=1)
+        \frac{n \mathcal{V}_n}{T_2} \geq \mathcal{X}_{1-\alpha}^2,
 
-    return chi_quant * t2 / x_dist.shape[0]
+    where :math:`n` is the number of samples, :math:`\mathcal{V}_n` is the
+    sample distance correlation between the selected point and the target,
+    :math:`\mathcal{X}_{1-\alpha}^2` is the :math:`1-\alpha` quantile of a
+    chi-squared variable with 1 degree of freedom. :math:`T_2` is the product
+    of the means of the distance matrices of the selected point and the
+    target, a term which is involved in the standard computation of the sample
+    distance covariance.
 
+    Parameters:
 
-def normal_bound(x, y, significance):
+        significance (float): Significance used in the independence test. By
+                              default is 0.01 (1%).
 
-    x_dist = dcor.distances.pairwise_distances(x)
-    y_dist = dcor.distances.pairwise_distances(y)
+    References:
 
-    t2 = np.mean(x_dist) * np.mean(y_dist)
-
-    norm_quant = scipy.stats.norm.ppf(1 - significance / 2, df=1)
-
-    return norm_quant ** 2 * t2 / x_dist.shape[0]
-
-
-class Chi2BoundStop(StoppingCondition):
-    '''Stop when the score is under a threshold.'''
-
-    def __init__(self, significance=0.01):
-        super().__init__()
-        self.significance = significance
-
-    def __call__(self, *, selected_variable, X, Y,
-                 **kwargs):
-        bound = chi_bound(selected_variable, Y, self.significance)
-        # print(f'bound = {bound}')
-        return dcor.u_distance_covariance_sqr(selected_variable, Y) < bound
+        .. [1] G. J. Székely and M. L. Rizzo, “Brownian distance covariance,”
+               Ann. Appl. Stat., vol. 3, no. 4, pp. 1236–1265, Dec. 2009,
+               doi: 10.1214/09-AOAS312.
 
 
-class NormalBoundStop(StoppingCondition):
-    '''Stop when the score is under a threshold.'''
+    """
 
     def __init__(self, significance=0.01):
         super().__init__()
         self.significance = significance
 
-    def __call__(self, *, selected_variable, X, Y,
-                 **kwargs):
-        bound = normal_bound(selected_variable, Y, self.significance)
-        # print(f'bound = {bound}')
-        return dcor.u_distance_covariance_sqr(selected_variable, Y) < bound
+    def chi_bound(self, x, y, significance):
 
+        x_dist = dcor.distances.pairwise_distances(x)
+        y_dist = dcor.distances.pairwise_distances(y)
 
-class DcovTestStop(StoppingCondition):
-    '''Stop when the score is under a threshold.'''
+        t2 = np.mean(x_dist) * np.mean(y_dist)
 
-    def __init__(self, significance=0.01, num_resamples=200,
-                 random_state=None):
-        super().__init__()
+        chi_quant = scipy.stats.chi2.ppf(1 - significance, df=1)
 
-        if random_state == -1:
-            random_state = None
+        return chi_quant * t2 / x_dist.shape[0]
 
-        self.significance = significance
-        self.num_resamples = num_resamples
-        self.random_state = random_state
+    def __call__(self, *, selected_variable, y, **kwargs):
 
-    def __call__(self, *, selected_variable, X, Y,
-                 **kwargs):
-        return dcor.independence.distance_covariance_test(
-            selected_variable, Y,
-            num_resamples=self.num_resamples,
-            random_state=self.random_state).p_value >= self.significance
+        bound = self.chi_bound(selected_variable, y, self.significance)
 
-
-class NComponentsStop(StoppingCondition):
-    '''Stop when the first n components are selected.'''
-
-    def __init__(self, n_components=1):
-        super().__init__()
-        self.n_components = n_components
-
-    def begin(self, min_relevance, **kwargs):
-        self.selected_components = 0
-
-    def __call__(self, *, score, **kwargs):
-        stop = self.selected_components >= self.n_components
-        self.selected_components += 1
-        return stop
-
-
-def redundancy_distance_covariance(x, y):
-    dcov = dcor.u_distance_covariance_sqr(x, y)
-    dvar = dcor.u_distance_covariance_sqr(x, x)
-
-    return dcov / dvar
+        return dcor.u_distance_covariance_sqr(selected_variable, y) < bound
 
 
 def _rec_maxima_hunting_gen_no_copy(
-        X: FDataGrid, Y, min_redundancy=0.9, min_relevance=0.2,
+        X: FDataGrid, y, min_redundancy=0.9,
         dependence_measure=dcor.u_distance_correlation_sqr,
         redundancy_dependence_measure=None,
         correction=None,
@@ -621,17 +601,16 @@ def _rec_maxima_hunting_gen_no_copy(
 
     Arguments:
         X: Matrix with one trajectory per row
-        Y: Vector for the response variable
+        y: Vector for the response variable
         min_redundancy: Minimum dependence between two features to be
         considered redundant.
-        min_relevance: Minimum score to consider a point relevant
         dependence_measure: Measure of the dependence between variables
         correction: Class that defines the correction to apply to eliminate the
         influence of the selected feature.
     '''
 
     # X = np.asfarray(X)
-    Y = np.asfarray(Y)
+    y = np.asfarray(y)
 
     if correction is None:
         correction = UniformCorrection()
@@ -643,42 +622,35 @@ def _rec_maxima_hunting_gen_no_copy(
         mask = np.zeros([len(t) for t in X.sample_points], dtype=bool)
 
     if stopping_condition is None:
-        stopping_condition = Chi2BoundStop()
+        stopping_condition = AsymptoticIndependenceTestStop()
 
     first_pass = True
 
-    correction.begin(X, Y)
-
-    try:
-        stopping_condition.begin(X=X.data_matrix, Y=Y, T=X.sample_points[0],
-                                 min_relevance=min_relevance,
-                                 dependence_measure=dependence_measure)
-    except AttributeError:
-        pass
+    correction.begin(X, y)
 
     while True:
-        dependencies = _compute_dependence(
-            X=X.data_matrix, Y=Y,
+        dependences = _compute_dependence(
+            X=X.data_matrix, y=y,
             dependence_measure=dependence_measure)
 
-        t_max_index = _absolute_argmax(dependencies,
+        t_max_index = _absolute_argmax(dependences,
                                        mask=mask)
-        score = dependencies[t_max_index]
+        score = dependences[t_max_index]
 
         repeated_point = mask[t_max_index]
 
         stopping_condition_reached = stopping_condition(
             selected_index=t_max_index,
+            dependences=dependences,
             selected_variable=X.data_matrix[(slice(None),) +
                                             tuple(t_max_index)],
-            score=score,
-            X=X.data_matrix, Y=Y)
+            X=X, y=y)
 
         if ((repeated_point or stopping_condition_reached) and
                 not first_pass):
             return
 
-        influence_mask = get_influence_mask(
+        influence_mask = _get_influence_mask(
             X=X.data_matrix, t_max_index=t_max_index,
             min_redundancy=min_redundancy,
             dependence_measure=redundancy_dependence_measure,
@@ -694,7 +666,7 @@ def _rec_maxima_hunting_gen_no_copy(
         # Additional info, useful for debugging
         if get_intermediate_results:
             result.matrix_after_correction = np.copy(X.data_matrix)
-            result.original_dependence = dependencies
+            result.original_dependence = dependences
             result.influence_mask = influence_mask
             result.current_mask = mask
 
@@ -802,7 +774,6 @@ class RecursiveMaximaHunting(
 
     def __init__(self,
                  min_redundancy=0.9,
-                 min_relevance=0.2,
                  dependence_measure=dcor.u_distance_correlation_sqr,
                  redundancy_dependence_measure=None,
                  n_components=None,
@@ -810,7 +781,6 @@ class RecursiveMaximaHunting(
                  stopping_condition=None,
                  num_extra_features=0):
         self.min_redundancy = min_redundancy
-        self.min_relevance = min_relevance
         self.dependence_measure = dependence_measure
         self.redundancy_dependence_measure = redundancy_dependence_measure
         self.n_components = n_components
@@ -828,9 +798,8 @@ class RecursiveMaximaHunting(
         for i, result in enumerate(
             _rec_maxima_hunting_gen(
                 X=X.copy(),
-                Y=y,
+                y=y,
                 min_redundancy=self.min_redundancy,
-                min_relevance=self.min_relevance,
                 dependence_measure=self.dependence_measure,
                 redundancy_dependence_measure=red_dep_measure,
                 correction=self.correction,

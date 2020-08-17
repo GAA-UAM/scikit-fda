@@ -1,14 +1,15 @@
+import dcor
+
 import scipy.signal
 import sklearn.base
 import sklearn.utils
 
-import dcor
 import numpy as np
 
 from ....representation import FDataGrid
 
 
-def _compute_dependence(X, Y, *, dependence_measure):
+def _compute_dependence(X, y, *, dependence_measure):
     '''
     Computes the dependence of each point in each trajectory in X with the
     corresponding class label in Y.
@@ -17,7 +18,7 @@ def _compute_dependence(X, Y, *, dependence_measure):
     def vectorial_dependence_measure(x):
         x = np.atleast_2d(x).transpose()
 
-        return dependence_measure(x, Y)
+        return dependence_measure(x, y)
 
     vectorial_dependence_measure = np.vectorize(
         vectorial_dependence_measure,

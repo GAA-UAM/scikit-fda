@@ -34,6 +34,45 @@ def _execute_kernel(kernel, t_0, t_1):
     return _execute_covariance(kernel, t_0, t_1)
 
 
+class _PicklableKernel():
+    """ Class used to pickle GPy kernels."""
+
+    def __init__(self, kernel):
+        super().__setattr__('_PicklableKernel__kernel', kernel)
+
+    def __getattr__(self, name):
+        if name != '__deepcopy__':
+            return getattr(self.__kernel, name)
+
+    def __setattr__(self, name, value):
+        setattr(self.__kernel, name, value)
+
+    def __getstate__(self):
+        return {'class': self.__kernel.__class__,
+                'input_dim': self.__kernel.input_dim,
+                'values': self.__kernel.param_array}
+
+    def __setstate__(self, state):
+        super().__setattr__('_PicklableKernel__kernel', state['class'](
+            input_dim=state['input_dim']))
+        self.__kernel.param_array[...] = state['values']
+
+    def __call__(self, *args, **kwargs):
+        return self.__kernel.K(*args, **kwargs)
+
+
+def make_kernel(k):
+    try:
+        import GPy
+    except ImportError:
+        return k
+
+    if isinstance(k, GPy.kern.Kern):
+        return _PicklableKernel(k)
+    else:
+        return k
+
+
 def _absolute_argmax(function, *, mask):
     """
     Computes the absolute maximum of a discretized function.
@@ -58,7 +97,7 @@ def _absolute_argmax(function, *, mask):
     return t_max
 
 
-class Correction(abc.ABC):
+class Correction(abc.ABC, sklearn.base.BaseEstimator):
     """
     Base class for applying a correction after a point is taken, eliminating
     its influence over the rest.
@@ -76,7 +115,10 @@ class Correction(abc.ABC):
 
     def conditioned(self, **kwargs):
         """
-        Returns a correction object that is conditioned to the value of a point.
+        Returns a correction object conditioned to the value of a point.
+
+        This method is necessary because after the RMH correction step, the
+        functions follow a different model.
 
         """
         return self
@@ -86,6 +128,15 @@ class Correction(abc.ABC):
         """
         Correct the trajectories.
 
+        This method subtracts the influence of the selected point from the
+        other points in the function.
+
+        Parameters:
+
+            X (FDataGrid): Functions in the current iteration of the algorithm.
+            selected_index (int or tuple of int): Index of the selected point
+                in the ``data_matrix``.
+
         """
         pass
 
@@ -93,13 +144,131 @@ class Correction(abc.ABC):
         self.correct(*args, **kwargs)
 
 
-class ConditionalExpectationCorrection(Correction):
+class ConditionalMeanCorrection(Correction):
+    """
+    Base class for applying a correction based on the conditional expectation.
+
+    The functions are assumed to be realizations of a particular stochastic
+    process. The information subtracted in each iteration would be the
+    mean of the process conditioned to the value observed at the
+    selected point.
+
+    """
 
     @abc.abstractmethod
-    def conditional_expectation(self, T, t_0, x_0, selected_index):
+    def conditional_mean(self, X, selected_index):
+        """
+        Mean of the process conditioned to the value observed at the
+        selected point.
+
+        Parameters:
+
+            X (FDataGrid): Functions in the current iteration of the algorithm.
+            selected_index (int or tuple of int): Index of the selected point
+                in the ``data_matrix``.
+
+        """
         pass
 
     def correct(self, X, selected_index):
+
+        X.data_matrix[...] -= self.conditional_mean(
+            X, selected_index).T
+
+        X.data_matrix[:, selected_index] = 0
+
+
+class GaussianCorrection(ConditionalMeanCorrection):
+    r"""
+    Correction assuming that the underlying process is Gaussian.
+
+    The conditional mean of a Gaussian process :math:`X(t)` is
+
+    .. math::
+
+        \mathbb{E}[X(t) \mid X(t_0) = x_0] = \mathbb{E}[X(t)]
+        + \frac{\mathrm{Cov}[X(t), X(t_0)]}{\mathrm{Cov}[X(t_0), X(t_0)]}
+        (X(t_0) - \mathbb{E}[X(t_0)])
+
+    The corrections after this is applied are of type
+    :class:`GaussianConditionedCorrection`.
+
+    Parameters:
+
+        mean (number or function): Mean function of the Gaussian process.
+        cov (number or function): Covariance function of the Gaussian process.
+        fit_hyperparameters (boolean): If ``True`` the hyperparameters of the
+            covariance function are optimized for the data.
+
+    """
+
+    def __init__(self, *, mean=0, cov=1, fit_hyperparameters=False):
+        super(GaussianCorrection, self).__init__()
+
+        self.mean = mean
+        self.cov = make_kernel(cov)
+        self.fit_hyperparameters = fit_hyperparameters
+
+    def begin(self, X, y):
+        if self.fit_hyperparameters:
+            import GPy
+
+            T = X.sample_points[0]
+            X_copy = np.copy(X.data_matrix[..., 0])
+
+            y = np.ravel(y)
+            for class_label in np.unique(y):
+                trajectories = X_copy[y == class_label, :]
+
+                mean = np.mean(trajectories, axis=0)
+                X_copy[y == class_label, :] -= mean
+
+            m = GPy.models.GPRegression(
+                T[:, None], X_copy.T,
+                kernel=self.cov._PicklableKernel__kernel)
+            m.constrain_positive('')
+            m.optimize()
+
+            self.cov_ = copy.deepcopy(make_kernel(m.kern))
+
+    def _evaluate_mean(self, t):
+
+        mean = self.mean
+
+        if isinstance(mean, numbers.Number):
+            expectation = np.ones_like(t, dtype=float) * mean
+        else:
+            expectation = mean(t)
+
+        return expectation
+
+    def _evaluate_cov(self, t_0, t_1):
+        cov = getattr(self, "cov_", self.cov)
+
+        return _execute_kernel(cov, t_0, t_1)
+
+    def conditioned(self, X, t_0, **kwargs):
+        # If the point makes the matrix singular, don't change the correction
+
+        cov = getattr(self, "cov_", self.cov)
+
+        try:
+
+            correction = GaussianConditionedCorrection(
+                mean=self.mean,
+                cov=cov,
+                conditioning_points=t_0)
+
+            correction._covariance_matrix_inv()
+
+            return correction
+
+        except linalg.LinAlgError:
+
+            return self
+
+    def conditional_mean(self, X, selected_index):
+
         T = X.sample_points[0]
 
         t_0 = T[selected_index]
@@ -109,25 +278,138 @@ class ConditionalExpectationCorrection(Correction):
 
         T = _transform_to_2d(T)
 
-        X.data_matrix[...] -= self.conditional_expectation(T, t_0, x_0,
-                                                           selected_index).T
+        var = self._evaluate_cov(t_0, t_0)
 
-        X.data_matrix[:, selected_index] = 0
+        expectation = self._evaluate_mean(T)
+        assert expectation.shape == T.shape
+
+        t_0_expectation = expectation[selected_index]
+
+        b_T = self._evaluate_cov(T, t_0)
+        assert b_T.shape == T.shape
+
+        cond_expectation = (expectation +
+                            b_T / var *
+                            (x_0.T - t_0_expectation)
+                            ) if var else expectation + np.zeros_like(x_0.T)
+
+        return cond_expectation
 
 
-class SampleGPCorrection(ConditionalExpectationCorrection):
+class GaussianConditionedCorrection(GaussianCorrection):
+    r"""
+    Correction assuming that the underlying process is Gaussian, with several
+    values conditioned to 0.
+
+   The conditional mean is inherited from :class:`GaussianConditioned`, with
+   the conditioned mean and covariance.
+
+    The corrections after this is applied are of type
+    :class:`GaussianConditionedCorrection`, adding additional points.
+
+    Parameters:
+
+        mean (number or function): Mean function of the (unconditioned)
+            Gaussian process.
+        cov (number or function): Covariance function of the (unconditioned)
+            Gaussian process.
+
+    """
+
+    def __init__(self, conditioning_points, *, mean=0, cov=1):
+
+        super(GaussianConditionedCorrection, self).__init__(
+            mean=mean, cov=cov)
+
+        self.conditioning_points = conditioning_points
+
+    def _covariance_matrix_inv(self):
+
+        cond_points = self._conditioning_points()
+
+        cov_matrix_inv = getattr(self, "_cov_matrix_inv", None)
+        if cov_matrix_inv is None:
+
+            cov_matrix = super()._evaluate_cov(
+                cond_points, cond_points
+            )
+
+            self._cov_matrix_inv = np.linalg.inv(cov_matrix)
+            cov_matrix_inv = self._cov_matrix_inv
+
+        return cov_matrix_inv
+
+    def _conditioning_points(self):
+        return _transform_to_2d(self.conditioning_points)
+
+    def conditioned(self, X, t_0, **kwargs):
+
+        # If the point makes the matrix singular, don't change the correction
+        try:
+
+            correction = GaussianConditionedCorrection(
+                mean=self.mean,
+                cov=self.cov,
+                conditioning_points=np.concatenate(
+                    (self._conditioning_points(), [[t_0]]))
+            )
+
+            correction._covariance_matrix_inv()
+
+            return correction
+
+        except linalg.LinAlgError:
+
+            return self
+
+    def _evaluate_mean(self, t):
+
+        cond_points = self._conditioning_points()
+
+        A_inv = self._covariance_matrix_inv()
+
+        b_T = super()._evaluate_cov(t, cond_points)
+
+        c = -super()._evaluate_mean(cond_points)
+        assert c.shape == np.shape(cond_points)
+
+        original_expect = super()._evaluate_mean(t)
+        assert original_expect.shape == t.shape
+
+        modified_expect = b_T.dot(A_inv).dot(c)
+        assert modified_expect.shape == t.shape
+
+        expectation = original_expect + modified_expect
+        assert expectation.shape == t.shape
+
+        return expectation
+
+    def _evaluate_cov(self, t_0, t_1):
+
+        cond_points = self._conditioning_points()
+
+        A_inv = self._covariance_matrix_inv()
+
+        b_t_0_T = super()._evaluate_cov(t_0, cond_points)
+
+        b_t_1 = super()._evaluate_cov(cond_points, t_1)
+
+        return (super()._evaluate_cov(t_0, t_1) -
+                b_t_0_T @ A_inv @ b_t_1)
+
+
+class SampleGaussianCorrection(ConditionalMeanCorrection):
     """
     Correction assuming that the process is Gaussian and using as the kernel
     the sample covariance.
 
     """
 
-    def __init__(self, markov=False):
+    def __init__(self):
         self.gaussian_correction = None
         self.covariance_matrix = None
         self.T = None
         self.time = 0
-        self.markov = markov
         self.cond_points = []
 
     def begin(self, X: FDataGrid, Y):
@@ -162,64 +444,10 @@ class SampleGPCorrection(ConditionalExpectationCorrection):
             t_0=t_0, **kwargs)
         return self
 
-    def conditional_expectation(self, T, t_0, x_0, selected_index):
+    def conditional_mean(self, X, selected_index):
 
-        gp_condexp = self.gaussian_correction.conditional_expectation(
-            T, t_0, x_0, selected_index)
-
-        if self.markov:
-            left_index = np.searchsorted(self.cond_points, t_0)
-
-            left_value = (self.cond_points[left_index - 1]
-                          if left_index != 0 else None)
-            right_value = (self.cond_points[left_index]
-                           if left_index != len(self.cond_points) else None)
-
-            if left_value is not None:
-                gp_condexp[:, T.ravel() < left_value, :] = 0
-
-            if right_value is not None:
-                gp_condexp[:, T.ravel() > right_value, :] = 0
-
-        return gp_condexp
-
-
-class PicklableKernel():
-
-    def __init__(self, kernel):
-        super().__setattr__('_PicklableKernel__kernel', kernel)
-
-    def __getattr__(self, name):
-        if name != '__deepcopy__':
-            return getattr(self.__kernel, name)
-
-    def __setattr__(self, name, value):
-        setattr(self.__kernel, name, value)
-
-    def __getstate__(self):
-        return {'class': self.__kernel.__class__,
-                'input_dim': self.__kernel.input_dim,
-                'values': self.__kernel.param_array}
-
-    def __setstate__(self, state):
-        super().__setattr__('_PicklableKernel__kernel', state['class'](
-            input_dim=state['input_dim']))
-        self.__kernel.param_array[...] = state['values']
-
-    def __call__(self, *args, **kwargs):
-        return self.__kernel.K(*args, **kwargs)
-
-
-def make_kernel(k):
-    try:
-        import GPy
-    except ImportError:
-        return k
-
-    if isinstance(k, GPy.kern.Kern):
-        return PicklableKernel(k)
-    else:
-        return k
+        return self.gaussian_correction.conditional_expectation(
+            X, selected_index)
 
 
 class UniformCorrection(Correction):
@@ -227,12 +455,16 @@ class UniformCorrection(Correction):
     Correction assuming that the underlying process is an Ornstein-Uhlenbeck
     process with infinite lengthscale.
 
+    The initial conditional mean subtracts the observed value from every
+    point, and the following correction is a :class:`GaussianCorrection`
+    with a :class:`skfda.misc.covariances.Brownian` covariance function.
+
     """
 
     def conditioned(self, X, t_0, **kwargs):
         from ....misc.covariances import Brownian
 
-        return GaussianCorrection(kernel=Brownian(origin=t_0))
+        return GaussianCorrection(cov=Brownian(origin=t_0))
 
     def correct(self, X, selected_index):
         x_index = (slice(None),) + tuple(selected_index) + (np.newaxis,)
@@ -242,175 +474,6 @@ class UniformCorrection(Correction):
         x_0 = np.copy(X.data_matrix[x_index])
 
         X.data_matrix[...] -= x_0
-
-
-class GaussianCorrection(ConditionalExpectationCorrection):
-    """
-    Correction assuming that the underlying process is Gaussian.
-
-    """
-
-    def __init__(self, expectation=0, kernel=1, optimize_kernel=False):
-        super(GaussianCorrection, self).__init__()
-
-        self.__expectation = expectation
-        self.__kernel = make_kernel(kernel)
-        self.optimize_kernel = optimize_kernel
-        self.kernel_params_optimized_names = None
-        self.kernel_params_optimized_values = None
-
-    def begin(self, X, Y):
-        if self.optimize_kernel:
-            import GPy
-
-            T = X.sample_points[0]
-            X_copy = np.copy(X.data_matrix[..., 0])
-
-            Y = np.ravel(Y)
-            for class_label in np.unique(Y):
-                trajectories = X_copy[Y == class_label, :]
-
-                mean = np.mean(trajectories, axis=0)
-                X_copy[Y == class_label, :] -= mean
-
-            m = GPy.models.GPRegression(
-                T[:, None], X_copy.T,
-                kernel=self.__kernel._PicklableKernel__kernel)
-            m.constrain_positive('')
-            m.optimize()
-
-            self.kernel_params_optimized_names = m.parameter_names(),
-            self.kernel_params_optimized_values = m.param_array
-
-            self.__kernel = copy.deepcopy(make_kernel(m.kern))
-
-    def conditioned(self, X, t_0, **kwargs):
-        # If the point makes the matrix singular, don't change the correction
-        try:
-            return GaussianConditionedCorrection(
-                expectation=self.expectation,
-                kernel=self.kernel,
-                point_list=t_0)
-        except linalg.LinAlgError:
-            return self
-
-    def expectation(self, t):
-
-        if isinstance(self.__expectation, numbers.Number):
-            expectation = np.ones_like(t, dtype=float) * self.__expectation
-        else:
-            expectation = self.__expectation(t)
-
-        return expectation
-
-    def kernel(self, t_0, t_1):
-        return _execute_kernel(self.__kernel, t_0, t_1)
-
-    covariance = kernel
-
-    def variance(self, t):
-        return self.covariance(t, t)
-
-    def conditional_expectation(self, T, t_0, x_0, selected_index):
-
-        var = self.variance(t_0)
-
-        expectation = self.expectation(T)
-        assert expectation.shape == T.shape
-
-        t_0_expectation = expectation[selected_index]
-
-        b_T = self.covariance(T, t_0)
-        assert b_T.shape == T.shape
-
-        cond_expectation = (expectation +
-                            b_T / var *
-                            (x_0.T - t_0_expectation)
-                            ) if var else expectation + np.zeros_like(x_0.T)
-
-        return cond_expectation
-
-
-class GaussianConditionedCorrection(GaussianCorrection):
-    """
-    Correction assuming that the underlying process is a Gaussian conditioned
-    to several points with value 0.
-
-    """
-
-    def __init__(self, point_list, expectation=0,
-                 kernel=1, **kwargs):
-        super(GaussianConditionedCorrection, self).__init__(
-            expectation=self.__expectation,
-            kernel=self.__kernel,
-            **kwargs)
-
-        self.point_list = _transform_to_2d(point_list)
-        self.__gaussian_expectation = expectation
-        self.__gaussian_kernel = make_kernel(kernel)
-        self.__covariance_matrix = self.gaussian_kernel(
-            self.point_list, self.point_list
-        )
-        self.__covariance_matrix_inv = np.linalg.inv(self.__covariance_matrix)
-
-    def conditioned(self, X, t_0, **kwargs):
-
-        # If the point makes the matrix singular, don't change the correction
-        try:
-            return GaussianConditionedCorrection(
-                expectation=self.__gaussian_expectation,
-                kernel=self.__gaussian_kernel,
-                point_list=np.concatenate((self.point_list, [[t_0]]))
-            )
-        except linalg.LinAlgError:
-            return self
-
-    def gaussian_expectation(self, t):
-        if isinstance(self.__gaussian_expectation, numbers.Number):
-            expectation = (np.ones_like(t, dtype=float) *
-                           self.__gaussian_expectation)
-        else:
-            expectation = self.__gaussian_expectation(t)
-
-        return expectation
-
-    def gaussian_kernel(self, t_0, t_1):
-        return _execute_kernel(self.__gaussian_kernel, t_0, t_1)
-
-    def __expectation(self, t):
-
-        A_inv = self.__covariance_matrix_inv
-
-        b_T = self.gaussian_kernel(t, self.point_list)
-
-        c = -self.gaussian_expectation(self.point_list)
-        assert c.shape == np.shape(self.point_list)
-
-        original_expect = self.gaussian_expectation(t)
-        assert original_expect.shape == t.shape
-
-        modified_expect = b_T.dot(A_inv).dot(c)
-        assert modified_expect.shape == t.shape
-
-        expectation = original_expect + modified_expect
-        assert expectation.shape == t.shape
-
-        return expectation
-
-    def __kernel(self, t_0, t_1):
-
-        A_inv = self.__covariance_matrix_inv
-
-        b_t_0_T = self.gaussian_kernel(t_0, self.point_list)
-        # assert b_t_0_T.shape[0] == np.shape(np.atleast_2d(t_0))[0]
-        # assert b_t_0_T.shape[1] == np.shape(point_list)[-1]
-
-        b_t_1 = self.gaussian_kernel(self.point_list, t_1)
-        # assert b_t_1.shape[0] == np.shape(point_list)[-1]
-        # assert b_t_1.shape[1] == np.shape(np.atleast_2d(t_1))[0]
-
-        return (self.gaussian_kernel(t_0, t_1) -
-                b_t_0_T @ A_inv @ b_t_1)
 
 
 class RMHResult(object):
@@ -432,7 +495,7 @@ class RMHResult(object):
 def _get_influence_mask(X, t_max_index, min_redundancy, dependence_measure,
                         old_mask):
     """
-    Get the mask of the points that have much dependence with the
+    Get the mask of the points that have a large dependence with the
     selected point.
 
     """

@@ -106,7 +106,8 @@ class Correction(abc.ABC, sklearn.base.BaseEstimator):
 
     def begin(self, X: FDataGrid, Y):
         """
-        Initialization.
+        Initialization for a particular application of Recursive Maxima
+        Hunting.
 
         The initial parameters of Recursive Maxima Hunting can be used there.
 
@@ -309,6 +310,8 @@ class GaussianConditionedCorrection(GaussianCorrection):
 
     Parameters:
 
+        conditioning_points (iterable of ints or tuples of ints): Points where
+            the process is conditioned to have the value 0.
         mean (number or function): Mean function of the (unconditioned)
             Gaussian process.
         cov (number or function): Covariance function of the (unconditioned)
@@ -405,15 +408,7 @@ class SampleGaussianCorrection(ConditionalMeanCorrection):
 
     """
 
-    def __init__(self):
-        self.gaussian_correction = None
-        self.covariance_matrix = None
-        self.T = None
-        self.time = 0
-        self.cond_points = []
-
     def begin(self, X: FDataGrid, Y):
-        T = X.sample_points
 
         X_copy = np.copy(X.data_matrix[..., 0])
 
@@ -424,29 +419,30 @@ class SampleGaussianCorrection(ConditionalMeanCorrection):
             mean = np.mean(trajectories, axis=0)
             X_copy[Y == class_label, :] -= mean
 
-        self.covariance_matrix = np.cov(X_copy, rowvar=False)
-        self.T = np.ravel(T)
-        self.gaussian_correction = GaussianCorrection(kernel=self.__kernel)
+        self.conditioning_points_ = []
+        self.cov_matrix_ = np.cov(X_copy, rowvar=False)
+        self.t_ = np.ravel(X.sample_points)
+        self.gaussian_correction_ = GaussianCorrection(kernel=self.cov)
 
-    def __kernel(self, t_0, t_1):
-        i = np.searchsorted(self.T, t_0)
-        j = np.searchsorted(self.T, t_1)
+    def cov(self, t_0, t_1):
+        i = np.searchsorted(self.t_, t_0)
+        j = np.searchsorted(self.t_, t_1)
 
         i = np.ravel(i)
         j = np.ravel(j)
 
-        return self.covariance_matrix[np.ix_(i, j)]
+        return self.cov_matrix_[np.ix_(i, j)]
 
     def conditioned(self, t_0, **kwargs):
-        self.cond_points.append(t_0)
-        self.cond_points.sort()
-        self.gaussian_correction = self.gaussian_correction.conditioned(
+        self.conditioning_points.append(t_0)
+        self.conditioning_points.sort()
+        self.gaussian_correction_ = self.gaussian_correction_.conditioned(
             t_0=t_0, **kwargs)
         return self
 
     def conditional_mean(self, X, selected_index):
 
-        return self.gaussian_correction.conditional_expectation(
+        return self.gaussian_correction_.conditional_expectation(
             X, selected_index)
 
 
@@ -474,79 +470,6 @@ class UniformCorrection(Correction):
         x_0 = np.copy(X.data_matrix[x_index])
 
         X.data_matrix[...] -= x_0
-
-
-class RMHResult(object):
-
-    def __init__(self, index, score):
-        self.index = index
-        self.score = score
-        self.matrix_after_correction = None
-        self.original_dependence = None
-        self.influence_mask = None
-        self.current_mask = None
-
-    def __repr__(self):
-        return (self.__class__.__name__ +
-                "(index={index}, score={score})"
-                .format(index=self.index, score=self.score))
-
-
-def _get_influence_mask(X, t_max_index, min_redundancy, dependence_measure,
-                        old_mask):
-    """
-    Get the mask of the points that have a large dependence with the
-    selected point.
-
-    """
-    sl = slice(None)
-
-    def get_index(index):
-        return (sl,) + tuple(index) + (np.newaxis,)
-
-    def is_redundant(index):
-
-        max_point = np.squeeze(X[get_index(t_max_index)], axis=1)
-        test_point = np.squeeze(X[get_index(index)], axis=1)
-
-        return (dependence_measure(max_point, test_point) >
-                min_redundancy)
-
-    def adjacent_indexes(index):
-        for i, coord in enumerate(index):
-            # Out of bounds right check
-            if coord < (X.shape[i + 1] - 1):
-                new_index = list(index)
-                new_index[i] += 1
-                yield tuple(new_index)
-            # Out of bounds left check
-            if coord > 0:
-                new_index = list(index)
-                new_index[i] -= 1
-                yield tuple(new_index)
-
-    def update_mask(new_mask, index):
-        indexes = [index]
-
-        while indexes:
-            index = indexes.pop()
-            # Check if it wasn't masked before
-            if (
-                not old_mask[index] and not new_mask[index] and
-                is_redundant(index)
-            ):
-                new_mask[index] = True
-                for i in adjacent_indexes(index):
-                    indexes.append(i)
-
-    new_mask = np.zeros_like(old_mask)
-
-    update_mask(new_mask, t_max_index)
-
-    # The selected point is masked even if min_redundancy is high
-    new_mask[t_max_index] = True
-
-    return new_mask
 
 
 class StoppingCondition(abc.ABC, sklearn.base.BaseEstimator):
@@ -650,14 +573,131 @@ class AsymptoticIndependenceTestStop(StoppingCondition):
         return dcor.u_distance_covariance_sqr(selected_variable, y) < bound
 
 
+class RedundancyCondition(abc.ABC, sklearn.base.BaseEstimator):
+    """
+    Redundancy condition for RMH.
+
+    This is a callable that should return ``True`` if the two points are
+    redundant and false otherwise.
+
+    """
+
+    @abc.abstractmethod
+    def __call__(self, max_point, test_point, **kwargs):
+        pass
+
+
+class DependenceThresholdRedundancy(RedundancyCondition):
+    """
+    The points are redundant if their dependency is above a given
+    threshold.
+
+    This stopping condition requires that the dependency has a known bound, for
+    example that it takes values in the interval :math:`[0, 1]`.
+
+    Parameters:
+
+        threshold (float): Value compared with the score. If the score
+            of the selected point is not higher than that,
+            the point will not be selected (unless it is
+            the first iteration) and RMH will end.
+        dependence_measure (callable): Dependence measure to use. By default,
+            it uses the bias corrected squared distance correlation.
+
+    """
+
+    def __init__(self, threshold=0.9, *,
+                 dependence_measure=dcor.u_distance_correlation_sqr):
+
+        super().__init__()
+        self.threshold = threshold
+        self.dependence_measure = dependence_measure
+
+    def __call__(self, *, max_point, test_point, **kwargs):
+
+        return self.dependence_measure(max_point, test_point) > self.threshold
+
+
+class RMHResult(object):
+
+    def __init__(self, index, score):
+        self.index = index
+        self.score = score
+        self.matrix_after_correction = None
+        self.original_dependence = None
+        self.influence_mask = None
+        self.current_mask = None
+
+    def __repr__(self):
+        return (self.__class__.__name__ +
+                "(index={index}, score={score})"
+                .format(index=self.index, score=self.score))
+
+
+def _get_influence_mask(X, t_max_index, redundancy_condition, old_mask):
+    """
+    Get the mask of the points that have a large dependence with the
+    selected point.
+
+    """
+    sl = slice(None)
+
+    def get_index(index):
+        return (sl,) + tuple(index) + (np.newaxis,)
+
+    def is_redundant(index):
+
+        max_point = np.squeeze(X[get_index(t_max_index)], axis=1)
+        test_point = np.squeeze(X[get_index(index)], axis=1)
+
+        return redundancy_condition(max_point=max_point,
+                                    test_point=test_point)
+
+    def adjacent_indexes(index):
+        for i, coord in enumerate(index):
+            # Out of bounds right check
+            if coord < (X.shape[i + 1] - 1):
+                new_index = list(index)
+                new_index[i] += 1
+                yield tuple(new_index)
+            # Out of bounds left check
+            if coord > 0:
+                new_index = list(index)
+                new_index[i] -= 1
+                yield tuple(new_index)
+
+    def update_mask(new_mask, index):
+        indexes = [index]
+
+        while indexes:
+            index = indexes.pop()
+            # Check if it wasn't masked before
+            if (
+                not old_mask[index] and not new_mask[index] and
+                is_redundant(index)
+            ):
+                new_mask[index] = True
+                for i in adjacent_indexes(index):
+                    indexes.append(i)
+
+    new_mask = np.zeros_like(old_mask)
+
+    update_mask(new_mask, t_max_index)
+
+    # The selected point is masked even if min_redundancy is high
+    new_mask[t_max_index] = True
+
+    return new_mask
+
+
 def _rec_maxima_hunting_gen_no_copy(
-        X: FDataGrid, y, min_redundancy=0.9,
+        X: FDataGrid, y, *,
         dependence_measure=dcor.u_distance_correlation_sqr,
-        redundancy_dependence_measure=None,
         correction=None,
+        redundancy_condition=None,
+        stopping_condition=None,
         mask=None,
-        get_intermediate_results=False,
-        stopping_condition=None):
+        get_intermediate_results=False):
     '''
     Find the most relevant features of a function using recursive maxima
     hunting. It changes the original matrix.
@@ -678,11 +718,11 @@ def _rec_maxima_hunting_gen_no_copy(
     if correction is None:
         correction = UniformCorrection()
 
-    if redundancy_dependence_measure is None:
-        redundancy_dependence_measure = dependence_measure
-
     if mask is None:
         mask = np.zeros([len(t) for t in X.sample_points], dtype=bool)
+
+    if redundancy_condition is None:
+        redundancy_condition = DependenceThresholdRedundancy()
 
     if stopping_condition is None:
         stopping_condition = AsymptoticIndependenceTestStop()
@@ -715,8 +755,7 @@ def _rec_maxima_hunting_gen_no_copy(
 
         influence_mask = _get_influence_mask(
             X=X.data_matrix, t_max_index=t_max_index,
-            min_redundancy=min_redundancy,
-            dependence_measure=redundancy_dependence_measure,
+            redundancy_condition=redundancy_condition,
             old_mask=mask)
 
         mask |= influence_mask
@@ -774,10 +813,13 @@ class RecursiveMaximaHunting(
 
         dependence_measure (callable): Dependence measure to use. By default,
             it uses the bias corrected squared distance correlation.
-        local_maxima_selector (callable): Function to detect local maxima. The
-            default is :func:`select_local_maxima` with ``order`` parameter
-            equal to one. The original article used a similar function testing
-            different values of ``order``.
+        max_features (int): Maximum number of features to select.
+        correction (Correction): Correction used to subtract the information
+            of each selected point in each iteration.
+        redundancy_condition (callable): Condition to consider a point
+            redundant with the selected maxima and discard it from future
+            consideration as a maximum.
+        stopping_condition (callable): Condition to stop the algorithm.
 
     Examples:
 
@@ -835,53 +877,35 @@ class RecursiveMaximaHunting(
 
     '''
 
-    def __init__(self,
-                 min_redundancy=0.9,
+    def __init__(self, *,
                  dependence_measure=dcor.u_distance_correlation_sqr,
-                 redundancy_dependence_measure=None,
-                 n_components=None,
+                 max_features=None,
                  correction=None,
-                 stopping_condition=None,
-                 num_extra_features=0):
-        self.min_redundancy = min_redundancy
+                 redundancy_condition=None,
+                 stopping_condition=None):
         self.dependence_measure = dependence_measure
-        self.redundancy_dependence_measure = redundancy_dependence_measure
-        self.n_components = n_components
+        self.max_features = max_features
         self.correction = correction
+        self.redundancy_condition = redundancy_condition
         self.stopping_condition = stopping_condition
-        self.num_extra_features = num_extra_features
 
     def fit(self, X, y):
 
         self.features_shape_ = X.data_matrix.shape[1:]
-
-        red_dep_measure = self.redundancy_dependence_measure
 
         indexes = []
         for i, result in enumerate(
             _rec_maxima_hunting_gen(
                 X=X.copy(),
                 y=y,
-                min_redundancy=self.min_redundancy,
                 dependence_measure=self.dependence_measure,
-                redundancy_dependence_measure=red_dep_measure,
                 correction=self.correction,
-                stopping_condition=self.stopping_condition,
-                get_intermediate_results=(self.num_extra_features != 0))):
+                redundancy_condition=self.redundancy_condition,
+                stopping_condition=self.stopping_condition)):
 
-            if self.n_components is None or i < self.n_components:
-                indexes.append(result.index)
+            indexes.append(result.index)
 
-                if self.num_extra_features:
-                    mask = result.influence_mask
-                    new_indexes = [a[0] for a in np.ndenumerate(mask) if a[1]]
-                    new_indexes.remove(result.index)
-                    new_indexes = random.sample(new_indexes, min(
-                        len(new_indexes), self.num_extra_features))
-
-                    indexes = indexes + new_indexes
-
-            else:
+            if self.max_features is not None and i >= self.max_features:
                 break
 
         self.indexes_ = tuple(np.transpose(indexes).tolist())

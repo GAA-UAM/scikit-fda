@@ -302,7 +302,7 @@ class GaussianConditionedCorrection(GaussianCorrection):
     Correction assuming that the underlying process is Gaussian, with several
     values conditioned to 0.
 
-   The conditional mean is inherited from :class:`GaussianConditioned`, with
+   The conditional mean is inherited from :class:`GaussianCorrection`, with
    the conditioned mean and covariance.
 
     The corrections after this is applied are of type
@@ -401,7 +401,7 @@ class GaussianConditionedCorrection(GaussianCorrection):
                 b_t_0_T @ A_inv @ b_t_1)
 
 
-class SampleGaussianCorrection(ConditionalMeanCorrection):
+class GaussianSampleCorrection(ConditionalMeanCorrection):
     """
     Correction assuming that the process is Gaussian and using as the kernel
     the sample covariance.
@@ -453,7 +453,8 @@ class UniformCorrection(Correction):
 
     The initial conditional mean subtracts the observed value from every
     point, and the following correction is a :class:`GaussianCorrection`
-    with a :class:`skfda.misc.covariances.Brownian` covariance function.
+    with a :class:`~skfda.misc.covariances.Brownian` covariance function with
+    the selected point as its origin.
 
     """
 
@@ -698,20 +699,25 @@ def _rec_maxima_hunting_gen_no_copy(
         stopping_condition=None,
         mask=None,
         get_intermediate_results=False):
-    '''
+    """
     Find the most relevant features of a function using recursive maxima
     hunting. It changes the original matrix.
 
-    Arguments:
-        X: Matrix with one trajectory per row
-        y: Vector for the response variable
-        min_redundancy: Minimum dependence between two features to be
-        considered redundant.
-        dependence_measure: Measure of the dependence between variables
-        correction: Class that defines the correction to apply to eliminate the
-        influence of the selected feature.
-    '''
+    Parameters:
 
+        dependence_measure (callable): Dependence measure to use. By default,
+            it uses the bias corrected squared distance correlation.
+        max_features (int): Maximum number of features to select.
+        correction (Correction): Correction used to subtract the information
+            of each selected point in each iteration.
+        redundancy_condition (callable): Condition to consider a point
+            redundant with the selected maxima and discard it from future
+            consideration as a maximum.
+        stopping_condition (callable): Condition to stop the algorithm.
+        mask (boolean array): Masked values.
+        get_intermediate_results (boolean): Return additional debug info.
+
+    """
     # X = np.asfarray(X)
     y = np.asfarray(y)
 
@@ -791,7 +797,7 @@ def _rec_maxima_hunting_gen(X, *args, **kwargs):
 
 class RecursiveMaximaHunting(
         sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
-    r'''
+    r"""
     Recursive Maxima Hunting variable selection.
 
     This is a filter variable selection method for problems with a target
@@ -808,18 +814,25 @@ class RecursiveMaximaHunting(
     selected by :class:`MaximaHunting` alone.
 
     This method was originally described in a special case in article [1]_.
+    Additional information about the usage of this method can be found in
+    :doc:`/modules/preprocessing/dim_reduction/recursive_maxima_hunting`.
 
     Parameters:
 
         dependence_measure (callable): Dependence measure to use. By default,
             it uses the bias corrected squared distance correlation.
-        max_features (int): Maximum number of features to select.
+        max_features (int): Maximum number of features to select. By default
+            there is no limit.
         correction (Correction): Correction used to subtract the information
-            of each selected point in each iteration.
+            of each selected point in each iteration. By default it is
+            a :class:`.UniformCorrection` object.
         redundancy_condition (callable): Condition to consider a point
             redundant with the selected maxima and discard it from future
-            consideration as a maximum.
-        stopping_condition (callable): Condition to stop the algorithm.
+            consideration as a maximum. By default it is a
+            :class:`.DependenceThresholdRedundancy` object.
+        stopping_condition (callable): Condition to stop the algorithm. By
+            default it is a :class:`.AsymptoticIndependenceTestStop`
+            object.
 
     Examples:
 
@@ -875,7 +888,7 @@ class RecursiveMaximaHunting(
                in Advances in Neural Information Processing Systems 29,
                Curran Associates, Inc., 2016, pp. 4835–4843.
 
-    '''
+    """
 
     def __init__(self, *,
                  dependence_measure=dcor.u_distance_correlation_sqr,

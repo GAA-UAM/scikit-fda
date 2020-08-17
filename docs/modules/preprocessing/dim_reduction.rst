@@ -19,7 +19,15 @@ following:
    :toctree: autosummary
 
    skfda.preprocessing.dim_reduction.variable_selection.MaximaHunting
+   skfda.preprocessing.dim_reduction.variable_selection.RecursiveMaximaHunting
    skfda.preprocessing.dim_reduction.variable_selection.RKHSVariableSelection
+   
+.. toctree::
+   :hidden:
+   :maxdepth: 4
+   :caption: Modules:
+
+   dim_reduction/recursive_maxima_hunting
 
 Projection
 ----------

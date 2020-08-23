@@ -419,10 +419,10 @@ class GaussianSampleCorrection(ConditionalMeanCorrection):
             mean = np.mean(trajectories, axis=0)
             X_copy[Y == class_label, :] -= mean
 
-        self.conditioning_points_ = []
         self.cov_matrix_ = np.cov(X_copy, rowvar=False)
         self.t_ = np.ravel(X.sample_points)
-        self.gaussian_correction_ = GaussianCorrection(kernel=self.cov)
+        self.gaussian_correction_ = GaussianCorrection(
+            cov=self.cov)
 
     def cov(self, t_0, t_1):
         i = np.searchsorted(self.t_, t_0)
@@ -434,15 +434,13 @@ class GaussianSampleCorrection(ConditionalMeanCorrection):
         return self.cov_matrix_[np.ix_(i, j)]
 
     def conditioned(self, t_0, **kwargs):
-        self.conditioning_points.append(t_0)
-        self.conditioning_points.sort()
         self.gaussian_correction_ = self.gaussian_correction_.conditioned(
             t_0=t_0, **kwargs)
         return self
 
     def conditional_mean(self, X, selected_index):
 
-        return self.gaussian_correction_.conditional_expectation(
+        return self.gaussian_correction_.conditional_mean(
             X, selected_index)
 
 

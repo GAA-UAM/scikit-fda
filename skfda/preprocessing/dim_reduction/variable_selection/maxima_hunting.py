@@ -15,20 +15,22 @@ def _compute_dependence(X, y, *, dependence_measure):
     corresponding class label in Y.
     '''
 
-    def vectorial_dependence_measure(x):
-        x = np.atleast_2d(x).transpose()
+    # Move n_samples to the end
+    # The shape is now input_shape + n_samples + n_output
+    X = np.moveaxis(X, 0, -2)
 
-        return dependence_measure(x, y)
+    input_shape = X.shape[:-2]
 
-    vectorial_dependence_measure = np.vectorize(
-        vectorial_dependence_measure,
-        otypes=[float],
-        signature="(m,n)->()"
-    )
+    # Join input in a list for rowwise
+    X = X.reshape(-1, X.shape[-2], X.shape[-1])
 
-    X_view = np.rollaxis(X, 0, len(X.shape))
+    if y.ndim == 1:
+        y = np.atleast_2d(y).T
+    Y = np.array([y] * len(X))
 
-    return vectorial_dependence_measure(X_view)
+    dependence_results = dcor.rowwise(dependence_measure, X, Y)
+
+    return dependence_results.reshape(input_shape)
 
 
 def select_local_maxima(X, *, order: int=1):
@@ -42,6 +44,7 @@ def select_local_maxima(X, *, order: int=1):
 
     Parameters:
 
+        X (numpy array): Where to compute the local maxima.
         order (callable): How many points on each side to look, to check if
             a point is a maximum in that interval.
 
@@ -176,11 +179,9 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
 
     def fit(self, X: FDataGrid, y):
 
-        X, y = sklearn.utils.validation.check_X_y(X.data_matrix[..., 0], y)
-
-        self.features_shape_ = X.shape[1:]
+        self.features_shape_ = X.data_matrix.shape[1:]
         self.dependence_ = _compute_dependence(
-            X[..., np.newaxis], y,
+            X.data_matrix, y,
             dependence_measure=self.dependence_measure)
 
         self.indexes_ = self.local_maxima_selector(self.dependence_)
@@ -194,7 +195,7 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
         if indices:
             return self.indexes_
         else:
-            mask = np.zeros(self.features_shape_[0], dtype=bool)
+            mask = np.zeros(self.features_shape_[0:-1], dtype=bool)
             mask[self.indexes_] = True
             return mask
 
@@ -202,10 +203,8 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
 
         sklearn.utils.validation.check_is_fitted(self)
 
-        X = sklearn.utils.validation.check_array(X.data_matrix[..., 0])
-
-        if X.shape[1:] != self.features_shape_:
+        if X.data_matrix.shape[1:] != self.features_shape_:
             raise ValueError("The trajectories have a different number of "
                              "points than the ones fitted")
 
-        return X[:, self.sorted_indexes_]
+        return X.data_matrix[:, self.sorted_indexes_].reshape(X.n_samples, -1)

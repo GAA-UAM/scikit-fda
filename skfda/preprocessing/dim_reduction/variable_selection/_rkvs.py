@@ -6,7 +6,7 @@ import numpy.linalg as linalg
 from ....representation import FDataGrid
 
 
-def _rkhs_vs(X, Y, n_components: int=1):
+def _rkhs_vs(X, Y, n_features_to_select: int=1):
     '''
     Parameters
     ----------
@@ -14,18 +14,18 @@ def _rkhs_vs(X, Y, n_components: int=1):
         Matrix of trajectories
     Y
         Vector of class labels
-    n_components
-        Number of selected components
+    n_features_to_select
+        Number of selected features
     '''
 
     X = np.atleast_2d(X)
-    assert n_components >= 1
-    assert n_components <= X.shape[1]
+    assert n_features_to_select >= 1
+    assert n_features_to_select <= X.shape[1]
 
     Y = np.asarray(Y)
 
-    selected_features = np.zeros(n_components, dtype=int)
-    score = np.zeros(n_components)
+    selected_features = np.zeros(n_features_to_select, dtype=int)
+    score = np.zeros(n_features_to_select)
     indexes = np.arange(0, X.shape[1])
 
     # Calculate means and covariance matrix
@@ -55,7 +55,7 @@ def _rkhs_vs(X, Y, n_components: int=1):
     score[0] = mu_sigma[selected_features[0]]
     indexes = np.delete(indexes, selected_features[0])
 
-    for i in range(1, n_components):
+    for i in range(1, n_features_to_select):
         aux = np.zeros_like(indexes, dtype=np.float_)
 
         for j in range(0, indexes.shape[0]):
@@ -115,7 +115,7 @@ class RKHSVariableSelection(sklearn.base.BaseEstimator,
 
     Parameters:
 
-        n_components (int): number of variables to select.
+        n_features_to_select (int): number of features to select.
 
     Examples:
 
@@ -149,7 +149,8 @@ class RKHSVariableSelection(sklearn.base.BaseEstimator,
 
         Select the relevant points to distinguish the two classes
 
-        >>> rkvs = variable_selection.RKHSVariableSelection(n_components=3)
+        >>> rkvs = variable_selection.RKHSVariableSelection(
+        ...                               n_features_to_select=3)
         >>> _ = rkvs.fit(X, y)
         >>> point_mask = rkvs.get_support()
         >>> points = X.sample_points[0][point_mask]
@@ -174,8 +175,8 @@ class RKHSVariableSelection(sklearn.base.BaseEstimator,
 
     '''
 
-    def __init__(self, n_components: int=1):
-        self.n_components = n_components
+    def __init__(self, n_features_to_select: int=1):
+        self.n_features_to_select = n_features_to_select
 
     def fit(self, X: FDataGrid, y):
 
@@ -195,7 +196,7 @@ class RKHSVariableSelection(sklearn.base.BaseEstimator,
         self._features_, self._scores_ = _rkhs_vs(
             X=X,
             Y=y,
-            n_components=self.n_components)
+            n_features_to_select=self.n_features_to_select)
 
         return self
 

@@ -26,7 +26,8 @@ def make_gaussian_process(n_samples: int = 100, n_features: int = 100, *,
                   ``n_features``.
             cov: The covariance function of the process. Can be a
                   callable accepting two vectors with the locations, or a
-                  matrix with size ``n_features`` x ``n_features``.
+                  matrix with size ``n_features`` x ``n_features``. By default,
+                  the Brownian covariance function is used.
             noise: Standard deviation of Gaussian noise added to the data.
             random_state: Random state.
 

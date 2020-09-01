@@ -5,9 +5,65 @@ import sklearn.utils
 import numpy as np
 
 from .. import FDataGrid
+from .._utils import _cartesian_product
 from ..misc import covariances
 from ..preprocessing.registration import normalize_warping
 from ..representation.interpolation import SplineInterpolation
+
+
+def make_gaussian(n_samples: int = 100, *,
+                  sample_points,
+                  domain_range=None,
+                  mean=0, cov=None, noise: float = 0.,
+                  random_state=None):
+    """Generate Gaussian process or fields.
+
+        Args:
+            n_samples: The total number of trajectories.
+            n_features: The total number of features (points of evaluation).
+            start: Starting point of the trajectories.
+            stop: Ending point of the trajectories.
+            mean: The mean function of the process. Can be a callable accepting
+                  a vector with the locations, or a vector with length
+                  ``n_features``.
+            cov: The covariance function of the process. Can be a
+                  callable accepting two vectors with the locations, or a
+                  matrix with size ``n_features`` x ``n_features``. By default,
+                  the Brownian covariance function is used.
+            noise: Standard deviation of Gaussian noise added to the data.
+            random_state: Random state.
+
+        Returns:
+            :class:`FDataGrid` object comprising all the trajectories.
+
+    """
+
+    random_state = sklearn.utils.check_random_state(random_state)
+
+    if cov is None:
+        cov = covariances.Brownian()
+
+    input_points = _cartesian_product(sample_points)
+
+    covariance = covariances._execute_covariance(
+        cov, input_points, input_points)
+
+    if noise:
+        covariance += np.eye(len(covariance)) * noise ** 2
+
+    mu = np.zeros(len(input_points))
+    if callable(mean):
+        mean = mean(sample_points)
+    mu += mean
+
+    data_matrix = random_state.multivariate_normal(
+        mu, covariance, n_samples)
+
+    data_matrix = data_matrix.reshape(
+        [n_samples] + [len(t) for t in sample_points])
+
+    return FDataGrid(sample_points=sample_points, data_matrix=data_matrix,
+                     domain_range=domain_range)
 
 
 def make_gaussian_process(n_samples: int = 100, n_features: int = 100, *,

@@ -51,13 +51,13 @@ def make_gaussian(n_samples: int = 100, *,
     if noise:
         covariance += np.eye(len(covariance)) * noise ** 2
 
-    mu = np.zeros(len(input_points))
+    mu = np.zeros_like(input_points)
     if callable(mean):
-        mean = mean(sample_points)
+        mean = mean(input_points)
     mu += mean
 
     data_matrix = random_state.multivariate_normal(
-        mu, covariance, n_samples)
+        mu.ravel(), covariance, n_samples)
 
     data_matrix = data_matrix.reshape(
         [n_samples] + [len(t) for t in sample_points])
@@ -92,26 +92,13 @@ def make_gaussian_process(n_samples: int = 100, n_features: int = 100, *,
 
     """
 
-    random_state = sklearn.utils.check_random_state(random_state)
+    t = np.linspace(start, stop, n_features)
 
-    x = np.linspace(start, stop, n_features)
-
-    if cov is None:
-        cov = covariances.Brownian()
-
-    covariance = covariances._execute_covariance(cov, x, x)
-
-    if noise:
-        covariance += np.eye(n_features) * noise ** 2
-
-    mu = np.zeros(n_features)
-    if callable(mean):
-        mean = mean(x)
-    mu += mean
-
-    y = random_state.multivariate_normal(mu, covariance, n_samples)
-
-    return FDataGrid(sample_points=x, data_matrix=y)
+    return make_gaussian(n_samples=n_samples,
+                         sample_points=[t],
+                         mean=mean, cov=cov,
+                         noise=noise,
+                         random_state=random_state)
 
 
 def make_sinusoidal_process(n_samples: int = 15, n_features: int = 100, *,

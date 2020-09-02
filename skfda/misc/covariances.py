@@ -203,7 +203,7 @@ class Brownian(Covariance):
     _parameters = [("variance", r"\sigma^2"),
                    ("origin", r"\mathcal{O}")]
 
-    def __init__(self, *, variance: float = 1., origin: float = 0.):
+    def __init__(self, *, variance: float = 1., origin=0.):
         self.variance = variance
         self.origin = origin
 
@@ -211,7 +211,13 @@ class Brownian(Covariance):
         x = _transform_to_2d(x) - self.origin
         y = _transform_to_2d(y) - self.origin
 
-        return self.variance * (np.abs(x) + np.abs(y.T) - np.abs(x - y.T)) / 2
+        sum_norms = np.add.outer(
+            np.linalg.norm(x, axis=-1),
+            np.linalg.norm(y, axis=-1))
+        norm_sub = np.linalg.norm(
+            x[:, np.newaxis, :] - y[np.newaxis, :, :], axis=-1)
+
+        return self.variance * (sum_norms - norm_sub) / 2
 
 
 class Linear(Covariance):

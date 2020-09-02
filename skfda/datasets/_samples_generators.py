@@ -16,25 +16,28 @@ def make_gaussian(n_samples: int = 100, *,
                   domain_range=None,
                   mean=0, cov=None, noise: float = 0.,
                   random_state=None):
-    """Generate Gaussian process or fields.
+    """Generate Gaussian random fields.
 
         Args:
             n_samples: The total number of trajectories.
-            n_features: The total number of features (points of evaluation).
-            start: Starting point of the trajectories.
-            stop: Ending point of the trajectories.
-            mean: The mean function of the process. Can be a callable accepting
-                  a vector with the locations, or a vector with length
-                  ``n_features``.
+            sample_points: Sample points for the evaluation grid of the
+                  Gaussian field.
+            mean: The mean function of the random field. Can be a callable
+                  accepting a vector with the locations, or a vector with
+                  appropriate size.
             cov: The covariance function of the process. Can be a
                   callable accepting two vectors with the locations, or a
-                  matrix with size ``n_features`` x ``n_features``. By default,
+                  matrix with appropriate size. By default,
                   the Brownian covariance function is used.
             noise: Standard deviation of Gaussian noise added to the data.
             random_state: Random state.
 
         Returns:
             :class:`FDataGrid` object comprising all the trajectories.
+
+        See also:
+            :func:`make_gaussian_process`: Simpler function for generating
+            Gaussian processes.
 
     """
 
@@ -61,7 +64,7 @@ def make_gaussian(n_samples: int = 100, *,
         mu.ravel(), covariance, n_samples)
 
     data_matrix = data_matrix.reshape(
-        [n_samples] + [len(t) for t in sample_points])
+        [n_samples] + [len(t) for t in sample_points] + [-1])
 
     return FDataGrid(sample_points=sample_points, data_matrix=data_matrix,
                      domain_range=domain_range)
@@ -90,6 +93,11 @@ def make_gaussian_process(n_samples: int = 100, n_features: int = 100, *,
 
         Returns:
             :class:`FDataGrid` object comprising all the trajectories.
+
+        See also:
+            :func:`make_gaussian`: More general function that allows to
+            select the points of evaluation and to
+            generate data in higer dimensions.
 
     """
 

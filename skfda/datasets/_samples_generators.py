@@ -5,9 +5,69 @@ import sklearn.utils
 import numpy as np
 
 from .. import FDataGrid
+from .._utils import _cartesian_product
 from ..misc import covariances
 from ..preprocessing.registration import normalize_warping
 from ..representation.interpolation import SplineInterpolation
+
+
+def make_gaussian(n_samples: int = 100, *,
+                  sample_points,
+                  domain_range=None,
+                  mean=0, cov=None, noise: float = 0.,
+                  random_state=None):
+    """Generate Gaussian random fields.
+
+        Args:
+            n_samples: The total number of trajectories.
+            sample_points: Sample points for the evaluation grid of the
+                  Gaussian field.
+            mean: The mean function of the random field. Can be a callable
+                  accepting a vector with the locations, or a vector with
+                  appropriate size.
+            cov: The covariance function of the process. Can be a
+                  callable accepting two vectors with the locations, or a
+                  matrix with appropriate size. By default,
+                  the Brownian covariance function is used.
+            noise: Standard deviation of Gaussian noise added to the data.
+            random_state: Random state.
+
+        Returns:
+            :class:`FDataGrid` object comprising all the trajectories.
+
+        See also:
+            :func:`make_gaussian_process`: Simpler function for generating
+            Gaussian processes.
+
+    """
+
+    random_state = sklearn.utils.check_random_state(random_state)
+
+    if cov is None:
+        cov = covariances.Brownian()
+
+    input_points = _cartesian_product(sample_points)
+
+    covariance = covariances._execute_covariance(
+        cov, input_points, input_points)
+
+    if noise:
+        covariance += np.eye(len(covariance)) * noise ** 2
+
+    mu = np.zeros(len(input_points))
+    if callable(mean):
+        mean = mean(input_points)
+
+    mu += np.ravel(mean)
+
+    data_matrix = random_state.multivariate_normal(
+        mu.ravel(), covariance, n_samples)
+
+    data_matrix = data_matrix.reshape(
+        [n_samples] + [len(t) for t in sample_points] + [-1])
+
+    return FDataGrid(sample_points=sample_points, data_matrix=data_matrix,
+                     domain_range=domain_range)
 
 
 def make_gaussian_process(n_samples: int = 100, n_features: int = 100, *,
@@ -34,28 +94,20 @@ def make_gaussian_process(n_samples: int = 100, n_features: int = 100, *,
         Returns:
             :class:`FDataGrid` object comprising all the trajectories.
 
+        See also:
+            :func:`make_gaussian`: More general function that allows to
+            select the points of evaluation and to
+            generate data in higer dimensions.
+
     """
 
-    random_state = sklearn.utils.check_random_state(random_state)
+    t = np.linspace(start, stop, n_features)
 
-    x = np.linspace(start, stop, n_features)
-
-    if cov is None:
-        cov = covariances.Brownian()
-
-    covariance = covariances._execute_covariance(cov, x, x)
-
-    if noise:
-        covariance += np.eye(n_features) * noise ** 2
-
-    mu = np.zeros(n_features)
-    if callable(mean):
-        mean = mean(x)
-    mu += mean
-
-    y = random_state.multivariate_normal(mu, covariance, n_samples)
-
-    return FDataGrid(sample_points=x, data_matrix=y)
+    return make_gaussian(n_samples=n_samples,
+                         sample_points=[t],
+                         mean=mean, cov=cov,
+                         noise=noise,
+                         random_state=random_state)
 
 
 def make_sinusoidal_process(n_samples: int = 15, n_features: int = 100, *,

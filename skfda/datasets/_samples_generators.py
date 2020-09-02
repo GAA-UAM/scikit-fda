@@ -51,10 +51,11 @@ def make_gaussian(n_samples: int = 100, *,
     if noise:
         covariance += np.eye(len(covariance)) * noise ** 2
 
-    mu = np.zeros_like(input_points)
+    mu = np.zeros(len(input_points))
     if callable(mean):
         mean = mean(input_points)
-    mu += mean
+
+    mu += np.ravel(mean)
 
     data_matrix = random_state.multivariate_normal(
         mu.ravel(), covariance, n_samples)

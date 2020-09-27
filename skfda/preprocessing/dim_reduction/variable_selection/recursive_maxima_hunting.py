@@ -12,6 +12,7 @@ import numpy as np
 import numpy.linalg as linalg
 import numpy.ma as ma
 
+from ...._utils import _cartesian_product
 from ....representation import FDataGrid
 from .maxima_hunting import _compute_dependence
 
@@ -28,10 +29,10 @@ def _transform_to_2d(t):
     return t
 
 
-def _execute_kernel(kernel, t_0, t_1):
+def _execute_kernel(*args, **kwargs):
     from ....misc.covariances import _execute_covariance
 
-    return _execute_covariance(kernel, t_0, t_1)
+    return _execute_covariance(*args, **kwargs)
 
 
 class _PicklableKernel():
@@ -174,7 +175,7 @@ class ConditionalMeanCorrection(Correction):
     def correct(self, X, selected_index):
 
         X.data_matrix[...] -= self.conditional_mean(
-            X, selected_index).T
+            X, selected_index)
 
         X.data_matrix[:, selected_index] = 0
 
@@ -232,21 +233,22 @@ class GaussianCorrection(ConditionalMeanCorrection):
 
             self.cov_ = copy.deepcopy(make_kernel(m.kern))
 
-    def _evaluate_mean(self, t):
+    def _evaluate_mean(self, t, dim_codomain):
 
         mean = self.mean
 
         if isinstance(mean, numbers.Number):
-            expectation = np.ones_like(t, dtype=float) * mean
+            expectation = np.ones(
+                shape=(t.shape[:-1] + (dim_codomain,)), dtype=np.float_) * mean
         else:
             expectation = mean(t)
 
         return expectation
 
-    def _evaluate_cov(self, t_0, t_1):
+    def _evaluate_cov(self, t_0, t_1, dim_codomain=None):
         cov = getattr(self, "cov_", self.cov)
 
-        return _execute_kernel(cov, t_0, t_1)
+        return _execute_kernel(cov, t_0, t_1, dim_codomain=dim_codomain)
 
     def conditioned(self, X, t_0, **kwargs):
         # If the point makes the matrix singular, don't change the correction
@@ -270,29 +272,47 @@ class GaussianCorrection(ConditionalMeanCorrection):
 
     def conditional_mean(self, X, selected_index):
 
-        T = X.sample_points[0]
+        T = _cartesian_product(X.sample_points, flatten=False)
+        assert T.shape == tuple(
+            len(p) for p in X.sample_points) + (len(X.sample_points),)
 
-        t_0 = T[selected_index]
+        t_0 = T[selected_index].reshape(-1, len(X.sample_points))
+        assert t_0.shape == (1, len(X.sample_points))
 
-        x_index = (slice(None),) + tuple(selected_index) + (np.newaxis,)
+        x_index = (slice(None),) + tuple(selected_index)
         x_0 = X.data_matrix[x_index]
+        assert x_0.shape == (len(X), X.dim_codomain)
 
-        T = _transform_to_2d(T)
+        var = self._evaluate_cov(t_0, t_0, dim_codomain=X.dim_codomain)
+        assert var.shape == (1, 1, X.dim_codomain, X.dim_codomain)
 
-        var = self._evaluate_cov(t_0, t_0)
-
-        expectation = self._evaluate_mean(T)
-        assert expectation.shape == T.shape
+        expectation = self._evaluate_mean(t=T, dim_codomain=X.dim_codomain)
+        assert expectation.shape == X.data_matrix.shape[1:]
 
         t_0_expectation = expectation[selected_index]
+        assert t_0_expectation.shape == (X.dim_codomain,)
 
-        b_T = self._evaluate_cov(T, t_0)
-        assert b_T.shape == T.shape
+        b_T = self._evaluate_cov(T, t_0, dim_codomain=X.dim_codomain)
+        assert b_T.shape == (T.shape[:-1] + t_0.shape[:-1]
+                             + (X.dim_codomain, X.dim_codomain))
 
-        cond_expectation = (expectation +
-                            b_T / var *
-                            (x_0.T - t_0_expectation)
-                            ) if var else expectation + np.zeros_like(x_0.T)
+        if var:
+
+            cov_part = b_T / var
+            assert cov_part.shape == b_T.shape
+
+            sample_part = x_0 - t_0_expectation
+            assert sample_part.shape == (X.n_samples, X.dim_codomain)
+
+            cond_expectation = np.einsum(
+                '...Iqq,Nq->N...q', cov_part, sample_part)  # I is 1
+
+        else:
+
+            cond_expectation = np.zeros_like(x_0.T)
+
+        cond_expectation += expectation
+        assert cond_expectation.shape == (X.data_matrix.shape)
 
         return cond_expectation
 
@@ -354,7 +374,7 @@ class GaussianConditionedCorrection(GaussianCorrection):
                 mean=self.mean,
                 cov=self.cov,
                 conditioning_points=np.concatenate(
-                    (self._conditioning_points(), [[t_0]]))
+                    (self._conditioning_points(), [t_0]))
             )
 
             correction._covariance_matrix_inv()
@@ -365,7 +385,7 @@ class GaussianConditionedCorrection(GaussianCorrection):
 
             return self
 
-    def _evaluate_mean(self, t):
+    def _evaluate_mean(self, t, dim_codomain):
 
         cond_points = self._conditioning_points()
 
@@ -373,11 +393,12 @@ class GaussianConditionedCorrection(GaussianCorrection):
 
         b_T = super()._evaluate_cov(t, cond_points)
 
-        c = -super()._evaluate_mean(cond_points)
-        assert c.shape == np.shape(cond_points)
+        c = -super()._evaluate_mean(t=cond_points, dim_codomain=dim_codomain)
+        assert c.shape == np.shape(cond_points)[:-1] + (dim_codomain,)
 
-        original_expect = super()._evaluate_mean(t)
-        assert original_expect.shape == t.shape
+        original_expect = super()._evaluate_mean(t=t,
+                                                 dim_codomain=dim_codomain)
+        assert original_expect.shape == t.shape[:-1] + (dim_codomain,)
 
         modified_expect = b_T.dot(A_inv).dot(c)
         assert modified_expect.shape == t.shape
@@ -387,18 +408,24 @@ class GaussianConditionedCorrection(GaussianCorrection):
 
         return expectation
 
-    def _evaluate_cov(self, t_0, t_1):
+    def _evaluate_cov(self, t_0, t_1, dim_codomain=None):
 
         cond_points = self._conditioning_points()
 
         A_inv = self._covariance_matrix_inv()
 
-        b_t_0_T = super()._evaluate_cov(t_0, cond_points)
+        b_t_0_T = super()._evaluate_cov(t_0, cond_points,
+                                        dim_codomain=dim_codomain)
+        assert (b_t_0_T.shape == t_0.shape[:-1] + cond_points.shape[:-1]
+                + (dim_codomain, dim_codomain))
 
-        b_t_1 = super()._evaluate_cov(cond_points, t_1)
+        b_t_1 = super()._evaluate_cov(cond_points, t_1,
+                                      dim_codomain=dim_codomain)
+        assert (b_t_1.shape == cond_points.shape[:-1] + t_1.shape[:-1]
+                + (dim_codomain, dim_codomain))
 
-        return (super()._evaluate_cov(t_0, t_1) -
-                b_t_0_T @ A_inv @ b_t_1)
+        return (super()._evaluate_cov(t_0, t_1, dim_codomain=dim_codomain)
+                - b_t_0_T.dot(A_inv).dot(b_t_1))
 
 
 class GaussianSampleCorrection(ConditionalMeanCorrection):
@@ -462,7 +489,11 @@ class UniformCorrection(Correction):
         return GaussianCorrection(cov=Brownian(origin=t_0))
 
     def correct(self, X, selected_index):
-        x_index = (slice(None),) + tuple(selected_index) + (np.newaxis,)
+        index_tuple = tuple(selected_index)
+
+        x_index = ((slice(None),) + index_tuple  # Index domain
+                   + (np.newaxis,) * len(index_tuple)  # Keep domain dims
+                   + (slice(None),))  # Select vector value
 
         # Have to copy it because otherwise is a view and shouldn't be
         # subtracted from the original matrix
@@ -780,10 +811,13 @@ def _rec_maxima_hunting_gen_no_copy(
         if new_X is not None:
             X.data_matrix = new_X
 
+        t_0 = np.array([t[t_max_index[i]]
+                        for i, t in enumerate(X.sample_points)])
+
         correction = correction.conditioned(
             X=X.data_matrix,
-            T=X.sample_points[0],
-            t_0=X.sample_points[0][t_max_index])
+            T=X.sample_points,
+            t_0=t_0)
 
         first_pass = False
 

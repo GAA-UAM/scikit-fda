@@ -18,15 +18,16 @@ def _transform_to_2d(t):
     t = np.asarray(t)
 
     dim = len(t.shape)
-    assert dim <= 2
 
     if dim < 2:
         t = np.atleast_2d(t).T
 
+    t = t.reshape(-1, t.shape[-1])
+
     return t
 
 
-def _execute_covariance(covariance, x, y):
+def _execute_covariance(covariance, x, y, dim_codomain=None):
     """Execute a covariance function.
     """
     x = _transform_to_2d(x)
@@ -45,6 +46,16 @@ def _execute_covariance(covariance, x, y):
 
         assert result.shape[0] == len(x)
         assert result.shape[1] == len(y)
+
+        shape_x = x.shape[:-1]
+        shape_y = y.shape[:-1]
+
+        result = result.reshape(shape_x + shape_y)
+
+        if dim_codomain is not None:
+            result = result.reshape(
+                shape_x + shape_y + (dim_codomain, dim_codomain))
+
         return result
 
 

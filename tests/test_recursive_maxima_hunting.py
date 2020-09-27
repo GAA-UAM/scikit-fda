@@ -3,6 +3,8 @@ from skfda.datasets import make_gaussian_process
 from skfda.preprocessing.dim_reduction import variable_selection as vs
 import unittest
 
+import sklearn.datasets
+
 import numpy as np
 
 
@@ -36,10 +38,33 @@ class TestRMH(unittest.TestCase):
         rmh = vs.RecursiveMaximaHunting(
             correction=correction,
             stopping_condition=stopping_condition)
-        _ = rmh.fit(X, y)
+        rmh.fit(X, y)
         point_mask = rmh.get_support()
         points = X.sample_points[0][point_mask]
         np.testing.assert_allclose(points, [0.25, 0.5, 0.75], rtol=1e-1)
+
+    def test_rmh_image(self):
+        X, y = sklearn.datasets.load_digits(return_X_y=True)
+
+        target_binary = (y < 2)
+        X = X[target_binary]
+        y = y[target_binary]
+
+        data_matrix = X.reshape(-1, 8, 8)
+        sample_points = [np.arange(8)] * 2
+
+        X = skfda.FDataGrid(
+            data_matrix=data_matrix,
+            sample_points=sample_points)
+
+        rmh = vs.recursive_maxima_hunting
+        correction = rmh.UniformCorrection()
+        stopping_condition = rmh.AsymptoticIndependenceTestStop()
+
+        rmh = vs.RecursiveMaximaHunting(
+            correction=correction,
+            stopping_condition=stopping_condition)
+        rmh.fit(X, y)
 
 
 if __name__ == '__main__':

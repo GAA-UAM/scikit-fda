@@ -50,7 +50,7 @@ cube = np.repeat(fd.data_matrix, n_features).reshape(
 # We can plot now the extruded trajectories.
 
 fd_2 = FDataGrid(data_matrix=cube,
-                 sample_points=np.tile(fd.sample_points, (2, 1)),
+                 grid_points=np.tile(fd.grid_points, (2, 1)),
                  dataset_name="Extruded Brownian process")
 
 fd_2.plot()

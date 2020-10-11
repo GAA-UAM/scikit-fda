@@ -114,17 +114,17 @@ class Boxplot(FDataBoxplot):
     Attributes:
 
         fdatagrid (FDataGrid): Object containing the data.
-        median (array, (fdatagrid.dim_codomain, nsample_points)): contains
+        median (array, (fdatagrid.dim_codomain, ngrid_points)): contains
             the median/s.
-        central_envelope (array, (fdatagrid.dim_codomain, 2, nsample_points)):
+        central_envelope (array, (fdatagrid.dim_codomain, 2, ngrid_points)):
             contains the central envelope/s.
         non_outlying_envelope (array, (fdatagrid.dim_codomain, 2,
-            nsample_points)):
+            ngrid_points)):
             contains the non-outlying envelope/s.
         colormap (matplotlib.colors.LinearSegmentedColormap): Colormap from
             which the colors to represent the central regions are selected.
         envelopes (array, (fdatagrid.dim_codomain * ncentral_regions, 2,
-            nsample_points)): contains the region envelopes.
+            ngrid_points)): contains the region envelopes.
         outliers (array, (fdatagrid.dim_codomain, fdatagrid.n_samples)):
             contains the outliers.
         barcol (string): Color of the envelopes and vertical lines.
@@ -159,8 +159,8 @@ class Boxplot(FDataBoxplot):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = FDataGrid(data_matrix, sample_points, dataset_name="dataset",
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = FDataGrid(data_matrix, grid_points, dataset_name="dataset",
         ...                argument_names=["x_label"],
         ...                coordinate_names=["y_label"])
         >>> Boxplot(fd)
@@ -190,7 +190,7 @@ class Boxplot(FDataBoxplot):
                         [-1. ],
                         [-1. ],
                         [-1. ]]]),
-                sample_points=(array([ 0.,  2.,  4.,  6.,  8., 10.]),),
+                grid_points=(array([ 0.,  2.,  4.,  6.,  8., 10.]),),
                 domain_range=((0.0, 10.0),),
                 dataset_name='dataset',
                 argument_names=('x_label',),
@@ -389,35 +389,35 @@ class Boxplot(FDataBoxplot):
 
             # Outliers
             for o in outliers:
-                axes[m].plot(o.sample_points[0],
+                axes[m].plot(o.grid_points[0],
                              o.data_matrix[0, :, m],
                              color=self.outliercol,
                              linestyle='--', zorder=1)
 
             for i in range(len(self._prob)):
                 # central regions
-                axes[m].fill_between(self.fdatagrid.sample_points[0],
+                axes[m].fill_between(self.fdatagrid.grid_points[0],
                                      self.envelopes[i][0][..., m],
                                      self.envelopes[i][1][..., m],
                                      facecolor=color[i], zorder=var_zorder)
 
             # outlying envelope
-            axes[m].plot(self.fdatagrid.sample_points[0],
+            axes[m].plot(self.fdatagrid.grid_points[0],
                          self.non_outlying_envelope[0][..., m],
-                         self.fdatagrid.sample_points[0],
+                         self.fdatagrid.grid_points[0],
                          self.non_outlying_envelope[1][..., m],
                          color=self.barcol, zorder=4)
 
             # central envelope
-            axes[m].plot(self.fdatagrid.sample_points[0],
+            axes[m].plot(self.fdatagrid.grid_points[0],
                          self.central_envelope[0][..., m],
-                         self.fdatagrid.sample_points[0],
+                         self.fdatagrid.grid_points[0],
                          self.central_envelope[1][..., m],
                          color=self.barcol, zorder=4)
 
             # vertical lines
             index = math.ceil(self.fdatagrid.ncol / 2)
-            x = self.fdatagrid.sample_points[0][index]
+            x = self.fdatagrid.grid_points[0][index]
             axes[m].plot([x, x],
                          [self.non_outlying_envelope[0][..., m][index],
                           self.central_envelope[0][..., m][index]],
@@ -429,7 +429,7 @@ class Boxplot(FDataBoxplot):
                          color=self.barcol, zorder=4)
 
             # median sample
-            axes[m].plot(self.fdatagrid.sample_points[0], self.median[..., m],
+            axes[m].plot(self.fdatagrid.grid_points[0], self.median[..., m],
                          color=self.mediancol, zorder=5)
 
         _set_labels(self.fdatagrid, fig, axes)
@@ -497,8 +497,8 @@ class SurfaceBoxplot(FDataBoxplot):
         ...                 [[4], [0.4], [5]]],
         ...                [[[2], [0.5], [2]],
         ...                 [[3], [0.6], [3]]]]
-        >>> sample_points = [[2, 4], [3, 6, 8]]
-        >>> fd = FDataGrid(data_matrix, sample_points, dataset_name="dataset",
+        >>> grid_points = [[2, 4], [3, 6, 8]]
+        >>> fd = FDataGrid(data_matrix, grid_points, dataset_name="dataset",
         ...                argument_names=["x1_label", "x2_label"],
         ...                coordinate_names=["y_label"])
         >>> SurfaceBoxplot(fd)
@@ -516,7 +516,7 @@ class SurfaceBoxplot(FDataBoxplot):
                         [[ 3. ],
                          [ 0.6],
                          [ 3. ]]]]),
-                sample_points=(array([ 2., 4.]), array([ 3., 6., 8.])),
+                grid_points=(array([ 2., 4.]), array([ 3., 6., 8.])),
                 domain_range=((2.0, 4.0), (3.0, 8.0)),
                 dataset_name='dataset',
                 argument_names=('x1_label', 'x2_label'),
@@ -671,9 +671,9 @@ class SurfaceBoxplot(FDataBoxplot):
         fig, axes = _set_figure_layout_for_fdata(
             self.fdatagrid, fig, axes, n_rows, n_cols)
 
-        x = self.fdatagrid.sample_points[0]
+        x = self.fdatagrid.grid_points[0]
         lx = len(x)
-        y = self.fdatagrid.sample_points[1]
+        y = self.fdatagrid.grid_points[1]
         ly = len(y)
         X, Y = np.meshgrid(x, y)
 

@@ -56,7 +56,7 @@ def v_sample_stat(fd, weights, p=2):
         >>> x1 = t * (1 - t) ** 5
         >>> x2 = t ** 2 * (1 - t) ** 4
         >>> x3 = t ** 3 * (1 - t) ** 3
-        >>> fd = FDataGrid([x1, x2, x3], sample_points=t)
+        >>> fd = FDataGrid([x1, x2, x3], grid_points=t)
         >>> weights = [10, 20, 30]
 
         Finally the value of the statistic is calculated:
@@ -129,7 +129,7 @@ def v_asymptotic_stat(fd, weights, p=2):
         >>> x1 = t * (1 - t) ** 5
         >>> x2 = t ** 2 * (1 - t) ** 4
         >>> x3 = t ** 3 * (1 - t) ** 3
-        >>> fd = FDataGrid([x1, x2, x3], sample_points=t)
+        >>> fd = FDataGrid([x1, x2, x3], grid_points=t)
         >>> weights = [10, 20, 30]
 
         Finally the value of the statistic is calculated:
@@ -304,7 +304,7 @@ def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None,
 
     if isinstance(fd_groups[0], FDataGrid):
         # Creating list with all the sample points
-        list_sample = [fd.sample_points[0].tolist() for fd in fd_groups]
+        list_sample = [fd.grid_points[0].tolist() for fd in fd_groups]
         # Checking that the all the entries in the list are the same
         if not list_sample.count(list_sample[0]) == len(list_sample):
             raise ValueError("All FDataGrid passed must have the same sample "

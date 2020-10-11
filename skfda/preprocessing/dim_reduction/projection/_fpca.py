@@ -56,8 +56,8 @@ class FPCA(BaseEstimator, TransformerMixin):
         several equivalent possibilities.
 
         >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
-        >>> sample_points = [0, 1]
-        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [0, 1]
+        >>> fd = FDataGrid(data_matrix, grid_points)
         >>> basis = skfda.representation.basis.Monomial((0,1), n_basis=2)
         >>> basis_fd = fd.to_basis(basis)
         >>> fpca_basis = FPCA(2)
@@ -70,8 +70,8 @@ class FPCA(BaseEstimator, TransformerMixin):
         possibilities.
 
         >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
-        >>> sample_points = [0, 1]
-        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [0, 1]
+        >>> fd = FDataGrid(data_matrix, grid_points)
         >>> fpca_grid = FPCA(2)
         >>> fpca_grid = fpca_grid.fit(fd)
 
@@ -284,15 +284,15 @@ class FPCA(BaseEstimator, TransformerMixin):
 
         # establish weights for each point of discretization
         if not self.weights:
-            # sample_points is a list with one array in the 1D case
+            # grid_points is a list with one array in the 1D case
             # in trapezoidal rule, suppose \deltax_k = x_k - x_{k-1}, the weight
             # vector is as follows: [\deltax_1/2, \deltax_1/2 + \deltax_2/2,
             # \deltax_2/2 + \deltax_3/2, ... , \deltax_n/2]
-            differences = np.diff(X.sample_points[0])
+            differences = np.diff(X.grid_points[0])
             differences = np.concatenate(((0,), differences, (0,)))
             self.weights = (differences[:-1] + differences[1:]) / 2
         elif callable(self.weights):
-            self.weights = self.weights(X.sample_points[0])
+            self.weights = self.weights(X.grid_points[0])
             # if its a FDataGrid then we need to reduce the dimension to 1-D
             # array
             if isinstance(self.weights, FDataGrid):
@@ -302,7 +302,7 @@ class FPCA(BaseEstimator, TransformerMixin):
 
         basis = FDataGrid(
             data_matrix=np.identity(n_points_discretization),
-            sample_points=X.sample_points
+            grid_points=X.grid_points
         )
 
         regularization_matrix = compute_penalty_matrix(

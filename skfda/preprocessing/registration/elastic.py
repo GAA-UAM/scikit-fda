@@ -154,7 +154,7 @@ class SRSF(BaseEstimator, TransformerMixin):
         check_is_univariate(X)
 
         if self.output_points is None:
-            output_points = X.sample_points[0]
+            output_points = X.grid_points[0]
         else:
             output_points = self.output_points
 
@@ -174,7 +174,7 @@ class SRSF(BaseEstimator, TransformerMixin):
             a = X.domain_range[0][0]
             self.initial_value_ = X(a).reshape(X.n_samples, 1, X.dim_codomain)
 
-        return X.copy(data_matrix=data_matrix, sample_points=output_points)
+        return X.copy(data_matrix=data_matrix, grid_points=output_points)
 
     def inverse_transform(self, X: FDataGrid, y=None):
         r"""Computes the inverse SRSF transform.
@@ -218,7 +218,7 @@ class SRSF(BaseEstimator, TransformerMixin):
                                  "transformation.")
 
         if self.output_points is None:
-            output_points = X.sample_points[0]
+            output_points = X.grid_points[0]
         else:
             output_points = self.output_points
 
@@ -235,7 +235,7 @@ class SRSF(BaseEstimator, TransformerMixin):
         else:
             f_data_matrix += self.initial_value
 
-        return X.copy(data_matrix=f_data_matrix, sample_points=output_points)
+        return X.copy(data_matrix=f_data_matrix, grid_points=output_points)
 
 
 def _elastic_alignment_array(template_data, q_data,
@@ -427,7 +427,7 @@ class ElasticRegistration(RegistrationTransformer):
 
         # Points of discretization
         if self.output_points is None:
-            output_points = fdatagrid_srsf.sample_points[0]
+            output_points = fdatagrid_srsf.grid_points[0]
         else:
             output_points = self.output_points
 
@@ -564,15 +564,15 @@ def warping_mean(warping, *, max_iter=100, tol=1e-6, step_size=.3):
             arXiv:1103.3817v2.
     """
 
-    eval_points = warping.sample_points[0]
+    eval_points = warping.grid_points[0]
     original_eval_points = eval_points
 
     # Rescale warping to (0, 1)
-    if warping.sample_points[0][0] != 0 or warping.sample_points[0][-1] != 1:
+    if warping.grid_points[0][0] != 0 or warping.grid_points[0][-1] != 1:
 
         eval_points = _normalize_scale(eval_points)
         warping = FDataGrid(_normalize_scale(warping.data_matrix[..., 0]),
-                            _normalize_scale(warping.sample_points[0]))
+                            _normalize_scale(warping.grid_points[0]))
 
     # Compute srsf of warpings and their mean
     srsf = SRSF(output_points=eval_points, initial_value=0)
@@ -630,7 +630,7 @@ def warping_mean(warping, *, max_iter=100, tol=1e-6, step_size=.3):
     monotone_interpolation = SplineInterpolation(interpolation_order=3,
                                                  monotone=True)
 
-    mean = FDataGrid([warping_mean], sample_points=original_eval_points,
+    mean = FDataGrid([warping_mean], grid_points=original_eval_points,
                      interpolation=monotone_interpolation)
 
     return mean
@@ -695,7 +695,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
 
     srsf_transformer = SRSF(initial_value=0)
     fdatagrid_srsf = srsf_transformer.fit_transform(fdatagrid)
-    eval_points = fdatagrid.sample_points[0]
+    eval_points = fdatagrid.grid_points[0]
 
     eval_points_normalized = _normalize_scale(eval_points)
     y_scale = eval_points[-1] - eval_points[0]
@@ -704,7 +704,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
 
     # Discretisation points
     fdatagrid_normalized = FDataGrid(fdatagrid(eval_points) / y_scale,
-                                     sample_points=eval_points_normalized)
+                                     grid_points=eval_points_normalized)
 
     srsf = fdatagrid_srsf(eval_points)[..., 0]
 
@@ -724,7 +724,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
 
         gammas = _elastic_alignment_array(
             mu, srsf, eval_points_normalized, penalty, grid_dim)
-        gammas = FDataGrid(gammas, sample_points=eval_points_normalized,
+        gammas = FDataGrid(gammas, grid_points=eval_points_normalized,
                            interpolation=interpolation)
 
         fdatagrid_normalized = fdatagrid_normalized.compose(gammas)
@@ -754,7 +754,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
 
     # Karcher mean orbit in space L2/Gamma
     karcher_mean = srsf_transformer.inverse_transform(
-        fdatagrid.copy(data_matrix=[mu], sample_points=eval_points,
+        fdatagrid.copy(data_matrix=[mu], grid_points=eval_points,
                        sample_names=("Karcher mean",)))
 
     if center:
@@ -765,7 +765,7 @@ def elastic_mean(fdatagrid, *, penalty=0., center=True, max_iter=20, tol=1e-3,
             mean_normalized.data_matrix[..., 0],
             a=eval_points[0],
             b=eval_points[-1]),
-            sample_points=eval_points)
+            grid_points=eval_points)
 
         gamma_inverse = invert_warping(gamma_mean)
 

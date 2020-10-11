@@ -38,9 +38,9 @@ import numpy as np
 # Constructs example surface
 X, Y, Z = axes3d.get_test_data(1.2)
 data_matrix = [Z.T]
-sample_points = [X[0, :], Y[:, 0]]
+grid_points = [X[0, :], Y[:, 0]]
 
-g = skfda.FDataGrid(data_matrix, sample_points)
+g = skfda.FDataGrid(data_matrix, grid_points)
 
 # Sets cubic interpolation
 g.interpolation = skfda.representation.interpolation.SplineInterpolation(

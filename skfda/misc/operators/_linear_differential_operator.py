@@ -564,14 +564,14 @@ def fdatagrid_penalty_matrix_optimized(
         basis: FDataGrid):
 
     evaluated_basis = sum(
-        w(basis.sample_points[0]) *
-        basis.derivative(order=i)(basis.sample_points[0])
+        w(basis.grid_points[0]) *
+        basis.derivative(order=i)(basis.grid_points[0])
         for i, w in enumerate(linear_operator.weights))
 
     indices = np.triu_indices(basis.n_samples)
     product = evaluated_basis[indices[0]] * evaluated_basis[indices[1]]
 
-    triang_vec = scipy.integrate.simps(product[..., 0], x=basis.sample_points)
+    triang_vec = scipy.integrate.simps(product[..., 0], x=basis.grid_points)
 
     matrix = np.empty((basis.n_samples, basis.n_samples))
 

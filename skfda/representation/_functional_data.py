@@ -576,11 +576,11 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 / self.n_samples)
 
     @abstractmethod
-    def to_grid(self, sample_points=None):
+    def to_grid(self, grid_points=None):
         """Return the discrete representation of the object.
 
         Args:
-            sample_points (array_like, optional): Points per axis
+            grid_points (array_like, optional): Points per axis
             where the function is going to be evaluated.
 
         Returns:

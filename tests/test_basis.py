@@ -18,7 +18,8 @@ class TestBasis(unittest.TestCase):
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = BSpline((0, 1), n_basis=5)
         np.testing.assert_array_almost_equal(
-            FDataBasis.from_data(x, t, basis, method='cholesky'
+            FDataBasis.from_data(x, grid_points=t, basis=basis,
+                                 method='cholesky'
                                  ).coefficients.round(2),
             np.array([[1., 2.78, -3., -0.78, 1.]])
         )
@@ -28,7 +29,8 @@ class TestBasis(unittest.TestCase):
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = BSpline((0, 1), n_basis=5)
         np.testing.assert_array_almost_equal(
-            FDataBasis.from_data(x, t, basis, method='qr'
+            FDataBasis.from_data(x, grid_points=t, basis=basis,
+                                 method='qr'
                                  ).coefficients.round(2),
             np.array([[1., 2.78, -3., -0.78, 1.]])
         )

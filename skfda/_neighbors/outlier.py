@@ -277,7 +277,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
             self.estimator_ = self._init_estimator(self.metric)
             res = self.estimator_.fit_predict(X, y)
         else:
-            self._sample_points = X.sample_points
+            self._grid_points = X.grid_points
             self._shape = X.data_matrix.shape[1:]
 
             if not self.multivariate_metric:
@@ -287,7 +287,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
                 else:
                     metric = self.metric
                 sklearn_metric = _to_multivariate_metric(metric,
-                                                         self._sample_points)
+                                                         self._grid_points)
             else:
                 sklearn_metric = self.metric
 

@@ -75,7 +75,7 @@ def invert_warping(fdatagrid, *, output_points=None):
     check_is_univariate(fdatagrid)
 
     if output_points is None:
-        output_points = fdatagrid.sample_points[0]
+        output_points = fdatagrid.grid_points[0]
 
     y = fdatagrid(output_points)[..., 0]
 
@@ -84,7 +84,7 @@ def invert_warping(fdatagrid, *, output_points=None):
     for i in range(fdatagrid.n_samples):
         data_matrix[i] = PchipInterpolator(y[i], output_points)(output_points)
 
-    return fdatagrid.copy(data_matrix=data_matrix, sample_points=output_points)
+    return fdatagrid.copy(data_matrix=data_matrix, grid_points=output_points)
 
 
 def _normalize_scale(t, a=0, b=1):
@@ -130,7 +130,7 @@ def normalize_warping(warping, domain_range=None):
         domain_range = warping.domain_range[0]
 
     data_matrix = _normalize_scale(warping.data_matrix[..., 0], *domain_range)
-    sample_points = _normalize_scale(warping.sample_points[0], *domain_range)
+    grid_points = _normalize_scale(warping.grid_points[0], *domain_range)
 
-    return warping.copy(data_matrix=data_matrix, sample_points=sample_points,
+    return warping.copy(data_matrix=data_matrix, grid_points=grid_points,
                         domain_range=domain_range)

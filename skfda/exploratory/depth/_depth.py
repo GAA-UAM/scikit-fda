@@ -73,8 +73,8 @@ def _rank_samples(fdatagrid):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> _rank_samples(fd)
         array([[ 4.,  4.,  4.,  4.,  4.,  4.],
                [ 3.,  3.,  3.,  3.,  3.,  3.],
@@ -87,8 +87,8 @@ def _rank_samples(fdatagrid):
         ...                 [[4], [0.4], [5]]],
         ...                [[[2], [0.5], [2]],
         ...                 [[3], [0.6], [3]]]]
-        >>> sample_points = [[2, 4], [3, 6, 8]]
-        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [[2, 4], [3, 6, 8]]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> _rank_samples(fd)
         array([[[ 1.,  2.,  1.],
                 [ 2.,  1.,  2.]],
@@ -137,8 +137,8 @@ def band_depth(fdatagrid, *, pointwise=False):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> band_depth(fd)
         array([ 0.5       ,  0.83333333,  0.5       ,  0.5       ])
 
@@ -187,8 +187,8 @@ def modified_band_depth(fdatagrid, *, pointwise=False):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> depth = modified_band_depth(fd)
         >>> depth.round(2)
         array([ 0.5 ,  0.83,  0.72,  0.67])
@@ -215,7 +215,7 @@ def modified_band_depth(fdatagrid, *, pointwise=False):
         return depth_pointwise
     else:
         npoints_sample = reduce(lambda x, y: x * len(y),
-                                fdatagrid.sample_points, 1)
+                                fdatagrid.grid_points, 1)
         proportion = match.sum(axis=axis) / npoints_sample
         depth = (proportion + fdatagrid.n_samples - 1) / nchoose2
 
@@ -285,8 +285,8 @@ def fraiman_muniz_depth(fdatagrid, *, pointwise=False):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> fraiman_muniz_depth(fd)
         array([ 0.5  ,  0.75 ,  0.925,  0.875])
 
@@ -308,7 +308,7 @@ def fraiman_muniz_depth(fdatagrid, *, pointwise=False):
     pointwise_depth = np.array([
         1 - abs(0.5 - _cumulative_distribution(
             fdatagrid.data_matrix[:, i, 0])
-        ) for i in range(len(fdatagrid.sample_points[0]))]).T
+        ) for i in range(len(fdatagrid.grid_points[0]))]).T
 
     if pointwise:
         return pointwise_depth
@@ -318,7 +318,7 @@ def fraiman_muniz_depth(fdatagrid, *, pointwise=False):
                         - fdatagrid.domain_range[0][0])
 
         depth = (scipy.integrate.simps(pointwise_depth,
-                                       fdatagrid.sample_points[0])
+                                       fdatagrid.grid_points[0])
                  / interval_len)
 
         return depth

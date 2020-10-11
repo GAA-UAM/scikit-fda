@@ -150,14 +150,14 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
         ...            local_maxima_selector=local_maxima_selector)
         >>> _ = mh.fit(X, y)
         >>> point_mask = mh.get_support()
-        >>> points = X.sample_points[0][point_mask]
+        >>> points = X.grid_points[0][point_mask]
         >>> np.allclose(points, [0.5], rtol=0.1)
         True
 
         Apply the learned dimensionality reduction
 
         >>> X_dimred = mh.transform(X)
-        >>> len(X.sample_points[0])
+        >>> len(X.grid_points[0])
         100
         >>> X_dimred.shape
         (10000, 1)

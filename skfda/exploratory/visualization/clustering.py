@@ -176,12 +176,12 @@ def _plot_clusters(estimator, fdata, *, chart=None, fig=None, axes=None,
 
     for j in range(fdata.dim_codomain):
         for i in range(fdata.n_samples):
-            axes[j].plot(fdata.sample_points[0],
+            axes[j].plot(fdata.grid_points[0],
                          fdata.data_matrix[i, :, j],
                          c=colors_by_cluster[i],
                          label=sample_labels[i])
         for i in range(estimator.n_clusters):
-            axes[j].plot(fdata.sample_points[0],
+            axes[j].plot(fdata.grid_points[0],
                          estimator.cluster_centers_.data_matrix[i, :, j],
                          c=center_colors[i],
                          label=center_labels[i],

@@ -214,7 +214,7 @@ class GaussianCorrection(ConditionalMeanCorrection):
         if self.fit_hyperparameters:
             import GPy
 
-            T = X.sample_points[0]
+            T = X.grid_points[0]
             X_copy = np.copy(X.data_matrix[..., 0])
 
             y = np.ravel(y)
@@ -270,7 +270,7 @@ class GaussianCorrection(ConditionalMeanCorrection):
 
     def conditional_mean(self, X, selected_index):
 
-        T = X.sample_points[0]
+        T = X.grid_points[0]
 
         t_0 = T[selected_index]
 
@@ -420,7 +420,7 @@ class GaussianSampleCorrection(ConditionalMeanCorrection):
             X_copy[Y == class_label, :] -= mean
 
         self.cov_matrix_ = np.cov(X_copy, rowvar=False)
-        self.t_ = np.ravel(X.sample_points)
+        self.t_ = np.ravel(X.grid_points)
         self.gaussian_correction_ = GaussianCorrection(
             cov=self.cov)
 
@@ -723,7 +723,7 @@ def _rec_maxima_hunting_gen_no_copy(
         correction = UniformCorrection()
 
     if mask is None:
-        mask = np.zeros([len(t) for t in X.sample_points], dtype=bool)
+        mask = np.zeros([len(t) for t in X.grid_points], dtype=bool)
 
     if redundancy_condition is None:
         redundancy_condition = DependenceThresholdRedundancy()
@@ -782,8 +782,8 @@ def _rec_maxima_hunting_gen_no_copy(
 
         correction = correction.conditioned(
             X=X.data_matrix,
-            T=X.sample_points[0],
-            t_0=X.sample_points[0][t_max_index])
+            T=X.grid_points[0],
+            t_0=X.grid_points[0][t_max_index])
 
         first_pass = False
 
@@ -867,14 +867,14 @@ class RecursiveMaximaHunting(
         >>> rmh = variable_selection.RecursiveMaximaHunting()
         >>> _ = rmh.fit(X, y)
         >>> point_mask = rmh.get_support()
-        >>> points = X.sample_points[0][point_mask]
+        >>> points = X.grid_points[0][point_mask]
         >>> np.allclose(points, [0.25, 0.5, 0.75], rtol=1e-1)
         True
 
         Apply the learned dimensionality reduction
 
         >>> X_dimred = rmh.transform(X)
-        >>> len(X.sample_points[0])
+        >>> len(X.grid_points[0])
         100
         >>> X_dimred.shape
         (10000, 3)

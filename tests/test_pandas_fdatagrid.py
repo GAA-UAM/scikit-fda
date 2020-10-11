@@ -16,7 +16,7 @@ import numpy as np
 def dtype():
     """A fixture providing the ExtensionDtype to validate."""
     return skfda.representation.grid.FDataGridDType(
-        sample_points=[
+        grid_points=[
             np.arange(10),
             np.arange(10) / 10],
         dim_codomain=3
@@ -32,11 +32,11 @@ def data():
     """
 
     data_matrix = np.arange(1, 100 * 10 * 10 * 3 + 1).reshape(100, 10, 10, 3)
-    sample_points = [
+    grid_points = [
         np.arange(10),
         np.arange(10) / 10]
 
-    return skfda.FDataGrid(data_matrix, sample_points=sample_points)
+    return skfda.FDataGrid(data_matrix, grid_points=grid_points)
 
 
 @pytest.fixture
@@ -45,11 +45,11 @@ def data_for_twos():
 
     data_matrix = np.full(
         100 * 10 * 10 * 3, fill_value=2).reshape(100, 10, 10, 3)
-    sample_points = [
+    grid_points = [
         np.arange(10),
         np.arange(10) / 10]
 
-    return skfda.FDataGrid(data_matrix, sample_points=sample_points)
+    return skfda.FDataGrid(data_matrix, grid_points=grid_points)
 
 
 @pytest.fixture
@@ -59,11 +59,11 @@ def data_missing():
     data_matrix = np.arange(
         2 * 10 * 10 * 3, dtype=np.float_).reshape(2, 10, 10, 3)
     data_matrix[0, ...] = np.NaN
-    sample_points = [
+    grid_points = [
         np.arange(10),
         np.arange(10) / 10]
 
-    return skfda.FDataGrid(data_matrix, sample_points=sample_points)
+    return skfda.FDataGrid(data_matrix, grid_points=grid_points)
 
 
 @pytest.fixture(params=["data", "data_missing"])

@@ -256,13 +256,13 @@ def inner_product(arg1, arg2, **kwargs):
 @inner_product.register
 def inner_product_fdatagrid(arg1: FDataGrid, arg2: FDataGrid):
 
-    if not np.array_equal(arg1.sample_points,
-                          arg2.sample_points):
+    if not np.array_equal(arg1.grid_points,
+                          arg2.grid_points):
         raise ValueError("Sample points for both objects must be equal")
 
     integrand = arg1.data_matrix * arg2.data_matrix
 
-    for s in arg1.sample_points:
+    for s in arg1.grid_points:
         integrand = scipy.integrate.simps(integrand,
                                           x=s,
                                           axis=1)

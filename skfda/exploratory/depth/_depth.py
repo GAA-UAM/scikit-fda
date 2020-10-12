@@ -3,6 +3,7 @@
 This module includes different methods to order functional data,
 from the center (larger values) outwards(smaller ones)."""
 
+import abc
 from functools import reduce
 import math
 
@@ -11,9 +12,89 @@ from scipy.stats import rankdata
 
 import numpy as np
 
+from . import multivariate
+
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
+
+
+class FunctionalDepth(multivariate.Depth):
+    """
+    Abstract class representing a functional depth function.
+
+    Usually it will accept a distribution in the initializer.
+
+    """
+    pass
+
+
+def _cumulative_distribution(column):
+    """Calculates the cumulative distribution function of the values passed to
+    the function and evaluates it at each point.
+
+    Args:
+        column (numpy.darray): Array containing the values over which the
+            distribution function is calculated.
+
+    Returns:
+        numpy.darray: Array containing the evaluation at each point of the
+            distribution function.
+
+    Examples:
+        >>> _cumulative_distribution(np.array([1, 4, 5, 1, 2, 2, 4, 1, 1, 3]))
+        array([ 0.4,  0.9,  1. ,  0.4,  0.6,  0.6,  0.9,  0.4,  0.4,  0.7])
+
+    """
+    if len(column.shape) != 1:
+        raise ValueError("Only supported 1 dimensional arrays.")
+    _, indexes, counts = np.unique(column, return_inverse=True,
+                                   return_counts=True)
+    count_cumulative = np.cumsum(counts) / len(column)
+    return count_cumulative[indexes].reshape(column.shape)
+
+
+class IntegratedDepth(FunctionalDepth):
+    """
+    Functional depth as the integral of a multivariate depth.
+
+    """
+
+    def __init__(self, distribution, *,
+                 multivariate_depth=multivariate._UnivariateFraimanMuniz):
+        if distribution.dim_domain > 1 or distribution.dim_codomain > 1:
+            raise ValueError("Currently multivariate data is not allowed")
+
+        self._domain_range = distribution.domain_range
+        self._grid_points = distribution.grid_points
+        self._multivariate_depth = multivariate_depth(distribution.data_matrix)
+
+    def __call__(self, data_points, pointwise=False):
+        if data_points.dim_domain > 1 or data_points.dim_codomain > 1:
+            raise ValueError("Currently multivariate data is not allowed")
+
+        pointwise_depth = self._multivariate_depth(data_points.data_matrix)
+
+        if pointwise:
+            return pointwise_depth
+        else:
+
+            interval_len = (self._domain_range[0][1]
+                            - self._domain_range[0][0])
+
+            depth = (scipy.integrate.simps(pointwise_depth,
+                                           self._grid_points[0])
+                     / interval_len)
+
+            return depth
+
+    @property
+    def max(self):
+        return self._multivariate_depth.max
+
+    @property
+    def min(self):
+        return self._multivariate_depth.min
 
 
 def outlyingness_to_depth(outlyingness, *, supreme=None):
@@ -222,31 +303,6 @@ def modified_band_depth(fdatagrid, *, pointwise=False):
         return depth
 
 
-def _cumulative_distribution(column):
-    """Calculates the cumulative distribution function of the values passed to
-    the function and evaluates it at each point.
-
-    Args:
-        column (numpy.darray): Array containing the values over which the
-            distribution function is calculated.
-
-    Returns:
-        numpy.darray: Array containing the evaluation at each point of the
-            distribution function.
-
-    Examples:
-        >>> _cumulative_distribution(np.array([1, 4, 5, 1, 2, 2, 4, 1, 1, 3]))
-        array([ 0.4,  0.9,  1. ,  0.4,  0.6,  0.6,  0.9,  0.4,  0.4,  0.7])
-
-    """
-    if len(column.shape) != 1:
-        raise ValueError("Only supported 1 dimensional arrays.")
-    _, indexes, counts = np.unique(column, return_inverse=True,
-                                   return_counts=True)
-    count_cumulative = np.cumsum(counts) / len(column)
-    return count_cumulative[indexes].reshape(column.shape)
-
-
 def fraiman_muniz_depth(fdatagrid, *, pointwise=False):
     r"""Implementation of Fraiman and Muniz (FM) Depth for functional data.
 
@@ -302,23 +358,4 @@ def fraiman_muniz_depth(fdatagrid, *, pointwise=False):
 
 
     """
-    if fdatagrid.dim_domain > 1 or fdatagrid.dim_codomain > 1:
-        raise ValueError("Currently multivariate data is not allowed")
-
-    pointwise_depth = np.array([
-        1 - abs(0.5 - _cumulative_distribution(
-            fdatagrid.data_matrix[:, i, 0])
-        ) for i in range(len(fdatagrid.grid_points[0]))]).T
-
-    if pointwise:
-        return pointwise_depth
-    else:
-
-        interval_len = (fdatagrid.domain_range[0][1]
-                        - fdatagrid.domain_range[0][0])
-
-        depth = (scipy.integrate.simps(pointwise_depth,
-                                       fdatagrid.grid_points[0])
-                 / interval_len)
-
-        return depth
+    return IntegratedDepth(fdatagrid)(fdatagrid, pointwise=pointwise)

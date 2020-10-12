@@ -24,8 +24,8 @@ class IQROutlierDetector(BaseEstimator, OutlierMixin):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> out_detector = IQROutlierDetector()
         >>> out_detector.fit_predict(fd)
         array([-1, 1, 1, -1])

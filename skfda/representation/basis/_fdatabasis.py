@@ -2,6 +2,7 @@ from builtins import isinstance
 import copy
 import numbers
 from typing import Any
+import warnings
 
 import pandas.api.extensions
 
@@ -118,7 +119,9 @@ class FDataBasis(FData):
                          sample_names=sample_names)
 
     @classmethod
-    def from_data(cls, data_matrix, sample_points, basis,
+    def from_data(cls, data_matrix, *, basis,
+                  grid_points=None,
+                  sample_points=None,
                   method='cholesky'):
         r"""Transform raw data to a smooth functional form.
 
@@ -156,7 +159,7 @@ class FDataBasis(FData):
             data_matrix (array_like): List or matrix containing the
                 observations. If a matrix each row represents a single
                 functional datum and the columns the different observations.
-            sample_points (array_like): Values of the domain where the previous
+            grid_points (array_like): Values of the domain where the previous
                 data were taken.
             basis: (Basis): Basis used.
             method (str): Algorithm used for calculating the coefficients using
@@ -177,7 +180,7 @@ class FDataBasis(FData):
 
             >>> from skfda.representation.basis import FDataBasis, Fourier
             >>> basis = Fourier((0, 1), n_basis=3)
-            >>> fd = FDataBasis.from_data(x, t, basis)
+            >>> fd = FDataBasis.from_data(x, grid_points=t, basis=basis)
             >>> fd.coefficients.round(2)
             array([[ 2.  , 0.71, 0.71]])
 
@@ -193,6 +196,12 @@ class FDataBasis(FData):
         """
         from ..grid import FDataGrid
 
+        if sample_points is not None:
+            warnings.warn("Parameter sample_points is deprecated. Use the "
+                          "parameter grid_points instead.",
+                          DeprecationWarning)
+            grid_points = sample_points
+
         # n is the samples
         # m is the observations
         # k is the number of elements of the basis
@@ -200,7 +209,7 @@ class FDataBasis(FData):
         # Each sample in a column (m x n)
         data_matrix = np.atleast_2d(data_matrix)
 
-        fd = FDataGrid(data_matrix=data_matrix, sample_points=sample_points)
+        fd = FDataGrid(data_matrix=data_matrix, grid_points=grid_points)
 
         return fd.to_basis(basis=basis, method=method)
 
@@ -317,8 +326,8 @@ class FDataBasis(FData):
                                          domain_range[1] + shifts))
 
             return FDataBasis.from_data(self.evaluate(eval_points),
-                                        eval_points + shifts,
-                                        _basis, **kwargs)
+                                        grid_points=eval_points + shifts,
+                                        basis=_basis, **kwargs)
 
         elif len(shifts) != self.n_samples:
             raise ValueError(f"shifts vector ({len(shifts)}) must have the "
@@ -347,8 +356,8 @@ class FDataBasis(FData):
 
         _basis = self.basis.rescale(domain)
 
-        return FDataBasis.from_data(_data_matrix, eval_points,
-                                    _basis, **kwargs)
+        return FDataBasis.from_data(_data_matrix, grid_points=eval_points,
+                                    basis=_basis, **kwargs)
 
     def derivative(self, *, order=1):
         r"""Differentiate a FDataBasis object.
@@ -465,11 +474,11 @@ class FDataBasis(FData):
         """
         return self.to_grid(eval_points).cov()
 
-    def to_grid(self, sample_points=None):
+    def to_grid(self, grid_points=None, *, sample_points=None):
         """Return the discrete representation of the object.
 
         Args:
-            sample_points (array_like, optional): Points per axis where the
+            grid_points (array_like, optional): Points per axis where the
                 functions are evaluated. If none are passed it calls
                 numpy.linspace with bounds equal to the ones defined in
                 self.domain_range and the number of points the maximum
@@ -492,20 +501,25 @@ class FDataBasis(FData):
                        [[ 1.],
                         [ 2.],
                         [ 5.]]]),
-                sample_points=(array([ 0., 1., 2.]),),
+                grid_points=(array([ 0., 1., 2.]),),
                 domain_range=((0, 5),),
                 ...)
 
         """
+        if sample_points is not None:
+            warnings.warn("Parameter sample_points is deprecated. Use the "
+                          "parameter grid_points instead.",
+                          DeprecationWarning)
+            grid_points = sample_points
 
-        if sample_points is None:
+        if grid_points is None:
             npoints = max(constants.N_POINTS_FINE_MESH,
                           constants.BASIS_MIN_FACTOR * self.n_basis)
-            sample_points = [np.linspace(*r, npoints)
-                             for r in self.domain_range]
+            grid_points = [np.linspace(*r, npoints)
+                           for r in self.domain_range]
 
-        return grid.FDataGrid(self.evaluate(sample_points, grid=True),
-                              sample_points=sample_points,
+        return grid.FDataGrid(self.evaluate(grid_points, grid=True),
+                              grid_points=grid_points,
                               domain_range=self.domain_range)
 
     def to_basis(self, basis, eval_points=None, **kwargs):

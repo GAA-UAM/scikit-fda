@@ -43,20 +43,20 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
         fdata2 = fdata2.to_grid(eval_points)
 
     elif not isinstance(fdata1, FDataGrid) and isinstance(fdata2, FDataGrid):
-        fdata1 = fdata1.to_grid(fdata2.sample_points[0])
+        fdata1 = fdata1.to_grid(fdata2.grid_points[0])
 
     elif not isinstance(fdata2, FDataGrid) and isinstance(fdata1, FDataGrid):
-        fdata2 = fdata2.to_grid(fdata1.sample_points[0])
+        fdata2 = fdata2.to_grid(fdata1.grid_points[0])
 
     elif (not isinstance(fdata1, FDataGrid) and
           not isinstance(fdata2, FDataGrid)):
         domain = fdata1.domain_range[0]
-        sample_points = np.linspace(*domain)
-        fdata1 = fdata1.to_grid(sample_points)
-        fdata2 = fdata2.to_grid(sample_points)
+        grid_points = np.linspace(*domain)
+        fdata1 = fdata1.to_grid(grid_points)
+        fdata2 = fdata2.to_grid(grid_points)
 
-    elif not np.array_equal(fdata1.sample_points,
-                            fdata2.sample_points):
+    elif not np.array_equal(fdata1.grid_points,
+                            fdata2.grid_points):
         raise ValueError("Sample points for both objects must be equal or"
                          "a new list evaluation points must be specified")
 
@@ -252,7 +252,7 @@ def lp_norm(fdata, p=2, p2=None):
             # Computes the norm, approximating the integral with Simpson's
             # rule.
             res = scipy.integrate.simps(data_matrix[..., 0] ** p,
-                                        x=fdata.sample_points) ** (1 / p)
+                                        x=fdata.grid_points) ** (1 / p)
 
         else:
             # Needed to perform surface integration
@@ -356,12 +356,12 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
                                    _check=_check)
 
     # Both should have the same sample points
-    eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
+    eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
-    fdata1 = fdata1.copy(sample_points=eval_points_normalized,
+    fdata1 = fdata1.copy(grid_points=eval_points_normalized,
                          domain_range=(0, 1))
-    fdata2 = fdata2.copy(sample_points=eval_points_normalized,
+    fdata2 = fdata2.copy(grid_points=eval_points_normalized,
                          domain_range=(0, 1))
 
     srsf = SRSF(initial_value=0)
@@ -426,12 +426,12 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
                                    _check=_check)
 
     # Both should have the same sample points
-    eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
+    eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
-    fdata1 = fdata1.copy(sample_points=eval_points_normalized,
+    fdata1 = fdata1.copy(grid_points=eval_points_normalized,
                          domain_range=(0, 1))
-    fdata2 = fdata2.copy(sample_points=eval_points_normalized,
+    fdata2 = fdata2.copy(grid_points=eval_points_normalized,
                          domain_range=(0, 1))
 
     elastic_registration = ElasticRegistration(
@@ -506,12 +506,12 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
                                    _check=_check)
 
     # Rescale in (0,1)
-    eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
+    eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
-    fdata1 = fdata1.copy(sample_points=eval_points_normalized,
+    fdata1 = fdata1.copy(grid_points=eval_points_normalized,
                          domain_range=(0, 1))
-    fdata2 = fdata2.copy(sample_points=eval_points_normalized,
+    fdata2 = fdata2.copy(grid_points=eval_points_normalized,
                          domain_range=(0, 1))
 
     elastic_registration = ElasticRegistration(
@@ -588,7 +588,7 @@ def warping_distance(warping1, warping2, *, eval_points=None, _check=True):
 
     product = np.multiply(srsf_warping1, srsf_warping2, out=srsf_warping1)
 
-    d = scipy.integrate.simps(product, x=warping1.sample_points[0])
+    d = scipy.integrate.simps(product, x=warping1.grid_points[0])
     d = np.clip(d, -1, 1)
 
     return np.arccos(d)

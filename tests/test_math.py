@@ -22,10 +22,10 @@ class InnerProductTest(unittest.TestCase):
 
         data_matrix = f(x2, y2, z2)
 
-        sample_points = [t, 2 * t, 3 * t]
+        grid_points = [t, 2 * t, 3 * t]
 
         fd = skfda.FDataGrid(
-            data_matrix[np.newaxis, ...], sample_points=sample_points)
+            data_matrix[np.newaxis, ...], grid_points=grid_points)
 
         basis = Tensor([Monomial(n_basis=5, domain_range=(0, 1)),
                         Monomial(n_basis=5, domain_range=(0, 2)),
@@ -52,10 +52,10 @@ class InnerProductTest(unittest.TestCase):
 
         data_matrix = np.array([np.array([f(t), g(t)]).T])
 
-        sample_points = [t]
+        grid_points = [t]
 
         fd = skfda.FDataGrid(
-            data_matrix, sample_points=sample_points)
+            data_matrix, grid_points=grid_points)
 
         basis = VectorValued([Monomial(n_basis=5),
                               Monomial(n_basis=5)])

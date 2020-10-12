@@ -1,6 +1,5 @@
-import warnings
-
 import rdata
+import warnings
 
 import numpy as np
 
@@ -21,7 +20,7 @@ def fdata_constructor(obj, attrs):
     names = obj["names"]
 
     return FDataGrid(data_matrix=obj["data"],
-                     sample_points=obj["argvals"],
+                     grid_points=obj["argvals"],
                      domain_range=obj["rangeval"],
                      dataset_name=names['main'][0],
                      argument_names=(names['xlab'][0],),
@@ -35,22 +34,22 @@ def functional_constructor(obj, attrs):
     target = np.array(obj['labels']).ravel()
     dataf = obj['dataf']
 
-    sample_points_set = {a for o in dataf for a in o["args"]}
+    grid_points_set = {a for o in dataf for a in o["args"]}
 
-    args_init = min(sample_points_set)
-    args_end = max(sample_points_set)
+    args_init = min(grid_points_set)
+    args_end = max(grid_points_set)
 
-    sample_points = np.arange(args_init,
-                              args_end + 1)
+    grid_points = np.arange(args_init,
+                            args_end + 1)
 
-    data_matrix = np.zeros(shape=(len(dataf), len(sample_points)))
+    data_matrix = np.zeros(shape=(len(dataf), len(grid_points)))
 
     for num_sample, o in enumerate(dataf):
         for t, x in zip(o["args"], o["vals"]):
             data_matrix[num_sample, t - args_init] = x
 
     return (FDataGrid(data_matrix=data_matrix,
-                      sample_points=sample_points,
+                      grid_points=grid_points,
                       domain_range=(args_init, args_end),
                       dataset_name=name[0],
                       argument_names=(args_label[0],),
@@ -112,9 +111,9 @@ def fetch_ucr(name, **kwargs):
 
             data = np.transpose(data, axes=(0, 2, 1))
 
-        sample_points = range(data.shape[1])
+        grid_points = range(data.shape[1])
 
-        return FDataGrid(data, sample_points=sample_points)
+        return FDataGrid(data, grid_points=grid_points)
 
     dataset['data'] = ucr_to_fdatagrid(dataset['data'])
     del dataset['feature_names']
@@ -220,7 +219,7 @@ def fetch_phoneme(return_X_y: bool = False):
     speaker = data["speaker"].values
 
     curves = FDataGrid(data_matrix=curve_data.values,
-                       sample_points=np.linspace(0, 8, 256),
+                       grid_points=np.linspace(0, 8, 256),
                        domain_range=[0, 8],
                        dataset_name="Phoneme",
                        argument_names=("frequency (kHz)",),
@@ -275,7 +274,7 @@ def fetch_growth(return_X_y: bool = False):
     males = data["hgtm"].T
 
     curves = FDataGrid(data_matrix=np.concatenate((males, females), axis=0),
-                       sample_points=ages,
+                       grid_points=ages,
                        dataset_name="Berkeley Growth Study",
                        argument_names=("age",),
                        coordinate_names=("height",))
@@ -470,7 +469,7 @@ def fetch_weather(return_X_y: bool = False):
     temp_prec_daily = np.transpose(weather_daily[:, :, 0:2], axes=(1, 0, 2))
 
     curves = FDataGrid(data_matrix=temp_prec_daily,
-                       sample_points=np.arange(0, 365) + 0.5,
+                       grid_points=np.arange(0, 365) + 0.5,
                        domain_range=(0, 365),
                        dataset_name="Canadian Weather",
                        argument_names=("day",),
@@ -601,7 +600,7 @@ def fetch_octane(return_X_y: bool = False):
 
     # "wavelengths ranging from 1102nm to 1552nm with measurements every two
     # nm.""
-    sample_points = np.linspace(1102, 1552, 226)
+    grid_points = np.linspace(1102, 1552, 226)
 
     # "The octane data set contains six outliers (25, 26, 36–39) to which
     # alcohol was added".
@@ -609,7 +608,7 @@ def fetch_octane(return_X_y: bool = False):
     target[24] = target[25] = target[35:39] = 1  # Outliers 1
 
     curves = FDataGrid(data,
-                       sample_points=sample_points,
+                       grid_points=grid_points,
                        dataset_name="Octane",
                        argument_names=("wavelength (nm)",),
                        coordinate_names=("absorbances",))
@@ -654,10 +653,10 @@ def fetch_gait(return_X_y: bool = False):
 
     data_matrix = np.asarray(data)
     data_matrix = np.transpose(data_matrix, axes=(1, 0, 2))
-    sample_points = np.asarray(data.coords.get('dim_0'), np.float64)
+    grid_points = np.asarray(data.coords.get('dim_0'), np.float64)
 
     curves = FDataGrid(data_matrix=data_matrix,
-                       sample_points=sample_points,
+                       grid_points=grid_points,
                        dataset_name="GAIT",
                        argument_names=("Time (proportion of gait cycle)",),
                        coordinate_names=("Hip angle (degrees)",

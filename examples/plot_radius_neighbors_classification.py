@@ -11,13 +11,14 @@ Shows the usage of the radius nearest neighbors classifier.
 # sphinx_gallery_thumbnail_number = 2
 
 
+import skfda
+from skfda.misc.metrics import pairwise_distance, lp_distance
+from skfda.ml.classification import RadiusNeighborsClassifier
+
 from sklearn.model_selection import train_test_split
 
 import matplotlib.pyplot as plt
 import numpy as np
-import skfda
-from skfda.misc.metrics import pairwise_distance, lp_distance
-from skfda.ml.classification import RadiusNeighborsClassifier
 
 
 ##############################################################################
@@ -76,7 +77,7 @@ sample.plot(fig=fig, color='red', linewidth=3)
 lower = sample - radius
 upper = sample + radius
 fig.axes[0].fill_between(
-    sample.sample_points[0], lower.data_matrix.flatten(),
+    sample.grid_points[0], lower.data_matrix.flatten(),
     upper.data_matrix[0].flatten(),  alpha=.25, color='C1')
 
 
@@ -95,7 +96,7 @@ distances = l_inf(sample, X_train)[0]  # L_inf distances to 'sample'
 fig = X_train[distances <= radius].plot(color='C0')
 sample.plot(fig=fig, color='red', linewidth=3)
 fig.axes[0].fill_between(
-    sample.sample_points[0], lower.data_matrix.flatten(),
+    sample.grid_points[0], lower.data_matrix.flatten(),
     upper.data_matrix[0].flatten(), alpha=.25, color='C1')
 
 

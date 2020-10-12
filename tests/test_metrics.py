@@ -13,9 +13,9 @@ import numpy as np
 class TestLpMetrics(unittest.TestCase):
 
     def setUp(self):
-        sample_points = [1, 2, 3, 4, 5]
+        grid_points = [1, 2, 3, 4, 5]
         self.fd = FDataGrid([[2, 3, 4, 5, 6], [1, 4, 9, 16, 25]],
-                            sample_points=sample_points)
+                            grid_points=grid_points)
         basis = Monomial(n_basis=3, domain_range=(1, 5))
         self.fd_basis = FDataBasis(basis, [[1, 1, 0], [0, 0, 1]])
         self.fd_curve = self.fd.concatenate(self.fd, as_coordinates=True)
@@ -55,17 +55,17 @@ class TestLpMetrics(unittest.TestCase):
             lp_distance(self.fd_surface, self.fd_curve)
 
     def test_lp_error_domain_ranges(self):
-        sample_points = [2, 3, 4, 5, 6]
+        grid_points = [2, 3, 4, 5, 6]
         fd2 = FDataGrid([[2, 3, 4, 5, 6], [1, 4, 9, 16, 25]],
-                        sample_points=sample_points)
+                        grid_points=grid_points)
 
         with np.testing.assert_raises(ValueError):
             lp_distance(self.fd, fd2)
 
-    def test_lp_error_sample_points(self):
-        sample_points = [1, 2, 4, 4.3, 5]
+    def test_lp_error_grid_points(self):
+        grid_points = [1, 2, 4, 4.3, 5]
         fd2 = FDataGrid([[2, 3, 4, 5, 6], [1, 4, 9, 16, 25]],
-                        sample_points=sample_points)
+                        grid_points=grid_points)
 
         with np.testing.assert_raises(ValueError):
             lp_distance(self.fd, fd2)

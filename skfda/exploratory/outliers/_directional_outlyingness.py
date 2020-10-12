@@ -1,3 +1,4 @@
+from skfda.exploratory.depth.multivariate import projection_depth
 import typing
 
 from numpy import linalg as la
@@ -8,7 +9,6 @@ from sklearn.base import BaseEstimator, OutlierMixin
 from sklearn.covariance import MinCovDet
 
 import numpy as np
-from skfda.exploratory.depth.multivariate import projection_depth
 
 from ... import FDataGrid
 
@@ -100,8 +100,8 @@ def directional_outlyingness_stats(
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = FDataGrid(data_matrix, grid_points)
         >>> stats = directional_outlyingness_stats(fd)
         >>> stats.directional_outlyingness
         array([[[ 0.89932101],
@@ -151,7 +151,7 @@ def directional_outlyingness_stats(
         raise NotImplementedError("Only support 1 dimension on the domain.")
 
     if (pointwise_weights is not None and
-        (len(pointwise_weights) != len(fdatagrid.sample_points[0]) or
+        (len(pointwise_weights) != len(fdatagrid.grid_points[0]) or
          pointwise_weights.sum() != 1)):
         raise ValueError(
             "There must be a weight in pointwise_weights for each recorded "
@@ -159,7 +159,7 @@ def directional_outlyingness_stats(
 
     if pointwise_weights is None:
         pointwise_weights = np.ones(
-            len(fdatagrid.sample_points[0])) / (
+            len(fdatagrid.grid_points[0])) / (
                 fdatagrid.domain_range[0][1] - fdatagrid.domain_range[0][0])
 
     depth_pointwise = depth_method(fdatagrid, pointwise=True)
@@ -190,7 +190,7 @@ def directional_outlyingness_stats(
     assert weighted_dir_outlyingness.shape == dir_outlyingness.shape
 
     mean_dir_outlyingness = scipy.integrate.simps(weighted_dir_outlyingness,
-                                                  fdatagrid.sample_points[0],
+                                                  fdatagrid.grid_points[0],
                                                   axis=1)
     assert mean_dir_outlyingness.shape == (
         fdatagrid.n_samples, fdatagrid.dim_codomain)
@@ -200,7 +200,7 @@ def directional_outlyingness_stats(
                              mean_dir_outlyingness[:, np.newaxis, :], axis=-1))
     weighted_norm = norm * pointwise_weights
     variation_dir_outlyingness = scipy.integrate.simps(
-        weighted_norm, fdatagrid.sample_points[0],
+        weighted_norm, fdatagrid.grid_points[0],
         axis=1)
     assert variation_dir_outlyingness.shape == (fdatagrid.n_samples,)
 
@@ -289,8 +289,8 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> out_detector = DirectionalOutlierDetector()
         >>> out_detector.fit_predict(fd)
         array([1, 1, 1, 1])

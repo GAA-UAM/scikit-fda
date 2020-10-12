@@ -67,7 +67,7 @@ class ShiftRegistration(RegistrationTransformer):
             functions are evaluated to obtain the discrete
             representation of the object to integrate. If None is
             passed it calls numpy.linspace in FDataBasis and uses the
-            `sample_points` in FDataGrids.
+            `grid_points` in FDataGrids.
 
     Attributes:
         template_ (FData): Template :math:`\mu` learned during the fitting
@@ -169,7 +169,7 @@ class ShiftRegistration(RegistrationTransformer):
         if self.output_points is None:
 
             try:
-                output_points = fd.sample_points[0]
+                output_points = fd.grid_points[0]
                 nfine = len(output_points)
             except AttributeError:
                 nfine = max(fd.n_basis * constants.BASIS_MIN_FACTOR + 1,
@@ -248,7 +248,7 @@ class ShiftRegistration(RegistrationTransformer):
             elif template == "fixed" and self.restrict_domain:
                 tfine_aux = template_points_aux[domain]
             elif callable(template):  # Callable
-                fd_x = FDataGrid(x, sample_points=output_points)
+                fd_x = FDataGrid(x, grid_points=output_points)
                 fd_tfine = template(fd_x)
                 tfine_aux = fd_tfine.data_matrix.ravel()
 
@@ -274,7 +274,7 @@ class ShiftRegistration(RegistrationTransformer):
         else:
 
             # Stores the template in an FDataGrid
-            template = FDataGrid(tfine_aux, sample_points=output_points)
+            template = FDataGrid(tfine_aux, grid_points=output_points)
 
         return delta, template
 

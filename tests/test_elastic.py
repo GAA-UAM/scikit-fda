@@ -62,7 +62,7 @@ class TestElasticRegistration(unittest.TestCase):
         # Checks SRSF conversion
         srsf_transformer = SRSF(
             initial_value=0,
-            output_points=self.dummy_sample.sample_points[0])
+            output_points=self.dummy_sample.grid_points[0])
         srsf = srsf_transformer.inverse_transform(self.dummy_sample)
 
         data_matrix = [[[0.], [-0.23449228], [-0.83464009],

@@ -78,7 +78,7 @@ class TestBasisSmoother(unittest.TestCase):
         t = np.linspace(0, 1, 5)
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = BSpline((0, 1), n_basis=5)
-        fd = FDataGrid(data_matrix=x, sample_points=t)
+        fd = FDataGrid(data_matrix=x, grid_points=t)
         smoother = smoothing.BasisSmoother(
             basis=basis,
             smoothing_parameter=10,
@@ -96,7 +96,7 @@ class TestBasisSmoother(unittest.TestCase):
         t = np.linspace(0, 1, 5)
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = BSpline((0, 1), n_basis=5)
-        fd = FDataGrid(data_matrix=x, sample_points=t)
+        fd = FDataGrid(data_matrix=x, grid_points=t)
         smoother = smoothing.BasisSmoother(
             basis=basis,
             smoothing_parameter=10,
@@ -116,7 +116,7 @@ class TestBasisSmoother(unittest.TestCase):
         t = np.linspace(0, 1, 5)
         x = np.sin(2 * np.pi * t) + np.cos(2 * np.pi * t)
         basis = Monomial(n_basis=4)
-        fd = FDataGrid(data_matrix=x, sample_points=t)
+        fd = FDataGrid(data_matrix=x, grid_points=t)
         smoother = smoothing.BasisSmoother(
             basis=basis,
             smoothing_parameter=1,

@@ -72,9 +72,9 @@ def _to_grid(X, y, eval_points=None):
         X = X.to_grid(eval_points)
         y = y.to_grid(eval_points)
     elif x_is_grid and not y_is_grid:
-        y = y.to_grid(X.sample_points[0])
+        y = y.to_grid(X.grid_points[0])
     elif not x_is_grid and y_is_grid:
-        X = X.to_grid(y.sample_points[0])
+        X = X.to_grid(y.grid_points[0])
     elif not x_is_grid and not y_is_grid:
         X = X.to_grid()
         y = y.to_grid()

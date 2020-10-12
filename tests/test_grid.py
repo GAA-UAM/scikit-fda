@@ -19,7 +19,7 @@ class TestFDataGrid(unittest.TestCase):
             np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]]))
         np.testing.assert_array_equal(fd.sample_range, [(0, 1)])
         np.testing.assert_array_equal(
-            fd.sample_points, np.array([[0., 0.25, 0.5, 0.75, 1.]]))
+            fd.grid_points, np.array([[0., 0.25, 0.5, 0.75, 1.]]))
 
     def test_copy_equals(self):
         fd = FDataGrid([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
@@ -33,7 +33,7 @@ class TestFDataGrid(unittest.TestCase):
             np.array([1.5, 2.5, 3.5, 4.5, 5.5]))
         np.testing.assert_array_equal(fd.sample_range, [(0, 1)])
         np.testing.assert_array_equal(
-            fd.sample_points,
+            fd.grid_points,
             np.array([[0., 0.25, 0.5, 0.75, 1.]]))
 
     def test_gmean(self):
@@ -45,7 +45,7 @@ class TestFDataGrid(unittest.TestCase):
                 np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])))
         np.testing.assert_array_equal(fd.sample_range, [(0, 1)])
         np.testing.assert_array_equal(
-            fd.sample_points,
+            fd.grid_points,
             np.array([[0., 0.25, 0.5, 0.75, 1.]]))
 
     def test_slice(self):
@@ -177,9 +177,9 @@ class TestFDataGrid(unittest.TestCase):
         X, Y, Z = axes3d.get_test_data(1.2)
 
         data_matrix = [Z.T]
-        sample_points = [X[0, :], Y[:, 0]]
+        grid_points = [X[0, :], Y[:, 0]]
 
-        g = FDataGrid(data_matrix, sample_points)
+        g = FDataGrid(data_matrix, grid_points)
         self.assertEqual(g.dim_domain, 2)
         self.assertEqual(g.dim_codomain, 1)
 
@@ -210,9 +210,9 @@ class TestEvaluateFDataGrid(unittest.TestCase):
                 ]
             ])
 
-        sample_points = [[0, 1], [0, 1]]
+        grid_points = [[0, 1], [0, 1]]
 
-        fd = FDataGrid(data_matrix, sample_points=sample_points)
+        fd = FDataGrid(data_matrix, grid_points=grid_points)
         self.assertEqual(fd.n_samples, 2)
         self.assertEqual(fd.dim_domain, 2)
         self.assertEqual(fd.dim_codomain, 3)

@@ -153,14 +153,14 @@ class RKHSVariableSelection(sklearn.base.BaseEstimator,
         ...                               n_features_to_select=3)
         >>> _ = rkvs.fit(X, y)
         >>> point_mask = rkvs.get_support()
-        >>> points = X.sample_points[0][point_mask]
+        >>> points = X.grid_points[0][point_mask]
         >>> np.allclose(points, [0.25, 0.5, 0.75], rtol=1e-2)
         True
 
         Apply the learned dimensionality reduction
 
         >>> X_dimred = rkvs.transform(X)
-        >>> len(X.sample_points[0])
+        >>> len(X.grid_points[0])
         1000
         >>> X_dimred.shape
         (10000, 3)

@@ -48,7 +48,7 @@ class TestWarping(unittest.TestCase):
         # Test new domain range (0, 1)
         np.testing.assert_array_equal(normalized.domain_range, [(0, 1)])
 
-        np.testing.assert_array_almost_equal(normalized.sample_points[0],
+        np.testing.assert_array_almost_equal(normalized.grid_points[0],
                                              np.linspace(0, 1, 50))
 
         np.testing.assert_array_almost_equal(
@@ -65,7 +65,7 @@ class TestWarping(unittest.TestCase):
         # Test new domain range (0, 1)
         np.testing.assert_array_equal(normalized.domain_range, [(-1, 1)])
 
-        np.testing.assert_array_almost_equal(normalized.sample_points[0],
+        np.testing.assert_array_almost_equal(normalized.grid_points[0],
                                              np.linspace(-1, 1, 50))
 
         np.testing.assert_array_almost_equal(
@@ -84,7 +84,7 @@ class TestWarping(unittest.TestCase):
         # Test new domain range (0, 1)
         np.testing.assert_array_equal(normalized.domain_range, [domain])
 
-        np.testing.assert_array_almost_equal(normalized.sample_points[0],
+        np.testing.assert_array_almost_equal(normalized.grid_points[0],
                                              np.linspace(*domain, 50))
 
         np.testing.assert_array_equal(normalized(a)[..., 0], [[a], [a]])
@@ -340,7 +340,7 @@ class TestRegistrationValidation(unittest.TestCase):
         np.testing.assert_allclose(score, 0.972095, rtol=1e-6)
 
     def test_amplitude_phase_score_with_output_points(self):
-        eval_points = self.X.sample_points[0]
+        eval_points = self.X.grid_points[0]
         scorer = AmplitudePhaseDecomposition(eval_points=eval_points)
         score = scorer(self.shift_registration, self.X)
         np.testing.assert_allclose(score, 0.972095, rtol=1e-6)

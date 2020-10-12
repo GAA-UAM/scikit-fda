@@ -37,8 +37,8 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
 
         >>> data_matrix = [[1, 2], [2, 3]]
-        >>> sample_points = [2, 4]
-        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [2, 4]
+        >>> fd = FDataGrid(data_matrix, grid_points)
         >>>
         >>> transformer = EvaluationTransformer()
         >>> transformer.fit_transform(fd)
@@ -49,8 +49,8 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}^2`.
 
         >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
-        >>> sample_points = [2, 4]
-        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [2, 4]
+        >>> fd = FDataGrid(data_matrix, grid_points)
         >>>
         >>> transformer = EvaluationTransformer()
         >>> transformer.fit_transform(fd)
@@ -61,8 +61,8 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
         representing a function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}`.
 
         >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
-        >>> sample_points = [[2, 4], [3, 6]]
-        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [[2, 4], [3, 6]]
+        >>> fd = FDataGrid(data_matrix, grid_points)
         >>>
         >>> transformer = EvaluationTransformer()
         >>> transformer.fit_transform(fd)

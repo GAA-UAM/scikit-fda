@@ -39,7 +39,7 @@ class OnewayAnovaTests(unittest.TestCase):
         m1 = [1 for _ in range(n_features)]
         m2 = [2 for _ in range(n_features)]
         m3 = [3 for _ in range(n_features)]
-        fd = FDataGrid([m1, m2, m3], sample_points=t)
+        fd = FDataGrid([m1, m2, m3], grid_points=t)
         self.assertEqual(v_sample_stat(fd, weights), 7.0)
         self.assertAlmostEqual(v_sample_stat(fd.to_basis(Fourier(n_basis=5)),
                                              weights), 7.0)

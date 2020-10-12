@@ -20,15 +20,15 @@ import numpy as np
 # random displacements.
 random_state = np.random.RandomState(0)
 
-sample_points = np.linspace(0, 1)
-data = np.array([np.sin((sample_points + random_state.randn())
+grid_points = np.linspace(0, 1)
+data = np.array([np.sin((grid_points + random_state.randn())
                         * 2 * np.pi) for _ in range(5)])
 
 ##############################################################################
 # The FDataGrid class is used for datasets containing discretized functions
 # that are measured at the same points.
 
-fd = FDataGrid(data, sample_points,
+fd = FDataGrid(data, grid_points,
                dataset_name='Sinusoidal curves',
                argument_names=['t'],
                coordinate_names=['x(t)'])

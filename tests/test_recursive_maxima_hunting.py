@@ -38,7 +38,7 @@ class TestRMH(unittest.TestCase):
             stopping_condition=stopping_condition)
         _ = rmh.fit(X, y)
         point_mask = rmh.get_support()
-        points = X.sample_points[0][point_mask]
+        points = X.grid_points[0][point_mask]
         np.testing.assert_allclose(points, [0.25, 0.5, 0.75], rtol=1e-1)
 
 

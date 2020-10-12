@@ -33,7 +33,7 @@ fd.plot(group=y, group_colors=['red', 'blue'])
 ##############################################################################
 # This kind of representation is a discretized representation, in which the
 # measurement points are shared between samples.
-print(fd.sample_points)
+print(fd.grid_points)
 
 ##############################################################################
 # In this representation, the data can be arranged as a matrix.

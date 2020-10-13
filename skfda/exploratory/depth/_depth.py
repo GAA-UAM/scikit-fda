@@ -60,20 +60,24 @@ class IntegratedDepth(FunctionalDepth):
 
     """
 
-    def __init__(self, distribution, *,
-                 multivariate_depth=multivariate._UnivariateFraimanMuniz):
-        if distribution.dim_domain > 1 or distribution.dim_codomain > 1:
+    def __init__(self, *,
+                 multivariate_depth=multivariate._UnivariateFraimanMuniz()):
+        self._multivariate_depth = multivariate_depth
+
+    def fit(self, X, y=None):
+        if X.dim_domain > 1 or X.dim_codomain > 1:
             raise ValueError("Currently multivariate data is not allowed")
 
-        self._domain_range = distribution.domain_range
-        self._grid_points = distribution.grid_points
-        self._multivariate_depth = multivariate_depth(distribution.data_matrix)
+        self._domain_range = X.domain_range
+        self._grid_points = X.grid_points
+        self._multivariate_depth.fit(X.data_matrix)
+        return self
 
-    def __call__(self, data_points, pointwise=False):
-        if data_points.dim_domain > 1 or data_points.dim_codomain > 1:
+    def predict(self, X, *, pointwise=False):
+        if X.dim_domain > 1 or X.dim_codomain > 1:
             raise ValueError("Currently multivariate data is not allowed")
 
-        pointwise_depth = self._multivariate_depth(data_points.data_matrix)
+        pointwise_depth = self._multivariate_depth.predict(X.data_matrix)
 
         if pointwise:
             return pointwise_depth
@@ -358,4 +362,5 @@ def fraiman_muniz_depth(fdatagrid, *, pointwise=False):
 
 
     """
-    return IntegratedDepth(fdatagrid)(fdatagrid, pointwise=pointwise)
+    return IntegratedDepth().fit(fdatagrid).predict(
+        fdatagrid, pointwise=pointwise)

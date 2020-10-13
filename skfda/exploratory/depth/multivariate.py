@@ -1,11 +1,12 @@
 import abc
 
 import scipy.stats
+import sklearn
 
 import numpy as np
 
 
-class Depth(abc.ABC):
+class Depth(abc.ABC, sklearn.base.BaseEstimator):
     """
     Abstract class representing a depth function.
 
@@ -13,17 +14,60 @@ class Depth(abc.ABC):
 
     """
 
-    @abc.abstractmethod
-    def __init__(self, distribution):
-        pass
+    def fit(self, X, y=None):
+        """
+        Learn the distribution from the observations.
+
+        Args:
+            X: Functional dataset from which the distribution of the data is
+               inferred.
+            y: Unused. Kept only for convention.
+
+        Returns:
+            self: Fitted estimator.
+
+        """
+        return self
 
     @abc.abstractmethod
-    def __call__(self, data_points):
+    def predict(self, X):
         """
-        Evaluate the depth over a different set of points.
+        Compute the depth inside the learned distribution.
+
+        Args:
+            X: Points whose depth is going to be evaluated.
 
         """
         pass
+
+    def fit_predict(self, X, y=None):
+        """
+        Compute the depth of each observation with respect to the whole
+        dataset.
+
+        Args:
+            X: Dataset.
+            y: Unused. Kept only for convention.
+
+        """
+        return self.fit(X).predict(X)
+
+    def __call__(self, X, distribution=None):
+        """
+        Allows the depth to be used as a function.
+
+        Args:
+            X: Points whose depth is going to be evaluated.
+            distribution: Functional dataset from which the distribution of
+                the data is inferred. If ``None`` it is the same as ``X``.
+
+        """
+        copy = sklearn.base.clone(self)
+
+        if distribution is None:
+            return copy.fit_predict(X)
+        else:
+            return copy.fit(distribution).predict(X)
 
     @property
     def max(self):
@@ -36,7 +80,7 @@ class Depth(abc.ABC):
     @property
     def min(self):
         """
-        Minimum (or infimum if there is no maximum)  of the depth values.
+        Minimum (or infimum if there is no maximum) of the depth values.
 
         """
         return 0
@@ -76,15 +120,17 @@ def _cumulative_distribution(column):
 class _UnivariateFraimanMuniz(Depth):
     """
     Univariate depth used to compute the Fraiman an Muniz depth.
+
     """
 
-    def __init__(self, distribution):
-        self.sorted_values = np.sort(distribution, axis=0)
+    def fit(self, X, y=None):
+        self.sorted_values = np.sort(X, axis=0)
+        return self
 
-    def __call__(self, data_points):
+    def predict(self, X):
         cum_dist = _cumulative_distribution_ordered(
             np.moveaxis(self.sorted_values, 0, -1),
-            np.moveaxis(data_points, 0, -1))
+            np.moveaxis(X, 0, -1))
 
         assert cum_dist.shape[-2] == 1
         return 1 - np.abs(0.5 - np.moveaxis(cum_dist, -1, 0)[..., 0])

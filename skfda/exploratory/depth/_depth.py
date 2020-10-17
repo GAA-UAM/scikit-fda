@@ -62,18 +62,18 @@ class IntegratedDepth(FunctionalDepth):
 
     def __init__(self, *,
                  multivariate_depth=multivariate._UnivariateFraimanMuniz()):
-        self._multivariate_depth = multivariate_depth
+        self.multivariate_depth = multivariate_depth
 
     def fit(self, X, y=None):
 
         self._domain_range = X.domain_range
         self._grid_points = X.grid_points
-        self._multivariate_depth.fit(X.data_matrix)
+        self.multivariate_depth.fit(X.data_matrix)
         return self
 
     def predict(self, X, *, pointwise=False):
 
-        pointwise_depth = self._multivariate_depth.predict(X.data_matrix)
+        pointwise_depth = self.multivariate_depth.predict(X.data_matrix)
 
         if pointwise:
             return pointwise_depth
@@ -95,11 +95,17 @@ class IntegratedDepth(FunctionalDepth):
 
     @property
     def max(self):
-        return self._multivariate_depth.max
+        return self.multivariate_depth.max
 
     @property
     def min(self):
-        return self._multivariate_depth.min
+        return self.multivariate_depth.min
+
+
+class ModifiedBandDepth(IntegratedDepth):
+
+    def __init__(self):
+        super().__init__(multivariate_depth=multivariate.SimplicialDepth())
 
 
 def outlyingness_to_depth(outlyingness, *, supreme=None):
@@ -286,9 +292,7 @@ def modified_band_depth(fdatagrid, *, pointwise=False):
                [ 0.83,  0.83,  0.83,  0.5 ,  0.5 ,  0.5 ]])
 
     """
-    return IntegratedDepth(
-        multivariate_depth=multivariate.SimplicialDepth()).fit(
-            fdatagrid).predict(
+    return ModifiedBandDepth().fit(fdatagrid).predict(
         fdatagrid, pointwise=pointwise)
 
 

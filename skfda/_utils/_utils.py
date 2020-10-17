@@ -1,5 +1,6 @@
 """Module with generic methods"""
 
+from builtins import getattr
 import functools
 import numbers
 import types
@@ -420,6 +421,23 @@ def _int_to_real(array):
     Convert integer arrays to floating point.
     """
     return array + 0.0
+
+
+def _integral_fdata(function, operation=None):
+
+    integrand = function
+
+    if operation is not None:
+        try:
+            integrand = operation(function)
+        except TypeError:
+            def integrand(x): return operation(function(x)[:, 0, :])
+
+            integral = nquad_vec(
+                integrand,
+                function.domain_range)
+
+            return integral
 
 
 def _check_array_key(array, key):

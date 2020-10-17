@@ -65,8 +65,6 @@ class IntegratedDepth(FunctionalDepth):
         self._multivariate_depth = multivariate_depth
 
     def fit(self, X, y=None):
-        if X.dim_domain > 1 or X.dim_codomain > 1:
-            raise ValueError("Currently multivariate data is not allowed")
 
         self._domain_range = X.domain_range
         self._grid_points = X.grid_points
@@ -74,8 +72,6 @@ class IntegratedDepth(FunctionalDepth):
         return self
 
     def predict(self, X, *, pointwise=False):
-        if X.dim_domain > 1 or X.dim_codomain > 1:
-            raise ValueError("Currently multivariate data is not allowed")
 
         pointwise_depth = self._multivariate_depth.predict(X.data_matrix)
 
@@ -86,11 +82,16 @@ class IntegratedDepth(FunctionalDepth):
             interval_len = (self._domain_range[0][1]
                             - self._domain_range[0][0])
 
-            depth = (scipy.integrate.simps(pointwise_depth,
-                                           self._grid_points[0])
-                     / interval_len)
+            integrand = pointwise_depth
 
-            return depth
+            for d, s in zip(X.domain_range, X.grid_points):
+                integrand = scipy.integrate.simps(integrand,
+                                                  x=s,
+                                                  axis=1)
+                interval_len = d[1] - d[0]
+                integrand /= interval_len
+
+            return integrand
 
     @property
     def max(self):
@@ -276,7 +277,7 @@ def modified_band_depth(fdatagrid, *, pointwise=False):
         >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> depth = modified_band_depth(fd)
         >>> depth.round(2)
-        array([ 0.5 ,  0.83,  0.72,  0.67])
+        array([ 0.5 ,  0.83,  0.73,  0.67])
         >>> pointwise = modified_band_depth(fd, pointwise = True)
         >>> pointwise.round(2)
         array([[ 0.5 ,  0.5 ,  0.5 ,  0.5 ,  0.5 ,  0.5 ],
@@ -285,26 +286,10 @@ def modified_band_depth(fdatagrid, *, pointwise=False):
                [ 0.83,  0.83,  0.83,  0.5 ,  0.5 ,  0.5 ]])
 
     """
-    n = fdatagrid.n_samples
-    nchoose2 = n * (n - 1) / 2
-
-    ranks = _rank_samples(fdatagrid)
-    n_samples_above = fdatagrid.n_samples - ranks
-    n_samples_below = ranks - 1
-    match = n_samples_above * n_samples_below
-    axis = tuple(range(1, fdatagrid.dim_domain + 1))
-
-    if pointwise:
-        depth_pointwise = (match + fdatagrid.n_samples - 1) / nchoose2
-
-        return depth_pointwise
-    else:
-        npoints_sample = reduce(lambda x, y: x * len(y),
-                                fdatagrid.grid_points, 1)
-        proportion = match.sum(axis=axis) / npoints_sample
-        depth = (proportion + fdatagrid.n_samples - 1) / nchoose2
-
-        return depth
+    return IntegratedDepth(
+        multivariate_depth=multivariate.SimplicialDepth()).fit(
+            fdatagrid).predict(
+        fdatagrid, pointwise=pointwise)
 
 
 def fraiman_muniz_depth(fdatagrid, *, pointwise=False):

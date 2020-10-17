@@ -1,4 +1,5 @@
 import abc
+from scipy.special import comb
 
 import scipy.stats
 import sklearn
@@ -86,15 +87,20 @@ class Depth(abc.ABC, sklearn.base.BaseEstimator):
         return 0
 
 
-def _cumulative_one_dim(array, values):
-    searched_index = np.searchsorted(array, values, side='right')
+def _searchsorted_one_dim(array, values, *, side='left'):
+    searched_index = np.searchsorted(array, values, side=side)
 
-    return searched_index / len(array)
+    return searched_index
 
 
-_cumulative_distribution_ordered = np.vectorize(
-    _cumulative_one_dim,
-    signature='(n),(m)->(m)')
+_searchsorted_vectorized = np.vectorize(
+    _searchsorted_one_dim,
+    signature='(n),(m),()->(m)',
+    excluded='side')
+
+
+def _searchsorted_ordered(array, values, *, side='left'):
+    return _searchsorted_vectorized(array, values, side=side)
 
 
 def _cumulative_distribution(column):
@@ -114,7 +120,8 @@ def _cumulative_distribution(column):
         array([ 0.4,  0.9,  1. ,  0.4,  0.6,  0.6,  0.9,  0.4,  0.4,  0.7])
 
     """
-    return _cumulative_distribution_ordered(np.sort(column), column)
+    return _searchsorted_ordered(np.sort(column), column,
+                                 side='right') / len(column)
 
 
 class _UnivariateFraimanMuniz(Depth):
@@ -124,16 +131,63 @@ class _UnivariateFraimanMuniz(Depth):
     """
 
     def fit(self, X, y=None):
-        self.sorted_values = np.sort(X, axis=0)
+        self._sorted_values = np.sort(X, axis=0)
         return self
 
     def predict(self, X):
-        cum_dist = _cumulative_distribution_ordered(
-            np.moveaxis(self.sorted_values, 0, -1),
-            np.moveaxis(X, 0, -1))
+        cum_dist = _searchsorted_ordered(
+            np.moveaxis(self._sorted_values, 0, -1),
+            np.moveaxis(X, 0, -1), side='right') / len(self._sorted_values)
 
         assert cum_dist.shape[-2] == 1
         return 1 - np.abs(0.5 - np.moveaxis(cum_dist, -1, 0)[..., 0])
+
+    @property
+    def min(self):
+        return 1 / 2
+
+
+class SimplicialDepth(Depth):
+    """
+    Simplicial depth.
+
+    """
+
+    def fit(self, X, y=None):
+        self._dim = X.shape[-1]
+
+        if self._dim == 1:
+            self.sorted_values = np.sort(X, axis=0)
+        else:
+            raise NotImplementedError("SimplicialDepth is currently only "
+                                      "implemented for one-dimensional data.")
+
+        return self
+
+    def predict(self, X):
+
+        assert self._dim == X.shape[-1]
+
+        if self._dim == 1:
+            positions_left = _searchsorted_ordered(
+                np.moveaxis(self.sorted_values, 0, -1),
+                np.moveaxis(X, 0, -1))
+
+            positions_left = np.moveaxis(positions_left, -1, 0)[..., 0]
+
+            positions_right = _searchsorted_ordered(
+                np.moveaxis(self.sorted_values, 0, -1),
+                np.moveaxis(X, 0, -1), side='right')
+
+            positions_right = np.moveaxis(positions_right, -1, 0)[..., 0]
+
+            num_strictly_below = positions_left
+            num_strictly_above = len(self.sorted_values) - positions_right
+
+            total_pairs = comb(len(self.sorted_values), 2)
+
+        return (total_pairs - comb(num_strictly_below, 2)
+                - comb(num_strictly_above, 2)) / total_pairs
 
     @property
     def min(self):

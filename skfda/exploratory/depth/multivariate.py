@@ -270,7 +270,13 @@ class StahelDonohoOutlyingness(Outlyingness):
 
     where :math:`\text{X}` is a sample with distribution :math:`F`,
     :math:`\text{Med}` is the median and :math:`\text{MAD}` is the
-    median absolute deviation.
+    median absolute deviation ([ZuCuHe04]_).
+
+    References:
+
+        .. [ZuCuHe04] Zuo, Y., Cui, H., & He, X. (2004). On the Stahel-Donoho
+           estimator and depth-weighted means of multivariate data. Annals of
+           Statistics, 32(1), 167–188. https://doi.org/10.1214/aos/1079120132
 
     """
 
@@ -281,7 +287,7 @@ class StahelDonohoOutlyingness(Outlyingness):
         if dim == 1:
             self._location = np.median(X, axis=0)
             self._scale = scipy.stats.median_abs_deviation(
-                X, axis=0, scale=1 / 1.4826)
+                X, axis=0)
         else:
             raise NotImplementedError("Only implemented for one dimension")
 
@@ -305,6 +311,19 @@ class StahelDonohoOutlyingness(Outlyingness):
 
 
 class ProjectionDepth(OutlyingnessBasedDepth):
+    r"""
+    Computes Projection depth.
+
+    It is defined as the depth induced by the Stahel-Donoho outlyingness
+    ([ZuCuHe04]_).
+
+    References:
+
+    .. [ZuCuHe04] Zuo, Y., Cui, H., & He, X. (2004). On the Stahel-Donoho
+       estimator and depth-weighted means of multivariate data. Annals of
+       Statistics, 32(1), 167–188. https://doi.org/10.1214/aos/1079120132
+
+    """
 
     def __init__(self):
         super().__init__(outlyingness=StahelDonohoOutlyingness())

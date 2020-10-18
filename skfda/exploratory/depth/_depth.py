@@ -3,8 +3,7 @@
 This module includes different methods to order functional data,
 from the center (larger values) outwards(smaller ones)."""
 
-import abc
-from functools import reduce
+import itertools
 import math
 
 import scipy.integrate
@@ -27,31 +26,6 @@ class FunctionalDepth(multivariate.Depth):
 
     """
     pass
-
-
-def _cumulative_distribution(column):
-    """Calculates the cumulative distribution function of the values passed to
-    the function and evaluates it at each point.
-
-    Args:
-        column (numpy.darray): Array containing the values over which the
-            distribution function is calculated.
-
-    Returns:
-        numpy.darray: Array containing the evaluation at each point of the
-            distribution function.
-
-    Examples:
-        >>> _cumulative_distribution(np.array([1, 4, 5, 1, 2, 2, 4, 1, 1, 3]))
-        array([ 0.4,  0.9,  1. ,  0.4,  0.6,  0.6,  0.9,  0.4,  0.4,  0.7])
-
-    """
-    if len(column.shape) != 1:
-        raise ValueError("Only supported 1 dimensional arrays.")
-    _, indexes, counts = np.unique(column, return_inverse=True,
-                                   return_counts=True)
-    count_cumulative = np.cumsum(counts) / len(column)
-    return count_cumulative[indexes].reshape(column.shape)
 
 
 class IntegratedDepth(FunctionalDepth):
@@ -108,6 +82,42 @@ class ModifiedBandDepth(IntegratedDepth):
         super().__init__(multivariate_depth=multivariate.SimplicialDepth())
 
 
+class BandDepth(FunctionalDepth):
+    """
+    Functional depth as the integral of a multivariate depth.
+
+    """
+
+    def fit(self, X, y=None):
+
+        if X.dim_codomain != 1:
+            raise NotImplementedError("Band depth not implemented for vector "
+                                      "valued functions")
+
+        self._distribution = X
+        return self
+
+    def predict(self, X, *, pointwise=False):
+
+        num_in = 0
+        n_total = 0
+
+        for f1, f2 in itertools.combinations(self._distribution, 2):
+            between_range_1 = (f1.data_matrix <= X.data_matrix) & (
+                X.data_matrix <= f2.data_matrix)
+
+            between_range_2 = (f2.data_matrix <= X.data_matrix) & (
+                X.data_matrix <= f1.data_matrix)
+
+            between_range = between_range_1 | between_range_2
+
+            num_in += np.all(between_range,
+                             axis=tuple(range(1, X.data_matrix.ndim)))
+            n_total += 1
+
+        return num_in / n_total
+
+
 def outlyingness_to_depth(outlyingness, *, supreme=None):
     r"""Convert outlyingness function to depth function.
 
@@ -147,60 +157,6 @@ def outlyingness_to_depth(outlyingness, *, supreme=None):
     return depth
 
 
-def _rank_samples(fdatagrid):
-    """Ranks the he samples in the FDataGrid at each point of discretisation.
-
-    Args:
-        fdatagrid (FDataGrid): Object whose samples are ranked.
-
-    Returns:
-        numpy.darray: Array containing the ranks of the sample points.
-
-    Examples:
-        Univariate setting:
-
-        >>> import skfda
-        >>>
-        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
-        ...                [0.5, 0.5, 1, 2, 1.5, 1],
-        ...                [-1, -1, -0.5, 1, 1, 0.5],
-        ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> grid_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
-        >>> _rank_samples(fd)
-        array([[ 4.,  4.,  4.,  4.,  4.,  4.],
-               [ 3.,  3.,  3.,  3.,  3.,  3.],
-               [ 1.,  1.,  2.,  2.,  2.,  2.],
-               [ 2.,  2.,  2.,  1.,  1.,  1.]])
-
-        Several input dimensions:
-
-        >>> data_matrix = [[[[1], [0.7], [1]],
-        ...                 [[4], [0.4], [5]]],
-        ...                [[[2], [0.5], [2]],
-        ...                 [[3], [0.6], [3]]]]
-        >>> grid_points = [[2, 4], [3, 6, 8]]
-        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
-        >>> _rank_samples(fd)
-        array([[[ 1.,  2.,  1.],
-                [ 2.,  1.,  2.]],
-               [[ 2.,  1.,  2.],
-                [ 1.,  2.,  1.]]])
-
-
-
-    """
-    if fdatagrid.dim_codomain > 1:
-        raise ValueError("Currently multivariate data is not allowed")
-
-    ranks = np.zeros(fdatagrid.data_matrix.shape[:-1])
-
-    for index, _ in np.ndenumerate(ranks[0]):
-        ranks[(slice(None),) + index] = rankdata(
-            fdatagrid.data_matrix[(slice(None),) + index + (0,)], method='max')
-    return ranks
-
-
 def band_depth(fdatagrid, *, pointwise=False):
     """Implementation of Band Depth for functional data.
 
@@ -238,17 +194,8 @@ def band_depth(fdatagrid, *, pointwise=False):
     if pointwise:
         return modified_band_depth(fdatagrid, pointwise)
     else:
-        n = fdatagrid.n_samples
-        nchoose2 = n * (n - 1) / 2
-
-        ranks = _rank_samples(fdatagrid)
-        axis = tuple(range(1, fdatagrid.dim_domain + 1))
-        n_samples_above = fdatagrid.n_samples - np.amax(ranks, axis=axis)
-        n_samples_below = np.amin(ranks, axis=axis) - 1
-        depth = ((n_samples_below * n_samples_above + fdatagrid.n_samples - 1)
-                 / nchoose2)
-
-        return depth
+        return BandDepth().fit(fdatagrid).predict(
+            fdatagrid, pointwise=pointwise)
 
 
 def modified_band_depth(fdatagrid, *, pointwise=False):

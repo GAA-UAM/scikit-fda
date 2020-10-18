@@ -38,7 +38,7 @@ class MagnitudeShapePlot:
     Args:
 
         fdatagrid (FDataGrid): Object containing the data.
-        depth_method (:ref:`depth measure <depth-measures>`, optional):
+        multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
             Method used to order the data. Defaults to :func:`projection
             depth <fda.depth_measures.multivariate.projection_depth>`.
         pointwise_weights (array_like, optional): an array containing the
@@ -69,9 +69,9 @@ class MagnitudeShapePlot:
     Attributes:
 
         fdatagrid (FDataGrid): Object to be visualized.
-        depth_method (:ref:`depth measure <depth-measures>`, optional): Method
-            used to order the data. Defaults to :func:`modified band depth
-            <fda.depth_measures.modified_band_depth>`.
+        multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
+            Method used to order the data. Defaults to :func:`modified band
+            depth <fda.depth_measures.modified_band_depth>`.
         pointwise_weights (array_like, optional): an array containing the
             weights of each points of discretisation where values have been
             recorded.
@@ -148,7 +148,7 @@ class MagnitudeShapePlot:
                 grid_points=(array([ 0.,  2.,  4.,  6.,  8., 10.]),),
                 domain_range=((0.0, 10.0),),
                 ...),
-            depth_method=projection_depth,
+            multivariate_depth=projection_depth,
             pointwise_weights=None,
             alpha=0.993,
             points=array([[ 1.12415127,  0.05813094],
@@ -177,7 +177,7 @@ class MagnitudeShapePlot:
 
         Args:
             fdatagrid (FDataGrid): Object containing the data.
-            depth_method (:ref:`depth measure <depth-measures>`, optional):
+            multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
                 Method used to order the data. Defaults to :func:`projection
                 depth <fda.depth_measures.multivariate.projection_depth>`.
             pointwise_weights (array_like, optional): an array containing the
@@ -231,8 +231,8 @@ class MagnitudeShapePlot:
         return self._fdatagrid
 
     @property
-    def depth_method(self):
-        return self.outlier_detector.depth_method
+    def multivariate_depth(self):
+        return self.outlier_detector.multivariate_depth
 
     @property
     def pointwise_weights(self):
@@ -317,7 +317,7 @@ class MagnitudeShapePlot:
         """Return repr(self)."""
         return (f"MagnitudeShapePlot("
                 f"\nFDataGrid={repr(self.fdatagrid)},"
-                f"\ndepth_method={self.depth_method.__name__},"
+                f"\nmultivariate_depth={self.multivariate_depth.__name__},"
                 f"\npointwise_weights={repr(self.pointwise_weights)},"
                 f"\nalpha={repr(self.alpha)},"
                 f"\npoints={repr(self.points)},"

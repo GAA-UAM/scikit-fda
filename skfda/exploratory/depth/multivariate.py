@@ -1,4 +1,5 @@
 import abc
+import math
 from scipy.special import comb
 
 import scipy.stats
@@ -7,11 +8,9 @@ import sklearn
 import numpy as np
 
 
-class Depth(abc.ABC, sklearn.base.BaseEstimator):
+class _DepthOrOutlyingness(abc.ABC, sklearn.base.BaseEstimator):
     """
-    Abstract class representing a depth function.
-
-    Usually it will accept a distribution in the initializer.
+    Abstract class representing a depth or outlyingness function.
 
     """
 
@@ -33,7 +32,7 @@ class Depth(abc.ABC, sklearn.base.BaseEstimator):
     @abc.abstractmethod
     def predict(self, X):
         """
-        Compute the depth inside the learned distribution.
+        Compute the depth or outlyingness inside the learned distribution.
 
         Args:
             X: Points whose depth is going to be evaluated.
@@ -43,8 +42,8 @@ class Depth(abc.ABC, sklearn.base.BaseEstimator):
 
     def fit_predict(self, X, y=None):
         """
-        Compute the depth of each observation with respect to the whole
-        dataset.
+        Compute the depth or outlyingness of each observation with respect to
+        the whole dataset.
 
         Args:
             X: Dataset.
@@ -55,7 +54,7 @@ class Depth(abc.ABC, sklearn.base.BaseEstimator):
 
     def __call__(self, X, distribution=None):
         """
-        Allows the depth to be used as a function.
+        Allows the depth or outlyingness to be used as a function.
 
         Args:
             X: Points whose depth is going to be evaluated.
@@ -73,7 +72,8 @@ class Depth(abc.ABC, sklearn.base.BaseEstimator):
     @property
     def max(self):
         """
-        Maximum (or supremum if there is no maximum) of the depth values.
+        Maximum (or supremum if there is no maximum) of the possibly predicted
+        values.
 
         """
         return 1
@@ -81,10 +81,27 @@ class Depth(abc.ABC, sklearn.base.BaseEstimator):
     @property
     def min(self):
         """
-        Minimum (or infimum if there is no maximum) of the depth values.
+        Minimum (or infimum if there is no maximum) of the possibly predicted
+        values.
 
         """
         return 0
+
+
+class Depth(_DepthOrOutlyingness):
+    """
+    Abstract class representing a depth function.
+
+    """
+    pass
+
+
+class Outlyingness(_DepthOrOutlyingness):
+    """
+    Abstract class representing an outlyingness function.
+
+    """
+    pass
 
 
 def _searchsorted_one_dim(array, values, *, side='left'):
@@ -194,20 +211,103 @@ class SimplicialDepth(Depth):
         return 1 / 2
 
 
-def _stagel_donoho_outlyingness(X, *, pointwise=False):
+class OutlyingnessBasedDepth(Depth):
+    r"""
+    Computes depth based on an outlyingness measure.
 
-    if pointwise is False:
-        raise NotImplementedError("Only implemented pointwise")
+    An outlyingness function :math:`O(x)` can be converted to a depth
+    function as
 
-    if X.dim_codomain == 1:
-        # Special case, can be computed exactly
-        m = X.data_matrix[..., 0]
+    .. math::
+        D(x) = \frac{1}{1 + O(x)}
 
-        return (np.abs(m - np.median(m, axis=0)) /
-                scipy.stats.median_abs_deviation(m, axis=0, scale=1 / 1.4826))
+    if :math:`O(x)` is unbounded or as
 
-    else:
-        raise NotImplementedError("Only implemented for one dimension")
+    .. math::
+        D(x) = 1 - \frac{O(x)}{\sup O(x)}
+
+    if :math:`O(x)` is bounded ([Se06]_). If the infimum value of the
+    outlyiness function is not zero, it is subtracted beforehand.
+
+    Args:
+        outlyingness (Outlyingness): Outlyingness object.
+
+    References:
+        .. [Se06] Serfling, R. (2006). Depth functions in nonparametric
+           multivariate inference. DIMACS Series in Discrete Mathematics and
+           Theoretical Computer Science, 72, 1.
+
+    """
+
+    def __init__(self, outlyingness):
+        self.outlyingness = outlyingness
+
+    def fit(self, X, y=None):
+        self.outlyingness.fit(X)
+
+        return self
+
+    def predict(self, X):
+        outlyingness_values = self.outlyingness.predict(X)
+
+        min_val = self.outlyingness.min
+        max_val = self.outlyingness.max
+
+        if(math.isinf(max_val)):
+            return 1 / (1 + outlyingness_values - min_val)
+        else:
+            return 1 - (outlyingness_values - min_val) / (max_val - min_val)
+
+
+class StahelDonohoOutlyingness(Outlyingness):
+    r"""
+    Computes Stahel-Donoho outlyingness.
+
+    Stahel-Donoho outlyingness is defined as
+
+    .. math::
+        \sup_{\|u\|=1} \frac{|u^T x - \text{Med}(u^T X))|}{\text{MAD}(u^TX)}
+
+    where :math:`\text{X}` is a sample with distribution :math:`F`,
+    :math:`\text{Med}` is the median and :math:`\text{MAD}` is the
+    median absolute deviation.
+
+    """
+
+    def fit(self, X, y=None):
+
+        dim = X.shape[-1]
+
+        if dim == 1:
+            self._location = np.median(X, axis=0)
+            self._scale = scipy.stats.median_abs_deviation(
+                X, axis=0, scale=1 / 1.4826)
+        else:
+            raise NotImplementedError("Only implemented for one dimension")
+
+        return self
+
+    def predict(self, X):
+
+        dim = X.shape[-1]
+
+        if dim == 1:
+            # Special case, can be computed exactly
+            return (np.abs(X - self._location) /
+                    self._scale)[..., 0]
+
+        else:
+            raise NotImplementedError("Only implemented for one dimension")
+
+    @property
+    def max(self):
+        return np.inf
+
+
+class ProjectionDepth(OutlyingnessBasedDepth):
+
+    def __init__(self):
+        super().__init__(outlyingness=StahelDonohoOutlyingness())
 
 
 def projection_depth(X, *, pointwise=False):
@@ -216,8 +316,4 @@ def projection_depth(X, *, pointwise=False):
     The projection depth is the depth function associated with the
     Stagel-Donoho outlyingness.
     """
-    from . import outlyingness_to_depth
-
-    depth = outlyingness_to_depth(_stagel_donoho_outlyingness)
-
-    return depth(X, pointwise=pointwise)
+    return ProjectionDepth().fit_predict(X.data_matrix)

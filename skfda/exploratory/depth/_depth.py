@@ -118,45 +118,6 @@ class BandDepth(FunctionalDepth):
         return num_in / n_total
 
 
-def outlyingness_to_depth(outlyingness, *, supreme=None):
-    r"""Convert outlyingness function to depth function.
-
-    An outlyingness function :math:`O(x)` can be converted to a depth
-    function as
-
-    .. math::
-        D(x) = \frac{1}{1 + O(x)}
-
-    if :math:`O(x)` is unbounded or as
-
-    .. math::
-        D(x) = 1 - \frac{O(x)}{\sup O(x)}
-
-    if :math:`O(x)` is bounded ([Se06]_).
-
-    Args:
-        outlyingness (Callable): Outlyingness function.
-        supreme (float, optional): Supreme value of the outlyingness function.
-
-    Returns:
-        Callable: The corresponding depth function.
-
-    References:
-        .. [Se06] Serfling, R. (2006). Depth functions in nonparametric
-           multivariate inference. DIMACS Series in Discrete Mathematics and
-           Theoretical Computer Science, 72, 1.
-    """
-
-    if supreme is None or math.isinf(supreme):
-        def depth(*args, **kwargs):
-            return 1 / (1 + outlyingness(*args, **kwargs))
-    else:
-        def depth(*args, **kwargs):
-            return 1 - outlyingness(*args, **kwargs) / supreme
-
-    return depth
-
-
 def band_depth(fdatagrid, *, pointwise=False):
     """Implementation of Band Depth for functional data.
 

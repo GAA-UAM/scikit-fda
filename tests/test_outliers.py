@@ -16,7 +16,7 @@ class TestsDirectionalOutlyingness(unittest.TestCase):
         grid_points = [2, 4, 6, 8]
         fd = FDataGrid(data_matrix, grid_points)
         stats = directional_outlyingness_stats(
-            fd, depth_method=modified_band_depth)
+            fd, multivariate_depth=modified_band_depth)
         np.testing.assert_allclose(stats.directional_outlyingness,
                                    np.array([[[0.],
                                               [0.],

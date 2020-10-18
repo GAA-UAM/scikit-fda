@@ -13,7 +13,7 @@ class TestMagnitudeShapePlot(unittest.TestCase):
         fd = fetch_weather()["data"]
         fd_temperatures = fd.coordinates[0]
         msplot = MagnitudeShapePlot(
-            fd_temperatures, depth_method=modified_band_depth)
+            fd_temperatures, multivariate_depth=modified_band_depth)
         np.testing.assert_allclose(msplot.points,
                                    np.array([[0.2112587, 3.0322570],
                                              [1.2823448, 0.8272850],

@@ -1,4 +1,4 @@
-from skfda.exploratory.depth.multivariate import projection_depth
+from skfda.exploratory.depth.multivariate import ProjectionDepth
 import typing
 
 from numpy import linalg as la
@@ -22,7 +22,7 @@ class DirectionalOutlyingnessStats(typing.NamedTuple):
 
 def directional_outlyingness_stats(
         fdatagrid: FDataGrid, *,
-        multivariate_depth=projection_depth,
+        multivariate_depth=ProjectionDepth(),
         pointwise_weights=None) -> DirectionalOutlyingnessStats:
     r"""Computes the directional outlyingness of the functional data.
 
@@ -84,8 +84,8 @@ def directional_outlyingness_stats(
         fdatagrid (FDataGrid): Object containing the samples to be ordered
             according to the directional outlyingness.
         multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
-            Method used to order the data. Defaults to :func:`modified band
-            depth <fda.depth_measures.modified_band_depth>`.
+            Method used to order the data. Defaults to :func:`projection
+            depth <skfda.exploratory.depth.multivariate.ProjectionDepth>`.
         pointwise_weights (array_like, optional): an array containing the
             weights of each point of discretisation where values have been
             recorded. Defaults to the same weight for each of the points:
@@ -162,7 +162,7 @@ def directional_outlyingness_stats(
             len(fdatagrid.grid_points[0])) / (
                 fdatagrid.domain_range[0][1] - fdatagrid.domain_range[0][0])
 
-    depth_pointwise = multivariate_depth(fdatagrid, pointwise=True)
+    depth_pointwise = multivariate_depth(fdatagrid.data_matrix)
     assert depth_pointwise.shape == fdatagrid.data_matrix.shape[:-1]
 
     # Obtaining the pointwise median sample Z, to calculate
@@ -254,8 +254,8 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
 
     Parameters:
         multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
-            Method used to order the data. Defaults to :func:`projection
-            depth <fda.depth_measures.multivariate.projection_depth>`.
+            Method used to order the data. Defaults to :class:`projection
+            depth <fda.depth_measures.multivariate.ProjectionDepth>`.
         pointwise_weights (array_like, optional): an array containing the
             weights of each points of discretisati on where values have
             been recorded.
@@ -303,7 +303,7 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
     """
 
     def __init__(
-            self, *, multivariate_depth=projection_depth,
+            self, *, multivariate_depth=ProjectionDepth(),
             pointwise_weights=None,
             assume_centered=False,
             support_fraction=None,

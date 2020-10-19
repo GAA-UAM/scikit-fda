@@ -145,6 +145,16 @@ class _UnivariateFraimanMuniz(Depth):
     """
     Univariate depth used to compute the Fraiman an Muniz depth.
 
+    Each column is considered as the samples of an aleatory variable.
+    The univariate depth of each of the samples of each column is calculated
+    as follows:
+
+    .. math::
+        D(x) = 1 - \left\lvert \frac{1}{2}- F(x)\right\rvert
+
+    Where :math:`F` stands for the marginal univariate distribution function of
+    each column.
+
     """
 
     def fit(self, X, y=None):
@@ -327,12 +337,3 @@ class ProjectionDepth(OutlyingnessBasedDepth):
 
     def __init__(self):
         super().__init__(outlyingness=StahelDonohoOutlyingness())
-
-
-def projection_depth(X, *, pointwise=False):
-    """Returns the projection depth.
-
-    The projection depth is the depth function associated with the
-    Stagel-Donoho outlyingness.
-    """
-    return ProjectionDepth().fit_predict(X.data_matrix)

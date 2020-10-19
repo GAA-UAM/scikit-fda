@@ -4,10 +4,8 @@ This module includes different methods to order functional data,
 from the center (larger values) outwards(smaller ones)."""
 
 import itertools
-import math
 
 import scipy.integrate
-from scipy.stats import rankdata
 
 import numpy as np
 
@@ -32,6 +30,35 @@ class IntegratedDepth(FunctionalDepth):
     """
     Functional depth as the integral of a multivariate depth.
 
+    This type of depth was introduced by Fraiman and Muniz ([FrMu01]_).
+
+    Args:
+        multivariate_depth (Depth): Multivariate depth to integrate.
+            By default it is the one used in [FrMu01]_, that is,
+
+            .. math::
+                D(x) = 1 - \left\lvert \frac{1}{2}- F(x)\right\rvert
+
+    Examples:
+
+        >>> import skfda
+        >>>
+        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
+        ...                [0.5, 0.5, 1, 2, 1.5, 1],
+        ...                [-1, -1, -0.5, 1, 1, 0.5],
+        ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
+        >>> depth = skfda.exploratory.depth.IntegratedDepth()
+        >>> depth(fd)
+        array([ 0.5  ,  0.75 ,  0.925,  0.875])
+
+    References:
+
+    .. [FrMu01] Fraiman, R., & Muniz, G. (2001). Trimmed means for functional
+       data. Test, 10(2), 419–440. https://doi.org/10.1007/BF02595706
+
+
     """
 
     def __init__(self, *,
@@ -45,27 +72,23 @@ class IntegratedDepth(FunctionalDepth):
         self.multivariate_depth.fit(X.data_matrix)
         return self
 
-    def predict(self, X, *, pointwise=False):
+    def predict(self, X):
 
         pointwise_depth = self.multivariate_depth.predict(X.data_matrix)
 
-        if pointwise:
-            return pointwise_depth
-        else:
+        interval_len = (self._domain_range[0][1]
+                        - self._domain_range[0][0])
 
-            interval_len = (self._domain_range[0][1]
-                            - self._domain_range[0][0])
+        integrand = pointwise_depth
 
-            integrand = pointwise_depth
+        for d, s in zip(X.domain_range, X.grid_points):
+            integrand = scipy.integrate.simps(integrand,
+                                              x=s,
+                                              axis=1)
+            interval_len = d[1] - d[0]
+            integrand /= interval_len
 
-            for d, s in zip(X.domain_range, X.grid_points):
-                integrand = scipy.integrate.simps(integrand,
-                                                  x=s,
-                                                  axis=1)
-                interval_len = d[1] - d[0]
-                integrand /= interval_len
-
-            return integrand
+        return integrand
 
     @property
     def max(self):
@@ -77,6 +100,36 @@ class IntegratedDepth(FunctionalDepth):
 
 
 class ModifiedBandDepth(IntegratedDepth):
+    """
+    Implementation of Modified Band Depth for functional data.
+
+    The band depth of each sample is obtained by computing the fraction of time
+    its graph is contained in the bands determined by two sample curves.
+    In the case the fdatagrid domain dimension is 2, instead of curves,
+    surfaces determine the bands. In larger dimensions, the hyperplanes
+    determine the bands. This method was originally defined in [LoRo09]_.
+
+    Examples:
+
+        >>> import skfda
+        >>>
+        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
+        ...                [0.5, 0.5, 1, 2, 1.5, 1],
+        ...                [-1, -1, -0.5, 1, 1, 0.5],
+        ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
+        >>> depth = skfda.exploratory.depth.ModifiedBandDepth()
+        >>> values = depth(fd)
+        >>> values.round(2)
+        array([ 0.5 ,  0.83,  0.73,  0.67])
+
+    References:
+        .. [LoRo09] López-Pintado, S., & Romo, J. (2009). On the Concept of
+           Depth for Functional Data. Journal of the American Statistical
+           Association, 104(486), 718–734.
+           https://doi.org/10.1198/jasa.2009.0108
+    """
 
     def __init__(self):
         super().__init__(multivariate_depth=multivariate.SimplicialDepth())
@@ -84,7 +137,33 @@ class ModifiedBandDepth(IntegratedDepth):
 
 class BandDepth(FunctionalDepth):
     """
-    Functional depth as the integral of a multivariate depth.
+    Implementation of Band Depth for functional data.
+
+    The band depth of each sample is obtained by computing the fraction of the
+    bands determined by two sample curves containing the whole graph of the
+    first one. In the case the fdatagrid domain dimension is 2, instead of
+    curves, surfaces determine the bands. In larger dimensions, the hyperplanes
+    determine the bands. This method was originally defined in [LoRo09]_.
+
+    Examples:
+
+        >>> import skfda
+        >>>
+        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
+        ...                [0.5, 0.5, 1, 2, 1.5, 1],
+        ...                [-1, -1, -0.5, 1, 1, 0.5],
+        ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
+        >>> depth = skfda.exploratory.depth.BandDepth()
+        >>> depth(fd)
+        array([ 0.5       ,  0.83333333,  0.5       ,  0.5       ])
+
+    References:
+        .. [LoRo09] López-Pintado, S., & Romo, J. (2009). On the Concept of
+           Depth for Functional Data. Journal of the American Statistical
+           Association, 104(486), 718–734.
+           https://doi.org/10.1198/jasa.2009.0108
 
     """
 
@@ -97,7 +176,7 @@ class BandDepth(FunctionalDepth):
         self._distribution = X
         return self
 
-    def predict(self, X, *, pointwise=False):
+    def predict(self, X):
 
         num_in = 0
         n_total = 0
@@ -116,148 +195,3 @@ class BandDepth(FunctionalDepth):
             n_total += 1
 
         return num_in / n_total
-
-
-def band_depth(fdatagrid, *, pointwise=False):
-    """Implementation of Band Depth for functional data.
-
-    The band depth of each sample is obtained by computing the fraction of the
-    bands determined by two sample curves containing the whole graph of the
-    first one. In the case the fdatagrid domain dimension is 2, instead of
-    curves, surfaces determine the bands. In larger dimensions, the hyperplanes
-    determine the bands.
-
-    Args:
-        fdatagrid (FDataGrid): Object over whose samples the band depth is
-            going to be calculated.
-        pointwise (boolean, optional): Indicates if the pointwise depth is
-            returned instead. Defaults to False.
-
-    Returns:
-        depth (numpy.darray): Array containing the band depth of the samples,
-            or the band depth of the samples at each point of discretization
-            if pointwise equals to True.
-
-    Examples:
-
-        >>> import skfda
-        >>>
-        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
-        ...                [0.5, 0.5, 1, 2, 1.5, 1],
-        ...                [-1, -1, -0.5, 1, 1, 0.5],
-        ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> grid_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
-        >>> band_depth(fd)
-        array([ 0.5       ,  0.83333333,  0.5       ,  0.5       ])
-
-    """
-    if pointwise:
-        return modified_band_depth(fdatagrid, pointwise)
-    else:
-        return BandDepth().fit(fdatagrid).predict(
-            fdatagrid, pointwise=pointwise)
-
-
-def modified_band_depth(fdatagrid, *, pointwise=False):
-    """Implementation of Modified Band Depth for functional data.
-
-    The band depth of each sample is obtained by computing the fraction of time
-    its graph is contained in the bands determined by two sample curves.
-    In the case the fdatagrid domain dimension is 2, instead of curves,
-    surfaces determine the bands. In larger dimensions, the hyperplanes
-    determine the bands.
-
-    Args:
-        fdatagrid (FDataGrid): Object over whose samples the modified band
-            depth is going to be calculated.
-        pointwise (boolean, optional): Indicates if the pointwise depth is
-            returned instead. Defaults to False.
-
-    Returns:
-        depth (numpy.darray): Array containing the modified band depth of the
-            samples, or the modified band depth of the samples at each point
-            of discretization if pointwise equals to True.
-
-    Examples:
-
-        >>> import skfda
-        >>>
-        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
-        ...                [0.5, 0.5, 1, 2, 1.5, 1],
-        ...                [-1, -1, -0.5, 1, 1, 0.5],
-        ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> grid_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
-        >>> depth = modified_band_depth(fd)
-        >>> depth.round(2)
-        array([ 0.5 ,  0.83,  0.73,  0.67])
-        >>> pointwise = modified_band_depth(fd, pointwise = True)
-        >>> pointwise.round(2)
-        array([[ 0.5 ,  0.5 ,  0.5 ,  0.5 ,  0.5 ,  0.5 ],
-               [ 0.83,  0.83,  0.83,  0.83,  0.83,  0.83],
-               [ 0.5 ,  0.5 ,  0.83,  0.83,  0.83,  0.83],
-               [ 0.83,  0.83,  0.83,  0.5 ,  0.5 ,  0.5 ]])
-
-    """
-    return ModifiedBandDepth().fit(fdatagrid).predict(
-        fdatagrid, pointwise=pointwise)
-
-
-def fraiman_muniz_depth(fdatagrid, *, pointwise=False):
-    r"""Implementation of Fraiman and Muniz (FM) Depth for functional data.
-
-    Each column is considered as the samples of an aleatory variable.
-    The univariate depth of each of the samples of each column is calculated
-    as follows:
-
-    .. math::
-        D(x) = 1 - \left\lvert \frac{1}{2}- F(x)\right\rvert
-
-    Where :math:`F` stands for the marginal univariate distribution function of
-    each column.
-
-    The depth of a sample is the result of integrating the previously computed
-    depth for each of its points and normalizing dividing by the length of
-    the interval.
-
-    Args:
-        fdatagrid (FDataGrid): Object over whose samples the FM depth is going
-            to be calculated.
-        pointwise (boolean, optional): Indicates if the pointwise depth is
-             returned instead. Defaults to False.
-
-    Returns:
-        depth (numpy.darray): Array containing the Fraiman-Muniz depth of the
-            samples, or the Fraiman-Muniz of the samples at each point
-            of discretization if pointwise equals to True.
-
-    Examples:
-        Currently, this depth function can only be used
-        for univariate functional data:
-
-        >>> import skfda
-        >>>
-        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
-        ...                [0.5, 0.5, 1, 2, 1.5, 1],
-        ...                [-1, -1, -0.5, 1, 1, 0.5],
-        ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> grid_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
-        >>> fraiman_muniz_depth(fd)
-        array([ 0.5  ,  0.75 ,  0.925,  0.875])
-
-        You can use ``pointwise`` to obtain the pointwise depth,
-        before the integral is applied.
-
-        >>> pointwise = fraiman_muniz_depth(fd, pointwise = True)
-        >>> pointwise
-        array([[ 0.5 ,  0.5 ,  0.5 ,  0.5 ,  0.5 ,  0.5 ],
-               [ 0.75,  0.75,  0.75,  0.75,  0.75,  0.75],
-               [ 0.75,  0.75,  1.  ,  1.  ,  1.  ,  1.  ],
-               [ 1.  ,  1.  ,  1.  ,  0.75,  0.75,  0.75]])
-
-
-    """
-    return IntegratedDepth().fit(fdatagrid).predict(
-        fdatagrid, pointwise=pointwise)

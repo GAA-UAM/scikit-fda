@@ -1,7 +1,7 @@
 from sklearn.base import BaseEstimator, OutlierMixin
 
 from . import _envelopes
-from ..depth import modified_band_depth
+from ..depth import ModifiedBandDepth
 
 
 class IQROutlierDetector(BaseEstimator, OutlierMixin):
@@ -32,7 +32,7 @@ class IQROutlierDetector(BaseEstimator, OutlierMixin):
 
     """
 
-    def __init__(self, *, depth_method=modified_band_depth, factor=1.5):
+    def __init__(self, *, depth_method=ModifiedBandDepth(), factor=1.5):
         self.depth_method = depth_method
         self.factor = factor
 

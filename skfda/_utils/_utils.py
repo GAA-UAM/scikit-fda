@@ -1,5 +1,6 @@
 """Module with generic methods"""
 
+from builtins import getattr
 import functools
 import numbers
 import types

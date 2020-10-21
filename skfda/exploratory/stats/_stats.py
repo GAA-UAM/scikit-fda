@@ -1,6 +1,6 @@
 """Functional data descriptive statistics.
 """
-from ..depth import modified_band_depth
+from ..depth import ModifiedBandDepth
 
 
 def mean(fdata):
@@ -69,7 +69,7 @@ def cov(fdatagrid):
     return fdatagrid.cov()
 
 
-def depth_based_median(fdatagrid, depth_method=modified_band_depth):
+def depth_based_median(fdatagrid, depth_method=ModifiedBandDepth()):
     """Compute the median based on a depth measure.
 
     The depth based median is the deepest curve given a certain
@@ -80,7 +80,7 @@ def depth_based_median(fdatagrid, depth_method=modified_band_depth):
             functional variable.
         depth_method (:ref:`depth measure <depth-measures>`, optional):
                 Method used to order the data. Defaults to :func:`modified
-                band depth <fda.depth_measures.modified_band_depth>`.
+                band depth <skfda.exploratory.depth.ModifiedBandDepth>`.
 
     Returns:
         FDataGrid: object containing the computed depth_based median.
@@ -95,7 +95,7 @@ def depth_based_median(fdatagrid, depth_method=modified_band_depth):
 
 def trim_mean(fdatagrid,
               proportiontocut,
-              depth_method=modified_band_depth):
+              depth_method=ModifiedBandDepth()):
     """Compute the trimmed means based on a depth measure.
 
     The trimmed means consists in computing the mean function without a
@@ -114,7 +114,7 @@ def trim_mean(fdatagrid,
             dataset.
         depth_method (:ref:`depth measure <depth-measures>`, optional):
             Method used to order the data. Defaults to :func:`modified
-            band depth <fda.depth_measures.modified_band_depth>`.
+            band depth <skfda.exploratory.depth.ModifiedBandDepth>`.
 
     Returns:
         FDataGrid: object containing the computed trimmed mean.

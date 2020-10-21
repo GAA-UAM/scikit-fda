@@ -1,4 +1,4 @@
-from skfda.exploratory.depth.multivariate import projection_depth
+from skfda.exploratory.depth.multivariate import ProjectionDepth
 import typing
 
 from numpy import linalg as la
@@ -22,7 +22,7 @@ class DirectionalOutlyingnessStats(typing.NamedTuple):
 
 def directional_outlyingness_stats(
         fdatagrid: FDataGrid, *,
-        depth_method=projection_depth,
+        multivariate_depth=ProjectionDepth(),
         pointwise_weights=None) -> DirectionalOutlyingnessStats:
     r"""Computes the directional outlyingness of the functional data.
 
@@ -83,9 +83,9 @@ def directional_outlyingness_stats(
     Args:
         fdatagrid (FDataGrid): Object containing the samples to be ordered
             according to the directional outlyingness.
-        depth_method (:ref:`depth measure <depth-measures>`, optional): Method
-            used to order the data. Defaults to :func:`modified band depth
-            <fda.depth_measures.modified_band_depth>`.
+        multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
+            Method used to order the data. Defaults to :func:`projection
+            depth <skfda.exploratory.depth.multivariate.ProjectionDepth>`.
         pointwise_weights (array_like, optional): an array containing the
             weights of each point of discretisation where values have been
             recorded. Defaults to the same weight for each of the points:
@@ -104,42 +104,42 @@ def directional_outlyingness_stats(
         >>> fd = FDataGrid(data_matrix, grid_points)
         >>> stats = directional_outlyingness_stats(fd)
         >>> stats.directional_outlyingness
-        array([[[ 0.89932101],
-                [ 0.89932101],
-                [ 1.57381177],
-                [ 1.01173614],
-                [ 1.12415127],
-                [ 1.12415127]],
+        array([[[ 1.33333333],
+                [ 1.33333333],
+                [ 2.33333333],
+                [ 1.5       ],
+                [ 1.66666667],
+                [ 1.66666667]],
                [[ 0.        ],
                 [ 0.        ],
                 [ 0.        ],
                 [ 0.        ],
                 [ 0.        ],
                 [ 0.        ]],
-               [[-0.89932101],
-                [-0.89932101],
-                [-0.67449076],
-                [-0.33724538],
-                [-0.22483025],
-                [-0.22483025]],
-               [[-0.44966051],
-                [-0.44966051],
-                [-0.67449076],
-                [-1.6862269 ],
-                [-2.02347228],
-                [-1.57381177]]])
+               [[-1.33333333],
+                [-1.33333333],
+                [-1.        ],
+                [-0.5       ],
+                [-0.33333333],
+                [-0.33333333]],
+               [[-0.66666667],
+                [-0.66666667],
+                [-1.        ],
+                [-2.5       ],
+                [-3.        ],
+                [-2.33333333]]])
 
     >>> stats.functional_directional_outlyingness
-    array([ 2.99742218,  2.93929124,  3.01966359,  3.36873005])
+    array([ 6.58864198,  6.4608642 ,  6.63753086,  7.40481481])
 
     >>> stats.mean_directional_outlyingness
-    array([[ 1.12415127],
+    array([[ 1.66666667],
            [ 0.        ],
-           [-0.53959261],
-           [-1.17661166]])
+           [-0.8       ],
+           [-1.74444444]])
 
     >>> stats.variation_directional_outlyingness
-    array([ 0.05813094,  0.        ,  0.08037234,  0.4294388 ])
+    array([ 0.12777778,  0.        ,  0.17666667,  0.94395062])
 
     References:
         Dai, Wenlin, and Genton, Marc G. "Directional outlyingness for
@@ -162,7 +162,7 @@ def directional_outlyingness_stats(
             len(fdatagrid.grid_points[0])) / (
                 fdatagrid.domain_range[0][1] - fdatagrid.domain_range[0][0])
 
-    depth_pointwise = depth_method(fdatagrid, pointwise=True)
+    depth_pointwise = multivariate_depth(fdatagrid.data_matrix)
     assert depth_pointwise.shape == fdatagrid.data_matrix.shape[:-1]
 
     # Obtaining the pointwise median sample Z, to calculate
@@ -253,9 +253,9 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
     detecting outliers under a normal distribution.
 
     Parameters:
-        depth_method (:ref:`depth measure <depth-measures>`, optional):
-            Method used to order the data. Defaults to :func:`projection
-            depth <fda.depth_measures.multivariate.projection_depth>`.
+        multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
+            Method used to order the data. Defaults to :class:`projection
+            depth <fda.depth_measures.multivariate.ProjectionDepth>`.
         pointwise_weights (array_like, optional): an array containing the
             weights of each points of discretisati on where values have
             been recorded.
@@ -303,7 +303,7 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
     """
 
     def __init__(
-            self, *, depth_method=projection_depth,
+            self, *, multivariate_depth=ProjectionDepth(),
             pointwise_weights=None,
             assume_centered=False,
             support_fraction=None,
@@ -311,7 +311,7 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
             random_state=0,
             alpha=0.993,
             _force_asymptotic=False):
-        self.depth_method = depth_method
+        self.multivariate_depth = multivariate_depth
         self.pointwise_weights = pointwise_weights
         self.assume_centered = assume_centered
         self.support_fraction = support_fraction
@@ -324,7 +324,7 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         # The depths of the samples are calculated giving them an ordering.
         *_, mean_dir_outl, variation_dir_outl = directional_outlyingness_stats(
             X,
-            depth_method=self.depth_method,
+            multivariate_depth=self.multivariate_depth,
             pointwise_weights=self.pointwise_weights)
 
         points = np.concatenate((mean_dir_outl,

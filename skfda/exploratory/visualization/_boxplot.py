@@ -12,7 +12,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ..depth import modified_band_depth
+from ..depth import ModifiedBandDepth
 from ..outliers import _envelopes
 from ._utils import (_figure_to_svg, _get_figure_and_axes,
                      _set_figure_layout_for_fdata, _set_labels)
@@ -104,7 +104,7 @@ class Boxplot(FDataBoxplot):
         depth_method (:ref:`depth measure <depth-measures>`, optional):
             Method used to order the data. Defaults to :func:`modified
             band depth
-            <fda.depth_measures.modified_band_depth>`.
+            <skfda.exploratory.depth.ModifiedBandDepth>`.
         prob (list of float, optional): List with float numbers (in the
             range from 1 to 0) that indicate which central regions to
             represent.
@@ -246,7 +246,7 @@ class Boxplot(FDataBoxplot):
 
     """
 
-    def __init__(self, fdatagrid, depth_method=modified_band_depth, prob=[0.5],
+    def __init__(self, fdatagrid, depth_method=ModifiedBandDepth(), prob=[0.5],
                  factor=1.5):
         """Initialization of the Boxplot class.
 
@@ -255,7 +255,7 @@ class Boxplot(FDataBoxplot):
             depth_method (:ref:`depth measure <depth-measures>`, optional):
                 Method used to order the data. Defaults to :func:`modified
                 band depth
-                <fda.depth_measures.modified_band_depth>`.
+                <skfda.exploratory.depth.ModifiedBandDepth>`.
             prob (list of float, optional): List with float numbers (in the
                 range from 1 to 0) that indicate which central regions to
                 represent.
@@ -465,8 +465,8 @@ class SurfaceBoxplot(FDataBoxplot):
 
         fdatagrid (FDataGrid): Object containing the data.
         method (:ref:`depth measure <depth-measures>`, optional): Method
-            used to order the data. Defaults to :func:`modified band depth
-            <fda.depth_measures.modified_band_depth>`.
+            used to order the data. Defaults to :class:`modified band depth
+            <skfda.exploratory.depth.ModifiedBandDepth>`.
         prob (list of float, optional): List with float numbers (in the
             range from 1 to 0) that indicate which central regions to
             represent.
@@ -562,14 +562,14 @@ class SurfaceBoxplot(FDataBoxplot):
 
     """
 
-    def __init__(self, fdatagrid, method=modified_band_depth, factor=1.5):
+    def __init__(self, fdatagrid, method=ModifiedBandDepth(), factor=1.5):
         """Initialization of the functional boxplot.
 
         Args:
             fdatagrid (FDataGrid): Object containing the data.
             method (:ref:`depth measure <depth-measures>`, optional): Method
-                used to order the data. Defaults to :func:`modified band depth
-                <fda.depth_measures.modified_band_depth>`.
+                used to order the data. Defaults to :class:`modified band depth
+                <skfda.exploratory.depth.ModifiedBandDepth>`.
             prob (list of float, optional): List with float numbers (in the
                 range from 1 to 0) that indicate which central regions to
                 represent.

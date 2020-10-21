@@ -11,7 +11,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ..depth import modified_band_depth
 from ..outliers import DirectionalOutlierDetector
 from ._utils import _figure_to_svg, _get_figure_and_axes, _set_figure_layout
 
@@ -38,9 +37,9 @@ class MagnitudeShapePlot:
     Args:
 
         fdatagrid (FDataGrid): Object containing the data.
-        depth_method (:ref:`depth measure <depth-measures>`, optional):
-            Method used to order the data. Defaults to :func:`projection
-            depth <fda.depth_measures.multivariate.projection_depth>`.
+        multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
+            Method used to order the data. Defaults to :class:`projection
+            depth <fda.depth_measures.multivariate.ProjectionDepth>`.
         pointwise_weights (array_like, optional): an array containing the
             weights of each points of discretisati on where values have
             been recorded.
@@ -68,16 +67,6 @@ class MagnitudeShapePlot:
 
     Attributes:
 
-        fdatagrid (FDataGrid): Object to be visualized.
-        depth_method (:ref:`depth measure <depth-measures>`, optional): Method
-            used to order the data. Defaults to :func:`modified band depth
-            <fda.depth_measures.modified_band_depth>`.
-        pointwise_weights (array_like, optional): an array containing the
-            weights of each points of discretisation where values have been
-            recorded.
-        alpha(float, optional): Denotes the quantile to choose the cutoff
-            value for detecting outliers Defaults to 0.993, which is used
-            in the classical boxplot.
         points(numpy.ndarray): 2-dimensional matrix where each row
             contains the points plotted in the graph.
         outliers (1-D array, (fdatagrid.n_samples,)): Contains 1 or 0 to denote
@@ -111,7 +100,6 @@ class MagnitudeShapePlot:
     Example:
 
         >>> import skfda
-        >>> from skfda.exploratory.depth import modified_band_depth
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
@@ -148,13 +136,13 @@ class MagnitudeShapePlot:
                 grid_points=(array([ 0.,  2.,  4.,  6.,  8., 10.]),),
                 domain_range=((0.0, 10.0),),
                 ...),
-            depth_method=projection_depth,
+            multivariate_depth=ProjectionDepth(),
             pointwise_weights=None,
             alpha=0.993,
-            points=array([[ 1.12415127,  0.05813094],
+            points=array([[ 1.66666667,  0.12777778],
                           [ 0.        ,  0.        ],
-                          [-0.53959261,  0.08037234],
-                          [-1.17661166,  0.4294388 ]]),
+                          [-0.8       ,  0.17666667],
+                          [-1.74444444,  0.94395062]]),
             outliers=array([False, False, False, False]),
             colormap=seismic,
             color=0.2,
@@ -177,9 +165,9 @@ class MagnitudeShapePlot:
 
         Args:
             fdatagrid (FDataGrid): Object containing the data.
-            depth_method (:ref:`depth measure <depth-measures>`, optional):
-                Method used to order the data. Defaults to :func:`projection
-                depth <fda.depth_measures.multivariate.projection_depth>`.
+            multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
+                Method used to order the data. Defaults to :class:`projection
+                depth <fda.depth_measures.multivariate.ProjectionDepth>`.
             pointwise_weights (array_like, optional): an array containing the
                 weights of each points of discretisati on where values have
                 been recorded.
@@ -231,8 +219,8 @@ class MagnitudeShapePlot:
         return self._fdatagrid
 
     @property
-    def depth_method(self):
-        return self.outlier_detector.depth_method
+    def multivariate_depth(self):
+        return self.outlier_detector.multivariate_depth
 
     @property
     def pointwise_weights(self):
@@ -317,7 +305,7 @@ class MagnitudeShapePlot:
         """Return repr(self)."""
         return (f"MagnitudeShapePlot("
                 f"\nFDataGrid={repr(self.fdatagrid)},"
-                f"\ndepth_method={self.depth_method.__name__},"
+                f"\nmultivariate_depth={self.multivariate_depth},"
                 f"\npointwise_weights={repr(self.pointwise_weights)},"
                 f"\nalpha={repr(self.alpha)},"
                 f"\npoints={repr(self.points)},"

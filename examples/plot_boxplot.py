@@ -11,11 +11,12 @@ dataset.
 
 # sphinx_gallery_thumbnail_number = 2
 
+from skfda import datasets
+from skfda.exploratory.depth import ModifiedBandDepth, IntegratedDepth
+from skfda.exploratory.visualization import Boxplot
+
 import matplotlib.pyplot as plt
 import numpy as np
-from skfda import datasets
-from skfda.exploratory.depth import band_depth, fraiman_muniz_depth
-from skfda.exploratory.visualization import Boxplot
 
 
 ##############################################################################
@@ -77,20 +78,21 @@ fd_temperatures.plot(group=fdBoxplot.outliers.astype(int),
 ##############################################################################
 # The curves pointed as outliers are are those curves with significantly lower
 # values than the rest. This is the expected result due to the depth measure
-# used, :func:`~skfda.exploratory.depth.fraiman_muniz_depth`, which ranks
+# used, :func:`~skfda.exploratory.depth.IntegratedDepth`, which ranks
 # the samples according to their magnitude.
 #
 # The :class:`~skfda.exploratory.visualization.Boxplot` object admits any
 # :ref:`depth measure <depth-measures>` defined or customized by the user. Now
-# the call is done with the :func:`~skfda.exploratory.depth.band_depth` and
-# the factor is reduced in order to designate some samples as outliers
+# the call is done with the :class:`~skfda.exploratory.depth.ModifiedBandDepth`
+# and the factor is reduced in order to designate some samples as outliers
 # (otherwise, with this measure and the default factor, none of the curves are
 # pointed out as outliers). We can see that the outliers detected belong to
 # the Pacific and Arctic climates which are less common to find in Canada. As
 # a consequence, this measure detects better shape outliers compared to the
 # previous one.
 
-fdBoxplot = Boxplot(fd_temperatures, depth_method=band_depth, factor=0.4)
+fdBoxplot = Boxplot(
+    fd_temperatures, depth_method=ModifiedBandDepth(), factor=0.4)
 fdBoxplot.show_full_outliers = True
 
 fdBoxplot.plot()
@@ -101,10 +103,10 @@ fdBoxplot.plot()
 # 50% one.
 #
 # In the following instantiation, the
-# :func:`~skfda.exploratory.depth.fraiman_muniz_depth` is used and the 25% and
+# :func:`~skfda.exploratory.depth.IntegratedDepth` is used and the 25% and
 # 75% central regions are specified.
 
-fdBoxplot = Boxplot(fd_temperatures,  depth_method=fraiman_muniz_depth,
+fdBoxplot = Boxplot(fd_temperatures,  depth_method=IntegratedDepth(),
                     prob=[0.75, 0.5, 0.25])
 fdBoxplot.plot()
 

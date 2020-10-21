@@ -10,11 +10,13 @@ Shows the use of the MS-Plot applied to the Canadian Weather dataset.
 
 # sphinx_gallery_thumbnail_number = 2
 
+from skfda import datasets
+from skfda.exploratory.depth import IntegratedDepth
+from skfda.exploratory.depth.multivariate import SimplicialDepth
+from skfda.exploratory.visualization import MagnitudeShapePlot
+
 import matplotlib.pyplot as plt
 import numpy as np
-from skfda import datasets
-from skfda.exploratory.depth import fraiman_muniz_depth, modified_band_depth
-from skfda.exploratory.visualization import MagnitudeShapePlot
 
 
 ##############################################################################
@@ -49,7 +51,7 @@ fd_temperatures.plot(group=dataset["target"],
 # (which is 'seismic' and can be customized), are assigned.
 
 msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures,
-                            depth_method=modified_band_depth)
+                            multivariate_depth=SimplicialDepth())
 
 color = 0.3
 outliercol = 0.7
@@ -76,12 +78,12 @@ fd_temperatures.plot(group=msplot.outliers.astype(int),
 # outliers but in the MS-Plot, they appear further left from the central
 # points. This behaviour can be modified specifying the parameter alpha.
 #
-# Now we use the pointwise
-# :func:`~skfda.exploratory.depth_measures.fraiman_muniz_depth` in the
+# Now we use the default multivariate depth from
+# :func:`~skfda.exploratory.depth.IntegratedDepth` in the
 # MS-Plot.
 
 msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures,
-                            depth_method=fraiman_muniz_depth)
+                            multivariate_depth=IntegratedDepth().multivariate_depth)
 
 msplot.color = color
 msplot.outliercol = outliercol

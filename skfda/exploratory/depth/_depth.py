@@ -10,31 +10,20 @@ import scipy.integrate
 import numpy as np
 
 from . import multivariate
+from .multivariate import Depth
 
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
 
-class FunctionalDepth(multivariate.Depth):
-    """
-    Abstract class representing a functional depth function.
-
-    Usually it will accept a distribution in the initializer.
-
-    """
-    pass
-
-
-class IntegratedDepth(FunctionalDepth):
-    """
+class IntegratedDepth(Depth):
+    r"""
     Functional depth as the integral of a multivariate depth.
-
-    This type of depth was introduced by Fraiman and Muniz ([FrMu01]_).
 
     Args:
         multivariate_depth (Depth): Multivariate depth to integrate.
-            By default it is the one used in [FrMu01]_, that is,
+            By default it is the one used by Fraiman and Muniz, that is,
 
             .. math::
                 D(x) = 1 - \left\lvert \frac{1}{2}- F(x)\right\rvert
@@ -55,8 +44,8 @@ class IntegratedDepth(FunctionalDepth):
 
     References:
 
-    .. [FrMu01] Fraiman, R., & Muniz, G. (2001). Trimmed means for functional
-       data. Test, 10(2), 419–440. https://doi.org/10.1007/BF02595706
+        Fraiman, R., & Muniz, G. (2001). Trimmed means for functional
+        data. Test, 10(2), 419–440. https://doi.org/10.1007/BF02595706
 
 
     """
@@ -100,14 +89,14 @@ class IntegratedDepth(FunctionalDepth):
 
 
 class ModifiedBandDepth(IntegratedDepth):
-    """
+    r"""
     Implementation of Modified Band Depth for functional data.
 
     The band depth of each sample is obtained by computing the fraction of time
     its graph is contained in the bands determined by two sample curves.
     In the case the fdatagrid domain dimension is 2, instead of curves,
     surfaces determine the bands. In larger dimensions, the hyperplanes
-    determine the bands. This method was originally defined in [LoRo09]_.
+    determine the bands.
 
     Examples:
 
@@ -125,25 +114,26 @@ class ModifiedBandDepth(IntegratedDepth):
         array([ 0.5 ,  0.83,  0.73,  0.67])
 
     References:
-        .. [LoRo09] López-Pintado, S., & Romo, J. (2009). On the Concept of
-           Depth for Functional Data. Journal of the American Statistical
-           Association, 104(486), 718–734.
-           https://doi.org/10.1198/jasa.2009.0108
+
+        López-Pintado, S., & Romo, J. (2009). On the Concept of
+        Depth for Functional Data. Journal of the American Statistical
+        Association, 104(486), 718–734.
+        https://doi.org/10.1198/jasa.2009.0108
     """
 
     def __init__(self):
         super().__init__(multivariate_depth=multivariate.SimplicialDepth())
 
 
-class BandDepth(FunctionalDepth):
-    """
+class BandDepth(Depth):
+    r"""
     Implementation of Band Depth for functional data.
 
     The band depth of each sample is obtained by computing the fraction of the
     bands determined by two sample curves containing the whole graph of the
     first one. In the case the fdatagrid domain dimension is 2, instead of
     curves, surfaces determine the bands. In larger dimensions, the hyperplanes
-    determine the bands. This method was originally defined in [LoRo09]_.
+    determine the bands.
 
     Examples:
 
@@ -160,10 +150,11 @@ class BandDepth(FunctionalDepth):
         array([ 0.5       ,  0.83333333,  0.5       ,  0.5       ])
 
     References:
-        .. [LoRo09] López-Pintado, S., & Romo, J. (2009). On the Concept of
-           Depth for Functional Data. Journal of the American Statistical
-           Association, 104(486), 718–734.
-           https://doi.org/10.1198/jasa.2009.0108
+
+        López-Pintado, S., & Romo, J. (2009). On the Concept of
+        Depth for Functional Data. Journal of the American Statistical
+        Association, 104(486), 718–734.
+        https://doi.org/10.1198/jasa.2009.0108
 
     """
 

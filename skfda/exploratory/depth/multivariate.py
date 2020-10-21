@@ -52,7 +52,7 @@ class _DepthOrOutlyingness(abc.ABC, sklearn.base.BaseEstimator):
         """
         return self.fit(X).predict(X)
 
-    def __call__(self, X, distribution=None):
+    def __call__(self, X, *, distribution=None):
         """
         Allows the depth or outlyingness to be used as a function.
 
@@ -142,7 +142,7 @@ def _cumulative_distribution(column):
 
 
 class _UnivariateFraimanMuniz(Depth):
-    """
+    r"""
     Univariate depth used to compute the Fraiman an Muniz depth.
 
     Each column is considered as the samples of an aleatory variable.
@@ -175,8 +175,18 @@ class _UnivariateFraimanMuniz(Depth):
 
 
 class SimplicialDepth(Depth):
-    """
+    r"""
     Simplicial depth.
+
+    The simplicial depth of a point :math:`x` in :math:`\mathbb{R}^p` given a
+    distribution :math:`F` is the probability that a random simplex with its
+    :math:`p + 1` points sampled from :math:`F` contains :math:`x`.
+
+    References:
+
+        Liu, R. Y. (1990). On a Notion of Data Depth Based on Random
+        Simplices. The Annals of Statistics, 18(1), 405–414.
+
 
     """
 
@@ -236,16 +246,17 @@ class OutlyingnessBasedDepth(Depth):
     .. math::
         D(x) = 1 - \frac{O(x)}{\sup O(x)}
 
-    if :math:`O(x)` is bounded ([Se06]_). If the infimum value of the
+    if :math:`O(x)` is bounded. If the infimum value of the
     outlyiness function is not zero, it is subtracted beforehand.
 
     Args:
         outlyingness (Outlyingness): Outlyingness object.
 
     References:
-        .. [Se06] Serfling, R. (2006). Depth functions in nonparametric
-           multivariate inference. DIMACS Series in Discrete Mathematics and
-           Theoretical Computer Science, 72, 1.
+
+        Serfling, R. (2006). Depth functions in nonparametric
+        multivariate inference. DIMACS Series in Discrete Mathematics and
+        Theoretical Computer Science, 72, 1.
 
     """
 
@@ -280,13 +291,13 @@ class StahelDonohoOutlyingness(Outlyingness):
 
     where :math:`\text{X}` is a sample with distribution :math:`F`,
     :math:`\text{Med}` is the median and :math:`\text{MAD}` is the
-    median absolute deviation ([ZuCuHe04]_).
+    median absolute deviation.
 
     References:
 
-        .. [ZuCuHe04] Zuo, Y., Cui, H., & He, X. (2004). On the Stahel-Donoho
-           estimator and depth-weighted means of multivariate data. Annals of
-           Statistics, 32(1), 167–188. https://doi.org/10.1214/aos/1079120132
+        Zuo, Y., Cui, H., & He, X. (2004). On the Stahel-Donoho
+        estimator and depth-weighted means of multivariate data. Annals of
+        Statistics, 32(1), 167–188. https://doi.org/10.1214/aos/1079120132
 
     """
 
@@ -324,14 +335,17 @@ class ProjectionDepth(OutlyingnessBasedDepth):
     r"""
     Computes Projection depth.
 
-    It is defined as the depth induced by the Stahel-Donoho outlyingness
-    ([ZuCuHe04]_).
+    It is defined as the depth induced by the
+    :class:`Stahel-Donoho outlyingness <StahelDonohoOutlyingness>`.
+
+    See also:
+        :class:`StahelDonohoOutlyingness`: Stahel-Donoho outlyingness.
 
     References:
 
-    .. [ZuCuHe04] Zuo, Y., Cui, H., & He, X. (2004). On the Stahel-Donoho
-       estimator and depth-weighted means of multivariate data. Annals of
-       Statistics, 32(1), 167–188. https://doi.org/10.1214/aos/1079120132
+        Zuo, Y., Cui, H., & He, X. (2004). On the Stahel-Donoho
+        estimator and depth-weighted means of multivariate data. Annals of
+        Statistics, 32(1), 167–188. https://doi.org/10.1214/aos/1079120132
 
     """
 

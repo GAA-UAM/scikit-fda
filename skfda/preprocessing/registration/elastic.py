@@ -260,7 +260,7 @@ def _elastic_alignment_array(template_data, q_data,
     return optimum_reparam(np.ascontiguousarray(template_data.T),
                            np.ascontiguousarray(eval_points),
                            np.ascontiguousarray(q_data.T),
-                           method="DP2",
+                           method="DP",
                            lam=penalty).T
 
 

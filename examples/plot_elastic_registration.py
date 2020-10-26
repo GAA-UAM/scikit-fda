@@ -94,6 +94,10 @@ fd_align.plot()
 # * Srivastava, Anuj & Klassen, Eric P. (2016). Functional and shape data
 #   analysis. In *Functional Data and Elastic Registration* (pp. 73-122).
 #   Springer.
+# 
+# * Tucker, J. D., Wu, W. and Srivastava, A. (2013). Generative Models for
+#   Functional Data using Phase and Amplitude Separation. Computational Statistics
+#   and Data Analysis, Vol. 61, 50-66.
 #
 # * J. S. Marron, James O. Ramsay, Laura M. Sangalli and Anuj Srivastava
 #   (2015). Functional Data Analysis of Amplitude and Phase Variation.

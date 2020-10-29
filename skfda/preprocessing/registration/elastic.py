@@ -1,6 +1,5 @@
 
-import optimum_reparam
-
+from fdasrsf.utility_functions import optimum_reparam
 import scipy.integrate
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
@@ -258,20 +257,11 @@ def _elastic_alignment_array(template_data, q_data,
         the functions aligned to the template(s).
     """
 
-    # Select cython function
-    if template_data.ndim == 1 and q_data.ndim == 1:
-        reparam = optimum_reparam.coptimum_reparam
-
-    elif template_data.ndim == 1:
-        reparam = optimum_reparam.coptimum_reparam_n
-
-    else:
-        reparam = optimum_reparam.coptimum_reparam_n2
-
-    return reparam(np.ascontiguousarray(template_data.T),
-                   np.ascontiguousarray(eval_points),
-                   np.ascontiguousarray(q_data.T),
-                   penalty, grid_dim).T
+    return optimum_reparam(np.ascontiguousarray(template_data.T),
+                           np.ascontiguousarray(eval_points),
+                           np.ascontiguousarray(q_data.T),
+                           method="DP2",
+                           lam=penalty, grid_dim=grid_dim).T
 
 
 class ElasticRegistration(RegistrationTransformer):

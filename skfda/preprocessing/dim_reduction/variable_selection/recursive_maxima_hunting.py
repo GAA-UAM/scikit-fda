@@ -842,7 +842,7 @@ class RecursiveMaximaHunting(
         We create trajectories from two classes, one with zero mean and the
         other with a peak-like mean. Both have Brownian covariance.
 
-        >>> n_samples = 10000
+        >>> n_samples = 1000
         >>> n_features = 100
         >>>
         >>> def mean_1(t):
@@ -877,7 +877,7 @@ class RecursiveMaximaHunting(
         >>> len(X.grid_points[0])
         100
         >>> X_dimred.shape
-        (10000, 3)
+        (1000, 3)
 
     References:
 

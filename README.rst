@@ -62,6 +62,7 @@ Requirements
 *scikit-fda* depends on the following packages:
 
 * `cython <https://github.com/cython/cython>`_ - Python to C compiler
+* `fdasrsf <https://github.com/jdtuck/fdasrsf_python>`_ - SRSF framework
 * `findiff <https://github.com/maroba/findiff>`_ - Finite differences
 * `matplotlib <https://github.com/matplotlib/matplotlib>`_ - Plotting with Python
 * `mpldatacursor <https://github.com/joferkington/mpldatacursor/>`_ - Interactive data cursors for matplotlib

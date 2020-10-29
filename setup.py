@@ -62,7 +62,7 @@ setup(name='scikit-fda',
       install_requires=[
           'cython',
           'dcor',
-          'fdasrsf',
+          'fdasrsf>=2.2.0',
           'findiff',
           'matplotlib',
           'mpldatacursor',

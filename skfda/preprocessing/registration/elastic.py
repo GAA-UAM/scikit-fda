@@ -261,7 +261,7 @@ def _elastic_alignment_array(template_data, q_data,
                            np.ascontiguousarray(eval_points),
                            np.ascontiguousarray(q_data.T),
                            method="DP2",
-                           lam=penalty).T
+                           lam=penalty, grid_dim=grid_dim).T
 
 
 class ElasticRegistration(RegistrationTransformer):

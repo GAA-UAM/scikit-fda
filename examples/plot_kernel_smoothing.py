@@ -11,9 +11,10 @@ undersmoothing and oversmoothing.
 # Author: Miguel Carbajo Berrocal
 # License: MIT
 
+import skfda
+
 import matplotlib.pylab as plt
 import numpy as np
-import skfda
 import skfda.preprocessing.smoothing.kernel_smoothers as ks
 import skfda.preprocessing.smoothing.validation as val
 
@@ -37,33 +38,34 @@ fd[0:5].plot()
 # Here we show the general cross validation scores for different values of the
 # parameters given to the different smoothing methods.
 
-param_values = np.linspace(start=2, stop=25, num=24)
+param_values_knn = np.arange(1, 24, 2)
+param_values_others = param_values_knn / 32
 
 # Local linear regression kernel smoothing.
 llr = val.SmoothingParameterSearch(
-    ks.LocalLinearRegressionSmoother(), param_values)
+    ks.LocalLinearRegressionSmoother(), param_values_others)
 llr.fit(fd)
 llr_fd = llr.transform(fd)
 
 # Nadaraya-Watson kernel smoothing.
 nw = val.SmoothingParameterSearch(
-    ks.NadarayaWatsonSmoother(), param_values)
+    ks.NadarayaWatsonSmoother(), param_values_others)
 nw.fit(fd)
 nw_fd = nw.transform(fd)
 
 # K-nearest neighbours kernel smoothing.
 knn = val.SmoothingParameterSearch(
-    ks.KNeighborsSmoother(), param_values)
+    ks.KNeighborsSmoother(), param_values_knn)
 knn.fit(fd)
 knn_fd = knn.transform(fd)
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
-ax.plot(param_values, knn.cv_results_['mean_test_score'],
+ax.plot(param_values_knn, knn.cv_results_['mean_test_score'],
         label='k-nearest neighbors')
-ax.plot(param_values, llr.cv_results_['mean_test_score'],
+ax.plot(param_values_knn, llr.cv_results_['mean_test_score'],
         label='local linear regression')
-ax.plot(param_values, nw.cv_results_['mean_test_score'],
+ax.plot(param_values_knn, nw.cv_results_['mean_test_score'],
         label='Nadaraya-Watson')
 ax.legend()
 fig
@@ -115,8 +117,10 @@ nw_fd[0:5].plot()
 # We can also appreciate the effects of undersmoothing and oversmoothing in
 # the following plots.
 
-fd_us = ks.NadarayaWatsonSmoother(smoothing_parameter=2).fit_transform(fd[10])
-fd_os = ks.NadarayaWatsonSmoother(smoothing_parameter=15).fit_transform(fd[10])
+fd_us = ks.NadarayaWatsonSmoother(
+    smoothing_parameter=2 / 32).fit_transform(fd[10])
+fd_os = ks.NadarayaWatsonSmoother(
+    smoothing_parameter=15 / 32).fit_transform(fd[10])
 
 ##############################################################################
 # Under-smoothed

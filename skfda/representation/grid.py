@@ -255,22 +255,10 @@ class FDataGrid(FData):
 
     @property
     def dim_domain(self):
-        """Return number of dimensions of the domain.
-
-        Returns:
-            int: Number of dimensions of the domain.
-
-        """
         return len(self.grid_points)
 
     @property
     def dim_codomain(self):
-        """Return number of dimensions of the image.
-
-        Returns:
-            int: Number of dimensions of the image.
-
-        """
         try:
             # The dimension of the image is the length of the array that can
             #  be extracted from the data_matrix using all the dimensions of

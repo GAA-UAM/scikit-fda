@@ -110,7 +110,7 @@ def _normalize_scale(t, a=0, b=1):
 
 
 def normalize_warping(warping, domain_range=None):
-    r"""Rescale a warping to normalize their domain.
+    r"""Rescale a warping to normalize their :term:`domain`.
 
     Given a set of warpings :math:`\gamma_i:[a,b]\rightarrow  [a,b]` it is
     used an affine traslation to change the domain of the transformation to

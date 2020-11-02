@@ -85,8 +85,9 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
                **kwargs):
     """Plot the FDatGrid object graph as hypersurfaces.
 
-    Plots each coordinate separately. If the domain is one dimensional, the
-    plots will be curves, and if it is two dimensional, they will be surfaces.
+    Plots each coordinate separately. If the :term:`domain` is one dimensional,
+    the plots will be curves, and if it is two dimensional, they will be
+    surfaces.
 
     Args:
         chart (figure object, axe or list of axes, optional): figure over

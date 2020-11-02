@@ -196,8 +196,8 @@ class Basis(ABC):
             return self._coordinate_nonfull(fdatabasis=fdatabasis, key=r_key)
 
     def rescale(self, domain_range=None):
-        r"""Return a copy of the basis with a new domain range, with the
-            corresponding values rescaled to the new bounds.
+        r"""Return a copy of the basis with a new :term:`domain` range, with
+            the corresponding values rescaled to the new bounds.
 
             Args:
                 domain_range (tuple, optional): Definition of the interval

@@ -1,6 +1,6 @@
 """Module with the extrapolation methods.
 
-Defines methods to evaluate points outside the domain range.
+Defines methods to evaluate points outside the :term:`domain` range.
 
 """
 
@@ -10,7 +10,7 @@ from .evaluator import Evaluator
 
 
 class PeriodicExtrapolation(Evaluator):
-    """Extends the domain range periodically.
+    """Extends the :term:`domain` range periodically.
 
     Examples:
 
@@ -57,7 +57,7 @@ class PeriodicExtrapolation(Evaluator):
 
 
 class BoundaryExtrapolation(Evaluator):
-    """Extends the domain range using the boundary values.
+    """Extends the :term:`domain` range using the boundary values.
 
     Examples:
 
@@ -142,7 +142,8 @@ class ExceptionExtrapolation(Evaluator):
 
 
 class FillExtrapolation(Evaluator):
-    """Values outside the domain range will be filled with a fixed value.
+    """
+    Values outside the :term:`domain` range will be filled with a fixed value.
 
     Examples:
 

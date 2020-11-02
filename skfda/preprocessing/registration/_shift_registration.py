@@ -51,14 +51,14 @@ class ShiftRegistration(RegistrationTransformer):
             in each iteration. In [RaSi2005-7-9-1]_ is described in detail this
             procedure. Defaults to "mean".
         extrapolation (str or :class:`Extrapolation`, optional): Controls the
-            extrapolation mode for points outside the domain range.
+            extrapolation mode for points outside the :term:`domain` range.
             By default uses the method defined in the data to be transformed.
             See the `extrapolation` documentation to obtain more information.
         step_size (int or float, optional): Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see [RaSi2005-7-9-1]_.
             Defaults to 1.
-        restrict_domain (bool, optional): If True restricts the domain to avoid
-            evaluate points outside the domain using extrapolation, in which
+        restrict_domain (bool, optional): If True restricts the :term:`domain`
+            to avoid the need of using extrapolation, in which
             case only the fit_transform method will be available, as training
             and transformation must be done together. Defaults to False.
         initial (str or array_like, optional): Array with an initial estimation

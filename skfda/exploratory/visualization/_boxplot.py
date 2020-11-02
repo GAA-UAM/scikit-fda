@@ -26,7 +26,8 @@ class FDataBoxplot(ABC):
     """Abstract class inherited by the Boxplot and SurfaceBoxplot classes.
 
     It the data of the functional boxplot or surface boxplot of a FDataGrid
-    object, depending on the dimensions of the domain, 1 or 2 respectively.
+    object, depending on the dimensions of the :term:`domain`, 1 or 2
+    respectively.
 
     It forces to both classes, Boxplot and SurfaceBoxplot to conain at least
     the median, central and outlying envelopes and a colormap for their
@@ -89,7 +90,7 @@ class Boxplot(FDataBoxplot):
     Class implementing the functionl boxplot which is an informative
     exploratory tool for visualizing functional data, as well as its
     generalization, the enhanced functional boxplot. Only supports 1
-    dimensional domain functional data.
+    dimensional :term:`domain` functional data.
 
     Based on the center outward ordering induced by a :ref:`depth measure
     <depth-measures>` for functional data, the descriptive statistics of a
@@ -452,8 +453,8 @@ class SurfaceBoxplot(FDataBoxplot):
 
     Class implementing the surface boxplot. Analogously to the functional
     boxplot, it is an informative exploratory tool for visualizing functional
-    data with domain dimension 2. Nevertheless, it does not implement the
-    enhanced surface boxplot.
+    data with :term:`domain` dimension 2. Nevertheless, it does not implement
+    the enhanced surface boxplot.
 
     Based on the center outward ordering induced by a
     :ref:`depth measure <depth-measures>`

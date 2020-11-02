@@ -94,7 +94,7 @@ class ModifiedBandDepth(IntegratedDepth):
 
     The band depth of each sample is obtained by computing the fraction of time
     its graph is contained in the bands determined by two sample curves.
-    In the case the fdatagrid domain dimension is 2, instead of curves,
+    In the case the fdatagrid :term:`domain` dimension is 2, instead of curves,
     surfaces determine the bands. In larger dimensions, the hyperplanes
     determine the bands.
 
@@ -131,9 +131,9 @@ class BandDepth(Depth):
 
     The band depth of each sample is obtained by computing the fraction of the
     bands determined by two sample curves containing the whole graph of the
-    first one. In the case the fdatagrid domain dimension is 2, instead of
-    curves, surfaces determine the bands. In larger dimensions, the hyperplanes
-    determine the bands.
+    first one. In the case the fdatagrid :term:`domain` dimension is 2, instead
+    of curves, surfaces determine the bands. In larger dimensions, the
+    hyperplanes determine the bands.
 
     Examples:
 

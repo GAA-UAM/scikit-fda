@@ -36,8 +36,8 @@ The following classes implement depth functions for functional data:
    skfda.exploratory.depth.BandDepth
    skfda.exploratory.depth.ModifiedBandDepth
 
-Most of them support multivariate functional data, with more than one dimension
-on the domain and on the codomain.
+Most of them support functional data with more than one dimension
+on the :term:`domain` and on the :term:`codomain`.
    
 Multivariate depths
 ^^^^^^^^^^^^^^^^^^^

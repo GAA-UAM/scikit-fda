@@ -20,8 +20,8 @@ def landmark_shift_deltas(fd, landmarks, location=None):
         The function will calculate the corresponding :math:`\delta_i` shuch
         that :math:`t_i = t^* + \delta_i`.
 
-        This procedure will work independent of the dimension of the domain
-        and the image.
+        This procedure will work independent of the dimension of the
+        :term:`domain` and the :term:`codomain`.
 
     Args:
         fd (:class:`FData`): Functional data object.
@@ -286,8 +286,8 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
         eval_points (array_like, optional): Set of points where
             the functions are evaluated to obtain a discrete
             representation of the object. In case of objects with
-            multidimensional domain a list axis with points of evaluation
-            for each dimension.
+            multidimensional :term:`domain` a list axis with points of
+            evaluation for each dimension.
 
     Returns:
         :class:`FData`: FData with the functional data object registered.

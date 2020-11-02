@@ -5,7 +5,7 @@ import multimethod
 
 class Operator(abc.ABC):
     """
-    Abstract class for operators (functions whose domain are functions).
+    Abstract class for :term:`operators`.
 
     """
 

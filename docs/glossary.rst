@@ -36,23 +36,22 @@ General Concepts
 
     functional data
     	A collection of :term:`functional data objects`.
-    	Usually represented by a :class:`FData` object.
+    	Represented by a :class:`~skfda.representation.FData` object.
 
     functional data object
     functional data objects
     functional object
     functional objects
     	An object of study of Functional Data Analysis.
-    	It is a function or map between two sets, often subsets of powers of
-    	:math:`\mathbb{R}`.
-    	Usually represented by a :class:`FData` object of length 1, but in
-    	some cases regular Python :term:`callables <sklearn:callable>` are
-    	also accepted.
+    	It is a function between :math:`\mathbb{R}^p` and :math:`\mathbb{R}^q`.
+    	Usually represented by a :class:`~skfda.representation.FData` object of
+    	length 1, but in some cases regular Python
+    	:term:`callables <sklearn:callable>` are also accepted.
     
     functional observation
     functional observations
-        An observed :term:`functional data object`, usually represented as a
-        :class:`FData` object of length 1.
+        An observed :term:`functional data object`, represented as a
+        :class:`~skfda.representation.FData` object of length 1.
     
     image
         The set of actual ouput values that a function takes.
@@ -65,7 +64,7 @@ General Concepts
     multivariate object
     multivariate objects
     	An object of study of multivariate statistics.
-    	It is a vector of possibly related variables, usually represented
+    	It is a vector of possibly related variables, represented
     	as a :term:`sklearn:1d array`.
     	
     operator

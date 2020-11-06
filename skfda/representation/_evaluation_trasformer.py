@@ -13,8 +13,8 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
             evaluated. If `None`, the functions must be `FDatagrid` objects
             and all points will be returned.
         extrapolation (str or Extrapolation, optional): Controls the
-            extrapolation mode for elements outside the domain range. By
-            default it is used the mode defined during the instance of the
+            extrapolation mode for elements outside the :term:`domain` range.
+            By default it is used the mode defined during the instance of the
             object.
         grid (bool, optional): Whether to evaluate the results on a grid
             spanned by the input arrays, or at points specified by the

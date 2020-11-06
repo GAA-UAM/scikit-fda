@@ -9,9 +9,10 @@ from ._basis import Basis
 class VectorValued(Basis):
     r"""Vector-valued basis.
 
-    Basis for vector-valued functions constructed from scalar-valued bases.
+    Basis for :term:`vector-valued functions <vector-valued function>`
+    constructed from scalar-valued bases.
 
-    For each dimension in the codomain, it uses a scalar-valued basis
+    For each dimension in the :term:`codomain`, it uses a scalar-valued basis
     multiplying each basis by the corresponding unitary vector.
 
     Attributes:

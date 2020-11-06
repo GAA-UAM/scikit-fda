@@ -215,19 +215,14 @@ class FDataBasis(FData):
 
     @property
     def n_samples(self):
-        """Return number of samples."""
         return self.coefficients.shape[0]
 
     @property
     def dim_domain(self):
-        """Return number of dimensions of the domain."""
-
         return self.basis.dim_domain
 
     @property
     def dim_codomain(self):
-        """Return number of dimensions of the image."""
-
         return self.basis.dim_codomain
 
     @property

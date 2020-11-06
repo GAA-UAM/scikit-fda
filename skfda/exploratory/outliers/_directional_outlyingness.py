@@ -70,7 +70,7 @@ def directional_outlyingness_stats(
         \left(\mathbf{X}(t), F_{\mathbf{X}(t)}\right)-\mathbf{MO}\left(
         \mathbf{X} , F_{\mathbf{X}}\right)  \rVert^2 \cdot w(t) dt
 
-    where :math:`w(t)` a weight function defined on the domain of
+    where :math:`w(t)` a weight function defined on the :term:`domain` of
     :math:`\mathbf{X}`, :math:`I`.
 
     Then, the total functional outlyingness can be computed using these values:

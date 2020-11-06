@@ -155,7 +155,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     @property
     @abstractmethod
     def dim_domain(self):
-        """Return number of dimensions of the domain.
+        """Return number of dimensions of the :term:`domain`.
 
         Returns:
             int: Number of dimensions of the domain.
@@ -166,7 +166,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     @property
     @abstractmethod
     def dim_codomain(self):
-        """Return number of dimensions of the codomain.
+        """Return number of dimensions of the :term:`codomain`.
 
         Returns:
             int: Number of dimensions of the codomain.
@@ -204,7 +204,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     @property
     @abstractmethod
     def domain_range(self):
-        """Return the domain range of the object
+        """Return the :term:`domain` range of the object
 
         Returns:
             List of tuples with the ranges for each domain dimension.
@@ -305,9 +305,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         Args:
             eval_points (array_like): List of points where the functions are
                 evaluated. If ``grid`` is ``True``, a list of axes, one per
-                domain dimension, must be passed instead. If ``aligned`` is
-                ``True``, then a list of lists (of points or axes, as
-                explained) must be passed, with one list per sample.
+                :term:`domain` dimension, must be passed instead. If
+                ``aligned`` is ``True``, then a list of lists (of points or
+                axes, as explained) must be passed, with one list per sample.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range. By
                 default it is used the mode defined during the instance of the
@@ -507,11 +507,11 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 will be used 30 points per axis, wich makes a grid with 900
                 points.
             domain_range (tuple or list of tuples, optional): Range where the
-                function will be plotted. In objects with unidimensional domain
-                the domain range should be a tuple with the bounds of the
-                interval; in the case of surfaces a list with 2 tuples with
-                the ranges for each dimension. Default uses the domain range
-                of the functional object.
+                function will be plotted. In objects with unidimensional
+                :term:`domain` the domain range should be a tuple with the
+                bounds of the interval; in the case of surfaces a list with 2
+                tuples with the ranges for each dimension. Default uses the
+                domain range of the functional object.
             group (list of int): contains integers from [0 to number of
                 labels) indicating to which group each sample belongs to. Then,
                 the samples with the same label are plotted in the same color.

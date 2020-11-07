@@ -71,7 +71,7 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
             sample_colors = fdata.n_samples * [kwargs.get("c")]
             kwargs.pop('c')
 
-        else:
+        else: 
             sample_colors = None
 
     return sample_colors, patches
@@ -85,9 +85,8 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
                **kwargs):
     """Plot the FDatGrid object graph as hypersurfaces.
 
-    Plots each coordinate separately. If the :term:`domain` is one dimensional,
-    the plots will be curves, and if it is two dimensional, they will be
-    surfaces.
+    Plots each coordinate separately. If the domain is one dimensional, the
+    plots will be curves, and if it is two dimensional, they will be surfaces.
 
     Args:
         chart (figure object, axe or list of axes, optional): figure over
@@ -155,7 +154,6 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
         fdata, group, group_names, group_colors, legend, kwargs)
 
     if fdata.dim_domain == 1:
-
         if n_points is None:
             n_points = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
 
@@ -164,7 +162,7 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
         mat = fdata(eval_points)
 
         color_dict = {}
-
+        
         for i in range(fdata.dim_codomain):
             for j in range(fdata.n_samples):
 
@@ -175,7 +173,6 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
                              **color_dict, **kwargs)
 
     else:
-
         # Selects the number of points
         if n_points is None:
             npoints = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
@@ -287,7 +284,7 @@ def plot_scatter(fdata, chart=None, *, grid_points=None,
 
     sample_colors, patches = _get_color_info(
         fdata, group, group_names, group_colors, legend, kwargs)
-
+        
     if fdata.dim_domain == 1:
 
         color_dict = {}
@@ -321,5 +318,140 @@ def plot_scatter(fdata, chart=None, *, grid_points=None,
                                 **color_dict, **kwargs)
 
     _set_labels(fdata, fig, axes, patches)
+
+    return fig
+
+def plot_with_gradient(fdata, chart=None, *, fig=None, axes=None,
+                    n_rows=None, n_cols=None, n_points=None,
+                    domain_range=None, gradient_list,  
+                    max_grad = None, min_grad = None,
+                    colormap_name = 'autumn', 
+                    **kwargs):
+    """Plot the FDatGrid object graph as hypersurfaces, representing each 
+    instance depending on a color defined by the gradient_list.
+
+    Plots each coordinate separately. If the domain is one dimensional, the
+    plots will be curves, and if it is two dimensional, they will be surfaces.
+
+    Args:
+        chart (figure object, axe or list of axes, optional): figure over
+            with the graphs are plotted or axis over where the graphs are
+            plotted. If None and ax is also None, the figure is
+            initialized.
+        fig (figure object, optional): figure over with the graphs are
+            plotted in case ax is not specified. If None and ax is also
+            None, the figure is initialized.
+        axes (list of axis objects, optional): axis over where the graphs are
+            plotted. If None, see param fig.
+        n_rows (int, optional): designates the number of rows of the figure
+            to plot the different dimensions of the image. Only specified
+            if fig and ax are None.
+        n_cols(int, optional): designates the number of columns of the
+            figure to plot the different dimensions of the image. Only
+            specified if fig and ax are None.
+        n_points (int or tuple, optional): Number of points to evaluate in
+            the plot. In case of surfaces a tuple of length 2 can be pased
+            with the number of points to plot in each axis, otherwise the
+            same number of points will be used in the two axes. By default
+            in unidimensional plots will be used 501 points; in surfaces
+            will be used 30 points per axis, wich makes a grid with 900
+            points.
+        domain_range (tuple or list of tuples, optional): Range where the
+            function will be plotted. In objects with unidimensional domain
+            the domain range should be a tuple with the bounds of the
+            interval; in the case of surfaces a list with 2 tuples with
+            the ranges for each dimension. Default uses the domain range
+            of the functional object.
+        max_grad: maximum value that the gradient_list can take, it will be
+            used to normalize the gradient list in order to get values that
+            can be used in the funcion colormap.__call__(). If not declared 
+            it will be initialized to the maximum value of gradient_list
+        min_grad: minimum value that the gradient_list can take, it will be
+            used to normalize the gradient list in order to get values that
+            can be used in the funcion colormap.__call__(). If not declared 
+            it will be initialized to the minimum value of gradient_list
+        colormap_name: name of the colormap to be used. By default we will 
+            use autumn.
+        **kwargs: if dim_domain is 1, keyword arguments to be passed to
+            the matplotlib.pyplot.plot function; if dim_domain is 2,
+            keyword arguments to be passed to the
+            matplotlib.pyplot.plot_surface function.
+
+    Returns:
+        fig (figure object): figure object in which the graphs are plotted.
+
+    """
+
+    fig, axes = _get_figure_and_axes(chart, fig, axes)
+    fig, axes = _set_figure_layout_for_fdata(fdata, fig, axes, n_rows, n_cols)
+
+    if domain_range is None:
+        domain_range = fdata.domain_range
+    else:
+        domain_range = _tuple_of_arrays(domain_range)
+
+    colormap = matplotlib.cm.get_cmap(colormap_name)
+    colormap = colormap.reversed()
+    if min_grad is None and max_grad is None:
+        min_grad = min(gradient_list)
+        max_grad = max(gradient_list)
+
+    gradient_list = (gradient_list-min_grad)/(max_grad-min_grad)
+
+    sample_colors = [None] * fdata.n_samples
+    for i in range(fdata.n_samples):
+        sample_colors[i] = colormap.__call__(gradient_list[i])
+
+
+    if fdata.dim_domain == 1:
+        if n_points is None:
+            n_points = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
+
+        # Evaluates the object in a linspace
+        eval_points = np.linspace(*domain_range[0], n_points)
+        mat = fdata(eval_points)
+
+        color_dict = {}
+        
+        for i in range(fdata.dim_codomain):
+            for j in range(fdata.n_samples):
+
+                if sample_colors is not None:
+                    color_dict["color"] = sample_colors[j]
+
+                axes[i].plot(eval_points, mat[j, ..., i].T,
+                             **color_dict, **kwargs)
+
+    else:
+        # Selects the number of points
+        if n_points is None:
+            npoints = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
+        elif np.isscalar(npoints):
+            npoints = (npoints, npoints)
+        elif len(npoints) != 2:
+            raise ValueError(f"n_points should be a number or a tuple of "
+                             f"length 2, and has length {len(npoints)}")
+
+        # Axes where will be evaluated
+        x = np.linspace(*domain_range[0], npoints[0])
+        y = np.linspace(*domain_range[1], npoints[1])
+
+        # Evaluation of the functional object
+        Z = fdata((x, y), grid=True)
+
+        X, Y = np.meshgrid(x, y, indexing='ij')
+
+        color_dict = {}
+
+        for i in range(fdata.dim_codomain):
+            for j in range(fdata.n_samples):
+
+                if sample_colors is not None:
+                    color_dict["color"] = sample_colors[j]
+
+                axes[i].plot_surface(X, Y, Z[j, ..., i],
+                                     **color_dict, **kwargs)
+
+    _set_labels(fdata, fig, axes)
 
     return fig

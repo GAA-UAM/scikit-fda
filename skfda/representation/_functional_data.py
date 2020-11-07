@@ -155,7 +155,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     @property
     @abstractmethod
     def dim_domain(self):
-        """Return number of dimensions of the :term:`domain`.
+        """Return number of dimensions of the domain.
 
         Returns:
             int: Number of dimensions of the domain.
@@ -166,7 +166,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     @property
     @abstractmethod
     def dim_codomain(self):
-        """Return number of dimensions of the :term:`codomain`.
+        """Return number of dimensions of the codomain.
 
         Returns:
             int: Number of dimensions of the codomain.
@@ -204,7 +204,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     @property
     @abstractmethod
     def domain_range(self):
-        """Return the :term:`domain` range of the object
+        """Return the domain range of the object
 
         Returns:
             List of tuples with the ranges for each domain dimension.
@@ -305,9 +305,9 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         Args:
             eval_points (array_like): List of points where the functions are
                 evaluated. If ``grid`` is ``True``, a list of axes, one per
-                :term:`domain` dimension, must be passed instead. If
-                ``aligned`` is ``True``, then a list of lists (of points or
-                axes, as explained) must be passed, with one list per sample.
+                domain dimension, must be passed instead. If ``aligned`` is
+                ``True``, then a list of lists (of points or axes, as
+                explained) must be passed, with one list per sample.
             extrapolation (str or Extrapolation, optional): Controls the
                 extrapolation mode for elements outside the domain range. By
                 default it is used the mode defined during the instance of the
@@ -507,11 +507,11 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 will be used 30 points per axis, wich makes a grid with 900
                 points.
             domain_range (tuple or list of tuples, optional): Range where the
-                function will be plotted. In objects with unidimensional
-                :term:`domain` the domain range should be a tuple with the
-                bounds of the interval; in the case of surfaces a list with 2
-                tuples with the ranges for each dimension. Default uses the
-                domain range of the functional object.
+                function will be plotted. In objects with unidimensional domain
+                the domain range should be a tuple with the bounds of the
+                interval; in the case of surfaces a list with 2 tuples with
+                the ranges for each dimension. Default uses the domain range
+                of the functional object.
             group (list of int): contains integers from [0 to number of
                 labels) indicating to which group each sample belongs to. Then,
                 the samples with the same label are plotted in the same color.
@@ -536,6 +536,63 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             plot_graph)
 
         return plot_graph(self, *args, **kwargs)
+
+    def plot_gr(self, *args, **kwargs):
+        """Plot the FDatGrid object representing each 
+        instance depending on a color defined by the gradient_list.
+
+        Args: 
+            chart (figure object, axe or list of axes, optional): figure over
+                with the graphs are plotted or axis over where the graphs are
+                plotted. If None and ax is also None, the figure is
+                initialized.
+            fig (figure object, optional): figure over with the graphs are
+                plotted in case ax is not specified. If None and ax is also
+                None, the figure is initialized.
+            axes (list of axis objects, optional): axis over where the graphs are
+                plotted. If None, see param fig.
+            n_rows (int, optional): designates the number of rows of the figure
+                to plot the different dimensions of the image. Only specified
+                if fig and ax are None.
+            n_cols(int, optional): designates the number of columns of the
+                figure to plot the different dimensions of the image. Only
+                specified if fig and ax are None.
+            n_points (int or tuple, optional): Number of points to evaluate in
+                the plot. In case of surfaces a tuple of length 2 can be pased
+                with the number of points to plot in each axis, otherwise the
+                same number of points will be used in the two axes. By default
+                in unidimensional plots will be used 501 points; in surfaces
+                will be used 30 points per axis, wich makes a grid with 900
+                points.
+            domain_range (tuple or list of tuples, optional): Range where the
+                function will be plotted. In objects with unidimensional domain
+                the domain range should be a tuple with the bounds of the
+                interval; in the case of surfaces a list with 2 tuples with
+                the ranges for each dimension. Default uses the domain range
+                of the functional object.
+            max_grad: maximum value that the gradient_list can take, it will be
+                used to normalize the gradient list in order to get values that
+                can be used in the funcion colormap.__call__(). If not declared 
+                it will be initialized to the maximum value of gradient_list
+            min_grad: minimum value that the gradient_list can take, it will be
+                used to normalize the gradient list in order to get values that
+                can be used in the funcion colormap.__call__(). If not declared 
+                it will be initialized to the minimum value of gradient_list
+            colormap_name: name of the colormap to be used. By default we will 
+                use autumn.
+            **kwargs: if dim_domain is 1, keyword arguments to be passed to
+                the matplotlib.pyplot.plot function; if dim_domain is 2,
+                keyword arguments to be passed to the
+                matplotlib.pyplot.plot_surface function.
+
+        Returns:
+            fig (figure object): figure object in which the graphs are plotted.
+
+        """
+        from ..exploratory.visualization.representation import (
+            plot_with_gradient)
+
+        return plot_with_gradient(self, *args, **kwargs)
 
     @abstractmethod
     def copy(self, **kwargs):

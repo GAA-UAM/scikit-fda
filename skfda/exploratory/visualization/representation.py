@@ -322,11 +322,11 @@ def plot_scatter(fdata, chart=None, *, grid_points=None,
     return fig
 
 def plot_with_gradient(fdata, chart=None, *, fig=None, axes=None,
-                    n_rows=None, n_cols=None, n_points=None,
-                    domain_range=None, gradient_list,  
-                    max_grad = None, min_grad = None,
-                    colormap_name = 'autumn', 
-                    **kwargs):
+                       n_rows=None, n_cols=None, n_points=None,
+                       domain_range=None, gradient_list,  
+                       max_grad = None, min_grad = None,
+                       colormap_name = 'autumn', 
+                       **kwargs):
     """Plot the FDatGrid object graph as hypersurfaces, representing each 
     instance depending on a color defined by the gradient_list.
 
@@ -453,5 +453,32 @@ def plot_with_gradient(fdata, chart=None, *, fig=None, axes=None,
                                      **color_dict, **kwargs)
 
     _set_labels(fdata, fig, axes)
+
+    return fig
+
+def dd_plot(fdata, dist1, dist2, depth_method, chart=None, *, fig=None, 
+            axes=None, n_rows=None, n_cols=None, **kwargs):
+            
+    fig, axes = _get_figure_and_axes(chart, fig, axes)
+    fig, axes = _set_figure_layout_for_fdata(fdata, fig, axes, n_rows, n_cols)
+
+    depth_dist1 = depth_method.__call__(fdata, distribution = dist1)
+    depth_dist2 = depth_method.__call__(fdata, distribution = dist2)
+  
+    if fdata.dim_domain == 1:
+
+        for i in range(fdata.dim_codomain):
+
+            axes[i].scatter(depth_dist1, depth_dist2,
+                            **kwargs)
+        
+    fig.suptitle("DDPlot")
+
+    for i in range(fdata.dim_codomain):
+        axes[i].set_xlabel("X depth")
+        axes[i].set_ylabel("Y depth")
+        axes[i].set_xlim([0, 1])
+        axes[i].set_ylim([0, 1])
+        axes[i].plot([0,1], linewidth = 0.2, color = "gray")
 
     return fig

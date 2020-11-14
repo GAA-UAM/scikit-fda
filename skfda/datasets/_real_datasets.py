@@ -1,7 +1,10 @@
 import rdata
 import warnings
 
+from sklearn.utils import Bunch
+
 import numpy as np
+import pandas as pd
 
 from .. import FDataGrid
 
@@ -153,6 +156,7 @@ def _fetch_fda_usc(name):
 _param_descr = """
     Args:
         return_X_y: Return only the data and target as a tuple.
+        as_frame: Return the data in a Pandas Dataframe or Series.
 """
 
 _phoneme_descr = """
@@ -200,7 +204,7 @@ _phoneme_descr = """
     """
 
 
-def fetch_phoneme(return_X_y: bool = False):
+def fetch_phoneme(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the phoneme dataset.
 
@@ -225,16 +229,28 @@ def fetch_phoneme(return_X_y: bool = False):
                        argument_names=("frequency (kHz)",),
                        coordinate_names=("log-periodogram",))
 
-    if return_X_y:
-        return curves, sound
+    if as_frame:
+        frame = pd.DataFrame({"log-periodogram": curves,
+                              "phoneme": sound})
+        curves = frame.iloc[:, 0]
+        target = frame.iloc[:, 1]
+        meta = pd.Series(speaker, name="speaker")
     else:
-        return {"data": curves,
-                "target": sound.codes,
-                "target_names": sound.categories.tolist(),
-                "target_feature_names": ["sound"],
-                "meta": np.array([speaker]).T,
-                "meta_feature_names": ["speaker"],
-                "DESCR": DESCR}
+        target = sound.codes
+        meta = np.array([speaker]).T
+
+    if return_X_y:
+        return curves, target
+    else:
+        return Bunch(
+            data=curves,
+            target=target,
+            frame=frame,
+            target_names=sound.categories.tolist(),
+            target_feature_names=["sound"],
+            meta=meta,
+            meta_feature_names=["speaker"],
+            DESCR=DESCR)
 
 
 if hasattr(fetch_phoneme, "__doc__"):  # docstrings can be stripped off

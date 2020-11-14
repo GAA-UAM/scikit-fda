@@ -381,14 +381,14 @@ def fetch_tecator(return_X_y: bool = False, as_frame: bool = False):
     data = raw_dataset["tecator"]
 
     curves = data['absorp.fdata']
-    target = data['y']
-    feature_names = [curves.dataset_name]
+    target = data['y'].rename(columns=str.lower)
+    feature_name = curves.dataset_name.lower()
     target_names = target.columns.values.tolist()
 
     frame = None
 
     if as_frame:
-        curves = pd.Series(curves, name=curves.dataset_name)
+        curves = pd.Series(curves, name=feature_name)
         frame = pd.concat([curves, target], axis=1)
     else:
         target = target.values
@@ -400,7 +400,7 @@ def fetch_tecator(return_X_y: bool = False, as_frame: bool = False):
                      target=target,
                      frame=frame,
                      categories={},
-                     feature_names=feature_names,
+                     feature_names=[feature_name],
                      target_names=target_names,
                      DESCR=DESCR)
 
@@ -446,7 +446,7 @@ _medflies_descr = """
 """
 
 
-def fetch_medflies(return_X_y: bool = False):
+def fetch_medflies(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the Medflies dataset, where the flies are separated in two classes
     according to their longevity.
@@ -464,18 +464,31 @@ def fetch_medflies(return_X_y: bool = False):
     curves = data[0]
 
     unique = np.unique(data[1], return_inverse=True)
-    target_names = [unique[0][1], unique[0][0]]
+    target_categories = [unique[0][1], unique[0][0]]
     target = 1 - unique[1]
-    target_feature_names = ["lifetime"]
+    curve_name = 'eggs'
+    target_name = "lifetime"
+
+    frame = None
+
+    if as_frame:
+        target = pd.Categorical.from_codes(
+            target, categories=target_categories)
+        frame = pd.DataFrame({curve_name: curves,
+                              target_name: target})
+        curves = frame.iloc[:, 0]
+        target = frame.iloc[:, 1]
 
     if return_X_y:
         return curves, target
     else:
-        return {"data": curves,
-                "target": target,
-                "target_names": target_names,
-                "target_feature_names": target_feature_names,
-                "DESCR": DESCR}
+        return Bunch(data=curves,
+                     target=target,
+                     frame=frame,
+                     categories={target_name: target_categories},
+                     feature_names=[curve_name],
+                     target_names=[target_name],
+                     DESCR=DESCR)
 
 
 if hasattr(fetch_medflies, "__doc__"):  # docstrings can be stripped off

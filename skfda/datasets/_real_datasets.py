@@ -229,9 +229,13 @@ def fetch_phoneme(return_X_y: bool = False, as_frame: bool = False):
                        argument_names=("frequency (kHz)",),
                        coordinate_names=("log-periodogram",))
 
+    curve_name = "log-periodogram"
+    target_name = "phoneme"
+    frame = None
+
     if as_frame:
-        frame = pd.DataFrame({"log-periodogram": curves,
-                              "phoneme": sound})
+        frame = pd.DataFrame({curve_name: curves,
+                              target_name: sound})
         curves = frame.iloc[:, 0]
         target = frame.iloc[:, 1]
         meta = pd.Series(speaker, name="speaker")
@@ -246,10 +250,11 @@ def fetch_phoneme(return_X_y: bool = False, as_frame: bool = False):
             data=curves,
             target=target,
             frame=frame,
-            target_names=sound.categories.tolist(),
-            target_feature_names=["sound"],
+            categories={target_name: sound.categories.tolist()},
+            feature_names=[curve_name],
+            target_names=[target_name],
             meta=meta,
-            meta_feature_names=["speaker"],
+            meta_names=["speaker"],
             DESCR=DESCR)
 
 
@@ -271,7 +276,7 @@ _growth_descr = """
 """
 
 
-def fetch_growth(return_X_y: bool = False):
+def fetch_growth(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the Berkeley Growth Study dataset.
 
@@ -289,22 +294,35 @@ def fetch_growth(return_X_y: bool = False):
     females = data["hgtf"].T
     males = data["hgtm"].T
 
+    sex = np.array([0] * males.shape[0] + [1] * females.shape[0])
     curves = FDataGrid(data_matrix=np.concatenate((males, females), axis=0),
                        grid_points=ages,
                        dataset_name="Berkeley Growth Study",
                        argument_names=("age",),
                        coordinate_names=("height",))
 
-    sex = np.array([0] * males.shape[0] + [1] * females.shape[0])
+    curve_name = "height"
+    target_name = "sex"
+    target_categories = ["male", "female"]
+    frame = None
+
+    if as_frame:
+        sex = pd.Categorical.from_codes(sex, categories=target_categories)
+        frame = pd.DataFrame({curve_name: curves,
+                              target_name: sex})
+        curves = frame.iloc[:, 0]
+        sex = frame.iloc[:, 1]
 
     if return_X_y:
         return curves, sex
     else:
-        return {"data": curves,
-                "target": sex,
-                "target_names": ["male", "female"],
-                "target_feature_names": ["sex"],
-                "DESCR": DESCR}
+        return Bunch(data=curves,
+                     target=sex,
+                     frame=frame,
+                     categories={target_name: target_categories},
+                     feature_names=[curve_name],
+                     target_names=[target_name],
+                     DESCR=DESCR)
 
 
 if hasattr(fetch_growth, "__doc__"):  # docstrings can be stripped off

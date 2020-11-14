@@ -366,7 +366,7 @@ _tecator_descr = """
 """
 
 
-def fetch_tecator(return_X_y: bool = False):
+def fetch_tecator(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the Tecator dataset.
 
@@ -381,16 +381,28 @@ def fetch_tecator(return_X_y: bool = False):
     data = raw_dataset["tecator"]
 
     curves = data['absorp.fdata']
-    target = data['y'].values
-    target_feature_names = data['y'].columns.values.tolist()
+    target = data['y']
+    feature_names = [curves.dataset_name]
+    target_names = target.columns.values.tolist()
+
+    frame = None
+
+    if as_frame:
+        curves = pd.Series(curves, name=curves.dataset_name)
+        frame = pd.concat([curves, target], axis=1)
+    else:
+        target = target.values
 
     if return_X_y:
         return curves, target
     else:
-        return {"data": curves,
-                "target": target,
-                "target_feature_names": target_feature_names,
-                "DESCR": DESCR}
+        return Bunch(data=curves,
+                     target=target,
+                     frame=frame,
+                     categories={},
+                     feature_names=feature_names,
+                     target_names=target_names,
+                     DESCR=DESCR)
 
 
 if hasattr(fetch_tecator, "__doc__"):  # docstrings can be stripped off

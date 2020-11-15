@@ -507,7 +507,7 @@ _weather_descr = """
 """
 
 
-def fetch_weather(return_X_y: bool = False):
+def fetch_weather(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the Canadian Weather dataset.
 
@@ -531,30 +531,65 @@ def fetch_weather(return_X_y: bool = False):
                        grid_points=np.arange(0, 365) + 0.5,
                        domain_range=(0, 365),
                        dataset_name="Canadian Weather",
+                       sample_names=data["place"],
                        argument_names=("day",),
                        coordinate_names=("temperature (ºC)",
                                          "precipitation (mm.)"))
 
-    target_names, target = np.unique(data["region"], return_inverse=True)
+    curve_name = "daily averages"
+    target_name = "region"
+    target_categories, target = np.unique(data["region"], return_inverse=True)
+
+    frame = None
+
+    if as_frame:
+        target = pd.Categorical.from_codes(
+            target, categories=target_categories)
+        frame = pd.DataFrame({
+            curve_name: curves,
+            "place": data["place"],
+            "province": data["province"],
+            "latitude": np.asarray(data["coordinates"])[:, 0],
+            "longitude": np.asarray(data["coordinates"])[:, 1],
+            "index": data["geogindex"],
+            "monthly temperatures": np.asarray(
+                data["monthlyTemp"]).T.tolist(),
+            "monthly precipitation": np.asarray(
+                data["monthlyPrecip"]).T.tolist(),
+            target_name: target})
+        X = frame.iloc[:, :-1]
+        target = frame.iloc[:, 1]
+        feature_names = list(X.columns.values)
+
+        additional_dict = {}
+    else:
+        feature_names = [curve_name]
+        X = curves
+        meta = np.array(list(zip(data["place"],
+                                 data["province"],
+                                 np.asarray(data["coordinates"])[:, 0],
+                                 np.asarray(data["coordinates"])[:, 1],
+                                 data["geogindex"],
+                                 np.asarray(data["monthlyTemp"]).T,
+                                 np.asarray(data["monthlyPrecip"]).T)))
+        meta_names = ["place", "province", "latitude", "longitude",
+                      "index", "monthly temperatures",
+                      "monthly precipitation"],
+
+        additional_dict = {"meta": meta,
+                           "meta_names": meta_names}
 
     if return_X_y:
-        return curves, target
+        return X, target
     else:
-        return {"data": curves,
-                "target": target,
-                "target_names": target_names,
-                "target_feature_names": ["region"],
-                "meta": list(zip(data["place"], data["province"],
-                                 np.asarray(data["coordinates"])[0],
-                                 np.asarray(data["coordinates"])[1],
-                                 data["geogindex"],
-                                 np.asarray(data["monthlyTemp"]),
-                                 np.asarray(data["monthlyPrecip"]))),
-
-                "meta_names": ["place", "province", "latitude", "longitude",
-                               "ind", "monthlyTemp", "monthlyPrecip"],
-                "meta_feature_names": ["location"],
-                "DESCR": DESCR}
+        return Bunch(data=X,
+                     target=target,
+                     frame=frame,
+                     categories={target_name: target_categories},
+                     feature_names=feature_names,
+                     target_names=[target_name],
+                     **additional_dict,
+                     DESCR=DESCR)
 
 
 if hasattr(fetch_weather, "__doc__"):  # docstrings can be stripped off

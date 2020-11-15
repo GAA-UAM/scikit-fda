@@ -641,7 +641,7 @@ _octane_descr = """
 """
 
 
-def fetch_octane(return_X_y: bool = False):
+def fetch_octane(return_X_y: bool = False, as_frame: bool = False):
     """Load near infrared spectra of gasoline samples.
 
     This function fetchs the octane dataset from the R package 'mrfDepth'
@@ -663,22 +663,36 @@ def fetch_octane(return_X_y: bool = False):
 
     # "The octane data set contains six outliers (25, 26, 36–39) to which
     # alcohol was added".
-    target = np.zeros(len(data), dtype=int)
+    target = np.zeros(len(data), dtype=np.bool_)
     target[24] = target[25] = target[35:39] = 1  # Outliers 1
+    target_name = "is outlier"
+
+    curve_name = "absorbances"
 
     curves = FDataGrid(data,
                        grid_points=grid_points,
-                       dataset_name="Octane",
+                       dataset_name="octane",
                        argument_names=("wavelength (nm)",),
                        coordinate_names=("absorbances",))
+
+    frame = None
+
+    if as_frame:
+        frame = pd.DataFrame({curve_name: curves,
+                              target_name: target})
+        curves = frame.iloc[:, [0]]
+        target = frame.iloc[:, 1]
 
     if return_X_y:
         return curves, target
     else:
-        return {"data": curves,
-                "target": target,
-                "target_names": ['inliner', 'outlier'],
-                "DESCR": DESCR}
+        return Bunch(data=curves,
+                     target=target,
+                     frame=frame,
+                     categories={},
+                     feature_names=[curve_name],
+                     target_names=[target_name],
+                     DESCR=DESCR)
 
 
 if hasattr(fetch_octane, "__doc__"):  # docstrings can be stripped off

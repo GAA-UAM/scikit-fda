@@ -236,7 +236,7 @@ def fetch_phoneme(return_X_y: bool = False, as_frame: bool = False):
     if as_frame:
         frame = pd.DataFrame({curve_name: curves,
                               target_name: sound})
-        curves = frame.iloc[:, 0]
+        curves = frame.iloc[:, [0]]
         target = frame.iloc[:, 1]
         meta = pd.Series(speaker, name="speaker")
     else:
@@ -310,7 +310,7 @@ def fetch_growth(return_X_y: bool = False, as_frame: bool = False):
         sex = pd.Categorical.from_codes(sex, categories=target_categories)
         frame = pd.DataFrame({curve_name: curves,
                               target_name: sex})
-        curves = frame.iloc[:, 0]
+        curves = frame.iloc[:, [0]]
         sex = frame.iloc[:, 1]
 
     if return_X_y:
@@ -388,7 +388,7 @@ def fetch_tecator(return_X_y: bool = False, as_frame: bool = False):
     frame = None
 
     if as_frame:
-        curves = pd.Series(curves, name=feature_name)
+        curves = pd.DataFrame({feature_name: curves})
         frame = pd.concat([curves, target], axis=1)
     else:
         target = target.values
@@ -476,7 +476,7 @@ def fetch_medflies(return_X_y: bool = False, as_frame: bool = False):
             target, categories=target_categories)
         frame = pd.DataFrame({curve_name: curves,
                               target_name: target})
-        curves = frame.iloc[:, 0]
+        curves = frame.iloc[:, [0]]
         target = frame.iloc[:, 1]
 
     if return_X_y:
@@ -634,9 +634,9 @@ _octane_descr = """
             Hubert, Mia. (2006). Robustness and Outlier Detection in
             Chemometrics. Critical Reviews in Analytical Chemistry. 36.
             221-242. 10.1080/10408340600969403.
-        ..  [HuRS2015] Hubert, Mia & Rousseeuw, Peter & Segaert, Pieter. (2015).
-            Multivariate functional outlier detection. Statistical Methods and
-            Applications. 24. 177-202. 10.1007/s10260-015-0297-8.
+        ..  [HuRS2015] Hubert, Mia & Rousseeuw, Peter & Segaert, Pieter.
+            (2015). Multivariate functional outlier detection. Statistical
+            Methods and Applications. 24. 177-202. 10.1007/s10260-015-0297-8.
 
 """
 
@@ -650,7 +650,7 @@ def fetch_octane(return_X_y: bool = False):
     """
     DESCR = _octane_descr
 
-    # octane file from mrfDepth R package
+    # octane file from mrfDepth R package
     raw_dataset = fetch_cran("octane", "mrfDepth", version="1.0.11")
     data = raw_dataset['octane'][..., 0].T
 
@@ -685,7 +685,7 @@ if hasattr(fetch_octane, "__doc__"):  # docstrings can be stripped off
     fetch_octane.__doc__ += _octane_descr + _param_descr
 
 _gait_descr = """
-    Angles formed by the hip and knee of each of 39 children over each boy 
+    Angles formed by the hip and knee of each of 39 children over each boy
     gait cycle.
 
     References:
@@ -697,7 +697,7 @@ _gait_descr = """
 """
 
 
-def fetch_gait(return_X_y: bool = False):
+def fetch_gait(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the GAIT dataset.
 
@@ -713,25 +713,33 @@ def fetch_gait(return_X_y: bool = False):
     data_matrix = np.asarray(data)
     data_matrix = np.transpose(data_matrix, axes=(1, 0, 2))
     grid_points = np.asarray(data.coords.get('dim_0'), np.float64)
+    sample_names = np.asarray(data.coords.get('dim_1'))
+    feature_name = 'gait'
 
     curves = FDataGrid(data_matrix=data_matrix,
                        grid_points=grid_points,
-                       dataset_name="GAIT",
-                       argument_names=("Time (proportion of gait cycle)",),
-                       coordinate_names=("Hip angle (degrees)",
-                                         "Knee angle (degrees)"))
+                       dataset_name=feature_name,
+                       sample_names=sample_names,
+                       argument_names=("time (proportion of gait cycle)",),
+                       coordinate_names=("hip angle (degrees)",
+                                         "knee angle (degrees)"))
 
-    meta_names, meta = np.unique(np.asarray(data.coords.get('dim_1')),
-                                 return_inverse=True)
+    frame = None
+
+    if as_frame:
+        curves = pd.DataFrame({feature_name: curves})
+        frame = curves
 
     if return_X_y:
         return curves, None
     else:
-        return {"data": curves,
-                "meta": meta,
-                "meta_names": meta_names,
-                "meta_feature_names": ["boys"],
-                "DESCR": DESCR}
+        return Bunch(data=curves,
+                     target=None,
+                     frame=frame,
+                     categories={},
+                     feature_names=[feature_name],
+                     target_names=[],
+                     DESCR=DESCR)
 
 
 if hasattr(fetch_gait, "__doc__"):  # docstrings can be stripped off

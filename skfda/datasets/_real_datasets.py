@@ -610,7 +610,7 @@ _aemet_descr = """
 """
 
 
-def fetch_aemet(return_X_y: bool = False):
+def fetch_aemet(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the Spanish Weather dataset.
 
@@ -629,22 +629,48 @@ def fetch_aemet(return_X_y: bool = False):
     data_matrix[:, :, 2] = data["wind.speed"].data_matrix[:, :, 0]
 
     curves = data["temp"].copy(data_matrix=data_matrix,
-                               dataset_name="AEMET",
+                               dataset_name="aemet",
+                               sample_names=data["df"].iloc[:, 1],
                                argument_names=("day",),
                                coordinate_names=("temperature (ºC)",
                                                  "logprecipitation",
                                                  "wind speed (m/s)"))
 
-    if return_X_y:
-        return curves, None
+    curve_name = "daily averages"
+    df_names = ["index", "place", "province", "altitude",
+                "longitude", "latitude"]
+    df_indexes = np.array([0, 1, 2, 3, 6, 7])
+
+    frame = None
+
+    if as_frame:
+        frame = pd.DataFrame({
+            curve_name: curves,
+            **{n: data["df"].iloc[:, d] for (n, d) in zip(df_names, df_indexes)}})
+        X = frame
+        feature_names = list(X.columns.values)
+
+        additional_dict = {}
+
     else:
-        return {"data": curves,
-                "meta": np.asarray(data["df"])[:,
-                                               np.array([0, 1, 2, 3, 6, 7])],
-                "meta_names": ["ind", "place", "province", "altitude",
-                               "longitude", "latitude"],
-                "meta_feature_names": ["location"],
-                "DESCR": DESCR}
+        feature_names = [curve_name]
+        X = curves
+        meta = np.asarray(data["df"])[:, df_indexes]
+        meta_names = df_names
+        additional_dict = {"meta": meta,
+                           "meta_names": meta_names}
+
+    if return_X_y:
+        return X, None
+    else:
+        return Bunch(
+            data=X,
+            target=None,
+            frame=frame,
+            categories={},
+            feature_names=feature_names,
+            **additional_dict,
+            DESCR=DESCR)
 
 
 if hasattr(fetch_aemet, "__doc__"):  # docstrings can be stripped off

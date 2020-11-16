@@ -24,8 +24,8 @@ import numpy as np
 # CRAN. It contains a FDataGrid with daily temperatures and precipitations,
 # that is, it has a 2-dimensional image. We are interested only in the daily
 # average temperatures, so we will use the first coordinate.
-dataset = datasets.fetch_weather()
-fd = dataset["data"]
+X, y = datasets.fetch_weather(return_X_y=True, as_frame=True)
+fd = X.iloc[:, 0].values
 fd_temperatures = fd.coordinates[0]
 
 ##############################################################################
@@ -35,11 +35,11 @@ fd_temperatures = fd.coordinates[0]
 
 # Each climate is assigned a color. Defaults to grey.
 colormap = plt.cm.get_cmap('seismic')
-label_names = dataset["target_names"]
+label_names = y.values.categories
 nlabels = len(label_names)
 label_colors = colormap(np.arange(nlabels) / (nlabels - 1))
 
-fd_temperatures.plot(group=dataset["target"],
+fd_temperatures.plot(group=y.values.codes,
                      group_colors=label_colors,
                      group_names=label_names)
 

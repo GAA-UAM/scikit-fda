@@ -22,11 +22,9 @@ import numpy as np
 #
 # In this example we only want to discriminate between meat with less than 20%
 # of fat, and meat with a higher fat content.
-dataset = skfda.datasets.fetch_tecator()
-fd = dataset['data']
-y = dataset['target']
-target_feature_names = dataset['target_feature_names']
-fat = y[:, np.asarray(target_feature_names) == 'Fat'].ravel()
+X, y = skfda.datasets.fetch_tecator(return_X_y=True, as_frame=True)
+fd = X.iloc[:, 0].values
+fat = y['fat'].values
 
 ##############################################################################
 # We will now plot in red samples containing less than 20% of fat and in blue

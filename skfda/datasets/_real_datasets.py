@@ -1,7 +1,10 @@
 import rdata
 import warnings
 
+from sklearn.utils import Bunch
+
 import numpy as np
+import pandas as pd
 
 from .. import FDataGrid
 
@@ -153,6 +156,7 @@ def _fetch_fda_usc(name):
 _param_descr = """
     Args:
         return_X_y: Return only the data and target as a tuple.
+        as_frame: Return the data in a Pandas Dataframe or Series.
 """
 
 _phoneme_descr = """
@@ -200,7 +204,7 @@ _phoneme_descr = """
     """
 
 
-def fetch_phoneme(return_X_y: bool = False):
+def fetch_phoneme(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the phoneme dataset.
 
@@ -225,16 +229,33 @@ def fetch_phoneme(return_X_y: bool = False):
                        argument_names=("frequency (kHz)",),
                        coordinate_names=("log-periodogram",))
 
-    if return_X_y:
-        return curves, sound
+    curve_name = "log-periodogram"
+    target_name = "phoneme"
+    frame = None
+
+    if as_frame:
+        frame = pd.DataFrame({curve_name: curves,
+                              target_name: sound})
+        curves = frame.iloc[:, [0]]
+        target = frame.iloc[:, 1]
+        meta = pd.Series(speaker, name="speaker")
     else:
-        return {"data": curves,
-                "target": sound.codes,
-                "target_names": sound.categories.tolist(),
-                "target_feature_names": ["sound"],
-                "meta": np.array([speaker]).T,
-                "meta_feature_names": ["speaker"],
-                "DESCR": DESCR}
+        target = sound.codes
+        meta = np.array([speaker]).T
+
+    if return_X_y:
+        return curves, target
+    else:
+        return Bunch(
+            data=curves,
+            target=target,
+            frame=frame,
+            categories={target_name: sound.categories.tolist()},
+            feature_names=[curve_name],
+            target_names=[target_name],
+            meta=meta,
+            meta_names=["speaker"],
+            DESCR=DESCR)
 
 
 if hasattr(fetch_phoneme, "__doc__"):  # docstrings can be stripped off
@@ -255,7 +276,7 @@ _growth_descr = """
 """
 
 
-def fetch_growth(return_X_y: bool = False):
+def fetch_growth(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the Berkeley Growth Study dataset.
 
@@ -273,22 +294,35 @@ def fetch_growth(return_X_y: bool = False):
     females = data["hgtf"].T
     males = data["hgtm"].T
 
+    sex = np.array([0] * males.shape[0] + [1] * females.shape[0])
     curves = FDataGrid(data_matrix=np.concatenate((males, females), axis=0),
                        grid_points=ages,
                        dataset_name="Berkeley Growth Study",
                        argument_names=("age",),
                        coordinate_names=("height",))
 
-    sex = np.array([0] * males.shape[0] + [1] * females.shape[0])
+    curve_name = "height"
+    target_name = "sex"
+    target_categories = ["male", "female"]
+    frame = None
+
+    if as_frame:
+        sex = pd.Categorical.from_codes(sex, categories=target_categories)
+        frame = pd.DataFrame({curve_name: curves,
+                              target_name: sex})
+        curves = frame.iloc[:, [0]]
+        sex = frame.iloc[:, 1]
 
     if return_X_y:
         return curves, sex
     else:
-        return {"data": curves,
-                "target": sex,
-                "target_names": ["male", "female"],
-                "target_feature_names": ["sex"],
-                "DESCR": DESCR}
+        return Bunch(data=curves,
+                     target=sex,
+                     frame=frame,
+                     categories={target_name: target_categories},
+                     feature_names=[curve_name],
+                     target_names=[target_name],
+                     DESCR=DESCR)
 
 
 if hasattr(fetch_growth, "__doc__"):  # docstrings can be stripped off
@@ -332,7 +366,7 @@ _tecator_descr = """
 """
 
 
-def fetch_tecator(return_X_y: bool = False):
+def fetch_tecator(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the Tecator dataset.
 
@@ -347,16 +381,28 @@ def fetch_tecator(return_X_y: bool = False):
     data = raw_dataset["tecator"]
 
     curves = data['absorp.fdata']
-    target = data['y'].values
-    target_feature_names = data['y'].columns.values.tolist()
+    target = data['y'].rename(columns=str.lower)
+    feature_name = curves.dataset_name.lower()
+    target_names = target.columns.values.tolist()
+
+    frame = None
+
+    if as_frame:
+        curves = pd.DataFrame({feature_name: curves})
+        frame = pd.concat([curves, target], axis=1)
+    else:
+        target = target.values
 
     if return_X_y:
         return curves, target
     else:
-        return {"data": curves,
-                "target": target,
-                "target_feature_names": target_feature_names,
-                "DESCR": DESCR}
+        return Bunch(data=curves,
+                     target=target,
+                     frame=frame,
+                     categories={},
+                     feature_names=[feature_name],
+                     target_names=target_names,
+                     DESCR=DESCR)
 
 
 if hasattr(fetch_tecator, "__doc__"):  # docstrings can be stripped off
@@ -400,7 +446,7 @@ _medflies_descr = """
 """
 
 
-def fetch_medflies(return_X_y: bool = False):
+def fetch_medflies(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the Medflies dataset, where the flies are separated in two classes
     according to their longevity.
@@ -418,18 +464,31 @@ def fetch_medflies(return_X_y: bool = False):
     curves = data[0]
 
     unique = np.unique(data[1], return_inverse=True)
-    target_names = [unique[0][1], unique[0][0]]
+    target_categories = [unique[0][1], unique[0][0]]
     target = 1 - unique[1]
-    target_feature_names = ["lifetime"]
+    curve_name = 'eggs'
+    target_name = "lifetime"
+
+    frame = None
+
+    if as_frame:
+        target = pd.Categorical.from_codes(
+            target, categories=target_categories)
+        frame = pd.DataFrame({curve_name: curves,
+                              target_name: target})
+        curves = frame.iloc[:, [0]]
+        target = frame.iloc[:, 1]
 
     if return_X_y:
         return curves, target
     else:
-        return {"data": curves,
-                "target": target,
-                "target_names": target_names,
-                "target_feature_names": target_feature_names,
-                "DESCR": DESCR}
+        return Bunch(data=curves,
+                     target=target,
+                     frame=frame,
+                     categories={target_name: target_categories},
+                     feature_names=[curve_name],
+                     target_names=[target_name],
+                     DESCR=DESCR)
 
 
 if hasattr(fetch_medflies, "__doc__"):  # docstrings can be stripped off
@@ -448,7 +507,7 @@ _weather_descr = """
 """
 
 
-def fetch_weather(return_X_y: bool = False):
+def fetch_weather(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the Canadian Weather dataset.
 
@@ -472,30 +531,65 @@ def fetch_weather(return_X_y: bool = False):
                        grid_points=np.arange(0, 365) + 0.5,
                        domain_range=(0, 365),
                        dataset_name="Canadian Weather",
+                       sample_names=data["place"],
                        argument_names=("day",),
                        coordinate_names=("temperature (ºC)",
                                          "precipitation (mm.)"))
 
-    target_names, target = np.unique(data["region"], return_inverse=True)
+    curve_name = "daily averages"
+    target_name = "region"
+    target_categories, target = np.unique(data["region"], return_inverse=True)
+
+    frame = None
+
+    if as_frame:
+        target = pd.Categorical.from_codes(
+            target, categories=target_categories)
+        frame = pd.DataFrame({
+            curve_name: curves,
+            "place": data["place"],
+            "province": data["province"],
+            "latitude": np.asarray(data["coordinates"])[:, 0],
+            "longitude": np.asarray(data["coordinates"])[:, 1],
+            "index": data["geogindex"],
+            "monthly temperatures": np.asarray(
+                data["monthlyTemp"]).T.tolist(),
+            "monthly precipitation": np.asarray(
+                data["monthlyPrecip"]).T.tolist(),
+            target_name: target})
+        X = frame.iloc[:, :-1]
+        target = frame.iloc[:, -1]
+        feature_names = list(X.columns.values)
+
+        additional_dict = {}
+    else:
+        feature_names = [curve_name]
+        X = curves
+        meta = np.array(list(zip(data["place"],
+                                 data["province"],
+                                 np.asarray(data["coordinates"])[:, 0],
+                                 np.asarray(data["coordinates"])[:, 1],
+                                 data["geogindex"],
+                                 np.asarray(data["monthlyTemp"]).T,
+                                 np.asarray(data["monthlyPrecip"]).T)))
+        meta_names = ["place", "province", "latitude", "longitude",
+                      "index", "monthly temperatures",
+                      "monthly precipitation"],
+
+        additional_dict = {"meta": meta,
+                           "meta_names": meta_names}
 
     if return_X_y:
-        return curves, target
+        return X, target
     else:
-        return {"data": curves,
-                "target": target,
-                "target_names": target_names,
-                "target_feature_names": ["region"],
-                "meta": list(zip(data["place"], data["province"],
-                                 np.asarray(data["coordinates"])[0],
-                                 np.asarray(data["coordinates"])[1],
-                                 data["geogindex"],
-                                 np.asarray(data["monthlyTemp"]),
-                                 np.asarray(data["monthlyPrecip"]))),
-
-                "meta_names": ["place", "province", "latitude", "longitude",
-                               "ind", "monthlyTemp", "monthlyPrecip"],
-                "meta_feature_names": ["location"],
-                "DESCR": DESCR}
+        return Bunch(data=X,
+                     target=target,
+                     frame=frame,
+                     categories={target_name: target_categories},
+                     feature_names=feature_names,
+                     target_names=[target_name],
+                     **additional_dict,
+                     DESCR=DESCR)
 
 
 if hasattr(fetch_weather, "__doc__"):  # docstrings can be stripped off
@@ -516,7 +610,7 @@ _aemet_descr = """
 """
 
 
-def fetch_aemet(return_X_y: bool = False):
+def fetch_aemet(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the Spanish Weather dataset.
 
@@ -535,22 +629,48 @@ def fetch_aemet(return_X_y: bool = False):
     data_matrix[:, :, 2] = data["wind.speed"].data_matrix[:, :, 0]
 
     curves = data["temp"].copy(data_matrix=data_matrix,
-                               dataset_name="AEMET",
+                               dataset_name="aemet",
+                               sample_names=data["df"].iloc[:, 1],
                                argument_names=("day",),
                                coordinate_names=("temperature (ºC)",
                                                  "logprecipitation",
                                                  "wind speed (m/s)"))
 
-    if return_X_y:
-        return curves, None
+    curve_name = "daily averages"
+    df_names = ["index", "place", "province", "altitude",
+                "longitude", "latitude"]
+    df_indexes = np.array([0, 1, 2, 3, 6, 7])
+
+    frame = None
+
+    if as_frame:
+        frame = pd.DataFrame({
+            curve_name: curves,
+            **{n: data["df"].iloc[:, d] for (n, d) in zip(df_names, df_indexes)}})
+        X = frame
+        feature_names = list(X.columns.values)
+
+        additional_dict = {}
+
     else:
-        return {"data": curves,
-                "meta": np.asarray(data["df"])[:,
-                                               np.array([0, 1, 2, 3, 6, 7])],
-                "meta_names": ["ind", "place", "province", "altitude",
-                               "longitude", "latitude"],
-                "meta_feature_names": ["location"],
-                "DESCR": DESCR}
+        feature_names = [curve_name]
+        X = curves
+        meta = np.asarray(data["df"])[:, df_indexes]
+        meta_names = df_names
+        additional_dict = {"meta": meta,
+                           "meta_names": meta_names}
+
+    if return_X_y:
+        return X, None
+    else:
+        return Bunch(
+            data=X,
+            target=None,
+            frame=frame,
+            categories={},
+            feature_names=feature_names,
+            **additional_dict,
+            DESCR=DESCR)
 
 
 if hasattr(fetch_aemet, "__doc__"):  # docstrings can be stripped off
@@ -575,14 +695,14 @@ _octane_descr = """
             Hubert, Mia. (2006). Robustness and Outlier Detection in
             Chemometrics. Critical Reviews in Analytical Chemistry. 36.
             221-242. 10.1080/10408340600969403.
-        ..  [HuRS2015] Hubert, Mia & Rousseeuw, Peter & Segaert, Pieter. (2015).
-            Multivariate functional outlier detection. Statistical Methods and
-            Applications. 24. 177-202. 10.1007/s10260-015-0297-8.
+        ..  [HuRS2015] Hubert, Mia & Rousseeuw, Peter & Segaert, Pieter.
+            (2015). Multivariate functional outlier detection. Statistical
+            Methods and Applications. 24. 177-202. 10.1007/s10260-015-0297-8.
 
 """
 
 
-def fetch_octane(return_X_y: bool = False):
+def fetch_octane(return_X_y: bool = False, as_frame: bool = False):
     """Load near infrared spectra of gasoline samples.
 
     This function fetchs the octane dataset from the R package 'mrfDepth'
@@ -591,7 +711,7 @@ def fetch_octane(return_X_y: bool = False):
     """
     DESCR = _octane_descr
 
-    # octane file from mrfDepth R package
+    # octane file from mrfDepth R package
     raw_dataset = fetch_cran("octane", "mrfDepth", version="1.0.11")
     data = raw_dataset['octane'][..., 0].T
 
@@ -604,29 +724,43 @@ def fetch_octane(return_X_y: bool = False):
 
     # "The octane data set contains six outliers (25, 26, 36–39) to which
     # alcohol was added".
-    target = np.zeros(len(data), dtype=int)
+    target = np.zeros(len(data), dtype=np.bool_)
     target[24] = target[25] = target[35:39] = 1  # Outliers 1
+    target_name = "is outlier"
+
+    curve_name = "absorbances"
 
     curves = FDataGrid(data,
                        grid_points=grid_points,
-                       dataset_name="Octane",
+                       dataset_name="octane",
                        argument_names=("wavelength (nm)",),
                        coordinate_names=("absorbances",))
+
+    frame = None
+
+    if as_frame:
+        frame = pd.DataFrame({curve_name: curves,
+                              target_name: target})
+        curves = frame.iloc[:, [0]]
+        target = frame.iloc[:, 1]
 
     if return_X_y:
         return curves, target
     else:
-        return {"data": curves,
-                "target": target,
-                "target_names": ['inliner', 'outlier'],
-                "DESCR": DESCR}
+        return Bunch(data=curves,
+                     target=target,
+                     frame=frame,
+                     categories={},
+                     feature_names=[curve_name],
+                     target_names=[target_name],
+                     DESCR=DESCR)
 
 
 if hasattr(fetch_octane, "__doc__"):  # docstrings can be stripped off
     fetch_octane.__doc__ += _octane_descr + _param_descr
 
 _gait_descr = """
-    Angles formed by the hip and knee of each of 39 children over each boy 
+    Angles formed by the hip and knee of each of 39 children over each boy
     gait cycle.
 
     References:
@@ -638,7 +772,7 @@ _gait_descr = """
 """
 
 
-def fetch_gait(return_X_y: bool = False):
+def fetch_gait(return_X_y: bool = False, as_frame: bool = False):
     """
     Load the GAIT dataset.
 
@@ -654,25 +788,33 @@ def fetch_gait(return_X_y: bool = False):
     data_matrix = np.asarray(data)
     data_matrix = np.transpose(data_matrix, axes=(1, 0, 2))
     grid_points = np.asarray(data.coords.get('dim_0'), np.float64)
+    sample_names = np.asarray(data.coords.get('dim_1'))
+    feature_name = 'gait'
 
     curves = FDataGrid(data_matrix=data_matrix,
                        grid_points=grid_points,
-                       dataset_name="GAIT",
-                       argument_names=("Time (proportion of gait cycle)",),
-                       coordinate_names=("Hip angle (degrees)",
-                                         "Knee angle (degrees)"))
+                       dataset_name=feature_name,
+                       sample_names=sample_names,
+                       argument_names=("time (proportion of gait cycle)",),
+                       coordinate_names=("hip angle (degrees)",
+                                         "knee angle (degrees)"))
 
-    meta_names, meta = np.unique(np.asarray(data.coords.get('dim_1')),
-                                 return_inverse=True)
+    frame = None
+
+    if as_frame:
+        curves = pd.DataFrame({feature_name: curves})
+        frame = curves
 
     if return_X_y:
         return curves, None
     else:
-        return {"data": curves,
-                "meta": meta,
-                "meta_names": meta_names,
-                "meta_feature_names": ["boys"],
-                "DESCR": DESCR}
+        return Bunch(data=curves,
+                     target=None,
+                     frame=frame,
+                     categories={},
+                     feature_names=[feature_name],
+                     target_names=[],
+                     DESCR=DESCR)
 
 
 if hasattr(fetch_gait, "__doc__"):  # docstrings can be stripped off

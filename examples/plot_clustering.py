@@ -12,12 +12,13 @@ calculate the results plotted.
 
 # sphinx_gallery_thumbnail_number = 6
 
-import matplotlib.pyplot as plt
-import numpy as np
 from skfda import datasets
 from skfda.exploratory.visualization.clustering import (
     plot_clusters, plot_cluster_lines, plot_cluster_bars)
 from skfda.ml.clustering import KMeans, FuzzyCMeans
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 ##############################################################################
@@ -25,9 +26,10 @@ from skfda.ml.clustering import KMeans, FuzzyCMeans
 # CRAN. It contains a FDataGrid with daily temperatures and precipitations,
 # that is, it has a 2-dimensional image. We are interested only in the daily
 # average temperatures, so we select the first coordinate function.
-dataset = datasets.fetch_weather()
-fd = dataset["data"]
+X, y = datasets.fetch_weather(return_X_y=True, as_frame=True)
+fd = X.iloc[:, 0].values
 fd_temperatures = fd.coordinates[0]
+target = y.values
 
 # The desired FDataGrid only contains 10 random samples, so that the example
 # provides clearer plots.
@@ -39,27 +41,15 @@ fd = fd_temperatures[indices_samples]
 # according to the target. In this case, it includes the different climates to
 # which the weather stations belong to.
 
-climate_by_sample = [dataset["target"][i] for i in indices_samples]
-
-# Note that the samples chosen belong to three of the four possible target
-# groups. By coincidence, these three groups correspond to indices 1, 2, 3,
-# that is why the indices (´climate_by_sample´) are decremented in 1. In case
-# of reproducing the example with other ´indices_samples´ and the four groups
-# are not present in the sample, changes should be made in order ´indexer´
-# contains numbers in the interval [0, n_target_groups) and at least, an
-# occurrence of each one.
-indexer = np.asarray(climate_by_sample) - 1
-
-indices_target_groups = np.unique(climate_by_sample)
-climates = dataset["target_names"][indices_target_groups]
+climates = target[indices_samples].remove_unused_categories()
 
 # Assigning the color to each of the groups.
 colormap = plt.cm.get_cmap('tab20b')
-n_climates = len(climates)
+n_climates = len(climates.categories)
 climate_colors = colormap(np.arange(n_climates) / (n_climates - 1))
 
-fd.plot(group=indexer, group_colors=climate_colors,
-        group_names=climates)
+fd.plot(group=climates.codes, group_names=climates.categories,
+        group_colors=climate_colors)
 
 ##############################################################################
 # The number of clusters is set with the number of climates, in order to see
@@ -89,7 +79,7 @@ print(kmeans.predict(fd))
 # Customization of cluster colors and labels in order to match the first image
 # of raw data.
 cluster_colors = climate_colors[np.array([0, 2, 1])]
-cluster_labels = climates[np.array([0, 2, 1])]
+cluster_labels = climates.categories[np.array([0, 2, 1])]
 
 plot_clusters(kmeans, fd, cluster_colors=cluster_colors,
               cluster_labels=cluster_labels)
@@ -127,7 +117,7 @@ plot_clusters(fuzzy_kmeans, fd, cluster_colors=cluster_colors,
 # to each of the samples in order to identify them. In this example, the
 # colors are the ones of the first plot, dividing the samples by climate.
 
-colors_by_climate = colormap(indexer / (n_climates - 1))
+colors_by_climate = colormap(climates.codes / (n_climates - 1))
 
 plot_cluster_lines(fuzzy_kmeans, fd, cluster_labels=cluster_labels,
                    sample_colors=colors_by_climate)

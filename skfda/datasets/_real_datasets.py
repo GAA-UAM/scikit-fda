@@ -558,7 +558,7 @@ def fetch_weather(return_X_y: bool = False, as_frame: bool = False):
                 data["monthlyPrecip"]).T.tolist(),
             target_name: target})
         X = frame.iloc[:, :-1]
-        target = frame.iloc[:, 1]
+        target = frame.iloc[:, -1]
         feature_names = list(X.columns.values)
 
         additional_dict = {}

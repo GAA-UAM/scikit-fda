@@ -448,7 +448,7 @@ def _check_estimator(estimator):
     check_get_params_invariance(name, instance)
     check_set_params(name, instance)
 
-def _fit_init(y):
+def _classifier_fit_init(y):
     from sklearn.utils.multiclass import check_classification_targets
     from sklearn.preprocessing import LabelEncoder
 
@@ -458,8 +458,8 @@ def _fit_init(y):
     y_ind = le.fit_transform(y)
 
     classes = le.classes_
-    n_classes = classes.size
-    if n_classes < 2:
+
+    if classes.size < 2:
         raise ValueError(f'The number of classes has to be greater than'
-                            f' one; got {n_classes} class')
-    return classes, n_classes, y_ind
+                            f' one; got {classes.size} class')
+    return classes, y_ind

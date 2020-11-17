@@ -1,11 +1,12 @@
 """Maximum depth for supervised classification."""
+
 import numpy as np
 
 from sklearn.base import ClassifierMixin, BaseEstimator, clone
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from skfda.exploratory.depth import *
-from skfda._utils import _fit_init
+from skfda._utils import _classifier_fit_init
 
 class MaximumDepth(BaseEstimator, ClassifierMixin):
     """Maximum depth classifier for functional data.
@@ -44,10 +45,14 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
     >>> clf.predict(X_test) # Predict labels for test samples
     array([1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0,
            1, 1])
+    
+    Finally, we calculate the mean accuracy for the test data
+
+    >>> clf.score(X_test, y_test)
+    0.7916666666666666
 
     See also
     --------
-    :class:`~skfda.ml.classification.DD-plot`
 
     """
 
@@ -59,19 +64,14 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
         """Fit the model using X as training data and y as target values.
 
         Args:
-            X (:class:`FDataGrid`, array_matrix): Training data. FDataGrid
-                with the training data or array matrix with shape
-                [n_samples, n_samples] if metric='precomputed'.
-            y (array-like or sparse matrix): Target values of
-                shape = [n_samples] or [n_samples, n_outputs].
+            X (:class:`FDataGrid`): FDataGrid with the training data.
+            y (array-like): Target values of shape = [n_samples].
 
         """
-        self.classes_, n_classes, y_ind = _fit_init(y)
-
-        self.distributions_ = [None]*n_classes
-        for cur_class in range(0, n_classes):
-            distribution = clone(self.depth_method).fit(X[y_ind == cur_class])
-            self.distributions_[cur_class] = distribution
+        self.classes_, y_ind = _classifier_fit_init(y)
+      
+        self.distributions_ = [clone(self.depth_method).fit(
+            X[y_ind == cur_class]) for cur_class in range(self.classes_.size)]
 
         return self
   
@@ -82,8 +82,8 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
             X (:class:`FDataGrid`): FDataGrid with the test samples.
 
         Returns:
-            (np.array): y : array of shape [n_samples] or
-            [n_samples, n_outputs] with class labels for each data sample.
+            y (np.array): array of shape [n_samples] with class labels
+                for each data sample.
 
         """
         sklearn_check_is_fitted(self)

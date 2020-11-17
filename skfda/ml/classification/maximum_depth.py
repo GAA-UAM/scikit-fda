@@ -1,8 +1,7 @@
 """Maximum depth for supervised classification."""
 import numpy as np
-import copy
 
-from sklearn.base import ClassifierMixin, BaseEstimator
+from sklearn.base import ClassifierMixin, BaseEstimator, clone
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
@@ -24,38 +23,38 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
         by Fraiman and Muniz.
     Examples
     --------
-    Firstly, we will create a toy dataset with 2 classes
+    Firstly, we will import and split the Berkeley Growth Study dataset
 
-    >>> from skfda.datasets import make_sinusoidal_process
-    >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
-    >>> fd2 = make_sinusoidal_process(phase_mean=1.8, error_std=0.,
-    ...                               phase_std=.25, random_state=0)
-    >>> fd = fd1.concatenate(fd2)
-    >>> y = 15*[0] + 15*[1]
+    >>> from skfda.datasets import fetch_growth
+    >>> from sklearn.model_selection import train_test_split
+    >>> dataset = fetch_growth()
+    >>> fd = dataset['data']
+    >>> y = dataset['target']
+    >>> X_train, X_test, y_train, y_test = train_test_split(
+    ...     fd, y, test_size=0.25, stratify=y, random_state=0)
 
     We will fit a Maximum depth classifier
 
     >>> from skfda.ml.classification import MaximumDepth
-    >>> clf= MaximumDepth()
-    >>> depth.fit(fd, y)
+    >>> clf = MaximumDepth()
+    >>> clf.fit(X_train, y_train)
     MaximumDepth()
 
     We can predict the class of new samples
 
-    >>> depth.predict(fd[::2]) # Predict labels for even samples
-    array([0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
+    >>> clf.predict(X_test) # Predict labels for even samples
+    array([1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0,
+           1, 1])
 
     See also
     --------
-    :class:`~skfda.ml.classification.KNeighborsClassifier`
-    :class:`~skfda.ml.classification.RadiusNeighborsClassifier`
-
+    :class:`~skfda.ml.classification.DD-plot`
 
     """
 
-    def __init__(self, depth_class=IntegratedDepth()):
+    def __init__(self, depth_method=IntegratedDepth()):
         """Initialize the classifier."""
-        self.depth_class = depth_class
+        self.depth_method = depth_method
 
     def fit(self, X, y):
         """Fit the model using X as training data and y as target values.
@@ -78,10 +77,10 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
             raise ValueError(f'The number of classes has to be greater than'
                              f' one; got {n_classes} class')
 
-        self.distributions_ = []
+        self.distributions_ = [None]*n_classes
         for cur_class in range(0, n_classes):
-            distribution = self.depth_class.fit(X[y_ind == cur_class])
-            self.distributions_.append(copy.deepcopy(distribution))
+            distribution = clone(self.depth_method).fit(X[y_ind == cur_class])
+            self.distributions_[cur_class] = distribution
 
         return self
   
@@ -99,4 +98,4 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
         sklearn_check_is_fitted(self)
 
         depths = [distribution.predict(X) for distribution in self.distributions_]
-        return np.array([self.classes_[i] for i in np.argmax(depths, axis=0)])
+        return self.classes_[np.argmax(depths, axis=0)]

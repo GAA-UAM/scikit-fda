@@ -16,7 +16,7 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
 
     Parameters
     ----------
-    depth_class : callable, (default
+    depth_method : callable, (default
         :class:`IntegratedDepth <skfda.depth.IntegratedDepth>`)
         The depth class to use when calculating the depth of a test 
         samples in a class. See the documentation of the depths module

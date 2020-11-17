@@ -42,7 +42,7 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
 
     We can predict the class of new samples
 
-    >>> clf.predict(X_test) # Predict labels for even samples
+    >>> clf.predict(X_test) # Predict labels for test samples
     array([1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0,
            1, 1])
 

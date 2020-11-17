@@ -2,11 +2,10 @@
 import numpy as np
 
 from sklearn.base import ClassifierMixin, BaseEstimator, clone
-from sklearn.preprocessing import LabelEncoder
-from sklearn.utils.multiclass import check_classification_targets
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from skfda.exploratory.depth import *
+from skfda._utils import _fit_init
 
 class MaximumDepth(BaseEstimator, ClassifierMixin):
     """Maximum depth classifier for functional data.
@@ -67,15 +66,7 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
                 shape = [n_samples] or [n_samples, n_outputs].
 
         """
-        check_classification_targets(y)
-
-        le = LabelEncoder()
-        y_ind = le.fit_transform(y)
-        self.classes_ = classes = le.classes_
-        n_classes = classes.size
-        if n_classes < 2:
-            raise ValueError(f'The number of classes has to be greater than'
-                             f' one; got {n_classes} class')
+        self.classes_, n_classes, y_ind = _fit_init(y)
 
         self.distributions_ = [None]*n_classes
         for cur_class in range(0, n_classes):

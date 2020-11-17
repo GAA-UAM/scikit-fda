@@ -36,7 +36,7 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
     We will fit a Maximum depth classifier
 
     >>> from skfda.ml.classification import MaximumDepth
-    >>> depth = MaximumDepth()
+    >>> clf= MaximumDepth()
     >>> depth.fit(fd, y)
     MaximumDepth()
 

@@ -96,7 +96,7 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
             [n_samples, n_outputs] with class labels for each data sample.
 
         """
-        sklearn_check_is_fitted(self, 'distributions_')
+        sklearn_check_is_fitted(self)
 
         depths = [distribution.predict(X) for distribution in self.distributions_]
         return np.array([self.classes_[i] for i in np.argmax(depths, axis=0)])

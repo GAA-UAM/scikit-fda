@@ -18,7 +18,7 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
         depth_method (Depth, default
             :class:`ModifiedBandDepth <skfda.depth.ModifiedBandDepth>`):
             The depth class to use when calculating the depth of a test
-            samples in a class. See the documentation of the depths module
+            sample in a class. See the documentation of the depths module
             for a list of available depths. By default it is ModifiedBandDepth.
     Examples:
         Firstly, we will import and split the Berkeley Growth Study dataset

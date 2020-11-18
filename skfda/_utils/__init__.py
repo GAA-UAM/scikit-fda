@@ -8,4 +8,4 @@ from ._utils import (_tuple_of_arrays, _cartesian_product,
                      _evaluate_grid, nquad_vec,
                      _FDataCallable, _pairwise_commutative,
                      _domain_range, _check_array_key,
-                     _classifier_fit_init)
+                     _classifier_get_classes)

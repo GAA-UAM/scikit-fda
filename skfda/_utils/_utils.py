@@ -449,7 +449,7 @@ def _check_estimator(estimator):
     check_set_params(name, instance)
 
 
-def _classifier_fit_init(y):
+def _classifier_get_classes(y):
     from sklearn.utils.multiclass import check_classification_targets
     from sklearn.preprocessing import LabelEncoder
 

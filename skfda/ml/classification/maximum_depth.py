@@ -6,7 +6,7 @@ from sklearn.base import ClassifierMixin, BaseEstimator, clone
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from skfda.exploratory.depth import *
-from skfda._utils import _classifier_fit_init
+from skfda._utils import _classifier_get_classes
 
 class MaximumDepth(BaseEstimator, ClassifierMixin):
     """Maximum depth classifier for functional data.
@@ -68,7 +68,7 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
             y (array-like): Target values of shape = [n_samples].
 
         """
-        self.classes_, y_ind = _classifier_fit_init(y)
+        self.classes_, y_ind = _classifier_get_classes(y)
       
         self.distributions_ = [clone(self.depth_method).fit(
             X[y_ind == cur_class]) for cur_class in range(self.classes_.size)]

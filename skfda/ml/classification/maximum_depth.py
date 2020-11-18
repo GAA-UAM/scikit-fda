@@ -13,46 +13,43 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
 
     Test samples are classified to the class where they are deeper.
 
-    Parameters
-    ----------
-    depth_method : callable, (default
-        :class:`IntegratedDepth <skfda.depth.IntegratedDepth>`)
-        The depth class to use when calculating the depth of a test 
-        samples in a class. See the documentation of the depths module
-        for a list of available depths. By default it is the one used
-        by Fraiman and Muniz.
-    Examples
-    --------
-    Firstly, we will import and split the Berkeley Growth Study dataset
+    Parameters:
+        depth_method (callable, (default
+            :class:`IntegratedDepth <skfda.depth.IntegratedDepth>`)):
+            The depth class to use when calculating the depth of a test 
+            samples in a class. See the documentation of the depths module
+            for a list of available depths. By default it is the one used
+            by Fraiman and Muniz.
+    Examples:
+        Firstly, we will import and split the Berkeley Growth Study dataset
 
-    >>> from skfda.datasets import fetch_growth
-    >>> from sklearn.model_selection import train_test_split
-    >>> dataset = fetch_growth()
-    >>> fd = dataset['data']
-    >>> y = dataset['target']
-    >>> X_train, X_test, y_train, y_test = train_test_split(
-    ...     fd, y, test_size=0.25, stratify=y, random_state=0)
+        >>> from skfda.datasets import fetch_growth
+        >>> from sklearn.model_selection import train_test_split
+        >>> dataset = fetch_growth()
+        >>> fd = dataset['data']
+        >>> y = dataset['target']
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     fd, y, test_size=0.25, stratify=y, random_state=0)
 
-    We will fit a Maximum depth classifier
+        We will fit a Maximum depth classifier
 
-    >>> from skfda.ml.classification import MaximumDepth
-    >>> clf = MaximumDepth()
-    >>> clf.fit(X_train, y_train)
-    MaximumDepth()
+        >>> from skfda.ml.classification import MaximumDepth
+        >>> clf = MaximumDepth()
+        >>> clf.fit(X_train, y_train)
+        MaximumDepth()
 
-    We can predict the class of new samples
+        We can predict the class of new samples
 
-    >>> clf.predict(X_test) # Predict labels for test samples
-    array([1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0,
-           1, 1])
-    
-    Finally, we calculate the mean accuracy for the test data
+        >>> clf.predict(X_test) # Predict labels for test samples
+        array([1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0,
+               1, 1])
+        
+        Finally, we calculate the mean accuracy for the test data
 
-    >>> clf.score(X_test, y_test)
-    0.7916666666666666
+        >>> clf.score(X_test, y_test)
+        0.7916666666666666
 
-    See also
-    --------
+    See also:
 
     """
 

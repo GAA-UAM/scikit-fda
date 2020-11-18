@@ -8,6 +8,7 @@ from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ..._utils import _classifier_get_classes
 
+
 class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
     """Maximum depth classifier for functional data.
 
@@ -40,9 +41,9 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
         We can predict the class of new samples
 
         >>> clf.predict(X_test) # Predict labels for test samples
-        array([1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0,
-               1, 1])
-        
+        array([1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
+
         Finally, we calculate the mean accuracy for the test data
 
         >>> clf.score(X_test, y_test)
@@ -65,12 +66,12 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
 
         """
         self.classes_, y_ind = _classifier_get_classes(y)
-      
+
         self.distributions_ = [clone(self.depth_method).fit(
             X[y_ind == cur_class]) for cur_class in range(self.classes_.size)]
 
         return self
-  
+
     def predict(self, X):
         """Predict the class labels for the provided data.
 
@@ -84,6 +85,7 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
         """
         sklearn_check_is_fitted(self)
 
-        depths = [distribution.predict(X) for distribution in self.distributions_]
-        
+        depths = [distribution.predict(X)
+                  for distribution in self.distributions_]
+
         return self.classes_[np.argmax(depths, axis=0)]

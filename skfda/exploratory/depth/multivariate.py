@@ -226,10 +226,6 @@ class SimplicialDepth(Depth):
         return (total_pairs - comb(num_strictly_below, 2)
                 - comb(num_strictly_above, 2)) / total_pairs
 
-    @property
-    def min(self):
-        return 1 / 2
-
 
 class OutlyingnessBasedDepth(Depth):
     r"""

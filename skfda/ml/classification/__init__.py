@@ -1,3 +1,3 @@
 from ..._neighbors import (KNeighborsClassifier, RadiusNeighborsClassifier,
                            NearestCentroid)
-from .maximum_depth import MaximumDepth
+from .maximum_depth_classifier import MaximumDepthClassifier

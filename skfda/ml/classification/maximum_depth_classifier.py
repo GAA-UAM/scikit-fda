@@ -5,21 +5,20 @@ import numpy as np
 from sklearn.base import ClassifierMixin, BaseEstimator, clone
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from skfda.exploratory.depth import *
-from skfda._utils import _classifier_get_classes
+from ...exploratory.depth import Depth, ModifiedBandDepth
+from ..._utils import _classifier_get_classes
 
-class MaximumDepth(BaseEstimator, ClassifierMixin):
+class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
     """Maximum depth classifier for functional data.
 
     Test samples are classified to the class where they are deeper.
 
     Parameters:
-        depth_method (callable, (default
-            :class:`IntegratedDepth <skfda.depth.IntegratedDepth>`)):
-            The depth class to use when calculating the depth of a test 
+        depth_method (Depth, default
+            :class:`ModifiedBandDepth <skfda.depth.ModifiedBandDepth>`):
+            The depth class to use when calculating the depth of a test
             samples in a class. See the documentation of the depths module
-            for a list of available depths. By default it is the one used
-            by Fraiman and Muniz.
+            for a list of available depths. By default it is ModifiedBandDepth.
     Examples:
         Firstly, we will import and split the Berkeley Growth Study dataset
 
@@ -33,27 +32,27 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
 
         We will fit a Maximum depth classifier
 
-        >>> from skfda.ml.classification import MaximumDepth
-        >>> clf = MaximumDepth()
+        >>> from skfda.ml.classification import MaximumDepthClassifier
+        >>> clf = MaximumDepthClassifier()
         >>> clf.fit(X_train, y_train)
-        MaximumDepth()
+        MaximumDepthClassifier()
 
         We can predict the class of new samples
 
         >>> clf.predict(X_test) # Predict labels for test samples
-        array([1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0,
+        array([1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0,
                1, 1])
         
         Finally, we calculate the mean accuracy for the test data
 
         >>> clf.score(X_test, y_test)
-        0.7916666666666666
+        0.875
 
     See also:
 
     """
 
-    def __init__(self, depth_method=IntegratedDepth()):
+    def __init__(self, depth_method: Depth = ModifiedBandDepth()):
         """Initialize the classifier."""
         self.depth_method = depth_method
 
@@ -86,4 +85,5 @@ class MaximumDepth(BaseEstimator, ClassifierMixin):
         sklearn_check_is_fitted(self)
 
         depths = [distribution.predict(X) for distribution in self.distributions_]
+        
         return self.classes_[np.argmax(depths, axis=0)]

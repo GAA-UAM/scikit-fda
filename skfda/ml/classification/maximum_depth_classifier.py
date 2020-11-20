@@ -49,8 +49,6 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
         >>> clf.score(X_test, y_test)
         0.875
 
-    See also:
-
     """
 
     def __init__(self, depth_method: Depth = ModifiedBandDepth()):

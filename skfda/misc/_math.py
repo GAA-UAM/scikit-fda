@@ -264,17 +264,32 @@ def inner_product_fdatagrid(arg1: FDataGrid, arg2: FDataGrid, *, matrix=False):
     d1 = arg1.data_matrix
     d2 = arg2.data_matrix
 
+    einsum_broadcast_list = (np.arange(d1.ndim - 1) + 2).tolist()
+
     if matrix:
-        integrand = np.einsum('n...,m...->nm...', d1, d2)
+
+        d1 = np.copy(d1)
+
+        # Perform quadrature inside the einsum
+        for i, s in enumerate(arg1.grid_points[::-1]):
+            identity = np.eye(len(s))
+            weights = scipy.integrate.simps(identity, x=s)
+            index = (slice(None),) + (np.newaxis,) * (i + 1)
+            d1 *= weights[index]
+
+        return np.einsum(d1, [0] + einsum_broadcast_list,
+                         d2, [1] + einsum_broadcast_list,
+                         [0, 1])
+
     else:
         integrand = d1 * d2
 
-    for s in arg1.grid_points[::-1]:
-        integrand = scipy.integrate.simps(integrand,
-                                          x=s,
-                                          axis=-2)
+        for s in arg1.grid_points[::-1]:
+            integrand = scipy.integrate.simps(integrand,
+                                              x=s,
+                                              axis=-2)
 
-    return np.sum(integrand, axis=-1)
+        return np.sum(integrand, axis=-1)
 
 
 @inner_product.register(FDataBasis, FDataBasis)

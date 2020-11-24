@@ -1,5 +1,7 @@
 """Functional data descriptive statistics.
 """
+import numpy as np
+
 from ..depth import ModifiedBandDepth
 
 
@@ -91,6 +93,34 @@ def depth_based_median(fdatagrid, depth_method=ModifiedBandDepth()):
 
     # The median is the deepest curve
     return fdatagrid[indices_descending_depth[0]]
+
+
+def geometric_median(fdata, rtol=1.e-5, atol=1.e-8):
+
+    from ...misc import inner_product_matrix
+
+    gram = inner_product_matrix(fdata)
+    identity = np.eye(fdata.n_samples)
+    weights = np.full(fdata.n_samples, 1 / fdata.n_samples)
+    prod_matrix = identity - weights
+    distances = np.einsum('ln,nn,nl->l', prod_matrix.T, gram, prod_matrix)**0.5
+
+    while True:
+        zero_distances = (distances == 0)
+        n_zeros = np.sum(zero_distances)
+        weights_new = ((1 / distances) / np.sum(1 / distances) if n_zeros == 0
+                       else (1 / n_zeros) * zero_distances)
+
+        if np.allclose(weights, weights_new, rtol=rtol, atol=atol):
+            return (fdata * weights_new).sum()
+
+        prod_matrix = identity - weights_new
+
+        np.einsum('ln,nn,nl->l', prod_matrix.T, gram,
+                  prod_matrix, out=distances)
+        distances **= 0.5
+
+        weights[...] = weights_new
 
 
 def trim_mean(fdatagrid,

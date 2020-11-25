@@ -2,7 +2,7 @@
 
 from skfda.ml.neighbors_outlier import LocalOutlierFactor  # Pending theory
 from skfda.datasets import make_multimodal_samples, make_sinusoidal_process
-from skfda.exploratory.stats import mean as l2_mean
+from skfda.exploratory.stats import mean
 from skfda.misc.metrics import lp_distance, pairwise_distance
 from skfda.ml.classification import (KNeighborsClassifier,
                                      RadiusNeighborsClassifier,
@@ -56,7 +56,7 @@ class TestNeighbors(unittest.TestCase):
         for neigh in (KNeighborsClassifier(),
                       RadiusNeighborsClassifier(radius=.1),
                       NearestCentroid(),
-                      NearestCentroid(metric=lp_distance, mean=l2_mean)):
+                      NearestCentroid(metric=lp_distance, centroid=mean)):
 
             neigh.fit(self.X, self.y)
             pred = neigh.predict(self.X)
@@ -347,7 +347,7 @@ class TestNeighbors(unittest.TestCase):
         res = lof.fit_predict(self.fd_lof)
         np.testing.assert_array_equal(expected, res)
 
-        # With explicit l2 distance
+        # With explicit l2 distance
         lof2 = LocalOutlierFactor(metric=lp_distance)
         res2 = lof2.fit_predict(self.fd_lof)
         np.testing.assert_array_equal(expected, res2)

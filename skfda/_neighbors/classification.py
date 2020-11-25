@@ -53,7 +53,8 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         n_jobs: int or None, optional (default=None)
             The number of parallel jobs to run for neighbors search.
             ``None`` means 1 unless in a :obj:`joblib.parallel_backend`
-            context. ``-1`` means using all processors.
+            context.
+            ``-1`` means using all processors.
             Doesn't affect :meth:`fit` method.
         multivariate_metric: boolean, optional (default = False)
             Indicates if the metric used is a sklearn distance between vectors
@@ -209,7 +210,8 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
         n_jobs: int or None, optional (default=None)
             The number of parallel jobs to run for neighbors search.
             ``None`` means 1 unless in a :obj:`joblib.parallel_backend`
-            context. ``-1`` means using all processors.
+            context.
+            ``-1`` means using all processors.
         multivariate_metric: boolean, optional (default = False)
             Indicates if the metric used is a sklearn distance between vectors
             (see :class:`sklearn.neighbors.DistanceMetric`) or a functional

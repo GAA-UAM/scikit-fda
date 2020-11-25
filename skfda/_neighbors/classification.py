@@ -102,7 +102,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         This class wraps the sklearn classifier
         `sklearn.neighbors.KNeighborsClassifier`.
 
-        .. warning::
+    Warning:
         Regarding the Nearest Neighbors algorithms, if it is found that two
         neighbors, neighbor `k+1` and `k`, have identical distances
         but different labels, the results will depend on the ordering of the

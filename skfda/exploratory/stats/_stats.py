@@ -1,5 +1,5 @@
-"""Functional data descriptive statistics.
-"""
+"""Functional data descriptive statistics."""
+
 from ..depth import ModifiedBandDepth
 
 

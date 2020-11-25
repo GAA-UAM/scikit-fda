@@ -12,10 +12,6 @@ import numpy as np
 from ...misc.metrics import pairwise_distance, lp_distance
 
 
-__author__ = "Amanda Hernando Bernabé"
-__email__ = "amanda.hernando@estudiante.uam.es"
-
-
 class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
     """Base class to implement K-Means clustering algorithms.
 
@@ -702,7 +698,8 @@ class FuzzyCMeans(BaseKMeans):
 
     def _compute_inertia(self, membership, centroids,
                          distances_to_centroids):
-        return np.sum(membership ** self.fuzzifier * distances_to_centroids ** 2)
+        return np.sum(
+            membership ** self.fuzzifier * distances_to_centroids ** 2)
 
     def _create_membership(self, n_samples):
         return np.empty((n_samples, self.n_clusters))

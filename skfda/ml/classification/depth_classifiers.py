@@ -1,4 +1,4 @@
-"""Maximum depth for supervised classification."""
+"""Depth models for supervised classification."""
 
 import numpy as np
 

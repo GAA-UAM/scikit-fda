@@ -1,4 +1,4 @@
-from ..._neighbors import (KNeighborsClassifier, RadiusNeighborsClassifier,
-                           NearestCentroid)
-from .maximum_depth_classifier import MaximumDepthClassifier
-from .DTM_classifier import DTMClassifier
+from .neighbors_classifiers import (KNeighborsClassifier,
+                                    RadiusNeighborsClassifier)
+from .depth_classifiers import MaximumDepthClassifier
+from .centroid_classifiers import NearestCentroid, DTMClassifier

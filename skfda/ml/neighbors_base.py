@@ -64,7 +64,7 @@ def _to_multivariate_metric(metric, grid_points):
         >>> import numpy as np
         >>> from skfda import FDataGrid
         >>> from skfda.misc.metrics import lp_distance
-        >>> from skfda._neighbors.base import _to_multivariate_metric
+        >>> from skfda.ml.neighbors_base import _to_multivariate_metric
 
         Calculate the Lp distance between fd and fd2.
 

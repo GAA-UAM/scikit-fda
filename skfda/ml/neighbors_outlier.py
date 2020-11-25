@@ -3,8 +3,8 @@
 from sklearn.base import OutlierMixin
 
 from ..misc.metrics import lp_distance
-from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
-                   _to_multivariate_metric)
+from .neighbors_base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
+                             _to_multivariate_metric)
 
 
 class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
@@ -102,7 +102,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
         **Local Outlier Factor (LOF) for outlier detection**.
 
-        >>> from skfda._neighbors.outlier import LocalOutlierFactor
+        >>> from skfda.ml.neighbors_outlier import LocalOutlierFactor
 
         Creation of simulated dataset with 2 outliers to be used with LOF.
 

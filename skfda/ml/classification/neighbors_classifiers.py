@@ -1,13 +1,9 @@
 """Neighbor models for supervised classification."""
 
-from sklearn.base import ClassifierMixin, BaseEstimator
-from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
+from sklearn.base import ClassifierMixin
 
-from ..exploratory.stats import mean
-from ..misc.metrics import l2_distance, pairwise_distance
-from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
-                   NeighborsClassifierMixin, RadiusNeighborsMixin)
-from .._utils import _classifier_get_classes
+from ..neighbors_base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
+                              NeighborsClassifierMixin, RadiusNeighborsMixin)
 
 
 class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
@@ -286,99 +282,3 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
             algorithm=self.algorithm, leaf_size=self.leaf_size,
             metric=sklearn_metric, metric_params=self.metric_params,
             outlier_label=self.outlier_label, n_jobs=self.n_jobs)
-
-
-class NearestCentroid(BaseEstimator, ClassifierMixin):
-    """Nearest centroid classifier for functional data.
-
-    Each class is represented by its centroid, with test samples classified to
-    the class with the nearest centroid.
-
-    Parameters:
-        metric: callable, (default
-            :func:`lp_distance <skfda.metrics.lp_distance>`)
-            The metric to use when calculating distance between test samples
-            and centroids. See the documentation of the metrics module
-            for a list of available metrics. Defaults used L2 distance.
-        centroid: callable, (default
-            :func:`mean <skfda.exploratory.stats.mean>`)
-            The centroids for the samples corresponding to each class is the
-            point from which the sum of the distances (according to the metric)
-            of all samples that belong to that particular class are minimized.
-            By default it is used the usual mean, which minimizes the sum of L2
-            distances. This parameter allows change the centroid constructor.
-            The function must accept a :class:`FData` with the samples of one
-            class and return a :class:`FData` object with only one sample
-            representing the centroid.
-    Attributes:
-        centroids_: :class:`FDataGrid`
-            FDatagrid containing the centroid of each class
-    Examples:
-        Firstly, we will create a toy dataset with 2 classes
-
-        >>> from skfda.datasets import make_sinusoidal_process
-        >>> fd1 = make_sinusoidal_process(phase_std=.25, random_state=0)
-        >>> fd2 = make_sinusoidal_process(phase_mean=1.8, error_std=0.,
-        ...                               phase_std=.25, random_state=0)
-        >>> fd = fd1.concatenate(fd2)
-        >>> y = 15*[0] + 15*[1]
-
-        We will fit a Nearest centroids classifier
-
-        >>> from skfda.ml.classification import NearestCentroid
-        >>> neigh = NearestCentroid()
-        >>> neigh.fit(fd, y)
-        NearestCentroid(...)
-
-        We can predict the class of new samples
-
-        >>> neigh.predict(fd[::2]) # Predict labels for even samples
-        array([0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
-
-    See also:
-        :class:`~skfda.ml.classification.KNeighborsClassifier`
-        :class:`~skfda.ml.classification.RadiusNeighborsClassifier`
-        :class:`~skfda.ml.regression.KNeighborsRegressor`
-        :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
-        :class:`~skfda.ml.clustering.NearestNeighbors`
-    """
-
-    def __init__(self, metric=l2_distance, centroid=mean):
-        """Initialize the classifier."""
-        self.metric = metric
-        self.centroid = centroid
-
-    def fit(self, X, y):
-        """Fit the model using X as training data and y as target values.
-
-        Args:
-            X (:class:`FDataGrid`, array_matrix): Training data. FDataGrid
-                with the training data or array matrix with shape
-                [n_samples, n_samples] if metric='precomputed'.
-            y (array-like or sparse matrix): Target values of
-                shape = [n_samples] or [n_samples, n_outputs].
-        """
-        self.classes_, y_ind = _classifier_get_classes(y)
-
-        self.centroids_ = self.centroid(X[y_ind == 0])
-
-        for cur_class in range(1, self.classes_.size):
-            centroid = self.centroid(X[y_ind == cur_class])
-            self.centroids_ = self.centroids_.concatenate(centroid)
-
-        return self
-
-    def predict(self, X):
-        """Predict the class labels for the provided data.
-
-        Args:
-            X (:class:`FDataGrid`): FDataGrid with the test samples.
-
-        Returns:
-            y (np.array): array of shape [n_samples] or
-            [n_samples, n_outputs] with class labels for each data sample.
-        """
-        sklearn_check_is_fitted(self)
-
-        return self.classes_[pairwise_distance(self.metric)(
-            X, self.centroids_).argmin(axis=1)]

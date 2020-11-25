@@ -1,7 +1,8 @@
 """Neighbor models for regression."""
 
-from .base import (NeighborsBase, KNeighborsMixin, RadiusNeighborsMixin,
-                   NeighborsRegressorMixin)
+from ..neighbors_base import (NeighborsBase, KNeighborsMixin,
+                              RadiusNeighborsMixin,
+                              NeighborsRegressorMixin)
 
 
 class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,

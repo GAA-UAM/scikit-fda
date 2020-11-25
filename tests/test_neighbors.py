@@ -1,6 +1,6 @@
 """Test neighbors classifiers and regressors"""
 
-from skfda._neighbors.outlier import LocalOutlierFactor  # Pending theory
+from skfda.ml.neighbors_outlier import LocalOutlierFactor  # Pending theory
 from skfda.datasets import make_multimodal_samples, make_sinusoidal_process
 from skfda.exploratory.stats import mean as l2_mean
 from skfda.misc.metrics import lp_distance, pairwise_distance
@@ -15,7 +15,7 @@ import unittest
 import numpy as np
 
 
-#from skfda.exploratory.outliers import LocalOutlierFactor
+# from skfda.exploratory.outliers import LocalOutlierFactor
 class TestNeighbors(unittest.TestCase):
 
     def setUp(self):

@@ -60,11 +60,7 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
         array([0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
 
     See also:
-        :class:`~skfda.ml.classification.KNeighborsClassifier`
-        :class:`~skfda.ml.classification.RadiusNeighborsClassifier`
-        :class:`~skfda.ml.regression.KNeighborsRegressor`
-        :class:`~skfda.ml.regression.RadiusNeighborsRegressor`
-        :class:`~skfda.ml.clustering.NearestNeighbors`
+        :class:`~skfda.ml.classification.DTMClassifier
     """
 
     def __init__(self, metric=l2_distance, centroid=mean):
@@ -160,6 +156,7 @@ class DTMClassifier(NearestCentroid):
 
     See also:
         :class:`~skfda.ml.classification.MaximumDepthClassifier
+        :class:`~skfda.ml.classification.NearestCentroid
     """
 
     def __init__(self, proportiontocut,

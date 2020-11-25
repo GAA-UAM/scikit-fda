@@ -1,13 +1,13 @@
-"""Maximum depth classification.
+"""Distance to trimmed means (DTM) classification.
 
-Shows the usage of maximum depth classifier.
+Shows the usage of DTM classifier.
 """
 
 # Author: Pedro Martín Rodríguez-Ponga Eyriès
 # License: MIT
 
 import skfda
-from skfda.ml.classification import MaximumDepthClassifier
+from skfda.ml.classification import DTMClassifier
 
 from sklearn.model_selection import train_test_split
 
@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 ############################################################################
-# In this example we are going to show the usage of the maximum depth
-# classifier.
+# In this example we are going to show the usage of the distance to trimmed
+# means classifier.
 #
 # Firstly, we are going to fetch a functional dataset, such as the Berkeley
 # Growth Study. This dataset contains the height of several boys and girls
@@ -52,25 +52,27 @@ X_train, X_test, y_train, y_test = train_test_split(fd, y, test_size=0.25,
 
 ############################################################################
 # We will fit the classifier
-# :class:`~skfda.ml.classification.MaximumDepthClassifier`
+# :class:`~skfda.ml.classification.DTMClassifier`
 # with the training partition. This classifier accepts as input a
 # :class:`~skfda.representation.grid.FDataGrid`.
 
-clf = MaximumDepthClassifier()
+clf = DTMClassifier(proportiontocut=0.25)
 clf.fit(X_train, y_train)
 
 ############################################################################
 # Once it is fitted, we can predict labels for the test samples.
 #
 # To predict the label of a test sample, the classifier will assign the
-# sample to the class where it is deeper. See the documentation of the
-# depths module for a list of available depths in
-# :doc:`/modules/exploratory/depths`. By default modified band depth is used.
+# sample to the class to the class that minimizes the distance of
+# the observation to the trimmed mean of the group. See the documentation of
+# the depths module for a list of available depths in
+# :doc:`/modules/exploratory/depths`. By default modified band depth and
+# lp_distance are used.
 
 pred = clf.predict(X_test)
 
 ############################################################################
-# The :func:`~skfda.ml.classification.MaximumDepthClassifier.score` method
+# The :func:`~skfda.ml.classification.DTMClassifier.score` method
 # allows us to calculate the mean accuracy for the test data. In this case we
 # obtained around 87.5% of accuracy.
 

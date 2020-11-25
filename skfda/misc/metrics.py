@@ -112,12 +112,13 @@ def distance_from_norm(norm, **kwargs):
 
 
 def pairwise_distance(distance, **kwargs):
-    r"""Return pairwise distance for FDataGrid objects.
+    r"""Returns a pairwise distance function for FData objects.
 
-    Given a distance returns the corresponding pairwise distance function.
+    Given a distance it returns the corresponding pairwise distance function.
 
-    The pairwise distance calculates the distance between all possible pairs of
-    one sample of the first FDataGrid object and one of the second one.
+    The returned pairwise distance function calculates the distance between
+    all possible pairs consisting of one sample of the first FDataGrid object
+    and one of the second one.
 
     The matrix returned by the pairwise distance is a matrix with as many rows
     as samples in the first object and as many columns as samples in the second
@@ -267,15 +268,12 @@ def lp_norm(fdata, p=2, p2=None):
 def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
     r"""Lp distance for FDataGrid objects.
 
-    Calculates the distance between all possible pairs of one sample of
-    the first FDataGrid object and one of the second one.
+    Calculates the distance between two functional objects.
 
     For each pair of samples f and g the distance between them is defined as:
 
     .. math::
-        d(f, g) = d(f, g) = \lVert f - g \rVert
-
-    The norm is specified as a parameter but defaults to the l2 norm.
+        d(f, g) = d(g, f) = \lVert f - g \rVert
 
     Args:
         fdatagrid (FDataGrid): FDataGrid object.
@@ -313,6 +311,44 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
     _check_compatible(fdata1, fdata2)
 
     return lp_norm(fdata1 - fdata2, p=p, p2=p2)
+
+
+def l1_distance(fdata1, fdata2, *, eval_points=None, _check=True):
+    r"""L1 distance for FDataGrid objects.
+
+    Calculates the L1 distance between fdata1 and fdata2:
+    .. math::
+        d(fdata1, fdata2) =
+            \left( \int_D \lvert fdata1(x)-fdata2(x) \rvert dx
+            \right)
+    """
+    return lp_distance(fdata1, fdata2, p=1, p2=1,
+                       eval_points=eval_points, _check=_check)
+
+
+def l2_distance(fdata1, fdata2, *, eval_points=None, _check=True):
+    r"""L2 distance for FDataGrid objects.
+
+    Calculates the euclidean distance between fdata1 and fdata2:
+    .. math::
+        d(fdata1, fdata2) =
+            \left( \int_D \lvert fdata1(x)-fdata2(x) \rvert^2 dx
+            \right)^{\frac{1}{2}}
+    """
+    return lp_distance(fdata1, fdata2, p=2, p2=2,
+                       eval_points=eval_points, _check=_check)
+
+
+def linf_distance(fdata1, fdata2, *, eval_points=None, _check=True):
+    r"""Linf distance for FDataGrid objects.
+
+    Calculates the Linf distance between fdata1 and fdata2:
+    .. math::
+        d(fdata1, fdata2) \equiv \inf \{ C\ge 0 : |fdata1(x)-fdata2(x)|
+                                                                \le C a.e. \}.
+    """
+    return lp_distance(fdata1, fdata2, p=np.inf, p2=np.inf,
+                       eval_points=eval_points, _check=_check)
 
 
 def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):

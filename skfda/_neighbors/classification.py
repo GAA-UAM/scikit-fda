@@ -1,15 +1,13 @@
 """Neighbor models for supervised classification."""
 
-
 from sklearn.base import ClassifierMixin, BaseEstimator
-from sklearn.preprocessing import LabelEncoder
-from sklearn.utils.multiclass import check_classification_targets
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ..exploratory.stats import mean as l2_mean
-from ..misc.metrics import lp_distance, pairwise_distance
+from ..exploratory.stats import mean
+from ..misc.metrics import l2_distance, pairwise_distance
 from .base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
                    NeighborsClassifierMixin, RadiusNeighborsMixin)
+from .._utils import _classifier_get_classes
 
 
 class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
@@ -18,7 +16,8 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
     Parameters:
         n_neighbors: int, optional (default = 5)
-            Number of neighbors to use by default for :meth:`kneighbors` queries.
+            Number of neighbors to use by default for :meth:`kneighbors`
+            queries.
         weights: str or callable, optional (default = 'uniform')
             weight function used in prediction.  Possible values:
 
@@ -36,8 +35,8 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
 
             - 'ball_tree' will use :class:`sklearn.neighbors.BallTree`.
             - 'brute' will use a brute-force search.
-            - 'auto' will attempt to decide the most appropriate algorithm based on
-            the values passed to :meth:`fit` method.
+            - 'auto' will attempt to decide the most appropriate algorithm
+            based on the values passed to :meth:`fit` method.
 
         leaf_size: int, optional (default = 30)
             Leaf size passed to BallTree or KDTree.  This can affect the
@@ -53,13 +52,13 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
             Additional keyword arguments for the metric function.
         n_jobs: int or None, optional (default=None)
             The number of parallel jobs to run for neighbors search.
-            ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
-            ``-1`` means using all processors.
+            ``None`` means 1 unless in a :obj:`joblib.parallel_backend`
+            context. ``-1`` means using all processors.
             Doesn't affect :meth:`fit` method.
         multivariate_metric: boolean, optional (default = False)
-            Indicates if the metric used is a sklearn distance between vectors (see
-            :class:`~sklearn.neighbors.DistanceMetric`) or a functional metric of
-            the module `skfda.misc.metrics` if ``False``.
+            Indicates if the metric used is a sklearn distance between vectors
+            (see :class:`~sklearn.neighbors.DistanceMetric`) or a functional
+            metric of the module `skfda.misc.metrics` if ``False``.
 
     Examples:
         Firstly, we will create a toy dataset with 2 classes
@@ -96,8 +95,8 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         :class:`~skfda.ml.clustering.NearestNeighbors`
 
     Notes:
-        See Nearest Neighbors in the sklearn online documentation for a discussion
-        of the choice of ``algorithm`` and ``leaf_size``.
+        See Nearest Neighbors in the sklearn online documentation for a
+        discussion of the choice of ``algorithm`` and ``leaf_size``.
 
         This class wraps the sklearn classifier
         `sklearn.neighbors.KNeighborsClassifier`.
@@ -168,8 +167,8 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
 
     Parameters:
         radius: float, optional (default = 1.0)
-            Range of parameter space to use by default for :meth:`radius_neighbors`
-            queries.
+            Range of parameter space to use by default for
+            :meth:`radius_neighbors` queries.
         weights: str or callable
             weight function used in prediction.  Possible values:
 
@@ -209,12 +208,12 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
             Additional keyword arguments for the metric function.
         n_jobs: int or None, optional (default=None)
             The number of parallel jobs to run for neighbors search.
-            ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
-            ``-1`` means using all processors.
+            ``None`` means 1 unless in a :obj:`joblib.parallel_backend`
+            context. ``-1`` means using all processors.
         multivariate_metric: boolean, optional (default = False)
-            Indicates if the metric used is a sklearn distance between vectors (see
-            :class:`sklearn.neighbors.DistanceMetric`) or a functional metric of
-            the module :mod:`skfda.misc.metrics`.
+            Indicates if the metric used is a sklearn distance between vectors
+            (see :class:`sklearn.neighbors.DistanceMetric`) or a functional
+            metric of the module :mod:`skfda.misc.metrics`.
 
     Examples:
         Firstly, we will create a toy dataset with 2 classes.
@@ -246,8 +245,8 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
         :class:`~skfda.ml.clustering.NearestNeighbors`
 
     Notes:
-        See Nearest Neighbors in the sklearn online documentation for a discussion
-        of the choice of ``algorithm`` and ``leaf_size``.
+        See Nearest Neighbors in the sklearn online documentation for a
+        discussion of the choice of ``algorithm`` and ``leaf_size``.
 
         This class wraps the sklearn classifier
         `sklearn.neighbors.RadiusNeighborsClassifier`.
@@ -342,10 +341,10 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
         :class:`~skfda.ml.clustering.NearestNeighbors`
     """
 
-    def __init__(self, metric='l2', mean='mean'):
+    def __init__(self, metric=l2_distance, centroid=mean):
         """Initialize the classifier."""
         self.metric = metric
-        self.mean = mean
+        self.centroid = centroid
 
     def fit(self, X, y):
         """Fit the model using X as training data and y as target values.
@@ -357,30 +356,12 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
             y (array-like or sparse matrix): Target values of
                 shape = [n_samples] or [n_samples, n_outputs].
         """
-        if self.metric == 'precomputed':
-            raise ValueError("Precomputed is not supported.")
-        elif self.metric == 'l2':
-            self._pairwise_distance = pairwise_distance(lp_distance)
-        else:
-            self._pairwise_distance = pairwise_distance(self.metric)
+        self.classes_, y_ind = _classifier_get_classes(y)
 
-        mean = l2_mean if self.mean == 'mean' else self.mean
+        self.centroids_ = self.centroid(X[y_ind == 0])
 
-        check_classification_targets(y)
-
-        le = LabelEncoder()
-        y_ind = le.fit_transform(y)
-        self.classes_ = classes = le.classes_
-        n_classes = classes.size
-        if n_classes < 2:
-            raise ValueError(f'The number of classes has to be greater than'
-                             f' one; got {n_classes} class')
-
-        self.centroids_ = mean(X[y_ind == 0])
-
-        for cur_class in range(1, n_classes):
-            center_mask = y_ind == cur_class
-            centroid = mean(X[center_mask])
+        for cur_class in range(1, self.classes_.size):
+            centroid = self.centroid(X[y_ind == cur_class])
             self.centroids_ = self.centroids_.concatenate(centroid)
 
         return self
@@ -395,7 +376,7 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
             y (np.array): array of shape [n_samples] or
             [n_samples, n_outputs] with class labels for each data sample.
         """
-        sklearn_check_is_fitted(self, 'centroids_')
+        sklearn_check_is_fitted(self)
 
-        return self.classes_[self._pairwise_distance(
+        return self.classes_[pairwise_distance(self.metric)(
             X, self.centroids_).argmin(axis=1)]

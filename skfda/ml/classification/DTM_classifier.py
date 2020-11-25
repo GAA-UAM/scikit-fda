@@ -1,17 +1,12 @@
 """Distance to trimmed means (DTM) classification."""
 
-import numpy as np
-
-from sklearn.base import ClassifierMixin, BaseEstimator, clone
-from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
-
+from ..._neighbors.classification import NearestCentroid
 from ...exploratory.depth import Depth, ModifiedBandDepth
-from ..._utils import _classifier_get_classes
 from ...exploratory.stats import trim_mean
-from ...misc.metrics import lp_distance, pairwise_distance
+from ...misc.metrics import lp_distance
 
 
-class DTMClassifier(BaseEstimator, ClassifierMixin):
+class DTMClassifier(NearestCentroid):
     """Distance to trimmed means (DTM) classification.
 
     Test samples are classified to the class that minimizes the distance of
@@ -69,39 +64,7 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
                  depth_method: Depth = ModifiedBandDepth(),
                  metric=lp_distance):
         """Initialize the classifier."""
-        self.proportiontocut = proportiontocut
-        self.depth_method = depth_method
-        self.metric = metric
-
-    def fit(self, X, y):
-        """Fit the model using X as training data and y as target values.
-
-        Args:
-            X (:class:`FDataGrid`): FDataGrid with the training data.
-            y (array-like): Target values of shape = [n_samples].
-        """
-        self.classes_, y_ind = _classifier_get_classes(y)
-
-        self.trim_means_ = [trim_mean(X[y_ind == cur_class],
-                                      self.proportiontocut,
-                                      self.depth_method)
-                            for cur_class in range(self.classes_.size)]
-
-        return self
-
-    def predict(self, X):
-        """Predict the class labels for the provided data.
-
-        Args:
-            X (:class:`FDataGrid`): FDataGrid with the test samples.
-
-        Returns:
-            y (np.array): array of shape [n_samples] with class labels
-                for each data sample.
-        """
-        sklearn_check_is_fitted(self)
-
-        distances = [self.metric(X, trim_mean)
-                     for trim_mean in self.trim_means_]
-
-        return self.classes_[np.argmin(distances, axis=0)]
+        super().__init__(metric=metric,
+                         centroid=lambda fdatagrid: trim_mean(fdatagrid,
+                                                              proportiontocut,
+                                                              depth_method))

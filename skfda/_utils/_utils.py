@@ -462,5 +462,5 @@ def _classifier_get_classes(y):
 
     if classes.size < 2:
         raise ValueError(f'The number of classes has to be greater than'
-                            f' one; got {classes.size} class')
+                         f' one; got {classes.size} class')
     return classes, y_ind

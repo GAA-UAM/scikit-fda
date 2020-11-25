@@ -148,7 +148,7 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
             X (:class:`FDataGrid` or array-like): FDataGrid with the test
                 samples or array (n_query, n_indexed) if metric ==
                 'precomputed'.
-        Returns
+        Returns:
             p: array of shape = [n_samples, n_classes], or a list of n_outputs
                 of such arrays if n_outputs > 1.
                 The class probabilities of the input samples. Classes are

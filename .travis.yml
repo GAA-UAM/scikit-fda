@@ -1,4 +1,5 @@
 language: python
+
 matrix:
   include:
     - name: "Python 3.6 on Linux"
@@ -24,6 +25,7 @@ matrix:
       dist: xenial          # required for Python >= 3.7
       env:
         - PEP8COVERAGE=true    # coverage test are only 
+
 install:
   - pip3 install --upgrade pip cython numpy || pip3 install --upgrade --user pip cython numpy # all three OSes agree about 'pip3'
   - |
@@ -43,7 +45,6 @@ script:
       else
         python3 setup.py test || python setup.py test;
       fi
-
 
 after_success:
     - |

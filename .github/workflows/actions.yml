@@ -1,4 +1,4 @@
-name: Python
+name: Python CI
 
 on:
   push:
@@ -8,6 +8,7 @@ jobs:
   build:
 
     runs-on: ${{ matrix.os }}
+    name: Python ${{ matrix.os }} ${{ matrix.python-version }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]

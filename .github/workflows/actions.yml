@@ -1,0 +1,40 @@
+name: Python
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.6', '3.7']
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - run: |
+        pip3 install --upgrade pip cython numpy || pip3 install --upgrade --user pip cython numpy 
+        if [[ $PEP8COVERAGE == true ]]; then
+          pip3 install flake8 || pip3 install --user flake8;
+          pip3 install codecov pytest-cov || pip3 install --user codecov pytest-cov;
+        fi
+
+    - run: |
+        pip3 install .
+        if [[ $PEP8COVERAGE == true ]]; then
+          flake8 --exit-zero skfda;
+          coverage run --source=skfda/ setup.py test;
+        else
+          python3 setup.py test || python setup.py test;
+        fi
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1

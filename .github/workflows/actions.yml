@@ -22,7 +22,7 @@ jobs:
 
     - run: |
         pip3 install --upgrade pip cython numpy || pip3 install --upgrade --user pip cython numpy 
-        if [[ $PEP8COVERAGE == true ]]; then
+        if ([[ $PEP8COVERAGE == true ]]); then
           pip3 install flake8 || pip3 install --user flake8;
           pip3 install codecov pytest-cov || pip3 install --user codecov pytest-cov;
         fi

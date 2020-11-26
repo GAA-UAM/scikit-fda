@@ -1,7 +1,13 @@
 """Functional data descriptive statistics.
 """
+from builtins import isinstance
+
+from IPython.extensions.autoreload import isinstance2
+
 import numpy as np
 
+from ...misc.metrics import lp_norm
+from ...representation import FData
 from ..depth import ModifiedBandDepth
 
 
@@ -95,15 +101,42 @@ def depth_based_median(fdatagrid, depth_method=ModifiedBandDepth()):
     return fdatagrid[indices_descending_depth[0]]
 
 
-def geometric_median(fdata, rtol=1.e-5, atol=1.e-8):
+def geometric_median(fdata: FData, tol: float=1.e-8):
+    r"""Compute the geometric median.
+
+    The sample geometric median is the point that minimizes the :math:`L_1`
+    norm of the vector of Euclidean distances to all observations:
+
+    .. math::
+
+        \underset{y \in L(\mathcal{T})}{\arg \min}
+        \sum_{i=1}^m \left \| x_i-y \right \|_2
+
+    Args:
+        fdata (FData): Object containing different samples of a
+            functional variable.
+        tol (float): tolerance used to check convergence.
+
+    Returns:
+        FData: object containing the computed geometric median.
+
+    """
 
     from ...misc import inner_product_matrix
 
+    def weighted_average(fdata, weights):
+        if isinstance(fdata, FData):
+            return (fdata * weights).sum()
+        else:
+            # To support also multivariate data
+            return (fdata.T * weights).T.sum(axis=0)
+
     gram = inner_product_matrix(fdata)
-    identity = np.eye(fdata.n_samples)
-    weights = np.full(fdata.n_samples, 1 / fdata.n_samples)
+    identity = np.eye(len(fdata))
+    weights = np.full(len(fdata), 1 / len(fdata))
     prod_matrix = identity - weights
-    distances = np.einsum('ln,nn,nl->l', prod_matrix.T, gram, prod_matrix)**0.5
+    distances = np.einsum('ln,nm,ml->l', prod_matrix.T, gram, prod_matrix)**0.5
+    median = weighted_average(fdata, weights)
 
     while True:
         zero_distances = (distances == 0)
@@ -111,16 +144,18 @@ def geometric_median(fdata, rtol=1.e-5, atol=1.e-8):
         weights_new = ((1 / distances) / np.sum(1 / distances) if n_zeros == 0
                        else (1 / n_zeros) * zero_distances)
 
-        if np.allclose(weights, weights_new, rtol=rtol, atol=atol):
-            return (fdata * weights_new).sum()
+        median_new = weighted_average(fdata, weights_new)
+
+        if lp_norm(median_new - median) < tol:
+            return median_new
 
         prod_matrix = identity - weights_new
 
-        np.einsum('ln,nn,nl->l', prod_matrix.T, gram,
+        np.einsum('ln,nm,ml->l', prod_matrix.T, gram,
                   prod_matrix, out=distances)
         distances **= 0.5
 
-        weights[...] = weights_new
+        weights, median = (weights_new, median_new)
 
 
 def trim_mean(fdatagrid,

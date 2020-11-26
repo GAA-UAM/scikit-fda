@@ -21,12 +21,14 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - run: |
+    - name: Installing
+      run: |
         pip3 install --upgrade pip cython numpy || pip3 install --upgrade --user pip cython numpy;
         pip3 install flake8 || pip3 install --user flake8;
         pip3 install codecov pytest-cov || pip3 install --user codecov pytest-cov;
 
-    - run: |
+    - name: Running tests
+      run: |
         pip3 install .
         flake8 --exit-zero skfda;
         coverage run --source=skfda/ setup.py test;

@@ -30,7 +30,8 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
         fdata2: (:obj:`FData`): Second functional object.
 
     Returns:
-        tuple: Tuple with two :obj:`FDataGrid` with the same sample points.
+        tuple: Tuple with two :obj:`FDataGrid` with the same observation
+        points.
     """
     # Dont perform any check
     if not _check:
@@ -58,7 +59,7 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
 
     elif not np.array_equal(fdata1.grid_points,
                             fdata2.grid_points):
-        raise ValueError("Sample points for both objects must be equal or"
+        raise ValueError("Observation points for both objects must be equal or"
                          "a new list evaluation points must be specified")
 
     return fdata1, fdata2
@@ -118,13 +119,14 @@ def pairwise_distance(distance, **kwargs):
     Given a distance it returns the corresponding pairwise distance function.
 
     The returned pairwise distance function calculates the distance between
-    all possible pairs consisting of one sample of the first FDataGrid object
-    and one of the second one.
+    all possible pairs consisting of one observation of the first FDataGrid
+    object and one of the second one.
 
     The matrix returned by the pairwise distance is a matrix with as many rows
-    as samples in the first object and as many columns as samples in the second
-    one. Each element (i, j) of the matrix is the distance between the ith
-    sample of the first object and the jth sample of the second one.
+    as observations in the first object and as many columns as observations in
+    the second one. Each element (i, j) of the matrix is the distance between
+    the ith observation of the first object and the jth observation of the
+    second one.
 
     Args:
         distance (:obj:`Function`): Distance functions between two functional
@@ -146,9 +148,9 @@ def pairwise_distance(distance, **kwargs):
 
 
 def lp_norm(fdata, p=2, p2=None):
-    r"""Calculate the norm of all the samples in a FDataGrid object.
+    r"""Calculate the norm of all the observations in a FDataGrid object.
 
-    For each sample f the Lp norm is defined as:
+    For each observation f the Lp norm is defined as:
 
     .. math::
         \| f \| = \left( \int_D \| f \|^p dx \right)^{
@@ -188,10 +190,11 @@ def lp_norm(fdata, p=2, p2=None):
             multivariate objects. Defaults to 2.
 
     Returns:
-        numpy.darray: Matrix with as many rows as samples in the first
-        object and as many columns as samples in the second one. Each
-        element (i, j) of the matrix is the inner product of the ith sample
-        of the first object and the jth sample of the second one.
+        numpy.darray: Matrix with as many rows as observations in the first
+        object and as many columns as observations in the second one. Each
+        element (i, j) of the matrix is the inner product of the ith
+        observation of the first object and the jth observation of the second
+        one.
 
     Examples:
         Calculates the norm of a FDataGrid containing the functions y = 1
@@ -247,7 +250,8 @@ def lp_norm(fdata, p=2, p2=None):
             if fdata.dim_domain == 1:
                 res = np.max(data_matrix[..., 0], axis=1)
             else:
-                res = np.array([np.max(sample) for sample in data_matrix])
+                res = np.array([np.max(observation)
+                                for observation in data_matrix])
 
         elif fdata.dim_domain == 1:
 
@@ -271,7 +275,8 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
 
     Calculates the distance between two functional objects.
 
-    For each pair of samples f and g the distance between them is defined as:
+    For each pair of observations f and g the distance between them is defined
+    as:
 
     .. math::
         d(f, g) = d(g, f) = \| f - g \|_p
@@ -375,8 +380,8 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
     match with the usual fisher-rao distance in non-parametric form for
     probability distributions [S11-2]_.
 
-    If the samples are defined in a domain different than (0,1) their domains
-    are normalized to this interval with an affine transformation.
+    If the observations are defined in a domain different than (0,1) their
+    domains are normalized to this interval with an affine transformation.
 
     Args:
         fdata1 (FData): First FData object.
@@ -398,7 +403,7 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
                                    _check=_check)
 
-    # Both should have the same sample points
+    # Both should have the same observation points
     eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
@@ -442,8 +447,8 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
 
     See [SK16-4-10-1]_ for a detailed explanation.
 
-    If the samples are defined in a domain different than (0,1) their domains
-    are normalized to this interval with an affine transformation.
+    If the observations are defined in a domain different than (0,1) their
+    domains are normalized to this interval with an affine transformation.
 
     Args:
         fdata1 (FData): First FData object.
@@ -467,7 +472,7 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
                                    _check=_check)
 
-    # Both should have the same sample points
+    # Both should have the same observation points
     eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
@@ -519,8 +524,8 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
 
     See [SK16-4-10-2]_ for a detailed explanation.
 
-    If the samples are defined in a domain different than (0,1) their domains
-    are normalized to this interval with an affine transformation.
+    If the observations are defined in a domain different than (0,1) their
+    domains are normalized to this interval with an affine transformation.
 
     Args:
         fdata1 (FData): First FData object.

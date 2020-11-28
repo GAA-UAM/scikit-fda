@@ -1,12 +1,14 @@
 """Distance to trimmed means (DTM) classification."""
 
+from sklearn.base import ClassifierMixin, BaseEstimator
+
 from ..._neighbors.classification import NearestCentroid
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...exploratory.stats import trim_mean
 from ...misc.metrics import lp_distance
 
 
-class DTMClassifier(NearestCentroid):
+class DTMClassifier(BaseEstimator, ClassifierMixin):
     """Distance to trimmed means (DTM) classification.
 
     Test samples are classified to the class that minimizes the distance of
@@ -68,7 +70,35 @@ class DTMClassifier(NearestCentroid):
                  depth_method: Depth = ModifiedBandDepth(),
                  metric=lp_distance):
         """Initialize the classifier."""
-        super().__init__(metric=metric,
-                         centroid=lambda fdatagrid: trim_mean(fdatagrid,
-                                                              proportiontocut,
-                                                              depth_method))
+        self.proportiontocut = proportiontocut
+        self.depth_method = depth_method
+        self.metric = metric
+
+    def fit(self, X, y):
+        """Fit the model using X as training data and y as target values.
+
+        Args:
+            X (:class:`FDataGrid`): FDataGrid with the training data.
+            y (array-like): Target values of shape = [n_samples].
+
+        """
+        self.clf = NearestCentroid(
+                    metric=self.metric,
+                    centroid=lambda fdatagrid: trim_mean(fdatagrid,
+                                                         self.proportiontocut,
+                                                         self.depth_method))
+        self.clf.fit(X, y)
+
+        return self
+
+    def predict(self, X):
+        """Predict the class labels for the provided data.
+
+        Args:
+            X (:class:`FDataGrid`): FDataGrid with the test samples.
+
+        Returns:
+            y (np.array): array of shape [n_samples] or
+            [n_samples, n_outputs] with class labels for each data sample.
+        """
+        return self.clf.predict(X)

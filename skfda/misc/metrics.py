@@ -148,10 +148,10 @@ def pairwise_distance(distance, **kwargs):
 def lp_norm(fdata, p=2, p2=None):
     r"""Calculate the norm of all the samples in a FDataGrid object.
 
-    For each sample sample f the Lp norm is defined as:
+    For each sample f the Lp norm is defined as:
 
     .. math::
-        \lVert f \rVert = \left( \int_D \lvert f \rvert^p dx \right)^{
+        \| f \| = \left( \int_D \| f \|^p dx \right)^{
         \frac{1}{p}}
 
     Where D is the domain over which the functions are defined.
@@ -174,8 +174,8 @@ def lp_norm(fdata, p=2, p2=None):
     :math:`\| (x,y) \|_* = \sqrt{x^2 + y^2}`, the lp norm applied is
 
     .. math::
-        \lVert f \rVert = \left( \int \int_D \left ( \sqrt{ \lvert f_1(x,y)
-        \rvert^2 + \lvert f_2(x,y) \rvert^2 } \right )^p dxdy \right)^{
+        \| f \| = \left( \int \int_D \left ( \sqrt{ \| f_1(x,y)
+        \|^2 + \| f_2(x,y) \|^2 } \right )^p dxdy \right)^{
         \frac{1}{p}}
 
 
@@ -327,7 +327,7 @@ def l1_distance(fdata1, fdata2, *, eval_points=None, _check=True):
     Calculates the L1 distance between fdata1 and fdata2:
     .. math::
         d(fdata1, fdata2) =
-            \left( \int_D \lvert fdata1(x)-fdata2(x) \rvert dx
+            \left( \int_D \| fdata1(x)-fdata2(x) \| dx
             \right)
     """
     return lp_distance(fdata1, fdata2, p=1, p2=1,
@@ -340,7 +340,7 @@ def l2_distance(fdata1, fdata2, *, eval_points=None, _check=True):
     Calculates the euclidean distance between fdata1 and fdata2:
     .. math::
         d(fdata1, fdata2) =
-            \left( \int_D \lvert fdata1(x)-fdata2(x) \rvert^2 dx
+            \left( \int_D \| fdata1(x)-fdata2(x) \|^2 dx
             \right)^{\frac{1}{2}}
     """
     return lp_distance(fdata1, fdata2, p=2, p2=2,

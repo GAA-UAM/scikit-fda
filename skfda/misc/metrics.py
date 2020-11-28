@@ -273,7 +273,9 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
     For each pair of samples f and g the distance between them is defined as:
 
     .. math::
-        d(f, g) = d(g, f) = \lVert f - g \rVert
+        d(f, g) = d(g, f) = \| f - g \|_p
+    
+    where :math:`\| {}\cdot{} \|_p` denotes the :func:`Lp norm <lp_norm>`.
 
     Args:
         fdatagrid (FDataGrid): FDataGrid object.

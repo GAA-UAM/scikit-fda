@@ -20,8 +20,10 @@ def _check_compatible(fdata1, fdata2):
 
 
 def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
-    """Checks if the fdatas passed as argument are unidimensional and
-    compatible and converts them to FDatagrid to compute their distances.
+    """Convert fdata1 and fdata2 to FDatagrid.
+
+    Checks if the fdatas passed as argument are unidimensional and compatible
+    and converts them to FDatagrid to compute their distances.
 
     Args:
         fdata1: (:obj:`FData`): First functional object.
@@ -30,7 +32,6 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
     Returns:
         tuple: Tuple with two :obj:`FDataGrid` with the same sample points.
     """
-
     # Dont perform any check
     if not _check:
         return fdata1, fdata2
@@ -64,7 +65,7 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
 
 
 def distance_from_norm(norm, **kwargs):
-    r"""Returns the distance induced by a norm.
+    r"""Return the distance induced by a norm.
 
     Given a norm :math:`\| \cdot \|: X \rightarrow \mathbb{R}`,
     returns the distance :math:`d: X \times X \rightarrow \mathbb{R}` induced
@@ -112,7 +113,7 @@ def distance_from_norm(norm, **kwargs):
 
 
 def pairwise_distance(distance, **kwargs):
-    r"""Returns a pairwise distance function for FData objects.
+    r"""Return a pairwise distance function for FData objects.
 
     Given a distance it returns the corresponding pairwise distance function.
 
@@ -274,7 +275,7 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
 
     .. math::
         d(f, g) = d(g, f) = \| f - g \|_p
-    
+
     where :math:`\| {}\cdot{} \|_p` denotes the :func:`Lp norm <lp_norm>`.
 
     Args:
@@ -309,6 +310,11 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
             ....
         ValueError: ...
 
+    See also:
+        :func:`~skfda.misc.metrics.l1_distance
+        :func:`~skfda.misc.metrics.l2_distance
+        :func:`~skfda.misc.metrics.linf_distance
+
     """
     _check_compatible(fdata1, fdata2)
 
@@ -342,9 +348,9 @@ def l2_distance(fdata1, fdata2, *, eval_points=None, _check=True):
 
 
 def linf_distance(fdata1, fdata2, *, eval_points=None, _check=True):
-    r"""Linf distance for FDataGrid objects.
+    r"""L_infinity distance for FDataGrid objects.
 
-    Calculates the Linf distance between fdata1 and fdata2:
+    Calculates the L_infinity distance between fdata1 and fdata2:
     .. math::
         d(fdata1, fdata2) \equiv \inf \{ C\ge 0 : |fdata1(x)-fdata2(x)|
                                                                 \le C a.e. \}.
@@ -389,7 +395,6 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
             Metric* (pp. 5-7). arXiv:1103.3817v2.
 
     """
-
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
                                    _check=_check)
 
@@ -459,7 +464,6 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
             Functional and shape data analysis. In *Amplitude Space and a
             Metric Structure* (pp. 107-109). Springer.
     """
-
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
                                    _check=_check)
 
@@ -532,14 +536,11 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
     Raises:
         ValueError: If the objects are not unidimensional.
 
-
     Refereces:
         ..  [SK16-4-10-2] Srivastava, Anuj & Klassen, Eric P. (2016).
             Functional and shape data analysis. In *Phase Space and a Metric
             Structure* (pp. 109-111). Springer.
-
     """
-
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
                                    _check=_check)
 
@@ -604,7 +605,6 @@ def warping_distance(warping1, warping2, *, eval_points=None, _check=True):
             Functions* (pp. 113-117). Springer.
 
     """
-
     warping1, warping2 = _cast_to_grid(warping1, warping2,
                                        eval_points=eval_points, _check=_check)
 

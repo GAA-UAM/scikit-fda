@@ -58,6 +58,10 @@ class DTMClassifier(NearestCentroid):
 
     See also:
         :class:`~skfda.ml.classification.MaximumDepthClassifier
+
+    References:
+        Fraiman, R. and Muniz, G. (2001). Trimmed means for functional
+        data. Test, 10, 419-440.
     """
 
     def __init__(self, proportiontocut,

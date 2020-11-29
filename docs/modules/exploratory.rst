@@ -8,6 +8,7 @@ and visualize functional data.
    :maxdepth: 4
    :caption: Modules:
    
-   exploratory/visualization
    exploratory/depth
    exploratory/outliers
+   exploratory/stats
+   exploratory/visualization

@@ -94,7 +94,7 @@ def depth_based_median(fdatagrid, depth_method=ModifiedBandDepth()):
         FDataGrid: object containing the computed depth_based median.
 
     See also:
-        geometric_median
+        :func:`geometric_median`
 
     """
     depth = depth_method(fdatagrid)
@@ -112,21 +112,21 @@ def geometric_median(X: T, tol: float=1.e-8,
     r"""Compute the geometric median.
 
     The sample geometric median is the point that minimizes the :math:`L_1`
-    norm of the vector of Euclidean distances to all observations:
+    norm of the vector of distances to all observations:
 
     .. math::
 
         \underset{y \in L(\mathcal{T})}{\arg \min}
-        \sum_{i=1}^m \left \| x_i-y \right \|_2
+        \sum_{i=1}^N \left \| x_i-y \right \|
 
-    It uses the corrected Weiszfeld algorithm to compute the median,
-    precalculating the inner product matrix in order to compute the
-    distances.
+    It uses the corrected Weiszfeld algorithm to compute the median.
 
     Args:
         X: Object containing different samples of a
             functional variable.
         tol: tolerance used to check convergence.
+        metric: metric used to compute the vector of distances. By
+            default is the :math:`L_2` distance.
 
     Returns:
         FData: object containing the computed geometric median.
@@ -141,7 +141,7 @@ def geometric_median(X: T, tol: float=1.e-8,
         array([ 1. ,  1. ,  3. ,  0.5])
 
     See also:
-        depth_based_median
+        :func:`depth_based_median`
 
     References:
         Gervini, D. (2008). Robust functional estimation using the median and

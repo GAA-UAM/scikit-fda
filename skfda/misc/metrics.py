@@ -462,8 +462,9 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
 
     See [SK16-4-10-1]_ for a detailed explanation.
 
-    If the observations are defined in a :term:`domain` different than (0,1) their
-    domains are normalized to this interval with an affine transformation.
+    If the observations are defined in a :term:`domain` different than (0,1)
+    their domains are normalized to this interval with an affine
+    transformation.
 
     Args:
         fdata1 (FData): First FData object.

@@ -30,8 +30,7 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
         fdata2: (:obj:`FData`): Second functional object.
 
     Returns:
-        tuple: Tuple with two :obj:`FDataGrid` with the same observation
-        points.
+        tuple: Tuple with two :obj:`FDataGrid` with the same grid points.
     """
     # Dont perform any check
     if not _check:
@@ -156,7 +155,7 @@ def lp_norm(fdata, p=2, p2=None):
         \| f \| = \left( \int_D \| f \|^p dx \right)^{
         \frac{1}{p}}
 
-    Where D is the domain over which the functions are defined.
+    Where D is the :term:`domain` over which the functions are defined.
 
     The integral is approximated using Simpson's rule.
 
@@ -419,7 +418,7 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
                                    _check=_check)
 
-    # Both should have the same observation points
+    # Both should have the same grid points
     eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
@@ -463,7 +462,7 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
 
     See [SK16-4-10-1]_ for a detailed explanation.
 
-    If the observations are defined in a domain different than (0,1) their
+    If the observations are defined in a :term:`domain` different than (0,1) their
     domains are normalized to this interval with an affine transformation.
 
     Args:
@@ -608,7 +607,7 @@ def warping_distance(warping1, warping2, *, eval_points=None, _check=True):
     See [SK16-4-11-2]_ for a detailed explanation.
 
     If the warpings are not defined in [0,1], an affine transformation is maked
-    to change the domain.
+    to change the :term:`domain`.
 
     Args:
         fdata1 (:obj:`FData`): First warping.

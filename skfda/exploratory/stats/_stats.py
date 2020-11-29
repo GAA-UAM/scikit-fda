@@ -2,11 +2,11 @@
 """
 from builtins import isinstance
 
-from IPython.extensions.autoreload import isinstance2
+from typing import Callable, TypeVar, Union
 
 import numpy as np
 
-from ...misc.metrics import lp_norm
+from ...misc.metrics import lp_norm, lp_distance
 from ...representation import FData
 from ..depth import ModifiedBandDepth
 
@@ -93,6 +93,9 @@ def depth_based_median(fdatagrid, depth_method=ModifiedBandDepth()):
     Returns:
         FDataGrid: object containing the computed depth_based median.
 
+    See also:
+        geometric_median
+
     """
     depth = depth_method(fdatagrid)
     indices_descending_depth = (-depth).argsort(axis=0)
@@ -101,7 +104,11 @@ def depth_based_median(fdatagrid, depth_method=ModifiedBandDepth()):
     return fdatagrid[indices_descending_depth[0]]
 
 
-def geometric_median(fdata: FData, tol: float=1.e-8):
+T = TypeVar('T', bound=Union[np.array, FData])
+
+
+def geometric_median(X: T, tol: float=1.e-8,
+                     metric: Callable = lp_distance) -> T:
     r"""Compute the geometric median.
 
     The sample geometric median is the point that minimizes the :math:`L_1`
@@ -112,31 +119,47 @@ def geometric_median(fdata: FData, tol: float=1.e-8):
         \underset{y \in L(\mathcal{T})}{\arg \min}
         \sum_{i=1}^m \left \| x_i-y \right \|_2
 
+    It uses the corrected Weiszfeld algorithm to compute the median,
+    precalculating the inner product matrix in order to compute the
+    distances.
+
     Args:
-        fdata (FData): Object containing different samples of a
+        X: Object containing different samples of a
             functional variable.
-        tol (float): tolerance used to check convergence.
+        tol: tolerance used to check convergence.
 
     Returns:
         FData: object containing the computed geometric median.
 
+    Example:
+
+        >>> from skfda import FDataGrid
+        >>> data_matrix = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
+        >>> X = FDataGrid(data_matrix)
+        >>> median = geometric_median(X)
+        >>> median.data_matrix[0, ..., 0]
+        array([ 1. ,  1. ,  3. ,  0.5])
+
+    See also:
+        depth_based_median
+
+    References:
+        Gervini, D. (2008). Robust functional estimation using the median and
+        spherical principal components. Biometrika, 95(3), 587–600.
+        https://doi.org/10.1093/biomet/asn031
+
     """
 
-    from ...misc import inner_product_matrix
-
-    def weighted_average(fdata, weights):
-        if isinstance(fdata, FData):
-            return (fdata * weights).sum()
+    def weighted_average(X, weights):
+        if isinstance(X, FData):
+            return (X * weights).sum()
         else:
             # To support also multivariate data
-            return (fdata.T * weights).T.sum(axis=0)
+            return (X.T * weights).T.sum(axis=0)
 
-    gram = inner_product_matrix(fdata)
-    identity = np.eye(len(fdata))
-    weights = np.full(len(fdata), 1 / len(fdata))
-    prod_matrix = identity - weights
-    distances = np.einsum('ln,nm,ml->l', prod_matrix.T, gram, prod_matrix)**0.5
-    median = weighted_average(fdata, weights)
+    weights = np.full(len(X), 1 / len(X))
+    median = weighted_average(X, weights)
+    distances = metric(X, median)
 
     while True:
         zero_distances = (distances == 0)
@@ -144,16 +167,12 @@ def geometric_median(fdata: FData, tol: float=1.e-8):
         weights_new = ((1 / distances) / np.sum(1 / distances) if n_zeros == 0
                        else (1 / n_zeros) * zero_distances)
 
-        median_new = weighted_average(fdata, weights_new)
+        median_new = weighted_average(X, weights_new)
 
         if lp_norm(median_new - median) < tol:
             return median_new
 
-        prod_matrix = (identity - weights_new).T
-
-        np.einsum('ln,nm,ml->l', prod_matrix.T, gram,
-                  prod_matrix, out=distances)
-        distances **= 0.5
+        distances = metric(X, median_new)
 
         weights, median = (weights_new, median_new)
 

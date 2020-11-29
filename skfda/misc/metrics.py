@@ -1,3 +1,5 @@
+from builtins import isinstance
+
 import scipy.integrate
 
 import numpy as np
@@ -6,17 +8,18 @@ from .._utils import _pairwise_commutative
 from ..preprocessing.registration import normalize_warping, ElasticRegistration
 from ..preprocessing.registration._warping import _normalize_scale
 from ..preprocessing.registration.elastic import SRSF
-from ..representation import FDataGrid, FDataBasis
+from ..representation import FData, FDataGrid, FDataBasis
 
 
 def _check_compatible(fdata1, fdata2):
 
-    if (fdata2.dim_codomain != fdata1.dim_codomain or
-            fdata2.dim_domain != fdata1.dim_domain):
-        raise ValueError("Objects should have the same dimensions")
+    if isinstance(fdata1, FData) and isinstance(fdata2, FData):
+        if (fdata2.dim_codomain != fdata1.dim_codomain or
+                fdata2.dim_domain != fdata1.dim_domain):
+            raise ValueError("Objects should have the same dimensions")
 
-    if not np.array_equal(fdata1.domain_range, fdata2.domain_range):
-        raise ValueError("Domain ranges for both objects must be equal")
+        if not np.array_equal(fdata1.domain_range, fdata2.domain_range):
+            raise ValueError("Domain ranges for both objects must be equal")
 
 
 def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):

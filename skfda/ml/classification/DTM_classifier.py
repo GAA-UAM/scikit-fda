@@ -1,5 +1,6 @@
 """Distance to trimmed means (DTM) classification."""
 
+from typing import Callable
 from sklearn.base import ClassifierMixin, BaseEstimator
 
 from ..._neighbors.classification import NearestCentroid
@@ -68,7 +69,7 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
 
     def __init__(self, proportiontocut: float,
                  depth_method: Depth = ModifiedBandDepth(),
-                 metric: function = lp_distance):
+                 metric: Callable = lp_distance) -> None:
         """Initialize the classifier."""
         self.proportiontocut = proportiontocut
         self.depth_method = depth_method

@@ -7,7 +7,7 @@ from typing import Callable, TypeVar, Union
 
 import numpy as np
 
-from ...misc.metrics import lp_norm, lp_distance
+from ...misc.metrics import lp_norm, l2_distance
 from ...representation import FData
 from ..depth import ModifiedBandDepth
 
@@ -109,7 +109,7 @@ T = TypeVar('T', bound=Union[np.array, FData])
 
 
 def geometric_median(X: T, tol: float=1.e-8,
-                     metric: Callable = lp_distance) -> T:
+                     metric: Callable = l2_distance) -> T:
     r"""Compute the geometric median.
 
     The sample geometric median is the point that minimizes the :math:`L_1`

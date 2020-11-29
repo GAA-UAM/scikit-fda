@@ -66,9 +66,9 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
         data. Test, 10, 419-440.
     """
 
-    def __init__(self, proportiontocut,
+    def __init__(self, proportiontocut: float,
                  depth_method: Depth = ModifiedBandDepth(),
-                 metric=lp_distance):
+                 metric: function = lp_distance):
         """Initialize the classifier."""
         self.proportiontocut = proportiontocut
         self.depth_method = depth_method
@@ -82,12 +82,12 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
             y (array-like): Target values of shape = [n_samples].
 
         """
-        self.clf = NearestCentroid(
+        self._clf = NearestCentroid(
                     metric=self.metric,
                     centroid=lambda fdatagrid: trim_mean(fdatagrid,
                                                          self.proportiontocut,
                                                          self.depth_method))
-        self.clf.fit(X, y)
+        self._clf.fit(X, y)
 
         return self
 
@@ -101,4 +101,4 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
             y (np.array): array of shape [n_samples] or
             [n_samples, n_outputs] with class labels for each data sample.
         """
-        return self.clf.predict(X)
+        return self._clf.predict(X)

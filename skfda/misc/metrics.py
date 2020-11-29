@@ -59,7 +59,7 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
 
     elif not np.array_equal(fdata1.grid_points,
                             fdata2.grid_points):
-        raise ValueError("Observation points for both objects must be equal or"
+        raise ValueError("Grid points for both objects must be equal or"
                          "a new list evaluation points must be specified")
 
     return fdata1, fdata2
@@ -334,6 +334,11 @@ def l1_distance(fdata1, fdata2, *, eval_points=None, _check=True):
         d(fdata1, fdata2) =
             \left( \int_D \| fdata1(x)-fdata2(x) \| dx
             \right)
+
+    See also:
+        :func:`~skfda.misc.metrics.lp_distance
+        :func:`~skfda.misc.metrics.l2_distance
+        :func:`~skfda.misc.metrics.linf_distance
     """
     return lp_distance(fdata1, fdata2, p=1, p2=1,
                        eval_points=eval_points, _check=_check)
@@ -347,6 +352,11 @@ def l2_distance(fdata1, fdata2, *, eval_points=None, _check=True):
         d(fdata1, fdata2) =
             \left( \int_D \| fdata1(x)-fdata2(x) \|^2 dx
             \right)^{\frac{1}{2}}
+
+    See also:
+        :func:`~skfda.misc.metrics.lp_distance
+        :func:`~skfda.misc.metrics.l1_distance
+        :func:`~skfda.misc.metrics.linf_distance
     """
     return lp_distance(fdata1, fdata2, p=2, p2=2,
                        eval_points=eval_points, _check=_check)
@@ -359,6 +369,11 @@ def linf_distance(fdata1, fdata2, *, eval_points=None, _check=True):
     .. math::
         d(fdata1, fdata2) \equiv \inf \{ C\ge 0 : |fdata1(x)-fdata2(x)|
                                                                 \le C a.e. \}.
+
+    See also:
+        :func:`~skfda.misc.metrics.lp_distance
+        :func:`~skfda.misc.metrics.l1_distance
+        :func:`~skfda.misc.metrics.l2_distance
     """
     return lp_distance(fdata1, fdata2, p=np.inf, p2=np.inf,
                        eval_points=eval_points, _check=_check)
@@ -380,8 +395,9 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
     match with the usual fisher-rao distance in non-parametric form for
     probability distributions [S11-2]_.
 
-    If the observations are defined in a domain different than (0,1) their
-    domains are normalized to this interval with an affine transformation.
+    If the observations are defined in a :term:`domain` different than (0,1)
+    their domains are normalized to this interval with an affine
+    transformation.
 
     Args:
         fdata1 (FData): First FData object.
@@ -472,7 +488,7 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
                                    _check=_check)
 
-    # Both should have the same observation points
+    # Both should have the same grid points
     eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
@@ -524,8 +540,9 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
 
     See [SK16-4-10-2]_ for a detailed explanation.
 
-    If the observations are defined in a domain different than (0,1) their
-    domains are normalized to this interval with an affine transformation.
+    If the observations are defined in a :term:`domain` different than (0,1)
+    their domains are normalized to this interval with an affine
+    transformation.
 
     Args:
         fdata1 (FData): First FData object.

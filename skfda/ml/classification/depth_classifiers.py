@@ -51,6 +51,10 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
 
     See also:
         :class:`~skfda.ml.classification.DTMClassifier
+
+    References:
+        Ghosh, A. K. and Chaudhuri, P. (2005b). On maximum depth and
+        related classifiers. Scandinavian Journal of Statistics, 32, 327–350.
     """
 
     def __init__(self, depth_method: Depth = ModifiedBandDepth()):

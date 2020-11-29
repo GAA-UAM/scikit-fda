@@ -1,4 +1,5 @@
-"""Functional data descriptive statistics.
+"""
+Functional data descriptive statistics.
 """
 from builtins import isinstance
 

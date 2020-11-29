@@ -56,7 +56,7 @@ class TestNeighbors(unittest.TestCase):
         for neigh in (KNeighborsClassifier(),
                       RadiusNeighborsClassifier(radius=.1),
                       NearestCentroid(),
-                      NearestCentroid(metric=lp_distance, mean=l2_mean)):
+                      NearestCentroid(metric=lp_distance, centroid=l2_mean)):
 
             neigh.fit(self.X, self.y)
             pred = neigh.predict(self.X)

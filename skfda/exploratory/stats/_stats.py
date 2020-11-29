@@ -149,7 +149,7 @@ def geometric_median(fdata: FData, tol: float=1.e-8):
         if lp_norm(median_new - median) < tol:
             return median_new
 
-        prod_matrix = identity - weights_new
+        prod_matrix = (identity - weights_new).T
 
         np.einsum('ln,nm,ml->l', prod_matrix.T, gram,
                   prod_matrix, out=distances)

@@ -1,5 +1,6 @@
 """Centroid models for supervised classification."""
 
+from typing import Callable
 from sklearn.base import ClassifierMixin, BaseEstimator
 
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
@@ -104,7 +105,7 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
             X, self.centroids_).argmin(axis=1)]
 
 
-class DTMClassifier(NearestCentroid):
+class DTMClassifier(BaseEstimator, ClassifierMixin):
     """Distance to trimmed means (DTM) classification.
 
     Test samples are classified to the class that minimizes the distance of
@@ -119,7 +120,7 @@ class DTMClassifier(NearestCentroid):
             The depth class used to order the data. See the documentation of
             the depths module for a list of available depths. By default it
             is ModifiedBandDepth.
-        metric (function, default
+        metric (Callable, default
             :func:`lp_distance <skfda.misc.metrics.lp_distance>`):
             Distance function between two functional objects. See the
             documentation of the metrics module for a list of available
@@ -156,14 +157,45 @@ class DTMClassifier(NearestCentroid):
 
     See also:
         :class:`~skfda.ml.classification.MaximumDepthClassifier
-        :class:`~skfda.ml.classification.NearestCentroid
+
+    References:
+        Fraiman, R. and Muniz, G. (2001). Trimmed means for functional
+        data. Test, 10, 419-440.
     """
 
-    def __init__(self, proportiontocut,
+    def __init__(self, proportiontocut: float,
                  depth_method: Depth = ModifiedBandDepth(),
-                 metric=lp_distance):
+                 metric: Callable = lp_distance) -> None:
         """Initialize the classifier."""
-        super().__init__(metric=metric,
-                         centroid=lambda fdatagrid: trim_mean(fdatagrid,
-                                                              proportiontocut,
-                                                              depth_method))
+        self.proportiontocut = proportiontocut
+        self.depth_method = depth_method
+        self.metric = metric
+
+    def fit(self, X, y):
+        """Fit the model using X as training data and y as target values.
+
+        Args:
+            X (:class:`FDataGrid`): FDataGrid with the training data.
+            y (array-like): Target values of shape = [n_samples].
+
+        """
+        self._clf = NearestCentroid(
+                    metric=self.metric,
+                    centroid=lambda fdatagrid: trim_mean(fdatagrid,
+                                                         self.proportiontocut,
+                                                         self.depth_method))
+        self._clf.fit(X, y)
+
+        return self
+
+    def predict(self, X):
+        """Predict the class labels for the provided data.
+
+        Args:
+            X (:class:`FDataGrid`): FDataGrid with the test samples.
+
+        Returns:
+            y (np.array): array of shape [n_samples] or
+            [n_samples, n_outputs] with class labels for each data sample.
+        """
+        return self._clf.predict(X)

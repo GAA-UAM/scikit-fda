@@ -24,7 +24,7 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
             The depth class used to order the data. See the documentation of
             the depths module for a list of available depths. By default it
             is ModifiedBandDepth.
-        metric (function, default
+        metric (Callable, default
             :func:`lp_distance <skfda.misc.metrics.lp_distance>`):
             Distance function between two functional objects. See the
             documentation of the metrics module for a list of available

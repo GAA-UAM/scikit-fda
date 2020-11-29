@@ -144,7 +144,7 @@ def cumsum(fdatagrid):
 
 
 @multimethod.multidispatch
-def inner_product(arg1, arg2, **kwargs):
+def inner_product(arg1, arg2, *, matrix=False, **kwargs):
     r"""Return the usual (:math:`L_2`) inner product.
 
     Calculates the inner product between matching samples in two
@@ -248,26 +248,48 @@ def inner_product(arg1, arg2, **kwargs):
     """
 
     if callable(arg1):
-        return _inner_product_integrate(arg1, arg2)
+        return _inner_product_integrate(arg1, arg2, matrix=matrix)
     else:
-        return (arg1 * arg2).sum(axis=-1)
+        return (np.einsum('n...,m...->nm...', arg1, arg2).sum(axis=-1)
+                if matrix else (arg1 * arg2).sum(axis=-1))
 
 
 @inner_product.register
-def inner_product_fdatagrid(arg1: FDataGrid, arg2: FDataGrid):
+def inner_product_fdatagrid(arg1: FDataGrid, arg2: FDataGrid, *, matrix=False):
 
     if not np.array_equal(arg1.grid_points,
                           arg2.grid_points):
         raise ValueError("Sample points for both objects must be equal")
 
-    integrand = arg1.data_matrix * arg2.data_matrix
+    d1 = arg1.data_matrix
+    d2 = arg2.data_matrix
 
-    for s in arg1.grid_points:
-        integrand = scipy.integrate.simps(integrand,
-                                          x=s,
-                                          axis=1)
+    einsum_broadcast_list = (np.arange(d1.ndim - 1) + 2).tolist()
 
-    return np.sum(integrand, axis=-1)
+    if matrix:
+
+        d1 = np.copy(d1)
+
+        # Perform quadrature inside the einsum
+        for i, s in enumerate(arg1.grid_points[::-1]):
+            identity = np.eye(len(s))
+            weights = scipy.integrate.simps(identity, x=s)
+            index = (slice(None),) + (np.newaxis,) * (i + 1)
+            d1 *= weights[index]
+
+        return np.einsum(d1, [0] + einsum_broadcast_list,
+                         d2, [1] + einsum_broadcast_list,
+                         [0, 1])
+
+    else:
+        integrand = d1 * d2
+
+        for s in arg1.grid_points[::-1]:
+            integrand = scipy.integrate.simps(integrand,
+                                              x=s,
+                                              axis=-2)
+
+        return np.sum(integrand, axis=-1)
 
 
 @inner_product.register(FDataBasis, FDataBasis)
@@ -277,6 +299,7 @@ def inner_product_fdatagrid(arg1: FDataGrid, arg2: FDataGrid):
 def inner_product_fdatabasis(arg1: Union[FDataBasis, Basis],
                              arg2: Union[FDataBasis, Basis],
                              *,
+                             matrix=False,
                              inner_product_matrix=None,
                              force_numerical=False):
 
@@ -300,7 +323,7 @@ def inner_product_fdatabasis(arg1: Union[FDataBasis, Basis],
     # it is usually worthwhile
     same_basis = arg1.basis == arg2.basis
 
-    # The number of operations is less usinf the matrix
+    # The number of operations is less using the matrix
     n_ops_best_with_matrix = max(
         arg1.n_samples, arg2.n_samples) > arg1.n_basis * arg2.n_basis
 
@@ -312,24 +335,48 @@ def inner_product_fdatabasis(arg1: Union[FDataBasis, Basis],
         if inner_product_matrix is None:
             inner_product_matrix = arg1.basis.inner_product_matrix(arg2.basis)
 
-        return (arg1.coefficients @
-                inner_product_matrix *
-                arg2.coefficients).sum(axis=-1)
+        coef1 = arg1.coefficients
+        coef2 = arg2.coefficients
+
+        if matrix:
+            return np.einsum('nb,bc,mc->nm',
+                             coef1, inner_product_matrix, coef2)
+        else:
+            return (coef1 @
+                    inner_product_matrix *
+                    coef2).sum(axis=-1)
+
     else:
-        return _inner_product_integrate(arg1, arg2)
+        return _inner_product_integrate(arg1, arg2, matrix=matrix)
 
 
-def _inner_product_integrate(arg1, arg2):
+def _inner_product_integrate(arg1, arg2, *, matrix=False):
 
     if not np.array_equal(arg1.domain_range,
                           arg2.domain_range):
         raise ValueError("Domain range for both objects must be equal")
 
+    def integrand(*args):
+        f1 = arg1([*args])[:, 0, :]
+        f2 = arg2([*args])[:, 0, :]
+
+        if matrix:
+            ret = np.einsum('n...,m...->nm...', f1, f2)
+            ret = ret.reshape((-1,) + ret.shape[2:])
+            return ret
+        else:
+            return f1 * f2
+
     integral = nquad_vec(
-        lambda *args: arg1([*args])[:, 0, :] * arg2([*args])[:, 0, :],
+        integrand,
         arg1.domain_range)
 
-    return np.sum(integral, axis=-1)
+    summation = np.sum(integral, axis=-1)
+
+    if matrix:
+        summation = summation.reshape((len(arg1), len(arg2)))
+
+    return summation
 
 
 def inner_product_matrix(arg1, arg2=None, **kwargs):
@@ -350,4 +397,7 @@ def inner_product_matrix(arg1, arg2=None, **kwargs):
     if isinstance(arg2, Basis):
         arg2 = arg2.to_basis()
 
-    return _pairwise_commutative(inner_product, arg1, arg2, **kwargs)
+    if arg2 is None:
+        arg2 = arg1
+
+    return inner_product(arg1, arg2, matrix=True, **kwargs)

@@ -1,6 +1,8 @@
 import skfda
+from skfda._utils import _pairwise_commutative
 from skfda.representation.basis import Monomial, Tensor, VectorValued
 import unittest
+
 import numpy as np
 
 
@@ -68,6 +70,32 @@ class InnerProductTest(unittest.TestCase):
             skfda.misc.inner_product(fd, fd), res, rtol=1e-5)
         np.testing.assert_allclose(
             skfda.misc.inner_product(fd_basis, fd_basis), res, rtol=1e-5)
+
+    def test_matrix(self):
+
+        basis = skfda.representation.basis.BSpline(n_basis=12)
+
+        X = skfda.datasets.make_gaussian_process(
+            n_samples=10, n_features=20,
+            cov=skfda.misc.covariances.Gaussian(),
+            random_state=0)
+        Y = skfda.datasets.make_gaussian_process(
+            n_samples=10, n_features=20,
+            cov=skfda.misc.covariances.Gaussian(),
+            random_state=1)
+
+        X_basis = X.to_basis(basis)
+        Y_basis = Y.to_basis(basis)
+
+        gram = skfda.misc.inner_product_matrix(X, Y)
+        gram_basis = skfda.misc.inner_product_matrix(X_basis, Y_basis)
+
+        np.testing.assert_allclose(gram, gram_basis, rtol=1e-2)
+
+        gram_pairwise = _pairwise_commutative(
+            skfda.misc.inner_product, X, Y)
+
+        np.testing.assert_allclose(gram, gram_pairwise)
 
 
 if __name__ == "__main__":

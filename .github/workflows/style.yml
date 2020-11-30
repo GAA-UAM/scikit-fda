@@ -18,9 +18,6 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      
-      - id: changed-files
-        uses: jitterbit/get-changed-files@v1
 
       # Runs a single command using the runners shell
       - id: wemake-python-styleguide
@@ -28,8 +25,6 @@ jobs:
         # uses: wemake-services/wemake-python-styleguide@8068e6634aaacf1eecba3f27a529213df3bd6284
         uses: wemake-services/wemake-python-styleguide@0.14.1
         with:
-          # Path or space-separated list of paths to lint
-          path: ${{ steps.changed-files.outputs.added_modified }}
           # How would you like the results to be displayed?
           reporter: 'github-pr-review' # optional, default is terminal
         env:

@@ -130,7 +130,7 @@ def geometric_median(X: T, tol: float=1.e-8,
             default is the :math:`L_2` distance.
 
     Returns:
-        FData: object containing the computed geometric median.
+        Object containing the computed geometric median.
 
     Example:
 

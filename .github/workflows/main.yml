@@ -25,8 +25,6 @@ jobs:
         # uses: wemake-services/wemake-python-styleguide@8068e6634aaacf1eecba3f27a529213df3bd6284
         uses: wemake-services/wemake-python-styleguide@0.14.1
         with:
-          # Path or space-separated list of paths to lint
-          path: # optional, default is .
           # How would you like the results to be displayed?
           reporter: 'github-pr-review' # optional, default is terminal
         env:

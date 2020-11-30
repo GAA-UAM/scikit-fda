@@ -1,6 +1,6 @@
 """Unsupervised learner for implementing neighbor searches."""
 
-from ..neighbors_base import (NeighborsBase, NeighborsMixin,
+from .._neighbors_base import (NeighborsBase, NeighborsMixin,
                               KNeighborsMixin,
                               RadiusNeighborsMixin)
 

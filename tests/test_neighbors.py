@@ -1,9 +1,9 @@
 """Test neighbors classifiers and regressors"""
 
-from skfda.ml.neighbors_outlier import LocalOutlierFactor  # Pending theory
+from skfda.exploratory.outliers import LocalOutlierFactor  # Pending theory
 from skfda.datasets import make_multimodal_samples, make_sinusoidal_process
 from skfda.exploratory.stats import mean
-from skfda.misc.metrics import lp_distance, pairwise_distance
+from skfda.misc.metrics import lp_distance, l2_distance, pairwise_distance
 from skfda.ml.classification import (KNeighborsClassifier,
                                      RadiusNeighborsClassifier,
                                      NearestCentroid)
@@ -348,7 +348,7 @@ class TestNeighbors(unittest.TestCase):
         np.testing.assert_array_equal(expected, res)
 
         # With explicit l2 distance
-        lof2 = LocalOutlierFactor(metric=lp_distance)
+        lof2 = LocalOutlierFactor(metric=l2_distance)
         res2 = lof2.fit_predict(self.fd_lof)
         np.testing.assert_array_equal(expected, res2)
 

@@ -2,7 +2,7 @@
 
 from sklearn.base import ClassifierMixin
 
-from ..neighbors_base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
+from .._neighbors_base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
                               NeighborsClassifierMixin, RadiusNeighborsMixin)
 
 

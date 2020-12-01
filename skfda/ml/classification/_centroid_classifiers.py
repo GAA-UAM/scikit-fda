@@ -61,7 +61,7 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
         array([0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
 
     See also:
-        :class:`~skfda.ml.classification.DTMClassifier
+        :class:`~skfda.ml.classification.DTMClassifier`
     """
 
     def __init__(self, metric=l2_distance, centroid=mean):
@@ -156,7 +156,7 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
         0.875
 
     See also:
-        :class:`~skfda.ml.classification.MaximumDepthClassifier
+        :class:`~skfda.ml.classification.MaximumDepthClassifier`
 
     References:
         Fraiman, R. and Muniz, G. (2001). Trimmed means for functional
@@ -180,10 +180,10 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
 
         """
         self._clf = NearestCentroid(
-                    metric=self.metric,
-                    centroid=lambda fdatagrid: trim_mean(fdatagrid,
-                                                         self.proportiontocut,
-                                                         self.depth_method))
+            metric=self.metric,
+            centroid=lambda fdatagrid: trim_mean(fdatagrid,
+                                                 self.proportiontocut,
+                                                 self.depth_method))
         self._clf.fit(X, y)
 
         return self

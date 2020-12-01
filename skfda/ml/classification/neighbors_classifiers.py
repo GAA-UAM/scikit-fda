@@ -2,8 +2,9 @@
 
 from sklearn.base import ClassifierMixin
 
-from .._neighbors_base import (NeighborsBase, NeighborsMixin, KNeighborsMixin,
-                              NeighborsClassifierMixin, RadiusNeighborsMixin)
+from .._neighbors_base import (KNeighborsMixin, NeighborsBase,
+                               NeighborsClassifierMixin, NeighborsMixin,
+                               RadiusNeighborsMixin)
 
 
 class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
@@ -128,8 +129,8 @@ class KNeighborsClassifier(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         Returns:
             Sklearn K Neighbors estimator initialized.
         """
-        from sklearn.neighbors import (KNeighborsClassifier as
-                                       _KNeighborsClassifier)
+        from sklearn.neighbors import \
+            KNeighborsClassifier as _KNeighborsClassifier
 
         return _KNeighborsClassifier(
             n_neighbors=self.n_neighbors, weights=self.weights,
@@ -274,8 +275,8 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
         Returns:
             Sklearn Radius Neighbors estimator initialized.
         """
-        from sklearn.neighbors import (RadiusNeighborsClassifier as
-                                       _RadiusNeighborsClassifier)
+        from sklearn.neighbors import \
+            RadiusNeighborsClassifier as _RadiusNeighborsClassifier
 
         return _RadiusNeighborsClassifier(
             radius=self.radius, weights=self.weights,

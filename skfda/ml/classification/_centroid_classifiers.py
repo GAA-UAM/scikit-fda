@@ -1,16 +1,14 @@
 """Centroid models for supervised classification."""
 
 from typing import Callable
-from sklearn.base import ClassifierMixin, BaseEstimator
 
+from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ...exploratory.stats import mean
-from ...misc.metrics import l2_distance, pairwise_distance
-from ...exploratory.depth import Depth, ModifiedBandDepth
-from ...exploratory.stats import trim_mean
-from ...misc.metrics import lp_distance
 from ..._utils import _classifier_get_classes
+from ...exploratory.depth import Depth, ModifiedBandDepth
+from ...exploratory.stats import mean, trim_mean
+from ...misc.metrics import l2_distance, lp_distance, pairwise_distance
 
 
 class NearestCentroid(BaseEstimator, ClassifierMixin):

@@ -699,7 +699,8 @@ class FuzzyCMeans(BaseKMeans):
     def _compute_inertia(self, membership, centroids,
                          distances_to_centroids):
         return np.sum(
-            membership ** self.fuzzifier * distances_to_centroids ** 2)
+            membership ** self.fuzzifier * distances_to_centroids ** 2
+        )
 
     def _create_membership(self, n_samples):
         return np.empty((n_samples, self.n_clusters))

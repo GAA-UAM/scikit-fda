@@ -53,7 +53,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx_gallery.gen_gallery',
               'sphinx.ext.intersphinx',
               'sphinx.ext.doctest',
-              'jupyter_sphinx']
+              'jupyter_sphinx',
+              'sphinx.ext.autodoc.typehints']
 
 autodoc_default_flags = ['members', 'inherited-members']
 
@@ -237,7 +238,8 @@ sphinx_gallery_conf = {
 }
 
 autosummary_generate = True
-
+autodoc_typehints = "description"
+napoleon_use_rtype = True
 
 # Napoleon fix for attributes
 # Taken from

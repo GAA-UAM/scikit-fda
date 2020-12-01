@@ -1,21 +1,19 @@
 """Test neighbors classifiers and regressors"""
 
-from skfda.exploratory.outliers import LocalOutlierFactor  # Pending theory
-from skfda.datasets import make_multimodal_samples, make_sinusoidal_process
-from skfda.exploratory.stats import mean
-from skfda.misc.metrics import lp_distance, l2_distance, pairwise_distance
-from skfda.ml.classification import (KNeighborsClassifier,
-                                     RadiusNeighborsClassifier,
-                                     NearestCentroid)
-from skfda.ml.clustering import NearestNeighbors
-from skfda.ml.regression import KNeighborsRegressor, RadiusNeighborsRegressor
-from skfda.representation.basis import Fourier
 import unittest
 
 import numpy as np
+from skfda.datasets import make_multimodal_samples, make_sinusoidal_process
+from skfda.exploratory.outliers import LocalOutlierFactor  # Pending theory
+from skfda.exploratory.stats import mean
+from skfda.misc.metrics import l2_distance, lp_distance, pairwise_distance
+from skfda.ml.classification import (KNeighborsClassifier, NearestCentroid,
+                                     RadiusNeighborsClassifier)
+from skfda.ml.clustering import NearestNeighbors
+from skfda.ml.regression import KNeighborsRegressor, RadiusNeighborsRegressor
+from skfda.representation.basis import Fourier
 
 
-# from skfda.exploratory.outliers import LocalOutlierFactor
 class TestNeighbors(unittest.TestCase):
 
     def setUp(self):
@@ -74,7 +72,7 @@ class TestNeighbors(unittest.TestCase):
         np.testing.assert_array_almost_equal(probs, self.probs)
 
     def test_predict_regressor(self):
-        """Test scalar regression, predics mode location"""
+        """Test scalar regression, predics mode location."""
 
         # Dummy test, with weight = distance, only the sample with distance 0
         # will be returned, obtaining the exact location
@@ -90,8 +88,7 @@ class TestNeighbors(unittest.TestCase):
                                              self.modes_location)
 
     def test_kneighbors(self):
-        """Test k neighbor searches for all k-neighbors estimators"""
-
+        """Test k neighbor searches for all k-neighbors estimators."""
         nn = NearestNeighbors()
         nn.fit(self.X)
 
@@ -124,7 +121,7 @@ class TestNeighbors(unittest.TestCase):
                 self.assertEqual(graph[0, i] == 0.0, i not in links[0])
 
     def test_radius_neighbors(self):
-        """Test query with radius"""
+        """Test query with radius."""
         nn = NearestNeighbors(radius=.1)
         nn.fit(self.X)
 

@@ -135,7 +135,6 @@ class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
                  algorithm='auto', leaf_size=30, metric='l2',
                  metric_params=None, n_jobs=1, multivariate_metric=False):
         """Initialize the regressor."""
-
         super().__init__(n_neighbors=n_neighbors,
                          weights=weights, algorithm=algorithm,
                          leaf_size=leaf_size, metric=metric,
@@ -300,7 +299,6 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
                  metric_params=None, outlier_response=None, n_jobs=1,
                  multivariate_metric=False):
         """Initialize the classifier."""
-
         super().__init__(radius=radius, weights=weights, algorithm=algorithm,
                          leaf_size=leaf_size, metric=metric,
                          metric_params=metric_params, n_jobs=n_jobs,
@@ -330,5 +328,5 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
             n_jobs=self.n_jobs)
 
     def _query(self, X):
-        """Return distances and neighbors of given sample"""
+        """Return distances and neighbors of given sample."""
         return self.estimator_.radius_neighbors(X)

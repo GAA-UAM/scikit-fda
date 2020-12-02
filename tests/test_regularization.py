@@ -4,7 +4,7 @@ from skfda.misc.operators._linear_differential_operator import (
     _monomial_evaluate_constant_linear_diff_op)
 from skfda.misc.operators._operators import gramian_matrix_numerical
 from skfda.misc.regularization import TikhonovRegularization, L2Regularization
-from skfda.ml.regression.linear import LinearRegression
+from skfda.ml.regression import LinearRegression
 from skfda.representation.basis import Constant, Monomial, BSpline, Fourier
 import unittest
 import warnings

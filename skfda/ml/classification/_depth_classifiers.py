@@ -1,12 +1,11 @@
-"""Maximum depth for supervised classification."""
+"""Depth-based models for supervised classification."""
 
 import numpy as np
-
-from sklearn.base import ClassifierMixin, BaseEstimator, clone
+from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ...exploratory.depth import Depth, ModifiedBandDepth
 from ..._utils import _classifier_get_classes
+from ...exploratory.depth import Depth, ModifiedBandDepth
 
 
 class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
@@ -36,7 +35,7 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
         >>> from skfda.ml.classification import MaximumDepthClassifier
         >>> clf = MaximumDepthClassifier()
         >>> clf.fit(X_train, y_train)
-        MaximumDepthClassifier()
+        MaximumDepthClassifier(...)
 
         We can predict the class of new samples
 
@@ -50,16 +49,20 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
         0.875
 
     See also:
-        :class:`~skfda.ml.classification.DTMClassifier
+        :class:`~skfda.ml.classification.DTMClassifier`
 
     References:
         Ghosh, A. K. and Chaudhuri, P. (2005b). On maximum depth and
         related classifiers. Scandinavian Journal of Statistics, 32, 327–350.
     """
 
-    def __init__(self, depth_method: Depth = ModifiedBandDepth()):
-        """Initialize the classifier."""
+    def __init__(self, depth_method: Depth = None):
         self.depth_method = depth_method
+
+        if depth_method is None:
+            self.depth_method = ModifiedBandDepth()
+        else:
+            self.depth_method = depth_method
 
     def fit(self, X, y):
         """Fit the model using X as training data and y as target values.
@@ -68,11 +71,17 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
             X (:class:`FDataGrid`): FDataGrid with the training data.
             y (array-like): Target values of shape = [n_samples].
 
-        """
-        self.classes_, y_ind = _classifier_get_classes(y)
+        Returns:
+            self (object)
 
-        self.distributions_ = [clone(self.depth_method).fit(
-            X[y_ind == cur_class]) for cur_class in range(self.classes_.size)]
+        """
+        classes_, y_ind = _classifier_get_classes(y)
+
+        self.classes_ = classes_
+        self.distributions_ = [
+            clone(self.depth_method).fit(X[y_ind == cur_class])
+            for cur_class in range(self.classes_.size)
+        ]
 
         return self
 
@@ -89,7 +98,9 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
         """
         sklearn_check_is_fitted(self)
 
-        depths = [distribution.predict(X)
-                  for distribution in self.distributions_]
+        depths = [
+            distribution.predict(X)
+            for distribution in self.distributions_
+        ]
 
         return self.classes_[np.argmax(depths, axis=0)]

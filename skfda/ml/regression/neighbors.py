@@ -1,8 +1,9 @@
 """Neighbor models for regression."""
 
-from sklearn.neighbors import KNeighborsRegressor as _KNeighborsRegressor
-from sklearn.neighbors import \
-    RadiusNeighborsRegressor as _RadiusNeighborsRegressor
+from sklearn.neighbors import (
+    KNeighborsRegressor as _KNeighborsRegressor,
+    RadiusNeighborsRegressor as _RadiusNeighborsRegressor,
+)
 
 from .._neighbors_base import (
     KNeighborsMixin,

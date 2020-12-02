@@ -92,7 +92,7 @@ class TestNeighbors(unittest.TestCase):
         np.testing.assert_array_almost_equal(probs, self.probs)
 
     def test_predict_regressor(self):
-        """Test scalar regression, predics mode location."""
+        """Test scalar regression, predicts mode location."""
         # Dummy test, with weight = distance, only the sample with distance 0
         # will be returned, obtaining the exact location
         knnr = KNeighborsRegressor(weights='distance')

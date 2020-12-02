@@ -1,4 +1,4 @@
-"""Depth models for supervised classification."""
+"""Depth-based models for supervised classification."""
 
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, clone

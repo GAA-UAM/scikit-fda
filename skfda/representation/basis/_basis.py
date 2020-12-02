@@ -14,11 +14,6 @@ import numpy as np
 from ..._utils import _domain_range, _reshape_eval_points, _same_domain
 from . import _fdatabasis
 
-__author__ = "Miguel Carbajo Berrocal"
-__email__ = "miguel.carbajo@estudiante.uam.es"
-
-# aux functions
-
 
 def _check_domain(domain_range):
     for domain in domain_range:
@@ -36,7 +31,7 @@ class Basis(ABC):
 
     """
 
-    def __init__(self, domain_range=None, n_basis: int=1):
+    def __init__(self, *, domain_range=None, n_basis: int=1):
         """Basis constructor.
 
         Args:
@@ -60,6 +55,9 @@ class Basis(ABC):
         self._n_basis = n_basis
 
         super().__init__()
+
+    def __call__(self, *args, **kwargs) -> np.ndarray:
+        return self.evaluate(*args, **kwargs)
 
     @property
     def dim_domain(self) -> int:
@@ -115,9 +113,6 @@ class Basis(ABC):
 
         return self._evaluate(eval_points).reshape(
             (self.n_basis, len(eval_points), self.dim_codomain))
-
-    def __call__(self, *args, **kwargs) -> np.ndarray:
-        return self.evaluate(*args, **kwargs)
 
     def __len__(self) -> int:
         return self.n_basis

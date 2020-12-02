@@ -74,7 +74,7 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
                 shape = [n_samples] or [n_samples, n_outputs].
 
         Returns:
-            self
+            self (object)
         """
         classes_, y_ind = _classifier_get_classes(y)
 
@@ -184,7 +184,7 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
             y (array-like): Target values of shape = [n_samples].
 
         Returns:
-            self
+            self (object)
         """
         self._clf = NearestCentroid(
             metric=self.metric,

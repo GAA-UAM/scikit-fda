@@ -1,3 +1,4 @@
+"""Neighbors outlier detection methods."""
 from sklearn.base import OutlierMixin
 
 from ...misc.metrics import lp_distance

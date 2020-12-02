@@ -33,9 +33,6 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
             The function must accept a :class:`FData` with the samples of one
             class and return a :class:`FData` object with only one sample
             representing the centroid.
-    Attributes:
-        centroids_: :class:`FDataGrid`
-            FDatagrid containing the centroid of each class
     Examples:
         Firstly, we will create a toy dataset with 2 classes
 
@@ -63,7 +60,15 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
     """
 
     def __init__(self, metric=l2_distance, centroid=mean):
-        """Initialize the classifier."""
+        """Initialize the classifier.
+
+        Args:
+            metric: The metric to use when calculating distance between test
+                samples and centroids.
+            centroid: Point from which the sum of the distances (according to
+                the metric) of all samples that belong to that particular class
+                are minimized.
+        """
         self.metric = metric
         self.centroid = centroid
 

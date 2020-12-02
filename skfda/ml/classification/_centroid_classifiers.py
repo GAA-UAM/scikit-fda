@@ -60,15 +60,7 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
     """
 
     def __init__(self, metric=l2_distance, centroid=mean):
-        """Initialize the classifier.
-
-        Args:
-            metric: The metric to use when calculating distance between test
-                samples and centroids.
-            centroid: Point from which the sum of the distances (according to
-                the metric) of all samples that belong to that particular class
-                are minimized.
-        """
+        """Initialize the classifier."""
         self.metric = metric
         self.centroid = centroid
 

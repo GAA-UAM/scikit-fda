@@ -76,9 +76,13 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
                 [n_samples, n_samples] if metric='precomputed'.
             y (array-like or sparse matrix): Target values of
                 shape = [n_samples] or [n_samples, n_outputs].
-        """
-        self.classes_, y_ind = _classifier_get_classes(y)
 
+        Returns:
+            self
+        """
+        classes_, y_ind = _classifier_get_classes(y)
+
+        self.classes_ = classes_
         self.centroids_ = self.centroid(X[y_ind == 0])
 
         for cur_class in range(1, self.classes_.size):
@@ -100,7 +104,10 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
         sklearn_check_is_fitted(self)
 
         return self.classes_[pairwise_distance(self.metric)(
-            X, self.centroids_).argmin(axis=1)]
+            X,
+            self.centroids_,
+        ).argmin(axis=1)
+        ]
 
 
 class DTMClassifier(BaseEstimator, ClassifierMixin):
@@ -161,11 +168,16 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
         data. Test, 10, 419-440.
     """
 
-    def __init__(self, proportiontocut: float,
-                 depth_method: Depth = ModifiedBandDepth(),
-                 metric: Callable = lp_distance) -> None:
+    def __init__(
+        self,
+        proportiontocut: float,
+        depth_method: Depth = None,
+        metric: Callable = lp_distance,
+    ) -> None:
         """Initialize the classifier."""
         self.proportiontocut = proportiontocut
+        if depth_method is None:
+            self.depth_method = ModifiedBandDepth()
         self.depth_method = depth_method
         self.metric = metric
 
@@ -176,12 +188,17 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
             X (:class:`FDataGrid`): FDataGrid with the training data.
             y (array-like): Target values of shape = [n_samples].
 
+        Returns:
+            self
         """
         self._clf = NearestCentroid(
             metric=self.metric,
-            centroid=lambda fdatagrid: trim_mean(fdatagrid,
-                                                 self.proportiontocut,
-                                                 self.depth_method))
+            centroid=lambda fdatagrid: trim_mean(
+                fdatagrid,
+                self.proportiontocut,
+                self.depth_method,
+            ),
+        )
         self._clf.fit(X, y)
 
         return self

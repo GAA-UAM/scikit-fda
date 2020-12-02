@@ -232,9 +232,6 @@ class TestNeighbors(unittest.TestCase):
             res.data_matrix, self.X.data_matrix,
         )
 
-    def _weights(self, weights_):
-        return np.array([w == 0 for w in weights_], dtype=float)
-
     def test_functional_response_custom_weights(self):
 
         knnr = KNeighborsRegressor(weights=self._weights, n_neighbors=5)
@@ -484,6 +481,9 @@ class TestNeighbors(unittest.TestCase):
         # Error in predict function
         with np.testing.assert_raises(AttributeError):
             lof.predict(self.fd_lof[5:])
+
+    def _weights(self, weights_):
+        return np.array([w == 0 for w in weights_], dtype=float)
 
 
 if __name__ == '__main__':

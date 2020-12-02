@@ -1,4 +1,4 @@
-"""Centroid models for supervised classification."""
+"""Centroid-based models for supervised classification."""
 
 from typing import Callable
 

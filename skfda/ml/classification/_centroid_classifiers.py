@@ -60,7 +60,6 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
     """
 
     def __init__(self, metric=l2_distance, centroid=mean):
-        """Initialize the classifier."""
         self.metric = metric
         self.centroid = centroid
 
@@ -171,7 +170,6 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
         depth_method: Depth = None,
         metric: Callable = lp_distance,
     ) -> None:
-        """Initialize the classifier."""
         self.proportiontocut = proportiontocut
         if depth_method is None:
             self.depth_method = ModifiedBandDepth()

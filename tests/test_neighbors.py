@@ -8,8 +8,11 @@ from skfda.datasets import make_multimodal_samples, make_sinusoidal_process
 from skfda.exploratory.outliers import LocalOutlierFactor  # Pending theory
 from skfda.exploratory.stats import mean
 from skfda.misc.metrics import l2_distance, lp_distance, pairwise_distance
-from skfda.ml.classification import (KNeighborsClassifier, NearestCentroid,
-                                     RadiusNeighborsClassifier)
+from skfda.ml.classification import (
+    KNeighborsClassifier,
+    NearestCentroid,
+    RadiusNeighborsClassifier,
+)
 from skfda.ml.clustering import NearestNeighbors
 from skfda.ml.regression import KNeighborsRegressor, RadiusNeighborsRegressor
 from skfda.representation.basis import Fourier
@@ -231,9 +234,8 @@ class TestNeighbors(unittest.TestCase):
 
     def test_functional_response_custom_weights(self):
 
-        def weights(weights):
-
-            return np.array([w == 0 for w in weights], dtype=float)
+        def weights(weights_):
+            return np.array([w == 0 for w in weights_], dtype=float)
 
         knnr = KNeighborsRegressor(weights=weights, n_neighbors=5)
         response = self.X.to_basis(Fourier(domain_range=(-1, 1), n_basis=10))

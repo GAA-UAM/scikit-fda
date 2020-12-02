@@ -171,9 +171,12 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
         metric: Callable = lp_distance,
     ) -> None:
         self.proportiontocut = proportiontocut
+
         if depth_method is None:
             self.depth_method = ModifiedBandDepth()
-        self.depth_method = depth_method
+        else:
+            self.depth_method = depth_method
+
         self.metric = metric
 
     def fit(self, X, y):

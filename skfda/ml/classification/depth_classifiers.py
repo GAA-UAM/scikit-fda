@@ -35,7 +35,7 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
         >>> from skfda.ml.classification import MaximumDepthClassifier
         >>> clf = MaximumDepthClassifier()
         >>> clf.fit(X_train, y_train)
-        MaximumDepthClassifier()
+        MaximumDepthClassifier(...)
 
         We can predict the class of new samples
 

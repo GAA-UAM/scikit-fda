@@ -1,7 +1,10 @@
 """Neighbor models for supervised classification."""
 
 from sklearn.base import ClassifierMixin
-from sklearn.neighbors import KNeighborsClassifier as _KNeighborsClassifier
+from sklearn.neighbors import (
+    KNeighborsClassifier as _KNeighborsClassifier,
+    RadiusNeighborsClassifier as _RadiusNeighborsClassifier,
+)
 
 from .._neighbors_base import (
     KNeighborsMixin,
@@ -277,9 +280,6 @@ class RadiusNeighborsClassifier(NeighborsBase, NeighborsMixin,
         Returns:
             Sklearn Radius Neighbors estimator initialized.
         """
-        from sklearn.neighbors import \
-            RadiusNeighborsClassifier as _RadiusNeighborsClassifier
-
         return _RadiusNeighborsClassifier(
             radius=self.radius, weights=self.weights,
             algorithm=self.algorithm, leaf_size=self.leaf_size,

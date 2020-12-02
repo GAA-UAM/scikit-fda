@@ -1,12 +1,11 @@
 """Depth models for supervised classification."""
 
 import numpy as np
-
-from sklearn.base import ClassifierMixin, BaseEstimator, clone
+from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ...exploratory.depth import Depth, ModifiedBandDepth
 from ..._utils import _classifier_get_classes
+from ...exploratory.depth import Depth, ModifiedBandDepth
 
 
 class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):

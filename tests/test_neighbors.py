@@ -232,12 +232,12 @@ class TestNeighbors(unittest.TestCase):
             res.data_matrix, self.X.data_matrix,
         )
 
+    def weights(self, weights_):
+        return np.array([w == 0 for w in weights_], dtype=float)
+
     def test_functional_response_custom_weights(self):
 
-        def weights(weights_):
-            return np.array([w == 0 for w in weights_], dtype=float)
-
-        knnr = KNeighborsRegressor(weights=weights, n_neighbors=5)
+        knnr = KNeighborsRegressor(weights=self.weights, n_neighbors=5)
         response = self.X.to_basis(Fourier(domain_range=(-1, 1), n_basis=10))
         knnr.fit(self.X, response)
 

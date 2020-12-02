@@ -1,0 +1,35 @@
+name: Style
+
+# Controls when the action will run. 
+on:
+  pull_request:
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v1
+      
+      - run: |
+          echo "_CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} -- '*.py' | tr -s '\n' ' ' )" >> ${GITHUB_ENV}
+
+      # Runs a single command using the runners shell
+      - id: wemake-python-styleguide
+        # You may pin to the exact commit or the version.
+        # uses: wemake-services/wemake-python-styleguide@8068e6634aaacf1eecba3f27a529213df3bd6284
+        uses: wemake-services/wemake-python-styleguide@master
+        if: ${{ env._CHANGED_FILES }}
+        with:
+          reporter: 'github-pr-review' # optional, default is terminal
+          path: "${{ env._CHANGED_FILES }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.github_token }}

@@ -55,7 +55,7 @@ class TestNeighbors(unittest.TestCase):
             n_samples=25,
             error_std=0,
             phase_std=0.1,
-            random_state=0
+            random_state=0,
         )
         fd_outliers = make_sinusoidal_process(
             n_samples=2,
@@ -389,7 +389,7 @@ class TestNeighbors(unittest.TestCase):
             neigh.score(self.X[:5], y)
 
     def test_lof_fit_predict(self):
-        """ Test same results with different forms to call fit_predict."""
+        """Test same results with different forms to call fit_predict."""
         # Outliers
         expected = np.ones(len(self.fd_lof))
         expected[:2] = -1
@@ -451,7 +451,7 @@ class TestNeighbors(unittest.TestCase):
         )
 
     def test_lof_decision_function(self):
-        """ Test decision function and score samples of LOF."""
+        """Test decision function and score samples of LOF."""
         lof = LocalOutlierFactor(novelty=True)
         lof.fit(self.fd_lof[5:])
 
@@ -471,7 +471,7 @@ class TestNeighbors(unittest.TestCase):
         )
 
     def test_lof_exceptions(self):
-        """ Test error due to novelty attribute."""
+        """Test error due to novelty attribute."""
         lof = LocalOutlierFactor(novelty=True)
 
         # Error in fit_predict function

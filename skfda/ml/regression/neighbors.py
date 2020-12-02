@@ -1,7 +1,15 @@
 """Neighbor models for regression."""
 
-from .._neighbors_base import (KNeighborsMixin, NeighborsBase,
-                               NeighborsRegressorMixin, RadiusNeighborsMixin)
+from sklearn.neighbors import KNeighborsRegressor as _KNeighborsRegressor
+from sklearn.neighbors import \
+    RadiusNeighborsRegressor as _RadiusNeighborsRegressor
+
+from .._neighbors_base import (
+    KNeighborsMixin,
+    NeighborsBase,
+    NeighborsRegressorMixin,
+    RadiusNeighborsMixin,
+)
 
 
 class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
@@ -153,9 +161,6 @@ class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
             Sklearn K Neighbors estimator initialized.
 
         """
-        from sklearn.neighbors import \
-            KNeighborsRegressor as _KNeighborsRegressor
-
         return _KNeighborsRegressor(
             n_neighbors=self.n_neighbors, weights=self.weights,
             algorithm=self.algorithm, leaf_size=self.leaf_size,
@@ -317,9 +322,6 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
             Sklearn Radius Neighbors estimator initialized.
 
         """
-        from sklearn.neighbors import \
-            RadiusNeighborsRegressor as _RadiusNeighborsRegressor
-
         return _RadiusNeighborsRegressor(
             radius=self.radius, weights=self.weights,
             algorithm=self.algorithm, leaf_size=self.leaf_size,
@@ -327,6 +329,13 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
             n_jobs=self.n_jobs)
 
     def _query(self, X):
-        """Return distances and neighbors of given sample."""
-        
+        """Return distances and neighbors of given sample.
+
+        Args:
+            X: the sample
+
+        Returns:
+            Distances and neighbors of a given sample
+
+        """
         return self.estimator_.radius_neighbors(X)

@@ -1,8 +1,12 @@
 from sklearn.base import OutlierMixin
 
 from ...misc.metrics import lp_distance
-from ...ml._neighbors_base import (KNeighborsMixin, NeighborsBase,
-                                   NeighborsMixin, _to_multivariate_metric)
+from ...ml._neighbors_base import (
+    KNeighborsMixin,
+    NeighborsBase,
+    NeighborsMixin,
+    _to_multivariate_metric,
+)
 
 
 class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,

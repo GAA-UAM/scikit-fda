@@ -19,12 +19,15 @@ class TestClustering(unittest.TestCase):
         init_fd = FDataGrid(init, grid_points)
         kmeans = KMeans(init=init_fd)
         distances_to_centers = kmeans.fit_transform(fd)
-        np.testing.assert_allclose(distances_to_centers,
-                                   np.array([[2.98142397, 9.23534876],
-                                             [0.68718427, 6.50960828],
-                                             [3.31243449, 4.39222798],
-                                             [6.49679408, 0.]
-                                            ]))
+        np.testing.assert_allclose(
+            distances_to_centers,
+            np.array([
+                [2.98142397, 9.23534876],
+                [0.68718427, 6.50960828],
+                [3.31243449, 4.39222798],
+                [6.49679408, 0.0],
+            ]),
+        )
         np.testing.assert_array_equal(kmeans.predict(fd),
                                       np.array([0, 0, 0, 1]))
         np.testing.assert_allclose(kmeans.transform(fd),

@@ -1,6 +1,6 @@
 """Base classes for the neighbor estimators"""
 
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from sklearn.base import BaseEstimator
 from sklearn.base import RegressorMixin
@@ -64,7 +64,7 @@ def _to_multivariate_metric(metric, grid_points):
         >>> import numpy as np
         >>> from skfda import FDataGrid
         >>> from skfda.misc.metrics import lp_distance
-        >>> from skfda._neighbors.base import _to_multivariate_metric
+        >>> from skfda.ml._neighbors_base import _to_multivariate_metric
 
         Calculate the Lp distance between fd and fd2.
 

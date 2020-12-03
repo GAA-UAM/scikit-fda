@@ -1,6 +1,5 @@
-import scipy.linalg
-
 import numpy as np
+import scipy.linalg
 
 from ..._utils import _same_domain
 from ._basis import Basis
@@ -23,7 +22,7 @@ class Monomial(Basis):
         Defines a monomial base over the interval :math:`[0, 5]` consisting
         on the first 3 powers of :math:`t`: :math:`1, t, t^2`.
 
-        >>> bs_mon = Monomial((0,5), n_basis=3)
+        >>> bs_mon = Monomial(domain_range=(0,5), n_basis=3)
 
         And evaluates all the functions in the basis in a list of descrete
         values.
@@ -77,10 +76,12 @@ class Monomial(Basis):
 
     def _derivative_basis_and_coefs(self, coefs, order=1):
         if order >= self.n_basis:
-            return (Monomial(self.domain_range, 1),
+            return (Monomial(domain_range=self.domain_range,
+                             n_basis=1),
                     np.zeros((len(coefs), 1)))
         else:
-            return (Monomial(self.domain_range, self.n_basis - order),
+            return (Monomial(domain_range=self.domain_range,
+                             n_basis=self.n_basis - order),
                     np.array([np.polyder(x[::-1], order)[::-1]
                               for x in coefs]))
 

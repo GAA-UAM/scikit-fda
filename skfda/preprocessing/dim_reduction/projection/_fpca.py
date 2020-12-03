@@ -1,16 +1,14 @@
 """Functional Principal Component Analysis Module."""
 
-import skfda
-from skfda.misc.regularization import compute_penalty_matrix
-from skfda.representation.basis import FDataBasis
-from skfda.representation.grid import FDataGrid
-
+import numpy as np
 from scipy.linalg import solve_triangular
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
-import numpy as np
-
+import skfda
+from skfda.misc.regularization import compute_penalty_matrix
+from skfda.representation.basis import FDataBasis
+from skfda.representation.grid import FDataGrid
 
 __author__ = "Yujian Hong"
 __email__ = "yujian.hong@estudiante.uam.es"
@@ -58,7 +56,9 @@ class FPCA(BaseEstimator, TransformerMixin):
         >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
         >>> grid_points = [0, 1]
         >>> fd = FDataGrid(data_matrix, grid_points)
-        >>> basis = skfda.representation.basis.Monomial((0,1), n_basis=2)
+        >>> basis = skfda.representation.basis.Monomial(
+        ...     domain_range=(0,1), n_basis=2
+        ... )
         >>> basis_fd = fd.to_basis(basis)
         >>> fpca_basis = FPCA(2)
         >>> fpca_basis = fpca_basis.fit(basis_fd)

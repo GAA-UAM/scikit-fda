@@ -1,16 +1,14 @@
 import numbers
 
-from numpy import polyder, polyint, polymul, polyval
+import numpy as np
 import scipy.integrate
+from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
 
-import numpy as np
-
-from ..._utils import _same_domain, _FDataCallable
+from ..._utils import _FDataCallable, _same_domain
 from ...representation import FDataGrid
-from ...representation.basis import Constant, Monomial, Fourier, BSpline
+from ...representation.basis import BSpline, Constant, Fourier, Monomial
 from ._operators import Operator, gramian_matrix_optimization
-
 
 __author__ = "Pablo Pérez Manso"
 __email__ = "92manso@gmail.com"
@@ -79,7 +77,7 @@ class LinearDifferentialOperator(Operator):
         Create a linear differential operator with non-constant weights.
 
         >>> constant = Constant()
-        >>> monomial = Monomial((0, 1), n_basis=3)
+        >>> monomial = Monomial(domain_range=(0, 1), n_basis=3)
         >>> fdlist = [FDataBasis(constant, [0.]),
         ...           FDataBasis(constant, [0.]),
         ...           FDataBasis(monomial, [1., 2., 3.])]

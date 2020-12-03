@@ -1,7 +1,6 @@
 import numpy as np
 
-from ..._utils import _domain_range
-from ..._utils import _same_domain
+from ..._utils import _domain_range, _same_domain
 from ._basis import Basis
 
 
@@ -94,7 +93,7 @@ class Fourier(Basis):
         self._period = period
         # If number of basis is even, add 1
         n_basis += 1 - n_basis % 2
-        super().__init__(domain_range, n_basis)
+        super().__init__(domain_range=domain_range, n_basis=n_basis)
 
     @property
     def period(self):

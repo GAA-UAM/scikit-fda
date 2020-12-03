@@ -194,7 +194,7 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
             centroid=lambda fdatagrid: trim_mean(
                 fdatagrid,
                 self.proportiontocut,
-                self.depth_method,
+                depth_method=self.depth_method,
             ),
         )
         self._clf.fit(X, y)

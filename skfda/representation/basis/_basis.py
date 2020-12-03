@@ -31,15 +31,15 @@ class Basis(ABC):
 
     """
 
-    def __init__(self, *, domain_range=None, n_basis: int=1):
+    def __init__(self, *, domain_range=None, n_basis: int = 1):
         """Basis constructor.
 
         Args:
             domain_range (tuple or list of tuples, optional): Definition of the
                 interval where the basis defines a space. Defaults to (0,1).
             n_basis: Number of functions that form the basis. Defaults to 1.
-        """
 
+        """
         if domain_range is not None:
 
             domain_range = _domain_range(domain_range)
@@ -48,8 +48,9 @@ class Basis(ABC):
             _check_domain(domain_range)
 
         if n_basis < 1:
-            raise ValueError("The number of basis has to be strictly "
-                             "possitive.")
+            raise ValueError(
+                "The number of basis has to be strictly positive.",
+            )
 
         self._domain_range = domain_range
         self._n_basis = n_basis

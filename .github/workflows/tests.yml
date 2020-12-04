@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.6', '3.7']
+        python-version: ['3.6', '3.7', '3.8']
 
     steps:
     - uses: actions/checkout@v2
@@ -23,14 +23,11 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip3 install --upgrade pip cython numpy || pip3 install --upgrade --user pip cython numpy;
-        pip3 install flake8 || pip3 install --user flake8;
         pip3 install codecov pytest-cov || pip3 install --user codecov pytest-cov;
 
     - name: Run tests
       run: |
         pip3 install .
-        flake8 --exit-zero skfda;
         coverage run --source=skfda/ setup.py test;
 
     - name: Upload coverage to Codecov

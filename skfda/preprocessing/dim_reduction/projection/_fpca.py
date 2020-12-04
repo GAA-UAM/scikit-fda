@@ -5,7 +5,6 @@ from scipy.linalg import solve_triangular
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
-import skfda
 from skfda.misc.regularization import compute_penalty_matrix
 from skfda.representation.basis import FDataBasis
 from skfda.representation.grid import FDataGrid

@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..._utils import _domain_range, _same_domain
+from ..._utils import _domain_range
 from ._basis import Basis
 
 

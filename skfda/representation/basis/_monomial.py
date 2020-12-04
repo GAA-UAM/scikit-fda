@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.linalg
 
-from ..._utils import _same_domain
 from ._basis import Basis
 
 
@@ -76,14 +75,18 @@ class Monomial(Basis):
 
     def _derivative_basis_and_coefs(self, coefs, order=1):
         if order >= self.n_basis:
-            return (Monomial(domain_range=self.domain_range,
-                             n_basis=1),
-                    np.zeros((len(coefs), 1)))
-        else:
-            return (Monomial(domain_range=self.domain_range,
-                             n_basis=self.n_basis - order),
-                    np.array([np.polyder(x[::-1], order)[::-1]
-                              for x in coefs]))
+            return (
+                Monomial(domain_range=self.domain_range, n_basis=1),
+                np.zeros((len(coefs), 1)),
+            )
+
+        return (
+            Monomial(
+                domain_range=self.domain_range,
+                n_basis=self.n_basis - order,
+            ),
+            np.array([np.polyder(x[::-1], order)[::-1] for x in coefs]),
+        )
 
     def _gram_matrix(self):
         integral_coefs = np.polyint(np.ones(2 * self.n_basis - 1))

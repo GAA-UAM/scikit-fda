@@ -1,9 +1,9 @@
 import numpy as np
 import scipy.interpolate
-from numpy import polyder, polyint, polymul, polyval
+from numpy import polyint, polymul, polyval
 from scipy.interpolate import BSpline as SciBSpline, PPoly
 
-from ..._utils import _domain_range, _same_domain
+from ..._utils import _domain_range
 from ._basis import Basis
 
 

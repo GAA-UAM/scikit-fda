@@ -58,6 +58,7 @@ class Basis(ABC):
         super().__init__()
 
     def __call__(self, *args, **kwargs) -> np.ndarray:
+        """Evaluate the basis using :meth:`evaluate`."""
         return self.evaluate(*args, **kwargs)
 
     @property
@@ -219,6 +220,11 @@ class Basis(ABC):
         return new_copy
 
     def to_basis(self) -> '_fdatabasis.FDataBasis':
+        """Convert the Basis to FDatabasis.
+
+        The resulting FDataBasis will have this basis as its basis, and as
+        observations it will have all functions in the basis.
+        """
         from . import FDataBasis
         return FDataBasis(self.copy(), np.identity(self.n_basis))
 
@@ -246,8 +252,8 @@ class Basis(ABC):
 
         Args:
             other: Basis to compute the inner product
-            matrix. If not basis is given, it computes the matrix with
-            itself returning the Gram Matrix
+                matrix. If not basis is given, it computes the matrix with
+                itself returning the Gram Matrix
 
         Returns:
             Inner Product Matrix of two basis

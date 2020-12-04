@@ -42,8 +42,10 @@ class TestLinearDifferentialOperator(unittest.TestCase):
 
         # Checks for a non zero order Lfd object
         lfd_3 = LinearDifferentialOperator(3)
-        consfd = FDataBasis(Constant(domain_range=(0, 1)),
-                            [[0], [0], [0], [1]])
+        consfd = FDataBasis(
+            Constant(domain_range=(0, 1)),
+            [[0], [0], [0], [1]],
+        )
         bwtlist3 = list(consfd)
 
         self._assert_equal_weights(

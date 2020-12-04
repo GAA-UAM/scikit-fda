@@ -1,11 +1,12 @@
+from typing import Tuple
+
+import numpy as np
+from sklearn.utils import check_random_state
+
 from skfda import concatenate
 from skfda.datasets import make_gaussian_process
 from skfda.misc.metrics import lp_distance
 from skfda.representation import FData, FDataGrid
-
-from sklearn.utils import check_random_state
-
-import numpy as np
 
 
 def v_sample_stat(fd, weights, p=2):
@@ -202,8 +203,14 @@ def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=2,
     return v_samples
 
 
-def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None,
-                 p=2, equal_var=True):
+def oneway_anova(
+    *args,
+    n_reps: int = 2000,
+    return_dist: bool = False,
+    random_state=None,
+    p: int = 2,
+    equal_var: bool = True,
+) -> Tuple[float, float]:
     r"""
     Performs one-way functional ANOVA.
 
@@ -237,20 +244,20 @@ def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None,
     Args:
         fd1,fd2,.... (FDataGrid): The sample measurements for each each group.
 
-        n_reps (int, optional): Number of simulations for the bootstrap
+        n_reps: Number of simulations for the bootstrap
             procedure. Defaults to 2000 (This value may change in future
             versions).
 
-        return_dist (bool, optional): Flag to indicate if the function should
+        return_dist: Flag to indicate if the function should
             return a numpy.array with the sampling distribution simulated.
 
         random_state (optional): Random state.
 
-        p (int, optional): p of the lp norm. Must be greater or equal
+        p: p of the lp norm. Must be greater or equal
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
 
-        equal_var (bool, optional): If True (default), perform a One-way
+        equal_var: If True (default), perform a One-way
             ANOVA assuming the same covariance operator for all the groups,
             else considers an independent covariance operator for each group.
 

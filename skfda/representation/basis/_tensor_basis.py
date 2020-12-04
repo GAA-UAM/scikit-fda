@@ -29,8 +29,8 @@ class Tensor(Basis):
 
         >>> from skfda.representation.basis import Tensor, Monomial
         >>>
-        >>> basis_x = Monomial((0,5), n_basis=3)
-        >>> basis_y = Monomial((0,3), n_basis=2)
+        >>> basis_x = Monomial(domain_range=(0,5), n_basis=3)
+        >>> basis_y = Monomial(domain_range=(0,3), n_basis=2)
         >>>
         >>> basis = Tensor([basis_x, basis_y])
 

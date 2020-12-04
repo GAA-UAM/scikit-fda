@@ -1,4 +1,5 @@
 import numpy as np
+
 from ..._utils import _same_domain
 from ._basis import Basis
 
@@ -28,7 +29,7 @@ class Constant(Basis):
             function is defined.
 
         """
-        super().__init__(domain_range, 1)
+        super().__init__(domain_range=domain_range, n_basis=1)
 
     def _evaluate(self, eval_points):
         return np.ones((1, len(eval_points)))

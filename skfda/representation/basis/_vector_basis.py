@@ -1,6 +1,5 @@
-import scipy.linalg
-
 import numpy as np
+import scipy.linalg
 
 from ..._utils import _same_domain
 from ._basis import Basis
@@ -30,8 +29,8 @@ class VectorValued(Basis):
 
         >>> from skfda.representation.basis import VectorValued, Monomial
         >>>
-        >>> basis_x = Monomial((0,5), n_basis=3)
-        >>> basis_y = Monomial((0,5), n_basis=2)
+        >>> basis_x = Monomial(domain_range=(0,5), n_basis=3)
+        >>> basis_y = Monomial(domain_range=(0,5), n_basis=2)
         >>>
         >>> basis = VectorValued([basis_x, basis_y])
 

@@ -222,8 +222,10 @@ class Basis(ABC):
     def to_basis(self) -> '_fdatabasis.FDataBasis':
         """Convert the Basis to FDatabasis.
 
-        The resulting FDataBasis will have this basis as its basis, and as
-        observations it will have all functions in the basis.
+        Returns:
+            FDataBasis with this basis as its basis, and all basis functions
+            as observations.
+
         """
         from . import FDataBasis
         return FDataBasis(self.copy(), np.identity(self.n_basis))

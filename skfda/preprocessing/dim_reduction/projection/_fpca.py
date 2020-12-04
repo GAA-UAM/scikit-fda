@@ -52,6 +52,7 @@ class FPCA(BaseEstimator, TransformerMixin):
         The resulting principal components are not compared because there are
         several equivalent possibilities.
 
+        >>> import skfda
         >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
         >>> grid_points = [0, 1]
         >>> fd = FDataGrid(data_matrix, grid_points)

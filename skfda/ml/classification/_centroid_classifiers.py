@@ -69,9 +69,9 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
         Args:
             X (:class:`FDataGrid`, array_matrix): Training data. FDataGrid
                 with the training data or array matrix with shape
-                [n_samples, n_samples] if metric='precomputed'.
+                (n_samples, n_samples) if metric='precomputed'.
             y (array-like or sparse matrix): Target values of
-                shape = [n_samples] or [n_samples, n_outputs].
+                shape = (n_samples) or (n_samples, n_outputs).
 
         Returns:
             self (object)
@@ -94,8 +94,8 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
             X (:class:`FDataGrid`): FDataGrid with the test samples.
 
         Returns:
-            y (np.array): array of shape [n_samples] or
-            [n_samples, n_outputs] with class labels for each data sample.
+            y (np.array): array of shape (n_samples) or
+            (n_samples, n_outputs) with class labels for each data sample.
         """
         sklearn_check_is_fitted(self)
 
@@ -184,7 +184,7 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
 
         Args:
             X (:class:`FDataGrid`): FDataGrid with the training data.
-            y (array-like): Target values of shape = [n_samples].
+            y (array-like): Target values of shape = (n_samples).
 
         Returns:
             self (object)
@@ -208,7 +208,7 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
             X (:class:`FDataGrid`): FDataGrid with the test samples.
 
         Returns:
-            y (np.array): array of shape [n_samples] or
-            [n_samples, n_outputs] with class labels for each data sample.
+            y (np.array): array of shape (n_samples) or
+            (n_samples, n_outputs) with class labels for each data sample.
         """
         return self._clf.predict(X)

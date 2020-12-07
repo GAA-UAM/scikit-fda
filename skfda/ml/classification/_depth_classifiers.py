@@ -183,13 +183,13 @@ class DDTransform(BaseEstimator, TransformerMixin):
         (2017) The DDG-classifier in the functional setting. TEST, 26. 119-142.
     """
 
-    def __init__(self, depth_methods: List[Depth] = None):  # FIXME
+    def __init__(self, depth_methods: List[Depth] = None):
         if depth_methods is None:
             self.depth_methods = [ModifiedBandDepth(), IntegratedDepth()]
         else:
             self.depth_methods = depth_methods
 
-    def fit(self, X, y):  # FIXME
+    def fit(self, X, y):
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -210,14 +210,14 @@ class DDTransform(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self, X):  # FIXME
+    def transform(self, X):
         """Transform the provided data using the defined map.
 
         Args:
             X (:class:`FDataGrid`): FDataGrid with the test samples.
 
         Returns:
-            X_new (array-like): array of shape (n_samples, G). FIXME
+            X_new (array-like): array of shape (n_samples, G).
         """
         sklearn_check_is_fitted(self)
 

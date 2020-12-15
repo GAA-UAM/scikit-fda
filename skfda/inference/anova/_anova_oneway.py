@@ -3,12 +3,11 @@ from typing import List, Tuple, Union
 import numpy as np
 from sklearn.utils import check_random_state
 
-from skfda import concatenate
-from skfda.datasets import make_gaussian_process
-from skfda.misc.metrics import lp_distance
-from skfda.representation import FData, FDataGrid
-
+from ... import concatenate
 from ..._utils import RandomStateLike
+from ...datasets import make_gaussian_process
+from ...misc.metrics import lp_distance
+from ...representation import FData, FDataGrid
 
 
 def v_sample_stat(fd: FData, weights: List[int], p: int = 2) -> float:
@@ -165,7 +164,7 @@ def _anova_bootstrap(
     n_reps: int,
     random_state: RandomStateLike = None,
     p: int = 2,
-    equal_var: bool = True
+    equal_var: bool = True,
 ) -> np.ndarray:
 
     n_groups = len(fd_grouped)
@@ -272,9 +271,6 @@ def oneway_anova(
         Tuple containing the value of the sample statistic, p-value (and
         sampling distribution of the simulated asymptotic statistic if
         `return_dist` is `True`).
-
-    Raises:
-        ValueError: In case of bad arguments.
 
     Examples:
         >>> from skfda.inference.anova import oneway_anova

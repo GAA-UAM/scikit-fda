@@ -1,15 +1,14 @@
-from builtins import isinstance
 import copy
 import numbers
-from typing import Any
 import warnings
-
-import pandas.api.extensions
+from builtins import isinstance
+from typing import Any
 
 import numpy as np
+import pandas.api.extensions
 
+from ..._utils import _check_array_key, _int_to_real, constants
 from .. import grid
-from ..._utils import constants, _int_to_real, _check_array_key
 from .._functional_data import FData
 
 
@@ -487,7 +486,7 @@ class FDataBasis(FData):
 
             >>> from skfda.representation.basis import FDataBasis, Monomial
             >>> fd = FDataBasis(coefficients=[[1, 1, 1], [1, 0, 1]],
-            ...                 basis=Monomial((0,5), n_basis=3))
+            ...                 basis=Monomial(domain_range=(0,5), n_basis=3))
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
                 array([[[ 1.],

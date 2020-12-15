@@ -1,5 +1,3 @@
-
-
-from . import kmeans
-from ..._neighbors import NearestNeighbors
-from .kmeans import KMeans, FuzzyCMeans
+"""Clustering."""
+from ._kmeans import BaseKMeans, FuzzyCMeans, KMeans
+from ._neighbors_clustering import NearestNeighbors

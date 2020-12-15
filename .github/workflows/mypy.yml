@@ -1,16 +1,14 @@
 name: Mypy
 
 on:
-  push:
   pull_request:
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     name: Mypy
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - uses: tsuyoshicho/action-mypy@v1
       with:
         github_token: ${{ secrets.github_token }}

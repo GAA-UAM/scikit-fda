@@ -1,11 +1,20 @@
 from . import constants
-
-from ._utils import (_tuple_of_arrays, _cartesian_product,
-                     _check_estimator, _int_to_real,
-                     _to_grid, check_is_univariate,
-                     _same_domain, _to_array_maybe_ragged,
-                     _reshape_eval_points,
-                     _evaluate_grid, nquad_vec,
-                     _FDataCallable, _pairwise_commutative,
-                     _domain_range, _check_array_key,
-                     _classifier_get_classes)
+from ._utils import (
+    RandomStateLike,
+    _cartesian_product,
+    _check_array_key,
+    _check_estimator,
+    _classifier_get_classes,
+    _domain_range,
+    _evaluate_grid,
+    _FDataCallable,
+    _int_to_real,
+    _pairwise_commutative,
+    _reshape_eval_points,
+    _same_domain,
+    _to_array_maybe_ragged,
+    _to_grid,
+    _tuple_of_arrays,
+    check_is_univariate,
+    nquad_vec,
+)

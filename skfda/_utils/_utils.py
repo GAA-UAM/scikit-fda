@@ -1,14 +1,14 @@
 """Module with generic methods"""
 
-from builtins import getattr
 import functools
 import numbers
-import types
-
-from pandas.api.indexers import check_array_indexer
-import scipy.integrate
+from typing import Optional, Union
 
 import numpy as np
+import scipy.integrate
+from pandas.api.indexers import check_array_indexer
+
+RandomStateLike = Optional[Union[int, np.random.RandomState]]
 
 
 class _FDataCallable():

@@ -1,2 +1,1 @@
-from . import anova_oneway
-from .anova_oneway import v_sample_stat, v_asymptotic_stat, oneway_anova
+from ._anova_oneway import oneway_anova, v_asymptotic_stat, v_sample_stat

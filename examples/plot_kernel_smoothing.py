@@ -11,13 +11,12 @@ undersmoothing and oversmoothing.
 # Author: Miguel Carbajo Berrocal
 # License: MIT
 
-import skfda
-
 import matplotlib.pylab as plt
 import numpy as np
+
+import skfda
 import skfda.preprocessing.smoothing.kernel_smoothers as ks
 import skfda.preprocessing.smoothing.validation as val
-
 
 ##############################################################################
 #

@@ -1,10 +1,14 @@
-import rdata
 import warnings
-
-from sklearn.utils import Bunch
+from typing import Any, Tuple, Union, overload
 
 import numpy as np
 import pandas as pd
+from numpy import ndarray
+from pandas import DataFrame, Series
+from sklearn.utils import Bunch
+from typing_extensions import Literal
+
+import rdata
 
 from .. import FDataGrid
 
@@ -59,8 +63,13 @@ def functional_constructor(obj, attrs):
                       coordinate_names=(values_label[0],)), target)
 
 
-def fetch_cran(name, package_name, *, converter=None,
-               **kwargs):
+def fetch_cran(
+    name: str,
+    package_name: str,
+    *,
+    converter: rdata.conversion.Converter = None,
+    **kwargs,
+) -> Any:
     """
     Fetch a dataset from CRAN.
 
@@ -81,7 +90,7 @@ def fetch_cran(name, package_name, *, converter=None,
                                            converter=converter, **kwargs)
 
 
-def fetch_ucr(name, **kwargs):
+def fetch_ucr(name: str, **kwargs) -> Bunch:
     """
     Fetch a dataset from the UCR.
 
@@ -204,7 +213,38 @@ _phoneme_descr = """
     """
 
 
-def fetch_phoneme(return_X_y: bool = False, as_frame: bool = False):
+@overload
+def fetch_phoneme(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    ...
+
+
+@overload
+def fetch_phoneme(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    ...
+
+
+@overload
+def fetch_phoneme(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, Series]:
+    ...
+
+
+def fetch_phoneme(
+    *,
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """
     Load the phoneme dataset.
 
@@ -258,7 +298,7 @@ def fetch_phoneme(return_X_y: bool = False, as_frame: bool = False):
             DESCR=DESCR)
 
 
-if hasattr(fetch_phoneme, "__doc__"):  # docstrings can be stripped off
+if fetch_phoneme.__doc__ is not None:  # docstrings can be stripped off
     fetch_phoneme.__doc__ += _phoneme_descr + _param_descr
 
 _growth_descr = """
@@ -276,7 +316,37 @@ _growth_descr = """
 """
 
 
-def fetch_growth(return_X_y: bool = False, as_frame: bool = False):
+@overload
+def fetch_growth(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    ...
+
+
+@overload
+def fetch_growth(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    ...
+
+
+@overload
+def fetch_growth(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, Series]:
+    ...
+
+
+def fetch_growth(
+    return_X_y: bool = False,
+    as_frame: bool = False
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """
     Load the Berkeley Growth Study dataset.
 
@@ -325,7 +395,7 @@ def fetch_growth(return_X_y: bool = False, as_frame: bool = False):
                      DESCR=DESCR)
 
 
-if hasattr(fetch_growth, "__doc__"):  # docstrings can be stripped off
+if fetch_growth.__doc__ is not None:  # docstrings can be stripped off
     fetch_growth.__doc__ += _growth_descr + _param_descr
 
 _tecator_descr = """
@@ -366,7 +436,37 @@ _tecator_descr = """
 """
 
 
-def fetch_tecator(return_X_y: bool = False, as_frame: bool = False):
+@overload
+def fetch_tecator(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    ...
+
+
+@overload
+def fetch_tecator(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    ...
+
+
+@overload
+def fetch_tecator(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, DataFrame]:
+    ...
+
+
+def fetch_tecator(
+    return_X_y: bool = False,
+    as_frame: bool = False
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, DataFrame]]:
     """
     Load the Tecator dataset.
 
@@ -405,7 +505,7 @@ def fetch_tecator(return_X_y: bool = False, as_frame: bool = False):
                      DESCR=DESCR)
 
 
-if hasattr(fetch_tecator, "__doc__"):  # docstrings can be stripped off
+if fetch_tecator.__doc__ is not None:  # docstrings can be stripped off
     fetch_tecator.__doc__ += _tecator_descr + _param_descr
 
 _medflies_descr = """
@@ -446,7 +546,37 @@ _medflies_descr = """
 """
 
 
-def fetch_medflies(return_X_y: bool = False, as_frame: bool = False):
+@overload
+def fetch_medflies(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    ...
+
+
+@overload
+def fetch_medflies(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    ...
+
+
+@overload
+def fetch_medflies(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, Series]:
+    ...
+
+
+def fetch_medflies(
+    return_X_y: bool = False,
+    as_frame: bool = False
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """
     Load the Medflies dataset, where the flies are separated in two classes
     according to their longevity.
@@ -491,7 +621,7 @@ def fetch_medflies(return_X_y: bool = False, as_frame: bool = False):
                      DESCR=DESCR)
 
 
-if hasattr(fetch_medflies, "__doc__"):  # docstrings can be stripped off
+if fetch_medflies.__doc__ is not None:  # docstrings can be stripped off
     fetch_medflies.__doc__ += _medflies_descr + _param_descr
 
 _weather_descr = """
@@ -507,7 +637,37 @@ _weather_descr = """
 """
 
 
-def fetch_weather(return_X_y: bool = False, as_frame: bool = False):
+@overload
+def fetch_weather(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    ...
+
+
+@overload
+def fetch_weather(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    ...
+
+
+@overload
+def fetch_weather(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, Series]:
+    ...
+
+
+def fetch_weather(
+    return_X_y: bool = False,
+    as_frame: bool = False
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """
     Load the Canadian Weather dataset.
 
@@ -592,7 +752,7 @@ def fetch_weather(return_X_y: bool = False, as_frame: bool = False):
                      DESCR=DESCR)
 
 
-if hasattr(fetch_weather, "__doc__"):  # docstrings can be stripped off
+if fetch_weather.__doc__ is not None:  # docstrings can be stripped off
     fetch_weather.__doc__ += _weather_descr + _param_descr
 
 _aemet_descr = """
@@ -610,7 +770,37 @@ _aemet_descr = """
 """
 
 
-def fetch_aemet(return_X_y: bool = False, as_frame: bool = False):
+@overload
+def fetch_aemet(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    ...
+
+
+@overload
+def fetch_aemet(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, None]:
+    ...
+
+
+@overload
+def fetch_aemet(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, None]:
+    ...
+
+
+def fetch_aemet(
+    return_X_y: bool = False,
+    as_frame: bool = False
+) -> Union[Bunch, Tuple[FDataGrid, None], Tuple[DataFrame, None]]:
     """
     Load the Spanish Weather dataset.
 
@@ -673,7 +863,7 @@ def fetch_aemet(return_X_y: bool = False, as_frame: bool = False):
             DESCR=DESCR)
 
 
-if hasattr(fetch_aemet, "__doc__"):  # docstrings can be stripped off
+if fetch_aemet.__doc__ is not None:  # docstrings can be stripped off
     fetch_aemet.__doc__ += _aemet_descr + _param_descr
 
 
@@ -702,7 +892,37 @@ _octane_descr = """
 """
 
 
-def fetch_octane(return_X_y: bool = False, as_frame: bool = False):
+@overload
+def fetch_octane(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    ...
+
+
+@overload
+def fetch_octane(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    ...
+
+
+@overload
+def fetch_octane(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, Series]:
+    ...
+
+
+def fetch_octane(
+    return_X_y: bool = False,
+    as_frame: bool = False
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """Load near infrared spectra of gasoline samples.
 
     This function fetchs the octane dataset from the R package 'mrfDepth'
@@ -756,7 +976,7 @@ def fetch_octane(return_X_y: bool = False, as_frame: bool = False):
                      DESCR=DESCR)
 
 
-if hasattr(fetch_octane, "__doc__"):  # docstrings can be stripped off
+if fetch_octane.__doc__ is not None:  # docstrings can be stripped off
     fetch_octane.__doc__ += _octane_descr + _param_descr
 
 _gait_descr = """
@@ -772,7 +992,37 @@ _gait_descr = """
 """
 
 
-def fetch_gait(return_X_y: bool = False, as_frame: bool = False):
+@overload
+def fetch_gait(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    ...
+
+
+@overload
+def fetch_gait(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, None]:
+    ...
+
+
+@overload
+def fetch_gait(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, None]:
+    ...
+
+
+def fetch_gait(
+    return_X_y: bool = False,
+    as_frame: bool = False
+) -> Union[Bunch, Tuple[FDataGrid, None], Tuple[DataFrame, None]]:
     """
     Load the GAIT dataset.
 
@@ -817,5 +1067,5 @@ def fetch_gait(return_X_y: bool = False, as_frame: bool = False):
                      DESCR=DESCR)
 
 
-if hasattr(fetch_gait, "__doc__"):  # docstrings can be stripped off
+if fetch_gait.__doc__ is not None:  # docstrings can be stripped off
     fetch_gait.__doc__ += _gait_descr + _param_descr

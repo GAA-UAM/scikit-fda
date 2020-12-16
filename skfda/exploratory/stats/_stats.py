@@ -27,7 +27,7 @@ def mean(X: F) -> F:
     return X.mean()
 
 
-def var(X: FData) -> FDataGrid:  # noqa: WPS110
+def var(X: FData) -> FDataGrid:
     """Compute the variance of a set of samples in a FDataGrid object.
 
     Args:

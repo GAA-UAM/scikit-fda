@@ -24,17 +24,35 @@ def _get_skdatasets_repositories():
 
 
 def fdata_constructor(obj, attrs):
+    """
+    Construct a :func:`FDataGrid` objet from a R `fdata` object.
+
+    This constructor can be used in the dict passed to
+    :func:`rdata.conversion.SimpleConverter` in order to
+    convert `fdata` objects from the fda.usc package.
+
+    """
     names = obj["names"]
 
-    return FDataGrid(data_matrix=obj["data"],
-                     grid_points=obj["argvals"],
-                     domain_range=obj["rangeval"],
-                     dataset_name=names['main'][0],
-                     argument_names=(names['xlab'][0],),
-                     coordinate_names=(names['ylab'][0],))
+    return FDataGrid(
+        data_matrix=obj["data"],
+        grid_points=obj["argvals"],
+        domain_range=obj["rangeval"],
+        dataset_name=names['main'][0],
+        argument_names=(names['xlab'][0],),
+        coordinate_names=(names['ylab'][0],),
+    )
 
 
 def functional_constructor(obj, attrs):
+    """
+    Construct a :func:`FDataGrid` objet from a R `functional` object.
+
+    This constructor can be used in the dict passed to
+    :func:`rdata.conversion.SimpleConverter` in order to
+    convert `functional` objects from the ddalpha package.
+
+    """
     name = obj['name']
     args_label = obj['args']
     values_label = obj['vals']
@@ -46,8 +64,7 @@ def functional_constructor(obj, attrs):
     args_init = min(grid_points_set)
     args_end = max(grid_points_set)
 
-    grid_points = np.arange(args_init,
-                            args_end + 1)
+    grid_points = np.arange(args_init, args_end + 1)
 
     data_matrix = np.zeros(shape=(len(dataf), len(grid_points)))
 
@@ -55,12 +72,17 @@ def functional_constructor(obj, attrs):
         for t, x in zip(o["args"], o["vals"]):
             data_matrix[num_sample, t - args_init] = x
 
-    return (FDataGrid(data_matrix=data_matrix,
-                      grid_points=grid_points,
-                      domain_range=(args_init, args_end),
-                      dataset_name=name[0],
-                      argument_names=(args_label[0],),
-                      coordinate_names=(values_label[0],)), target)
+    return (
+        FDataGrid(
+            data_matrix=data_matrix,
+            grid_points=grid_points,
+            domain_range=(args_init, args_end),
+            dataset_name=name[0],
+            argument_names=(args_label[0],),
+            coordinate_names=(values_label[0],),
+        ),
+        target,
+    )
 
 
 def fetch_cran(
@@ -76,6 +98,14 @@ def fetch_cran(
     Args:
         name: Dataset name.
         package_name: Name of the R package containing the dataset.
+        converter: Object that performs the conversion of the R objects to
+            Python objects.
+        kwargs: Additional parameters for the function
+            :func:`skdatasets.repositories.cran.fetch_dataset`.
+
+    Returns:
+        The dataset, with the R types converted to suitable Python
+        types.
 
     """
     repositories = _get_skdatasets_repositories()
@@ -84,10 +114,30 @@ def fetch_cran(
         converter = rdata.conversion.SimpleConverter({
             **rdata.conversion.DEFAULT_CLASS_MAP,
             "fdata": fdata_constructor,
-            "functional": functional_constructor})
+            "functional": functional_constructor,
+        })
 
-    return repositories.cran.fetch_dataset(name, package_name,
-                                           converter=converter, **kwargs)
+    return repositories.cran.fetch_dataset(
+        name,
+        package_name,
+        converter=converter,
+        **kwargs,
+    )
+
+
+def _ucr_to_fdatagrid(data):
+    if data.dtype == np.object_:
+        data = np.array(data.tolist())
+
+        # n_instances := data.shape[0]
+        # dim_output  := data.shape[1]
+        # n_points    := data.shape[2]
+
+        data = np.transpose(data, axes=(0, 2, 1))
+
+    grid_points = range(data.shape[1])
+
+    return FDataGrid(data, grid_points=grid_points)
 
 
 def fetch_ucr(name: str, **kwargs) -> Bunch:
@@ -96,6 +146,11 @@ def fetch_ucr(name: str, **kwargs) -> Bunch:
 
     Args:
         name: Dataset name.
+        kwargs: Additional parameters for the function
+            :func:`skdatasets.repositories.ucr.fetch`.
+
+    Returns:
+        The dataset requested.
 
     Note:
         Functional multivariate datasets are not yet supported.
@@ -113,26 +168,12 @@ def fetch_ucr(name: str, **kwargs) -> Bunch:
 
     dataset = repositories.ucr.fetch(name, **kwargs)
 
-    def ucr_to_fdatagrid(data):
-        if data.dtype == np.object_:
-            data = np.array(data.tolist())
-
-            # n_instances = data.shape[0]
-            # dim_output = data.shape[1]
-            # n_points = data.shape[2]
-
-            data = np.transpose(data, axes=(0, 2, 1))
-
-        grid_points = range(data.shape[1])
-
-        return FDataGrid(data, grid_points=grid_points)
-
-    dataset['data'] = ucr_to_fdatagrid(dataset['data'])
-    del dataset['feature_names']
+    dataset['data'] = _ucr_to_fdatagrid(dataset['data'])
+    dataset.pop('feature_names')
 
     data_test = dataset.get('data_test', None)
     if data_test is not None:
-        dataset['data_test'] = ucr_to_fdatagrid(data_test)
+        dataset['data_test'] = _ucr_to_fdatagrid(data_test)
 
     return dataset
 
@@ -140,14 +181,20 @@ def fetch_ucr(name: str, **kwargs) -> Bunch:
 def _fetch_cran_no_encoding_warning(*args, **kwargs):
     # Probably non thread safe
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=UserWarning,
-                                message="Unknown encoding. Assumed ASCII.")
+        warnings.filterwarnings(
+            "ignore",
+            category=UserWarning,
+            message="Unknown encoding. Assumed ASCII.",
+        )
         return fetch_cran(*args, **kwargs)
 
 
 def _fetch_elem_stat_learn(name):
-    return _fetch_cran_no_encoding_warning(name, "ElemStatLearn",
-                                           version="0.1-7.1")
+    return _fetch_cran_no_encoding_warning(
+        name,
+        "ElemStatLearn",
+        version="0.1-7.1",
+    )
 
 
 def _fetch_ddalpha(name):
@@ -252,30 +299,36 @@ def fetch_phoneme(
     from the dataset in `https://web.stanford.edu/~hastie/ElemStatLearn/`.
 
     """
-    DESCR = _phoneme_descr
+    descr = _phoneme_descr
 
     raw_dataset = _fetch_elem_stat_learn("phoneme")
 
     data = raw_dataset["phoneme"]
 
-    curve_data = data.iloc[:, 0:256]
+    n_points = 256
+
+    curve_data = data.iloc[:, 0:n_points]
     sound = data["g"].values
     speaker = data["speaker"].values
 
-    curves = FDataGrid(data_matrix=curve_data.values,
-                       grid_points=np.linspace(0, 8, 256),
-                       domain_range=[0, 8],
-                       dataset_name="Phoneme",
-                       argument_names=("frequency (kHz)",),
-                       coordinate_names=("log-periodogram",))
+    curves = FDataGrid(
+        data_matrix=curve_data.values,
+        grid_points=np.linspace(0, 8, n_points),
+        domain_range=[0, 8],
+        dataset_name="Phoneme",
+        argument_names=("frequency (kHz)",),
+        coordinate_names=("log-periodogram",),
+    )
 
     curve_name = "log-periodogram"
     target_name = "phoneme"
     frame = None
 
     if as_frame:
-        frame = pd.DataFrame({curve_name: curves,
-                              target_name: sound})
+        frame = pd.DataFrame({
+            curve_name: curves,
+            target_name: sound
+        })
         curves = frame.iloc[:, [0]]
         target = frame.iloc[:, 1]
         meta = pd.Series(speaker, name="speaker")
@@ -285,17 +338,18 @@ def fetch_phoneme(
 
     if return_X_y:
         return curves, target
-    else:
-        return Bunch(
-            data=curves,
-            target=target,
-            frame=frame,
-            categories={target_name: sound.categories.tolist()},
-            feature_names=[curve_name],
-            target_names=[target_name],
-            meta=meta,
-            meta_names=["speaker"],
-            DESCR=DESCR)
+
+    return Bunch(
+        data=curves,
+        target=target,
+        frame=frame,
+        categories={target_name: sound.categories.tolist()},
+        feature_names=[curve_name],
+        target_names=[target_name],
+        meta=meta,
+        meta_names=["speaker"],
+        DESCR=descr
+    )
 
 
 if fetch_phoneme.__doc__ is not None:  # docstrings can be stripped off
@@ -345,7 +399,7 @@ def fetch_growth(
 
 def fetch_growth(
     return_X_y: bool = False,
-    as_frame: bool = False
+    as_frame: bool = False,
 ) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """
     Load the Berkeley Growth Study dataset.
@@ -465,7 +519,7 @@ def fetch_tecator(
 
 def fetch_tecator(
     return_X_y: bool = False,
-    as_frame: bool = False
+    as_frame: bool = False,
 ) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, DataFrame]]:
     """
     Load the Tecator dataset.
@@ -575,7 +629,7 @@ def fetch_medflies(
 
 def fetch_medflies(
     return_X_y: bool = False,
-    as_frame: bool = False
+    as_frame: bool = False,
 ) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """
     Load the Medflies dataset, where the flies are separated in two classes
@@ -666,7 +720,7 @@ def fetch_weather(
 
 def fetch_weather(
     return_X_y: bool = False,
-    as_frame: bool = False
+    as_frame: bool = False,
 ) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """
     Load the Canadian Weather dataset.
@@ -799,7 +853,7 @@ def fetch_aemet(
 
 def fetch_aemet(
     return_X_y: bool = False,
-    as_frame: bool = False
+    as_frame: bool = False,
 ) -> Union[Bunch, Tuple[FDataGrid, None], Tuple[DataFrame, None]]:
     """
     Load the Spanish Weather dataset.
@@ -921,7 +975,7 @@ def fetch_octane(
 
 def fetch_octane(
     return_X_y: bool = False,
-    as_frame: bool = False
+    as_frame: bool = False,
 ) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """Load near infrared spectra of gasoline samples.
 
@@ -1021,7 +1075,7 @@ def fetch_gait(
 
 def fetch_gait(
     return_X_y: bool = False,
-    as_frame: bool = False
+    as_frame: bool = False,
 ) -> Union[Bunch, Tuple[FDataGrid, None], Tuple[DataFrame, None]]:
     """
     Load the GAIT dataset.

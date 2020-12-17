@@ -266,7 +266,7 @@ def fetch_phoneme(
     return_X_y: Literal[False] = False,
     as_frame: bool = False,
 ) -> Bunch:
-    ...
+    pass
 
 
 @overload
@@ -275,7 +275,7 @@ def fetch_phoneme(
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
 ) -> Tuple[FDataGrid, ndarray]:
-    ...
+    pass
 
 
 @overload
@@ -284,7 +284,7 @@ def fetch_phoneme(
     return_X_y: Literal[True],
     as_frame: Literal[True],
 ) -> Tuple[DataFrame, Series]:
-    ...
+    pass
 
 
 def fetch_phoneme(
@@ -327,7 +327,7 @@ def fetch_phoneme(
     if as_frame:
         frame = pd.DataFrame({
             curve_name: curves,
-            target_name: sound
+            target_name: sound,
         })
         curves = frame.iloc[:, [0]]
         target = frame.iloc[:, 1]
@@ -348,7 +348,7 @@ def fetch_phoneme(
         target_names=[target_name],
         meta=meta,
         meta_names=["speaker"],
-        DESCR=descr
+        DESCR=descr,
     )
 
 
@@ -376,7 +376,7 @@ def fetch_growth(
     return_X_y: Literal[False] = False,
     as_frame: bool = False,
 ) -> Bunch:
-    ...
+    pass
 
 
 @overload
@@ -385,7 +385,7 @@ def fetch_growth(
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
 ) -> Tuple[FDataGrid, ndarray]:
-    ...
+    pass
 
 
 @overload
@@ -394,7 +394,7 @@ def fetch_growth(
     return_X_y: Literal[True],
     as_frame: Literal[True],
 ) -> Tuple[DataFrame, Series]:
-    ...
+    pass
 
 
 def fetch_growth(
@@ -408,7 +408,7 @@ def fetch_growth(
     Berkeley Growth Study.
 
     """
-    DESCR = _growth_descr
+    descr = _growth_descr
 
     raw_dataset = _fetch_fda("growth")
 
@@ -419,11 +419,13 @@ def fetch_growth(
     males = data["hgtm"].T
 
     sex = np.array([0] * males.shape[0] + [1] * females.shape[0])
-    curves = FDataGrid(data_matrix=np.concatenate((males, females), axis=0),
-                       grid_points=ages,
-                       dataset_name="Berkeley Growth Study",
-                       argument_names=("age",),
-                       coordinate_names=("height",))
+    curves = FDataGrid(
+        data_matrix=np.concatenate((males, females), axis=0),
+        grid_points=ages,
+        dataset_name="Berkeley Growth Study",
+        argument_names=("age",),
+        coordinate_names=("height",),
+    )
 
     curve_name = "height"
     target_name = "sex"
@@ -432,21 +434,25 @@ def fetch_growth(
 
     if as_frame:
         sex = pd.Categorical.from_codes(sex, categories=target_categories)
-        frame = pd.DataFrame({curve_name: curves,
-                              target_name: sex})
+        frame = pd.DataFrame({
+            curve_name: curves,
+            target_name: sex,
+        })
         curves = frame.iloc[:, [0]]
         sex = frame.iloc[:, 1]
 
     if return_X_y:
         return curves, sex
-    else:
-        return Bunch(data=curves,
-                     target=sex,
-                     frame=frame,
-                     categories={target_name: target_categories},
-                     feature_names=[curve_name],
-                     target_names=[target_name],
-                     DESCR=DESCR)
+
+    return Bunch(
+        data=curves,
+        target=sex,
+        frame=frame,
+        categories={target_name: target_categories},
+        feature_names=[curve_name],
+        target_names=[target_name],
+        DESCR=descr,
+    )
 
 
 if fetch_growth.__doc__ is not None:  # docstrings can be stripped off
@@ -496,7 +502,7 @@ def fetch_tecator(
     return_X_y: Literal[False] = False,
     as_frame: bool = False,
 ) -> Bunch:
-    ...
+    pass
 
 
 @overload
@@ -505,7 +511,7 @@ def fetch_tecator(
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
 ) -> Tuple[FDataGrid, ndarray]:
-    ...
+    pass
 
 
 @overload
@@ -514,7 +520,7 @@ def fetch_tecator(
     return_X_y: Literal[True],
     as_frame: Literal[True],
 ) -> Tuple[DataFrame, DataFrame]:
-    ...
+    pass
 
 
 def fetch_tecator(
@@ -528,7 +534,7 @@ def fetch_tecator(
     http://lib.stat.cmu.edu/datasets/tecator.
 
     """
-    DESCR = _tecator_descr
+    descr = _tecator_descr
 
     raw_dataset = _fetch_fda_usc("tecator")
 
@@ -549,14 +555,16 @@ def fetch_tecator(
 
     if return_X_y:
         return curves, target
-    else:
-        return Bunch(data=curves,
-                     target=target,
-                     frame=frame,
-                     categories={},
-                     feature_names=[feature_name],
-                     target_names=target_names,
-                     DESCR=DESCR)
+
+    return Bunch(
+        data=curves,
+        target=target,
+        frame=frame,
+        categories={},
+        feature_names=[feature_name],
+        target_names=target_names,
+        DESCR=descr,
+    )
 
 
 if fetch_tecator.__doc__ is not None:  # docstrings can be stripped off
@@ -606,7 +614,7 @@ def fetch_medflies(
     return_X_y: Literal[False] = False,
     as_frame: bool = False,
 ) -> Bunch:
-    ...
+    pass
 
 
 @overload
@@ -615,7 +623,7 @@ def fetch_medflies(
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
 ) -> Tuple[FDataGrid, ndarray]:
-    ...
+    pass
 
 
 @overload
@@ -624,7 +632,7 @@ def fetch_medflies(
     return_X_y: Literal[True],
     as_frame: Literal[True],
 ) -> Tuple[DataFrame, Series]:
-    ...
+    pass
 
 
 def fetch_medflies(
@@ -632,14 +640,13 @@ def fetch_medflies(
     as_frame: bool = False,
 ) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """
-    Load the Medflies dataset, where the flies are separated in two classes
-    according to their longevity.
+    Load the Medflies dataset.
 
     The data is obtained from the R package 'ddalpha', which its a modification
     of the dataset in http://www.stat.ucdavis.edu/~wang/data/medfly1000.htm.
 
     """
-    DESCR = _medflies_descr
+    descr = _medflies_descr
 
     raw_dataset = _fetch_ddalpha("medflies")
 
@@ -657,22 +664,28 @@ def fetch_medflies(
 
     if as_frame:
         target = pd.Categorical.from_codes(
-            target, categories=target_categories)
-        frame = pd.DataFrame({curve_name: curves,
-                              target_name: target})
+            target,
+            categories=target_categories,
+        )
+        frame = pd.DataFrame({
+            curve_name: curves,
+            target_name: target,
+        })
         curves = frame.iloc[:, [0]]
         target = frame.iloc[:, 1]
 
     if return_X_y:
         return curves, target
-    else:
-        return Bunch(data=curves,
-                     target=target,
-                     frame=frame,
-                     categories={target_name: target_categories},
-                     feature_names=[curve_name],
-                     target_names=[target_name],
-                     DESCR=DESCR)
+
+    return Bunch(
+        data=curves,
+        target=target,
+        frame=frame,
+        categories={target_name: target_categories},
+        feature_names=[curve_name],
+        target_names=[target_name],
+        DESCR=descr,
+    )
 
 
 if fetch_medflies.__doc__ is not None:  # docstrings can be stripped off
@@ -697,7 +710,7 @@ def fetch_weather(
     return_X_y: Literal[False] = False,
     as_frame: bool = False,
 ) -> Bunch:
-    ...
+    pass
 
 
 @overload
@@ -706,7 +719,7 @@ def fetch_weather(
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
 ) -> Tuple[FDataGrid, ndarray]:
-    ...
+    pass
 
 
 @overload
@@ -715,7 +728,7 @@ def fetch_weather(
     return_X_y: Literal[True],
     as_frame: Literal[True],
 ) -> Tuple[DataFrame, Series]:
-    ...
+    pass
 
 
 def fetch_weather(
@@ -728,27 +741,29 @@ def fetch_weather(
     The data is obtained from the R package 'fda' from CRAN.
 
     """
-    DESCR = _weather_descr
+    descr = _weather_descr
 
-    raw_dataset = _fetch_fda("CanadianWeather")
-
-    data = raw_dataset["CanadianWeather"]
-
-    weather_daily = np.asarray(data["dailyAv"])
+    data = _fetch_fda("CanadianWeather")["CanadianWeather"]
 
     # Axes 0 and 1 must be transposed since in the downloaded dataset the
     # data_matrix shape is (nfeatures, n_samples, dim_codomain) while our
     # data_matrix shape is (n_samples, nfeatures, dim_codomain).
-    temp_prec_daily = np.transpose(weather_daily[:, :, 0:2], axes=(1, 0, 2))
+    temp_prec_daily = np.transpose(data["dailyAv"][:, :, 0:2], axes=(1, 0, 2))
 
-    curves = FDataGrid(data_matrix=temp_prec_daily,
-                       grid_points=np.arange(0, 365) + 0.5,
-                       domain_range=(0, 365),
-                       dataset_name="Canadian Weather",
-                       sample_names=data["place"],
-                       argument_names=("day",),
-                       coordinate_names=("temperature (ºC)",
-                                         "precipitation (mm.)"))
+    days_in_year = 365
+
+    curves = FDataGrid(
+        data_matrix=temp_prec_daily,
+        grid_points=np.arange(0, days_in_year) + 0.5,
+        domain_range=(0, days_in_year),
+        dataset_name="Canadian Weather",
+        sample_names=data["place"],
+        argument_names=("day",),
+        coordinate_names=(
+            "temperature (ºC)",
+            "precipitation (mm.)",
+        ),
+    )
 
     curve_name = "daily averages"
     target_name = "region"
@@ -758,7 +773,9 @@ def fetch_weather(
 
     if as_frame:
         target = pd.Categorical.from_codes(
-            target, categories=target_categories)
+            target,
+            categories=target_categories,
+        )
         frame = pd.DataFrame({
             curve_name: curves,
             "place": data["place"],
@@ -767,10 +784,13 @@ def fetch_weather(
             "longitude": np.asarray(data["coordinates"])[:, 1],
             "index": data["geogindex"],
             "monthly temperatures": np.asarray(
-                data["monthlyTemp"]).T.tolist(),
+                data["monthlyTemp"],
+            ).T.tolist(),
             "monthly precipitation": np.asarray(
-                data["monthlyPrecip"]).T.tolist(),
-            target_name: target})
+                data["monthlyPrecip"],
+            ).T.tolist(),
+            target_name: target,
+        })
         X = frame.iloc[:, :-1]
         target = frame.iloc[:, -1]
         feature_names = list(X.columns.values)
@@ -779,31 +799,43 @@ def fetch_weather(
     else:
         feature_names = [curve_name]
         X = curves
-        meta = np.array(list(zip(data["place"],
-                                 data["province"],
-                                 np.asarray(data["coordinates"])[:, 0],
-                                 np.asarray(data["coordinates"])[:, 1],
-                                 data["geogindex"],
-                                 np.asarray(data["monthlyTemp"]).T,
-                                 np.asarray(data["monthlyPrecip"]).T)))
-        meta_names = ["place", "province", "latitude", "longitude",
-                      "index", "monthly temperatures",
-                      "monthly precipitation"],
+        meta = np.array(list(zip(
+            data["place"],
+            data["province"],
+            np.asarray(data["coordinates"])[:, 0],
+            np.asarray(data["coordinates"])[:, 1],
+            data["geogindex"],
+            np.asarray(data["monthlyTemp"]).T,
+            np.asarray(data["monthlyPrecip"]).T,
+        )))
+        meta_names = [
+            "place",
+            "province",
+            "latitude",
+            "longitude",
+            "index",
+            "monthly temperatures",
+            "monthly precipitation",
+        ]
 
-        additional_dict = {"meta": meta,
-                           "meta_names": meta_names}
+        additional_dict = {
+            "meta": meta,
+            "meta_names": meta_names,
+        }
 
     if return_X_y:
         return X, target
-    else:
-        return Bunch(data=X,
-                     target=target,
-                     frame=frame,
-                     categories={target_name: target_categories},
-                     feature_names=feature_names,
-                     target_names=[target_name],
-                     **additional_dict,
-                     DESCR=DESCR)
+
+    return Bunch(
+        data=X,
+        target=target,
+        frame=frame,
+        categories={target_name: target_categories},
+        feature_names=feature_names,
+        target_names=[target_name],
+        **additional_dict,
+        DESCR=descr,
+    )
 
 
 if fetch_weather.__doc__ is not None:  # docstrings can be stripped off
@@ -830,7 +862,7 @@ def fetch_aemet(
     return_X_y: Literal[False] = False,
     as_frame: bool = False,
 ) -> Bunch:
-    ...
+    pass
 
 
 @overload
@@ -839,7 +871,7 @@ def fetch_aemet(
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
 ) -> Tuple[FDataGrid, None]:
-    ...
+    pass
 
 
 @overload
@@ -848,7 +880,7 @@ def fetch_aemet(
     return_X_y: Literal[True],
     as_frame: Literal[True],
 ) -> Tuple[DataFrame, None]:
-    ...
+    pass
 
 
 def fetch_aemet(
@@ -861,28 +893,36 @@ def fetch_aemet(
     The data is obtained from the R package 'fda.usc' from CRAN.
 
     """
-    DESCR = _aemet_descr
+    descr = _aemet_descr
 
-    raw_dataset = _fetch_fda_usc("aemet")
-
-    data = raw_dataset["aemet"]
+    data = _fetch_fda_usc("aemet")["aemet"]
 
     data_matrix = np.empty((73, 365, 3))
     data_matrix[:, :, 0] = data["temp"].data_matrix[:, :, 0]
     data_matrix[:, :, 1] = data["logprec"].data_matrix[:, :, 0]
     data_matrix[:, :, 2] = data["wind.speed"].data_matrix[:, :, 0]
 
-    curves = data["temp"].copy(data_matrix=data_matrix,
-                               dataset_name="aemet",
-                               sample_names=data["df"].iloc[:, 1],
-                               argument_names=("day",),
-                               coordinate_names=("temperature (ºC)",
-                                                 "logprecipitation",
-                                                 "wind speed (m/s)"))
+    curves = data["temp"].copy(
+        data_matrix=data_matrix,
+        dataset_name="aemet",
+        sample_names=data["df"].iloc[:, 1],
+        argument_names=("day",),
+        coordinate_names=(
+            "temperature (ºC)",
+            "logprecipitation",
+            "wind speed (m/s)",
+        ),
+    )
 
     curve_name = "daily averages"
-    df_names = ["index", "place", "province", "altitude",
-                "longitude", "latitude"]
+    df_names = [
+        "index",
+        "place",
+        "province",
+        "altitude",
+        "longitude",
+        "latitude",
+    ]
     df_indexes = np.array([0, 1, 2, 3, 6, 7])
 
     frame = None
@@ -890,7 +930,11 @@ def fetch_aemet(
     if as_frame:
         frame = pd.DataFrame({
             curve_name: curves,
-            **{n: data["df"].iloc[:, d] for (n, d) in zip(df_names, df_indexes)}})
+            **{
+                n: data["df"].iloc[:, d]
+                for (n, d) in zip(df_names, df_indexes)
+            },
+        })
         X = frame
         feature_names = list(X.columns.values)
 
@@ -901,20 +945,23 @@ def fetch_aemet(
         X = curves
         meta = np.asarray(data["df"])[:, df_indexes]
         meta_names = df_names
-        additional_dict = {"meta": meta,
-                           "meta_names": meta_names}
+        additional_dict = {
+            "meta": meta,
+            "meta_names": meta_names,
+        }
 
     if return_X_y:
         return X, None
-    else:
-        return Bunch(
-            data=X,
-            target=None,
-            frame=frame,
-            categories={},
-            feature_names=feature_names,
-            **additional_dict,
-            DESCR=DESCR)
+
+    return Bunch(
+        data=X,
+        target=None,
+        frame=frame,
+        categories={},
+        feature_names=feature_names,
+        **additional_dict,
+        DESCR=descr,
+    )
 
 
 if fetch_aemet.__doc__ is not None:  # docstrings can be stripped off
@@ -952,7 +999,7 @@ def fetch_octane(
     return_X_y: Literal[False] = False,
     as_frame: bool = False,
 ) -> Bunch:
-    ...
+    pass
 
 
 @overload
@@ -961,7 +1008,7 @@ def fetch_octane(
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
 ) -> Tuple[FDataGrid, ndarray]:
-    ...
+    pass
 
 
 @overload
@@ -970,7 +1017,7 @@ def fetch_octane(
     return_X_y: Literal[True],
     as_frame: Literal[True],
 ) -> Tuple[DataFrame, Series]:
-    ...
+    pass
 
 
 def fetch_octane(
@@ -983,7 +1030,7 @@ def fetch_octane(
     from CRAN.
 
     """
-    DESCR = _octane_descr
+    descr = _octane_descr
 
     # octane file from mrfDepth R package
     raw_dataset = fetch_cran("octane", "mrfDepth", version="1.0.11")
@@ -994,40 +1041,56 @@ def fetch_octane(
 
     # "wavelengths ranging from 1102nm to 1552nm with measurements every two
     # nm.""
-    grid_points = np.linspace(1102, 1552, 226)
+    wavelength_start = 1102
+    wavelength_end = 1552
+    wavelength_count = 226
+
+    grid_points = np.linspace(
+        wavelength_start,
+        wavelength_end,
+        wavelength_count,
+    )
 
     # "The octane data set contains six outliers (25, 26, 36–39) to which
     # alcohol was added".
     target = np.zeros(len(data), dtype=np.bool_)
-    target[24] = target[25] = target[35:39] = 1  # Outliers 1
+    target[24:26] = 1  # noqa: WPS432
+    target[35:39] = 1  # noqa: WPS432
+
     target_name = "is outlier"
 
     curve_name = "absorbances"
 
-    curves = FDataGrid(data,
-                       grid_points=grid_points,
-                       dataset_name="octane",
-                       argument_names=("wavelength (nm)",),
-                       coordinate_names=("absorbances",))
+    curves = FDataGrid(
+        data,
+        grid_points=grid_points,
+        dataset_name="octane",
+        argument_names=("wavelength (nm)",),
+        coordinate_names=("absorbances",),
+    )
 
     frame = None
 
     if as_frame:
-        frame = pd.DataFrame({curve_name: curves,
-                              target_name: target})
+        frame = pd.DataFrame({
+            curve_name: curves,
+            target_name: target,
+        })
         curves = frame.iloc[:, [0]]
         target = frame.iloc[:, 1]
 
     if return_X_y:
         return curves, target
-    else:
-        return Bunch(data=curves,
-                     target=target,
-                     frame=frame,
-                     categories={},
-                     feature_names=[curve_name],
-                     target_names=[target_name],
-                     DESCR=DESCR)
+
+    return Bunch(
+        data=curves,
+        target=target,
+        frame=frame,
+        categories={},
+        feature_names=[curve_name],
+        target_names=[target_name],
+        DESCR=descr,
+    )
 
 
 if fetch_octane.__doc__ is not None:  # docstrings can be stripped off
@@ -1052,7 +1115,7 @@ def fetch_gait(
     return_X_y: Literal[False] = False,
     as_frame: bool = False,
 ) -> Bunch:
-    ...
+    pass
 
 
 @overload
@@ -1061,7 +1124,7 @@ def fetch_gait(
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
 ) -> Tuple[FDataGrid, None]:
-    ...
+    pass
 
 
 @overload
@@ -1070,7 +1133,7 @@ def fetch_gait(
     return_X_y: Literal[True],
     as_frame: Literal[True],
 ) -> Tuple[DataFrame, None]:
-    ...
+    pass
 
 
 def fetch_gait(
@@ -1083,7 +1146,7 @@ def fetch_gait(
     The data is obtained from the R package 'fda' from CRAN.
 
     """
-    DESCR = _gait_descr
+    descr = _gait_descr
 
     raw_data = _fetch_fda("gait")
 
@@ -1095,13 +1158,17 @@ def fetch_gait(
     sample_names = np.asarray(data.coords.get('dim_1'))
     feature_name = 'gait'
 
-    curves = FDataGrid(data_matrix=data_matrix,
-                       grid_points=grid_points,
-                       dataset_name=feature_name,
-                       sample_names=sample_names,
-                       argument_names=("time (proportion of gait cycle)",),
-                       coordinate_names=("hip angle (degrees)",
-                                         "knee angle (degrees)"))
+    curves = FDataGrid(
+        data_matrix=data_matrix,
+        grid_points=grid_points,
+        dataset_name=feature_name,
+        sample_names=sample_names,
+        argument_names=("time (proportion of gait cycle)",),
+        coordinate_names=(
+            "hip angle (degrees)",
+            "knee angle (degrees)",
+        ),
+    )
 
     frame = None
 
@@ -1111,14 +1178,16 @@ def fetch_gait(
 
     if return_X_y:
         return curves, None
-    else:
-        return Bunch(data=curves,
-                     target=None,
-                     frame=frame,
-                     categories={},
-                     feature_names=[feature_name],
-                     target_names=[],
-                     DESCR=DESCR)
+
+    return Bunch(
+        data=curves,
+        target=None,
+        frame=frame,
+        categories={},
+        feature_names=[feature_name],
+        target_names=[],
+        DESCR=descr,
+    )
 
 
 if fetch_gait.__doc__ is not None:  # docstrings can be stripped off

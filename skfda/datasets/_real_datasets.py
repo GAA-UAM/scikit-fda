@@ -748,7 +748,9 @@ def fetch_weather(
     # Axes 0 and 1 must be transposed since in the downloaded dataset the
     # data_matrix shape is (nfeatures, n_samples, dim_codomain) while our
     # data_matrix shape is (n_samples, nfeatures, dim_codomain).
-    temp_prec_daily = np.transpose(data["dailyAv"][:, :, 0:2], axes=(1, 0, 2))
+    temp_prec_daily = np.transpose(
+        np.asarray(data["dailyAv"])[:, :, 0:2], axes=(1, 0, 2)
+    )
 
     days_in_year = 365
 

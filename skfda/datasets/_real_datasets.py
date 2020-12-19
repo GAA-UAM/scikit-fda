@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Tuple, Union, overload
+from typing import Any, Mapping, Optional, Tuple, Union, overload
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ import rdata
 from .. import FDataGrid
 
 
-def _get_skdatasets_repositories():
+def _get_skdatasets_repositories() -> Any:
     import skdatasets
 
     repositories = getattr(skdatasets, "repositories", None)
@@ -23,7 +23,10 @@ def _get_skdatasets_repositories():
     return repositories
 
 
-def fdata_constructor(obj, attrs):
+def fdata_constructor(
+    obj: Any,
+    attrs: Mapping[Union[str, bytes], Any],
+) -> FDataGrid:
     """
     Construct a :func:`FDataGrid` objet from a R `fdata` object.
 
@@ -44,7 +47,10 @@ def fdata_constructor(obj, attrs):
     )
 
 
-def functional_constructor(obj, attrs):
+def functional_constructor(
+    obj: Any,
+    attrs: Mapping[Union[str, bytes], Any],
+) -> FDataGrid:
     """
     Construct a :func:`FDataGrid` objet from a R `functional` object.
 
@@ -89,8 +95,8 @@ def fetch_cran(
     name: str,
     package_name: str,
     *,
-    converter: rdata.conversion.Converter = None,
-    **kwargs,
+    converter: Optional[rdata.conversion.Converter] = None,
+    **kwargs: Any,
 ) -> Any:
     """
     Fetch a dataset from CRAN.
@@ -125,7 +131,7 @@ def fetch_cran(
     )
 
 
-def _ucr_to_fdatagrid(data):
+def _ucr_to_fdatagrid(data: np.ndarray) -> FDataGrid:
     if data.dtype == np.object_:
         data = np.array(data.tolist())
 
@@ -140,7 +146,7 @@ def _ucr_to_fdatagrid(data):
     return FDataGrid(data, grid_points=grid_points)
 
 
-def fetch_ucr(name: str, **kwargs) -> Bunch:
+def fetch_ucr(name: str, **kwargs: Any) -> Bunch:
     """
     Fetch a dataset from the UCR.
 
@@ -178,7 +184,7 @@ def fetch_ucr(name: str, **kwargs) -> Bunch:
     return dataset
 
 
-def _fetch_cran_no_encoding_warning(*args, **kwargs):
+def _fetch_cran_no_encoding_warning(*args: Any, **kwargs: Any) -> Any:
     # Probably non thread safe
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -189,7 +195,7 @@ def _fetch_cran_no_encoding_warning(*args, **kwargs):
         return fetch_cran(*args, **kwargs)
 
 
-def _fetch_elem_stat_learn(name):
+def _fetch_elem_stat_learn(name: str) -> Any:
     return _fetch_cran_no_encoding_warning(
         name,
         "ElemStatLearn",
@@ -197,15 +203,15 @@ def _fetch_elem_stat_learn(name):
     )
 
 
-def _fetch_ddalpha(name):
+def _fetch_ddalpha(name: str) -> Any:
     return _fetch_cran_no_encoding_warning(name, "ddalpha", version="1.3.4")
 
 
-def _fetch_fda(name):
+def _fetch_fda(name: str) -> Any:
     return _fetch_cran_no_encoding_warning(name, "fda", version="2.4.7")
 
 
-def _fetch_fda_usc(name):
+def _fetch_fda_usc(name: str) -> Any:
     return _fetch_cran_no_encoding_warning(name, "fda.usc", version="1.3.0")
 
 
@@ -749,7 +755,7 @@ def fetch_weather(
     # data_matrix shape is (nfeatures, n_samples, dim_codomain) while our
     # data_matrix shape is (n_samples, nfeatures, dim_codomain).
     temp_prec_daily = np.transpose(
-        np.asarray(data["dailyAv"])[:, :, 0:2], axes=(1, 0, 2)
+        np.asarray(data["dailyAv"])[:, :, 0:2], axes=(1, 0, 2),
     )
 
     days_in_year = 365

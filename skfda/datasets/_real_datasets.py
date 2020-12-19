@@ -891,7 +891,7 @@ def fetch_aemet(
     pass
 
 
-def fetch_aemet(
+def fetch_aemet(  # noqa: WPS210
     return_X_y: bool = False,
     as_frame: bool = False,
 ) -> Union[Bunch, Tuple[FDataGrid, None], Tuple[DataFrame, None]]:
@@ -905,13 +905,17 @@ def fetch_aemet(
 
     data = _fetch_fda_usc("aemet")["aemet"]
 
-    data_matrix = np.empty((73, 365, 3))
+    days_in_year = 365
+
+    data_matrix = np.empty((73, days_in_year, 3))
     data_matrix[:, :, 0] = data["temp"].data_matrix[:, :, 0]
     data_matrix[:, :, 1] = data["logprec"].data_matrix[:, :, 0]
     data_matrix[:, :, 2] = data["wind.speed"].data_matrix[:, :, 0]
 
     curves = data["temp"].copy(
         data_matrix=data_matrix,
+        grid_points=np.arange(0, days_in_year) + 0.5,
+        domain_range=(0, days_in_year),
         dataset_name="aemet",
         sample_names=data["df"].iloc[:, 1],
         argument_names=("day",),

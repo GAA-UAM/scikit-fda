@@ -1,12 +1,9 @@
-from numpy import polyder, polyint, polymul, polyval
-from scipy.interpolate import BSpline as SciBSpline
-from scipy.interpolate import PPoly
-import scipy.interpolate
-
 import numpy as np
+import scipy.interpolate
+from numpy import polyint, polymul, polyval
+from scipy.interpolate import BSpline as SciBSpline, PPoly
 
 from ..._utils import _domain_range
-from ..._utils import _same_domain
 from ._basis import Basis
 
 
@@ -137,7 +134,7 @@ class BSpline(Basis):
 
         self._order = order
         self._knots = None if knots is None else tuple(knots)
-        super().__init__(domain_range, n_basis)
+        super().__init__(domain_range=domain_range, n_basis=n_basis)
 
         # Checks
         if self.n_basis != self.order + len(self.knots) - 2:

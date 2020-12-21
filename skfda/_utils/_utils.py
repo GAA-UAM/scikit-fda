@@ -299,8 +299,8 @@ def _evaluate_grid(
     n_samples: int,
     dim_domain: int,
     dim_codomain: int,
-    extrapolation: Optional[Evaluator]=None,
-    aligned: bool=True,
+    extrapolation: Optional[Union[str, Evaluator]] = None,
+    aligned: bool = True,
 ) -> np.ndarray:
     """Evaluate the functional object in the cartesian grid.
 

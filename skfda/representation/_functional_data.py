@@ -606,7 +606,7 @@ class FData(  # noqa: WPS214
         pass
 
     @abstractmethod  # noqa: WPS125
-    def sum(
+    def sum(  # noqa: WPS125
         self: T,
         *,
         axis: None = None,

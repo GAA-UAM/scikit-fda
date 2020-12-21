@@ -2,11 +2,13 @@
 
 import functools
 import numbers
-from typing import Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
 import numpy as np
 import scipy.integrate
 from pandas.api.indexers import check_array_indexer
+
+from ..representation.evaluator import Evaluator
 
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
 
@@ -293,13 +295,13 @@ def _one_grid_to_points(axes, *, dim_domain):
 def _evaluate_grid(
     axes: Sequence[np.ndarray],
     *,
-    evaluate_method,
-    n_samples,
-    dim_domain,
-    dim_codomain,
-    extrapolation=None,
-    aligned=True
-):
+    evaluate_method: Any,
+    n_samples: int,
+    dim_domain: int,
+    dim_codomain: int,
+    extrapolation: Optional[Evaluator]=None,
+    aligned: bool=True,
+) -> np.ndarray:
     """Evaluate the functional object in the cartesian grid.
 
     This method is called internally by :meth:`evaluate` when the argument
@@ -325,15 +327,15 @@ def _evaluate_grid(
     Args:
         axes: List of axes to generated the grid where the
             object will be evaluated.
-        extrapolation (str or Extrapolation, optional): Controls the
+        extrapolation: Controls the
             extrapolation mode for elements outside the domain range. By
             default it is used the mode defined during the instance of the
             object.
-        aligned (bool, optional): If False evaluates each sample
+        aligned: If False evaluates each sample
             in a different grid.
 
     Returns:
-        (numpy.darray): Numpy array with dim_domain + 1 dimensions with
+        Numpy array with dim_domain + 1 dimensions with
             the result of the evaluation.
 
     Raises:

@@ -32,9 +32,13 @@ if TYPE_CHECKING:
 
 T = TypeVar('T', bound='FData')
 DomainRange = Tuple[Tuple[float, float], ...]
+LabelTuple = Tuple[Optional[str], ...]
 
 
-class FData(ABC, pandas.api.extensions.ExtensionArray):  # type: ignore
+class FData(  # noqa: WPS214
+    ABC,
+    pandas.api.extensions.ExtensionArray,  # type: ignore
+):
     """Defines the structure of a functional data object.
 
     Attributes:
@@ -56,10 +60,10 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):  # type: ignore
         extrapolation: Evaluator,
         dataset_name: Optional[str] = None,
         dataset_label: Optional[str] = None,
-        axes_labels: Optional[Tuple[Optional[str], ...]] = None,
-        argument_names: Optional[Tuple[Optional[str], ...]] = None,
-        coordinate_names: Optional[Tuple[Optional[str], ...]] = None,
-        sample_names: Optional[Tuple[Optional[str], ...]] = None,
+        axes_labels: Optional[LabelTuple] = None,
+        argument_names: Optional[LabelTuple] = None,
+        coordinate_names: Optional[LabelTuple] = None,
+        sample_names: Optional[LabelTuple] = None,
     ) -> None:
 
         self.extrapolation = extrapolation
@@ -68,11 +72,11 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):  # type: ignore
         if dataset_label is not None:
             self.dataset_label = dataset_label
 
-        self.argument_names = argument_names
-        self.coordinate_names = coordinate_names
+        self.argument_names = argument_names  # type: ignore
+        self.coordinate_names = coordinate_names  # type: ignore
         if axes_labels is not None:
             self.axes_labels = axes_labels
-        self.sample_names = sample_names
+        self.sample_names = sample_names  # type: ignore
 
     @property
     def dataset_label(self) -> Optional[str]:
@@ -93,13 +97,13 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):  # type: ignore
         self.dataset_name = name
 
     @property
-    def argument_names(self) -> Tuple[Optional[str], ...]:
+    def argument_names(self) -> LabelTuple:
         return self._argument_names
 
     @argument_names.setter
     def argument_names(
         self,
-        names: Optional[Tuple[Optional[str], ...]],
+        names: Optional[LabelTuple],
     ) -> None:
         if names is None:
             names = (None,) * self.dim_domain
@@ -114,13 +118,13 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):  # type: ignore
         self._argument_names = names
 
     @property
-    def coordinate_names(self) -> Tuple[Optional[str], ...]:
+    def coordinate_names(self) -> LabelTuple:
         return self._coordinate_names
 
     @coordinate_names.setter
     def coordinate_names(
         self,
-        names: Optional[Tuple[Optional[str], ...]],
+        names: Optional[LabelTuple],
     ) -> None:
         if names is None:
             names = (None,) * self.dim_codomain
@@ -135,7 +139,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):  # type: ignore
         self._coordinate_names = names
 
     @property
-    def axes_labels(self) -> Tuple[Optional[str], ...]:
+    def axes_labels(self) -> LabelTuple:
         warnings.warn(
             "Parameter axes_labels is deprecated. Use the "
             "parameters argument_names and "
@@ -146,7 +150,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):  # type: ignore
         return self.argument_names + self.coordinate_names
 
     @axes_labels.setter
-    def axes_labels(self, labels: Tuple[Optional[str], ...]) -> None:
+    def axes_labels(self, labels: LabelTuple) -> None:
         """Set the list of labels."""
         if labels is not None:
 
@@ -174,11 +178,11 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):  # type: ignore
             self.coordinate_names = labels_array[self.dim_domain:]
 
     @property
-    def sample_names(self) -> Tuple[Optional[str], ...]:
+    def sample_names(self) -> LabelTuple:
         return self._sample_names
 
     @sample_names.setter
-    def sample_names(self, names: Optional[Tuple[Optional[str], ...]]) -> None:
+    def sample_names(self, names: Optional[LabelTuple]) -> None:
         if names is None:
             names = (None,) * self.n_samples
         else:
@@ -601,7 +605,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):  # type: ignore
         """
         pass
 
-    @abstractmethod
+    @abstractmethod  # noqa: WPS125
     def sum(
         self: T,
         *,

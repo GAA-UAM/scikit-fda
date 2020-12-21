@@ -4,6 +4,8 @@ Defines methods to evaluate points outside the :term:`domain` range.
 
 """
 
+from typing import Optional, Union
+
 import numpy as np
 
 from .evaluator import Evaluator
@@ -201,7 +203,9 @@ class FillExtrapolation(Evaluator):
                 or np.isnan(self.fill_value) and np.isnan(other.fill_value))
 
 
-def _parse_extrapolation(extrapolation):
+def _parse_extrapolation(
+    extrapolation: Optional[Union[str, Evaluator]],
+) -> Optional[Evaluator]:
     """Parse the argument `extrapolation` of `FData`.
 
     If extrapolation is None returns the default extrapolator.

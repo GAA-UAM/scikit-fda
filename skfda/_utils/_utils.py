@@ -2,11 +2,13 @@
 
 import functools
 import numbers
-from typing import Optional, Union
+from typing import Any, Optional, Sequence, Union
 
 import numpy as np
 import scipy.integrate
 from pandas.api.indexers import check_array_indexer
+
+from ..representation.evaluator import Evaluator
 
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
 
@@ -215,18 +217,25 @@ def _same_domain(fd, fd2):
     return np.array_equal(fd.domain_range, fd2.domain_range)
 
 
-def _reshape_eval_points(eval_points, *, aligned, n_samples, dim_domain):
+def _reshape_eval_points(
+    eval_points: np.ndarray,
+    *,
+    aligned: bool,
+    n_samples: int,
+    dim_domain: int,
+) -> np.ndarray:
     """Convert and reshape the eval_points to ndarray with the
     corresponding shape.
 
     Args:
-        eval_points (array_like): Evaluation points to be reshaped.
-        aligned (bool): Boolean flag. True if all the samples
+        eval_points: Evaluation points to be reshaped.
+        aligned: Boolean flag. True if all the samples
             will be evaluated at the same evaluation_points.
-        dim_domain (int): Dimension of the domain.
+        n_samples: Number of observations.
+        dim_domain: Dimension of the domain.
 
     Returns:
-        (np.ndarray): Numpy array with the eval_points, if
+        Numpy array with the eval_points, if
         evaluation_aligned is True with shape `number of evaluation points`
         x `dim_domain`. If the points are not aligned the shape of the
         points will be `n_samples` x `number of evaluation points`
@@ -283,10 +292,16 @@ def _one_grid_to_points(axes, *, dim_domain):
     return cartesian, shape
 
 
-def _evaluate_grid(axes, *, evaluate_method,
-                   n_samples, dim_domain, dim_codomain,
-                   extrapolation=None,
-                   aligned=True):
+def _evaluate_grid(
+    axes: Sequence[np.ndarray],
+    *,
+    evaluate_method: Any,
+    n_samples: int,
+    dim_domain: int,
+    dim_codomain: int,
+    extrapolation: Optional[Union[str, Evaluator]] = None,
+    aligned: bool = True,
+) -> np.ndarray:
     """Evaluate the functional object in the cartesian grid.
 
     This method is called internally by :meth:`evaluate` when the argument
@@ -310,17 +325,17 @@ def _evaluate_grid(axes, *, evaluate_method,
     option, but with worst performance.
 
     Args:
-        axes (array_like): List of axes to generated the grid where the
+        axes: List of axes to generated the grid where the
             object will be evaluated.
-        extrapolation (str or Extrapolation, optional): Controls the
+        extrapolation: Controls the
             extrapolation mode for elements outside the domain range. By
             default it is used the mode defined during the instance of the
             object.
-        aligned (bool, optional): If False evaluates each sample
+        aligned: If False evaluates each sample
             in a different grid.
 
     Returns:
-        (numpy.darray): Numpy array with dim_domain + 1 dimensions with
+        Numpy array with dim_domain + 1 dimensions with
             the result of the evaluation.
 
     Raises:

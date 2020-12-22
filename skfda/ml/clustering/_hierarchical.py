@@ -1,8 +1,14 @@
+from typing import Any
+
+import numpy as np
 import sklearn.cluster
 from sklearn.base import BaseEstimator, ClusterMixin
 
+from ...misc.metrics import l2_distance, pairwise_distance
+from ...representation import FData
 
-class AgglomerativeClustering(ClusterMixin, BaseEstimator):
+
+class AgglomerativeClustering(ClusterMixin, BaseEstimator):  # type: ignore
     """
     Agglomerative Clustering
     Recursively merges the pair of clusters that minimally increases
@@ -80,23 +86,33 @@ class AgglomerativeClustering(ClusterMixin, BaseEstimator):
         node and has children `children_[i - n_samples]`. Alternatively
         at the i-th iteration, children[i][0] and children[i][1]
         are merged to form node `n_samples + i`
-    Examples
-    --------
-    >>> from sklearn.cluster import AgglomerativeClustering
-    >>> import numpy as np
-    >>> X = np.array([[1, 2], [1, 4], [1, 0],
-    ...               [4, 2], [4, 4], [4, 0]])
-    >>> clustering = AgglomerativeClustering().fit(X)
-    >>> clustering
-    AgglomerativeClustering()
-    >>> clustering.labels_
-    array([1, 1, 1, 0, 0, 0])
+
+    Examples:
+
+        >>> from skfda import FDataGrid
+        >>> from skfda.ml.clustering import AgglomerativeClustering
+        >>> import numpy as np
+        >>> data_matrix = np.array([[1, 2], [1, 4], [1, 0],
+        ...                        [4, 2], [4, 4], [4, 0]])
+        >>> X = FDataGrid(data_matrix)
+        >>> clustering = AgglomerativeClustering().fit(X)
+        >>> clustering
+        AgglomerativeClustering()
+        >>> clustering.labels_
+        array([0, 0, 1, 0, 0, 1], dtype=int64)
     """
 
-    def __init__(self, n_clusters=2, *, metric="euclidean",
-                 memory=None,
-                 connectivity=None, compute_full_tree='auto',
-                 linkage='ward', distance_threshold=None):
+    def __init__(
+        self,
+        n_clusters: int = 2,
+        *,
+        metric=l2_distance,
+        memory=None,
+        connectivity=None,
+        compute_full_tree='auto',
+        linkage='complete',
+        distance_threshold=None
+    ) -> None:
         self.n_clusters = n_clusters
         self.metric = metric
         self.memory = memory
@@ -105,10 +121,10 @@ class AgglomerativeClustering(ClusterMixin, BaseEstimator):
         self.linkage = linkage
         self.distance_threshold = distance_threshold
 
-    def _init_estimator(self):
+    def _init_estimator(self) -> None:
         self._estimator = sklearn.cluster.AgglomerativeClustering(
             n_clusters=self.n_clusters,
-            affinity="precomputed",
+            affinity='precomputed',
             memory=self.memory,
             connectivity=self.connectivity,
             compute_full_tree=self.compute_full_tree,
@@ -116,17 +132,24 @@ class AgglomerativeClustering(ClusterMixin, BaseEstimator):
             distance_threshold=self.distance_threshold,
         )
 
-    def fit(self, X, y=None):
+    def fit(self, X: FData, y: Any = None) -> 'AgglomerativeClustering':
+
         self._init_estimator()
 
-        # TODO: Compute precomputed
+        if self.metric != 'precomputed':
+            data = pairwise_distance(self.metric)(X)
 
-        return self._estimator.fit(X, y)
+        self._estimator.fit(data, y)
+        return self
 
     def fit_predict(self, X, y=None):
 
         self._init_estimator()
 
-        # TODO: Compute precomputed
+        if self.metric != 'precomputed':
+            data = pairwise_distance(self.metric)(X)
 
-        return self._estimator.fit_predict(X, y)
+        return self._estimator.fit_predict(data, y)
+
+    def __getattr__(self, attr):
+        return getattr(self._estimator, attr)

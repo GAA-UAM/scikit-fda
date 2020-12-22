@@ -2,13 +2,11 @@
 
 from abc import ABC
 
-from sklearn.base import BaseEstimator
-from sklearn.base import RegressorMixin
+import numpy as np
+from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-import numpy as np
-
-from .. import FDataGrid, FData
+from .. import FData, FDataGrid
 from ..misc.metrics import lp_distance
 
 

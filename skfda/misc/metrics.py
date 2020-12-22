@@ -1,14 +1,13 @@
 from builtins import isinstance
 
+import numpy as np
 import scipy.integrate
 
-import numpy as np
-
 from .._utils import _pairwise_commutative
-from ..preprocessing.registration import normalize_warping, ElasticRegistration
+from ..preprocessing.registration import ElasticRegistration, normalize_warping
 from ..preprocessing.registration._warping import _normalize_scale
 from ..preprocessing.registration.elastic import SRSF
-from ..representation import FData, FDataGrid, FDataBasis
+from ..representation import FData, FDataBasis, FDataGrid
 
 
 def _check_compatible(fdata1, fdata2):

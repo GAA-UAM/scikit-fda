@@ -1,15 +1,15 @@
 import itertools
+from typing import Any, Iterable, Tuple
 
 import numpy as np
 
-from ..._utils import _same_domain
 from ._basis import Basis
 
 
 class Tensor(Basis):
     r"""Tensor basis.
 
-    Basis for multivariate functions constructed as a tensor product of 
+    Basis for multivariate functions constructed as a tensor product of
     :math:`\mathbb{R} \to \mathbb{R}` bases.
 
 
@@ -60,30 +60,28 @@ class Tensor(Basis):
 
     """
 
-    def __init__(self, basis_list):
+    def __init__(self, basis_list: Iterable[Basis]):
 
-        basis_list = tuple(basis_list)
+        self._basis_list = tuple(basis_list)
 
         if not all(b.dim_domain == 1 and b.dim_codomain == 1
-                   for b in basis_list):
+                   for b in self._basis_list):
             raise ValueError("The basis functions must be "
                              "univariate and scalar valued")
-
-        self._basis_list = basis_list
 
         super().__init__(
             domain_range=[b.domain_range[0] for b in basis_list],
             n_basis=np.prod([b.n_basis for b in basis_list]))
 
     @property
-    def basis_list(self):
+    def basis_list(self) -> Tuple[Basis, ...]:
         return self._basis_list
 
     @property
-    def dim_domain(self):
+    def dim_domain(self) -> int:
         return len(self.basis_list)
 
-    def _evaluate(self, eval_points):
+    def _evaluate(self, eval_points: np.ndarray) -> np.ndarray:
 
         matrix = np.zeros((self.n_basis, len(eval_points), self.dim_codomain))
 
@@ -96,11 +94,7 @@ class Tensor(Basis):
 
         return matrix
 
-    def _derivative_basis_and_coefs(self, coefs, order=1):
-
-        pass
-
-    def _gram_matrix(self):
+    def _gram_matrix(self) -> np.ndarray:
 
         gram_matrices = [b.gram_matrix().ravel() for b in self.basis_list]
 
@@ -111,8 +105,8 @@ class Tensor(Basis):
 
         return gram.reshape((self.n_basis, self.n_basis))
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return super().__eq__(other) and self.basis_list == other.basis_list
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((super().__hash__(), self.basis_list))

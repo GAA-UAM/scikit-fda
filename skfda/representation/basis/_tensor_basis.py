@@ -85,8 +85,10 @@ class Tensor(Basis):
 
         matrix = np.zeros((self.n_basis, len(eval_points), self.dim_codomain))
 
-        basis_evaluations = [b._evaluate(eval_points[:, i:i + 1])
-                             for i, b in enumerate(self.basis_list)]
+        basis_evaluations = [
+            b._evaluate(eval_points[:, i:i + 1])
+            for i, b in enumerate(self.basis_list)
+        ]
 
         for i, ev in enumerate(itertools.product(*basis_evaluations)):
 
@@ -96,14 +98,17 @@ class Tensor(Basis):
 
     def _gram_matrix(self) -> np.ndarray:
 
-        gram_matrices = [b.gram_matrix().ravel() for b in self.basis_list]
+        gram_matrices = [b.gram_matrix() for b in self.basis_list]
 
         gram = gram_matrices[0]
 
         for g in gram_matrices[1:]:
-            gram = np.outer(gram, g).ravel()
+            n_rows = len(gram) * len(g)
+            gram = np.multiply.outer(gram, g)
+            gram = np.moveaxis(gram, [1, 2], [2, 1])
+            gram = gram.reshape(n_rows, n_rows)
 
-        return gram.reshape((self.n_basis, self.n_basis))
+        return gram
 
     def __eq__(self, other: Any) -> bool:
         return super().__eq__(other) and self.basis_list == other.basis_list

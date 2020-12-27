@@ -8,21 +8,24 @@ list of discretisation points.
 
 import copy
 import numbers
-from typing import Any
 import warnings
+from typing import Any
 
 import findiff
+import numpy as np
 import pandas.api.extensions
 import scipy.stats.mstats
 
-import numpy as np
-
+from .._utils import (
+    _check_array_key,
+    _domain_range,
+    _int_to_real,
+    _tuple_of_arrays,
+    constants,
+)
 from . import basis as fdbasis
-from .._utils import (_tuple_of_arrays, constants,
-                      _domain_range, _int_to_real, _check_array_key)
 from ._functional_data import FData
 from .interpolation import SplineInterpolation
-
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -428,7 +431,7 @@ class FDataGrid(FData):
         if order_list.ndim != 1 or len(order_list) != self.dim_domain:
             raise ValueError("The order for each partial should be specified.")
 
-        operator = findiff.FinDiff(*[(1 + i, p, o)
+        operator = findiff.FinDiff(*[(1 + i, p, int(o))
                                      for i, (p, o) in enumerate(
                                          zip(self.grid_points, order_list))])
         data_matrix = operator(self.data_matrix.astype(float))

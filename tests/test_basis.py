@@ -1,12 +1,20 @@
-from skfda import concatenate
-import skfda
-from skfda.misc import inner_product, inner_product_matrix
-from skfda.representation.basis import (Basis, FDataBasis, Constant, Monomial,
-                                        BSpline, Fourier)
-from skfda.representation.grid import FDataGrid
+import itertools
 import unittest
 
 import numpy as np
+
+import skfda
+from skfda import concatenate
+from skfda.misc import inner_product, inner_product_matrix
+from skfda.representation.basis import (
+    Basis,
+    BSpline,
+    Constant,
+    FDataBasis,
+    Fourier,
+    Monomial,
+)
+from skfda.representation.grid import FDataGrid
 
 
 class TestBasis(unittest.TestCase):
@@ -406,6 +414,104 @@ class TestBasis(unittest.TestCase):
         np.testing.assert_allclose(
             X_basis.coordinates[1].coefficients,
             X.coordinates[1].to_basis(basis_dim).coefficients)
+
+
+class TestTensorBasis(unittest.TestCase):
+
+    def setUp(self) -> None:
+        """Create original and tensor bases."""
+        self.n_x = 4
+        self.n_y = 3
+        self.n_z = 5
+
+        self.n = self.n_x * self.n_y * self.n_z
+
+        self.dims = (self.n_x, self.n_y, self.n_z)
+
+        self.basis_x = skfda.representation.basis.Monomial(n_basis=self.n_x)
+        self.basis_y = skfda.representation.basis.Fourier(n_basis=self.n_y)
+        self.basis_z = skfda.representation.basis.BSpline(n_basis=self.n_z)
+
+        self.basis = skfda.representation.basis.Tensor([
+            self.basis_x,
+            self.basis_y,
+            self.basis_z,
+        ])
+
+    def test_tensor_order(self) -> None:
+        """
+        Check the order of the elements in the tensor basis.
+
+        The order should be:
+
+        a_1 b_1 c_1, a_1 b_1 c_2, ..., a_1 b_1 c_n,
+        a_1 b_2 c_1, a_1 b_1 c_2, ..., a_1 b_2 c_n,
+        .
+        .
+        .
+        a_1 b_m c_1, a_1 b_1 c_2, ..., a_1 b_m c_n,
+        a_2 b_1 c_1, a_2 b_1 c_2, ..., a_2 b_1 c_n,
+        .
+        .
+        .
+
+        where the bases of the original spaces are A, B and C.
+
+        """
+        x_vals = [0, 0.3, 0.7]
+        y_vals = [0.2, 0.5, 0.9]
+        z_vals = [0.1, 0.4, 0.8]
+
+        for t in itertools.product(x_vals, y_vals, z_vals):
+
+            val_x = self.basis_x(t[0])
+            val_y = self.basis_y(t[1])
+            val_z = self.basis_z(t[2])
+            val = self.basis([t])
+
+            for x in range(self.n_x):
+                for y in range(self.n_y):
+                    for z in range(self.n_z):
+
+                        index = (
+                            x * self.n_y * self.n_z
+                            + y * self.n_z
+                            + z
+                        )
+
+                        index2 = np.ravel_multi_index(
+                            [x, y, z],
+                            dims=self.dims)
+
+                        self.assertEqual(index, index2)
+
+                        self.assertAlmostEqual(
+                            val[index],
+                            val_x[x] * val_y[y] * val_z[z],
+                        )
+
+    def test_tensor_gram_matrix(self) -> None:
+        """Check that the Gram matrix is right."""
+        gram_x = self.basis_x.gram_matrix()
+        gram_y = self.basis_y.gram_matrix()
+        gram_z = self.basis_z.gram_matrix()
+
+        gram = self.basis.gram_matrix()
+
+        for i in range(self.n):
+            for j in range(self.n):
+                left = np.unravel_index(i, shape=self.dims)
+                right = np.unravel_index(j, shape=self.dims)
+
+                value_gram = gram[i, j]
+                value_gram_x = gram_x[left[0], right[0]]
+                value_gram_y = gram_y[left[1], right[1]]
+                value_gram_z = gram_z[left[2], right[2]]
+
+                self.assertAlmostEqual(
+                    value_gram,
+                    value_gram_x * value_gram_y * value_gram_z,
+                )
 
 
 if __name__ == '__main__':

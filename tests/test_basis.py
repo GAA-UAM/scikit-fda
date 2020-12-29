@@ -1,3 +1,5 @@
+"""Tests of basis functions."""
+
 import itertools
 import unittest
 
@@ -5,9 +7,8 @@ import numpy as np
 
 import skfda
 from skfda import concatenate
-from skfda.misc import inner_product, inner_product_matrix
+from skfda.misc import inner_product_matrix
 from skfda.representation.basis import (
-    Basis,
     BSpline,
     Constant,
     FDataBasis,
@@ -417,6 +418,7 @@ class TestBasis(unittest.TestCase):
 
 
 class TestTensorBasis(unittest.TestCase):
+    """Tests for the Tensor basis."""
 
     def setUp(self) -> None:
         """Create original and tensor bases."""
@@ -469,26 +471,29 @@ class TestTensorBasis(unittest.TestCase):
             val_z = self.basis_z(t[2])
             val = self.basis([t])
 
-            for x in range(self.n_x):
-                for y in range(self.n_y):
-                    for z in range(self.n_z):
+            for x, y, z in itertools.product(
+                    range(self.n_x),
+                    range(self.n_y),
+                    range(self.n_z)
+            ):
 
-                        index = (
-                            x * self.n_y * self.n_z
-                            + y * self.n_z
-                            + z
-                        )
+                index = (
+                    x * self.n_y * self.n_z
+                    + y * self.n_z
+                    + z
+                )
 
-                        index2 = np.ravel_multi_index(
-                            [x, y, z],
-                            dims=self.dims)
+                index2 = np.ravel_multi_index(
+                    [x, y, z],
+                    dims=self.dims,
+                )
 
-                        self.assertEqual(index, index2)
+                self.assertEqual(index, index2)
 
-                        self.assertAlmostEqual(
-                            val[index],
-                            val_x[x] * val_y[y] * val_z[z],
-                        )
+                self.assertAlmostEqual(
+                    val[index],
+                    val_x[x] * val_y[y] * val_z[z],
+                )
 
     def test_tensor_gram_matrix(self) -> None:
         """Check that the Gram matrix is right."""

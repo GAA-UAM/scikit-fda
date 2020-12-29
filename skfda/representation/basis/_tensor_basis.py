@@ -19,7 +19,6 @@ class Tensor(Basis):
         n_basis (int): number of functions in the basis.
 
     Examples:
-
         Defines a tensor basis over the interval :math:`[0, 5] \times [0, 3]`
         consisting on the functions
 
@@ -64,14 +63,18 @@ class Tensor(Basis):
 
         self._basis_list = tuple(basis_list)
 
-        if not all(b.dim_domain == 1 and b.dim_codomain == 1
-                   for b in self._basis_list):
-            raise ValueError("The basis functions must be "
-                             "univariate and scalar valued")
+        if not all(
+            b.dim_domain == 1 and b.dim_codomain == 1
+            for b in self._basis_list
+        ):
+            raise ValueError(
+                "The basis functions must be univariate and scalar valued",
+            )
 
         super().__init__(
             domain_range=[b.domain_range[0] for b in basis_list],
-            n_basis=np.prod([b.n_basis for b in basis_list]))
+            n_basis=np.prod([b.n_basis for b in basis_list]),
+        )
 
     @property
     def basis_list(self) -> Tuple[Basis, ...]:
@@ -86,13 +89,13 @@ class Tensor(Basis):
         matrix = np.zeros((self.n_basis, len(eval_points), self.dim_codomain))
 
         basis_evaluations = [
-            b._evaluate(eval_points[:, i:i + 1])
+            b(eval_points[:, i:i + 1])
             for i, b in enumerate(self.basis_list)
         ]
 
         for i, ev in enumerate(itertools.product(*basis_evaluations)):
 
-            matrix[i, :, 0] = np.prod(ev, axis=0)
+            matrix[i, :, :] = np.prod(ev, axis=0)
 
         return matrix
 

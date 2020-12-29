@@ -472,9 +472,9 @@ class TestTensorBasis(unittest.TestCase):
             val = self.basis([t])
 
             for x, y, z in itertools.product(
-                    range(self.n_x),
-                    range(self.n_y),
-                    range(self.n_z)
+                range(self.n_x),
+                range(self.n_y),
+                range(self.n_z),
             ):
 
                 index = (

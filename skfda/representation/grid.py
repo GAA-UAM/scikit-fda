@@ -571,7 +571,7 @@ class FDataGrid(FData):
             if other is pandas.NA:
                 return self.isna()
             if pandas.api.types.is_list_like(other) and not isinstance(
-                    other, (pandas.Series, pandas.Index, pandas.DataFrame)
+                other, (pandas.Series, pandas.Index, pandas.DataFrame),
             ):
                 return np.concatenate([x == y for x, y in zip(self, other)])
             else:

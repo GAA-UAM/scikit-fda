@@ -8,21 +8,24 @@ list of discretisation points.
 
 import copy
 import numbers
-from typing import Any
 import warnings
+from typing import Any
 
 import findiff
+import numpy as np
 import pandas.api.extensions
 import scipy.stats.mstats
 
-import numpy as np
-
+from .._utils import (
+    _check_array_key,
+    _domain_range,
+    _int_to_real,
+    _tuple_of_arrays,
+    constants,
+)
 from . import basis as fdbasis
-from .._utils import (_tuple_of_arrays, constants,
-                      _domain_range, _int_to_real, _check_array_key)
 from ._functional_data import FData
 from .interpolation import SplineInterpolation
-
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -564,14 +567,17 @@ class FDataGrid(FData):
     def __eq__(self, other):
         """Elementwise equality of FDataGrid"""
 
-        if type(self) != type(other) or self.dtype != other.dtype:
+        if not isinstance(self, type(other)) or self.dtype != other.dtype:
+            if other is pandas.NA:
+                return self.isna()
             if pandas.api.types.is_list_like(other) and not isinstance(
-                    other, (pandas.Series, pandas.Index)):
+                other, (pandas.Series, pandas.Index, pandas.DataFrame),
+            ):
                 return np.concatenate([x == y for x, y in zip(self, other)])
             else:
                 return NotImplemented
 
-        if len(self) != len(other):
+        if len(self) != len(other) and len(self) != 1 and len(other) != 1:
             raise ValueError(f"Different lengths: "
                              f"len(self)={len(self)} and "
                              f"len(other)={len(other)}")

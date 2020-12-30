@@ -431,7 +431,7 @@ class FDataGrid(FData):
         if order_list.ndim != 1 or len(order_list) != self.dim_domain:
             raise ValueError("The order for each partial should be specified.")
 
-        operator = findiff.FinDiff(*[(1 + i, p, int(o))
+        operator = findiff.FinDiff(*[(1 + i, p, o)
                                      for i, (p, o) in enumerate(
                                          zip(self.grid_points, order_list))])
         data_matrix = operator(self.data_matrix.astype(float))

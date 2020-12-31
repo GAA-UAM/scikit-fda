@@ -4,18 +4,41 @@ Defines the abstract class that should be implemented by the funtional data
 objects of the package and contains some commons methods.
 """
 
-from abc import ABC, abstractmethod
 import warnings
-
-import pandas.api.extensions
+from abc import ABC, abstractmethod
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Iterator,
+    NoReturn,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
+import pandas.api.extensions
 
-from .._utils import (_evaluate_grid, _reshape_eval_points)
+from .._utils import _evaluate_grid, _reshape_eval_points
+from .evaluator import Evaluator
 from .extrapolation import _parse_extrapolation
 
+if TYPE_CHECKING:
+    from . import FDataGrid, FDataBasis
+    from .basis import Basis
 
-class FData(ABC, pandas.api.extensions.ExtensionArray):
+T = TypeVar('T', bound='FData')
+DomainRange = Tuple[Tuple[float, float], ...]
+LabelTuple = Tuple[Optional[str], ...]
+
+
+class FData(  # noqa: WPS214
+    ABC,
+    pandas.api.extensions.ExtensionArray,  # type: ignore
+):
     """Defines the structure of a functional data object.
 
     Attributes:
@@ -31,12 +54,17 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
     """
 
-    def __init__(self, *, extrapolation,
-                 dataset_name=None,
-                 dataset_label=None,
-                 axes_labels=None,
-                 argument_names=None,
-                 coordinate_names=None):
+    def __init__(
+        self,
+        *,
+        extrapolation: Evaluator,
+        dataset_name: Optional[str] = None,
+        dataset_label: Optional[str] = None,
+        axes_labels: Optional[LabelTuple] = None,
+        argument_names: Optional[LabelTuple] = None,
+        coordinate_names: Optional[LabelTuple] = None,
+        sample_names: Optional[LabelTuple] = None,
+    ) -> None:
 
         self.extrapolation = extrapolation
         self.dataset_name = dataset_name
@@ -44,121 +72,164 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         if dataset_label is not None:
             self.dataset_label = dataset_label
 
-        self.argument_names = argument_names
-        self.coordinate_names = coordinate_names
-        self.axes_labels = axes_labels
+        self.argument_names = argument_names  # type: ignore
+        self.coordinate_names = coordinate_names  # type: ignore
+        if axes_labels is not None:
+            self.axes_labels = axes_labels
+        self.sample_names = sample_names  # type: ignore
 
     @property
-    def dataset_label(self):
-        warnings.warn("Parameter dataset_label is deprecated. Use the "
-                      "parameter dataset_name instead.",
-                      DeprecationWarning)
+    def dataset_label(self) -> Optional[str]:
+        warnings.warn(
+            "Parameter dataset_label is deprecated. Use the "
+            "parameter dataset_name instead.",
+            DeprecationWarning,
+        )
         return self.dataset_name
 
     @dataset_label.setter
-    def dataset_label(self, name):
-        warnings.warn("Parameter dataset_label is deprecated. Use the "
-                      "parameter dataset_name instead.",
-                      DeprecationWarning)
+    def dataset_label(self, name: Optional[str]) -> None:
+        warnings.warn(
+            "Parameter dataset_label is deprecated. Use the "
+            "parameter dataset_name instead.",
+            DeprecationWarning,
+        )
         self.dataset_name = name
 
     @property
-    def argument_names(self):
+    def argument_names(self) -> LabelTuple:
         return self._argument_names
 
     @argument_names.setter
-    def argument_names(self, names):
+    def argument_names(
+        self,
+        names: Optional[LabelTuple],
+    ) -> None:
         if names is None:
             names = (None,) * self.dim_domain
         else:
             names = tuple(names)
             if len(names) != self.dim_domain:
-                raise ValueError("There must be a name for each of the "
-                                 "dimensions of the domain.")
+                raise ValueError(
+                    "There must be a name for each of the "
+                    "dimensions of the domain.",
+                )
 
         self._argument_names = names
 
     @property
-    def coordinate_names(self):
+    def coordinate_names(self) -> LabelTuple:
         return self._coordinate_names
 
     @coordinate_names.setter
-    def coordinate_names(self, names):
+    def coordinate_names(
+        self,
+        names: Optional[LabelTuple],
+    ) -> None:
         if names is None:
             names = (None,) * self.dim_codomain
         else:
             names = tuple(names)
             if len(names) != self.dim_codomain:
-                raise ValueError("There must be a name for each of the "
-                                 "dimensions of the codomain.")
+                raise ValueError(
+                    "There must be a name for each of the "
+                    "dimensions of the codomain.",
+                )
 
         self._coordinate_names = names
 
     @property
-    def axes_labels(self):
-        warnings.warn("Parameter axes_labels is deprecated. Use the "
-                      "parameters argument_names and "
-                      "coordinate_names instead.", DeprecationWarning)
+    def axes_labels(self) -> LabelTuple:
+        warnings.warn(
+            "Parameter axes_labels is deprecated. Use the "
+            "parameters argument_names and "
+            "coordinate_names instead.",
+            DeprecationWarning,
+        )
 
         return self.argument_names + self.coordinate_names
 
     @axes_labels.setter
-    def axes_labels(self, labels):
-        """Sets the list of labels"""
-
+    def axes_labels(self, labels: LabelTuple) -> None:
+        """Set the list of labels."""
         if labels is not None:
 
-            warnings.warn("Parameter axes_labels is deprecated. Use the "
-                          "parameters argument_names and "
-                          "coordinate_names instead.", DeprecationWarning)
+            warnings.warn(
+                "Parameter axes_labels is deprecated. Use the "
+                "parameters argument_names and "
+                "coordinate_names instead.",
+                DeprecationWarning,
+            )
 
-            labels = np.asarray(labels)
-            if len(labels) > (self.dim_domain + self.dim_codomain):
-                raise ValueError("There must be a label for each of the "
-                                 "dimensions of the domain and the image.")
-            if len(labels) < (self.dim_domain + self.dim_codomain):
-                diff = (self.dim_domain + self.dim_codomain) - len(labels)
-                labels = np.concatenate((labels, diff * [None]))
+            labels_array = np.asarray(labels)
+            if len(labels_array) > (self.dim_domain + self.dim_codomain):
+                raise ValueError(
+                    "There must be a label for each of the "
+                    "dimensions of the domain and the image.",
+                )
+            if len(labels_array) < (self.dim_domain + self.dim_codomain):
+                diff = (
+                    (self.dim_domain + self.dim_codomain)
+                    - len(labels_array)
+                )
+                labels_array = np.concatenate((labels_array, diff * [None]))
 
-            self.argument_names = labels[:self.dim_domain]
-            self.coordinate_names = labels[self.dim_domain:]
+            self.argument_names = labels_array[:self.dim_domain]
+            self.coordinate_names = labels_array[self.dim_domain:]
+
+    @property
+    def sample_names(self) -> LabelTuple:
+        return self._sample_names
+
+    @sample_names.setter
+    def sample_names(self, names: Optional[LabelTuple]) -> None:
+        if names is None:
+            names = (None,) * self.n_samples
+        else:
+            names = tuple(names)
+            if len(names) != self.n_samples:
+                raise ValueError(
+                    "There must be a name for each of the samples.",
+                )
+
+        self._sample_names = names
 
     @property
     @abstractmethod
-    def n_samples(self):
+    def n_samples(self) -> int:
         """Return the number of samples.
 
         Returns:
-            int: Number of samples of the FData object.
+            Number of samples of the FData object.
 
         """
         pass
 
     @property
     @abstractmethod
-    def dim_domain(self):
-        """Return number of dimensions of the domain.
+    def dim_domain(self) -> int:
+        """Return number of dimensions of the :term:`domain`.
 
         Returns:
-            int: Number of dimensions of the domain.
+            Number of dimensions of the domain.
 
         """
         pass
 
     @property
     @abstractmethod
-    def dim_codomain(self):
-        """Return number of dimensions of the codomain.
+    def dim_codomain(self) -> int:
+        """Return number of dimensions of the :term:`codomain`.
 
         Returns:
-            int: Number of dimensions of the codomain.
+            Number of dimensions of the codomain.
 
         """
         pass
 
     @property
     @abstractmethod
-    def coordinates(self):
+    def coordinates(self: T) -> T:
         r"""Return a component of the FDataGrid.
 
         If the functional object contains multivariate samples
@@ -169,44 +240,38 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         pass
 
     @property
-    def extrapolation(self):
+    def extrapolation(self) -> Optional[Evaluator]:
         """Return default type of extrapolation."""
-
         return self._extrapolation
 
     @extrapolation.setter
-    def extrapolation(self, value):
-        """Sets the type of extrapolation."""
-
-        if value is None:
-            self._extrapolation = None
-        else:
-            self._extrapolation = _parse_extrapolation(value)
+    def extrapolation(self, value: Optional[Union[str, Evaluator]]) -> None:
+        """Set the type of extrapolation."""
+        self._extrapolation = _parse_extrapolation(value)
 
     @property
     @abstractmethod
-    def domain_range(self):
-        """Return the domain range of the object
+    def domain_range(self) -> DomainRange:
+        """Return the :term:`domain` range of the object
 
         Returns:
             List of tuples with the ranges for each domain dimension.
         """
         pass
 
-    def _extrapolation_index(self, eval_points):
-        """Checks the points that need to be extrapolated.
+    def _extrapolation_index(self, eval_points: np.ndarray) -> np.ndarray:
+        """Check the points that need to be extrapolated.
 
         Args:
-            eval_points (np.ndarray): Array with shape `n_eval_points` x
+            eval_points: Array with shape `n_eval_points` x
                 `dim_domain` with the evaluation points, or shape ´n_samples´ x
                 `n_eval_points` x `dim_domain` with different evaluation
                 points for each sample.
 
         Returns:
-
-            (np.ndarray): Array with boolean index. The positions with True
-                in the index are outside the domain range and extrapolation
-                should be applied.
+            Array with boolean index. The positions with True
+            in the index are outside the domain range and extrapolation
+            should be applied.
 
         """
         index = np.zeros(eval_points.shape[:-1], dtype=np.bool)
@@ -218,29 +283,38 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         return index
 
-    def _join_evaluation(self, index_matrix, index_ext, index_ev,
-                         res_extrapolation, res_evaluation):
+    def _join_evaluation(
+        self,
+        index_matrix: np.ndarray,
+        index_ext: np.ndarray,
+        index_ev: np.ndarray,
+        res_extrapolation: np.ndarray,
+        res_evaluation: np.ndarray,
+    ) -> np.ndarray:
         """Join the points evaluated.
 
         This method is used internally by :func:`evaluate` to join the result
         of the evaluation and the result of the extrapolation.
 
         Args:
-            index_matrix (ndarray): Boolean index with the points extrapolated.
-            index_ext (ndarray): Boolean index with the columns that contains
+            index_matrix: Boolean index with the points extrapolated.
+            index_ext: Boolean index with the columns that contains
                 points extrapolated.
-            index_ev (ndarray): Boolean index with the columns that contains
+            index_ev: Boolean index with the columns that contains
                 points evaluated.
-            res_extrapolation (ndarray): Result of the extrapolation.
-            res_evaluation (ndarray): Result of the evaluation.
+            res_extrapolation: Result of the extrapolation.
+            res_evaluation: Result of the evaluation.
 
         Returns:
-            (ndarray): Matrix with the points evaluated with shape
+            Matrix with the points evaluated with shape
             `n_samples` x `number of points evaluated` x `dim_codomain`.
 
         """
-        res = np.empty((self.n_samples, index_matrix.shape[-1],
-                        self.dim_codomain))
+        res = np.empty((
+            self.n_samples,
+            index_matrix.shape[-1],
+            self.dim_codomain,
+        ))
 
         # Case aligned evaluation
         if index_matrix.ndim == 1:
@@ -255,78 +329,95 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         return res
 
     @abstractmethod
-    def _evaluate(self, eval_points, *, aligned=True):
-        """Internal evaluation method, defines the evaluation of the FData.
+    def _evaluate(
+        self,
+        eval_points: np.ndarray,
+        *,
+        aligned: bool = True,
+    ) -> np.ndarray:
+        """Define the evaluation of the FData.
 
         Evaluates the samples of an FData object at several points.
 
         Subclasses must override this method to implement evaluation.
 
         Args:
-            eval_points (array_like): List of points where the functions are
+            eval_points: List of points where the functions are
                 evaluated. If `aligned` is `True`, then a list of
                 lists of points must be passed, with one list per sample.
-            aligned (bool, optional): Whether the input points are
+            aligned: Whether the input points are
                 the same for each sample, or an array of points per sample is
                 passed.
 
         Returns:
-            (numpy.darray): Numpy 3d array with shape `(n_samples,
-                len(eval_points), dim_codomain)` with the result of the
-                evaluation. The entry (i,j,k) will contain the value k-th image
-                dimension of the i-th sample, at the j-th evaluation point.
+            Numpy 3d array with shape `(n_samples,
+            len(eval_points), dim_codomain)` with the result of the
+            evaluation. The entry (i,j,k) will contain the value k-th image
+            dimension of the i-th sample, at the j-th evaluation point.
 
         """
         pass
 
-    def evaluate(self, eval_points, *, derivative=0, extrapolation=None,
-                 grid=False, aligned=True):
-        """Evaluate the object or its derivatives at a list of values or
-        a grid.
+    def evaluate(
+        self,
+        eval_points: np.ndarray,
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[Union[str, Evaluator]] = None,
+        grid: bool = False,
+        aligned: bool = True,
+    ) -> np.ndarray:
+        """Evaluate the object at a list of values or a grid.
 
         Args:
-            eval_points (array_like): List of points where the functions are
+            eval_points: List of points where the functions are
                 evaluated. If ``grid`` is ``True``, a list of axes, one per
-                domain dimension, must be passed instead. If ``aligned`` is
-                ``True``, then a list of lists (of points or axes, as
-                explained) must be passed, with one list per sample.
-            extrapolation (str or Extrapolation, optional): Controls the
+                :term:`domain` dimension, must be passed instead. If
+                ``aligned`` is ``True``, then a list of lists (of points or
+                axes, as explained) must be passed, with one list per sample.
+            derivative: Deprecated. Order of the derivative to evaluate.
+            extrapolation: Controls the
                 extrapolation mode for elements outside the domain range. By
                 default it is used the mode defined during the instance of the
                 object.
-            grid (bool, optional): Whether to evaluate the results on a grid
+            grid: Whether to evaluate the results on a grid
                 spanned by the input arrays, or at points specified by the
                 input arrays. If true the eval_points should be a list of size
                 dim_domain with the corresponding times for each axis. The
                 return matrix has shape n_samples x len(t1) x len(t2) x ... x
                 len(t_dim_domain) x dim_codomain. If the domain dimension is 1
                 the parameter has no efect. Defaults to False.
-            aligned (bool, optional): Whether the input points are
-                the same for each sample, or an array of points per sample is
-                passed.
+            aligned: Whether the input points are the same for each sample,
+                or an array of points per sample is passed.
 
         Returns:
-            (np.darray): Matrix whose rows are the values of the each
+            Matrix whose rows are the values of the each
             function at the values specified in eval_points.
 
         """
         if derivative != 0:
-            warnings.warn("Parameter derivative is deprecated. Use the "
-                          "derivative function instead.", DeprecationWarning)
+            warnings.warn(
+                "Parameter derivative is deprecated. Use the "
+                "derivative function instead.",
+                DeprecationWarning,
+            )
             return self.derivative(order=derivative)(
                 eval_points,
                 extrapolation=extrapolation,
                 grid=grid,
-                aligned=aligned)
+                aligned=aligned,
+            )
 
         if grid:  # Evaluation of a grid performed in auxiliar function
-            return _evaluate_grid(eval_points,
-                                  evaluate_method=self.evaluate,
-                                  n_samples=self.n_samples,
-                                  dim_domain=self.dim_domain,
-                                  dim_codomain=self.dim_codomain,
-                                  extrapolation=extrapolation,
-                                  aligned=aligned)
+            return _evaluate_grid(
+                eval_points,
+                evaluate_method=self.evaluate,
+                n_samples=self.n_samples,
+                dim_domain=self.dim_domain,
+                dim_codomain=self.dim_codomain,
+                extrapolation=extrapolation,
+                aligned=aligned,
+            )
 
         if extrapolation is None:
             extrapolation = self.extrapolation
@@ -335,258 +426,301 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
             extrapolation = _parse_extrapolation(extrapolation)
 
         # Convert to array and check dimensions of eval points
-        eval_points = _reshape_eval_points(eval_points,
-                                           aligned=aligned,
-                                           n_samples=self.n_samples,
-                                           dim_domain=self.dim_domain)
+        eval_points = _reshape_eval_points(
+            eval_points,
+            aligned=aligned,
+            n_samples=self.n_samples,
+            dim_domain=self.dim_domain,
+        )
 
-        # Check if extrapolation should be applied
         if extrapolation is not None:
+
             index_matrix = self._extrapolation_index(eval_points)
-            extrapolate = index_matrix.any()
 
-        else:
-            extrapolate = False
+            if index_matrix.any():
 
-        if not extrapolate:  # Direct evaluation
+                # Partition of eval points
+                if aligned:
 
-            res = self._evaluate(
-                eval_points, aligned=aligned)
+                    index_ext = index_matrix
+                    index_ev = ~index_matrix
 
-        else:
-            # Partition of eval points
-            if aligned:
+                    eval_points_extrapolation = eval_points[index_ext]
+                    eval_points_evaluation = eval_points[index_ev]
 
-                index_ext = index_matrix
-                index_ev = ~index_matrix
+                else:
+                    index_ext = np.logical_or.reduce(index_matrix, axis=0)
+                    eval_points_extrapolation = eval_points[:, index_ext]
 
-                eval_points_extrapolation = eval_points[index_ext]
-                eval_points_evaluation = eval_points[index_ev]
+                    index_ev = np.logical_or.reduce(~index_matrix, axis=0)
+                    eval_points_evaluation = eval_points[:, index_ev]
 
-            else:
-                index_ext = np.logical_or.reduce(index_matrix, axis=0)
-                eval_points_extrapolation = eval_points[:, index_ext]
+                # Direct evaluation
+                res_evaluation = self._evaluate(
+                    eval_points_evaluation,
+                    aligned=aligned,
+                )
 
-                index_ev = np.logical_or.reduce(~index_matrix, axis=0)
-                eval_points_evaluation = eval_points[:, index_ev]
+                res_extrapolation = extrapolation.evaluate(
+                    self,
+                    eval_points_extrapolation,
+                    aligned=aligned,
+                )
 
-            # Direct evaluation
-            res_evaluation = self._evaluate(
-                eval_points_evaluation,
-                aligned=aligned)
+                return self._join_evaluation(
+                    index_matrix,
+                    index_ext,
+                    index_ev,
+                    res_extrapolation,
+                    res_evaluation,
+                )
 
-            res_extrapolation = extrapolation.evaluate(
-                self,
-                eval_points_extrapolation,
-                aligned=aligned)
+        return self._evaluate(
+            eval_points,
+            aligned=aligned,
+        )
 
-            res = self._join_evaluation(index_matrix, index_ext, index_ev,
-                                        res_extrapolation, res_evaluation)
+    def __call__(
+        self,
+        eval_points: np.ndarray,
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[Union[str, Evaluator]] = None,
+        grid: bool = False,
+        aligned: bool = True,
+    ) -> np.ndarray:
+        """Evaluate the :term:`functional object`.
 
-        return res
-
-    def __call__(self, eval_points, *, derivative=0, extrapolation=None,
-                 grid=False, aligned=True):
-        """Evaluate the object or its derivatives at a list of values or a
+        Evaluate the object or its derivatives at a list of values or a
         grid. This method is a wrapper of :meth:`evaluate`.
 
         Args:
-            eval_points (array_like): List of points where the functions are
+            eval_points: List of points where the functions are
                 evaluated. If a matrix of shape nsample x eval_points is given
                 each sample is evaluated at the values in the corresponding row
                 in eval_points.
-            derivative (int, optional): Order of the derivative. Defaults to 0.
-            extrapolation (str or Extrapolation, optional): Controls the
+            derivative: Order of the derivative. Defaults to 0.
+            extrapolation: Controls the
                 extrapolation mode for elements outside the domain range. By
                 default it is used the mode defined during the instance of the
                 object.
-            grid (bool, optional): Whether to evaluate the results on a grid
+            grid: Whether to evaluate the results on a grid
                 spanned by the input arrays, or at points specified by the
                 input arrays. If true the eval_points should be a list of size
                 dim_domain with the corresponding times for each axis. The
                 return matrix has shape n_samples x len(t1) x len(t2) x ... x
                 len(t_dim_domain) x dim_codomain. If the domain dimension is 1
                 the parameter has no efect. Defaults to False.
+            aligned: Whether the input points are the same for each sample,
+                or an array of points per sample is passed.
 
         Returns:
-            (np.ndarray): Matrix whose rows are the values of the each
+            Matrix whose rows are the values of the each
             function at the values specified in eval_points.
 
         """
-        return self.evaluate(eval_points, derivative=derivative,
-                             extrapolation=extrapolation, grid=grid,
-                             aligned=aligned)
+        return self.evaluate(
+            eval_points,
+            derivative=derivative,
+            extrapolation=extrapolation,
+            grid=grid,
+            aligned=aligned,
+        )
 
     @abstractmethod
-    def derivative(self, order=1):
+    def derivative(self: T, order: int = 1) -> T:
         """Differentiate a FData object.
 
-
         Args:
-            order (int, optional): Order of the derivative. Defaults to one.
+            order: Order of the derivative. Defaults to one.
 
         Returns:
-            :class:`FData`: Functional object containg the derivative.
+            Functional object containg the derivative.
+
         """
         pass
 
     @abstractmethod
-    def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
-              discretization_points=None, **kwargs):
+    def shift(
+        self: T,
+        shifts: Union[float, np.ndarray],
+        *,
+        restrict_domain: bool = False,
+        extrapolation: Optional[Union[str, Evaluator]] = None,
+        eval_points: np.ndarray = None,
+        **kwargs: Any,
+    ) -> T:
         """Perform a shift of the curves.
 
         Args:
-            shifts (array_like or numeric): List with the shift corresponding
+            shifts: List with the shift corresponding
                 for each sample or numeric with the shift to apply to all
                 samples.
-            restrict_domain (bool, optional): If True restricts the domain to
+            restrict_domain: If True restricts the domain to
                 avoid evaluate points outside the domain using extrapolation.
                 Defaults uses extrapolation.
-            extrapolation (str or Extrapolation, optional): Controls the
+            extrapolation: Controls the
                 extrapolation mode for elements outside the domain range.
                 By default uses the method defined in fd. See extrapolation to
                 more information.
-            discretization_points (array_like, optional): Set of points where
+            eval_points: Set of points where
                 the functions are evaluated to obtain the discrete
                 representation of the object to operate. If an empty list is
                 passed it calls np.linspace with bounds equal to the ones
                 defined in fd.domain_range and the number of points the maximum
                 between 201 and 10 times the number of basis plus 1.
+            kwargs: Additional arguments.
 
         Returns:
             :class:`FData` with the shifted functional data.
+
         """
         pass
 
-    def plot(self, *args, **kwargs):
+    def plot(self, *args: Any, **kwargs: Any) -> Any:
         """Plot the FDatGrid object.
 
         Args:
-            chart (figure object, axe or list of axes, optional): figure over
-                with the graphs are plotted or axis over where the graphs are
-                plotted. If None and ax is also None, the figure is
-                initialized.
-            derivative (int or tuple, optional): Order of derivative to be
-                plotted. In case of surfaces a tuple with the order of
-                derivation in each direction can be passed. See
-                :func:`evaluate` to obtain more information. Defaults 0.
-            fig (figure object, optional): figure over with the graphs are
-                plotted in case ax is not specified. If None and ax is also
-                None, the figure is initialized.
-            ax (list of axis objects, optional): axis over where the graphs are
-                plotted. If None, see param fig.
-            n_rows (int, optional): designates the number of rows of the figure
-                to plot the different dimensions of the image. Only specified
-                if fig and ax are None.
-            n_cols (int, optional): designates the number of columns of the
-                figure to plot the different dimensions of the image. Only
-                specified if fig and ax are None.
-            n_points (int or tuple, optional): Number of points to evaluate in
-                the plot. In case of surfaces a tuple of length 2 can be pased
-                with the number of points to plot in each axis, otherwise the
-                same number of points will be used in the two axes. By default
-                in unidimensional plots will be used 501 points; in surfaces
-                will be used 30 points per axis, wich makes a grid with 900
-                points.
-            domain_range (tuple or list of tuples, optional): Range where the
-                function will be plotted. In objects with unidimensional domain
-                the domain range should be a tuple with the bounds of the
-                interval; in the case of surfaces a list with 2 tuples with
-                the ranges for each dimension. Default uses the domain range
-                of the functional object.
-            group (list of int): contains integers from [0 to number of
-                labels) indicating to which group each sample belongs to. Then,
-                the samples with the same label are plotted in the same color.
-                If None, the default value, each sample is plotted in the color
-                assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-            group_colors (list of colors): colors in which groups are
-                represented, there must be one for each group. If None, each
-                group is shown with distict colors in the "Greys" colormap.
-            group_names (list of str): name of each of the groups which appear
-                in a legend, there must be one for each one. Defaults to None
-                and the legend is not shown.
-            **kwargs: if dim_domain is 1, keyword arguments to be passed to
-                the matplotlib.pyplot.plot function; if dim_domain is 2,
-                keyword arguments to be passed to the
-                matplotlib.pyplot.plot_surface function.
+            args: positional arguments for :func:`plot_graph`.
+            kwargs: keyword arguments for :func:`plot_graph`.
 
         Returns:
             fig (figure object): figure object in which the graphs are plotted.
 
         """
-        from ..exploratory.visualization.representation import (
-            plot_graph)
+        from ..exploratory.visualization.representation import plot_graph
 
         return plot_graph(self, *args, **kwargs)
 
     @abstractmethod
-    def copy(self, **kwargs):
+    def copy(self: T, **kwargs: Any) -> T:
         """Make a copy of the object.
 
         Args:
             kwargs: named args with attributes to be changed in the new copy.
 
         Returns:
-            FData: A copy of the FData object.
+            A copy of the FData object.
 
         """
         pass
 
-    @abstractmethod
-    def mean(self, weights=None):
-        """Compute the mean of all the samples.
+    @abstractmethod  # noqa: WPS125
+    def sum(  # noqa: WPS125
+        self: T,
+        *,
+        axis: None = None,
+        out: None = None,
+        keepdims: bool = False,
+        skipna: bool = False,
+        min_count: int = 0,
+    ) -> T:
+        """Compute the sum of all the samples.
 
-        weights (array-like, optional): List of weights.
+        Args:
+            axis: Used for compatibility with numpy. Must be None or 0.
+            out: Used for compatibility with numpy. Must be None.
+            keepdims: Used for compatibility with numpy. Must be False.
+            skipna: Wether the NaNs are ignored or not.
+            min_count: Number of valid (non NaN) data to have in order
+                for the a variable to not be NaN when `skipna` is
+                `True`.
 
         Returns:
-            FData : A FData object with just one sample representing
+            A FData object with just one sample representing
+            the sum of all the samples in the original object.
+
+        """
+        if (
+            (axis is not None and axis != 0)
+            or out is not None
+            or keepdims is not False
+        ):
+            raise NotImplementedError(
+                "Not implemented for that parameter combination",
+            )
+
+        return self
+
+    def mean(
+        self: T,
+        *,
+        axis: None = None,
+        dtype: None = None,
+        out: None = None,
+        keepdims: bool = False,
+        skipna: bool = False,
+    ) -> T:
+        """Compute the mean of all the samples.
+
+        Args:
+            axis: Used for compatibility with numpy. Must be None or 0.
+            dtype: Used for compatibility with numpy. Must be None.
+            out: Used for compatibility with numpy. Must be None.
+            keepdims: Used for compatibility with numpy. Must be False.
+            skipna: Wether the NaNs are ignored or not.
+
+        Returns:
+            A FData object with just one sample representing
             the mean of all the samples in the original object.
 
         """
-        pass
+        if dtype is not None:
+            raise NotImplementedError(
+                "Not implemented for that parameter combination",
+            )
+
+        return (
+            self.sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
+            / self.n_samples
+        )
 
     @abstractmethod
-    def to_grid(self, sample_points=None):
+    def to_grid(self, grid_points: np.ndarray = None) -> 'FDataGrid':
         """Return the discrete representation of the object.
 
         Args:
-            sample_points (array_like, optional): Points per axis
-            where the function is going to be evaluated.
+            grid_points: Points per axis
+                where the function is going to be evaluated.
 
         Returns:
-              FDataGrid: Discrete representation of the functional data
-              object.
-        """
+            Discrete representation of the functional data
+            object.
 
+        """
         pass
 
     @abstractmethod
-    def to_basis(self, basis, eval_points=None, **kwargs):
+    def to_basis(
+        self,
+        basis: 'Basis',
+        **kwargs: Any,
+    ) -> 'FDataBasis':
         """Return the basis representation of the object.
 
         Args:
-            basis(Basis): basis object in which the functional data are
+            basis: basis object in which the functional data are
                 going to be represented.
-            **kwargs: keyword arguments to be passed to
+            kwargs: keyword arguments to be passed to
                 FDataBasis.from_data().
 
         Returns:
-            FDataBasis: Basis representation of the funtional data
+            Basis representation of the funtional data
             object.
-        """
 
+        """
         pass
 
     @abstractmethod
-    def concatenate(self, *others, as_coordinates=False):
+    def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
         """Join samples from a similar FData object.
 
         Joins samples from another FData object if it has the same
         dimensions and has compatible representations.
 
         Args:
-            others (:class:`FData`): other FData objects.
-            as_coordinates (boolean, optional):  If False concatenates as
+            others: other FData objects.
+            as_coordinates:  If False concatenates as
                 new samples, else, concatenates the other functions as
                 new components of the image. Defaults to False.
 
@@ -598,102 +732,123 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
         pass
 
     @abstractmethod
-    def compose(self, fd, *, eval_points=None, **kwargs):
+    def compose(
+        self: T,
+        fd: T,
+        *,
+        eval_points: np.ndarray = None,
+        **kwargs: Any,
+    ) -> T:
         """Composition of functions.
 
         Performs the composition of functions.
 
         Args:
-            fd (:class:`FData`): FData object to make the composition. Should
+            fd: FData object to make the composition. Should
                 have the same number of samples and image dimension equal to
                 the domain dimension of the object composed.
-            eval_points (array_like): Points to perform the evaluation.
-            **kwargs: Named arguments to be passed to the composition method of
+            eval_points: Points to perform the evaluation.
+            kwargs: Named arguments to be passed to the composition method of
                 the specific functional object.
 
         """
         pass
 
     @abstractmethod
-    def __getitem__(self, key):
+    def __getitem__(self: T, key: Union[int, slice]) -> T:
         """Return self[key]."""
-
         pass
 
-    def __eq__(self, other):
+    def equals(self, other: Any) -> bool:
+        """Whole object equality."""
         return (
-            self.extrapolation == other.extrapolation
+            isinstance(other, type(self))  # noqa: WPS222
+            and self.extrapolation == other.extrapolation
             and self.dataset_name == other.dataset_name
             and self.argument_names == other.argument_names
             and self.coordinate_names == other.coordinate_names
         )
 
     @abstractmethod
-    def __add__(self, other):
-        """Addition for FData object."""
+    def __eq__(self, other: Any) -> np.ndarray:
+        pass
 
+    def __ne__(self, other: Any) -> np.ndarray:
+        """Return for `self != other` (element-wise in-equality)."""
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return NotImplemented
+
+        return ~result
+
+    def _copy_op(
+        self: T,
+        other: Union[T, np.ndarray, float],
+        **kwargs: Any,
+    ) -> T:
+
+        base_copy = (
+            other if isinstance(other, type(self))
+            and self.n_samples == 1 and other.n_samples != 1
+            else self
+        )
+
+        return base_copy.copy(**kwargs)
+
+    @abstractmethod
+    def __add__(self: T, other: Union[T, np.ndarray, float]) -> T:
+        """Addition for FData object."""
         pass
 
     @abstractmethod
-    def __radd__(self, other):
+    def __radd__(self: T, other: Union[T, np.ndarray, float]) -> T:
         """Addition for FData object."""
-
         pass
 
     @abstractmethod
-    def __sub__(self, other):
+    def __sub__(self: T, other: Union[T, np.ndarray, float]) -> T:
         """Subtraction for FData object."""
-
         pass
 
     @abstractmethod
-    def __rsub__(self, other):
+    def __rsub__(self: T, other: Union[T, np.ndarray, float]) -> T:
         """Right subtraction for FData object."""
-
         pass
 
     @abstractmethod
-    def __mul__(self, other):
+    def __mul__(self: T, other: Union[np.ndarray, float]) -> T:
         """Multiplication for FData object."""
-
         pass
 
     @abstractmethod
-    def __rmul__(self, other):
+    def __rmul__(self: T, other: Union[np.ndarray, float]) -> T:
         """Multiplication for FData object."""
-
         pass
 
     @abstractmethod
-    def __truediv__(self, other):
+    def __truediv__(self: T, other: Union[np.ndarray, float]) -> T:
         """Division for FData object."""
-
         pass
 
     @abstractmethod
-    def __rtruediv__(self, other):
+    def __rtruediv__(self: T, other: Union[np.ndarray, float]) -> T:
         """Right division for FData object."""
-
         pass
 
-    def __iter__(self):
-        """Iterate over the samples"""
+    def __iter__(self: T) -> Iterator[T]:
+        """Iterate over the samples."""
+        yield from (self[i] for i in range(self.n_samples))
 
-        for i in range(self.n_samples):
-            yield self[i]
-
-    def __len__(self):
-        """Returns the number of samples of the FData object."""
-
+    def __len__(self) -> int:
+        """Return the number of samples of the FData object."""
         return self.n_samples
 
     #####################################################################
     # Numpy methods
     #####################################################################
 
-    def to_numpy(self):
-        """Returns a numpy array with the objects"""
-
+    def __array__(self, *args: Any, **kwargs: Any) -> np.ndarray:
+        """Return a numpy array with the objects."""
         # This is to prevent numpy to access inner dimensions
         array = np.empty(shape=len(self), dtype=np.object_)
 
@@ -706,59 +861,74 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
     # Pandas ExtensionArray methods
     #####################################################################
     @property
-    def ndim(self):
+    def ndim(self) -> int:
         """
-        Return number of dimensions of the functional data. It is
-        always 1, as each observation is considered a "scalar" object.
+        Return number of dimensions of the functional data.
+
+        It is always 1, as each observation is considered a "scalar" object.
 
         Returns:
-            int: Number of dimensions of the functional data.
+            Number of dimensions of the functional data.
 
         """
         return 1
 
     @classmethod
-    def _from_sequence(cls, scalars, dtype=None, copy=False):
+    def _from_sequence(
+        cls,
+        scalars: Union['FData', Sequence['FData']],
+        dtype: Any = None,
+        copy: bool = False,
+    ) -> 'FData':
+
+        scalars_seq: Sequence['FData'] = (
+            [scalars] if isinstance(scalars, cls) else scalars
+        )
+
         if copy:
-            scalars = [f.copy() for f in scalars]
+            scalars_seq = [f.copy() for f in scalars_seq]
 
-        if dtype is not None and dtype != cls.dtype.fget(None):
-            raise ValueError(f"Invalid dtype {dtype}")
+        if dtype is None:
+            first_element = next(s for s in scalars_seq if s is not pandas.NA)
+            dtype = first_element.dtype
 
-        return cls._concat_same_type(scalars)
+        scalars_seq = [
+            s if s is not pandas.NA else dtype._na_repr()  # noqa: WPS437
+            for s in scalars_seq
+        ]
+
+        if len(scalars_seq) == 0:
+            scalars_seq = [dtype._na_repr()[:0]]  # noqa: WPS437
+
+        return cls._concat_same_type(scalars_seq)
 
     @classmethod
-    def _from_factorized(cls, values, original):
-        raise NotImplementedError("Factorization does not make sense for "
-                                  "functional data")
+    def _from_factorized(cls, values: Any, original: Any) -> NoReturn:
+        raise NotImplementedError(
+            "Factorization does not make sense for functional data",
+        )
 
-    def isna(self):
-        """
-        A 1-D array indicating if each value is missing.
-
-        Returns:
-            na_values (np.ndarray): Array full of False values.
-        """
-        return np.zeros(self.n_samples, dtype=bool)
-
-    def take(self, indices, allow_fill=False, fill_value=None, axis=0):
+    def take(
+        self: T,
+        indices: Sequence[int],
+        allow_fill: bool = False,
+        fill_value: Optional[T] = None,
+        axis: int = 0,
+    ) -> T:
         """Take elements from an array.
 
         Parameters:
-            indices (sequence of integers):
+            indices:
                 Indices to be taken.
-            allow_fill (bool, default False): How to handle negative values
-                in `indices`.
-
+            allow_fill: How to handle negative values in `indices`.
                 * False: negative values in `indices` indicate positional
                   indices from the right (the default). This is similar to
                   :func:`numpy.take`.
                 * True: negative values in `indices` indicate
                   missing values. These values are set to `fill_value`. Any
                   other negative values raise a ``ValueError``.
-
-            fill_value (any, optional):
-                Fill value to use for NA-indices when `allow_fill` is True.
+            fill_value: Fill value to use for NA-indices
+                when `allow_fill` is True.
                 This may be ``None``, in which case the default NA value for
                 the type, ``self.dtype.na_value``, is used.
                 For many ExtensionArrays, there will be two representations of
@@ -766,6 +936,7 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
                 physical NA value. `fill_value` should be the user-facing
                 version, and the implementation should handle translating that
                 to the physical version for processing the take if necessary.
+            axis: Parameter for compatibility with numpy. Must be always 0.
 
         Returns:
             FData
@@ -794,49 +965,73 @@ class FData(ABC, pandas.api.extensions.ExtensionArray):
 
         # If the ExtensionArray is backed by an ndarray, then
         # just pass that here instead of coercing to object.
-        data = self.to_numpy()
+        data = np.asarray(self)
         if allow_fill and fill_value is None:
             fill_value = self.dtype.na_value
         # fill value should always be translated from the scalar
         # type for the array, to the physical storage type for
         # the data, before passing to take.
-        result = take(data, indices, fill_value=fill_value,
-                      allow_fill=allow_fill)
+        result = take(
+            data,
+            indices,
+            fill_value=fill_value,
+            allow_fill=allow_fill,
+        )
         return self._from_sequence(result, dtype=self.dtype)
 
     @classmethod
     def _concat_same_type(
-            cls,
-            to_concat
-    ):
+        cls,
+        to_concat: Sequence[T],
+    ) -> T:
         """
-        Concatenate multiple array
+        Concatenate multiple array.
 
         Parameters:
-            to_concat (sequence of FData)
+            to_concat: Sequence of FData objects to concat.
 
         Returns:
-            FData
+            Concatenation of the objects.
+
         """
+        if isinstance(to_concat, cls):
+            return to_concat
 
-        first, *others = to_concat
+        return concatenate(to_concat)
 
-        return first.concatenate(*others)
+    def astype(self, dtype: Any, copy: bool = True) -> Any:
+        """Cast to a new dtype."""
+        if isinstance(dtype, type(self.dtype)):
+            new_obj = self
+            if copy:
+                new_obj = self.copy()
+            return new_obj
+        return super().astype(dtype)
+
+    def _reduce(self, name: str, skipna: bool = True, **kwargs: Any) -> Any:
+        meth = getattr(self, name, None)
+        if meth:
+            return meth(skipna=skipna, **kwargs)
+
+        raise TypeError(
+            f"'{type(self).__name__}' does not implement "
+            f"reduction '{name}'",
+        )
 
 
-def concatenate(objects, as_coordinates=False):
+def concatenate(functions: Iterable[T], as_coordinates: bool = False) -> T:
     """
     Join samples from an iterable of similar FData objects.
 
     Joins samples of FData objects if they have the same
     dimensions and sampling points.
     Args:
-        objects (list of :obj:`FDataBasis`): Objects to be concatenated.
-        as_coordinates (boolean, optional):  If False concatenates as
+        objects: Objects to be concatenated.
+        as_coordinates:  If False concatenates as
                 new samples, else, concatenates the other functions as
                 new components of the image. Defaults to False.
     Returns:
-        :obj:`FData`: FData object with the samples from the
+        FData object with the samples from the
         original objects.
     Raises:
         ValueError: In case the provided list of FData objects is
@@ -845,11 +1040,12 @@ def concatenate(objects, as_coordinates=False):
         By the moment, only unidimensional objects are supported in basis
         representation.
     """
-    objects = iter(objects)
-    first = next(objects, None)
+    functions = iter(functions)
+    first = next(functions, None)
 
-    if not first:
-        raise ValueError("At least one FData object must be provided "
-                         "to concatenate.")
+    if first is None:
+        raise ValueError(
+            "At least one FData object must be provided to concatenate.",
+        )
 
-    return first.concatenate(*objects, as_coordinates=as_coordinates)
+    return first.concatenate(*functions, as_coordinates=as_coordinates)

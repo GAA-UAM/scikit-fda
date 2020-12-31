@@ -13,8 +13,8 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
             evaluated. If `None`, the functions must be `FDatagrid` objects
             and all points will be returned.
         extrapolation (str or Extrapolation, optional): Controls the
-            extrapolation mode for elements outside the domain range. By
-            default it is used the mode defined during the instance of the
+            extrapolation mode for elements outside the :term:`domain` range.
+            By default it is used the mode defined during the instance of the
             object.
         grid (bool, optional): Whether to evaluate the results on a grid
             spanned by the input arrays, or at points specified by the
@@ -37,20 +37,20 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
 
         >>> data_matrix = [[1, 2], [2, 3]]
-        >>> sample_points = [2, 4]
-        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [2, 4]
+        >>> fd = FDataGrid(data_matrix, grid_points)
         >>>
         >>> transformer = EvaluationTransformer()
         >>> transformer.fit_transform(fd)
-        array([[1, 2],
-               [2, 3]])
+        array([[ 1., 2.],
+               [ 2., 3.]])
 
         Functional data object with 2 samples
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}^2`.
 
         >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
-        >>> sample_points = [2, 4]
-        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [2, 4]
+        >>> fd = FDataGrid(data_matrix, grid_points)
         >>>
         >>> transformer = EvaluationTransformer()
         >>> transformer.fit_transform(fd)
@@ -61,8 +61,8 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
         representing a function :math:`f : \mathbb{R}^2\longmapsto\mathbb{R}`.
 
         >>> data_matrix = [[[1, 0.3], [2, 0.4]], [[2, 0.5], [3, 0.6]]]
-        >>> sample_points = [[2, 4], [3, 6]]
-        >>> fd = FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [[2, 4], [3, 6]]
+        >>> fd = FDataGrid(data_matrix, grid_points)
         >>>
         >>> transformer = EvaluationTransformer()
         >>> transformer.fit_transform(fd)

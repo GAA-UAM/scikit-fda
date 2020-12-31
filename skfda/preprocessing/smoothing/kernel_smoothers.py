@@ -107,7 +107,7 @@ class NadarayaWatsonSmoother(_LinearKernelSmoother):
 
     Examples:
         >>> from skfda import FDataGrid
-        >>> fd = FDataGrid(sample_points=[1, 2, 4, 5, 7],
+        >>> fd = FDataGrid(grid_points=[1, 2, 4, 5, 7],
         ...                data_matrix=[[1, 2, 3, 4, 5]])
         >>> smoother = NadarayaWatsonSmoother(smoothing_parameter=3.5)
         >>> fd_smoothed = smoother.fit_transform(fd)
@@ -209,7 +209,7 @@ class LocalLinearRegressionSmoother(_LinearKernelSmoother):
 
     Examples:
         >>> from skfda import FDataGrid
-        >>> fd = FDataGrid(sample_points=[1, 2, 4, 5, 7],
+        >>> fd = FDataGrid(grid_points=[1, 2, 4, 5, 7],
         ...                data_matrix=[[1, 2, 3, 4, 5]])
         >>> smoother = LocalLinearRegressionSmoother(smoothing_parameter=3.5)
         >>> fd_smoothed = smoother.fit_transform(fd)
@@ -298,7 +298,7 @@ class KNeighborsSmoother(_LinearKernelSmoother):
 
     Examples:
         >>> from skfda import FDataGrid
-        >>> fd = FDataGrid(sample_points=[1, 2, 4, 5, 7],
+        >>> fd = FDataGrid(grid_points=[1, 2, 4, 5, 7],
         ...                data_matrix=[[1, 2, 3, 4, 5]])
         >>> smoother = KNeighborsSmoother(smoothing_parameter=2)
         >>> fd_smoothed = smoother.fit_transform(fd)
@@ -318,7 +318,7 @@ class KNeighborsSmoother(_LinearKernelSmoother):
 
         In case there are two points at the same distance it will take both.
 
-        >>> fd = FDataGrid(sample_points=[1, 2, 3, 5, 7],
+        >>> fd = FDataGrid(grid_points=[1, 2, 3, 5, 7],
         ...                data_matrix=[[1, 2, 3, 4, 5]])
         >>> smoother = KNeighborsSmoother(smoothing_parameter=2)
         >>> fd_smoothed = smoother.fit_transform(fd)

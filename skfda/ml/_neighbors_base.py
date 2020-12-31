@@ -1,6 +1,6 @@
 """Base classes for the neighbor estimators"""
 
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from sklearn.base import BaseEstimator
 from sklearn.base import RegressorMixin
@@ -9,7 +9,6 @@ from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 import numpy as np
 
 from .. import FDataGrid, FData
-from ..exploratory.stats import mean as l2_mean
 from ..misc.metrics import lp_distance
 
 
@@ -22,19 +21,19 @@ def _to_multivariate(fdatagrid):
 
     Returns:
         (np.array): Numpy array with size (n_samples, points), where
-            points = prod([len(d) for d in fdatagrid.sample_points]
+            points = prod([len(d) for d in fdatagrid.grid_points]
 
     """
     return fdatagrid.data_matrix.reshape(fdatagrid.n_samples, -1)
 
 
-def _from_multivariate(data_matrix, sample_points, shape, **kwargs):
+def _from_multivariate(data_matrix, grid_points, shape, **kwargs):
     r"""Constructs a FDatagrid from the data matrix flattened.
 
     Args:
         data_matrix (np.array): Data Matrix flattened as multivariate vector
             compatible with sklearn.
-        sample_points (array_like): List with sample points for each dimension.
+        grid_points (array_like): List with sample points for each dimension.
         shape (tuple): Shape of the data_matrix.
         **kwargs: Named params to be passed to the FDataGrid constructor.
 
@@ -42,10 +41,10 @@ def _from_multivariate(data_matrix, sample_points, shape, **kwargs):
         (:class:`FDataGrid`): FDatagrid with the data.
 
     """
-    return FDataGrid(data_matrix.reshape(shape), sample_points, **kwargs)
+    return FDataGrid(data_matrix.reshape(shape), grid_points, **kwargs)
 
 
-def _to_multivariate_metric(metric, sample_points):
+def _to_multivariate_metric(metric, grid_points):
     r"""Transform a metric between FDatagrid in a sklearn compatible one.
 
     Given a metric between FDatagrids returns a compatible metric used to
@@ -54,7 +53,7 @@ def _to_multivariate_metric(metric, sample_points):
     Args:
         metric (pyfunc): Metric of the module `mics.metrics`. Must accept
             two FDataGrids and return a float representing the distance.
-        sample_points (array_like): Array of arrays with the sample points of
+        grid_points (array_like): Array of arrays with the sample points of
             the FDataGrids.
 
     Returns:
@@ -65,7 +64,7 @@ def _to_multivariate_metric(metric, sample_points):
         >>> import numpy as np
         >>> from skfda import FDataGrid
         >>> from skfda.misc.metrics import lp_distance
-        >>> from skfda._neighbors.base import _to_multivariate_metric
+        >>> from skfda.ml._neighbors_base import _to_multivariate_metric
 
         Calculate the Lp distance between fd and fd2.
 
@@ -83,12 +82,12 @@ def _to_multivariate_metric(metric, sample_points):
 
     """
     # Shape -> (n_samples = 1, domain_dims...., image_dimension (-1))
-    shape = [1] + [len(axis) for axis in sample_points] + [-1]
+    shape = [1] + [len(axis) for axis in grid_points] + [-1]
 
     def multivariate_metric(x, y, _check=False, **kwargs):
 
-        return metric(_from_multivariate(x, sample_points, shape),
-                      _from_multivariate(y, sample_points, shape),
+        return metric(_from_multivariate(x, grid_points, shape),
+                      _from_multivariate(y, grid_points, shape),
                       _check=_check, **kwargs)
 
     return multivariate_metric
@@ -157,7 +156,7 @@ class NeighborsMixin:
             self.estimator_ = self._init_estimator(self.metric)
             self.estimator_.fit(X, y)
         else:
-            self._sample_points = X.sample_points
+            self._grid_points = X.grid_points
             self._shape = X.data_matrix.shape[1:]
 
             if not self.multivariate_metric:
@@ -168,7 +167,7 @@ class NeighborsMixin:
                     metric = self.metric
 
                 sklearn_metric = _to_multivariate_metric(metric,
-                                                         self._sample_points)
+                                                         self._grid_points)
             else:
                 sklearn_metric = self.metric
 
@@ -440,6 +439,19 @@ class NeighborsClassifierMixin:
 class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
     """Mixin class for the regressors based on neighbors"""
 
+    def _mean_regressor(self, X, weights=None):
+        """
+        Default regressor using weighted average.
+
+        """
+
+        if weights is None:
+            return X.mean()
+        else:
+            weights /= np.sum(weights)
+
+            return (X * weights).sum()
+
     def fit(self, X, y):
         """Fit the model using X as training data and y as responses.
 
@@ -481,7 +493,7 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
             self.estimator_ = self._init_estimator(self.metric)
             self.estimator_.fit(X)
         else:
-            self._sample_points = X.sample_points
+            self._grid_points = X.grid_points
             self._shape = X.data_matrix.shape[1:]
 
             if not self.multivariate_metric:
@@ -492,7 +504,7 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
                     metric = self.metric
 
                 sklearn_metric = _to_multivariate_metric(metric,
-                                                         self._sample_points)
+                                                         self._grid_points)
             else:
                 sklearn_metric = self.metric
 
@@ -500,7 +512,7 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
             self.estimator_.fit(self._transform_to_multivariate(X))
 
         if self.regressor == 'mean':
-            self._regressor = l2_mean
+            self._regressor = self._mean_regressor
         else:
             self._regressor = self.regressor
 
@@ -768,7 +780,7 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
         sum_u = np.sum(data_u, axis=0)
         sum_v = np.sum(data_v, axis=0)
 
-        int_u = simps(sum_u, x=u.sample_points[0])
-        int_v = simps(sum_v, x=v.sample_points[0])
+        int_u = simps(sum_u, x=u.grid_points[0])
+        int_v = simps(sum_v, x=v.grid_points[0])
 
         return 1 - int_u / int_v

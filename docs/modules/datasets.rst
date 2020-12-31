@@ -43,7 +43,8 @@ The following functions are used to make synthetic functional datasets:
 
 .. autosummary::
    :toctree: autosummary
-
+	
+   skfda.datasets.make_gaussian
    skfda.datasets.make_gaussian_process
    skfda.datasets.make_sinusoidal_process
    skfda.datasets.make_multimodal_samples

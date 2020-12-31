@@ -1,12 +1,9 @@
-from numpy import polyder, polyint, polymul, polyval
-from scipy.interpolate import BSpline as SciBSpline
-from scipy.interpolate import PPoly
-import scipy.interpolate
-
 import numpy as np
+import scipy.interpolate
+from numpy import polyint, polymul, polyval
+from scipy.interpolate import BSpline as SciBSpline, PPoly
 
-from ..._utils import _list_of_arrays
-from ..._utils import _same_domain
+from ..._utils import _domain_range
 from ._basis import Basis
 
 
@@ -104,7 +101,7 @@ class BSpline(Basis):
         """
 
         if domain_range is not None:
-            domain_range = _list_of_arrays(domain_range)
+            domain_range = _domain_range(domain_range)
 
             if len(domain_range) != 1:
                 raise ValueError("Domain range should be unidimensional.")
@@ -117,8 +114,8 @@ class BSpline(Basis):
                 raise ValueError("Must provide either a list of knots or the"
                                  "number of basis.")
         else:
-            knots = list(knots)
-            knots.sort()
+            knots = tuple(knots)
+            knots = sorted(knots)
             if domain_range is None:
                 domain_range = (knots[0], knots[-1])
             else:
@@ -135,9 +132,9 @@ class BSpline(Basis):
                              f"order of the bspline ({order}) should be "
                              f"greater than 3.")
 
-        self.order = order
-        self.knots = None if knots is None else list(knots)
-        super().__init__(domain_range, n_basis)
+        self._order = order
+        self._knots = None if knots is None else tuple(knots)
+        super().__init__(domain_range=domain_range, n_basis=n_basis)
 
         # Checks
         if self.n_basis != self.order + len(self.knots) - 2:
@@ -148,14 +145,14 @@ class BSpline(Basis):
     @property
     def knots(self):
         if self._knots is None:
-            return list(np.linspace(*self.domain_range[0],
-                                    self.n_basis - self.order + 2))
+            return tuple(np.linspace(*self.domain_range[0],
+                                     self.n_basis - self.order + 2))
         else:
             return self._knots
 
-    @knots.setter
-    def knots(self, value):
-        self._knots = value
+    @property
+    def order(self):
+        return self._order
 
     def _evaluation_knots(self):
         """
@@ -166,8 +163,8 @@ class BSpline(Basis):
             .. [RS05] Ramsay, J., Silverman, B. W. (2005). *Functional Data
                 Analysis*. Springer. 50-51.
         """
-        return np.array([self.knots[0]] * (self.order - 1) + self.knots +
-                        [self.knots[-1]] * (self.order - 1))
+        return np.array((self.knots[0],) * (self.order - 1) + self.knots +
+                        (self.knots[-1],) * (self.order - 1))
 
     def _evaluate(self, eval_points):
 
@@ -246,12 +243,6 @@ class BSpline(Basis):
                 f"n_basis={self.n_basis}, order={self.order}, "
                 f"knots={self.knots})")
 
-    def __eq__(self, other):
-        """Equality of Basis"""
-        return (super().__eq__(other)
-                and self.order == other.order
-                and self.knots == other.knots)
-
     def _gram_matrix(self):
         # Places m knots at the boundaries
         knots = self._evaluation_knots()
@@ -322,60 +313,6 @@ class BSpline(Basis):
 
         return matrix
 
-    def basis_of_product(self, other):
-        from ._constant import Constant
-
-        """Multiplication of two Bspline Basis"""
-        if not _same_domain(self, other):
-            raise ValueError("Ranges are not equal.")
-
-        if isinstance(other, Constant):
-            return other.rbasis_of_product(self)
-
-        if isinstance(other, BSpline):
-            uniqueknots = np.union1d(self.inknots, other.inknots)
-
-            multunique = np.zeros(len(uniqueknots), dtype=np.int32)
-            for i in range(len(uniqueknots)):
-                mult1 = np.count_nonzero(self.inknots == uniqueknots[i])
-                mult2 = np.count_nonzero(other.inknots == uniqueknots[i])
-                multunique[i] = max(mult1, mult2)
-
-            m2 = 0
-            allknots = np.zeros(np.sum(multunique))
-            for i in range(len(uniqueknots)):
-                m1 = m2
-                m2 = m2 + multunique[i]
-                allknots[m1:m2] = uniqueknots[i]
-
-            norder1 = self.n_basis - len(self.inknots)
-            norder2 = other.n_basis - len(other.inknots)
-            norder = min(norder1 + norder2 - 1, 20)
-
-            allbreaks = ([self.domain_range[0][0]] +
-                         np.ndarray.tolist(allknots) +
-                         [self.domain_range[0][1]])
-            n_basis = len(allbreaks) + norder - 2
-            return BSpline(self.domain_range, n_basis, norder, allbreaks)
-        else:
-            norder = min(self.n_basis - len(self.inknots) + 2, 8)
-            n_basis = max(self.n_basis + other.n_basis, norder + 1)
-            return BSpline(self.domain_range, n_basis, norder)
-
-    def rbasis_of_product(self, other):
-        """Multiplication of a Bspline Basis with other basis"""
-
-        norder = min(self.n_basis - len(self.inknots) + 2, 8)
-        n_basis = max(self.n_basis + other.n_basis, norder + 1)
-        return BSpline(self.domain_range, n_basis, norder)
-
-    def _to_R(self):
-        drange = self.domain_range[0]
-        return ("create.bspline.basis(rangeval = c(" + str(drange[0]) + "," +
-                str(drange[1]) + "), nbasis = " + str(self.n_basis) +
-                ", norder = " + str(self.order) + ", breaks = " +
-                self._list_to_R(self.knots) + ")")
-
     def _to_scipy_BSpline(self, coefs):
 
         knots = np.concatenate((
@@ -403,3 +340,11 @@ class BSpline(Basis):
     def inknots(self):
         """Return number of basis."""
         return self.knots[1:len(self.knots) - 1]
+
+    def __eq__(self, other):
+        return (super().__eq__(other)
+                and self.order == other.order
+                and self.knots == other.knots)
+
+    def __hash__(self):
+        return hash((super().__hash__(), self.order, self.knots))

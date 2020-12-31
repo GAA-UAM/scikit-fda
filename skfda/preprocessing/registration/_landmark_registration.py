@@ -20,8 +20,8 @@ def landmark_shift_deltas(fd, landmarks, location=None):
         The function will calculate the corresponding :math:`\delta_i` shuch
         that :math:`t_i = t^* + \delta_i`.
 
-        This procedure will work independent of the dimension of the domain
-        and the image.
+        This procedure will work independent of the dimension of the
+        :term:`domain` and the :term:`codomain`.
 
     Args:
         fd (:class:`FData`): Functional data object.
@@ -238,7 +238,7 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
     data_matrix[:, 1:-1] = landmarks
 
     if location is None:
-        sample_points = np.mean(data_matrix, axis=0)
+        grid_points = np.mean(data_matrix, axis=0)
 
     elif n_landmarks != len(location):
 
@@ -246,20 +246,20 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
                          f"the number of landmarks ({len(location)}) != "
                          f"({n_landmarks})")
     else:
-        sample_points = np.empty(n_landmarks + 2)
-        sample_points[0] = fd.domain_range[0][0]
-        sample_points[-1] = fd.domain_range[0][1]
-        sample_points[1:-1] = location
+        grid_points = np.empty(n_landmarks + 2)
+        grid_points[0] = fd.domain_range[0][0]
+        grid_points[-1] = fd.domain_range[0][1]
+        grid_points[1:-1] = location
 
     interpolation = SplineInterpolation(interpolation_order=3, monotone=True)
 
     warping = FDataGrid(data_matrix=data_matrix,
-                        sample_points=sample_points,
+                        grid_points=grid_points,
                         interpolation=interpolation,
                         extrapolation='bounds')
 
     try:
-        warping_points = fd.sample_points
+        warping_points = fd.grid_points
     except AttributeError:
         warping_points = [np.linspace(*domain, 201)
                           for domain in fd.domain_range]
@@ -286,8 +286,8 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
         eval_points (array_like, optional): Set of points where
             the functions are evaluated to obtain a discrete
             representation of the object. In case of objects with
-            multidimensional domain a list axis with points of evaluation
-            for each dimension.
+            multidimensional :term:`domain` a list axis with points of
+            evaluation for each dimension.
 
     Returns:
         :class:`FData`: FData with the functional data object registered.

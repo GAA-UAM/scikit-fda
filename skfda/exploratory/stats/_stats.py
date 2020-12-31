@@ -1,101 +1,196 @@
-"""Functional data descriptive statistics.
-"""
-from ..depth import modified_band_depth
+"""Functional data descriptive statistics."""
 
-def mean(fdata, weights=None):
+from builtins import isinstance
+from typing import Callable, Optional, TypeVar, Union
+
+import numpy as np
+
+from ...misc.metrics import l2_distance, lp_norm
+from ...representation import FData, FDataGrid
+from ..depth import Depth, ModifiedBandDepth
+
+F = TypeVar('F', bound=FData)
+
+
+def mean(X: F) -> F:
     """Compute the mean of all the samples in a FData object.
 
-    Computes the mean of all the samples in a FDataGrid or FDataBasis object.
-
     Args:
-        fdata (FDataGrid or FDataBasis): Object containing all the samples
-            whose mean is wanted.
-        weight (array-like, optional): List of weights.
+        X: Object containing all the samples whose mean is wanted.
 
 
     Returns:
-        FDataGrid or FDataBasis: A FDataGrid or FDataBasis object with just
-        one sample representing the mean of all the samples in the original
-        object.
+        A :term:`functional data object` with just one sample representing
+        the mean of all the samples in the original object.
 
     """
-    return fdata.mean(weights)
+    return X.mean()
 
 
-def var(fdatagrid):
+def var(X: FData) -> FDataGrid:
     """Compute the variance of a set of samples in a FDataGrid object.
 
     Args:
-        fdatagrid (FDataGrid): Object containing all the set of samples
-        whose variance is desired.
+        X: Object containing all the set of samples whose variance is desired.
 
     Returns:
-        FDataGrid: A FDataGrid object with just one sample representing the
-        variance of all the samples in the original FDataGrid object.
+        A :term:`functional data object` with just one sample representing the
+        variance of all the samples in the original object.
 
     """
-    return fdatagrid.var()
+    return X.var()
 
 
-def gmean(fdatagrid):
+def gmean(X: FDataGrid) -> FDataGrid:
     """Compute the geometric mean of all the samples in a FDataGrid object.
 
     Args:
-        fdatagrid (FDataGrid): Object containing all the samples whose
-            geometric mean is wanted.
+        X: Object containing all the samples whose geometric mean is wanted.
 
     Returns:
-        FDataGrid: A FDataGrid object with just one sample representing the
-        geometric mean of all the samples in the original FDataGrid object.
+        A :term:`functional data object` with just one sample representing the
+        geometric mean of all the samples in the original object.
 
     """
-    return fdatagrid.gmean()
+    return X.gmean()
 
 
-def cov(fdatagrid):
+def cov(X: FData) -> FDataGrid:
     """Compute the covariance.
 
     Calculates the covariance matrix representing the covariance of the
     functional samples at the observation points.
 
     Args:
-        fdatagrid (FDataGrid): Object containing different samples of a
-            functional variable.
+        X: Object containing different samples of a functional variable.
 
     Returns:
-        numpy.darray: Matrix of covariances.
+        A :term:`functional data object` with just one sample representing the
+        covariance of all the samples in the original object.
 
     """
-    return fdatagrid.cov()
+    return X.cov()
 
 
-def depth_based_median(fdatagrid, depth_method=modified_band_depth):
+def depth_based_median(
+    X: FDataGrid,
+    depth_method: Optional[Depth] = None,
+) -> FDataGrid:
     """Compute the median based on a depth measure.
 
     The depth based median is the deepest curve given a certain
-    depth measure
+    depth measure.
 
     Args:
-        fdatagrid (FDataGrid): Object containing different samples of a
+        X: Object containing different samples of a
             functional variable.
-        depth_method (:ref:`depth measure <depth-measures>`, optional):
-                Method used to order the data. Defaults to :func:`modified
-                band depth <fda.depth_measures.modified_band_depth>`.
+        depth_method: Method used to order the data. Defaults to
+            :func:`modified band
+            depth <skfda.exploratory.depth.ModifiedBandDepth>`.
 
     Returns:
-        FDataGrid: object containing the computed depth_based median.
+        Object containing the computed depth_based median.
+
+    See also:
+        :func:`geometric_median`
 
     """
-    depth = depth_method(fdatagrid)
+    if depth_method is None:
+        depth_method = ModifiedBandDepth()
+
+    depth = depth_method(X)
     indices_descending_depth = (-depth).argsort(axis=0)
 
     # The median is the deepest curve
-    return fdatagrid[indices_descending_depth[0]]
+    return X[indices_descending_depth[0]]
 
 
-def trim_mean(fdatagrid,
-              proportiontocut,
-              depth_method=modified_band_depth):
+T = TypeVar('T', bound=Union[np.ndarray, FData])
+
+
+def _weighted_average(X: T, weights: np.ndarray) -> T:
+
+    return (
+        (X * weights).sum() if isinstance(X, FData)
+        # To support also multivariate data
+        else (X.T * weights).T.sum(axis=0)
+    )
+
+
+def geometric_median(
+    X: T,
+    *,
+    tol: float = 1.e-8,
+    metric: Callable[[T, T], np.ndarray] = l2_distance,
+) -> T:
+    r"""Compute the geometric median.
+
+    The sample geometric median is the point that minimizes the :math:`L_1`
+    norm of the vector of distances to all observations:
+
+    .. math::
+
+        \underset{y \in L(\mathcal{T})}{\arg \min}
+        \sum_{i=1}^N \left \| x_i-y \right \|
+
+    It uses the corrected Weiszfeld algorithm to compute the median.
+
+    Args:
+        X: Object containing different samples of a
+            functional variable.
+        tol: tolerance used to check convergence.
+        metric: metric used to compute the vector of distances. By
+            default is the :math:`L_2` distance.
+
+    Returns:
+        Object containing the computed geometric median.
+
+    Example:
+
+        >>> from skfda import FDataGrid
+        >>> data_matrix = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
+        >>> X = FDataGrid(data_matrix)
+        >>> median = geometric_median(X)
+        >>> median.data_matrix[0, ..., 0]
+        array([ 1. ,  1. ,  3. ,  0.5])
+
+    See also:
+        :func:`depth_based_median`
+
+    References:
+        Gervini, D. (2008). Robust functional estimation using the median and
+        spherical principal components. Biometrika, 95(3), 587–600.
+        https://doi.org/10.1093/biomet/asn031
+
+    """
+    weights = np.full(len(X), 1 / len(X))
+    median = _weighted_average(X, weights)
+    distances = metric(X, median)
+
+    while True:
+        zero_distances = (distances == 0)
+        n_zeros = np.sum(zero_distances)
+        weights_new = (
+            (1 / distances) / np.sum(1 / distances) if n_zeros == 0
+            else (1 / n_zeros) * zero_distances
+        )
+
+        median_new = _weighted_average(X, weights_new)
+
+        if lp_norm(median_new - median) < tol:
+            return median_new
+
+        distances = metric(X, median_new)
+
+        weights, median = (weights_new, median_new)
+
+
+def trim_mean(
+    X: FDataGrid,
+    proportiontocut: float,
+    *,
+    depth_method: Optional[Depth] = None,
+) -> FDataGrid:
     """Compute the trimmed means based on a depth measure.
 
     The trimmed means consists in computing the mean function without a
@@ -107,26 +202,28 @@ def trim_mean(fdatagrid,
     those that have the least depth values.
 
     Args:
-        fdatagrid (FDataGrid): Object containing different samples of a
+        X: Object containing different samples of a
             functional variable.
-        proportiontocut (float): indicates the percentage of functions to
+        proportiontocut: Indicates the percentage of functions to
             remove. It is not easy to determine as it varies from dataset to
             dataset.
-        depth_method (:ref:`depth measure <depth-measures>`, optional):
-            Method used to order the data. Defaults to :func:`modified
-            band depth <fda.depth_measures.modified_band_depth>`.
+        depth_method: Method used to order the data. Defaults to
+            :func:`modified band depth
+            <skfda.exploratory.depth.ModifiedBandDepth>`.
 
     Returns:
-        FDataGrid: object containing the computed trimmed mean.
+        Object containing the computed trimmed mean.
 
     """
-    n_samples_to_keep = (fdatagrid.n_samples -
-                         int(fdatagrid.n_samples * proportiontocut))
+    if depth_method is None:
+        depth_method = ModifiedBandDepth()
+
+    n_samples_to_keep = (len(X) - int(len(X) * proportiontocut))
 
     # compute the depth of each curve and store the indexes in descending order
-    depth = depth_method(fdatagrid)
+    depth = depth_method(X)
     indices_descending_depth = (-depth).argsort(axis=0)
 
-    trimmed_curves = fdatagrid[indices_descending_depth[:n_samples_to_keep]]
+    trimmed_curves = X[indices_descending_depth[:n_samples_to_keep]]
 
     return trimmed_curves.mean()

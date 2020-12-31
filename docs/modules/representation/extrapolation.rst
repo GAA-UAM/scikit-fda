@@ -2,7 +2,7 @@ Extrapolation
 =============
 
 This module contains the extrapolators used to evaluate points outside the
-domain range of :class:`FDataBasis` or :class:`FDataGrid`. See
+:term:`domain` range of :class:`FDataBasis` or :class:`FDataGrid`. See
 `Extrapolation Example
 <../auto_examples/plot_extrapolation.html>`_ for detailed explanation.
 

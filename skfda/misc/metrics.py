@@ -1,3 +1,5 @@
+from builtins import isinstance
+
 import scipy.integrate
 
 import numpy as np
@@ -6,31 +8,33 @@ from .._utils import _pairwise_commutative
 from ..preprocessing.registration import normalize_warping, ElasticRegistration
 from ..preprocessing.registration._warping import _normalize_scale
 from ..preprocessing.registration.elastic import SRSF
-from ..representation import FDataGrid, FDataBasis
+from ..representation import FData, FDataGrid, FDataBasis
 
 
 def _check_compatible(fdata1, fdata2):
 
-    if (fdata2.dim_codomain != fdata1.dim_codomain or
-            fdata2.dim_domain != fdata1.dim_domain):
-        raise ValueError("Objects should have the same dimensions")
+    if isinstance(fdata1, FData) and isinstance(fdata2, FData):
+        if (fdata2.dim_codomain != fdata1.dim_codomain or
+                fdata2.dim_domain != fdata1.dim_domain):
+            raise ValueError("Objects should have the same dimensions")
 
-    if not np.array_equal(fdata1.domain_range, fdata2.domain_range):
-        raise ValueError("Domain ranges for both objects must be equal")
+        if not np.array_equal(fdata1.domain_range, fdata2.domain_range):
+            raise ValueError("Domain ranges for both objects must be equal")
 
 
 def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
-    """Checks if the fdatas passed as argument are unidimensional and
-    compatible and converts them to FDatagrid to compute their distances.
+    """Convert fdata1 and fdata2 to FDatagrid.
+
+    Checks if the fdatas passed as argument are unidimensional and compatible
+    and converts them to FDatagrid to compute their distances.
 
     Args:
         fdata1: (:obj:`FData`): First functional object.
         fdata2: (:obj:`FData`): Second functional object.
 
     Returns:
-        tuple: Tuple with two :obj:`FDataGrid` with the same sample points.
+        tuple: Tuple with two :obj:`FDataGrid` with the same grid points.
     """
-
     # Dont perform any check
     if not _check:
         return fdata1, fdata2
@@ -43,28 +47,28 @@ def _cast_to_grid(fdata1, fdata2, eval_points=None, _check=True, **kwargs):
         fdata2 = fdata2.to_grid(eval_points)
 
     elif not isinstance(fdata1, FDataGrid) and isinstance(fdata2, FDataGrid):
-        fdata1 = fdata1.to_grid(fdata2.sample_points[0])
+        fdata1 = fdata1.to_grid(fdata2.grid_points[0])
 
     elif not isinstance(fdata2, FDataGrid) and isinstance(fdata1, FDataGrid):
-        fdata2 = fdata2.to_grid(fdata1.sample_points[0])
+        fdata2 = fdata2.to_grid(fdata1.grid_points[0])
 
     elif (not isinstance(fdata1, FDataGrid) and
           not isinstance(fdata2, FDataGrid)):
         domain = fdata1.domain_range[0]
-        sample_points = np.linspace(*domain)
-        fdata1 = fdata1.to_grid(sample_points)
-        fdata2 = fdata2.to_grid(sample_points)
+        grid_points = np.linspace(*domain)
+        fdata1 = fdata1.to_grid(grid_points)
+        fdata2 = fdata2.to_grid(grid_points)
 
-    elif not np.array_equal(fdata1.sample_points,
-                            fdata2.sample_points):
-        raise ValueError("Sample points for both objects must be equal or"
+    elif not np.array_equal(fdata1.grid_points,
+                            fdata2.grid_points):
+        raise ValueError("Grid points for both objects must be equal or"
                          "a new list evaluation points must be specified")
 
     return fdata1, fdata2
 
 
 def distance_from_norm(norm, **kwargs):
-    r"""Returns the distance induced by a norm.
+    r"""Return the distance induced by a norm.
 
     Given a norm :math:`\| \cdot \|: X \rightarrow \mathbb{R}`,
     returns the distance :math:`d: X \times X \rightarrow \mathbb{R}` induced
@@ -112,17 +116,19 @@ def distance_from_norm(norm, **kwargs):
 
 
 def pairwise_distance(distance, **kwargs):
-    r"""Return pairwise distance for FDataGrid objects.
+    r"""Return a pairwise distance function for FData objects.
 
-    Given a distance returns the corresponding pairwise distance function.
+    Given a distance it returns the corresponding pairwise distance function.
 
-    The pairwise distance calculates the distance between all possible pairs of
-    one sample of the first FDataGrid object and one of the second one.
+    The returned pairwise distance function calculates the distance between
+    all possible pairs consisting of one observation of the first FDataGrid
+    object and one of the second one.
 
     The matrix returned by the pairwise distance is a matrix with as many rows
-    as samples in the first object and as many columns as samples in the second
-    one. Each element (i, j) of the matrix is the distance between the ith
-    sample of the first object and the jth sample of the second one.
+    as observations in the first object and as many columns as observations in
+    the second one. Each element (i, j) of the matrix is the distance between
+    the ith observation of the first object and the jth observation of the
+    second one.
 
     Args:
         distance (:obj:`Function`): Distance functions between two functional
@@ -144,15 +150,15 @@ def pairwise_distance(distance, **kwargs):
 
 
 def lp_norm(fdata, p=2, p2=None):
-    r"""Calculate the norm of all the samples in a FDataGrid object.
+    r"""Calculate the norm of all the observations in a FDataGrid object.
 
-    For each sample sample f the Lp norm is defined as:
+    For each observation f the Lp norm is defined as:
 
     .. math::
-        \lVert f \rVert = \left( \int_D \lvert f \rvert^p dx \right)^{
+        \| f \| = \left( \int_D \| f \|^p dx \right)^{
         \frac{1}{p}}
 
-    Where D is the domain over which the functions are defined.
+    Where D is the :term:`domain` over which the functions are defined.
 
     The integral is approximated using Simpson's rule.
 
@@ -172,8 +178,8 @@ def lp_norm(fdata, p=2, p2=None):
     :math:`\| (x,y) \|_* = \sqrt{x^2 + y^2}`, the lp norm applied is
 
     .. math::
-        \lVert f \rVert = \left( \int \int_D \left ( \sqrt{ \lvert f_1(x,y)
-        \rvert^2 + \lvert f_2(x,y) \rvert^2 } \right )^p dxdy \right)^{
+        \| f \| = \left( \int \int_D \left ( \sqrt{ \| f_1(x,y)
+        \|^2 + \| f_2(x,y) \|^2 } \right )^p dxdy \right)^{
         \frac{1}{p}}
 
 
@@ -186,10 +192,11 @@ def lp_norm(fdata, p=2, p2=None):
             multivariate objects. Defaults to 2.
 
     Returns:
-        numpy.darray: Matrix with as many rows as samples in the first
-        object and as many columns as samples in the second one. Each
-        element (i, j) of the matrix is the inner product of the ith sample
-        of the first object and the jth sample of the second one.
+        numpy.darray: Matrix with as many rows as observations in the first
+        object and as many columns as observations in the second one. Each
+        element (i, j) of the matrix is the inner product of the ith
+        observation of the first object and the jth observation of the second
+        one.
 
     Examples:
         Calculates the norm of a FDataGrid containing the functions y = 1
@@ -245,14 +252,15 @@ def lp_norm(fdata, p=2, p2=None):
             if fdata.dim_domain == 1:
                 res = np.max(data_matrix[..., 0], axis=1)
             else:
-                res = np.array([np.max(sample) for sample in data_matrix])
+                res = np.array([np.max(observation)
+                                for observation in data_matrix])
 
         elif fdata.dim_domain == 1:
 
             # Computes the norm, approximating the integral with Simpson's
             # rule.
             res = scipy.integrate.simps(data_matrix[..., 0] ** p,
-                                        x=fdata.sample_points) ** (1 / p)
+                                        x=fdata.grid_points) ** (1 / p)
 
         else:
             # Needed to perform surface integration
@@ -267,15 +275,15 @@ def lp_norm(fdata, p=2, p2=None):
 def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
     r"""Lp distance for FDataGrid objects.
 
-    Calculates the distance between all possible pairs of one sample of
-    the first FDataGrid object and one of the second one.
+    Calculates the distance between two functional objects.
 
-    For each pair of samples f and g the distance between them is defined as:
+    For each pair of observations f and g the distance between them is defined
+    as:
 
     .. math::
-        d(f, g) = d(f, g) = \lVert f - g \rVert
+        d(f, g) = d(g, f) = \| f - g \|_p
 
-    The norm is specified as a parameter but defaults to the l2 norm.
+    where :math:`\| {}\cdot{} \|_p` denotes the :func:`Lp norm <lp_norm>`.
 
     Args:
         fdatagrid (FDataGrid): FDataGrid object.
@@ -309,10 +317,68 @@ def lp_distance(fdata1, fdata2, p=2, p2=2, *, eval_points=None, _check=True):
             ....
         ValueError: ...
 
+    See also:
+        :func:`~skfda.misc.metrics.l1_distance
+        :func:`~skfda.misc.metrics.l2_distance
+        :func:`~skfda.misc.metrics.linf_distance
+
     """
     _check_compatible(fdata1, fdata2)
 
     return lp_norm(fdata1 - fdata2, p=p, p2=p2)
+
+
+def l1_distance(fdata1, fdata2, *, eval_points=None, _check=True):
+    r"""L1 distance for FDataGrid objects.
+
+    Calculates the L1 distance between fdata1 and fdata2:
+    .. math::
+        d(fdata1, fdata2) =
+            \left( \int_D \| fdata1(x)-fdata2(x) \| dx
+            \right)
+
+    See also:
+        :func:`~skfda.misc.metrics.lp_distance
+        :func:`~skfda.misc.metrics.l2_distance
+        :func:`~skfda.misc.metrics.linf_distance
+    """
+    return lp_distance(fdata1, fdata2, p=1, p2=1,
+                       eval_points=eval_points, _check=_check)
+
+
+def l2_distance(fdata1, fdata2, *, eval_points=None, _check=True):
+    r"""L2 distance for FDataGrid objects.
+
+    Calculates the euclidean distance between fdata1 and fdata2:
+    .. math::
+        d(fdata1, fdata2) =
+            \left( \int_D \| fdata1(x)-fdata2(x) \|^2 dx
+            \right)^{\frac{1}{2}}
+
+    See also:
+        :func:`~skfda.misc.metrics.lp_distance
+        :func:`~skfda.misc.metrics.l1_distance
+        :func:`~skfda.misc.metrics.linf_distance
+    """
+    return lp_distance(fdata1, fdata2, p=2, p2=2,
+                       eval_points=eval_points, _check=_check)
+
+
+def linf_distance(fdata1, fdata2, *, eval_points=None, _check=True):
+    r"""L_infinity distance for FDataGrid objects.
+
+    Calculates the L_infinity distance between fdata1 and fdata2:
+    .. math::
+        d(fdata1, fdata2) \equiv \inf \{ C\ge 0 : |fdata1(x)-fdata2(x)|
+                                                                \le C a.e. \}.
+
+    See also:
+        :func:`~skfda.misc.metrics.lp_distance
+        :func:`~skfda.misc.metrics.l1_distance
+        :func:`~skfda.misc.metrics.l2_distance
+    """
+    return lp_distance(fdata1, fdata2, p=np.inf, p2=np.inf,
+                       eval_points=eval_points, _check=_check)
 
 
 def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
@@ -331,8 +397,9 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
     match with the usual fisher-rao distance in non-parametric form for
     probability distributions [S11-2]_.
 
-    If the samples are defined in a domain different than (0,1) their domains
-    are normalized to this interval with an affine transformation.
+    If the observations are defined in a :term:`domain` different than (0,1)
+    their domains are normalized to this interval with an affine
+    transformation.
 
     Args:
         fdata1 (FData): First FData object.
@@ -351,17 +418,16 @@ def fisher_rao_distance(fdata1, fdata2, *, eval_points=None, _check=True):
             Metric* (pp. 5-7). arXiv:1103.3817v2.
 
     """
-
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
                                    _check=_check)
 
-    # Both should have the same sample points
-    eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
+    # Both should have the same grid points
+    eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
-    fdata1 = fdata1.copy(sample_points=eval_points_normalized,
+    fdata1 = fdata1.copy(grid_points=eval_points_normalized,
                          domain_range=(0, 1))
-    fdata2 = fdata2.copy(sample_points=eval_points_normalized,
+    fdata2 = fdata2.copy(grid_points=eval_points_normalized,
                          domain_range=(0, 1))
 
     srsf = SRSF(initial_value=0)
@@ -399,8 +465,9 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
 
     See [SK16-4-10-1]_ for a detailed explanation.
 
-    If the samples are defined in a domain different than (0,1) their domains
-    are normalized to this interval with an affine transformation.
+    If the observations are defined in a :term:`domain` different than (0,1)
+    their domains are normalized to this interval with an affine
+    transformation.
 
     Args:
         fdata1 (FData): First FData object.
@@ -421,17 +488,16 @@ def amplitude_distance(fdata1, fdata2, *, lam=0., eval_points=None,
             Functional and shape data analysis. In *Amplitude Space and a
             Metric Structure* (pp. 107-109). Springer.
     """
-
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
                                    _check=_check)
 
-    # Both should have the same sample points
-    eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
+    # Both should have the same grid points
+    eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
-    fdata1 = fdata1.copy(sample_points=eval_points_normalized,
+    fdata1 = fdata1.copy(grid_points=eval_points_normalized,
                          domain_range=(0, 1))
-    fdata2 = fdata2.copy(sample_points=eval_points_normalized,
+    fdata2 = fdata2.copy(grid_points=eval_points_normalized,
                          domain_range=(0, 1))
 
     elastic_registration = ElasticRegistration(
@@ -477,8 +543,9 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
 
     See [SK16-4-10-2]_ for a detailed explanation.
 
-    If the samples are defined in a domain different than (0,1) their domains
-    are normalized to this interval with an affine transformation.
+    If the observations are defined in a :term:`domain` different than (0,1)
+    their domains are normalized to this interval with an affine
+    transformation.
 
     Args:
         fdata1 (FData): First FData object.
@@ -494,24 +561,21 @@ def phase_distance(fdata1, fdata2, *, lam=0., eval_points=None, _check=True,
     Raises:
         ValueError: If the objects are not unidimensional.
 
-
     Refereces:
         ..  [SK16-4-10-2] Srivastava, Anuj & Klassen, Eric P. (2016).
             Functional and shape data analysis. In *Phase Space and a Metric
             Structure* (pp. 109-111). Springer.
-
     """
-
     fdata1, fdata2 = _cast_to_grid(fdata1, fdata2, eval_points=eval_points,
                                    _check=_check)
 
     # Rescale in (0,1)
-    eval_points_normalized = _normalize_scale(fdata1.sample_points[0])
+    eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
-    fdata1 = fdata1.copy(sample_points=eval_points_normalized,
+    fdata1 = fdata1.copy(grid_points=eval_points_normalized,
                          domain_range=(0, 1))
-    fdata2 = fdata2.copy(sample_points=eval_points_normalized,
+    fdata2 = fdata2.copy(grid_points=eval_points_normalized,
                          domain_range=(0, 1))
 
     elastic_registration = ElasticRegistration(
@@ -547,7 +611,7 @@ def warping_distance(warping1, warping2, *, eval_points=None, _check=True):
     See [SK16-4-11-2]_ for a detailed explanation.
 
     If the warpings are not defined in [0,1], an affine transformation is maked
-    to change the domain.
+    to change the :term:`domain`.
 
     Args:
         fdata1 (:obj:`FData`): First warping.
@@ -566,7 +630,6 @@ def warping_distance(warping1, warping2, *, eval_points=None, _check=True):
             Functions* (pp. 113-117). Springer.
 
     """
-
     warping1, warping2 = _cast_to_grid(warping1, warping2,
                                        eval_points=eval_points, _check=_check)
 
@@ -588,7 +651,7 @@ def warping_distance(warping1, warping2, *, eval_points=None, _check=True):
 
     product = np.multiply(srsf_warping1, srsf_warping2, out=srsf_warping1)
 
-    d = scipy.integrate.simps(product, x=warping1.sample_points[0])
+    d = scipy.integrate.simps(product, x=warping1.grid_points[0])
     d = np.clip(d, -1, 1)
 
     return np.arccos(d)

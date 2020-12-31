@@ -23,12 +23,7 @@ the package, along with several examples showing different funcionalities.
 import os
 import sys
 
-from Cython.Build import cythonize
-from setuptools import setup, find_packages
-from setuptools.extension import Extension
-
-import numpy as np
-
+from setuptools import find_packages, setup
 
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
 pytest_runner = ['pytest-runner'] if needs_pytest else []
@@ -39,21 +34,6 @@ with open(os.path.join(os.path.dirname(__file__),
                        'VERSION'), 'r') as version_file:
     version = version_file.read().strip()
 
-deps_path = 'deps'
-fdasrsf_path = os.path.join(deps_path, 'fdasrsf')
-
-
-extensions = [
-    Extension(name='optimum_reparam',
-              sources=[
-                  os.path.join(fdasrsf_path, 'optimum_reparam.pyx'),
-                  os.path.join(fdasrsf_path, 'dp_grid.c')
-              ],
-              include_dirs=[np.get_include()],
-              language='c',
-              ),
-]
-
 setup(name='scikit-fda',
       version=version,
       description=DOCLINES[1],
@@ -61,7 +41,6 @@ setup(name='scikit-fda',
       url='https://fda.readthedocs.io',
       maintainer='Carlos Ramos Carreño',
       maintainer_email='vnmabus@gmail.com',
-      ext_modules=cythonize(extensions),
       include_package_data=True,
       platforms=['any'],
       license='BSD',
@@ -79,17 +58,22 @@ setup(name='scikit-fda',
           'Topic :: Scientific/Engineering :: Mathematics',
           'Topic :: Software Development :: Libraries :: Python Modules',
       ],
-      install_requires=['numpy>=1.16',
-                        'scipy>=1.3.0',
-                        'scikit-learn>=0.20',
-                        'pandas',
-                        'matplotlib',
-                        'scikit-datasets[cran]>=0.1.24',
-                        'rdata',
-                        'cython',
-                        'mpldatacursor',
-                        'multimethod>=1.2',
-                        'findiff'],
+      install_requires=[
+          'cython',
+          'dcor',
+          'fdasrsf>=2.2.0',
+          'findiff',
+          'matplotlib',
+          'mpldatacursor',
+          'multimethod>=1.2',
+          'numpy>=1.16',
+          'pandas',
+          'rdata',
+          'scikit-datasets[cran]>=0.1.24',
+          'scikit-learn>=0.20',
+          'scipy>=1.3.0',
+          'typing-extensions',
+      ],
       setup_requires=pytest_runner,
       tests_require=['pytest'],
       test_suite='tests',

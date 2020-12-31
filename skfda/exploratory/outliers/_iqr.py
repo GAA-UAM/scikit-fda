@@ -1,7 +1,7 @@
 from sklearn.base import BaseEstimator, OutlierMixin
 
 from . import _envelopes
-from ..depth import modified_band_depth
+from ..depth import ModifiedBandDepth
 
 
 class IQROutlierDetector(BaseEstimator, OutlierMixin):
@@ -24,15 +24,15 @@ class IQROutlierDetector(BaseEstimator, OutlierMixin):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> out_detector = IQROutlierDetector()
         >>> out_detector.fit_predict(fd)
         array([-1, 1, 1, -1])
 
     """
 
-    def __init__(self, *, depth_method=modified_band_depth, factor=1.5):
+    def __init__(self, *, depth_method=ModifiedBandDepth(), factor=1.5):
         self.depth_method = depth_method
         self.factor = factor
 

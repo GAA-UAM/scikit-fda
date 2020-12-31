@@ -1,12 +1,14 @@
-from builtins import isinstance
 import copy
-
-import pandas.api.extensions
+import numbers
+import warnings
+from builtins import isinstance
+from typing import Any
 
 import numpy as np
+import pandas.api.extensions
 
+from ..._utils import _check_array_key, _int_to_real, constants
 from .. import grid
-from ..._utils import constants
 from .._functional_data import FData
 
 
@@ -54,7 +56,7 @@ class FDataBasis(FData):
         >>> coefficients = [1, 1, 3, .5]
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
-            basis=Monomial(domain_range=[array([0, 1])], n_basis=4),
+            basis=Monomial(domain_range=((0, 1),), n_basis=4),
             coefficients=[[ 1.   1.   3.   0.5]],
             ...)
 
@@ -88,7 +90,9 @@ class FDataBasis(FData):
     def __init__(self, basis, coefficients, *, dataset_label=None,
                  dataset_name=None,
                  axes_labels=None, argument_names=None,
-                 coordinate_names=None, extrapolation=None):
+                 coordinate_names=None,
+                 sample_names=None,
+                 extrapolation=None):
         """Construct a FDataBasis object.
 
         Args:
@@ -97,7 +101,7 @@ class FDataBasis(FData):
                 have the same length or number of columns as the number of
                 basis function in the basis.
         """
-        coefficients = np.atleast_2d(coefficients)
+        coefficients = _int_to_real(np.atleast_2d(coefficients))
         if coefficients.shape[1] != basis.n_basis:
             raise ValueError("The length or number of columns of coefficients "
                              "has to be the same equal to the number of "
@@ -110,10 +114,13 @@ class FDataBasis(FData):
                          dataset_name=dataset_name,
                          axes_labels=axes_labels,
                          argument_names=argument_names,
-                         coordinate_names=coordinate_names)
+                         coordinate_names=coordinate_names,
+                         sample_names=sample_names)
 
     @classmethod
-    def from_data(cls, data_matrix, sample_points, basis,
+    def from_data(cls, data_matrix, *, basis,
+                  grid_points=None,
+                  sample_points=None,
                   method='cholesky'):
         r"""Transform raw data to a smooth functional form.
 
@@ -151,7 +158,7 @@ class FDataBasis(FData):
             data_matrix (array_like): List or matrix containing the
                 observations. If a matrix each row represents a single
                 functional datum and the columns the different observations.
-            sample_points (array_like): Values of the domain where the previous
+            grid_points (array_like): Values of the domain where the previous
                 data were taken.
             basis: (Basis): Basis used.
             method (str): Algorithm used for calculating the coefficients using
@@ -172,7 +179,7 @@ class FDataBasis(FData):
 
             >>> from skfda.representation.basis import FDataBasis, Fourier
             >>> basis = Fourier((0, 1), n_basis=3)
-            >>> fd = FDataBasis.from_data(x, t, basis)
+            >>> fd = FDataBasis.from_data(x, grid_points=t, basis=basis)
             >>> fd.coefficients.round(2)
             array([[ 2.  , 0.71, 0.71]])
 
@@ -186,8 +193,13 @@ class FDataBasis(FData):
                 Data Analysis* (pp. 86-87). Springer.
 
         """
-        from ...preprocessing.smoothing import BasisSmoother
         from ..grid import FDataGrid
+
+        if sample_points is not None:
+            warnings.warn("Parameter sample_points is deprecated. Use the "
+                          "parameter grid_points instead.",
+                          DeprecationWarning)
+            grid_points = sample_points
 
         # n is the samples
         # m is the observations
@@ -196,30 +208,20 @@ class FDataBasis(FData):
         # Each sample in a column (m x n)
         data_matrix = np.atleast_2d(data_matrix)
 
-        fd = FDataGrid(data_matrix=data_matrix, sample_points=sample_points)
+        fd = FDataGrid(data_matrix=data_matrix, grid_points=grid_points)
 
-        smoother = BasisSmoother(
-            basis=basis,
-            method=method,
-            return_basis=True)
-
-        return smoother.fit_transform(fd)
+        return fd.to_basis(basis=basis, method=method)
 
     @property
     def n_samples(self):
-        """Return number of samples."""
         return self.coefficients.shape[0]
 
     @property
     def dim_domain(self):
-        """Return number of dimensions of the domain."""
-
         return self.basis.dim_domain
 
     @property
     def dim_codomain(self):
-        """Return number of dimensions of the image."""
-
         return self.basis.dim_codomain
 
     @property
@@ -318,8 +320,8 @@ class FDataBasis(FData):
                                          domain_range[1] + shifts))
 
             return FDataBasis.from_data(self.evaluate(eval_points),
-                                        eval_points + shifts,
-                                        _basis, **kwargs)
+                                        grid_points=eval_points + shifts,
+                                        basis=_basis, **kwargs)
 
         elif len(shifts) != self.n_samples:
             raise ValueError(f"shifts vector ({len(shifts)}) must have the "
@@ -348,8 +350,8 @@ class FDataBasis(FData):
 
         _basis = self.basis.rescale(domain)
 
-        return FDataBasis.from_data(_data_matrix, eval_points,
-                                    _basis, **kwargs)
+        return FDataBasis.from_data(_data_matrix, grid_points=eval_points,
+                                    basis=_basis, **kwargs)
 
     def derivative(self, *, order=1):
         r"""Differentiate a FDataBasis object.
@@ -370,12 +372,13 @@ class FDataBasis(FData):
 
         return FDataBasis(basis, coefficients)
 
-    def mean(self, weights=None):
-        """Compute the mean of all the samples in a FDataBasis object.
+    def sum(self, *, axis=None, out=None, keepdims=False, skipna=False,
+            min_count=0):
+        """Compute the sum of all the samples in a FDataBasis object.
 
         Returns:
             :obj:`FDataBasis`: A FDataBais object with just one sample
-            representing the mean of all the samples in the original
+            representing the sum of all the samples in the original
             FDataBasis object.
 
         Examples:
@@ -383,22 +386,25 @@ class FDataBasis(FData):
             >>> from skfda.representation.basis import FDataBasis, Monomial
             >>> basis = Monomial(n_basis=4)
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
-            >>> FDataBasis(basis, coefficients).mean()
+            >>> FDataBasis(basis, coefficients).sum()
             FDataBasis(
-                basis=Monomial(domain_range=[array([0, 1])], n_basis=4),
-                coefficients=[[ 1.  1.  3.  0.5]],
+                basis=Monomial(domain_range=((0, 1),), n_basis=4),
+                coefficients=[[ 2.  2.  6.  1.]],
                 ...)
 
         """
+        super().sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
 
-        if weights is not None:
-            return self.copy(coefficients=np.average(self.coefficients,
-                                                     weights=weights,
-                                                     axis=0
-                                                     )[np.newaxis, ...]
-                             )
+        coefs = (np.nansum(self.coefficients, axis=0) if skipna
+                 else np.sum(self.coefficients, axis=0))
 
-        return self.copy(coefficients=np.mean(self.coefficients, axis=0))
+        if min_count > 0:
+            valid = ~np.isnan(self.coefficients)
+            n_valid = np.sum(valid, axis=0)
+            coefs[n_valid < min_count] = np.NaN
+
+        return self.copy(coefficients=coefs,
+                         sample_names=(None,))
 
     def gmean(self, eval_points=None):
         """Compute the geometric mean of the functional data object.
@@ -462,11 +468,11 @@ class FDataBasis(FData):
         """
         return self.to_grid(eval_points).cov()
 
-    def to_grid(self, sample_points=None):
+    def to_grid(self, grid_points=None, *, sample_points=None):
         """Return the discrete representation of the object.
 
         Args:
-            sample_points (array_like, optional): Points per axis where the
+            grid_points (array_like, optional): Points per axis where the
                 functions are evaluated. If none are passed it calls
                 numpy.linspace with bounds equal to the ones defined in
                 self.domain_range and the number of points the maximum
@@ -480,29 +486,34 @@ class FDataBasis(FData):
 
             >>> from skfda.representation.basis import FDataBasis, Monomial
             >>> fd = FDataBasis(coefficients=[[1, 1, 1], [1, 0, 1]],
-            ...                 basis=Monomial((0,5), n_basis=3))
+            ...                 basis=Monomial(domain_range=(0,5), n_basis=3))
             >>> fd.to_grid([0, 1, 2])
             FDataGrid(
-                array([[[1],
-                        [3],
-                        [7]],
-                       [[1],
-                        [2],
-                        [5]]]),
-                sample_points=[array([0, 1, 2])],
-                domain_range=array([[0, 5]]),
+                array([[[ 1.],
+                        [ 3.],
+                        [ 7.]],
+                       [[ 1.],
+                        [ 2.],
+                        [ 5.]]]),
+                grid_points=(array([ 0., 1., 2.]),),
+                domain_range=((0, 5),),
                 ...)
 
         """
+        if sample_points is not None:
+            warnings.warn("Parameter sample_points is deprecated. Use the "
+                          "parameter grid_points instead.",
+                          DeprecationWarning)
+            grid_points = sample_points
 
-        if sample_points is None:
+        if grid_points is None:
             npoints = max(constants.N_POINTS_FINE_MESH,
                           constants.BASIS_MIN_FACTOR * self.n_basis)
-            sample_points = [np.linspace(*r, npoints)
-                             for r in self.domain_range]
+            grid_points = [np.linspace(*r, npoints)
+                           for r in self.domain_range]
 
-        return grid.FDataGrid(self.evaluate(sample_points, grid=True),
-                              sample_points=sample_points,
+        return grid.FDataGrid(self.evaluate(grid_points, grid=True),
+                              grid_points=grid_points,
                               domain_range=self.domain_range)
 
     def to_basis(self, basis, eval_points=None, **kwargs):
@@ -528,6 +539,7 @@ class FDataBasis(FData):
              dataset_name=None,
              argument_names=None,
              coordinate_names=None,
+             sample_names=None,
              extrapolation=None):
         """FDataBasis copy"""
 
@@ -541,10 +553,16 @@ class FDataBasis(FData):
             dataset_name = self.dataset_name
 
         if argument_names is None:
+            # Tuple, immutable
             argument_names = self.argument_names
 
         if coordinate_names is None:
+            # Tuple, immutable
             coordinate_names = self.coordinate_names
+
+        if sample_names is None:
+            # Tuple, immutable
+            sample_names = self.sample_names
 
         if extrapolation is None:
             extrapolation = self.extrapolation
@@ -553,59 +571,8 @@ class FDataBasis(FData):
                           dataset_name=dataset_name,
                           argument_names=argument_names,
                           coordinate_names=coordinate_names,
+                          sample_names=sample_names,
                           extrapolation=extrapolation)
-
-    def times(self, other):
-        """"Provides a numerical approximation of the multiplication between
-            an FDataObject to other object
-
-        Args:
-            other (int, list, FDataBasis): Object to multiply with the
-                                           FDataBasis object.
-
-                * int: Multiplies all samples with the value
-                * list: multiply each values with the samples respectively.
-                    Length should match with FDataBasis samples
-                * FDataBasis: if there is one sample it multiplies this with
-                    all the samples in the object. If not, it multiplies each
-                    sample respectively. Samples should match
-
-        Returns:
-            (FDataBasis): FDataBasis object containing the multiplication
-
-        """
-        if isinstance(other, FDataBasis):
-
-            if not _same_domain(self.domain_range, other.domain_range):
-                raise ValueError("The functions domains are different.")
-
-            basisobj = self.basis.basis_of_product(other.basis)
-            neval = max(constants.BASIS_MIN_FACTOR *
-                        max(self.n_basis, other.n_basis) + 1,
-                        constants.N_POINTS_COARSE_MESH)
-            (left, right) = self.domain_range[0]
-            evalarg = np.linspace(left, right, neval)
-
-            first = self.copy(coefficients=(np.repeat(self.coefficients,
-                                                      other.n_samples, axis=0)
-                                            if (self.n_samples == 1 and
-                                                other.n_samples > 1)
-                                            else self.coefficients.copy()))
-            second = other.copy(coefficients=(np.repeat(other.coefficients,
-                                                        self.n_samples, axis=0)
-                                              if (other.n_samples == 1 and
-                                                  self.n_samples > 1)
-                                              else other.coefficients.copy()))
-
-            fdarray = first.evaluate(evalarg) * second.evaluate(evalarg)
-
-            return FDataBasis.from_data(fdarray, evalarg, basisobj)
-
-        if isinstance(other, int):
-            other = [other for _ in range(self.n_samples)]
-
-        coefs = np.transpose(np.atleast_2d(other))
-        return self.copy(coefficients=self.coefficients * coefs)
 
     def _to_R(self):
         """Gives the code to build the object on fda package on R"""
@@ -650,12 +617,32 @@ class FDataBasis(FData):
                 f"\n_basis={self.basis},"
                 f"\ncoefficients={self.coefficients})").replace('\n', '\n    ')
 
-    def __eq__(self, other):
+    def equals(self, other):
         """Equality of FDataBasis"""
         # TODO check all other params
-        return (super().__eq__(other)
+        return (super().equals(other)
                 and self.basis == other.basis
-                and np.all(self.coefficients == other.coefficients))
+                and np.array_equal(self.coefficients, other.coefficients))
+
+    def __eq__(self, other):
+        """Elementwise equality of FDataBasis"""
+
+        if not isinstance(self, type(other)) or self.dtype != other.dtype:
+            if other is pandas.NA:
+                return self.isna()
+            if pandas.api.types.is_list_like(other) and not isinstance(
+                other, (pandas.Series, pandas.Index, pandas.DataFrame),
+            ):
+                return np.concatenate([x == y for x, y in zip(self, other)])
+            else:
+                return NotImplemented
+
+        if len(self) != len(other) and len(self) != 1 and len(other) != 1:
+            raise ValueError(f"Different lengths: "
+                             f"len(self)={len(self)} and "
+                             f"len(other)={len(other)}")
+
+        return np.all(self.coefficients == other.coefficients, axis=1)
 
     def concatenate(self, *others, as_coordinates=False):
         """Join samples from a similar FDataBasis object.
@@ -689,7 +676,10 @@ class FDataBasis(FData):
 
         data = [self.coefficients] + [other.coefficients for other in others]
 
-        return self.copy(coefficients=np.concatenate(data, axis=0))
+        sample_names = [fd.sample_names for fd in [self, *others]]
+
+        return self.copy(coefficients=np.concatenate(data, axis=0),
+                         sample_names=sum(sample_names, ()))
 
     def compose(self, fd, *, eval_points=None, **kwargs):
         """Composition of functions.
@@ -718,27 +708,29 @@ class FDataBasis(FData):
     def __getitem__(self, key):
         """Return self[key]."""
 
-        if isinstance(key, int):
-            return self.copy(coefficients=self.coefficients[key:key + 1])
-        else:
-            return self.copy(coefficients=self.coefficients[key])
+        key = _check_array_key(self.coefficients, key)
+
+        return self.copy(coefficients=self.coefficients[key],
+                         sample_names=np.array(self.sample_names)[key])
 
     def __add__(self, other):
         """Addition for FDataBasis object."""
+
         if isinstance(other, FDataBasis):
             if self.basis != other.basis:
                 return NotImplemented
             else:
                 basis, coefs = self.basis._add_same_basis(self.coefficients,
                                                           other.coefficients)
+
         else:
             try:
                 basis, coefs = self.basis._add_constant(self.coefficients,
                                                         other)
-            except TypeError:
+            except Exception:
                 return NotImplemented
 
-        return self.copy(basis=basis, coefficients=coefs)
+        return self._copy_op(other, basis=basis, coefficients=coefs)
 
     def __radd__(self, other):
         """Addition for FDataBasis object."""
@@ -757,10 +749,10 @@ class FDataBasis(FData):
             try:
                 basis, coefs = self.basis._sub_constant(self.coefficients,
                                                         other)
-            except TypeError:
+            except Exception:
                 return NotImplemented
 
-        return self.copy(basis=basis, coefficients=coefs)
+        return self._copy_op(other, basis=basis, coefficients=coefs)
 
     def __rsub__(self, other):
         """Right subtraction for FDataBasis object."""
@@ -773,10 +765,10 @@ class FDataBasis(FData):
 
         try:
             basis, coefs = self.basis._mul_constant(self.coefficients, other)
-        except TypeError:
+        except Exception:
             return NotImplemented
 
-        return self.copy(basis=basis, coefficients=coefs)
+        return self._copy_op(other, basis=basis, coefficients=coefs)
 
     def __rmul__(self, other):
         """Multiplication for FDataBasis object."""
@@ -789,7 +781,7 @@ class FDataBasis(FData):
 
         try:
             other = 1 / other
-        except TypeError:
+        except Exception:
             return NotImplemented
 
         return self * other
@@ -805,33 +797,63 @@ class FDataBasis(FData):
     @property
     def dtype(self):
         """The dtype for this extension array, FDataGridDType"""
-        return FDataBasisDType
+        return FDataBasisDType(basis=self.basis)
 
     @property
     def nbytes(self) -> int:
         """
         The number of bytes needed to store this object in memory.
         """
-        return self.coefficients.nbytes()
+        return self.coefficients.nbytes
+
+    def isna(self):
+        """
+        A 1-D array indicating if each value is missing.
+
+        Returns:
+            na_values (np.ndarray): Positions of NA.
+        """
+        return np.all(np.isnan(self.coefficients), axis=1)
 
 
 class FDataBasisDType(pandas.api.extensions.ExtensionDtype):
     """
     DType corresponding to FDataBasis in Pandas
     """
-    name = 'functional data (basis)'
     kind = 'O'
     type = FDataBasis
-    na_value = None
+    name = 'FDataBasis'
+    na_value = pandas.NA
+
+    _metadata = ("basis")
+
+    def __init__(self, basis) -> None:
+        self.basis = basis
 
     @classmethod
-    def construct_from_string(cls, string):
-        if string == cls.name:
-            return cls()
-        else:
-            raise TypeError("Cannot construct a '{}' from "
-                            "'{}'".format(cls, string))
-
-    @classmethod
-    def construct_array_type(cls):
+    def construct_array_type(cls) -> type:
         return FDataBasis
+
+    def _na_repr(self) -> FDataBasis:
+        return FDataBasis(
+            basis=self.basis,
+            coefficients=((np.NaN,) * self.basis.n_basis,))
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Rules for equality (similar to categorical):
+        1) Any FData is equal to the string 'category'
+        2) Any FData is equal to itself
+        3) Otherwise, they are equal if the arguments are equal.
+        6) Any other comparison returns False
+        """
+        if isinstance(other, str):
+            return other == self.name
+        elif other is self:
+            return True
+        else:
+            return (isinstance(other, FDataBasisDType)
+                    and self.basis == other.basis)
+
+    def __hash__(self) -> int:
+        return hash(self.basis)

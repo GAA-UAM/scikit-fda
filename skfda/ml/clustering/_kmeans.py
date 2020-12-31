@@ -3,15 +3,13 @@
 from abc import abstractmethod
 import warnings
 
-import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_is_fitted
 
-from ...misc.metrics import pairwise_distance, lp_distance
+import numpy as np
 
-__author__ = "Amanda Hernando Bernabé"
-__email__ = "amanda.hernando@estudiante.uam.es"
+from ...misc.metrics import pairwise_distance, lp_distance
 
 
 class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
@@ -130,7 +128,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         if self.init is None:
             _, idx = np.unique(fdatagrid.data_matrix,
                                axis=0, return_index=True)
-            unique_data = fdatagrid.data_matrix[np.sort(idx)]
+            unique_data = fdatagrid[np.sort(idx)]
 
             if len(unique_data) < self.n_clusters:
                 return ValueError("Not enough unique data points to "
@@ -141,7 +139,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                 :self.n_clusters]
             centroids = unique_data[indices]
 
-            return fdatagrid.copy(data_matrix=centroids)
+            return centroids.copy()
         else:
             return self.init.copy()
 
@@ -289,21 +287,21 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         """
         check_is_fitted(self)
         self._check_test_data(X)
-        
+
         membership_matrix = self._create_membership(X.n_samples)
         centroids = self.cluster_centers_.copy()
-        
+
         pairwise_metric = pairwise_distance(self.metric)
-        
+
         distances_to_centroids = pairwise_metric(fdata1=X,
                                                  fdata2=centroids)
-        
+
         self._update(
             fdata=X,
             membership_matrix=membership_matrix,
             distances_to_centroids=distances_to_centroids,
             centroids=centroids)
-        
+
         return membership_matrix
 
     def transform(self, X):
@@ -456,8 +454,8 @@ class KMeans(BaseKMeans):
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
         ...                [-1, -1, -0.5, 1, 1, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
-        >>> sample_points = [0, 2, 4, 6, 8, 10]
-        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> kmeans = skfda.ml.clustering.KMeans(random_state=0)
         >>> kmeans.fit(fd)
         KMeans(...)
@@ -516,7 +514,7 @@ class KMeans(BaseKMeans):
         distances_to_their_center = np.choose(membership,
                                               distances_to_centroids.T)
 
-        return np.sum(distances_to_their_center ** 2)
+        return np.sum(distances_to_their_center**2)
 
     def _create_membership(self, n_samples):
         return np.empty(n_samples, dtype=int)
@@ -639,8 +637,8 @@ class FuzzyCMeans(BaseKMeans):
         >>> data_matrix = [[[1, 0.3], [2, 0.4], [3, 0.5], [4, 0.6]],
         ...                [[2, 0.5], [3, 0.6], [4, 0.7], [5, 0.7]],
         ...                [[3, 0.2], [4, 0.3], [5, 0.4], [6, 0.5]]]
-        >>> sample_points = [2, 4, 6, 8]
-        >>> fd = skfda.FDataGrid(data_matrix, sample_points)
+        >>> grid_points = [2, 4, 6, 8]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
         >>> fuzzy_kmeans = skfda.ml.clustering.FuzzyCMeans(random_state=0)
         >>> fuzzy_kmeans.fit(fd)
         FuzzyCMeans(...)
@@ -700,7 +698,9 @@ class FuzzyCMeans(BaseKMeans):
 
     def _compute_inertia(self, membership, centroids,
                          distances_to_centroids):
-        return np.sum(membership ** self.fuzzifier * distances_to_centroids ** 2)
+        return np.sum(
+            membership**self.fuzzifier * distances_to_centroids**2,
+        )
 
     def _create_membership(self, n_samples):
         return np.empty((n_samples, self.n_clusters))
@@ -709,7 +709,7 @@ class FuzzyCMeans(BaseKMeans):
                 centroids):
         # Divisions by zero allowed
         with np.errstate(divide='ignore'):
-            distances_to_centers_raised = (distances_to_centroids ** (
+            distances_to_centers_raised = (distances_to_centroids**(
                 2 / (1 - self.fuzzifier)))
 
         # Divisions infinity by infinity allowed
@@ -725,7 +725,7 @@ class FuzzyCMeans(BaseKMeans):
         membership_matrix_raised = np.power(
             membership_matrix, self.fuzzifier)
 
-        slice_denominator = ((slice(None),) + (np.newaxis,) * 
+        slice_denominator = ((slice(None),) + (np.newaxis,) *
                              (fdata.data_matrix.ndim - 1))
         centroids.data_matrix[:] = (
             np.einsum('ij,i...->j...', membership_matrix_raised,

@@ -1,4 +1,5 @@
 import numpy as np
+
 from ..._utils import _same_domain
 from ._basis import Basis
 
@@ -28,7 +29,7 @@ class Constant(Basis):
             function is defined.
 
         """
-        super().__init__(domain_range, 1)
+        super().__init__(domain_range=domain_range, n_basis=1)
 
     def _evaluate(self, eval_points):
         return np.ones((1, len(eval_points)))
@@ -40,17 +41,6 @@ class Constant(Basis):
     def _gram_matrix(self):
         return np.array([[self.domain_range[0][1] -
                           self.domain_range[0][0]]])
-
-    def basis_of_product(self, other):
-        """Multiplication of a Constant Basis with other Basis"""
-        if not _same_domain(self, other):
-            raise ValueError("Ranges are not equal.")
-
-        return other.copy()
-
-    def rbasis_of_product(self, other):
-        """Multiplication of a Constant Basis with other Basis"""
-        return other.copy()
 
     def _to_R(self):
         drange = self.domain_range[0]

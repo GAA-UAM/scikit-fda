@@ -1,13 +1,16 @@
+from typing import List, Tuple, Union
+
 import numpy as np
 from sklearn.utils import check_random_state
 
-from skfda import concatenate
-from skfda.misc.metrics import lp_distance
-from skfda.representation import FData, FDataGrid
-from skfda.datasets import make_gaussian_process
+from ... import concatenate
+from ..._utils import RandomStateLike
+from ...datasets import make_gaussian_process
+from ...misc.metrics import lp_distance
+from ...representation import FData, FDataGrid
 
 
-def v_sample_stat(fd, weights, p=2):
+def v_sample_stat(fd: FData, weights: List[int], p: int = 2) -> float:
     r"""
     Calculates a statistic that measures the variability between groups of
     samples in a :class:`skfda.representation.FData` object.
@@ -27,12 +30,12 @@ def v_sample_stat(fd, weights, p=2):
     This statistic is defined in Cuevas[1].
 
     Args:
-         fd (FData): Object containing all the samples for which we want
+         fd: Object containing all the samples for which we want
             to calculate the statistic.
-         weights (list of int): Weights related to each sample. Each
+         weights: Weights related to each sample. Each
             weight is expected to appear in the same position as its
             corresponding sample in the FData object.
-        p (int, optional): p of the lp norm. Must be greater or equal
+         p: p of the lp norm. Must be greater or equal
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
 
@@ -55,7 +58,7 @@ def v_sample_stat(fd, weights, p=2):
         >>> x1 = t * (1 - t) ** 5
         >>> x2 = t ** 2 * (1 - t) ** 4
         >>> x3 = t ** 3 * (1 - t) ** 3
-        >>> fd = FDataGrid([x1, x2, x3], sample_points=t)
+        >>> fd = FDataGrid([x1, x2, x3], grid_points=t)
         >>> weights = [10, 20, 30]
 
         Finally the value of the statistic is calculated:
@@ -80,7 +83,7 @@ def v_sample_stat(fd, weights, p=2):
     return np.sum(coef * lp_distance(fd[t_ind[0]], fd[t_ind[1]], p=p) ** p)
 
 
-def v_asymptotic_stat(fd, weights, p=2):
+def v_asymptotic_stat(fd: FData, weights: List[int], p: int = 2) -> float:
     r"""
     Calculates a statistic that measures the variability between groups of
     samples in a :class:`skfda.representation.FData` object.
@@ -100,12 +103,12 @@ def v_asymptotic_stat(fd, weights, p=2):
     This statistic is defined in Cuevas[1].
 
     Args:
-         fd (FData): Object containing all the samples for which we want
+         fd: Object containing all the samples for which we want
             to calculate the statistic.
-         weights (list of int): Weights related to each sample. Each
+         weights: Weights related to each sample. Each
             weight is expected to appear in the same position as its
             corresponding sample in the FData object.
-        p (int, optional): p of the lp norm. Must be greater or equal
+         p: p of the lp norm. Must be greater or equal
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
 
@@ -128,7 +131,7 @@ def v_asymptotic_stat(fd, weights, p=2):
         >>> x1 = t * (1 - t) ** 5
         >>> x2 = t ** 2 * (1 - t) ** 4
         >>> x3 = t ** 3 * (1 - t) ** 3
-        >>> fd = FDataGrid([x1, x2, x3], sample_points=t)
+        >>> fd = FDataGrid([x1, x2, x3], grid_points=t)
         >>> weights = [10, 20, 30]
 
         Finally the value of the statistic is calculated:
@@ -152,15 +155,17 @@ def v_asymptotic_stat(fd, weights, p=2):
     t_ind = np.tril_indices(fd.n_samples, -1)
     coef = np.sqrt(weights[t_ind[1]] / weights[t_ind[0]])
     left_fd = fd[t_ind[1]]
-    if isinstance(fd, FDataGrid):
-        right_fd = coef[:, None, np.newaxis] * fd[t_ind[0]]
-    else:
-        right_fd = fd[t_ind[0]].times(coef)
+    right_fd = fd[t_ind[0]] * coef
     return np.sum(lp_distance(left_fd, right_fd, p=p) ** p)
 
 
-def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=2,
-                     equal_var=True):
+def _anova_bootstrap(
+    fd_grouped: Tuple[FData, ...],
+    n_reps: int,
+    random_state: RandomStateLike = None,
+    p: int = 2,
+    equal_var: bool = True,
+) -> np.ndarray:
 
     n_groups = len(fd_grouped)
     if n_groups < 2:
@@ -173,7 +178,8 @@ def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=2,
 
     start, stop = fd_grouped[0].domain_range[0]
 
-    sizes = [fd.n_samples for fd in fd_grouped]  # List with sizes of each group
+    # List with sizes of each group
+    sizes = [fd.n_samples for fd in fd_grouped]
 
     # Instance a random state object in case random_state is an int
     random_state = check_random_state(random_state)
@@ -203,8 +209,14 @@ def _anova_bootstrap(fd_grouped, n_reps, random_state=None, p=2,
     return v_samples
 
 
-def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None,
-                 p=2, equal_var=True):
+def oneway_anova(
+    *args: FData,
+    n_reps: int = 2000,
+    return_dist: bool = False,
+    random_state: RandomStateLike = None,
+    p: int = 2,
+    equal_var: bool = True,
+) -> Union[Tuple[float, float], Tuple[float, float, np.ndarray]]:
     r"""
     Performs one-way functional ANOVA.
 
@@ -236,34 +248,29 @@ def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None,
     This procedure is from Cuevas[1].
 
     Args:
-        fd1,fd2,.... (FDataGrid): The sample measurements for each each group.
+        args: The sample measurements for each each group.
 
-        n_reps (int, optional): Number of simulations for the bootstrap
+        n_reps: Number of simulations for the bootstrap
             procedure. Defaults to 2000 (This value may change in future
             versions).
 
-        return_dist (bool, optional): Flag to indicate if the function should
+        return_dist: Flag to indicate if the function should
             return a numpy.array with the sampling distribution simulated.
 
-        random_state (optional): Random state.
+        random_state: Random state.
 
-        p (int, optional): p of the lp norm. Must be greater or equal
+        p: p of the lp norm. Must be greater or equal
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
 
-        equal_var (bool, optional): If True (default), perform a One-way
+        equal_var: If True (default), perform a One-way
             ANOVA assuming the same covariance operator for all the groups,
             else considers an independent covariance operator for each group.
 
     Returns:
-        Value of the sample statistic, p-value and sampling distribution of
-        the simulated asymptotic statistic.
-
-    Return type:
-        (float, float, numpy.array)
-
-    Raises:
-        ValueError: In case of bad arguments.
+        Tuple containing the value of the sample statistic, p-value (and
+        sampling distribution of the simulated asymptotic statistic if
+        `return_dist` is `True`).
 
     Examples:
         >>> from skfda.inference.anova import oneway_anova
@@ -305,7 +312,7 @@ def oneway_anova(*args, n_reps=2000, return_dist=False, random_state=None,
 
     if isinstance(fd_groups[0], FDataGrid):
         # Creating list with all the sample points
-        list_sample = [fd.sample_points[0].tolist() for fd in fd_groups]
+        list_sample = [fd.grid_points[0].tolist() for fd in fd_groups]
         # Checking that the all the entries in the list are the same
         if not list_sample.count(list_sample[0]) == len(list_sample):
             raise ValueError("All FDataGrid passed must have the same sample "

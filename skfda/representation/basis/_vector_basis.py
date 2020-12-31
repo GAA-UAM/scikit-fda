@@ -1,6 +1,5 @@
-import scipy.linalg
-
 import numpy as np
+import scipy.linalg
 
 from ..._utils import _same_domain
 from ._basis import Basis
@@ -9,9 +8,10 @@ from ._basis import Basis
 class VectorValued(Basis):
     r"""Vector-valued basis.
 
-    Basis for vector-valued functions constructed from scalar-valued bases.
+    Basis for :term:`vector-valued functions <vector-valued function>`
+    constructed from scalar-valued bases.
 
-    For each dimension in the codomain, it uses a scalar-valued basis
+    For each dimension in the :term:`codomain`, it uses a scalar-valued basis
     multiplying each basis by the corresponding unitary vector.
 
     Attributes:
@@ -29,8 +29,8 @@ class VectorValued(Basis):
 
         >>> from skfda.representation.basis import VectorValued, Monomial
         >>>
-        >>> basis_x = Monomial((0,5), n_basis=3)
-        >>> basis_y = Monomial((0,5), n_basis=2)
+        >>> basis_x = Monomial(domain_range=(0,5), n_basis=3)
+        >>> basis_y = Monomial(domain_range=(0,5), n_basis=2)
         >>>
         >>> basis = VectorValued([basis_x, basis_y])
 
@@ -59,6 +59,8 @@ class VectorValued(Basis):
 
     def __init__(self, basis_list):
 
+        basis_list = tuple(basis_list)
+
         if not all(b.dim_codomain == 1 for b in basis_list):
             raise ValueError("The basis functions must be "
                              "scalar valued")
@@ -69,11 +71,15 @@ class VectorValued(Basis):
             raise ValueError("The basis must all have the same domain "
                              "dimension an range")
 
-        self.basis_list = basis_list
+        self._basis_list = basis_list
 
         super().__init__(
             domain_range=basis_list[0].domain_range,
             n_basis=sum(b.n_basis for b in basis_list))
+
+    @property
+    def basis_list(self):
+        return self._basis_list
 
     @property
     def dim_domain(self):
@@ -144,8 +150,8 @@ class VectorValued(Basis):
         return fdatabasis.copy(basis=basis, coefficients=coefs,
                                coordinate_names=coordinate_names)
 
-    def basis_of_product(self, other):
-        pass
+    def __eq__(self, other):
+        return super().__eq__(other) and self.basis_list == other.basis_list
 
-    def rbasis_of_product(self, other):
-        pass
+    def __hash__(self):
+        return hash((super().__hash__(), self.basis_list))

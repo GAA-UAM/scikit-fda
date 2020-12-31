@@ -80,7 +80,7 @@ class LinearRegression(BaseEstimator, RegressorMixin):
         >>> _ = linear.fit(x_fd, y)
         >>> linear.coef_[0]
         FDataBasis(
-            basis=Monomial(domain_range=[array([0, 1])], n_basis=3),
+            basis=Monomial(domain_range=((0, 1),), n_basis=3),
             coefficients=[[-15.  96. -90.]],
             ...)
         >>> linear.intercept_
@@ -106,7 +106,7 @@ class LinearRegression(BaseEstimator, RegressorMixin):
         array([ 2.,  1.])
         >>> linear.coef_[1]
         FDataBasis(
-        basis=Constant(domain_range=[array([0, 1])], n_basis=1),
+        basis=Constant(domain_range=((0, 1),), n_basis=1),
         coefficients=[[ 1.]],
         ...)
         >>> linear.intercept_
@@ -218,12 +218,11 @@ class LinearRegression(BaseEstimator, RegressorMixin):
 
         X = self._argcheck_X(X)
 
-        y = np.asarray(y)
-
-        if (np.issubdtype(y.dtype, np.object_)
-                and any(isinstance(i, FData) for i in y)):
+        if any(isinstance(i, FData) for i in y):
             raise ValueError(
                 "Some of the response variables are not scalar")
+
+        y = np.asarray(y)
 
         if coef_basis is None:
             coef_basis = [None] * len(X)

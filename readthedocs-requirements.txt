@@ -3,7 +3,7 @@ numpy
 scipy
 Cython
 sklearn
-Sphinx
+Sphinx>=3
 sphinx_rtd_theme
 sphinx-gallery
 pillow
@@ -13,3 +13,4 @@ setuptools>=41.2
 multimethod>=1.2
 findiff
 jupyter-sphinx
+pytest

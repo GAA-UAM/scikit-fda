@@ -1,8 +1,6 @@
+import numpy as np
 import scipy.linalg
 
-import numpy as np
-
-from ..._utils import _same_domain
 from ._basis import Basis
 
 
@@ -23,7 +21,7 @@ class Monomial(Basis):
         Defines a monomial base over the interval :math:`[0, 5]` consisting
         on the first 3 powers of :math:`t`: :math:`1, t, t^2`.
 
-        >>> bs_mon = Monomial((0,5), n_basis=3)
+        >>> bs_mon = Monomial(domain_range=(0,5), n_basis=3)
 
         And evaluates all the functions in the basis in a list of descrete
         values.
@@ -77,12 +75,18 @@ class Monomial(Basis):
 
     def _derivative_basis_and_coefs(self, coefs, order=1):
         if order >= self.n_basis:
-            return (Monomial(self.domain_range, 1),
-                    np.zeros((len(coefs), 1)))
-        else:
-            return (Monomial(self.domain_range, self.n_basis - order),
-                    np.array([np.polyder(x[::-1], order)[::-1]
-                              for x in coefs]))
+            return (
+                Monomial(domain_range=self.domain_range, n_basis=1),
+                np.zeros((len(coefs), 1)),
+            )
+
+        return (
+            Monomial(
+                domain_range=self.domain_range,
+                n_basis=self.n_basis - order,
+            ),
+            np.array([np.polyder(x[::-1], order)[::-1] for x in coefs]),
+        )
 
     def _gram_matrix(self):
         integral_coefs = np.polyint(np.ones(2 * self.n_basis - 1))
@@ -106,20 +110,6 @@ class Monomial(Basis):
         return scipy.linalg.hankel(
             ordered_evaluated_points[:self.n_basis],
             ordered_evaluated_points[self.n_basis - 1:])
-
-    def basis_of_product(self, other):
-        """Multiplication of a Monomial Basis with other Basis"""
-        if not _same_domain(self, other):
-            raise ValueError("Ranges are not equal.")
-
-        if isinstance(other, Monomial):
-            return Monomial(self.domain_range, self.n_basis + other.n_basis)
-
-        return other.rbasis_of_product(self)
-
-    def rbasis_of_product(self, other):
-        """Multiplication of a Monomial Basis with other Basis"""
-        return Basis.default_basis_of_product(self, other)
 
     def _to_R(self):
         drange = self.domain_range[0]

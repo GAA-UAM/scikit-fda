@@ -3,13 +3,12 @@
 # Pablo Marcos Manchón
 # pablo.marcosm@protonmail.com
 
+import numpy as np
 from scipy.integrate import simps
 from sklearn.utils.validation import check_is_fitted
 
-import numpy as np
-
 from ... import FData, FDataGrid
-from ..._utils import constants, check_is_univariate
+from ..._utils import check_is_univariate, constants
 from .base import RegistrationTransformer
 
 
@@ -51,14 +50,14 @@ class ShiftRegistration(RegistrationTransformer):
             in each iteration. In [RaSi2005-7-9-1]_ is described in detail this
             procedure. Defaults to "mean".
         extrapolation (str or :class:`Extrapolation`, optional): Controls the
-            extrapolation mode for points outside the domain range.
+            extrapolation mode for points outside the :term:`domain` range.
             By default uses the method defined in the data to be transformed.
             See the `extrapolation` documentation to obtain more information.
         step_size (int or float, optional): Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see [RaSi2005-7-9-1]_.
             Defaults to 1.
-        restrict_domain (bool, optional): If True restricts the domain to avoid
-            evaluate points outside the domain using extrapolation, in which
+        restrict_domain (bool, optional): If True restricts the :term:`domain`
+            to avoid the need of using extrapolation, in which
             case only the fit_transform method will be available, as training
             and transformation must be done together. Defaults to False.
         initial (str or array_like, optional): Array with an initial estimation
@@ -67,7 +66,7 @@ class ShiftRegistration(RegistrationTransformer):
             functions are evaluated to obtain the discrete
             representation of the object to integrate. If None is
             passed it calls numpy.linspace in FDataBasis and uses the
-            `sample_points` in FDataGrids.
+            `grid_points` in FDataGrids.
 
     Attributes:
         template_ (FData): Template :math:`\mu` learned during the fitting
@@ -155,7 +154,7 @@ class ShiftRegistration(RegistrationTransformer):
         domain_range = fd.domain_range[0]
 
         # Initial estimation of the shifts
-        if self.initial is "zeros":
+        if self.initial == "zeros":
             delta = np.zeros(fd.n_samples)
 
         elif len(self.initial) != fd.n_samples:
@@ -169,7 +168,7 @@ class ShiftRegistration(RegistrationTransformer):
         if self.output_points is None:
 
             try:
-                output_points = fd.sample_points[0]
+                output_points = fd.grid_points[0]
                 nfine = len(output_points)
             except AttributeError:
                 nfine = max(fd.n_basis * constants.BASIS_MIN_FACTOR + 1,
@@ -248,7 +247,7 @@ class ShiftRegistration(RegistrationTransformer):
             elif template == "fixed" and self.restrict_domain:
                 tfine_aux = template_points_aux[domain]
             elif callable(template):  # Callable
-                fd_x = FDataGrid(x, sample_points=output_points)
+                fd_x = FDataGrid(x, grid_points=output_points)
                 fd_tfine = template(fd_x)
                 tfine_aux = fd_tfine.data_matrix.ravel()
 
@@ -274,7 +273,7 @@ class ShiftRegistration(RegistrationTransformer):
         else:
 
             # Stores the template in an FDataGrid
-            template = FDataGrid(tfine_aux, sample_points=output_points)
+            template = FDataGrid(tfine_aux, grid_points=output_points)
 
         return delta, template
 

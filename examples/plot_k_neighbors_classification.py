@@ -8,13 +8,14 @@ Shows the usage of the k-nearest neighbors classifier.
 # Author: Pablo Marcos Manchón
 # License: MIT
 
+import skfda
+from skfda.ml.classification import KNeighborsClassifier
+
 from sklearn.model_selection import (train_test_split, GridSearchCV,
                                      StratifiedShuffleSplit)
 
 import matplotlib.pyplot as plt
 import numpy as np
-import skfda
-from skfda.ml.classification import KNeighborsClassifier
 
 
 ##############################################################################
@@ -31,13 +32,14 @@ from skfda.ml.classification import KNeighborsClassifier
 # The following figure shows the growth curves grouped by sex.
 #
 # Loads dataset
-data = skfda.datasets.fetch_growth()
-X = data['data']
-y = data['target']
-class_names = data['target_names']
+X, y = skfda.datasets.fetch_growth(return_X_y=True, as_frame=True)
+X = X.iloc[:, 0].values
+y = y.values
 
 # Plot samples grouped by sex
-X.plot(group=y, group_names=class_names)
+X.plot(group=y.codes, group_names=y.categories)
+
+y = y.codes
 
 
 ##############################################################################

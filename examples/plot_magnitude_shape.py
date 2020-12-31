@@ -10,11 +10,13 @@ Shows the use of the MS-Plot applied to the Canadian Weather dataset.
 
 # sphinx_gallery_thumbnail_number = 2
 
+from skfda import datasets
+from skfda.exploratory.depth import IntegratedDepth
+from skfda.exploratory.depth.multivariate import SimplicialDepth
+from skfda.exploratory.visualization import MagnitudeShapePlot
+
 import matplotlib.pyplot as plt
 import numpy as np
-from skfda import datasets
-from skfda.exploratory.depth import fraiman_muniz_depth, modified_band_depth
-from skfda.exploratory.visualization import MagnitudeShapePlot
 
 
 ##############################################################################
@@ -22,9 +24,10 @@ from skfda.exploratory.visualization import MagnitudeShapePlot
 # CRAN. It contains a FDataGrid with daily temperatures and precipitations,
 # that is, it has a 2-dimensional image. We are interested only in the daily
 # average temperatures, so we extract the first coordinate.
-dataset = datasets.fetch_weather()
-fd = dataset["data"]
+X, y = datasets.fetch_weather(return_X_y=True, as_frame=True)
+fd = X.iloc[:, 0].values
 fd_temperatures = fd.coordinates[0]
+target = y.values
 
 ##############################################################################
 # The data is plotted to show the curves we are working with. They are divided
@@ -33,11 +36,11 @@ fd_temperatures = fd.coordinates[0]
 
 # Each climate is assigned a color. Defaults to grey.
 colormap = plt.cm.get_cmap('seismic')
-label_names = dataset["target_names"]
+label_names = target.categories
 nlabels = len(label_names)
 label_colors = colormap(np.arange(nlabels) / (nlabels - 1))
 
-fd_temperatures.plot(group=dataset["target"],
+fd_temperatures.plot(group=target.codes,
                      group_colors=label_colors,
                      group_names=label_names)
 
@@ -49,7 +52,7 @@ fd_temperatures.plot(group=dataset["target"],
 # (which is 'seismic' and can be customized), are assigned.
 
 msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures,
-                            depth_method=modified_band_depth)
+                            multivariate_depth=SimplicialDepth())
 
 color = 0.3
 outliercol = 0.7
@@ -76,12 +79,12 @@ fd_temperatures.plot(group=msplot.outliers.astype(int),
 # outliers but in the MS-Plot, they appear further left from the central
 # points. This behaviour can be modified specifying the parameter alpha.
 #
-# Now we use the pointwise
-# :func:`~skfda.exploratory.depth_measures.fraiman_muniz_depth` in the
+# Now we use the default multivariate depth from
+# :func:`~skfda.exploratory.depth.IntegratedDepth` in the
 # MS-Plot.
 
 msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures,
-                            depth_method=fraiman_muniz_depth)
+                            multivariate_depth=IntegratedDepth().multivariate_depth)
 
 msplot.color = color
 msplot.outliercol = outliercol

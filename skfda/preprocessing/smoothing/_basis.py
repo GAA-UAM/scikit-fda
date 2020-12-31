@@ -124,7 +124,7 @@ class _Matrix():
         else:
             # The matrix is cached
             return X.copy(data_matrix=self.hat_matrix() @ X.data_matrix,
-                          sample_points=estimator.output_points_)
+                          grid_points=estimator.output_points_)
 
 
 class BasisSmoother(_LinearSmoother):
@@ -201,7 +201,7 @@ class BasisSmoother(_LinearSmoother):
         >>> x
         array([ 3.,  3.,  1.,  1.,  3.])
 
-        >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
+        >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='cholesky')
@@ -216,7 +216,7 @@ class BasisSmoother(_LinearSmoother):
         However, the parameter ``return_basis`` can be used to return the data
         in basis form, by default, without extra smoothing:
 
-        >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
+        >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='cholesky', return_basis=True)
@@ -248,7 +248,7 @@ class BasisSmoother(_LinearSmoother):
         >>> from skfda.misc.regularization import TikhonovRegularization
         >>> from skfda.misc.operators import LinearDifferentialOperator
         >>>
-        >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
+        >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='cholesky',
@@ -259,7 +259,7 @@ class BasisSmoother(_LinearSmoother):
         >>> fd_basis.coefficients.round(2)
         array([[ 2.04,  0.51,  0.55]])
 
-        >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
+        >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='qr',
@@ -270,7 +270,7 @@ class BasisSmoother(_LinearSmoother):
         >>> fd_basis.coefficients.round(2)
         array([[ 2.04,  0.51,  0.55]])
 
-        >>> fd = skfda.FDataGrid(data_matrix=x, sample_points=t)
+        >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...                basis, method='matrix',
@@ -374,7 +374,7 @@ class BasisSmoother(_LinearSmoother):
 
         """
 
-        self.input_points_ = X.sample_points
+        self.input_points_ = X.grid_points
         self.output_points_ = (self.output_points
                                if self.output_points is not None
                                else self.input_points_)
@@ -399,7 +399,7 @@ class BasisSmoother(_LinearSmoother):
         """
         from ...misc.regularization import compute_penalty_matrix
 
-        self.input_points_ = X.sample_points
+        self.input_points_ = X.grid_points
         self.output_points_ = (self.output_points
                                if self.output_points is not None
                                else self.input_points_)
@@ -462,12 +462,16 @@ class BasisSmoother(_LinearSmoother):
                              f"({data_matrix.shape[0]}).")
 
         fdatabasis = FDataBasis(
-            basis=self.basis, coefficients=coefficients)
+            basis=self.basis, coefficients=coefficients,
+            dataset_name=X.dataset_name,
+            argument_names=X.argument_names,
+            coordinate_names=X.coordinate_names,
+            sample_names=X.sample_names)
 
         if self.return_basis:
             return fdatabasis
         else:
-            return fdatabasis.to_grid(sample_points=self.output_points_)
+            return fdatabasis.to_grid(grid_points=self.output_points_)
 
         return self
 
@@ -484,7 +488,7 @@ class BasisSmoother(_LinearSmoother):
         """
 
         assert all([all(i == s)
-                    for i, s in zip(self.input_points_, X.sample_points)])
+                    for i, s in zip(self.input_points_, X.grid_points)])
 
         method = self._method_function()
 

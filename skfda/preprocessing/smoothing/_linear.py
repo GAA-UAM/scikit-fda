@@ -80,7 +80,7 @@ class _LinearSmoother(abc.ABC, BaseEstimator, TransformerMixin):
         """
         _check_r_to_r(X)
 
-        self.input_points_ = X.sample_points[0]
+        self.input_points_ = X.grid_points[0]
         self.output_points_ = (self.output_points
                                if self.output_points is not None
                                else self.input_points_)
@@ -102,11 +102,11 @@ class _LinearSmoother(abc.ABC, BaseEstimator, TransformerMixin):
 
         """
 
-        assert all(self.input_points_ == X.sample_points[0])
+        assert all(self.input_points_ == X.grid_points[0])
 
         # The matrix is cached
         return X.copy(data_matrix=self.hat_matrix() @ X.data_matrix,
-                      sample_points=self.output_points_)
+                      grid_points=self.output_points_)
 
     def score(self, X, y):
         """Returns the generalized cross validation (GCV) score.

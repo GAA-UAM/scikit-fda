@@ -10,6 +10,7 @@ from scipy.interpolate import (PchipInterpolator, UnivariateSpline,
 
 import numpy as np
 
+from .._utils import _to_array_maybe_ragged
 from .evaluator import Evaluator
 
 
@@ -47,7 +48,7 @@ class _SplineList(abc.ABC):
                               fdata.dim_codomain)
 
         else:
-            res = np.array([self._evaluate_codomain(
+            res = _to_array_maybe_ragged([self._evaluate_codomain(
                 s, e, derivative=derivative)
                 for s, e in zip(self.splines, eval_points)])
 
@@ -124,19 +125,19 @@ class _SplineList1D(_SplineList):
         if self.monotone and self.interpolation_order == 1:
             monotone = False
 
-        sample_points = fdatagrid.sample_points[0]
+        grid_points = fdatagrid.grid_points[0]
 
         if monotone:
             def constructor(data):
                 """Constructs an unidimensional cubic monotone interpolation"""
-                return PchipInterpolator(sample_points, data)
+                return PchipInterpolator(grid_points, data)
 
         else:
 
             def constructor(data):
                 """Constructs an unidimensional interpolation"""
                 return UnivariateSpline(
-                    sample_points, data,
+                    grid_points, data,
                     s=self.smoothness_parameter,
                     k=self.interpolation_order)
 
@@ -215,8 +216,8 @@ class _SplineList2D(_SplineList):
         for i in range(fdatagrid.n_samples):
             for j in range(fdatagrid.dim_codomain):
                 self.splines[i, j] = RectBivariateSpline(
-                    fdatagrid.sample_points[0],
-                    fdatagrid.sample_points[1],
+                    fdatagrid.grid_points[0],
+                    fdatagrid.grid_points[1],
                     fdatagrid.data_matrix[i, :, :, j],
                     kx=kx, ky=ky,
                     s=self.smoothness_parameter)
@@ -244,7 +245,7 @@ class _SplineListND(_SplineList):
     RegularGridInterpolator.
 
     Args:
-        sample_points (np.ndarray): Sample points of the fdatagrid.
+        grid_points (np.ndarray): Sample points of the fdatagrid.
         data_matrix (np.ndarray): Data matrix of the fdatagrid.
         k (integer): Order of the spline interpolations.
 
@@ -286,7 +287,7 @@ class _SplineListND(_SplineList):
         for i in range(fdatagrid.n_samples):
             for j in range(fdatagrid.dim_codomain):
                 self.splines[i, j] = RegularGridInterpolator(
-                    fdatagrid.sample_points, fdatagrid.data_matrix[i, ..., j],
+                    fdatagrid.grid_points, fdatagrid.data_matrix[i, ..., j],
                     method, False)
 
     def _evaluate_one(self, spl, t, derivative=0):

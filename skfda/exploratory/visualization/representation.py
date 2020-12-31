@@ -4,7 +4,7 @@ import matplotlib.patches
 
 import numpy as np
 
-from ..._utils import _list_of_arrays, constants
+from ..._utils import _tuple_of_arrays, constants
 from ._utils import (_get_figure_and_axes, _set_figure_layout_for_fdata,
                      _set_labels)
 
@@ -85,8 +85,9 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
                **kwargs):
     """Plot the FDatGrid object graph as hypersurfaces.
 
-    Plots each coordinate separately. If the domain is one dimensional, the
-    plots will be curves, and if it is two dimensional, they will be surfaces.
+    Plots each coordinate separately. If the :term:`domain` is one dimensional,
+    the plots will be curves, and if it is two dimensional, they will be
+    surfaces.
 
     Args:
         chart (figure object, axe or list of axes, optional): figure over
@@ -148,7 +149,7 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
     if domain_range is None:
         domain_range = fdata.domain_range
     else:
-        domain_range = _list_of_arrays(domain_range)
+        domain_range = _tuple_of_arrays(domain_range)
 
     sample_colors, patches = _get_color_info(
         fdata, group, group_names, group_colors, legend, kwargs)
@@ -209,7 +210,7 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
     return fig
 
 
-def plot_scatter(fdata, chart=None, *, sample_points=None,
+def plot_scatter(fdata, chart=None, *, grid_points=None,
                  fig=None, axes=None,
                  n_rows=None, n_cols=None, domain_range=None,
                  group=None, group_colors=None, group_names=None,
@@ -222,7 +223,7 @@ def plot_scatter(fdata, chart=None, *, sample_points=None,
             with the graphs are plotted or axis over where the graphs are
             plotted. If None and ax is also None, the figure is
             initialized.
-        sample_points (ndarray): points to plot.
+        grid_points (ndarray): points to plot.
         fig (figure object, optional): figure over with the graphs are
             plotted in case ax is not specified. If None and ax is also
             None, the figure is initialized.
@@ -267,14 +268,14 @@ def plot_scatter(fdata, chart=None, *, sample_points=None,
 
     evaluated_points = None
 
-    if sample_points is None:
+    if grid_points is None:
         # This can only be done for FDataGrid
-        sample_points = fdata.sample_points
+        grid_points = fdata.grid_points
         evaluated_points = fdata.data_matrix
 
     if evaluated_points is None:
         evaluated_points = fdata(
-            sample_points, grid=True)
+            grid_points, grid=True)
 
     fig, axes = _get_figure_and_axes(chart, fig, axes)
     fig, axes = _set_figure_layout_for_fdata(fdata, fig, axes, n_rows, n_cols)
@@ -282,7 +283,7 @@ def plot_scatter(fdata, chart=None, *, sample_points=None,
     if domain_range is None:
         domain_range = fdata.domain_range
     else:
-        domain_range = _list_of_arrays(domain_range)
+        domain_range = _tuple_of_arrays(domain_range)
 
     sample_colors, patches = _get_color_info(
         fdata, group, group_names, group_colors, legend, kwargs)
@@ -297,14 +298,14 @@ def plot_scatter(fdata, chart=None, *, sample_points=None,
                 if sample_colors is not None:
                     color_dict["color"] = sample_colors[j]
 
-                axes[i].scatter(sample_points[0],
+                axes[i].scatter(grid_points[0],
                                 evaluated_points[j, ..., i].T,
                                 **color_dict, **kwargs)
 
     else:
 
-        X = fdata.sample_points[0]
-        Y = fdata.sample_points[1]
+        X = fdata.grid_points[0]
+        Y = fdata.grid_points[1]
         X, Y = np.meshgrid(X, Y)
 
         color_dict = {}

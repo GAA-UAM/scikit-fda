@@ -1,9 +1,9 @@
+from skfda import FDataGrid
+from skfda.exploratory.depth import IntegratedDepth
+from skfda.exploratory.visualization import Boxplot, SurfaceBoxplot
 import unittest
 
 import numpy as np
-from skfda import FDataGrid
-from skfda.exploratory.depth import fraiman_muniz_depth
-from skfda.exploratory.visualization import Boxplot, SurfaceBoxplot
 
 
 class TestBoxplot(unittest.TestCase):
@@ -13,9 +13,9 @@ class TestBoxplot(unittest.TestCase):
                        [0.5, 0.5, 1, 2, 1.5, 1],
                        [-1, -1, -0.5, 1, 1, 0.5],
                        [-0.5, -0.5, -0.5, -1, -1, -1]]
-        sample_points = [0, 2, 4, 6, 8, 10]
-        fd = FDataGrid(data_matrix, sample_points)
-        fdataBoxplot = Boxplot(fd, depth_method=fraiman_muniz_depth)
+        grid_points = [0, 2, 4, 6, 8, 10]
+        fd = FDataGrid(data_matrix, grid_points)
+        fdataBoxplot = Boxplot(fd, depth_method=IntegratedDepth())
         np.testing.assert_array_equal(
             fdataBoxplot.median.ravel(),
             np.array([-1., -1., -0.5, 1., 1., 0.5]))

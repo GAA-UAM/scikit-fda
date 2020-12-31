@@ -1,16 +1,14 @@
 import numbers
 
-from numpy import polyder, polyint, polymul, polyval
+import numpy as np
 import scipy.integrate
+from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
 
-import numpy as np
-
-from ..._utils import _same_domain, _FDataCallable
+from ..._utils import _FDataCallable, _same_domain
 from ...representation import FDataGrid
-from ...representation.basis import Constant, Monomial, Fourier, BSpline
+from ...representation.basis import BSpline, Constant, Fourier, Monomial
 from ._operators import Operator, gramian_matrix_optimization
-
 
 __author__ = "Pablo Pérez Manso"
 __email__ = "92manso@gmail.com"
@@ -43,16 +41,16 @@ class LinearDifferentialOperator(Operator):
         LinearDifferentialOperator(
         weights=[
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[1]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 1.]],
             ...)]
         )
 
@@ -63,40 +61,40 @@ class LinearDifferentialOperator(Operator):
         LinearDifferentialOperator(
         weights=[
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[2]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 2.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[3]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 3.]],
             ...)]
         )
 
         Create a linear differential operator with non-constant weights.
 
         >>> constant = Constant()
-        >>> monomial = Monomial((0, 1), n_basis=3)
-        >>> fdlist = [FDataBasis(constant, [0]),
-        ...           FDataBasis(constant, [0]),
-        ...           FDataBasis(monomial, [1, 2, 3])]
+        >>> monomial = Monomial(domain_range=(0, 1), n_basis=3)
+        >>> fdlist = [FDataBasis(constant, [0.]),
+        ...           FDataBasis(constant, [0.]),
+        ...           FDataBasis(monomial, [1., 2., 3.])]
         >>> LinearDifferentialOperator(weights=fdlist)
         LinearDifferentialOperator(
         weights=[
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Constant(domain_range=[array([0, 1])], n_basis=1),
-            coefficients=[[0]],
+            basis=Constant(domain_range=((0, 1),), n_basis=1),
+            coefficients=[[ 0.]],
             ...),
         FDataBasis(
-            basis=Monomial(domain_range=[array([0, 1])], n_basis=3),
-            coefficients=[[1 2 3]],
+            basis=Monomial(domain_range=((0, 1),), n_basis=3),
+            coefficients=[[ 1. 2. 3.]],
             ...)]
         )
 
@@ -564,14 +562,14 @@ def fdatagrid_penalty_matrix_optimized(
         basis: FDataGrid):
 
     evaluated_basis = sum(
-        w(basis.sample_points[0]) *
-        basis.derivative(order=i)(basis.sample_points[0])
+        w(basis.grid_points[0]) *
+        basis.derivative(order=i)(basis.grid_points[0])
         for i, w in enumerate(linear_operator.weights))
 
     indices = np.triu_indices(basis.n_samples)
     product = evaluated_basis[indices[0]] * evaluated_basis[indices[1]]
 
-    triang_vec = scipy.integrate.simps(product[..., 0], x=basis.sample_points)
+    triang_vec = scipy.integrate.simps(product[..., 0], x=basis.grid_points)
 
     matrix = np.empty((basis.n_samples, basis.n_samples))
 

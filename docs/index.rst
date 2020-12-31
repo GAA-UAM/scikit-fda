@@ -21,6 +21,7 @@ Github you can find more information related to the development of the package.
    :titlesonly:
 
    apilist
+   glossary
 
 
 .. toctree::

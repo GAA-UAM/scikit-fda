@@ -1,13 +1,19 @@
 import warnings
-
-import rdata
+from typing import Any, Mapping, Optional, Tuple, Union, overload
 
 import numpy as np
+import pandas as pd
+from numpy import ndarray
+from pandas import DataFrame, Series
+from sklearn.utils import Bunch
+from typing_extensions import Literal
+
+import rdata
 
 from .. import FDataGrid
 
 
-def _get_skdatasets_repositories():
+def _get_skdatasets_repositories() -> Any:
     import skdatasets
 
     repositories = getattr(skdatasets, "repositories", None)
@@ -17,54 +23,95 @@ def _get_skdatasets_repositories():
     return repositories
 
 
-def fdata_constructor(obj, attrs):
+def fdata_constructor(
+    obj: Any,
+    attrs: Mapping[Union[str, bytes], Any],
+) -> FDataGrid:
+    """
+    Construct a :func:`FDataGrid` objet from a R `fdata` object.
+
+    This constructor can be used in the dict passed to
+    :func:`rdata.conversion.SimpleConverter` in order to
+    convert `fdata` objects from the fda.usc package.
+
+    """
     names = obj["names"]
 
-    return FDataGrid(data_matrix=obj["data"],
-                     sample_points=obj["argvals"],
-                     domain_range=obj["rangeval"],
-                     dataset_name=names['main'][0],
-                     argument_names=(names['xlab'][0],),
-                     coordinate_names=(names['ylab'][0],))
+    return FDataGrid(
+        data_matrix=obj["data"],
+        grid_points=obj["argvals"],
+        domain_range=obj["rangeval"],
+        dataset_name=names['main'][0],
+        argument_names=(names['xlab'][0],),
+        coordinate_names=(names['ylab'][0],),
+    )
 
 
-def functional_constructor(obj, attrs):
+def functional_constructor(
+    obj: Any,
+    attrs: Mapping[Union[str, bytes], Any],
+) -> FDataGrid:
+    """
+    Construct a :func:`FDataGrid` objet from a R `functional` object.
+
+    This constructor can be used in the dict passed to
+    :func:`rdata.conversion.SimpleConverter` in order to
+    convert `functional` objects from the ddalpha package.
+
+    """
     name = obj['name']
     args_label = obj['args']
     values_label = obj['vals']
     target = np.array(obj['labels']).ravel()
     dataf = obj['dataf']
 
-    sample_points_set = {a for o in dataf for a in o["args"]}
+    grid_points_set = {a for o in dataf for a in o["args"]}
 
-    args_init = min(sample_points_set)
-    args_end = max(sample_points_set)
+    args_init = min(grid_points_set)
+    args_end = max(grid_points_set)
 
-    sample_points = np.arange(args_init,
-                              args_end + 1)
+    grid_points = np.arange(args_init, args_end + 1)
 
-    data_matrix = np.zeros(shape=(len(dataf), len(sample_points)))
+    data_matrix = np.zeros(shape=(len(dataf), len(grid_points)))
 
     for num_sample, o in enumerate(dataf):
         for t, x in zip(o["args"], o["vals"]):
             data_matrix[num_sample, t - args_init] = x
 
-    return (FDataGrid(data_matrix=data_matrix,
-                      sample_points=sample_points,
-                      domain_range=(args_init, args_end),
-                      dataset_name=name[0],
-                      argument_names=(args_label[0],),
-                      coordinate_names=(values_label[0],)), target)
+    return (
+        FDataGrid(
+            data_matrix=data_matrix,
+            grid_points=grid_points,
+            domain_range=(args_init, args_end),
+            dataset_name=name[0],
+            argument_names=(args_label[0],),
+            coordinate_names=(values_label[0],),
+        ),
+        target,
+    )
 
 
-def fetch_cran(name, package_name, *, converter=None,
-               **kwargs):
+def fetch_cran(
+    name: str,
+    package_name: str,
+    *,
+    converter: Optional[rdata.conversion.Converter] = None,
+    **kwargs: Any,
+) -> Any:
     """
     Fetch a dataset from CRAN.
 
     Args:
         name: Dataset name.
         package_name: Name of the R package containing the dataset.
+        converter: Object that performs the conversion of the R objects to
+            Python objects.
+        kwargs: Additional parameters for the function
+            :func:`skdatasets.repositories.cran.fetch_dataset`.
+
+    Returns:
+        The dataset, with the R types converted to suitable Python
+        types.
 
     """
     repositories = _get_skdatasets_repositories()
@@ -73,18 +120,43 @@ def fetch_cran(name, package_name, *, converter=None,
         converter = rdata.conversion.SimpleConverter({
             **rdata.conversion.DEFAULT_CLASS_MAP,
             "fdata": fdata_constructor,
-            "functional": functional_constructor})
+            "functional": functional_constructor,
+        })
 
-    return repositories.cran.fetch_dataset(name, package_name,
-                                           converter=converter, **kwargs)
+    return repositories.cran.fetch_dataset(
+        name,
+        package_name,
+        converter=converter,
+        **kwargs,
+    )
 
 
-def fetch_ucr(name, **kwargs):
+def _ucr_to_fdatagrid(data: np.ndarray) -> FDataGrid:
+    if data.dtype == np.object_:
+        data = np.array(data.tolist())
+
+        # n_instances := data.shape[0]
+        # dim_output  := data.shape[1]
+        # n_points    := data.shape[2]
+
+        data = np.transpose(data, axes=(0, 2, 1))
+
+    grid_points = range(data.shape[1])
+
+    return FDataGrid(data, grid_points=grid_points)
+
+
+def fetch_ucr(name: str, **kwargs: Any) -> Bunch:
     """
     Fetch a dataset from the UCR.
 
     Args:
         name: Dataset name.
+        kwargs: Additional parameters for the function
+            :func:`skdatasets.repositories.ucr.fetch`.
+
+    Returns:
+        The dataset requested.
 
     Note:
         Functional multivariate datasets are not yet supported.
@@ -102,58 +174,51 @@ def fetch_ucr(name, **kwargs):
 
     dataset = repositories.ucr.fetch(name, **kwargs)
 
-    def ucr_to_fdatagrid(data):
-        if data.dtype == np.object_:
-            data = np.array(data.tolist())
-
-            # n_instances = data.shape[0]
-            # dim_output = data.shape[1]
-            # n_points = data.shape[2]
-
-            data = np.transpose(data, axes=(0, 2, 1))
-
-        sample_points = range(data.shape[1])
-
-        return FDataGrid(data, sample_points=sample_points)
-
-    dataset['data'] = ucr_to_fdatagrid(dataset['data'])
-    del dataset['feature_names']
+    dataset['data'] = _ucr_to_fdatagrid(dataset['data'])
+    dataset.pop('feature_names')
 
     data_test = dataset.get('data_test', None)
     if data_test is not None:
-        dataset['data_test'] = ucr_to_fdatagrid(data_test)
+        dataset['data_test'] = _ucr_to_fdatagrid(data_test)
 
     return dataset
 
 
-def _fetch_cran_no_encoding_warning(*args, **kwargs):
+def _fetch_cran_no_encoding_warning(*args: Any, **kwargs: Any) -> Any:
     # Probably non thread safe
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=UserWarning,
-                                message="Unknown encoding. Assumed ASCII.")
+        warnings.filterwarnings(
+            "ignore",
+            category=UserWarning,
+            message="Unknown encoding. Assumed ASCII.",
+        )
         return fetch_cran(*args, **kwargs)
 
 
-def _fetch_elem_stat_learn(name):
-    return _fetch_cran_no_encoding_warning(name, "ElemStatLearn",
-                                           version="0.1-7.1")
+def _fetch_elem_stat_learn(name: str) -> Any:
+    return _fetch_cran_no_encoding_warning(
+        name,
+        "ElemStatLearn",
+        version="0.1-7.1",
+    )
 
 
-def _fetch_ddalpha(name):
+def _fetch_ddalpha(name: str) -> Any:
     return _fetch_cran_no_encoding_warning(name, "ddalpha", version="1.3.4")
 
 
-def _fetch_fda(name):
+def _fetch_fda(name: str) -> Any:
     return _fetch_cran_no_encoding_warning(name, "fda", version="2.4.7")
 
 
-def _fetch_fda_usc(name):
+def _fetch_fda_usc(name: str) -> Any:
     return _fetch_cran_no_encoding_warning(name, "fda.usc", version="1.3.0")
 
 
 _param_descr = """
     Args:
         return_X_y: Return only the data and target as a tuple.
+        as_frame: Return the data in a Pandas Dataframe or Series.
 """
 
 _phoneme_descr = """
@@ -201,7 +266,38 @@ _phoneme_descr = """
     """
 
 
-def fetch_phoneme(return_X_y: bool = False):
+@overload
+def fetch_phoneme(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch_phoneme(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    pass
+
+
+@overload
+def fetch_phoneme(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, Series]:
+    pass
+
+
+def fetch_phoneme(
+    *,
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """
     Load the phoneme dataset.
 
@@ -209,36 +305,60 @@ def fetch_phoneme(return_X_y: bool = False):
     from the dataset in `https://web.stanford.edu/~hastie/ElemStatLearn/`.
 
     """
-    DESCR = _phoneme_descr
+    descr = _phoneme_descr
 
     raw_dataset = _fetch_elem_stat_learn("phoneme")
 
     data = raw_dataset["phoneme"]
 
-    curve_data = data.iloc[:, 0:256]
+    n_points = 256
+
+    curve_data = data.iloc[:, 0:n_points]
     sound = data["g"].values
     speaker = data["speaker"].values
 
-    curves = FDataGrid(data_matrix=curve_data.values,
-                       sample_points=np.linspace(0, 8, 256),
-                       domain_range=[0, 8],
-                       dataset_name="Phoneme",
-                       argument_names=("frequency (kHz)",),
-                       coordinate_names=("log-periodogram",))
+    curves = FDataGrid(
+        data_matrix=curve_data.values,
+        grid_points=np.linspace(0, 8, n_points),
+        domain_range=[0, 8],
+        dataset_name="Phoneme",
+        argument_names=("frequency (kHz)",),
+        coordinate_names=("log-periodogram",),
+    )
+
+    curve_name = "log-periodogram"
+    target_name = "phoneme"
+    frame = None
+
+    if as_frame:
+        frame = pd.DataFrame({
+            curve_name: curves,
+            target_name: sound,
+        })
+        curves = frame.iloc[:, [0]]
+        target = frame.iloc[:, 1]
+        meta = pd.Series(speaker, name="speaker")
+    else:
+        target = sound.codes
+        meta = np.array([speaker]).T
 
     if return_X_y:
-        return curves, sound
-    else:
-        return {"data": curves,
-                "target": sound.codes,
-                "target_names": sound.categories.tolist(),
-                "target_feature_names": ["sound"],
-                "meta": np.array([speaker]).T,
-                "meta_feature_names": ["speaker"],
-                "DESCR": DESCR}
+        return curves, target
+
+    return Bunch(
+        data=curves,
+        target=target,
+        frame=frame,
+        categories={target_name: sound.categories.tolist()},
+        feature_names=[curve_name],
+        target_names=[target_name],
+        meta=meta,
+        meta_names=["speaker"],
+        DESCR=descr,
+    )
 
 
-if hasattr(fetch_phoneme, "__doc__"):  # docstrings can be stripped off
+if fetch_phoneme.__doc__ is not None:  # docstrings can be stripped off
     fetch_phoneme.__doc__ += _phoneme_descr + _param_descr
 
 _growth_descr = """
@@ -256,7 +376,37 @@ _growth_descr = """
 """
 
 
-def fetch_growth(return_X_y: bool = False):
+@overload
+def fetch_growth(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch_growth(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    pass
+
+
+@overload
+def fetch_growth(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, Series]:
+    pass
+
+
+def fetch_growth(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """
     Load the Berkeley Growth Study dataset.
 
@@ -264,7 +414,7 @@ def fetch_growth(return_X_y: bool = False):
     Berkeley Growth Study.
 
     """
-    DESCR = _growth_descr
+    descr = _growth_descr
 
     raw_dataset = _fetch_fda("growth")
 
@@ -274,25 +424,44 @@ def fetch_growth(return_X_y: bool = False):
     females = data["hgtf"].T
     males = data["hgtm"].T
 
-    curves = FDataGrid(data_matrix=np.concatenate((males, females), axis=0),
-                       sample_points=ages,
-                       dataset_name="Berkeley Growth Study",
-                       argument_names=("age",),
-                       coordinate_names=("height",))
-
     sex = np.array([0] * males.shape[0] + [1] * females.shape[0])
+    curves = FDataGrid(
+        data_matrix=np.concatenate((males, females), axis=0),
+        grid_points=ages,
+        dataset_name="Berkeley Growth Study",
+        argument_names=("age",),
+        coordinate_names=("height",),
+    )
+
+    curve_name = "height"
+    target_name = "sex"
+    target_categories = ["male", "female"]
+    frame = None
+
+    if as_frame:
+        sex = pd.Categorical.from_codes(sex, categories=target_categories)
+        frame = pd.DataFrame({
+            curve_name: curves,
+            target_name: sex,
+        })
+        curves = frame.iloc[:, [0]]
+        sex = frame.iloc[:, 1]
 
     if return_X_y:
         return curves, sex
-    else:
-        return {"data": curves,
-                "target": sex,
-                "target_names": ["male", "female"],
-                "target_feature_names": ["sex"],
-                "DESCR": DESCR}
+
+    return Bunch(
+        data=curves,
+        target=sex,
+        frame=frame,
+        categories={target_name: target_categories},
+        feature_names=[curve_name],
+        target_names=[target_name],
+        DESCR=descr,
+    )
 
 
-if hasattr(fetch_growth, "__doc__"):  # docstrings can be stripped off
+if fetch_growth.__doc__ is not None:  # docstrings can be stripped off
     fetch_growth.__doc__ += _growth_descr + _param_descr
 
 _tecator_descr = """
@@ -333,7 +502,37 @@ _tecator_descr = """
 """
 
 
-def fetch_tecator(return_X_y: bool = False):
+@overload
+def fetch_tecator(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch_tecator(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    pass
+
+
+@overload
+def fetch_tecator(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, DataFrame]:
+    pass
+
+
+def fetch_tecator(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, DataFrame]]:
     """
     Load the Tecator dataset.
 
@@ -341,26 +540,40 @@ def fetch_tecator(return_X_y: bool = False):
     http://lib.stat.cmu.edu/datasets/tecator.
 
     """
-    DESCR = _tecator_descr
+    descr = _tecator_descr
 
     raw_dataset = _fetch_fda_usc("tecator")
 
     data = raw_dataset["tecator"]
 
     curves = data['absorp.fdata']
-    target = data['y'].values
-    target_feature_names = data['y'].columns.values.tolist()
+    target = data['y'].rename(columns=str.lower)
+    feature_name = curves.dataset_name.lower()
+    target_names = target.columns.values.tolist()
+
+    frame = None
+
+    if as_frame:
+        curves = pd.DataFrame({feature_name: curves})
+        frame = pd.concat([curves, target], axis=1)
+    else:
+        target = target.values
 
     if return_X_y:
         return curves, target
-    else:
-        return {"data": curves,
-                "target": target,
-                "target_feature_names": target_feature_names,
-                "DESCR": DESCR}
+
+    return Bunch(
+        data=curves,
+        target=target,
+        frame=frame,
+        categories={},
+        feature_names=[feature_name],
+        target_names=target_names,
+        DESCR=descr,
+    )
 
 
-if hasattr(fetch_tecator, "__doc__"):  # docstrings can be stripped off
+if fetch_tecator.__doc__ is not None:  # docstrings can be stripped off
     fetch_tecator.__doc__ += _tecator_descr + _param_descr
 
 _medflies_descr = """
@@ -401,16 +614,45 @@ _medflies_descr = """
 """
 
 
-def fetch_medflies(return_X_y: bool = False):
+@overload
+def fetch_medflies(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch_medflies(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    pass
+
+
+@overload
+def fetch_medflies(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, Series]:
+    pass
+
+
+def fetch_medflies(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """
-    Load the Medflies dataset, where the flies are separated in two classes
-    according to their longevity.
+    Load the Medflies dataset.
 
     The data is obtained from the R package 'ddalpha', which its a modification
     of the dataset in http://www.stat.ucdavis.edu/~wang/data/medfly1000.htm.
 
     """
-    DESCR = _medflies_descr
+    descr = _medflies_descr
 
     raw_dataset = _fetch_ddalpha("medflies")
 
@@ -419,21 +661,40 @@ def fetch_medflies(return_X_y: bool = False):
     curves = data[0]
 
     unique = np.unique(data[1], return_inverse=True)
-    target_names = [unique[0][1], unique[0][0]]
+    target_categories = [unique[0][1], unique[0][0]]
     target = 1 - unique[1]
-    target_feature_names = ["lifetime"]
+    curve_name = 'eggs'
+    target_name = "lifetime"
+
+    frame = None
+
+    if as_frame:
+        target = pd.Categorical.from_codes(
+            target,
+            categories=target_categories,
+        )
+        frame = pd.DataFrame({
+            curve_name: curves,
+            target_name: target,
+        })
+        curves = frame.iloc[:, [0]]
+        target = frame.iloc[:, 1]
 
     if return_X_y:
         return curves, target
-    else:
-        return {"data": curves,
-                "target": target,
-                "target_names": target_names,
-                "target_feature_names": target_feature_names,
-                "DESCR": DESCR}
+
+    return Bunch(
+        data=curves,
+        target=target,
+        frame=frame,
+        categories={target_name: target_categories},
+        feature_names=[curve_name],
+        target_names=[target_name],
+        DESCR=descr,
+    )
 
 
-if hasattr(fetch_medflies, "__doc__"):  # docstrings can be stripped off
+if fetch_medflies.__doc__ is not None:  # docstrings can be stripped off
     fetch_medflies.__doc__ += _medflies_descr + _param_descr
 
 _weather_descr = """
@@ -449,56 +710,143 @@ _weather_descr = """
 """
 
 
-def fetch_weather(return_X_y: bool = False):
+@overload
+def fetch_weather(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch_weather(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    pass
+
+
+@overload
+def fetch_weather(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, Series]:
+    pass
+
+
+def fetch_weather(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """
     Load the Canadian Weather dataset.
 
     The data is obtained from the R package 'fda' from CRAN.
 
     """
-    DESCR = _weather_descr
+    descr = _weather_descr
 
-    raw_dataset = _fetch_fda("CanadianWeather")
-
-    data = raw_dataset["CanadianWeather"]
-
-    weather_daily = np.asarray(data["dailyAv"])
+    data = _fetch_fda("CanadianWeather")["CanadianWeather"]
 
     # Axes 0 and 1 must be transposed since in the downloaded dataset the
     # data_matrix shape is (nfeatures, n_samples, dim_codomain) while our
     # data_matrix shape is (n_samples, nfeatures, dim_codomain).
-    temp_prec_daily = np.transpose(weather_daily[:, :, 0:2], axes=(1, 0, 2))
+    temp_prec_daily = np.transpose(
+        np.asarray(data["dailyAv"])[:, :, 0:2], axes=(1, 0, 2),
+    )
 
-    curves = FDataGrid(data_matrix=temp_prec_daily,
-                       sample_points=range(1, 366),
-                       dataset_name="Canadian Weather",
-                       argument_names=("day",),
-                       coordinate_names=("temperature (ºC)",
-                                         "precipitation (mm.)"))
+    days_in_year = 365
 
-    target_names, target = np.unique(data["region"], return_inverse=True)
+    curves = FDataGrid(
+        data_matrix=temp_prec_daily,
+        grid_points=np.arange(0, days_in_year) + 0.5,
+        domain_range=(0, days_in_year),
+        dataset_name="Canadian Weather",
+        sample_names=data["place"],
+        argument_names=("day",),
+        coordinate_names=(
+            "temperature (ºC)",
+            "precipitation (mm.)",
+        ),
+    )
+
+    curve_name = "daily averages"
+    target_name = "region"
+    target_categories, target = np.unique(data["region"], return_inverse=True)
+
+    frame = None
+
+    if as_frame:
+        target = pd.Categorical.from_codes(
+            target,
+            categories=target_categories,
+        )
+        frame = pd.DataFrame({
+            curve_name: curves,
+            "place": data["place"],
+            "province": data["province"],
+            "latitude": np.asarray(data["coordinates"])[:, 0],
+            "longitude": np.asarray(data["coordinates"])[:, 1],
+            "index": data["geogindex"],
+            "monthly temperatures": np.asarray(
+                data["monthlyTemp"],
+            ).T.tolist(),
+            "monthly precipitation": np.asarray(
+                data["monthlyPrecip"],
+            ).T.tolist(),
+            target_name: target,
+        })
+        X = frame.iloc[:, :-1]
+        target = frame.iloc[:, -1]
+        feature_names = list(X.columns.values)
+
+        additional_dict = {}
+    else:
+        feature_names = [curve_name]
+        X = curves
+        meta = np.array(list(zip(
+            data["place"],
+            data["province"],
+            np.asarray(data["coordinates"])[:, 0],
+            np.asarray(data["coordinates"])[:, 1],
+            data["geogindex"],
+            np.asarray(data["monthlyTemp"]).T,
+            np.asarray(data["monthlyPrecip"]).T,
+        )))
+        meta_names = [
+            "place",
+            "province",
+            "latitude",
+            "longitude",
+            "index",
+            "monthly temperatures",
+            "monthly precipitation",
+        ]
+
+        additional_dict = {
+            "meta": meta,
+            "meta_names": meta_names,
+        }
 
     if return_X_y:
-        return curves, target
-    else:
-        return {"data": curves,
-                "target": target,
-                "target_names": target_names,
-                "target_feature_names": ["region"],
-                "meta": list(zip(data["place"], data["province"],
-                                 np.asarray(data["coordinates"])[0],
-                                 np.asarray(data["coordinates"])[1],
-                                 data["geogindex"],
-                                 np.asarray(data["monthlyTemp"]),
-                                 np.asarray(data["monthlyPrecip"]))),
+        return X, target
 
-                "meta_names": ["place", "province", "latitude", "longitude",
-                               "ind", "monthlyTemp", "monthlyPrecip"],
-                "meta_feature_names": ["location"],
-                "DESCR": DESCR}
+    return Bunch(
+        data=X,
+        target=target,
+        frame=frame,
+        categories={target_name: target_categories},
+        feature_names=feature_names,
+        target_names=[target_name],
+        **additional_dict,
+        DESCR=descr,
+    )
 
 
-if hasattr(fetch_weather, "__doc__"):  # docstrings can be stripped off
+if fetch_weather.__doc__ is not None:  # docstrings can be stripped off
     fetch_weather.__doc__ += _weather_descr + _param_descr
 
 _aemet_descr = """
@@ -516,44 +864,119 @@ _aemet_descr = """
 """
 
 
-def fetch_aemet(return_X_y: bool = False):
+@overload
+def fetch_aemet(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch_aemet(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, None]:
+    pass
+
+
+@overload
+def fetch_aemet(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, None]:
+    pass
+
+
+def fetch_aemet(  # noqa: WPS210
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Union[Bunch, Tuple[FDataGrid, None], Tuple[DataFrame, None]]:
     """
     Load the Spanish Weather dataset.
 
     The data is obtained from the R package 'fda.usc' from CRAN.
 
     """
-    DESCR = _aemet_descr
+    descr = _aemet_descr
 
-    raw_dataset = _fetch_fda_usc("aemet")
+    data = _fetch_fda_usc("aemet")["aemet"]
 
-    data = raw_dataset["aemet"]
+    days_in_year = 365
 
-    data_matrix = np.empty((73, 365, 3))
+    data_matrix = np.empty((73, days_in_year, 3))
     data_matrix[:, :, 0] = data["temp"].data_matrix[:, :, 0]
     data_matrix[:, :, 1] = data["logprec"].data_matrix[:, :, 0]
     data_matrix[:, :, 2] = data["wind.speed"].data_matrix[:, :, 0]
 
-    curves = data["temp"].copy(data_matrix=data_matrix,
-                               dataset_name="AEMET",
-                               argument_names=("day",),
-                               coordinate_names=("temperature (ºC)",
-                                                 "logprecipitation",
-                                                 "wind speed (m/s)"))
+    curves = data["temp"].copy(
+        data_matrix=data_matrix,
+        grid_points=np.arange(0, days_in_year) + 0.5,
+        domain_range=(0, days_in_year),
+        dataset_name="aemet",
+        sample_names=data["df"].iloc[:, 1],
+        argument_names=("day",),
+        coordinate_names=(
+            "temperature (ºC)",
+            "logprecipitation",
+            "wind speed (m/s)",
+        ),
+    )
+
+    curve_name = "daily averages"
+    df_names = [
+        "index",
+        "place",
+        "province",
+        "altitude",
+        "longitude",
+        "latitude",
+    ]
+    df_indexes = np.array([0, 1, 2, 3, 6, 7])
+
+    frame = None
+
+    if as_frame:
+        frame = pd.DataFrame({
+            curve_name: curves,
+            **{
+                n: data["df"].iloc[:, d]
+                for (n, d) in zip(df_names, df_indexes)
+            },
+        })
+        X = frame
+        feature_names = list(X.columns.values)
+
+        additional_dict = {}
+
+    else:
+        feature_names = [curve_name]
+        X = curves
+        meta = np.asarray(data["df"])[:, df_indexes]
+        meta_names = df_names
+        additional_dict = {
+            "meta": meta,
+            "meta_names": meta_names,
+        }
 
     if return_X_y:
-        return curves, None
-    else:
-        return {"data": curves,
-                "meta": np.asarray(data["df"])[:,
-                                               np.array([0, 1, 2, 3, 6, 7])],
-                "meta_names": ["ind", "place", "province", "altitude",
-                               "longitude", "latitude"],
-                "meta_feature_names": ["location"],
-                "DESCR": DESCR}
+        return X, None
+
+    return Bunch(
+        data=X,
+        target=None,
+        frame=frame,
+        categories={},
+        feature_names=feature_names,
+        **additional_dict,
+        DESCR=descr,
+    )
 
 
-if hasattr(fetch_aemet, "__doc__"):  # docstrings can be stripped off
+if fetch_aemet.__doc__ is not None:  # docstrings can be stripped off
     fetch_aemet.__doc__ += _aemet_descr + _param_descr
 
 
@@ -575,23 +998,53 @@ _octane_descr = """
             Hubert, Mia. (2006). Robustness and Outlier Detection in
             Chemometrics. Critical Reviews in Analytical Chemistry. 36.
             221-242. 10.1080/10408340600969403.
-        ..  [HuRS2015] Hubert, Mia & Rousseeuw, Peter & Segaert, Pieter. (2015).
-            Multivariate functional outlier detection. Statistical Methods and
-            Applications. 24. 177-202. 10.1007/s10260-015-0297-8.
+        ..  [HuRS2015] Hubert, Mia & Rousseeuw, Peter & Segaert, Pieter.
+            (2015). Multivariate functional outlier detection. Statistical
+            Methods and Applications. 24. 177-202. 10.1007/s10260-015-0297-8.
 
 """
 
 
-def fetch_octane(return_X_y: bool = False):
+@overload
+def fetch_octane(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch_octane(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    pass
+
+
+@overload
+def fetch_octane(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, Series]:
+    pass
+
+
+def fetch_octane(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
     """Load near infrared spectra of gasoline samples.
 
     This function fetchs the octane dataset from the R package 'mrfDepth'
     from CRAN.
 
     """
-    DESCR = _octane_descr
+    descr = _octane_descr
 
-    # octane file from mrfDepth R package
+    # octane file from mrfDepth R package
     raw_dataset = fetch_cran("octane", "mrfDepth", version="1.0.11")
     data = raw_dataset['octane'][..., 0].T
 
@@ -600,33 +1053,63 @@ def fetch_octane(return_X_y: bool = False):
 
     # "wavelengths ranging from 1102nm to 1552nm with measurements every two
     # nm.""
-    sample_points = np.linspace(1102, 1552, 226)
+    wavelength_start = 1102
+    wavelength_end = 1552
+    wavelength_count = 226
+
+    grid_points = np.linspace(
+        wavelength_start,
+        wavelength_end,
+        wavelength_count,
+    )
 
     # "The octane data set contains six outliers (25, 26, 36–39) to which
     # alcohol was added".
-    target = np.zeros(len(data), dtype=int)
-    target[24] = target[25] = target[35:39] = 1  # Outliers 1
+    target = np.zeros(len(data), dtype=np.bool_)
+    target[24:26] = 1  # noqa: WPS432
+    target[35:39] = 1  # noqa: WPS432
 
-    curves = FDataGrid(data,
-                       sample_points=sample_points,
-                       dataset_name="Octane",
-                       argument_names=("wavelength (nm)",),
-                       coordinate_names=("absorbances",))
+    target_name = "is outlier"
+
+    curve_name = "absorbances"
+
+    curves = FDataGrid(
+        data,
+        grid_points=grid_points,
+        dataset_name="octane",
+        argument_names=("wavelength (nm)",),
+        coordinate_names=("absorbances",),
+    )
+
+    frame = None
+
+    if as_frame:
+        frame = pd.DataFrame({
+            curve_name: curves,
+            target_name: target,
+        })
+        curves = frame.iloc[:, [0]]
+        target = frame.iloc[:, 1]
 
     if return_X_y:
         return curves, target
-    else:
-        return {"data": curves,
-                "target": target,
-                "target_names": ['inliner', 'outlier'],
-                "DESCR": DESCR}
+
+    return Bunch(
+        data=curves,
+        target=target,
+        frame=frame,
+        categories={},
+        feature_names=[curve_name],
+        target_names=[target_name],
+        DESCR=descr,
+    )
 
 
-if hasattr(fetch_octane, "__doc__"):  # docstrings can be stripped off
+if fetch_octane.__doc__ is not None:  # docstrings can be stripped off
     fetch_octane.__doc__ += _octane_descr + _param_descr
 
 _gait_descr = """
-    Angles formed by the hip and knee of each of 39 children over each boy 
+    Angles formed by the hip and knee of each of 39 children over each boy
     gait cycle.
 
     References:
@@ -638,14 +1121,44 @@ _gait_descr = """
 """
 
 
-def fetch_gait(return_X_y: bool = False):
+@overload
+def fetch_gait(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch_gait(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, None]:
+    pass
+
+
+@overload
+def fetch_gait(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, None]:
+    pass
+
+
+def fetch_gait(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Union[Bunch, Tuple[FDataGrid, None], Tuple[DataFrame, None]]:
     """
     Load the GAIT dataset.
 
     The data is obtained from the R package 'fda' from CRAN.
 
     """
-    DESCR = _gait_descr
+    descr = _gait_descr
 
     raw_data = _fetch_fda("gait")
 
@@ -653,27 +1166,41 @@ def fetch_gait(return_X_y: bool = False):
 
     data_matrix = np.asarray(data)
     data_matrix = np.transpose(data_matrix, axes=(1, 0, 2))
-    sample_points = np.asarray(data.coords.get('dim_0'), np.float64)
+    grid_points = np.asarray(data.coords.get('dim_0'), np.float64)
+    sample_names = np.asarray(data.coords.get('dim_1'))
+    feature_name = 'gait'
 
-    curves = FDataGrid(data_matrix=data_matrix,
-                       sample_points=sample_points,
-                       dataset_name="GAIT",
-                       argument_names=("Time (proportion of gait cycle)",),
-                       coordinate_names=("Hip angle (degrees)",
-                                         "Knee angle (degrees)"))
+    curves = FDataGrid(
+        data_matrix=data_matrix,
+        grid_points=grid_points,
+        dataset_name=feature_name,
+        sample_names=sample_names,
+        argument_names=("time (proportion of gait cycle)",),
+        coordinate_names=(
+            "hip angle (degrees)",
+            "knee angle (degrees)",
+        ),
+    )
 
-    meta_names, meta = np.unique(np.asarray(data.coords.get('dim_1')),
-                                 return_inverse=True)
+    frame = None
+
+    if as_frame:
+        curves = pd.DataFrame({feature_name: curves})
+        frame = curves
 
     if return_X_y:
         return curves, None
-    else:
-        return {"data": curves,
-                "meta": meta,
-                "meta_names": meta_names,
-                "meta_feature_names": ["boys"],
-                "DESCR": DESCR}
+
+    return Bunch(
+        data=curves,
+        target=None,
+        frame=frame,
+        categories={},
+        feature_names=[feature_name],
+        target_names=[],
+        DESCR=descr,
+    )
 
 
-if hasattr(fetch_gait, "__doc__"):  # docstrings can be stripped off
+if fetch_gait.__doc__ is not None:  # docstrings can be stripped off
     fetch_gait.__doc__ += _gait_descr + _param_descr

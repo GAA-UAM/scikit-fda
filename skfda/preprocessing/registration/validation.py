@@ -285,7 +285,7 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         # Creates the mesh to discretize the functions
         if self.eval_points is None:
             try:
-                eval_points = y.sample_points[0]
+                eval_points = y.grid_points[0]
 
             except AttributeError:
                 nfine = max(y.basis.n_basis * 10 + 1, 201)

@@ -14,18 +14,9 @@
    {%- endfor %}
    {% endif %}
    
-   .. automethod:: __init__
-   {% endblock %}
-
-   {% block attributes %}
-   {% if attributes %}
-   .. rubric:: Attributes
-
-   .. autosummary::
-   {% for item in attributes %}
-      ~{{ name }}.{{ item }}
+   {% for item in methods %}
+   .. automethod:: {{ item }}
    {%- endfor %}
-   {% endif %}
    {% endblock %}
    
 .. include:: {{package}}/backreferences/{{fullname}}.examples

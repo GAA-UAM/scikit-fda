@@ -73,6 +73,16 @@ several :math:`\mathbb{R}^n \to \mathbb{R}` bases.
    :toctree: autosummary
 
    skfda.representation.basis.VectorValued
+   
+All the aforementioned basis inherit the basics from an
+abstract base class :class:`Basis`. Users can create their own
+basis subclassing this class and implementing the required
+methods.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.representation.basis.Basis
 
 Generic representation
 ----------------------

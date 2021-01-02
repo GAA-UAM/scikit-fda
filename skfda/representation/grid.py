@@ -567,7 +567,7 @@ class FDataGrid(FData):
     def __eq__(self, other):
         """Elementwise equality of FDataGrid"""
 
-        if not isinstance(self, type(other)) or self.dtype != other.dtype:
+        if not isinstance(other, type(self)) or self.dtype != other.dtype:
             if other is pandas.NA:
                 return self.isna()
             if pandas.api.types.is_list_like(other) and not isinstance(

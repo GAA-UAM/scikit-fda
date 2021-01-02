@@ -14,8 +14,8 @@ class Constant(Basis):
     Basis for constant functions
 
     Parameters:
-        domain_range (tuple): a tuple of length 2 containing the initial and
-            end values of the interval over which the basis can be evaluated.
+        domain_range: The :term:`domain range` over which the basis can be
+            evaluated.
 
     Examples:
         Defines a contant base over the interval :math:`[0, 5]` consisting

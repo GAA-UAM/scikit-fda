@@ -3,7 +3,7 @@ import scipy.interpolate
 from numpy import polyint, polymul, polyval
 from scipy.interpolate import BSpline as SciBSpline, PPoly
 
-from ..._utils import _domain_range
+from ..._utils import _to_domain_range
 from ._basis import Basis
 
 
@@ -101,7 +101,7 @@ class BSpline(Basis):
         """
 
         if domain_range is not None:
-            domain_range = _domain_range(domain_range)
+            domain_range = _to_domain_range(domain_range)
 
             if len(domain_range) != 1:
                 raise ValueError("Domain range should be unidimensional.")

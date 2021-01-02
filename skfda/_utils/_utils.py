@@ -1,16 +1,23 @@
 """Module with generic methods"""
 
+from __future__ import annotations
+
 import functools
 import numbers
-from typing import Any, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Union, cast
 
 import numpy as np
 import scipy.integrate
 from pandas.api.indexers import check_array_indexer
 
+from ..representation._typing import DomainRange, DomainRangeLike
 from ..representation.evaluator import Evaluator
 
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
+
+if TYPE_CHECKING:
+    from ..representation import FData
+    from ..representation.basis import Basis
 
 
 class _FDataCallable():
@@ -117,19 +124,23 @@ def _tuple_of_arrays(original_array):
         return tuple(_int_to_real(np.asarray(i)) for i in original_array)
 
 
-def _domain_range(sequence):
+def _to_domain_range(sequence: DomainRangeLike) -> DomainRange:
+    """Convert sequence to a proper domain range."""
 
-    try:
-        iter(sequence[0])
-    except TypeError:
-        sequence = (sequence,)
+    seq_aux = cast(
+        Sequence[Sequence[float]],
+        (sequence,) if isinstance(sequence[0], numbers.Real) else sequence,
+    )
 
-    sequence = tuple(tuple(s) for s in sequence)
+    tuple_aux = tuple(tuple(s) for s in seq_aux)
 
-    if not all(len(s) == 2 for s in sequence):
-        raise ValueError("Domain intervals should have 2 bounds each")
+    if not all(len(s) == 2 and s[0] <= s[1] for s in tuple_aux):
+        raise ValueError(
+            "Domain intervals should have 2 bounds for "
+            "dimension: (lower, upper).",
+        )
 
-    return sequence
+    return cast(DomainRange, tuple_aux)
 
 
 def _to_array_maybe_ragged(array, *, row_shape=None):
@@ -212,7 +223,7 @@ def _cartesian_product(axes, flatten=True, return_shape=False):
         return cartesian
 
 
-def _same_domain(fd, fd2):
+def _same_domain(fd: Union[Basis, FData], fd2: Union[Basis, FData]) -> bool:
     """Check if the domain range of two objects is the same."""
     return np.array_equal(fd.domain_range, fd2.domain_range)
 

@@ -1,8 +1,10 @@
+from typing import Iterable
+
 import numpy as np
 import scipy.linalg
 
 from ..._utils import _same_domain
-from ._basis import Basis
+from ._basis import Basis, Tuple
 
 
 class VectorValued(Basis):
@@ -57,39 +59,43 @@ class VectorValued(Basis):
 
     """
 
-    def __init__(self, basis_list):
+    def __init__(self, basis_list: Iterable[Basis]) -> None:
 
         basis_list = tuple(basis_list)
 
         if not all(b.dim_codomain == 1 for b in basis_list):
-            raise ValueError("The basis functions must be "
-                             "scalar valued")
+            raise ValueError(
+                "The basis functions must be scalar valued",
+            )
 
         if any(b.dim_domain != basis_list[0].dim_domain or
                not _same_domain(b,  basis_list[0])
                for b in basis_list):
-            raise ValueError("The basis must all have the same domain "
-                             "dimension an range")
+            raise ValueError(
+                "The basis must all have the same domain "
+                "dimension and range",
+            )
 
         self._basis_list = basis_list
 
         super().__init__(
             domain_range=basis_list[0].domain_range,
-            n_basis=sum(b.n_basis for b in basis_list))
+            n_basis=sum(b.n_basis for b in basis_list),
+        )
 
     @property
-    def basis_list(self):
+    def basis_list(self) -> Tuple[Basis, ...]:
         return self._basis_list
 
     @property
-    def dim_domain(self):
+    def dim_domain(self) -> int:
         return self.basis_list[0].dim_domain
 
     @property
-    def dim_codomain(self):
+    def dim_codomain(self) -> int:
         return len(self.basis_list)
 
-    def _evaluate(self, eval_points):
+    def _evaluate(self, eval_points: np.ndarray) -> np.ndarray:
         matrix = np.zeros((self.n_basis, len(eval_points), self.dim_codomain))
 
         n_basis_evaluated = 0
@@ -103,7 +109,11 @@ class VectorValued(Basis):
 
         return matrix
 
-    def _derivative_basis_and_coefs(self, coefs, order=1):
+    def _derivative_basis_and_coefs(
+            self,
+            coefs: np.ndarray,
+            order: int = 1,
+    ) -> Tuple[Basis, np.ndarray]:
 
         n_basis_list = [b.n_basis for b in self.basis_list]
         indexes = np.cumsum(n_basis_list)

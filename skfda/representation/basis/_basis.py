@@ -4,34 +4,39 @@ Defines functional data object in a basis function system representation and
 the corresponding basis classes.
 
 """
+from __future__ import annotations
+
 import copy
 import warnings
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Any, Optional, Tuple, TypeVar, Union
 
 import numpy as np
+from matplotlib.figure import Figure
 
-from ..._utils import _domain_range, _reshape_eval_points, _same_domain
+from ..._utils import _reshape_eval_points, _same_domain, _to_domain_range
+from .._typing import DomainRange, DomainRangeLike
 from . import _fdatabasis
 
-
-def _check_domain(domain_range):
-    for domain in domain_range:
-        if len(domain) != 2 or domain[0] >= domain[1]:
-            raise ValueError(f"The interval {domain} is not well-defined.")
+T = TypeVar("T", bound='Basis')
 
 
 class Basis(ABC):
     """Defines the structure of a basis function system.
 
     Attributes:
-        domain_range (tuple): a tuple of length 2 containing the initial and
+        domain_range: a tuple of length 2 containing the initial and
             end values of the interval over which the basis can be evaluated.
-        n_basis (int): number of functions in the basis.
+        n_basis: number of functions in the basis.
 
     """
 
-    def __init__(self, *, domain_range=None, n_basis: int = 1):
+    def __init__(
+        self,
+        *,
+        domain_range: Optional[DomainRangeLike] = None,
+        n_basis: int = 1,
+    ) -> None:
         """Basis constructor.
 
         Args:
@@ -42,10 +47,7 @@ class Basis(ABC):
         """
         if domain_range is not None:
 
-            domain_range = _domain_range(domain_range)
-
-            # Some checks
-            _check_domain(domain_range)
+            domain_range = _to_domain_range(domain_range)
 
         if n_basis < 1:
             raise ValueError(
@@ -57,9 +59,28 @@ class Basis(ABC):
 
         super().__init__()
 
-    def __call__(self, *args, **kwargs) -> np.ndarray:
-        """Evaluate the basis using :meth:`evaluate`."""
-        return self.evaluate(*args, **kwargs)
+    def __call__(
+        self,
+        eval_points: np.ndarray,
+        *,
+        derivative: int = 0,
+    ) -> np.ndarray:
+        """Evaluate Basis objects.
+
+        Evaluates the basis function system or its derivatives at a list of
+        given values.
+
+        Args:
+            eval_points (array_like): List of points where the basis is
+                evaluated.
+
+        Returns:
+            Matrix whose rows are the values of the each
+            basis function or its derivatives at the values specified in
+            eval_points.
+
+        """
+        return self.evaluate(eval_points, derivative=derivative)
 
     @property
     def dim_domain(self) -> int:
@@ -70,7 +91,7 @@ class Basis(ABC):
         return 1
 
     @property
-    def domain_range(self) -> Tuple[Tuple[float, float], ...]:
+    def domain_range(self) -> DomainRange:
         if self._domain_range is None:
             return ((0, 1),) * self.dim_domain
         else:
@@ -81,11 +102,19 @@ class Basis(ABC):
         return self._n_basis
 
     @abstractmethod
-    def _evaluate(self, eval_points) -> np.ndarray:
+    def _evaluate(
+        self,
+        eval_points: np.ndarray,
+    ) -> np.ndarray:
         """Subclasses must override this to provide basis evaluation."""
         pass
 
-    def evaluate(self, eval_points, *, derivative: int = 0) -> np.ndarray:
+    def evaluate(
+        self,
+        eval_points: np.ndarray,
+        *,
+        derivative: int = 0,
+    ) -> np.ndarray:
         """Evaluate Basis objects and its derivatives.
 
         Evaluates the basis function system or its derivatives at a list of
@@ -119,7 +148,7 @@ class Basis(ABC):
     def __len__(self) -> int:
         return self.n_basis
 
-    def derivative(self, *, order: int = 1) -> '_fdatabasis.FDataBasis':
+    def derivative(self, *, order: int = 1) -> _fdatabasis.FDataBasis:
         """Construct a FDataBasis object containing the derivative.
 
         Args:
@@ -129,10 +158,13 @@ class Basis(ABC):
             Derivative object.
 
         """
-
         return self.to_basis().derivative(order=order)
 
-    def _derivative_basis_and_coefs(self, coefs: np.ndarray, order: int = 1):
+    def _derivative_basis_and_coefs(
+            self: T,
+            coefs: np.ndarray,
+            order: int = 1,
+    ) -> Tuple[T, np.ndarray]:
         """
         Subclasses can override this to provide derivative construction.
 
@@ -141,11 +173,12 @@ class Basis(ABC):
         although is recommended to provide both if possible.
 
         """
-        raise NotImplementedError(f"{type(self)} basis does not support "
-                                  "the construction of a basis of the "
-                                  "derivatives.")
+        raise NotImplementedError(
+            f"{type(self)} basis does not support the construction of a "
+            "basis of the derivatives.",
+        )
 
-    def plot(self, chart=None, **kwargs):
+    def plot(self, *args: Any, **kwargs: Any) -> Figure:
         """Plot the basis object or its derivatives.
 
         Args:
@@ -159,9 +192,13 @@ class Basis(ABC):
             fig (figure): figure object in which the graphs are plotted.
 
         """
-        self.to_basis().plot(chart=chart, **kwargs)
+        self.to_basis().plot(*args, **kwargs)
 
-    def _coordinate_nonfull(self, fdatabasis, key):
+    def _coordinate_nonfull(
+        self,
+        fdatabasis: _fdatabasis.FDataBasis,
+        key: Union[int, range],
+    ) -> _fdatabasis.FDataBasis:
         """
         Returns a fdatagrid for the coordinate functions indexed by key.
 
@@ -173,8 +210,12 @@ class Basis(ABC):
         """
         raise NotImplementedError("Coordinate indexing not implemented")
 
-    def _coordinate(self, fdatabasis, key):
-        """Returns a fdatagrid for the coordinate functions indexed by key."""
+    def _coordinate(
+        self,
+        fdatabasis: _fdatabasis.FDataBasis,
+        key: Union[int, slice],
+    ) -> _fdatabasis.FDataBasis:
+        """Returns a fdatabasis for the coordinate functions indexed by key."""
 
         # Raises error if not in range and normalize key
         r_key = range(self.dim_codomain)[key]
@@ -192,34 +233,34 @@ class Basis(ABC):
 
             return self._coordinate_nonfull(fdatabasis=fdatabasis, key=r_key)
 
-    def rescale(self, domain_range=None):
+    def rescale(self: T, domain_range: Optional[DomainRangeLike] = None) -> T:
         r"""Return a copy of the basis with a new :term:`domain` range, with
             the corresponding values rescaled to the new bounds.
 
             Args:
-                domain_range (tuple, optional): Definition of the interval
+                domain_range: Definition of the interval
                     where the basis defines a space. Defaults uses the same as
                     the original basis.
+
+            Return:
+                Rescaled copy-
         """
 
         return self.copy(domain_range=domain_range)
 
-    def copy(self, domain_range=None):
+    def copy(self: T, domain_range: Optional[DomainRangeLike] = None) -> T:
         """Basis copy"""
 
         new_copy = copy.deepcopy(self)
 
         if domain_range is not None:
-            domain_range = _domain_range(domain_range)
-
-            # Some checks
-            _check_domain(domain_range)
+            domain_range = _to_domain_range(domain_range)
 
             new_copy._domain_range = domain_range
 
         return new_copy
 
-    def to_basis(self) -> '_fdatabasis.FDataBasis':
+    def to_basis(self) -> _fdatabasis.FDataBasis:
         """Convert the Basis to FDatabasis.
 
         Returns:
@@ -230,16 +271,10 @@ class Basis(ABC):
         from . import FDataBasis
         return FDataBasis(self.copy(), np.identity(self.n_basis))
 
-    def _list_to_R(self, knots):
-        retstring = "c("
-        for i in range(0, len(knots)):
-            retstring = retstring + str(knots[i]) + ", "
-        return retstring[0:len(retstring) - 2] + ")"
-
-    def _to_R(self):
+    def _to_R(self) -> str:
         raise NotImplementedError
 
-    def inner_product_matrix(self, other: 'Basis' = None) -> np.array:
+    def inner_product_matrix(self, other: Optional[Basis] = None) -> np.array:
         r"""Return the Inner Product Matrix of a pair of basis.
 
         The Inner Product Matrix is defined as
@@ -311,27 +346,47 @@ class Basis(ABC):
 
         return gram
 
-    def _add_same_basis(self, coefs1, coefs2):
+    def _add_same_basis(
+        self: T,
+        coefs1: np.ndarray,
+        coefs2: np.ndarray,
+    ) -> Tuple[T, np.ndarray]:
         return self.copy(), coefs1 + coefs2
 
-    def _add_constant(self, coefs, constant):
+    def _add_constant(
+        self: T,
+        coefs: np.ndarray,
+        constant: float
+    ) -> Tuple[T, np.ndarray]:
         coefs = coefs.copy()
         constant = np.array(constant)
         coefs[:, 0] = coefs[:, 0] + constant
 
         return self.copy(), coefs
 
-    def _sub_same_basis(self, coefs1, coefs2):
+    def _sub_same_basis(
+        self: T,
+        coefs1: np.ndarray,
+        coefs2: np.ndarray,
+    ) -> Tuple[T, np.ndarray]:
         return self.copy(), coefs1 - coefs2
 
-    def _sub_constant(self, coefs, other):
+    def _sub_constant(
+        self: T,
+        coefs: np.ndarray,
+        other: float,
+    ) -> Tuple[T, np.ndarray]:
         coefs = coefs.copy()
         other = np.array(other)
         coefs[:, 0] = coefs[:, 0] - other
 
         return self.copy(), coefs
 
-    def _mul_constant(self, coefs, other):
+    def _mul_constant(
+        self: T,
+        coefs: np.ndarray,
+        other: float,
+    ) -> Tuple[T, np.ndarray]:
         coefs = coefs.copy()
         other = np.atleast_2d(other).reshape(-1, 1)
         coefs = coefs * other
@@ -343,7 +398,7 @@ class Basis(ABC):
         return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
                 f"n_basis={self.n_basis})")
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Equality of Basis"""
         return (type(self) == type(other)
                 and _same_domain(self, other)

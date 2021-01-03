@@ -441,7 +441,7 @@ def _pairwise_commutative(function, arg1, arg2=None, **kwargs):
                 (len(arg1), len(arg2)))
 
 
-def _int_to_real(array):
+def _int_to_real(array: np.ndarray) -> np.ndarray:
     """
     Convert integer arrays to floating point.
     """

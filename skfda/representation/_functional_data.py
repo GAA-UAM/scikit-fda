@@ -4,6 +4,8 @@ Defines the abstract class that should be implemented by the funtional data
 objects of the package and contains some commons methods.
 """
 
+from __future__ import annotations
+
 import warnings
 from abc import ABC, abstractmethod
 from typing import (
@@ -14,7 +16,6 @@ from typing import (
     NoReturn,
     Optional,
     Sequence,
-    Tuple,
     TypeVar,
     Union,
 )
@@ -23,7 +24,7 @@ import numpy as np
 import pandas.api.extensions
 
 from .._utils import _evaluate_grid, _reshape_eval_points
-from ._typing import DomainRange
+from ._typing import DomainRange, LabelTuple, LabelTupleLike
 from .evaluator import Evaluator
 from .extrapolation import _parse_extrapolation
 
@@ -32,7 +33,6 @@ if TYPE_CHECKING:
     from .basis import Basis
 
 T = TypeVar('T', bound='FData')
-LabelTuple = Tuple[Optional[str], ...]
 
 
 class FData(  # noqa: WPS214
@@ -57,16 +57,16 @@ class FData(  # noqa: WPS214
     def __init__(
         self,
         *,
-        extrapolation: Evaluator,
+        extrapolation: Optional[Union[str, Evaluator]] = None,
         dataset_name: Optional[str] = None,
         dataset_label: Optional[str] = None,
-        axes_labels: Optional[LabelTuple] = None,
-        argument_names: Optional[LabelTuple] = None,
-        coordinate_names: Optional[LabelTuple] = None,
-        sample_names: Optional[LabelTuple] = None,
+        axes_labels: Optional[LabelTupleLike] = None,
+        argument_names: Optional[LabelTupleLike] = None,
+        coordinate_names: Optional[LabelTupleLike] = None,
+        sample_names: Optional[LabelTupleLike] = None,
     ) -> None:
 
-        self.extrapolation = extrapolation
+        self.extrapolation = extrapolation  # type: ignore
         self.dataset_name = dataset_name
 
         if dataset_label is not None:
@@ -75,7 +75,7 @@ class FData(  # noqa: WPS214
         self.argument_names = argument_names  # type: ignore
         self.coordinate_names = coordinate_names  # type: ignore
         if axes_labels is not None:
-            self.axes_labels = axes_labels
+            self.axes_labels = axes_labels  # type: ignore
         self.sample_names = sample_names  # type: ignore
 
     @property
@@ -103,7 +103,7 @@ class FData(  # noqa: WPS214
     @argument_names.setter
     def argument_names(
         self,
-        names: Optional[LabelTuple],
+        names: Optional[LabelTupleLike],
     ) -> None:
         if names is None:
             names = (None,) * self.dim_domain
@@ -124,7 +124,7 @@ class FData(  # noqa: WPS214
     @coordinate_names.setter
     def coordinate_names(
         self,
-        names: Optional[LabelTuple],
+        names: Optional[LabelTupleLike],
     ) -> None:
         if names is None:
             names = (None,) * self.dim_codomain
@@ -150,7 +150,7 @@ class FData(  # noqa: WPS214
         return self.argument_names + self.coordinate_names
 
     @axes_labels.setter
-    def axes_labels(self, labels: LabelTuple) -> None:
+    def axes_labels(self, labels: LabelTupleLike) -> None:
         """Set the list of labels."""
         if labels is not None:
 
@@ -182,7 +182,7 @@ class FData(  # noqa: WPS214
         return self._sample_names
 
     @sample_names.setter
-    def sample_names(self, names: Optional[LabelTuple]) -> None:
+    def sample_names(self, names: Optional[LabelTupleLike]) -> None:
         if names is None:
             names = (None,) * self.n_samples
         else:
@@ -229,7 +229,7 @@ class FData(  # noqa: WPS214
 
     @property
     @abstractmethod
-    def coordinates(self: T) -> T:
+    def coordinates(self: T) -> Sequence[T]:
         r"""Return a component of the FDataGrid.
 
         If the functional object contains multivariate samples
@@ -528,7 +528,7 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def derivative(self: T, order: int = 1) -> T:
+    def derivative(self: T, *, order: int = 1) -> T:
         """Differentiate a FData object.
 
         Args:
@@ -609,7 +609,7 @@ class FData(  # noqa: WPS214
     def sum(  # noqa: WPS125
         self: T,
         *,
-        axis: None = None,
+        axis: Optional[int] = None,
         out: None = None,
         keepdims: bool = False,
         skipna: bool = False,
@@ -676,7 +676,7 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def to_grid(self, grid_points: np.ndarray = None) -> 'FDataGrid':
+    def to_grid(self, grid_points: np.ndarray = None) -> FDataGrid:
         """Return the discrete representation of the object.
 
         Args:
@@ -693,9 +693,9 @@ class FData(  # noqa: WPS214
     @abstractmethod
     def to_basis(
         self,
-        basis: 'Basis',
+        basis: Basis,
         **kwargs: Any,
-    ) -> 'FDataBasis':
+    ) -> FDataBasis:
         """Return the basis representation of the object.
 
         Args:

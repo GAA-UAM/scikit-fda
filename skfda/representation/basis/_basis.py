@@ -5,14 +5,16 @@ from __future__ import annotations
 import copy
 import warnings
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, Tuple, TypeVar, Union
 
 import numpy as np
 from matplotlib.figure import Figure
 
 from ..._utils import _reshape_eval_points, _same_domain, _to_domain_range
 from .._typing import DomainRange, DomainRangeLike
-from . import _fdatabasis
+
+if TYPE_CHECKING:
+    from . import FDataBasis
 
 T = TypeVar("T", bound='Basis')
 
@@ -154,7 +156,7 @@ class Basis(ABC):
     def __len__(self) -> int:
         return self.n_basis
 
-    def derivative(self, *, order: int = 1) -> _fdatabasis.FDataBasis:
+    def derivative(self, *, order: int = 1) -> FDataBasis:
         """Construct a FDataBasis object containing the derivative.
 
         Args:
@@ -199,9 +201,9 @@ class Basis(ABC):
 
     def _coordinate_nonfull(
         self,
-        fdatabasis: _fdatabasis.FDataBasis,
+        fdatabasis: FDataBasis,
         key: Union[int, range],
-    ) -> _fdatabasis.FDataBasis:
+    ) -> FDataBasis:
         """
         Return a fdatagrid for the coordinate functions indexed by key.
 
@@ -215,9 +217,9 @@ class Basis(ABC):
 
     def _coordinate(
         self,
-        fdatabasis: _fdatabasis.FDataBasis,
+        fdatabasis: FDataBasis,
         key: Union[int, slice],
-    ) -> _fdatabasis.FDataBasis:
+    ) -> FDataBasis:
         """Return a fdatabasis for the coordinate functions indexed by key."""
         # Raises error if not in range and normalize key
         r_key = range(self.dim_codomain)[key]
@@ -260,7 +262,7 @@ class Basis(ABC):
 
         return new_copy
 
-    def to_basis(self) -> _fdatabasis.FDataBasis:
+    def to_basis(self) -> FDataBasis:
         """Convert the Basis to FDatabasis.
 
         Returns:

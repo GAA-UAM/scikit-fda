@@ -126,7 +126,6 @@ def _tuple_of_arrays(original_array):
 
 def _to_domain_range(sequence: DomainRangeLike) -> DomainRange:
     """Convert sequence to a proper domain range."""
-
     seq_aux = cast(
         Sequence[Sequence[float]],
         (sequence,) if isinstance(sequence[0], numbers.Real) else sequence,

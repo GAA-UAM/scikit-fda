@@ -1,7 +1,12 @@
+from typing import Any, Optional, Tuple, TypeVar
+
 import numpy as np
 
 from ..._utils import _to_domain_range
+from .._typing import DomainRangeLike
 from ._basis import Basis
+
+T = TypeVar("T", bound='Fourier')
 
 
 class Fourier(Basis):
@@ -24,11 +29,11 @@ class Fourier(Basis):
     Actually this basis functions are not orthogonal but not orthonormal. To
     achieve this they are divided by its norm: :math:`\sqrt{\frac{T}{2}}`.
 
-    Attributes:
-        domain_range (tuple): A tuple of length 2 containing the initial and
+    Parameters:
+        domain_range: A tuple of length 2 containing the initial and
             end values of the interval over which the basis can be evaluated.
-        n_basis (int): Number of functions in the basis.
-        period (int or float): Period (:math:`T`).
+        n_basis: Number of functions in the basis.
+        period: Period (:math:`T`).
 
     Examples:
         Constructs specifying number of basis, definition interval and period.
@@ -67,21 +72,26 @@ class Fourier(Basis):
 
     """
 
-    def __init__(self, domain_range=None, n_basis=3, period=None):
-        """Construct a Fourier object.
+    def __init__(
+        self,
+        domain_range: Optional[DomainRangeLike] = None,
+        n_basis: int = 3,
+        period: Optional[float] = None,
+    ) -> None:
+        """
+        Construct a Fourier object.
 
         It forces the object to have an odd number of basis. If n_basis is
         even, it is incremented by one.
 
         Args:
-            domain_range (tuple): Tuple defining the domain over which the
-            function is defined.
-            n_basis (int): Number of basis functions.
-            period (int or float): Period of the trigonometric functions that
+            domain_range: Tuple defining the domain over which the
+                function is defined.
+            n_basis: Number of basis functions.
+            period: Period of the trigonometric functions that
                 define the basis.
 
         """
-
         if domain_range is not None:
             domain_range = _to_domain_range(domain_range)
 
@@ -96,13 +106,13 @@ class Fourier(Basis):
         super().__init__(domain_range=domain_range, n_basis=n_basis)
 
     @property
-    def period(self):
+    def period(self) -> float:
         if self._period is None:
             return self.domain_range[0][1] - self.domain_range[0][0]
-        else:
-            return self._period
 
-    def _evaluate(self, eval_points):
+        return self._period
+
+    def _evaluate(self, eval_points: np.ndarray) -> np.ndarray:
 
         # Input is scalar
         eval_points = eval_points[..., 0]
@@ -120,7 +130,7 @@ class Fourier(Basis):
         res = np.einsum('ij,k->ijk', phase_coefs, eval_points)
 
         # Apply odd and even functions
-        for i in [0, 1]:
+        for i in (0, 1):
             functions[i](res[:, i, :], out=res[:, i, :])
 
         res = res.reshape(-1, len(eval_points))
@@ -128,21 +138,26 @@ class Fourier(Basis):
 
         constant_basis = np.full(
             shape=(1, len(eval_points)),
-            fill_value=1 / (np.sqrt(2) * normalization_denominator))
+            fill_value=1 / (np.sqrt(2) * normalization_denominator),
+        )
 
-        res = np.concatenate((constant_basis, res))
+        return np.concatenate((constant_basis, res))
 
-        return res
-
-    def _derivative_basis_and_coefs(self, coefs, order=1):
+    def _derivative_basis_and_coefs(
+        self: T,
+        coefs: np.ndarray,
+        order: int = 1,
+    ) -> Tuple[T, np.ndarray]:
 
         omega = 2 * np.pi / self.period
         deriv_factor = (np.arange(1, (self.n_basis + 1) / 2) * omega) ** order
 
         deriv_coefs = np.zeros(coefs.shape)
 
-        cos_sign, sin_sign = ((-1) ** int((order + 1) / 2),
-                              (-1) ** int(order / 2))
+        cos_sign, sin_sign = (
+            (-1) ** int((order + 1) / 2),
+            (-1) ** int(order / 2),
+        )
 
         if order % 2 == 0:
             deriv_coefs[:, 1::2] = sin_sign * coefs[:, 1::2] * deriv_factor
@@ -154,27 +169,35 @@ class Fourier(Basis):
         # normalise
         return self.copy(), deriv_coefs
 
-    def _gram_matrix(self):
+    def _gram_matrix(self) -> np.ndarray:
 
         # Orthogonal in this case
         if self.period == (self.domain_range[0][1] - self.domain_range[0][0]):
             return np.identity(self.n_basis)
-        else:
-            return super()._gram_matrix()
 
-    def rescale(self, domain_range=None, *, rescale_period=False):
-        r"""Return a copy of the basis with a new domain range, with the
-            corresponding values rescaled to the new bounds.
+        return super()._gram_matrix()
 
-            Args:
-                domain_range (tuple, optional): Definition of the interval
-                    where the basis defines a space. Defaults uses the same as
-                    the original basis.
-                rescale_period (bool, optional): If true the period will be
-                    rescaled using the ratio between the lengths of the new
-                    and old interval. Defaults to False.
+    def rescale(
+        self: T,
+        domain_range: Optional[DomainRangeLike] = None,
+        *,
+        rescale_period: bool = False,
+    ) -> T:
+        r"""
+        Return a copy of the basis with a new domain range.
+
+        Args:
+            domain_range: Definition of the interval
+                where the basis defines a space. Defaults uses the same as
+                the original basis.
+            rescale_period: If true the period will be
+                rescaled using the ratio between the lengths of the new
+                and old interval. Defaults to False.
+
+        Returns:
+            Rescaled basis.
+
         """
-
         rescale_basis = super().rescale(domain_range)
 
         if rescale_period is True:
@@ -182,26 +205,35 @@ class Fourier(Basis):
             domain_rescaled = rescale_basis.domain_range[0]
             domain = self.domain_range[0]
 
-            rescale_basis._period = (
-                self.period *
-                (domain_rescaled[1] - domain_rescaled[0]) /
-                (domain[1] - domain[0]))
+            rescale_basis._period = (  # noqa: WPS437
+                self.period
+                * (domain_rescaled[1] - domain_rescaled[0])
+                / (domain[1] - domain[0])
+            )
 
         return rescale_basis
 
-    def _to_R(self):
+    def _to_R(self) -> str:  # noqa: N802
         drange = self.domain_range[0]
-        return ("create.fourier.basis(rangeval = c(" + str(drange[0]) + "," +
-                str(drange[1]) + "), nbasis = " + str(self.n_basis) +
-                ", period = " + str(self.period) + ")")
+        rangeval = f"c({drange[0]}, {drange[1]})"
+        return (
+            f"create.fourier.basis("
+            f"rangeval = {rangeval}, "
+            f"nbasis = {self.n_basis}, "
+            f"period = {self.period})"
+        )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Representation of a Fourier basis."""
-        return (f"{self.__class__.__name__}(domain_range={self.domain_range}, "
-                f"n_basis={self.n_basis}, period={self.period})")
+        return (
+            f"{self.__class__.__name__}("
+            f"domain_range={self.domain_range}, "
+            f"n_basis={self.n_basis}, "
+            f"period={self.period})"
+        )
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return super().__eq__(other) and self.period == other.period
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((super().__hash__(), self.period))

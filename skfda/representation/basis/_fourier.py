@@ -177,7 +177,7 @@ class Fourier(Basis):
 
         return super()._gram_matrix()
 
-    def rescale(
+    def rescale(  # noqa: D102
         self: T,
         domain_range: Optional[DomainRangeLike] = None,
         *,

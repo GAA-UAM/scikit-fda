@@ -23,6 +23,7 @@ import numpy as np
 import pandas.api.extensions
 
 from .._utils import _evaluate_grid, _reshape_eval_points
+from ._typing import DomainRange
 from .evaluator import Evaluator
 from .extrapolation import _parse_extrapolation
 
@@ -31,7 +32,6 @@ if TYPE_CHECKING:
     from .basis import Basis
 
 T = TypeVar('T', bound='FData')
-DomainRange = Tuple[Tuple[float, float], ...]
 LabelTuple = Tuple[Optional[str], ...]
 
 

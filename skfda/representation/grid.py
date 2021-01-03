@@ -18,8 +18,8 @@ import scipy.stats.mstats
 
 from .._utils import (
     _check_array_key,
-    _domain_range,
     _int_to_real,
+    _to_domain_range,
     _tuple_of_arrays,
     constants,
 )
@@ -207,7 +207,7 @@ class FDataGrid(FData):
             # Default value for domain_range is a list of tuples with
             # the first and last element of each list of the grid_points.
 
-        self._domain_range = _domain_range(domain_range)
+        self._domain_range = _to_domain_range(domain_range)
 
         if len(self._domain_range) != self.dim_domain:
             raise ValueError("Incorrect shape of domain_range.")
@@ -567,7 +567,7 @@ class FDataGrid(FData):
     def __eq__(self, other):
         """Elementwise equality of FDataGrid"""
 
-        if not isinstance(self, type(other)) or self.dtype != other.dtype:
+        if not isinstance(other, type(self)) or self.dtype != other.dtype:
             if other is pandas.NA:
                 return self.isna()
             if pandas.api.types.is_list_like(other) and not isinstance(
@@ -858,18 +858,20 @@ class FDataGrid(FData):
         return self.copy(data_matrix=self.evaluate(grid_points, grid=True),
                          grid_points=grid_points)
 
-    def copy(self, *,
-             deep=False,  # For Pandas compatibility
-             data_matrix=None,
-             grid_points=None,
-             sample_points=None,
-             domain_range=None,
-             dataset_name=None,
-             argument_names=None,
-             coordinate_names=None,
-             sample_names=None,
-             extrapolation=None,
-             interpolation=None):
+    def copy(
+        self, *,
+        deep=False,  # For Pandas compatibility
+        data_matrix=None,
+        grid_points=None,
+        sample_points=None,
+        domain_range=None,
+        dataset_name=None,
+        argument_names=None,
+        coordinate_names=None,
+        sample_names=None,
+        extrapolation=None,
+        interpolation=None,
+    ):
         """Returns a copy of the FDataGrid.
 
         If an argument is provided the corresponding attribute in the new copy
@@ -915,14 +917,17 @@ class FDataGrid(FData):
         if interpolation is None:
             interpolation = self.interpolation
 
-        return FDataGrid(data_matrix, grid_points=grid_points,
-                         domain_range=domain_range,
-                         dataset_name=dataset_name,
-                         argument_names=argument_names,
-                         coordinate_names=coordinate_names,
-                         sample_names=sample_names,
-                         extrapolation=extrapolation,
-                         interpolation=interpolation)
+        return FDataGrid(
+            data_matrix,
+            grid_points=grid_points,
+            domain_range=domain_range,
+            dataset_name=dataset_name,
+            argument_names=argument_names,
+            coordinate_names=coordinate_names,
+            sample_names=sample_names,
+            extrapolation=extrapolation,
+            interpolation=interpolation,
+        )
 
     def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
               eval_points=None):
@@ -1186,7 +1191,7 @@ class FDataGridDType(pandas.api.extensions.ExtensionDtype):
             domain_range = np.array(
                 [(s[0], s[-1]) for s in self.grid_points])
 
-        self.domain_range = _domain_range(domain_range)
+        self.domain_range = _to_domain_range(domain_range)
         self.dim_codomain = dim_codomain
 
     @classmethod

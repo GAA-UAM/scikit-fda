@@ -183,21 +183,7 @@ class Fourier(Basis):
         *,
         rescale_period: bool = False,
     ) -> T:
-        r"""
-        Return a copy of the basis with a new domain range.
 
-        Args:
-            domain_range: Definition of the interval
-                where the basis defines a space. Defaults uses the same as
-                the original basis.
-            rescale_period: If true the period will be
-                rescaled using the ratio between the lengths of the new
-                and old interval. Defaults to False.
-
-        Returns:
-            Rescaled basis.
-
-        """
         rescale_basis = super().rescale(domain_range)
 
         if rescale_period is True:

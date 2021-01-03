@@ -1,7 +1,11 @@
+from typing import Tuple, TypeVar
+
 import numpy as np
 import scipy.linalg
 
 from ._basis import Basis
+
+T = TypeVar("T", bound='Monomial')
 
 
 class Monomial(Basis):
@@ -13,9 +17,9 @@ class Monomial(Basis):
         1, t, t^2, t^3...
 
     Attributes:
-        domain_range (tuple): a tuple of length 2 containing the initial and
+        domain_range: a tuple of length 2 containing the initial and
             end values of the interval over which the basis can be evaluated.
-        n_basis (int): number of functions in the basis.
+        n_basis: number of functions in the basis.
 
     Examples:
         Defines a monomial base over the interval :math:`[0, 5]` consisting
@@ -63,7 +67,7 @@ class Monomial(Basis):
                 [ 2.]]])
     """
 
-    def _evaluate(self, eval_points):
+    def _evaluate(self, eval_points: np.ndarray) -> np.ndarray:
 
         # Input is scalar
         eval_points = eval_points[..., 0]
@@ -73,31 +77,37 @@ class Monomial(Basis):
 
         return raised.T
 
-    def _derivative_basis_and_coefs(self, coefs, order=1):
+    def _derivative_basis_and_coefs(
+        self: T,
+        coefs: np.ndarray,
+        order: int = 1,
+    ) -> Tuple[T, np.ndarray]:
         if order >= self.n_basis:
             return (
-                Monomial(domain_range=self.domain_range, n_basis=1),
+                type(self)(domain_range=self.domain_range, n_basis=1),
                 np.zeros((len(coefs), 1)),
             )
 
         return (
-            Monomial(
+            type(self)(
                 domain_range=self.domain_range,
                 n_basis=self.n_basis - order,
             ),
             np.array([np.polyder(x[::-1], order)[::-1] for x in coefs]),
         )
 
-    def _gram_matrix(self):
+    def _gram_matrix(self) -> np.ndarray:
         integral_coefs = np.polyint(np.ones(2 * self.n_basis - 1))
 
         # We obtain the powers of both extremes in the domain range
         power_domain_limits = np.vander(
-            self.domain_range[0], 2 * self.n_basis)
+            self.domain_range[0], 2 * self.n_basis,
+        )
 
         # Subtract the powers (Barrow's rule)
         power_domain_limits_diff = (
-            power_domain_limits[1] - power_domain_limits[0])
+            power_domain_limits[1] - power_domain_limits[0]
+        )
 
         # Multiply the constants that appear in the integration
         evaluated_points = integral_coefs * power_domain_limits_diff
@@ -109,9 +119,14 @@ class Monomial(Basis):
         # Build the matrix
         return scipy.linalg.hankel(
             ordered_evaluated_points[:self.n_basis],
-            ordered_evaluated_points[self.n_basis - 1:])
+            ordered_evaluated_points[self.n_basis - 1:],
+        )
 
-    def _to_R(self):
+    def _to_R(self) -> str:  # noqa: N802
         drange = self.domain_range[0]
-        return "create.monomial.basis(rangeval = c(" + str(drange[0]) + "," +\
-               str(drange[1]) + "), nbasis = " + str(self.n_basis) + ")"
+        rangeval = f"c({drange[0]}, {drange[1]})"
+        return (
+            f"create.monomial.basis("
+            f"rangeval = {rangeval}, "
+            f"nbasis = {self.n_basis})"
+        )

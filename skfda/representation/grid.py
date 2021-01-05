@@ -5,30 +5,51 @@ lists of values, each representing the observation of a function measured in a
 list of discretisation points.
 
 """
+from __future__ import annotations
 
 import copy
 import numbers
 import warnings
-from typing import Any
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterator,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import findiff
 import numpy as np
 import pandas.api.extensions
 import scipy.stats.mstats
+from matplotlib.figure import Figure
 
 from .._utils import (
     _check_array_key,
     _int_to_real,
     _to_domain_range,
-    _tuple_of_arrays,
+    _to_grid_points,
     constants,
 )
-from . import basis as fdbasis
 from ._functional_data import FData
+from ._typing import (
+    DomainRange,
+    DomainRangeLike,
+    GridPoints,
+    GridPointsLike,
+    LabelTupleLike,
+)
+from .basis import Basis
+from .evaluator import Evaluator
 from .interpolation import SplineInterpolation
 
-__author__ = "Miguel Carbajo Berrocal"
-__email__ = "miguel.carbajo@estudiante.uam.es"
+if TYPE_CHECKING:
+    from .. import FDataBasis
+
+T = TypeVar("T", bound='FDataGrid')
 
 
 class FDataGrid(FData):
@@ -38,24 +59,24 @@ class FDataGrid(FData):
     in a grid of points.
 
     Attributes:
-        data_matrix (numpy.ndarray): a matrix where each entry of the first
+        data_matrix: a matrix where each entry of the first
             axis contains the values of a functional datum evaluated at the
             points of discretisation.
-        grid_points (numpy.ndarray): 2 dimension matrix where each row
+        grid_points: 2 dimension matrix where each row
             contains the points of dicretisation for each axis of data_matrix.
-        domain_range (numpy.ndarray): 2 dimension matrix where each row
+        domain_range: 2 dimension matrix where each row
             contains the bounds of the interval in which the functional data
             is considered to exist for each one of the axies.
-        dataset_name (str): name of the dataset.
-        argument_names (tuple): tuple containing the names of the different
+        dataset_name: name of the dataset.
+        argument_names: tuple containing the names of the different
             arguments.
-        coordinate_names (tuple): tuple containing the names of the different
+        coordinate_names: tuple containing the names of the different
             coordinate functions.
-        extrapolation (str or Extrapolation): defines the default type of
+        extrapolation: defines the default type of
             extrapolation. By default None, which does not apply any type of
             extrapolation. See `Extrapolation` for detailled information of the
             types of extrapolation.
-        interpolation (GridInterpolation): Defines the type of interpolation
+        interpolation: Defines the type of interpolation
             applied in `evaluate`.
 
     Examples:
@@ -108,65 +129,39 @@ class FDataGrid(FData):
 
     """
 
-    class _CoordinateIterator:
-        """Internal class to iterate through the image coordinates."""
-
-        def __init__(self, fdatagrid):
-            """Create an iterator through the image coordinates."""
-            self._fdatagrid = fdatagrid
-
-        def __iter__(self):
-            """Return an iterator through the image coordinates."""
-
-            for i in range(len(self)):
-                yield self[i]
-
-        def __getitem__(self, key):
-            """Get a specific coordinate."""
-
-            s_key = key
-            if isinstance(s_key, int):
-                s_key = slice(s_key, s_key + 1)
-
-            coordinate_names = np.array(
-                self._fdatagrid.coordinate_names)[s_key]
-
-            return self._fdatagrid.copy(
-                data_matrix=self._fdatagrid.data_matrix[..., key],
-                coordinate_names=coordinate_names)
-
-        def __len__(self):
-            """Return the number of coordinates."""
-            return self._fdatagrid.dim_codomain
-
-    def __init__(self, data_matrix, grid_points=None,
-                 *,
-                 sample_points=None,
-                 domain_range=None,
-                 dataset_label=None,
-                 dataset_name=None,
-                 argument_names=None,
-                 coordinate_names=None,
-                 sample_names=None,
-                 axes_labels=None, extrapolation=None,
-                 interpolation=None):
+    def __init__(
+        self,
+        data_matrix: np.ndarray,
+        grid_points: Optional[GridPointsLike] = None,
+        *,
+        sample_points: Optional[GridPointsLike] = None,
+        domain_range: Optional[DomainRangeLike] = None,
+        dataset_label: Optional[str] = None,
+        dataset_name: Optional[str] = None,
+        argument_names: Optional[LabelTupleLike] = None,
+        coordinate_names: Optional[LabelTupleLike] = None,
+        sample_names: Optional[LabelTupleLike] = None,
+        axes_labels: Optional[LabelTupleLike] = None,
+        extrapolation: Optional[Union[str, Evaluator]] = None,
+        interpolation: Optional[Evaluator] = None
+    ):
         """Construct a FDataGrid object.
 
         Args:
-            data_matrix (array_like): a matrix where each row contains the
+            data_matrix: a matrix where each row contains the
                 values of a functional datum evaluated at the
                 points of discretisation.
-            grid_points (array_like, optional): an array containing the
+            grid_points: an array containing the
                 points of discretisation where values have been recorded or a
                 list of lists with each of the list containing the points of
                 dicretisation for each axis.
-            domain_range (tuple or list of tuples, optional): contains the
+            domain_range: contains the
                 edges of the interval in which the functional data is
                 considered to exist (if the argument has 2 dimensions each
                 row is interpreted as the limits of one of the dimension of
                 the domain).
-            dataset_label (str, optional): name of the dataset.
-            axes_labels (list, optional): list containing the labels of the
+            dataset_label: name of the dataset.
+            axes_labels: list containing the labels of the
                 different axes. The length of the list must be equal to the sum
                 of the number of dimensions of the domain plus the number of
                 dimensions of the image.
@@ -180,7 +175,7 @@ class FDataGrid(FData):
         self.data_matrix = _int_to_real(np.atleast_2d(data_matrix))
 
         if grid_points is None:
-            self.grid_points = _tuple_of_arrays(
+            self.grid_points = _to_grid_points(
                 [np.linspace(0., 1., self.data_matrix.shape[i]) for i in
                  range(1, self.data_matrix.ndim)])
 
@@ -188,7 +183,7 @@ class FDataGrid(FData):
             # Check that the dimension of the data matches the grid_points
             # list
 
-            self.grid_points = _tuple_of_arrays(grid_points)
+            self.grid_points = _to_grid_points(grid_points)
 
             data_shape = self.data_matrix.shape[1: 1 + self.dim_domain]
             grid_points_shape = [len(i) for i in self.grid_points]
@@ -223,7 +218,7 @@ class FDataGrid(FData):
         if self.data_matrix.ndim == 1 + self.dim_domain:
             self.data_matrix = self.data_matrix[..., np.newaxis]
 
-        self.interpolation = interpolation
+        self.interpolation = interpolation  # type: ignore
 
         super().__init__(extrapolation=extrapolation,
                          dataset_label=dataset_label,
@@ -233,35 +228,34 @@ class FDataGrid(FData):
                          coordinate_names=coordinate_names,
                          sample_names=sample_names)
 
-    def round(self, decimals=0):
+    def round(self: T, decimals: int = 0) -> T:
         """Evenly round to the given number of decimals.
 
         Args:
-            decimals (int, optional): Number of decimal places to round to.
+            decimals: Number of decimal places to round to.
                 If decimals is negative, it specifies the number of
                 positions to the left of the decimal point. Defaults to 0.
 
         Returns:
-            :obj:FDataGrid: Returns a FDataGrid object where all elements
-            in its data_matrix are rounded .The real and
-            imaginary parts of complex numbers are rounded separately.
+            Returns a FDataGrid object where all elements
+            in its data_matrix are rounded.
 
         """
         return self.copy(data_matrix=self.data_matrix.round(decimals))
 
     @property
-    def sample_points(self):
+    def sample_points(self) -> GridPoints:
         warnings.warn("Parameter sample_points is deprecated. Use the "
                       "parameter grid_points instead.",
                       DeprecationWarning)
         return self.grid_points
 
     @property
-    def dim_domain(self):
+    def dim_domain(self) -> int:
         return len(self.grid_points)
 
     @property
-    def dim_codomain(self):
+    def dim_codomain(self) -> int:
         try:
             # The dimension of the image is the length of the array that can
             #  be extracted from the data_matrix using all the dimensions of
@@ -272,7 +266,7 @@ class FDataGrid(FData):
             return 1
 
     @property
-    def coordinates(self):
+    def coordinates(self: T) -> _CoordinateIterator[T]:
         r"""Returns an object to access to the image coordinates.
 
         If the functional object contains multivariate samples
@@ -326,10 +320,10 @@ class FDataGrid(FData):
 
         """
 
-        return FDataGrid._CoordinateIterator(self)
+        return _CoordinateIterator(self)
 
     @property
-    def n_samples(self):
+    def n_samples(self) -> int:
         """Return number of rows of the data_matrix. Also the number of samples.
 
         Returns:
@@ -340,19 +334,7 @@ class FDataGrid(FData):
         return self.data_matrix.shape[0]
 
     @property
-    def ncol(self):
-        """Return number of columns of the data_matrix.
-
-        Also the number of points of discretisation.
-
-        Returns:
-            int: Number of columns of the data_matrix.
-
-        """
-        return self.data_matrix.shape[1]
-
-    @property
-    def sample_range(self):
+    def sample_range(self) -> DomainRange:
         """Return the edges of the interval in which the functional data is
             considered to exist by the sample points.
 
@@ -361,7 +343,7 @@ class FDataGrid(FData):
         return self._sample_range
 
     @property
-    def domain_range(self):
+    def domain_range(self) -> DomainRange:
         """Return the edges of the interval in which the functional data is
             considered to exist by the sample points.
 
@@ -370,24 +352,29 @@ class FDataGrid(FData):
         return self._domain_range
 
     @property
-    def interpolation(self):
+    def interpolation(self) -> Evaluator:
         """Defines the type of interpolation applied in `evaluate`."""
         return self._interpolation
 
     @interpolation.setter
-    def interpolation(self, new_interpolation):
+    def interpolation(self, new_interpolation: Optional[Evaluator]) -> None:
         """Sets the interpolation of the FDataGrid."""
         if new_interpolation is None:
             new_interpolation = SplineInterpolation()
 
         self._interpolation = new_interpolation
 
-    def _evaluate(self, eval_points, *, aligned=True):
+    def _evaluate(
+        self,
+        eval_points: np.ndarray,
+        *,
+        aligned: bool = True,
+    ) -> np.ndarray:
 
         return self.interpolation.evaluate(self, eval_points,
                                            aligned=aligned)
 
-    def derivative(self, *, order=1):
+    def derivative(self: T, *, order: int=1) -> T:
         r"""Differentiate a FDataGrid object.
 
         It is calculated using central finite differences when possible. In
@@ -395,7 +382,7 @@ class FDataGrid(FData):
         2 are used.
 
         Args:
-            order (int, optional): Order of the derivative. Defaults to one.
+            order: Order of the derivative. Defaults to one.
 
         Examples:
             First order derivative
@@ -436,25 +423,31 @@ class FDataGrid(FData):
                                          zip(self.grid_points, order_list))])
         data_matrix = operator(self.data_matrix.astype(float))
 
-        if self.dataset_name:
-            dataset_name = "{} - {} derivative".format(self.dataset_name,
-                                                       order)
-        else:
-            dataset_name = None
+        dataset_name = "{} - {} derivative".format(
+            self.dataset_name,
+            order
+        ) if self.dataset_name else None
 
         fdatagrid = self.copy(data_matrix=data_matrix,
                               dataset_name=dataset_name)
 
         return fdatagrid
 
-    def __check_same_dimensions(self, other):
+    def __check_same_dimensions(self: T, other: T) -> None:
         if self.data_matrix.shape[1:-1] != other.data_matrix.shape[1:-1]:
             raise ValueError("Error in columns dimensions")
         if not np.array_equal(self.grid_points, other.grid_points):
             raise ValueError("Sample points for both objects must be equal")
 
-    def sum(self, *, axis=None, out=None, keepdims=False, skipna=False,
-            min_count=0):
+    def sum(
+        self: T,
+        *,
+        axis: Optional[int] = None,
+        out: None = None,
+        keepdims: bool = False,
+        skipna: bool = False,
+        min_count: int = 0
+    ) -> T:
         """Compute the sum of all the samples.
 
         Returns:
@@ -487,7 +480,7 @@ class FDataGrid(FData):
         return self.copy(data_matrix=data,
                          sample_names=(None,))
 
-    def var(self):
+    def var(self: T) -> T:
         """Compute the variance of a set of samples in a FDataGrid object.
 
         Returns:
@@ -498,7 +491,7 @@ class FDataGrid(FData):
         return self.copy(data_matrix=[np.var(self.data_matrix, 0)],
                          sample_names=("variance",))
 
-    def cov(self):
+    def cov(self: T) -> T:
         """Compute the covariance.
 
         Calculates the covariance matrix representing the covariance of the
@@ -528,7 +521,7 @@ class FDataGrid(FData):
                          argument_names=self.argument_names * 2,
                          sample_names=("covariance",))
 
-    def gmean(self):
+    def gmean(self: T) -> T:
         """Compute the geometric mean of all samples in the FDataGrid object.
 
         Returns:
@@ -541,7 +534,7 @@ class FDataGrid(FData):
             scipy.stats.mstats.gmean(self.data_matrix, 0)],
             sample_names=("geometric mean",))
 
-    def equals(self, other):
+    def equals(self, other: Any) -> bool:
         """Comparison of FDataGrid objects"""
         if not super().equals(other):
             return False
@@ -564,7 +557,7 @@ class FDataGrid(FData):
 
         return True
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> np.ndarray:
         """Elementwise equality of FDataGrid"""
 
         if not isinstance(other, type(self)) or self.dtype != other.dtype:
@@ -585,7 +578,7 @@ class FDataGrid(FData):
         return np.all(self.data_matrix == other.data_matrix,
                       axis=tuple(range(1, self.data_matrix.ndim)))
 
-    def _get_op_matrix(self, other):
+    def _get_op_matrix(self, other: Union[T, np.ndarray, float]) -> np.ndarray:
         if isinstance(other, numbers.Number):
             return other
         elif isinstance(other, np.ndarray):
@@ -606,12 +599,7 @@ class FDataGrid(FData):
         else:
             return None
 
-    def __add__(self, other):
-        """Addition for FDataGrid object.
-
-        It supports other FDataGrid objects, numpy.ndarray and numbers.
-
-        """
+    def __add__(self: T, other: Union[T, np.ndarray, float]) -> T:
 
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
@@ -619,84 +607,55 @@ class FDataGrid(FData):
 
         return self._copy_op(other, data_matrix=self.data_matrix + data_matrix)
 
-    def __radd__(self, other):
-        """Addition for FDataGrid object.
-
-        It supports other FDataGrid objects, numpy.ndarray and numbers.
-
-        """
+    def __radd__(self: T, other: Union[T, np.ndarray, float]) -> T:
 
         return self.__add__(other)
 
-    def __sub__(self, other):
-        """Subtraction for FDataGrid object.
+    def __sub__(self: T, other: Union[T, np.ndarray, float]) -> T:
 
-        It supports other FDataGrid objects, numpy.ndarray and numbers.
-
-        """
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
             return NotImplemented
 
         return self._copy_op(other, data_matrix=self.data_matrix - data_matrix)
 
-    def __rsub__(self, other):
-        """Right Subtraction for FDataGrid object.
+    def __rsub__(self: T, other: Union[T, np.ndarray, float]) -> T:
 
-        It supports other FDataGrid objects, numpy.ndarray and numbers.
-
-        """
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
             return NotImplemented
 
         return self.copy(data_matrix=data_matrix - self.data_matrix)
 
-    def __mul__(self, other):
-        """Multiplication for FDataGrid object.
+    def __mul__(self: T, other: Union[T, np.ndarray, float]) -> T:
 
-        It supports other FDataGrid objects, numpy.ndarray and numbers.
-
-        """
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
             return NotImplemented
 
         return self._copy_op(other, data_matrix=self.data_matrix * data_matrix)
 
-    def __rmul__(self, other):
-        """Multiplication for FDataGrid object.
+    def __rmul__(self: T, other: Union[T, np.ndarray, float]) -> T:
 
-        It supports other FDataGrid objects, numpy.ndarray and numbers.
-
-        """
         return self.__mul__(other)
 
-    def __truediv__(self, other):
-        """Division for FDataGrid object.
+    def __truediv__(self: T, other: Union[T, np.ndarray, float]) -> T:
 
-        It supports other FDataGrid objects, numpy.ndarray and numbers.
-
-        """
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
             return NotImplemented
 
         return self._copy_op(other, data_matrix=self.data_matrix / data_matrix)
 
-    def __rtruediv__(self, other):
-        """Division for FDataGrid object.
+    def __rtruediv__(self: T, other: Union[T, np.ndarray, float]) -> T:
 
-        It supports other FDataGrid objects, numpy.ndarray and numbers.
-
-        """
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
             return NotImplemented
 
         return self._copy_op(other, data_matrix=data_matrix / self.data_matrix)
 
-    def concatenate(self, *others, as_coordinates=False):
+    def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
         """Join samples from a similar FDataGrid object.
 
         Joins samples from another FDataGrid object if it has the same
@@ -765,7 +724,7 @@ class FDataGrid(FData):
             return self.copy(data_matrix=np.concatenate(data, axis=0),
                              sample_names=sum(sample_names, ()))
 
-    def scatter(self, *args, **kwargs):
+    def scatter(self, *args: Any, **kwargs: Any) -> Figure:
         """Scatter plot of the FDatGrid object.
 
         Args:
@@ -792,7 +751,7 @@ class FDataGrid(FData):
 
         return plot_scatter(self, *args, **kwargs)
 
-    def to_basis(self, basis, **kwargs):
+    def to_basis(self, basis: Basis, **kwargs: Any) -> FDataBasis:
         """Return the basis representation of the object.
 
         Args:
@@ -844,7 +803,12 @@ class FDataGrid(FData):
 
         return smoother.fit_transform(self)
 
-    def to_grid(self, grid_points=None, *, sample_points=None):
+    def to_grid(
+        self: T,
+        grid_points: Optional[GridPointsLike] = None,
+        *,
+        sample_points: Optional[GridPointsLike] = None
+    ) -> T:
 
         if sample_points is not None:
             warnings.warn("Parameter sample_points is deprecated. Use the "
@@ -859,19 +823,20 @@ class FDataGrid(FData):
                          grid_points=grid_points)
 
     def copy(
-        self, *,
-        deep=False,  # For Pandas compatibility
-        data_matrix=None,
-        grid_points=None,
-        sample_points=None,
-        domain_range=None,
-        dataset_name=None,
-        argument_names=None,
-        coordinate_names=None,
-        sample_names=None,
-        extrapolation=None,
-        interpolation=None,
-    ):
+        self: T,
+        *,
+        deep: bool = False,  # For Pandas compatibility
+        data_matrix: Optional[np.ndarray] = None,
+        grid_points: Optional[GridPointsLike] = None,
+        sample_points: Optional[GridPointsLike] = None,
+        domain_range: Optional[DomainRangeLike] = None,
+        dataset_name: Optional[str] = None,
+        argument_names: Optional[LabelTupleLike] = None,
+        coordinate_names: Optional[LabelTupleLike] = None,
+        sample_names: Optional[LabelTupleLike] = None,
+        extrapolation: Optional[Union[str, Evaluator]] = None,
+        interpolation: Optional[Evaluator] = None,
+    ) -> T:
         """Returns a copy of the FDataGrid.
 
         If an argument is provided the corresponding attribute in the new copy
@@ -929,8 +894,14 @@ class FDataGrid(FData):
             interpolation=interpolation,
         )
 
-    def shift(self, shifts, *, restrict_domain=False, extrapolation=None,
-              eval_points=None):
+    def shift(
+        self: T,
+        shifts: Union[np.ndarray, float],
+        *,
+        restrict_domain: bool = False,
+        extrapolation: Optional[Union[str, Evaluator]] = None,
+        eval_points: np.ndarray = None,
+    ) -> T:
         """Perform a shift of the curves.
 
         Args:
@@ -1021,7 +992,12 @@ class FDataGrid(FData):
         return self.copy(data_matrix=data_matrix, grid_points=eval_points,
                          domain_range=domain)
 
-    def compose(self, fd, *, eval_points=None):
+    def compose(
+        self: T,
+        fd: T,
+        *,
+        eval_points: np.ndarray = None
+    ) -> T:
         """Composition of functions.
 
         Performs the composition of functions.
@@ -1078,13 +1054,13 @@ class FDataGrid(FData):
                          domain_range=fd.domain_range,
                          argument_names=fd.argument_names)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return str(self)."""
         return ('Data set:    ' + str(self.data_matrix)
                 + '\ngrid_points:    ' + str(self.grid_points)
                 + '\ntime range:    ' + str(self.domain_range))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return repr(self)."""
 
         return (f"FDataGrid("
@@ -1098,7 +1074,7 @@ class FDataGrid(FData):
                 f"\ninterpolation={repr(self.interpolation)})").replace(
                     '\n', '\n    ')
 
-    def __getitem__(self, key):
+    def __getitem__(self: T, key: Union[int, slice]) -> T:
         """Return self[key]."""
 
         key = _check_array_key(self.data_matrix, key)
@@ -1110,7 +1086,13 @@ class FDataGrid(FData):
     # Numpy methods
     #####################################################################
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+    def __array_ufunc__(
+        self,
+        ufunc: Any,
+        method: str,
+        *inputs: Any,
+        **kwargs: Any
+    ) -> Any:
 
         for i in inputs:
             if isinstance(i, FDataGrid) and not np.array_equal(
@@ -1147,7 +1129,7 @@ class FDataGrid(FData):
     # Pandas ExtensionArray methods
     #####################################################################
     @property
-    def dtype(self):
+    def dtype(self) -> FDataGridDType:
         """The dtype for this extension array, FDataGridDType"""
         return FDataGridDType(
             grid_points=self.grid_points,
@@ -1162,7 +1144,7 @@ class FDataGrid(FData):
         return self.data_matrix.nbytes + sum(
             p.nbytes for p in self.grid_points)
 
-    def isna(self):
+    def isna(self) -> np.ndarray:
         """
         A 1-D array indicating if each value is missing.
 
@@ -1173,7 +1155,7 @@ class FDataGrid(FData):
                       axis=tuple(range(1, self.data_matrix.ndim)))
 
 
-class FDataGridDType(pandas.api.extensions.ExtensionDtype):
+class FDataGridDType(pandas.api.extensions.ExtensionDtype):  # type: ignore
     """
     DType corresponding to FDataGrid in Pandas
     """
@@ -1182,8 +1164,13 @@ class FDataGridDType(pandas.api.extensions.ExtensionDtype):
     type = FDataGrid
     na_value = pandas.NA
 
-    def __init__(self, grid_points, dim_codomain, domain_range=None) -> None:
-        grid_points = _tuple_of_arrays(grid_points)
+    def __init__(
+        self,
+        grid_points: GridPointsLike,
+        dim_codomain: int,
+        domain_range: Optional[DomainRangeLike] = None
+    ) -> None:
+        grid_points = _to_grid_points(grid_points)
 
         self.grid_points = tuple(tuple(s) for s in grid_points)
 
@@ -1195,7 +1182,7 @@ class FDataGridDType(pandas.api.extensions.ExtensionDtype):
         self.dim_codomain = dim_codomain
 
     @classmethod
-    def construct_array_type(cls):
+    def construct_array_type(cls) -> Type[FDataGrid]:
         return FDataGrid
 
     def _na_repr(self) -> FDataGrid:
@@ -1232,3 +1219,34 @@ class FDataGridDType(pandas.api.extensions.ExtensionDtype):
     def __hash__(self) -> int:
         return hash((self.grid_points,
                      self.domain_range, self.dim_codomain))
+
+
+class _CoordinateIterator(Sequence[T]):
+    """Internal class to iterate through the image coordinates."""
+
+    def __init__(self, fdatagrid: T) -> None:
+        """Create an iterator through the image coordinates."""
+        self._fdatagrid = fdatagrid
+
+    def __iter__(self) -> Iterator[T]:
+        """Return an iterator through the image coordinates."""
+        for i in range(len(self)):
+            yield self[i]
+
+    def __getitem__(self, key: Union[int, slice]) -> T:
+        """Get a specific coordinate."""
+
+        s_key = key
+        if isinstance(s_key, int):
+            s_key = slice(s_key, s_key + 1)
+
+        coordinate_names = np.array(
+            self._fdatagrid.coordinate_names)[s_key]
+
+        return self._fdatagrid.copy(
+            data_matrix=self._fdatagrid.data_matrix[..., key],
+            coordinate_names=coordinate_names)
+
+    def __len__(self) -> int:
+        """Return the number of coordinates."""
+        return self._fdatagrid.dim_codomain

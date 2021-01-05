@@ -548,7 +548,6 @@ class FData(  # noqa: WPS214
         restrict_domain: bool = False,
         extrapolation: Optional[Union[str, Evaluator]] = None,
         eval_points: np.ndarray = None,
-        **kwargs: Any,
     ) -> T:
         """Perform a shift of the curves.
 
@@ -569,7 +568,6 @@ class FData(  # noqa: WPS214
                 passed it calls np.linspace with bounds equal to the ones
                 defined in fd.domain_range and the number of points the maximum
                 between 201 and 10 times the number of basis plus 1.
-            kwargs: Additional arguments.
 
         Returns:
             :class:`FData` with the shifted functional data.
@@ -593,11 +591,17 @@ class FData(  # noqa: WPS214
         return plot_graph(self, *args, **kwargs)
 
     @abstractmethod
-    def copy(self: T, **kwargs: Any) -> T:
+    def copy(
+        self: T,
+        *,
+        deep: bool = False,  # For Pandas compatibility
+        dataset_name: Optional[str] = None,
+        argument_names: Optional[LabelTupleLike] = None,
+        coordinate_names: Optional[LabelTupleLike] = None,
+        sample_names: Optional[LabelTupleLike] = None,
+        extrapolation: Optional[Union[str, Evaluator]] = None,
+    ) -> T:
         """Make a copy of the object.
-
-        Args:
-            kwargs: named args with attributes to be changed in the new copy.
 
         Returns:
             A copy of the FData object.
@@ -737,7 +741,6 @@ class FData(  # noqa: WPS214
         fd: T,
         *,
         eval_points: np.ndarray = None,
-        **kwargs: Any,
     ) -> T:
         """Composition of functions.
 
@@ -748,8 +751,6 @@ class FData(  # noqa: WPS214
                 have the same number of samples and image dimension equal to
                 the domain dimension of the object composed.
             eval_points: Points to perform the evaluation.
-            kwargs: Named arguments to be passed to the composition method of
-                the specific functional object.
 
         """
         pass

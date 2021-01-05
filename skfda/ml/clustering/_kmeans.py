@@ -1,15 +1,14 @@
 """K-Means Algorithms Module."""
 
-from abc import abstractmethod
 import warnings
+from abc import abstractmethod
 
+import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_is_fitted
 
-import numpy as np
-
-from ...misc.metrics import pairwise_distance, lp_distance
+from ...misc.metrics import lp_distance, pairwise_distance
 
 
 class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
@@ -89,7 +88,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
                           "because the init parameter is set.")
 
         if self.init is not None and self.init.data_matrix.shape != (
-                self.n_clusters, fdata.ncol, fdata.dim_codomain):
+                self.n_clusters,) + fdata.data_matrix.shape[1:]:
             raise ValueError("The init FDataGrid data_matrix should be of "
                              "shape (n_clusters, n_features, dim_codomain) "
                              "and gives the initial centers.")
@@ -182,7 +181,7 @@ class BaseKMeans(BaseEstimator, ClusterMixin, TransformerMixin):
         """
         repetitions = 0
         centroids_old_matrix = np.zeros(
-            (self.n_clusters, fdata.ncol, fdata.dim_codomain))
+            (self.n_clusters,) + fdata.data_matrix.shape[1:])
         membership_matrix = self._create_membership(fdata.n_samples)
 
         centroids = self._init_centroids(fdata, random_state)

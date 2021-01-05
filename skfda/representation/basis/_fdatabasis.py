@@ -4,6 +4,7 @@ import copy
 import warnings
 from builtins import isinstance
 from typing import (
+    TYPE_CHECKING,
     Any,
     Generic,
     Iterator,
@@ -23,6 +24,9 @@ from .._functional_data import FData
 from .._typing import DomainRange, GridPointsLike, LabelTupleLike
 from ..evaluator import Evaluator
 from . import Basis
+
+if TYPE_CHECKING:
+    from .. import FDataGrid
 
 T = TypeVar('T', bound='FDataBasis')
 
@@ -148,13 +152,13 @@ class FDataBasis(FData):
         [RS05-5-2-7]_
 
         Args:
-            data_matrix (array_like): List or matrix containing the
+            data_matrix: List or matrix containing the
                 observations. If a matrix each row represents a single
                 functional datum and the columns the different observations.
-            grid_points (array_like): Values of the domain where the previous
+            grid_points: Values of the domain where the previous
                 data were taken.
-            basis: (Basis): Basis used.
-            method (str): Algorithm used for calculating the coefficients using
+            basis: Basis used.
+            method: Algorithm used for calculating the coefficients using
                 the least squares method. The values admitted are 'cholesky'
                 and 'qr' for Cholesky and QR factorisation methods
                 respectively.
@@ -225,13 +229,7 @@ class FDataBasis(FData):
         :math:`f: \mathbb{R}^n \rightarrow \mathbb{R}^d`, this object allows
         a component of the vector :math:`f = (f_1, ..., f_d)`.
 
-
-        Todo:
-            By the moment, only unidimensional objects are supported in basis
-            form.
-
         """
-
         return _CoordinateIterator(self)
 
     @property
@@ -286,17 +284,17 @@ class FDataBasis(FData):
         r"""Perform a shift of the curves.
 
         Args:
-            shifts (array_like or numeric): List with the the shift
+            shifts: List with the the shift
                 corresponding for each sample or numeric with the shift to
                 apply to all samples.
-            restrict_domain (bool, optional): If True restricts the domain to
+            restrict_domain: If True restricts the domain to
                 avoid evaluate points outside the domain using extrapolation.
                 Defaults uses extrapolation.
-            extrapolation (str or Extrapolation, optional): Controls the
+            extrapolation: Controls the
                 extrapolation mode for elements outside the domain range.
                 By default uses the method defined in fd. See extrapolation to
                 more information.
-            eval_points (array_like, optional): Set of points where
+            eval_points: Set of points where
                 the functions are evaluated to obtain the discrete
                 representation of the object to operate. If an empty list is
                 passed it calls numpy.linspace with bounds equal to the ones
@@ -383,7 +381,7 @@ class FDataBasis(FData):
         """Compute the sum of all the samples in a FDataBasis object.
 
         Returns:
-            :obj:`FDataBasis`: A FDataBais object with just one sample
+            A FDataBais object with just one sample
             representing the sum of all the samples in the original
             FDataBasis object.
 
@@ -420,7 +418,7 @@ class FDataBasis(FData):
         then the object is taken back to the basis representation.
 
         Args:
-            eval_points (array_like, optional): Set of points where the
+            eval_points: Set of points where the
                 functions are evaluated to obtain the discrete
                 representation of the object. If none are passed it calls
                 numpy.linspace with bounds equal to the ones defined in
@@ -441,7 +439,7 @@ class FDataBasis(FData):
         then the object is taken back to the basis representation.
 
         Args:
-            eval_points (array_like, optional): Set of points where the
+            eval_points: Set of points where the
                 functions are evaluated to obtain the discrete
                 representation of the object. If none are passed it calls
                 numpy.linspace with bounds equal to the ones defined in
@@ -449,7 +447,7 @@ class FDataBasis(FData):
                 between 501 and 10 times the number of basis.
 
         Returns:
-            FDataBasis: Variance of the original object.
+            Variance of the original object.
 
         """
         return self.to_grid(eval_points).var().to_basis(self.basis)
@@ -461,7 +459,7 @@ class FDataBasis(FData):
         discrete representation and then the covariance matrix is computed.
 
         Args:
-            eval_points (array_like, optional): Set of points where the
+            eval_points: Set of points where the
                 functions are evaluated to obtain the discrete
                 representation of the object. If none are passed it calls
                 numpy.linspace with bounds equal to the ones defined in
@@ -469,12 +467,17 @@ class FDataBasis(FData):
                 between 501 and 10 times the number of basis.
 
         Returns:
-            numpy.darray: Matrix of covariances.
+            Matrix of covariances.
 
         """
         return self.to_grid(eval_points).cov()
 
-    def to_grid(self, grid_points=None, *, sample_points=None):
+    def to_grid(
+        self,
+        grid_points: Optional[GridPointsLike] = None,
+        *,
+        sample_points: np.ndarray = None,
+    ) -> FDataGrid:
         """Return the discrete representation of the object.
 
         Args:
@@ -549,6 +552,7 @@ class FDataBasis(FData):
     def copy(
         self: T,
         *,
+        deep: bool = False,  # For Pandas compatibility
         basis: Optional[Basis] = None,
         coefficients: Optional[np.ndarray] = None,
         dataset_name: Optional[str] = None,

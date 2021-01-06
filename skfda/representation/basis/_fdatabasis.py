@@ -3,17 +3,7 @@ from __future__ import annotations
 import copy
 import warnings
 from builtins import isinstance
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generic,
-    Iterator,
-    Optional,
-    Sequence,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Type, TypeVar, Union
 
 import numpy as np
 import pandas.api.extensions
@@ -88,14 +78,16 @@ class FDataBasis(FData):
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[Union[str, Evaluator]] = None
+        extrapolation: Optional[Union[str, Evaluator]] = None,
     ) -> None:
         """Construct a FDataBasis object."""
         coefficients = _int_to_real(np.atleast_2d(coefficients))
         if coefficients.shape[1] != basis.n_basis:
-            raise ValueError("The length or number of columns of coefficients "
-                             "has to be the same equal to the number of "
-                             "elements of the basis.")
+            raise ValueError(
+                "The length or number of columns of coefficients "
+                "has to be the same equal to the number of "
+                "elements of the basis.",
+            )
         self.basis = basis
         self.coefficients = coefficients
 
@@ -106,7 +98,7 @@ class FDataBasis(FData):
             axes_labels=axes_labels,
             argument_names=argument_names,
             coordinate_names=coordinate_names,
-            sample_names=sample_names
+            sample_names=sample_names,
         )
 
     @classmethod
@@ -162,6 +154,10 @@ class FDataBasis(FData):
                 the least squares method. The values admitted are 'cholesky'
                 and 'qr' for Cholesky and QR factorisation methods
                 respectively.
+            sample_points: Old name for `grid_points`. New code should
+                use `grid_points` instead.
+
+                .. deprecated:: 0.5
 
         Returns:
             FDataBasis: Represention of the data in a functional form as
@@ -190,12 +186,12 @@ class FDataBasis(FData):
                 Data Analysis* (pp. 86-87). Springer.
 
         """
-        from ..grid import FDataGrid
-
         if sample_points is not None:
-            warnings.warn("Parameter sample_points is deprecated. Use the "
-                          "parameter grid_points instead.",
-                          DeprecationWarning)
+            warnings.warn(
+                "Parameter sample_points is deprecated. Use the "
+                "parameter grid_points instead.",
+                DeprecationWarning,
+            )
             grid_points = sample_points
 
         # n is the samples
@@ -205,7 +201,7 @@ class FDataBasis(FData):
         # Each sample in a column (m x n)
         data_matrix = np.atleast_2d(data_matrix)
 
-        fd = FDataGrid(data_matrix=data_matrix, grid_points=grid_points)
+        fd = grid.FDataGrid(data_matrix=data_matrix, grid_points=grid_points)
 
         return fd.to_basis(basis=basis, method=method)
 
@@ -257,20 +253,20 @@ class FDataBasis(FData):
             res = np.tensordot(self.coefficients, basis_values, axes=(1, 0))
 
             return res.reshape(
-                (self.n_samples, len(eval_points), self.dim_codomain))
+                (self.n_samples, len(eval_points), self.dim_codomain),
+            )
 
-        else:
+        res_matrix = np.empty(
+            (self.n_samples, eval_points.shape[1], self.dim_codomain),
+        )
 
-            res_matrix = np.empty(
-                (self.n_samples, eval_points.shape[1], self.dim_codomain))
+        for i in range(self.n_samples):
+            basis_values = self.basis.evaluate(eval_points[i])
 
-            for i in range(self.n_samples):
-                basis_values = self.basis.evaluate(eval_points[i])
+            values = self.coefficients[i] * basis_values.T
+            np.sum(values.T, axis=0, out=res_matrix[i])
 
-                values = self.coefficients[i] * basis_values.T
-                np.sum(values.T, axis=0, out=res_matrix[i])
-
-            return res_matrix
+        return res_matrix
 
     def shift(
         self: T,
@@ -304,8 +300,8 @@ class FDataBasis(FData):
 
         Returns:
             :obj:`FDataBasis` with the shifted data.
-        """
 
+        """
         if self.dim_codomain > 1 or self.dim_domain > 1:
             raise ValueError
 
@@ -319,44 +315,62 @@ class FDataBasis(FData):
 
         if np.isscalar(shifts):  # Special case, all curves with same shift
 
-            _basis = self.basis.rescale((domain_range[0] + shifts,
-                                         domain_range[1] + shifts))
+            basis = self.basis.rescale((
+                domain_range[0] + shifts,
+                domain_range[1] + shifts,
+            ))
 
-            return FDataBasis.from_data(self.evaluate(eval_points),
-                                        grid_points=eval_points + shifts,
-                                        basis=_basis, **kwargs)
+            return FDataBasis.from_data(
+                self.evaluate(eval_points),
+                grid_points=eval_points + shifts,
+                basis=basis,
+                **kwargs,
+            )
 
         elif len(shifts) != self.n_samples:
-            raise ValueError(f"shifts vector ({len(shifts)}) must have the "
-                             f"same length than the number of samples "
-                             f"({self.n_samples})")
+            raise ValueError(
+                f"shifts vector ({len(shifts)}) must have the "
+                f"same length than the number of samples "
+                f"({self.n_samples})",
+            )
 
         if restrict_domain:
             a = domain_range[0] - min(np.min(shifts), 0)
             b = domain_range[1] - max(np.max(shifts), 0)
             domain = (a, b)
             eval_points = eval_points[
-                np.logical_and(eval_points >= a,
-                               eval_points <= b)]
+                np.logical_and(
+                    eval_points >= a,
+                    eval_points <= b,
+                )
+            ]
         else:
             domain = domain_range
 
-        points_shifted = np.outer(np.ones(self.n_samples),
-                                  eval_points)
+        points_shifted = np.outer(
+            np.ones(self.n_samples),
+            eval_points,
+        )
 
         points_shifted += np.atleast_2d(shifts).T
 
         # Matrix of shifted values
-        _data_matrix = self(points_shifted,
-                            aligned=False,
-                            extrapolation=extrapolation)[..., 0]
+        data_matrix = self(
+            points_shifted,
+            aligned=False,
+            extrapolation=extrapolation,
+        )[..., 0]
 
-        _basis = self.basis.rescale(domain)
+        basis = self.basis.rescale(domain)
 
-        return FDataBasis.from_data(_data_matrix, grid_points=eval_points,
-                                    basis=_basis, **kwargs)
+        return FDataBasis.from_data(
+            data_matrix,
+            grid_points=eval_points,
+            basis=basis,
+            **kwargs,
+        )
 
-    def derivative(self: T, *, order: int = 1) -> T:
+    def derivative(self: T, *, order: int = 1) -> T:  # noqa: D102
 
         if order < 0:
             raise ValueError("order only takes non-negative integer values.")
@@ -365,11 +379,13 @@ class FDataBasis(FData):
             return self.copy()
 
         basis, coefficients = self.basis._derivative_basis_and_coefs(
-            self.coefficients, order)
+            self.coefficients,
+            order,
+        )
 
         return FDataBasis(basis, coefficients)
 
-    def sum(
+    def sum(  # noqa: WPS125
         self: T,
         *,
         axis: Optional[int] = None,
@@ -380,13 +396,21 @@ class FDataBasis(FData):
     ) -> T:
         """Compute the sum of all the samples in a FDataBasis object.
 
+        Args:
+            axis: Used for compatibility with numpy. Must be None or 0.
+            out: Used for compatibility with numpy. Must be None.
+            keepdims: Used for compatibility with numpy. Must be False.
+            skipna: Wether the NaNs are ignored or not.
+            min_count: Number of valid (non NaN) data to have in order
+                for the a variable to not be NaN when `skipna` is
+                `True`.
+
         Returns:
             A FDataBais object with just one sample
             representing the sum of all the samples in the original
             FDataBasis object.
 
         Examples:
-
             >>> from skfda.representation.basis import FDataBasis, Monomial
             >>> basis = Monomial(n_basis=4)
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
@@ -399,16 +423,20 @@ class FDataBasis(FData):
         """
         super().sum(axis=axis, out=out, keepdims=keepdims, skipna=skipna)
 
-        coefs = (np.nansum(self.coefficients, axis=0) if skipna
-                 else np.sum(self.coefficients, axis=0))
+        coefs = (
+            np.nansum(self.coefficients, axis=0) if skipna
+            else np.sum(self.coefficients, axis=0)
+        )
 
         if min_count > 0:
             valid = ~np.isnan(self.coefficients)
             n_valid = np.sum(valid, axis=0)
             coefs[n_valid < min_count] = np.NaN
 
-        return self.copy(coefficients=coefs,
-                         sample_names=(None,))
+        return self.copy(
+            coefficients=coefs,
+            sample_names=(None,),
+        )
 
     def gmean(self: T, eval_points: Optional[np.ndarray] = None) -> T:
         """Compute the geometric mean of the functional data object.
@@ -426,7 +454,7 @@ class FDataBasis(FData):
                 between 501 and 10 times the number of basis.
 
         Returns:
-            FDataBasis: Geometric mean of the original object.
+            Geometric mean of the original object.
 
         """
         return self.to_grid(eval_points).gmean().to_basis(self.basis)
@@ -486,13 +514,16 @@ class FDataBasis(FData):
                 numpy.linspace with bounds equal to the ones defined in
                 self.domain_range and the number of points the maximum
                 between 501 and 10 times the number of basis.
+            sample_points: Old name for `grid_points`. New code should
+                use `grid_points` instead.
+
+                .. deprecated:: 0.5
 
         Returns:
               FDataGrid: Discrete representation of the functional data
               object.
 
         Examples:
-
             >>> from skfda.representation.basis import FDataBasis, Monomial
             >>> fd = FDataBasis(coefficients=[[1, 1, 1], [1, 0, 1]],
             ...                 basis=Monomial(domain_range=(0,5), n_basis=3))
@@ -510,40 +541,50 @@ class FDataBasis(FData):
 
         """
         if sample_points is not None:
-            warnings.warn("Parameter sample_points is deprecated. Use the "
-                          "parameter grid_points instead.",
-                          DeprecationWarning)
+            warnings.warn(
+                "Parameter sample_points is deprecated. Use the "
+                "parameter grid_points instead.",
+                DeprecationWarning,
+            )
             grid_points = sample_points
 
         if grid_points is None:
-            npoints = max(constants.N_POINTS_FINE_MESH,
-                          constants.BASIS_MIN_FACTOR * self.n_basis)
-            grid_points = [np.linspace(*r, npoints)
-                           for r in self.domain_range]
+            npoints = max(
+                constants.N_POINTS_FINE_MESH,
+                constants.BASIS_MIN_FACTOR * self.n_basis,
+            )
+            grid_points = [
+                np.linspace(*r, npoints)
+                for r in self.domain_range
+            ]
 
-        return grid.FDataGrid(self.evaluate(grid_points, grid=True),
-                              grid_points=grid_points,
-                              domain_range=self.domain_range)
+        return grid.FDataGrid(
+            self.evaluate(grid_points, grid=True),
+            grid_points=grid_points,
+            domain_range=self.domain_range,
+        )
 
     def to_basis(
         self,
         basis: Basis,
         eval_points: Optional[np.ndarray] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> FDataBasis:
-        """Return the basis representation of the object.
+        """
+        Return the basis representation of the object.
 
         Args:
-            basis(Basis): basis object in which the functional data are
+            basis: Basis object in which the functional data are
                 going to be represented.
-            **kwargs: keyword arguments to be passed to
+            eval_points: Evaluation points used to discretize the function
+                if the basis is going to be changed.
+            kwargs: Keyword arguments to be passed to
                 FDataBasis.from_data().
 
         Returns:
-            FDataBasis: Basis representation of the funtional data
-            object.
-        """
+            Basis representation of the funtional data object.
 
+        """
         if basis == self.basis:
             return self.copy()
 
@@ -561,8 +602,7 @@ class FDataBasis(FData):
         sample_names: Optional[LabelTupleLike] = None,
         extrapolation: Optional[Union[str, Evaluator]] = None,
     ) -> T:
-        """FDataBasis copy"""
-
+        """Copy the FDataBasis."""
         if basis is None:
             basis = copy.deepcopy(self.basis)
 
@@ -587,19 +627,24 @@ class FDataBasis(FData):
         if extrapolation is None:
             extrapolation = self.extrapolation
 
-        return FDataBasis(basis, coefficients,
-                          dataset_name=dataset_name,
-                          argument_names=argument_names,
-                          coordinate_names=coordinate_names,
-                          sample_names=sample_names,
-                          extrapolation=extrapolation)
+        return FDataBasis(
+            basis,
+            coefficients,
+            dataset_name=dataset_name,
+            argument_names=argument_names,
+            coordinate_names=coordinate_names,
+            sample_names=sample_names,
+            extrapolation=extrapolation,
+        )
 
-    def _to_R(self) -> str:
-        """Gives the code to build the object on fda package on R"""
-        return ("fd(coef = " + self._array_to_R(self.coefficients, True) +
-                ", basisobj = " + self.basis._to_R() + ")")
+    def _to_R(self) -> str:  # noqa: N802
+        """Return the code to build the object on fda package on R."""
+        return (
+            f"fd(coef = {self._array_to_R(self.coefficients, transpose=True)},"
+            f" basisobj = {self.basis._to_R()})"
+        )
 
-    def _array_to_R(
+    def _array_to_R(  # noqa: N802
         self,
         coefficients: np.ndarray,
         transpose: bool = False,
@@ -612,42 +657,48 @@ class FDataBasis(FData):
 
         (rows, cols) = coefficients.shape
         retstring = "matrix(c("
-        for j in range(cols):
-            for i in range(rows):
-                retstring = retstring + str(coefficients[i, j]) + ", "
+        retstring += "".join(
+            f"{coefficients[i, j]}, "
+            for j in range(cols)
+            for i in range(rows)
+        )
 
-        return (retstring[0:len(retstring) - 2] + "), nrow = " + str(rows) +
-                ", ncol = " + str(cols) + ")")
+        return (
+            retstring[:len(retstring) - 2]
+            + f"), nrow = {rows}, ncol = {cols})"
+        )
 
     def __repr__(self) -> str:
-        """Representation of FDataBasis object."""
 
-        return (f"{self.__class__.__name__}("
-                f"\nbasis={self.basis},"
-                f"\ncoefficients={self.coefficients},"
-                f"\ndataset_name={self.dataset_name},"
-                f"\nargument_names={repr(self.argument_names)},"
-                f"\ncoordinate_names={repr(self.coordinate_names)},"
-                f"\nextrapolation={self.extrapolation})").replace(
-                    '\n', '\n    ')
+        return (
+            f"{self.__class__.__name__}("
+            f"\nbasis={self.basis},"
+            f"\ncoefficients={self.coefficients},"
+            f"\ndataset_name={self.dataset_name},"
+            f"\nargument_names={repr(self.argument_names)},"
+            f"\ncoordinate_names={repr(self.coordinate_names)},"
+            f"\nextrapolation={self.extrapolation})"
+        ).replace('\n', '\n    ')
 
     def __str__(self) -> str:
-        """Return str(self)."""
 
-        return (f"{self.__class__.__name__}("
-                f"\n_basis={self.basis},"
-                f"\ncoefficients={self.coefficients})").replace('\n', '\n    ')
+        return (
+            f"{self.__class__.__name__}("
+            f"\n_basis={self.basis},"
+            f"\ncoefficients={self.coefficients})"
+        ).replace('\n', '\n    ')
 
     def equals(self, other: Any) -> bool:
-        """Equality of FDataBasis"""
+        """Equality of FDataBasis."""
         # TODO check all other params
-        return (super().equals(other)
-                and self.basis == other.basis
-                and np.array_equal(self.coefficients, other.coefficients))
+        return (
+            super().equals(other)
+            and self.basis == other.basis
+            and np.array_equal(self.coefficients, other.coefficients)
+        )
 
     def __eq__(self, other: Any) -> np.ndarray:
-        """Elementwise equality of FDataBasis"""
-
+        """Elementwise equality of FDataBasis."""
         if not isinstance(other, type(self)) or self.dtype != other.dtype:
             if other is pandas.NA:
                 return self.isna()
@@ -655,29 +706,32 @@ class FDataBasis(FData):
                 other, (pandas.Series, pandas.Index, pandas.DataFrame),
             ):
                 return np.concatenate([x == y for x, y in zip(self, other)])
-            else:
-                return NotImplemented
+
+            return NotImplemented
 
         if len(self) != len(other) and len(self) != 1 and len(other) != 1:
-            raise ValueError(f"Different lengths: "
-                             f"len(self)={len(self)} and "
-                             f"len(other)={len(other)}")
+            raise ValueError(
+                f"Different lengths: "
+                f"len(self)={len(self)} and "
+                f"len(other)={len(other)}",
+            )
 
         return np.all(self.coefficients == other.coefficients, axis=1)
 
     def concatenate(
         self: T,
         *others: T,
-        as_coordinates: bool = False
+        as_coordinates: bool = False,
     ) -> T:
-        """Join samples from a similar FDataBasis object.
+        """
+        Join samples from a similar FDataBasis object.
 
         Joins samples from another FDataBasis object if they have the same
         basis.
 
         Args:
-            others (:class:`FDataBasis`): Objects to be concatenated.
-            as_coordinates (boolean, optional):  If False concatenates as
+            others: Objects to be concatenated.
+            as_coordinates:  If False concatenates as
                 new samples, else, concatenates the other functions as
                 new components of the image. Defaults to False.
 
@@ -688,8 +742,8 @@ class FDataBasis(FData):
         Todo:
             By the moment, only unidimensional objects are supported in basis
             representation.
-        """
 
+        """
         # TODO: Change to support multivariate functions
         #  in basis representation
         if as_coordinates:
@@ -701,13 +755,16 @@ class FDataBasis(FData):
 
         data = [self.coefficients] + [other.coefficients for other in others]
 
-        sample_names = [fd.sample_names for fd in [self, *others]]
+        sample_names = [fd.sample_names for fd in (self, *others)]
 
-        return self.copy(coefficients=np.concatenate(data, axis=0),
-                         sample_names=sum(sample_names, ()))
+        return self.copy(
+            coefficients=np.concatenate(data, axis=0),
+            sample_names=sum(sample_names, ()),
+        )
 
     def compose(self, fd, *, eval_points=None, **kwargs):
-        """Composition of functions.
+        """
+        Composition of functions.
 
         Performs the composition of functions. The basis is discretized to
         compute the composition.
@@ -717,8 +774,11 @@ class FDataBasis(FData):
                 have the same number of samples and image dimension equal to 1.
             eval_points (array_like): Points to perform the evaluation.
              kwargs: Named arguments to be passed to :func:`from_data`.
-        """
 
+        Returns:
+            Function resulting from the composition.
+
+        """
         grid = self.to_grid().compose(fd, eval_points=eval_points)
 
         if fd.dim_domain == 1:
@@ -732,26 +792,30 @@ class FDataBasis(FData):
 
     def __getitem__(self: T, key: Union[int, slice]) -> T:
         """Return self[key]."""
-
         key = _check_array_key(self.coefficients, key)
 
-        return self.copy(coefficients=self.coefficients[key],
-                         sample_names=np.array(self.sample_names)[key])
+        return self.copy(
+            coefficients=self.coefficients[key],
+            sample_names=np.array(self.sample_names)[key],
+        )
 
     def __add__(self: T, other: Union[T, np.ndarray, float]) -> T:
         """Addition for FDataBasis object."""
-
         if isinstance(other, FDataBasis):
-            if self.basis != other.basis:
-                return NotImplemented
+            if self.basis == other.basis:
+                basis, coefs = self.basis._add_same_basis(
+                    self.coefficients,
+                    other.coefficients,
+                )
             else:
-                basis, coefs = self.basis._add_same_basis(self.coefficients,
-                                                          other.coefficients)
+                return NotImplemented
 
         else:
             try:
-                basis, coefs = self.basis._add_constant(self.coefficients,
-                                                        other)
+                basis, coefs = self.basis._add_constant(
+                    self.coefficients,
+                    other,
+                )
             except Exception:
                 return NotImplemented
 
@@ -759,21 +823,24 @@ class FDataBasis(FData):
 
     def __radd__(self: T, other: Union[T, np.ndarray, float]) -> T:
         """Addition for FDataBasis object."""
-
         return self.__add__(other)
 
     def __sub__(self: T, other: Union[T, np.ndarray, float]) -> T:
         """Subtraction for FDataBasis object."""
         if isinstance(other, FDataBasis):
-            if self.basis != other.basis:
-                return NotImplemented
+            if self.basis == other.basis:
+                basis, coefs = self.basis._sub_same_basis(
+                    self.coefficients,
+                    other.coefficients,
+                )
             else:
-                basis, coefs = self.basis._sub_same_basis(self.coefficients,
-                                                          other.coefficients)
+                return NotImplemented
         else:
             try:
-                basis, coefs = self.basis._sub_constant(self.coefficients,
-                                                        other)
+                basis, coefs = self.basis._sub_constant(
+                    self.coefficients,
+                    other,
+                )
             except Exception:
                 return NotImplemented
 
@@ -801,7 +868,6 @@ class FDataBasis(FData):
 
     def __truediv__(self: T, other: Union[np.ndarray, float]) -> T:
         """Division for FDataBasis object."""
-
         other = np.array(other)
 
         try:
@@ -813,7 +879,6 @@ class FDataBasis(FData):
 
     def __rtruediv__(self: T, other: Union[np.ndarray, float]) -> T:
         """Right division for FDataBasis object."""
-
         return NotImplemented
 
     #####################################################################
@@ -833,7 +898,7 @@ class FDataBasis(FData):
 
     def isna(self) -> np.ndarray:
         """
-        A 1-D array indicating if each value is missing.
+        Return a 1-D array indicating if each value is missing.
 
         Returns:
             na_values (np.ndarray): Positions of NA.
@@ -842,11 +907,10 @@ class FDataBasis(FData):
 
 
 class FDataBasisDType(pandas.api.extensions.ExtensionDtype):  # type: ignore
-    """
-    DType corresponding to FDataBasis in Pandas
-    """
+    """DType corresponding to FDataBasis in Pandas."""
+
     kind = 'O'
-    type = FDataBasis
+    type = FDataBasis  # noqa: WPS125
     name = 'FDataBasis'
     na_value = pandas.NA
 
@@ -856,16 +920,19 @@ class FDataBasisDType(pandas.api.extensions.ExtensionDtype):  # type: ignore
         self.basis = basis
 
     @classmethod
-    def construct_array_type(cls) -> Type[FDataBasis]:
+    def construct_array_type(cls) -> Type[FDataBasis]:  # noqa: D102
         return FDataBasis
 
     def _na_repr(self) -> FDataBasis:
         return FDataBasis(
             basis=self.basis,
-            coefficients=((np.NaN,) * self.basis.n_basis,))
+            coefficients=((np.NaN,) * self.basis.n_basis,),
+        )
 
     def __eq__(self, other: Any) -> bool:
         """
+        Compare dtype equality.
+
         Rules for equality (similar to categorical):
         1) Any FData is equal to the string 'category'
         2) Any FData is equal to itself
@@ -876,9 +943,11 @@ class FDataBasisDType(pandas.api.extensions.ExtensionDtype):  # type: ignore
             return other == self.name
         elif other is self:
             return True
-        else:
-            return (isinstance(other, FDataBasisDType)
-                    and self.basis == other.basis)
+
+        return (
+            isinstance(other, FDataBasisDType)
+            and self.basis == other.basis
+        )
 
     def __hash__(self) -> int:
         return hash(self.basis)
@@ -895,15 +964,8 @@ class _CoordinateIterator(Sequence[T]):
         """Create an iterator through the image coordinates."""
         self._fdatabasis = fdatabasis
 
-    def __iter__(self) -> Iterator[T]:
-        """Return an iterator through the image coordinates."""
-
-        for i in range(len(self)):
-            yield self[i]
-
     def __getitem__(self, key: Union[int, slice]) -> T:
         """Get a specific coordinate."""
-
         return self._fdatabasis.basis._coordinate(self._fdatabasis, key)
 
     def __len__(self) -> int:

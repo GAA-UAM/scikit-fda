@@ -857,10 +857,12 @@ class FDataBasis(FData):
         if vector.ndim > 1:
             return NotImplemented
 
+        vector = vector[:, np.newaxis]
+
         return self._copy_op(
             other,
             basis=self.basis,
-            coefficients=self.coefs * vector,
+            coefficients=self.coefficients * vector,
         )
 
     def __mul__(self: T, other: Union[np.ndarray, float]) -> T:
@@ -874,7 +876,7 @@ class FDataBasis(FData):
     def __truediv__(self: T, other: Union[np.ndarray, float]) -> T:
         """Division for FDataBasis object."""
         try:
-            other = 1 / other
+            other = 1 / np.asarray(other)
         except Exception:
             return NotImplemented
 

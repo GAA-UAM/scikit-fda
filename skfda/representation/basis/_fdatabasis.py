@@ -801,81 +801,84 @@ class FDataBasis(FData):
 
     def __add__(self: T, other: Union[T, np.ndarray, float]) -> T:
         """Addition for FDataBasis object."""
-        if isinstance(other, FDataBasis):
-            if self.basis == other.basis:
-                basis, coefs = self.basis._add_same_basis(
-                    self.coefficients,
-                    other.coefficients,
-                )
-            else:
-                return NotImplemented
+        if isinstance(other, FDataBasis) and self.basis == other.basis:
 
-        else:
-            try:
-                basis, coefs = self.basis._add_constant(
-                    self.coefficients,
-                    other,
-                )
-            except Exception:
-                return NotImplemented
+            return self._copy_op(
+                other,
+                basis=self.basis,
+                coefficients=self.coefficients + other.coefficients,
+            )
 
-        return self._copy_op(other, basis=basis, coefficients=coefs)
+        return NotImplemented
 
     def __radd__(self: T, other: Union[T, np.ndarray, float]) -> T:
         """Addition for FDataBasis object."""
-        return self.__add__(other)
+        if isinstance(other, FDataBasis) and self.basis == other.basis:
+
+            return self._copy_op(
+                other,
+                basis=self.basis,
+                coefficients=self.coefficients + other.coefficients,
+            )
+
+        return NotImplemented
 
     def __sub__(self: T, other: Union[T, np.ndarray, float]) -> T:
         """Subtraction for FDataBasis object."""
-        if isinstance(other, FDataBasis):
-            if self.basis == other.basis:
-                basis, coefs = self.basis._sub_same_basis(
-                    self.coefficients,
-                    other.coefficients,
-                )
-            else:
-                return NotImplemented
-        else:
-            try:
-                basis, coefs = self.basis._sub_constant(
-                    self.coefficients,
-                    other,
-                )
-            except Exception:
-                return NotImplemented
+        if isinstance(other, FDataBasis) and self.basis == other.basis:
 
-        return self._copy_op(other, basis=basis, coefficients=coefs)
+            return self._copy_op(
+                other,
+                basis=self.basis,
+                coefficients=self.coefficients - other.coefficients,
+            )
+
+        return NotImplemented
 
     def __rsub__(self: T, other: Union[T, np.ndarray, float]) -> T:
         """Right subtraction for FDataBasis object."""
-        return (self * -1).__add__(other)
+        if isinstance(other, FDataBasis) and self.basis == other.basis:
 
-    def __mul__(self: T, other: Union[np.ndarray, float]) -> T:
-        """Multiplication for FDataBasis object."""
-        if isinstance(other, FDataBasis):
-            return NotImplemented
+            return self._copy_op(
+                other,
+                basis=self.basis,
+                coefficients=other.coefficients - self.coefficients,
+            )
 
+        return NotImplemented
+
+    def _mul_scalar(self: T, other: Union[np.ndarray, float]) -> T:
+        """Multiplication by scalar."""
         try:
-            basis, coefs = self.basis._mul_constant(self.coefficients, other)
+            vector = np.atleast_1d(other)
         except Exception:
             return NotImplemented
 
-        return self._copy_op(other, basis=basis, coefficients=coefs)
+        if vector.ndim > 1:
+            return NotImplemented
+
+        return self._copy_op(
+            other,
+            basis=self.basis,
+            coefficients=self.coefs * vector,
+        )
+
+    def __mul__(self: T, other: Union[np.ndarray, float]) -> T:
+        """Multiplication for FDataBasis object."""
+        return self._mul_scalar(other)
 
     def __rmul__(self: T, other: Union[np.ndarray, float]) -> T:
         """Multiplication for FDataBasis object."""
-        return self.__mul__(other)
+        return self._mul_scalar(other)
 
     def __truediv__(self: T, other: Union[np.ndarray, float]) -> T:
         """Division for FDataBasis object."""
-        other = np.array(other)
-
         try:
             other = 1 / other
         except Exception:
             return NotImplemented
 
-        return self * other
+        return self._mul_scalar(other)
 
     def __rtruediv__(self: T, other: Union[np.ndarray, float]) -> T:
         """Right division for FDataBasis object."""

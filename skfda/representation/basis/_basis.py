@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import numbers
 import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Tuple, TypeVar, Union
@@ -263,7 +264,8 @@ class Basis(ABC):
         return new_copy
 
     def to_basis(self) -> FDataBasis:
-        """Convert the Basis to FDatabasis.
+        """
+        Convert the Basis to FDatabasis.
 
         Returns:
             FDataBasis with this basis as its basis, and all basis functions
@@ -277,7 +279,8 @@ class Basis(ABC):
         raise NotImplementedError
 
     def inner_product_matrix(self, other: Optional[Basis] = None) -> np.array:
-        r"""Return the Inner Product Matrix of a pair of basis.
+        r"""
+        Return the Inner Product Matrix of a pair of basis.
 
         The Inner Product Matrix is defined as
 
@@ -344,42 +347,6 @@ class Basis(ABC):
             self._gram_matrix_cached = gram
 
         return gram
-
-    def _add_same_basis(
-        self: T,
-        coefs1: np.ndarray,
-        coefs2: np.ndarray,
-    ) -> Tuple[T, np.ndarray]:
-        return self.copy(), coefs1 + coefs2
-
-    def _add_constant(
-        self: T,
-        coefs: np.ndarray,
-        constant: float,
-    ) -> Tuple[T, np.ndarray]:
-        coefs = coefs.copy()
-        constant = np.array(constant)
-        coefs[:, 0] = coefs[:, 0] + constant
-
-        return self.copy(), coefs
-
-    def _sub_same_basis(
-        self: T,
-        coefs1: np.ndarray,
-        coefs2: np.ndarray,
-    ) -> Tuple[T, np.ndarray]:
-        return self.copy(), coefs1 - coefs2
-
-    def _sub_constant(
-        self: T,
-        coefs: np.ndarray,
-        other: float,
-    ) -> Tuple[T, np.ndarray]:
-        coefs = coefs.copy()
-        other = np.array(other)
-        coefs[:, 0] = coefs[:, 0] - other
-
-        return self.copy(), coefs
 
     def _mul_constant(
         self: T,

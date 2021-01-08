@@ -1,12 +1,14 @@
 
 import matplotlib.cm
 import matplotlib.patches
-
 import numpy as np
 
-from ..._utils import _tuple_of_arrays, constants
-from ._utils import (_get_figure_and_axes, _set_figure_layout_for_fdata,
-                     _set_labels)
+from ..._utils import _to_domain_range, constants
+from ._utils import (
+    _get_figure_and_axes,
+    _set_figure_layout_for_fdata,
+    _set_labels,
+)
 
 
 def _get_label_colors(n_labels, group_colors=None):
@@ -149,7 +151,7 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
     if domain_range is None:
         domain_range = fdata.domain_range
     else:
-        domain_range = _tuple_of_arrays(domain_range)
+        domain_range = _to_domain_range(domain_range)
 
     sample_colors, patches = _get_color_info(
         fdata, group, group_names, group_colors, legend, kwargs)
@@ -283,7 +285,7 @@ def plot_scatter(fdata, chart=None, *, grid_points=None,
     if domain_range is None:
         domain_range = fdata.domain_range
     else:
-        domain_range = _tuple_of_arrays(domain_range)
+        domain_range = _to_domain_range(domain_range)
 
     sample_colors, patches = _get_color_info(
         fdata, group, group_names, group_colors, legend, kwargs)

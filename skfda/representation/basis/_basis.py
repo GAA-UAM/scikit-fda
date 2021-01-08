@@ -5,14 +5,16 @@ from __future__ import annotations
 import copy
 import warnings
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, Tuple, TypeVar, Union
 
 import numpy as np
 from matplotlib.figure import Figure
 
 from ..._utils import _reshape_eval_points, _same_domain, _to_domain_range
 from .._typing import DomainRange, DomainRangeLike
-from . import _fdatabasis
+
+if TYPE_CHECKING:
+    from . import FDataBasis
 
 T = TypeVar("T", bound='Basis')
 
@@ -93,6 +95,20 @@ class Basis(ABC):
     def n_basis(self) -> int:
         return self._n_basis
 
+    def is_domain_range_fixed(self) -> bool:
+        """
+        Return wether the :term:`domain range` has been set explicitly.
+
+        This is useful when using a basis for converting a dataset, since
+        if this is not explicitly assigned it can be changed to the domain of
+        the data.
+
+        Returns:
+            `True` if the domain range has been fixed. `False` otherwise.
+
+        """
+        return self._domain_range is not None
+
     @abstractmethod
     def _evaluate(
         self,
@@ -154,7 +170,7 @@ class Basis(ABC):
     def __len__(self) -> int:
         return self.n_basis
 
-    def derivative(self, *, order: int = 1) -> _fdatabasis.FDataBasis:
+    def derivative(self, *, order: int = 1) -> FDataBasis:
         """Construct a FDataBasis object containing the derivative.
 
         Args:
@@ -174,6 +190,13 @@ class Basis(ABC):
         """
         Return basis and coefficients of the derivative.
 
+        Args:
+            coefs: Coefficients of a vector expressed in this basis.
+            order: Order of the derivative.
+
+        Returns:
+            Tuple with the basis of the derivative and its coefficients.
+
         Subclasses can override this to provide derivative construction.
 
         """
@@ -181,6 +204,24 @@ class Basis(ABC):
             f"{type(self)} basis does not support the construction of a "
             "basis of the derivatives.",
         )
+
+    def derivative_basis_and_coefs(
+        self: T,
+        coefs: np.ndarray,
+        order: int = 1,
+    ) -> Tuple[T, np.ndarray]:
+        """
+        Return basis and coefficients of the derivative.
+
+        Args:
+            coefs: Coefficients of a vector expressed in this basis.
+            order: Order of the derivative.
+
+        Returns:
+            Tuple with the basis of the derivative and its coefficients.
+
+        """
+        return self._derivative_basis_and_coefs(coefs, order)
 
     def plot(self, *args: Any, **kwargs: Any) -> Figure:
         """Plot the basis object or its derivatives.
@@ -199,25 +240,22 @@ class Basis(ABC):
 
     def _coordinate_nonfull(
         self,
-        fdatabasis: _fdatabasis.FDataBasis,
-        key: Union[int, range],
-    ) -> _fdatabasis.FDataBasis:
+        coefs: np.ndarray,
+        key: Union[int, slice],
+    ) -> Tuple[Basis, np.ndarray]:
         """
-        Return a fdatagrid for the coordinate functions indexed by key.
+        Return a basis and coefficients for the indexed coordinate functions.
 
         Subclasses can override this to provide coordinate indexing.
-
-        The key parameter has been already validated and is an integer or
-        slice in the range [0, self.dim_codomain.
 
         """
         raise NotImplementedError("Coordinate indexing not implemented")
 
-    def _coordinate(
+    def coordinate_basis_and_coefs(
         self,
-        fdatabasis: _fdatabasis.FDataBasis,
+        coefs: np.ndarray,
         key: Union[int, slice],
-    ) -> _fdatabasis.FDataBasis:
+    ) -> Tuple[Basis, np.ndarray]:
         """Return a fdatabasis for the coordinate functions indexed by key."""
         # Raises error if not in range and normalize key
         r_key = range(self.dim_codomain)[key]
@@ -230,9 +268,12 @@ class Basis(ABC):
             (self.dim_codomain == 1 and r_key == 0)
             or (isinstance(r_key, range) and len(r_key) == self.dim_codomain)
         ):
-            return fdatabasis.copy()
+            return self, np.copy(coefs)
 
-        return self._coordinate_nonfull(fdatabasis=fdatabasis, key=r_key)
+        return self._coordinate_nonfull(
+            coefs=coefs,
+            key=key,
+        )
 
     def rescale(self: T, domain_range: Optional[DomainRangeLike] = None) -> T:
         r"""
@@ -260,8 +301,9 @@ class Basis(ABC):
 
         return new_copy
 
-    def to_basis(self) -> _fdatabasis.FDataBasis:
-        """Convert the Basis to FDatabasis.
+    def to_basis(self) -> FDataBasis:
+        """
+        Convert the Basis to FDatabasis.
 
         Returns:
             FDataBasis with this basis as its basis, and all basis functions
@@ -275,7 +317,8 @@ class Basis(ABC):
         raise NotImplementedError
 
     def inner_product_matrix(self, other: Optional[Basis] = None) -> np.array:
-        r"""Return the Inner Product Matrix of a pair of basis.
+        r"""
+        Return the Inner Product Matrix of a pair of basis.
 
         The Inner Product Matrix is defined as
 
@@ -342,42 +385,6 @@ class Basis(ABC):
             self._gram_matrix_cached = gram
 
         return gram
-
-    def _add_same_basis(
-        self: T,
-        coefs1: np.ndarray,
-        coefs2: np.ndarray,
-    ) -> Tuple[T, np.ndarray]:
-        return self.copy(), coefs1 + coefs2
-
-    def _add_constant(
-        self: T,
-        coefs: np.ndarray,
-        constant: float,
-    ) -> Tuple[T, np.ndarray]:
-        coefs = coefs.copy()
-        constant = np.array(constant)
-        coefs[:, 0] = coefs[:, 0] + constant
-
-        return self.copy(), coefs
-
-    def _sub_same_basis(
-        self: T,
-        coefs1: np.ndarray,
-        coefs2: np.ndarray,
-    ) -> Tuple[T, np.ndarray]:
-        return self.copy(), coefs1 - coefs2
-
-    def _sub_constant(
-        self: T,
-        coefs: np.ndarray,
-        other: float,
-    ) -> Tuple[T, np.ndarray]:
-        coefs = coefs.copy()
-        other = np.array(other)
-        coefs[:, 0] = coefs[:, 0] - other
-
-        return self.copy(), coefs
 
     def _mul_constant(
         self: T,

@@ -175,18 +175,6 @@ class TestBasis(unittest.TestCase):
         self.assertTrue((monomial1 + monomial2).equals(
                         FDataBasis(Monomial(n_basis=3),
                                    [[2, 4, 6], [4, 6, 8]])))
-        self.assertTrue((monomial2 + 1).equals(
-            FDataBasis(Monomial(n_basis=3),
-                       [[2, 2, 3], [4, 4, 5]])))
-        self.assertTrue((1 + monomial2).equals(
-            FDataBasis(Monomial(n_basis=3),
-                       [[2, 2, 3], [4, 4, 5]])))
-        self.assertTrue((monomial2 + [1, 2]).equals(
-            FDataBasis(Monomial(n_basis=3),
-                       [[2, 2, 3], [5, 4, 5]])))
-        self.assertTrue(([1, 2] + monomial2).equals(
-                        FDataBasis(Monomial(n_basis=3),
-                                   [[2, 2, 3], [5, 4, 5]])))
 
         with np.testing.assert_raises(TypeError):
             monomial2 + FDataBasis(Fourier(n_basis=3),
@@ -199,18 +187,6 @@ class TestBasis(unittest.TestCase):
         self.assertTrue((monomial1 - monomial2).equals(
                         FDataBasis(Monomial(n_basis=3),
                                    [[0, 0, 0], [-2, -2, -2]])))
-        self.assertTrue((monomial2 - 1).equals(
-                        FDataBasis(Monomial(n_basis=3),
-                                   [[0, 2, 3], [2, 4, 5]])))
-        self.assertTrue((1 - monomial2).equals(
-                        FDataBasis(Monomial(n_basis=3),
-                                   [[0, -2, -3], [-2, -4, -5]])))
-        self.assertTrue((monomial2 - [1, 2]).equals(
-                        FDataBasis(Monomial(n_basis=3),
-                                   [[0, 2, 3], [1, 4, 5]])))
-        self.assertTrue(([1, 2] - monomial2).equals(
-                        FDataBasis(Monomial(n_basis=3),
-                                   [[0, -2, -3], [-1, -4, -5]])))
 
         with np.testing.assert_raises(TypeError):
             monomial2 - FDataBasis(Fourier(n_basis=3),

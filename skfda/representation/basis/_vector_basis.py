@@ -149,38 +149,23 @@ class VectorValued(Basis):
 
     def _coordinate_nonfull(
         self,
-        fdatabasis: FDataBasis,
-        key: Union[int, range],
-    ) -> FDataBasis:
+        coefs: np.ndarray,
+        key: Union[int, slice],
+    ) -> Tuple[Basis, np.ndarray]:
 
-        r_key = key
-        if isinstance(r_key, int):
-            r_key = range(r_key, r_key + 1)
+        basis_sizes = [b.n_basis for b in self.basis_list]
+        basis_indexes = np.cumsum(basis_sizes)
+        coef_splits = np.split(coefs, basis_indexes[:-1], axis=1)
 
-        s_key = slice(r_key.start, r_key.stop, r_key.step)
+        new_basis = self.basis_list[key]
+        if not isinstance(new_basis, Basis):
+            new_basis = VectorValued(new_basis)
 
-        coef_indexes = np.concatenate([
-            np.ones(b.n_basis, dtype=np.bool_) if i in r_key
-            else np.zeros(b.n_basis, dtype=np.bool_)
-            for i, b in enumerate(self.basis_list)
-        ])
+        new_coefs = coef_splits[key]
+        if not isinstance(new_coefs, np.ndarray):
+            new_coefs = np.concatenate(coef_splits[key], axis=1)
 
-        new_basis_list = self.basis_list[s_key]
-
-        basis = (
-            new_basis_list[0] if isinstance(key, int)
-            else VectorValued(new_basis_list)
-        )
-
-        coefs = fdatabasis.coefficients[:, coef_indexes]
-
-        coordinate_names = np.array(fdatabasis.coordinate_names)[s_key]
-
-        return fdatabasis.copy(
-            basis=basis,
-            coefficients=coefs,
-            coordinate_names=coordinate_names,
-        )
+        return new_basis, new_coefs
 
     def __repr__(self) -> str:
         """Representation of a Basis object."""

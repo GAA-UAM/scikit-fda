@@ -10,7 +10,12 @@ import numpy as np
 import scipy.integrate
 from pandas.api.indexers import check_array_indexer
 
-from ..representation._typing import DomainRange, DomainRangeLike
+from ..representation._typing import (
+    DomainRange,
+    DomainRangeLike,
+    GridPoints,
+    GridPointsLike,
+)
 from ..representation.evaluator import Evaluator
 
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
@@ -92,8 +97,8 @@ def _to_grid(X, y, eval_points=None):
     return X, y
 
 
-def _tuple_of_arrays(original_array):
-    """Convert to a list of arrays.
+def _to_grid_points(grid_points_like: GridPointsLike) -> GridPoints:
+    """Convert to grid points.
 
     If the original list is one-dimensional (e.g. [1, 2, 3]), return list to
     array (in this case [array([1, 2, 3])]).
@@ -105,23 +110,22 @@ def _tuple_of_arrays(original_array):
     In any other case the behaviour is unespecified.
 
     """
-
     unidimensional = False
 
     try:
-        iter(original_array)
+        iter(grid_points_like)
     except TypeError:
-        original_array = [original_array]
+        grid_points_like = [grid_points_like]
 
     try:
-        iter(original_array[0])
+        iter(grid_points_like[0])
     except TypeError:
         unidimensional = True
 
     if unidimensional:
-        return (_int_to_real(np.asarray(original_array)),)
-    else:
-        return tuple(_int_to_real(np.asarray(i)) for i in original_array)
+        return (_int_to_real(np.asarray(grid_points_like)),)
+
+    return tuple(_int_to_real(np.asarray(i)) for i in grid_points_like)
 
 
 def _to_domain_range(sequence: DomainRangeLike) -> DomainRange:
@@ -288,7 +292,7 @@ def _one_grid_to_points(axes, *, dim_domain):
     Returns also the shape containing the information of how each point
     is formed.
     """
-    axes = _tuple_of_arrays(axes)
+    axes = _to_grid_points(axes)
 
     if len(axes) != dim_domain:
         raise ValueError(f"Length of axes should be "
@@ -441,7 +445,7 @@ def _pairwise_commutative(function, arg1, arg2=None, **kwargs):
                 (len(arg1), len(arg2)))
 
 
-def _int_to_real(array):
+def _int_to_real(array: np.ndarray) -> np.ndarray:
     """
     Convert integer arrays to floating point.
     """

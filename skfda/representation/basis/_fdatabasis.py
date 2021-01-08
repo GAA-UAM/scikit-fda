@@ -768,7 +768,7 @@ class FDataBasis(FData):  # noqa: WPS214
         fd: FData,
         *,
         eval_points: np.ndarray = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> FData:
         """
         Composition of functions.

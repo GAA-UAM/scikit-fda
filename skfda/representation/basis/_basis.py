@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import numbers
 import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Tuple, TypeVar, Union

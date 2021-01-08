@@ -601,12 +601,7 @@ class FData(  # noqa: WPS214
         sample_names: Optional[LabelTupleLike] = None,
         extrapolation: Optional[Union[str, Evaluator]] = None,
     ) -> T:
-        """Make a copy of the object.
-
-        Returns:
-            A copy of the FData object.
-
-        """
+        """Make a copy of the object."""
         pass
 
     @abstractmethod  # noqa: WPS125
@@ -741,7 +736,7 @@ class FData(  # noqa: WPS214
         fd: T,
         *,
         eval_points: np.ndarray = None,
-    ) -> T:
+    ) -> FData:
         """Composition of functions.
 
         Performs the composition of functions.

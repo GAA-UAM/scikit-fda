@@ -110,7 +110,6 @@ def _to_grid_points(grid_points_like: GridPointsLike) -> GridPoints:
     In any other case the behaviour is unespecified.
 
     """
-
     unidimensional = False
 
     try:
@@ -125,8 +124,8 @@ def _to_grid_points(grid_points_like: GridPointsLike) -> GridPoints:
 
     if unidimensional:
         return (_int_to_real(np.asarray(grid_points_like)),)
-    else:
-        return tuple(_int_to_real(np.asarray(i)) for i in grid_points_like)
+
+    return tuple(_int_to_real(np.asarray(i)) for i in grid_points_like)
 
 
 def _to_domain_range(sequence: DomainRangeLike) -> DomainRange:

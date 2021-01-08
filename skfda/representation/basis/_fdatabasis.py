@@ -480,7 +480,7 @@ class FDataBasis(FData):  # noqa: WPS214
         """
         return self.to_grid(eval_points).var().to_basis(self.basis)
 
-    def cov(self, eval_points: Optional[np.ndarray] = None):
+    def cov(self, eval_points: Optional[np.ndarray] = None) -> FData:
         """Compute the covariance of the functional data object.
 
         A numerical approach its used. The object its transformed into its
@@ -588,7 +588,7 @@ class FDataBasis(FData):  # noqa: WPS214
         if basis == self.basis:
             return self.copy()
 
-        return self.to_grid(eval_points=eval_points).to_basis(basis, **kwargs)
+        return self.to_grid(grid_points=eval_points).to_basis(basis, **kwargs)
 
     def copy(
         self: T,
@@ -763,7 +763,13 @@ class FDataBasis(FData):  # noqa: WPS214
             sample_names=sum(sample_names, ()),
         )
 
-    def compose(self, fd, *, eval_points=None, **kwargs):
+    def compose(
+        self,
+        fd: FData,
+        *,
+        eval_points: np.ndarray = None,
+        **kwargs: Any
+    ) -> FData:
         """
         Composition of functions.
 

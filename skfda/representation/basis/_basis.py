@@ -96,6 +96,20 @@ class Basis(ABC):
     def n_basis(self) -> int:
         return self._n_basis
 
+    def is_domain_range_fixed(self) -> bool:
+        """
+        Return wether the :term:`domain ramge` has been set explicitly.
+
+        This is useful when using a basis for converting a dataset, since
+        if this is not explicitly assigned it can be changed to the domain of
+        the data.
+
+        Returns:
+            `True` if the domain range has been fixed. `False` otherwise.
+
+        """
+        return self._domain_range is not None
+
     @abstractmethod
     def _evaluate(
         self,

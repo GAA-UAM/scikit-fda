@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound='FDataGrid')
 
 
-class FDataGrid(FData):
+class FDataGrid(FData):  # noqa: WPS214
     r"""Represent discretised functional data.
 
     Class for representing functional data as a set of curves discretised
@@ -120,7 +120,7 @@ class FDataGrid(FData):
 
     """
 
-    def __init__(
+    def __init__(  # noqa: WPS211
         self,
         data_matrix: np.ndarray,
         grid_points: Optional[GridPointsLike] = None,
@@ -565,14 +565,15 @@ class FDataGrid(FData):
         if not np.array_equal(self.data_matrix, other.data_matrix):
             return False
 
-        if len(self.grid_points) != len(other.grid_points):
-            return False
-
-        for a, b in zip(self.grid_points, other.grid_points):
-            if not np.array_equal(a, b):
-                return False
-
-        if not np.array_equal(self.domain_range, other.domain_range):
+        # Comparison of the domain
+        if (
+            not np.array_equal(self.domain_range, other.domain_range)
+            or len(self.grid_points) != len(other.grid_points)
+            or not all(
+                np.array_equal(a, b)
+                for a, b in zip(self.grid_points, other.grid_points)
+            )
+        ):
             return False
 
         if self.interpolation != other.interpolation:
@@ -621,8 +622,6 @@ class FDataGrid(FData):
                 )
 
                 return other[other_index]
-
-            return None
 
         elif isinstance(other, FDataGrid):
             self._check_same_dimensions(other)
@@ -826,7 +825,7 @@ class FDataGrid(FData):
             )
 
         # Readjust the domain range if there was not an explicit one
-        if basis._domain_range is None:
+        if not basis.is_domain_range_fixed():
             basis = basis.copy(domain_range=self.domain_range)
 
         smoother = BasisSmoother(
@@ -1143,7 +1142,7 @@ class FDataGrid(FData):
     def __repr__(self) -> str:
         """Return repr(self)."""
         return (
-            f"FDataGrid("
+            f"FDataGrid("  # noqa: WPS221
             f"\n{repr(self.data_matrix)},"
             f"\ngrid_points={repr(self.grid_points)},"
             f"\ndomain_range={repr(self.domain_range)},"

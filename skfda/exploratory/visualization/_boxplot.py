@@ -4,19 +4,21 @@ This module contains the classes to construct the functional data boxplot and
 visualize it.
 
 """
-from abc import ABC, abstractmethod
 import math
+from abc import ABC, abstractmethod
 
 import matplotlib
-
 import matplotlib.pyplot as plt
 import numpy as np
 
 from ..depth import ModifiedBandDepth
 from ..outliers import _envelopes
-from ._utils import (_figure_to_svg, _get_figure_and_axes,
-                     _set_figure_layout_for_fdata, _set_labels)
-
+from ._utils import (
+    _figure_to_svg,
+    _get_figure_and_axes,
+    _set_figure_layout_for_fdata,
+    _set_labels,
+)
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
@@ -417,7 +419,7 @@ class Boxplot(FDataBoxplot):
                          color=self.barcol, zorder=4)
 
             # vertical lines
-            index = math.ceil(self.fdatagrid.ncol / 2)
+            index = math.ceil(len(self.fdatagrid.grid_points[0]) / 2)
             x = self.fdatagrid.grid_points[0][index]
             axes[m].plot([x, x],
                          [self.non_outlying_envelope[0][..., m][index],

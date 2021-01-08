@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 T = TypeVar('T', bound='FDataBasis')
 
 
-class FDataBasis(FData):
+class FDataBasis(FData):  # noqa: WPS214
     r"""Basis representation of functional data.
 
     Class representation for functional data in the form of a set of basis
@@ -378,7 +378,7 @@ class FDataBasis(FData):
         if order == 0:
             return self.copy()
 
-        basis, coefficients = self.basis._derivative_basis_and_coefs(
+        basis, coefficients = self.basis.derivative_basis_and_coefs(
             self.coefficients,
             order,
         )
@@ -640,7 +640,8 @@ class FDataBasis(FData):
     def _to_R(self) -> str:  # noqa: N802
         """Return the code to build the object on fda package on R."""
         return (
-            f"fd(coef = {self._array_to_R(self.coefficients, transpose=True)},"
+            f"fd("  # noqa: WPS437
+            f"coef = {self._array_to_R(self.coefficients, transpose=True)},"
             f" basisobj = {self.basis._to_R()})"
         )
 
@@ -671,7 +672,7 @@ class FDataBasis(FData):
     def __repr__(self) -> str:
 
         return (
-            f"{self.__class__.__name__}("
+            f"{self.__class__.__name__}("  # noqa: WPS221
             f"\nbasis={self.basis},"
             f"\ncoefficients={self.coefficients},"
             f"\ndataset_name={self.dataset_name},"
@@ -779,14 +780,14 @@ class FDataBasis(FData):
             Function resulting from the composition.
 
         """
-        grid = self.to_grid().compose(fd, eval_points=eval_points)
+        fd_grid = self.to_grid().compose(fd, eval_points=eval_points)
 
         if fd.dim_domain == 1:
             basis = self.basis.rescale(fd.domain_range[0])
-            composition = grid.to_basis(basis, **kwargs)
+            composition = fd_grid.to_basis(basis, **kwargs)
         else:
             #  Cant be convertered to basis due to the dimensions
-            composition = grid
+            composition = fd_grid
 
         return composition
 
@@ -971,7 +972,20 @@ class _CoordinateIterator(Sequence[T]):
 
     def __getitem__(self, key: Union[int, slice]) -> T:
         """Get a specific coordinate."""
-        return self._fdatabasis.basis._coordinate(self._fdatabasis, key)
+        basis, coefs = self._fdatabasis.basis.coordinate_basis_and_coefs(
+            self._fdatabasis.coefficients,
+            key,
+        )
+
+        coord_names = self._fdatabasis.coordinate_names[key]
+        if coord_names is None or isinstance(coord_names, str):
+            coord_names = (coord_names,)
+
+        return self._fdatabasis.copy(
+            basis=basis,
+            coefficients=coefs,
+            coordinate_names=coord_names,
+        )
 
     def __len__(self) -> int:
         """Return the number of coordinates."""

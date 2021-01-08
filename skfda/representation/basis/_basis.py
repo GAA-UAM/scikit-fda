@@ -177,6 +177,13 @@ class Basis(ABC):
         """
         Return basis and coefficients of the derivative.
 
+        Args:
+            coefs: Coefficients of a vector expressed in this basis.
+            order: Order of the derivative.
+
+        Returns:
+            Tuple with the basis of the derivative and its coefficients.
+
         Subclasses can override this to provide derivative construction.
 
         """
@@ -184,6 +191,24 @@ class Basis(ABC):
             f"{type(self)} basis does not support the construction of a "
             "basis of the derivatives.",
         )
+
+    def derivative_basis_and_coefs(
+        self: T,
+        coefs: np.ndarray,
+        order: int = 1,
+    ) -> Tuple[T, np.ndarray]:
+        """
+        Return basis and coefficients of the derivative.
+
+        Args:
+            coefs: Coefficients of a vector expressed in this basis.
+            order: Order of the derivative.
+
+        Returns:
+            Tuple with the basis of the derivative and its coefficients.
+
+        """
+        return self._derivative_basis_and_coefs(coefs, order)
 
     def plot(self, *args: Any, **kwargs: Any) -> Figure:
         """Plot the basis object or its derivatives.
@@ -202,25 +227,22 @@ class Basis(ABC):
 
     def _coordinate_nonfull(
         self,
-        fdatabasis: FDataBasis,
-        key: Union[int, range],
-    ) -> FDataBasis:
+        coefs: np.ndarray,
+        key: Union[int, slice],
+    ) -> Tuple[Basis, np.ndarray]:
         """
-        Return a fdatagrid for the coordinate functions indexed by key.
+        Return a basis and coefficients for the indexed coordinate functions.
 
         Subclasses can override this to provide coordinate indexing.
-
-        The key parameter has been already validated and is an integer or
-        slice in the range [0, self.dim_codomain.
 
         """
         raise NotImplementedError("Coordinate indexing not implemented")
 
-    def _coordinate(
+    def coordinate_basis_and_coefs(
         self,
-        fdatabasis: FDataBasis,
+        coefs: np.ndarray,
         key: Union[int, slice],
-    ) -> FDataBasis:
+    ) -> Tuple[Basis, np.ndarray]:
         """Return a fdatabasis for the coordinate functions indexed by key."""
         # Raises error if not in range and normalize key
         r_key = range(self.dim_codomain)[key]
@@ -233,9 +255,12 @@ class Basis(ABC):
             (self.dim_codomain == 1 and r_key == 0)
             or (isinstance(r_key, range) and len(r_key) == self.dim_codomain)
         ):
-            return fdatabasis.copy()
+            return self, np.copy(coefs)
 
-        return self._coordinate_nonfull(fdatabasis=fdatabasis, key=r_key)
+        return self._coordinate_nonfull(
+            coefs=coefs,
+            key=key,
+        )
 
     def rescale(self: T, domain_range: Optional[DomainRangeLike] = None) -> T:
         r"""

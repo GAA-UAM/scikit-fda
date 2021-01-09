@@ -6,14 +6,14 @@ package. FDataBasis and FDataGrid.
 """
 import warnings
 from builtins import isinstance
-from typing import Any, TypeVar, Union, cast
+from typing import Any, Optional, TypeVar, Union, cast
 
 import multimethod
 import numpy as np
 import scipy.integrate
 
 from .._utils import _same_domain, nquad_vec
-from ..representation import FDataBasis, FDataGrid
+from ..representation import FData, FDataBasis, FDataGrid
 from ..representation.basis import Basis
 
 __author__ = "Miguel Carbajo Berrocal"
@@ -209,12 +209,12 @@ def cumsum(fdatagrid: FDataGrid) -> FDataGrid:
 
 @multimethod.multidispatch
 def inner_product(
-    arg1,
-    arg2,
+    arg1: Any,
+    arg2: Any,
     *,
     matrix=False,
     **kwargs,
-):
+) -> np.ndarray:
     r"""Return the usual (:math:`L_2`) inner product.
 
     Calculates the inner product between matching samples in two
@@ -329,8 +329,8 @@ def inner_product_fdatagrid(
     arg1: FDataGrid,
     arg2: FDataGrid,
     *,
-    matrix=False
-):
+    matrix=False,
+) -> np.ndarray:
 
     if not np.array_equal(arg1.grid_points,
                           arg2.grid_points):
@@ -371,12 +371,14 @@ def inner_product_fdatagrid(
 @inner_product.register(FDataBasis, Basis)
 @inner_product.register(Basis, FDataBasis)
 @inner_product.register(Basis, Basis)
-def inner_product_fdatabasis(arg1: Union[FDataBasis, Basis],
-                             arg2: Union[FDataBasis, Basis],
-                             *,
-                             matrix=False,
-                             inner_product_matrix=None,
-                             force_numerical=False):
+def inner_product_fdatabasis(
+    arg1: Union[FDataBasis, Basis],
+    arg2: Union[FDataBasis, Basis],
+    *,
+    matrix=False,
+    inner_product_matrix=None,
+    force_numerical=False,
+) -> np.ndarray:
 
     if not _same_domain(arg1, arg2):
         raise ValueError("Both Objects should have the same domain_range")
@@ -425,15 +427,20 @@ def inner_product_fdatabasis(arg1: Union[FDataBasis, Basis],
         return _inner_product_integrate(arg1, arg2, matrix=matrix)
 
 
-def _inner_product_integrate(arg1, arg2, *, matrix=False):
+def _inner_product_integrate(
+    arg1: FData,
+    arg2: FData,
+    *,
+    matrix: bool = False,
+) -> np.ndarray:
 
     if not np.array_equal(arg1.domain_range,
                           arg2.domain_range):
         raise ValueError("Domain range for both objects must be equal")
 
-    def integrand(*args):
-        f1 = arg1([*args])[:, 0, :]
-        f2 = arg2([*args])[:, 0, :]
+    def integrand(*args: np.ndarray) -> np.ndarray:
+        f1 = arg1(args)[:, 0, :]
+        f2 = arg2(args)[:, 0, :]
 
         if matrix:
             ret = np.einsum('n...,m...->nm...', f1, f2)
@@ -454,7 +461,11 @@ def _inner_product_integrate(arg1, arg2, *, matrix=False):
     return summation
 
 
-def inner_product_matrix(arg1, arg2=None, **kwargs):
+def inner_product_matrix(
+    arg1: Vector,
+    arg2: Optional[Vector] = None,
+    **kwargs: Any
+) -> np.ndarray:
     """
     Returns the inner product matrix between is arguments.
 

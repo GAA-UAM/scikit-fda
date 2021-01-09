@@ -4,18 +4,17 @@ Defines the basic mathematical operations for classes defined in this
 package. FDataBasis and FDataGrid.
 
 """
+import warnings
 from builtins import isinstance
-from typing import Union
+from typing import Any, TypeVar, Union, cast
 
 import multimethod
+import numpy as np
 import scipy.integrate
 
-import numpy as np
-
-from .._utils import _same_domain, nquad_vec, _pairwise_commutative
-from ..representation import FDataGrid, FDataBasis
+from .._utils import _same_domain, nquad_vec
+from ..representation import FDataBasis, FDataGrid
 from ..representation.basis import Basis
-
 
 __author__ = "Miguel Carbajo Berrocal"
 __license__ = "GPL3"
@@ -24,111 +23,176 @@ __maintainer__ = ""
 __email__ = ""
 __status__ = "Development"
 
+Vector = TypeVar("Vector")
 
-def sqrt(fdatagrid):
+
+def sqrt(fdatagrid: FDataGrid) -> FDataGrid:
     """Perform a element wise square root operation.
 
+    .. deprecated:: 0.6
+        Use :func:`numpy.sqrt` function instead.
+
     Args:
-        fdatagrid (FDataGrid): Object to whose elements the square root
+        fdatagrid: Object to whose elements the square root
             operation is going to be applied.
 
     Returns:
-        FDataGrid: Object whose elements are the square roots of the original.
+        FDataGrid object whose elements are the square roots of the original.
 
     """
-    return fdatagrid.copy(data_matrix=np.sqrt(fdatagrid.data_matrix))
+    warnings.warn(
+        "Function sqrt is deprecated. Use numpy.sqrt with a FDataGrid "
+        "parameter instead.",
+        DeprecationWarning,
+    )
+
+    return cast(FDataGrid, np.sqrt(fdatagrid))
 
 
-def absolute(fdatagrid):
+def absolute(fdatagrid: FDataGrid) -> FDataGrid:
     """Get the absolute value of all elements in the FDataGrid object.
 
+    .. deprecated:: 0.6
+        Use :func:`numpy.absolute` function instead.
+
     Args:
-        fdatagrid (FDataGrid): Object from whose elements the absolute value
+        fdatagrid: Object from whose elements the absolute value
             is going to be retrieved.
 
     Returns:
-        FDataGrid: Object whose elements are the absolute values of the
+        FDataGrid object whose elements are the absolute values of the
             original.
 
     """
-    return fdatagrid.copy(data_matrix=np.absolute(fdatagrid.data_matrix))
+    warnings.warn(
+        "Function absolute is deprecated. Use numpy.absolute with a FDataGrid "
+        "parameter instead.",
+        DeprecationWarning,
+    )
+
+    return cast(FDataGrid, np.absolute(fdatagrid))
 
 
-def round(fdatagrid, decimals=0):
+def round(fdatagrid: FDataGrid, decimals: int = 0) -> FDataGrid:
     """Round all elements of the object.
 
+    .. deprecated:: 0.6
+        Use :func:`numpy.round` function instead.
+
     Args:
-        fdatagrid (FDataGrid): Object to whose elements are going to be
+        fdatagrid: Object to whose elements are going to be
             rounded.
-        decimals (int, optional): Number of decimals wanted. Defaults to 0.
+        decimals: Number of decimals wanted. Defaults to 0.
 
     Returns:
-        FDataGrid: Object whose elements are rounded.
+        FDataGrid object whose elements are rounded.
 
     """
-    return fdatagrid.round(decimals)
+    warnings.warn(
+        "Function round is deprecated. Use numpy.round with a FDataGrid "
+        "parameter instead.",
+        DeprecationWarning,
+    )
+
+    return cast(FDataGrid, np.round(fdatagrid, decimals))
 
 
-def exp(fdatagrid):
+def exp(fdatagrid: FDataGrid) -> FDataGrid:
     """Perform a element wise exponential operation.
 
+    .. deprecated:: 0.6
+        Use :func:`numpy.exp` function instead.
+
     Args:
-        fdatagrid (FDataGrid): Object to whose elements the exponential
+        fdatagrid: Object to whose elements the exponential
             operation is going to be applied.
 
     Returns:
-        FDataGrid: Object whose elements are the result of exponentiating
+        FDataGrid object whose elements are the result of exponentiating
             the elements of the original.
 
     """
-    return fdatagrid.copy(data_matrix=np.exp(fdatagrid.data_matrix))
+    warnings.warn(
+        "Function exp is deprecated. Use numpy.exp with a FDataGrid "
+        "parameter instead.",
+        DeprecationWarning,
+    )
+
+    return cast(FDataGrid, np.exp(fdatagrid))
 
 
-def log(fdatagrid):
+def log(fdatagrid: FDataGrid) -> FDataGrid:
     """Perform a element wise logarithm operation.
 
+    .. deprecated:: 0.6
+        Use :func:`numpy.log` function instead.
+
     Args:
-        fdatagrid (FDataGrid): Object to whose elements the logarithm
+        fdatagrid: Object to whose elements the logarithm
             operation is going to be applied.
 
     Returns:
-        FDataGrid: Object whose elements are the logarithm of the original.
+        FDataGrid object whose elements are the logarithm of the original.
 
     """
-    return fdatagrid.copy(data_matrix=np.log(fdatagrid.data_matrix))
+    warnings.warn(
+        "Function log is deprecated. Use numpy.log with a FDataGrid "
+        "parameter instead.",
+        DeprecationWarning,
+    )
+
+    return cast(FDataGrid, np.log(fdatagrid))
 
 
-def log10(fdatagrid):
+def log10(fdatagrid: FDataGrid) -> FDataGrid:
     """Perform an element wise base 10 logarithm operation.
 
+    .. deprecated:: 0.6
+        Use :func:`numpy.log10` function instead.
+
     Args:
-        fdatagrid (FDataGrid): Object to whose elements the base 10 logarithm
+        fdatagrid: Object to whose elements the base 10 logarithm
             operation is going to be applied.
 
     Returns:
-        FDataGrid: Object whose elements are the base 10 logarithm of the
+        FDataGrid object whose elements are the base 10 logarithm of the
             original.
 
     """
-    return fdatagrid.copy(data_matrix=np.log10(fdatagrid.data_matrix))
+    warnings.warn(
+        "Function log10 is deprecated. Use numpy.log10 with a FDataGrid "
+        "parameter instead.",
+        DeprecationWarning,
+    )
+
+    return cast(FDataGrid, np.log10(fdatagrid))
 
 
-def log2(fdatagrid):
+def log2(fdatagrid: FDataGrid) -> FDataGrid:
     """Perform an element wise binary logarithm operation.
 
+    .. deprecated:: 0.6
+        Use :func:`numpy.log2` function instead.
+
     Args:
-        fdatagrid (FDataGrid): Object to whose elements the binary logarithm
+        fdatagrid: Object to whose elements the binary logarithm
             operation is going to be applied.
 
     Returns:
-        FDataGrid: Object whose elements are the binary logarithm of the
+        FDataGrid object whose elements are the binary logarithm of the
             original.
 
     """
-    return fdatagrid.copy(data_matrix=np.log2(fdatagrid.data_matrix))
+    warnings.warn(
+        "Function log2 is deprecated. Use numpy.log2 with a FDataGrid "
+        "parameter instead.",
+        DeprecationWarning,
+    )
+
+    return cast(FDataGrid, np.log2(fdatagrid))
 
 
-def cumsum(fdatagrid):
+def cumsum(fdatagrid: FDataGrid) -> FDataGrid:
     """Return the cumulative sum of the samples.
 
     Args:
@@ -144,7 +208,13 @@ def cumsum(fdatagrid):
 
 
 @multimethod.multidispatch
-def inner_product(arg1, arg2, *, matrix=False, **kwargs):
+def inner_product(
+    arg1,
+    arg2,
+    *,
+    matrix=False,
+    **kwargs,
+):
     r"""Return the usual (:math:`L_2`) inner product.
 
     Calculates the inner product between matching samples in two
@@ -255,7 +325,12 @@ def inner_product(arg1, arg2, *, matrix=False, **kwargs):
 
 
 @inner_product.register
-def inner_product_fdatagrid(arg1: FDataGrid, arg2: FDataGrid, *, matrix=False):
+def inner_product_fdatagrid(
+    arg1: FDataGrid,
+    arg2: FDataGrid,
+    *,
+    matrix=False
+):
 
     if not np.array_equal(arg1.grid_points,
                           arg2.grid_points):

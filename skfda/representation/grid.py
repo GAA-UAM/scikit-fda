@@ -208,8 +208,15 @@ class FDataGrid(FData):  # noqa: WPS214
             sample_names=sample_names,
         )
 
-    def round(self: T, decimals: int = 0) -> T:  # noqa: WPS125
+    def round(  # noqa: WPS125
+        self,
+        decimals: int = 0,
+        out: Optional[FDataGrid] = None,
+    ) -> FDataGrid:
         """Evenly round to the given number of decimals.
+
+        .. deprecated:: 0.6
+            Use :func:`numpy.round` function instead.
 
         Args:
             decimals: Number of decimal places to round to.
@@ -221,7 +228,28 @@ class FDataGrid(FData):  # noqa: WPS214
             in its data_matrix are rounded.
 
         """
-        return self.copy(data_matrix=self.data_matrix.round(decimals))
+        out_matrix = None if out is None else out.data_matrix
+
+        if (
+            out is not None
+            and (
+                self.domain_range != out.domain_range
+                or not all(
+                    np.array_equal(a, b)
+                    for a, b in zip(self.grid_points, out.grid_points)
+                )
+                or self.data_matrix.shape != out.data_matrix.shape
+            )
+        ):
+            raise ValueError("out parameter is not valid")
+
+        data_matrix = np.round(
+            self.data_matrix,
+            decimals=decimals,
+            out=out_matrix
+        )
+
+        return self.copy(data_matrix=data_matrix) if out is None else out
 
     @property
     def sample_points(self) -> GridPoints:

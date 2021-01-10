@@ -566,7 +566,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
     def to_basis(
         self,
-        basis: Basis,
+        basis: Optional[Basis] = None,
         eval_points: Optional[np.ndarray] = None,
         **kwargs: Any,
     ) -> FDataBasis:
@@ -585,7 +585,7 @@ class FDataBasis(FData):  # noqa: WPS214
             Basis representation of the funtional data object.
 
         """
-        if basis == self.basis:
+        if basis is None or basis == self.basis:
             return self.copy()
 
         return self.to_grid(grid_points=eval_points).to_basis(basis, **kwargs)

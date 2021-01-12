@@ -222,6 +222,7 @@ class FDataGrid(FData):  # noqa: WPS214
             decimals: Number of decimal places to round to.
                 If decimals is negative, it specifies the number of
                 positions to the left of the decimal point. Defaults to 0.
+            out: FDataGrid where to place the result, if any.
 
         Returns:
             Returns a FDataGrid object where all elements
@@ -246,7 +247,7 @@ class FDataGrid(FData):  # noqa: WPS214
         data_matrix = np.round(
             self.data_matrix,
             decimals=decimals,
-            out=out_matrix
+            out=out_matrix,
         )
 
         return self.copy(data_matrix=data_matrix) if out is None else out

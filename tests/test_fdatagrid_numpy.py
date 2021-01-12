@@ -20,7 +20,7 @@ from skfda import FDataGrid
 ])
 def monary(request: Any) -> Any:
     """
-    A fixture providing the monary function to validate.
+    Fixture providing the monary function to validate.
 
     Not all of them are ufuncs.
 
@@ -59,7 +59,7 @@ def test_binary_ufunc() -> None:
     assert fd_mul.equals(fd_mul_build)
 
 
-def test_out_ufunc(monary) -> None:
+def test_out_ufunc(monary: Callable[..., Any]) -> None:
     """Test that the out parameter of ufuncs work for FDataGrid."""
     data_matrix = np.arange(15).reshape(3, 5) + 1
     data_matrix_copy = np.copy(data_matrix)

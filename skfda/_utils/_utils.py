@@ -409,10 +409,11 @@ def nquad_vec(
     func: Callable[[np.ndarray], np.ndarray],
     ranges: Sequence[Tuple[float, float]],
 ) -> np.ndarray:
+    """Perform multiple integration of vector valued functions."""
 
     initial_depth = len(ranges) - 1
 
-    def integrate(*args: Any, depth: int) -> np.ndarray:
+    def integrate(*args: Any, depth: int) -> np.ndarray:  # noqa: WPS430
 
         if depth == 0:
             f = functools.partial(func, *args)

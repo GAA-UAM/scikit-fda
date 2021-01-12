@@ -410,7 +410,6 @@ def nquad_vec(
     ranges: Sequence[Tuple[float, float]],
 ) -> np.ndarray:
     """Perform multiple integration of vector valued functions."""
-
     initial_depth = len(ranges) - 1
 
     def integrate(*args: Any, depth: int) -> np.ndarray:  # noqa: WPS430

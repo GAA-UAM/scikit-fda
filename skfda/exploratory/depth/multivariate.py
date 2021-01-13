@@ -12,7 +12,7 @@ import sklearn
 from scipy.special import comb
 from typing_extensions import Literal
 
-T = TypeVar("T")
+T = TypeVar("T", contravariant=True)
 SelfType = TypeVar("SelfType")
 _Side = Literal["left", "right"]
 

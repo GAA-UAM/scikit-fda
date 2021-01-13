@@ -95,7 +95,7 @@ class _DepthOrOutlyingness(
         return copy.fit(distribution).predict(X)
 
     @property  # noqa: WPS125
-    def max(self) -> float:
+    def max(self) -> float:  # noqa: WPS125
         """
         Maximum (or supremum if there is no maximum) of the possibly predicted
         values.
@@ -104,7 +104,7 @@ class _DepthOrOutlyingness(
         return 1
 
     @property  # noqa: WPS125
-    def min(self) -> float:
+    def min(self) -> float:  # noqa: WPS125
         """
         Minimum (or infimum if there is no maximum) of the possibly predicted
         values.
@@ -200,7 +200,7 @@ class _UnivariateFraimanMuniz(Depth[np.ndarray]):
         return 1 - np.abs(0.5 - np.moveaxis(cum_dist, -1, 0)[..., 0])
 
     @property  # noqa: WPS125
-    def min(self) -> float:
+    def min(self) -> float:  # noqa: WPS125
         return 1 / 2
 
 
@@ -302,7 +302,7 @@ class OutlyingnessBasedDepth(Depth[T]):
         self,
         X: T,
         y: None = None,
-    ) -> OutlyingnessBasedDepth:
+    ) -> OutlyingnessBasedDepth[T]:
         self.outlyingness.fit(X)
 
         return self
@@ -369,7 +369,7 @@ class StahelDonohoOutlyingness(Outlyingness[np.ndarray]):
         raise NotImplementedError("Only implemented for one dimension")
 
     @property  # noqa: WPS125
-    def max(self) -> float:
+    def max(self) -> float:  # noqa: WPS125
         return math.inf
 
 

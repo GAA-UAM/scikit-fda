@@ -97,11 +97,11 @@ class IntegratedDepth(Depth[FDataGrid]):
         return integrand
 
     @property  # noqa: WPS125
-    def max(self) -> float:
+    def max(self) -> float:  # noqa: WPS125
         return self.multivariate_depth_.max
 
     @property  # noqa: WPS125
-    def min(self) -> float:
+    def min(self) -> float:  # noqa: WPS125
         return self.multivariate_depth_.min
 
 

@@ -279,6 +279,7 @@ linf_norm = LpNorm(math.inf)
 
 def lp_norm(
     fdata: FData,
+    *,
     p: float,
     vector_norm: Optional[Union[Norm[np.ndarray], float]] = None,
 ) -> np.ndarray:
@@ -313,6 +314,12 @@ def lp_norm(
         \| f \| = \left( \int \int_D \left ( \sqrt{ \| f_1(x,y)
         \|^2 + \| f_2(x,y) \|^2 } \right )^p dxdy \right)^{
         \frac{1}{p}}
+
+    Note:
+        This function is a wrapper of :class:`LpNorm`, available only for
+        convenience. As the parameter `p` is mandatory, it cannot be used
+        where a fully-defined norm is required: use an instance of
+        :class:`LpNorm` in those cases.
 
     Args:
         fdata (FData): FData object.
@@ -353,6 +360,9 @@ def lp_norm(
             ....
         ValueError: p must be equal or greater than 1.
 
+    See also:
+        :class:`LpNorm`
+
     """
     return LpNorm(p=p, vector_norm=vector_norm)(fdata)
 
@@ -380,15 +390,16 @@ class NormInducedMetric(Metric[VectorType]):
         Firstly we create the functional data.
 
         >>> import skfda
+        >>> import numpy as np
         >>>
         >>> x = np.linspace(0, 1, 1001)
-        >>> fd = FDataGrid([x], x)
-        >>> fd2 = FDataGrid([x/2], x)
+        >>> fd = skfda.FDataGrid([x], x)
+        >>> fd2 = skfda.FDataGrid([x/2], x)
 
         To construct the :math:`\mathbb{L}^2` distance it is used the
         :math:`\mathbb{L}^2` norm wich it is used to compute the distance.
 
-        >>> l2_distance = distance_from_norm(lp_norm, p=2)
+        >>> l2_distance = skfda.misc.metrics.NormInducedMetric(l2_norm)
         >>> d = l2_distance(fd, fd2)
         >>> float('%.3f'% d)
         0.289
@@ -407,7 +418,6 @@ class NormInducedMetric(Metric[VectorType]):
 
 def distance_from_norm(
     norm: Norm[VectorType],
-    **kwargs: Any,
 ) -> Metric[VectorType]:
     r"""Return the distance induced by a norm.
 
@@ -441,19 +451,13 @@ def distance_from_norm(
         To construct the :math:`\mathbb{L}^2` distance it is used the
         :math:`\mathbb{L}^2` norm wich it is used to compute the distance.
 
-        >>> l2_distance = distance_from_norm(lp_norm, p=2)
+        >>> l2_distance = distance_from_norm(l2_norm)
         >>> d = l2_distance(fd, fd2)
         >>> float('%.3f'% d)
         0.289
 
     """
-    def norm_distance(fdata1: VectorType, fdata2: VectorType) -> np.ndarray:
-        # Substract operation checks if objects are compatible
-        return norm(fdata1 - fdata2, **kwargs)  # type: ignore
-
-    norm_distance.__name__ = f"{norm.__name__}_distance"
-
-    return norm_distance
+    return NormInducedMetric(norm)
 
 
 def pairwise_distance(
@@ -493,14 +497,7 @@ def pairwise_distance(
     return pairwise
 
 
-def lp_distance(
-    fdata1: T,
-    fdata2: T,
-    p: int = 2,
-    p2: int = 2,
-    *,
-    eval_points: np.ndarray = None,
-) -> np.ndarray:
+class LpDistance(NormInducedMetric[FData]):
     r"""Lp distance for FDataGrid objects.
 
     Calculates the distance between two functional objects.
@@ -512,6 +509,9 @@ def lp_distance(
         d(f, g) = d(g, f) = \| f - g \|_p
 
     where :math:`\| {}\cdot{} \|_p` denotes the :func:`Lp norm <lp_norm>`.
+
+    The objects `l1_distance`, `l2_distance` and `linf_distance` are instances
+    of this class with commonly used values of `p`, namely 1, 2 and infinity.
 
     Args:
         fdatagrid (FDataGrid): FDataGrid object.
@@ -528,10 +528,14 @@ def lp_distance(
         = 0 and y = x/2. The result then is an array 2x2 with the computed
         l2 distance between every pair of functions.
 
+        >>> import skfda
+        >>> import numpy as np
+        >>>
         >>> x = np.linspace(0, 1, 1001)
-        >>> fd = FDataGrid([np.ones(len(x))], x)
-        >>> fd2 =  FDataGrid([np.zeros(len(x))], x)
-        >>> lp_distance(fd, fd2).round(2)
+        >>> fd = skfda.FDataGrid([np.ones(len(x))], x)
+        >>> fd2 =  skfda.FDataGrid([np.zeros(len(x))], x)
+        >>>
+        >>> skfda.misc.metrics.lp_distance(fd, fd2).round(2)
         array([ 1.])
 
 
@@ -540,103 +544,102 @@ def lp_distance(
 
         >>> x = np.linspace(0, 2, 1001)
         >>> fd2 =  FDataGrid([np.zeros(len(x)), x/2 + 0.5], x)
-        >>> lp_distance(fd, fd2)
+        >>> skfda.misc.metrics.lp_distance(fd, fd2)
+        Traceback (most recent call last):
+            ....
+        ValueError: ...
+
+    """
+
+    def __init__(
+        self, p: float,
+        vector_norm: Optional[Union[Norm[np.ndarray], float]] = None,
+    ) -> None:
+
+        self.p = p
+        self.vector_norm = vector_norm
+        norm = LpNorm(p=p, vector_norm=vector_norm)
+
+        super().__init__(norm)
+
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}("
+            f"p={self.p}, vector_norm={self.vector_norm})"
+        )
+
+
+l1_distance = LpDistance(p=1)
+l2_distance = LpDistance(p=2)
+linf_distance = LpDistance(p=math.inf)
+
+
+def lp_distance(
+    fdata1: T,
+    fdata2: T,
+    *,
+    p: float,
+    vector_norm: Optional[Union[Norm[np.ndarray], float]],
+) -> np.ndarray:
+    r"""Lp distance for FDataGrid objects.
+
+    Calculates the distance between two functional objects.
+
+    For each pair of observations f and g the distance between them is defined
+    as:
+
+    .. math::
+        d(f, g) = d(g, f) = \| f - g \|_p
+
+    where :math:`\| {}\cdot{} \|_p` denotes the :func:`Lp norm <lp_norm>`.
+
+    Note:
+        This function is a wrapper of :class:`LpDistance`, available only for
+        convenience. As the parameter `p` is mandatory, it cannot be used
+        where a fully-defined metric is required: use an instance of
+        :class:`LpDistance` in those cases.
+
+    Args:
+        fdatagrid (FDataGrid): FDataGrid object.
+        p (int, optional): p of the lp norm. Must be greater or equal
+            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
+            Defaults to 2.
+        p2 (int, optional): p index of the vectorial norm applied in case of
+            multivariate objects. Defaults to 2. See :func:`lp_norm`.
+
+    Examples:
+        Computes the distances between an object containing functional data
+        corresponding to the functions y = 1 and y = x defined over the
+        interval [0, 1] and another ones containing data of the functions y
+        = 0 and y = x/2. The result then is an array 2x2 with the computed
+        l2 distance between every pair of functions.
+
+        >>> import skfda
+        >>> import numpy as np
+        >>>
+        >>> x = np.linspace(0, 1, 1001)
+        >>> fd = skfda.FDataGrid([np.ones(len(x))], x)
+        >>> fd2 =  skfda.FDataGrid([np.zeros(len(x))], x)
+        >>>
+        >>> skfda.misc.metrics.lp_distance(fd, fd2).round(2)
+        array([ 1.])
+
+
+        If the functional data are defined over a different set of points of
+        discretisation the functions returns an exception.
+
+        >>> x = np.linspace(0, 2, 1001)
+        >>> fd2 =  FDataGrid([np.zeros(len(x)), x/2 + 0.5], x)
+        >>> skfda.misc.metrics.lp_distance(fd, fd2)
         Traceback (most recent call last):
             ....
         ValueError: ...
 
     See also:
-        :func:`~skfda.misc.metrics.l1_distance
-        :func:`~skfda.misc.metrics.l2_distance
-        :func:`~skfda.misc.metrics.linf_distance
+        :class:`~skfda.misc.metrics.LpDistance
 
     """
-    _check_compatible(fdata1, fdata2)
-
-    return lp_norm(fdata1 - fdata2, p=p, vector_norm=p2)
-
-
-def l1_distance(
-    fdata1: T,
-    fdata2: T,
-    *,
-    eval_points: np.ndarray = None,
-) -> np.ndarray:
-    r"""L1 distance for FDataGrid objects.
-
-    Calculates the L1 distance between fdata1 and fdata2:
-    .. math::
-        d(fdata1, fdata2) =
-            \left( \int_D \| fdata1(x)-fdata2(x) \| dx
-            \right)
-
-    See also:
-        :func:`~skfda.misc.metrics.lp_distance
-        :func:`~skfda.misc.metrics.l2_distance
-        :func:`~skfda.misc.metrics.linf_distance
-    """
-    return lp_distance(
-        fdata1,
-        fdata2,
-        p=1,
-        p2=1,
-        eval_points=eval_points,
-    )
-
-
-def l2_distance(
-    fdata1: T,
-    fdata2: T,
-    *,
-    eval_points: np.ndarray = None,
-) -> np.ndarray:
-    r"""L2 distance for FDataGrid objects.
-
-    Calculates the euclidean distance between fdata1 and fdata2:
-    .. math::
-        d(fdata1, fdata2) =
-            \left( \int_D \| fdata1(x)-fdata2(x) \|^2 dx
-            \right)^{\frac{1}{2}}
-
-    See also:
-        :func:`~skfda.misc.metrics.lp_distance
-        :func:`~skfda.misc.metrics.l1_distance
-        :func:`~skfda.misc.metrics.linf_distance
-    """
-    return lp_distance(
-        fdata1,
-        fdata2,
-        p=2,
-        p2=2,
-        eval_points=eval_points,
-    )
-
-
-def linf_distance(
-    fdata1: T,
-    fdata2: T,
-    *,
-    eval_points: np.ndarray = None,
-) -> np.ndarray:
-    r"""L_infinity distance for FDataGrid objects.
-
-    Calculates the L_infinity distance between fdata1 and fdata2:
-    .. math::
-        d(fdata1, fdata2) \equiv \inf \{ C\ge 0 : |fdata1(x)-fdata2(x)|
-                                                                \le C a.e. \}.
-
-    See also:
-        :func:`~skfda.misc.metrics.lp_distance
-        :func:`~skfda.misc.metrics.l1_distance
-        :func:`~skfda.misc.metrics.l2_distance
-    """
-    return lp_distance(
-        fdata1,
-        fdata2,
-        p=np.inf,
-        p2=np.inf,
-        eval_points=eval_points,
-    )
+    return LpDistance(p=p, vector_norm=vector_norm)(fdata1, fdata2)
 
 
 def fisher_rao_distance(

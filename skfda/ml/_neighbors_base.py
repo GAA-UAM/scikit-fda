@@ -2,13 +2,11 @@
 
 from abc import ABC
 
-from sklearn.base import BaseEstimator
-from sklearn.base import RegressorMixin
+import numpy as np
+from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-import numpy as np
-
-from .. import FDataGrid, FData
+from .. import FData, FDataGrid
 from ..misc.metrics import lp_distance
 
 
@@ -84,11 +82,11 @@ def _to_multivariate_metric(metric, grid_points):
     # Shape -> (n_samples = 1, domain_dims...., image_dimension (-1))
     shape = [1] + [len(axis) for axis in grid_points] + [-1]
 
-    def multivariate_metric(x, y, _check=False, **kwargs):
+    def multivariate_metric(x, y, **kwargs):
 
         return metric(_from_multivariate(x, grid_points, shape),
                       _from_multivariate(y, grid_points, shape),
-                      _check=_check, **kwargs)
+                      **kwargs)
 
     return multivariate_metric
 

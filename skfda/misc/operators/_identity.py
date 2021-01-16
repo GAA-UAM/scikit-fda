@@ -33,6 +33,6 @@ def basis_penalty_matrix_optimized(
 def fdatagrid_penalty_matrix_optimized(
         linear_operator: Identity,
         basis: FDataGrid):
-    from ..metrics import lp_norm
+    from ..metrics import l2_norm
 
-    return np.diag(lp_norm(basis)**2)
+    return np.diag(l2_norm(basis)**2)

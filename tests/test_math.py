@@ -1,9 +1,10 @@
-import skfda
-from skfda._utils import _pairwise_commutative
-from skfda.representation.basis import Monomial, Tensor, VectorValued
 import unittest
 
 import numpy as np
+
+import skfda
+from skfda._utils import _pairwise_symmetric
+from skfda.representation.basis import Monomial, Tensor, VectorValued
 
 
 def ndm(*args):
@@ -92,7 +93,7 @@ class InnerProductTest(unittest.TestCase):
 
         np.testing.assert_allclose(gram, gram_basis, rtol=1e-2)
 
-        gram_pairwise = _pairwise_commutative(
+        gram_pairwise = _pairwise_symmetric(
             skfda.misc.inner_product, X, Y)
 
         np.testing.assert_allclose(gram, gram_pairwise)

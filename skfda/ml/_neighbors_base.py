@@ -7,7 +7,7 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from .. import FData, FDataGrid
-from ..misc.metrics import lp_distance
+from ..misc.metrics import l2_distance
 
 
 def _to_multivariate(fdatagrid):
@@ -61,7 +61,7 @@ def _to_multivariate_metric(metric, grid_points):
 
         >>> import numpy as np
         >>> from skfda import FDataGrid
-        >>> from skfda.misc.metrics import lp_distance
+        >>> from skfda.misc.metrics import l2_distance
         >>> from skfda.ml._neighbors_base import _to_multivariate_metric
 
         Calculate the Lp distance between fd and fd2.
@@ -69,13 +69,13 @@ def _to_multivariate_metric(metric, grid_points):
         >>> x = np.linspace(0, 1, 101)
         >>> fd = FDataGrid([np.ones(len(x))], x)
         >>> fd2 =  FDataGrid([np.zeros(len(x))], x)
-        >>> lp_distance(fd, fd2).round(2)
+        >>> l2_distance(fd, fd2).round(2)
         array([ 1.])
 
         Creation of the sklearn-style metric.
 
-        >>> sklearn_lp_distance = _to_multivariate_metric(lp_distance, [x])
-        >>> sklearn_lp_distance(np.ones(len(x)), np.zeros(len(x))).round(2)
+        >>> sklearn_l2_distance = _to_multivariate_metric(l2_distance, [x])
+        >>> sklearn_l2_distance(np.ones(len(x)), np.zeros(len(x))).round(2)
         array([ 1.])
 
     """
@@ -160,7 +160,7 @@ class NeighborsMixin:
             if not self.multivariate_metric:
                 # Constructs sklearn metric to manage vector
                 if self.metric == 'l2':
-                    metric = lp_distance
+                    metric = l2_distance
                 else:
                     metric = self.metric
 
@@ -497,7 +497,7 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
             if not self.multivariate_metric:
 
                 if self.metric == 'l2':
-                    metric = lp_distance
+                    metric = l2_distance
                 else:
                     metric = self.metric
 

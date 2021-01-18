@@ -2,13 +2,13 @@ import math
 import warnings
 from abc import abstractmethod
 from builtins import isinstance
-from typing import Any, Optional, Tuple, TypeVar, Union
+from typing import Any, Generic, Optional, Tuple, TypeVar, Union
 
 import numpy as np
 import scipy.integrate
 from typing_extensions import Protocol
 
-from .._utils import _pairwise_commutative
+from .._utils import _pairwise_symmetric
 from ..preprocessing.registration import ElasticRegistration, normalize_warping
 from ..preprocessing.registration._warping import _normalize_scale
 from ..preprocessing.registration.elastic import SRSF
@@ -36,18 +36,6 @@ class Metric(Protocol[MetricElementType]):
         self,
         __e1: MetricElementType,
         __e2: MetricElementType,
-    ) -> np.ndarray:
-        """Compute the norm of a vector."""
-
-
-class PairwiseMetric(Protocol[MetricElementType]):
-    """Protocol for a pairwise metric between elements of a metric space."""
-
-    @abstractmethod
-    def __call__(
-        self,
-        __e1: MetricElementType,
-        __e2: Optional[MetricElementType] = None,
     ) -> np.ndarray:
         """Compute the norm of a vector."""
 
@@ -460,9 +448,40 @@ def distance_from_norm(
     return NormInducedMetric(norm)
 
 
+class PairwiseMetric(Generic[MetricElementType]):
+    r"""Pairwise metric function.
+
+    Computes a given metric pairwise. The matrix returned by the pairwise
+    metric is a matrix with as many rows as observations in the first object
+    and as many columns as observations in the second one. Each element
+    (i, j) of the matrix is the distance between the ith observation of the
+    first object and the jth observation of the second one.
+
+    Args:
+        metric: Metric between two elements of a metric
+            space.
+
+    """
+
+    def __init__(
+        self,
+        metric: Metric[MetricElementType],
+    ):
+        self.metric = metric
+
+    def __call__(
+        self,
+        elem1: MetricElementType,
+        elem2: Optional[MetricElementType] = None,
+    ) -> np.ndarray:
+        return _pairwise_symmetric(self.metric, elem1, elem2)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}(metric={self.metric})"
+
+
 def pairwise_distance(
-    distance: Metric[MetricElementType],
-    **kwargs,
+    distance: Metric[MetricElementType]
 ) -> PairwiseMetric[MetricElementType]:
     r"""Return a pairwise distance function for FData objects.
 
@@ -478,6 +497,9 @@ def pairwise_distance(
     the ith observation of the first object and the jth observation of the
     second one.
 
+    .. deprecated:: 0.6
+        Use class :class:`PairwiseMetric` instead.
+
     Args:
         distance (:obj:`Function`): Distance functions between two functional
             objects `distance(fdata1, fdata2, **kwargs)`.
@@ -488,13 +510,14 @@ def pairwise_distance(
         :obj:`Function`: Pairwise distance function, wich accepts two
             functional data objects and returns the pairwise distance matrix.
     """
-    def pairwise(fdata1, fdata2=None):
 
-        return _pairwise_commutative(distance, fdata1, fdata2, **kwargs)
+    warnings.warn(
+        "Function pairwise_distance is deprecated. Use the "
+        "class PairwiseMetric instead.",
+        DeprecationWarning,
+    )
 
-    pairwise.__name__ = f"pairwise_{distance.__name__}"
-
-    return pairwise
+    return PairwiseMetric(distance)
 
 
 class LpDistance(NormInducedMetric[FData]):
@@ -535,7 +558,8 @@ class LpDistance(NormInducedMetric[FData]):
         >>> fd = skfda.FDataGrid([np.ones(len(x))], x)
         >>> fd2 =  skfda.FDataGrid([np.zeros(len(x))], x)
         >>>
-        >>> skfda.misc.metrics.lp_distance(fd, fd2).round(2)
+        >>> distance = skfda.misc.metrics.LpDistance(p=2)
+        >>> distance(fd, fd2).round(2)
         array([ 1.])
 
 
@@ -544,9 +568,10 @@ class LpDistance(NormInducedMetric[FData]):
 
         >>> x = np.linspace(0, 2, 1001)
         >>> fd2 =  FDataGrid([np.zeros(len(x)), x/2 + 0.5], x)
-        >>> skfda.misc.metrics.lp_distance(fd, fd2)
+        >>> distance = skfda.misc.metrics.LpDistance(p=2)
+        >>> distance(fd, fd2)
         Traceback (most recent call last):
-            ....
+            ...
         ValueError: ...
 
     """
@@ -579,7 +604,7 @@ def lp_distance(
     fdata2: T,
     *,
     p: float,
-    vector_norm: Optional[Union[Norm[np.ndarray], float]],
+    vector_norm: Optional[Union[Norm[np.ndarray], float]] = None,
 ) -> np.ndarray:
     r"""Lp distance for FDataGrid objects.
 
@@ -621,7 +646,7 @@ def lp_distance(
         >>> fd = skfda.FDataGrid([np.ones(len(x))], x)
         >>> fd2 =  skfda.FDataGrid([np.zeros(len(x))], x)
         >>>
-        >>> skfda.misc.metrics.lp_distance(fd, fd2).round(2)
+        >>> skfda.misc.metrics.lp_distance(fd, fd2, p=2).round(2)
         array([ 1.])
 
 
@@ -630,7 +655,7 @@ def lp_distance(
 
         >>> x = np.linspace(0, 2, 1001)
         >>> fd2 =  FDataGrid([np.zeros(len(x)), x/2 + 0.5], x)
-        >>> skfda.misc.metrics.lp_distance(fd, fd2)
+        >>> skfda.misc.metrics.lp_distance(fd, fd2, p=2)
         Traceback (most recent call last):
             ....
         ValueError: ...
@@ -710,7 +735,7 @@ def fisher_rao_distance(
     fdata2_srsf = srsf.transform(fdata2)
 
     # Return the L2 distance of the SRSF
-    return lp_distance(fdata1_srsf, fdata2_srsf, p=2)
+    return l2_distance(fdata1_srsf, fdata2_srsf)
 
 
 def amplitude_distance(
@@ -802,7 +827,7 @@ def amplitude_distance(
     srsf = SRSF(initial_value=0)
     fdata1_reg_srsf = srsf.fit_transform(fdata1_reg)
     fdata2_srsf = srsf.transform(fdata2)
-    distance = lp_distance(fdata1_reg_srsf, fdata2_srsf)
+    distance = l2_distance(fdata1_reg_srsf, fdata2_srsf)
 
     if lam != 0.0:
         # L2 norm || sqrt(Dh) - 1 ||^2

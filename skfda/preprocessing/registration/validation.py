@@ -4,7 +4,7 @@ from typing import NamedTuple
 
 import numpy as np
 
-from ..._utils import check_is_univariate, _to_grid
+from ..._utils import _to_grid, check_is_univariate
 
 
 class RegistrationScorer():
@@ -435,7 +435,7 @@ class LeastSquares(AmplitudePhaseDecomposition):
             float: Score of the transformation.
 
         """
-        from ...misc.metrics import pairwise_distance, lp_distance
+        from ...misc.metrics import PairwiseMetric, l2_distance
 
         check_is_univariate(X)
         check_is_univariate(y)
@@ -456,7 +456,7 @@ class LeastSquares(AmplitudePhaseDecomposition):
         mean_y = C2 * y.mean()
 
         # Compute distance to mean
-        distance = pairwise_distance(lp_distance)
+        distance = PairwiseMetric(l2_distance)
         ls_x = distance(X, mean_X).flatten()
         ls_y = distance(y, mean_y).flatten()
 
@@ -550,7 +550,7 @@ class SobolevLeastSquares(RegistrationScorer):
             float: Score of the transformation.
 
         """
-        from ...misc.metrics import pairwise_distance, lp_distance
+        from ...misc.metrics import PairwiseMetric, l2_distance
 
         check_is_univariate(X)
         check_is_univariate(y)
@@ -563,7 +563,7 @@ class SobolevLeastSquares(RegistrationScorer):
         X, y = _to_grid(X, y, eval_points=self.eval_points)
 
         # L2 distance to mean
-        distance = pairwise_distance(lp_distance)
+        distance = PairwiseMetric(l2_distance)
 
         sls_x = distance(X, X.mean())
         sls_y = distance(y, y.mean())

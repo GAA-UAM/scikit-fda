@@ -6,7 +6,7 @@ import numpy as np
 
 from skfda import FDataBasis, FDataGrid
 from skfda.datasets import make_multimodal_samples
-from skfda.misc.metrics import lp_distance, lp_norm
+from skfda.misc.metrics import l2_distance, lp_norm
 from skfda.representation.basis import Monomial
 
 
@@ -62,13 +62,13 @@ class TestLpMetrics(unittest.TestCase):
     def test_lp_error_dimensions(self) -> None:
         # Case internal arrays
         with np.testing.assert_raises(ValueError):
-            lp_distance(self.fd, self.fd_surface)
+            l2_distance(self.fd, self.fd_surface)
 
         with np.testing.assert_raises(ValueError):
-            lp_distance(self.fd, self.fd_curve)
+            l2_distance(self.fd, self.fd_curve)
 
         with np.testing.assert_raises(ValueError):
-            lp_distance(self.fd_surface, self.fd_curve)
+            l2_distance(self.fd_surface, self.fd_curve)
 
     def test_lp_error_domain_ranges(self) -> None:
         grid_points = [2, 3, 4, 5, 6]
@@ -81,7 +81,7 @@ class TestLpMetrics(unittest.TestCase):
         )
 
         with np.testing.assert_raises(ValueError):
-            lp_distance(self.fd, fd2)
+            l2_distance(self.fd, fd2)
 
     def test_lp_error_grid_points(self) -> None:
         grid_points = [1, 2, 4, 4.3, 5]
@@ -94,7 +94,7 @@ class TestLpMetrics(unittest.TestCase):
         )
 
         with np.testing.assert_raises(ValueError):
-            lp_distance(self.fd, fd2)
+            l2_distance(self.fd, fd2)
 
 
 if __name__ == '__main__':

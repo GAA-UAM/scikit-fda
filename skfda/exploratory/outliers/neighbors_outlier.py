@@ -1,7 +1,7 @@
 """Neighbors outlier detection methods."""
 from sklearn.base import OutlierMixin
 
-from ...misc.metrics import lp_distance
+from ...misc.metrics import l2_distance
 from ...ml._neighbors_base import (
     KNeighborsMixin,
     NeighborsBase,
@@ -51,7 +51,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
         required to store the tree. The optimal value depends on the
         nature of the problem.
     metric : string or callable, (default
-        :func:`lp_distance <skfda.misc.metrics.lp_distance>`)
+        :func:`l2_distance <skfda.misc.metrics.l2_distance>`)
         the distance metric to use for the tree.  The default metric is
         the L2 distance. See the documentation of the metrics module
         for a list of available metrics.
@@ -286,7 +286,7 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
             if not self.multivariate_metric:
                 # Constructs sklearn metric to manage vector
                 if self.metric == 'l2':
-                    metric = lp_distance
+                    metric = l2_distance
                 else:
                     metric = self.metric
                 sklearn_metric = _to_multivariate_metric(metric,

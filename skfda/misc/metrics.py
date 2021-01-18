@@ -4,6 +4,7 @@ from abc import abstractmethod
 from builtins import isinstance
 from typing import Any, Generic, Optional, Tuple, TypeVar, Union
 
+import multimethod
 import numpy as np
 import scipy.integrate
 from typing_extensions import Protocol
@@ -448,6 +449,20 @@ def distance_from_norm(
     return NormInducedMetric(norm)
 
 
+@multimethod.multidispatch
+def pairwise_metric_optimization(
+    metric: Any,
+    elem1: Any,
+    elem2: Optional[Any],
+) -> np.ndarray:
+    r"""
+    Generic function that can be subclassed for different combinations of
+    metric and operators in order to provide a more efficient implementation
+    for the pairwise metric matrix.
+    """
+    return NotImplemented
+
+
 class PairwiseMetric(Generic[MetricElementType]):
     r"""Pairwise metric function.
 
@@ -474,7 +489,13 @@ class PairwiseMetric(Generic[MetricElementType]):
         elem1: MetricElementType,
         elem2: Optional[MetricElementType] = None,
     ) -> np.ndarray:
-        return _pairwise_symmetric(self.metric, elem1, elem2)
+        optimized = pairwise_metric_optimization(self.metric, elem1, elem2)
+
+        return (
+            _pairwise_symmetric(self.metric, elem1, elem2)
+            if optimized is NotImplemented
+            else optimized
+        )
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(metric={self.metric})"
@@ -597,6 +618,49 @@ class LpDistance(NormInducedMetric[FData]):
 l1_distance = LpDistance(p=1)
 l2_distance = LpDistance(p=2)
 linf_distance = LpDistance(p=math.inf)
+
+
+@pairwise_metric_optimization.register
+def _pairwise_metric_optimization_lp_fdata(
+    metric: LpDistance,
+    elem1: FData,
+    elem2: Optional[FData],
+) -> np.ndarray:
+    from ..misc import inner_product, inner_product_matrix
+
+    vector_norm = metric.vector_norm
+
+    if vector_norm is None:
+        vector_norm = metric.p
+
+    # Special case, the inner product is heavily optimized
+    if metric.p == vector_norm == 2:
+        diag1 = inner_product(elem1, elem1)
+        diag2 = diag1 if elem2 is None else inner_product(elem2, elem2)
+
+        if elem2 is None:
+            elem2 = elem1
+
+        inner_matrix = inner_product_matrix(elem1, elem2)
+
+        distance_matrix_sqr = (
+            -2 * inner_matrix
+            + diag1[:, np.newaxis]
+            + diag2[np.newaxis, :]
+        )
+
+        np.clip(
+            distance_matrix_sqr,
+            a_min=0,
+            a_max=None,
+            out=distance_matrix_sqr,
+        )
+
+        distance_matrix = np.sqrt(distance_matrix_sqr)
+
+        return distance_matrix
+
+    return NotImplemented
 
 
 def lp_distance(

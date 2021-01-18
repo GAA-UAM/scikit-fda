@@ -445,7 +445,6 @@ def _map_in_batches(
 
     memory_per_element = sum(a.nbytes // len(a) for a in arguments)
     n_elements_per_batch_allowed = memory_per_batch // memory_per_element
-    print(n_elements_per_batch_allowed)
     if n_elements_per_batch_allowed < 1:
         raise ValueError("Too few memory allowed for the operation")
 
@@ -456,7 +455,6 @@ def _map_in_batches(
     batches: List[np.ndarray] = []
 
     for pos in range(0, n_indexes, n_elements_per_batch_allowed):
-        print(pos)
         batch_args = tuple(
             a[i[pos:pos + n_elements_per_batch_allowed]]
             for a, i in zip(arguments, indexes)

@@ -1,3 +1,4 @@
+"""Norms and metrics for functional data objects."""
 import math
 import warnings
 from abc import abstractmethod
@@ -25,7 +26,7 @@ class Norm(Protocol[VectorType]):
     """Protocol for a norm of a vector."""
 
     @abstractmethod
-    def __call__(self, __vector: VectorType) -> np.ndarray:
+    def __call__(self, __vector: VectorType) -> np.ndarray:  # noqa: WPS112
         """Compute the norm of a vector."""
 
 
@@ -35,8 +36,8 @@ class Metric(Protocol[MetricElementType]):
     @abstractmethod
     def __call__(
         self,
-        __e1: MetricElementType,
-        __e2: MetricElementType,
+        __e1: MetricElementType,  # noqa: WPS112
+        __e2: MetricElementType,  # noqa: WPS112
     ) -> np.ndarray:
         """Compute the norm of a vector."""
 
@@ -44,8 +45,10 @@ class Metric(Protocol[MetricElementType]):
 def _check_compatible(fdata1: T, fdata2: T) -> None:
 
     if isinstance(fdata1, FData) and isinstance(fdata2, FData):
-        if (fdata2.dim_codomain != fdata1.dim_codomain or
-                fdata2.dim_domain != fdata1.dim_domain):
+        if (
+            fdata2.dim_codomain != fdata1.dim_codomain
+            or fdata2.dim_domain != fdata1.dim_domain
+        ):
             raise ValueError("Objects should have the same dimensions")
 
         if not np.array_equal(fdata1.domain_range, fdata2.domain_range):
@@ -64,11 +67,12 @@ def _cast_to_grid(
     and converts them to FDatagrid to compute their distances.
 
     Args:
-        fdata1: (:obj:`FData`): First functional object.
-        fdata2: (:obj:`FData`): Second functional object.
+        fdata1: First functional object.
+        fdata2: Second functional object.
+        eval_points: Evaluation points.
 
     Returns:
-        tuple: Tuple with two :obj:`FDataGrid` with the same grid points.
+        Tuple with two :obj:`FDataGrid` with the same grid points.
     """
     # Dont perform any check
     if not _check:
@@ -77,7 +81,7 @@ def _cast_to_grid(
     _check_compatible(fdata1, fdata2)
 
     # Case new evaluation points specified
-    if eval_points is not None:
+    if eval_points is not None:  # noqa: WPS223
         fdata1 = fdata1.to_grid(eval_points)
         fdata2 = fdata2.to_grid(eval_points)
 
@@ -87,17 +91,23 @@ def _cast_to_grid(
     elif not isinstance(fdata2, FDataGrid) and isinstance(fdata1, FDataGrid):
         fdata2 = fdata2.to_grid(fdata1.grid_points[0])
 
-    elif (not isinstance(fdata1, FDataGrid) and
-          not isinstance(fdata2, FDataGrid)):
+    elif (
+        not isinstance(fdata1, FDataGrid)
+        and not isinstance(fdata2, FDataGrid)
+    ):
         domain = fdata1.domain_range[0]
         grid_points = np.linspace(*domain)
         fdata1 = fdata1.to_grid(grid_points)
         fdata2 = fdata2.to_grid(grid_points)
 
-    elif not np.array_equal(fdata1.grid_points,
-                            fdata2.grid_points):
-        raise ValueError("Grid points for both objects must be equal or"
-                         "a new list evaluation points must be specified")
+    elif not np.array_equal(
+        fdata1.grid_points,
+        fdata2.grid_points,
+    ):
+        raise ValueError(
+            "Grid points for both objects must be equal or"
+            "a new list evaluation points must be specified",
+        )
 
     return fdata1, fdata2
 
@@ -136,16 +146,16 @@ class LpNorm(Norm[FData]):
         \|^2 + \| f_2(x,y) \|^2 } \right )^p dxdy \right)^{
         \frac{1}{p}}
 
-    The objects `l1_norm`, `l2_norm` and `linf_norm` are instances of this
-    class with commonly used values of `p`, namely 1, 2 and infinity.
+    The objects ``l1_norm``, ``l2_norm`` and ``linf_norm`` are instances of
+    this class with commonly used values of ``p``, namely 1, 2 and infinity.
 
     Args:
-        fdata (FData): FData object.
+        fdata: FData object.
         p: p of the lp norm. Must be greater or equal
-            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
+            than 1. If ``p=math.inf`` it is used the L infinity metric.
             Defaults to 2.
-        p2: vector norm to apply. If it is a float, is the index of the
-            multivariate lp norm. Defaults to the same as `p`.
+        vector_norm: vector norm to apply. If it is a float, is the index of
+            the multivariate lp norm. Defaults to the same as ``p``.
 
     Examples:
         Calculates the norm of a FDataGrid containing the functions y = 1
@@ -175,13 +185,14 @@ class LpNorm(Norm[FData]):
     """
 
     def __init__(
-        self, p: float,
-        vector_norm: Optional[Union[Norm[np.ndarray], float]] = None,
+        self,
+        p: float,
+        vector_norm: Union[Norm[np.ndarray], float, None] = None,
     ) -> None:
 
         # Checks that the lp normed is well defined
         if not np.isinf(p) and p < 1:
-            raise ValueError(f"p must be equal or greater than 1.")
+            raise ValueError(f"p (={p}) must be equal or greater than 1.")
 
         self.p = p
         self.vector_norm = vector_norm
@@ -193,6 +204,7 @@ class LpNorm(Norm[FData]):
         )
 
     def __call__(self, fdata: FData) -> np.ndarray:
+        """Compute the Lp norm of a functional data object."""
         from ..misc import inner_product
 
         vector_norm = self.vector_norm
@@ -239,8 +251,10 @@ class LpNorm(Norm[FData]):
                 if fdata.dim_domain == 1:
                     res = np.max(data_matrix[..., 0], axis=1)
                 else:
-                    res = np.array([np.max(observation)
-                                    for observation in data_matrix])
+                    res = np.array([
+                        np.max(observation)
+                        for observation in data_matrix
+                    ])
 
             elif fdata.dim_domain == 1:
 
@@ -270,7 +284,7 @@ def lp_norm(
     fdata: FData,
     *,
     p: float,
-    vector_norm: Optional[Union[Norm[np.ndarray], float]] = None,
+    vector_norm: Union[Norm[np.ndarray], float, None] = None,
 ) -> np.ndarray:
     r"""Calculate the norm of all the observations in a FDataGrid object.
 
@@ -306,17 +320,17 @@ def lp_norm(
 
     Note:
         This function is a wrapper of :class:`LpNorm`, available only for
-        convenience. As the parameter `p` is mandatory, it cannot be used
+        convenience. As the parameter ``p`` is mandatory, it cannot be used
         where a fully-defined norm is required: use an instance of
         :class:`LpNorm` in those cases.
 
     Args:
-        fdata (FData): FData object.
-        p (int, optional): p of the lp norm. Must be greater or equal
-            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
+        fdata: FData object.
+        p: p of the lp norm. Must be greater or equal
+            than 1. If ``p=math.inf`` it is used the L infinity metric.
             Defaults to 2.
-        p2 (int, optional): p index of the vectorial norm applied in case of
-            multivariate objects. Defaults to 2.
+        vector_norm: vector norm to apply. If it is a float, is the index of
+            the multivariate lp norm. Defaults to the same as ``p``.
 
     Returns:
         numpy.darray: Matrix with as many rows as observations in the first
@@ -337,7 +351,7 @@ def lp_norm(
         >>> skfda.misc.metrics.lp_norm(fd, p=2).round(2)
         array([ 1.  ,  0.58])
 
-        As the norm with `p=2` is a common choice, one can use `l2_norm`
+        As the norm with ``p=2`` is a common choice, one can use ``l2_norm``
         directly:
         >>> skfda.misc.metrics.l2_norm(fd).round(2)
         array([ 1.  ,  0.58])
@@ -368,7 +382,7 @@ class NormInducedMetric(Metric[VectorType]):
         d(f,g) = \|f - g\|
 
     Args:
-        norm (:obj:`Function`): Norm function `norm(fdata, **kwargs)`.
+        norm: Norm used to induce the metric.
 
     Examples:
         Computes the :math:`\mathbb{L}^2` distance between an object containing
@@ -399,6 +413,7 @@ class NormInducedMetric(Metric[VectorType]):
         self.norm = norm
 
     def __call__(self, elem1: VectorType, elem2: VectorType) -> np.ndarray:
+        """Compute the induced norm between two vectors."""
         return self.norm(elem1 - elem2)
 
     def __repr__(self) -> str:
@@ -418,9 +433,7 @@ def distance_from_norm(
         d(f,g) = \|f - g\|
 
     Args:
-        norm (:obj:`Function`): Norm function `norm(fdata, **kwargs)`.
-        **kwargs (dict, optional): Named parameters to be passed to the norm
-            function.
+        norm: Norm used to induce the metric.
 
     Returns:
         :obj:`Function`: Distance function `norm_distance(fdata1, fdata2)`.
@@ -456,9 +469,11 @@ def pairwise_metric_optimization(
     elem2: Optional[Any],
 ) -> np.ndarray:
     r"""
-    Generic function that can be subclassed for different combinations of
-    metric and operators in order to provide a more efficient implementation
-    for the pairwise metric matrix.
+    Optimized computation of a pairwise metric.
+
+    This is a generic function that can be subclassed for different
+    combinations of metric and operators in order to provide a more
+    efficient implementation for the pairwise metric matrix.
     """
     return NotImplemented
 
@@ -489,6 +504,7 @@ class PairwiseMetric(Generic[MetricElementType]):
         elem1: MetricElementType,
         elem2: Optional[MetricElementType] = None,
     ) -> np.ndarray:
+        """Evaluate the pairwise metric."""
         optimized = pairwise_metric_optimization(self.metric, elem1, elem2)
 
         return (
@@ -502,7 +518,7 @@ class PairwiseMetric(Generic[MetricElementType]):
 
 
 def pairwise_distance(
-    distance: Metric[MetricElementType]
+    distance: Metric[MetricElementType],
 ) -> PairwiseMetric[MetricElementType]:
     r"""Return a pairwise distance function for FData objects.
 
@@ -522,16 +538,13 @@ def pairwise_distance(
         Use class :class:`PairwiseMetric` instead.
 
     Args:
-        distance (:obj:`Function`): Distance functions between two functional
-            objects `distance(fdata1, fdata2, **kwargs)`.
-        **kwargs (:obj:`dict`, optional): parameters dictionary to be passed
-            to the distance function.
+        distance: Distance function between two functional data objects.
 
     Returns:
-        :obj:`Function`: Pairwise distance function, wich accepts two
-            functional data objects and returns the pairwise distance matrix.
-    """
+        Pairwise distance function, wich accepts two functional data objects
+        and returns the pairwise distance matrix.
 
+    """
     warnings.warn(
         "Function pairwise_distance is deprecated. Use the "
         "class PairwiseMetric instead.",
@@ -554,16 +567,16 @@ class LpDistance(NormInducedMetric[FData]):
 
     where :math:`\| {}\cdot{} \|_p` denotes the :func:`Lp norm <lp_norm>`.
 
-    The objects `l1_distance`, `l2_distance` and `linf_distance` are instances
-    of this class with commonly used values of `p`, namely 1, 2 and infinity.
+    The objects ``l1_distance``, ``l2_distance`` and ``linf_distance`` are
+    instances of this class with commonly used values of ``p``, namely 1, 2 and
+    infinity.
 
     Args:
-        fdatagrid (FDataGrid): FDataGrid object.
-        p (int, optional): p of the lp norm. Must be greater or equal
-            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
+        p: p of the lp norm. Must be greater or equal
+            than 1. If ``p=math.inf`` it is used the L infinity metric.
             Defaults to 2.
-        p2 (int, optional): p index of the vectorial norm applied in case of
-            multivariate objects. Defaults to 2. See :func:`lp_norm`.
+        vector_norm: vector norm to apply. If it is a float, is the index of
+            the multivariate lp norm. Defaults to the same as ``p``.
 
     Examples:
         Computes the distances between an object containing functional data
@@ -595,11 +608,12 @@ class LpDistance(NormInducedMetric[FData]):
             ...
         ValueError: ...
 
-    """
+    """  # noqa: P102
 
     def __init__(
-        self, p: float,
-        vector_norm: Optional[Union[Norm[np.ndarray], float]] = None,
+        self,
+        p: float,
+        vector_norm: Union[Norm[np.ndarray], float, None] = None,
     ) -> None:
 
         self.p = p
@@ -656,9 +670,7 @@ def _pairwise_metric_optimization_lp_fdata(
             out=distance_matrix_sqr,
         )
 
-        distance_matrix = np.sqrt(distance_matrix_sqr)
-
-        return distance_matrix
+        return np.sqrt(distance_matrix_sqr)
 
     return NotImplemented
 
@@ -668,9 +680,10 @@ def lp_distance(
     fdata2: T,
     *,
     p: float,
-    vector_norm: Optional[Union[Norm[np.ndarray], float]] = None,
+    vector_norm: Union[Norm[np.ndarray], float, None] = None,
 ) -> np.ndarray:
-    r"""Lp distance for FDataGrid objects.
+    r"""
+    Lp distance for FDataGrid objects.
 
     Calculates the distance between two functional objects.
 
@@ -684,17 +697,23 @@ def lp_distance(
 
     Note:
         This function is a wrapper of :class:`LpDistance`, available only for
-        convenience. As the parameter `p` is mandatory, it cannot be used
+        convenience. As the parameter ``p`` is mandatory, it cannot be used
         where a fully-defined metric is required: use an instance of
         :class:`LpDistance` in those cases.
 
     Args:
-        fdatagrid (FDataGrid): FDataGrid object.
-        p (int, optional): p of the lp norm. Must be greater or equal
-            than 1. If p='inf' or p=np.inf it is used the L infinity metric.
+        fdata1: First FData object.
+        fdata2: Second FData object.
+        p: p of the lp norm. Must be greater or equal
+            than 1. If ``p=math.inf`` it is used the L infinity metric.
             Defaults to 2.
-        p2 (int, optional): p index of the vectorial norm applied in case of
-            multivariate objects. Defaults to 2. See :func:`lp_norm`.
+        vector_norm: vector norm to apply. If it is a float, is the index of
+            the multivariate lp norm. Defaults to the same as ``p``.
+
+    Returns:
+        Numpy vector where the i-th coordinate has the distance between the
+        i-th element of the first object and the i-th element of the second
+        one.
 
     Examples:
         Computes the distances between an object containing functional data
@@ -713,7 +732,6 @@ def lp_distance(
         >>> skfda.misc.metrics.lp_distance(fd, fd2, p=2).round(2)
         array([ 1.])
 
-
         If the functional data are defined over a different set of points of
         discretisation the functions returns an exception.
 
@@ -721,13 +739,13 @@ def lp_distance(
         >>> fd2 =  FDataGrid([np.zeros(len(x)), x/2 + 0.5], x)
         >>> skfda.misc.metrics.lp_distance(fd, fd2, p=2)
         Traceback (most recent call last):
-            ....
+            ...
         ValueError: ...
 
     See also:
-        :class:`~skfda.misc.metrics.LpDistance
+        :class:`~skfda.misc.metrics.LpDistance`
 
-    """
+    """  # noqa: P102
     return LpDistance(p=p, vector_norm=vector_norm)(fdata1, fdata2)
 
 
@@ -768,7 +786,7 @@ def fisher_rao_distance(
     Raises:
         ValueError: If the objects are not unidimensional.
 
-    Refereces:
+    References:
         .. [S11-2] Srivastava, Anuj et. al. Registration of Functional Data
             Using Fisher-Rao Metric (2011). In *Function Representation and
             Metric* (pp. 5-7). arXiv:1103.3817v2.
@@ -845,7 +863,7 @@ def amplitude_distance(
         fdata2: Second FData object.
         lam: Penalty term to restric the elasticity.
         eval_points: Array with points of evaluation.
-        **kwargs: Name arguments to be passed to
+        kwargs: Name arguments to be passed to
             :func:`elastic_registration_warping`.
 
     Returns:
@@ -854,7 +872,7 @@ def amplitude_distance(
     Raises:
         ValueError: If the objects are not unidimensional.
 
-    Refereces:
+    References:
         ..  [SK16-4-10-1] Srivastava, Anuj & Klassen, Eric P. (2016).
             Functional and shape data analysis. In *Amplitude Space and a
             Metric Structure* (pp. 107-109). Springer.
@@ -936,10 +954,8 @@ def phase_distance(
     Args:
         fdata1: First FData object.
         fdata2: Second FData object.
-        lambda: Penalty term to restric the elasticity.
+        lam: Penalty term to restric the elasticity.
         eval_points (array_like, optional): Array with points of evaluation.
-        **kwargs (dict): Name arguments to be passed to
-            :func:`elastic_registration_warping`.
 
     Returns:
         Phase distance between the objects.
@@ -947,7 +963,7 @@ def phase_distance(
     Raises:
         ValueError: If the objects are not unidimensional.
 
-    Refereces:
+    References:
         ..  [SK16-4-10-2] Srivastava, Anuj & Klassen, Eric P. (2016).
             Functional and shape data analysis. In *Phase Space and a Metric
             Structure* (pp. 109-111). Springer.
@@ -959,7 +975,7 @@ def phase_distance(
         _check=_check,
     )
 
-    # Rescale in (0,1)
+    # Rescale in the interval (0,1)
     eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
@@ -973,7 +989,8 @@ def phase_distance(
     )
 
     elastic_registration = ElasticRegistration(
-        penalty=lam, template=fdata2,
+        penalty=lam,
+        template=fdata2,
         output_points=eval_points_normalized,
     )
 
@@ -1025,7 +1042,7 @@ def warping_distance(
     Raises:
         ValueError: If the objects are not unidimensional.
 
-    Refereces:
+    References:
         ..  [SK16-4-11-2] Srivastava, Anuj & Klassen, Eric P. (2016).
             Functional and shape data analysis. In *Probability Density
             Functions* (pp. 113-117). Springer.

@@ -150,7 +150,6 @@ class LpNorm(Norm[FData]):
     this class with commonly used values of ``p``, namely 1, 2 and infinity.
 
     Args:
-        fdata: FData object.
         p: p of the lp norm. Must be greater or equal
             than 1. If ``p=math.inf`` it is used the L infinity metric.
             Defaults to 2.
@@ -172,6 +171,7 @@ class LpNorm(Norm[FData]):
 
         As the norm with `p=2` is a common choice, one can use `l2_norm`
         directly:
+
         >>> skfda.misc.metrics.l2_norm(fd).round(2)
         array([ 1.  ,  0.58])
 
@@ -180,7 +180,7 @@ class LpNorm(Norm[FData]):
         >>> norm = skfda.misc.metrics.LpNorm(0.5)
         Traceback (most recent call last):
             ....
-        ValueError: p must be equal or greater than 1.
+        ValueError: p (=0.5) must be equal or greater than 1.
 
     """
 
@@ -353,6 +353,7 @@ def lp_norm(
 
         As the norm with ``p=2`` is a common choice, one can use ``l2_norm``
         directly:
+
         >>> skfda.misc.metrics.l2_norm(fd).round(2)
         array([ 1.  ,  0.58])
 
@@ -361,7 +362,7 @@ def lp_norm(
         >>> skfda.misc.metrics.lp_norm(fd, p=0.5)
         Traceback (most recent call last):
             ....
-        ValueError: p must be equal or greater than 1.
+        ValueError: p (=0.5) must be equal or greater than 1.
 
     See also:
         :class:`LpNorm`
@@ -420,48 +421,6 @@ class NormInducedMetric(Metric[VectorType]):
         return f"{type(self).__name__}(norm={self.norm})"
 
 
-def distance_from_norm(
-    norm: Norm[VectorType],
-) -> Metric[VectorType]:
-    r"""Return the distance induced by a norm.
-
-    Given a norm :math:`\| \cdot \|: X \rightarrow \mathbb{R}`,
-    returns the distance :math:`d: X \times X \rightarrow \mathbb{R}` induced
-    by the norm:
-
-    .. math::
-        d(f,g) = \|f - g\|
-
-    Args:
-        norm: Norm used to induce the metric.
-
-    Returns:
-        :obj:`Function`: Distance function `norm_distance(fdata1, fdata2)`.
-
-    Examples:
-        Computes the :math:`\mathbb{L}^2` distance between an object containing
-        functional data corresponding to the function :math:`y(x) = x` defined
-        over the interval [0, 1] and another one containing data of the
-        function :math:`y(x) = x/2`.
-
-        Firstly we create the functional data.
-
-        >>> x = np.linspace(0, 1, 1001)
-        >>> fd = FDataGrid([x], x)
-        >>> fd2 =  FDataGrid([x/2], x)
-
-        To construct the :math:`\mathbb{L}^2` distance it is used the
-        :math:`\mathbb{L}^2` norm wich it is used to compute the distance.
-
-        >>> l2_distance = distance_from_norm(l2_norm)
-        >>> d = l2_distance(fd, fd2)
-        >>> float('%.3f'% d)
-        0.289
-
-    """
-    return NormInducedMetric(norm)
-
-
 @multimethod.multidispatch
 def pairwise_metric_optimization(
     metric: Any,
@@ -515,43 +474,6 @@ class PairwiseMetric(Generic[MetricElementType]):
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(metric={self.metric})"
-
-
-def pairwise_distance(
-    distance: Metric[MetricElementType],
-) -> PairwiseMetric[MetricElementType]:
-    r"""Return a pairwise distance function for FData objects.
-
-    Given a distance it returns the corresponding pairwise distance function.
-
-    The returned pairwise distance function calculates the distance between
-    all possible pairs consisting of one observation of the first FDataGrid
-    object and one of the second one.
-
-    The matrix returned by the pairwise distance is a matrix with as many rows
-    as observations in the first object and as many columns as observations in
-    the second one. Each element (i, j) of the matrix is the distance between
-    the ith observation of the first object and the jth observation of the
-    second one.
-
-    .. deprecated:: 0.6
-        Use class :class:`PairwiseMetric` instead.
-
-    Args:
-        distance: Distance function between two functional data objects.
-
-    Returns:
-        Pairwise distance function, wich accepts two functional data objects
-        and returns the pairwise distance matrix.
-
-    """
-    warnings.warn(
-        "Function pairwise_distance is deprecated. Use the "
-        "class PairwiseMetric instead.",
-        DeprecationWarning,
-    )
-
-    return PairwiseMetric(distance)
 
 
 class LpDistance(NormInducedMetric[FData]):

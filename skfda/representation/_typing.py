@@ -27,11 +27,20 @@ class Vector(Protocol):
     It should accept numpy arrays and FData, among other things.
     """
 
-    def __add__(self: VectorType, __other: VectorType) -> VectorType:
+    def __add__(
+        self: VectorType,
+        __other: VectorType,  # noqa: WPS112
+    ) -> VectorType:
         pass
 
-    def __sub__(self: VectorType, __other: VectorType) -> VectorType:
+    def __sub__(
+        self: VectorType,
+        __other: VectorType,  # noqa: WPS112
+    ) -> VectorType:
         pass
 
-    def __mul__(self: VectorType, __other: float) -> VectorType:
+    def __mul__(
+        self: VectorType,
+        __other: float,  # noqa: WPS112
+        ) -> VectorType:
         pass

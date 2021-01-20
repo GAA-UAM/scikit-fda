@@ -1,6 +1,5 @@
 """Norms and metrics for functional data objects."""
 import math
-import warnings
 from abc import abstractmethod
 from builtins import isinstance
 from typing import Any, Generic, Optional, Tuple, TypeVar, Union
@@ -229,32 +228,26 @@ class LpNorm(Norm[FData]):
             res = np.sqrt(integral[0]).flatten()
 
         else:
-            if fdata.dim_codomain > 1:
-                data_matrix = fdata.data_matrix
-                original_shape = data_matrix.shape
-                data_matrix = data_matrix.reshape(-1, original_shape[-1])
+            data_matrix = fdata.data_matrix
+            original_shape = data_matrix.shape
+            data_matrix = data_matrix.reshape(-1, original_shape[-1])
 
-                data_matrix = (np.linalg.norm(
-                    fdata.data_matrix,
-                    ord=vector_norm,
-                    axis=-1,
-                    keepdims=True,
-                ) if isinstance(vector_norm, (float, int))
-                    else vector_norm(data_matrix)
-                )
-                data_matrix = data_matrix.reshape(original_shape[:-1] + (1,))
-            else:
-                data_matrix = np.abs(fdata.data_matrix)
+            data_matrix = (np.linalg.norm(
+                fdata.data_matrix,
+                ord=vector_norm,
+                axis=-1,
+                keepdims=True,
+            ) if isinstance(vector_norm, (float, int))
+                else vector_norm(data_matrix)
+            )
+            data_matrix = data_matrix.reshape(original_shape[:-1] + (1,))
 
             if np.isinf(self.p):
 
-                if fdata.dim_domain == 1:
-                    res = np.max(data_matrix[..., 0], axis=1)
-                else:
-                    res = np.array([
-                        np.max(observation)
-                        for observation in data_matrix
-                    ])
+                res = np.max(
+                    data_matrix,
+                    axis=tuple(range(1, data_matrix.ndim)),
+                )
 
             elif fdata.dim_domain == 1:
 

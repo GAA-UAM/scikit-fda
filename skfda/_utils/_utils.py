@@ -441,7 +441,7 @@ def _map_in_batches(
     """
     if memory_per_batch is None:
         # 256MB is not too big
-        memory_per_batch = 256 * 1024 * 1024
+        memory_per_batch = 256 * 1024 * 1024  # noqa: WPS432
 
     memory_per_element = sum(a.nbytes // len(a) for a in arguments)
     n_elements_per_batch_allowed = memory_per_batch // memory_per_element
@@ -472,10 +472,7 @@ def _pairwise_symmetric(
     memory_per_batch: Optional[int] = None,
     **kwargs: Any,
 ) -> np.ndarray:
-    """
-    Compute pairwise a commutative function.
-
-    """
+    """Compute pairwise a commutative function."""
     if arg2 is None or arg2 is arg1:
 
         indices = np.triu_indices(len(arg1))
@@ -484,7 +481,10 @@ def _pairwise_symmetric(
 
         triang_vec = _map_in_batches(
             function,
-            (arg1, arg1),
+            (
+                arg1,
+                arg1,
+            ),
             indices,
             memory_per_batch=memory_per_batch,
             **kwargs,
@@ -504,8 +504,14 @@ def _pairwise_symmetric(
 
         vec = _map_in_batches(
             function,
-            (arg1, arg2),
-            (indices[0].ravel(), indices[1].ravel()),
+            (
+                arg1,
+                arg2,
+            ),
+            (
+                indices[0].ravel(),
+                indices[1].ravel(),
+            ),
             memory_per_batch=memory_per_batch,
             **kwargs,
         )

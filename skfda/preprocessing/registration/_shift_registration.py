@@ -3,13 +3,12 @@
 # Pablo Marcos Manchón
 # pablo.marcosm@protonmail.com
 
+import numpy as np
 from scipy.integrate import simps
 from sklearn.utils.validation import check_is_fitted
 
-import numpy as np
-
 from ... import FData, FDataGrid
-from ..._utils import constants, check_is_univariate
+from ..._utils import check_is_univariate, constants
 from .base import RegistrationTransformer
 
 
@@ -155,7 +154,7 @@ class ShiftRegistration(RegistrationTransformer):
         domain_range = fd.domain_range[0]
 
         # Initial estimation of the shifts
-        if self.initial is "zeros":
+        if self.initial == "zeros":
             delta = np.zeros(fd.n_samples)
 
         elif len(self.initial) != fd.n_samples:

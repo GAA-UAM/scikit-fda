@@ -11,15 +11,13 @@ Shows the usage of the radius nearest neighbors classifier.
 # sphinx_gallery_thumbnail_number = 2
 
 
-import skfda
-from skfda.misc.metrics import pairwise_distance, lp_distance
-from skfda.ml.classification import RadiusNeighborsClassifier
-
-from sklearn.model_selection import train_test_split
-
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.model_selection import train_test_split
 
+import skfda
+from skfda.misc.metrics import PairwiseMetric, linf_distance
+from skfda.ml.classification import RadiusNeighborsClassifier
 
 ##############################################################################
 #
@@ -89,7 +87,7 @@ fig.axes[0].fill_between(
 
 
 # Creation of pairwise distance
-l_inf = pairwise_distance(lp_distance, p=np.inf)
+l_inf = PairwiseMetric(linf_distance)
 distances = l_inf(sample, X_train)[0]  # L_inf distances to 'sample'
 
 # Plot samples in the ball

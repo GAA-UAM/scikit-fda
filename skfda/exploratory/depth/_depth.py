@@ -1,23 +1,24 @@
-"""Depth Measures Module.
+"""
+Depth Measures Module.
 
 This module includes different methods to order functional data,
-from the center (larger values) outwards(smaller ones)."""
+from the center (larger values) outwards(smaller ones).
+
+"""
+from __future__ import annotations
 
 import itertools
-
-import scipy.integrate
+from typing import Optional
 
 import numpy as np
+import scipy.integrate
 
+from ... import FDataGrid
 from . import multivariate
-from .multivariate import Depth
+from .multivariate import Depth, _UnivariateFraimanMuniz
 
 
-__author__ = "Amanda Hernando Bernabé"
-__email__ = "amanda.hernando@estudiante.uam.es"
-
-
-class IntegratedDepth(Depth):
+class IntegratedDepth(Depth[FDataGrid]):
     r"""
     Functional depth as the integral of a multivariate depth.
 
@@ -29,7 +30,6 @@ class IntegratedDepth(Depth):
                 D(x) = 1 - \left\lvert \frac{1}{2}- F(x)\right\rvert
 
     Examples:
-
         >>> import skfda
         >>>
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
@@ -43,49 +43,66 @@ class IntegratedDepth(Depth):
         array([ 0.5  ,  0.75 ,  0.925,  0.875])
 
     References:
-
         Fraiman, R., & Muniz, G. (2001). Trimmed means for functional
         data. Test, 10(2), 419–440. https://doi.org/10.1007/BF02595706
 
 
     """
 
-    def __init__(self, *,
-                 multivariate_depth=multivariate._UnivariateFraimanMuniz()):
+    def __init__(
+        self,
+        *,
+        multivariate_depth: Optional[Depth[np.ndarray]] = None,
+    ) -> None:
         self.multivariate_depth = multivariate_depth
 
-    def fit(self, X, y=None):
+    def fit(  # noqa: D102
+        self,
+        X: FDataGrid,
+        y: None = None,
+    ) -> IntegratedDepth:
+
+        self.multivariate_depth_: Depth[np.ndarray]
+
+        if self.multivariate_depth is None:
+            self.multivariate_depth_ = _UnivariateFraimanMuniz()
+        else:
+            self.multivariate_depth_ = self.multivariate_depth
 
         self._domain_range = X.domain_range
         self._grid_points = X.grid_points
-        self.multivariate_depth.fit(X.data_matrix)
+        self.multivariate_depth_.fit(X.data_matrix)
         return self
 
-    def predict(self, X):
+    def predict(self, X: FDataGrid) -> np.ndarray:  # noqa: D102
 
-        pointwise_depth = self.multivariate_depth.predict(X.data_matrix)
+        pointwise_depth = self.multivariate_depth_.predict(X.data_matrix)
 
-        interval_len = (self._domain_range[0][1]
-                        - self._domain_range[0][0])
+        interval_len = (
+            self._domain_range[0][1]
+            - self._domain_range[0][0]
+        )
 
         integrand = pointwise_depth
 
         for d, s in zip(X.domain_range, X.grid_points):
-            integrand = scipy.integrate.simps(integrand,
-                                              x=s,
-                                              axis=1)
+            integrand = scipy.integrate.simps(
+                integrand,
+                x=s,
+                axis=1,
+            )
             interval_len = d[1] - d[0]
             integrand /= interval_len
 
         return integrand
 
-    @property
-    def max(self):
-        return self.multivariate_depth.max
+    @property  # noqa: WPS125
+    def max(self) -> float:  # noqa: WPS125
+        return self.multivariate_depth_.max
 
-    @property
-    def min(self):
-        return self.multivariate_depth.min
+    @property  # noqa: WPS125
+    def min(self) -> float:  # noqa: WPS125
+        return self.multivariate_depth_.min
 
 
 class ModifiedBandDepth(IntegratedDepth):
@@ -99,7 +116,6 @@ class ModifiedBandDepth(IntegratedDepth):
     determine the bands.
 
     Examples:
-
         >>> import skfda
         >>>
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
@@ -114,18 +130,17 @@ class ModifiedBandDepth(IntegratedDepth):
         array([ 0.5 ,  0.83,  0.73,  0.67])
 
     References:
-
         López-Pintado, S., & Romo, J. (2009). On the Concept of
         Depth for Functional Data. Journal of the American Statistical
         Association, 104(486), 718–734.
         https://doi.org/10.1198/jasa.2009.0108
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(multivariate_depth=multivariate.SimplicialDepth())
 
 
-class BandDepth(Depth):
+class BandDepth(Depth[FDataGrid]):
     r"""
     Implementation of Band Depth for functional data.
 
@@ -136,7 +151,6 @@ class BandDepth(Depth):
     hyperplanes determine the bands.
 
     Examples:
-
         >>> import skfda
         >>>
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
@@ -150,7 +164,6 @@ class BandDepth(Depth):
         array([ 0.5       ,  0.83333333,  0.5       ,  0.5       ])
 
     References:
-
         López-Pintado, S., & Romo, J. (2009). On the Concept of
         Depth for Functional Data. Journal of the American Statistical
         Association, 104(486), 718–734.
@@ -158,31 +171,38 @@ class BandDepth(Depth):
 
     """
 
-    def fit(self, X, y=None):
+    def fit(self, X: FDataGrid, y: None = None) -> BandDepth:  # noqa: D102
 
         if X.dim_codomain != 1:
-            raise NotImplementedError("Band depth not implemented for vector "
-                                      "valued functions")
+            raise NotImplementedError(
+                "Band depth not implemented for vector valued functions",
+            )
 
         self._distribution = X
         return self
 
-    def predict(self, X):
+    def predict(self, X: FDataGrid) -> np.ndarray:  # noqa: D102
 
         num_in = 0
         n_total = 0
 
         for f1, f2 in itertools.combinations(self._distribution, 2):
-            between_range_1 = (f1.data_matrix <= X.data_matrix) & (
-                X.data_matrix <= f2.data_matrix)
+            between_range_1 = (
+                (f1.data_matrix <= X.data_matrix)
+                & (X.data_matrix <= f2.data_matrix)
+            )
 
-            between_range_2 = (f2.data_matrix <= X.data_matrix) & (
-                X.data_matrix <= f1.data_matrix)
+            between_range_2 = (
+                (f2.data_matrix <= X.data_matrix)
+                & (X.data_matrix <= f1.data_matrix)
+            )
 
             between_range = between_range_1 | between_range_2
 
-            num_in += np.all(between_range,
-                             axis=tuple(range(1, X.data_matrix.ndim)))
+            num_in += np.all(
+                between_range,
+                axis=tuple(range(1, X.data_matrix.ndim)),
+            )
             n_total += 1
 
         return num_in / n_total

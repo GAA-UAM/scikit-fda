@@ -8,6 +8,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    List,
     Optional,
     Sequence,
     Tuple,
@@ -424,20 +425,70 @@ def nquad_vec(
     return integrate(depth=initial_depth)
 
 
-def _pairwise_commutative(function, arg1, arg2=None, **kwargs):
+def _map_in_batches(
+    function: Callable[..., np.ndarray],
+    arguments: Tuple[Union[FData, np.ndarray], ...],
+    indexes: Tuple[np.ndarray, ...],
+    memory_per_batch: Optional[int] = None,
+    **kwargs: Any,
+) -> np.ndarray:
     """
-    Compute pairwise a commutative function.
+    Map a function over samples of FData or ndarray tuples efficiently.
+
+    This function prevents a large set of indexes to use all available
+    memory and hang the PC.
 
     """
-    if arg2 is None:
+    if memory_per_batch is None:
+        # 256MB is not too big
+        memory_per_batch = 256 * 1024 * 1024  # noqa: WPS432
+
+    memory_per_element = sum(a.nbytes // len(a) for a in arguments)
+    n_elements_per_batch_allowed = memory_per_batch // memory_per_element
+    if n_elements_per_batch_allowed < 1:
+        raise ValueError("Too few memory allowed for the operation")
+
+    n_indexes = len(indexes[0])
+
+    assert all(n_indexes == len(i) for i in indexes)
+
+    batches: List[np.ndarray] = []
+
+    for pos in range(0, n_indexes, n_elements_per_batch_allowed):
+        batch_args = tuple(
+            a[i[pos:pos + n_elements_per_batch_allowed]]
+            for a, i in zip(arguments, indexes)
+        )
+
+        batches.append(function(*batch_args, **kwargs))
+
+    return np.concatenate(batches, axis=0)
+
+
+def _pairwise_symmetric(
+    function: Callable[..., np.ndarray],
+    arg1: Union[FData, np.ndarray],
+    arg2: Optional[Union[FData, np.ndarray]] = None,
+    memory_per_batch: Optional[int] = None,
+    **kwargs: Any,
+) -> np.ndarray:
+    """Compute pairwise a commutative function."""
+    if arg2 is None or arg2 is arg1:
 
         indices = np.triu_indices(len(arg1))
 
         matrix = np.empty((len(arg1), len(arg1)))
 
-        triang_vec = function(
-            arg1[indices[0]], arg1[indices[1]],
-            **kwargs)
+        triang_vec = _map_in_batches(
+            function,
+            (
+                arg1,
+                arg1,
+            ),
+            indices,
+            memory_per_batch=memory_per_batch,
+            **kwargs,
+        )
 
         # Set upper matrix
         matrix[indices] = triang_vec
@@ -451,10 +502,21 @@ def _pairwise_commutative(function, arg1, arg2=None, **kwargs):
 
         indices = np.indices((len(arg1), len(arg2)))
 
-        return function(
-            arg1[indices[0].ravel()], arg2[indices[1].ravel()],
-            **kwargs).reshape(
-                (len(arg1), len(arg2)))
+        vec = _map_in_batches(
+            function,
+            (
+                arg1,
+                arg2,
+            ),
+            (
+                indices[0].ravel(),
+                indices[1].ravel(),
+            ),
+            memory_per_batch=memory_per_batch,
+            **kwargs,
+        )
+
+        return vec.reshape((len(arg1), len(arg2)))
 
 
 def _int_to_real(array: np.ndarray) -> np.ndarray:

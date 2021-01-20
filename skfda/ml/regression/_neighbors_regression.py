@@ -57,7 +57,7 @@ class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
         required to store the tree.  The optimal value depends on the
         nature of the problem.
     metric : string or callable, (default
-        :func:`lp_distance <skfda.misc.metrics.lp_distance>`)
+        :func:`l2_distance <skfda.misc.metrics.l2_distance>`)
         the distance metric to use for the tree.  The default metric is
         the L2 distance. See the documentation of the metrics module
         for a list of available metrics.
@@ -219,7 +219,7 @@ class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
         required to store the tree. The optimal value depends on the
         nature of the problem.
     metric : string or callable, (default
-        :func:`lp_distance <skfda.metrics.lp_distance>`)
+        :func:`l2_distance <skfda.metrics.l2_distance>`)
         the distance metric to use for the tree.  The default metric is
         the L2 distance. See the documentation of the metrics module
         for a list of available metrics.

@@ -5,7 +5,7 @@ from typing import Callable, Optional, TypeVar, Union
 
 import numpy as np
 
-from ...misc.metrics import l2_distance, lp_norm
+from ...misc.metrics import l2_distance, l2_norm
 from ...representation import FData, FDataGrid
 from ..depth import Depth, ModifiedBandDepth
 
@@ -177,7 +177,7 @@ def geometric_median(
 
         median_new = _weighted_average(X, weights_new)
 
-        if lp_norm(median_new - median) < tol:
+        if l2_norm(median_new - median) < tol:
             return median_new
 
         distances = metric(X, median_new)

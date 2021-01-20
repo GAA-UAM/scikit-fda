@@ -1,20 +1,30 @@
-from skfda import FDataGrid
-from skfda.datasets import make_multimodal_samples, make_random_warping
-from skfda.misc.metrics import (fisher_rao_distance, amplitude_distance,
-                                phase_distance, pairwise_distance, lp_distance,
-                                warping_distance)
-from skfda.preprocessing.registration import (ElasticRegistration,
-                                              invert_warping,
-                                              normalize_warping)
-from skfda.preprocessing.registration.elastic import (SRSF, elastic_mean,
-                                                      warping_mean)
 import unittest
 
 import numpy as np
 
+from skfda import FDataGrid
+from skfda.datasets import make_multimodal_samples, make_random_warping
+from skfda.misc.metrics import (
+    PairwiseMetric,
+    amplitude_distance,
+    fisher_rao_distance,
+    l2_distance,
+    phase_distance,
+    warping_distance,
+)
+from skfda.preprocessing.registration import (
+    ElasticRegistration,
+    invert_warping,
+    normalize_warping,
+)
+from skfda.preprocessing.registration.elastic import (
+    SRSF,
+    elastic_mean,
+    warping_mean,
+)
 
-metric = pairwise_distance(lp_distance)
-pairwise_fisher_rao = pairwise_distance(fisher_rao_distance)
+metric = PairwiseMetric(l2_distance)
+pairwise_fisher_rao = PairwiseMetric(fisher_rao_distance)
 
 
 class TestElasticRegistration(unittest.TestCase):

@@ -8,7 +8,7 @@ from ._utils import (
     _evaluate_grid,
     _FDataCallable,
     _int_to_real,
-    _pairwise_commutative,
+    _pairwise_symmetric,
     _reshape_eval_points,
     _same_domain,
     _to_array_maybe_ragged,

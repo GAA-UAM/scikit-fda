@@ -7,13 +7,11 @@ detection method is implemented.
 """
 
 import matplotlib
-
 import matplotlib.pyplot as plt
 import numpy as np
 
 from ..outliers import DirectionalOutlierDetector
 from ._utils import _figure_to_svg, _get_figure_and_axes, _set_figure_layout
-
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
@@ -136,7 +134,7 @@ class MagnitudeShapePlot:
                 grid_points=(array([ 0.,  2.,  4.,  6.,  8., 10.]),),
                 domain_range=((0.0, 10.0),),
                 ...),
-            multivariate_depth=ProjectionDepth(),
+            multivariate_depth=None,
             pointwise_weights=None,
             alpha=0.993,
             points=array([[ 1.66666667,  0.12777778],

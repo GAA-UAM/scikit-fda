@@ -42,5 +42,5 @@ class Vector(Protocol):
     def __mul__(
         self: VectorType,
         __other: float,  # noqa: WPS112
-        ) -> VectorType:
+    ) -> VectorType:
         pass

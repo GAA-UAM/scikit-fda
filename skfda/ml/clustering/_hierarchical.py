@@ -21,8 +21,17 @@ MetricElementType = TypeVar(
     bound=FData,
 )
 
+MetricOrPrecomputed = Union[Metric[MetricElementType], _PrecomputedTypes]
+Connectivity = Union[
+    np.ndarray,
+    Callable[[MetricElementType], np.ndarray],
+    None,
+]
+
 
 class LinkageCriterion(enum.Enum):
+    """Linkage criterion to use in :class:`AgglomerativeClustering`."""
+
     # WARD = "ward" Not until
     # https://github.com/scikit-learn/scikit-learn/issues/15287 is solved
     COMPLETE = "complete"
@@ -32,17 +41,17 @@ class LinkageCriterion(enum.Enum):
 
 LinkageCriterionLike = Union[
     LinkageCriterion,
-    Literal["ward", "complete", "average", "single"]
+    Literal["ward", "complete", "average", "single"],
 ]
 
 
-class AgglomerativeClustering(
-        ClusterMixin,  # type: ignore
-        BaseEstimator,  # type: ignore
-        Generic[MetricElementType],
+class AgglomerativeClustering(  # noqa: WPS230
+    ClusterMixin,  # type: ignore
+    BaseEstimator,  # type: ignore
+    Generic[MetricElementType],
 ):
-    """
-    Agglomerative Clustering
+    r"""
+    Agglomerative Clustering.
 
     Recursively merges the pair of clusters that minimally increases
     a given linkage distance.
@@ -88,7 +97,8 @@ class AgglomerativeClustering(
         linkage:
             Which linkage criterion to use. The linkage criterion determines
             which distance to use between sets of observation. The algorithm
-            will merge the pairs of cluster that minimize this criterion.
+            will merge the pairs of clusters that minimize this criterion.
+
             - average uses the average of the distances of each observation of
               the two sets.
             - complete or maximum linkage uses the maximum distances between
@@ -101,17 +111,17 @@ class AgglomerativeClustering(
             ``compute_full_tree`` must be ``True``.
 
     Attributes:
-        n_clusters_:
+        n_clusters\_:
             The number of clusters found by the algorithm. If
             ``distance_threshold=None``, it will be equal to the given
             ``n_clusters``.
-        labels_:
+        labels\_:
             cluster labels for each point
-        n_leaves_:
+        n_leaves\_:
             Number of leaves in the hierarchical tree.
-        n_connected_components_:
+        n_connected_components\_:
             The estimated number of connected components in the graph.
-        children_ :
+        children\_ :
             The children of each non-leaf node. Values less than `n_samples`
             correspond to leaves of the tree which are the original samples.
             A node `i` greater than or equal to `n_samples` is a non-leaf
@@ -119,8 +129,8 @@ class AgglomerativeClustering(
             at the i-th iteration, children[i][0] and children[i][1]
             are merged to form node `n_samples + i`
 
-    Examples:
 
+    Examples:
         >>> from skfda import FDataGrid
         >>> from skfda.ml.clustering import AgglomerativeClustering
         >>> import numpy as np
@@ -132,8 +142,8 @@ class AgglomerativeClustering(
         ... )
         >>> clustering.fit(X)
         AgglomerativeClustering(...)
-        >>> clustering.labels_
-        array([0, 0, 1, 0, 0, 1], dtype=int64)
+        >>> clustering.labels_.astype(np.int_)
+        array([0, 0, 1, 0, 0, 1])
     """
 
     LinkageCriterion = LinkageCriterion
@@ -142,16 +152,9 @@ class AgglomerativeClustering(
         self,
         n_clusters: Optional[int] = 2,
         *,
-        metric: Union[
-            Metric[MetricElementType],
-            _PrecomputedTypes,
-        ] = l2_distance,
+        metric: MetricOrPrecomputed[MetricElementType] = l2_distance,
         memory: Union[str, joblib.Memory, None] = None,
-        connectivity: Union[
-            np.ndarray,
-            Callable[[MetricElementType], np.ndarray],
-            None,
-        ] = None,
+        connectivity: Connectivity[MetricElementType] = None,
         compute_full_tree: Union[Literal['auto'], bool] = 'auto',
         linkage: LinkageCriterionLike,
         distance_threshold: Optional[float] = None,
@@ -177,7 +180,20 @@ class AgglomerativeClustering(
             distance_threshold=self.distance_threshold,
         )
 
-    def fit(self, X: MetricElementType, y: None = None) -> AgglomerativeClustering:
+    def _copy_attrs(self) -> None:
+        self.n_clusters_: int = self._estimator.n_clusters_
+        self.labels_: np.ndarray = self._estimator.labels_
+        self.n_leaves_: int = self._estimator.n_leaves_
+        self.n_connected_components_: int = (
+            self._estimator.n_connected_components_
+        )
+        self.children_: np.ndarray = self._estimator.children_
+
+    def fit(  # noqa: D102
+        self,
+        X: MetricElementType,
+        y: None = None,
+    ) -> AgglomerativeClustering[MetricElementType]:
 
         self._init_estimator()
 
@@ -187,9 +203,16 @@ class AgglomerativeClustering(
             data = PairwiseMetric(metric)(X)
 
         self._estimator.fit(data, y)
+
+        self._copy_attrs()
+
         return self
 
-    def fit_predict(self, X: MetricElementType, y: None = None) -> np.ndarray:
+    def fit_predict(  # noqa: D102
+        self,
+        X: MetricElementType,
+        y: None = None,
+    ) -> np.ndarray:
 
         self._init_estimator()
 
@@ -198,7 +221,8 @@ class AgglomerativeClustering(
         if metric is not PRECOMPUTED:
             data = PairwiseMetric(metric)(X)
 
-        return self._estimator.fit_predict(data, y)
+        predicted = self._estimator.fit_predict(data, y)
 
-    def __getattr__(self, attr):
-        return getattr(self._estimator, attr)
+        self._copy_attrs()
+
+        return predicted

@@ -1,7 +1,6 @@
-from typing import Optional, Tuple, TypeVar
+from typing import Optional, TypeVar
 
 import numpy as np
-import scipy.linalg
 
 from .._typing import DomainRangeLike
 from ._basis import Basis
@@ -23,6 +22,7 @@ class FiniteElement(Basis):
 
     Examples:
 
+        >>> from skfda.representation.basis import FiniteElement
         >>> basis = FiniteElement(
         ...     vertices=[[0, 0], [0, 1], [1, 0], [1, 1]],
         ...     cells=[[0, 1, 2], [1, 2, 3]],
@@ -50,6 +50,20 @@ class FiniteElement(Basis):
                 [ 0. ],
                 [ 0.7]]])
 
+
+        >>> from scipy.spatial import Delaunay
+        >>> import numpy as np
+        >>>
+        >>> n_points = 10
+        >>> points = np.random.uniform(size=(n_points, 2))
+        >>> delaunay = Delaunay(points)
+        >>> basis = FiniteElement(
+        ...     vertices=delaunay.points,
+        ...     cells=delaunay.simplices,
+        ... )
+        >>> basis.n_basis
+        10
+
     """
 
     def __init__(
@@ -61,6 +75,10 @@ class FiniteElement(Basis):
         Basis.__init__(self, domain_range=domain_range, n_basis=len(vertices))
         self.vertices = np.asarray(vertices)
         self.cells = np.asarray(cells)
+
+    @property
+    def dim_domain(self) -> int:
+        return self.vertices.shape[-1]
 
     def _barycentric_coords(self, points: np.ndarray) -> np.ndarray:
         """
@@ -101,7 +119,8 @@ class FiniteElement(Basis):
 
         # Remove values outside each cell
         wrong_vals = np.any(
-            (barycentric_coords < 0) | (barycentric_coords > 1),
+            ((barycentric_coords < 0) & ~np.isclose(barycentric_coords + 1, 1))
+            | ((barycentric_coords > 1) & ~np.isclose(barycentric_coords, 1)),
             axis=-1,
         )
 
@@ -110,6 +129,7 @@ class FiniteElement(Basis):
         points_in_cells = np.any(barycentric_coords, axis=-1)
         n_cells_per_point = np.sum(points_in_cells, axis=0)
 
+        n_cells_per_point[n_cells_per_point == 0] = 1
         barycentric_coords /= n_cells_per_point[:, np.newaxis]
 
         return barycentric_coords

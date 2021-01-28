@@ -52,7 +52,7 @@ n_neighbors = np.arange(1, 24)
 # as the smoothing parameter the number of neighbors, we want to use a
 # comparable range of values. In this case, we know that our grid points are
 # equispaced, so a given bandwidth ``B`` will include
-# ``B * N / D grid points``, where ``N`` is the total number of grid points
+# ``B * N / D`` grid points, where ``N`` is the total number of grid points
 # and ``D`` the size of the whole domain range. Thus, if we pick
 # ``B = n_neighbors * D / N``, ``B`` will include ``n_neighbors`` grid points
 # and we could compare the results of the different smoothers.
@@ -89,7 +89,7 @@ nw.fit(fd)
 nw_fd = nw.transform(fd)
 
 ##############################################################################
-# The plot of the mean test scores for all smoothers are shown below.
+# The plot of the mean test scores for all smoothers is shown below.
 # As the X axis we will use the neighbors for all the smoothers in order
 # to compare k-NN with the others, but remember that the bandwidth is
 # this quantity scaled by ``scale_factor``!

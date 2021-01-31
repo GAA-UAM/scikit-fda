@@ -34,3 +34,23 @@ searches.
    :toctree: autosummary
 
    skfda.ml.clustering.NearestNeighbors
+
+Hierarchical clustering
+-----------------------
+
+Hierarchical clusterings are constructed by iteratively merging or splitting
+clusters given a metric between their elements, in order to cluster together
+elements that are close from each other. This is repeated until a desired
+number of clusters is obtained. The resulting hierarchy of clusters can be
+represented as a tree, called a dendogram. The following hierarchical
+clusterings are supported: 
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.ml.clustering.AgglomerativeClustering
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.ml.clustering.Agglomerative clustering

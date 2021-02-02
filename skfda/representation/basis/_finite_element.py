@@ -21,7 +21,6 @@ class FiniteElement(Basis):
             :math:`n+1` vertices for an n-dimensional domain space.
 
     Examples:
-
         >>> from skfda.representation.basis import FiniteElement
         >>> basis = FiniteElement(
         ...     vertices=[[0, 0], [0, 1], [1, 0], [1, 1]],
@@ -71,8 +70,12 @@ class FiniteElement(Basis):
         vertices: np.ndarray,
         cells: np.ndarray,
         domain_range: Optional[DomainRangeLike] = None,
-    )-> None:
-        Basis.__init__(self, domain_range=domain_range, n_basis=len(vertices))
+    ) -> None:
+        super().__init__(
+            self,
+            domain_range=domain_range,
+            n_basis=len(vertices),
+        )
         self.vertices = np.asarray(vertices)
         self.cells = np.asarray(cells)
 

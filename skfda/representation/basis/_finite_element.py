@@ -72,7 +72,6 @@ class FiniteElement(Basis):
         domain_range: Optional[DomainRangeLike] = None,
     ) -> None:
         super().__init__(
-            self,
             domain_range=domain_range,
             n_basis=len(vertices),
         )

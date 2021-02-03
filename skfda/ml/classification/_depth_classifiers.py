@@ -1,5 +1,6 @@
 """Depth-based models for supervised classification."""
 
+from skfda.exploratory.depth import multivariate
 from typing import List
 
 import numpy as np
@@ -186,11 +187,9 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
         depth_method: Depth = ModifiedBandDepth(),
         depth_methods: List[Depth] = None,
     ):
+        self.multivariate_classifier = multivariate_classifier
         self.depth_method = depth_method
-        self.pipeline = make_pipeline(
-            DDGTransformer(depth_method, depth_methods),
-            multivariate_classifier,
-        )
+        self.depth_methods = depth_methods
 
     def fit(self, X, y):
         """Fit the model using X as training data and y as target values.
@@ -202,6 +201,11 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
         Returns:
             self (object)
         """
+        self.pipeline = make_pipeline(
+            DDGTransformer(self.depth_method, self.depth_methods),
+            self.multivariate_classifier,
+        )
+
         self.pipeline.fit(X, y)
 
         return self

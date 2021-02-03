@@ -186,6 +186,7 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
         depth_method: Depth = ModifiedBandDepth(),
         depth_methods: List[Depth] = None,
     ):
+        self.depth_method = depth_method
         self.pipeline = make_pipeline(
             DDGTransformer(depth_method, depth_methods),
             multivariate_classifier,

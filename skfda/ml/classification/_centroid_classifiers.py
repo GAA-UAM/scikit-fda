@@ -8,7 +8,7 @@ from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 from ..._utils import _classifier_get_classes
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...exploratory.stats import mean, trim_mean
-from ...misc.metrics import l2_distance, lp_distance, pairwise_distance
+from ...misc.metrics import PairwiseMetric, l2_distance
 
 
 class NearestCentroid(BaseEstimator, ClassifierMixin):
@@ -19,7 +19,7 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
 
     Parameters:
         metric: callable, (default
-            :func:`lp_distance <skfda.metrics.lp_distance>`)
+            :func:`l2_distance <skfda.metrics.l2_distance>`)
             The metric to use when calculating distance between test samples
             and centroids. See the documentation of the metrics module
             for a list of available metrics. Defaults used L2 distance.
@@ -99,7 +99,7 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
         """
         sklearn_check_is_fitted(self)
 
-        return self.classes_[pairwise_distance(self.metric)(
+        return self.classes_[PairwiseMetric(self.metric)(
             X,
             self.centroids_,
         ).argmin(axis=1)
@@ -122,7 +122,7 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
             the depths module for a list of available depths. By default it
             is ModifiedBandDepth.
         metric (Callable, default
-            :func:`lp_distance <skfda.misc.metrics.lp_distance>`):
+            :func:`l2_distance <skfda.misc.metrics.l2_distance>`):
             Distance function between two functional objects. See the
             documentation of the metrics module for a list of available
             metrics.
@@ -168,7 +168,7 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
         self,
         proportiontocut: float,
         depth_method: Depth = None,
-        metric: Callable = lp_distance,
+        metric: Callable = l2_distance,
     ) -> None:
         self.proportiontocut = proportiontocut
 

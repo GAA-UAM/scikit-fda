@@ -22,6 +22,9 @@ import os
 import sys
 
 import pkg_resources
+# -- Extensions to the  Napoleon GoogleDocstring class ---------------------
+from sphinx.ext.napoleon.docstring import GoogleDocstring
+
 try:
     release = pkg_resources.get_distribution('scikit-fda').version
 except pkg_resources.DistributionNotFound:
@@ -245,8 +248,6 @@ napoleon_use_rtype = True
 # Taken from
 # https://michaelgoerz.net/notes/extending-sphinx-napoleon-docstring-sections.html
 
-# -- Extensions to the  Napoleon GoogleDocstring class ---------------------
-from sphinx.ext.napoleon.docstring import GoogleDocstring
 
 # first, we define new methods for any new sections and add them to the class
 

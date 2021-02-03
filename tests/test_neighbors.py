@@ -7,7 +7,7 @@ import numpy as np
 from skfda.datasets import make_multimodal_samples, make_sinusoidal_process
 from skfda.exploratory.outliers import LocalOutlierFactor  # Pending theory
 from skfda.exploratory.stats import mean
-from skfda.misc.metrics import l2_distance, lp_distance, pairwise_distance
+from skfda.misc.metrics import PairwiseMetric, l2_distance
 from skfda.ml.classification import (
     KNeighborsClassifier,
     NearestCentroid,
@@ -71,7 +71,7 @@ class TestNeighbors(unittest.TestCase):
             KNeighborsClassifier(),
             RadiusNeighborsClassifier(radius=0.1),
             NearestCentroid(),
-            NearestCentroid(metric=lp_distance, centroid=mean),
+            NearestCentroid(metric=l2_distance, centroid=mean),
         ):
 
             neigh.fit(self.X, self.y)
@@ -84,7 +84,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_predict_proba_classifier(self):
         """Tests predict proba for k neighbors classifier."""
-        neigh = KNeighborsClassifier(metric=lp_distance)
+        neigh = KNeighborsClassifier(metric=l2_distance)
 
         neigh.fit(self.X, self.y)
         probs = neigh.predict_proba(self.X)
@@ -139,7 +139,7 @@ class TestNeighbors(unittest.TestCase):
 
             graph = neigh.kneighbors_graph(self.X[:4])
 
-            dist_kneigh = lp_distance(self.X[0], self.X[7])
+            dist_kneigh = l2_distance(self.X[0], self.X[7])
 
             np.testing.assert_array_almost_equal(dist[0, 1], dist_kneigh)
 
@@ -167,7 +167,7 @@ class TestNeighbors(unittest.TestCase):
             np.testing.assert_array_equal(links[2], np.array([2, 17, 22, 27]))
             np.testing.assert_array_equal(links[3], np.array([3, 4, 9]))
 
-            dist_kneigh = lp_distance(self.X[0], self.X[7])
+            dist_kneigh = l2_distance(self.X[0], self.X[7])
 
             np.testing.assert_array_almost_equal(dist[0][1], dist_kneigh)
 
@@ -209,7 +209,7 @@ class TestNeighbors(unittest.TestCase):
             weights='distance',
             metric='precomputed',
         )
-        d = pairwise_distance(lp_distance)
+        d = PairwiseMetric(l2_distance)
         distances = d(self.X[:4], self.X[:4])
 
         knnr.fit(distances, self.X[:4])
@@ -221,7 +221,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_radius_functional_response(self):
         knnr = RadiusNeighborsRegressor(
-            metric=lp_distance,
+            metric=l2_distance,
             weights='distance',
         )
 
@@ -251,7 +251,7 @@ class TestNeighbors(unittest.TestCase):
         knnr.fit(self.X[:10], self.X[:10])
         res = knnr.predict(self.X[11])
 
-        d = pairwise_distance(lp_distance)
+        d = PairwiseMetric(l2_distance)
         distances = d(self.X[:10], self.X[11]).flatten()
 
         weights = 1 / distances
@@ -311,7 +311,7 @@ class TestNeighbors(unittest.TestCase):
             knnr.fit(self.X[:3], self.X[:4])
 
     def test_search_neighbors_precomputed(self):
-        d = pairwise_distance(lp_distance)
+        d = PairwiseMetric(l2_distance)
         distances = d(self.X[:4], self.X[:4])
 
         nn = NearestNeighbors(metric='precomputed', n_neighbors=2)
@@ -401,7 +401,7 @@ class TestNeighbors(unittest.TestCase):
         res2 = lof2.fit_predict(self.fd_lof)
         np.testing.assert_array_equal(expected, res2)
 
-        d = pairwise_distance(lp_distance)
+        d = PairwiseMetric(l2_distance)
         distances = d(self.fd_lof, self.fd_lof)
 
         # With precompute distances

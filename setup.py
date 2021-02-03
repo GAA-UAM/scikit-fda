@@ -23,8 +23,7 @@ the package, along with several examples showing different funcionalities.
 import os
 import sys
 
-from setuptools import setup, find_packages
-
+from setuptools import find_packages, setup
 
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
 pytest_runner = ['pytest-runner'] if needs_pytest else []
@@ -46,7 +45,7 @@ setup(name='scikit-fda',
       platforms=['any'],
       license='BSD',
       packages=find_packages(),
-      python_requires='>=3.6, <4',
+      python_requires='>=3.7, <4',
       classifiers=[
           'Development Status :: 4 - Beta',
           'Intended Audience :: Developers',
@@ -54,8 +53,8 @@ setup(name='scikit-fda',
           'License :: OSI Approved :: BSD License',
           'Natural Language :: English',
           'Operating System :: OS Independent',
-          'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7',
+          'Programming Language :: Python :: 3.8',
           'Topic :: Scientific/Engineering :: Mathematics',
           'Topic :: Software Development :: Libraries :: Python Modules',
       ],
@@ -72,7 +71,8 @@ setup(name='scikit-fda',
           'rdata',
           'scikit-datasets[cran]>=0.1.24',
           'scikit-learn>=0.20',
-          'scipy>=1.3.0'
+          'scipy>=1.3.0',
+          'typing-extensions',
       ],
       setup_requires=pytest_runner,
       tests_require=['pytest'],

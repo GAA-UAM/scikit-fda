@@ -1,16 +1,40 @@
 """Module with generic methods"""
 
-from builtins import getattr
+from __future__ import annotations
+
 import functools
 import numbers
-import types
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+)
 
-from pandas.api.indexers import check_array_indexer
+import numpy as np
 import scipy.integrate
+from pandas.api.indexers import check_array_indexer
 
 from sklearn.base import clone
 
-import numpy as np
+from ..representation._typing import (
+    DomainRange,
+    DomainRangeLike,
+    GridPoints,
+    GridPointsLike,
+)
+from ..representation.evaluator import Evaluator
+
+RandomStateLike = Optional[Union[int, np.random.RandomState]]
+
+if TYPE_CHECKING:
+    from ..representation import FData
+    from ..representation.basis import Basis
 
 
 class _FDataCallable():
@@ -85,8 +109,8 @@ def _to_grid(X, y, eval_points=None):
     return X, y
 
 
-def _tuple_of_arrays(original_array):
-    """Convert to a list of arrays.
+def _to_grid_points(grid_points_like: GridPointsLike) -> GridPoints:
+    """Convert to grid points.
 
     If the original list is one-dimensional (e.g. [1, 2, 3]), return list to
     array (in this case [array([1, 2, 3])]).
@@ -98,38 +122,40 @@ def _tuple_of_arrays(original_array):
     In any other case the behaviour is unespecified.
 
     """
-
     unidimensional = False
 
     try:
-        iter(original_array)
+        iter(grid_points_like)
     except TypeError:
-        original_array = [original_array]
+        grid_points_like = [grid_points_like]
 
     try:
-        iter(original_array[0])
+        iter(grid_points_like[0])
     except TypeError:
         unidimensional = True
 
     if unidimensional:
-        return (_int_to_real(np.asarray(original_array)),)
-    else:
-        return tuple(_int_to_real(np.asarray(i)) for i in original_array)
+        return (_int_to_real(np.asarray(grid_points_like)),)
+
+    return tuple(_int_to_real(np.asarray(i)) for i in grid_points_like)
 
 
-def _domain_range(sequence):
+def _to_domain_range(sequence: DomainRangeLike) -> DomainRange:
+    """Convert sequence to a proper domain range."""
+    seq_aux = cast(
+        Sequence[Sequence[float]],
+        (sequence,) if isinstance(sequence[0], numbers.Real) else sequence,
+    )
 
-    try:
-        iter(sequence[0])
-    except TypeError:
-        sequence = (sequence,)
+    tuple_aux = tuple(tuple(s) for s in seq_aux)
 
-    sequence = tuple(tuple(s) for s in sequence)
+    if not all(len(s) == 2 and s[0] <= s[1] for s in tuple_aux):
+        raise ValueError(
+            "Domain intervals should have 2 bounds for "
+            "dimension: (lower, upper).",
+        )
 
-    if not all(len(s) == 2 for s in sequence):
-        raise ValueError("Domain intervals should have 2 bounds each")
-
-    return sequence
+    return cast(DomainRange, tuple_aux)
 
 
 def _to_array_maybe_ragged(array, *, row_shape=None):
@@ -212,23 +238,30 @@ def _cartesian_product(axes, flatten=True, return_shape=False):
         return cartesian
 
 
-def _same_domain(fd, fd2):
+def _same_domain(fd: Union[Basis, FData], fd2: Union[Basis, FData]) -> bool:
     """Check if the domain range of two objects is the same."""
     return np.array_equal(fd.domain_range, fd2.domain_range)
 
 
-def _reshape_eval_points(eval_points, *, aligned, n_samples, dim_domain):
+def _reshape_eval_points(
+    eval_points: np.ndarray,
+    *,
+    aligned: bool,
+    n_samples: int,
+    dim_domain: int,
+) -> np.ndarray:
     """Convert and reshape the eval_points to ndarray with the
     corresponding shape.
 
     Args:
-        eval_points (array_like): Evaluation points to be reshaped.
-        aligned (bool): Boolean flag. True if all the samples
+        eval_points: Evaluation points to be reshaped.
+        aligned: Boolean flag. True if all the samples
             will be evaluated at the same evaluation_points.
-        dim_domain (int): Dimension of the domain.
+        n_samples: Number of observations.
+        dim_domain: Dimension of the domain.
 
     Returns:
-        (np.ndarray): Numpy array with the eval_points, if
+        Numpy array with the eval_points, if
         evaluation_aligned is True with shape `number of evaluation points`
         x `dim_domain`. If the points are not aligned the shape of the
         points will be `n_samples` x `number of evaluation points`
@@ -271,7 +304,7 @@ def _one_grid_to_points(axes, *, dim_domain):
     Returns also the shape containing the information of how each point
     is formed.
     """
-    axes = _tuple_of_arrays(axes)
+    axes = _to_grid_points(axes)
 
     if len(axes) != dim_domain:
         raise ValueError(f"Length of axes should be "
@@ -285,10 +318,16 @@ def _one_grid_to_points(axes, *, dim_domain):
     return cartesian, shape
 
 
-def _evaluate_grid(axes, *, evaluate_method,
-                   n_samples, dim_domain, dim_codomain,
-                   extrapolation=None,
-                   aligned=True):
+def _evaluate_grid(
+    axes: Sequence[np.ndarray],
+    *,
+    evaluate_method: Any,
+    n_samples: int,
+    dim_domain: int,
+    dim_codomain: int,
+    extrapolation: Optional[Union[str, Evaluator]] = None,
+    aligned: bool = True,
+) -> np.ndarray:
     """Evaluate the functional object in the cartesian grid.
 
     This method is called internally by :meth:`evaluate` when the argument
@@ -312,17 +351,17 @@ def _evaluate_grid(axes, *, evaluate_method,
     option, but with worst performance.
 
     Args:
-        axes (array_like): List of axes to generated the grid where the
+        axes: List of axes to generated the grid where the
             object will be evaluated.
-        extrapolation (str or Extrapolation, optional): Controls the
+        extrapolation: Controls the
             extrapolation mode for elements outside the domain range. By
             default it is used the mode defined during the instance of the
             object.
-        aligned (bool, optional): If False evaluates each sample
+        aligned: If False evaluates each sample
             in a different grid.
 
     Returns:
-        (numpy.darray): Numpy array with dim_domain + 1 dimensions with
+        Numpy array with dim_domain + 1 dimensions with
             the result of the evaluation.
 
     Raises:
@@ -369,11 +408,14 @@ def _evaluate_grid(axes, *, evaluate_method,
     return res
 
 
-def nquad_vec(func, ranges):
-
+def nquad_vec(
+    func: Callable[[np.ndarray], np.ndarray],
+    ranges: Sequence[Tuple[float, float]],
+) -> np.ndarray:
+    """Perform multiple integration of vector valued functions."""
     initial_depth = len(ranges) - 1
 
-    def integrate(*args, depth):
+    def integrate(*args: Any, depth: int) -> np.ndarray:  # noqa: WPS430
 
         if depth == 0:
             f = functools.partial(func, *args)
@@ -385,20 +427,70 @@ def nquad_vec(func, ranges):
     return integrate(depth=initial_depth)
 
 
-def _pairwise_commutative(function, arg1, arg2=None, **kwargs):
+def _map_in_batches(
+    function: Callable[..., np.ndarray],
+    arguments: Tuple[Union[FData, np.ndarray], ...],
+    indexes: Tuple[np.ndarray, ...],
+    memory_per_batch: Optional[int] = None,
+    **kwargs: Any,
+) -> np.ndarray:
     """
-    Compute pairwise a commutative function.
+    Map a function over samples of FData or ndarray tuples efficiently.
+
+    This function prevents a large set of indexes to use all available
+    memory and hang the PC.
 
     """
-    if arg2 is None:
+    if memory_per_batch is None:
+        # 256MB is not too big
+        memory_per_batch = 256 * 1024 * 1024  # noqa: WPS432
+
+    memory_per_element = sum(a.nbytes // len(a) for a in arguments)
+    n_elements_per_batch_allowed = memory_per_batch // memory_per_element
+    if n_elements_per_batch_allowed < 1:
+        raise ValueError("Too few memory allowed for the operation")
+
+    n_indexes = len(indexes[0])
+
+    assert all(n_indexes == len(i) for i in indexes)
+
+    batches: List[np.ndarray] = []
+
+    for pos in range(0, n_indexes, n_elements_per_batch_allowed):
+        batch_args = tuple(
+            a[i[pos:pos + n_elements_per_batch_allowed]]
+            for a, i in zip(arguments, indexes)
+        )
+
+        batches.append(function(*batch_args, **kwargs))
+
+    return np.concatenate(batches, axis=0)
+
+
+def _pairwise_symmetric(
+    function: Callable[..., np.ndarray],
+    arg1: Union[FData, np.ndarray],
+    arg2: Optional[Union[FData, np.ndarray]] = None,
+    memory_per_batch: Optional[int] = None,
+    **kwargs: Any,
+) -> np.ndarray:
+    """Compute pairwise a commutative function."""
+    if arg2 is None or arg2 is arg1:
 
         indices = np.triu_indices(len(arg1))
 
         matrix = np.empty((len(arg1), len(arg1)))
 
-        triang_vec = function(
-            arg1[indices[0]], arg1[indices[1]],
-            **kwargs)
+        triang_vec = _map_in_batches(
+            function,
+            (
+                arg1,
+                arg1,
+            ),
+            indices,
+            memory_per_batch=memory_per_batch,
+            **kwargs,
+        )
 
         # Set upper matrix
         matrix[indices] = triang_vec
@@ -412,13 +504,24 @@ def _pairwise_commutative(function, arg1, arg2=None, **kwargs):
 
         indices = np.indices((len(arg1), len(arg2)))
 
-        return function(
-            arg1[indices[0].ravel()], arg2[indices[1].ravel()],
-            **kwargs).reshape(
-                (len(arg1), len(arg2)))
+        vec = _map_in_batches(
+            function,
+            (
+                arg1,
+                arg2,
+            ),
+            (
+                indices[0].ravel(),
+                indices[1].ravel(),
+            ),
+            memory_per_batch=memory_per_batch,
+            **kwargs,
+        )
+
+        return vec.reshape((len(arg1), len(arg2)))
 
 
-def _int_to_real(array):
+def _int_to_real(array: np.ndarray) -> np.ndarray:
     """
     Convert integer arrays to floating point.
     """

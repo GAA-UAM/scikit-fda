@@ -1,13 +1,13 @@
 import operator
-import skfda
-from skfda.representation.basis import Monomial, Fourier, BSpline
-
-from pandas import Series
-import pandas
-from pandas.tests.extension import base
-import pytest
 
 import numpy as np
+import pandas
+import pytest
+from pandas import Series
+from pandas.tests.extension import base
+
+import skfda
+from skfda.representation.basis import BSpline, Fourier, Monomial
 
 
 ##############################################################################
@@ -333,6 +333,11 @@ class TestInterface(base.BaseInterfaceTests):
     # We do not implement setitem
     @pytest.mark.skip(reason="Unsupported")
     def test_view(self, dtype):
+        pass
+
+    # Pending https://github.com/pandas-dev/pandas/issues/38812 resolution
+    @pytest.mark.skip(reason="Bugged")
+    def test_contains(self, data, data_missing):
         pass
 
 

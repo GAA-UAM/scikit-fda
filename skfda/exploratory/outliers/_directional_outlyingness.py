@@ -1,14 +1,14 @@
-from skfda.exploratory.depth.multivariate import ProjectionDepth
 import typing
 
-from numpy import linalg as la
+import numpy as np
 import scipy.integrate
-from scipy.stats import f
 import scipy.stats
+from numpy import linalg as la
+from scipy.stats import f
 from sklearn.base import BaseEstimator, OutlierMixin
 from sklearn.covariance import MinCovDet
 
-import numpy as np
+from skfda.exploratory.depth.multivariate import ProjectionDepth
 
 from ... import FDataGrid
 
@@ -303,7 +303,9 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
     """
 
     def __init__(
-            self, *, multivariate_depth=ProjectionDepth(),
+            self,
+            *,
+            multivariate_depth=None,
             pointwise_weights=None,
             assume_centered=False,
             support_fraction=None,
@@ -321,10 +323,14 @@ class DirectionalOutlierDetector(BaseEstimator, OutlierMixin):
         self._force_asymptotic = _force_asymptotic
 
     def _compute_points(self, X):
+        multivariate_depth = self.multivariate_depth
+        if multivariate_depth is None:
+            multivariate_depth = ProjectionDepth()
+
         # The depths of the samples are calculated giving them an ordering.
         *_, mean_dir_outl, variation_dir_outl = directional_outlyingness_stats(
             X,
-            multivariate_depth=self.multivariate_depth,
+            multivariate_depth=multivariate_depth,
             pointwise_weights=self.pointwise_weights)
 
         points = np.concatenate((mean_dir_outl,

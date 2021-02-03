@@ -1,12 +1,14 @@
 
 import matplotlib.cm
 import matplotlib.patches
-
 import numpy as np
 
-from ..._utils import _tuple_of_arrays, constants
-from ._utils import (_get_figure_and_axes, _set_figure_layout_for_fdata,
-                     _set_labels)
+from ..._utils import _to_domain_range, constants
+from ._utils import (
+    _get_figure_and_axes,
+    _set_figure_layout_for_fdata,
+    _set_labels,
+)
 
 
 def _get_label_colors(n_labels, group_colors=None):
@@ -149,7 +151,7 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
     if domain_range is None:
         domain_range = fdata.domain_range
     else:
-        domain_range = _tuple_of_arrays(domain_range)
+        domain_range = _to_domain_range(domain_range)
 
     sample_colors, patches = _get_color_info(
         fdata, group, group_names, group_colors, legend, kwargs)
@@ -178,16 +180,16 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
 
         # Selects the number of points
         if n_points is None:
-            npoints = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
-        elif np.isscalar(npoints):
-            npoints = (npoints, npoints)
-        elif len(npoints) != 2:
+            n_points = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
+        elif np.isscalar(n_points):
+            n_points = (n_points, n_points)
+        elif len(n_points) != 2:
             raise ValueError(f"n_points should be a number or a tuple of "
-                             f"length 2, and has length {len(npoints)}")
+                             f"length 2, and has length {len(n_points)}")
 
         # Axes where will be evaluated
-        x = np.linspace(*domain_range[0], npoints[0])
-        y = np.linspace(*domain_range[1], npoints[1])
+        x = np.linspace(*domain_range[0], n_points[0])
+        y = np.linspace(*domain_range[1], n_points[1])
 
         # Evaluation of the functional object
         Z = fdata((x, y), grid=True)
@@ -283,7 +285,7 @@ def plot_scatter(fdata, chart=None, *, grid_points=None,
     if domain_range is None:
         domain_range = fdata.domain_range
     else:
-        domain_range = _tuple_of_arrays(domain_range)
+        domain_range = _to_domain_range(domain_range)
 
     sample_colors, patches = _get_color_info(
         fdata, group, group_names, group_colors, legend, kwargs)

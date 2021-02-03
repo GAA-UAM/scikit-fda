@@ -10,14 +10,13 @@ Shows the use of the MS-Plot applied to the Canadian Weather dataset.
 
 # sphinx_gallery_thumbnail_number = 2
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 from skfda import datasets
 from skfda.exploratory.depth import IntegratedDepth
 from skfda.exploratory.depth.multivariate import SimplicialDepth
 from skfda.exploratory.visualization import MagnitudeShapePlot
-
-import matplotlib.pyplot as plt
-import numpy as np
-
 
 ##############################################################################
 # First, the Canadian Weather dataset is downloaded from the package 'fda' in

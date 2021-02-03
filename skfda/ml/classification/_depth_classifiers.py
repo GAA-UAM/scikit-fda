@@ -1,7 +1,7 @@
 """Depth-based models for supervised classification."""
 
 from skfda.exploratory.depth import multivariate
-from typing import List
+from typing import Sequence, Union
 
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -127,14 +127,11 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
     Parameters:
         depth_method (default
             :class:`ModifiedBandDepth <skfda.depth.ModifiedBandDepth>`):
-            The depth class to use when calculating the depth of a test
-            sample in a class. See the documentation of the depths module
-            for a list of available depths. By default it is ModifiedBandDepth.
-        depth_methods (optional):
-            List of depth classes to use when calculating the depth of a test
-            sample in a class. See the documentation of the depths module
-            for a list of available depths. By default it is None.
-        multivariate_classifier ():
+            The depth class or sequence of depths to use when calculating
+            the depth of a test sample in a class. See the documentation of
+            the depths module for a list of available depths. By default it
+            is ModifiedBandDepth.
+        multivariate_classifier:
             The multivariate classifier to use in the DDG-plot.
 
     Examples:
@@ -184,12 +181,10 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
         multivariate_classifier: ClassifierMixin = None,
-        depth_method: Depth = ModifiedBandDepth(),
-        depth_methods: List[Depth] = None,
+        depth_method: Union[Depth, Sequence[Depth]] = ModifiedBandDepth(),
     ):
         self.multivariate_classifier = multivariate_classifier
         self.depth_method = depth_method
-        self.depth_methods = depth_methods
 
     def fit(self, X, y):
         """Fit the model using X as training data and y as target values.
@@ -202,7 +197,7 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
             self (object)
         """
         self.pipeline = make_pipeline(
-            DDGTransformer(self.depth_method, self.depth_methods),
+            DDGTransformer(self.depth_method),
             self.multivariate_classifier,
         )
 

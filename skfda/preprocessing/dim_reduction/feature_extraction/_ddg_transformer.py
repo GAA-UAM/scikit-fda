@@ -1,6 +1,6 @@
 """Feature extraction transformers for dimensionality reduction."""
 
-from typing import List
+from typing import List, Sequence, Union
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -29,14 +29,10 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
     Parameters:
         depth_method (default
             :class:`ModifiedBandDepth <skfda.depth.ModifiedBandDepth>`):
-            The depth class to use when calculating the depth of a test
-            sample in a class. See the documentation of the depths module
-            for a list of available depths. By default it is ModifiedBandDepth.
-        depth_methods (optional):
-            List of depth classes to use when calculating the depth of a test
-            sample in a class. See the documentation of the depths module
-            for a list of available depths. By default it is None.
-            If a list is provided, the parameter depth_method will be ignored.
+            The depth class or sequence of depths to use when calculating
+            the depth of a test sample in a class. See the documentation of
+            the depths module for a list of available depths. By default it
+            is ModifiedBandDepth.
 
     Examples:
         Firstly, we will import and split the Berkeley Growth Study dataset
@@ -60,7 +56,7 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
         >>> pipe = make_pipeline(DDGTransformer(), KNeighborsClassifier())
         >>> pipe.fit(X_train, y_train)
         Pipeline(steps=[('ddgtransformer',
-                         DDGTransformer(depth_methods=[ModifiedBandDepth()])),
+                         DDGTransformer(depth_method=[ModifiedBandDepth()])),
                         ('kneighborsclassifier', KNeighborsClassifier())])
 
         We can predict the class of new samples
@@ -82,14 +78,11 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        depth_method: Depth = ModifiedBandDepth(),
-        depth_methods: List[Depth] = None,
+        depth_method: Union[Depth, Sequence[Depth]] = ModifiedBandDepth(),
     ):
+        if isinstance(depth_method, Depth):
+            depth_method = [depth_method]
         self.depth_method = depth_method
-        if depth_methods is None:
-            self.depth_methods = [depth_method]
-        else:
-            self.depth_methods = depth_methods
 
     def fit(self, X, y):
         """Fit the model using X as training data and y as target values.
@@ -102,7 +95,7 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
             self (object)
         """
         classes_, distributions_ = _classifier_fit_distributions(
-            X, y, self.depth_methods,
+            X, y, self.depth_method,
         )
 
         self.classes_ = classes_

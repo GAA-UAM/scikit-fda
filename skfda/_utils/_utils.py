@@ -396,8 +396,9 @@ def _evaluate_grid(
     # Reshape the result
     if aligned:
 
-        res = res.reshape([n_samples]
-                          + list(shape) + [dim_codomain])
+        res = res.reshape(
+            [n_samples] + list(shape) + [dim_codomain]
+        )
 
     else:
 

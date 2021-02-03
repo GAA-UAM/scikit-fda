@@ -8,6 +8,8 @@ import types
 from pandas.api.indexers import check_array_indexer
 import scipy.integrate
 
+from sklearn.base import clone
+
 import numpy as np
 
 
@@ -54,12 +56,12 @@ def check_is_univariate(fd):
     """
     if fd.dim_domain != 1 or fd.dim_codomain != 1:
         raise ValueError(f"The functional data must be univariate, i.e., " +
-                         f"with dim_domain=1 " +
-                         (f"" if fd.dim_domain == 1
-                          else f"(currently is {fd.dim_domain}) ") +
-                         f"and dim_codomain=1 " +
-                         (f"" if fd.dim_codomain == 1 else
-                          f"(currently is  {fd.dim_codomain})"))
+                         f"with dim_domain=1 "
+                         + (f"" if fd.dim_domain == 1
+                            else f"(currently is {fd.dim_domain}) ")
+                         + f"and dim_codomain=1 "
+                         + (f"" if fd.dim_codomain == 1 else
+                            f"(currently is  {fd.dim_codomain})"))
 
 
 def _to_grid(X, y, eval_points=None):
@@ -355,8 +357,8 @@ def _evaluate_grid(axes, *, evaluate_method,
     # Reshape the result
     if aligned:
 
-        res = res.reshape([n_samples] +
-                          list(shape) + [dim_codomain])
+        res = res.reshape([n_samples]
+                          + list(shape) + [dim_codomain])
 
     else:
 
@@ -464,3 +466,22 @@ def _classifier_get_classes(y):
         raise ValueError(f'The number of classes has to be greater than'
                          f' one; got {classes.size} class')
     return classes, y_ind
+
+
+def _classifier_get_distributions(classes, X, y_ind, depth_methods):
+    distributions = [
+        clone(depth_method).fit(X[y_ind == cur_class])
+        for cur_class in range(classes.size)
+        for depth_method in depth_methods
+    ]
+    return distributions
+
+
+def _classifier_fit_distributions(X, y, depth_methods):
+    classes_, y_ind = _classifier_get_classes(y)
+
+    distributions_ = _classifier_get_distributions(
+        classes_, X, y_ind, depth_methods,
+    )
+
+    return classes_, distributions_

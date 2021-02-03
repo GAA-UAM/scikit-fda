@@ -157,7 +157,7 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
         0.875
 
     See also:
-        :class:`~skfda.ml.classification.MaximumDepthClassifier`
+        :class:`~skfda.ml.classification.NearestCentroid`
 
     References:
         Fraiman, R. and Muniz, G. (2001). Trimmed means for functional

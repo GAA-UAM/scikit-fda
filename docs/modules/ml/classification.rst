@@ -24,4 +24,4 @@ it is explained the basic usage of these estimators.
    skfda.ml.classification.NearestCentroid
    skfda.ml.classification.DTMClassifier
    skfda.ml.classification.MaximumDepthClassifier
-   skfda.ml.classification.DDTransform
+   skfda.ml.classification.DDGClassifier

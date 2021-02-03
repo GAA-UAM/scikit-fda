@@ -60,8 +60,7 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
         >>> pipe = make_pipeline(DDGTransformer(), KNeighborsClassifier())
         >>> pipe.fit(X_train, y_train)
         Pipeline(steps=[('ddgtransformer',
-                         DDGTransformer(depth_method=None,
-                                        depth_methods=[ModifiedBandDepth()])),
+                         DDGTransformer(depth_methods=[ModifiedBandDepth()])),
                         ('kneighborsclassifier', KNeighborsClassifier())])
 
         We can predict the class of new samples
@@ -86,6 +85,7 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
         depth_method: Depth = ModifiedBandDepth(),
         depth_methods: List[Depth] = None,
     ):
+        self.depth_method = depth_method
         if depth_methods is None:
             self.depth_methods = [depth_method]
         else:

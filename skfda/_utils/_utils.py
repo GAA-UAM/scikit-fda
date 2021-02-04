@@ -1,4 +1,4 @@
-"""Module with generic methods"""
+"""Module with generic methods."""
 
 from __future__ import annotations
 
@@ -19,7 +19,6 @@ from typing import (
 import numpy as np
 import scipy.integrate
 from pandas.api.indexers import check_array_indexer
-
 from sklearn.base import clone
 
 from ..representation._typing import (
@@ -547,7 +546,9 @@ def _check_array_key(array, key):
 
 def _check_estimator(estimator):
     from sklearn.utils.estimator_checks import (
-        check_get_params_invariance, check_set_params)
+        check_get_params_invariance,
+        check_set_params,
+    )
 
     name = estimator.__name__
     instance = estimator()
@@ -556,8 +557,8 @@ def _check_estimator(estimator):
 
 
 def _classifier_get_classes(y):
-    from sklearn.utils.multiclass import check_classification_targets
     from sklearn.preprocessing import LabelEncoder
+    from sklearn.utils.multiclass import check_classification_targets
 
     check_classification_targets(y)
 

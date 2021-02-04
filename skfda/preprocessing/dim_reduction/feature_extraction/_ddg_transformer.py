@@ -1,13 +1,17 @@
 """Feature extraction transformers for dimensionality reduction."""
 
-from typing import List, Sequence, Union
+from typing import Sequence, Union
 
 import numpy as np
+from numpy import ndarray
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from ...._utils import _classifier_fit_distributions
 from ....exploratory.depth import Depth, ModifiedBandDepth
+from ....representation.grid import FDataGrid
+
+default_depth = ModifiedBandDepth()
 
 
 class DDGTransformer(BaseEstimator, TransformerMixin):
@@ -27,8 +31,7 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
     :math:`\mathcal{X} = \mathcal{X}_1 \times ... \times \mathcal{X}_p`.
 
     Parameters:
-        depth_method (default
-            :class:`ModifiedBandDepth <skfda.depth.ModifiedBandDepth>`):
+        depth_method:
             The depth class or sequence of depths to use when calculating
             the depth of a test sample in a class. See the documentation of
             the depths module for a list of available depths. By default it
@@ -78,18 +81,18 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        depth_method: Union[Depth, Sequence[Depth]] = ModifiedBandDepth(),
-    ):
+        depth_method: Union[Depth, Sequence[Depth]] = default_depth,
+    ) -> None:
         if isinstance(depth_method, Depth):
             depth_method = [depth_method]
         self.depth_method = depth_method
 
-    def fit(self, X, y):
+    def fit(self, X: FDataGrid, y: ndarray):
         """Fit the model using X as training data and y as target values.
 
         Args:
-            X (:class:`FDataGrid`): FDataGrid with the training data.
-            y (array-like): Target values of shape = (n_samples).
+            X: FDataGrid with the training data.
+            y: Target values of shape = (n_samples).
 
         Returns:
             self (object)
@@ -103,14 +106,14 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self, X):
+    def transform(self, X: FDataGrid) -> ndarray:
         """Transform the provided data using the defined map.
 
         Args:
-            X (:class:`FDataGrid`): FDataGrid with the test samples.
+            X: FDataGrid with the test samples.
 
         Returns:
-            X_new (array-like): array of shape (n_samples, G).
+            ndarray: array of shape (n_samples, G).
         """
         sklearn_check_is_fitted(self)
 

@@ -1,16 +1,19 @@
 """Depth-based models for supervised classification."""
-
-from skfda.exploratory.depth import multivariate
 from typing import Sequence, Union
 
 import numpy as np
+from numpy import ndarray
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.pipeline import make_pipeline
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
+from skfda.representation.grid import FDataGrid
+
 from ..._utils import _classifier_fit_distributions
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...preprocessing.dim_reduction.feature_extraction import DDGTransformer
+
+default_depth = ModifiedBandDepth()
 
 
 class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
@@ -19,8 +22,7 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
     Test samples are classified to the class where they are deeper.
 
     Parameters:
-        depth_method (Depth, default
-            :class:`ModifiedBandDepth <skfda.depth.ModifiedBandDepth>`):
+        depth_method:
             The depth class to use when calculating the depth of a test
             sample in a class. See the documentation of the depths module
             for a list of available depths. By default it is ModifiedBandDepth.
@@ -61,15 +63,15 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
         related classifiers. Scandinavian Journal of Statistics, 32, 327–350.
     """
 
-    def __init__(self, depth_method: Depth = ModifiedBandDepth()):
+    def __init__(self, depth_method: Depth = default_depth) -> None:
         self.depth_method = depth_method
 
-    def fit(self, X, y):
+    def fit(self, X: FDataGrid, y: ndarray):
         """Fit the model using X as training data and y as target values.
 
         Args:
-            X (:class:`FDataGrid`): FDataGrid with the training data.
-            y (array-like): Target values of shape = (n_samples).
+            X: FDataGrid with the training data.
+            y: Target values of shape = (n_samples).
 
         Returns:
             self (object)
@@ -83,15 +85,15 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def predict(self, X):
+    def predict(self, X: FDataGrid) -> ndarray:
         """Predict the class labels for the provided data.
 
         Args:
-            X (:class:`FDataGrid`): FDataGrid with the test samples.
+            X: FDataGrid with the test samples.
 
         Returns:
-            y (np.array): array of shape (n_samples) with class labels
-                for each data sample.
+            ndarray: array of shape (n_samples) with class labels
+            for each data sample.
         """
         sklearn_check_is_fitted(self)
 
@@ -125,8 +127,7 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
     multivariate classifer.
 
     Parameters:
-        depth_method (default
-            :class:`ModifiedBandDepth <skfda.depth.ModifiedBandDepth>`):
+        depth_method:
             The depth class or sequence of depths to use when calculating
             the depth of a test sample in a class. See the documentation of
             the depths module for a list of available depths. By default it
@@ -181,17 +182,17 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
         multivariate_classifier: ClassifierMixin = None,
-        depth_method: Union[Depth, Sequence[Depth]] = ModifiedBandDepth(),
-    ):
+        depth_method: Union[Depth, Sequence[Depth]] = default_depth,
+    ) -> None:
         self.multivariate_classifier = multivariate_classifier
         self.depth_method = depth_method
 
-    def fit(self, X, y):
+    def fit(self, X: FDataGrid, y: ndarray):
         """Fit the model using X as training data and y as target values.
 
         Args:
-            X (:class:`FDataGrid`): FDataGrid with the training data.
-            y (array-like): Target values of shape = (n_samples).
+            X: FDataGrid with the training data.
+            y: Target values of shape = (n_samples).
 
         Returns:
             self (object)
@@ -205,14 +206,14 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def predict(self, X):
+    def predict(self, X: FDataGrid) -> ndarray:
         """Predict the class labels for the provided data.
 
         Args:
-            X (:class:`FDataGrid`): FDataGrid with the test samples.
+            X: FDataGrid with the test samples.
 
         Returns:
-            y (np.array): array of shape (n_samples) with class labels
+            ndarray: array of shape (n_samples) with class labels
                 for each data sample.
         """
         return self.pipeline.predict(X)

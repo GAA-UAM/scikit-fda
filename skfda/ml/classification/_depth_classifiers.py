@@ -7,11 +7,10 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.pipeline import make_pipeline
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from skfda.representation.grid import FDataGrid
-
 from ..._utils import _classifier_fit_distributions
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...preprocessing.dim_reduction.feature_extraction import DDGTransformer
+from ...representation.grid import FDataGrid
 
 default_depth = ModifiedBandDepth()
 
@@ -66,7 +65,7 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, depth_method: Depth = default_depth) -> None:
         self.depth_method = depth_method
 
-    def fit(self, X: FDataGrid, y: ndarray):
+    def fit(self, X: FDataGrid, y: ndarray) -> 'MaximumDepthClassifier':
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -187,7 +186,7 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
         self.multivariate_classifier = multivariate_classifier
         self.depth_method = depth_method
 
-    def fit(self, X: FDataGrid, y: ndarray):
+    def fit(self, X: FDataGrid, y: ndarray) -> 'DDGClassifier':
         """Fit the model using X as training data and y as target values.
 
         Args:

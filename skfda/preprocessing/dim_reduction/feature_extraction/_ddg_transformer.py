@@ -1,5 +1,4 @@
 """Feature extraction transformers for dimensionality reduction."""
-
 from typing import Sequence, Union
 
 import numpy as np
@@ -87,7 +86,7 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
             depth_method = [depth_method]
         self.depth_method = depth_method
 
-    def fit(self, X: FDataGrid, y: ndarray):
+    def fit(self, X: FDataGrid, y: ndarray) -> 'DDGTransformer':
         """Fit the model using X as training data and y as target values.
 
         Args:

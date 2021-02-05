@@ -18,6 +18,7 @@ from typing import (
 
 import numpy as np
 import scipy.integrate
+from numpy import ndarray
 from pandas.api.indexers import check_array_indexer
 from sklearn.base import clone
 
@@ -32,8 +33,10 @@ from ..representation.evaluator import Evaluator
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
 
 if TYPE_CHECKING:
+    from ..exploratory.depth import Depth
     from ..representation import FData
     from ..representation.basis import Basis
+    from ..representation.grid import FDataGrid
 
 
 class _FDataCallable():
@@ -60,13 +63,15 @@ class _FDataCallable():
         tmp = np.empty(self.n_samples)
         new_nsamples = len(tmp[key])
 
-        return _FDataCallable(new_function,
-                              domain_range=self.domain_range,
-                              n_samples=new_nsamples)
+        return _FDataCallable(
+            new_function,
+            domain_range=self.domain_range,
+            n_samples=new_nsamples,
+        )
 
 
 def check_is_univariate(fd):
-    """Checks if an FData is univariate and raises an error
+    """Check if an FData is univariate and raises an error.
 
     Args:
         fd (:class:`~skfda.FData`): Functional object to check if is
@@ -78,18 +83,17 @@ def check_is_univariate(fd):
 
     """
     if fd.dim_domain != 1 or fd.dim_codomain != 1:
-        raise ValueError(f"The functional data must be univariate, i.e., " +
-                         f"with dim_domain=1 "
-                         + (f"" if fd.dim_domain == 1
-                            else f"(currently is {fd.dim_domain}) ")
-                         + f"and dim_codomain=1 "
-                         + (f"" if fd.dim_codomain == 1 else
-                            f"(currently is  {fd.dim_codomain})"))
+        raise ValueError(
+            f'The functional data must be univariate, i.e., '
+            f'with dim_domain=1 '
+            f'{"" if fd.dim_domain == 1 else f"(now {fd.dim_domain}) "}'
+            f'and dim_codomain=1 '
+            f'{"" if fd.dim_codomain == 1 else f"(now {fd.dim_codomain})"}',
+        )
 
 
 def _to_grid(X, y, eval_points=None):
     """Transform a pair of FDatas in grids to perform calculations."""
-
     from .. import FDataGrid
     x_is_grid = isinstance(X, FDataGrid)
     y_is_grid = isinstance(y, FDataGrid)
@@ -178,31 +182,32 @@ def _to_array_maybe_ragged(array, *, row_shape=None):
 
     if all(s == shapes[0] for s in shapes):
         return np.array(array_list)
-    else:
-        res = np.empty(len(array_list), dtype=np.object_)
 
-        for i, a in enumerate(array_list):
-            res[i] = a
+    res = np.empty(len(array_list), dtype=np.object_)
 
-        return res
+    for i, a in enumerate(array_list):
+        res[i] = a
+
+    return res
 
 
 def _cartesian_product(axes, flatten=True, return_shape=False):
-    """Computes the cartesian product of the axes.
+    """Compute the cartesian product of the axes.
 
     Computes the cartesian product of the axes and returns a numpy array of
     1 dimension with all the possible combinations, for an arbitrary number of
     dimensions.
 
     Args:
-        Axes (array_like): List with axes.
+        axes (array_like): List with axes.
+        flatten: Boolean flag. True if the product is flattened.
+        return_shape: Boolean flag. True if the shape is returned.
 
-    Return:
+    Returns:
         (np.ndarray): Numpy 2-D array with all the possible combinations.
         The entry (i,j) represent the j-th coordinate of the i-th point.
 
     Examples:
-
         >>> from skfda._utils import _cartesian_product
         >>> axes = [[0,1],[2,3]]
         >>> _cartesian_product(axes)
@@ -222,7 +227,6 @@ def _cartesian_product(axes, flatten=True, return_shape=False):
         >>> _cartesian_product(axes)
         array([[0],
                [1]])
-
     """
     cartesian = np.stack(np.meshgrid(*axes, indexing='ij'), -1)
 
@@ -233,8 +237,8 @@ def _cartesian_product(axes, flatten=True, return_shape=False):
 
     if return_shape:
         return cartesian, shape
-    else:
-        return cartesian
+
+    return cartesian
 
 
 def _same_domain(fd: Union[Basis, FData], fd2: Union[Basis, FData]) -> bool:
@@ -249,8 +253,7 @@ def _reshape_eval_points(
     n_samples: int,
     dim_domain: int,
 ) -> np.ndarray:
-    """Convert and reshape the eval_points to ndarray with the
-    corresponding shape.
+    """Convert and reshape the eval_points to ndarray.
 
     Args:
         eval_points: Evaluation points to be reshaped.
@@ -267,31 +270,36 @@ def _reshape_eval_points(
         x `dim_domain`.
 
     """
-
     if aligned:
         eval_points = np.asarray(eval_points)
     else:
         eval_points = _to_array_maybe_ragged(
-            eval_points, row_shape=(-1, dim_domain))
+            eval_points, row_shape=(-1, dim_domain),
+        )
 
     # Case evaluation of a single value, i.e., f(0)
     # Only allowed for aligned evaluation
-    if aligned and (eval_points.shape == (dim_domain,)
-                    or (eval_points.ndim == 0 and dim_domain == 1)):
+    if aligned and (
+        eval_points.shape == (dim_domain,)
+        or (eval_points.ndim == 0 and dim_domain == 1)
+    ):
         eval_points = np.array([eval_points])
 
     if aligned:  # Samples evaluated at same eval points
 
-        eval_points = eval_points.reshape((eval_points.shape[0],
-                                           dim_domain))
+        eval_points = eval_points.reshape((
+            eval_points.shape[0],
+            dim_domain,
+        ))
 
     else:  # Different eval_points for each sample
 
         if eval_points.shape[0] != n_samples:
-
-            raise ValueError(f"eval_points should be a list "
-                             f"of length {n_samples} with the "
-                             f"evaluation points for each sample.")
+            raise ValueError(
+                f'eval_points should be a list '
+                f'of length {n_samples} with the '
+                f'evaluation points for each sample.',
+            )
 
     return eval_points
 
@@ -306,8 +314,9 @@ def _one_grid_to_points(axes, *, dim_domain):
     axes = _to_grid_points(axes)
 
     if len(axes) != dim_domain:
-        raise ValueError(f"Length of axes should be "
-                         f"{dim_domain}")
+        raise ValueError(
+            f'Length of axes should be {dim_domain}',
+        )
 
     cartesian, shape = _cartesian_product(axes, return_shape=True)
 
@@ -358,6 +367,10 @@ def _evaluate_grid(
             object.
         aligned: If False evaluates each sample
             in a different grid.
+        evaluate_method: method to use to evaluate the points
+        n_samples: number of samples
+        dim_domain: dimension of the domain
+        dim_codomain: dimensions of the codomain
 
     Returns:
         Numpy array with dim_domain + 1 dimensions with
@@ -368,7 +381,6 @@ def _evaluate_grid(
             dimension.
 
     """
-
     # Compute intersection points and resulting shapes
     if aligned:
 
@@ -379,31 +391,36 @@ def _evaluate_grid(
         axes = list(axes)
 
         if len(axes) != n_samples:
-            raise ValueError("Should be provided a list of axis per "
-                             "sample")
+            raise ValueError(
+                "A list of axis per sample should be provided",
+            )
 
         eval_points, shape = zip(
-            *[_one_grid_to_points(a, dim_domain=dim_domain) for a in axes])
+            *[_one_grid_to_points(a, dim_domain=dim_domain) for a in axes],
+        )
 
     eval_points = _to_array_maybe_ragged(eval_points)
 
     # Evaluate the points
-    res = evaluate_method(eval_points,
-                          extrapolation=extrapolation,
-                          aligned=aligned)
+    res = evaluate_method(
+        eval_points,
+        extrapolation=extrapolation,
+        aligned=aligned,
+    )
 
     # Reshape the result
     if aligned:
 
         res = res.reshape(
-            [n_samples] + list(shape) + [dim_codomain]
+            [n_samples] + list(shape) + [dim_codomain],
         )
 
     else:
 
         res = _to_array_maybe_ragged([
             r.reshape(list(s) + [dim_codomain])
-            for r, s in zip(res, shape)])
+            for r, s in zip(res, shape)
+        ])
 
     return res
 
@@ -475,18 +492,15 @@ def _pairwise_symmetric(
     **kwargs: Any,
 ) -> np.ndarray:
     """Compute pairwise a commutative function."""
+    dim1 = len(arg1)
     if arg2 is None or arg2 is arg1:
+        indices = np.triu_indices(dim1)
 
-        indices = np.triu_indices(len(arg1))
-
-        matrix = np.empty((len(arg1), len(arg1)))
+        matrix = np.empty((dim1, dim1))
 
         triang_vec = _map_in_batches(
             function,
-            (
-                arg1,
-                arg1,
-            ),
+            (arg1, arg1),
             indices,
             memory_per_batch=memory_per_batch,
             **kwargs,
@@ -500,39 +514,27 @@ def _pairwise_symmetric(
 
         return matrix
 
-    else:
+    dim2 = len(arg2)
+    indices = np.indices((dim1, dim2))
 
-        indices = np.indices((len(arg1), len(arg2)))
+    vec = _map_in_batches(
+        function,
+        (arg1, arg2),
+        (indices[0].ravel(), indices[1].ravel()),
+        memory_per_batch=memory_per_batch,
+        **kwargs,
+    )
 
-        vec = _map_in_batches(
-            function,
-            (
-                arg1,
-                arg2,
-            ),
-            (
-                indices[0].ravel(),
-                indices[1].ravel(),
-            ),
-            memory_per_batch=memory_per_batch,
-            **kwargs,
-        )
-
-        return vec.reshape((len(arg1), len(arg2)))
+    return vec.reshape((dim1, dim2))
 
 
 def _int_to_real(array: np.ndarray) -> np.ndarray:
-    """
-    Convert integer arrays to floating point.
-    """
+    """Convert integer arrays to floating point."""
     return array + 0.0
 
 
 def _check_array_key(array, key):
-    """
-    Checks a getitem key.
-    """
-
+    """Check a getitem key."""
     key = check_array_indexer(array, key)
 
     if isinstance(key, numbers.Integral):  # To accept also numpy ints
@@ -540,8 +542,8 @@ def _check_array_key(array, key):
         key = range(len(array))[key]
 
         return slice(key, key + 1)
-    else:
-        return key
+
+    return key
 
 
 def _check_estimator(estimator):
@@ -556,7 +558,7 @@ def _check_estimator(estimator):
     check_set_params(name, instance)
 
 
-def _classifier_get_classes(y):
+def _classifier_get_classes(y: ndarray) -> Tuple[ndarray, ndarray]:
     from sklearn.preprocessing import LabelEncoder
     from sklearn.utils.multiclass import check_classification_targets
 
@@ -568,21 +570,31 @@ def _classifier_get_classes(y):
     classes = le.classes_
 
     if classes.size < 2:
-        raise ValueError(f'The number of classes has to be greater than'
-                         f' one; got {classes.size} class')
+        raise ValueError(
+            f'The number of classes has to be greater than'
+            f'one; got {classes.size} class',
+        )
     return classes, y_ind
 
 
-def _classifier_get_distributions(classes, X, y_ind, depth_methods):
-    distributions = [
+def _classifier_get_distributions(
+    classes: ndarray,
+    X: FDataGrid,
+    y_ind: ndarray,
+    depth_methods: Sequence[Depth],
+) -> Sequence[Depth]:
+    return [
         clone(depth_method).fit(X[y_ind == cur_class])
         for cur_class in range(classes.size)
         for depth_method in depth_methods
     ]
-    return distributions
 
 
-def _classifier_fit_distributions(X, y, depth_methods):
+def _classifier_fit_distributions(
+    X: FDataGrid,
+    y: ndarray,
+    depth_methods: Sequence[Depth],
+) -> Tuple[ndarray, Sequence[Depth]]:
     classes_, y_ind = _classifier_get_classes(y)
 
     distributions_ = _classifier_get_distributions(

@@ -5,7 +5,9 @@ To do this depth is calculated for the two chosen distributions, and then
 a scatter plot is created of this two variables.
 """
 
+from typing import Callable
 from ... import FDataGrid
+from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from ._utils import (
     _get_figure_and_axes,
@@ -14,6 +16,7 @@ from ._utils import (
 
 
 class DDPlot:
+
     """DDPlot visualization. Plot the depth of our fdata elements in two
     different distributions, one in each axis. It is useful to understand
     how our data is more related with one subset of data / distribution
@@ -29,14 +32,32 @@ class DDPlot:
             data with respect to the distributions.
 
     """
-    def __init__(self, fdata: FDataGrid, dist1, dist2, depth_method) -> None:
+
+    def __init__(
+        self,
+        fdata: FDataGrid,
+        dist1: FDataGrid,
+        dist2: FDataGrid,
+        depth_method: Callable,
+    ) -> None:
         self.fdata = fdata
         self.dist1 = dist1
         self.dist2 = dist2
         self.depth_method = depth_method
+        self.depth_method.fit(fdata)
 
-    def plot(self, chart=None, *, fig=None, axes=None, 
-             n_rows=None, n_cols=None, **kwargs) -> Figure:
+    def plot(
+        self,
+        chart: Figure = None,
+        *,
+        fig: Figure = None,
+        axes: Axes = None,
+        n_rows: int = None,
+        n_cols: int = None,
+        width_aux_line: float = 0.35,
+        color_aux_line: str = "gray",
+        **kwargs,
+    ) -> Figure:
         """Plot the depth of our fdata elements in the two different
         distributions,one in each axis. It is useful to understand how
         our data is more related with one subset of data / distribution
@@ -50,44 +71,72 @@ class DDPlot:
             fig (figure object, optional): figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-            axes (list of axis objects, optional): axis over where the graphs
-            are plotted. If None, see param fig.
+                axes (list of axis objects, optional): axis over where the
+                graphs are plotted. If None, see param fig.
             n_rows (int, optional): designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
                 if fig and ax are None.
             n_cols(int, optional): designates the number of columns of the
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
-            **kwargs: if dim_domain is 1, keyword arguments to be passed to
-                the matplotlib.pyplot.plot function; if dim_domain is 2,
-                keyword arguments to be passed to the
-                matplotlib.pyplot.plot_surface function.
+            width_aux_line: indicates the width of the auxiliary line that goes
+                from [0,0] to [1,1], used to get a better understanding of the
+                depths.
+            color_aux_line: indicates the color of the auxiliary line that goes
+                from [0,0] to [1,1], used to get a better understanding of the
+                depths.
+            **kwargs: if dim_domain is 1, keyword arguments to be passed to the
+                matplotlib.pyplot.plot function; if dim_domain is 2, keyword
+                arguments to be passed to the matplotlib.pyplot.plot_surface
+                function.
 
         Returns:
             fig (figure object): figure object in which the depths will be
             scattered.
 
-        """  
+        """
+        margin = 0.025
         fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(self.fdata, fig, axes, n_rows, n_cols)
+        fig, axes = _set_figure_layout_for_fdata(
+            self.fdata, fig, axes, n_rows, n_cols,
+        )
 
-        depth_dist1 = self.depth_method.__call__(self.fdata, distribution=self.dist1)
-        depth_dist2 = self.depth_method.__call__(self.fdata, distribution=self.dist2)
-    
+        depth_dist1 = self.depth_method.__call__(
+            self.fdata, distribution=self.dist1,
+        )
+        depth_dist2 = self.depth_method.__call__(
+            self.fdata, distribution=self.dist2,
+        )
+
         if self.fdata.dim_domain == 1:
-
             for i in range(self.fdata.dim_codomain):
+                axes[i].scatter(
+                    depth_dist1,
+                    depth_dist2,
+                    **kwargs,
+                )
 
-                axes[i].scatter(depth_dist1, depth_dist2,
-                                **kwargs)
-
-        # Set labels of graph 
+        # Set labels of graph
         fig.suptitle("DDPlot")
-        for i in range(self.fdata.dim_codomain):
-            axes[i].set_xlabel("X depth")
-            axes[i].set_ylabel("Y depth")
-            axes[i].set_xlim([self.depth_method.min, self.depth_method.max])
-            axes[i].set_ylim([self.depth_method.min, self.depth_method.max])
-            axes[i].plot([0, 1], linewidth=0.2, color="gray")
+        for j in range(self.fdata.dim_codomain):
+            axes[j].set_xlabel("X depth")
+            axes[j].set_ylabel("Y depth")
+            axes[j].set_xlim(
+                [
+                    self.depth_method.min - margin,
+                    self.depth_method.max + margin,
+                ],
+            )
+            axes[j].set_ylim(
+                [
+                    self.depth_method.min - margin,
+                    self.depth_method.max + margin,
+                ],
+            )
+            axes[j].plot(
+                [0, 1],
+                linewidth=width_aux_line,
+                color=color_aux_line,
+            )
 
         return fig

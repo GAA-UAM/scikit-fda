@@ -7,12 +7,11 @@ from numpy import ndarray
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from skfda.representation.grid import FDataGrid
-
 from ..._utils import _classifier_get_classes
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...exploratory.stats import mean, trim_mean
 from ...misc.metrics import LpDistance, PairwiseMetric, l2_distance
+from ...representation.grid import FDataGrid
 
 T = TypeVar("T", contravariant=True)
 

@@ -238,6 +238,8 @@ class DDClassifier(BaseEstimator, ClassifierMixin):
             ndarray: array of shape (n_samples) with class labels
                 for each data sample.
         """
+        sklearn_check_is_fitted(self)
+
         dd_coordinates = [
             distribution.predict(X)
             for distribution in self.distributions_
@@ -363,4 +365,6 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
             ndarray: array of shape (n_samples) with class labels
                 for each data sample.
         """
+        sklearn_check_is_fitted(self)
+
         return self.pipeline.predict(X)

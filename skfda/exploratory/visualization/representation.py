@@ -78,6 +78,9 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
 
     return sample_colors, patches
 
+class GraphPlot:
+    
+
 
 def plot_graph(fdata, chart=None, *, fig=None, axes=None,
                n_rows=None, n_cols=None, n_points=None,

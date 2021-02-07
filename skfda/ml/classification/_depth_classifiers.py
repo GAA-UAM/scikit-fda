@@ -116,6 +116,13 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
 class DDClassifier(BaseEstimator, ClassifierMixin):
     """Depth-versus-depth (DD) classifer for functional data.
 
+    Transforms the data into a DD-plot and then classifies using a polynomial
+    of a chosen degree. The polynomial passes through zero and maximizes the
+    accuracy of the classification on the train dataset.
+
+    If a point is below the polynomial in the DD-plot, it is classified to
+    the first class. Otherwise, the point is classified to the second class.
+
     Parameters:
         degree: degree of the polynomial used to classify in the DD-plot
         depth_method:

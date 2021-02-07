@@ -372,6 +372,4 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
             ndarray: array of shape (n_samples) with class labels
                 for each data sample.
         """
-        sklearn_check_is_fitted(self)
-
         return self.pipeline.predict(X)

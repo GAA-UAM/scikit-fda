@@ -38,7 +38,6 @@ class DDPlot:
             data with respect to the distributions.
 
     """
-
     def __init__(
         self,
         fdata: T,
@@ -62,7 +61,7 @@ class DDPlot:
         n_cols: Optional[int] = None,
         **kwargs,
     ) -> Figure:
-    
+
         """Plot the depth of our fdata elements in the two different
         distributions,one in each axis. It is useful to understand how
         our data is more related with one subset of data / distribution

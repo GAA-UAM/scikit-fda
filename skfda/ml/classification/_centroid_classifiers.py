@@ -1,14 +1,20 @@
 """Centroid-based models for supervised classification."""
+from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Optional, TypeVar, Union
 
+from numpy import ndarray
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
+
+from skfda.representation.grid import FDataGrid
 
 from ..._utils import _classifier_get_classes
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...exploratory.stats import mean, trim_mean
-from ...misc.metrics import PairwiseMetric, l2_distance
+from ...misc.metrics import LpDistance, PairwiseMetric, l2_distance
+
+T = TypeVar("T", contravariant=True)
 
 
 class NearestCentroid(BaseEstimator, ClassifierMixin):
@@ -18,13 +24,11 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
     the class with the nearest centroid.
 
     Parameters:
-        metric: callable, (default
-            :func:`l2_distance <skfda.metrics.l2_distance>`)
+        metric:
             The metric to use when calculating distance between test samples
             and centroids. See the documentation of the metrics module
-            for a list of available metrics. Defaults used L2 distance.
-        centroid: callable, (default
-            :func:`mean <skfda.exploratory.stats.mean>`)
+            for a list of available metrics. L2 distance is used by default.
+        centroid:
             The centroids for the samples corresponding to each class is the
             point from which the sum of the distances (according to the metric)
             of all samples that belong to that particular class are minimized.
@@ -59,22 +63,25 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
         :class:`~skfda.ml.classification.DTMClassifier`
     """
 
-    def __init__(self, metric=l2_distance, centroid=mean):
+    def __init__(
+        self,
+        metric: Union[str, LpDistance] = l2_distance,
+        centroid: Callable = mean,
+    ):
         self.metric = metric
         self.centroid = centroid
 
-    def fit(self, X, y):
+    def fit(self, X: Union[FDataGrid, ndarray], y: ndarray) -> NearestCentroid:
         """Fit the model using X as training data and y as target values.
 
         Args:
-            X (:class:`FDataGrid`, array_matrix): Training data. FDataGrid
-                with the training data or array matrix with shape
+            X: FDataGrid with the training data or array matrix with shape
                 (n_samples, n_samples) if metric='precomputed'.
-            y (array-like or sparse matrix): Target values of
+            y: Target values of
                 shape = (n_samples) or (n_samples, n_outputs).
 
         Returns:
-            self (object)
+            self
         """
         classes_, y_ind = _classifier_get_classes(y)
 
@@ -87,15 +94,15 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def predict(self, X):
+    def predict(self, X: FDataGrid) -> ndarray:
         """Predict the class labels for the provided data.
 
         Args:
-            X (:class:`FDataGrid`): FDataGrid with the test samples.
+            X: FDataGrid with the test samples.
 
         Returns:
-            y (np.array): array of shape (n_samples) or
-            (n_samples, n_outputs) with class labels for each data sample.
+            ndarray: array of shape (n_samples) or
+                (n_samples, n_outputs) with class labels for each data sample.
         """
         sklearn_check_is_fitted(self)
 
@@ -113,19 +120,18 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
     the observation to the trimmed mean of the group.
 
     Parameters:
-        proportiontocut (float): indicates the percentage of functions to
-            remove. It is not easy to determine as it varies from dataset to
+        proportiontocut:
+            Indicates the percentage of functions to remove.
+            It is not easy to determine as it varies from dataset to
             dataset.
-        depth_method (Depth, default
-            :class:`ModifiedBandDepth <skfda.depth.ModifiedBandDepth>`):
+        depth_method:
             The depth class used to order the data. See the documentation of
             the depths module for a list of available depths. By default it
             is ModifiedBandDepth.
-        metric (Callable, default
-            :func:`l2_distance <skfda.misc.metrics.l2_distance>`):
+        metric:
             Distance function between two functional objects. See the
             documentation of the metrics module for a list of available
-            metrics.
+            metrics. L2 distance is used by default.
 
     Examples:
         Firstly, we will import and split the Berkeley Growth Study dataset
@@ -167,28 +173,26 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
         proportiontocut: float,
-        depth_method: Depth = None,
+        depth_method: Optional[Depth[T]] = None,
         metric: Callable = l2_distance,
     ) -> None:
         self.proportiontocut = proportiontocut
-
-        if depth_method is None:
-            self.depth_method = ModifiedBandDepth()
-        else:
-            self.depth_method = depth_method
-
+        self.depth_method = depth_method
         self.metric = metric
 
-    def fit(self, X, y):
+    def fit(self, X: FDataGrid, y: ndarray) -> DTMClassifier:
         """Fit the model using X as training data and y as target values.
 
         Args:
-            X (:class:`FDataGrid`): FDataGrid with the training data.
-            y (array-like): Target values of shape = (n_samples).
+            X: FDataGrid with the training data.
+            y: Target values of shape = (n_samples).
 
         Returns:
-            self (object)
+            self
         """
+        if self.depth_method is None:
+            self.depth_method = ModifiedBandDepth()
+
         self._clf = NearestCentroid(
             metric=self.metric,
             centroid=lambda fdatagrid: trim_mean(
@@ -201,14 +205,14 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def predict(self, X):
+    def predict(self, X: FDataGrid) -> ndarray:
         """Predict the class labels for the provided data.
 
         Args:
-            X (:class:`FDataGrid`): FDataGrid with the test samples.
+            X: FDataGrid with the test samples.
 
         Returns:
-            y (np.array): array of shape (n_samples) or
-            (n_samples, n_outputs) with class labels for each data sample.
+            ndarray: array of shape (n_samples) or
+                (n_samples, n_outputs) with class labels for each data sample.
         """
         return self._clf.predict(X)

@@ -1,5 +1,7 @@
 """Feature extraction transformers for dimensionality reduction."""
-from typing import Sequence, Union
+from __future__ import annotations
+
+from typing import Optional, Sequence, TypeVar, Union
 
 import numpy as np
 from numpy import ndarray
@@ -10,7 +12,7 @@ from ...._utils import _classifier_fit_distributions
 from ....exploratory.depth import Depth, ModifiedBandDepth
 from ....representation.grid import FDataGrid
 
-default_depth = ModifiedBandDepth()
+T = TypeVar("T", contravariant=True)
 
 
 class DDGTransformer(BaseEstimator, TransformerMixin):
@@ -80,13 +82,11 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        depth_method: Union[Depth, Sequence[Depth]] = default_depth,
+        depth_method: Optional[Union[Depth[T], Sequence[Depth[T]]]] = None,
     ) -> None:
-        if isinstance(depth_method, Depth):
-            depth_method = [depth_method]
         self.depth_method = depth_method
 
-    def fit(self, X: FDataGrid, y: ndarray) -> 'DDGTransformer':
+    def fit(self, X: FDataGrid, y: ndarray) -> DDGTransformer:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -94,8 +94,14 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
             y: Target values of shape = (n_samples).
 
         Returns:
-            self (object)
+            self
         """
+        if self.depth_method is None:
+            self.depth_method = ModifiedBandDepth()
+
+        if isinstance(self.depth_method, Depth):
+            self.depth_method = [self.depth_method]
+
         classes_, distributions_ = _classifier_fit_distributions(
             X, y, self.depth_method,
         )

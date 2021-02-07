@@ -12,6 +12,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    TypeVar,
     Union,
     cast,
 )
@@ -37,6 +38,8 @@ if TYPE_CHECKING:
     from ..representation import FData
     from ..representation.basis import Basis
     from ..representation.grid import FDataGrid
+
+T = TypeVar("T", contravariant=True)
 
 
 class _FDataCallable():
@@ -581,8 +584,8 @@ def _classifier_get_distributions(
     classes: ndarray,
     X: FDataGrid,
     y_ind: ndarray,
-    depth_methods: Sequence[Depth],
-) -> Sequence[Depth]:
+    depth_methods: Sequence[Depth[T]],
+) -> Sequence[Depth[T]]:
     return [
         clone(depth_method).fit(X[y_ind == cur_class])
         for cur_class in range(classes.size)
@@ -593,8 +596,8 @@ def _classifier_get_distributions(
 def _classifier_fit_distributions(
     X: FDataGrid,
     y: ndarray,
-    depth_methods: Sequence[Depth],
-) -> Tuple[ndarray, Sequence[Depth]]:
+    depth_methods: Sequence[Depth[T]],
+) -> Tuple[ndarray, Sequence[Depth[T]]]:
     classes_, y_ind = _classifier_get_classes(y)
 
     distributions_ = _classifier_get_distributions(

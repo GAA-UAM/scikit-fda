@@ -5,7 +5,9 @@ To do this depth is calculated for the two chosen distributions, and then
 a scatter plot is created of this two variables.
 """
 
-from typing import Callable
+import numpy as np
+
+from ...exploratory.depth.multivariate import Depth
 from ... import FDataGrid
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -13,6 +15,10 @@ from ._utils import (
     _get_figure_and_axes,
     _set_figure_layout_for_fdata,
 )
+
+from typing import TypeVar, Optional
+
+T = TypeVar('T', FDataGrid, np.ndarray)
 
 
 class DDPlot:
@@ -35,10 +41,10 @@ class DDPlot:
 
     def __init__(
         self,
-        fdata: FDataGrid,
-        dist1: FDataGrid,
-        dist2: FDataGrid,
-        depth_method: Callable,
+        fdata: T,
+        dist1: T,
+        dist2: T,
+        depth_method: Depth[T],
     ) -> None:
         self.fdata = fdata
         self.dist1 = dist1
@@ -52,10 +58,8 @@ class DDPlot:
         *,
         fig: Figure = None,
         axes: Axes = None,
-        n_rows: int = None,
-        n_cols: int = None,
-        width_aux_line: float = 0.35,
-        color_aux_line: str = "gray",
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
         **kwargs,
     ) -> Figure:
         """Plot the depth of our fdata elements in the two different
@@ -79,12 +83,6 @@ class DDPlot:
             n_cols(int, optional): designates the number of columns of the
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
-            width_aux_line: indicates the width of the auxiliary line that goes
-                from [0,0] to [1,1], used to get a better understanding of the
-                depths.
-            color_aux_line: indicates the color of the auxiliary line that goes
-                from [0,0] to [1,1], used to get a better understanding of the
-                depths.
             **kwargs: if dim_domain is 1, keyword arguments to be passed to the
                 matplotlib.pyplot.plot function; if dim_domain is 2, keyword
                 arguments to be passed to the matplotlib.pyplot.plot_surface
@@ -96,6 +94,9 @@ class DDPlot:
 
         """
         margin = 0.025
+        width_aux_line = 0.35
+        color_aux_line = "gray"
+
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         fig, axes = _set_figure_layout_for_fdata(
             self.fdata, fig, axes, n_rows, n_cols,

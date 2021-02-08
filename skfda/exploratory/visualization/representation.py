@@ -1,18 +1,19 @@
-from matplotlib import colors
+from typing import Any, List, Optional, TypeVar
+
 import matplotlib.cm
 import matplotlib.patches
 import numpy as np
+from matplotlib import colors
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 from ... import FDataGrid
 from ..._utils import _to_domain_range, constants
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
 from ._utils import (
     _get_figure_and_axes,
     _set_figure_layout_for_fdata,
     _set_labels,
 )
-from typing import TypeVar, Optional, Any, List
 
 T = TypeVar('T', FDataGrid, np.ndarray)
 S = TypeVar('S', int, tuple)
@@ -89,9 +90,11 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
 
 class GraphPlot:
 
-    """Class used to plot the FDatGrid object graph as hypersurfaces. A list
-    of variables (probably depths) can be used as an argument to display the
-    functions wtih a gradient of colors.
+    """
+    Class used to plot the FDatGrid object graph as hypersurfaces.
+    
+    A list of variables (probably depths) can be used as an argument to
+    display the functions wtih a gradient of colors.
 
     Args:
         fdata: functional data set that we want to plot.
@@ -106,11 +109,13 @@ class GraphPlot:
             used to normalize the gradient_color_list in order to get values
             thatcan be used in the funcion colormap.__call__(). If not
             declared it will be initialized to the minimum value of
-            gradient_list
+            gradient_list.
+
     Attributes:
         gradient_list: normalization of the values from gradient color_list
             that will be used to determine the intensity of the color
             each function will have.
+
     """
     def __init__(
         self,
@@ -151,7 +156,7 @@ class GraphPlot:
         chart: Figure = None,
         *,
         fig: Figure = None,
-        axes: Axes = None,
+        axes: List[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
         n_points: Optional[S] = None,
@@ -163,16 +168,72 @@ class GraphPlot:
         legend: bool = False,
         **kwargs: Any,
     ) -> Figure:
-
-        """Method used to plot the graph. Plots each coordinate separately. 
-        If the :term:`domain` is one dimensional, the plots will be curves, 
-        and if it is two dimensional, they will be surfaces.
+        """
+        Plot the graph. 
         
-        There are two styles of visualizations, one that displays the
-        functions without any criteria choosing the colors and a new one
-        that displays the function with a gradient of colors depending
-        on the initial gradient_color_list (normalized in 
-        gradient_list)."""
+        Plots each coordinate separately. If the :term:`domain` is one
+        dimensional, the plots will be curves, and if it is two
+        dimensional, they will be surfaces. There are two styles of
+        visualizations, one that displays the functions without any
+        criteria choosing the colors and a new one that displays the
+        function with a gradient of colors depending on the initial
+        gradient_color_list (normalized in gradient_list).
+        
+        Args:
+        chart (figure object, axe or list of axes, optional): figure over
+            with the graphs are plotted or axis over where the graphs are
+            plotted. If None and ax is also None, the figure is
+            initialized.
+        fig (figure object, optional): figure over with the graphs are
+            plotted in case ax is not specified. If None and ax is also
+            None, the figure is initialized.
+        axes (list of axis objects, optional): axis over where the graphs are
+            plotted. If None, see param fig.
+        n_rows (int, optional): designates the number of rows of the figure
+            to plot the different dimensions of the image. Only specified
+            if fig and ax are None.
+        n_cols(int, optional): designates the number of columns of the
+            figure to plot the different dimensions of the image. Only
+            specified if fig and ax are None.
+        n_points (int or tuple, optional): Number of points to evaluate in
+            the plot. In case of surfaces a tuple of length 2 can be pased
+            with the number of points to plot in each axis, otherwise the
+            same number of points will be used in the two axes. By default
+            in unidimensional plots will be used 501 points; in surfaces
+            will be used 30 points per axis, wich makes a grid with 900
+            points.
+        domain_range (tuple or list of tuples, optional): Range where the
+            function will be plotted. In objects with unidimensional domain
+            the domain range should be a tuple with the bounds of the
+            interval; in the case of surfaces a list with 2 tuples with
+            the ranges for each dimension. Default uses the domain range
+            of the functional object.
+        group (list of int): contains integers from [0 to number of
+            labels) indicating to which group each sample belongs to. Then,
+            the samples with the same label are plotted in the same color.
+            If None, the default value, each sample is plotted in the color
+            assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+        group_colors (list of colors): colors in which groups are
+            represented, there must be one for each group. If None, each
+            group is shown with distict colors in the "Greys" colormap.
+        group_names (list of str): name of each of the groups which appear
+            in a legend, there must be one for each one. Defaults to None
+            and the legend is not shown. Implies `legend=True`.
+        colormap_name: name of the colormap to be used. By default we will
+            use autumn.
+        legend (bool): if `True`, show a legend with the groups. If
+            `group_names` is passed, it will be used for finding the names
+            to display in the legend. Otherwise, the values passed to
+            `group` will be used.
+        **kwargs: if dim_domain is 1, keyword arguments to be passed to
+            the matplotlib.pyplot.plot function; if dim_domain is 2,
+            keyword arguments to be passed to the
+            matplotlib.pyplot.plot_surface function.
+
+        Returns:
+            fig (figure object): figure object in which the graphs are plotted.
+
+        """
 
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         fig, axes = _set_figure_layout_for_fdata(

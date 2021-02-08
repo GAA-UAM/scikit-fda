@@ -84,7 +84,7 @@ class DDPlot:
             n_cols(int, optional): designates the number of columns of the
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
-            **kwargs: if dim_domain is 1, keyword arguments to be passed to the
+            kwargs: if dim_domain is 1, keyword arguments to be passed to the
                 matplotlib.pyplot.plot function; if dim_domain is 2, keyword
                 arguments to be passed to the matplotlib.pyplot.plot_surface
                 function.

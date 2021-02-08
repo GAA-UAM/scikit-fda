@@ -37,9 +37,8 @@ if TYPE_CHECKING:
     from ..exploratory.depth import Depth
     from ..representation import FData
     from ..representation.basis import Basis
-    from ..representation.grid import FDataGrid
 
-T = TypeVar("T", contravariant=True)
+T = TypeVar("T", bound=FData)
 
 
 class _FDataCallable():
@@ -582,7 +581,7 @@ def _classifier_get_classes(y: ndarray) -> Tuple[ndarray, ndarray]:
 
 def _classifier_get_depth_methods(
     classes: ndarray,
-    X: FDataGrid,
+    X: T,
     y_ind: ndarray,
     depth_methods: Sequence[Depth[T]],
 ) -> Sequence[Depth[T]]:
@@ -594,7 +593,7 @@ def _classifier_get_depth_methods(
 
 
 def _classifier_fit_depth_methods(
-    X: FDataGrid,
+    X: T,
     y: ndarray,
     depth_methods: Sequence[Depth[T]],
 ) -> Tuple[ndarray, Sequence[Depth[T]]]:

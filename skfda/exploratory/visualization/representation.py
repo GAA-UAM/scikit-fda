@@ -1,5 +1,4 @@
-from typing import Any, List
-from typing import Optional, TypeVar
+import typing as t
 
 import matplotlib.cm
 import matplotlib.patches
@@ -15,9 +14,9 @@ from ._utils import (
     _set_labels,
 )
 
-T = TypeVar('T', FDataGrid, np.ndarray)
-S = TypeVar('S', int, tuple)
-V = TypeVar('V', tuple, list)
+T = t.TypeVar('T', FDataGrid, np.ndarray)
+S = t.TypeVar('S', int, tuple)
+V = t.TypeVar('V', tuple, list)
 
 
 def _get_label_colors(n_labels, group_colors=None):
@@ -50,13 +49,15 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
 
         if group_colors is not None:
             group_colors_array = np.array(
-                [group_colors[g] for g in group_unique])
+                [group_colors[g] for g in group_unique]
+            )
         else:
             prop_cycle = matplotlib.rcParams['axes.prop_cycle']
             cycle_colors = prop_cycle.by_key()['color']
 
             group_colors_array = np.take(
-                cycle_colors, np.arange(n_labels), mode='wrap')
+                cycle_colors, np.arange(n_labels), mode='wrap',
+            )
 
         sample_colors = group_colors_array[group_indexes]
 
@@ -64,13 +65,16 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
 
         if group_names is not None:
             group_names_array = np.array(
-                [group_names[g] for g in group_unique])
+                [group_names[g] for g in group_unique]
+            )
         elif legend is True:
             group_names_array = group_unique
 
         if group_names_array is not None:
-            patches = [matplotlib.patches.Patch(color=c, label=l)
-                       for c, l in zip(group_colors_array, group_names_array)]
+            patches = [
+                matplotlib.patches.Patch(color=c, label=l)
+                for c, l in zip(group_colors_array, group_names_array)
+            ]
 
     else:
         # In this case, each curve has a different color unless specified
@@ -88,6 +92,7 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
             sample_colors = None
 
     return sample_colors, patches
+
 
 
 class GraphPlot:
@@ -122,9 +127,9 @@ class GraphPlot:
     def __init__(
         self,
         fdata: T,
-        gradient_color_list: List[float] = None,
-        max_grad: Optional[float] = None,
-        min_grad: Optional[float] = None,
+        gradient_color_list: t.List[float] = None,
+        max_grad: t.Optional[float] = None,
+        min_grad: t.Optional[float] = None,
     ) -> None:
         self.fdata = fdata
         self.gradient_color_list = gradient_color_list
@@ -133,10 +138,11 @@ class GraphPlot:
                 raise ValueError(
                     "The length of the gradient color"
                     "list should be the same as the number"
-                    "of samples in fdata")
+                    "of samples in fdata"
+                )
 
             if min_grad is None:
-                self.min_grad = min(gradient_color_list) 
+                self.min_grad = min(gradient_color_list)
             else:
                 self.min_grad = min_grad
 
@@ -146,8 +152,7 @@ class GraphPlot:
                 self.max_grad = max_grad
 
             self.gradient_list = (
-                (gradient_color_list - self.min_grad) 
-                / 
+                (gradient_color_list - self.min_grad) /
                 (self.max_grad - self.min_grad)
             )
         else:
@@ -158,17 +163,17 @@ class GraphPlot:
         chart: Figure = None,
         *,
         fig: Figure = None,
-        axes: List[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
-        n_points: Optional[S] = None,
-        domain_range: Optional[V] = None,
-        group: List[int] = None,
-        group_colors: List[Any] = None,
-        group_names: List[str] = None,
+        axes: t.List[Axes] = None,
+        n_rows: t.Optional[int] = None,
+        n_cols: t.Optional[int] = None,
+        n_points: t.Optional[S] = None,
+        domain_range: t.Optional[V] = None,
+        group: t.List[int] = None,
+        group_colors: t.List[t.Any] = None,
+        group_names: t.List[str] = None,
         colormap_name: str = 'autumn',
         legend: bool = False,
-        **kwargs: Any,
+        **kwargs: t.Any,
     ) -> Figure:
         """
         Plot the graph. 
@@ -309,8 +314,10 @@ class GraphPlot:
                     if sample_colors is not None:
                         color_dict["color"] = sample_colors[j]
 
-                    axes[i].plot_surface(X, Y, Z[j, ..., i],
-                                        **color_dict, **kwargs)
+                    axes[i].plot_surface(
+                        X, Y, Z[j, ..., i],
+                        **color_dict, **kwargs,
+                    )
 
         _set_labels(self.fdata, fig, axes, patches)
 
@@ -340,16 +347,16 @@ class ScatterPlot:
         chart: Figure = None,
         *,
         fig: Figure = None,
-        axes: List[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
-        n_points: Optional[S] = None,
-        domain_range: Optional[V] = None,
-        group: List[int] = None,
-        group_colors: List[Any] = None,
-        group_names: List[str] = None,
+        axes: t.List[Axes] = None,
+        n_rows: t.Optional[int] = None,
+        n_cols: t.Optional[int] = None,
+        n_points: t.Optional[S] = None,
+        domain_range: t.Optional[V] = None,
+        group: t.List[int] = None,
+        group_colors: t.List[t.Any] = None,
+        group_names: t.List[str] = None,
         legend: bool = False,
-        **kwargs: Any,
+        **kwargs: t.Any,
     ) -> Figure:
         """
         Scatter FDataGrid object.

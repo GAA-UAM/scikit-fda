@@ -1,9 +1,9 @@
-from typing import Any, List, Optional, TypeVar
+from typing import Any, List
+from typing import Optional, TypeVar
 
 import matplotlib.cm
 import matplotlib.patches
 import numpy as np
-from matplotlib import colors
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
@@ -25,9 +25,11 @@ def _get_label_colors(n_labels, group_colors=None):
 
     if group_colors is not None:
         if len(group_colors) != n_labels:
-            raise ValueError("There must be a color in group_colors "
-                             "for each of the labels that appear in "
-                             "group.")
+            raise ValueError(
+                "There must be a color in group_colors "
+                "for each of the labels that appear in "
+                "group."
+            )
     else:
         colormap = matplotlib.cm.get_cmap()
         group_colors = colormap(np.arange(n_labels) / (n_labels - 1))
@@ -187,8 +189,8 @@ class GraphPlot:
             fig (figure object, optional): figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-            axes (list of axis objects, optional): axis over where the graphs are
-                plotted. If None, see param fig.
+            axes (list of axis objects, optional): axis over where the graphs
+                are plotted. If None, see param fig.
             n_rows (int, optional): designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
                 if fig and ax are None.
@@ -225,7 +227,7 @@ class GraphPlot:
                 `group_names` is passed, it will be used for finding the names
                 to display in the legend. Otherwise, the values passed to
                 `group` will be used.
-            **kwargs: if dim_domain is 1, keyword arguments to be passed to
+            kwargs: if dim_domain is 1, keyword arguments to be passed to
                 the matplotlib.pyplot.plot function; if dim_domain is 2,
                 keyword arguments to be passed to the
                 matplotlib.pyplot.plot_surface function.
@@ -273,8 +275,9 @@ class GraphPlot:
                     if sample_colors is not None:
                         color_dict["color"] = sample_colors[j]
 
-                    axes[i].plot(eval_points, mat[j, ..., i].T,
-                                **color_dict, **kwargs)
+                    axes[i].plot(
+                        eval_points, mat[j, ..., i].T, **color_dict, **kwargs
+                    )
 
         else:
 
@@ -284,8 +287,10 @@ class GraphPlot:
             elif np.isscalar(n_points):
                 n_points = (n_points, n_points)
             elif len(n_points) != 2:
-                raise ValueError(f"n_points should be a number or a tuple of "
-                                f"length 2, and has length {len(n_points)}")
+                raise ValueError(
+                    f"n_points should be a number or a tuple of "
+                    f"length 2, and has length {len(n_points)}"
+                )
 
             # Axes where will be evaluated
             x = np.linspace(*domain_range[0], n_points[0])
@@ -386,7 +391,7 @@ class ScatterPlot:
                 `group_names` is passed, it will be used for finding the names
                 to display in the legend. Otherwise, the values passed to
                 `group` will be used.
-            **kwargs: if dim_domain is 1, keyword arguments to be passed to
+            kwargs: if dim_domain is 1, keyword arguments to be passed to
                 the matplotlib.pyplot.plot function; if dim_domain is 2,
                 keyword arguments to be passed to the
                 matplotlib.pyplot.plot_surface function.
@@ -400,15 +405,18 @@ class ScatterPlot:
 
         if self.grid_points is None:
             # This can only be done for FDataGrid
-            grid_points = self.fdata.grid_points
+            self.grid_points = self.fdata.grid_points
             evaluated_points = self.fdata.data_matrix
 
         if evaluated_points is None:
             evaluated_points = self.fdata(
-                self.grid_points, grid=True)
+                self.grid_points, grid=True,
+            )
 
         fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(self.fdata, fig, axes, n_rows, n_cols)
+        fig, axes = _set_figure_layout_for_fdata(
+            self.fdata, fig, axes, n_rows, n_cols
+        )
 
         if domain_range is None:
             domain_range = self.fdata.domain_range
@@ -416,7 +424,7 @@ class ScatterPlot:
             domain_range = _to_domain_range(domain_range)
 
         sample_colors, patches = _get_color_info(
-            self.fdata, group, group_names, group_colors, legend, kwargs
+            self.fdata, group, group_names, group_colors, legend, kwargs,
         )
 
         if self.fdata.dim_domain == 1:

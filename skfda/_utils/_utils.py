@@ -37,8 +37,7 @@ if TYPE_CHECKING:
     from ..exploratory.depth import Depth
     from ..representation import FData
     from ..representation.basis import Basis
-
-T = TypeVar("T", bound=FData)
+    T = TypeVar("T", bound=FData)
 
 
 class _FDataCallable():

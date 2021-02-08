@@ -1,15 +1,19 @@
+from __future__ import annotations
+
+from math import ceil
 from typing import Tuple
 
 import numpy as np
 import scipy.integrate
+from sklearn.base import BaseEstimator, RegressorMixin
 
-from ..._utils import _pairwise_symmetric
+from ..._utils import _cartesian_product, _pairwise_symmetric
 from ...representation import FDataBasis, FDataGrid
-from ...representation.basis._finite_element import FiniteElement
+from ...representation.basis import Basis, FiniteElement
 
 
-def _fem_inner_product_matrix(
-    fem_basis: FiniteElement,
+def _inner_product_matrix(
+    basis: Basis,
     fd: FDataGrid,
     limits: Tuple[float, float],
     y_val: float,
@@ -20,7 +24,7 @@ def _fem_inner_product_matrix(
     integration uses Romberg integration with the trapezoidal rule.
 
     Arguments:
-        fem_basis: an FEM basis defined by a triangulation within a
+        basis: typically a FEM basis defined by a triangulation within a
             rectangular domain. It is assumed that only the part of the mesh
             that is within the upper left triangular is of interest.
         fd: a regular functional data object.
@@ -30,13 +34,13 @@ def _fem_inner_product_matrix(
 
     """
 
-    fem_basis_fd = fem_basis.to_basis()
+    basis_fd = basis.to_basis()
     grid = fd.grid_points[0]
     grid_index = (grid >= limits[0]) & (grid <= limits[1])
     grid = grid[grid_index]
 
     def _pairwise_fem_inner_product(
-        fem_basis_fd: FDataBasis,
+        basis_fd: FDataBasis,
         fd: FDataGrid,
     ) -> np.ndarray:
 
@@ -51,7 +55,7 @@ def _fem_inner_product_matrix(
             axis=1,
         )
 
-        eval_fem = fem_basis_fd(eval_grid_fem)
+        eval_fem = basis_fd(eval_grid_fem)
         eval_fd = fd(grid)
 
         # Only for scalar valued functions for now
@@ -64,13 +68,13 @@ def _fem_inner_product_matrix(
 
     return _pairwise_symmetric(
         _pairwise_fem_inner_product,
-        fem_basis_fd,
+        basis_fd,
         fd,
     )
 
 
 def _design_matrix(
-    fem_basis: FiniteElement,
+    basis: Basis,
     fd: FDataGrid,
     pred_points: np.ndarray,
 ) -> np.ndarray:
@@ -78,7 +82,7 @@ def _design_matrix(
     Computes the indefinite integrals of the curves over s up to each t-value.
 
     Arguments:
-        fem_basis: an FEM basis defined by a triangulation within a
+        basis: typically a FEM basis defined by a triangulation within a
             rectangular domain. It is assumed that only the part of the mesh
             that is within the upper left triangular is of interest.
         fd: a regular functional data object.
@@ -90,8 +94,131 @@ def _design_matrix(
     """
 
     matrix = np.array([
-        _fem_inner_product_matrix(fem_basis, fd, limits=(0, t), y_val=t).T
+        _inner_product_matrix(basis, fd, limits=(0, t), y_val=t).T
         for t in pred_points
     ])
 
     return np.swapaxes(matrix, 0, 1)
+
+
+def _get_valid_points(
+    interval_len: float,
+    n_intervals: int,
+    lag: float,
+) -> np.ndarray:
+    """Return the valid points as integer tuples."""
+    interval_points = np.arange(n_intervals + 1)
+    full_grid_points = _cartesian_product((interval_points, interval_points))
+
+    past_points = full_grid_points[
+        full_grid_points[:, 0] <= full_grid_points[:, 1]
+    ]
+
+    discrete_lag = np.inf if lag == np.inf else ceil(lag / interval_len)
+
+    valid_points = past_points[
+        past_points[:, 1] - past_points[:, 0] <= discrete_lag
+    ]
+
+    return valid_points
+
+
+def _get_triangles(
+    n_intervals: int,
+    valid_points: np.ndarray,
+) -> np.ndarray:
+    """Construct the triangle grid given the valid points."""
+    # A matrix where the (integer) coords of a point match
+    # to its index or to -1 if it does not exist.
+    indexes_matrix = np.full(
+        shape=(n_intervals + 1, n_intervals + 1),
+        fill_value=-1,
+        dtype=np.int_,
+    )
+
+    indexes_matrix[
+        valid_points[:, 0],
+        valid_points[:, 1],
+    ] = np.arange(len(valid_points))
+
+    interval_without_end = np.arange(n_intervals)
+
+    pts_coords = _cartesian_product(
+        (interval_without_end, interval_without_end),
+    )
+
+    down_triangles = np.stack(
+        (
+            indexes_matrix[pts_coords[:, 0], pts_coords[:, 1]],
+            indexes_matrix[pts_coords[:, 0] + 1, pts_coords[:, 1]],
+            indexes_matrix[pts_coords[:, 0] + 1, pts_coords[:, 1] + 1],
+        ),
+        axis=1,
+    )
+
+    up_triangles = np.stack(
+        (
+            indexes_matrix[pts_coords[:, 0], pts_coords[:, 1]],
+            indexes_matrix[pts_coords[:, 0], pts_coords[:, 1] + 1],
+            indexes_matrix[pts_coords[:, 0] + 1, pts_coords[:, 1] + 1],
+        ),
+        axis=1,
+    )
+
+    triangles = np.concatenate((down_triangles, up_triangles))
+    has_wrong_index = np.any(triangles < 0, axis=1)
+
+    triangles = triangles[~has_wrong_index]
+
+    return triangles
+
+
+def _create_fem_basis(
+    start: float,
+    stop: float,
+    n_intervals: int,
+    lag: float,
+) -> FiniteElement:
+
+    interval_len = (stop - start) / n_intervals
+
+    valid_points = _get_valid_points(
+        interval_len=interval_len,
+        n_intervals=n_intervals,
+        lag=lag,
+    )
+
+    final_points = valid_points * interval_len + start
+
+    triangles = _get_triangles(
+        n_intervals=n_intervals,
+        valid_points=valid_points,
+    )
+
+    return FiniteElement(
+        vertices=final_points,
+        cells=triangles,
+        domain_range=(start, stop),
+    )
+
+
+class HistoricalLinearRegression(
+        BaseEstimator,  # type: ignore
+        RegressorMixin,  # type: ignore
+):
+
+    def __init__(self) -> None:
+        pass
+
+    def fit(self, X: FDataGrid, y: FDataGrid) -> HistoricalLinearRegression:
+
+        design_matrix = _design_matrix(
+            fem_basis,
+            X,
+            pred_points=y.grid_points[0],
+        )
+
+        return self
+
+    def predict(self) -> FDataGrid:
+        pass

@@ -5,25 +5,22 @@ To do this depth is calculated for the two chosen distributions, and then
 a scatter plot is created of this two variables.
 """
 
-import numpy as np
+from typing import List, Optional, TypeVar
 
-from ...exploratory.depth.multivariate import Depth
-from ... import FDataGrid
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from ._utils import (
-    _get_figure_and_axes,
-    _set_figure_layout_for_fdata,
-)
 
-from typing import TypeVar, Optional
+from ...exploratory.depth.multivariate import Depth
+from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
-T = TypeVar('T', FDataGrid, np.ndarray)
+T = TypeVar('T')
+S = TypeVar('S', Figure, Axes, List[Axes])
 
 
 class DDPlot:
+    """
 
-    """DDPlot visualization. Plot the depth of our fdata elements in two
+    DDPlot visualization. Plot the depth of our fdata elements in two
     different distributions, one in each axis. It is useful to understand
     how our data is more related with one subset of data / distribution
     than another one.
@@ -38,6 +35,7 @@ class DDPlot:
             data with respect to the distributions.
 
     """
+
     def __init__(
         self,
         fdata: T,
@@ -53,16 +51,19 @@ class DDPlot:
 
     def plot(
         self,
-        chart: Figure = None,
+        chart: Optional[S] = None,
         *,
         fig: Figure = None,
-        axes: Axes = None,
+        axes: List[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
         **kwargs,
     ) -> Figure:
+        """
 
-        """Plot the depth of our fdata elements in the two different
+        Plot DDPlot graph.
+
+        Plot the depth of our fdata elements in the two different
         distributions,one in each axis. It is useful to understand how
         our data is more related with one subset of data / distribution
         than another one.
@@ -75,8 +76,8 @@ class DDPlot:
             fig (figure object, optional): figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-                axes (list of axis objects, optional): axis over where the
-                graphs are plotted. If None, see param fig.
+            axes (list of axis objects, optional): axis over where the graphs 
+                are plotted. If None, see param fig.
             n_rows (int, optional): designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
                 if fig and ax are None.
@@ -102,10 +103,10 @@ class DDPlot:
             self.fdata, fig, axes, n_rows, n_cols,
         )
 
-        depth_dist1 = self.depth_method.__call__(
+        depth_dist1 = self.depth_method(
             self.fdata, distribution=self.dist1,
         )
-        depth_dist2 = self.depth_method.__call__(
+        depth_dist2 = self.depth_method(
             self.fdata, distribution=self.dist2,
         )
 
@@ -119,22 +120,22 @@ class DDPlot:
 
         # Set labels of graph
         fig.suptitle("DDPlot")
-        for j in range(self.fdata.dim_codomain):
-            axes[j].set_xlabel("X depth")
-            axes[j].set_ylabel("Y depth")
-            axes[j].set_xlim(
+        for axe in axes:
+            axe.set_xlabel("X depth")
+            axe.set_ylabel("Y depth")
+            axe.set_xlim(
                 [
                     self.depth_method.min - margin,
                     self.depth_method.max + margin,
                 ],
             )
-            axes[j].set_ylim(
+            axe.set_ylim(
                 [
                     self.depth_method.min - margin,
                     self.depth_method.max + margin,
                 ],
             )
-            axes[j].plot(
+            axe.plot(
                 [0, 1],
                 linewidth=width_aux_line,
                 color=color_aux_line,

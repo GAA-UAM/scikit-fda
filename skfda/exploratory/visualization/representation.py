@@ -180,55 +180,55 @@ class GraphPlot:
         gradient_color_list (normalized in gradient_list).
         
         Args:
-        chart (figure object, axe or list of axes, optional): figure over
-            with the graphs are plotted or axis over where the graphs are
-            plotted. If None and ax is also None, the figure is
-            initialized.
-        fig (figure object, optional): figure over with the graphs are
-            plotted in case ax is not specified. If None and ax is also
-            None, the figure is initialized.
-        axes (list of axis objects, optional): axis over where the graphs are
-            plotted. If None, see param fig.
-        n_rows (int, optional): designates the number of rows of the figure
-            to plot the different dimensions of the image. Only specified
-            if fig and ax are None.
-        n_cols(int, optional): designates the number of columns of the
-            figure to plot the different dimensions of the image. Only
-            specified if fig and ax are None.
-        n_points (int or tuple, optional): Number of points to evaluate in
-            the plot. In case of surfaces a tuple of length 2 can be pased
-            with the number of points to plot in each axis, otherwise the
-            same number of points will be used in the two axes. By default
-            in unidimensional plots will be used 501 points; in surfaces
-            will be used 30 points per axis, wich makes a grid with 900
-            points.
-        domain_range (tuple or list of tuples, optional): Range where the
-            function will be plotted. In objects with unidimensional domain
-            the domain range should be a tuple with the bounds of the
-            interval; in the case of surfaces a list with 2 tuples with
-            the ranges for each dimension. Default uses the domain range
-            of the functional object.
-        group (list of int): contains integers from [0 to number of
-            labels) indicating to which group each sample belongs to. Then,
-            the samples with the same label are plotted in the same color.
-            If None, the default value, each sample is plotted in the color
-            assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-        group_colors (list of colors): colors in which groups are
-            represented, there must be one for each group. If None, each
-            group is shown with distict colors in the "Greys" colormap.
-        group_names (list of str): name of each of the groups which appear
-            in a legend, there must be one for each one. Defaults to None
-            and the legend is not shown. Implies `legend=True`.
-        colormap_name: name of the colormap to be used. By default we will
-            use autumn.
-        legend (bool): if `True`, show a legend with the groups. If
-            `group_names` is passed, it will be used for finding the names
-            to display in the legend. Otherwise, the values passed to
-            `group` will be used.
-        **kwargs: if dim_domain is 1, keyword arguments to be passed to
-            the matplotlib.pyplot.plot function; if dim_domain is 2,
-            keyword arguments to be passed to the
-            matplotlib.pyplot.plot_surface function.
+            chart (figure object, axe or list of axes, optional): figure over
+                with the graphs are plotted or axis over where the graphs are
+                plotted. If None and ax is also None, the figure is
+                initialized.
+            fig (figure object, optional): figure over with the graphs are
+                plotted in case ax is not specified. If None and ax is also
+                None, the figure is initialized.
+            axes (list of axis objects, optional): axis over where the graphs are
+                plotted. If None, see param fig.
+            n_rows (int, optional): designates the number of rows of the figure
+                to plot the different dimensions of the image. Only specified
+                if fig and ax are None.
+            n_cols(int, optional): designates the number of columns of the
+                figure to plot the different dimensions of the image. Only
+                specified if fig and ax are None.
+            n_points (int or tuple, optional): Number of points to evaluate in
+                the plot. In case of surfaces a tuple of length 2 can be pased
+                with the number of points to plot in each axis, otherwise the
+                same number of points will be used in the two axes. By default
+                in unidimensional plots will be used 501 points; in surfaces
+                will be used 30 points per axis, wich makes a grid with 900
+                points.
+            domain_range (tuple or list of tuples, optional): Range where the
+                function will be plotted. In objects with unidimensional domain
+                the domain range should be a tuple with the bounds of the
+                interval; in the case of surfaces a list with 2 tuples with
+                the ranges for each dimension. Default uses the domain range
+                of the functional object.
+            group (list of int): contains integers from [0 to number of
+                labels) indicating to which group each sample belongs to. Then,
+                the samples with the same label are plotted in the same color.
+                If None, the default value, each sample is plotted in the color
+                assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+            group_colors (list of colors): colors in which groups are
+                represented, there must be one for each group. If None, each
+                group is shown with distict colors in the "Greys" colormap.
+            group_names (list of str): name of each of the groups which appear
+                in a legend, there must be one for each one. Defaults to None
+                and the legend is not shown. Implies `legend=True`.
+            colormap_name: name of the colormap to be used. By default we will
+                use autumn.
+            legend (bool): if `True`, show a legend with the groups. If
+                `group_names` is passed, it will be used for finding the names
+                to display in the legend. Otherwise, the values passed to
+                `group` will be used.
+            **kwargs: if dim_domain is 1, keyword arguments to be passed to
+                the matplotlib.pyplot.plot function; if dim_domain is 2,
+                keyword arguments to be passed to the
+                matplotlib.pyplot.plot_surface function.
 
         Returns:
             fig (figure object): figure object in which the graphs are plotted.
@@ -445,13 +445,157 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
     return fig
 
 
-def plot_scatter(fdata, chart=None, *, grid_points=None,
-                 fig=None, axes=None,
+class ScatterPlot:
+
+    """
+    Class used to scatter the FDataGrid object.
+
+    Args:
+        fdata: functional data set that we want to plot.
+        grid_points (ndarray): points to plot.
+
+    """
+    def __init__(
+        self,
+        fdata: T,
+        grid_points: np.ndarray = None,
+    ) -> None:
+        self.fdata = fdata
+        self.grid_points = grid_points
+            
+    def plot(
+        self,
+        chart: Figure = None,
+        *,
+        fig: Figure = None,
+        axes: List[Axes] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+        n_points: Optional[S] = None,
+        domain_range: Optional[V] = None,
+        group: List[int] = None,
+        group_colors: List[Any] = None,
+        group_names: List[str] = None,
+        legend: bool = False,
+        **kwargs: Any,
+    ) -> Figure:
+        """
+        Scatter FDataGrid object.
+        
+        Args:
+            chart (figure object, axe or list of axes, optional): figure over
+                with the graphs are plotted or axis over where the graphs are
+                plotted. If None and ax is also None, the figure is
+                initialized.
+            fig (figure object, optional): figure over with the graphs are
+                plotted in case ax is not specified. If None and ax is also
+                None, the figure is initialized.
+            axes (list of axis objects, optional): axis over where the graphs are
+                plotted. If None, see param fig.
+            n_rows (int, optional): designates the number of rows of the figure
+                to plot the different dimensions of the image. Only specified
+                if fig and ax are None.
+            n_cols(int, optional): designates the number of columns of the
+                figure to plot the different dimensions of the image. Only
+                specified if fig and ax are None.
+            domain_range (tuple or list of tuples, optional): Range where the
+                function will be plotted. In objects with unidimensional domain
+                the domain range should be a tuple with the bounds of the
+                interval; in the case of surfaces a list with 2 tuples with
+                the ranges for each dimension. Default uses the domain range
+                of the functional object.
+            group (list of int): contains integers from [0 to number of
+                labels) indicating to which group each sample belongs to. Then,
+                the samples with the same label are plotted in the same color.
+                If None, the default value, each sample is plotted in the color
+                assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+            group_colors (list of colors): colors in which groups are
+                represented, there must be one for each group. If None, each
+                group is shown with distict colors in the "Greys" colormap.
+            group_names (list of str): name of each of the groups which appear
+                in a legend, there must be one for each one. Defaults to None
+                and the legend is not shown. Implies `legend=True`.
+            legend (bool): if `True`, show a legend with the groups. If
+                `group_names` is passed, it will be used for finding the names
+                to display in the legend. Otherwise, the values passed to
+                `group` will be used.
+            **kwargs: if dim_domain is 1, keyword arguments to be passed to
+                the matplotlib.pyplot.plot function; if dim_domain is 2,
+                keyword arguments to be passed to the
+                matplotlib.pyplot.plot_surface function.
+
+        Returns:
+            fig (figure object): figure object in which the graphs are plotted.
+
+        """
+
+        evaluated_points = None
+
+        if self.grid_points is None:
+            # This can only be done for FDataGrid
+            grid_points = self.fdata.grid_points
+            evaluated_points = self.fdata.data_matrix
+
+        if evaluated_points is None:
+            evaluated_points = self.fdata(
+                self.grid_points, grid=True)
+
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout_for_fdata(self.fdata, fig, axes, n_rows, n_cols)
+
+        if domain_range is None:
+            domain_range = self.fdata.domain_range
+        else:
+            domain_range = _to_domain_range(domain_range)
+
+        sample_colors, patches = _get_color_info(
+            self.fdata, group, group_names, group_colors, legend, kwargs
+        )
+
+        if self.fdata.dim_domain == 1:
+
+            color_dict = {}
+
+            for i in range(self.fdata.dim_codomain):
+                for j in range(self.fdata.n_samples):
+
+                    if sample_colors is not None:
+                        color_dict["color"] = sample_colors[j]
+
+                    axes[i].scatter(self.grid_points[0],
+                                    evaluated_points[j, ..., i].T,
+                                    **color_dict, **kwargs)
+
+        else:
+
+            X = self.fdata.grid_points[0]
+            Y = self.fdata.grid_points[1]
+            X, Y = np.meshgrid(X, Y)
+
+            color_dict = {}
+
+            for i in range(self.fdata.dim_codomain):
+                for j in range(self.fdata.n_samples):
+
+                    if sample_colors is not None:
+                        color_dict["color"] = sample_colors[j]
+
+                    axes[i].scatter(X, Y,
+                                    evaluated_points[j, ..., i].T,
+                                    **color_dict, **kwargs)
+
+        _set_labels(self.fdata, fig, axes, patches)
+
+        return fig
+
+
+def plot_scatter(fdata, chart=None, *,
+                 fig=None, axes=None, grid_points = None,
                  n_rows=None, n_cols=None, domain_range=None,
                  group=None, group_colors=None, group_names=None,
                  legend: bool = False,
                  **kwargs):
-    """Plot the FDatGrid object.
+    """Plot the FDataGrid object.
 
     Args:
         chart (figure object, axe or list of axes, optional): figure over

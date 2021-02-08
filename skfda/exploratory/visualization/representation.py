@@ -12,11 +12,11 @@ from ._utils import (
     _set_figure_layout_for_fdata,
     _set_labels,
 )
-from typing import TypeVar, Optional, Any
+from typing import TypeVar, Optional, Any, List
 
 T = TypeVar('T', FDataGrid, np.ndarray)
 S = TypeVar('S', int, tuple)
-V = TypeVar('V', tuple, list[tuple])
+V = TypeVar('V', tuple, list)
 
 
 def _get_label_colors(n_labels, group_colors=None):
@@ -89,10 +89,33 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
 
 class GraphPlot:
 
+    """Class used to plot the FDatGrid object graph as hypersurfaces. A list
+    of variables (probably depths) can be used as an argument to display the
+    functions wtih a gradient of colors.
+
+    Args:
+        fdata: functional data set that we want to plot.
+        gradient_color_list: list of real values used to determine the color
+            in which each of the instances will be plotted. The size
+        max_grad: maximum value that the gradient_list can take, it will be
+            used to normalize the gradient_color_list in order to get values
+            thatcan be used in the funcion colormap.__call__(). If not
+            declared it will be initialized to the maximum value of
+            gradient_list
+        min_grad: minimum value that the gradient_list can take, it will be
+            used to normalize the gradient_color_list in order to get values
+            thatcan be used in the funcion colormap.__call__(). If not
+            declared it will be initialized to the minimum value of
+            gradient_list
+    Attributes:
+        gradient_list: normalization of the values from gradient color_list
+            that will be used to determine the intensity of the color
+            each function will have.
+    """
     def __init__(
         self,
         fdata: T,
-        gradient_color_list: Optional[list[float]] = None,
+        gradient_color_list: List[float] = None,
         max_grad: Optional[float] = None,
         min_grad: Optional[float] = None,
     ) -> None:
@@ -104,18 +127,21 @@ class GraphPlot:
                     "The length of the gradient color"
                     "list should be the same as the number"
                     "of samples in fdata")
-            if min_grad is None: 
+
+            if min_grad is None:
                 self.min_grad = min(gradient_color_list) 
             else:
-                self.min_grad = None
+                self.min_grad = min_grad
 
             if max_grad is None:
                 self.max_grad = max(gradient_color_list)
             else:
-                self.max_grad = None
+                self.max_grad = max_grad
 
             self.gradient_list = (
-                (gradient_color_list - min_grad) / (max_grad - min_grad)
+                (gradient_color_list - self.min_grad) 
+                / 
+                (self.max_grad - self.min_grad)
             )
         else:
             self.gradient_list = None
@@ -130,16 +156,28 @@ class GraphPlot:
         n_cols: Optional[int] = None,
         n_points: Optional[S] = None,
         domain_range: Optional[V] = None,
-        group: list[int] = None,
-        group_colors: list[Any] = None,
-        group_names: list[str] = None,
+        group: List[int] = None,
+        group_colors: List[Any] = None,
+        group_names: List[str] = None,
         colormap_name: str = 'autumn',
         legend: bool = False,
         **kwargs: Any,
     ) -> Figure:
 
+        """Method used to plot the graph. Plots each coordinate separately. 
+        If the :term:`domain` is one dimensional, the plots will be curves, 
+        and if it is two dimensional, they will be surfaces.
+        
+        There are two styles of visualizations, one that displays the
+        functions without any criteria choosing the colors and a new one
+        that displays the function with a gradient of colors depending
+        on the initial gradient_color_list (normalized in 
+        gradient_list)."""
+
         fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(self.fdata, fig, axes, n_rows, n_cols)
+        fig, axes = _set_figure_layout_for_fdata(
+            self.fdata, fig, axes, n_rows, n_cols,
+        )
 
         if domain_range is None:
             domain_range = self.fdata.domain_range
@@ -157,7 +195,6 @@ class GraphPlot:
             sample_colors = [None] * self.fdata.n_samples
             for i in range(self.fdata.n_samples):
                 sample_colors[i] = colormap.__call__(self.gradient_list[i])
-
 
         if self.fdata.dim_domain == 1:
 

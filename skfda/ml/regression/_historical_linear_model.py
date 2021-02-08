@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import math
 from math import ceil
 from typing import Tuple
 
 import numpy as np
 import scipy.integrate
 from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _cartesian_product, _pairwise_symmetric
 from ...representation import FDataBasis, FDataGrid
@@ -207,18 +209,69 @@ class HistoricalLinearRegression(
         RegressorMixin,  # type: ignore
 ):
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, *, n_intervals: int, lag: float=math.inf) -> None:
+        self.n_intervals = n_intervals
+        self.lag = lag
+
+    def _fit_and_return_matrix(self, X: FDataGrid, y: FDataGrid) -> np.ndarray:
+
+        self._pred_points = y.grid_points[0]
+        self._pred_domain_range = y.domain_range[0]
+
+        self._basis = _create_fem_basis(
+            start=X.domain_range[0][0],
+            stop=X.domain_range[0][1],
+            n_intervals=self.n_intervals,
+            lag=self.lag,
+        )
+
+        design_matrix = _design_matrix(
+            self._basis,
+            X,
+            pred_points=self._pred_points,
+        )
+        design_matrix = design_matrix.reshape(-1, design_matrix.shape[-1])
+
+        self.discretized_coef_ = np.linalg.lstsq(
+            design_matrix,
+            y.data_matrix[:, ..., 0].ravel(),
+            rcond=None,
+        )[0]
+
+        return design_matrix
+
+    def _prediction_from_matrix(self, design_matrix: np.ndarray) -> FDataGrid:
+
+        points = (design_matrix @ self.discretized_coef_).reshape(
+            -1,
+            len(self._pred_points),
+        )
+
+        return FDataGrid(
+            points,
+            grid_points=self._pred_points,
+            domain_range=self._pred_domain_range,
+        )
 
     def fit(self, X: FDataGrid, y: FDataGrid) -> HistoricalLinearRegression:
 
-        design_matrix = _design_matrix(
-            fem_basis,
-            X,
-            pred_points=y.grid_points[0],
-        )
-
+        self._fit_and_return_matrix(X, y)
         return self
 
-    def predict(self) -> FDataGrid:
-        pass
+    def fit_predict(self, X: FDataGrid, y: FDataGrid) -> FDataGrid:
+
+        design_matrix = self._fit_and_return_matrix(X, y)
+        return self._prediction_from_matrix(design_matrix)
+
+    def predict(self, X: FDataGrid) -> FDataGrid:
+
+        check_is_fitted(self)
+
+        design_matrix = _design_matrix(
+            self._basis,
+            X,
+            pred_points=self._pred_points,
+        )
+        design_matrix = design_matrix.reshape(-1, design_matrix.shape[-1])
+
+        return self._prediction_from_matrix(design_matrix)

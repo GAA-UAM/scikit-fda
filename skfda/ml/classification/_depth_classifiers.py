@@ -2,25 +2,29 @@
 from __future__ import annotations
 
 from itertools import combinations
-from typing import Optional, Sequence, TypeVar, Union
+from typing import Generic, Optional, Sequence, TypeVar, Union
 
 import numpy as np
-import numpy.polynomial.polynomial as poly
 from numpy import ndarray
+from scipy.interpolate import lagrange
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.metrics import accuracy_score
 from sklearn.pipeline import make_pipeline
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ..._utils import _classifier_fit_distributions
+from ..._utils import _classifier_fit_depth_methods
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...preprocessing.dim_reduction.feature_extraction import DDGTransformer
-from ...representation.grid import FDataGrid
+from ...representation.grid import FData
 
-T = TypeVar("T", contravariant=True)
+T = TypeVar("T", bound=FData)
 
 
-class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
+class MaximumDepthClassifier(
+    BaseEstimator,  # type: ignore
+    ClassifierMixin,  # type: ignore
+    Generic[T],
+):
     """Maximum depth classifier for functional data.
 
     Test samples are classified to the class where they are deeper.
@@ -71,7 +75,7 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, depth_method: Optional[Depth[T]] = None) -> None:
         self.depth_method = depth_method
 
-    def fit(self, X: FDataGrid, y: ndarray) -> MaximumDepthClassifier:
+    def fit(self, X: T, y: ndarray) -> MaximumDepthClassifier[T]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -84,16 +88,16 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
         if self.depth_method is None:
             self.depth_method = ModifiedBandDepth()
 
-        classes_, distributions_ = _classifier_fit_distributions(
+        classes, class_depth_methods = _classifier_fit_depth_methods(
             X, y, [self.depth_method],
         )
 
-        self.classes_ = classes_
-        self.distributions_ = distributions_
+        self._classes = classes
+        self.class_depth_methods_ = class_depth_methods
 
         return self
 
-    def predict(self, X: FDataGrid) -> ndarray:
+    def predict(self, X: T) -> ndarray:
         """Predict the class labels for the provided data.
 
         Args:
@@ -106,14 +110,18 @@ class MaximumDepthClassifier(BaseEstimator, ClassifierMixin):
         sklearn_check_is_fitted(self)
 
         depths = [
-            distribution.predict(X)
-            for distribution in self.distributions_
+            depth_method.predict(X)
+            for depth_method in self.class_depth_methods_
         ]
 
-        return self.classes_[np.argmax(depths, axis=0)]
+        return self._classes[np.argmax(depths, axis=0)]
 
 
-class DDClassifier(BaseEstimator, ClassifierMixin):
+class DDClassifier(
+    BaseEstimator,  # type: ignore
+    ClassifierMixin,  # type: ignore
+    Generic[T],
+):
     """Depth-versus-depth (DD) classifer for functional data.
 
     Transforms the data into a DD-plot and then classifies using a polynomial
@@ -178,7 +186,7 @@ class DDClassifier(BaseEstimator, ClassifierMixin):
         self.depth_method = depth_method
         self.degree = degree
 
-    def fit(self, X: FDataGrid, y: ndarray) -> DDClassifier:
+    def fit(self, X: T, y: ndarray) -> DDClassifier[T]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -191,16 +199,16 @@ class DDClassifier(BaseEstimator, ClassifierMixin):
         if self.depth_method is None:
             self.depth_method = ModifiedBandDepth()
 
-        classes_, distributions_ = _classifier_fit_distributions(
+        classes, class_depth_methods = _classifier_fit_depth_methods(
             X, y, [self.depth_method],
         )
 
-        self.classes_ = classes_
-        self.distributions_ = distributions_
+        self._classes = classes
+        self.class_depth_methods_ = class_depth_methods
 
         dd_coordinates = [
-            distribution.predict(X)
-            for distribution in self.distributions_
+            depth_method.predict(X)
+            for depth_method in self.class_depth_methods_
         ]
 
         polynomial_elements = combinations(
@@ -208,34 +216,32 @@ class DDClassifier(BaseEstimator, ClassifierMixin):
             self.degree,
         )
 
-        accuracy = -1
+        accuracy = -1  # initialise accuracy
 
         for elements in polynomial_elements:
-            x_coord = [0] + [dd_coordinates[0][e] for e in elements]
-            y_coord = [0] + [dd_coordinates[1][e] for e in elements]
+            x_coord = np.append(dd_coordinates[0][list(elements)], 0)
+            y_coord = np.append(dd_coordinates[1][list(elements)], 0)
 
-            coefs = poly.polyfit(
-                x_coord, y_coord, self.degree,
+            poly = lagrange(
+                x_coord, y_coord,
             )
 
-            polynomial = poly.Polynomial(coefs)
+            predicted_values = np.polyval(poly, dd_coordinates[0])
 
-            predicted_values = polynomial(dd_coordinates[0])
-
-            y_pred = [
-                self.classes_[0] if z - y > 0 else self.classes_[1]
-                for (z, y) in zip(predicted_values, dd_coordinates[1])
+            y_pred = self._classes[(
+                dd_coordinates[1] > predicted_values
+            ).astype(int)
             ]
 
             new_accuracy = accuracy_score(y, y_pred)
 
             if (new_accuracy > accuracy):
                 accuracy = new_accuracy
-                self.polynomial = polynomial
+                self.poly = poly
 
         return self
 
-    def predict(self, X: FDataGrid) -> ndarray:
+    def predict(self, X: T) -> ndarray:
         """Predict the class labels for the provided data.
 
         Args:
@@ -248,19 +254,23 @@ class DDClassifier(BaseEstimator, ClassifierMixin):
         sklearn_check_is_fitted(self)
 
         dd_coordinates = [
-            distribution.predict(X)
-            for distribution in self.distributions_
+            depth_method.predict(X)
+            for depth_method in self.class_depth_methods_
         ]
 
-        predicted_values = self.polynomial(dd_coordinates[0])
+        predicted_values = np.polyval(self.poly, dd_coordinates[0])
 
-        return np.array([
-            self.classes_[0] if z - y > 0 else self.classes_[1]
-            for (z, y) in zip(predicted_values, dd_coordinates[1])
-        ])
+        return self._classes[(
+            dd_coordinates[1] > predicted_values
+        ).astype(int)
+        ]
 
 
-class DDGClassifier(BaseEstimator, ClassifierMixin):
+class DDGClassifier(
+    BaseEstimator,  # type: ignore
+    ClassifierMixin,  # type: ignore
+    Generic[T],
+):
     r"""Generalized depth-versus-depth (DD) classifer for functional data.
 
     This classifier builds an interface around the DDGTransfomer.
@@ -338,12 +348,12 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
     def __init__(
         self,
         multivariate_classifier: ClassifierMixin = None,
-        depth_method: Optional[Union[Depth[T], Sequence[Depth[T]]]] = None,
+        depth_method: Union[Depth[T], Sequence[Depth[T]], None] = None,
     ) -> None:
         self.multivariate_classifier = multivariate_classifier
         self.depth_method = depth_method
 
-    def fit(self, X: FDataGrid, y: ndarray) -> DDGClassifier:
+    def fit(self, X: T, y: ndarray) -> DDGClassifier[T]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -362,7 +372,7 @@ class DDGClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def predict(self, X: FDataGrid) -> ndarray:
+    def predict(self, X: T) -> ndarray:
         """Predict the class labels for the provided data.
 
         Args:

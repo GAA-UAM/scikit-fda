@@ -1,21 +1,25 @@
 """Feature extraction transformers for dimensionality reduction."""
 from __future__ import annotations
 
-from typing import Optional, Sequence, TypeVar, Union
+from typing import Generic, Sequence, TypeVar, Union
 
 import numpy as np
 from numpy import ndarray
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ...._utils import _classifier_fit_distributions
+from ...._utils import _classifier_fit_depth_methods
 from ....exploratory.depth import Depth, ModifiedBandDepth
-from ....representation.grid import FDataGrid
+from ....representation.grid import FData
 
-T = TypeVar("T", contravariant=True)
+T = TypeVar("T", bound=FData)
 
 
-class DDGTransformer(BaseEstimator, TransformerMixin):
+class DDGTransformer(
+    BaseEstimator,  # type: ignore
+    TransformerMixin,  # type: ignore
+    Generic[T],
+):
     r"""Generalized depth-versus-depth (DD) transformer for functional data.
 
     This transformer takes a list of k depths and performs the following map:
@@ -82,11 +86,11 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        depth_method: Optional[Union[Depth[T], Sequence[Depth[T]]]] = None,
+        depth_method: Union[Depth[T], Sequence[Depth[T]], None] = None,
     ) -> None:
         self.depth_method = depth_method
 
-    def fit(self, X: FDataGrid, y: ndarray) -> DDGTransformer:
+    def fit(self, X: T, y: ndarray) -> DDGTransformer[T]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -102,16 +106,16 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
         if isinstance(self.depth_method, Depth):
             self.depth_method = [self.depth_method]
 
-        classes_, distributions_ = _classifier_fit_distributions(
+        classes, class_depth_methods = _classifier_fit_depth_methods(
             X, y, self.depth_method,
         )
 
-        self.classes_ = classes_
-        self.distributions_ = distributions_
+        self._classes = classes
+        self.class_depth_methods_ = class_depth_methods
 
         return self
 
-    def transform(self, X: FDataGrid) -> ndarray:
+    def transform(self, X: T) -> ndarray:
         """Transform the provided data using the defined map.
 
         Args:
@@ -123,6 +127,6 @@ class DDGTransformer(BaseEstimator, TransformerMixin):
         sklearn_check_is_fitted(self)
 
         return np.transpose([
-            distribution.predict(X)
-            for distribution in self.distributions_
+            depth_method.predict(X)
+            for depth_method in self.class_depth_methods_
         ])

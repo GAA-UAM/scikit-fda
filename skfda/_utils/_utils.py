@@ -580,7 +580,7 @@ def _classifier_get_classes(y: ndarray) -> Tuple[ndarray, ndarray]:
     return classes, y_ind
 
 
-def _classifier_get_distributions(
+def _classifier_get_depth_methods(
     classes: ndarray,
     X: FDataGrid,
     y_ind: ndarray,
@@ -593,15 +593,15 @@ def _classifier_get_distributions(
     ]
 
 
-def _classifier_fit_distributions(
+def _classifier_fit_depth_methods(
     X: FDataGrid,
     y: ndarray,
     depth_methods: Sequence[Depth[T]],
 ) -> Tuple[ndarray, Sequence[Depth[T]]]:
-    classes_, y_ind = _classifier_get_classes(y)
+    classes, y_ind = _classifier_get_classes(y)
 
-    distributions_ = _classifier_get_distributions(
-        classes_, X, y_ind, depth_methods,
+    class_depth_methods_ = _classifier_get_depth_methods(
+        classes, X, y_ind, depth_methods,
     )
 
-    return classes_, distributions_
+    return classes, class_depth_methods_

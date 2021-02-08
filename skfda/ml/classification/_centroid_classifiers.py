@@ -1,7 +1,7 @@
 """Centroid-based models for supervised classification."""
 from __future__ import annotations
 
-from typing import Callable, Optional, TypeVar, Union
+from typing import Callable, Generic, Optional, TypeVar
 
 from numpy import ndarray
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -10,13 +10,17 @@ from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 from ..._utils import _classifier_get_classes
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...exploratory.stats import mean, trim_mean
-from ...misc.metrics import LpDistance, PairwiseMetric, l2_distance
-from ...representation.grid import FDataGrid
+from ...misc.metrics import Metric, PairwiseMetric, l2_distance
+from ...representation import FData
 
-T = TypeVar("T", contravariant=True)
+T = TypeVar("T", bound=FData)
 
 
-class NearestCentroid(BaseEstimator, ClassifierMixin):
+class NearestCentroid(
+    BaseEstimator,  # type: ignore
+    ClassifierMixin,  # type: ignore
+    Generic[T],
+):
     """Nearest centroid classifier for functional data.
 
     Each class is represented by its centroid, with test samples classified to
@@ -64,13 +68,13 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
 
     def __init__(
         self,
-        metric: Union[str, LpDistance] = l2_distance,
-        centroid: Callable = mean,
+        metric: Metric[T] = l2_distance,
+        centroid: Callable[[T], T] = mean,
     ):
         self.metric = metric
         self.centroid = centroid
 
-    def fit(self, X: Union[FDataGrid, ndarray], y: ndarray) -> NearestCentroid:
+    def fit(self, X: T, y: ndarray) -> NearestCentroid[T]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -82,18 +86,18 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
         Returns:
             self
         """
-        classes_, y_ind = _classifier_get_classes(y)
+        classes, y_ind = _classifier_get_classes(y)
 
-        self.classes_ = classes_
+        self._classes = classes
         self.centroids_ = self.centroid(X[y_ind == 0])
 
-        for cur_class in range(1, self.classes_.size):
+        for cur_class in range(1, self._classes.size):
             centroid = self.centroid(X[y_ind == cur_class])
             self.centroids_ = self.centroids_.concatenate(centroid)
 
         return self
 
-    def predict(self, X: FDataGrid) -> ndarray:
+    def predict(self, X: T) -> ndarray:
         """Predict the class labels for the provided data.
 
         Args:
@@ -105,14 +109,18 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
         """
         sklearn_check_is_fitted(self)
 
-        return self.classes_[PairwiseMetric(self.metric)(
+        return self._classes[PairwiseMetric(self.metric)(
             X,
             self.centroids_,
         ).argmin(axis=1)
         ]
 
 
-class DTMClassifier(BaseEstimator, ClassifierMixin):
+class DTMClassifier(
+    BaseEstimator,  # type: ignore
+    ClassifierMixin,  # type: ignore
+    Generic[T],
+):
     """Distance to trimmed means (DTM) classification.
 
     Test samples are classified to the class that minimizes the distance of
@@ -173,13 +181,13 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
         self,
         proportiontocut: float,
         depth_method: Optional[Depth[T]] = None,
-        metric: Callable = l2_distance,
+        metric: Metric[T] = l2_distance,
     ) -> None:
         self.proportiontocut = proportiontocut
         self.depth_method = depth_method
         self.metric = metric
 
-    def fit(self, X: FDataGrid, y: ndarray) -> DTMClassifier:
+    def fit(self, X: T, y: ndarray) -> DTMClassifier[T]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -204,7 +212,7 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def predict(self, X: FDataGrid) -> ndarray:
+    def predict(self, X: T) -> ndarray:
         """Predict the class labels for the provided data.
 
         Args:

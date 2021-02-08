@@ -19,8 +19,9 @@ S = TypeVar('S', Figure, Axes, List[Axes])
 
 class DDPlot:
     """
+    DDPlot visualization.
 
-    DDPlot visualization. Plot the depth of our fdata elements in two
+    Plot the depth of our fdata elements in two
     different distributions, one in each axis. It is useful to understand
     how our data is more related with one subset of data / distribution
     than another one.
@@ -53,14 +54,13 @@ class DDPlot:
         self,
         chart: Optional[S] = None,
         *,
-        fig: Figure = None,
+        fig: Optional[Figure] = None,
         axes: List[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
         **kwargs,
     ) -> Figure:
         """
-
         Plot DDPlot graph.
 
         Plot the depth of our fdata elements in the two different
@@ -76,7 +76,7 @@ class DDPlot:
             fig (figure object, optional): figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-            axes (list of axis objects, optional): axis over where the graphs 
+            axes (list of axis objects, optional): axis where the graphs
                 are plotted. If None, see param fig.
             n_rows (int, optional): designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified

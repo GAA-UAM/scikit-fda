@@ -1,14 +1,22 @@
-
+from matplotlib import colors
 import matplotlib.cm
 import matplotlib.patches
 import numpy as np
 
+from ... import FDataGrid
 from ..._utils import _to_domain_range, constants
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from ._utils import (
     _get_figure_and_axes,
     _set_figure_layout_for_fdata,
     _set_labels,
 )
+from typing import TypeVar, Optional, Any
+
+T = TypeVar('T', FDataGrid, np.ndarray)
+S = TypeVar('S', int, tuple)
+V = TypeVar('V', tuple, list[tuple])
 
 
 def _get_label_colors(n_labels, group_colors=None):
@@ -78,8 +86,132 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
 
     return sample_colors, patches
 
+
 class GraphPlot:
-    
+
+    def __init__(
+        self,
+        fdata: T,
+        gradient_color_list: Optional[list[float]] = None,
+        max_grad: Optional[float] = None,
+        min_grad: Optional[float] = None,
+    ) -> None:
+        self.fdata = fdata
+        self.gradient_color_list = gradient_color_list
+        if self.gradient_color_list is not None:
+            if len(gradient_color_list) != fdata.n_samples:
+                raise ValueError(
+                    "The length of the gradient color"
+                    "list should be the same as the number"
+                    "of samples in fdata")
+            if min_grad is None: 
+                self.min_grad = min(gradient_color_list) 
+            else:
+                self.min_grad = None
+
+            if max_grad is None:
+                self.max_grad = max(gradient_color_list)
+            else:
+                self.max_grad = None
+
+            self.gradient_list = (
+                (gradient_color_list - min_grad) / (max_grad - min_grad)
+            )
+        else:
+            self.gradient_list = None
+            
+    def plot(
+        self,
+        chart: Figure = None,
+        *,
+        fig: Figure = None,
+        axes: Axes = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+        n_points: Optional[S] = None,
+        domain_range: Optional[V] = None,
+        group: list[int] = None,
+        group_colors: list[Any] = None,
+        group_names: list[str] = None,
+        colormap_name: str = 'autumn',
+        legend: bool = False,
+        **kwargs: Any,
+    ) -> Figure:
+
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout_for_fdata(self.fdata, fig, axes, n_rows, n_cols)
+
+        if domain_range is None:
+            domain_range = self.fdata.domain_range
+        else:
+            domain_range = _to_domain_range(domain_range)
+
+        if self.gradient_list is None:
+            sample_colors, patches = _get_color_info(
+                self.fdata, group, group_names, group_colors, legend, kwargs)
+        else:
+            patches = None
+            colormap = matplotlib.cm.get_cmap(colormap_name)
+            colormap = colormap.reversed()
+
+            sample_colors = [None] * self.fdata.n_samples
+            for i in range(self.fdata.n_samples):
+                sample_colors[i] = colormap.__call__(self.gradient_list[i])
+
+
+        if self.fdata.dim_domain == 1:
+
+            if n_points is None:
+                n_points = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
+
+            # Evaluates the object in a linspace
+            eval_points = np.linspace(*domain_range[0], n_points)
+            mat = self.fdata(eval_points)
+
+            color_dict = {}
+
+            for i in range(self.fdata.dim_codomain):
+                for j in range(self.fdata.n_samples):
+                    if sample_colors is not None:
+                        color_dict["color"] = sample_colors[j]
+
+                    axes[i].plot(eval_points, mat[j, ..., i].T,
+                                **color_dict, **kwargs)
+
+        else:
+
+            # Selects the number of points
+            if n_points is None:
+                n_points = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
+            elif np.isscalar(n_points):
+                n_points = (n_points, n_points)
+            elif len(n_points) != 2:
+                raise ValueError(f"n_points should be a number or a tuple of "
+                                f"length 2, and has length {len(n_points)}")
+
+            # Axes where will be evaluated
+            x = np.linspace(*domain_range[0], n_points[0])
+            y = np.linspace(*domain_range[1], n_points[1])
+
+            # Evaluation of the functional object
+            Z = self.fdata((x, y), grid=True)
+
+            X, Y = np.meshgrid(x, y, indexing='ij')
+
+            color_dict = {}
+
+            for i in range(self.fdata.dim_codomain):
+                for j in range(self.fdata.n_samples):
+
+                    if sample_colors is not None:
+                        color_dict["color"] = sample_colors[j]
+
+                    axes[i].plot_surface(X, Y, Z[j, ..., i],
+                                        **color_dict, **kwargs)
+
+        _set_labels(self.fdata, fig, axes, patches)
+
+        return fig
 
 
 def plot_graph(fdata, chart=None, *, fig=None, axes=None,
@@ -376,13 +508,13 @@ def plot_color_gradient(fdata, chart=None, *, fig=None, axes=None,
             in which each of the instances will be plotted. The size
         max_grad: maximum value that the gradient_list can take, it will be
             used to normalize the gradient_color_list in order to get values that
-            can be used in the funcion colormap.__call__(). If not declared 
+            can be used in the funcion colormap.__call__(). If not declared
             it will be initialized to the maximum value of gradient_list
         min_grad: minimum value that the gradient_list can take, it will be
             used to normalize the gradient_color_list in order to get values that
-            can be used in the funcion colormap.__call__(). If not declared 
+            can be used in the funcion colormap.__call__(). If not declared
             it will be initialized to the minimum value of gradient_list
-        colormap_name: name of the colormap to be used. By default we will 
+        colormap_name: name of the colormap to be used. By default we will
             use autumn.
         **kwargs: if dim_domain is 1, keyword arguments to be passed to
             the matplotlib.pyplot.plot function; if dim_domain is 2,

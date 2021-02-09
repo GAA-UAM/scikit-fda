@@ -53,7 +53,7 @@ class DDPlot:
         chart: Optional[S] = None,
         *,
         fig: Optional[Figure] = None,
-        axes: List[Axes] = None,
+        axes: Optional[List[Axes]] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
         **kwargs,

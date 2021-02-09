@@ -94,12 +94,11 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
     return sample_colors, patches
 
 
-
 class GraphPlot:
 
     """
     Class used to plot the FDatGrid object graph as hypersurfaces.
-    
+
     A list of variables (probably depths) can be used as an argument to
     display the functions wtih a gradient of colors.
 
@@ -151,13 +150,14 @@ class GraphPlot:
             else:
                 self.max_grad = max_grad
 
+            aux_list = gradient_color_list - self.min_grad
+
             self.gradient_list = (
-                (gradient_color_list - self.min_grad) /
-                (self.max_grad - self.min_grad)
+                aux_list / (self.max_grad - self.min_grad)
             )
         else:
             self.gradient_list = None
-            
+
     def plot(
         self,
         chart: Figure = None,
@@ -177,7 +177,7 @@ class GraphPlot:
     ) -> Figure:
         """
         Plot the graph. 
-        
+
         Plots each coordinate separately. If the :term:`domain` is one
         dimensional, the plots will be curves, and if it is two
         dimensional, they will be surfaces. There are two styles of

@@ -176,7 +176,7 @@ class GraphPlot:
         **kwargs: t.Any,
     ) -> Figure:
         """
-        Plot the graph. 
+        Plot the graph.
 
         Plots each coordinate separately. If the :term:`domain` is one
         dimensional, the plots will be curves, and if it is two
@@ -185,7 +185,7 @@ class GraphPlot:
         criteria choosing the colors and a new one that displays the
         function with a gradient of colors depending on the initial
         gradient_color_list (normalized in gradient_list).
-        
+   
         Args:
             chart (figure object, axe or list of axes, optional): figure over
                 with the graphs are plotted or axis over where the graphs are
@@ -254,7 +254,8 @@ class GraphPlot:
 
         if self.gradient_list is None:
             sample_colors, patches = _get_color_info(
-                self.fdata, group, group_names, group_colors, legend, kwargs)
+                self.fdata, group, group_names, group_colors, legend, kwargs
+            )
         else:
             patches = None
             colormap = matplotlib.cm.get_cmap(colormap_name)
@@ -262,7 +263,7 @@ class GraphPlot:
 
             sample_colors = [None] * self.fdata.n_samples
             for i in range(self.fdata.n_samples):
-                sample_colors[i] = colormap.__call__(self.gradient_list[i])
+                sample_colors[i] = colormap(self.gradient_list[i])
 
         if self.fdata.dim_domain == 1:
 
@@ -281,7 +282,7 @@ class GraphPlot:
                         color_dict["color"] = sample_colors[j]
 
                     axes[i].plot(
-                        eval_points, mat[j, ..., i].T, **color_dict, **kwargs
+                        eval_points, mat[j, ..., i].T, **color_dict, **kwargs,
                     )
 
         else:

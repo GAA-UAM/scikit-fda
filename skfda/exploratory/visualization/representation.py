@@ -16,7 +16,8 @@ from ._utils import (
 
 T = t.TypeVar('T', FDataGrid, np.ndarray)
 S = t.TypeVar('S', int, tuple)
-V = t.TypeVar('V', tuple, list)
+V = t.TypeVar('V', tuple, t.List)
+C = t.TypeVar('C', Figure, Axes, t.List[Axes])
 
 
 def _get_label_colors(n_labels, group_colors=None):
@@ -27,7 +28,7 @@ def _get_label_colors(n_labels, group_colors=None):
             raise ValueError(
                 "There must be a color in group_colors "
                 "for each of the labels that appear in "
-                "group."
+                "group.",
             )
     else:
         colormap = matplotlib.cm.get_cmap()
@@ -49,7 +50,7 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
 
         if group_colors is not None:
             group_colors_array = np.array(
-                [group_colors[g] for g in group_unique]
+                [group_colors[g] for g in group_unique],
             )
         else:
             prop_cycle = matplotlib.rcParams['axes.prop_cycle']
@@ -65,7 +66,7 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
 
         if group_names is not None:
             group_names_array = np.array(
-                [group_names[g] for g in group_unique]
+                [group_names[g] for g in group_unique],
             )
         elif legend is True:
             group_names_array = group_unique
@@ -95,7 +96,6 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
 
 
 class GraphPlot:
-
     """
     Class used to plot the FDatGrid object graph as hypersurfaces.
 
@@ -160,9 +160,9 @@ class GraphPlot:
 
     def plot(
         self,
-        chart: Figure = None,
+        chart: t.Optional[C] = None,
         *,
-        fig: Figure = None,
+        fig: t.Optional[Figure] = None,
         axes: t.List[Axes] = None,
         n_rows: t.Optional[int] = None,
         n_cols: t.Optional[int] = None,
@@ -254,7 +254,7 @@ class GraphPlot:
 
         if self.gradient_list is None:
             sample_colors, patches = _get_color_info(
-                self.fdata, group, group_names, group_colors, legend, kwargs
+                self.fdata, group, group_names, group_colors, legend, kwargs,
             )
         else:
             patches = None
@@ -295,7 +295,7 @@ class GraphPlot:
             elif len(n_points) != 2:
                 raise ValueError(
                     f"n_points should be a number or a tuple of "
-                    f"length 2, and has length {len(n_points)}"
+                    f"length 2, and has length {len(n_points)}",
                 )
 
             # Axes where will be evaluated
@@ -326,7 +326,6 @@ class GraphPlot:
 
 
 class ScatterPlot:
-
     """
     Class used to scatter the FDataGrid object.
 
@@ -335,6 +334,7 @@ class ScatterPlot:
         grid_points (ndarray): points to plot.
 
     """
+
     def __init__(
         self,
         fdata: T,
@@ -345,13 +345,12 @@ class ScatterPlot:
             
     def plot(
         self,
-        chart: Figure = None,
+        chart: t.Optional[C] = None,
         *,
-        fig: Figure = None,
-        axes: t.List[Axes] = None,
+        fig: t.Optional[Figure] = None,
+        axes: t.Optional[C] = None,
         n_rows: t.Optional[int] = None,
         n_cols: t.Optional[int] = None,
-        n_points: t.Optional[S] = None,
         domain_range: t.Optional[V] = None,
         group: t.List[int] = None,
         group_colors: t.List[t.Any] = None,
@@ -423,7 +422,7 @@ class ScatterPlot:
 
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         fig, axes = _set_figure_layout_for_fdata(
-            self.fdata, fig, axes, n_rows, n_cols
+            self.fdata, fig, axes, n_rows, n_cols,
         )
 
         if domain_range is None:

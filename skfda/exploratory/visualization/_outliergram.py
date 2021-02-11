@@ -51,7 +51,9 @@ class Outliergram:
         fdata: T,
     ) -> None:
         self.fdata = fdata
-        self.mbd = ModifiedBandDepth(self.fdata)
+        self.depth = ModifiedBandDepth()
+        self.depth.fit(fdata)
+        self.mbd = self.depth(fdata)
         self.mei = self.modified_epigraph_index_list()
 
     def plot(
@@ -112,13 +114,13 @@ class Outliergram:
 
         # Set labels of graph
         fig.suptitle("Outliergram")
-        for axe in Axes:
+        for axe in axes:
             axe.set_xlabel("MEI")
             axe.set_ylabel("MBD")
             axe.set_xlim([0, 1])
             axe.set_ylim([
-                ModifiedBandDepth().min,
-                ModifiedBandDepth().max,
+                self.depth.min,
+                self.depth.max,
             ])
 
         return fig
@@ -132,8 +134,8 @@ class Outliergram:
         with all the other curves of our dataset.
         """
         interval_len = (
-            self.fdata.domain_range()[0][1]
-            - self.fdata.domain_range()[0][0]
+            self.fdata.domain_range[0][1]
+            - self.fdata.domain_range[0][0]
         )
 
         function = rankdata(

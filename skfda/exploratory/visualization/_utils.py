@@ -1,12 +1,15 @@
 import io
 import math
 import re
+from typing import List, Optional, Tuple, Union, TypeVar
 
-import matplotlib.axes
+import matplotlib.axes as a
 import matplotlib.backends.backend_svg
-import matplotlib.figure
-
+import matplotlib.figure as f
 import matplotlib.pyplot as plt
+
+T = TypeVar('T')
+
 
 non_close_text = '[^>]*?'
 svg_width_regex = re.compile(
@@ -43,7 +46,11 @@ def _figure_to_svg(figure):
     return new_data
 
 
-def _get_figure_and_axes(chart=None, fig=None, axes=None):
+def _get_figure_and_axes(
+    chart: Union[f.Figure, a.Axes, List[a.Axes]] = None,
+    fig: Optional[f.Figure] = None, 
+    axes: List[a.Axes] = None,
+) -> Tuple[f.Figure, a.Axes]:
     """Obtain the figure and axes from the arguments."""
 
     num_defined = sum(e is not None for e in (chart, fig, axes))
@@ -160,8 +167,13 @@ def _set_figure_layout(fig=None, axes=None,
     return fig, axes
 
 
-def _set_figure_layout_for_fdata(fdata, fig=None, axes=None,
-                                 n_rows=None, n_cols=None):
+def _set_figure_layout_for_fdata(
+    fdata: T,
+    fig: Optional[f.Figure] = None, 
+    axes: List[a.Axes] = None,
+    n_rows: int = None,
+    n_cols: int = None,
+) -> Tuple[f.Figure, a.Axes]:
     """Set the figure axes for plotting a
     :class:`~skfda.representation.FData` object.
 
@@ -242,8 +254,9 @@ def _change_luminosity(color, amount=0.5):
     Note:
         Based on https://stackoverflow.com/a/49601444/2455333
     """
-    import matplotlib.colors as mc
     import colorsys
+
+    import matplotlib.colors as mc
     try:
         c = mc.cnames[color]
     except TypeError:

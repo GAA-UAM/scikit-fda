@@ -78,7 +78,9 @@ class Basis(ABC):
 
     @property
     def dim_domain(self) -> int:
-        return 1
+        if self._domain_range is None:
+            return 1
+        return len(self._domain_range)
 
     @property
     def dim_codomain(self) -> int:

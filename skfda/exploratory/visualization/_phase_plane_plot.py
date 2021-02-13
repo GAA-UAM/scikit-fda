@@ -36,14 +36,14 @@ class PhasePlanePlot:
         fig, axes = _get_figure_and_axes(chart, fig, axes)
 
         if (
-            self.fdata1.dim_domain == 1 
+            self.fdata1.dim_domain == 1
             and self.fdata1.dim_codomain == 2
             and self.fdata2 is None
         ):
             fig, axes = _set_figure_layout(
-                fig, 
-                axes, 
-                dim=self.fdata1.dim_domain + 1, 
+                fig,
+                axes,
+                dim=self.fdata1.dim_domain + 1,
                 n_axes=1,
             )
             axes[0].plot(

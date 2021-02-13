@@ -1,3 +1,5 @@
+"""Initialization module of visualization folder."""
+
 from . import clustering, representation
 from ._boxplot import Boxplot, SurfaceBoxplot
 from ._ddplot import DDPlot

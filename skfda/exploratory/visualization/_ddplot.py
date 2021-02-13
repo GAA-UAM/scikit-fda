@@ -61,7 +61,7 @@ class DDPlot:
         chart: Union[Figure, Axes, List[Axes]] = None,
         *,
         fig: Optional[Figure] = None,
-        axes: Optional[List[Axes]] = None,
+        axes: List[Axes] = None,
         **kwargs,
     ) -> Figure:
         """

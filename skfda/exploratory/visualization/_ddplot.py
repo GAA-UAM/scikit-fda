@@ -5,7 +5,7 @@ To do this depth is calculated for the two chosen distributions, and then
 a scatter plot is created of this two variables.
 """
 
-from typing import List, Optional, TypeVar
+from typing import List, Optional, TypeVar, Union
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -14,7 +14,6 @@ from ...exploratory.depth.multivariate import Depth
 from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
 T = TypeVar('T')
-S = TypeVar('S', Figure, Axes, List[Axes])
 
 
 class DDPlot:
@@ -33,6 +32,11 @@ class DDPlot:
             we want to use to compute the depth (Depth Y).
         depth_method: method that will be used to compute the depths of the
             data with respect to the distributions.
+    Attributes:
+        depth_dist1: result of the calculation of the depth_method into our
+            first distribution (dist1).
+        depth_dist2: result of the calculation of the depth_method into our
+            second distribution (dist2).
     """
 
     def __init__(
@@ -43,19 +47,21 @@ class DDPlot:
         depth_method: Depth[T],
     ) -> None:
         self.fdata = fdata
-        self.dist1 = dist1
-        self.dist2 = dist2
         self.depth_method = depth_method
         self.depth_method.fit(fdata)
+        self.depth_dist1 = self.depth_method(
+            self.fdata, distribution=dist1,
+        )
+        self.depth_dist2 = self.depth_method(
+            self.fdata, distribution=dist2,
+        )
 
     def plot(
         self,
-        chart: Optional[S] = None,
+        chart: Union[Figure, Axes, List[Axes]] = None,
         *,
         fig: Optional[Figure] = None,
         axes: Optional[List[Axes]] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
         **kwargs,
     ) -> Figure:
         """
@@ -75,12 +81,6 @@ class DDPlot:
                 None, the figure is initialized.
             axes (list of axis objects, optional): axis where the graphs
                 are plotted. If None, see param fig.
-            n_rows (int, optional): designates the number of rows of the figure
-                to plot the different dimensions of the image. Only specified
-                if fig and ax are None.
-            n_cols(int, optional): designates the number of columns of the
-                figure to plot the different dimensions of the image. Only
-                specified if fig and ax are None.
             kwargs: if dim_domain is 1, keyword arguments to be passed to the
                 matplotlib.pyplot.plot function; if dim_domain is 2, keyword
                 arguments to be passed to the matplotlib.pyplot.plot_surface
@@ -95,45 +95,37 @@ class DDPlot:
 
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         fig, axes = _set_figure_layout_for_fdata(
-            self.fdata, fig, axes, n_rows, n_cols,
+            self.fdata, fig, axes,
         )
 
-        depth_dist1 = self.depth_method(
-            self.fdata, distribution=self.dist1,
-        )
-        depth_dist2 = self.depth_method(
-            self.fdata, distribution=self.dist2,
-        )
+        axe = axes[0]
 
-        if self.fdata.dim_domain == 1:
-            for i in range(self.fdata.dim_codomain):
-                axes[i].scatter(
-                    depth_dist1,
-                    depth_dist2,
-                    **kwargs,
-                )
+        axe.scatter(
+            self.depth_dist1,
+            self.depth_dist2,
+            **kwargs,
+        )
 
         # Set labels of graph
         fig.suptitle("DDPlot")
-        for axe in axes:
-            axe.set_xlabel("X depth")
-            axe.set_ylabel("Y depth")
-            axe.set_xlim(
-                [
-                    self.depth_method.min - margin,
-                    self.depth_method.max + margin,
-                ],
-            )
-            axe.set_ylim(
-                [
-                    self.depth_method.min - margin,
-                    self.depth_method.max + margin,
-                ],
-            )
-            axe.plot(
-                [0, 1],
-                linewidth=width_aux_line,
-                color=color_aux_line,
-            )
+        axe.set_xlabel("X depth")
+        axe.set_ylabel("Y depth")
+        axe.set_xlim(
+            [
+                self.depth_method.min - margin,
+                self.depth_method.max + margin,
+            ],
+        )
+        axe.set_ylim(
+            [
+                self.depth_method.min - margin,
+                self.depth_method.max + margin,
+            ],
+        )
+        axe.plot(
+            [0, 1],
+            linewidth=width_aux_line,
+            color=color_aux_line,
+        )
 
         return fig

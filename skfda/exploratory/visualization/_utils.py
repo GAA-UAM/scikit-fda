@@ -171,8 +171,8 @@ def _set_figure_layout_for_fdata(
     fdata: T,
     fig: Optional[f.Figure] = None, 
     axes: List[a.Axes] = None,
-    n_rows: int = None,
-    n_cols: int = None,
+    n_rows: Optional[int] = None,
+    n_cols: Optional[int] = None,
 ) -> Tuple[f.Figure, a.Axes]:
     """Set the figure axes for plotting a
     :class:`~skfda.representation.FData` object.

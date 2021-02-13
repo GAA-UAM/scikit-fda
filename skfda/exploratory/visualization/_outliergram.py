@@ -14,10 +14,10 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from scipy.stats import rankdata
 
+from ... import FDataGrid
 from ..depth._depth import ModifiedBandDepth
 from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
-T = TypeVar('T')
 S = TypeVar('S', Figure, Axes, List[Axes])
 
 
@@ -48,7 +48,7 @@ class Outliergram:
 
     def __init__(
         self,
-        fdata: T,
+        fdata: FDataGrid,
     ) -> None:
         self.fdata = fdata
         self.depth = ModifiedBandDepth()
@@ -102,30 +102,27 @@ class Outliergram:
             self.fdata, fig, axes, n_rows, n_cols,
         )
 
-        if self.fdata.dim_domain == 1:
+        axe = axes[0]
 
-            for i in range(self.fdata.dim_codomain):
-
-                axes[i].scatter(
-                    self.mei,
-                    self.mbd,
-                    **kwargs,
-                )
+        axe.scatter(
+            self.mei,
+            self.mbd,
+            **kwargs,
+        )
 
         # Set labels of graph
         fig.suptitle("Outliergram")
-        for axe in axes:
-            axe.set_xlabel("MEI")
-            axe.set_ylabel("MBD")
-            axe.set_xlim([0, 1])
-            axe.set_ylim([
-                self.depth.min,
-                self.depth.max,
-            ])
+        axe.set_xlabel("MEI")
+        axe.set_ylabel("MBD")
+        axe.set_xlim([0, 1])
+        axe.set_ylim([
+            self.depth.min,
+            self.depth.max,
+        ])
 
         return fig
 
-    def modified_epigraph_index_list(self):
+    def modified_epigraph_index_list(self) -> List[float]:
         """
         Calculate the Modified Epigraph Index of a FData.
 

@@ -61,7 +61,7 @@ class DDPlot:
         chart: Union[Figure, Axes, List[Axes]] = None,
         *,
         fig: Optional[Figure] = None,
-        axes: List[Axes] = None,
+        axe: Optional[Axes] = None,
         **kwargs,
     ) -> Figure:
         """
@@ -79,7 +79,7 @@ class DDPlot:
             fig (figure object, optional): figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-            axes (list of axis objects, optional): axis where the graphs
+            axes (axis, optional): axis where the graphs
                 are plotted. If None, see param fig.
             kwargs: if dim_domain is 1, keyword arguments to be passed to the
                 matplotlib.pyplot.plot function; if dim_domain is 2, keyword
@@ -97,8 +97,6 @@ class DDPlot:
         fig, axes = _set_figure_layout_for_fdata(
             self.fdata, fig, axes,
         )
-
-        axe = axes[0]
 
         axe.scatter(
             self.depth_dist1,

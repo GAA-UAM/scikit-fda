@@ -13,10 +13,15 @@ import scipy.integrate as integrate
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from scipy.stats import rankdata
+from . import PlotGraph
 
 from ... import FDataGrid
 from ..depth._depth import ModifiedBandDepth
-from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
+from ._utils import (
+    _get_figure_and_axes,
+    _set_figure_layout_for_fdata,
+    _set_figure_layout,
+)
 
 S = TypeVar('S', Figure, Axes, List[Axes])
 
@@ -55,6 +60,10 @@ class Outliergram:
         self.depth.fit(fdata)
         self.mbd = self.depth(fdata)
         self.mei = self.modified_epigraph_index_list()
+        if self.mbd.len() != self.mei.len():
+            raise ValueError(
+                "The size of mbd and mei should be the same."
+            )
 
     def plot(
         self,
@@ -64,6 +73,7 @@ class Outliergram:
         axes: Optional[List[Axes]] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
+        interactivity_mode: bool = True,
         **kwargs,
     ) -> Figure:
         """
@@ -89,6 +99,10 @@ class Outliergram:
             n_cols(int, optional): designates the number of columns of the
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
+            interactivity_mode (bool): if this is activated it will plot an
+                aditional graph representing the functions of the functional
+                data, that will allow to click and highlight the points
+                represented.
             kwargs: if dim_domain is 1, keyword arguments to be passed to the
                 matplotlib.pyplot.plot function; if dim_domain is 2, keyword
                 arguments to be passed to the matplotlib.pyplot.plot_surface
@@ -98,17 +112,31 @@ class Outliergram:
             scattered.
         """
         fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(
-            self.fdata, fig, axes, n_rows, n_cols,
-        )
+        if interactivity_mode:
+            fig, axes = _set_figure_layout(
+                fig, axes, 2, n_rows, n_cols,
+            )
+        else:
+            fig, axes = _set_figure_layout_for_fdata(
+                self.fdata, fig, axes, n_rows, n_cols,
+            )
+
+        PlotGraph(self.fdata)
 
         axe = axes[0]
 
-        axe.scatter(
-            self.mei,
-            self.mbd,
-            **kwargs,
-        )
+        if interactivity_mode:
+            for i in range(self.mei.len()):
+                
+
+            
+        
+        else:
+            axe.scatter(
+                self.mei,
+                self.mbd,
+                **kwargs,
+            )
 
         # Set labels of graph
         fig.suptitle("Outliergram")

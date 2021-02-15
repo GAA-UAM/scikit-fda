@@ -93,9 +93,9 @@ class DDPlot:
         width_aux_line = 0.35
         color_aux_line = "gray"
 
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(
-            self.fdata, fig, axes,
+        fig, axe = _get_figure_and_axes(chart, fig, axe)
+        fig, axe = _set_figure_layout_for_fdata(
+            self.fdata, fig, axe,
         )
 
         axe.scatter(

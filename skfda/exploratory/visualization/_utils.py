@@ -47,7 +47,7 @@ def _figure_to_svg(figure):
 
 def _get_figure_and_axes(
     chart: Union[Figure, Axes, List[Axes]] = None,
-    fig: Optional[Figure] = None, 
+    fig: Optional[Figure] = None,
     axes: Optional[List[Axes]] = None,
 ) -> Tuple[Figure, List[Axes]]:
     """Obtain the figure and axes from the arguments."""

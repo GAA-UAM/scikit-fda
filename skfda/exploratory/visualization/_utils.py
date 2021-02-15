@@ -1,15 +1,14 @@
 import io
 import math
 import re
-from typing import List, Optional, Tuple, Union, TypeVar
+from typing import List, Optional, Tuple, Union
 
-import matplotlib.axes as a
+import matplotlib.axes as axes
 import matplotlib.backends.backend_svg
-import matplotlib.figure as f
+import matplotlib.figure as figure
 import matplotlib.pyplot as plt
 
-T = TypeVar('T')
-
+from ...representation._functional_data import FData
 
 non_close_text = '[^>]*?'
 svg_width_regex = re.compile(
@@ -47,10 +46,10 @@ def _figure_to_svg(figure):
 
 
 def _get_figure_and_axes(
-    chart: Union[f.Figure, a.Axes, List[a.Axes]] = None,
-    fig: Optional[f.Figure] = None, 
-    axes: Union[a.Axes, List[a.Axes]] = None,
-) -> Tuple[f.Figure, a.Axes]:
+    chart: Union[figure.Figure, axes.Axes, List[axes.Axes]] = None,
+    fig: Optional[figure.Figure] = None, 
+    axes: Union[axes.Axes, List[axes.Axes]] = None,
+) -> Tuple[figure.Figure, axes.Axes]:
     """Obtain the figure and axes from the arguments."""
 
     num_defined = sum(e is not None for e in (chart, fig, axes))
@@ -168,12 +167,12 @@ def _set_figure_layout(fig=None, axes=None,
 
 
 def _set_figure_layout_for_fdata(
-    fdata: T,
-    fig: Optional[f.Figure] = None, 
-    axes: Union[a.Axes, List[a.Axes]] = None,
+    fdata: FData,
+    fig: Optional[figure.Figure] = None, 
+    axes: Union[axes.Axes, List[axes.Axes]] = None,
     n_rows: Optional[int] = None,
     n_cols: Optional[int] = None,
-) -> Tuple[f.Figure, a.Axes]:
+) -> Tuple[figure.Figure, axes.Axes]:
     """Set the figure axes for plotting a
     :class:`~skfda.representation.FData` object.
 

@@ -61,7 +61,7 @@ class DDPlot:
         chart: Union[Figure, Axes, List[Axes]] = None,
         *,
         fig: Optional[Figure] = None,
-        axe: Optional[Axes] = None,
+        ax: Axes = None,
         **kwargs,
     ) -> Figure:
         """
@@ -93,12 +93,12 @@ class DDPlot:
         width_aux_line = 0.35
         color_aux_line = "gray"
 
-        fig, axe = _get_figure_and_axes(chart, fig, axe)
-        fig, axe = _set_figure_layout_for_fdata(
-            self.fdata, fig, axe,
+        fig, ax = _get_figure_and_axes(chart, fig, ax)
+        fig, ax = _set_figure_layout_for_fdata(
+            self.fdata, fig, ax,
         )
 
-        axe.scatter(
+        ax.scatter(
             self.depth_dist1,
             self.depth_dist2,
             **kwargs,
@@ -106,21 +106,21 @@ class DDPlot:
 
         # Set labels of graph
         fig.suptitle("DDPlot")
-        axe.set_xlabel("X depth")
-        axe.set_ylabel("Y depth")
-        axe.set_xlim(
+        ax.set_xlabel("X depth")
+        ax.set_ylabel("Y depth")
+        ax.set_xlim(
             [
                 self.depth_method.min - margin,
                 self.depth_method.max + margin,
             ],
         )
-        axe.set_ylim(
+        ax.set_ylim(
             [
                 self.depth_method.min - margin,
                 self.depth_method.max + margin,
             ],
         )
-        axe.plot(
+        ax.plot(
             [0, 1],
             linewidth=width_aux_line,
             color=color_aux_line,

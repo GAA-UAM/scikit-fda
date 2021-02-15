@@ -48,8 +48,8 @@ def _figure_to_svg(figure):
 def _get_figure_and_axes(
     chart: Union[figure.Figure, axes.Axes, List[axes.Axes]] = None,
     fig: Optional[figure.Figure] = None, 
-    axes: Union[axes.Axes, List[axes.Axes]] = None,
-) -> Tuple[figure.Figure, axes.Axes]:
+    axes: List[axes.Axes] = None,
+) -> Tuple[figure.Figure, List[axes.Axes]]:
     """Obtain the figure and axes from the arguments."""
 
     num_defined = sum(e is not None for e in (chart, fig, axes))
@@ -169,10 +169,10 @@ def _set_figure_layout(fig=None, axes=None,
 def _set_figure_layout_for_fdata(
     fdata: FData,
     fig: Optional[figure.Figure] = None, 
-    axes: Union[axes.Axes, List[axes.Axes]] = None,
+    axes: List[axes.Axes] = None,
     n_rows: Optional[int] = None,
     n_cols: Optional[int] = None,
-) -> Tuple[figure.Figure, axes.Axes]:
+) -> Tuple[figure.Figure, List[axes.Axes]]:
     """Set the figure axes for plotting a
     :class:`~skfda.representation.FData` object.
 

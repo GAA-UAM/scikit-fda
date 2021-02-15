@@ -61,7 +61,7 @@ class DDPlot:
         chart: Union[Figure, Axes, List[Axes]] = None,
         *,
         fig: Optional[Figure] = None,
-        ax: Axes = None,
+        axes: Optional[List[Axes]] = None,
         **kwargs,
     ) -> Figure:
         """
@@ -93,10 +93,12 @@ class DDPlot:
         width_aux_line = 0.35
         color_aux_line = "gray"
 
-        fig, ax = _get_figure_and_axes(chart, fig, ax)
-        fig, ax = _set_figure_layout_for_fdata(
-            self.fdata, fig, ax,
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout_for_fdata(
+            self.fdata, fig, axes,
         )
+
+        ax = axes[0]
 
         ax.scatter(
             self.depth_dist1,

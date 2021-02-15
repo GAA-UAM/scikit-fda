@@ -13,7 +13,7 @@ from matplotlib.figure import Figure
 from ...exploratory.depth.multivariate import Depth
 from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
-T = TypeVar('T')
+T = TypeVar('T', bound="FData")
 
 
 class DDPlot:
@@ -61,7 +61,7 @@ class DDPlot:
         chart: Union[Figure, Axes, List[Axes]] = None,
         *,
         fig: Optional[Figure] = None,
-        axes: Optional[List[Axes]] = None,
+        axes: Optional[Sequence[Axes]] = None,
         **kwargs,
     ) -> Figure:
         """
@@ -92,7 +92,7 @@ class DDPlot:
         margin = 0.025
         width_aux_line = 0.35
         color_aux_line = "gray"
-
+        #List axes
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         fig, axes = _set_figure_layout_for_fdata(
             self.fdata, fig, axes,

@@ -3,10 +3,10 @@ import math
 import re
 from typing import List, Optional, Tuple, Union
 
-import matplotlib.axes as axes
 import matplotlib.backends.backend_svg
-import matplotlib.figure as figure
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 from ...representation._functional_data import FData
 
@@ -46,10 +46,10 @@ def _figure_to_svg(figure):
 
 
 def _get_figure_and_axes(
-    chart: Union[figure.Figure, axes.Axes, List[axes.Axes]] = None,
-    fig: Optional[figure.Figure] = None, 
-    axes: Optional[List[axes.Axes]] = None,
-) -> Tuple[figure.Figure, List[axes.Axes]]:
+    chart: Union[Figure, Axes, List[Axes]] = None,
+    fig: Optional[Figure] = None, 
+    axes: Optional[List[Axes]] = None,
+) -> Tuple[Figure, List[Axes]]:
     """Obtain the figure and axes from the arguments."""
 
     num_defined = sum(e is not None for e in (chart, fig, axes))
@@ -168,11 +168,11 @@ def _set_figure_layout(fig=None, axes=None,
 
 def _set_figure_layout_for_fdata(
     fdata: FData,
-    fig: Optional[figure.Figure] = None, 
-    axes: Optional[List[axes.Axes]] = None,
+    fig: Optional[Figure] = None, 
+    axes: Optional[List[Axes]] = None,
     n_rows: Optional[int] = None,
     n_cols: Optional[int] = None,
-) -> Tuple[figure.Figure, List[axes.Axes]]:
+) -> Tuple[Figure, List[Axes]]:
     """Set the figure axes for plotting a
     :class:`~skfda.representation.FData` object.
 

@@ -13,15 +13,15 @@ import scipy.integrate as integrate
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from scipy.stats import rankdata
-from . import PlotGraph
 
 from ... import FDataGrid
 from ..depth._depth import ModifiedBandDepth
 from ._utils import (
     _get_figure_and_axes,
-    _set_figure_layout_for_fdata,
     _set_figure_layout,
+    _set_figure_layout_for_fdata,
 )
+from .representation import GraphPlot
 
 S = TypeVar('S', Figure, Axes, List[Axes])
 
@@ -60,7 +60,7 @@ class Outliergram:
         self.depth.fit(fdata)
         self.mbd = self.depth(fdata)
         self.mei = self.modified_epigraph_index_list()
-        if self.mbd.len() != self.mei.len():
+        if self.mbd.size != self.mei.size:
             raise ValueError(
                 "The size of mbd and mei should be the same."
             )
@@ -121,18 +121,20 @@ class Outliergram:
                 self.fdata, fig, axes, n_rows, n_cols,
             )
 
-        PlotGraph(self.fdata)
 
-        axe = axes[0]
+        axScatter = axes[0]
 
         if interactivity_mode:
+            id_function = {}
+            axPlot = axes[1]
             for i in range(self.mei.len()):
-                
+                id_function.update(GraphPlot(self.fdata, axes = axPlot), )
+
 
             
         
         else:
-            axe.scatter(
+            axScatter.scatter(
                 self.mei,
                 self.mbd,
                 **kwargs,
@@ -140,10 +142,10 @@ class Outliergram:
 
         # Set labels of graph
         fig.suptitle("Outliergram")
-        axe.set_xlabel("MEI")
-        axe.set_ylabel("MBD")
-        axe.set_xlim([0, 1])
-        axe.set_ylim([
+        axScatter.set_xlabel("MEI")
+        axScatter.set_ylabel("MBD")
+        axScatter.set_xlim([0, 1])
+        axScatter.set_ylim([
             self.depth.min,
             self.depth.max,
         ])

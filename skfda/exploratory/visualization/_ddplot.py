@@ -11,9 +11,10 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from ...exploratory.depth.multivariate import Depth
+from ...representation._functional_data import FData
 from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
-T = TypeVar('T', bound="FData")
+T = TypeVar('T', bound=FData)
 
 
 class DDPlot:
@@ -61,7 +62,7 @@ class DDPlot:
         chart: Union[Figure, Axes, List[Axes]] = None,
         *,
         fig: Optional[Figure] = None,
-        axes: Optional[Sequence[Axes]] = None,
+        ax: Optional[Axes] = None,
         **kwargs,
     ) -> Figure:
         """
@@ -92,15 +93,17 @@ class DDPlot:
         margin = 0.025
         width_aux_line = 0.35
         color_aux_line = "gray"
-        #List axes
+
+        axes = []
+        axes.append(ax)
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         fig, axes = _set_figure_layout_for_fdata(
             self.fdata, fig, axes,
         )
 
-        ax = axes[0]
+        ax_fig = axes[0]
 
-        ax.scatter(
+        ax_fig.scatter(
             self.depth_dist1,
             self.depth_dist2,
             **kwargs,
@@ -108,21 +111,21 @@ class DDPlot:
 
         # Set labels of graph
         fig.suptitle("DDPlot")
-        ax.set_xlabel("X depth")
-        ax.set_ylabel("Y depth")
-        ax.set_xlim(
+        ax_fig.set_xlabel("X depth")
+        ax_fig.set_ylabel("Y depth")
+        ax_fig.set_xlim(
             [
                 self.depth_method.min - margin,
                 self.depth_method.max + margin,
             ],
         )
-        ax.set_ylim(
+        ax_fig.set_ylim(
             [
                 self.depth_method.min - margin,
                 self.depth_method.max + margin,
             ],
         )
-        ax.plot(
+        ax_fig.plot(
             [0, 1],
             linewidth=width_aux_line,
             color=color_aux_line,

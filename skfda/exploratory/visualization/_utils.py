@@ -1,7 +1,7 @@
 import io
 import math
 import re
-from typing import List, Optional, Tuple, Union
+from typing import Optional, List, Tuple, Union
 
 import matplotlib.backends.backend_svg
 import matplotlib.pyplot as plt

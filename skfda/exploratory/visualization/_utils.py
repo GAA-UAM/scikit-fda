@@ -48,7 +48,7 @@ def _figure_to_svg(figure):
 def _get_figure_and_axes(
     chart: Union[Figure, Axes, List[Axes]] = None,
     fig: Optional[Figure] = None,
-    axes: Optional[List[Axes]] = None,
+    axes: Optional[Tuple[Axes, List[Axes]]] = None,
 ) -> Tuple[Figure, List[Axes]]:
     """Obtain the figure and axes from the arguments."""
 
@@ -62,22 +62,22 @@ def _get_figure_and_axes(
         if isinstance(chart, matplotlib.figure.Figure):
             fig = chart
         else:
-            axes = chart
+            axes_r = chart
 
     if fig is None and axes is None:
         fig = _create_figure()
-        axes = []
+        axes_r = []
 
     elif fig is not None:
-        axes = fig.axes
+        axes_r = fig.axes
 
     else:
         if isinstance(axes, matplotlib.axes.Axes):
-            axes = [axes]
+            axes_r = [axes]
 
-        fig = axes[0].figure
+        fig = axes_r[0].figure
 
-    return fig, axes
+    return fig, axes_r
 
 
 def _get_axes_shape(n_axes, n_rows=None, n_cols=None):

@@ -80,7 +80,7 @@ class DDPlot:
             fig (figure object, optional): figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-            axes (axis, optional): axis where the graphs
+            ax (axis, optional): axis where the graphs
                 are plotted. If None, see param fig.
             kwargs: if dim_domain is 1, keyword arguments to be passed to the
                 matplotlib.pyplot.plot function; if dim_domain is 2, keyword
@@ -94,16 +94,14 @@ class DDPlot:
         width_aux_line = 0.35
         color_aux_line = "gray"
 
-        axes = []
-        axes.append(ax)
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _get_figure_and_axes(chart, fig, ax)
         fig, axes = _set_figure_layout_for_fdata(
             self.fdata, fig, axes,
         )
 
-        ax_fig = axes[0]
+        ax = axes[0]
 
-        ax_fig.scatter(
+        ax.scatter(
             self.depth_dist1,
             self.depth_dist2,
             **kwargs,
@@ -111,21 +109,21 @@ class DDPlot:
 
         # Set labels of graph
         fig.suptitle("DDPlot")
-        ax_fig.set_xlabel("X depth")
-        ax_fig.set_ylabel("Y depth")
-        ax_fig.set_xlim(
+        ax.set_xlabel("X depth")
+        ax.set_ylabel("Y depth")
+        ax.set_xlim(
             [
                 self.depth_method.min - margin,
                 self.depth_method.max + margin,
             ],
         )
-        ax_fig.set_ylim(
+        ax.set_ylim(
             [
                 self.depth_method.min - margin,
                 self.depth_method.max + margin,
             ],
         )
-        ax_fig.plot(
+        ax.plot(
             [0, 1],
             linewidth=width_aux_line,
             color=color_aux_line,

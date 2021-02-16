@@ -9,6 +9,7 @@ magnitude outliers, but there is a necessity of capturing this other type.
 
 from typing import List, Optional, TypeVar
 
+import numpy as np
 import scipy.integrate as integrate
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -114,24 +115,31 @@ class Outliergram:
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         if interactivity_mode:
             fig, axes = _set_figure_layout(
-                fig, axes, 2, n_rows, n_cols,
+                fig=fig, axes=axes, n_axes=2,
             )
         else:
             fig, axes = _set_figure_layout_for_fdata(
-                self.fdata, fig, axes, n_rows, n_cols,
+                fdata=self.fdata, fig=fig, axes=axes,
             )
-
 
         axScatter = axes[0]
 
         if interactivity_mode:
-            id_function = {}
+            id_function = []
+            id_point = []
             axPlot = axes[1]
-            for i in range(self.mei.len()):
-                id_function.update(GraphPlot(self.fdata, axes = axPlot), )
-
-
-            
+            for i in range(self.mei.size):
+                id_function[i] = GraphPlot(
+                    FDataGrid(
+                        self.fdata.data_matrix[i],
+                        self.fdata.grid_points,
+                    )
+                ).plot(axes=axPlot)
+                id_point[i] = axScatter.scatter(
+                    self.mei[i],
+                    self.mbd[i],
+                    **kwargs,
+                )
         
         else:
             axScatter.scatter(
@@ -152,7 +160,7 @@ class Outliergram:
 
         return fig
 
-    def modified_epigraph_index_list(self) -> List[float]:
+    def modified_epigraph_index_list(self) -> np.ndarray:
         """
         Calculate the Modified Epigraph Index of a FData.
 

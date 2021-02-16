@@ -5,7 +5,7 @@ To do this depth is calculated for the two chosen distributions, and then
 a scatter plot is created of this two variables.
 """
 
-from typing import List, Optional, TypeVar, Union
+from typing import Optional, TypeVar, Union
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -59,7 +59,7 @@ class DDPlot:
 
     def plot(
         self,
-        chart: Union[Figure, Axes, List[Axes]] = None,
+        chart: Union[Figure, Axes, None] = None,
         *,
         fig: Optional[Figure] = None,
         ax: Optional[Axes] = None,
@@ -73,15 +73,13 @@ class DDPlot:
         our data is more related with one subset of data / distribution
         than another one.
         Args:
-            chart: figure over
-                with the graphs are plotted or axis over where the graphs are
-                plotted. If None and ax is also None, the figure is
-                initialized.
-            fig: figure over with the graphs are
-                plotted in case ax is not specified. If None and ax is also
+            chart: figure over with the graphs are plotted or axis over
+                where the graphs are plotted. If None and ax is also
                 None, the figure is initialized.
-            ax: axis where the graphs
-                are plotted. If None, see param fig.
+            fig: figure over with the graphs are plotted in case ax is not
+                specified. If None and ax is also None, the figure is
+                initialized.
+            ax: axis where the graphs are plotted. If None, see param fig.
             kwargs: if dim_domain is 1, keyword arguments to be passed to the
                 matplotlib.pyplot.plot function; if dim_domain is 2, keyword
                 arguments to be passed to the matplotlib.pyplot.plot_surface

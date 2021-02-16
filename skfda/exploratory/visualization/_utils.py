@@ -1,7 +1,7 @@
 import io
 import math
 import re
-from typing import Optional, List, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import matplotlib.backends.backend_svg
 import matplotlib.pyplot as plt
@@ -46,10 +46,10 @@ def _figure_to_svg(figure):
 
 
 def _get_figure_and_axes(
-    chart: Union[Figure, Axes, List[Axes]] = None,
+    chart: Union[Figure, Axes, Sequence[Axes], None] = None,
     fig: Optional[Figure] = None,
-    axes: Optional[Tuple[Axes, List[Axes]]] = None,
-) -> Tuple[Figure, List[Axes]]:
+    axes: Union[Axes, Sequence[Axes], None] = None,
+) -> Tuple[Figure, Sequence[Axes]]:
     """Obtain the figure and axes from the arguments."""
 
     num_defined = sum(e is not None for e in (chart, fig, axes))
@@ -62,22 +62,22 @@ def _get_figure_and_axes(
         if isinstance(chart, matplotlib.figure.Figure):
             fig = chart
         else:
-            axes_r = chart
+            axes = chart
 
     if fig is None and axes is None:
         fig = _create_figure()
-        axes_r = []
+        axes = []
 
     elif fig is not None:
-        axes_r = fig.axes
+        axes = fig.axes
 
     else:
         if isinstance(axes, matplotlib.axes.Axes):
-            axes_r = [axes]
+            axes = [axes]
 
-        fig = axes_r[0].figure
+        fig = axes[0].figure
 
-    return fig, axes_r
+    return fig, axes
 
 
 def _get_axes_shape(n_axes, n_rows=None, n_cols=None):
@@ -169,10 +169,10 @@ def _set_figure_layout(fig=None, axes=None,
 def _set_figure_layout_for_fdata(
     fdata: FData,
     fig: Optional[Figure] = None, 
-    axes: Optional[List[Axes]] = None,
+    axes: Optional[Sequence[Axes]] = None,
     n_rows: Optional[int] = None,
     n_cols: Optional[int] = None,
-) -> Tuple[Figure, List[Axes]]:
+) -> Tuple[Figure, Sequence[Axes]]:
     """Set the figure axes for plotting a
     :class:`~skfda.representation.FData` object.
 

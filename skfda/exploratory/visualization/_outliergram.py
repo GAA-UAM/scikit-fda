@@ -9,6 +9,7 @@ magnitude outliers, but there is a necessity of capturing this other type.
 
 from typing import List, Optional, TypeVar
 
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.integrate as integrate
 from matplotlib.axes import Axes
@@ -22,7 +23,6 @@ from ._utils import (
     _set_figure_layout,
     _set_figure_layout_for_fdata,
 )
-from .representation import GraphPlot
 
 S = TypeVar('S', Figure, Axes, List[Axes])
 
@@ -112,12 +112,14 @@ class Outliergram:
             fig (figure object): figure object in which the depths will be
             scattered.
         """
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
         if interactivity_mode:
+            fig = plt.figure(figsize=(9,3))
+            fig, axes = _get_figure_and_axes(chart, fig, axes)
             fig, axes = _set_figure_layout(
                 fig=fig, axes=axes, n_axes=2,
             )
         else:
+            fig, axes = _get_figure_and_axes(chart, fig, axes)
             fig, axes = _set_figure_layout_for_fdata(
                 fdata=self.fdata, fig=fig, axes=axes,
             )
@@ -129,12 +131,10 @@ class Outliergram:
             id_point = []
             axPlot = axes[1]
             for i in range(self.mei.size):
-                id_function.append(GraphPlot(
-                    FDataGrid(
+                id_function.append(axPlot.plot(
+                        self.fdata.grid_points[0],
                         self.fdata.data_matrix[i].flatten(),
-                        self.fdata.grid_points,
-                    )
-                ).plot(axes=axPlot))
+                ))
                 id_point.append(axScatter.scatter(
                     self.mei[i],
                     self.mbd[i],
@@ -157,6 +157,8 @@ class Outliergram:
             self.depth.min,
             self.depth.max,
         ])
+
+        fig.canvas.mpl_connect('pick_event', onpick)
 
         return fig
 
@@ -188,3 +190,8 @@ class Outliergram:
         integrand /= (interval_len * self.fdata.n_samples)
 
         return integrand
+
+def onpick(event):
+    thisline = event.artist
+    thisline.set_alpha(0)
+    axScatter.scatter((0,1),(0,5), color='red')

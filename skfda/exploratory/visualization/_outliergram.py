@@ -129,17 +129,17 @@ class Outliergram:
             id_point = []
             axPlot = axes[1]
             for i in range(self.mei.size):
-                id_function[i] = GraphPlot(
+                id_function.append(GraphPlot(
                     FDataGrid(
-                        self.fdata.data_matrix[i],
+                        self.fdata.data_matrix[i].flatten(),
                         self.fdata.grid_points,
                     )
-                ).plot(axes=axPlot)
-                id_point[i] = axScatter.scatter(
+                ).plot(axes=axPlot))
+                id_point.append(axScatter.scatter(
                     self.mei[i],
                     self.mbd[i],
                     **kwargs,
-                )
+                ))
         
         else:
             axScatter.scatter(

@@ -113,7 +113,8 @@ class Outliergram:
             scattered.
         """
         if interactivity_mode:
-            fig = plt.figure(figsize=(9,3))
+            self.point_clicked = None
+            fig = plt.figure(figsize=(9, 3))
             fig, axes = _get_figure_and_axes(chart, fig, axes)
             fig, axes = _set_figure_layout(
                 fig=fig, axes=axes, n_axes=2,
@@ -124,41 +125,42 @@ class Outliergram:
                 fdata=self.fdata, fig=fig, axes=axes,
             )
 
-        axScatter = axes[0]
+        self.axScatter = axes[0]
 
         if interactivity_mode:
-            id_function = []
-            id_point = []
-            axPlot = axes[1]
+            self.id_function = []
+            self.id_point = []
+            self.axPlot = axes[1]
             for i in range(self.mei.size):
-                id_function.append(axPlot.plot(
-                        self.fdata.grid_points[0],
-                        self.fdata.data_matrix[i].flatten(),
+                self.id_function.append(self.axPlot.plot(
+                    self.fdata.grid_points[0],
+                    self.fdata.data_matrix[i].flatten(),
+                    picker=2,
                 ))
-                id_point.append(axScatter.scatter(
+                self.id_point.append(self.axScatter.scatter(
                     self.mei[i],
                     self.mbd[i],
-                    **kwargs,
+                    picker=2,
                 ))
         
         else:
-            axScatter.scatter(
+            self.axScatter.scatter(
                 self.mei,
-                self.mbd,
+                self.mbd, 
                 **kwargs,
             )
 
         # Set labels of graph
         fig.suptitle("Outliergram")
-        axScatter.set_xlabel("MEI")
-        axScatter.set_ylabel("MBD")
-        axScatter.set_xlim([0, 1])
-        axScatter.set_ylim([
+        self.axScatter.set_xlabel("MEI")
+        self.axScatter.set_ylabel("MBD")
+        self.axScatter.set_xlim([0, 1])
+        self.axScatter.set_ylim([
             self.depth.min,
             self.depth.max,
         ])
 
-        fig.canvas.mpl_connect('pick_event', onpick)
+        fig.canvas.mpl_connect('pick_event', self.__call__)
 
         return fig
 
@@ -191,7 +193,53 @@ class Outliergram:
 
         return integrand
 
-def onpick(event):
-    thisline = event.artist
-    thisline.set_alpha(0)
-    axScatter.scatter((0,1),(0,5), color='red')
+    def __call__(self, event):
+        if self.point_clicked is None:
+            self.point_clicked = event.artist
+            self.reduce_points_intensity()
+
+        elif self.point_clicked == event.artist:
+            self.restore_points_intensity()
+            self.point_clicked = None
+        else:
+            self.change_points_intensity(event.artist)
+            self.point_clicked = event.artist
+
+    def reduce_points_intensity(self):
+        for point in self.id_point:
+            print('click: ', np.ma.getdata(point.get_offsets())[0][0], ', ', np.ma.getdata(point.get_offsets())[0][1])
+            print('points: ', self.point_clicked.get_xdata() , ', ', self.point_clicked.get_ydata())
+            if not (
+                np.ma.getdata(point.get_offsets())[0][0]
+                ==
+                self.point_clicked.get_xdata()
+            ) or not (
+                np.ma.getdata(point.get_offsets())[0][1]
+                ==
+                self.point_clicked.get_ydata()
+            ):
+                point.set_alpha(0.5)
+
+    def restore_points_intensity(self):
+        for point in self.id_point:
+            point.set_alpha(1)
+
+    def change_points_intensity(self, new_point):
+        for point in self.id_point:
+            if (
+                np.ma.getdata(point.get_offsets())[0][0]
+                == self.point_clicked.get_xdata()
+            ) and (
+                np.ma.getdata(point.get_offsets())[0][1]
+                == self.point_clicked.get_ydata()
+            ):
+                point.set_alpha(1)
+
+            elif (
+                np.ma.getdata(point.get_offsets())[0][0]
+                == new_point.get_xdata()
+            ) and (
+                np.ma.getdata(point.get_offsets())[0][1]
+                == new_point.get_ydata()
+            ):
+                point.set_alpha(0.5)

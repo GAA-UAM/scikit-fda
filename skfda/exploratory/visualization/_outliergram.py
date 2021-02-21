@@ -135,18 +135,17 @@ class Outliergram:
                 self.id_function.append(self.axPlot.plot(
                     self.fdata.grid_points[0],
                     self.fdata.data_matrix[i].flatten(),
-                    picker=2,
                 ))
                 self.id_point.append(self.axScatter.scatter(
                     self.mei[i],
                     self.mbd[i],
                     picker=2,
                 ))
-        
+
         else:
             self.axScatter.scatter(
                 self.mei,
-                self.mbd, 
+                self.mbd,
                 **kwargs,
             )
 
@@ -197,7 +196,6 @@ class Outliergram:
         if self.point_clicked is None:
             self.point_clicked = event.artist
             self.reduce_points_intensity()
-
         elif self.point_clicked == event.artist:
             self.restore_points_intensity()
             self.point_clicked = None
@@ -205,41 +203,39 @@ class Outliergram:
             self.change_points_intensity(event.artist)
             self.point_clicked = event.artist
 
+
     def reduce_points_intensity(self):
-        for point in self.id_point:
-            print('click: ', np.ma.getdata(point.get_offsets())[0][0], ', ', np.ma.getdata(point.get_offsets())[0][1])
-            print('points: ', self.point_clicked.get_xdata() , ', ', self.point_clicked.get_ydata())
+        for point, function in zip(self.id_point, self.id_function):
             if not (
                 np.ma.getdata(point.get_offsets())[0][0]
-                ==
-                self.point_clicked.get_xdata()
+                == np.ma.getdata(self.point_clicked.get_offsets())[0][0]
             ) or not (
                 np.ma.getdata(point.get_offsets())[0][1]
-                ==
-                self.point_clicked.get_ydata()
+                == np.ma.getdata(self.point_clicked.get_offsets())[0][1]
             ):
                 point.set_alpha(0.5)
+                function[0].set_alpha(0.1)
+
 
     def restore_points_intensity(self):
-        for point in self.id_point:
+        for point, function in zip(self.id_point, self.id_function):
             point.set_alpha(1)
+            function[0].set_alpha(1)
+            
 
     def change_points_intensity(self, new_point):
-        for point in self.id_point:
+        for point, function in zip(self.id_point, self.id_function):
             if (
                 np.ma.getdata(point.get_offsets())[0][0]
-                == self.point_clicked.get_xdata()
+                == np.ma.getdata(new_point.get_offsets())[0][0]
             ) and (
                 np.ma.getdata(point.get_offsets())[0][1]
-                == self.point_clicked.get_ydata()
+                == np.ma.getdata(new_point.get_offsets())[0][1]
             ):
                 point.set_alpha(1)
+                function[0].set_alpha(1)
 
-            elif (
-                np.ma.getdata(point.get_offsets())[0][0]
-                == new_point.get_xdata()
-            ) and (
-                np.ma.getdata(point.get_offsets())[0][1]
-                == new_point.get_ydata()
-            ):
+            else:
                 point.set_alpha(0.5)
+                function[0].set_alpha(0.1)
+

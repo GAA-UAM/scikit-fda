@@ -6,7 +6,7 @@ from ...representation import FData
 
 from ._utils import (
     _get_figure_and_axes,
-    _set_figure_layout_for_fdata,
+    _set_figure_layout,
 )
 
 S = TypeVar('S', Figure, Axes, List[Axes])
@@ -41,24 +41,26 @@ class PhasePlanePlot:
                 and self.fdata1.dim_domain == 1
                 and self.fdata1.dim_codomain == 1
             ):
-                fd = self.fdata1.concatenate()
+                self.fd_final = self.fdata1.concatenate(
+                    self.fdata2, as_coordinates=True
+                )
             else:
                 raise ValueError(
                     "Error in data arguments",
                 )
         else:
-            fd = self.fdata1
+            self.fd_final = self.fdata1
 
         if (
-            fd.dim_domain == 1
-            and fd.dim_codomain == 2
+            self.fd_final.dim_domain == 1
+            and self.fd_final.dim_codomain == 2
         ):
-            fig, axes = _set_figure_layout_for_fdata(
-                fd, fig, axes,
+            fig, axes = _set_figure_layout(
+                fig, axes, dim=2, n_axes=1,
             )
             axes[0].plot(
-                fd.data_matrix[0][0].tolist(),
-                fd.data_matrix[0][1].tolist(),
+                self.fd_final.data_matrix[0][:,0].tolist(),
+                self.fd_final.data_matrix[0][:,1].tolist(),
                 **kwargs,
             )
         else:

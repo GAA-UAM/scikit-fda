@@ -1,7 +1,7 @@
 import io
 import math
 import re
-from typing import Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import matplotlib.backends.backend_svg
 import matplotlib.pyplot as plt
@@ -100,10 +100,14 @@ def _get_axes_shape(n_axes, n_rows=None, n_cols=None):
 
     return n_rows, n_cols
 
-
-def _set_figure_layout(fig=None, axes=None,
-                       dim=2, n_axes=1,
-                       n_rows=None, n_cols=None):
+def _set_figure_layout(
+    fig: Optional[Figure] = None,
+    axes: Union[Axes, Sequence[Axes], None] = None,
+    dim: int = 2,
+    n_axes: int = 1,
+    n_rows: int = None,
+    n_cols: int = None
+) -> Tuple[Figure, Sequence[Axes]]:
     """Set the figure axes for plotting.
 
     Args:
@@ -202,7 +206,12 @@ def _set_figure_layout_for_fdata(
                               n_rows=n_rows, n_cols=n_cols)
 
 
-def _set_labels(fdata, fig=None, axes=None, patches=None):
+def _set_labels(
+    fdata: FData,
+    fig: Optional[Figure] = None,        
+    axes: Union[Axes, Sequence[Axes], None] = None,
+    patches = Optional[List[matplotlib.patches.Patch]],
+):
     """Set labels if any.
 
     Args:

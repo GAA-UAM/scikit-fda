@@ -7,7 +7,7 @@ this outliers. The motivation of the method is that it is easy to find
 magnitude outliers, but there is a necessity of capturing this other type.
 """
 
-from typing import List, Optional, TypeVar
+from typing import List, Optional, Sequence, TypeVar, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +16,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from scipy.stats import rankdata
 
+from ._display import Display
 from ... import FDataGrid
 from ..depth._depth import ModifiedBandDepth
 from ._utils import (
@@ -27,7 +28,7 @@ from ._utils import (
 S = TypeVar('S', Figure, Axes, List[Axes])
 
 
-class Outliergram:
+class Outliergram(Display):
     """
     Outliergram method of visualization.
 
@@ -56,6 +57,7 @@ class Outliergram:
         self,
         fdata: FDataGrid,
     ) -> None:
+        Display.__init__(self)
         self.fdata = fdata
         self.depth = ModifiedBandDepth()
         self.depth.fit(fdata)
@@ -71,10 +73,9 @@ class Outliergram:
         chart: Optional[S] = None,
         *,
         fig: Optional[Figure] = None,
-        axes: Optional[List[Axes]] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
+        axes: Optional[Sequence[Axes]] = None,
         interactivity_mode: bool = True,
+        displays: Union[Display, Sequence[Display], None] = None,
         **kwargs,
     ) -> Figure:
         """
@@ -104,6 +105,7 @@ class Outliergram:
                 aditional graph representing the functions of the functional
                 data, that will allow to click and highlight the points
                 represented.
+            displays:
             kwargs: if dim_domain is 1, keyword arguments to be passed to the
                 matplotlib.pyplot.plot function; if dim_domain is 2, keyword
                 arguments to be passed to the matplotlib.pyplot.plot_surface

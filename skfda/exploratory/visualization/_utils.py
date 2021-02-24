@@ -172,7 +172,7 @@ def _set_figure_layout(
 
 def _set_figure_layout_for_fdata(
     fdata: FData,
-    fig: Optional[Figure] = None, 
+    fig: Optional[Figure] = None,
     axes: Optional[Sequence[Axes]] = None,
     n_rows: Optional[int] = None,
     n_cols: Optional[int] = None,

@@ -159,20 +159,26 @@ class GraphPlot:
             else:
                 self.max_grad = max_grad
 
-            aux_list = self.gradient_color_list - self.min_grad
+            aux_list = [
+                grad_color - self.min_grad
+                for grad_color in self.gradient_color_list
+            ]
 
-            self.gradient_list = (
-                aux_list / (self.max_grad - self.min_grad)
+            self.gradient_list: Sequence[float] = (
+                [
+                    aux / (self.max_grad - self.min_grad)
+                    for aux in aux_list
+                ]
             )
         else:
-            self.gradient_list = None
+            self.gradient_list = []
 
     def plot(
         self,
         chart: Union[Figure, Axes, None] = None,
         *,
         fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
+        ax: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
         n_points: Union[int, Tuple[int, int], None],
@@ -203,7 +209,7 @@ class GraphPlot:
             fig (figure object, optional): figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-            axes (list of axis objects, optional): axis over where the graphs
+            ax (list of axis objects, optional): axis over where the graphs
                 are plotted. If None, see param fig.
             n_rows (int, optional): designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
@@ -251,7 +257,7 @@ class GraphPlot:
 
         """
 
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _get_figure_and_axes(chart, fig, ax)
         fig, axes = _set_figure_layout_for_fdata(
             self.fdata, fig, axes, n_rows, n_cols,
         )
@@ -261,7 +267,7 @@ class GraphPlot:
         else:
             domain_range = _to_domain_range(domain_range)
 
-        if self.gradient_list is None:
+        if not self.gradient_list:
             sample_colors, patches = _get_color_info(
                 self.fdata, group, group_names, group_colors, legend, kwargs,
             )
@@ -357,7 +363,7 @@ class ScatterPlot:
         chart: Union[Figure, Axes, None] = None,
         *,
         fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
+        ax: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
         domain_range: Union[Tuple[int, int], Sequence[Tuple[int, int]], None],
@@ -378,7 +384,7 @@ class ScatterPlot:
             fig (figure object, optional): figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-            axes (list of axis objects, optional): axis over where the graphs
+            ax (list of axis objects, optional): axis over where the graphs
                 are plotted. If None, see param fig.
             n_rows (int, optional): designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
@@ -429,15 +435,15 @@ class ScatterPlot:
                 self.grid_points, grid=True,
             )
 
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _get_figure_and_axes(chart, fig, ax)
         fig, axes = _set_figure_layout_for_fdata(
             self.fdata, fig, axes, n_rows, n_cols,
         )
 
         if domain_range is None:
-            domain_range = self.fdata.domain_range
+            self.domain_range = self.fdata.domain_range
         else:
-            domain_range = _to_domain_range(domain_range)
+            self.domain_range = _to_domain_range(domain_range)
 
         sample_colors, patches = _get_color_info(
             self.fdata, group, group_names, group_colors, legend, kwargs,

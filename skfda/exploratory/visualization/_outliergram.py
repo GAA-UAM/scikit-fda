@@ -230,7 +230,7 @@ class Outliergram(Display):
                 self.extra_displays.id_function[i].set_alpha(1)
             elif self.extra_displays is not None:
                 for display in self.extra_displays:
-                    display.id_function[i].set_alpha(1)    
+                    display.id_function[i].set_alpha(1)
 
     def change_points_intensity(self, new_point: Artist) -> None:
         for i in range(len(self.id_function)):

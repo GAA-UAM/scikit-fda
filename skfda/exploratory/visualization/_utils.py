@@ -101,9 +101,13 @@ def _get_axes_shape(n_axes, n_rows=None, n_cols=None):
     return n_rows, n_cols
 
 
-def _set_figure_layout(fig=None, axes=None,
-                       dim=2, n_axes=1,
-                       n_rows=None, n_cols=None):
+def _set_figure_layout(
+    fig: Optional[Figure] = None, 
+    axes: Optional[Sequence[Axes]] = None,
+    dim: int = 2, n_axes: int = 1,
+    n_rows: Optional[int] = None,
+    n_cols: Optional[int] = None,
+) -> Tuple[Figure, Sequence[Axes]]:
     """Set the figure axes for plotting.
 
     Args:

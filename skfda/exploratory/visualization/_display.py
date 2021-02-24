@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, TypeVar
+from typing import List, Optional, Sequence, TypeVar
 
 from matplotlib.axes import Axes
+from matplotlib.collections import PathCollection
 from matplotlib.figure import Figure
 
 S = TypeVar('S', Figure, Axes, List[Axes])
@@ -12,7 +13,7 @@ class Display(ABC):
     def __init__(
         self,
     ) -> None:
-        pass
+        self.id_function = []
 
     def plot(
         self,
@@ -23,3 +24,4 @@ class Display(ABC):
         **kwargs,
     ) -> Figure:
         pass
+

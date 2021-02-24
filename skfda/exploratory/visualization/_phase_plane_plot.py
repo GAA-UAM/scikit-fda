@@ -6,16 +6,13 @@ one FData, with domain 1 and codomain 2, or giving two FData, both
 of them with domain 1 and codomain 1.
 """
 
-from typing import List, Optional, TypeVar
+from typing import Any, List, Optional, TypeVar
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from ...representation import FData
 
-from ._utils import (
-    _get_figure_and_axes,
-    _set_figure_layout,
-)
+from ...representation import FData
+from ._utils import _get_figure_and_axes, _set_figure_layout
 
 S = TypeVar('S', Figure, Axes, List[Axes])
 
@@ -47,7 +44,7 @@ class PhasePlanePlot:
         *,
         fig: Optional[Figure] = None,
         ax: Optional[Axes] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Figure:
         """
         Plot Phase-Plane graph.

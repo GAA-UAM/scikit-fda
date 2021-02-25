@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Sequence, TypeVar
+from typing import List, Optional, TypeVar
 
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection

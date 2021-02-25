@@ -135,7 +135,7 @@ class GraphPlot:
     def __init__(
         self,
         fdata: FData,
-        gradient_color_list: Union[Sequence[float], None],
+        gradient_color_list: Union[Sequence[float], None] = None,
         max_grad: Optional[float] = None,
         min_grad: Optional[float] = None,
     ) -> None:

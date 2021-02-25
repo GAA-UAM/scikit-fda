@@ -463,7 +463,7 @@ class ScatterPlot:
                         self.grid_points[0],
                         evaluated_points[j, ..., i].T,
                         **color_dict,
-                        **kwargs
+                        **kwargs,
                     )
 
         else:
@@ -480,9 +480,13 @@ class ScatterPlot:
                     if sample_colors is not None:
                         color_dict["color"] = sample_colors[j]
 
-                    axes[i].scatter(X, Y,
-                                    evaluated_points[j, ..., i].T,
-                                    **color_dict, **kwargs)
+                    axes[i].scatter(
+                        X,
+                        Y,
+                        evaluated_points[j, ..., i].T,
+                        **color_dict,
+                        **kwargs,
+                    )
 
         _set_labels(self.fdata, fig, axes, patches)
 

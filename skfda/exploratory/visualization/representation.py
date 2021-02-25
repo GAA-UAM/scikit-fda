@@ -267,7 +267,7 @@ class GraphPlot:
         else:
             domain_range = _to_domain_range(domain_range)
 
-        if not self.gradient_list:
+        if len(self.gradient_list) == 0:
             sample_colors, patches = _get_color_info(
                 self.fdata, group, group_names, group_colors, legend, kwargs,
             )
@@ -459,9 +459,12 @@ class ScatterPlot:
                     if sample_colors is not None:
                         color_dict["color"] = sample_colors[j]
 
-                    axes[i].scatter(self.grid_points[0],
-                                    evaluated_points[j, ..., i].T,
-                                    **color_dict, **kwargs)
+                    axes[i].scatter(
+                        self.grid_points[0],
+                        evaluated_points[j, ..., i].T,
+                        **color_dict,
+                        **kwargs
+                    )
 
         else:
 

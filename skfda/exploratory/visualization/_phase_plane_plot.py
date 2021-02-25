@@ -18,7 +18,8 @@ S = TypeVar('S', Figure, Axes, List[Axes])
 
 
 class PhasePlanePlot:
-    """Phase-Plane Plot visualization.
+    """
+    Phase-Plane Plot visualization.
 
     This class contains the functionality in charge of plotting
     two different functions as coordinates, this can be done giving
@@ -30,6 +31,7 @@ class PhasePlanePlot:
         fdata2: optional functional data set, that will be needed if the fdata1
             has dim_codomain = 1.
     """
+
     def __init__(
         self,
         fdata1: FData,
@@ -76,7 +78,7 @@ class PhasePlanePlot:
                 and self.fdata1.dim_codomain == 1
             ):
                 self.fd_final = self.fdata1.concatenate(
-                    self.fdata2, as_coordinates=True
+                    self.fdata2, as_coordinates=True,
                 )
             else:
                 raise ValueError(

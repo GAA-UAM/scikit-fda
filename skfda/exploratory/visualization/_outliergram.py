@@ -7,27 +7,17 @@ this outliers. The motivation of the method is that it is easy to find
 magnitude outliers, but there is a necessity of capturing this other type.
 """
 
-from typing import Any, Optional, Sequence, TypeVar, Union
+from typing import Any, Optional, Sequence, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.integrate as integrate
-from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from scipy.stats import rankdata
-from matplotlib.backend_bases import Event
 
 from ... import FDataGrid
 from ..depth._depth import ModifiedBandDepth
 from ._display import Display
-from ._utils import (
-    _get_figure_and_axes,
-    _set_figure_layout,
-    _set_figure_layout_for_fdata,
-)
-
-S = TypeVar('S', Figure, Axes, Sequence[Axes])
 
 
 class Outliergram(Display):
@@ -67,12 +57,12 @@ class Outliergram(Display):
         self.mei = self.modified_epigraph_index_list()
         if self.mbd.size != self.mei.size:
             raise ValueError(
-                "The size of mbd and mei should be the same."
+                "The size of mbd and mei should be the same.",
             )
 
     def plot(
         self,
-        chart: Optional[S] = None,
+        chart: Union[Figure, Axes, None] = None,
         *,
         fig: Optional[Figure] = None,
         axes: Optional[Sequence[Axes]] = None,
@@ -106,7 +96,9 @@ class Outliergram(Display):
                 aditional graph representing the functions of the functional
                 data, that will allow to click and highlight the points
                 represented.
-            displays:
+            extra_displays: additional Diplay objects that will be plotted in
+                our figure. They will be linked to our data so that we can plot
+                the same data in different ways with only just one call.
             kwargs: if dim_domain is 1, keyword arguments to be passed to the
                 matplotlib.pyplot.plot function; if dim_domain is 2, keyword
                 arguments to be passed to the matplotlib.pyplot.plot_surface
@@ -116,27 +108,8 @@ class Outliergram(Display):
             scattered.
         """
         self.extra_displays = extra_displays
-        self.point_clicked: Artist = None
 
-        if extra_displays is None:
-            fig, self.axes = _get_figure_and_axes(chart, fig, axes)
-            fig, self.axes = _set_figure_layout_for_fdata(
-                fdata=self.fdata, fig=fig, axes=self.axes,
-            )
-        else:
-            if fig is None:
-                fig = plt.figure(figsize=(9, 3))
-
-            fig, self.axes = _get_figure_and_axes(chart, fig, axes)
-
-            if isinstance(extra_displays, Display):
-                fig, self.axes = _set_figure_layout(
-                    fig=fig, axes=self.axes, n_axes=2,
-                )
-            else:
-                fig, self.axes = _set_figure_layout(
-                    fig=fig, axes=self.axes, n_axes=len(extra_displays),
-                )
+        fig = self.init_axes(chart=chart, fig=fig, axes=axes)
 
         self.axScatter = self.axes[0]
 
@@ -147,11 +120,7 @@ class Outliergram(Display):
                 picker=2,
             ))
 
-        if isinstance(extra_displays, Display):
-            extra_displays.plot(axes=self.axes[1])
-        elif extra_displays is not None:
-            for ax, display in zip(self.axes[1:], extra_displays):
-                display.plot(axes=ax)
+        self.display_extra()
 
         # Set labels of graph
         fig.suptitle("Outliergram")
@@ -163,7 +132,7 @@ class Outliergram(Display):
             self.depth.max,
         ])
 
-        fig.canvas.mpl_connect('pick_event', self.__call__)
+        fig.canvas.mpl_connect('pick_event', self.pick)
 
         return fig
 
@@ -196,62 +165,3 @@ class Outliergram(Display):
 
         return integrand
 
-    def __call__(self, event: Event) -> None:
-        if self.point_clicked is None:
-            self.point_clicked = event.artist
-            self.reduce_points_intensity()
-        elif self.point_clicked == event.artist:
-            self.restore_points_intensity()
-            self.point_clicked = None
-        else:
-            self.change_points_intensity(event.artist)
-            self.point_clicked = event.artist
-
-    def reduce_points_intensity(self) -> None:
-        for i in range(len(self.id_function)):
-            if not (
-                np.ma.getdata(self.id_function[i].get_offsets())[0][0]
-                == np.ma.getdata(self.point_clicked.get_offsets())[0][0]
-            ) or not (
-                np.ma.getdata(self.id_function[i].get_offsets())[0][1]
-                == np.ma.getdata(self.point_clicked.get_offsets())[0][1]
-            ):
-                self.id_function[i].set_alpha(0.5)
-                if isinstance(self.extra_displays, Display):
-                    self.extra_displays.id_function[i].set_alpha(0.1)
-                elif self.extra_displays is not None:
-                    for display in self.extra_displays:
-                        display.id_function[i].set_alpha(0.1)
-
-    def restore_points_intensity(self) -> None:
-        for i in range(len(self.id_function)):
-            self.id_function[i].set_alpha(1)
-            if isinstance(self.extra_displays, Display):
-                self.extra_displays.id_function[i].set_alpha(1)
-            elif self.extra_displays is not None:
-                for display in self.extra_displays:
-                    display.id_function[i].set_alpha(1)
-
-    def change_points_intensity(self, new_point: Artist) -> None:
-        for i in range(len(self.id_function)):
-            if (
-                np.ma.getdata(self.id_function[i].get_offsets())[0][0]
-                == np.ma.getdata(new_point.get_offsets())[0][0]
-            ) and (
-                np.ma.getdata(self.id_function[i].get_offsets())[0][1]
-                == np.ma.getdata(new_point.get_offsets())[0][1]
-            ):
-                self.id_function[i].set_alpha(1)
-                if isinstance(self.extra_displays, Display):
-                    self.extra_displays.id_function[i].set_alpha(1)
-                elif self.extra_displays is not None:
-                    for display in self.extra_displays:
-                        display.id_function[i].set_alpha(1)
-
-            else:
-                self.id_function[i].set_alpha(0.5)
-                if isinstance(self.extra_displays, Display):
-                    self.extra_displays.id_function[i].set_alpha(0.1)
-                elif self.extra_displays is not None:
-                    for display in self.extra_displays:
-                        display.id_function[i].set_alpha(0.1)

@@ -1,26 +1,30 @@
-import typing as t
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 
 import matplotlib.cm
 import matplotlib.patches
+import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from ... import FDataGrid
 from ..._utils import _to_domain_range, constants
+from ...representation._functional_data import FData
+from ...representation._typing import DomainRangeLike
+from ._display import Display
 from ._utils import (
     _get_figure_and_axes,
     _set_figure_layout_for_fdata,
     _set_labels,
 )
 
-T = t.TypeVar('T', FDataGrid, np.ndarray)
-S = t.TypeVar('S', int, tuple)
-V = t.TypeVar('V', tuple, t.List)
-C = t.TypeVar('C', Figure, Axes, t.List[Axes])
+T = TypeVar('T', FDataGrid, np.ndarray)
 
 
-def _get_label_colors(n_labels, group_colors=None):
+def _get_label_colors(
+    n_labels: int,
+    group_colors: Union[Sequence[Any], None],
+) -> np.ndarray:
     """Get the colors of each label"""
 
     if group_colors is not None:
@@ -37,7 +41,14 @@ def _get_label_colors(n_labels, group_colors=None):
     return group_colors
 
 
-def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
+def _get_color_info(
+    fdata: T,
+    group: Union[Sequence[int], None],
+    group_names: Union[Sequence[str], None],
+    group_colors: Union[Sequence[Any], None],
+    legend: bool,
+    kwargs: Any,
+) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
 
     patches = None
 
@@ -95,7 +106,7 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
     return sample_colors, patches
 
 
-class GraphPlot:
+class GraphPlot(Display):
     """
     Class used to plot the FDatGrid object graph as hypersurfaces.
     A list of variables (probably depths) can be used as an argument to
@@ -121,55 +132,63 @@ class GraphPlot:
     """
     def __init__(
         self,
-        fdata: T,
-        gradient_color_list: t.List[float] = None,
-        max_grad: t.Optional[float] = None,
-        min_grad: t.Optional[float] = None,
+        fdata: FData,
+        gradient_color_list: Union[Sequence[float], None] = None,
+        max_grad: Optional[float] = None,
+        min_grad: Optional[float] = None,
     ) -> None:
+        Display.__init__(self)
         self.fdata = fdata
         self.gradient_color_list = gradient_color_list
         if self.gradient_color_list is not None:
-            if len(gradient_color_list) != fdata.n_samples:
+            if len(self.gradient_color_list) != fdata.n_samples:
                 raise ValueError(
-                    "The length of the gradient color"
-                    "list should be the same as the number"
-                    "of samples in fdata"
+                    "The length of the gradient color",
+                    "list should be the same as the number",
+                    "of samples in fdata",
                 )
 
             if min_grad is None:
-                self.min_grad = min(gradient_color_list)
+                self.min_grad = min(self.gradient_color_list)
             else:
                 self.min_grad = min_grad
 
             if max_grad is None:
-                self.max_grad = max(gradient_color_list)
+                self.max_grad = max(self.gradient_color_list)
             else:
                 self.max_grad = max_grad
 
-            aux_list = gradient_color_list - self.min_grad
+            aux_list = [
+                grad_color - self.min_grad
+                for grad_color in self.gradient_color_list
+            ]
 
-            self.gradient_list = (
-                aux_list / (self.max_grad - self.min_grad)
+            self.gradient_list: Sequence[float] = (
+                [
+                    aux / (self.max_grad - self.min_grad)
+                    for aux in aux_list
+                ]
             )
         else:
-            self.gradient_list = None
+            self.gradient_list = []
 
     def plot(
         self,
-        chart: t.Optional[C] = None,
+        chart: Union[Figure, Axes, None] = None,
         *,
-        fig: t.Optional[Figure] = None,
-        axes: t.List[Axes] = None,
-        n_rows: t.Optional[int] = None,
-        n_cols: t.Optional[int] = None,
-        n_points: t.Optional[S] = None,
-        domain_range: t.Optional[V] = None,
-        group: t.List[int] = None,
-        group_colors: t.List[t.Any] = None,
-        group_names: t.List[str] = None,
+        fig: Optional[Figure] = None,
+        ax: Optional[Axes] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+        n_points: Union[int, Tuple[int, int], None],
+        domain_range: Union[Tuple[int, int], DomainRangeLike, None],
+        group: Union[Sequence[int], None],
+        group_colors: Union[Sequence[Any], None],
+        group_names: Union[Sequence[str], None],
         colormap_name: str = 'autumn',
         legend: bool = False,
-        **kwargs: t.Any,
+        extra_displays: Union[Display, Sequence[Display], None] = None,
+        **kwargs: Any,
     ) -> Figure:
         """
         Plot the graph.
@@ -180,7 +199,6 @@ class GraphPlot:
         criteria choosing the colors and a new one that displays the
         function with a gradient of colors depending on the initial
         gradient_color_list (normalized in gradient_list).
-   
         Args:
             chart (figure object, axe or list of axes, optional): figure over
                 with the graphs are plotted or axis over where the graphs are
@@ -189,7 +207,7 @@ class GraphPlot:
             fig (figure object, optional): figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-            axes (list of axis objects, optional): axis over where the graphs
+            ax (axis object, optional): axis over where the graphs
                 are plotted. If None, see param fig.
             n_rows (int, optional): designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
@@ -227,6 +245,9 @@ class GraphPlot:
                 `group_names` is passed, it will be used for finding the names
                 to display in the legend. Otherwise, the values passed to
                 `group` will be used.
+            extra_displays: additional Diplay objects that will be plotted in
+                our figure. They will be linked to our data so that we can plot
+                the same data in different ways with only just one call.
             kwargs: if dim_domain is 1, keyword arguments to be passed to
                 the matplotlib.pyplot.plot function; if dim_domain is 2,
                 keyword arguments to be passed to the
@@ -235,9 +256,14 @@ class GraphPlot:
             fig (figure object): figure object in which the graphs are plotted.
         """
 
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(
-            self.fdata, fig, axes, n_rows, n_cols,
+        self.extra_displays = extra_displays
+
+        fig = self.init_axes(
+            chart=chart,
+            fig=fig,
+            axes=ax,
+            n_rows=n_rows,
+            n_cols=n_cols,
         )
 
         if domain_range is None:
@@ -245,7 +271,7 @@ class GraphPlot:
         else:
             domain_range = _to_domain_range(domain_range)
 
-        if self.gradient_list is None:
+        if len(self.gradient_list) == 0:
             sample_colors, patches = _get_color_info(
                 self.fdata, group, group_names, group_colors, legend, kwargs,
             )
@@ -261,30 +287,37 @@ class GraphPlot:
         if self.fdata.dim_domain == 1:
 
             if n_points is None:
-                n_points = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
+                self.n_points = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
 
             # Evaluates the object in a linspace
             eval_points = np.linspace(*domain_range[0], n_points)
             mat = self.fdata(eval_points)
 
-            color_dict = {}
+            color_dict: Dict[str, Any] = {}
+            self.axPlot = self.axes[0]
 
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
                     if sample_colors is not None:
                         color_dict["color"] = sample_colors[j]
 
-                    axes[i].plot(
-                        eval_points, mat[j, ..., i].T, **color_dict, **kwargs,
-                    )
+                    for z in range(len(eval_points)):
+                        self.id_function.append(self.axPlot.plot(
+                            eval_points[z], 
+                            mat[j, ..., i].T[z],
+                            **color_dict,
+                            **kwargs,
+                        ))
+
+            self.display_extra()
 
         else:
 
             # Selects the number of points
             if n_points is None:
-                n_points = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
-            elif np.isscalar(n_points):
-                n_points = (n_points, n_points)
+                n_points_tuple = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
+            elif isinstance(n_points, int):
+                n_points_tuple = (n_points, n_points)
             elif len(n_points) != 2:
                 raise ValueError(
                     f"n_points should be a number or a tuple of "
@@ -292,8 +325,8 @@ class GraphPlot:
                 )
 
             # Axes where will be evaluated
-            x = np.linspace(*domain_range[0], n_points[0])
-            y = np.linspace(*domain_range[1], n_points[1])
+            x = np.linspace(*domain_range[0], n_points_tuple[0])
+            y = np.linspace(*domain_range[1], n_points_tuple[1])
 
             # Evaluation of the functional object
             Z = self.fdata((x, y), grid=True)
@@ -308,12 +341,12 @@ class GraphPlot:
                     if sample_colors is not None:
                         color_dict["color"] = sample_colors[j]
 
-                    axes[i].plot_surface(
+                    self.axes[i].plot_surface(
                         X, Y, Z[j, ..., i],
                         **color_dict, **kwargs,
                     )
 
-        _set_labels(self.fdata, fig, axes, patches)
+        _set_labels(self.fdata, fig, self.axes, patches)
 
         return fig
 
@@ -328,30 +361,29 @@ class ScatterPlot:
 
     def __init__(
         self,
-        fdata: T,
+        fdata: FData,
         grid_points: np.ndarray = None,
     ) -> None:
         self.fdata = fdata
         self.grid_points = grid_points
-            
+
     def plot(
         self,
-        chart: t.Optional[C] = None,
+        chart: Union[Figure, Axes, None] = None,
         *,
-        fig: t.Optional[Figure] = None,
-        axes: t.Optional[C] = None,
-        n_rows: t.Optional[int] = None,
-        n_cols: t.Optional[int] = None,
-        domain_range: t.Optional[V] = None,
-        group: t.List[int] = None,
-        group_colors: t.List[t.Any] = None,
-        group_names: t.List[str] = None,
+        fig: Optional[Figure] = None,
+        ax: Optional[Axes] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+        domain_range: Union[Tuple[int, int], Sequence[Tuple[int, int]], None],
+        group: Union[Sequence[int], None],
+        group_colors: Union[Sequence[Any], None],
+        group_names: Union[Sequence[str], None],
         legend: bool = False,
-        **kwargs: t.Any,
+        **kwargs: Any,
     ) -> Figure:
         """
         Scatter FDataGrid object.
-        
         Args:
             chart (figure object, axe or list of axes, optional): figure over
                 with the graphs are plotted or axis over where the graphs are
@@ -360,7 +392,7 @@ class ScatterPlot:
             fig (figure object, optional): figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-            axes (list of axis objects, optional): axis over where the graphs 
+            ax (list of axis objects, optional): axis over where the graphs
                 are plotted. If None, see param fig.
             n_rows (int, optional): designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
@@ -409,15 +441,15 @@ class ScatterPlot:
                 self.grid_points, grid=True,
             )
 
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _get_figure_and_axes(chart, fig, ax)
         fig, axes = _set_figure_layout_for_fdata(
             self.fdata, fig, axes, n_rows, n_cols,
         )
 
         if domain_range is None:
-            domain_range = self.fdata.domain_range
+            self.domain_range = self.fdata.domain_range
         else:
-            domain_range = _to_domain_range(domain_range)
+            self.domain_range = _to_domain_range(domain_range)
 
         sample_colors, patches = _get_color_info(
             self.fdata, group, group_names, group_colors, legend, kwargs,
@@ -433,9 +465,12 @@ class ScatterPlot:
                     if sample_colors is not None:
                         color_dict["color"] = sample_colors[j]
 
-                    axes[i].scatter(self.grid_points[0],
-                                    evaluated_points[j, ..., i].T,
-                                    **color_dict, **kwargs)
+                    axes[i].scatter(
+                        self.grid_points[0],
+                        evaluated_points[j, ..., i].T,
+                        **color_dict,
+                        **kwargs,
+                    )
 
         else:
 
@@ -451,9 +486,13 @@ class ScatterPlot:
                     if sample_colors is not None:
                         color_dict["color"] = sample_colors[j]
 
-                    axes[i].scatter(X, Y,
-                                    evaluated_points[j, ..., i].T,
-                                    **color_dict, **kwargs)
+                    axes[i].scatter(
+                        X,
+                        Y,
+                        evaluated_points[j, ..., i].T,
+                        **color_dict,
+                        **kwargs,
+                    )
 
         _set_labels(self.fdata, fig, axes, patches)
 

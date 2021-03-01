@@ -161,6 +161,9 @@ class NadarayaWatsonSmoother(_LinearKernelSmoother):
                [ 0.017,  0.053,  0.238,  0.346,  0.346],
                [ 0.006,  0.022,  0.163,  0.305,  0.503]])
 
+    References:
+        Wasserman, L. (2006).   Local Regression.
+        In *All of Nonparametric Statistics* (pp. 71). Springer.
     """
 
     def _hat_matrix_function_not_normalized(self, *, delta_x,
@@ -264,6 +267,9 @@ class LocalLinearRegressionSmoother(_LinearKernelSmoother):
                [-0.098, -0.202, -0.003,  0.651,  0.651],
                [-0.012, -0.032, -0.025,  0.154,  0.915]])
 
+    References:
+        Wasserman, L. (2006).   Local Regression.
+        In *All of Nonparametric Statistics* (pp. 77). Springer.
     """
 
     def _hat_matrix_function_not_normalized(self, *, delta_x,
@@ -373,6 +379,10 @@ class KNeighborsSmoother(_LinearKernelSmoother):
                [ 0.   ,  0.   ,  0.   ,  0.5  ,  0.5  ],
                [ 0.   ,  0.   ,  0.   ,  0.5  ,  0.5  ]])
 
+    References:
+        Frederic Ferraty, Philippe Vieu (2006).  kNN Estimator.
+        In *Nonparametric Functional Data Analysis: Theory and Practice*
+        (pp. 116). Springer.
     """
 
     def __init__(self, *, smoothing_parameter=None,

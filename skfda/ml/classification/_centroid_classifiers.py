@@ -104,7 +104,7 @@ class NearestCentroid(
             X: FDataGrid with the test samples.
 
         Returns:
-            ndarray: array of shape (n_samples) or
+            Array of shape (n_samples) or
                 (n_samples, n_outputs) with class labels for each data sample.
         """
         sklearn_check_is_fitted(self)
@@ -219,7 +219,7 @@ class DTMClassifier(
             X: FDataGrid with the test samples.
 
         Returns:
-            ndarray: array of shape (n_samples) or
+            Array of shape (n_samples) or
                 (n_samples, n_outputs) with class labels for each data sample.
         """
         return self._clf.predict(X)

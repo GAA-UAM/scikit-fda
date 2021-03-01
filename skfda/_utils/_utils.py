@@ -22,6 +22,8 @@ import scipy.integrate
 from numpy import ndarray
 from pandas.api.indexers import check_array_indexer
 from sklearn.base import clone
+from sklearn.preprocessing import LabelEncoder
+from sklearn.utils.multiclass import check_classification_targets
 
 from ..representation._typing import (
     DomainRange,
@@ -560,8 +562,6 @@ def _check_estimator(estimator):
 
 
 def _classifier_get_classes(y: ndarray) -> Tuple[ndarray, ndarray]:
-    from sklearn.preprocessing import LabelEncoder
-    from sklearn.utils.multiclass import check_classification_targets
 
     check_classification_targets(y)
 

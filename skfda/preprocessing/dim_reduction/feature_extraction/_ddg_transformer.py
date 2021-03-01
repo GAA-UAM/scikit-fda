@@ -122,7 +122,7 @@ class DDGTransformer(
             X: FDataGrid with the test samples.
 
         Returns:
-            ndarray: array of shape (n_samples, G).
+            Array of shape (n_samples, G).
         """
         sklearn_check_is_fitted(self)
 

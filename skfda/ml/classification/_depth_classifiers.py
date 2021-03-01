@@ -7,7 +7,7 @@ from typing import Generic, Optional, Sequence, TypeVar, Union
 import numpy as np
 from numpy import ndarray
 from scipy.interpolate import lagrange
-from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from sklearn.metrics import accuracy_score
 from sklearn.pipeline import make_pipeline
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
@@ -104,7 +104,7 @@ class MaximumDepthClassifier(
             X: FDataGrid with the test samples.
 
         Returns:
-            ndarray: array of shape (n_samples) with class labels
+             Array of shape (n_samples) with class labels
                 for each data sample.
         """
         sklearn_check_is_fitted(self)
@@ -212,7 +212,7 @@ class DDClassifier(
         ]
 
         polynomial_elements = combinations(
-            range(len(dd_coordinates[0])),
+            range(len(dd_coordinates[0])),  # noqa: WPS518
             self.degree,
         )
 
@@ -237,7 +237,7 @@ class DDClassifier(
 
             if (new_accuracy > accuracy):
                 accuracy = new_accuracy
-                self.poly = poly
+                self.poly_ = poly
 
         return self
 
@@ -248,7 +248,7 @@ class DDClassifier(
             X: FDataGrid with the test samples.
 
         Returns:
-            ndarray: array of shape (n_samples) with class labels
+            Array of shape (n_samples) with class labels
                 for each data sample.
         """
         sklearn_check_is_fitted(self)
@@ -258,7 +258,7 @@ class DDClassifier(
             for depth_method in self.class_depth_methods_
         ]
 
-        predicted_values = np.polyval(self.poly, dd_coordinates[0])
+        predicted_values = np.polyval(self.poly_, dd_coordinates[0])
 
         return self._classes[(
             dd_coordinates[1] > predicted_values
@@ -363,12 +363,12 @@ class DDGClassifier(
         Returns:
             self
         """
-        self.pipeline = make_pipeline(
+        self._pipeline = make_pipeline(
             DDGTransformer(self.depth_method),
-            self.multivariate_classifier,
+            clone(self.multivariate_classifier),
         )
 
-        self.pipeline.fit(X, y)
+        self._pipeline.fit(X, y)
 
         return self
 
@@ -379,7 +379,7 @@ class DDGClassifier(
             X: FDataGrid with the test samples.
 
         Returns:
-            ndarray: array of shape (n_samples) with class labels
+            Array of shape (n_samples) with class labels
                 for each data sample.
         """
-        return self.pipeline.predict(X)
+        return self._pipeline.predict(X)

@@ -191,8 +191,8 @@ class LocalLinearRegressionSmoother(_LinearKernelSmoother):
         \hat{H}_{i,j} = \frac{b_j(t_i')}{\sum_{k=1}^{n}b_k(t_i')}
 
     .. math::
-        b_j(t') = K\left(\frac{t_j - t'}{h}\right) S_{n,2}(t') - (t_j - t')S_{n,
-        1}(t')
+        b_j(t') = K\left(\frac{t_j - t'}{h}\right) S_{n,2}(t') -
+        (t_j - t')S_{n,1}(t')
 
     .. math::
         S_{n,k}(t') = \sum_{j=1}^{n}K\left(\frac{t_j-t'}{h}\right)(t_j-t')^k
@@ -299,8 +299,8 @@ class KNeighborsSmoother(_LinearKernelSmoother):
         H_{i,j} =\frac{K\left(\frac{t_j-t_i'}{h_{ik}}\right)}{\sum_{r=1}^n
         K\left(\frac{t_r-t_i'}{h_{ik}}\right)}
 
-    :math:`K(\cdot)` is a kernel function and :math:`h_{ik}` the is the distance
-    from :math:`t_i'` to the 𝑘-th nearest neighbor of :math:`t_i'`.
+    :math:`K(\cdot)` is a kernel function and :math:`h_{ik}` the is the
+    distance from :math:`t_i'` to the 𝑘-th nearest neighbor of :math:`t_i'`.
 
     Usually used with the uniform kernel, it takes the average of the closest k
     points to a given point.

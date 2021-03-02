@@ -48,6 +48,9 @@ class MultipleDisplay:
 
         self.fig.canvas.mpl_connect('pick_event', self.pick)
 
+        self.fig.suptitle("Multiple display")
+        self.fig.tight_layout()
+
         return self.fig
 
     def add_displays(
@@ -65,9 +68,6 @@ class MultipleDisplay:
         fig: Optional[Figure] = None,
         axes: Union[Axes, Sequence[Axes], None] = None,
     ) -> Figure:
-        if fig is None:
-            fig = plt.figure(figsize=(9, 3))
-
         fig, axes = _get_figure_and_axes(chart, fig, axes)
 
         fig, axes = _set_figure_layout(

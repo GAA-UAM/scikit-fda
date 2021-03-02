@@ -128,7 +128,7 @@ class Outliergram(Display):
             ))
 
         # Set labels of graph
-        fig.suptitle("Outliergram")
+        self.axScatter.set_title("Outliergram")
         self.axScatter.set_xlabel("MEI")
         self.axScatter.set_ylabel("MBD")
         self.axScatter.set_xlim([0, 1])

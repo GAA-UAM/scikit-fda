@@ -12,6 +12,7 @@ from matplotlib.figure import Figure
 
 from ...exploratory.depth.multivariate import Depth
 from ...representation._functional_data import FData
+from ._display import Display
 from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
 T = TypeVar('T', bound=FData)
@@ -47,6 +48,7 @@ class DDPlot:
         dist2: T,
         depth_method: Depth[T],
     ) -> None:
+        Display.__init__(self)
         self.fdata = fdata
         self.depth_method = depth_method
         self.depth_method.fit(fdata)
@@ -62,7 +64,7 @@ class DDPlot:
         chart: Union[Figure, Axes, None] = None,
         *,
         fig: Optional[Figure] = None,
-        ax: Optional[Axes] = None,
+        axes: Optional[Axes] = None,
         **kwargs,
     ) -> Figure:
         """
@@ -79,7 +81,7 @@ class DDPlot:
             fig: figure over with the graphs are plotted in case ax is not
                 specified. If None and ax is also None, the figure is
                 initialized.
-            ax: axis where the graphs are plotted. If None, see param fig.
+            axes: axis where the graphs are plotted. If None, see param fig.
             kwargs: if dim_domain is 1, keyword arguments to be passed to the
                 matplotlib.pyplot.plot function; if dim_domain is 2, keyword
                 arguments to be passed to the matplotlib.pyplot.plot_surface
@@ -88,25 +90,30 @@ class DDPlot:
             fig (figure object): figure object in which the depths will be
             scattered.
         """
+        self.id_function = []
         margin = 0.025
         width_aux_line = 0.35
         color_aux_line = "gray"
 
-        fig, axes = _get_figure_and_axes(chart, fig, ax)
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
         fig, axes = _set_figure_layout_for_fdata(
             self.fdata, fig, axes,
         )
+        self.fig = fig
+        self.axes = axes
 
-        ax = axes[0]
+        ax = self.axes[0]
 
-        ax.scatter(
-            self.depth_dist1,
-            self.depth_dist2,
-            **kwargs,
-        )
+        for d1, d2 in zip(self.depth_dist1, self.depth_dist2):
+            self.id_function.append(ax.scatter(
+                d1,
+                d2,
+                picker=2,
+                **kwargs,
+            ))
 
         # Set labels of graph
-        fig.suptitle("DDPlot")
+        ax.set_title("DDPlot")
         ax.set_xlabel("X depth")
         ax.set_ylabel("Y depth")
         ax.set_xlim(
@@ -127,4 +134,8 @@ class DDPlot:
             color=color_aux_line,
         )
 
-        return fig
+        return self.fig
+
+
+    def num_instances(self) -> int:
+        return self.fdata.n_samples

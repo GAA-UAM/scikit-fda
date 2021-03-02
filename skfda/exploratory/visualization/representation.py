@@ -342,6 +342,7 @@ class GraphPlot(Display):
                     ))
 
         _set_labels(self.fdata, self.fig, self.axes, patches)
+        self.axes[0].set_title("GraphPlot")
 
         return self.fig
 
@@ -471,6 +472,7 @@ class ScatterPlot(Display):
                         self.grid_points[0],
                         evaluated_points[j, ..., i].T,
                         **color_dict,
+                        picker=2,
                         **kwargs,
                     ))
 
@@ -493,10 +495,12 @@ class ScatterPlot(Display):
                         Y,
                         evaluated_points[j, ..., i].T,
                         **color_dict,
+                        picker=2,
                         **kwargs,
                     ))
 
         _set_labels(self.fdata, self.fig, self.axes, patches)
+        self.axes[0].set_title("ScatterPlot")
 
         return self.fig
 

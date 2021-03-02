@@ -18,6 +18,10 @@ from scipy.stats import rankdata
 from ... import FDataGrid
 from ..depth._depth import ModifiedBandDepth
 from ._display import Display
+from ._utils import (
+    _get_figure_and_axes,
+    _set_figure_layout_for_fdata,
+)
 
 
 class Outliergram(Display):
@@ -66,7 +70,6 @@ class Outliergram(Display):
         *,
         fig: Optional[Figure] = None,
         axes: Optional[Sequence[Axes]] = None,
-        extra_displays: Union[Display, Sequence[Display], None] = None,
         **kwargs: Any,
     ) -> Figure:
         """
@@ -96,9 +99,6 @@ class Outliergram(Display):
                 aditional graph representing the functions of the functional
                 data, that will allow to click and highlight the points
                 represented.
-            extra_displays: additional Diplay objects that will be plotted in
-                our figure. They will be linked to our data so that we can plot
-                the same data in different ways with only just one call.
             kwargs: if dim_domain is 1, keyword arguments to be passed to the
                 matplotlib.pyplot.plot function; if dim_domain is 2, keyword
                 arguments to be passed to the matplotlib.pyplot.plot_surface
@@ -107,9 +107,16 @@ class Outliergram(Display):
             fig (figure object): figure object in which the depths will be
             scattered.
         """
-        self.extra_displays = extra_displays
+        self.id_function = []
 
-        fig = self.init_axes(chart=chart, fig=fig, axes=axes)
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout_for_fdata(
+            fdata=self.fdata,
+            fig=fig,
+            axes=axes,
+        )
+        self.fig = fig
+        self.axes = axes
 
         self.axScatter = self.axes[0]
 
@@ -119,8 +126,6 @@ class Outliergram(Display):
                 self.mbd[i],
                 picker=2,
             ))
-
-        self.display_extra()
 
         # Set labels of graph
         fig.suptitle("Outliergram")
@@ -132,9 +137,7 @@ class Outliergram(Display):
             self.depth.max,
         ])
 
-        fig.canvas.mpl_connect('pick_event', self.pick)
-
-        return fig
+        return self.fig
 
     def modified_epigraph_index_list(self) -> np.ndarray:
         """
@@ -165,3 +168,5 @@ class Outliergram(Display):
 
         return integrand
 
+    def num_instances(self) -> int:
+        return self.fdata.n_samples

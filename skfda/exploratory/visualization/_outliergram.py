@@ -34,10 +34,12 @@ class Outliergram:
         fdata: functional data set that we want to examine.
     Attributes:
         mbd: result of the calculation of the Modified Band Depth on our
-            dataset. Represents the mean time a curve stays between other pair
-            of curves, being a good measure of centrality.
+            dataset. Represents the mean time a curve stays between all the
+            possible pair of curves we have in our data set, being a good
+            measure of centrality.
         mei: result of the calculation of the Modified Epigraph Index on our
-            dataset. Represents the mean time a curve stays below other curve.
+            dataset. Represents the mean time a curve stays below each curve
+            in our dataset.
     References:
         López-Pintado S.,  Romo J.. (2011). A half-region depth for functional
         data, Computational Statistics & Data Analysis, volume 55

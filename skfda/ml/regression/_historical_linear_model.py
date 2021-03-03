@@ -5,9 +5,10 @@ from math import ceil
 from typing import Tuple
 
 import numpy as np
-import scipy.integrate
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
+
+import scipy.integrate
 
 from ..._utils import _cartesian_product, _pairwise_symmetric
 from ...representation import FDataBasis, FDataGrid
@@ -208,26 +209,128 @@ class HistoricalLinearRegression(
         BaseEstimator,  # type: ignore
         RegressorMixin,  # type: ignore
 ):
+    r"""Historical functional linear regression.
 
-    def __init__(self, *, n_intervals: int, lag: float=math.inf) -> None:
+    This is a linear regression method where the covariate and the response are
+    both functions :math:`\mathbb{R}` to :math:`\mathbb{R}` with the same
+    domain. In order to predict the value of the response function at point
+    :math:`t`, only the information of the covariate at points :math:`s < t` is
+    used. Is thus an "historical" model in the sense that, if the domain
+    represents time, only the data from the past, or historical data, is used
+    to predict a given point.
+
+    The model assumed by this method is:
+
+    .. math::
+        y_i = \alpha(t) + \int_{s_0(t)}^t x_i(s) \beta(s, t) ds
+
+    where :math:`s_0(t) = \max(0, t - \delta)` and :math:`\delta` is a
+    predefined time lag that can be specified so that points far in the past
+    do not affect the predicted value.
+
+    Args:
+        n_intervals: Number of intervals used to create the basis of the
+            coefficients. This will be a bidimensional
+            :class:`~skfda.representation.basis.FiniteElement` basis, and
+            this parameter indirectly specifies the number of
+            elements of that basis, and thus the granularity.
+        fit_intercept:  Whether to calculate the intercept for this
+            model. If set to False, no intercept will be used in calculations
+            (i.e. data is expected to be centered).
+        lag: The maximum time lag at which points in the past can still
+            influence the prediction.
+
+    Attributes:
+        discretized_coef_: The discretized values of the fitted
+            coefficient function.
+        intercept_: Independent term in the linear model. Set to the constant
+            function 0 if `fit_intercept = False`.
+
+    Examples:
+
+        The following example test a case that conforms to this model.
+
+        >>> from skfda import FDataGrid
+        >>> from skfda.ml.regression import HistoricalLinearRegression
+        >>> import numpy as np
+        >>> import scipy.integrate
+
+        >>> random_state = np.random.RandomState(0)
+        >>> data_matrix = random_state.choice(10, size=(8, 6))
+        >>> data_matrix
+        array([[5, 0, 3, 3, 7, 9],
+               [3, 5, 2, 4, 7, 6],
+               [8, 8, 1, 6, 7, 7],
+               [8, 1, 5, 9, 8, 9],
+               [4, 3, 0, 3, 5, 0],
+               [2, 3, 8, 1, 3, 3],
+               [3, 7, 0, 1, 9, 9],
+               [0, 4, 7, 3, 2, 7]])
+        >>> intercept = random_state.choice(10, size=(1, 6))
+        >>> intercept
+        array([[2, 0, 0, 4, 5, 5]])
+        >>> y_data = scipy.integrate.cumtrapz(
+        ...              data_matrix,
+        ...              initial=0,
+        ...              axis=1,
+        ...          ) + intercept
+        >>> y_data
+        array([[  2. ,   2.5,   4. ,  11. ,  17. ,  25. ],
+               [  2. ,   4. ,   7.5,  14.5,  21. ,  27.5],
+               [  2. ,   8. ,  12.5,  20. ,  27.5,  34.5],
+               [  2. ,   4.5,   7.5,  18.5,  28. ,  36.5],
+               [  2. ,   3.5,   5. ,  10.5,  15.5,  18. ],
+               [  2. ,   2.5,   8. ,  16.5,  19.5,  22.5],
+               [  2. ,   5. ,   8.5,  13. ,  19. ,  28. ],
+               [  2. ,   2. ,   7.5,  16.5,  20. ,  24.5]])
+        >>> X = FDataGrid(data_matrix)
+        >>> y = FDataGrid(y_data)
+        >>> hist = HistoricalLinearRegression(n_intervals=8)
+        >>> _ = hist.fit(X, y)
+        >>> hist.predict(X).data_matrix[..., 0].round(1)
+        array([[  2. ,   2.5,   4. ,  11. ,  17. ,  25. ],
+               [  2. ,   4. ,   7.5,  14.5,  21. ,  27.5],
+               [  2. ,   8. ,  12.5,  20. ,  27.5,  34.5],
+               [  2. ,   4.5,   7.5,  18.5,  28. ,  36.5],
+               [  2. ,   3.5,   5. ,  10.5,  15.5,  18. ],
+               [  2. ,   2.5,   8. ,  16.5,  19.5,  22.5],
+               [  2. ,   5. ,   8.5,  13. ,  19. ,  28. ],
+               [  2. ,   2. ,   7.5,  16.5,  20. ,  24.5]])
+        >>> hist.intercept_.data_matrix[..., 0].round()
+        array([[ 2.,  0.,  0.,  4.,  5.,  5.]])
+
+    References:
+        Malfait, N., & Ramsay, J. O. (2003). The historical functional linear
+        model. Canadian Journal of Statistics, 31(2), 115-128.
+
+    """
+
+    def __init__(
+        self, *, n_intervals: int,
+        fit_intercept: bool = True,
+        lag: float = math.inf,
+    ) -> None:
         self.n_intervals = n_intervals
+        self.fit_intercept = fit_intercept
         self.lag = lag
 
     def _fit_and_return_matrix(self, X: FDataGrid, y: FDataGrid) -> np.ndarray:
+
+        X_centered = X - X.mean() if self.fit_intercept else X
 
         self._pred_points = y.grid_points[0]
         self._pred_domain_range = y.domain_range[0]
 
         self._basis = _create_fem_basis(
-            start=X.domain_range[0][0],
-            stop=X.domain_range[0][1],
+            start=X_centered.domain_range[0][0],
+            stop=X_centered.domain_range[0][1],
             n_intervals=self.n_intervals,
             lag=self.lag,
         )
 
         design_matrix = _design_matrix(
             self._basis,
-            X,
+            X_centered,
             pred_points=self._pred_points,
         )
         design_matrix = design_matrix.reshape(-1, design_matrix.shape[-1])
@@ -237,6 +340,11 @@ class HistoricalLinearRegression(
             y.data_matrix[:, ..., 0].ravel(),
             rcond=None,
         )[0]
+
+        if self.fit_intercept:
+            self.intercept_ = y.mean() - self._predict_no_intercept(X.mean())
+        else:
+            self.intercept_ = y[0].copy() * 0
 
         return design_matrix
 
@@ -261,11 +369,9 @@ class HistoricalLinearRegression(
     def fit_predict(self, X: FDataGrid, y: FDataGrid) -> FDataGrid:
 
         design_matrix = self._fit_and_return_matrix(X, y)
-        return self._prediction_from_matrix(design_matrix)
+        return self._prediction_from_matrix(design_matrix) + self.intercept_
 
-    def predict(self, X: FDataGrid) -> FDataGrid:
-
-        check_is_fitted(self)
+    def _predict_no_intercept(self, X: FDataGrid) -> FDataGrid:
 
         design_matrix = _design_matrix(
             self._basis,
@@ -275,3 +381,9 @@ class HistoricalLinearRegression(
         design_matrix = design_matrix.reshape(-1, design_matrix.shape[-1])
 
         return self._prediction_from_matrix(design_matrix)
+
+    def predict(self, X: FDataGrid) -> FDataGrid:
+
+        check_is_fitted(self)
+
+        return self._predict_no_intercept(X) + self.intercept_

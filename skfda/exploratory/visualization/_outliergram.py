@@ -7,8 +7,9 @@ this outliers. The motivation of the method is that it is easy to find
 magnitude outliers, but there is a necessity of capturing this other type.
 """
 
-from typing import List, Optional, TypeVar
+from typing import List, Optional, TypeVar, Union
 
+import numpy as np
 import scipy.integrate as integrate
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -58,10 +59,10 @@ class Outliergram:
 
     def plot(
         self,
-        chart: Optional[S] = None,
+        chart: Union[Figure, Axes, None] = None,
         *,
         fig: Optional[Figure] = None,
-        axes: Optional[List[Axes]] = None,
+        axes: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
         **kwargs,
@@ -97,14 +98,16 @@ class Outliergram:
             fig (figure object): figure object in which the depths will be
             scattered.
         """
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(
-            self.fdata, fig, axes, n_rows, n_cols,
+        fig, axes_list = _get_figure_and_axes(chart, fig, axes)
+        fig, axes_list = _set_figure_layout_for_fdata(
+            self.fdata, fig, axes_list, n_rows, n_cols,
         )
+        self.fig = fig
+        self.axes = axes_list
 
-        axe = axes[0]
+        ax = self.axes[0]
 
-        axe.scatter(
+        ax.scatter(
             self.mei,
             self.mbd,
             **kwargs,
@@ -112,17 +115,17 @@ class Outliergram:
 
         # Set labels of graph
         fig.suptitle("Outliergram")
-        axe.set_xlabel("MEI")
-        axe.set_ylabel("MBD")
-        axe.set_xlim([0, 1])
-        axe.set_ylim([
+        ax.set_xlabel("MEI")
+        ax.set_ylabel("MBD")
+        ax.set_xlim([0, 1])
+        ax.set_ylim([
             self.depth.min,
             self.depth.max,
         ])
 
         return fig
 
-    def modified_epigraph_index_list(self) -> List[float]:
+    def modified_epigraph_index_list(self) -> np.ndarray:
         """
         Calculate the Modified Epigraph Index of a FData.
 

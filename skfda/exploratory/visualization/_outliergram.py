@@ -18,10 +18,7 @@ from scipy.stats import rankdata
 from ... import FDataGrid
 from ..depth._depth import ModifiedBandDepth
 from ._display import Display
-from ._utils import (
-    _get_figure_and_axes,
-    _set_figure_layout_for_fdata,
-)
+from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
 
 class Outliergram(Display):

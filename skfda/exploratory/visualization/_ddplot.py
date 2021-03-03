@@ -136,6 +136,5 @@ class DDPlot:
 
         return self.fig
 
-
     def num_instances(self) -> int:
         return self.fdata.n_samples

@@ -1,11 +1,12 @@
 from typing import Any, Optional, Sequence, Union
 
-import matplotlib.pyplot as plt
+import ipywidgets as widgets
 import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import Event
 from matplotlib.figure import Figure
+from IPython.display import display
 
 from ._display import Display
 from ._utils import _get_figure_and_axes, _set_figure_layout
@@ -23,6 +24,8 @@ class MultipleDisplay:
         self.point_clicked: Artist = None
         self.num_graphs = len(self.displays)
         self.length_data = self.displays[0].num_instances()
+        self.sliders = []
+        self.valueSliders = CallbackList(multDisp=self)
 
     def plot(
         self,
@@ -37,19 +40,22 @@ class MultipleDisplay:
         self.axes = axes
 
         if self.num_graphs > 1:
-            for display in self.displays[1:]:
-                if display.num_instances() != self.length_data:
+            for d in self.displays[1:]:
+                if d.num_instances() != self.length_data:
                     raise ValueError(
                         "Length of some data sets are not equal ",
                     )
 
-        for display, ax in zip(self.displays, self.axes):
-            display.plot(axes=ax)
+        for d, ax in zip(self.displays, self.axes):
+            d.plot(axes=ax)
 
         self.fig.canvas.mpl_connect('pick_event', self.pick)
 
         self.fig.suptitle("Multiple display")
         self.fig.tight_layout()
+
+        for slider in self.sliders:
+            display(slider)
 
         return self.fig
 
@@ -105,19 +111,19 @@ class MultipleDisplay:
                 )[0][1]
                 == np.ma.getdata(self.point_clicked.get_offsets())[0][1]
             ):
-                for display in self.displays:
+                for d in self.displays:
                     if isinstance(display.id_function[i], list):
-                        display.id_function[i][0].set_alpha(0.1)
+                        d.id_function[i][0].set_alpha(0.1)
                     else:
-                        display.id_function[i].set_alpha(0.1)
+                        d.id_function[i].set_alpha(0.1)
 
     def restore_points_intensity(self) -> None:
         for i in range(self.length_data):
-            for display in self.displays:
-                if isinstance(display.id_function[i], list):
-                    display.id_function[i][0].set_alpha(1)
+            for d in self.displays:
+                if isinstance(d.id_function[i], list):
+                    d.id_function[i][0].set_alpha(1)
                 else:
-                    display.id_function[i].set_alpha(1)
+                    d.id_function[i].set_alpha(1)
 
     def change_points_intensity(self, new_point: Artist) -> None:
         for i in range(self.length_data):
@@ -136,8 +142,36 @@ class MultipleDisplay:
             else:
                 intensity = 0.1
 
-            for display in self.displays:
-                if isinstance(display.id_function[i], list):
-                    display.id_function[i][0].set_alpha(intensity)
+            for d in self.displays:
+                if isinstance(d.id_function[i], list):
+                    d.id_function[i][0].set_alpha(intensity)
                 else:
-                    display.id_function[i].set_alpha(intensity)
+                    d.id_function[i].set_alpha(intensity)
+
+    def add_slider(self):
+        self.sliders.append(widgets.IntSlider(
+            value=0,
+            min=0,
+            max=3,
+            step=1,
+            description='Filter:',
+            disabled=False,
+            continuous_update=False,
+            orientation='horizontal',
+            readout=True,
+            readout_format='d',
+        ))
+        self.valueSliders.append(self.sliders[-1].value)
+
+class CallbackList(list):
+
+    def __init__(self, *args, multDisp: MultipleDisplay, **kwargs):
+        self.multDisp = multDisp
+        self.x = 0
+        
+         
+
+
+    def __setitem__(self, index, value): 
+        self.x = 2 
+        super(CallbackList, self).__setitem__(index, value)

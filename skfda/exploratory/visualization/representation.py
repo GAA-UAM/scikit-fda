@@ -375,7 +375,12 @@ class ScatterPlot(Display):
         axes: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
-        domain_range: Union[Tuple[int, int], Sequence[Tuple[int, int]], None] = None,
+        domain_range: Union
+                        [
+                            Tuple[int, int],
+                            Sequence[Tuple[int, int]],
+                            None, ] = None,
+                        
         group: Union[Sequence[int], None] = None,
         group_colors: Union[Sequence[Any], None] = None,
         group_names: Union[Sequence[str], None] = None,
@@ -426,7 +431,7 @@ class ScatterPlot(Display):
                 keyword arguments to be passed to the
                 matplotlib.pyplot.plot_surface function.
         Returns:
-            fig (figure object): figure object in which the graphs are plotted.
+            fig (figure object): figure object in which the graphs are plotted. 
         """
         self.id_function = []
 
@@ -504,5 +509,7 @@ class ScatterPlot(Display):
 
         return self.fig
 
+
     def num_instances(self) -> int:
         return self.fdata.n_samples
+

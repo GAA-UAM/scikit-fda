@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-from math import ceil
 from typing import Tuple
 
 import numpy as np
@@ -15,6 +14,36 @@ from ...representation import FDataBasis, FDataGrid
 from ...representation.basis import Basis, FiniteElement
 
 
+def _pairwise_fem_inner_product(
+    basis_fd: FDataBasis,
+    fd: FDataGrid,
+    y_val: float,
+    grid: np.ndarray,
+) -> np.ndarray:
+
+    eval_grid_fem = np.concatenate(
+        (
+            grid[:, None],
+            np.full(
+                shape=(len(grid), 1),
+                fill_value=y_val,
+            ),
+        ),
+        axis=1,
+    )
+
+    eval_fem = basis_fd(eval_grid_fem)
+    eval_fd = fd(grid)
+
+    # Only for scalar valued functions for now
+    assert eval_fem.shape[-1] == 1
+    assert eval_fd.shape[-1] == 1
+
+    prod = eval_fem[..., 0] * eval_fd[..., 0]
+
+    return scipy.integrate.simps(prod, grid, axis=1)
+
+
 def _inner_product_matrix(
     basis: Basis,
     fd: FDataGrid,
@@ -22,7 +51,9 @@ def _inner_product_matrix(
     y_val: float,
 ) -> np.ndarray:
     """
-    Computes the matrix of inner products of an FEM basis with a functional
+    Compute inner products with the FEM basis.
+
+    Compute the matrix of inner products of an FEM basis with a functional
     data object over a range of x-values for a fixed y-value. The numerical
     integration uses Romberg integration with the trapezoidal rule.
 
@@ -35,44 +66,21 @@ def _inner_product_matrix(
             (lower limit, upper limit)
         y_val: the fixed y value.
 
-    """
+    Returns:
+        Matrix of inner products.
 
+    """
     basis_fd = basis.to_basis()
     grid = fd.grid_points[0]
     grid_index = (grid >= limits[0]) & (grid <= limits[1])
     grid = grid[grid_index]
 
-    def _pairwise_fem_inner_product(
-        basis_fd: FDataBasis,
-        fd: FDataGrid,
-    ) -> np.ndarray:
-
-        eval_grid_fem = np.concatenate(
-            (
-                grid[:, None],
-                np.full(
-                    shape=(len(grid), 1),
-                    fill_value=y_val,
-                )
-            ),
-            axis=1,
-        )
-
-        eval_fem = basis_fd(eval_grid_fem)
-        eval_fd = fd(grid)
-
-        # Only for scalar valued functions for now
-        assert eval_fem.shape[-1] == 1
-        assert eval_fd.shape[-1] == 1
-
-        prod = eval_fem[..., 0] * eval_fd[..., 0]
-
-        return scipy.integrate.simps(prod, grid, axis=1)
-
     return _pairwise_symmetric(
         _pairwise_fem_inner_product,
         basis_fd,
         fd,
+        y_val=y_val,
+        grid=grid,
     )
 
 
@@ -82,7 +90,7 @@ def _design_matrix(
     pred_points: np.ndarray,
 ) -> np.ndarray:
     """
-    Computes the indefinite integrals of the curves over s up to each t-value.
+    Compute the indefinite integrals of the curves over s up to each t-value.
 
     Arguments:
         basis: typically a FEM basis defined by a triangulation within a
@@ -95,7 +103,6 @@ def _design_matrix(
         Design matrix.
 
     """
-
     matrix = np.array([
         _inner_product_matrix(basis, fd, limits=(0, t), y_val=t).T
         for t in pred_points
@@ -117,13 +124,11 @@ def _get_valid_points(
         full_grid_points[:, 0] <= full_grid_points[:, 1]
     ]
 
-    discrete_lag = np.inf if lag == np.inf else ceil(lag / interval_len)
+    discrete_lag = np.inf if lag == np.inf else math.ceil(lag / interval_len)
 
-    valid_points = past_points[
+    return past_points[
         past_points[:, 1] - past_points[:, 0] <= discrete_lag
     ]
-
-    return valid_points
 
 
 def _get_triangles(
@@ -150,20 +155,23 @@ def _get_triangles(
         (interval_without_end, interval_without_end),
     )
 
+    pts_coords_x = pts_coords[:, 0]
+    pts_coords_y = pts_coords[:, 1]
+
     down_triangles = np.stack(
         (
-            indexes_matrix[pts_coords[:, 0], pts_coords[:, 1]],
-            indexes_matrix[pts_coords[:, 0] + 1, pts_coords[:, 1]],
-            indexes_matrix[pts_coords[:, 0] + 1, pts_coords[:, 1] + 1],
+            indexes_matrix[pts_coords_x, pts_coords_y],
+            indexes_matrix[pts_coords_x + 1, pts_coords_y],
+            indexes_matrix[pts_coords_x + 1, pts_coords_y + 1],
         ),
         axis=1,
     )
 
     up_triangles = np.stack(
         (
-            indexes_matrix[pts_coords[:, 0], pts_coords[:, 1]],
-            indexes_matrix[pts_coords[:, 0], pts_coords[:, 1] + 1],
-            indexes_matrix[pts_coords[:, 0] + 1, pts_coords[:, 1] + 1],
+            indexes_matrix[pts_coords_x, pts_coords_y],
+            indexes_matrix[pts_coords_x, pts_coords_y + 1],
+            indexes_matrix[pts_coords_x + 1, pts_coords_y + 1],
         ),
         axis=1,
     )
@@ -171,9 +179,7 @@ def _get_triangles(
     triangles = np.concatenate((down_triangles, up_triangles))
     has_wrong_index = np.any(triangles < 0, axis=1)
 
-    triangles = triangles[~has_wrong_index]
-
-    return triangles
+    return triangles[~has_wrong_index]
 
 
 def _create_fem_basis(
@@ -206,8 +212,8 @@ def _create_fem_basis(
 
 
 class HistoricalLinearRegression(
-        BaseEstimator,  # type: ignore
-        RegressorMixin,  # type: ignore
+    BaseEstimator,  # type: ignore
+    RegressorMixin,  # type: ignore
 ):
     r"""Historical functional linear regression.
 
@@ -241,13 +247,12 @@ class HistoricalLinearRegression(
             influence the prediction.
 
     Attributes:
-        discretized_coef_: The discretized values of the fitted
+        discretized_coef\_: The discretized values of the fitted
             coefficient function.
-        intercept_: Independent term in the linear model. Set to the constant
+        intercept\_: Independent term in the linear model. Set to the constant
             function 0 if `fit_intercept = False`.
 
     Examples:
-
         The following example test a case that conforms to this model.
 
         >>> from skfda import FDataGrid
@@ -306,7 +311,9 @@ class HistoricalLinearRegression(
     """
 
     def __init__(
-        self, *, n_intervals: int,
+        self,
+        *,
+        n_intervals: int,
         fit_intercept: bool = True,
         lag: float = math.inf,
     ) -> None:
@@ -344,7 +351,9 @@ class HistoricalLinearRegression(
         if self.fit_intercept:
             self.intercept_ = y.mean() - self._predict_no_intercept(X.mean())
         else:
-            self.intercept_ = y[0].copy() * 0
+            self.intercept_ = y.copy(
+                data_matrix=np.zeros_like(y.data_matrix[0]),
+            )
 
         return design_matrix
 
@@ -361,12 +370,20 @@ class HistoricalLinearRegression(
             domain_range=self._pred_domain_range,
         )
 
-    def fit(self, X: FDataGrid, y: FDataGrid) -> HistoricalLinearRegression:
+    def fit(  # noqa: D102
+        self,
+        X: FDataGrid,
+        y: FDataGrid,
+    ) -> HistoricalLinearRegression:
 
         self._fit_and_return_matrix(X, y)
         return self
 
-    def fit_predict(self, X: FDataGrid, y: FDataGrid) -> FDataGrid:
+    def fit_predict(  # noqa: D102
+        self,
+        X: FDataGrid,
+        y: FDataGrid,
+    ) -> FDataGrid:
 
         design_matrix = self._fit_and_return_matrix(X, y)
         return self._prediction_from_matrix(design_matrix) + self.intercept_
@@ -382,7 +399,7 @@ class HistoricalLinearRegression(
 
         return self._prediction_from_matrix(design_matrix)
 
-    def predict(self, X: FDataGrid) -> FDataGrid:
+    def predict(self, X: FDataGrid) -> FDataGrid:  # noqa: D102
 
         check_is_fitted(self)
 

@@ -296,7 +296,7 @@ class HistoricalLinearRegression(
                [  2. ,   2.5,   8. ,  16.5,  19.5,  22.5],
                [  2. ,   5. ,   8.5,  13. ,  19. ,  28. ],
                [  2. ,   2. ,   7.5,  16.5,  20. ,  24.5]])
-        >>> hist.intercept_.data_matrix[..., 0].round()
+        >>> abs(hist.intercept_.data_matrix[..., 0].round())
         array([[ 2.,  0.,  0.,  4.,  5.,  5.]])
 
     References:

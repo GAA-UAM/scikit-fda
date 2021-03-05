@@ -186,7 +186,11 @@ def _to_array_maybe_ragged(array, *, row_shape=None):
         return res
 
 
-def _cartesian_product(axes, flatten=True, return_shape=False):
+def _cartesian_product(
+    axes: Sequence[np.ndarray],
+    flatten: bool=True,
+    return_shape: bool=False,
+) -> np.ndarray:
     """Computes the cartesian product of the axes.
 
     Computes the cartesian product of the axes and returns a numpy array of
@@ -194,10 +198,10 @@ def _cartesian_product(axes, flatten=True, return_shape=False):
     dimensions.
 
     Args:
-        Axes (array_like): List with axes.
+        Axes: List with axes.
 
     Return:
-        (np.ndarray): Numpy 2-D array with all the possible combinations.
+        Numpy 2-D array with all the possible combinations.
         The entry (i,j) represent the j-th coordinate of the i-th point.
 
     Examples:

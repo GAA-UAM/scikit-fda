@@ -146,7 +146,7 @@ class GraphPlot:
                 raise ValueError(
                     "The length of the gradient color"
                     "list should be the same as the number"
-                    "of samples in fdata"
+                    "of samples in fdata",
                 )
 
             if min_grad is None:

@@ -168,7 +168,6 @@ class MultipleDisplay:
                     else:
                         disp.id_function[j].set_alpha(intensity)
 
-
     def add_slider(
         self,
         criterion: Sequence[float],
@@ -190,7 +189,7 @@ class MultipleDisplay:
             self.ind += 1
 
             dic = dict(zip(criterion, range(self.length_data)))
-            order_dic = collections.OrderedDict(sorted(dic.items()))    
+            order_dic = collections.OrderedDict(sorted(dic.items()))
             self.criteria.append(order_dic.values())
         else:
             raise ValueError(

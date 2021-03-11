@@ -4,13 +4,21 @@ This module contains the abstract base class for all registration methods.
 """
 
 from abc import ABC
+
+import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
+
 from ... import FData
 
-class RegistrationTransformer(ABC, BaseEstimator, TransformerMixin):
+
+class RegistrationTransformer(
+    ABC,
+    BaseEstimator,  # type: ignore
+    TransformerMixin,  # type: ignore
+):
     """Base class for the registration methods."""
 
-    def score(self, X: FData, y=None):
+    def score(self, X: FData, y: None=None) -> np.ndarray:
         r"""Returns the percentage of total variation removed.
 
         Computes the squared multiple correlation index of the proportion of

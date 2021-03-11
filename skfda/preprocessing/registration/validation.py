@@ -1,14 +1,15 @@
 """Methods and classes for validation of the registration procedures"""
 
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 import numpy as np
 
 from ..._utils import _to_grid, check_is_univariate
+from ...representation import FData
 
 
 class RegistrationScorer():
-    r"""Cross validation scoring for registration procedures.
+    """Cross validation scoring for registration procedures.
 
     It calculates the score of a registration procedure, used to perform
     model validation or parameter selection.
@@ -80,6 +81,7 @@ class AmplitudePhaseDecompositionStats(NamedTuple):
         c_r (float): Constant :math:`C_R`.
 
     """
+
     r_squared: float
     mse_amp: float
     mse_pha: float
@@ -183,7 +185,6 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
             Springer.
 
     Examples:
-
         Calculate the score of the shift registration of a sinusoidal process
         synthetically generated.
 
@@ -227,8 +228,12 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
 
     """
 
-    def __init__(self, return_stats=False, eval_points=None):
-        """Initialize the transformer"""
+    def __init__(
+        self,
+        return_stats: bool = False,
+        eval_points: Optional[np.ndarray] = None,
+    ) -> None:
+
         super().__init__(eval_points)
         self.return_stats = return_stats
 
@@ -257,15 +262,22 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         else:
             return self.score_function(y, X_reg)
 
-    def score_function(self, X, y, *, warping=None):
+    def score_function(
+        self,
+        X: FData,
+        y: FData,
+        *,
+        warping: Optional[FData] = None,
+    ) -> float:
         """Compute the score of the transformation performed.
 
         Args:
-            X (FData): Original functional data.
-            y (FData): Functional data registered.
+            X: Original functional data.
+            y: Functional data registered.
+            warping: Warping function used to register the functions.
 
         Returns:
-            float: Score of the transformation.
+            Score of the transformation.
 
         """
         from scipy.integrate import simps
@@ -274,13 +286,17 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         check_is_univariate(y)
 
         if len(y) != len(X):
-            raise ValueError(f"the registered and unregistered curves must have "
-                             f"the same number of samples ({len(y)})!=({len(X)})")
+            raise ValueError(
+                f"The registered and unregistered curves must have "
+                f"the same number of samples ({len(y)})!=({len(X)})",
+            )
 
         if warping is not None and len(warping) != len(X):
-            raise ValueError(f"The registered curves and the warping functions "
-                             f"must have the same number of samples "
-                             f"({len(X)})!=({len(warping)})")
+            raise ValueError(
+                f"The registered curves and the warping functions "
+                f"must have the same number of samples "
+                f"({len(X)})!=({len(warping)})",
+            )
 
         # Creates the mesh to discretize the functions
         if self.eval_points is None:
@@ -288,25 +304,27 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
                 eval_points = y.grid_points[0]
 
             except AttributeError:
-                nfine = max(y.basis.n_basis * 10 + 1, 201)
-                eval_points = np.linspace(*y.domain_range[0], nfine)
+                n_points = max(y.basis.n_basis * 10 + 1, 201)
+                eval_points = np.linspace(*y.domain_range[0], n_points)
         else:
             eval_points = np.asarray(self.eval_points)
 
-        x_fine = X.evaluate(eval_points)[..., 0]
-        y_fine = y.evaluate(eval_points)[..., 0]
-        mu_fine = x_fine.mean(axis=0)  # Mean unregistered function
-        eta_fine = y_fine.mean(axis=0)  # Mean registered function
-        mu_fine_sq = np.square(mu_fine)
-        eta_fine_sq = np.square(eta_fine)
+        x_eval = X.evaluate(eval_points)[..., 0]
+        y_eval = y.evaluate(eval_points)[..., 0]
+
+        x_eval_mean = x_eval.mean(axis=0)
+        y_eval_mean = y_eval.mean(axis=0)
+
+        x_eval_mean_sq = np.square(x_eval_mean)
+        y_eval_mean_sq = np.square(y_eval_mean)
 
         # Total mean square error of the original funtions
         # mse_total = scipy.integrate.simps(
         #    np.mean(np.square(x_fine - mu_fine), axis=0),
         #    eval_points)
 
-        cr = 1.  # Constant related to the covariation between the deformation
-        # functions and y^2
+        # Constant related to the covariation between the warpings and y^2
+        cr = 1.0
 
         # If the warping functions are not provided, are suppose independent
         if warping is not None:
@@ -316,20 +334,22 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
             dh_fine_mean = dh_fine.mean(axis=0)
             dh_fine_center = dh_fine - dh_fine_mean
 
-            y_fine_sq = np.square(y_fine)  # y^2
-            y_fine_sq_center = np.subtract(y_fine_sq, eta_fine_sq)  # y^2-E[y2]
+            y_fine_sq = np.square(y_eval)  # y^2
+            y_fine_sq_center = np.subtract(y_fine_sq, y_eval_mean_sq)
 
             covariate = np.inner(dh_fine_center.T, y_fine_sq_center.T)
             covariate = covariate.mean(axis=0)
-            cr += np.divide(simps(covariate, eval_points),
-                            simps(eta_fine_sq, eval_points))
+            cr += np.divide(
+                simps(covariate, eval_points),
+                simps(y_eval_mean_sq, eval_points),
+            )
 
         # mse due to phase variation
-        mse_pha = simps(cr * eta_fine_sq - mu_fine_sq, eval_points)
+        mse_pha = simps(cr * y_eval_mean_sq - x_eval_mean_sq, eval_points)
 
         # mse due to amplitude variation
         # mse_amp = mse_total - mse_pha
-        y_fine_center = np.subtract(y_fine, eta_fine)
+        y_fine_center = np.subtract(y_eval, y_eval_mean)
         y_fine_center_sq = np.square(y_fine_center, out=y_fine_center)
         y_fine_center_sq_mean = y_fine_center_sq.mean(axis=0)
 

@@ -17,8 +17,9 @@ from typing import (
 )
 
 import numpy as np
-import scipy.integrate
 from pandas.api.indexers import check_array_indexer
+
+import scipy.integrate
 
 from ..representation._typing import (
     DomainRange,
@@ -64,12 +65,11 @@ class _FDataCallable():
                               n_samples=new_nsamples)
 
 
-def check_is_univariate(fd):
-    """Checks if an FData is univariate and raises an error
+def check_is_univariate(fd: FData) -> None:
+    """Check if an FData is univariate and raises an error.
 
     Args:
-        fd (:class:`~skfda.FData`): Functional object to check if is
-            univariate.
+        fd: Functional object to check if is univariate.
 
     Raises:
         ValueError: If it is not univariate, i.e., `fd.dim_domain != 1` or
@@ -77,13 +77,22 @@ def check_is_univariate(fd):
 
     """
     if fd.dim_domain != 1 or fd.dim_codomain != 1:
-        raise ValueError(f"The functional data must be univariate, i.e., " +
-                         f"with dim_domain=1 " +
-                         (f"" if fd.dim_domain == 1
-                          else f"(currently is {fd.dim_domain}) ") +
-                         f"and dim_codomain=1 " +
-                         (f"" if fd.dim_codomain == 1 else
-                          f"(currently is  {fd.dim_codomain})"))
+
+        domain_str = (
+            "" if fd.dim_domain == 1
+            else f"(currently is {fd.dim_domain}) "
+        )
+
+        codomain_str = (
+            "" if fd.dim_codomain == 1
+            else f"(currently is  {fd.dim_codomain})"
+        )
+
+        raise ValueError(
+            f"The functional data must be univariate, i.e., "
+            f"with dim_domain=1 {domain_str}"
+            f"and dim_codomain=1 {codomain_str}",
+        )
 
 
 def _to_grid(X, y, eval_points=None):

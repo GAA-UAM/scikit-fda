@@ -32,7 +32,7 @@ from ..representation.evaluator import Evaluator
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
 
 if TYPE_CHECKING:
-    from ..representation import FData
+    from ..representation import FData, FDataGrid
     from ..representation.basis import Basis
 
 
@@ -95,7 +95,11 @@ def check_is_univariate(fd: FData) -> None:
         )
 
 
-def _to_grid(X, y, eval_points=None):
+def _to_grid(
+    X: FData,
+    y: FData,
+    eval_points: Optional[np.ndarray] = None,
+) -> Tuple[FDataGrid, FDataGrid]:
     """Transform a pair of FDatas in grids to perform calculations."""
 
     from .. import FDataGrid

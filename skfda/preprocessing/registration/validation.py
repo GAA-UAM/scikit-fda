@@ -1,8 +1,9 @@
-"""Methods and classes for validation of the registration procedures"""
+"""Methods and classes for validation of the registration procedures."""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import NamedTuple, Optional, Union
+from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 
@@ -89,7 +90,8 @@ class RegistrationScorer(ABC):
         pass
 
 
-class AmplitudePhaseDecompositionStats(NamedTuple):
+@dataclass
+class AmplitudePhaseDecompositionStats():
     r"""Named tuple to store the values of the amplitude-phase decomposition.
 
     Values of the amplitude phase decomposition computed in
@@ -230,10 +232,10 @@ class AmplitudePhaseDecomposition(
         >>> round(score, 3)
         0.971
 
-        Also it is possible to get all the values of the decomposition.
+        Also it is possible to get all the values of the decomposition:
 
-        >>> scorer = AmplitudePhaseDecomposition(return_stats=True)
-        >>> stats = scorer(shift_registration, X)
+        >>> X_reg = shift_registration.transform(X)
+        >>> stats = scorer.stats(X, X_reg)
         >>> round(stats.r_squared, 3)
         0.971
         >>> round(stats.mse_amplitude, 3)
@@ -251,34 +253,20 @@ class AmplitudePhaseDecomposition(
 
     """
 
-    def __init__(
-        self,
-        return_stats: bool = False,
-    ) -> None:
-        self.return_stats = return_stats
-
-    def __call__(
-        self,
-        estimator: RegistrationTransformer,
-        X: FData,
-        y: Optional[FData] = None,
-    ) -> Union[float, AmplitudePhaseDecompositionStats]:
-        return super().__call__(estimator, X, y)
-
-    def score_function(
+    def stats(
         self,
         X: FData,
         y: FData,
-    ) -> Union[float, AmplitudePhaseDecompositionStats]:
-        """Compute the score of the transformation performed.
+    ) -> AmplitudePhaseDecompositionStats:
+        """
+        Compute the decomposition statistics.
 
         Args:
             X: Original functional data.
             y: Functional data registered.
 
         Returns:
-            Score of the transformation.
-
+            The decomposition statistics.
         """
         from ...misc.metrics import l2_distance, l2_norm
 
@@ -305,15 +293,29 @@ class AmplitudePhaseDecomposition(
         # squared correlation measure of proportion of phase variation
         rsq = mse_phase / mse_total
 
-        if self.return_stats is True:
-            return AmplitudePhaseDecompositionStats(
-                r_squared=rsq,
-                mse_amplitude=mse_amplitude,
-                mse_phase=mse_phase,
-                c_r=c_r,
-            )
+        return AmplitudePhaseDecompositionStats(
+            r_squared=rsq,
+            mse_amplitude=mse_amplitude,
+            mse_phase=mse_phase,
+            c_r=c_r,
+        )
 
-        return float(rsq)
+    def score_function(
+        self,
+        X: FData,
+        y: FData,
+    ) -> float:
+        """Compute the score of the transformation performed.
+
+        Args:
+            X: Original functional data.
+            y: Functional data registered.
+
+        Returns:
+            Score of the transformation.
+
+        """
+        return float(self.stats(X, y).r_squared)
 
 
 class LeastSquares(RegistrationScorer):

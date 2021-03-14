@@ -376,20 +376,21 @@ class TestRegistrationValidation(unittest.TestCase):
         score = scorer(self.shift_registration, self.X)
         np.testing.assert_allclose(score, 0.923962, rtol=1e-6)
 
-    def test_pairwise_correlation(self):
+    def test_pairwise_correlation(self) -> None:
+        """Test PairwiseCorrelation."""
         scorer = PairwiseCorrelation()
         score = scorer(self.shift_registration, self.X)
         np.testing.assert_allclose(score, 1.816228, rtol=1e-6)
 
     def test_mse_decomposition(self) -> None:
-
+        """Test obtaining all stats from AmplitudePhaseDecomposition."""
         fd = make_multimodal_samples(n_samples=3, random_state=1)
         landmarks = make_multimodal_landmarks(n_samples=3, random_state=1)
         landmarks = landmarks.squeeze()
         warping = landmark_registration_warping(fd, landmarks)
         fd_registered = fd.compose(warping)
-        scorer = AmplitudePhaseDecomposition(return_stats=True)
-        ret = scorer.score_function(fd, fd_registered)
+        scorer = AmplitudePhaseDecomposition()
+        ret = scorer.stats(fd, fd_registered)
         np.testing.assert_allclose(ret.mse_amplitude, 0.0009465483)
         np.testing.assert_allclose(ret.mse_phase, 0.1051769136)
         np.testing.assert_allclose(ret.r_squared, 0.9910806875)

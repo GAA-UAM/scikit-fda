@@ -6,7 +6,7 @@ one FData, with domain 1 and codomain 2, or giving two FData, both
 of them with domain 1 and codomain 1.
 """
 
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -69,20 +69,9 @@ class PhasePlanePlot:
         if (
             self.fdata2 is not None
         ):
-            if (
-                self.fdata1.dim_domain == self.fdata2.dim_domain
-                and self.fdata1.dim_codomain == self.fdata2.dim_codomain
-                and self.fdata1.dim_domain == 1
-                and self.fdata1.dim_codomain == 1
-            ):
-                self.fd_final = self.fdata1.concatenate(
-                    self.fdata2, as_coordinates=True,
-                )
-            else:
-                raise ValueError(
-                    "Error in data arguments,",
-                    "codomain or domain is not correct.",
-                )
+            self.fd_final = self.fdata1.concatenate(
+                self.fdata2, as_coordinates=True,
+            )
         else:
             self.fd_final = self.fdata1
 
@@ -93,9 +82,10 @@ class PhasePlanePlot:
             fig, axes = _set_figure_layout(
                 fig, axes, dim=2, n_axes=1,
             )
+            data_matrix = self.fd_final.data_matrix[0][:, 0]
             axes[0].plot(
-                self.fd_final.data_matrix[0][:, 0].tolist(),
-                self.fd_final.data_matrix[0][:, 1].tolist(),
+                data_matrix[:, 0].tolist(),
+                data_matrix[:, 1].tolist(),
                 **kwargs,
             )
         else:

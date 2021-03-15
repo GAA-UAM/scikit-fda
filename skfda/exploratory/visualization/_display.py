@@ -4,11 +4,10 @@ from typing import List, Optional, Sequence, TypeVar, Union
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from ._utils import _get_figure_and_axes
-
 S = TypeVar('S', Figure, Axes, List[Axes])
 
 
+#BasePlot, ABCPlot
 class Display(ABC):
     @abstractmethod
     def __init__(

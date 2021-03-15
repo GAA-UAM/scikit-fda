@@ -404,7 +404,7 @@ class ScatterPlot(Display):
                         [
                             Tuple[int, int],
                             Sequence[Tuple[int, int]],
-                            None,] = None,      
+                            None, ] = None,      
         group: Union[Sequence[int], None] = None,
         group_colors: Union[Sequence[Any], None] = None,
         group_names: Union[Sequence[str], None] = None,

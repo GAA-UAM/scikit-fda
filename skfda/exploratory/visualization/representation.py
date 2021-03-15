@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TypedDict, TypeVar, Union
 
 import matplotlib.cm
 import matplotlib.patches
@@ -41,9 +41,9 @@ def _get_label_colors(
 
 def _get_color_info(
     fdata: T,
-    group: Union[Sequence[int], None],
-    group_names: Union[Sequence[str], dict, None],
-    group_colors: Union[Sequence[Any], dict, None],
+    group: Union[Sequence[Any], None],
+    group_names: Union[Sequence[str], TypedDict, None],
+    group_colors: Union[Sequence[Any], TypedDict, None],
     legend: bool,
     kwargs: Any,
 ) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
@@ -183,9 +183,9 @@ class GraphPlot:
         n_cols: Optional[int] = None,
         n_points: Union[int, Tuple[int, int], None],
         domain_range: Union[Tuple[int, int], DomainRangeLike, None],
-        group: Union[Sequence[int], None],
-        group_colors: Union[Sequence[Any], None],
-        group_names: Union[Sequence[str], None],
+        group: Union[Sequence[Any], None],
+        group_colors: Union[Sequence[Any], TypedDict, None],
+        group_names: Union[Sequence[str], TypedDict, None],
         colormap_name: str = 'autumn',
         legend: bool = False,
         **kwargs: Any,
@@ -367,9 +367,9 @@ class ScatterPlot:
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
         domain_range: Union[Tuple[int, int], Sequence[Tuple[int, int]], None],
-        group: Union[Sequence[int], None],
-        group_colors: Union[Sequence[Any], None],
-        group_names: Union[Sequence[str], None],
+        group: Union[Sequence[Any], None],
+        group_colors: Union[Sequence[Any], TypedDict, None],
+        group_names: Union[Sequence[str], TypedDict, None],
         legend: bool = False,
         **kwargs: Any,
     ) -> Figure:

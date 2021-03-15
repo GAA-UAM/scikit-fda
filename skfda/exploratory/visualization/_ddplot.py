@@ -34,6 +34,13 @@ class DDPlot:
             we want to use to compute the depth (Depth Y).
         depth_method: method that will be used to compute the depths of the
             data with respect to the distributions.
+        chart: figure over with the graphs are plotted or axis over
+            where the graphs are plotted. If None and ax is also
+            None, the figure is initialized.
+        fig: figure over with the graphs are plotted in case ax is not
+            specified. If None and ax is also None, the figure is
+            initialized.
+        axes: axis where the graphs are plotted. If None, see param fig. 
     Attributes:
         depth_dist1: result of the calculation of the depth_method into our
             first distribution (dist1).
@@ -47,6 +54,9 @@ class DDPlot:
         dist1: T,
         dist2: T,
         depth_method: Depth[T],
+        chart: Union[Figure, Axes, None] = None,
+        fig: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
     ) -> None:
         Display.__init__(self)
         self.fdata = fdata
@@ -58,14 +68,10 @@ class DDPlot:
         self.depth_dist2 = self.depth_method(
             self.fdata, distribution=dist2,
         )
+        self.set_figure_and_axes(chart, fig, axes)
 
     def plot(
         self,
-        chart: Union[Figure, Axes, None] = None,
-        *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        **kwargs,
     ) -> Figure:
         """
         Plot DDPlot graph.
@@ -74,18 +80,6 @@ class DDPlot:
         distributions,one in each axis. It is useful to understand how
         our data is more related with one subset of data / distribution
         than another one.
-        Args:
-            chart: figure over with the graphs are plotted or axis over
-                where the graphs are plotted. If None and ax is also
-                None, the figure is initialized.
-            fig: figure over with the graphs are plotted in case ax is not
-                specified. If None and ax is also None, the figure is
-                initialized.
-            axes: axis where the graphs are plotted. If None, see param fig.
-            kwargs: if dim_domain is 1, keyword arguments to be passed to the
-                matplotlib.pyplot.plot function; if dim_domain is 2, keyword
-                arguments to be passed to the matplotlib.pyplot.plot_surface
-                function.
         Returns:
             fig (figure object): figure object in which the depths will be
             scattered.
@@ -94,13 +88,6 @@ class DDPlot:
         margin = 0.025
         width_aux_line = 0.35
         color_aux_line = "gray"
-
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(
-            self.fdata, fig, axes,
-        )
-        self.fig = fig
-        self.axes = axes
 
         ax = self.axes[0]
 
@@ -138,3 +125,18 @@ class DDPlot:
 
     def num_instances(self) -> int:
         return self.fdata.n_samples
+
+    def set_figure_and_axes(
+        self,
+        chart: Union[Figure, Axes, None] = None,
+        fig: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+    ) -> None:
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout_for_fdata(
+            fdata=self.fdata,
+            fig=fig,
+            axes=axes,
+        )
+        self.fig = fig
+        self.axes = axes

@@ -124,6 +124,21 @@ class GraphPlot(Display):
             thatcan be used in the funcion colormap.__call__(). If not
             declared it will be initialized to the minimum value of
             gradient_list.
+        chart (figure object, axe or list of axes, optional): figure over
+            with the graphs are plotted or axis over where the graphs are
+            plotted. If None and ax is also None, the figure is
+            initialized.
+        fig (figure object, optional): figure over with the graphs are
+            plotted in case ax is not specified. If None and ax is also
+            None, the figure is initialized.
+        axes (axis object, optional): axis over where the graphs
+            are plotted. If None, see param fig.
+        n_rows (int, optional): designates the number of rows of the figure
+            to plot the different dimensions of the image. Only specified
+            if fig and ax are None.
+        n_cols(int, optional): designates the number of columns of the
+            figure to plot the different dimensions of the image. Only
+            specified if fig and ax are None.
     Attributes:
         gradient_list: normalization of the values from gradient color_list
             that will be used to determine the intensity of the color
@@ -135,6 +150,12 @@ class GraphPlot(Display):
         gradient_color_list: Union[Sequence[float], None] = None,
         max_grad: Optional[float] = None,
         min_grad: Optional[float] = None,
+        chart: Union[Figure, Axes, None] = None,
+        *,
+        fig: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
     ) -> None:
         Display.__init__(self)
         self.fdata = fdata
@@ -170,15 +191,11 @@ class GraphPlot(Display):
             )
         else:
             self.gradient_list = []
+        self.set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
     def plot(
         self,
-        chart: Union[Figure, Axes, None] = None,
         *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
         n_points: Union[int, Tuple[int, int], None] = None,
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
         group: Union[Sequence[int], None] = None,
@@ -198,21 +215,6 @@ class GraphPlot(Display):
         function with a gradient of colors depending on the initial
         gradient_color_list (normalized in gradient_list).
         Args:
-            chart (figure object, axe or list of axes, optional): figure over
-                with the graphs are plotted or axis over where the graphs are
-                plotted. If None and ax is also None, the figure is
-                initialized.
-            fig (figure object, optional): figure over with the graphs are
-                plotted in case ax is not specified. If None and ax is also
-                None, the figure is initialized.
-            axes (axis object, optional): axis over where the graphs
-                are plotted. If None, see param fig.
-            n_rows (int, optional): designates the number of rows of the figure
-                to plot the different dimensions of the image. Only specified
-                if fig and ax are None.
-            n_cols(int, optional): designates the number of columns of the
-                figure to plot the different dimensions of the image. Only
-                specified if fig and ax are None.
             n_points (int or tuple, optional): Number of points to evaluate in
                 the plot. In case of surfaces a tuple of length 2 can be pased
                 with the number of points to plot in each axis, otherwise the
@@ -250,19 +252,6 @@ class GraphPlot(Display):
         Returns:
             fig (figure object): figure object in which the graphs are plotted.
         """
-
-        self.id_function = []
-
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(
-            fdata=self.fdata,
-            fig=fig,
-            axes=axes,
-            n_rows=n_rows,
-            n_cols=n_cols,
-        )
-        self.fig = fig
-        self.axes = axes
 
         if domain_range is None:
             domain_range = self.fdata.domain_range
@@ -349,6 +338,25 @@ class GraphPlot(Display):
     def num_instances(self) -> int:
         return self.fdata.n_samples
 
+    def set_figure_and_axes(
+        self,
+        chart: Union[Figure, Axes, None] = None,
+        fig: Optional[Figure] = None,
+        axes: Union[Axes, Sequence[Axes], None] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+    ) -> None:
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout_for_fdata(
+            fdata=self.fdata,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows, 
+            n_cols=n_cols,
+        )
+        self.fig = fig
+        self.axes = axes
+
 
 class ScatterPlot(Display):
     """
@@ -356,31 +364,47 @@ class ScatterPlot(Display):
     Args:
         fdata: functional data set that we want to plot.
         grid_points (ndarray): points to plot.
+        chart (figure object, axe or list of axes, optional): figure over
+            with the graphs are plotted or axis over where the graphs are
+            plotted. If None and ax is also None, the figure is
+            initialized.
+        fig (figure object, optional): figure over with the graphs are
+            plotted in case ax is not specified. If None and ax is also
+            None, the figure is initialized.
+        axes (axis, optional): axis over where the graphs
+            are plotted. If None, see param fig.
+        n_rows (int, optional): designates the number of rows of the figure
+            to plot the different dimensions of the image. Only specified
+            if fig and ax are None.
+        n_cols(int, optional): designates the number of columns of the
+            figure to plot the different dimensions of the image. Only
+            specified if fig and ax are None.     
     """
 
     def __init__(
         self,
         fdata: FData,
-        grid_points: np.ndarray = None,
-    ) -> None:
-        Display.__init__(self)
-        self.fdata = fdata
-        self.grid_points = grid_points
-
-    def plot(
-        self,
         chart: Union[Figure, Axes, None] = None,
         *,
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
+        grid_points: np.ndarray = None,
+    ) -> None:
+        Display.__init__(self)
+        self.fdata = fdata
+        self.grid_points = grid_points
+        self.set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
+
+    def plot(
+        self,
+        *,
         domain_range: Union
                         [
                             Tuple[int, int],
                             Sequence[Tuple[int, int]],
-                            None, ] = None,
-                        
+                            None,] = None,      
         group: Union[Sequence[int], None] = None,
         group_colors: Union[Sequence[Any], None] = None,
         group_names: Union[Sequence[str], None] = None,
@@ -390,21 +414,6 @@ class ScatterPlot(Display):
         """
         Scatter FDataGrid object.
         Args:
-            chart (figure object, axe or list of axes, optional): figure over
-                with the graphs are plotted or axis over where the graphs are
-                plotted. If None and ax is also None, the figure is
-                initialized.
-            fig (figure object, optional): figure over with the graphs are
-                plotted in case ax is not specified. If None and ax is also
-                None, the figure is initialized.
-            axes (axis, optional): axis over where the graphs
-                are plotted. If None, see param fig.
-            n_rows (int, optional): designates the number of rows of the figure
-                to plot the different dimensions of the image. Only specified
-                if fig and ax are None.
-            n_cols(int, optional): designates the number of columns of the
-                figure to plot the different dimensions of the image. Only
-                specified if fig and ax are None.
             domain_range (tuple or list of tuples, optional): Range where the
                 function will be plotted. In objects with unidimensional domain
                 the domain range should be a tuple with the bounds of the
@@ -433,8 +442,6 @@ class ScatterPlot(Display):
         Returns:
             fig (figure object): figure object in which the graphs are plotted. 
         """
-        self.id_function = []
-
         evaluated_points = None
 
         if self.grid_points is None:
@@ -446,13 +453,6 @@ class ScatterPlot(Display):
             evaluated_points = self.fdata(
                 self.grid_points, grid=True,
             )
-
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(
-            self.fdata, fig, axes, n_rows, n_cols,
-        )
-        self.fig = fig
-        self.axes = axes
 
         if domain_range is None:
             self.domain_range = self.fdata.domain_range
@@ -512,3 +512,21 @@ class ScatterPlot(Display):
     def num_instances(self) -> int:
         return self.fdata.n_samples
 
+    def set_figure_and_axes(
+        self,
+        chart: Union[Figure, Axes, None] = None,
+        fig: Optional[Figure] = None,
+        axes: Union[Axes, Sequence[Axes], None] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+    ) -> None:
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout_for_fdata(
+            fdata=self.fdata,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows, 
+            n_cols=n_cols,
+        )
+        self.fig = fig
+        self.axes = axes

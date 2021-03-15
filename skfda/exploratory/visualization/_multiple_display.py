@@ -1,5 +1,6 @@
 import collections
-from typing import Any, Optional, Sequence, Union
+import copy
+from typing import Any, List, Optional, Sequence, Union
 
 import ipywidgets as widgets
 from IPython.display import display
@@ -7,8 +8,6 @@ from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import Event
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-import numpy as np
 
 from ._display import Display
 from ._utils import _get_figure_and_axes, _set_figure_layout
@@ -17,12 +16,17 @@ from ._utils import _get_figure_and_axes, _set_figure_layout
 class MultipleDisplay:
     def __init__(
         self,
-        displays: Union[Display, Sequence[Display]],
+        displays: Union[Display, List[Display]],
+        chart: Union[Figure, Axes, None] = None,
+        fig: Optional[Figure] = None,
+        axes: Optional[Sequence[Axes]] = None,
     ):
         if isinstance(displays, Display):
-            self.displays = [displays]
+            self.displays = [copy.copy(displays)]
         else:
-            self.displays = displays
+            self.displays = []
+            for d in displays:
+                self.displays.append(copy.copy(d))
         self.point_clicked: Artist = None
         self.num_graphs = len(self.displays)
         self.length_data = self.displays[0].num_instances()
@@ -33,19 +37,11 @@ class MultipleDisplay:
         self.index_clicked = -1
         self.tags = []
         self.previous_hovered = None
+        self.init_axes(chart=chart, fig=fig, axes=axes)
 
     def plot(
         self,
-        chart: Union[Figure, Axes, None] = None,
-        *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Sequence[Axes]] = None,
-        **kwargs: Any,
     ):
-        fig, axes = self.init_axes(chart=chart, fig=fig, axes=axes)
-        self.fig = fig
-        self.axes = axes
-
         if self.num_graphs > 1:
             for d in self.displays[1:]:
                 if d.num_instances() != self.length_data:
@@ -54,7 +50,8 @@ class MultipleDisplay:
                     )
 
         for disp, ax in zip(self.displays, self.axes):
-            disp.plot(axes=ax)
+            disp.set_figure_and_axes(axes=ax)
+            disp.plot()
             self.tags.append(
                 ax.annotate(
                     "",
@@ -63,7 +60,7 @@ class MultipleDisplay:
                     textcoords="offset points",
                     bbox=dict(boxstyle="round", fc="w"),
                     arrowprops=dict(arrowstyle="->"),
-                )
+                ),
             )
 
         self.fig.canvas.mpl_connect('motion_notify_event', self.hover)
@@ -86,15 +83,14 @@ class MultipleDisplay:
         ydata_graph = self.previous_hovered.get_offsets()[0][1]
         xdata_aprox = "{0:.2f}".format(xdata_graph)
         ydata_aprox = "{0:.2f}".format(ydata_graph)
+
         self.tags[index].xy = (xdata_graph, ydata_graph)
         text = "".join(["(", str(xdata_aprox), ", ", str(ydata_aprox), ")"])
-        
+
         self.tags[index].set_text(text)
-        """cmap = plt.cm.RdYlGn
-        norm = plt.Normalize(1, 4)
-        c = np.random.randint(1, 5, size=15)"""
         self.tags[index].get_bbox_patch().set_facecolor(color='red')
-        self.tags[index].get_bbox_patch().set_alpha(0.4)
+        intensity = 0.4
+        self.tags[index].get_bbox_patch().set_alpha(intensity)
 
     def hover(self, event: Event):
         index_axis = -1
@@ -104,9 +100,9 @@ class MultipleDisplay:
                 index_axis = i
                 for artist in self.displays[i].id_function:
                     is_graph, ind = artist.contains(event)
+                    if is_graph and self.previous_hovered == artist:
+                        return
                     if is_graph:
-                        if self.previous_hovered == artist:
-                            return
                         self.previous_hovered = artist
                         break
                 break
@@ -134,14 +130,14 @@ class MultipleDisplay:
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
         axes: Union[Axes, Sequence[Axes], None] = None,
-    ) -> Figure:
+    ) -> None:
         fig, axes = _get_figure_and_axes(chart, fig, axes)
-
         fig, axes = _set_figure_layout(
             fig=fig, axes=axes, n_axes=len(self.displays),
         )
 
-        return fig, axes
+        self.fig = fig
+        self.axes = axes
 
     def pick(self, event: Event) -> None:
         if self.clicked:
@@ -206,11 +202,14 @@ class MultipleDisplay:
                 intensity = -1
 
             if intensity != -1:
-                for d in self.displays:
-                    if isinstance(d.id_function[i], list):
-                        d.id_function[i][0].set_alpha(intensity)
-                    else:
-                        d.id_function[i].set_alpha(intensity)
+                self.change_display_intensity(i, intensity)
+
+    def change_display_intensity(self, index: int, intensity: int) -> None:
+        for d in self.displays:
+            if isinstance(d.id_function[index], list):
+                d.id_function[index][0].set_alpha(intensity)
+            else:
+                d.id_function[index].set_alpha(intensity)
 
     def add_slider(
         self,

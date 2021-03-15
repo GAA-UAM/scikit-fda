@@ -66,9 +66,7 @@ class PhasePlanePlot:
         """
         fig, axes = _get_figure_and_axes(chart, fig, ax)
 
-        if (
-            self.fdata2 is not None
-        ):
+        if self.fdata2 is not None:
             self.fd_final = self.fdata1.concatenate(
                 self.fdata2, as_coordinates=True,
             )

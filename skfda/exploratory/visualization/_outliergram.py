@@ -19,8 +19,6 @@ from ... import FDataGrid
 from ..depth._depth import ModifiedBandDepth
 from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
-S = TypeVar('S', Figure, Axes, List[Axes])
-
 
 class Outliergram:
     """
@@ -77,19 +75,19 @@ class Outliergram:
         a parabola. The shape outliers will be the points that appear far from
         this curve.
         Args:
-            chart (figure object, axe or list of axes, optional): figure over
+            chart: figure over
                 with the graphs are plotted or axis over where the graphs are
                 plotted. If None and ax is also None, the figure is
                 initialized.
-            fig (figure object, optional): figure over with the graphs are
+            fig: figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-            axes (list of axis objects, optional): axis where the graphs
+            axes: axis where the graphs
                 are plotted. If None, see param fig.
-            n_rows (int, optional): designates the number of rows of the figure
+            n_rows: designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
                 if fig and ax are None.
-            n_cols(int, optional): designates the number of columns of the
+            n_cols: designates the number of columns of the
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
             kwargs: if dim_domain is 1, keyword arguments to be passed to the
@@ -97,7 +95,7 @@ class Outliergram:
                 arguments to be passed to the matplotlib.pyplot.plot_surface
                 function.
         Returns:
-            fig (figure object): figure object in which the depths will be
+            fig: figure object in which the depths will be
             scattered.
         """
         fig, axes_list = _get_figure_and_axes(chart, fig, axes)

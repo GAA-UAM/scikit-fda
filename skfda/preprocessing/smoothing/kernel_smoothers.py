@@ -85,7 +85,7 @@ class NadarayaWatsonSmoother(_LinearKernelSmoother):
     values :math:`\hat{X}` at the points :math:`(t_1', t_2', ..., t_m')`
     can be calculated as :math:`\hat{X} = \hat{H}X` where :math:`X` is the
     vector of observations at the points of discretisation
-    :math:`(t_1, t_2, ..., t_n)`.
+    :math:`(t_1, t_2, ..., t_n)` and
 
     .. math::
         \hat{H}_{i,j} = \frac{K\left(\frac{t_j-t_i'}{h}\right)}{\sum_{k=1}^{
@@ -185,7 +185,7 @@ class LocalLinearRegressionSmoother(_LinearKernelSmoother):
     values :math:`\hat{X}` at the points :math:`(t_1', t_2', ..., t_m')`
     can be calculated as :math:`\hat{X} = \hat{H}X` where :math:`X` is the
     vector of observations at the points of discretisation
-    :math:`(t_1, t_2, ..., t_n)`.
+    :math:`(t_1, t_2, ..., t_n)` and
 
     .. math::
         \hat{H}_{i,j} = \frac{b_j(t_i')}{\sum_{k=1}^{n}b_k(t_i')}
@@ -292,7 +292,7 @@ class KNeighborsSmoother(_LinearKernelSmoother):
     The smoothed values :math:`\hat{X}` at the points
     :math:`(t_1', t_2', ..., t_m')` can be calculated as
     :math:`\hat{X} = \hat{H}X` where :math:`X` is the vector of observations
-    at the points of discretisation :math:`(t_1, t_2, ..., t_n)`.
+    at the points of discretisation :math:`(t_1, t_2, ..., t_n)` and
 
     .. math::
 

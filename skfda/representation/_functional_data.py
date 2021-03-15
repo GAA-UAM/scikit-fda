@@ -274,7 +274,7 @@ class FData(  # noqa: WPS214
             should be applied.
 
         """
-        index = np.zeros(eval_points.shape[:-1], dtype=np.bool)
+        index = np.zeros(eval_points.shape[:-1], dtype=np.bool_)
 
         # Checks bounds in each domain dimension
         for i, bounds in enumerate(self.domain_range):

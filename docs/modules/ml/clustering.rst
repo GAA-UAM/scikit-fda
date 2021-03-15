@@ -49,8 +49,3 @@ clusterings are supported:
    :toctree: autosummary
 
    skfda.ml.clustering.AgglomerativeClustering
-
-.. autosummary::
-   :toctree: autosummary
-
-   skfda.ml.clustering.Agglomerative clustering

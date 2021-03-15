@@ -180,16 +180,16 @@ def plot_graph(fdata, chart=None, *, fig=None, axes=None,
 
         # Selects the number of points
         if n_points is None:
-            npoints = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
-        elif np.isscalar(npoints):
-            npoints = (npoints, npoints)
-        elif len(npoints) != 2:
+            n_points = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
+        elif np.isscalar(n_points):
+            n_points = (n_points, n_points)
+        elif len(n_points) != 2:
             raise ValueError(f"n_points should be a number or a tuple of "
-                             f"length 2, and has length {len(npoints)}")
+                             f"length 2, and has length {len(n_points)}")
 
         # Axes where will be evaluated
-        x = np.linspace(*domain_range[0], npoints[0])
-        y = np.linspace(*domain_range[1], npoints[1])
+        x = np.linspace(*domain_range[0], n_points[0])
+        y = np.linspace(*domain_range[1], n_points[1])
 
         # Evaluation of the functional object
         Z = fdata((x, y), grid=True)

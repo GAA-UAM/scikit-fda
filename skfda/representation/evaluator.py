@@ -5,11 +5,16 @@ The evaluator is the core of the FData object for extrapolation and
 evaluation of FDataGrids.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from typing_extensions import Protocol
+
+if TYPE_CHECKING:
+    from . import FData
 
 
 class Evaluator(ABC):
@@ -32,7 +37,7 @@ class Evaluator(ABC):
     @abstractmethod
     def evaluate(
         self,
-        fdata: Callable[[np.ndarray], np.ndarray],
+        fdata: FData,
         eval_points: np.ndarray,
         *,
         aligned: bool = True,
@@ -76,7 +81,7 @@ class EvaluateFunction(Protocol):
 
     def __call__(
         self,
-        fdata: Callable[[np.ndarray], np.ndarray],
+        fdata: FData,
         eval_points: np.ndarray,
         *,
         aligned: bool = True,
@@ -122,7 +127,7 @@ class GenericEvaluator(Evaluator):
 
     def evaluate(  # noqa: D102
         self,
-        fdata: Callable[[np.ndarray], np.ndarray],
+        fdata: FData,
         eval_points: np.ndarray,
         *,
         aligned: bool = True,

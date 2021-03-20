@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TypedDict, TypeVar, Union
+from matplotlib import colors
 
 import matplotlib.cm
 import matplotlib.patches
@@ -106,7 +107,7 @@ def _get_color_info(
 
 class GraphPlot:
     """
-    Class used to plot the FDatGrid object graph as hypersurfaces.
+    Class used to plot the FDataGrid object graph as hypersurfaces.
 
     A list of variables (probably depths) can be used as an argument to
     display the functions wtih a gradient of colors.
@@ -202,48 +203,47 @@ class GraphPlot:
         gradient_color_list (normalized in gradient_list).
 
         Args:
-            chart (figure object, axe or list of axes, optional): figure over
+            chart: figure over
                 with the graphs are plotted or axis over where the graphs are
                 plotted. If None and ax is also None, the figure is
                 initialized.
-            fig (figure object, optional): figure over with the graphs are
+            fig : figure over with the graphs are
                 plotted in case ax is not specified. If None and ax is also
                 None, the figure is initialized.
-            ax (list of axis objects, optional): axis over where the graphs
-                are plotted. If None, see param fig.
-            n_rows (int, optional): designates the number of rows of the figure
+            ax: axis over where the graphs are plotted. If None, see param fig.
+            n_rows : designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
                 if fig and ax are None.
-            n_cols(int, optional): designates the number of columns of the
+            n_cols: designates the number of columns of the
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
-            n_points (int or tuple, optional): Number of points to evaluate in
+            n_points: Number of points to evaluate in
                 the plot. In case of surfaces a tuple of length 2 can be pased
                 with the number of points to plot in each axis, otherwise the
                 same number of points will be used in the two axes. By default
                 in unidimensional plots will be used 501 points; in surfaces
                 will be used 30 points per axis, wich makes a grid with 900
                 points.
-            domain_range (tuple or list of tuples, optional): Range where the
+            domain_range: Range where the
                 function will be plotted. In objects with unidimensional domain
                 the domain range should be a tuple with the bounds of the
                 interval; in the case of surfaces a list with 2 tuples with
                 the ranges for each dimension. Default uses the domain range
                 of the functional object.
-            group (list of int): contains integers from [0 to number of
+            group: contains integers from [0 to number of
                 labels) indicating to which group each sample belongs to. Then,
                 the samples with the same label are plotted in the same color.
                 If None, the default value, each sample is plotted in the color
                 assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-            group_colors (list of colors): colors in which groups are
+            group_colors: colors in which groups are
                 represented, there must be one for each group. If None, each
                 group is shown with distict colors in the "Greys" colormap.
-            group_names (list of str): name of each of the groups which appear
+            group_names: name of each of the groups which appear
                 in a legend, there must be one for each one. Defaults to None
                 and the legend is not shown. Implies `legend=True`.
             colormap_name: name of the colormap to be used. By default we will
                 use autumn.
-            legend (bool): if `True`, show a legend with the groups. If
+            legend: if `True`, show a legend with the groups. If
                 `group_names` is passed, it will be used for finding the names
                 to display in the legend. Otherwise, the values passed to
                 `group` will be used.
@@ -253,7 +253,7 @@ class GraphPlot:
                 matplotlib.pyplot.plot_surface function.
 
         Returns:
-            fig (figure object): figure object in which the graphs are plotted.
+            fig: figure object in which the graphs are plotted.
 
         """
 

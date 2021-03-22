@@ -7,6 +7,7 @@ this outliers. The motivation of the method is that it is easy to find
 magnitude outliers, but there is a necessity of capturing this other type.
 """
 
+from functools import partial
 from typing import Optional, Sequence, Union
 
 import numpy as np
@@ -74,6 +75,10 @@ class Outliergram(Display):
             raise ValueError(
                 "The size of mbd and mei should be the same.",
             )
+        self.n = self.mbd.size
+        distances, parable = self.compute_distances()
+        self.distances = distances
+        self.parable = parable
 
         self.set_figure_and_axes(chart, fig, axes)
 
@@ -100,6 +105,23 @@ class Outliergram(Display):
                 self.mbd[i],
                 picker=2,
             ))
+
+        mei_ordered = self.mei[:]
+        mei_ordered, parable = (
+            list(el) for el in zip(*sorted(zip(mei_ordered, self.parable)))
+        )
+        self.parable = parable
+        self.axScatter.plot(
+            mei_ordered,
+            self.parable,
+        )
+
+        self.compute_outliergram()
+        self.axScatter.plot(
+            mei_ordered,
+            self.shifted_parable,
+            linestyle='dashed',
+        )
 
         # Set labels of graph
         self.axScatter.set_title("Outliergram")
@@ -141,6 +163,29 @@ class Outliergram(Display):
         integrand /= (interval_len * self.fdata.n_samples)
 
         return integrand
+
+    def compute_distances(self) -> np.ndarray:
+        distances = []
+        parable = []
+        a_0 = -2 / (self.n * (self.n - 1))
+        a_1 = (2 * (self.n + 1)) / (self.n - 1)
+        a_2 = a_0
+
+        for mbd_item, mei_item in zip(self.mbd, self.mei):
+            p_i = (
+                a_0 + a_1 * mei_item + pow(self.n, 2) * a_2 * pow(mei_item, 2)
+            )
+            distances.append(p_i - mbd_item)
+            parable.append(p_i)
+        return distances, parable
+
+    def compute_outliergram(self):
+        percentile_25 = 25
+        percentile_75 = 75
+        first_quartile = np.percentile(self.distances, percentile_25)
+        third_quartile = np.percentile(self.distances, percentile_75)
+        iqr = third_quartile - first_quartile
+        self.shifted_parable = self.parable - (third_quartile + iqr)
 
     def num_instances(self) -> int:
         return self.fdata.n_samples

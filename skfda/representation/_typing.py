@@ -4,6 +4,11 @@ from typing import Optional, Sequence, Tuple, TypeVar, Union
 import numpy as np
 from typing_extensions import Protocol
 
+try:
+    from numpy.typing import ArrayLike
+except ImportError:
+    ArrayLike = np.ndarray  # type:ignore
+
 VectorType = TypeVar("VectorType")
 
 DomainRange = Tuple[Tuple[float, float], ...]
@@ -17,7 +22,7 @@ LabelTuple = Tuple[Optional[str], ...]
 LabelTupleLike = Sequence[Optional[str]]
 
 GridPoints = Tuple[np.ndarray, ...]
-GridPointsLike = Sequence[np.ndarray]
+GridPointsLike = Union[ArrayLike, Sequence[ArrayLike]]
 
 
 class Vector(Protocol):

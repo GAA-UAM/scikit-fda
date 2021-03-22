@@ -17,10 +17,12 @@ from typing import (
 )
 
 import numpy as np
-import scipy.integrate
 from pandas.api.indexers import check_array_indexer
 
+import scipy.integrate
+
 from ..representation._typing import (
+    ArrayLike,
     DomainRange,
     DomainRangeLike,
     GridPoints,
@@ -156,7 +158,11 @@ def _to_domain_range(sequence: DomainRangeLike) -> DomainRange:
     return cast(DomainRange, tuple_aux)
 
 
-def _to_array_maybe_ragged(array, *, row_shape=None):
+def _to_array_maybe_ragged(
+    array: Sequence[ArrayLike],
+    *,
+    row_shape: Optional[Sequence[int]] = None,
+) -> np.ndarray:
     """
     Convert to an array where each element may or may not be of equal length.
 
@@ -164,7 +170,7 @@ def _to_array_maybe_ragged(array, *, row_shape=None):
     Otherwise it is a ragged array.
 
     """
-    def convert_row(row):
+    def convert_row(row: ArrayLike) -> np.ndarray:
         r = np.array(row)
 
         if row_shape is not None:
@@ -177,16 +183,20 @@ def _to_array_maybe_ragged(array, *, row_shape=None):
 
     if all(s == shapes[0] for s in shapes):
         return np.array(array_list)
-    else:
-        res = np.empty(len(array_list), dtype=np.object_)
 
-        for i, a in enumerate(array_list):
-            res[i] = a
+    res = np.empty(len(array_list), dtype=np.object_)
 
-        return res
+    for i, a in enumerate(array_list):
+        res[i] = a
+
+    return res
 
 
-def _cartesian_product(axes, flatten=True, return_shape=False):
+def _cartesian_product(
+    axes: Sequence[np.ndarray],
+    flatten: bool=True,
+    return_shape: bool=False,
+) -> np.ndarray:
     """Computes the cartesian product of the axes.
 
     Computes the cartesian product of the axes and returns a numpy array of
@@ -194,10 +204,10 @@ def _cartesian_product(axes, flatten=True, return_shape=False):
     dimensions.
 
     Args:
-        Axes (array_like): List with axes.
+        Axes: List with axes.
 
     Return:
-        (np.ndarray): Numpy 2-D array with all the possible combinations.
+        Numpy 2-D array with all the possible combinations.
         The entry (i,j) represent the j-th coordinate of the i-th point.
 
     Examples:

@@ -93,10 +93,7 @@ class ParametricPlot:
             )
 
         fig.suptitle("Parametric Plot")
-        axes[0].set_xlabel(self.fdata1.coordinate_names[0])
-        if self.fdata2 is None:
-            axes[0].set_ylabel(self.fdata1.coordinate_names[1])
-        else:
-            axes[0].set_ylabel(self.fdata2.coordinate_names[0])
+        axes[0].set_xlabel(self.fd_final.coordinate_names[0])
+        axes[0].set_ylabel(self.fd_final.coordinate_names[1])
 
         return fig

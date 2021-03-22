@@ -7,7 +7,6 @@ this outliers. The motivation of the method is that it is easy to find
 magnitude outliers, but there is a necessity of capturing this other type.
 """
 
-from functools import partial
 from typing import Optional, Sequence, Union
 
 import numpy as np

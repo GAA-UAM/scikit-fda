@@ -5,7 +5,7 @@ Defines methods to evaluate points outside the :term:`domain` range.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, NoReturn, Optional, Union
+from typing import TYPE_CHECKING, Any, NoReturn, Optional, Union, overload
 
 import numpy as np
 
@@ -13,6 +13,8 @@ from .evaluator import Evaluator
 
 if TYPE_CHECKING:
     from . import FData
+
+ExtrapolationLike = Union[str, Evaluator]
 
 
 class PeriodicExtrapolation(Evaluator):
@@ -231,8 +233,22 @@ class FillExtrapolation(Evaluator):
         )
 
 
+@overload
 def _parse_extrapolation(
-    extrapolation: Optional[Union[str, Evaluator]],
+    extrapolation: None,
+) -> None:
+    pass
+
+
+@overload
+def _parse_extrapolation(
+    extrapolation: ExtrapolationLike,
+) -> Evaluator:
+    pass
+
+
+def _parse_extrapolation(
+    extrapolation: Optional[ExtrapolationLike],
 ) -> Optional[Evaluator]:
     """Parse the argument `extrapolation` of `FData`.
 

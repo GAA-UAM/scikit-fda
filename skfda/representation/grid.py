@@ -15,8 +15,9 @@ from typing import TYPE_CHECKING, Any, Optional, Sequence, Type, TypeVar, Union
 import findiff
 import numpy as np
 import pandas.api.extensions
-import scipy.stats.mstats
 from matplotlib.figure import Figure
+
+import scipy.stats.mstats
 
 from .._utils import (
     _check_array_key,
@@ -27,6 +28,7 @@ from .._utils import (
 )
 from ._functional_data import FData
 from ._typing import (
+    ArrayLike,
     DomainRange,
     DomainRangeLike,
     GridPoints,
@@ -122,7 +124,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def __init__(  # noqa: WPS211
         self,
-        data_matrix: np.ndarray,
+        data_matrix: ArrayLike,
         grid_points: Optional[GridPointsLike] = None,
         *,
         sample_points: Optional[GridPointsLike] = None,
@@ -149,7 +151,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
         if grid_points is None:
             self.grid_points = _to_grid_points([
-                np.linspace(0.0, 1.0, self.data_matrix.shape[i])
+                np.linspace(0, 1, self.data_matrix.shape[i])
                 for i in range(1, self.data_matrix.ndim)
             ])
 
@@ -169,8 +171,8 @@ class FDataGrid(FData):  # noqa: WPS214
                     f"points have shape {grid_points_shape}",
                 )
 
-        self._sample_range = np.array(
-            [(s[0], s[-1]) for s in self.grid_points],
+        self._sample_range = tuple(
+            (s[0], s[-1]) for s in self.grid_points
         )
 
         if domain_range is None:
@@ -527,7 +529,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
         """
         return self.copy(
-            data_matrix=[np.var(self.data_matrix, 0)],
+            data_matrix=np.array([np.var(self.data_matrix, 0)]),
             sample_names=("variance",),
         )
 
@@ -610,7 +612,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return True
 
-    def __eq__(self, other: Any) -> np.ndarray:
+    def __eq__(self, other: Any) -> np.ndarray:  # type: ignore[override]
         """Elementwise equality of FDataGrid."""
         if not isinstance(other, type(self)) or self.dtype != other.dtype:
             if other is pandas.NA:
@@ -637,9 +639,9 @@ class FDataGrid(FData):  # noqa: WPS214
     def _get_op_matrix(
         self,
         other: Union[T, np.ndarray, float],
-    ) -> Optional[np.ndarray]:
+    ) -> Union[None, float, np.ndarray]:
         if isinstance(other, numbers.Number):
-            return other
+            return float(other)
         elif isinstance(other, np.ndarray):
 
             if other.shape in {(), (1,)}:
@@ -892,7 +894,7 @@ class FDataGrid(FData):  # noqa: WPS214
         self: T,
         *,
         deep: bool = False,  # For Pandas compatibility
-        data_matrix: Optional[np.ndarray] = None,
+        data_matrix: Optional[ArrayLike] = None,
         grid_points: Optional[GridPointsLike] = None,
         sample_points: Optional[GridPointsLike] = None,
         domain_range: Optional[DomainRangeLike] = None,
@@ -968,7 +970,7 @@ class FDataGrid(FData):  # noqa: WPS214
         *,
         restrict_domain: bool = False,
         extrapolation: Optional[Union[str, Evaluator]] = None,
-        eval_points: np.ndarray = None,
+        eval_points: Optional[np.ndarray] = None,
     ) -> T:
         """Perform a shift of the curves.
 
@@ -993,45 +995,50 @@ class FDataGrid(FData):  # noqa: WPS214
             :class:`FDataGrid` with the shifted data.
 
         """
-        if np.isscalar(shifts):
-            shifts = [shifts]
-
-        shifts = np.array(shifts)
+        arr_shifts = np.array([shifts] if np.isscalar(shifts) else shifts)
 
         # Case unidimensional treated as the multidimensional
-        if self.dim_domain == 1 and shifts.ndim == 1 and shifts.shape[0] != 1:
-            shifts = shifts[:, np.newaxis]
+        if (
+            self.dim_domain == 1
+            and arr_shifts.ndim == 1
+            and arr_shifts.shape[0] != 1
+        ):
+            arr_shifts = arr_shifts[:, np.newaxis]
 
         # Case same shift for all the curves
-        if shifts.shape[0] == self.dim_domain and shifts.ndim == 1:
+        if arr_shifts.shape[0] == self.dim_domain and arr_shifts.ndim == 1:
 
             # Column vector with shapes
-            shifts = np.atleast_2d(shifts).T
+            arr_shifts = np.atleast_2d(arr_shifts).T
 
-            grid_points = self.grid_points + shifts
-            domain_range = self.domain_range + shifts
+            grid_points = self.grid_points + arr_shifts
+            domain_range = self.domain_range + arr_shifts
 
             return self.copy(
                 grid_points=grid_points,
                 domain_range=domain_range,
             )
 
-        if shifts.shape[0] != self.n_samples:
+        if arr_shifts.shape[0] != self.n_samples:
             raise ValueError(
-                f"shifts vector ({shifts.shape[0]}) must have the"
+                f"shifts vector ({arr_shifts.shape[0]}) must have the"
                 f" same length than the number of samples "
                 f"({self.n_samples})",
             )
 
-        if eval_points is None:
-            eval_points = self.grid_points
-        else:
-            eval_points = np.atleast_2d(eval_points)
+        eval_points = (
+            self.grid_points if eval_points is None
+            else np.atleast_2d(eval_points)
+        )
 
         if restrict_domain:
             domain = np.asarray(self.domain_range)
-            a = domain[:, 0] - np.atleast_1d(np.min(np.min(shifts, axis=1), 0))
-            b = domain[:, 1] - np.atleast_1d(np.max(np.max(shifts, axis=1), 0))
+            a = domain[:, 0] - np.atleast_1d(
+                np.min(np.min(arr_shifts, axis=1), 0),
+            )
+            b = domain[:, 1] - np.atleast_1d(
+                np.max(np.max(arr_shifts, axis=1), 0),
+            )
 
             domain = np.vstack((a, b)).T
 
@@ -1057,15 +1064,15 @@ class FDataGrid(FData):  # noqa: WPS214
 
         # Solve problem with cartesian and matrix indexing
         if self.dim_domain > 1:
-            shifts[:, :2] = np.flip(shifts[:, :2], axis=1)
+            arr_shifts[:, :2] = np.flip(arr_shifts[:, :2], axis=1)
 
-        shifts = np.repeat(
-            shifts[..., np.newaxis],
+        arr_shifts = np.repeat(
+            arr_shifts[..., np.newaxis],
             eval_points.shape[1],
             axis=2,
         )
 
-        eval_points_shifted = eval_points_repeat + shifts
+        eval_points_shifted = eval_points_repeat + arr_shifts
 
         data_matrix = self.evaluate(
             eval_points_shifted,
@@ -1084,7 +1091,7 @@ class FDataGrid(FData):  # noqa: WPS214
         self: T,
         fd: T,
         *,
-        eval_points: np.ndarray = None,
+        eval_points: Optional[GridPointsLike] = None,
     ) -> T:
         """Composition of functions.
 
@@ -1172,14 +1179,14 @@ class FDataGrid(FData):  # noqa: WPS214
         """Return repr(self)."""
         return (
             f"FDataGrid("  # noqa: WPS221
-            f"\n{repr(self.data_matrix)},"
-            f"\ngrid_points={repr(self.grid_points)},"
-            f"\ndomain_range={repr(self.domain_range)},"
-            f"\ndataset_name={repr(self.dataset_name)},"
-            f"\nargument_names={repr(self.argument_names)},"
-            f"\ncoordinate_names={repr(self.coordinate_names)},"
-            f"\nextrapolation={repr(self.extrapolation)},"
-            f"\ninterpolation={repr(self.interpolation)})"
+            f"\n{self.data_matrix!r},"
+            f"\ngrid_points={self.grid_points!r},"
+            f"\ndomain_range={self.domain_range!r},"
+            f"\ndataset_name={self.dataset_name!r},"
+            f"\nargument_names={self.argument_names!r},"
+            f"\ncoordinate_names={self.coordinate_names!r},"
+            f"\nextrapolation={self.extrapolation!r},"
+            f"\ninterpolation={self.interpolation!r})"
         ).replace(
             '\n',
             '\n    ',
@@ -1297,9 +1304,7 @@ class FDataGridDType(pandas.api.extensions.ExtensionDtype):  # type: ignore
         self.grid_points = tuple(tuple(s) for s in grid_points)
 
         if domain_range is None:
-            domain_range = np.array(
-                [(s[0], s[-1]) for s in self.grid_points],
-            )
+            domain_range = tuple((s[0], s[-1]) for s in self.grid_points)
 
         self.domain_range = _to_domain_range(domain_range)
         self.dim_codomain = dim_codomain

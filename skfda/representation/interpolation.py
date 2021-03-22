@@ -1,62 +1,107 @@
 """
 Module to interpolate functional data objects.
 """
-
+from __future__ import annotations
 
 import abc
-
-from scipy.interpolate import (PchipInterpolator, UnivariateSpline,
-                               RectBivariateSpline, RegularGridInterpolator)
+from typing import TYPE_CHECKING, Any, Callable, Sequence, Tuple, Union
 
 import numpy as np
+
+from scipy.interpolate import (
+    PchipInterpolator,
+    RectBivariateSpline,
+    RegularGridInterpolator,
+    UnivariateSpline,
+)
 
 from .._utils import _to_array_maybe_ragged
 from .evaluator import Evaluator
 
+if TYPE_CHECKING:
+    from . import FData
+
+SplineCallable = Callable[..., np.ndarray]
+
 
 class _SplineList(abc.ABC):
-    r"""ABC for list of interpolations."""
+    """ABC for list of interpolations."""
 
-    def __init__(self, fdatagrid,
-                 interpolation_order=1,
-                 smoothness_parameter=0.):
+    def __init__(
+        self,
+        fdatagrid: FData,
+        interpolation_order: Union[int, Sequence[int]] = 1,
+        smoothness_parameter: float = 0,
+    ):
 
         super().__init__()
 
         self.fdatagrid = fdatagrid
         self.interpolation_order = interpolation_order
         self.smoothness_parameter = smoothness_parameter
+        self.splines: Sequence[Sequence[SplineCallable]]
+
+    # @abc.abstractmethod
+    # @property
+    # def splines(self) -> Sequence[SplineCallable]:
+        # pass
 
     @abc.abstractmethod
-    def _evaluate_one(self, spl, t, derivative=0):
-        """Evaluates one spline of the list."""
+    def _evaluate_one(
+        self,
+        spline: SplineCallable,
+        eval_points: np.ndarray,
+    ) -> np.ndarray:
+        """Evaluate one spline of the list."""
         pass
 
-    def _evaluate_codomain(self, spl_m, t, derivative=0):
-        """Evaluator of multidimensional sample"""
-        return np.array([self._evaluate_one(spl, t, derivative)
-                         for spl in spl_m]).T
+    def _evaluate_codomain(
+        self,
+        spline_list: Sequence[SplineCallable],
+        eval_points: np.ndarray,
+    ) -> np.ndarray:
+        """Evaluate a multidimensional sample."""
+        return np.array([
+            self._evaluate_one(spl, eval_points)
+            for spl in spline_list
+        ]).T
 
-    def evaluate(self, fdata, eval_points, *, derivative=0, aligned=True):
+    def evaluate(
+        self,
+        fdata: FData,
+        eval_points: np.ndarray,
+        *,
+        aligned: bool = True,
+    ) -> np.ndarray:
+
+        res: np.ndarray
 
         if aligned:
             # Points evaluated inside the domain
             res = np.apply_along_axis(
-                self._evaluate_codomain, 1,
-                self.splines, eval_points, derivative)
-            res = res.reshape(fdata.n_samples, eval_points.shape[0],
-                              fdata.dim_codomain)
+                self._evaluate_codomain,
+                1,
+                self.splines,
+                eval_points,
+            )
+
+            res = res.reshape(
+                fdata.n_samples,
+                eval_points.shape[0],
+                fdata.dim_codomain,
+            )
 
         else:
-            res = _to_array_maybe_ragged([self._evaluate_codomain(
-                s, e, derivative=derivative)
-                for s, e in zip(self.splines, eval_points)])
+            res = _to_array_maybe_ragged([
+                self._evaluate_codomain(s, e)
+                for s, e in zip(self.splines, eval_points)
+            ])
 
         return res
 
 
 class _SplineList1D(_SplineList):
-    r"""List of interpolations for curves.
+    """List of interpolations for curves.
 
     List of interpolations for objects with domain
     dimension = 1. Calling internally during the creation of the
@@ -92,33 +137,45 @@ class _SplineList1D(_SplineList):
 
     """
 
-    def __init__(self, fdatagrid,
-                 interpolation_order=1,
-                 smoothness_parameter=0.,
-                 monotone=False):
+    def __init__(
+        self,
+        fdatagrid: FData,
+        interpolation_order: Union[int, Sequence[int]] = 1,
+        smoothness_parameter: float = 0,
+        monotone: bool = False,
+    ):
 
         super().__init__(
             fdatagrid=fdatagrid,
             interpolation_order=interpolation_order,
-            smoothness_parameter=smoothness_parameter)
+            smoothness_parameter=smoothness_parameter,
+        )
 
         self.monotone = monotone
 
-        if self.interpolation_order > 5 or self.interpolation_order < 1:
-            raise ValueError(f"Invalid degree of interpolation "
-                             f"({self.interpolation_order}). Must be "
-                             f"an integer greater than 0 and lower or "
-                             f"equal than 5.")
+        if (
+            isinstance(self.interpolation_order, Sequence)
+            or not 1 <= self.interpolation_order <= 5
+        ):
+            raise ValueError(
+                f"Invalid degree of interpolation "
+                f"({self.interpolation_order}). Must be "
+                f"an integer greater than 0 and lower or "
+                f"equal than 5.",
+            )
 
         if self.monotone and self.smoothness_parameter != 0:
-            raise ValueError("Smoothing interpolation is not supported with "
-                             "monotone interpolation")
+            raise ValueError(
+                "Smoothing interpolation is not supported with "
+                "monotone interpolation",
+            )
 
-        if self.monotone and (self.interpolation_order == 2
-                              or self.interpolation_order == 4):
-            raise ValueError(f"monotone interpolation of degree "
-                             f"{self.interpolation_order}"
-                             f"not supported.")
+        if self.monotone and self.interpolation_order in {2, 4}:
+            raise ValueError(
+                f"monotone interpolation of degree "
+                f"{self.interpolation_order}"
+                f"not supported.",
+            )
 
         # Monotone interpolation of degree 1 is performed with linear spline
         monotone = self.monotone
@@ -128,31 +185,44 @@ class _SplineList1D(_SplineList):
         grid_points = fdatagrid.grid_points[0]
 
         if monotone:
-            def constructor(data):
-                """Constructs an unidimensional cubic monotone interpolation"""
+            def constructor(  # noqa: WPS430
+                data: np.ndarray,
+            ) -> SplineCallable:
+                """Construct an unidimensional cubic monotone interpolation."""
                 return PchipInterpolator(grid_points, data)
 
         else:
 
-            def constructor(data):
-                """Constructs an unidimensional interpolation"""
+            def constructor(  # noqa: WPS430, WPS440
+                data: np.ndarray,
+            ) -> SplineCallable:
+                """Construct an unidimensional interpolation."""
                 return UnivariateSpline(
-                    grid_points, data,
+                    grid_points,
+                    data,
                     s=self.smoothness_parameter,
-                    k=self.interpolation_order)
+                    k=self.interpolation_order,
+                )
 
         self.splines = np.apply_along_axis(
-            constructor, 1, fdatagrid.data_matrix)
+            constructor,
+            1,
+            fdatagrid.data_matrix,
+        )
 
-    def _evaluate_one(self, spl, t, derivative=0):
+    def _evaluate_one(
+        self,
+        spline: SplineCallable,
+        eval_points: np.ndarray,
+    ) -> np.ndarray:
         try:
-            return spl(t, derivative)[:, 0]
+            return spline(eval_points)[:, 0]
         except ValueError:
-            return np.zeros_like(t)
+            return np.zeros_like(eval_points)
 
 
 class _SplineList2D(_SplineList):
-    r"""List of interpolations for surfaces.
+    """List of interpolations for surfaces.
 
     List of interpolations for objects with domain
     dimension = 2. Calling internally during the creationg of the
@@ -187,54 +257,70 @@ class _SplineList2D(_SplineList):
 
     """
 
-    def __init__(self, fdatagrid,
-                 interpolation_order=1,
-                 smoothness_parameter=0.):
+    def __init__(
+        self,
+        fdatagrid: FData,
+        interpolation_order: Union[int, Sequence[int]] = 1,
+        smoothness_parameter: float = 0,
+    ):
 
         super().__init__(
             fdatagrid=fdatagrid,
             interpolation_order=interpolation_order,
-            smoothness_parameter=smoothness_parameter)
+            smoothness_parameter=smoothness_parameter,
+        )
 
-        if np.isscalar(self.interpolation_order):
-            kx = ky = self.interpolation_order
-        elif len(self.interpolation_order) != 2:
-            raise ValueError("k should be numeric or a tuple of length 2.")
-        else:
+        if isinstance(self.interpolation_order, int):
+            kx = self.interpolation_order
+            ky = kx
+        elif len(self.interpolation_order) == 2:
             kx = self.interpolation_order[0]
             ky = self.interpolation_order[1]
+        else:
+            raise ValueError("k should be numeric or a tuple of length 2.")
 
         if kx > 5 or kx <= 0 or ky > 5 or ky <= 0:
-            raise ValueError(f"Invalid degree of interpolation ({kx},{ky}). "
-                             f"Must be an integer greater than 0 and lower or "
-                             f"equal than 5.")
+            raise ValueError(
+                f"Invalid degree of interpolation ({kx},{ky}). "
+                f"Must be an integer greater than 0 and lower or "
+                f"equal than 5.",
+            )
 
         # Matrix of splines
-        self.splines = np.empty(
-            (fdatagrid.n_samples, fdatagrid.dim_codomain), dtype=object)
+        splines = np.empty(
+            (fdatagrid.n_samples, fdatagrid.dim_codomain),
+            dtype=object,
+        )
 
         for i in range(fdatagrid.n_samples):
             for j in range(fdatagrid.dim_codomain):
-                self.splines[i, j] = RectBivariateSpline(
+                splines[i, j] = RectBivariateSpline(
                     fdatagrid.grid_points[0],
                     fdatagrid.grid_points[1],
                     fdatagrid.data_matrix[i, :, :, j],
-                    kx=kx, ky=ky,
-                    s=self.smoothness_parameter)
+                    kx=kx,
+                    ky=ky,
+                    s=self.smoothness_parameter,
+                )
 
-    def _evaluate_one(self, spl, t, derivative=0):
-        if np.isscalar(derivative):
-            derivative = 2 * [derivative]
-        elif len(derivative) != 2:
-            raise ValueError("derivative should be a numeric value "
-                             "or a tuple of length 2 with (dx,dy).")
+        self.splines = splines
 
-        return spl(t[:, 0], t[:, 1], dx=derivative[0], dy=derivative[1],
-                   grid=False)
+    def _evaluate_one(
+        self,
+        spline: SplineCallable,
+        eval_points: np.ndarray,
+    ) -> np.ndarray:
+
+        return spline(
+            eval_points[:, 0],
+            eval_points[:, 1],
+            grid=False,
+        )
 
 
 class _SplineListND(_SplineList):
-    r"""List of interpolations.
+    """
+    List of interpolations.
 
     List of interpolations for objects with domain
     dimension > 2. Calling internally during the creationg of the
@@ -259,18 +345,23 @@ class _SplineListND(_SplineList):
 
     """
 
-    def __init__(self, fdatagrid,
-                 interpolation_order=1,
-                 smoothness_parameter=0.):
-
+    def __init__(
+        self,
+        fdatagrid: FData,
+        interpolation_order: Union[int, Sequence[int]] = 1,
+        smoothness_parameter: float = 0,
+    ) -> None:
         super().__init__(
             fdatagrid=fdatagrid,
             interpolation_order=interpolation_order,
-            smoothness_parameter=smoothness_parameter)
+            smoothness_parameter=smoothness_parameter,
+        )
 
         if self.smoothness_parameter != 0:
-            raise ValueError("Smoothing interpolation is only supported with "
-                             "domain dimension up to 2, s should be 0.")
+            raise ValueError(
+                "Smoothing interpolation is only supported with "
+                "domain dimension up to 2.",
+            )
 
         # Parses method of interpolation
         if self.interpolation_order == 0:
@@ -278,29 +369,38 @@ class _SplineListND(_SplineList):
         elif self.interpolation_order == 1:
             method = 'linear'
         else:
-            raise ValueError("interpolation order should be 0 (nearest) or 1 "
-                             "(linear).")
+            raise ValueError(
+                "interpolation order should be 0 (nearest) or 1 (linear).",
+            )
 
-        self.splines = np.empty(
-            (fdatagrid.n_samples, fdatagrid.dim_codomain), dtype=object)
+        splines = np.empty(
+            (fdatagrid.n_samples, fdatagrid.dim_codomain),
+            dtype=object,
+        )
 
         for i in range(fdatagrid.n_samples):
             for j in range(fdatagrid.dim_codomain):
-                self.splines[i, j] = RegularGridInterpolator(
-                    fdatagrid.grid_points, fdatagrid.data_matrix[i, ..., j],
-                    method, False)
+                splines[i, j] = RegularGridInterpolator(
+                    fdatagrid.grid_points,
+                    fdatagrid.data_matrix[i, ..., j],
+                    method=method,
+                    bounds_error=False,
+                )
 
-    def _evaluate_one(self, spl, t, derivative=0):
+        self.splines = splines
 
-        if derivative != 0:
-            raise ValueError("derivates not suported for functional data "
-                             " with domain dimension greater than 2.")
+    def _evaluate_one(
+        self,
+        spline: SplineCallable,
+        eval_points: np.ndarray,
+    ) -> np.ndarray:
 
-        return spl(t)
+        return spline(eval_points)
 
 
 class SplineInterpolation(Evaluator):
-    r"""Spline interpolation of :class:`FDataGrid`.
+    """
+    Spline interpolation.
 
     Spline interpolation of discretized functional objects. Implements
     different interpolation methods based in splines, using the sample
@@ -326,88 +426,93 @@ class SplineInterpolation(Evaluator):
 
     """
 
-    def __init__(self, interpolation_order=1, *, smoothness_parameter=0.,
-                 monotone=False):
-        r"""Constructor of the SplineInterpolation.
-
-        Args:
-            interpolation_order (int, optional): Order of the interpolation, 1
-                for linear interpolation, 2 for cuadratic, 3 for cubic and so
-                on. In case of curves and surfaces there is available
-                interpolation up to degree 5. For higher dimensional objects
-                only linear or nearest interpolation is available. Default
-                lineal interpolation.
-            smoothness_parameter (float, optional): Penalisation to perform
-                smoothness interpolation. Option only available for curves and
-                surfaces. If 0 the residuals of the interpolation will be 0.
-                Defaults 0.
-            monotone (boolean, optional): Performs monotone interpolation in
-                curves using a PCHIP interpolation. Only valid for curves
-                (domain dimension equal to 1) and interpolation order equal
-                to 1 or 3.
-                Defaults false.
-
-        """
+    def __init__(
+        self,
+        interpolation_order: Union[int, Sequence[int]] = 1,
+        *,
+        smoothness_parameter: float = 0,
+        monotone: bool = False,
+    ) -> None:
         self._interpolation_order = interpolation_order
         self._smoothness_parameter = smoothness_parameter
         self._monotone = monotone
 
     @property
-    def interpolation_order(self):
-        "Returns the interpolation order"
-        return self._interpolation_order
+    def interpolation_order(self) -> Union[int, Tuple[int, ...]]:
+        """Interpolation order."""
+
+        return (
+            self._interpolation_order
+            if isinstance(self._interpolation_order, int)
+            else tuple(self._interpolation_order)
+        )
 
     @property
-    def smoothness_parameter(self):
-        "Returns the smoothness parameter"
+    def smoothness_parameter(self) -> float:
+        """Smoothness parameter."""
         return self._smoothness_parameter
 
     @property
-    def monotone(self):
-        "Returns flag to perform monotone interpolation"
+    def monotone(self) -> bool:
+        """Flag to perform monotone interpolation."""
         return self._monotone
 
-    def _build_interpolator(self, fdatagrid):
+    def _build_interpolator(
+        self,
+        fdatagrid: FData,
+    ) -> _SplineList:
 
         if fdatagrid.dim_domain == 1:
             return _SplineList1D(
                 fdatagrid=fdatagrid,
                 interpolation_order=self.interpolation_order,
                 smoothness_parameter=self.smoothness_parameter,
-                monotone=self.monotone)
+                monotone=self.monotone,
+            )
 
         elif self.monotone:
-            raise ValueError("Monotone interpolation is only supported with "
-                             "domain dimension equal to 1.")
+            raise ValueError(
+                "Monotone interpolation is only supported with "
+                "domain dimension equal to 1.",
+            )
 
         elif fdatagrid.dim_domain == 2:
             return _SplineList2D(
                 fdatagrid=fdatagrid,
                 interpolation_order=self.interpolation_order,
-                smoothness_parameter=self.smoothness_parameter)
+                smoothness_parameter=self.smoothness_parameter,
+            )
 
-        else:
-            return _SplineListND(
-                fdatagrid=fdatagrid,
-                interpolation_order=self.interpolation_order,
-                smoothness_parameter=self.smoothness_parameter)
+        return _SplineListND(
+            fdatagrid=fdatagrid,
+            interpolation_order=self.interpolation_order,
+            smoothness_parameter=self.smoothness_parameter,
+        )
 
-    def evaluate(self, fdata, eval_points, *, aligned=True):
+    def evaluate(  # noqa: D102
+        self,
+        fdata: FData,
+        eval_points: np.ndarray,
+        *,
+        aligned: bool = True,
+    ) -> np.ndarray:
 
         spline_list = self._build_interpolator(fdata)
 
         return spline_list.evaluate(fdata, eval_points, aligned=aligned)
 
-    def __repr__(self):
-        """repr method of the interpolation"""
-        return (f"{type(self).__name__}("
-                f"interpolation_order={self.interpolation_order}, "
-                f"smoothness_parameter={self.smoothness_parameter}, "
-                f"monotone={self.monotone})")
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}("
+            f"interpolation_order={self.interpolation_order}, "
+            f"smoothness_parameter={self.smoothness_parameter}, "
+            f"monotone={self.monotone})"
+        )
 
-    def __eq__(self, other):
-        """Equality operator between SplineInterpolation"""
-        return (super().__eq__(other) and
-                self.interpolation_order == other.interpolation_order and
-                self.smoothness_parameter == other.smoothness_parameter and
-                self.monotone == other.monotone)
+    def __eq__(self, other: Any) -> bool:
+        return (
+            super().__eq__(other)
+            and self.interpolation_order == other.interpolation_order
+            and self.smoothness_parameter == other.smoothness_parameter
+            and self.monotone == other.monotone
+        )

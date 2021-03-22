@@ -15,9 +15,9 @@ from ...representation import FData
 from ._utils import _get_figure_and_axes, _set_figure_layout
 
 
-class PhasePlanePlot:
+class ParametricPlot:
     """
-    Phase-Plane Plot visualization.
+    Parametric Plot visualization.
 
     This class contains the functionality in charge of plotting
     two different functions as coordinates, this can be done giving
@@ -47,7 +47,7 @@ class PhasePlanePlot:
         **kwargs: Any,
     ) -> Figure:
         """
-        Plot Phase-Plane graph.
+        ParametricPlot graph.
 
         Plot the functions as coordinates. If two functions are passed
         it will concatenate both into one only FData.
@@ -61,7 +61,7 @@ class PhasePlanePlot:
             ax: axis where the graphs are plotted. If None, see param fig.
             kwargs: optional arguments.
         Returns:
-            fig (figure object): figure object in which the phase-plane
+            fig (figure object): figure object in which the ParametricPlot
             graph will be plotted.
         """
         fig, axes = _get_figure_and_axes(chart, fig, ax)
@@ -92,7 +92,7 @@ class PhasePlanePlot:
                 "codomain or domain is not correct.",
             )
 
-        fig.suptitle("Phase-Plane Plot")
+        fig.suptitle("Parametric Plot")
         axes[0].set_xlabel("Function 1")
         axes[0].set_ylabel("Function 2")
 

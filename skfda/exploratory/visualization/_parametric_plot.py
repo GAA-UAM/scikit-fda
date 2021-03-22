@@ -80,7 +80,7 @@ class ParametricPlot:
             fig, axes = _set_figure_layout(
                 fig, axes, dim=2, n_axes=1,
             )
-            data_matrix = self.fd_final.data_matrix[0][:, 0]
+            data_matrix = self.fd_final.data_matrix[0]
             axes[0].plot(
                 data_matrix[:, 0].tolist(),
                 data_matrix[:, 1].tolist(),
@@ -93,7 +93,10 @@ class ParametricPlot:
             )
 
         fig.suptitle("Parametric Plot")
-        axes[0].set_xlabel("Function 1")
-        axes[0].set_ylabel("Function 2")
+        axes[0].set_xlabel(self.fdata1.coordinate_names[0])
+        if self.fdata2 is None:
+            axes[0].set_ylabel(self.fdata1.coordinate_names[1])
+        else:
+            axes[0].set_ylabel(self.fdata2.coordinate_names[0])
 
         return fig

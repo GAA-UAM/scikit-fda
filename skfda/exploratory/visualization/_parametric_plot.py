@@ -84,7 +84,6 @@ class ParametricPlot:
             fig, axes = _set_figure_layout(
                 fig, axes, dim=2, n_axes=1,
             )
-            #data_matrix = self.fd_final.data_matrix
             for data_matrix in self.fd_final.data_matrix:
                 axes[0].plot(
                     data_matrix[:, 0].tolist(),

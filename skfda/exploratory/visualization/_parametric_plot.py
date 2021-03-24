@@ -67,15 +67,11 @@ class ParametricPlot:
         fig, axes = _get_figure_and_axes(chart, fig, ax)
 
         if self.fdata2 is not None:
-            self.fd_final = self.fdata2.concatenate(
-                self.fdata1, as_coordinates=True,
+            self.fd_final = self.fdata1.concatenate(
+                self.fdata2, as_coordinates=True,
             )
-            x_label = self.fd_final.coordinate_names[1]
-            y_label = self.fd_final.coordinate_names[0]
         else:
             self.fd_final = self.fdata1
-            x_label = self.fd_final.coordinate_names[0]
-            y_label = self.fd_final.coordinate_names[1]
 
         if (
             self.fd_final.dim_domain == 1
@@ -100,7 +96,8 @@ class ParametricPlot:
             fig.suptitle(self.fd_final.dataset_name)
         else:
             fig.suptitle("Graph")
-        axes[0].set_xlabel(x_label)
-        axes[0].set_ylabel(y_label)
+
+        axes[0].set_xlabel(self.fd_final.coordinate_names[0])
+        axes[0].set_ylabel(self.fd_final.coordinate_names[1])
 
         return fig

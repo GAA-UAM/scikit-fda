@@ -50,7 +50,7 @@ class ParametricPlot:
         ParametricPlot graph.
 
         Plot the functions as coordinates. If two functions are passed
-        it will concatenate both into one only FData.
+        it will concatenate both as coordinates of a vector-valued FData.
         Args:
             chart: figure over with the graphs are plotted or axis over
                 where the graphs are plotted. If None and ax is also

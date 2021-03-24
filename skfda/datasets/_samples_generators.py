@@ -1,50 +1,69 @@
-import scipy.integrate
-from scipy.stats import multivariate_normal
-import sklearn.utils
+import itertools
+from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
+import sklearn.utils
+
+import scipy.integrate
+from scipy.stats import multivariate_normal
 
 from .. import FDataGrid
-from .._utils import _cartesian_product
+from .._utils import RandomStateLike, _cartesian_product, _to_grid_points
 from ..misc import covariances
 from ..preprocessing.registration import normalize_warping
+from ..representation._typing import DomainRangeLike, GridPointsLike
 from ..representation.interpolation import SplineInterpolation
 
+MeanCallable = Callable[[np.ndarray], np.ndarray]
+CovarianceCallable = Callable[[np.ndarray, np.ndarray], np.ndarray]
 
-def make_gaussian(n_samples: int = 100, *,
-                  grid_points,
-                  domain_range=None,
-                  mean=0, cov=None, noise: float = 0.,
-                  random_state=None):
-    """Generate Gaussian random fields.
+MeanLike = Union[float, np.ndarray, MeanCallable]
+CovarianceLike = Union[None, np.ndarray, CovarianceCallable]
 
-        Args:
-            n_samples: The total number of trajectories.
-            grid_points: Sample points for the evaluation grid of the
-                  Gaussian field.
-            mean: The mean function of the random field. Can be a callable
-                  accepting a vector with the locations, or a vector with
-                  appropriate size.
-            cov: The covariance function of the process. Can be a
-                  callable accepting two vectors with the locations, or a
-                  matrix with appropriate size. By default,
-                  the Brownian covariance function is used.
-            noise: Standard deviation of Gaussian noise added to the data.
-            random_state: Random state.
 
-        Returns:
-            :class:`FDataGrid` object comprising all the trajectories.
+def make_gaussian(
+    n_samples: int = 100,
+    *,
+    grid_points: GridPointsLike,
+    domain_range: Optional[DomainRangeLike] = None,
+    mean: MeanLike = 0,
+    cov: CovarianceLike = None,
+    noise: float = 0,
+    random_state: RandomStateLike = None,
+) -> FDataGrid:
+    """
+    Generate Gaussian random fields.
 
-        See also:
-            :func:`make_gaussian_process`: Simpler function for generating
-            Gaussian processes.
+    Args:
+        n_samples: The total number of trajectories.
+        grid_points: Sample points for the evaluation grid of the
+            Gaussian field.
+        domain_range: The domain range of the returned functional
+            observations.
+        mean: The mean function of the random field. Can be a callable
+            accepting a vector with the locations, or a vector with
+            appropriate size.
+        cov: The covariance function of the process. Can be a
+            callable accepting two vectors with the locations, or a
+            matrix with appropriate size. By default,
+            the Brownian covariance function is used.
+        noise: Standard deviation of Gaussian noise added to the data.
+        random_state: Random state.
+
+    Returns:
+        :class:`FDataGrid` object comprising all the trajectories.
+
+    See also:
+        :func:`make_gaussian_process`: Simpler function for generating
+        Gaussian processes.
 
     """
-
     random_state = sklearn.utils.check_random_state(random_state)
 
     if cov is None:
         cov = covariances.Brownian()
+
+    grid_points = _to_grid_points(grid_points)
 
     input_points = _cartesian_product(grid_points)
 
@@ -61,61 +80,85 @@ def make_gaussian(n_samples: int = 100, *,
     mu += np.ravel(mean)
 
     data_matrix = random_state.multivariate_normal(
-        mu.ravel(), covariance, n_samples)
+        mu.ravel(),
+        covariance,
+        n_samples,
+    )
 
     data_matrix = data_matrix.reshape(
-        [n_samples] + [len(t) for t in grid_points] + [-1])
+        [n_samples] + [len(t) for t in grid_points] + [-1],
+    )
 
-    return FDataGrid(grid_points=grid_points, data_matrix=data_matrix,
-                     domain_range=domain_range)
+    return FDataGrid(
+        grid_points=grid_points,
+        data_matrix=data_matrix,
+        domain_range=domain_range,
+    )
 
 
-def make_gaussian_process(n_samples: int = 100, n_features: int = 100, *,
-                          start: float = 0., stop: float = 1.,
-                          mean=0, cov=None, noise: float = 0.,
-                          random_state=None):
+def make_gaussian_process(
+    n_samples: int = 100,
+    n_features: int = 100,
+    *,
+    start: float = 0,
+    stop: float = 1,
+    mean: MeanLike = 0,
+    cov: CovarianceLike = None,
+    noise: float = 0,
+    random_state: RandomStateLike = None,
+) -> FDataGrid:
     """Generate Gaussian process trajectories.
 
-        Args:
-            n_samples: The total number of trajectories.
-            n_features: The total number of features (points of evaluation).
-            start: Starting point of the trajectories.
-            stop: Ending point of the trajectories.
-            mean: The mean function of the process. Can be a callable accepting
-                  a vector with the locations, or a vector with length
-                  ``n_features``.
-            cov: The covariance function of the process. Can be a
-                  callable accepting two vectors with the locations, or a
-                  matrix with size ``n_features`` x ``n_features``. By default,
-                  the Brownian covariance function is used.
-            noise: Standard deviation of Gaussian noise added to the data.
-            random_state: Random state.
+    Args:
+        n_samples: The total number of trajectories.
+        n_features: The total number of features (points of evaluation).
+        start: Starting point of the trajectories.
+        stop: Ending point of the trajectories.
+        mean: The mean function of the process. Can be a callable accepting
+              a vector with the locations, or a vector with length
+              ``n_features``.
+        cov: The covariance function of the process. Can be a
+              callable accepting two vectors with the locations, or a
+              matrix with size ``n_features`` x ``n_features``. By default,
+              the Brownian covariance function is used.
+        noise: Standard deviation of Gaussian noise added to the data.
+        random_state: Random state.
 
-        Returns:
-            :class:`FDataGrid` object comprising all the trajectories.
+    Returns:
+        :class:`FDataGrid` object comprising all the trajectories.
 
-        See also:
-            :func:`make_gaussian`: More general function that allows to
-            select the points of evaluation and to
-            generate data in higer dimensions.
+    See also:
+        :func:`make_gaussian`: More general function that allows to
+        select the points of evaluation and to
+        generate data in higer dimensions.
 
     """
-
     t = np.linspace(start, stop, n_features)
 
-    return make_gaussian(n_samples=n_samples,
-                         grid_points=[t],
-                         mean=mean, cov=cov,
-                         noise=noise,
-                         random_state=random_state)
+    return make_gaussian(
+        n_samples=n_samples,
+        grid_points=[t],
+        mean=mean,
+        cov=cov,
+        noise=noise,
+        random_state=random_state,
+    )
 
 
-def make_sinusoidal_process(n_samples: int = 15, n_features: int = 100, *,
-                            start: float = 0., stop: float = 1.,
-                            period: float = 1., phase_mean: float = 0.,
-                            phase_std: float = .6, amplitude_mean: float = 1.,
-                            amplitude_std: float = .05, error_std: float = .2,
-                            random_state=None):
+def make_sinusoidal_process(
+    n_samples: int = 15,
+    n_features: int = 100,
+    *,
+    start: float = 0,
+    stop: float = 1,
+    period: float = 1,
+    phase_mean: float = 0,
+    phase_std: float = 0.6,
+    amplitude_mean: float = 1,
+    amplitude_std: float = 0.05,
+    error_std: float = 0.2,
+    random_state: RandomStateLike = None,
+) -> FDataGrid:
     r"""Generate sinusoidal proccess.
 
     Each sample :math:`x_i(t)` is generated as:
@@ -146,16 +189,20 @@ def make_sinusoidal_process(n_samples: int = 15, n_features: int = 100, *,
         :class:`FDataGrid` object comprising all the samples.
 
     """
-
     random_state = sklearn.utils.check_random_state(random_state)
 
     t = np.linspace(start, stop, n_features)
 
-    alpha = np.diag(random_state.normal(amplitude_mean, amplitude_std,
-                                        n_samples))
+    alpha = np.diag(random_state.normal(
+        amplitude_mean,
+        amplitude_std,
+        n_samples,
+    ))
 
-    phi = np.outer(random_state.normal(phase_mean, phase_std, n_samples),
-                   np.ones(n_features))
+    phi = np.outer(
+        random_state.normal(phase_mean, phase_std, n_samples),
+        np.ones(n_features),
+    )
 
     error = random_state.normal(0, error_std, (n_samples, n_features))
 
@@ -164,10 +211,17 @@ def make_sinusoidal_process(n_samples: int = 15, n_features: int = 100, *,
     return FDataGrid(grid_points=t, data_matrix=y)
 
 
-def make_multimodal_landmarks(n_samples: int = 15, *, n_modes: int = 1,
-                              dim_domain: int = 1, dim_codomain: int = 1,
-                              start: float = -1, stop: float = 1,
-                              std: float = .05, random_state=None):
+def make_multimodal_landmarks(
+    n_samples: int = 15,
+    *,
+    n_modes: int = 1,
+    dim_domain: int = 1,
+    dim_codomain: int = 1,
+    start: float = -1,
+    stop: float = 1,
+    std: float = 0.05,
+    random_state: RandomStateLike = None,
+) -> np.ndarray:
     """Generate landmarks points.
 
     Used by :func:`make_multimodal_samples` to generate the location of the
@@ -196,30 +250,43 @@ def make_multimodal_landmarks(n_samples: int = 15, *, n_modes: int = 1,
         :class:`np.ndarray` with the location of the modes, where the component
         (i,j,k) corresponds to the mode k of the image dimension j of the
         sample i.
-    """
 
+    """
     random_state = sklearn.utils.check_random_state(random_state)
 
     modes_location = np.linspace(start, stop, n_modes + 2)[1:-1]
-    modes_location = np.repeat(modes_location[:, np.newaxis], dim_domain,
-                               axis=1)
+    modes_location = np.repeat(
+        modes_location[:, np.newaxis],
+        dim_domain,
+        axis=1,
+    )
 
-    variation = random_state.multivariate_normal((0,) * dim_domain,
-                                                 std * np.eye(dim_domain),
-                                                 size=(n_samples,
-                                                       dim_codomain,
-                                                       n_modes))
+    variation = random_state.multivariate_normal(
+        (0,) * dim_domain,
+        std * np.eye(dim_domain),
+        size=(n_samples, dim_codomain, n_modes),
+    )
 
     return modes_location + variation
 
 
-def make_multimodal_samples(n_samples: int = 15, *, n_modes: int = 1,
-                            points_per_dim: int = 100, dim_domain: int = 1,
-                            dim_codomain: int = 1, start: float = -1,
-                            stop: float = 1., std: float = .05,
-                            mode_std: float = .02, noise: float = .0,
-                            modes_location=None, random_state=None):
-    r"""Generate multimodal samples.
+def make_multimodal_samples(
+    n_samples: int = 15,
+    *,
+    n_modes: int = 1,
+    points_per_dim: int = 100,
+    dim_domain: int = 1,
+    dim_codomain: int = 1,
+    start: float = -1,
+    stop: float = 1,
+    std: float = 0.05,
+    mode_std: float = 0.02,
+    noise: float = 0,
+    modes_location: Optional[Sequence[float]] = None,
+    random_state: RandomStateLike = None,
+) -> FDataGrid:
+    r"""
+    Generate multimodal samples.
 
     Each sample :math:`x_i(t)` is proportional to a gaussian mixture, generated
     as the sum of multiple pdf of multivariate normal distributions with
@@ -256,26 +323,28 @@ def make_multimodal_samples(n_samples: int = 15, *, n_modes: int = 1,
 
     Returns:
         :class:`FDataGrid` object comprising all the samples.
-    """
 
+    """
     random_state = sklearn.utils.check_random_state(random_state)
 
     if modes_location is None:
 
-        location = make_multimodal_landmarks(n_samples=n_samples,
-                                             n_modes=n_modes,
-                                             dim_domain=dim_domain,
-                                             dim_codomain=dim_codomain,
-                                             start=start,
-                                             stop=stop,
-                                             std=std,
-                                             random_state=random_state)
+        location = make_multimodal_landmarks(
+            n_samples=n_samples,
+            n_modes=n_modes,
+            dim_domain=dim_domain,
+            dim_codomain=dim_codomain,
+            start=start,
+            stop=stop,
+            std=std,
+            random_state=random_state,
+        )
 
     else:
-        location = np.asarray(modes_location)
 
-        shape = (n_samples, dim_codomain, n_modes, dim_domain)
-        location = location.reshape(shape)
+        location = np.asarray(modes_location).reshape(
+            (n_samples, dim_codomain, n_modes, dim_domain),
+        )
 
     axis = np.linspace(start, stop, points_per_dim)
 
@@ -299,13 +368,16 @@ def make_multimodal_samples(n_samples: int = 15, *, n_modes: int = 1,
     # Covariance matrix of the samples
     cov = mode_std * np.eye(dim_domain)
 
-    import itertools
-    for i, j, k in itertools.product(range(n_samples),
-                                     range(dim_codomain),
-                                     range(n_modes)):
-        data_matrix[i, ..., j] += multivariate_normal.pdf(evaluation_grid,
-                                                          location[i, j, k],
-                                                          cov)
+    for i, j, k in itertools.product(
+        range(n_samples),
+        range(dim_codomain),
+        range(n_modes),
+    ):
+        data_matrix[i, ..., j] += multivariate_normal.pdf(
+            evaluation_grid,
+            location[i, j, k],
+            cov,
+        )
 
     # Constant to make modes value aprox. 1
     data_matrix *= (2 * np.pi * mode_std) ** (dim_domain / 2)
@@ -315,16 +387,23 @@ def make_multimodal_samples(n_samples: int = 15, *, n_modes: int = 1,
     return FDataGrid(grid_points=grid_points, data_matrix=data_matrix)
 
 
-def make_random_warping(n_samples: int = 15, n_features: int = 100, *,
-                        start: float = 0., stop: float = 1., sigma: float = 1.,
-                        shape_parameter: float = 50, n_random: int = 4,
-                        random_state=None):
+def make_random_warping(
+    n_samples: int = 15,
+    n_features: int = 100,
+    *,
+    start: float = 0,
+    stop: float = 1,
+    sigma: float = 1,
+    shape_parameter: float = 50,
+    n_random: int = 4,
+    random_state: RandomStateLike = None,
+) -> FDataGrid:
     r"""Generate random warping functions.
 
-     Let :math:`v(t)` be a randomly generated function defined in :math:`[0,1]`
+    Let :math:`v(t)` be a randomly generated function defined in :math:`[0,1]`
 
-     .. math::
-        v(t) = \sum_{j=0}^{N} a_j \sin(\frac{2 \pi j}{K}t) + b_j
+    .. math::
+        sv(t) = \sum_{j=0}^{N} a_j \sin(\frac{2 \pi j}{K}t) + b_j
         \cos(\frac{2 \pi j}{K}t)
 
     where :math:`a_j, b_j \sim N(0, \sigma)`.
@@ -357,9 +436,9 @@ def make_random_warping(n_samples: int = 15, n_features: int = 100, *,
         random_state: Random state.
 
     Returns:
-        :class:`FDataGrid` object comprising all the samples.
+        Object comprising all the samples.
 
-     """
+    """
     # Based on the original implementation of J. D. Tucker in the
     # package python_fdasrsf <https://github.com/jdtuck/fdasrsf_python>.
 
@@ -376,8 +455,10 @@ def make_random_warping(n_samples: int = 15, n_features: int = 100, *,
     time = np.outer(np.linspace(0, 1, n_features), np.ones(n_samples))
 
     # Operates trasposed to broadcast dimensions
-    v = np.outer(np.ones(n_features),
-                 random_state.normal(scale=sqrt_sigma, size=n_samples))
+    v = np.outer(
+        np.ones(n_features),
+        random_state.normal(scale=sqrt_sigma, size=n_samples),
+    )
 
     for j in range(2, 2 + n_random):
         alpha = random_state.normal(scale=sqrt_sigma, size=(2, n_samples))
@@ -397,11 +478,17 @@ def make_random_warping(n_samples: int = 15, n_features: int = 100, *,
     np.square(v, out=v)
 
     # Creation of FDataGrid in the corresponding domain
-    data_matrix = scipy.integrate.cumtrapz(v, dx=1. / n_features, initial=0,
-                                           axis=0)
+    data_matrix = scipy.integrate.cumtrapz(
+        v,
+        dx=1 / n_features,
+        initial=0,
+        axis=0,
+    )
     warping = FDataGrid(data_matrix.T, grid_points=time[:, 0])
     warping = normalize_warping(warping, domain_range=(start, stop))
-    warping.interpolation = SplineInterpolation(interpolation_order=3,
-                                                monotone=True)
+    warping.interpolation = SplineInterpolation(
+        interpolation_order=3,
+        monotone=True,
+    )
 
     return warping

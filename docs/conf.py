@@ -244,6 +244,11 @@ autosummary_generate = True
 autodoc_typehints = "description"
 napoleon_use_rtype = True
 
+autodoc_type_aliases = {
+    "ArrayLike": "ArrayLike",
+    "GridPointsLike": "Union[ArrayLike, Sequence[ArrayLike]]",
+}
+
 # Napoleon fix for attributes
 # Taken from
 # https://michaelgoerz.net/notes/extending-sphinx-napoleon-docstring-sections.html

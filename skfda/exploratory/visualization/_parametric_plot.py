@@ -97,7 +97,14 @@ class ParametricPlot:
         else:
             fig.suptitle("Graph")
 
-        axes[0].set_xlabel(self.fd_final.coordinate_names[0])
+        if self.fd_final.coordinate_names[0] is None:
+            axes[0].set_xlabel("Function 1")
+        else:
+            axes[0].set_xlabel(self.fd_final.coordinate_names[0])
+
+        if self.fd_final.coordinate_names[1] is None:
+            axes[0].set_ylabel("Function 2")
+        else:
         axes[0].set_ylabel(self.fd_final.coordinate_names[1])
 
         return fig

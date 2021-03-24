@@ -1,4 +1,4 @@
-"""Phase-Plane Plot Module.
+"""Parametric Plot Module.
 
 This module contains the functionality in charge of plotting
 two different functions as coordinates, this can be done giving
@@ -47,10 +47,10 @@ class ParametricPlot:
         **kwargs: Any,
     ) -> Figure:
         """
-        ParametricPlot graph.
+        Parametric Plot graph.
 
         Plot the functions as coordinates. If two functions are passed
-        it will concatenate both into one only FData.
+        it will concatenate both as coordinates of a vector-valued FData.
         Args:
             chart: figure over with the graphs are plotted or axis over
                 where the graphs are plotted. If None and ax is also
@@ -96,7 +96,10 @@ class ParametricPlot:
                 "codomain or domain is not correct.",
             )
 
-        fig.suptitle("Parametric Plot")
+        if self.fd_final.dataset_name is not None:
+            fig.suptitle(self.fd_final.dataset_name)
+        else:
+            fig.suptitle("Graph")
         axes[0].set_xlabel(x_label)
         axes[0].set_ylabel(y_label)
 

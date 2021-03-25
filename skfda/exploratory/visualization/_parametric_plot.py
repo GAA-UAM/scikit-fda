@@ -80,8 +80,10 @@ class ParametricPlot:
             fig, axes = _set_figure_layout(
                 fig, axes, dim=2, n_axes=1,
             )
+            ax = axes[0]
+
             for data_matrix in self.fd_final.data_matrix:
-                axes[0].plot(
+                ax.plot(
                     data_matrix[:, 0].tolist(),
                     data_matrix[:, 1].tolist(),
                     **kwargs,
@@ -94,17 +96,15 @@ class ParametricPlot:
 
         if self.fd_final.dataset_name is not None:
             fig.suptitle(self.fd_final.dataset_name)
-        else:
-            fig.suptitle("Graph")
 
         if self.fd_final.coordinate_names[0] is None:
-            axes[0].set_xlabel("Function 1")
+            ax.set_xlabel("Function 1")
         else:
-            axes[0].set_xlabel(self.fd_final.coordinate_names[0])
+            ax.set_xlabel(self.fd_final.coordinate_names[0])
 
         if self.fd_final.coordinate_names[1] is None:
-            axes[0].set_ylabel("Function 2")
+            ax.set_ylabel("Function 2")
         else:
-            axes[0].set_ylabel(self.fd_final.coordinate_names[1])
+            ax.set_ylabel(self.fd_final.coordinate_names[1])
 
         return fig

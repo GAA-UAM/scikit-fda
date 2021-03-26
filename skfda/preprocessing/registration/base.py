@@ -1,17 +1,26 @@
 # -*- coding: utf-8 -*-
-"""Registration method.
+"""Registration methods base class.
+
 This module contains the abstract base class for all registration methods.
+
 """
 
 from abc import ABC
+
 from sklearn.base import BaseEstimator, TransformerMixin
+
 from ... import FData
 
-class RegistrationTransformer(ABC, BaseEstimator, TransformerMixin):
+
+class RegistrationTransformer(
+    ABC,
+    BaseEstimator,  # type: ignore
+    TransformerMixin,  # type: ignore
+):
     """Base class for the registration methods."""
 
-    def score(self, X: FData, y=None):
-        r"""Returns the percentage of total variation removed.
+    def score(self, X: FData, y: None = None) -> float:
+        r"""Return the percentage of total variation removed.
 
         Computes the squared multiple correlation index of the proportion of
         the total variation due to phase, defined as:

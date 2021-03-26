@@ -4,7 +4,15 @@ Module to interpolate functional data objects.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Callable, Sequence, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 
@@ -69,7 +77,7 @@ class _SplineList(abc.ABC):
     def evaluate(
         self,
         fdata: FData,
-        eval_points: np.ndarray,
+        eval_points: Union[np.ndarray, Iterable[np.ndarray]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -77,6 +85,9 @@ class _SplineList(abc.ABC):
         res: np.ndarray
 
         if aligned:
+
+            assert isinstance(eval_points, np.ndarray)
+
             # Points evaluated inside the domain
             res = np.apply_along_axis(
                 self._evaluate_codomain,
@@ -489,10 +500,10 @@ class SplineInterpolation(Evaluator):
             smoothness_parameter=self.smoothness_parameter,
         )
 
-    def evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102
         self,
         fdata: FData,
-        eval_points: np.ndarray,
+        eval_points: Union[np.ndarray, Iterable[np.ndarray]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:

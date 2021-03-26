@@ -8,10 +8,10 @@ evaluation of FDataGrids.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterable, Union, overload
 
 import numpy as np
-from typing_extensions import Protocol
+from typing_extensions import Literal, Protocol
 
 if TYPE_CHECKING:
     from . import FData
@@ -29,16 +29,48 @@ class Evaluator(ABC):
 
     The evaluator is called internally by :func:`evaluate`.
 
-    Should implement the methods :func:`evaluate` and
-    :func:`evaluate_composed`.
-
     """
 
     @abstractmethod
-    def evaluate(
+    def _evaluate(
+        self,
+        fdata: FData,
+        eval_points: Union[np.ndarray, Iterable[np.ndarray]],
+        *,
+        aligned: bool = True,
+    ) -> np.ndarray:
+        """
+        Evaluation method.
+
+        Must be overriden in subclasses.
+
+        """
+        pass
+
+    @overload
+    def __call__(
         self,
         fdata: FData,
         eval_points: np.ndarray,
+        *,
+        aligned: Literal[True] = True,
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def __call__(
+        self,
+        fdata: FData,
+        eval_points: Iterable[np.ndarray],
+        *,
+        aligned: Literal[False],
+    ) -> np.ndarray:
+        pass
+
+    def __call__(
+        self,
+        fdata: FData,
+        eval_points: Union[np.ndarray, Iterable[np.ndarray]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -66,7 +98,11 @@ class Evaluator(ABC):
                 j-th evaluation point.
 
         """
-        pass
+        return self._evaluate(
+            fdata=fdata,
+            eval_points=eval_points,
+            aligned=aligned,
+        )
 
     def __repr__(self) -> str:
         return f"{type(self)}()"
@@ -82,7 +118,7 @@ class EvaluateFunction(Protocol):
     def __call__(
         self,
         fdata: FData,
-        eval_points: np.ndarray,
+        eval_points: Union[np.ndarray, Iterable[np.ndarray]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -125,10 +161,10 @@ class GenericEvaluator(Evaluator):
     def __init__(self, evaluate_function: EvaluateFunction) -> None:
         self.evaluate_function = evaluate_function
 
-    def evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102
         self,
         fdata: FData,
-        eval_points: np.ndarray,
+        eval_points: Union[np.ndarray, Iterable[np.ndarray]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:

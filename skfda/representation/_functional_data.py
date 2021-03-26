@@ -18,21 +18,31 @@ from typing import (
     Sequence,
     TypeVar,
     Union,
+    cast,
+    overload,
 )
 
 import numpy as np
 import pandas.api.extensions
+from typing_extensions import Literal
 
 from .._utils import _evaluate_grid, _reshape_eval_points
 from ._typing import DomainRange, LabelTuple, LabelTupleLike
 from .evaluator import Evaluator
-from .extrapolation import _parse_extrapolation
+from .extrapolation import ExtrapolationLike, _parse_extrapolation
 
 if TYPE_CHECKING:
     from . import FDataGrid, FDataBasis
     from .basis import Basis
 
 T = TypeVar('T', bound='FData')
+
+EvalPointsType = Union[
+    np.ndarray,
+    Iterable[np.ndarray],
+    Sequence[np.ndarray],
+    Iterable[Sequence[np.ndarray]],
+]
 
 
 class FData(  # noqa: WPS214
@@ -57,7 +67,7 @@ class FData(  # noqa: WPS214
     def __init__(
         self,
         *,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
         dataset_name: Optional[str] = None,
         dataset_label: Optional[str] = None,
         axes_labels: Optional[LabelTupleLike] = None,
@@ -245,7 +255,7 @@ class FData(  # noqa: WPS214
         return self._extrapolation
 
     @extrapolation.setter
-    def extrapolation(self, value: Optional[Union[str, Evaluator]]) -> None:
+    def extrapolation(self, value: Optional[ExtrapolationLike]) -> None:
         """Set the type of extrapolation."""
         self._extrapolation = _parse_extrapolation(value)
 
@@ -331,7 +341,7 @@ class FData(  # noqa: WPS214
     @abstractmethod
     def _evaluate(
         self,
-        eval_points: np.ndarray,
+        eval_points: Union[np.ndarray, Sequence[np.ndarray]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -358,12 +368,60 @@ class FData(  # noqa: WPS214
         """
         pass
 
+    @overload
     def evaluate(
         self,
         eval_points: np.ndarray,
         *,
         derivative: int = 0,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[False] = False,
+        aligned: Literal[True] = True,
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def evaluate(
+        self,
+        eval_points: Iterable[np.ndarray],
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[False] = False,
+        aligned: Literal[False],
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def evaluate(
+        self,
+        eval_points: Sequence[np.ndarray],
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[True],
+        aligned: Literal[True] = True,
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def evaluate(
+        self,
+        eval_points: Iterable[Sequence[np.ndarray]],
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[True],
+        aligned: Literal[False],
+    ) -> np.ndarray:
+        pass
+
+    def evaluate(
+        self,
+        eval_points: EvalPointsType,
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
         grid: bool = False,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -409,7 +467,8 @@ class FData(  # noqa: WPS214
             )
 
         if grid:  # Evaluation of a grid performed in auxiliar function
-            return _evaluate_grid(
+
+            return _evaluate_grid(  # type: ignore
                 eval_points,
                 evaluate_method=self.evaluate,
                 n_samples=self.n_samples,
@@ -424,6 +483,11 @@ class FData(  # noqa: WPS214
         else:
             # Gets the function to perform extrapolation or None
             extrapolation = _parse_extrapolation(extrapolation)
+
+        eval_points = cast(
+            Union[np.ndarray, Sequence[np.ndarray]],
+            eval_points,
+        )
 
         # Convert to array and check dimensions of eval points
         eval_points = _reshape_eval_points(
@@ -461,7 +525,7 @@ class FData(  # noqa: WPS214
                     aligned=aligned,
                 )
 
-                res_extrapolation = extrapolation.evaluate(
+                res_extrapolation = extrapolation(  # type: ignore
                     self,
                     eval_points_extrapolation,
                     aligned=aligned,
@@ -480,12 +544,72 @@ class FData(  # noqa: WPS214
             aligned=aligned,
         )
 
+    @overload
     def __call__(
         self,
         eval_points: np.ndarray,
         *,
         derivative: int = 0,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[False] = False,
+        aligned: Literal[True] = True,
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def __call__(
+        self,
+        eval_points: Iterable[np.ndarray],
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[False] = False,
+        aligned: Literal[False],
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def __call__(
+        self,
+        eval_points: Sequence[np.ndarray],
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[True],
+        aligned: Literal[True] = True,
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def __call__(
+        self,
+        eval_points: Iterable[Sequence[np.ndarray]],
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[True],
+        aligned: Literal[False],
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def __call__(
+        self,
+        eval_points: EvalPointsType,
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: bool = False,
+        aligned: bool = True,
+    ) -> np.ndarray:
+        pass
+
+    def __call__(
+        self,
+        eval_points: EvalPointsType,
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
         grid: bool = False,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -519,7 +643,7 @@ class FData(  # noqa: WPS214
             function at the values specified in eval_points.
 
         """
-        return self.evaluate(
+        return self.evaluate(  # type: ignore
             eval_points,
             derivative=derivative,
             extrapolation=extrapolation,
@@ -546,8 +670,8 @@ class FData(  # noqa: WPS214
         shifts: Union[float, np.ndarray],
         *,
         restrict_domain: bool = False,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
-        eval_points: np.ndarray = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        eval_points: Optional[np.ndarray] = None,
     ) -> T:
         """Perform a shift of the curves.
 
@@ -599,7 +723,7 @@ class FData(  # noqa: WPS214
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
     ) -> T:
         """Make a copy of the object."""
         pass
@@ -675,7 +799,7 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def to_grid(self, grid_points: np.ndarray = None) -> FDataGrid:
+    def to_grid(self, grid_points: Optional[np.ndarray] = None) -> FDataGrid:
         """Return the discrete representation of the object.
 
         Args:
@@ -735,7 +859,7 @@ class FData(  # noqa: WPS214
         self: T,
         fd: T,
         *,
-        eval_points: np.ndarray = None,
+        eval_points: Optional[np.ndarray] = None,
     ) -> FData:
         """Composition of functions.
 
@@ -766,10 +890,10 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def __eq__(self, other: Any) -> np.ndarray:
+    def __eq__(self, other: Any) -> np.ndarray:  # type: ignore[override]
         pass
 
-    def __ne__(self, other: Any) -> np.ndarray:
+    def __ne__(self, other: Any) -> np.ndarray:  # type: ignore[override]
         """Return for `self != other` (element-wise in-equality)."""
         result = self.__eq__(other)
         if result is NotImplemented:

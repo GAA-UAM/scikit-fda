@@ -8,6 +8,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Iterable,
     List,
     Optional,
     Sequence,
@@ -422,7 +423,7 @@ def _evaluate_grid(
 
 @overload
 def _evaluate_grid(
-    axes: Sequence[Sequence[np.ndarray]],
+    axes: Iterable[Sequence[np.ndarray]],
     *,
     evaluate_method: EvaluateMethod,
     n_samples: int,
@@ -434,22 +435,8 @@ def _evaluate_grid(
     pass
 
 
-@overload
 def _evaluate_grid(  # noqa: WPS234
-    axes: Sequence[Union[np.ndarray, Sequence[np.ndarray]]],
-    *,
-    evaluate_method: EvaluateMethod,
-    n_samples: int,
-    dim_domain: int,
-    dim_codomain: int,
-    extrapolation: Optional[ExtrapolationLike] = None,
-    aligned: bool = True,
-) -> np.ndarray:
-    pass
-
-
-def _evaluate_grid(  # noqa: WPS234
-    axes: Sequence[Union[np.ndarray, Sequence[np.ndarray]]],
+    axes: Union[Sequence[np.ndarray], Iterable[Sequence[np.ndarray]]],
     *,
     evaluate_method: EvaluateMethod,
     n_samples: int,
@@ -513,14 +500,9 @@ def _evaluate_grid(  # noqa: WPS234
 
     else:
 
-        axes_per_sample = cast(Sequence[Sequence[np.ndarray]], axes)
+        axes_per_sample = cast(Iterable[Sequence[np.ndarray]], axes)
 
         axes_per_sample = list(axes_per_sample)
-
-        if len(axes) != n_samples:
-            raise ValueError(
-                "Should be provided a list of axis per sample",
-            )
 
         eval_points_tuple, shape_tuple = zip(
             *[
@@ -528,6 +510,11 @@ def _evaluate_grid(  # noqa: WPS234
                 for a in axes_per_sample
             ],
         )
+
+        if len(eval_points_tuple) != n_samples:
+            raise ValueError(
+                "Should be provided a list of axis per sample",
+            )
 
         eval_points = _to_array_maybe_ragged(eval_points_tuple)
 

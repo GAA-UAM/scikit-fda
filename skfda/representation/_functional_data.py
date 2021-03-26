@@ -39,8 +39,9 @@ T = TypeVar('T', bound='FData')
 
 EvalPointsType = Union[
     np.ndarray,
+    Iterable[np.ndarray],
     Sequence[np.ndarray],
-    Sequence[Sequence[np.ndarray]],
+    Iterable[Sequence[np.ndarray]],
 ]
 
 
@@ -337,24 +338,6 @@ class FData(  # noqa: WPS214
 
         return res
 
-    @overload
-    def _evaluate(
-        self,
-        eval_points: np.ndarray,
-        *,
-        aligned: Literal[True] = True,
-    ) -> np.ndarray:
-        pass
-
-    @overload
-    def _evaluate(
-        self,
-        eval_points: Sequence[np.ndarray],
-        *,
-        aligned: Literal[False],
-    ) -> np.ndarray:
-        pass
-
     @abstractmethod
     def _evaluate(
         self,
@@ -400,7 +383,7 @@ class FData(  # noqa: WPS214
     @overload
     def evaluate(
         self,
-        eval_points: Sequence[np.ndarray],
+        eval_points: Iterable[np.ndarray],
         *,
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
@@ -424,7 +407,7 @@ class FData(  # noqa: WPS214
     @overload
     def evaluate(
         self,
-        eval_points: Sequence[Sequence[np.ndarray]],
+        eval_points: Iterable[Sequence[np.ndarray]],
         *,
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
@@ -485,7 +468,7 @@ class FData(  # noqa: WPS214
 
         if grid:  # Evaluation of a grid performed in auxiliar function
 
-            return _evaluate_grid(
+            return _evaluate_grid(  # type: ignore
                 eval_points,
                 evaluate_method=self.evaluate,
                 n_samples=self.n_samples,
@@ -542,7 +525,7 @@ class FData(  # noqa: WPS214
                     aligned=aligned,
                 )
 
-                res_extrapolation = extrapolation.evaluate(
+                res_extrapolation = extrapolation(  # type: ignore
                     self,
                     eval_points_extrapolation,
                     aligned=aligned,
@@ -576,7 +559,7 @@ class FData(  # noqa: WPS214
     @overload
     def __call__(
         self,
-        eval_points: Sequence[np.ndarray],
+        eval_points: Iterable[np.ndarray],
         *,
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
@@ -600,7 +583,7 @@ class FData(  # noqa: WPS214
     @overload
     def __call__(
         self,
-        eval_points: Sequence[Sequence[np.ndarray]],
+        eval_points: Iterable[Sequence[np.ndarray]],
         *,
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
@@ -660,7 +643,7 @@ class FData(  # noqa: WPS214
             function at the values specified in eval_points.
 
         """
-        return self.evaluate(
+        return self.evaluate(  # type: ignore
             eval_points,
             derivative=derivative,
             extrapolation=extrapolation,

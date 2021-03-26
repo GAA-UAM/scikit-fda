@@ -3,7 +3,16 @@ from __future__ import annotations
 import copy
 import warnings
 from builtins import isinstance
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 import pandas.api.extensions
@@ -242,7 +251,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
     def _evaluate(
         self,
-        eval_points: Union[np.ndarray, Sequence[np.ndarray]],
+        eval_points: Union[np.ndarray, Iterable[np.ndarray]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:

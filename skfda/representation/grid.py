@@ -10,7 +10,16 @@ from __future__ import annotations
 import copy
 import numbers
 import warnings
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import findiff
 import numpy as np
@@ -385,12 +394,12 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def _evaluate(
         self,
-        eval_points: Union[np.ndarray, Sequence[np.ndarray]],
+        eval_points: Union[np.ndarray, Iterable[np.ndarray]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
 
-        return self.interpolation.evaluate(
+        return self.interpolation(  # type: ignore
             self,
             eval_points,
             aligned=aligned,

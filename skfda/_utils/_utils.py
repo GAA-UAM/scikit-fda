@@ -36,7 +36,7 @@ from ..representation.extrapolation import ExtrapolationLike
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
 
 if TYPE_CHECKING:
-    from ..representation import FData
+    from ..representation import FData, FDataGrid
     from ..representation.basis import Basis
 
 
@@ -69,12 +69,11 @@ class _FDataCallable():
                               n_samples=new_nsamples)
 
 
-def check_is_univariate(fd):
-    """Checks if an FData is univariate and raises an error
+def check_is_univariate(fd: FData) -> None:
+    """Check if an FData is univariate and raises an error.
 
     Args:
-        fd (:class:`~skfda.FData`): Functional object to check if is
-            univariate.
+        fd: Functional object to check if is univariate.
 
     Raises:
         ValueError: If it is not univariate, i.e., `fd.dim_domain != 1` or
@@ -82,16 +81,29 @@ def check_is_univariate(fd):
 
     """
     if fd.dim_domain != 1 or fd.dim_codomain != 1:
-        raise ValueError(f"The functional data must be univariate, i.e., " +
-                         f"with dim_domain=1 " +
-                         (f"" if fd.dim_domain == 1
-                          else f"(currently is {fd.dim_domain}) ") +
-                         f"and dim_codomain=1 " +
-                         (f"" if fd.dim_codomain == 1 else
-                          f"(currently is  {fd.dim_codomain})"))
+
+        domain_str = (
+            "" if fd.dim_domain == 1
+            else f"(currently is {fd.dim_domain}) "
+        )
+
+        codomain_str = (
+            "" if fd.dim_codomain == 1
+            else f"(currently is  {fd.dim_codomain})"
+        )
+
+        raise ValueError(
+            f"The functional data must be univariate, i.e., "
+            f"with dim_domain=1 {domain_str}"
+            f"and dim_codomain=1 {codomain_str}",
+        )
 
 
-def _to_grid(X, y, eval_points=None):
+def _to_grid(
+    X: FData,
+    y: FData,
+    eval_points: Optional[np.ndarray] = None,
+) -> Tuple[FDataGrid, FDataGrid]:
     """Transform a pair of FDatas in grids to perform calculations."""
 
     from .. import FDataGrid

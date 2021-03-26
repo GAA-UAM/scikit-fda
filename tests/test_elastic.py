@@ -184,12 +184,12 @@ class TestElasticRegistration(unittest.TestCase):
         with np.testing.assert_raises(ValueError):
             reg.transform(self.unimodal_samples[0])
 
-    def test_score(self):
-        """Test score method of the transformer"""
+    def test_score(self) -> None:
+        """Test score method of the transformer."""
         reg = ElasticRegistration()
         reg.fit(self.unimodal_samples)
         score = reg.score(self.unimodal_samples)
-        np.testing.assert_almost_equal(score,  0.9994225)
+        np.testing.assert_almost_equal(score, 0.999389)
 
     def test_warping_mean(self):
         warping = make_random_warping(start=-1, random_state=0)

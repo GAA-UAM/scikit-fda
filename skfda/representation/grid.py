@@ -385,7 +385,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def _evaluate(
         self,
-        eval_points: np.ndarray,
+        eval_points: Union[np.ndarray, Sequence[np.ndarray]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:

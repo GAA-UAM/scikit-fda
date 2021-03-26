@@ -29,9 +29,6 @@ class Evaluator(ABC):
 
     The evaluator is called internally by :func:`evaluate`.
 
-    Should implement the methods :func:`evaluate` and
-    :func:`evaluate_composed`.
-
     """
 
     @abstractmethod

@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, Any, Optional, Sequence, Type, TypeVar, Union
 import numpy as np
 import pandas.api.extensions
 
+from skfda._utils._utils import _to_array_maybe_ragged
+
 from ..._utils import _check_array_key, _int_to_real, constants
 from .. import grid
 from .._functional_data import FData
@@ -240,12 +242,14 @@ class FDataBasis(FData):  # noqa: WPS214
 
     def _evaluate(
         self,
-        eval_points: np.ndarray,
+        eval_points: Union[np.ndarray, Sequence[np.ndarray]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
 
         if aligned:
+
+            assert isinstance(eval_points, np.ndarray)
 
             # Each row contains the values of one element of the basis
             basis_values = self.basis.evaluate(eval_points)
@@ -256,17 +260,12 @@ class FDataBasis(FData):  # noqa: WPS214
                 (self.n_samples, len(eval_points), self.dim_codomain),
             )
 
-        res_matrix = np.empty(
-            (self.n_samples, eval_points.shape[1], self.dim_codomain),
-        )
+        res_list = [
+            np.sum((c * self.basis.evaluate(p).T).T, axis=0)
+            for c, p in zip(self.coefficients, eval_points)
+        ]
 
-        for i in range(self.n_samples):
-            basis_values = self.basis.evaluate(eval_points[i])
-
-            values = self.coefficients[i] * basis_values.T
-            np.sum(values.T, axis=0, out=res_matrix[i])
-
-        return res_matrix
+        return _to_array_maybe_ragged(res_list)
 
     def shift(
         self: T,

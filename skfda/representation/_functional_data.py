@@ -879,7 +879,7 @@ class FData(  # noqa: WPS214
         """Return self[key]."""
         pass
 
-    def equals(self, other: Any) -> bool:
+    def equals(self, other: object) -> bool:
         """Whole object equality."""
         return (
             isinstance(other, type(self))  # noqa: WPS222
@@ -890,10 +890,10 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def __eq__(self, other: Any) -> np.ndarray:  # type: ignore[override]
+    def __eq__(self, other: object) -> np.ndarray:  # type: ignore[override]
         pass
 
-    def __ne__(self, other: Any) -> np.ndarray:  # type: ignore[override]
+    def __ne__(self, other: object) -> np.ndarray:  # type: ignore[override]
         """Return for `self != other` (element-wise in-equality)."""
         result = self.__eq__(other)
         if result is NotImplemented:

@@ -674,11 +674,8 @@ def _int_to_real(array: np.ndarray) -> np.ndarray:
     return array + 0.0
 
 
-def _check_array_key(array, key):
-    """
-    Checks a getitem key.
-    """
-
+def _check_array_key(array: np.ndarray, key: Any) -> Any:
+    """Check a getitem key."""
     key = check_array_indexer(array, key)
 
     if isinstance(key, numbers.Integral):  # To accept also numpy ints
@@ -686,8 +683,8 @@ def _check_array_key(array, key):
         key = range(len(array))[key]
 
         return slice(key, key + 1)
-    else:
-        return key
+
+    return key
 
 
 def _check_estimator(estimator):

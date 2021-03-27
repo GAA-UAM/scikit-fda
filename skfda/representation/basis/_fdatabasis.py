@@ -12,6 +12,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 
 import numpy as np
@@ -22,8 +23,9 @@ from skfda._utils._utils import _to_array_maybe_ragged
 from ..._utils import _check_array_key, _int_to_real, constants
 from .. import grid
 from .._functional_data import FData
-from .._typing import DomainRange, GridPointsLike, LabelTupleLike
+from .._typing import ArrayLike, DomainRange, GridPointsLike, LabelTupleLike
 from ..evaluator import Evaluator
+from ..extrapolation import ExtrapolationLike
 from . import Basis
 
 if TYPE_CHECKING:
@@ -81,7 +83,7 @@ class FDataBasis(FData):  # noqa: WPS214
     def __init__(
         self,
         basis: Basis,
-        coefficients: np.ndarray,
+        coefficients: ArrayLike,
         *,
         dataset_label: Optional[str] = None,
         dataset_name: Optional[str] = None,
@@ -89,7 +91,7 @@ class FDataBasis(FData):  # noqa: WPS214
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
     ) -> None:
         """Construct a FDataBasis object."""
         coefficients = _int_to_real(np.atleast_2d(coefficients))
@@ -281,11 +283,11 @@ class FDataBasis(FData):  # noqa: WPS214
         shifts: np.ndarray,
         *,
         restrict_domain: bool = False,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
         eval_points: Optional[np.ndarray] = None,
         **kwargs: Any,
     ) -> T:
-        r"""Perform a shift of the curves.
+        """Perform a shift of the curves.
 
         Args:
             shifts: List with the the shift
@@ -697,16 +699,21 @@ class FDataBasis(FData):  # noqa: WPS214
             f"\ncoefficients={self.coefficients})"
         ).replace('\n', '\n    ')
 
-    def equals(self, other: Any) -> bool:
+    def equals(self, other: object) -> bool:
         """Equality of FDataBasis."""
         # TODO check all other params
+
+        if not super().equals(other):
+            return False
+
+        other = cast(grid.FDataGrid, other)
+
         return (
-            super().equals(other)
-            and self.basis == other.basis
+            self.basis == other.basis
             and np.array_equal(self.coefficients, other.coefficients)
         )
 
-    def __eq__(self, other: Any) -> np.ndarray:
+    def __eq__(self, other: object) -> np.ndarray:  # type: ignore[override]
         """Elementwise equality of FDataBasis."""
         if not isinstance(other, type(self)) or self.dtype != other.dtype:
             if other is pandas.NA:
@@ -775,7 +782,7 @@ class FDataBasis(FData):  # noqa: WPS214
         self,
         fd: FData,
         *,
-        eval_points: np.ndarray = None,
+        eval_points: Optional[np.ndarray] = None,
         **kwargs: Any,
     ) -> FData:
         """

@@ -19,6 +19,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 
 import findiff
@@ -46,6 +47,7 @@ from ._typing import (
 )
 from .basis import Basis
 from .evaluator import Evaluator
+from .extrapolation import ExtrapolationLike
 from .interpolation import SplineInterpolation
 
 if TYPE_CHECKING:
@@ -144,7 +146,7 @@ class FDataGrid(FData):  # noqa: WPS214
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
         axes_labels: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
         interpolation: Optional[Evaluator] = None,
     ):
         """Construct a FDataGrid object."""
@@ -406,7 +408,7 @@ class FDataGrid(FData):  # noqa: WPS214
         )
 
     def derivative(self: T, *, order: int = 1) -> T:
-        r"""Differentiate a FDataGrid object.
+        """Differentiate a FDataGrid object.
 
         It is calculated using central finite differences when possible. In
         the extremes, forward and backward finite differences with accuracy
@@ -597,10 +599,12 @@ class FDataGrid(FData):  # noqa: WPS214
             sample_names=("geometric mean",),
         )
 
-    def equals(self, other: Any) -> bool:
+    def equals(self, other: object) -> bool:
         """Comparison of FDataGrid objects."""
         if not super().equals(other):
             return False
+
+        other = cast(FDataGrid, other)
 
         if not np.array_equal(self.data_matrix, other.data_matrix):
             return False
@@ -616,12 +620,9 @@ class FDataGrid(FData):  # noqa: WPS214
         ):
             return False
 
-        if self.interpolation != other.interpolation:
-            return False
+        return self.interpolation == other.interpolation
 
-        return True
-
-    def __eq__(self, other: Any) -> np.ndarray:  # type: ignore[override]
+    def __eq__(self, other: object) -> np.ndarray:  # type: ignore[override]
         """Elementwise equality of FDataGrid."""
         if not isinstance(other, type(self)) or self.dtype != other.dtype:
             if other is pandas.NA:
@@ -649,7 +650,7 @@ class FDataGrid(FData):  # noqa: WPS214
         self,
         other: Union[T, np.ndarray, float],
     ) -> Union[None, float, np.ndarray]:
-        if isinstance(other, numbers.Number):
+        if isinstance(other, numbers.Real):
             return float(other)
         elif isinstance(other, np.ndarray):
 
@@ -891,8 +892,11 @@ class FDataGrid(FData):  # noqa: WPS214
             )
             grid_points = sample_points
 
-        if grid_points is None:
-            grid_points = self.grid_points
+        grid_points = (
+            self.grid_points
+            if grid_points is None
+            else _to_grid_points(grid_points)
+        )
 
         return self.copy(
             data_matrix=self.evaluate(grid_points, grid=True),
@@ -911,7 +915,7 @@ class FDataGrid(FData):  # noqa: WPS214
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
         interpolation: Optional[Evaluator] = None,
     ) -> T:
         """

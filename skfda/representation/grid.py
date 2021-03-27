@@ -982,7 +982,7 @@ class FDataGrid(FData):  # noqa: WPS214
         shifts: Union[np.ndarray, float],
         *,
         restrict_domain: bool = False,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
         eval_points: Optional[np.ndarray] = None,
     ) -> T:
         """Perform a shift of the curves.

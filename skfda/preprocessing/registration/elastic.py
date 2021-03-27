@@ -1,18 +1,16 @@
 
-from fdasrsf.utility_functions import optimum_reparam
-import scipy.integrate
+import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 
-import numpy as np
+import scipy.integrate
+from fdasrsf.utility_functions import optimum_reparam
 
-from . import invert_warping
 from ... import FDataGrid
 from ..._utils import check_is_univariate
 from ...representation.interpolation import SplineInterpolation
-from ._warping import _normalize_scale
+from ._warping import _normalize_scale, invert_warping
 from .base import RegistrationTransformer
-
 
 __author__ = "Pablo Marcos Manchón"
 __email__ = "pablo.marcosm@estudiante.uam.es"

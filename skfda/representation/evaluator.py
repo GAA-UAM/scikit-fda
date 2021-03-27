@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING, Any, Iterable, Union, overload
 import numpy as np
 from typing_extensions import Literal, Protocol
 
+from ._typing import ArrayLike
+
 if TYPE_CHECKING:
     from . import FData
 
@@ -35,12 +37,12 @@ class Evaluator(ABC):
     def _evaluate(
         self,
         fdata: FData,
-        eval_points: Union[np.ndarray, Iterable[np.ndarray]],
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
         """
-        Evaluation method.
+        Evaluate the samples at evaluation points.
 
         Must be overriden in subclasses.
 
@@ -51,7 +53,7 @@ class Evaluator(ABC):
     def __call__(
         self,
         fdata: FData,
-        eval_points: np.ndarray,
+        eval_points: ArrayLike,
         *,
         aligned: Literal[True] = True,
     ) -> np.ndarray:
@@ -61,7 +63,7 @@ class Evaluator(ABC):
     def __call__(
         self,
         fdata: FData,
-        eval_points: Iterable[np.ndarray],
+        eval_points: Iterable[ArrayLike],
         *,
         aligned: Literal[False],
     ) -> np.ndarray:
@@ -70,7 +72,7 @@ class Evaluator(ABC):
     def __call__(
         self,
         fdata: FData,
-        eval_points: Union[np.ndarray, Iterable[np.ndarray]],
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -118,7 +120,7 @@ class EvaluateFunction(Protocol):
     def __call__(
         self,
         fdata: FData,
-        eval_points: Union[np.ndarray, Iterable[np.ndarray]],
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -131,7 +133,7 @@ class EvaluateFunction(Protocol):
 
         Args:
             fdata: Object to evaluate.
-            eval_points (numpy.ndarray): Numpy array with shape
+            eval_points: Numpy array with shape
                 ``(number_eval_points, dim_domain)`` with the
                 evaluation points.
             aligned: Whether the input points are
@@ -139,11 +141,11 @@ class EvaluateFunction(Protocol):
                 passed.
 
         Returns:
-            (numpy.darray): Numpy 3d array with shape
-                ``(n_samples, number_eval_points, dim_codomain)`` with the
-                result of the evaluation. The entry ``(i,j,k)`` will contain
-                the value k-th image dimension of the i-th sample, at the
-                j-th evaluation point.
+            Numpy 3d array with shape
+            ``(n_samples, number_eval_points, dim_codomain)`` with the
+            result of the evaluation. The entry ``(i,j,k)`` will contain
+            the value k-th image dimension of the i-th sample, at the
+            j-th evaluation point.
 
         """
         pass
@@ -164,8 +166,9 @@ class GenericEvaluator(Evaluator):
     def _evaluate(  # noqa: D102
         self,
         fdata: FData,
-        eval_points: Union[np.ndarray, Iterable[np.ndarray]],
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
+
         return self.evaluate_function(fdata, eval_points, aligned=aligned)

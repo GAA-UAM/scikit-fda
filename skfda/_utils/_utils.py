@@ -105,7 +105,6 @@ def _to_grid(
     eval_points: Optional[np.ndarray] = None,
 ) -> Tuple[FDataGrid, FDataGrid]:
     """Transform a pair of FDatas in grids to perform calculations."""
-
     from .. import FDataGrid
     x_is_grid = isinstance(X, FDataGrid)
     y_is_grid = isinstance(y, FDataGrid)
@@ -139,14 +138,10 @@ def _to_grid_points(grid_points_like: GridPointsLike) -> GridPoints:
     """
     unidimensional = False
 
-    try:
-        iter(grid_points_like)
-    except TypeError:
+    if not isinstance(grid_points_like, Iterable):
         grid_points_like = [grid_points_like]
 
-    try:
-        iter(grid_points_like[0])
-    except TypeError:
+    if not isinstance(grid_points_like[0], Iterable):
         unidimensional = True
 
     if unidimensional:
@@ -174,7 +169,7 @@ def _to_domain_range(sequence: DomainRangeLike) -> DomainRange:
 
 
 def _to_array_maybe_ragged(
-    array: Sequence[ArrayLike],
+    array: Iterable[ArrayLike],
     *,
     row_shape: Optional[Sequence[int]] = None,
 ) -> np.ndarray:
@@ -327,14 +322,13 @@ def _reshape_eval_points(
 
 
 def _reshape_eval_points(
-    eval_points: Union[np.ndarray, Sequence[np.ndarray]],
+    eval_points: Union[ArrayLike, Iterable[ArrayLike]],
     *,
     aligned: bool,
     n_samples: int,
     dim_domain: int,
 ) -> np.ndarray:
-    """Convert and reshape the eval_points to ndarray with the
-    corresponding shape.
+    """Convert and reshape the eval_points to ndarray.
 
     Args:
         eval_points: Evaluation points to be reshaped.
@@ -351,37 +345,45 @@ def _reshape_eval_points(
         x `dim_domain`.
 
     """
-
     if aligned:
         eval_points = np.asarray(eval_points)
     else:
+        eval_points = cast(Iterable[ArrayLike], eval_points)
+
         eval_points = _to_array_maybe_ragged(
-            eval_points, row_shape=(-1, dim_domain))
+            eval_points,
+            row_shape=(-1, dim_domain),
+        )
 
     # Case evaluation of a single value, i.e., f(0)
     # Only allowed for aligned evaluation
-    if aligned and (eval_points.shape == (dim_domain,)
-                    or (eval_points.ndim == 0 and dim_domain == 1)):
+    if aligned and (
+        eval_points.shape == (dim_domain,)
+        or (eval_points.ndim == 0 and dim_domain == 1)
+    ):
         eval_points = np.array([eval_points])
 
     if aligned:  # Samples evaluated at same eval points
 
-        eval_points = eval_points.reshape((eval_points.shape[0],
-                                           dim_domain))
+        eval_points = eval_points.reshape(
+            (eval_points.shape[0], dim_domain),
+        )
 
     else:  # Different eval_points for each sample
 
         if eval_points.shape[0] != n_samples:
 
-            raise ValueError(f"eval_points should be a list "
-                             f"of length {n_samples} with the "
-                             f"evaluation points for each sample.")
+            raise ValueError(
+                f"eval_points should be a list "
+                f"of length {n_samples} with the "
+                f"evaluation points for each sample.",
+            )
 
     return eval_points
 
 
 def _one_grid_to_points(
-    axes: Sequence[np.ndarray],
+    axes: GridPointsLike,
     *,
     dim_domain: int,
 ) -> Tuple[np.ndarray, Tuple[int, ...]]:
@@ -421,7 +423,7 @@ class EvaluateMethod(Protocol):
 
 @overload
 def _evaluate_grid(
-    axes: Sequence[np.ndarray],
+    axes: GridPointsLike,
     *,
     evaluate_method: EvaluateMethod,
     n_samples: int,
@@ -435,7 +437,7 @@ def _evaluate_grid(
 
 @overload
 def _evaluate_grid(
-    axes: Iterable[Sequence[np.ndarray]],
+    axes: Iterable[GridPointsLike],
     *,
     evaluate_method: EvaluateMethod,
     n_samples: int,
@@ -448,7 +450,7 @@ def _evaluate_grid(
 
 
 def _evaluate_grid(  # noqa: WPS234
-    axes: Union[Sequence[np.ndarray], Iterable[Sequence[np.ndarray]]],
+    axes: Union[GridPointsLike, Iterable[GridPointsLike]],
     *,
     evaluate_method: EvaluateMethod,
     n_samples: int,
@@ -506,13 +508,13 @@ def _evaluate_grid(  # noqa: WPS234
     # Compute intersection points and resulting shapes
     if aligned:
 
-        axes = cast(Sequence[np.ndarray], axes)
+        axes = cast(GridPointsLike, axes)
 
         eval_points, shape = _one_grid_to_points(axes, dim_domain=dim_domain)
 
     else:
 
-        axes_per_sample = cast(Iterable[Sequence[np.ndarray]], axes)
+        axes_per_sample = cast(Iterable[GridPointsLike], axes)
 
         axes_per_sample = list(axes_per_sample)
 

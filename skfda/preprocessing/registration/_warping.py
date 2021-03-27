@@ -2,21 +2,23 @@
 
 This module contains routines related to the registration procedure.
 """
-import collections
 
-import scipy.integrate
-from scipy.interpolate import PchipInterpolator
+from typing import Optional
 
 import numpy as np
 
-from ..._utils import check_is_univariate
+from scipy.interpolate import PchipInterpolator
+
+from ..._utils import _to_domain_range, check_is_univariate
+from ...representation import FDataGrid
+from ...representation._typing import ArrayLike, DomainRangeLike
 
 
-__author__ = "Pablo Marcos Manchón"
-__email__ = "pablo.marcosm@estudiante.uam.es"
-
-
-def invert_warping(fdatagrid, *, output_points=None):
+def invert_warping(
+    warping: FDataGrid,
+    *,
+    output_points: Optional[ArrayLike] = None,
+) -> FDataGrid:
     r"""Compute the inverse of a diffeomorphism.
 
     Let :math:`\gamma : [a,b] \rightarrow [a,b]` be a function strictly
@@ -27,20 +29,19 @@ def invert_warping(fdatagrid, *, output_points=None):
     Uses a PCHIP interpolator to compute approximately the inverse.
 
     Args:
-        fdatagrid (:class:`FDataGrid`): Functions to be inverted.
-        eval_points: (array_like, optional): Set of points where the
+        warping: Functions to be inverted.
+        output_points: Set of points where the
             functions are interpolated to obtain the inverse, by default uses
             the sample points of the fdatagrid.
 
     Returns:
-        :class:`FDataGrid`: Inverse of the original functions.
+        Inverse of the original functions.
 
     Raises:
         ValueError: If the functions are not strictly increasing or are
             multidimensional.
 
     Examples:
-
         >>> import numpy as np
         >>> from skfda import FDataGrid
         >>> from skfda.preprocessing.registration import invert_warping
@@ -71,34 +72,36 @@ def invert_warping(fdatagrid, *, output_points=None):
                 [ 1.  ]]])
 
     """
+    check_is_univariate(warping)
 
-    check_is_univariate(fdatagrid)
+    output_points = (
+        warping.grid_points[0]
+        if output_points is None
+        else np.asarray(output_points)
+    )
 
-    if output_points is None:
-        output_points = fdatagrid.grid_points[0]
+    y = warping(output_points)[..., 0]
 
-    y = fdatagrid(output_points)[..., 0]
+    data_matrix = np.empty((warping.n_samples, len(output_points)))
 
-    data_matrix = np.empty((fdatagrid.n_samples, len(output_points)))
-
-    for i in range(fdatagrid.n_samples):
+    for i in range(warping.n_samples):
         data_matrix[i] = PchipInterpolator(y[i], output_points)(output_points)
 
-    return fdatagrid.copy(data_matrix=data_matrix, grid_points=output_points)
+    return warping.copy(data_matrix=data_matrix, grid_points=output_points)
 
 
-def _normalize_scale(t, a=0, b=1):
+def _normalize_scale(t: np.ndarray, a: float = 0, b: float = 1) -> np.ndarray:
     """Perfoms an afine translation to normalize an interval.
 
     Args:
-        t (numpy.ndarray): Array of dim 1 or 2 with at least 2 values.
-        a (float): Starting point of the new interval. Defaults 0.
-        b (float): Stopping point of the new interval. Defaults 1.
+        t: Array of dim 1 or 2 with at least 2 values.
+        a: Starting point of the new interval. Defaults 0.
+        b: Stopping point of the new interval. Defaults 1.
 
     Returns:
-        (numpy.ndarray): Array with the transformed interval.
-    """
+        Array with the transformed interval.
 
+    """
     t = t.T  # Broadcast to normalize multiple arrays
     t1 = (t - t[0]).astype(float)  # Translation to [0, t[-1] - t[0]]
     t1 *= (b - a) / (t[-1] - t[0])  # Scale to [0, b-a]
@@ -109,7 +112,10 @@ def _normalize_scale(t, a=0, b=1):
     return t1.T
 
 
-def normalize_warping(warping, domain_range=None):
+def normalize_warping(
+    warping: FDataGrid,
+    domain_range: Optional[DomainRangeLike] = None,
+) -> FDataGrid:
     r"""Rescale a warping to normalize their :term:`domain`.
 
     Given a set of warpings :math:`\gamma_i:[a,b]\rightarrow  [a,b]` it is
@@ -118,19 +124,28 @@ def normalize_warping(warping, domain_range=None):
     [\tilde a, \tilde b]`.
 
     Args:
-        warping (:class:`FDatagrid`): Set of warpings to rescale.
-        domain_range (tuple, optional): New domain range of the warping. By
+        warping: Set of warpings to rescale.
+        domain_range: New domain range of the warping. By
             default it is used the same domain range.
-    Return:
-        (:class:`FDataGrid`): FDataGrid with the warpings normalized.
+
+    Returns:
+        Normalized warpings.
 
     """
+    domain_range_tuple = (
+        warping.domain_range[0]
+        if domain_range is None
+        else _to_domain_range(domain_range)[0]
+    )
 
-    if domain_range is None:
-        domain_range = warping.domain_range[0]
+    data_matrix = _normalize_scale(
+        warping.data_matrix[..., 0],
+        *domain_range_tuple,
+    )
+    grid_points = _normalize_scale(warping.grid_points[0], *domain_range_tuple)
 
-    data_matrix = _normalize_scale(warping.data_matrix[..., 0], *domain_range)
-    grid_points = _normalize_scale(warping.grid_points[0], *domain_range)
-
-    return warping.copy(data_matrix=data_matrix, grid_points=grid_points,
-                        domain_range=domain_range)
+    return warping.copy(
+        data_matrix=data_matrix,
+        grid_points=grid_points,
+        domain_range=domain_range,
+    )

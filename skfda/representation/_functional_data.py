@@ -27,7 +27,13 @@ import pandas.api.extensions
 from typing_extensions import Literal
 
 from .._utils import _evaluate_grid, _reshape_eval_points
-from ._typing import DomainRange, LabelTuple, LabelTupleLike
+from ._typing import (
+    ArrayLike,
+    DomainRange,
+    GridPointsLike,
+    LabelTuple,
+    LabelTupleLike,
+)
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike, _parse_extrapolation
 
@@ -38,10 +44,10 @@ if TYPE_CHECKING:
 T = TypeVar('T', bound='FData')
 
 EvalPointsType = Union[
-    np.ndarray,
-    Iterable[np.ndarray],
-    Sequence[np.ndarray],
-    Iterable[Sequence[np.ndarray]],
+    ArrayLike,
+    Iterable[ArrayLike],
+    GridPointsLike,
+    Iterable[GridPointsLike],
 ]
 
 
@@ -341,7 +347,7 @@ class FData(  # noqa: WPS214
     @abstractmethod
     def _evaluate(
         self,
-        eval_points: Union[np.ndarray, Sequence[np.ndarray]],
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -371,7 +377,7 @@ class FData(  # noqa: WPS214
     @overload
     def evaluate(
         self,
-        eval_points: np.ndarray,
+        eval_points: ArrayLike,
         *,
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
@@ -383,7 +389,7 @@ class FData(  # noqa: WPS214
     @overload
     def evaluate(
         self,
-        eval_points: Iterable[np.ndarray],
+        eval_points: Iterable[ArrayLike],
         *,
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
@@ -395,7 +401,7 @@ class FData(  # noqa: WPS214
     @overload
     def evaluate(
         self,
-        eval_points: Sequence[np.ndarray],
+        eval_points: GridPointsLike,
         *,
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
@@ -407,7 +413,7 @@ class FData(  # noqa: WPS214
     @overload
     def evaluate(
         self,
-        eval_points: Iterable[Sequence[np.ndarray]],
+        eval_points: Iterable[GridPointsLike],
         *,
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
@@ -459,7 +465,7 @@ class FData(  # noqa: WPS214
                 "derivative function instead.",
                 DeprecationWarning,
             )
-            return self.derivative(order=derivative)(
+            return self.derivative(order=derivative)(  # type: ignore
                 eval_points,
                 extrapolation=extrapolation,
                 grid=grid,
@@ -478,6 +484,8 @@ class FData(  # noqa: WPS214
                 aligned=aligned,
             )
 
+        eval_points = cast(Union[ArrayLike, Iterable[ArrayLike]], eval_points)
+
         if extrapolation is None:
             extrapolation = self.extrapolation
         else:
@@ -485,7 +493,7 @@ class FData(  # noqa: WPS214
             extrapolation = _parse_extrapolation(extrapolation)
 
         eval_points = cast(
-            Union[np.ndarray, Sequence[np.ndarray]],
+            Union[ArrayLike, Sequence[ArrayLike]],
             eval_points,
         )
 
@@ -547,7 +555,7 @@ class FData(  # noqa: WPS214
     @overload
     def __call__(
         self,
-        eval_points: np.ndarray,
+        eval_points: ArrayLike,
         *,
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
@@ -559,7 +567,7 @@ class FData(  # noqa: WPS214
     @overload
     def __call__(
         self,
-        eval_points: Iterable[np.ndarray],
+        eval_points: Iterable[ArrayLike],
         *,
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
@@ -571,7 +579,7 @@ class FData(  # noqa: WPS214
     @overload
     def __call__(
         self,
-        eval_points: Sequence[np.ndarray],
+        eval_points: GridPointsLike,
         *,
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
@@ -583,24 +591,12 @@ class FData(  # noqa: WPS214
     @overload
     def __call__(
         self,
-        eval_points: Iterable[Sequence[np.ndarray]],
+        eval_points: Iterable[GridPointsLike],
         *,
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[True],
         aligned: Literal[False],
-    ) -> np.ndarray:
-        pass
-
-    @overload
-    def __call__(
-        self,
-        eval_points: EvalPointsType,
-        *,
-        derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
-        grid: bool = False,
-        aligned: bool = True,
     ) -> np.ndarray:
         pass
 

@@ -5,14 +5,30 @@ Defines methods to evaluate points outside the :term:`domain` range.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, NoReturn, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    NoReturn,
+    Optional,
+    Union,
+    cast,
+    overload,
+)
 
 import numpy as np
+from typing_extensions import Literal
 
+from ._typing import ArrayLike
 from .evaluator import Evaluator
 
 if TYPE_CHECKING:
     from . import FData
+
+ExtrapolationLike = Union[
+    Evaluator,
+    Literal["bounds", "exception", "nan", "none", "periodic", "zeros"],
+]
 
 
 class PeriodicExtrapolation(Evaluator):
@@ -47,10 +63,10 @@ class PeriodicExtrapolation(Evaluator):
                 [-1.086]]])
     """
 
-    def evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102
         self,
         fdata: FData,
-        eval_points: np.ndarray,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -62,7 +78,7 @@ class PeriodicExtrapolation(Evaluator):
         eval_points %= domain_range[:, 1] - domain_range[:, 0]
         eval_points += domain_range[:, 0]
 
-        return fdata(eval_points, aligned=aligned)
+        return fdata(eval_points, aligned=aligned)  # type: ignore
 
 
 class BoundaryExtrapolation(Evaluator):
@@ -97,22 +113,36 @@ class BoundaryExtrapolation(Evaluator):
                 [ 1.125]]])
     """
 
-    def evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102
         self,
         fdata: FData,
-        eval_points: np.ndarray,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
 
         domain_range = fdata.domain_range
 
-        for i in range(fdata.dim_domain):
-            a, b = domain_range[i]
-            eval_points[eval_points[..., i] < a, i] = a
-            eval_points[eval_points[..., i] > b, i] = b
+        if aligned:
+            eval_points = np.asarray(eval_points)
 
-        return fdata(eval_points, aligned=aligned)
+            for i in range(fdata.dim_domain):
+                a, b = domain_range[i]
+                eval_points[eval_points[..., i] < a, i] = a
+                eval_points[eval_points[..., i] > b, i] = b
+        else:
+            eval_points = cast(Iterable[ArrayLike], eval_points)
+
+            for points_per_sample in eval_points:
+
+                points_per_sample = np.asarray(points_per_sample)
+
+                for i in range(fdata.dim_domain):
+                    a, b = domain_range[i]
+                    points_per_sample[points_per_sample[..., i] < a, i] = a
+                    points_per_sample[points_per_sample[..., i] > b, i] = b
+
+        return fdata(eval_points, aligned=aligned)  # type: ignore
 
 
 class ExceptionExtrapolation(Evaluator):
@@ -131,7 +161,7 @@ class ExceptionExtrapolation(Evaluator):
         ...     fd([-.5, 0, 1.5]).round(3)
         ... except ValueError as e:
         ...     print(e)
-        Attempt to evaluate 2 points outside the domain range.
+        Attempt to evaluate points outside the domain range.
 
         This extrapolator is equivalent to the string `"exception"`.
 
@@ -140,22 +170,20 @@ class ExceptionExtrapolation(Evaluator):
         ...     fd([-.5, 0, 1.5]).round(3)
         ... except ValueError as e:
         ...     print(e)
-        Attempt to evaluate 2 points outside the domain range.
+        Attempt to evaluate points outside the domain range.
 
     """
 
-    def evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102
         self,
         fdata: FData,
-        eval_points: np.ndarray,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> NoReturn:
 
-        n_points = eval_points.shape[-2]
-
         raise ValueError(
-            f"Attempt to evaluate {n_points} points outside the domain range.",
+            "Attempt to evaluate points outside the domain range.",
         )
 
 
@@ -195,7 +223,9 @@ class FillExtrapolation(Evaluator):
     def __init__(self, fill_value: float) -> None:
         self.fill_value = fill_value
 
-    def _fill(self, fdata: FData, eval_points: np.ndarray) -> np.ndarray:
+    def _fill(self, fdata: FData, eval_points: ArrayLike) -> np.ndarray:
+        eval_points = np.asarray(eval_points)
+
         shape = (
             fdata.n_samples,
             eval_points.shape[-2],
@@ -203,15 +233,24 @@ class FillExtrapolation(Evaluator):
         )
         return np.full(shape, self.fill_value)
 
-    def evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102
         self,
         fdata: FData,
-        eval_points: np.ndarray,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
+        from .._utils import _to_array_maybe_ragged
 
-        return self._fill(fdata, eval_points)
+        if aligned:
+            eval_points = cast(ArrayLike, eval_points)
+            return self._fill(fdata, eval_points)
+
+        eval_points = cast(Iterable[ArrayLike], eval_points)
+
+        res_list = [self._fill(fdata, p) for p in eval_points]
+
+        return _to_array_maybe_ragged(res_list)
 
     def __repr__(self) -> str:
         return (
@@ -231,8 +270,22 @@ class FillExtrapolation(Evaluator):
         )
 
 
+@overload
 def _parse_extrapolation(
-    extrapolation: Optional[Union[str, Evaluator]],
+    extrapolation: None,
+) -> None:
+    pass
+
+
+@overload
+def _parse_extrapolation(
+    extrapolation: ExtrapolationLike,
+) -> Evaluator:
+    pass
+
+
+def _parse_extrapolation(
+    extrapolation: Optional[ExtrapolationLike],
 ) -> Optional[Evaluator]:
     """Parse the argument `extrapolation` of `FData`.
 

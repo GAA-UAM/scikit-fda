@@ -3,16 +3,28 @@ from __future__ import annotations
 import copy
 import warnings
 from builtins import isinstance
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import numpy as np
 import pandas.api.extensions
 
+from skfda._utils._utils import _to_array_maybe_ragged
+
 from ..._utils import _check_array_key, _int_to_real, constants
 from .. import grid
 from .._functional_data import FData
-from .._typing import DomainRange, GridPointsLike, LabelTupleLike
-from ..evaluator import Evaluator
+from .._typing import ArrayLike, DomainRange, GridPointsLike, LabelTupleLike
+from ..extrapolation import ExtrapolationLike
 from . import Basis
 
 if TYPE_CHECKING:
@@ -70,7 +82,7 @@ class FDataBasis(FData):  # noqa: WPS214
     def __init__(
         self,
         basis: Basis,
-        coefficients: np.ndarray,
+        coefficients: ArrayLike,
         *,
         dataset_label: Optional[str] = None,
         dataset_name: Optional[str] = None,
@@ -78,7 +90,7 @@ class FDataBasis(FData):  # noqa: WPS214
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
     ) -> None:
         """Construct a FDataBasis object."""
         coefficients = _int_to_real(np.atleast_2d(coefficients))
@@ -240,12 +252,14 @@ class FDataBasis(FData):  # noqa: WPS214
 
     def _evaluate(
         self,
-        eval_points: np.ndarray,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
 
         if aligned:
+
+            eval_points = np.asarray(eval_points)
 
             # Each row contains the values of one element of the basis
             basis_values = self.basis.evaluate(eval_points)
@@ -256,118 +270,69 @@ class FDataBasis(FData):  # noqa: WPS214
                 (self.n_samples, len(eval_points), self.dim_codomain),
             )
 
-        res_matrix = np.empty(
-            (self.n_samples, eval_points.shape[1], self.dim_codomain),
-        )
+        eval_points = cast(Iterable[ArrayLike], eval_points)
 
-        for i in range(self.n_samples):
-            basis_values = self.basis.evaluate(eval_points[i])
+        res_list = [
+            np.sum((c * self.basis.evaluate(np.asarray(p)).T).T, axis=0)
+            for c, p in zip(self.coefficients, eval_points)
+        ]
 
-            values = self.coefficients[i] * basis_values.T
-            np.sum(values.T, axis=0, out=res_matrix[i])
-
-        return res_matrix
+        return _to_array_maybe_ragged(res_list)
 
     def shift(
-        self: T,
-        shifts: np.ndarray,
+        self,
+        shifts: Union[ArrayLike, float],
         *,
         restrict_domain: bool = False,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
-        eval_points: Optional[np.ndarray] = None,
-        **kwargs: Any,
-    ) -> T:
-        r"""Perform a shift of the curves.
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid_points: Optional[GridPointsLike] = None,
+    ) -> FDataGrid:
+        r"""
+        Perform a shift of the curves.
+
+        The i-th shifted function :math:`y_i` has the form
+
+        .. math::
+            y_i(t) = x_i(t + \delta_i)
+
+        where :math:`x_i` is the i-th original function and :math:`delta_i` is
+        the shift performed for that function, that must be a vector in the
+        domain space.
+
+        Note that a positive shift moves the graph of the function in the
+        negative direction and vice versa.
 
         Args:
-            shifts: List with the the shift
+            shifts: List with the shifts
                 corresponding for each sample or numeric with the shift to
                 apply to all samples.
-            restrict_domain: If True restricts the domain to
-                avoid evaluate points outside the domain using extrapolation.
+            restrict_domain: If True restricts the domain to avoid the
+                evaluation of points outside the domain using extrapolation.
                 Defaults uses extrapolation.
             extrapolation: Controls the
                 extrapolation mode for elements outside the domain range.
                 By default uses the method defined in fd. See extrapolation to
                 more information.
-            eval_points: Set of points where
+            grid_points: Grid of points where
                 the functions are evaluated to obtain the discrete
-                representation of the object to operate. If an empty list is
-                passed it calls numpy.linspace with bounds equal to the ones
-                defined in fd.domain_range and the number of points the maximum
-                between 201 and 10 times the number of basis plus 1.
-            kwargs: Keyword arguments to be passed to :meth:`from_data`.
+                representation of the object to operate. If ``None`` the
+                current grid_points are used to unificate the domain of the
+                shifted data.
 
         Returns:
-            :obj:`FDataBasis` with the shifted data.
+            Shifted functions.
 
         """
-        if self.dim_codomain > 1 or self.dim_domain > 1:
-            raise ValueError
-
-        domain_range = self.domain_range[0]
-
-        if eval_points is None:  # Grid to discretize the function
-            nfine = max(self.n_basis * 10 + 1, constants.N_POINTS_COARSE_MESH)
-            eval_points = np.linspace(*domain_range, nfine)
-        else:
-            eval_points = np.asarray(eval_points)
-
-        if np.isscalar(shifts):  # Special case, all curves with same shift
-
-            basis = self.basis.rescale((
-                domain_range[0] + shifts,
-                domain_range[1] + shifts,
-            ))
-
-            return FDataBasis.from_data(
-                self.evaluate(eval_points),
-                grid_points=eval_points + shifts,
-                basis=basis,
-                **kwargs,
-            )
-
-        elif len(shifts) != self.n_samples:
-            raise ValueError(
-                f"shifts vector ({len(shifts)}) must have the "
-                f"same length than the number of samples "
-                f"({self.n_samples})",
-            )
-
-        if restrict_domain:
-            a = domain_range[0] - min(np.min(shifts), 0)
-            b = domain_range[1] - max(np.max(shifts), 0)
-            domain = (a, b)
-            eval_points = eval_points[
-                np.logical_and(
-                    eval_points >= a,
-                    eval_points <= b,
-                )
-            ]
-        else:
-            domain = domain_range
-
-        points_shifted = np.outer(
-            np.ones(self.n_samples),
-            eval_points,
+        grid_points = (
+            self._default_grid_points() if grid_points is None
+            else grid_points
         )
 
-        points_shifted += np.atleast_2d(shifts).T
-
-        # Matrix of shifted values
-        data_matrix = self(
-            points_shifted,
-            aligned=False,
+        return super().shift(
+            shifts=shifts,
+            restrict_domain=restrict_domain,
             extrapolation=extrapolation,
-        )[..., 0]
-
-        basis = self.basis.rescale(domain)
-
-        return FDataBasis.from_data(
-            data_matrix,
-            grid_points=eval_points,
-            basis=basis,
-            **kwargs,
+            grid_points=grid_points,
         )
 
     def derivative(self: T, *, order: int = 1) -> T:  # noqa: D102
@@ -504,7 +469,7 @@ class FDataBasis(FData):  # noqa: WPS214
         self,
         grid_points: Optional[GridPointsLike] = None,
         *,
-        sample_points: np.ndarray = None,
+        sample_points: Optional[GridPointsLike] = None,
     ) -> FDataGrid:
         """Return the discrete representation of the object.
 
@@ -549,14 +514,7 @@ class FDataBasis(FData):  # noqa: WPS214
             grid_points = sample_points
 
         if grid_points is None:
-            npoints = max(
-                constants.N_POINTS_FINE_MESH,
-                constants.BASIS_MIN_FACTOR * self.n_basis,
-            )
-            grid_points = [
-                np.linspace(*r, npoints)
-                for r in self.domain_range
-            ]
+            grid_points = self._default_grid_points()
 
         return grid.FDataGrid(
             self.evaluate(grid_points, grid=True),
@@ -600,7 +558,7 @@ class FDataBasis(FData):  # noqa: WPS214
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
     ) -> T:
         """Copy the FDataBasis."""
         if basis is None:
@@ -636,6 +594,13 @@ class FDataBasis(FData):  # noqa: WPS214
             sample_names=sample_names,
             extrapolation=extrapolation,
         )
+
+    def _default_grid_points(self) -> GridPointsLike:
+        npoints = constants.N_POINTS_FINE_MESH
+        return [
+            np.linspace(*r, npoints)
+            for r in self.domain_range
+        ]
 
     def _to_R(self) -> str:  # noqa: N802
         """Return the code to build the object on fda package on R."""
@@ -689,16 +654,21 @@ class FDataBasis(FData):  # noqa: WPS214
             f"\ncoefficients={self.coefficients})"
         ).replace('\n', '\n    ')
 
-    def equals(self, other: Any) -> bool:
+    def equals(self, other: object) -> bool:
         """Equality of FDataBasis."""
         # TODO check all other params
+
+        if not super().equals(other):
+            return False
+
+        other = cast(grid.FDataGrid, other)
+
         return (
-            super().equals(other)
-            and self.basis == other.basis
+            self.basis == other.basis
             and np.array_equal(self.coefficients, other.coefficients)
         )
 
-    def __eq__(self, other: Any) -> np.ndarray:
+    def __eq__(self, other: object) -> np.ndarray:  # type: ignore[override]
         """Elementwise equality of FDataBasis."""
         if not isinstance(other, type(self)) or self.dtype != other.dtype:
             if other is pandas.NA:
@@ -767,7 +737,7 @@ class FDataBasis(FData):  # noqa: WPS214
         self,
         fd: FData,
         *,
-        eval_points: np.ndarray = None,
+        eval_points: Optional[np.ndarray] = None,
         **kwargs: Any,
     ) -> FData:
         """

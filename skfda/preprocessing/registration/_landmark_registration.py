@@ -153,7 +153,7 @@ def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
 
     return fd.shift(shifts, restrict_domain=restrict_domain,
                     extrapolation=extrapolation,
-                    eval_points=eval_points, **kwargs)
+                    grid_points=eval_points, **kwargs)
 
 
 def landmark_registration_warping(fd, landmarks, *, location=None,

@@ -667,30 +667,42 @@ class FData(  # noqa: WPS214
         *,
         restrict_domain: bool = False,
         extrapolation: Optional[ExtrapolationLike] = None,
-        eval_points: Optional[np.ndarray] = None,
+        grid_points: Optional[GridPointsLike] = None,
     ) -> T:
-        """Perform a shift of the curves.
+        r"""
+        Perform a shift of the curves.
+
+        The i-th shifted function :math:`y_i` has the form
+
+        .. math::
+            y_i(t) = x_i(t + \delta_i)
+
+        where :math:`x_i` is the i-th original function and :math:`delta_i` is
+        the shift performed for that function, that must be a vector in the
+        domain space.
+
+        Note that a positive shift moves the graph of the function in the
+        negative direction and vice versa.
 
         Args:
-            shifts: List with the shift corresponding
-                for each sample or numeric with the shift to apply to all
-                samples.
-            restrict_domain: If True restricts the domain to
-                avoid evaluate points outside the domain using extrapolation.
+            shifts: List with the shifts
+                corresponding for each sample or numeric with the shift to
+                apply to all samples.
+            restrict_domain: If True restricts the domain to avoid the
+                evaluation of points outside the domain using extrapolation.
                 Defaults uses extrapolation.
             extrapolation: Controls the
                 extrapolation mode for elements outside the domain range.
                 By default uses the method defined in fd. See extrapolation to
                 more information.
-            eval_points: Set of points where
+            grid_points: Grid of points where
                 the functions are evaluated to obtain the discrete
-                representation of the object to operate. If an empty list is
-                passed it calls np.linspace with bounds equal to the ones
-                defined in fd.domain_range and the number of points the maximum
-                between 201 and 10 times the number of basis plus 1.
+                representation of the object to operate. If ``None`` the
+                current grid_points are used to unificate the domain of the
+                shifted data.
 
         Returns:
-            :class:`FData` with the shifted functional data.
+            Shifted functions.
 
         """
         pass
@@ -795,7 +807,10 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def to_grid(self, grid_points: Optional[np.ndarray] = None) -> FDataGrid:
+    def to_grid(
+        self,
+        grid_points: Optional[GridPointsLike] = None,
+    ) -> FDataGrid:
         """Return the discrete representation of the object.
 
         Args:

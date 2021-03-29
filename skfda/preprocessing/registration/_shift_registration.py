@@ -1,15 +1,23 @@
 """Class to apply Shift Registration to functional data"""
+from __future__ import annotations
 
-# Pablo Marcos Manchón
-# pablo.marcosm@protonmail.com
+from typing import Callable, Optional, Tuple, TypeVar, Union
 
 import numpy as np
-from scipy.integrate import simps
 from sklearn.utils.validation import check_is_fitted
+from typing_extensions import Literal
+
+from scipy.integrate import simps
 
 from ... import FData, FDataGrid
 from ..._utils import check_is_univariate, constants
+from ...misc.metrics._lp_norms import l2_norm
+from ...representation._typing import ArrayLike
+from ...representation.extrapolation import ExtrapolationLike
 from .base import RegistrationTransformer
+
+T = TypeVar("T", bound=FData)
+TemplateFunction = Callable[[FData], FData]
 
 
 class ShiftRegistration(RegistrationTransformer):
@@ -82,7 +90,6 @@ class ShiftRegistration(RegistrationTransformer):
         the method.
 
     Examples:
-
         >>> from skfda.preprocessing.registration import ShiftRegistration
         >>> from skfda.datasets import make_sinusoidal_process
         >>> from skfda.representation.basis import Fourier
@@ -122,9 +129,17 @@ class ShiftRegistration(RegistrationTransformer):
             Data Analysis* (pp. 142-144). Springer.
     """
 
-    def __init__(self, max_iter=5, tol=1e-2, template="mean",
-                 extrapolation=None, step_size=1, restrict_domain=False,
-                 initial="zeros", output_points=None):
+    def __init__(
+        self,
+        max_iter: int = 5,
+        tol: float = 1e-2,
+        template: Union[Literal["mean"], FData, TemplateFunction] = "mean",
+        extrapolation: Optional[ExtrapolationLike] = None,
+        step_size: float = 1,
+        restrict_domain: bool = False,
+        initial: Union[Literal["zeros"], ArrayLike] = "zeros",
+        output_points: Optional[ArrayLike] = None,
+    ) -> None:
         self.max_iter = max_iter
         self.tol = tol
         self.template = template
@@ -134,50 +149,50 @@ class ShiftRegistration(RegistrationTransformer):
         self.initial = initial
         self.output_points = output_points
 
-    def _compute_deltas(self, fd, template):
-        r"""Compute the shifts to perform the registration.
+    def _compute_deltas(
+        self,
+        fd: FData,
+        template: Union[Literal["mean"], FData, TemplateFunction],
+    ) -> Tuple[np.ndarray, FDataGrid]:
+        """Compute the shifts to perform the registration.
 
         Args:
-            fd (FData: Functional object to be registered.
-            template (str, FData or callable): Template to align the
+            fd: Functional object to be registered.
+            template: Template to align the
                 the samples. "mean" to compute the mean iteratively as in
                 the original paper, an FData with the templated calculated or
                 a callable wich constructs the template.
 
         Returns:
-            tuple: A tuple with an array of deltas and an FDataGrid with the
-                template.
+            A tuple with an array of deltas and an FDataGrid with the template.
 
         """
         check_is_univariate(fd)
+
+        if not isinstance(fd, FDataGrid):
+            fd = fd.to_grid()
 
         domain_range = fd.domain_range[0]
 
         # Initial estimation of the shifts
         if self.initial == "zeros":
             delta = np.zeros(fd.n_samples)
-
-        elif len(self.initial) != fd.n_samples:
-            raise ValueError(f"the initial shift ({len(self.initial)}) must "
-                             f"have the same length than the number of samples"
-                             f" ({fd.n_samples})")
         else:
             delta = np.asarray(self.initial)
 
+            if len(delta) != fd.n_samples:
+                raise ValueError(
+                    f"The length of the initial shift ({len(delta)}) must "
+                    f"be the same than the number of samples ({fd.n_samples})",
+                )
+
         # Fine equispaced mesh to evaluate the samples
         if self.output_points is None:
-
-            try:
-                output_points = fd.grid_points[0]
-                nfine = len(output_points)
-            except AttributeError:
-                nfine = max(fd.n_basis * constants.BASIS_MIN_FACTOR + 1,
-                            constants.N_POINTS_COARSE_MESH)
-                output_points = np.linspace(*domain_range, nfine)
-
+            output_points = fd.grid_points[0]
+            nfine = len(output_points)
         else:
-            nfine = len(self.output_points)
             output_points = np.asarray(self.output_points)
+            nfine = len(output_points)
 
         # Auxiliar array to avoid multiple memory allocations
         delta_aux = np.empty(fd.n_samples)
@@ -188,20 +203,21 @@ class ShiftRegistration(RegistrationTransformer):
 
         # Second term of the second derivate estimation of REGSSE. The
         # first term has been dropped to improve convergence (see references)
-        d2_regsse = simps(np.square(D1x), output_points, axis=1)
+        d2_regsse = l2_norm(fd_deriv)**2
 
         max_diff = self.tol + 1
         self.n_iter_ = 0
 
+        template_fixed = False
+
         # Case template fixed
         if isinstance(template, FData):
-            original_template = template
             tfine_aux = template.evaluate(output_points)[0, ..., 0]
 
             if self.restrict_domain:
                 template_points_aux = tfine_aux
 
-            template = "fixed"
+            template_fixed = True
         else:
             tfine_aux = np.empty(nfine)
 
@@ -238,15 +254,17 @@ class ShiftRegistration(RegistrationTransformer):
                 output_points_rep = np.outer(ones, output_points)
 
             # Computes the new values shifted
-            x = fd(output_points_rep + np.atleast_2d(delta).T,
-                   aligned=False,
-                   extrapolation=self.extrapolation)[..., 0]
+            x = fd(
+                output_points_rep + np.atleast_2d(delta).T,
+                aligned=False,
+                extrapolation=self.extrapolation,
+            )[..., 0]
 
             if template == "mean":
                 x.mean(axis=0, out=tfine_aux)
-            elif template == "fixed" and self.restrict_domain:
+            elif template_fixed and self.restrict_domain:
                 tfine_aux = template_points_aux[domain]
-            elif callable(template):  # Callable
+            elif not template_fixed and callable(template):  # Callable
                 fd_x = FDataGrid(x, grid_points=output_points)
                 fd_tfine = template(fd_x)
                 tfine_aux = fd_tfine.data_matrix.ravel()
@@ -266,33 +284,28 @@ class ShiftRegistration(RegistrationTransformer):
             max_diff = np.abs(delta_aux, out=delta_aux).max()
             self.n_iter_ += 1
 
-        if template == "fixed":
-
-            # Stores the original template instead of building it again
-            template = original_template
-        else:
-
-            # Stores the template in an FDataGrid
+        if template_fixed is False:
+            # Stores the template in an FDataGrid
             template = FDataGrid(tfine_aux, grid_points=output_points)
 
         return delta, template
 
-    def fit_transform(self, X: FData, y=None):
+    def fit_transform(self, X: T, y: None = None) -> T:
         """Fit the estimator and transform the data.
 
         Args:
-            X (FData): Functional dataset to be transformed.
-            y (ignored): not used, present for API consistency by convention.
+            X: Functional dataset to be transformed.
+            y: not used, present for API consistency by convention.
 
         Returns:
-            FData: Functional data registered.
+            Functional data registered.
 
         """
         self.deltas_, self.template_ = self._compute_deltas(X, self.template)
 
         return X.shift(self.deltas_, restrict_domain=self.restrict_domain,
                        extrapolation=self.extrapolation,
-                       eval_points=self.output_points)
+                       grid_points=self.output_points)
 
     def fit(self, X: FData, y=None):
         """Fit the estimator.
@@ -359,7 +372,7 @@ class ShiftRegistration(RegistrationTransformer):
 
         return X.shift(deltas, restrict_domain=self.restrict_domain,
                        extrapolation=self.extrapolation,
-                       eval_points=self.output_points)
+                       grid_points=self.output_points)
 
     def inverse_transform(self, X: FData, y=None):
         """Applies the inverse transformation.
@@ -403,4 +416,4 @@ class ShiftRegistration(RegistrationTransformer):
 
         return X.shift(-self.deltas_, restrict_domain=self.restrict_domain,
                        extrapolation=self.extrapolation,
-                       eval_points=self.output_points)
+                       grid_points=self.output_points)

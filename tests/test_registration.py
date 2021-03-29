@@ -357,7 +357,7 @@ class TestRegistrationValidation(unittest.TestCase):
         scorer = AmplitudePhaseDecomposition()
         X = self.X.to_basis(Fourier())
         score = scorer(self.shift_registration, X)
-        np.testing.assert_allclose(score, 0.995087, rtol=1e-6)
+        np.testing.assert_allclose(score, 0.992519, rtol=1e-6)
 
     def test_default_score(self) -> None:
         """Test default score of a registration transformer."""

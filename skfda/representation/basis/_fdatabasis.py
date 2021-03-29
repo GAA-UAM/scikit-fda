@@ -284,32 +284,43 @@ class FDataBasis(FData):  # noqa: WPS214
         *,
         restrict_domain: bool = False,
         extrapolation: Optional[ExtrapolationLike] = None,
-        eval_points: Optional[np.ndarray] = None,
+        grid_points: Optional[GridPointsLike] = None,
         **kwargs: Any,
     ) -> T:
-        """Perform a shift of the curves.
+        """
+        Perform a shift of the curves.
+
+        The i-th shifted function :math:`y_i` has the form
+
+        .. math::
+            y_i(t) = x_i(t + \delta_i)
+
+        where :math:`x_i` is the i-th original function and :math:`delta_i` is
+        the shift performed for that function, that must be a vector in the
+        domain space.
+
+        Note that a positive shift moves the graph of the function in the
+        negative direction and vice versa.
 
         Args:
-            shifts: List with the the shift
+            shifts: List with the shifts
                 corresponding for each sample or numeric with the shift to
                 apply to all samples.
-            restrict_domain: If True restricts the domain to
-                avoid evaluate points outside the domain using extrapolation.
+            restrict_domain: If True restricts the domain to avoid the
+                evaluation of points outside the domain using extrapolation.
                 Defaults uses extrapolation.
             extrapolation: Controls the
                 extrapolation mode for elements outside the domain range.
                 By default uses the method defined in fd. See extrapolation to
                 more information.
-            eval_points: Set of points where
+            grid_points: Grid of points where
                 the functions are evaluated to obtain the discrete
-                representation of the object to operate. If an empty list is
-                passed it calls numpy.linspace with bounds equal to the ones
-                defined in fd.domain_range and the number of points the maximum
-                between 201 and 10 times the number of basis plus 1.
-            kwargs: Keyword arguments to be passed to :meth:`from_data`.
+                representation of the object to operate. If ``None`` the
+                current grid_points are used to unificate the domain of the
+                shifted data.
 
         Returns:
-            :obj:`FDataBasis` with the shifted data.
+            Shifted functions.
 
         """
         if self.dim_codomain > 1 or self.dim_domain > 1:
@@ -317,11 +328,11 @@ class FDataBasis(FData):  # noqa: WPS214
 
         domain_range = self.domain_range[0]
 
-        if eval_points is None:  # Grid to discretize the function
+        if grid_points is None:  # Grid to discretize the function
             nfine = max(self.n_basis * 10 + 1, constants.N_POINTS_COARSE_MESH)
-            eval_points = np.linspace(*domain_range, nfine)
+            grid_points = np.linspace(*domain_range, nfine)
         else:
-            eval_points = np.asarray(eval_points)
+            grid_points = np.asarray(grid_points)
 
         if np.isscalar(shifts):  # Special case, all curves with same shift
 
@@ -331,8 +342,8 @@ class FDataBasis(FData):  # noqa: WPS214
             ))
 
             return FDataBasis.from_data(
-                self.evaluate(eval_points),
-                grid_points=eval_points + shifts,
+                self.evaluate(grid_points),
+                grid_points=grid_points + shifts,
                 basis=basis,
                 **kwargs,
             )
@@ -348,10 +359,10 @@ class FDataBasis(FData):  # noqa: WPS214
             a = domain_range[0] - min(np.min(shifts), 0)
             b = domain_range[1] - max(np.max(shifts), 0)
             domain = (a, b)
-            eval_points = eval_points[
+            grid_points = grid_points[
                 np.logical_and(
-                    eval_points >= a,
-                    eval_points <= b,
+                    grid_points >= a,
+                    grid_points <= b,
                 )
             ]
         else:
@@ -359,7 +370,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         points_shifted = np.outer(
             np.ones(self.n_samples),
-            eval_points,
+            grid_points,
         )
 
         points_shifted += np.atleast_2d(shifts).T
@@ -375,7 +386,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return FDataBasis.from_data(
             data_matrix,
-            grid_points=eval_points,
+            grid_points=grid_points,
             basis=basis,
             **kwargs,
         )
@@ -514,7 +525,7 @@ class FDataBasis(FData):  # noqa: WPS214
         self,
         grid_points: Optional[GridPointsLike] = None,
         *,
-        sample_points: np.ndarray = None,
+        sample_points: Optional[GridPointsLike] = None,
     ) -> FDataGrid:
         """Return the discrete representation of the object.
 
@@ -610,7 +621,7 @@ class FDataBasis(FData):  # noqa: WPS214
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
     ) -> T:
         """Copy the FDataBasis."""
         if basis is None:

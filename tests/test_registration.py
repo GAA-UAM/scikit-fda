@@ -311,7 +311,7 @@ class TestShiftRegistration(unittest.TestCase):
         fd_registered_1 = reg.fit_transform(self.fd)
 
         np.testing.assert_array_almost_equal(
-            np.array(fd_registered_1.domain_range).round(3), [[0.022, 0.969]])
+            np.array(fd_registered_1.domain_range).round(3), [[0.022, 0.97]])
 
         reg2 = ShiftRegistration(restrict_domain=True, template=reg.template_)
         fd_registered_2 = reg2.fit_transform(self.fd)
@@ -333,8 +333,8 @@ class TestShiftRegistration(unittest.TestCase):
         # Only needed 1 iteration until convergence
         self.assertEqual(reg.n_iter_, 1)
 
-    def test_custom_output_points(self):
-        reg = ShiftRegistration(output_points=np.linspace(0, 1, 50))
+    def test_custom_grid_points(self):
+        reg = ShiftRegistration(grid_points=np.linspace(0, 1, 50))
         reg.fit_transform(self.fd)
 
 
@@ -357,7 +357,7 @@ class TestRegistrationValidation(unittest.TestCase):
         scorer = AmplitudePhaseDecomposition()
         X = self.X.to_basis(Fourier())
         score = scorer(self.shift_registration, X)
-        np.testing.assert_allclose(score, 0.992519, rtol=1e-6)
+        np.testing.assert_allclose(score, 0.995086, rtol=1e-6)
 
     def test_default_score(self) -> None:
         """Test default score of a registration transformer."""

@@ -110,14 +110,16 @@ class ShiftRegistration(RegistrationTransformer):
         array([-0.128,  0.187,  0.027,  0.034, -0.106,  0.114, ..., -0.06 ])
 
 
-        Registration and creation of a dataset in basis form using the
-        transformation previosly fitted:
+        Registration of a dataset in basis form using the
+        transformation previosly fitted. The result is a dataset in
+        discretized form, as it is not possible to express shifted functions
+        exactly as a basis expansion:
 
         >>> fd = make_sinusoidal_process(n_samples=2, error_std=0,
         ...                              random_state=2)
         >>> fd_basis = fd.to_basis(Fourier())
         >>> reg.transform(fd_basis)
-        FDataBasis(...)
+        FDataGrid(...)
 
 
     References:

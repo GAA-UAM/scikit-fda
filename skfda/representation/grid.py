@@ -994,13 +994,13 @@ class FDataGrid(FData):  # noqa: WPS214
         return self.copy(domain_range=domain_range)
 
     def shift(
-        self: T,
+        self,
         shifts: Union[ArrayLike, float],
         *,
         restrict_domain: bool = False,
         extrapolation: Optional[ExtrapolationLike] = None,
         grid_points: Optional[GridPointsLike] = None,
-    ) -> T:
+    ) -> FDataGrid:
         r"""
         Perform a shift of the curves.
 
@@ -1085,69 +1085,16 @@ class FDataGrid(FData):  # noqa: WPS214
             (0.3, 0.8)
 
         """
-        arr_shifts = np.array([shifts] if np.isscalar(shifts) else shifts)
-
-        # Accept unidimensional array when the domain dimension is one or when
-        # the shift is the same for each sample
-        if arr_shifts.ndim == 1:
-            arr_shifts = (
-                arr_shifts[np.newaxis, :]  # Same shift for each sample
-                if len(arr_shifts) == self.dim_domain
-                else arr_shifts[:, np.newaxis]
-            )
-
-        if len(arr_shifts) not in {1, self.n_samples}:
-            raise ValueError(
-                f"The length of the shift vector ({len(arr_shifts)}) must "
-                f"have length equal to 1 or to the number of samples "
-                f"({self.n_samples})",
-            )
-
         grid_points = (
             self.grid_points if grid_points is None
-            else _to_grid_points(grid_points)
+            else grid_points
         )
 
-        domain_range: DomainRangeLike
-        if restrict_domain:
-            domain = np.asarray(self.domain_range)
-
-            a = domain[:, 0] - np.min(np.min(arr_shifts, axis=0), 0)
-            b = domain[:, 1] - np.max(np.max(arr_shifts, axis=1), 0)
-
-            domain = np.hstack((a, b))
-            domain_range = tuple(domain)
-
-        else:
-            domain_range = self.domain_range
-
-        if len(arr_shifts) == 1:
-            shifted_grid_points = tuple(
-                g + s for g, s in zip(grid_points, arr_shifts[0])
-            )
-            data_matrix = self(
-                shifted_grid_points,
-                extrapolation=extrapolation,
-                aligned=True,
-                grid=True,
-            )
-        else:
-            shifted_grid_points_per_sample = (
-                tuple(
-                    g + s for g, s in zip(grid_points, shift)
-                ) for shift in arr_shifts
-            )
-            data_matrix = self(
-                shifted_grid_points_per_sample,
-                extrapolation=extrapolation,
-                aligned=False,
-                grid=True,
-            )
-
-        return self.copy(
-            data_matrix=data_matrix,
+        return super().shift(
+            shifts=shifts,
+            restrict_domain=restrict_domain,
+            extrapolation=extrapolation,
             grid_points=grid_points,
-            domain_range=domain_range,
         )
 
     def compose(

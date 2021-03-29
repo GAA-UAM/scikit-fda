@@ -24,7 +24,6 @@ from ..._utils import _check_array_key, _int_to_real, constants
 from .. import grid
 from .._functional_data import FData
 from .._typing import ArrayLike, DomainRange, GridPointsLike, LabelTupleLike
-from ..evaluator import Evaluator
 from ..extrapolation import ExtrapolationLike
 from . import Basis
 
@@ -260,7 +259,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         if aligned:
 
-            assert isinstance(eval_points, np.ndarray)
+            eval_points = np.asarray(eval_points)
 
             # Each row contains the values of one element of the basis
             basis_values = self.basis.evaluate(eval_points)
@@ -271,23 +270,24 @@ class FDataBasis(FData):  # noqa: WPS214
                 (self.n_samples, len(eval_points), self.dim_codomain),
             )
 
+        eval_points = cast(Iterable[ArrayLike], eval_points)
+
         res_list = [
-            np.sum((c * self.basis.evaluate(p).T).T, axis=0)
+            np.sum((c * self.basis.evaluate(np.asarray(p)).T).T, axis=0)
             for c, p in zip(self.coefficients, eval_points)
         ]
 
         return _to_array_maybe_ragged(res_list)
 
     def shift(
-        self: T,
-        shifts: np.ndarray,
+        self,
+        shifts: Union[ArrayLike, float],
         *,
         restrict_domain: bool = False,
         extrapolation: Optional[ExtrapolationLike] = None,
         grid_points: Optional[GridPointsLike] = None,
-        **kwargs: Any,
-    ) -> T:
-        """
+    ) -> FDataGrid:
+        r"""
         Perform a shift of the curves.
 
         The i-th shifted function :math:`y_i` has the form
@@ -323,72 +323,16 @@ class FDataBasis(FData):  # noqa: WPS214
             Shifted functions.
 
         """
-        if self.dim_codomain > 1 or self.dim_domain > 1:
-            raise ValueError
-
-        domain_range = self.domain_range[0]
-
-        if grid_points is None:  # Grid to discretize the function
-            nfine = max(self.n_basis * 10 + 1, constants.N_POINTS_COARSE_MESH)
-            grid_points = np.linspace(*domain_range, nfine)
-        else:
-            grid_points = np.asarray(grid_points)
-
-        if np.isscalar(shifts):  # Special case, all curves with same shift
-
-            basis = self.basis.rescale((
-                domain_range[0] + shifts,
-                domain_range[1] + shifts,
-            ))
-
-            return FDataBasis.from_data(
-                self.evaluate(grid_points),
-                grid_points=grid_points + shifts,
-                basis=basis,
-                **kwargs,
-            )
-
-        elif len(shifts) != self.n_samples:
-            raise ValueError(
-                f"shifts vector ({len(shifts)}) must have the "
-                f"same length than the number of samples "
-                f"({self.n_samples})",
-            )
-
-        if restrict_domain:
-            a = domain_range[0] - min(np.min(shifts), 0)
-            b = domain_range[1] - max(np.max(shifts), 0)
-            domain = (a, b)
-            grid_points = grid_points[
-                np.logical_and(
-                    grid_points >= a,
-                    grid_points <= b,
-                )
-            ]
-        else:
-            domain = domain_range
-
-        points_shifted = np.outer(
-            np.ones(self.n_samples),
-            grid_points,
+        grid_points = (
+            self._default_grid_points() if grid_points is None
+            else grid_points
         )
 
-        points_shifted += np.atleast_2d(shifts).T
-
-        # Matrix of shifted values
-        data_matrix = self(
-            points_shifted,
-            aligned=False,
+        return super().shift(
+            shifts=shifts,
+            restrict_domain=restrict_domain,
             extrapolation=extrapolation,
-        )[..., 0]
-
-        basis = self.basis.rescale(domain)
-
-        return FDataBasis.from_data(
-            data_matrix,
             grid_points=grid_points,
-            basis=basis,
-            **kwargs,
         )
 
     def derivative(self: T, *, order: int = 1) -> T:  # noqa: D102
@@ -570,14 +514,7 @@ class FDataBasis(FData):  # noqa: WPS214
             grid_points = sample_points
 
         if grid_points is None:
-            npoints = max(
-                constants.N_POINTS_FINE_MESH,
-                constants.BASIS_MIN_FACTOR * self.n_basis,
-            )
-            grid_points = [
-                np.linspace(*r, npoints)
-                for r in self.domain_range
-            ]
+            grid_points = self._default_grid_points()
 
         return grid.FDataGrid(
             self.evaluate(grid_points, grid=True),
@@ -657,6 +594,13 @@ class FDataBasis(FData):  # noqa: WPS214
             sample_names=sample_names,
             extrapolation=extrapolation,
         )
+
+    def _default_grid_points(self) -> GridPointsLike:
+        npoints = constants.N_POINTS_FINE_MESH
+        return [
+            np.linspace(*r, npoints)
+            for r in self.domain_range
+        ]
 
     def _to_R(self) -> str:  # noqa: N802
         """Return the code to build the object on fda package on R."""

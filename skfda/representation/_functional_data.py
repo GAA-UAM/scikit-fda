@@ -26,10 +26,11 @@ import numpy as np
 import pandas.api.extensions
 from typing_extensions import Literal
 
-from .._utils import _evaluate_grid, _reshape_eval_points
+from .._utils import _evaluate_grid, _reshape_eval_points, _to_grid_points
 from ._typing import (
     ArrayLike,
     DomainRange,
+    DomainRangeLike,
     GridPointsLike,
     LabelTuple,
     LabelTupleLike,
@@ -662,13 +663,13 @@ class FData(  # noqa: WPS214
 
     @abstractmethod
     def shift(
-        self: T,
-        shifts: Union[float, np.ndarray],
+        self,
+        shifts: Union[ArrayLike, float],
         *,
         restrict_domain: bool = False,
         extrapolation: Optional[ExtrapolationLike] = None,
         grid_points: Optional[GridPointsLike] = None,
-    ) -> T:
+    ) -> FDataGrid:
         r"""
         Perform a shift of the curves.
 
@@ -705,7 +706,68 @@ class FData(  # noqa: WPS214
             Shifted functions.
 
         """
-        pass
+        assert grid_points is not None
+        grid_points = _to_grid_points(grid_points)
+
+        arr_shifts = np.array([shifts] if np.isscalar(shifts) else shifts)
+
+        # Accept unidimensional array when the domain dimension is one or when
+        # the shift is the same for each sample
+        if arr_shifts.ndim == 1:
+            arr_shifts = (
+                arr_shifts[np.newaxis, :]  # Same shift for each sample
+                if len(arr_shifts) == self.dim_domain
+                else arr_shifts[:, np.newaxis]
+            )
+
+        if len(arr_shifts) not in {1, self.n_samples}:
+            raise ValueError(
+                f"The length of the shift vector ({len(arr_shifts)}) must "
+                f"have length equal to 1 or to the number of samples "
+                f"({self.n_samples})",
+            )
+
+        domain_range: DomainRangeLike
+        if restrict_domain:
+            domain = np.asarray(self.domain_range)
+
+            a = domain[:, 0] - np.min(np.min(arr_shifts, axis=0), 0)
+            b = domain[:, 1] - np.max(np.max(arr_shifts, axis=1), 0)
+
+            domain = np.hstack((a, b))
+            domain_range = tuple(domain)
+
+        else:
+            domain_range = self.domain_range
+
+        if len(arr_shifts) == 1:
+            shifted_grid_points = tuple(
+                g + s for g, s in zip(grid_points, arr_shifts[0])
+            )
+            data_matrix = self(
+                shifted_grid_points,
+                extrapolation=extrapolation,
+                aligned=True,
+                grid=True,
+            )
+        else:
+            shifted_grid_points_per_sample = (
+                tuple(
+                    g + s for g, s in zip(grid_points, shift)
+                ) for shift in arr_shifts
+            )
+            data_matrix = self(
+                shifted_grid_points_per_sample,
+                extrapolation=extrapolation,
+                aligned=False,
+                grid=True,
+            )
+
+        return self.to_grid().copy(
+            data_matrix=data_matrix,
+            grid_points=grid_points,
+            domain_range=domain_range,
+        )
 
     def plot(self, *args: Any, **kwargs: Any) -> Any:
         """Plot the FDatGrid object.

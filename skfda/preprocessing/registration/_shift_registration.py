@@ -39,13 +39,13 @@ class ShiftRegistration(RegistrationTransformer):
     Method only implemented for univariate functional data.
 
     Args:
-        max_iter (int, optional): Maximun number of iterations.
+        max_iter: Maximun number of iterations.
             Defaults sets to 5. Generally 2 or 3 iterations are sufficient to
             obtain a good alignment.
-        tol (float, optional): Tolerance allowable. The process will stop if
+        tol: Tolerance allowable. The process will stop if
             :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
             Default sets to 1e-2.
-        template (str, callable or FData, optional): Template to use in the
+        template: Template to use in the
             least squares criterion. If template="mean" it is use the
             functional mean as in the original paper. The template can be a
             callable that will receive an FDataGrid with the samples and will
@@ -56,31 +56,31 @@ class ShiftRegistration(RegistrationTransformer):
             template is computed iteratively constructing a temporal template
             in each iteration. In [RaSi2005-7-9-1]_ is described in detail this
             procedure. Defaults to "mean".
-        extrapolation (str or :class:`Extrapolation`, optional): Controls the
+        extrapolation: Controls the
             extrapolation mode for points outside the :term:`domain` range.
             By default uses the method defined in the data to be transformed.
             See the `extrapolation` documentation to obtain more information.
-        step_size (int or float, optional): Parameter to adjust the rate of
+        step_size: Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see [RaSi2005-7-9-1]_.
             Defaults to 1.
-        restrict_domain (bool, optional): If True restricts the :term:`domain`
+        restrict_domain: If True restricts the :term:`domain`
             to avoid the need of using extrapolation, in which
             case only the fit_transform method will be available, as training
             and transformation must be done together. Defaults to False.
-        initial (str or array_like, optional): Array with an initial estimation
+        initial: Array with an initial estimation
             of shifts. Default uses a list of zeros for the initial shifts.
-        grid_points (array_like, optional): Set of points where the
+        grid_points: Set of points where the
             functions are evaluated to obtain the discrete
             representation of the object to integrate. If None is
             passed it calls numpy.linspace in FDataBasis and uses the
             `grid_points` in FDataGrids.
 
     Attributes:
-        template_ (FData): Template :math:`\mu` learned during the fitting
+        template\_: Template :math:`\mu` learned during the fitting
             used to the transformation.
-        deltas_ (numpy.ndarray): List of shifts :math:`\delta_i` applied
+        deltas\_: List of shifts :math:`\delta_i` applied
             during the last transformation.
-        n_iter_ (int): Number of iterations performed during the last
+        n_iter\_: Number of iterations performed during the last
             transformation.
 
     Note:
@@ -260,90 +260,103 @@ class ShiftRegistration(RegistrationTransformer):
             Functional data registered.
 
         """
-        self.deltas_, self.template_ = self._compute_deltas(X, self.template)
+        deltas, template = self._compute_deltas(X, self.template)
 
-        return X.shift(self.deltas_, restrict_domain=self.restrict_domain,
-                       extrapolation=self.extrapolation,
-                       grid_points=self.grid_points)
+        self.deltas_ = deltas
+        self.template_ = template
 
-    def fit(self, X: FData, y=None):
+        return X.shift(
+            self.deltas_,
+            restrict_domain=self.restrict_domain,
+            extrapolation=self.extrapolation,
+            grid_points=self.grid_points,
+        )
+
+    def fit(self, X: FData, y: None = None) -> ShiftRegistration:
         """Fit the estimator.
 
         Args:
-            X (FData): Functional dataset used to construct the template for
+            X: Functional dataset used to construct the template for
                 the alignment.
-            y (ignored): not used, present for API consistency by convention.
+            y: not used, present for API consistency by convention.
 
         Returns:
-            RegistrationTransformer: self
+            self
 
         Raises:
             AttributeError: If this method is call when restrict_domain=True.
 
         """
         if self.restrict_domain:
-            raise AttributeError("fit and predict are not available when "
-                                 "restrict_domain=True, fitting and "
-                                 "transformation should be done together. Use "
-                                 "an extrapolation method with "
-                                 "restrict_domain=False or fit_predict")
+            raise AttributeError(
+                "fit and predict are not available when "
+                "restrict_domain=True, fitting and "
+                "transformation should be done together. Use "
+                "an extrapolation method with "
+                "restrict_domain=False or fit_predict",
+            )
 
         # If the template is an FData, fit doesnt learn anything
         if isinstance(self.template, FData):
             self.template_ = self.template
 
         else:
-            _, self.template_ = self._compute_deltas(X, self.template)
+            _, template = self._compute_deltas(X, self.template)
+
+            self.template_ = template
 
         return self
 
-    def transform(self, X: FData, y=None):
+    def transform(self, X: FData, y: None = None) -> FDataGrid:
         """Register the data.
 
         Transforms the data using the template previously learned during
         fitting.
 
         Args:
-            X (FData): Functional dataset to be transformed.
-            y (ignored): not used, present for API consistency by convention.
+            X: Functional dataset to be transformed.
+            y: not used, present for API consistency by convention.
 
         Returns:
-            FData: Functional data registered.
+            Functional data registered.
 
         Raises:
             AttributeError: If this method is call when restrict_domain=True.
 
         """
-
         if self.restrict_domain:
-            raise AttributeError("fit and predict are not available when "
-                                 "restrict_domain=True, fitting and "
-                                 "transformation should be done together. Use "
-                                 "an extrapolation method with "
-                                 "restrict_domain=False or fit_predict")
+            raise AttributeError(
+                "fit and predict are not available when "
+                "restrict_domain=True, fitting and "
+                "transformation should be done together. Use "
+                "an extrapolation method with "
+                "restrict_domain=False or fit_predict",
+            )
 
         # Check is fitted
-        check_is_fitted(self, 'template_')
+        check_is_fitted(self)
 
-        deltas, template = self._compute_deltas(X, self.template_)
-        self.template_ = template
+        deltas, _ = self._compute_deltas(X, self.template_)
         self.deltas_ = deltas
 
-        return X.shift(deltas, restrict_domain=self.restrict_domain,
-                       extrapolation=self.extrapolation,
-                       grid_points=self.grid_points)
+        return X.shift(
+            deltas,
+            restrict_domain=self.restrict_domain,
+            extrapolation=self.extrapolation,
+            grid_points=self.grid_points,
+        )
 
-    def inverse_transform(self, X: FData, y=None):
+    def inverse_transform(self, X: FData, y: None = None) -> FDataGrid:
         """Applies the inverse transformation.
 
         Applies the opossite shift used in the last call to `transform`.
 
         Args:
-            X (FData): Functional dataset to be transformed.
-            y (ignored): not used, present for API consistency by convention.
+            X: Functional dataset to be transformed.
+            y: not used, present for API consistency by convention.
 
         Returns:
-            FData: Functional data registered.
+            Functional data registered.
 
         Examples:
 
@@ -366,13 +379,22 @@ class ShiftRegistration(RegistrationTransformer):
         FDataGrid(...)
 
         """
-        if not hasattr(self, "deltas_"):
-            raise AttributeError("Data must be previously transformed to learn"
-                                 " the inverse transformation")
-        elif len(X) != len(self.deltas_):
-            raise ValueError("Data must contain the same number of samples "
-                             "than the dataset previously transformed")
+        deltas = getattr(self, "deltas_", None)
 
-        return X.shift(-self.deltas_, restrict_domain=self.restrict_domain,
-                       extrapolation=self.extrapolation,
-                       grid_points=self.grid_points)
+        if deltas is None:
+            raise AttributeError(
+                "Data must be previously transformed to learn"
+                " the inverse transformation",
+            )
+        elif len(X) != len(deltas):
+            raise ValueError(
+                "Data must contain the same number of samples "
+                "than the dataset previously transformed",
+            )
+
+        return X.shift(
+            -deltas,
+            restrict_domain=self.restrict_domain,
+            extrapolation=self.extrapolation,
+            grid_points=self.grid_points,
+        )

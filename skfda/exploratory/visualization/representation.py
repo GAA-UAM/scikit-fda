@@ -1,5 +1,23 @@
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TypedDict, TypeVar, Union
-from matplotlib import colors
+"""Representation Module.
+
+This module contains the functionality related
+with plotting and scattering our different datasets.
+It allows multiple modes and colors, which could
+be set manually or automatically depending on values
+like depth measures.
+"""
+
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 
 import matplotlib.cm
 import matplotlib.patches
@@ -43,11 +61,21 @@ def _get_label_colors(
 def _get_color_info(
     fdata: T,
     group: Union[Sequence[Any], None],
-    group_names: Union[Sequence[str], TypedDict[Any], None],
-    group_colors: Union[Sequence[Any], TypedDict[Any], None],
+    group_names: Union
+                [
+                    Sequence[str],
+                    TypedDict('group_names', {'ind': Any, 'str':str}),
+                    None,
+                ],
+    group_colors: Union
+                [
+                    Sequence[str],
+                    TypedDict('group_names', {'ind': Any, 'val':Any}),
+                    None,
+                ],
     legend: bool,
     kwargs: Any,
-) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
+) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]: 
 
     patches = None
 
@@ -182,11 +210,21 @@ class GraphPlot:
         ax: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
-        n_points: Union[int, Tuple[int, int], None],
-        domain_range: Union[Tuple[int, int], DomainRangeLike, None],
-        group: Union[Sequence[Any], None],
-        group_colors: Union[Sequence[Any], TypedDict, None],
-        group_names: Union[Sequence[str], TypedDict, None],
+        n_points: Union[int, Tuple[int, int], None] = None,
+        domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
+        group: Union[Sequence[Any], None] = None,
+        group_colors: Union
+                    [
+                        Sequence[Any],
+                        TypedDict('group_names', {'ind': Any, 'val':Any}),
+                        None,
+                    ] = None,
+        group_names: Union
+                    [
+                        Sequence[str],
+                        TypedDict('group_names', {'ind': Any, 'str':str}),
+                        None,
+                    ] = None,
         colormap_name: str = 'autumn',
         legend: bool = False,
         **kwargs: Any,
@@ -263,9 +301,9 @@ class GraphPlot:
         )
 
         if domain_range is None:
-            domain_range = self.fdata.domain_range
+            self.domain_range = self.fdata.domain_range
         else:
-            domain_range = _to_domain_range(domain_range)
+            self.domain_range = _to_domain_range(domain_range)
 
         if len(self.gradient_list) == 0:
             sample_colors, patches = _get_color_info(
@@ -286,7 +324,7 @@ class GraphPlot:
                 self.n_points = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
 
             # Evaluates the object in a linspace
-            eval_points = np.linspace(*domain_range[0], n_points)
+            eval_points = np.linspace(*self.domain_range[0], self.n_points)
             mat = self.fdata(eval_points)
 
             color_dict: Dict[str, Any] = {}
@@ -314,8 +352,8 @@ class GraphPlot:
                 )
 
             # Axes where will be evaluated
-            x = np.linspace(*domain_range[0], n_points_tuple[0])
-            y = np.linspace(*domain_range[1], n_points_tuple[1])
+            x = np.linspace(*self.domain_range[0], n_points_tuple[0])
+            y = np.linspace(*self.domain_range[1], n_points_tuple[1])
 
             # Evaluation of the functional object
             Z = self.fdata((x, y), grid=True)
@@ -346,7 +384,7 @@ class ScatterPlot:
 
     Args:
         fdata: functional data set that we want to plot.
-        grid_points (ndarray): points to plot.
+        grid_points: points to plot.
 
     """
 
@@ -366,10 +404,20 @@ class ScatterPlot:
         ax: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
-        domain_range: Union[Tuple[int, int], Sequence[Tuple[int, int]], None],
-        group: Union[Sequence[Any], None],
-        group_colors: Union[Sequence[Any], TypedDict, None],
-        group_names: Union[Sequence[str], TypedDict, None],
+        domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
+        group: Union[Sequence[Any], None] = None,
+        group_colors: Union
+                    [
+                        Sequence[Any],
+                        TypedDict('group_names', {'ind': Any, 'val':Any}),
+                        None,
+                    ] = None,
+        group_names: Union
+                    [
+                        Sequence[str],
+                        TypedDict('group_names', {'ind': Any, 'str':str}),
+                        None,
+                    ] = None,
         legend: bool = False,
         **kwargs: Any,
     ) -> Figure:
@@ -377,39 +425,37 @@ class ScatterPlot:
         Scatter FDataGrid object.
 
         Args:
-            chart (figure object, axe or list of axes, optional): figure over
-                with the graphs are plotted or axis over where the graphs are
-                plotted. If None and ax is also None, the figure is
-                initialized.
-            fig (figure object, optional): figure over with the graphs are
-                plotted in case ax is not specified. If None and ax is also
+            chart: figure over with the graphs are plotted or axis 
+                over where the graphs are plotted. If None and ax
+                is also None, the figure is initialized.
+            fig: figure over with the graphs are plotted in case ax is not 
+                specified. If None and ax is also
                 None, the figure is initialized.
-            ax (list of axis objects, optional): axis over where the graphs
-                are plotted. If None, see param fig.
-            n_rows (int, optional): designates the number of rows of the figure
+            ax: axis over where the graphs are plotted. If None, see param fig.
+            n_rows: designates the number of rows of the figure
                 to plot the different dimensions of the image. Only specified
                 if fig and ax are None.
-            n_cols(int, optional): designates the number of columns of the
+            n_cols: designates the number of columns of the
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
-            domain_range (tuple or list of tuples, optional): Range where the
-                function will be plotted. In objects with unidimensional domain
+            domain_range: Range where the function will be 
+                plotted. In objects with unidimensional domain
                 the domain range should be a tuple with the bounds of the
                 interval; in the case of surfaces a list with 2 tuples with
                 the ranges for each dimension. Default uses the domain range
                 of the functional object.
-            group (list of int): contains integers from [0 to number of
-                labels) indicating to which group each sample belongs to. Then,
+            group: contains integers from [0 to number of labels) 
+                indicating to which group each sample belongs to. Then,
                 the samples with the same label are plotted in the same color.
                 If None, the default value, each sample is plotted in the color
                 assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-            group_colors (list of colors): colors in which groups are
-                represented, there must be one for each group. If None, each
+            group_colors: colors in which groups are represented,
+                there must be one for each group. If None, each
                 group is shown with distict colors in the "Greys" colormap.
-            group_names (list of str): name of each of the groups which appear
+            group_names: name of each of the groups which appear
                 in a legend, there must be one for each one. Defaults to None
                 and the legend is not shown. Implies `legend=True`.
-            legend (bool): if `True`, show a legend with the groups. If
+            legend: if `True`, show a legend with the groups. If
                 `group_names` is passed, it will be used for finding the names
                 to display in the legend. Otherwise, the values passed to
                 `group` will be used.

@@ -51,6 +51,7 @@ def _get_figure_and_axes(
     axes: Union[Axes, Sequence[Axes], None] = None,
 ) -> Tuple[Figure, Sequence[Axes]]:
     """Obtain the figure and axes from the arguments."""
+    
 
     num_defined = sum(e is not None for e in (chart, fig, axes))
     if num_defined > 1:

@@ -10,12 +10,23 @@ from __future__ import annotations
 import copy
 import numbers
 import warnings
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import findiff
 import numpy as np
 import pandas.api.extensions
 from matplotlib.figure import Figure
+from typing_extensions import Literal
 
 import scipy.stats.mstats
 
@@ -37,6 +48,7 @@ from ._typing import (
 )
 from .basis import Basis
 from .evaluator import Evaluator
+from .extrapolation import ExtrapolationLike
 from .interpolation import SplineInterpolation
 
 if TYPE_CHECKING:
@@ -135,7 +147,7 @@ class FDataGrid(FData):  # noqa: WPS214
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
         axes_labels: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
         interpolation: Optional[Evaluator] = None,
     ):
         """Construct a FDataGrid object."""
@@ -184,15 +196,6 @@ class FDataGrid(FData):  # noqa: WPS214
 
         if len(self._domain_range) != self.dim_domain:
             raise ValueError("Incorrect shape of domain_range.")
-
-        for i in range(self.dim_domain):
-            if (
-                self._domain_range[i][0] > self.grid_points[i][0]
-                or self._domain_range[i][-1] < self.grid_points[i][-1]
-            ):
-                raise ValueError(
-                    "Sample points must be within the domain range.",
-                )
 
         # Adjust the data matrix if the dimension of the image is one
         if self.data_matrix.ndim == 1 + self.dim_domain:
@@ -385,19 +388,19 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def _evaluate(
         self,
-        eval_points: np.ndarray,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
 
-        return self.interpolation.evaluate(
+        return self.interpolation(  # type: ignore
             self,
             eval_points,
             aligned=aligned,
         )
 
     def derivative(self: T, *, order: int = 1) -> T:
-        r"""Differentiate a FDataGrid object.
+        """Differentiate a FDataGrid object.
 
         It is calculated using central finite differences when possible. In
         the extremes, forward and backward finite differences with accuracy
@@ -588,10 +591,12 @@ class FDataGrid(FData):  # noqa: WPS214
             sample_names=("geometric mean",),
         )
 
-    def equals(self, other: Any) -> bool:
+    def equals(self, other: object) -> bool:
         """Comparison of FDataGrid objects."""
         if not super().equals(other):
             return False
+
+        other = cast(FDataGrid, other)
 
         if not np.array_equal(self.data_matrix, other.data_matrix):
             return False
@@ -607,12 +612,9 @@ class FDataGrid(FData):  # noqa: WPS214
         ):
             return False
 
-        if self.interpolation != other.interpolation:
-            return False
+        return self.interpolation == other.interpolation
 
-        return True
-
-    def __eq__(self, other: Any) -> np.ndarray:  # type: ignore[override]
+    def __eq__(self, other: object) -> np.ndarray:  # type: ignore[override]
         """Elementwise equality of FDataGrid."""
         if not isinstance(other, type(self)) or self.dtype != other.dtype:
             if other is pandas.NA:
@@ -640,7 +642,7 @@ class FDataGrid(FData):  # noqa: WPS214
         self,
         other: Union[T, np.ndarray, float],
     ) -> Union[None, float, np.ndarray]:
-        if isinstance(other, numbers.Number):
+        if isinstance(other, numbers.Real):
             return float(other)
         elif isinstance(other, np.ndarray):
 
@@ -882,8 +884,11 @@ class FDataGrid(FData):  # noqa: WPS214
             )
             grid_points = sample_points
 
-        if grid_points is None:
-            grid_points = self.grid_points
+        grid_points = (
+            self.grid_points
+            if grid_points is None
+            else _to_grid_points(grid_points)
+        )
 
         return self.copy(
             data_matrix=self.evaluate(grid_points, grid=True),
@@ -902,7 +907,7 @@ class FDataGrid(FData):  # noqa: WPS214
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
         interpolation: Optional[Evaluator] = None,
     ) -> T:
         """
@@ -964,127 +969,132 @@ class FDataGrid(FData):  # noqa: WPS214
             interpolation=interpolation,
         )
 
-    def shift(
+    def restrict(
         self: T,
-        shifts: Union[np.ndarray, float],
+        domain_range: DomainRangeLike,
+    ) -> T:
+        """
+        Restrict the functions to a new domain range.
+
+        Args:
+            domain_range: New domain range.
+
+        Returns:
+            Restricted function.
+
+        """
+        domain_range = _to_domain_range(domain_range)
+        assert all(
+            c <= a < b <= d  # noqa: WPS228
+            for ((a, b), (c, d)) in zip(domain_range, self.domain_range)
+        )
+
+        # We could in principle eliminate points outside the new range.
+
+        return self.copy(domain_range=domain_range)
+
+    def shift(
+        self,
+        shifts: Union[ArrayLike, float],
         *,
         restrict_domain: bool = False,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
-        eval_points: Optional[np.ndarray] = None,
-    ) -> T:
-        """Perform a shift of the curves.
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid_points: Optional[GridPointsLike] = None,
+    ) -> FDataGrid:
+        r"""
+        Perform a shift of the curves.
+
+        The i-th shifted function :math:`y_i` has the form
+
+        .. math::
+            y_i(t) = x_i(t + \delta_i)
+
+        where :math:`x_i` is the i-th original function and :math:`delta_i` is
+        the shift performed for that function, that must be a vector in the
+        domain space.
+
+        Note that a positive shift moves the graph of the function in the
+        negative direction and vice versa.
 
         Args:
             shifts: List with the shifts
                 corresponding for each sample or numeric with the shift to
                 apply to all samples.
-            restrict_domain: If True restricts the domain to
-                avoid evaluate points outside the domain using extrapolation.
+            restrict_domain: If True restricts the domain to avoid the
+                evaluation of points outside the domain using extrapolation.
                 Defaults uses extrapolation.
             extrapolation: Controls the
                 extrapolation mode for elements outside the domain range.
                 By default uses the method defined in fd. See extrapolation to
                 more information.
-            eval_points: Set of points where
+            grid_points: Grid of points where
                 the functions are evaluated to obtain the discrete
-                representation of the object to operate. If an empty list the
+                representation of the object to operate. If ``None`` the
                 current grid_points are used to unificate the domain of the
                 shifted data.
 
         Returns:
-            :class:`FDataGrid` with the shifted data.
+            Shifted functions.
+
+        Examples:
+            >>> import numpy as np
+            >>> import skfda
+            >>>
+            >>> t = np.linspace(0, 1, 6)
+            >>> x = np.array([t, t**2, t**3])
+            >>> fd = FDataGrid(x, t)
+            >>> fd.domain_range[0]
+            (0.0, 1.0)
+            >>> fd.grid_points[0]
+            array([ 0. ,  0.2,  0.4,  0.6,  0.8,  1. ])
+            >>> fd.data_matrix[..., 0]
+            array([[ 0.   ,  0.2  ,  0.4  ,  0.6  ,  0.8  ,  1.   ],
+                   [ 0.   ,  0.04 ,  0.16 ,  0.36 ,  0.64 ,  1.   ],
+                   [ 0.   ,  0.008,  0.064,  0.216,  0.512,  1.   ]])
+
+            Shift all curves by the same amount:
+
+            >>> shifted = fd.shift(0.2)
+            >>> shifted.domain_range[0]
+            (0.0, 1.0)
+            >>> shifted.grid_points[0]
+            array([ 0. ,  0.2,  0.4,  0.6,  0.8,  1. ])
+            >>> shifted.data_matrix[..., 0]
+            array([[ 0.2  ,  0.4  ,  0.6  ,  0.8  ,  1.   ,  1.2  ],
+                   [ 0.04 ,  0.16 ,  0.36 ,  0.64 ,  1.   ,  1.36 ],
+                   [ 0.008,  0.064,  0.216,  0.512,  1.   ,  1.488]])
+
+
+            Different shift per curve:
+
+            >>> shifted = fd.shift([-0.2, 0.0, 0.2])
+            >>> shifted.domain_range[0]
+            (0.0, 1.0)
+            >>> shifted.grid_points[0]
+            array([ 0. ,  0.2,  0.4,  0.6,  0.8,  1. ])
+            >>> shifted.data_matrix[..., 0]
+            array([[-0.2  ,  0.   ,  0.2  ,  0.4  ,  0.6  ,  0.8  ],
+                   [ 0.   ,  0.04 ,  0.16 ,  0.36 ,  0.64 ,  1.   ],
+                   [ 0.008,  0.064,  0.216,  0.512,  1.   ,  1.488]])
+
+            It is possible to restrict the domain to prevent the need for
+            extrapolations:
+
+            >>> shifted = fd.shift([-0.3, 0.1, 0.2], restrict_domain=True)
+            >>> shifted.domain_range[0]
+            (0.3, 0.8)
 
         """
-        arr_shifts = np.array([shifts] if np.isscalar(shifts) else shifts)
-
-        # Case unidimensional treated as the multidimensional
-        if (
-            self.dim_domain == 1
-            and arr_shifts.ndim == 1
-            and arr_shifts.shape[0] != 1
-        ):
-            arr_shifts = arr_shifts[:, np.newaxis]
-
-        # Case same shift for all the curves
-        if arr_shifts.shape[0] == self.dim_domain and arr_shifts.ndim == 1:
-
-            # Column vector with shapes
-            arr_shifts = np.atleast_2d(arr_shifts).T
-
-            grid_points = self.grid_points + arr_shifts
-            domain_range = self.domain_range + arr_shifts
-
-            return self.copy(
-                grid_points=grid_points,
-                domain_range=domain_range,
-            )
-
-        if arr_shifts.shape[0] != self.n_samples:
-            raise ValueError(
-                f"shifts vector ({arr_shifts.shape[0]}) must have the"
-                f" same length than the number of samples "
-                f"({self.n_samples})",
-            )
-
-        eval_points = (
-            self.grid_points if eval_points is None
-            else np.atleast_2d(eval_points)
+        grid_points = (
+            self.grid_points if grid_points is None
+            else grid_points
         )
 
-        if restrict_domain:
-            domain = np.asarray(self.domain_range)
-            a = domain[:, 0] - np.atleast_1d(
-                np.min(np.min(arr_shifts, axis=1), 0),
-            )
-            b = domain[:, 1] - np.atleast_1d(
-                np.max(np.max(arr_shifts, axis=1), 0),
-            )
-
-            domain = np.vstack((a, b)).T
-
-            eval_points = [
-                eval_points[i][
-                    np.logical_and(
-                        eval_points[i] >= domain[i, 0],
-                        eval_points[i] <= domain[i, 1],
-                    )]
-                for i in range(self.dim_domain)
-            ]
-
-        else:
-            domain = self.domain_range
-
-        eval_points = np.asarray(eval_points)
-
-        eval_points_repeat = np.repeat(
-            eval_points[np.newaxis, :],
-            self.n_samples,
-            axis=0,
-        )
-
-        # Solve problem with cartesian and matrix indexing
-        if self.dim_domain > 1:
-            arr_shifts[:, :2] = np.flip(arr_shifts[:, :2], axis=1)
-
-        arr_shifts = np.repeat(
-            arr_shifts[..., np.newaxis],
-            eval_points.shape[1],
-            axis=2,
-        )
-
-        eval_points_shifted = eval_points_repeat + arr_shifts
-
-        data_matrix = self.evaluate(
-            eval_points_shifted,
+        return super().shift(
+            shifts=shifts,
+            restrict_domain=restrict_domain,
             extrapolation=extrapolation,
-            aligned=False,
-            grid=True,
-        )
-
-        return self.copy(
-            data_matrix=data_matrix,
-            grid_points=eval_points,
-            domain_range=domain,
+            grid_points=grid_points,
         )
 
     def compose(

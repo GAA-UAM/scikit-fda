@@ -809,15 +809,14 @@ def fetch_weather(
         X = curves
         meta = np.concatenate(
             (
-                np.array(data["place"])[:, np.newaxis],
-                np.array(data["province"])[:, np.newaxis],
-                np.asarray(data["coordinates"]),
-                np.array(data["geogindex"])[:, np.newaxis],
+                np.array(data["place"], dtype=np.object_)[:, np.newaxis],
+                np.array(data["province"], dtype=np.object_)[:, np.newaxis],
+                np.asarray(data["coordinates"], dtype=np.object_),
+                np.array(data["geogindex"], dtype=np.object_)[:, np.newaxis],
                 np.asarray(data["monthlyTemp"]).T.tolist(),
                 np.asarray(data["monthlyPrecip"]).T.tolist(),
             ),
             axis=1,
-            dtype=np.object_
         )
         meta_names = [
             "place",

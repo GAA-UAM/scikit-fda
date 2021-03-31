@@ -4,7 +4,16 @@ Module to interpolate functional data objects.
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any, Callable, Sequence, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+)
 
 import numpy as np
 
@@ -16,6 +25,7 @@ from scipy.interpolate import (
 )
 
 from .._utils import _to_array_maybe_ragged
+from ._typing import ArrayLike
 from .evaluator import Evaluator
 
 if TYPE_CHECKING:
@@ -69,7 +79,7 @@ class _SplineList(abc.ABC):
     def evaluate(
         self,
         fdata: FData,
-        eval_points: np.ndarray,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -77,6 +87,9 @@ class _SplineList(abc.ABC):
         res: np.ndarray
 
         if aligned:
+
+            eval_points = np.asarray(eval_points)
+
             # Points evaluated inside the domain
             res = np.apply_along_axis(
                 self._evaluate_codomain,
@@ -92,8 +105,10 @@ class _SplineList(abc.ABC):
             )
 
         else:
+            eval_points = cast(Iterable[ArrayLike], eval_points)
+
             res = _to_array_maybe_ragged([
-                self._evaluate_codomain(s, e)
+                self._evaluate_codomain(s, np.asarray(e))
                 for s, e in zip(self.splines, eval_points)
             ])
 
@@ -489,10 +504,10 @@ class SplineInterpolation(Evaluator):
             smoothness_parameter=self.smoothness_parameter,
         )
 
-    def evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102
         self,
         fdata: FData,
-        eval_points: np.ndarray,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:

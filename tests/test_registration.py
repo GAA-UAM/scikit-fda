@@ -1,21 +1,33 @@
-from skfda import FDataGrid
-from skfda._utils import _check_estimator
-from skfda.datasets import (make_multimodal_samples, make_multimodal_landmarks,
-                            make_sinusoidal_process)
-from skfda.exploratory.stats import mean
-from skfda.preprocessing.registration import (
-    normalize_warping, invert_warping, landmark_shift_deltas, landmark_shift,
-    landmark_registration_warping, landmark_registration, ShiftRegistration)
-from skfda.preprocessing.registration.validation import (
-    AmplitudePhaseDecomposition, LeastSquares,
-    SobolevLeastSquares, PairwiseCorrelation)
-from skfda.representation.basis import Fourier
-from skfda.representation.interpolation import SplineInterpolation
 import unittest
 
+import numpy as np
 from sklearn.exceptions import NotFittedError
 
-import numpy as np
+from skfda import FDataGrid
+from skfda._utils import _check_estimator
+from skfda.datasets import (
+    make_multimodal_landmarks,
+    make_multimodal_samples,
+    make_sinusoidal_process,
+)
+from skfda.exploratory.stats import mean
+from skfda.preprocessing.registration import (
+    ShiftRegistration,
+    invert_warping,
+    landmark_registration,
+    landmark_registration_warping,
+    landmark_shift,
+    landmark_shift_deltas,
+    normalize_warping,
+)
+from skfda.preprocessing.registration.validation import (
+    AmplitudePhaseDecomposition,
+    LeastSquares,
+    PairwiseCorrelation,
+    SobolevLeastSquares,
+)
+from skfda.representation.basis import Fourier
+from skfda.representation.interpolation import SplineInterpolation
 
 
 class TestWarping(unittest.TestCase):
@@ -327,63 +339,62 @@ class TestShiftRegistration(unittest.TestCase):
 
 
 class TestRegistrationValidation(unittest.TestCase):
-    """Test shift registration"""
+    """Test validation functions."""
 
-    def setUp(self):
-        """Initialization of samples"""
+    def setUp(self) -> None:
+        """Initialize the samples."""
         self.X = make_sinusoidal_process(error_std=0, random_state=0)
         self.shift_registration = ShiftRegistration().fit(self.X)
 
-    def test_amplitude_phase_score(self):
+    def test_amplitude_phase_score(self) -> None:
+        """Test basic usage of AmplitudePhaseDecomposition."""
         scorer = AmplitudePhaseDecomposition()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_allclose(score, 0.972095, rtol=1e-6)
+        np.testing.assert_allclose(score, 0.971144, rtol=1e-6)
 
-    def test_amplitude_phase_score_with_output_points(self):
-        eval_points = self.X.grid_points[0]
-        scorer = AmplitudePhaseDecomposition(eval_points=eval_points)
-        score = scorer(self.shift_registration, self.X)
-        np.testing.assert_allclose(score, 0.972095, rtol=1e-6)
-
-    def test_amplitude_phase_score_with_basis(self):
+    def test_amplitude_phase_score_with_basis(self) -> None:
+        """Test the AmplitudePhaseDecomposition with FDataBasis."""
         scorer = AmplitudePhaseDecomposition()
         X = self.X.to_basis(Fourier())
         score = scorer(self.shift_registration, X)
-        np.testing.assert_allclose(score, 0.995087, rtol=1e-6)
+        np.testing.assert_allclose(score, 0.992519, rtol=1e-6)
 
-    def test_default_score(self):
-
+    def test_default_score(self) -> None:
+        """Test default score of a registration transformer."""
         score = self.shift_registration.score(self.X)
-        np.testing.assert_allclose(score, 0.972095, rtol=1e-6)
+        np.testing.assert_allclose(score, 0.971144, rtol=1e-6)
 
-    def test_least_squares_score(self):
+    def test_least_squares_score(self) -> None:
+        """Test LeastSquares."""
         scorer = LeastSquares()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_allclose(score, 0.795933, rtol=1e-6)
+        np.testing.assert_allclose(score, 0.953355, rtol=1e-6)
 
-    def test_sobolev_least_squares_score(self):
+    def test_sobolev_least_squares_score(self) -> None:
+        """Test SobolevLeastSquares."""
         scorer = SobolevLeastSquares()
         score = scorer(self.shift_registration, self.X)
-        np.testing.assert_allclose(score, 0.76124, rtol=1e-6)
+        np.testing.assert_allclose(score, 0.923962, rtol=1e-6)
 
-    def test_pairwise_correlation(self):
+    def test_pairwise_correlation(self) -> None:
+        """Test PairwiseCorrelation."""
         scorer = PairwiseCorrelation()
         score = scorer(self.shift_registration, self.X)
         np.testing.assert_allclose(score, 1.816228, rtol=1e-6)
 
-    def test_mse_decomposition(self):
-
+    def test_mse_decomposition(self) -> None:
+        """Test obtaining all stats from AmplitudePhaseDecomposition."""
         fd = make_multimodal_samples(n_samples=3, random_state=1)
         landmarks = make_multimodal_landmarks(n_samples=3, random_state=1)
         landmarks = landmarks.squeeze()
         warping = landmark_registration_warping(fd, landmarks)
         fd_registered = fd.compose(warping)
-        scorer = AmplitudePhaseDecomposition(return_stats=True)
-        ret = scorer.score_function(fd, fd_registered, warping=warping)
-        np.testing.assert_allclose(ret.mse_amp, 0.0009866997121476962)
-        np.testing.assert_allclose(ret.mse_pha, 0.11576935495450151)
-        np.testing.assert_allclose(ret.r_squared, 0.9915489952877273)
-        np.testing.assert_allclose(ret.c_r, 0.999999, rtol=1e-6)
+        scorer = AmplitudePhaseDecomposition()
+        ret = scorer.stats(fd, fd_registered)
+        np.testing.assert_allclose(ret.mse_amplitude, 0.0009465483)
+        np.testing.assert_allclose(ret.mse_phase, 0.1051769136)
+        np.testing.assert_allclose(ret.r_squared, 0.9910806875)
+        np.testing.assert_allclose(ret.c_r, 0.9593073773)
 
     def test_raises_amplitude_phase(self):
         scorer = AmplitudePhaseDecomposition()
@@ -394,7 +405,7 @@ class TestRegistrationValidation(unittest.TestCase):
 
         # Inconsistent number of functions registered
         with np.testing.assert_raises(ValueError):
-            scorer.score_function(self.X, self.X, warping=self.X[:2])
+            scorer.score_function(self.X, self.X[:-1])
 
 
 if __name__ == '__main__':

@@ -43,8 +43,8 @@ def _get_label_colors(
 def _get_color_info(
     fdata: T,
     group: Union[Sequence[Any], None],
-    group_names: Union[Sequence[str], TypedDict, None],
-    group_colors: Union[Sequence[Any], TypedDict, None],
+    group_names: Union[Sequence[str], TypedDict[Any], None],
+    group_colors: Union[Sequence[Any], TypedDict[Any], None],
     legend: bool,
     kwargs: Any,
 ) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:

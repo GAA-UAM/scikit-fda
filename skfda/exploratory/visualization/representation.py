@@ -61,16 +61,14 @@ def _get_label_colors(
 def _get_color_info(
     fdata: T,
     group: Union[Sequence[Any], None],
-    group_names: Union
-                [
+    group_names: Union[
                     Sequence[str],
-                    TypedDict('group_names', {'ind': Any, 'str':str}),
+                    TypedDict('group_names', {'ind': Any, 'str': str}),
                     None,
                 ],
-    group_colors: Union
-                [
+    group_colors: Union[
                     Sequence[str],
-                    TypedDict('group_names', {'ind': Any, 'val':Any}),
+                    TypedDict('group_names', {'ind': Any, 'val': Any}),
                     None,
                 ],
     legend: bool,
@@ -213,16 +211,14 @@ class GraphPlot:
         n_points: Union[int, Tuple[int, int], None] = None,
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
         group: Union[Sequence[Any], None] = None,
-        group_colors: Union
-                    [
+        group_colors: Union[
                         Sequence[Any],
-                        TypedDict('group_names', {'ind': Any, 'val':Any}),
+                        TypedDict('group_names', {'ind': Any, 'val': Any}),
                         None,
                     ] = None,
-        group_names: Union
-                    [
+        group_names: Union[
                         Sequence[str],
-                        TypedDict('group_names', {'ind': Any, 'str':str}),
+                        TypedDict('group_names', {'ind': Any, 'str': str}),
                         None,
                     ] = None,
         colormap_name: str = 'autumn',
@@ -406,16 +402,14 @@ class ScatterPlot:
         n_cols: Optional[int] = None,
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
         group: Union[Sequence[Any], None] = None,
-        group_colors: Union
-                    [
+        group_colors: Union[
                         Sequence[Any],
-                        TypedDict('group_names', {'ind': Any, 'val':Any}),
+                        TypedDict('group_names', {'ind': Any, 'val': Any}),
                         None,
                     ] = None,
-        group_names: Union
-                    [
+        group_names: Union[
                         Sequence[str],
-                        TypedDict('group_names', {'ind': Any, 'str':str}),
+                        TypedDict('group_names', {'ind': Any, 'str': str}),
                         None,
                     ] = None,
         legend: bool = False,

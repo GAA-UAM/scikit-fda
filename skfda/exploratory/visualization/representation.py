@@ -492,8 +492,7 @@ class ScatterPlot:
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
 
-                    if sample_colors is not None:
-                        color_dict["color"] = sample_colors[j]
+                    self.set_color_dict(sample_colors, j, color_dict)
 
                     axes[i].scatter(
                         self.grid_points[0],
@@ -513,8 +512,7 @@ class ScatterPlot:
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
 
-                    if sample_colors is not None:
-                        color_dict["color"] = sample_colors[j]
+                    self.set_color_dict(sample_colors, j, color_dict)
 
                     axes[i].scatter(
                         X,
@@ -527,3 +525,12 @@ class ScatterPlot:
         _set_labels(self.fdata, fig, axes, patches)
 
         return fig
+
+    def set_color_dict(
+        sample_colors: Any,
+        ind: int,
+        color_dict: Dict[str, Any],
+    ) -> None:
+        if sample_colors is not None:
+            color_dict["color"] = sample_colors[ind]
+            

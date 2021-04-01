@@ -7,16 +7,7 @@ be set manually or automatically depending on values
 like depth measures.
 """
 
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 
 import matplotlib.cm
 import matplotlib.patches
@@ -60,12 +51,14 @@ def _get_label_colors(
 def _get_color_info(
     fdata: T,
     group: Union[Sequence[Any], None],
-    group_names: Union[
+    group_names: Union
+    [
         Sequence[str],
         Dict[Any, str],
         None,
     ],
-    group_colors: Union[
+    group_colors: Union
+    [
         Sequence[str],
         Dict[Any, Any],
         None,
@@ -210,12 +203,14 @@ class GraphPlot:
         n_points: Union[int, Tuple[int, int], None] = None,
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
         group: Union[Sequence[Any], None] = None,
-        group_colors: Union[
+        group_colors: Union
+        [
             Sequence[Any],
             Dict[Any, Any],
             None,
         ] = None,
-        group_names: Union[
+        group_names: Union
+        [
             Sequence[str],
             Dict[Any, str],
             None,
@@ -401,12 +396,14 @@ class ScatterPlot:
         n_cols: Optional[int] = None,
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
         group: Union[Sequence[Any], None] = None,
-        group_colors: Union[
+        group_colors: Union
+        [
             Sequence[Any],
             Dict[Any, Any],
             None,
         ] = None,
-        group_names: Union[
+        group_names: Union
+        [
             Sequence[str],
             Dict[Any, str],
             None,

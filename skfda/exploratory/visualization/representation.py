@@ -527,6 +527,7 @@ class ScatterPlot:
         return fig
 
     def set_color_dict(
+        self,
         sample_colors: Any,
         ind: int,
         color_dict: Dict[str, Any],

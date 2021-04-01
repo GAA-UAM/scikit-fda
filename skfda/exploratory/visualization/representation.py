@@ -51,21 +51,11 @@ def _get_label_colors(
 def _get_color_info(
     fdata: T,
     group: Union[Sequence[Any], None],
-    group_names: Union
-    [
-        Sequence[str],
-        Dict[Any, str],
-        None,
-    ],
-    group_colors: Union
-    [
-        Sequence[str],
-        Dict[Any, Any],
-        None,
-    ],
+    group_names: Union[Sequence[str], Dict[Any, str], None],
+    group_colors: Union[Sequence[Any], Dict[Any, Any], None],
     legend: bool,
     kwargs: Any,
-) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]: 
+) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
 
     patches = None
 
@@ -203,18 +193,8 @@ class GraphPlot:
         n_points: Union[int, Tuple[int, int], None] = None,
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
         group: Union[Sequence[Any], None] = None,
-        group_colors: Union
-        [
-            Sequence[Any],
-            Dict[Any, Any],
-            None,
-        ] = None,
-        group_names: Union
-        [
-            Sequence[str],
-            Dict[Any, str],
-            None,
-        ] = None,
+        group_colors: Union[Sequence[Any], Dict[Any, Any], None] = None,
+        group_names: Union[Sequence[str], Dict[Any, str], None] = None,
         colormap_name: str = 'autumn',
         legend: bool = False,
         **kwargs: Any,
@@ -396,18 +376,8 @@ class ScatterPlot:
         n_cols: Optional[int] = None,
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
         group: Union[Sequence[Any], None] = None,
-        group_colors: Union
-        [
-            Sequence[Any],
-            Dict[Any, Any],
-            None,
-        ] = None,
-        group_names: Union
-        [
-            Sequence[str],
-            Dict[Any, str],
-            None,
-        ] = None,
+        group_colors: Union[Sequence[Any], Dict[Any, Any], None] = None,
+        group_names: Union[Sequence[str], Dict[Any, str], None] = None,
         legend: bool = False,
         **kwargs: Any,
     ) -> Figure:

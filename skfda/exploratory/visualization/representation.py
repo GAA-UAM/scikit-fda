@@ -14,7 +14,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    TypedDict,
     TypeVar,
     Union,
 )
@@ -63,12 +62,12 @@ def _get_color_info(
     group: Union[Sequence[Any], None],
     group_names: Union[
                     Sequence[str],
-                    TypedDict('group_names', {'ind': Any, 'str': str}),
+                    Dict[Any, str],
                     None,
                 ],
     group_colors: Union[
                     Sequence[str],
-                    TypedDict('group_names', {'ind': Any, 'val': Any}),
+                    Dict[Any, Any],
                     None,
                 ],
     legend: bool,
@@ -213,12 +212,12 @@ class GraphPlot:
         group: Union[Sequence[Any], None] = None,
         group_colors: Union[
                         Sequence[Any],
-                        TypedDict('group_names', {'ind': Any, 'val': Any}),
+                        Dict[Any, Any],
                         None,
                     ] = None,
         group_names: Union[
                         Sequence[str],
-                        TypedDict('group_names', {'ind': Any, 'str': str}),
+                        Dict[Any, str],
                         None,
                     ] = None,
         colormap_name: str = 'autumn',
@@ -404,12 +403,12 @@ class ScatterPlot:
         group: Union[Sequence[Any], None] = None,
         group_colors: Union[
                         Sequence[Any],
-                        TypedDict('group_names', {'ind': Any, 'val': Any}),
+                        Dict[Any, Any],
                         None,
                     ] = None,
         group_names: Union[
                         Sequence[str],
-                        TypedDict('group_names', {'ind': Any, 'str': str}),
+                        Dict[Any, str],
                         None,
                     ] = None,
         legend: bool = False,

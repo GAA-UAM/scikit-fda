@@ -61,15 +61,15 @@ def _get_color_info(
     fdata: T,
     group: Union[Sequence[Any], None],
     group_names: Union[
-                    Sequence[str],
-                    Dict[Any, str],
-                    None,
-                ],
+        Sequence[str],
+        Dict[Any, str],
+        None,
+    ],
     group_colors: Union[
-                    Sequence[str],
-                    Dict[Any, Any],
-                    None,
-                ],
+        Sequence[str],
+        Dict[Any, Any],
+        None,
+    ],
     legend: bool,
     kwargs: Any,
 ) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]: 
@@ -211,15 +211,15 @@ class GraphPlot:
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
         group: Union[Sequence[Any], None] = None,
         group_colors: Union[
-                        Sequence[Any],
-                        Dict[Any, Any],
-                        None,
-                    ] = None,
+            Sequence[Any],
+            Dict[Any, Any],
+            None,
+        ] = None,
         group_names: Union[
-                        Sequence[str],
-                        Dict[Any, str],
-                        None,
-                    ] = None,
+            Sequence[str],
+            Dict[Any, str],
+            None,
+        ] = None,
         colormap_name: str = 'autumn',
         legend: bool = False,
         **kwargs: Any,
@@ -402,15 +402,15 @@ class ScatterPlot:
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
         group: Union[Sequence[Any], None] = None,
         group_colors: Union[
-                        Sequence[Any],
-                        Dict[Any, Any],
-                        None,
-                    ] = None,
+            Sequence[Any],
+            Dict[Any, Any],
+            None,
+        ] = None,
         group_names: Union[
-                        Sequence[str],
-                        Dict[Any, str],
-                        None,
-                    ] = None,
+            Sequence[str],
+            Dict[Any, str],
+            None,
+        ] = None,
         legend: bool = False,
         **kwargs: Any,
     ) -> Figure:
@@ -418,7 +418,7 @@ class ScatterPlot:
         Scatter FDataGrid object.
 
         Args:
-            chart: figure over with the graphs are plotted or axis 
+            chart: figure over with the graphs are plotted or axis
                 over where the graphs are plotted. If None and ax
                 is also None, the figure is initialized.
             fig: figure over with the graphs are plotted in case ax is not 
@@ -431,13 +431,13 @@ class ScatterPlot:
             n_cols: designates the number of columns of the
                 figure to plot the different dimensions of the image. Only
                 specified if fig and ax are None.
-            domain_range: Range where the function will be 
+            domain_range: Range where the function will be
                 plotted. In objects with unidimensional domain
                 the domain range should be a tuple with the bounds of the
                 interval; in the case of surfaces a list with 2 tuples with
                 the ranges for each dimension. Default uses the domain range
                 of the functional object.
-            group: contains integers from [0 to number of labels) 
+            group: contains integers from [0 to number of labels)
                 indicating to which group each sample belongs to. Then,
                 the samples with the same label are plotted in the same color.
                 If None, the default value, each sample is plotted in the color

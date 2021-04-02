@@ -114,7 +114,8 @@ class Outliergram:
         )
 
         # Set labels of graph
-        fig.suptitle("Outliergram")
+        if self.fdata.dataset_name is not None:
+            fig.suptitle(self.fdata.dataset_name)
         ax.set_xlabel("MEI")
         ax.set_ylabel("MBD")
         ax.set_xlim([0, 1])
@@ -152,4 +153,4 @@ class Outliergram:
 
         integrand /= (interval_len * self.fdata.n_samples)
 
-        return integrand
+        return integrand.flatten()

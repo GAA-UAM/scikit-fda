@@ -7,17 +7,16 @@ import numpy as np
 from sklearn.utils.validation import check_is_fitted
 from typing_extensions import Literal
 
-from scipy.integrate import simps
-
 from ... import FData, FDataGrid
-from ..._utils import check_is_univariate, constants
+from ..._utils import check_is_univariate
+from ...misc._math import inner_product
 from ...misc.metrics._lp_norms import l2_norm
-from ...representation._typing import ArrayLike
+from ...representation._typing import ArrayLike, GridPointsLike
 from ...representation.extrapolation import ExtrapolationLike
 from .base import RegistrationTransformer
 
 T = TypeVar("T", bound=FData)
-TemplateFunction = Callable[[FData], FData]
+TemplateFunction = Callable[[FDataGrid], FDataGrid]
 
 
 class ShiftRegistration(RegistrationTransformer):
@@ -40,13 +39,13 @@ class ShiftRegistration(RegistrationTransformer):
     Method only implemented for univariate functional data.
 
     Args:
-        max_iter (int, optional): Maximun number of iterations.
+        max_iter: Maximun number of iterations.
             Defaults sets to 5. Generally 2 or 3 iterations are sufficient to
             obtain a good alignment.
-        tol (float, optional): Tolerance allowable. The process will stop if
+        tol: Tolerance allowable. The process will stop if
             :math:`\max_{i}|\delta_{i}^{(\nu)}-\delta_{i}^{(\nu-1)}|<tol`.
             Default sets to 1e-2.
-        template (str, callable or FData, optional): Template to use in the
+        template: Template to use in the
             least squares criterion. If template="mean" it is use the
             functional mean as in the original paper. The template can be a
             callable that will receive an FDataGrid with the samples and will
@@ -57,31 +56,31 @@ class ShiftRegistration(RegistrationTransformer):
             template is computed iteratively constructing a temporal template
             in each iteration. In [RaSi2005-7-9-1]_ is described in detail this
             procedure. Defaults to "mean".
-        extrapolation (str or :class:`Extrapolation`, optional): Controls the
+        extrapolation: Controls the
             extrapolation mode for points outside the :term:`domain` range.
             By default uses the method defined in the data to be transformed.
             See the `extrapolation` documentation to obtain more information.
-        step_size (int or float, optional): Parameter to adjust the rate of
+        step_size: Parameter to adjust the rate of
             convergence in the Newton-Raphson algorithm, see [RaSi2005-7-9-1]_.
             Defaults to 1.
-        restrict_domain (bool, optional): If True restricts the :term:`domain`
+        restrict_domain: If True restricts the :term:`domain`
             to avoid the need of using extrapolation, in which
             case only the fit_transform method will be available, as training
             and transformation must be done together. Defaults to False.
-        initial (str or array_like, optional): Array with an initial estimation
+        initial: Array with an initial estimation
             of shifts. Default uses a list of zeros for the initial shifts.
-        output_points (array_like, optional): Set of points where the
+        grid_points: Set of points where the
             functions are evaluated to obtain the discrete
             representation of the object to integrate. If None is
             passed it calls numpy.linspace in FDataBasis and uses the
             `grid_points` in FDataGrids.
 
     Attributes:
-        template_ (FData): Template :math:`\mu` learned during the fitting
+        template\_: Template :math:`\mu` learned during the fitting
             used to the transformation.
-        deltas_ (numpy.ndarray): List of shifts :math:`\delta_i` applied
+        deltas\_: List of shifts :math:`\delta_i` applied
             during the last transformation.
-        n_iter_ (int): Number of iterations performed during the last
+        n_iter\_: Number of iterations performed during the last
             transformation.
 
     Note:
@@ -107,7 +106,7 @@ class ShiftRegistration(RegistrationTransformer):
         Shifts applied during the transformation
 
         >>> reg.deltas_.round(3)
-        array([-0.128,  0.187,  0.027,  0.034, -0.106,  0.114, ..., -0.06 ])
+        array([-0.131,  0.188,  0.026,  0.033, -0.109,  0.115, ..., -0.062])
 
 
         Registration of a dataset in basis form using the
@@ -140,7 +139,7 @@ class ShiftRegistration(RegistrationTransformer):
         step_size: float = 1,
         restrict_domain: bool = False,
         initial: Union[Literal["zeros"], ArrayLike] = "zeros",
-        output_points: Optional[ArrayLike] = None,
+        grid_points: Optional[GridPointsLike] = None,
     ) -> None:
         self.max_iter = max_iter
         self.tol = tol
@@ -149,7 +148,7 @@ class ShiftRegistration(RegistrationTransformer):
         self.extrapolation = extrapolation
         self.step_size = step_size
         self.initial = initial
-        self.output_points = output_points
+        self.grid_points = grid_points
 
     def _compute_deltas(
         self,
@@ -171,9 +170,6 @@ class ShiftRegistration(RegistrationTransformer):
         """
         check_is_univariate(fd)
 
-        if not isinstance(fd, FDataGrid):
-            fd = fd.to_grid()
-
         domain_range = fd.domain_range[0]
 
         # Initial estimation of the shifts
@@ -188,53 +184,35 @@ class ShiftRegistration(RegistrationTransformer):
                     f"be the same than the number of samples ({fd.n_samples})",
                 )
 
-        # Fine equispaced mesh to evaluate the samples
-        if self.output_points is None:
-            output_points = fd.grid_points[0]
-            nfine = len(output_points)
-        else:
-            output_points = np.asarray(self.output_points)
-            nfine = len(output_points)
-
         # Auxiliar array to avoid multiple memory allocations
         delta_aux = np.empty(fd.n_samples)
 
         # Computes the derivate of originals curves in the mesh points
-        fd_deriv = fd.derivative(order=1)
-        D1x = fd_deriv(output_points)[..., 0]
+        fd_deriv = fd.derivative()
 
         # Second term of the second derivate estimation of REGSSE. The
         # first term has been dropped to improve convergence (see references)
         d2_regsse = l2_norm(fd_deriv)**2
 
+        # We need the discretized derivative to compute the inner product later
+        fd_deriv = fd_deriv.to_grid(grid_points=self.grid_points)
+
         max_diff = self.tol + 1
         self.n_iter_ = 0
 
-        template_fixed = False
-
-        # Case template fixed
-        if isinstance(template, FData):
-            tfine_aux = template.evaluate(output_points)[0, ..., 0]
-
-            if self.restrict_domain:
-                template_points_aux = tfine_aux
-
-            template_fixed = True
-        else:
-            tfine_aux = np.empty(nfine)
-
-        # Auxiliar array if the domain will be restricted
-        if self.restrict_domain:
-            D1x_tmp = D1x
-            tfine_tmp = output_points
-            tfine_aux_tmp = tfine_aux
-            domain = np.empty(nfine, dtype=np.dtype(bool))
-
-        ones = np.ones(fd.n_samples)
-        output_points_rep = np.outer(ones, output_points)
-
         # Newton-Rhapson iteration
         while max_diff > self.tol and self.n_iter_ < self.max_iter:
+
+            # Computes the new values shifted
+            x = fd.shift(delta, grid_points=self.grid_points)
+
+            if isinstance(template, str):
+                assert template == "mean"
+                template_iter = x.mean()
+            elif isinstance(template, FData):
+                template_iter = template.to_grid(grid_points=x.grid_points)
+            else:  # Callable
+                template_iter = template(x)
 
             # Updates the limits for non periodic functions ignoring the ends
             if self.restrict_domain:
@@ -242,55 +220,34 @@ class ShiftRegistration(RegistrationTransformer):
                 a = domain_range[0] - min(np.min(delta), 0)
                 b = domain_range[1] - max(np.max(delta), 0)
 
-                # New interval is (a,b)
-                np.logical_and(tfine_tmp >= a, tfine_tmp <= b, out=domain)
-                output_points = tfine_tmp[domain]
-                tfine_aux = tfine_aux_tmp[domain]
-                D1x = D1x_tmp[:, domain]
-                # Reescale the second derivate could be other approach
-                # d2_regsse =
-                # d2_regsse_original * ( 1 + (a - b) / (domain[1] - domain[0]))
-                d2_regsse = simps(np.square(D1x), output_points, axis=1)
+                restricted_domain = (
+                    max(a, template_iter.domain_range[0][0]),
+                    min(b, template_iter.domain_range[0][1]),
+                )
 
-                # Recompute base points for evaluation
-                output_points_rep = np.outer(ones, output_points)
+                template_iter = template_iter.restrict(restricted_domain)
 
-            # Computes the new values shifted
-            x = fd(
-                output_points_rep + np.atleast_2d(delta).T,
-                aligned=False,
-                extrapolation=self.extrapolation,
-            )[..., 0]
-
-            if template == "mean":
-                x.mean(axis=0, out=tfine_aux)
-            elif template_fixed and self.restrict_domain:
-                tfine_aux = template_points_aux[domain]
-            elif not template_fixed and callable(template):  # Callable
-                fd_x = FDataGrid(x, grid_points=output_points)
-                fd_tfine = template(fd_x)
-                tfine_aux = fd_tfine.data_matrix.ravel()
+                x = x.restrict(restricted_domain)
+                fd_deriv = fd_deriv.restrict(restricted_domain)
+                d2_regsse = l2_norm(fd_deriv)**2
 
             # Calculates x - mean
-            np.subtract(x, tfine_aux, out=x)
+            x -= template_iter
 
-            d1_regsse = simps(np.multiply(x, D1x, out=x),
-                              output_points, axis=1)
+            d1_regsse = inner_product(x, fd_deriv)
+
             # Updates the shifts by the Newton-Rhapson iteration
-            # delta = delta - step_size * d1_regsse / d2_regsse
-            np.divide(d1_regsse, d2_regsse, out=delta_aux)
-            np.multiply(delta_aux, self.step_size, out=delta_aux)
-            np.subtract(delta, delta_aux, out=delta)
+            # Same as delta = delta - step_size * d1_regsse / d2_regsse
+            delta_aux[:] = d1_regsse
+            delta_aux[:] /= d2_regsse
+            delta_aux[:] *= self.step_size
+            delta[:] -= delta_aux
 
             # Updates convergence criterions
             max_diff = np.abs(delta_aux, out=delta_aux).max()
             self.n_iter_ += 1
 
-        if template_fixed is False:
-            # Stores the template in an FDataGrid
-            template = FDataGrid(tfine_aux, grid_points=output_points)
-
-        return delta, template
+        return delta, template_iter
 
     def fit_transform(self, X: T, y: None = None) -> T:
         """Fit the estimator and transform the data.
@@ -303,90 +260,103 @@ class ShiftRegistration(RegistrationTransformer):
             Functional data registered.
 
         """
-        self.deltas_, self.template_ = self._compute_deltas(X, self.template)
+        deltas, template = self._compute_deltas(X, self.template)
 
-        return X.shift(self.deltas_, restrict_domain=self.restrict_domain,
-                       extrapolation=self.extrapolation,
-                       grid_points=self.output_points)
+        self.deltas_ = deltas
+        self.template_ = template
 
-    def fit(self, X: FData, y=None):
+        return X.shift(
+            self.deltas_,
+            restrict_domain=self.restrict_domain,
+            extrapolation=self.extrapolation,
+            grid_points=self.grid_points,
+        )
+
+    def fit(self, X: FData, y: None = None) -> ShiftRegistration:
         """Fit the estimator.
 
         Args:
-            X (FData): Functional dataset used to construct the template for
+            X: Functional dataset used to construct the template for
                 the alignment.
-            y (ignored): not used, present for API consistency by convention.
+            y: not used, present for API consistency by convention.
 
         Returns:
-            RegistrationTransformer: self
+            self
 
         Raises:
             AttributeError: If this method is call when restrict_domain=True.
 
         """
         if self.restrict_domain:
-            raise AttributeError("fit and predict are not available when "
-                                 "restrict_domain=True, fitting and "
-                                 "transformation should be done together. Use "
-                                 "an extrapolation method with "
-                                 "restrict_domain=False or fit_predict")
+            raise AttributeError(
+                "fit and predict are not available when "
+                "restrict_domain=True, fitting and "
+                "transformation should be done together. Use "
+                "an extrapolation method with "
+                "restrict_domain=False or fit_predict",
+            )
 
         # If the template is an FData, fit doesnt learn anything
         if isinstance(self.template, FData):
             self.template_ = self.template
 
         else:
-            _, self.template_ = self._compute_deltas(X, self.template)
+            _, template = self._compute_deltas(X, self.template)
+
+            self.template_ = template
 
         return self
 
-    def transform(self, X: FData, y=None):
+    def transform(self, X: FData, y: None = None) -> FDataGrid:
         """Register the data.
 
         Transforms the data using the template previously learned during
         fitting.
 
         Args:
-            X (FData): Functional dataset to be transformed.
-            y (ignored): not used, present for API consistency by convention.
+            X: Functional dataset to be transformed.
+            y: not used, present for API consistency by convention.
 
         Returns:
-            FData: Functional data registered.
+            Functional data registered.
 
         Raises:
             AttributeError: If this method is call when restrict_domain=True.
 
         """
-
         if self.restrict_domain:
-            raise AttributeError("fit and predict are not available when "
-                                 "restrict_domain=True, fitting and "
-                                 "transformation should be done together. Use "
-                                 "an extrapolation method with "
-                                 "restrict_domain=False or fit_predict")
+            raise AttributeError(
+                "fit and predict are not available when "
+                "restrict_domain=True, fitting and "
+                "transformation should be done together. Use "
+                "an extrapolation method with "
+                "restrict_domain=False or fit_predict",
+            )
 
         # Check is fitted
-        check_is_fitted(self, 'template_')
+        check_is_fitted(self)
 
-        deltas, template = self._compute_deltas(X, self.template_)
-        self.template_ = template
+        deltas, _ = self._compute_deltas(X, self.template_)
         self.deltas_ = deltas
 
-        return X.shift(deltas, restrict_domain=self.restrict_domain,
-                       extrapolation=self.extrapolation,
-                       grid_points=self.output_points)
+        return X.shift(
+            deltas,
+            restrict_domain=self.restrict_domain,
+            extrapolation=self.extrapolation,
+            grid_points=self.grid_points,
+        )
 
-    def inverse_transform(self, X: FData, y=None):
+    def inverse_transform(self, X: FData, y: None = None) -> FDataGrid:
         """Applies the inverse transformation.
 
         Applies the opossite shift used in the last call to `transform`.
 
         Args:
-            X (FData): Functional dataset to be transformed.
-            y (ignored): not used, present for API consistency by convention.
+            X: Functional dataset to be transformed.
+            y: not used, present for API consistency by convention.
 
         Returns:
-            FData: Functional data registered.
+            Functional data registered.
 
         Examples:
 
@@ -409,13 +379,22 @@ class ShiftRegistration(RegistrationTransformer):
         FDataGrid(...)
 
         """
-        if not hasattr(self, "deltas_"):
-            raise AttributeError("Data must be previously transformed to learn"
-                                 " the inverse transformation")
-        elif len(X) != len(self.deltas_):
-            raise ValueError("Data must contain the same number of samples "
-                             "than the dataset previously transformed")
+        deltas = getattr(self, "deltas_", None)
 
-        return X.shift(-self.deltas_, restrict_domain=self.restrict_domain,
-                       extrapolation=self.extrapolation,
-                       grid_points=self.output_points)
+        if deltas is None:
+            raise AttributeError(
+                "Data must be previously transformed to learn"
+                " the inverse transformation",
+            )
+        elif len(X) != len(deltas):
+            raise ValueError(
+                "Data must contain the same number of samples "
+                "than the dataset previously transformed",
+            )
+
+        return X.shift(
+            -deltas,
+            restrict_domain=self.restrict_domain,
+            extrapolation=self.extrapolation,
+            grid_points=self.grid_points,
+        )

@@ -1,7 +1,7 @@
 import io
 import math
 import re
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import matplotlib.backends.backend_svg
 import matplotlib.pyplot as plt
@@ -12,10 +12,12 @@ from ...representation._functional_data import FData
 
 non_close_text = '[^>]*?'
 svg_width_regex = re.compile(
-    f'(<svg {non_close_text}width="){non_close_text}("{non_close_text}>)')
+    f'(<svg {non_close_text}width="){non_close_text}("{non_close_text}>)'
+)
 svg_width_replacement = r'\g<1>100%\g<2>'
 svg_height_regex = re.compile(
-    f'(<svg {non_close_text})height="{non_close_text}"({non_close_text}>)')
+    f'(<svg {non_close_text})height="{non_close_text}"({non_close_text}>)'
+)
 svg_height_replacement = r'\g<1>\g<2>'
 
 
@@ -211,7 +213,7 @@ def _set_labels(
     fdata: FData,
     fig: Optional[Figure] = None,
     axes: Union[Axes, Sequence[Axes], None] = None,
-    patches: Optional[List[matplotlib.patches.Patch]] = None,
+    patches: Optional[Sequence[matplotlib.patches.Patch]] = None,
 ) -> None:
     """Set labels if any.
 

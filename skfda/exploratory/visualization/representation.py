@@ -7,7 +7,17 @@ be set manually or automatically depending on values
 like depth measures.
 """
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import matplotlib.cm
 import matplotlib.patches
@@ -25,12 +35,13 @@ from ._utils import (
     _set_labels,
 )
 
+K = TypeVar('K')
 T = TypeVar('T', FDataGrid, np.ndarray)
 
 
 def _get_label_colors(
     n_labels: int,
-    group_colors: Union[Sequence[Any], None],
+    group_colors: Union[Sequence[Any], Mapping[K, Any], None],
 ) -> np.ndarray:
     """Get the colors of each label."""
     if group_colors is not None:
@@ -50,8 +61,8 @@ def _get_label_colors(
 def _get_color_info(
     fdata: T,
     group: Union[Sequence[Any], None],
-    group_names: Union[Sequence[str], Dict[Any, str], None],
-    group_colors: Union[Sequence[Any], Dict[Any, Any], None],
+    group_names: Union[Sequence[str], Mapping[K, str], None],
+    group_colors: Union[Sequence[Any], Mapping[K, Any], None],
     legend: bool,
     kwargs: Any,
 ) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
@@ -116,13 +127,15 @@ class GraphPlot:
     """
     Class used to plot the FDataGrid object graph as hypersurfaces.
 
-    A list of variables (probably depths) can be used as an argument to
-    display the functions wtih a gradient of colors.
+    When plotting functional data, we can either choose manually a color,
+    a group of colors for the representations. Besides, we can use a list of 
+    variables (depths, scalar regression targets...) can be used as an
+    argument to display the functions wtih a gradient of colors.
 
     Args:
         fdata: functional data set that we want to plot.
         gradient_color_list: list of real values used to determine the color
-            in which each of the instances will be plotted. The size
+            in which each of the instances will be plotted.
         max_grad: maximum value that the gradient_list can take, it will be
             used to normalize the ``gradient_color_list``. If not
             declared it will be initialized to the maximum value of
@@ -132,17 +145,12 @@ class GraphPlot:
             declared it will be initialized to the minimum value of
             gradient_list.
 
-    Attributes:
-        gradient_list: normalization of the values from gradient color_list
-            that will be used to determine the intensity of the color
-            each function will have.
-
     """
 
     def __init__(
         self,
         fdata: FData,
-        gradient_color_list: Union[Sequence[float], None] = None,
+        gradient_color_list: Optional[Sequence[float]] = None,
         max_grad: Optional[float] = None,
         min_grad: Optional[float] = None,
     ) -> None:
@@ -191,8 +199,8 @@ class GraphPlot:
         n_points: Union[int, Tuple[int, int], None] = None,
         domain_range: Optional[DomainRangeLike] = None,
         group: Union[Sequence[Any], None] = None,
-        group_colors: Union[Sequence[Any], Dict[Any, Any], None] = None,
-        group_names: Union[Sequence[str], Dict[Any, str], None] = None,
+        group_colors: Union[Sequence[Any], Mapping[K, Any], None] = None,
+        group_names: Union[Sequence[str], Mapping[K, str], None] = None,
         colormap_name: str = 'autumn',
         legend: bool = False,
         **kwargs: Any,
@@ -294,12 +302,12 @@ class GraphPlot:
             eval_points = np.linspace(*self.domain_range[0], self.n_points)
             mat = self.fdata(eval_points)
 
-            color_dict: Dict[str, Any] = {}
+            color_dict: Mapping[str, Any] = {}
 
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
-                    if sample_colors is not None:
-                        color_dict["color"] = sample_colors[j]
+
+                    set_color_dict(sample_colors, j, color_dict)
 
                     axes[i].plot(
                         eval_points, mat[j, ..., i].T, **color_dict, **kwargs,
@@ -327,16 +335,15 @@ class GraphPlot:
 
             X, Y = np.meshgrid(x, y, indexing='ij')
 
-            color_dict = {}
+            color_dict: Mapping[str, Any] = {}
 
             for k in range(self.fdata.dim_codomain):
-                for l in range(self.fdata.n_samples):
+                for h in range(self.fdata.n_samples):
 
-                    if sample_colors is not None:
-                        color_dict["color"] = sample_colors[l]
+                    set_color_dict(sample_colors, h, color_dict)
 
                     axes[k].plot_surface(
-                        X, Y, Z[l, ..., k],
+                        X, Y, Z[h, ..., k],
                         **color_dict, **kwargs,
                     )
 
@@ -373,8 +380,8 @@ class ScatterPlot:
         n_cols: Optional[int] = None,
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
         group: Union[Sequence[Any], None] = None,
-        group_colors: Union[Sequence[Any], Dict[Any, Any], None] = None,
-        group_names: Union[Sequence[str], Dict[Any, str], None] = None,
+        group_colors: Union[Sequence[Any], Mapping[K, Any], None] = None,
+        group_names: Union[Sequence[str], Mapping[K, str], None] = None,
         legend: bool = False,
         **kwargs: Any,
     ) -> Figure:
@@ -453,12 +460,12 @@ class ScatterPlot:
 
         if self.fdata.dim_domain == 1:
 
-            color_dict = {}
+            color_dict: Mapping[str, Any] = {}
 
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
 
-                    self.set_color_dict(sample_colors, j, color_dict)
+                    set_color_dict(sample_colors, j, color_dict)
 
                     axes[i].scatter(
                         self.grid_points[0],
@@ -473,12 +480,12 @@ class ScatterPlot:
             Y = self.fdata.grid_points[1]
             X, Y = np.meshgrid(X, Y)
 
-            color_dict = {}
+            color_dict: Mapping[str, Any] = {}
 
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
 
-                    self.set_color_dict(sample_colors, j, color_dict)
+                    set_color_dict(sample_colors, j, color_dict)
 
                     axes[i].scatter(
                         X,
@@ -492,14 +499,13 @@ class ScatterPlot:
 
         return fig
 
-    def set_color_dict(
-        self,
-        sample_colors: Any,
-        ind: int,
-        color_dict: Dict[str, Any],
-    ) -> None:
-        """Auxiliary method that, sets the new color of the color
-        dict thanks to sample colors and index."""
-        if sample_colors is not None:
-            color_dict["color"] = sample_colors[ind]
+def set_color_dict(
+    sample_colors: Any,
+    ind: int,
+    color_dict: Mapping[str, Any],
+) -> None:
+    """Auxiliary method that, sets the new color of the color
+    dict thanks to sample colors and index."""
+    if sample_colors is not None:
+        color_dict["color"] = sample_colors[ind]
 

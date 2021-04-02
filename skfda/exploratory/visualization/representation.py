@@ -125,13 +125,11 @@ class GraphPlot:
         gradient_color_list: list of real values used to determine the color
             in which each of the instances will be plotted. The size
         max_grad: maximum value that the gradient_list can take, it will be
-            used to normalize the gradient_color_list in order to get values
-            thatcan be used in the funcion colormap.__call__(). If not
+            used to normalize the ``gradient_color_list``. If not
             declared it will be initialized to the maximum value of
             gradient_list
         min_grad: minimum value that the gradient_list can take, it will be
-            used to normalize the gradient_color_list in order to get values
-            thatcan be used in the funcion colormap.__call__(). If not
+            used to normalize the ``gradient_color_list``. If not
             declared it will be initialized to the minimum value of
             gradient_list.
 

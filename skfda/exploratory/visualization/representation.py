@@ -124,13 +124,11 @@ class GraphPlot:
         gradient_color_list: list of real values used to determine the color
             in which each of the instances will be plotted. The size
         max_grad: maximum value that the gradient_list can take, it will be
-            used to normalize the gradient_color_list in order to get values
-            thatcan be used in the funcion colormap.__call__(). If not
+            used to normalize the ``gradient_color_list``. If not
             declared it will be initialized to the maximum value of
             gradient_list
         min_grad: minimum value that the gradient_list can take, it will be
-            used to normalize the gradient_color_list in order to get values
-            thatcan be used in the funcion colormap.__call__(). If not
+            used to normalize the ``gradient_color_list``. If not
             declared it will be initialized to the minimum value of
             gradient_list.
 
@@ -191,7 +189,7 @@ class GraphPlot:
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
         n_points: Union[int, Tuple[int, int], None] = None,
-        domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
+        domain_range: Optional[DomainRangeLike] = None,
         group: Union[Sequence[Any], None] = None,
         group_colors: Union[Sequence[Any], Dict[Any, Any], None] = None,
         group_names: Union[Sequence[str], Dict[Any, str], None] = None,
@@ -504,4 +502,4 @@ class ScatterPlot:
         dict thanks to sample colors and index."""
         if sample_colors is not None:
             color_dict["color"] = sample_colors[ind]
-      
+

@@ -9,7 +9,6 @@ like depth measures.
 
 from typing import (
     Any,
-    Dict,
     List,
     Mapping,
     Optional,
@@ -128,7 +127,7 @@ class GraphPlot:
     Class used to plot the FDataGrid object graph as hypersurfaces.
 
     When plotting functional data, we can either choose manually a color,
-    a group of colors for the representations. Besides, we can use a list of 
+    a group of colors for the representations. Besides, we can use a list of
     variables (depths, scalar regression targets...) can be used as an
     argument to display the functions wtih a gradient of colors.
 
@@ -482,15 +481,15 @@ class ScatterPlot:
 
             color_dict: Mapping[str, Any] = {}
 
-            for i in range(self.fdata.dim_codomain):
-                for j in range(self.fdata.n_samples):
+            for k in range(self.fdata.dim_codomain):
+                for h in range(self.fdata.n_samples):
 
-                    set_color_dict(sample_colors, j, color_dict)
+                    set_color_dict(sample_colors, h, color_dict)
 
-                    axes[i].scatter(
+                    axes[k].scatter(
                         X,
                         Y,
-                        evaluated_points[j, ..., i].T,
+                        evaluated_points[h, ..., k].T,
                         **color_dict,
                         **kwargs,
                     )
@@ -499,13 +498,17 @@ class ScatterPlot:
 
         return fig
 
+
 def set_color_dict(
     sample_colors: Any,
     ind: int,
     color_dict: Mapping[str, Any],
 ) -> None:
-    """Auxiliary method that, sets the new color of the color
-    dict thanks to sample colors and index."""
+    """
+    Auxiliary method used to update color_dict.
+    
+    Sets the new color of the color
+    dict thanks to sample colors and index.
+    """
     if sample_colors is not None:
         color_dict["color"] = sample_colors[ind]
-

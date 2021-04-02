@@ -191,7 +191,7 @@ class GraphPlot:
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
         n_points: Union[int, Tuple[int, int], None] = None,
-        domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
+        domain_range: Optional[DomainRangeLike] = None,
         group: Union[Sequence[Any], None] = None,
         group_colors: Union[Sequence[Any], Dict[Any, Any], None] = None,
         group_names: Union[Sequence[str], Dict[Any, str], None] = None,

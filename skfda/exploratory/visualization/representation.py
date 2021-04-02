@@ -32,8 +32,7 @@ def _get_label_colors(
     n_labels: int,
     group_colors: Union[Sequence[Any], None],
 ) -> np.ndarray:
-    """Get the colors of each label"""
-
+    """Get the colors of each label."""
     if group_colors is not None:
         if len(group_colors) != n_labels:
             raise ValueError(
@@ -141,6 +140,7 @@ class GraphPlot:
             each function will have.
 
     """
+
     def __init__(
         self,
         fdata: FData,
@@ -261,10 +261,9 @@ class GraphPlot:
                 matplotlib.pyplot.plot_surface function.
 
         Returns:
-            fig: figure object in which the graphs are plotted.
+            fig: figure in which the graphs are plotted.
 
         """
-
         fig, axes = _get_figure_and_axes(chart, fig, ax)
         fig, axes = _set_figure_layout_for_fdata(
             self.fdata, fig, axes, n_rows, n_cols,
@@ -332,14 +331,14 @@ class GraphPlot:
 
             color_dict = {}
 
-            for i in range(self.fdata.dim_codomain):
-                for j in range(self.fdata.n_samples):
+            for k in range(self.fdata.dim_codomain):
+                for l in range(self.fdata.n_samples):
 
                     if sample_colors is not None:
-                        color_dict["color"] = sample_colors[j]
+                        color_dict["color"] = sample_colors[l]
 
-                    axes[i].plot_surface(
-                        X, Y, Z[j, ..., i],
+                    axes[k].plot_surface(
+                        X, Y, Z[l, ..., k],
                         **color_dict, **kwargs,
                     )
 
@@ -388,7 +387,7 @@ class ScatterPlot:
             chart: figure over with the graphs are plotted or axis
                 over where the graphs are plotted. If None and ax
                 is also None, the figure is initialized.
-            fig: figure over with the graphs are plotted in case ax is not 
+            fig: figure over with the graphs are plotted in case ax is not
                 specified. If None and ax is also
                 None, the figure is initialized.
             ax: axis over where the graphs are plotted. If None, see param fig.
@@ -428,7 +427,6 @@ class ScatterPlot:
             fig (figure object): figure object in which the graphs are plotted.
 
         """
-
         evaluated_points = None
 
         if self.grid_points is None:
@@ -502,6 +500,8 @@ class ScatterPlot:
         ind: int,
         color_dict: Dict[str, Any],
     ) -> None:
+        """Auxiliary method that, sets the new color of the color
+        dict thanks to sample colors and index."""
         if sample_colors is not None:
             color_dict["color"] = sample_colors[ind]
-            
+      

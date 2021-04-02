@@ -3,7 +3,7 @@
 This module contains the methods used to plot shapes in order to detect
 shape outliers in our dataset. In order to do this, we plot the
 Modified Band Depth and Modified Epigraph Index, that will help us detect
-this outliers. The motivation of the method is that it is easy to find
+these outliers. The motivation of the method is that it is easy to find
 magnitude outliers, but there is a necessity of capturing this other type.
 """
 

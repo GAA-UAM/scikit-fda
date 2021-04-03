@@ -57,7 +57,6 @@ def _get_label_colors(
 
     return group_colors
 
-
 @overload
 def _get_color_info(
     fdata: T,
@@ -84,7 +83,6 @@ def _get_color_info(
         sample_colors = None
 
     return sample_colors, patches
-
 
 @overload
 def _get_color_info(
@@ -133,7 +131,6 @@ def _get_color_info(
         ]
 
     return sample_colors, patches
-
 
 @overload
 def _get_color_info(

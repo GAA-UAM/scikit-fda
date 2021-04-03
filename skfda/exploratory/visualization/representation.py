@@ -57,6 +57,7 @@ def _get_label_colors(
 
     return group_colors
 
+
 @overload
 def _get_color_info(
     fdata: T,
@@ -83,6 +84,7 @@ def _get_color_info(
         sample_colors = None
 
     return sample_colors, patches
+
 
 @overload
 def _get_color_info(
@@ -132,6 +134,7 @@ def _get_color_info(
 
     return sample_colors, patches
 
+
 @overload
 def _get_color_info(
     fdata: T,
@@ -178,7 +181,7 @@ def _get_color_info(
             for c, l in zip(group_colors_array, group_names_array)
         ]
 
-    return sample_colors, patches 
+    return sample_colors, patches
 
 
 class GraphPlot:
@@ -380,7 +383,7 @@ class GraphPlot:
                 n_points_tuple = (n_points, n_points)
             elif len(n_points) != 2:
                 raise ValueError(
-                    f"n_points should be a number or a tuple of "
+                    "n_points should be a number or a tuple of "
                     f"length 2, and has length {len(n_points)}",
                 )
 

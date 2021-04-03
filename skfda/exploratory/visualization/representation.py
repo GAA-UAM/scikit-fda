@@ -57,6 +57,7 @@ def _get_label_colors(
 
     return group_colors
 
+
 @overload
 def _get_color_info(
     fdata: T,
@@ -83,6 +84,7 @@ def _get_color_info(
         sample_colors = None
 
     return sample_colors, patches
+
 
 @overload
 def _get_color_info(
@@ -132,6 +134,7 @@ def _get_color_info(
 
     return sample_colors, patches
 
+
 @overload
 def _get_color_info(
     fdata: T,
@@ -179,70 +182,6 @@ def _get_color_info(
         ]
 
     return sample_colors, patches 
-
-def _get_color_info(
-    fdata: T,
-    group: Union[Sequence[Any], None],
-    group_names: Union[Sequence[str], Mapping[K, str], None],
-    group_colors: Union[Sequence[Any], Mapping[K, Any], None],
-    legend: bool,
-    kwargs: Any,
-) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
-
-    patches = None
-
-    if group is not None:
-        # In this case, each curve has a label, and all curves with the same
-        # label should have the same color
-
-        group_unique, group_indexes = np.unique(group, return_inverse=True)
-        n_labels = len(group_unique)
-
-        if group_colors is not None:
-            group_colors_array = np.array(
-                [group_colors[g] for g in group_unique],
-            )
-        else:
-            prop_cycle = matplotlib.rcParams['axes.prop_cycle']
-            cycle_colors = prop_cycle.by_key()['color']
-
-            group_colors_array = np.take(
-                cycle_colors, np.arange(n_labels), mode='wrap',
-            )
-
-        sample_colors = group_colors_array[group_indexes]
-
-        group_names_array = None
-
-        if group_names is not None:
-            group_names_array = np.array(
-                [group_names[g] for g in group_unique],
-            )
-        elif legend is True:
-            group_names_array = group_unique
-
-        if group_names_array is not None:
-            patches = [
-                matplotlib.patches.Patch(color=c, label=l)
-                for c, l in zip(group_colors_array, group_names_array)
-            ]
-
-    else:
-        # In this case, each curve has a different color unless specified
-        # otherwise
-
-        if 'color' in kwargs:
-            sample_colors = fdata.n_samples * [kwargs.get("color")]
-            kwargs.pop('color')
-
-        elif 'c' in kwargs:
-            sample_colors = fdata.n_samples * [kwargs.get("c")]
-            kwargs.pop('c')
-
-        else:
-            sample_colors = None
-
-    return sample_colors, patches
 
 
 class GraphPlot:

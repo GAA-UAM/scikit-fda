@@ -16,6 +16,7 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
+    overload,
 )
 
 import matplotlib.cm
@@ -56,6 +57,128 @@ def _get_label_colors(
 
     return group_colors
 
+@overload
+def _get_color_info(
+    fdata: T,
+    group: None,
+    group_names: None,
+    group_colors: None,
+    legend: bool,
+    kwargs: Any,
+) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
+
+    patches = None
+    # In this case, each curve has a different color unless specified
+    # otherwise
+
+    if 'color' in kwargs:
+        sample_colors = fdata.n_samples * [kwargs.get("color")]
+        kwargs.pop('color')
+
+    elif 'c' in kwargs:
+        sample_colors = fdata.n_samples * [kwargs.get("c")]
+        kwargs.pop('c')
+
+    else:
+        sample_colors = None
+
+    return sample_colors, patches
+
+@overload
+def _get_color_info(
+    fdata: T,
+    group: Sequence[int],
+    group_names: Union[Sequence[str], Mapping[K, str], None],
+    group_colors: Union[Sequence[Any], Mapping[K, Any], None],
+    legend: bool,
+    kwargs: Any,
+) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
+
+    patches = None
+    # In this case, each curve has a label, and all curves with the same
+    # label should have the same color
+
+    group_unique, group_indexes = np.unique(group, return_inverse=True)
+    n_labels = len(group_unique)
+
+    if group_colors is not None:
+        group_colors_array = np.array(
+            [group_colors[g] for g in group_unique],
+        )
+    else:
+        prop_cycle = matplotlib.rcParams['axes.prop_cycle']
+        cycle_colors = prop_cycle.by_key()['color']
+
+        group_colors_array = np.take(
+            cycle_colors, np.arange(n_labels), mode='wrap',
+        )
+
+    sample_colors = group_colors_array[group_indexes]
+
+    group_names_array = None
+
+    if group_names is not None:
+        group_names_array = np.array(
+            [group_names[g] for g in group_unique],
+        )
+    elif legend is True:
+        group_names_array = group_unique
+
+    if group_names_array is not None:
+        patches = [
+            matplotlib.patches.Patch(color=c, label=l)
+            for c, l in zip(group_colors_array, group_names_array)
+        ]
+
+    return sample_colors, patches
+
+@overload
+def _get_color_info(
+    fdata: T,
+    group: Sequence[K],
+    group_names: Optional[Mapping[K, str]],
+    group_colors: Optional[Mapping[K, Any]],
+    legend: bool,
+    kwargs: Any,
+) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
+
+    patches = None
+    # In this case, each curve has a label, and all curves with the same
+    # label should have the same color
+
+    group_unique, group_indexes = np.unique(group, return_inverse=True)
+    n_labels = len(group_unique)
+
+    if group_colors is not None:
+        group_colors_array = np.array(
+            [group_colors[g] for g in group_unique],
+        )
+    else:
+        prop_cycle = matplotlib.rcParams['axes.prop_cycle']
+        cycle_colors = prop_cycle.by_key()['color']
+
+        group_colors_array = np.take(
+            cycle_colors, np.arange(n_labels), mode='wrap',
+        )
+
+    sample_colors = group_colors_array[group_indexes]
+
+    group_names_array = None
+
+    if group_names is not None:
+        group_names_array = np.array(
+            [group_names[g] for g in group_unique],
+        )
+    elif legend is True:
+        group_names_array = group_unique
+
+    if group_names_array is not None:
+        patches = [
+            matplotlib.patches.Patch(color=c, label=l)
+            for c, l in zip(group_colors_array, group_names_array)
+        ]
+
+    return sample_colors, patches 
 
 def _get_color_info(
     fdata: T,
@@ -266,7 +389,7 @@ class GraphPlot:
                 matplotlib.pyplot.plot_surface function.
 
         Returns:
-            fig: figure in which the graphs are plotted.
+            fig: the figure in which the graphs are plotted.
 
         """
         fig, axes = _get_figure_and_axes(chart, fig, ax)
@@ -292,6 +415,8 @@ class GraphPlot:
             for i in range(self.fdata.n_samples):
                 sample_colors[i] = colormap(self.gradient_list[i])
 
+        color_dict: Mapping[str, Any] = {}
+
         if self.fdata.dim_domain == 1:
 
             if n_points is None:
@@ -300,8 +425,6 @@ class GraphPlot:
             # Evaluates the object in a linspace
             eval_points = np.linspace(*self.domain_range[0], self.n_points)
             mat = self.fdata(eval_points)
-
-            color_dict: Mapping[str, Any] = {}
 
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
@@ -334,16 +457,17 @@ class GraphPlot:
 
             X, Y = np.meshgrid(x, y, indexing='ij')
 
-            color_dict: Mapping[str, Any] = {}
-
             for k in range(self.fdata.dim_codomain):
                 for h in range(self.fdata.n_samples):
 
                     set_color_dict(sample_colors, h, color_dict)
 
                     axes[k].plot_surface(
-                        X, Y, Z[h, ..., k],
-                        **color_dict, **kwargs,
+                        X,
+                        Y,
+                        Z[h, ..., k],
+                        **color_dict,
+                        **kwargs,
                     )
 
         _set_labels(self.fdata, fig, axes, patches)
@@ -457,9 +581,9 @@ class ScatterPlot:
             self.fdata, group, group_names, group_colors, legend, kwargs,
         )
 
-        if self.fdata.dim_domain == 1:
+        color_dict: Mapping[str, Any] = {}
 
-            color_dict: Mapping[str, Any] = {}
+        if self.fdata.dim_domain == 1:
 
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
@@ -478,8 +602,6 @@ class ScatterPlot:
             X = self.fdata.grid_points[0]
             Y = self.fdata.grid_points[1]
             X, Y = np.meshgrid(X, Y)
-
-            color_dict: Mapping[str, Any] = {}
 
             for k in range(self.fdata.dim_codomain):
                 for h in range(self.fdata.n_samples):
@@ -506,7 +628,7 @@ def set_color_dict(
 ) -> None:
     """
     Auxiliary method used to update color_dict.
-    
+
     Sets the new color of the color
     dict thanks to sample colors and index.
     """

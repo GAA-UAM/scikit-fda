@@ -11,6 +11,7 @@ from typing import (
     Any,
     List,
     Mapping,
+    Dict,
     Optional,
     Sequence,
     Tuple,
@@ -68,23 +69,6 @@ def _get_color_info(
     kwargs: Any,
 ) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
 
-    patches = None
-    # In this case, each curve has a different color unless specified
-    # otherwise
-
-    if 'color' in kwargs:
-        sample_colors = fdata.n_samples * [kwargs.get("color")]
-        kwargs.pop('color')
-
-    elif 'c' in kwargs:
-        sample_colors = fdata.n_samples * [kwargs.get("c")]
-        kwargs.pop('c')
-
-    else:
-        sample_colors = None
-
-    return sample_colors, patches
-
 
 @overload
 def _get_color_info(
@@ -95,44 +79,6 @@ def _get_color_info(
     legend: bool,
     kwargs: Any,
 ) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
-
-    patches = None
-    # In this case, each curve has a label, and all curves with the same
-    # label should have the same color
-
-    group_unique, group_indexes = np.unique(group, return_inverse=True)
-    n_labels = len(group_unique)
-
-    if group_colors is not None:
-        group_colors_array = np.array(
-            [group_colors[g] for g in group_unique],
-        )
-    else:
-        prop_cycle = matplotlib.rcParams['axes.prop_cycle']
-        cycle_colors = prop_cycle.by_key()['color']
-
-        group_colors_array = np.take(
-            cycle_colors, np.arange(n_labels), mode='wrap',
-        )
-
-    sample_colors = group_colors_array[group_indexes]
-
-    group_names_array = None
-
-    if group_names is not None:
-        group_names_array = np.array(
-            [group_names[g] for g in group_unique],
-        )
-    elif legend is True:
-        group_names_array = group_unique
-
-    if group_names_array is not None:
-        patches = [
-            matplotlib.patches.Patch(color=c, label=l)
-            for c, l in zip(group_colors_array, group_names_array)
-        ]
-
-    return sample_colors, patches
 
 
 @overload
@@ -145,41 +91,68 @@ def _get_color_info(
     kwargs: Any,
 ) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
 
+
+def _get_color_info(
+    fdata: T,
+    group: Sequence[K],
+    group_names: Optional[Mapping[K, str]],
+    group_colors: Optional[Mapping[K, Any]],
+    legend: bool,
+    kwargs: Any,
+) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
+
     patches = None
-    # In this case, each curve has a label, and all curves with the same
-    # label should have the same color
 
-    group_unique, group_indexes = np.unique(group, return_inverse=True)
-    n_labels = len(group_unique)
+    if group is not None:
+        # In this case, each curve has a label, and all curves with the same
+        # label should have the same color
 
-    if group_colors is not None:
-        group_colors_array = np.array(
-            [group_colors[g] for g in group_unique],
-        )
+        group_unique, group_indexes = np.unique(group, return_inverse=True)
+        n_labels = len(group_unique)
+
+        if group_colors is not None:
+            group_colors_array = np.array(
+                [group_colors[g] for g in group_unique],
+            )
+        else:
+            prop_cycle = matplotlib.rcParams['axes.prop_cycle']
+            cycle_colors = prop_cycle.by_key()['color']
+
+            group_colors_array = np.take(
+                cycle_colors, np.arange(n_labels), mode='wrap',
+            )
+
+        sample_colors = group_colors_array[group_indexes]
+
+        group_names_array = None
+
+        if group_names is not None:
+            group_names_array = np.array(
+                [group_names[g] for g in group_unique],
+            )
+        elif legend is True:
+            group_names_array = group_unique
+
+        if group_names_array is not None:
+            patches = [
+                matplotlib.patches.Patch(color=c, label=l)
+                for c, l in zip(group_colors_array, group_names_array)
+            ]
+
     else:
-        prop_cycle = matplotlib.rcParams['axes.prop_cycle']
-        cycle_colors = prop_cycle.by_key()['color']
+        # In this case, each curve has a different color unless specified
+        # otherwise
 
-        group_colors_array = np.take(
-            cycle_colors, np.arange(n_labels), mode='wrap',
-        )
+        if 'color' in kwargs:
+            sample_colors = fdata.n_samples * [kwargs.get("color")]
+            kwargs.pop('color')
 
-    sample_colors = group_colors_array[group_indexes]
+        elif 'c' in kwargs:
+            sample_colors = fdata.n_samples * [kwargs.get("c")]
+            kwargs.pop('c')
 
-    group_names_array = None
-
-    if group_names is not None:
-        group_names_array = np.array(
-            [group_names[g] for g in group_unique],
-        )
-    elif legend is True:
-        group_names_array = group_unique
-
-    if group_names_array is not None:
-        patches = [
-            matplotlib.patches.Patch(color=c, label=l)
-            for c, l in zip(group_colors_array, group_names_array)
-        ]
+        else:
+            sample_colors = None
 
     return sample_colors, patches
 
@@ -353,6 +326,8 @@ class GraphPlot:
             sample_colors = [None] * self.fdata.n_samples
             for i in range(self.fdata.n_samples):
                 sample_colors[i] = colormap(self.gradient_list[i])
+        
+        self.sample_colors = sample_colors
 
         color_dict: Mapping[str, Any] = {}
 
@@ -384,7 +359,7 @@ class GraphPlot:
             elif len(n_points) != 2:
                 raise ValueError(
                     "n_points should be a number or a tuple of "
-                    f"length 2, and has length {len(n_points)}",
+                    "length 2, and has length {}.".format(len(n_points)),
                 )
 
             # Axes where will be evaluated

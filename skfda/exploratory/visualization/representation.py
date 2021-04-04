@@ -253,6 +253,7 @@ class GraphPlot(Display):
             fig (figure object): figure object in which the graphs are plotted.
         """
 
+        Display.clear_ax(self)
         if domain_range is None:
             domain_range = self.fdata.domain_range
         else:
@@ -400,11 +401,10 @@ class ScatterPlot(Display):
     def plot(
         self,
         *,
-        domain_range: Union
-                        [
-                            Tuple[int, int],
-                            Sequence[Tuple[int, int]],
-                            None, ] = None,      
+        domain_range: Union[
+            Tuple[int, int],
+            Sequence[Tuple[int, int]],
+            None, ] = None,      
         group: Union[Sequence[int], None] = None,
         group_colors: Union[Sequence[Any], None] = None,
         group_names: Union[Sequence[str], None] = None,
@@ -442,6 +442,7 @@ class ScatterPlot(Display):
         Returns:
             fig (figure object): figure object in which the graphs are plotted. 
         """
+        Display.clear_ax(self)
         evaluated_points = None
 
         if self.grid_points is None:

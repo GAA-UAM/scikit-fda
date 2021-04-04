@@ -18,7 +18,7 @@ from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 T = TypeVar('T', bound=FData)
 
 
-class DDPlot:
+class DDPlot(Display):
     """
     DDPlot visualization.
 
@@ -84,6 +84,8 @@ class DDPlot:
             fig (figure object): figure object in which the depths will be
             scattered.
         """
+
+        Display.clear_ax(self)
         self.id_function = []
         margin = 0.025
         width_aux_line = 0.35
@@ -96,7 +98,6 @@ class DDPlot:
                 d1,
                 d2,
                 picker=2,
-                **kwargs,
             ))
 
         # Set labels of graph

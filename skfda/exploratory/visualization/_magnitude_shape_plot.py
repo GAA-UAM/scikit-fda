@@ -5,19 +5,24 @@ Plot. First the directional outlingness is calculated and then, an outliers
 detection method is implemented.
 
 """
+from typing import Optional, Sequence, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
+from ... import FDataGrid
 from ..outliers import DirectionalOutlierDetector
+from ._display import Display
 from ._utils import _figure_to_svg, _get_figure_and_axes, _set_figure_layout
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
 
-class MagnitudeShapePlot:
+class MagnitudeShapePlot(Display):
     r"""Implementation of the magnitude-shape plot
 
     This plot, which is based on the calculation of the :func:`directional
@@ -158,7 +163,15 @@ class MagnitudeShapePlot:
 
     """
 
-    def __init__(self, fdatagrid, **kwargs):
+    def __init__(
+        self,
+        fdatagrid: FDataGrid,
+        *,
+        chart: Union[Figure, Axes, None] = None,
+        fig: Optional[Figure] = None,
+        axes: Optional[Sequence[Axes]] = None,
+        **kwargs,
+    ):
         """Initialization of the MagnitudeShapePlot class.
 
         Args:
@@ -192,7 +205,7 @@ class MagnitudeShapePlot:
                 RandomState instance used by np.random. By default, it is 0.
 
         """
-
+        Display.__init__(self)
         if fdatagrid.dim_codomain > 1:
             raise NotImplementedError(
                 "Only support 1 dimension on the codomain.")
@@ -207,10 +220,12 @@ class MagnitudeShapePlot:
         self._outliers = outliers
         self._colormap = plt.cm.get_cmap('seismic')
         self._color = 0.2
-        self._outliercol = 0.8,
+        self._outliercol = 0.8
         self.xlabel = 'MO'
         self.ylabel = 'VO'
         self.title = 'MS-Plot'
+
+        self.set_figure_and_axes(chart, fig, axes)
 
     @property
     def fdatagrid(self):
@@ -270,7 +285,7 @@ class MagnitudeShapePlot:
                 "outcol must be a number between 0 and 1.")
         self._outliercol = value
 
-    def plot(self, chart=None, *, fig=None, axes=None,):
+    def plot(self):
         """Visualization of the magnitude shape plot of the fdatagrid.
 
         Args:
@@ -282,22 +297,40 @@ class MagnitudeShapePlot:
 
         """
 
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout(fig, axes)
-
+        Display.clear_ax(self)
         colors = np.zeros((self.fdatagrid.n_samples, 4))
         colors[np.where(self.outliers == 1)] = self.colormap(self.outliercol)
         colors[np.where(self.outliers == 0)] = self.colormap(self.color)
 
         colors_rgba = [tuple(i) for i in colors]
-        axes[0].scatter(self.points[:, 0].ravel(), self.points[:, 1].ravel(),
-                        color=colors_rgba)
 
-        axes[0].set_xlabel(self.xlabel)
-        axes[0].set_ylabel(self.ylabel)
-        axes[0].set_title(self.title)
+        for i in range(len(self.points[:, 0].ravel())):
+            self.id_function.append(self.axes[0].scatter(
+                self.points[:, 0].ravel()[i],
+                self.points[:, 1].ravel()[i],
+                color=colors_rgba[i],
+                picker=2,
+            ))
 
-        return fig
+        self.axes[0].set_xlabel(self.xlabel)
+        self.axes[0].set_ylabel(self.ylabel)
+        self.axes[0].set_title(self.title)
+
+        return self.fig
+
+    def num_instances(self) -> int:
+        return self.fdatagrid.n_samples
+
+    def set_figure_and_axes(
+        self,
+        chart: Union[Figure, Axes, None] = None,
+        fig: Optional[Figure] = None,
+        axes: Union[Axes, Sequence[Axes], None] = None,
+    ) -> None:
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout(fig, axes)
+        self.fig = fig
+        self.axes = axes
 
     def __repr__(self):
         """Return repr(self)."""

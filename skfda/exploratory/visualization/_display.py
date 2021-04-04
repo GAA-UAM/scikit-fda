@@ -33,3 +33,10 @@ class Display(ABC):
         axes: Union[Axes, Sequence[Axes], None] = None,
     ) -> None:
         pass
+
+    def clear_ax(self) -> None:
+        for ax in self.axes:
+            ax.clear()
+        if len(self.id_function) != 0:
+            self.id_function = []
+

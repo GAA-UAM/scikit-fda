@@ -77,7 +77,13 @@ class Outliergram(Display):
         self.n = self.mbd.size
         distances, parable = self.compute_distances()
         self.distances = distances
+        mei_ordered = self.mei[:]
+        mei_ordered, parable = (
+            list(el) for el in zip(*sorted(zip(mei_ordered, parable)))
+        )
         self.parable = parable
+        self.mei_ordered = mei_ordered
+        self.compute_outliergram()
 
         self.set_figure_and_axes(chart, fig, axes)
 
@@ -96,6 +102,7 @@ class Outliergram(Display):
             scattered.
         """
 
+        Display.clear_ax(self)
         self.axScatter = self.axes[0]
 
         for i in range(self.mei.size):
@@ -105,19 +112,13 @@ class Outliergram(Display):
                 picker=2,
             ))
 
-        mei_ordered = self.mei[:]
-        mei_ordered, parable = (
-            list(el) for el in zip(*sorted(zip(mei_ordered, self.parable)))
-        )
-        self.parable = parable
         self.axScatter.plot(
-            mei_ordered,
+            self.mei_ordered,
             self.parable,
         )
 
-        self.compute_outliergram()
         self.axScatter.plot(
-            mei_ordered,
+            self.mei_ordered,
             self.shifted_parable,
             linestyle='dashed',
         )

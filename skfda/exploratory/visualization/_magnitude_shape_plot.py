@@ -204,6 +204,13 @@ class MagnitudeShapePlot(BasePlot):
                 If RandomState instance, random_state is the random number
                 generator; If None, the random number generator is the
                 RandomState instance used by np.random. By default, it is 0.
+            chart: figure over with the graphs are plotted or axis over
+                where the graphs are plotted. If None and ax is also
+                None, the figure is initialized.
+            fig: figure over with the graphs are plotted in case ax is not
+                specified. If None and ax is also None, the figure is
+                initialized.
+            axes: axis where the graphs are plotted. If None, see param fig.
 
         """
         BasePlot.__init__(self)
@@ -288,10 +295,6 @@ class MagnitudeShapePlot(BasePlot):
 
     def plot(self):
         """Visualization of the magnitude shape plot of the fdatagrid.
-
-        Args:
-            ax (axes object, optional): axes over where the graph is plotted.
-                Defaults to matplotlib current axis.
 
         Returns:
             fig (figure object): figure object in which the graph is plotted.

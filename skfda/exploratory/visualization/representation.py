@@ -12,6 +12,8 @@ from typing import (
     List,
     Mapping,
     Dict,
+    Generic,
+    Protocol,
     Optional,
     Sequence,
     Tuple,
@@ -37,8 +39,13 @@ from ._utils import (
 )
 
 K = TypeVar('K')
+V = TypeVar('V')
 T = TypeVar('T', FDataGrid, np.ndarray)
 
+
+class Indexable(Protocol[K, V]):
+    def __getitem__(self, __key: K) -> V:
+        pass
 
 def _get_label_colors(
     n_labels: int,
@@ -58,7 +65,7 @@ def _get_label_colors(
 
     return group_colors
 
-
+"""
 @overload
 def _get_color_info(
     fdata: T,
@@ -80,7 +87,6 @@ def _get_color_info(
     kwargs: Any,
 ) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
 
-
 @overload
 def _get_color_info(
     fdata: T,
@@ -89,14 +95,14 @@ def _get_color_info(
     group_colors: Optional[Mapping[K, Any]],
     legend: bool,
     kwargs: Any,
-) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
+) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:"""
 
 
 def _get_color_info(
     fdata: T,
-    group: Sequence[K],
-    group_names: Optional[Mapping[K, str]],
-    group_colors: Optional[Mapping[K, Any]],
+    group: Optional[Sequence[K]],
+    group_names: Optional[Indexable[K, str]],
+    group_colors: Optional[Indexable[K, Any]],
     legend: bool,
     kwargs: Any,
 ) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:

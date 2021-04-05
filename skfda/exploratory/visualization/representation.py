@@ -41,9 +41,8 @@ T = TypeVar('T', FDataGrid, np.ndarray)
 
 
 class Indexable(Protocol[K, V]):
-    """
-    Class Indexable used to type _get_color_info.
-    """
+    """Class Indexable used to type _get_color_info."""
+
     def __getitem__(self, __key: K) -> V:
         pass
 
@@ -65,6 +64,7 @@ def _get_label_colors(
         group_colors = colormap(np.arange(n_labels) / (n_labels - 1))
 
     return group_colors
+
 
 def _get_color_info(
     fdata: T,

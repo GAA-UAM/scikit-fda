@@ -10,7 +10,7 @@ from ... import FDataGrid
 from ..._utils import _to_domain_range, constants
 from ...representation._functional_data import FData
 from ...representation._typing import DomainRangeLike
-from ._display import Display
+from ._baseplot import BasePlot
 from ._utils import (
     _get_figure_and_axes,
     _set_figure_layout_for_fdata,
@@ -105,7 +105,7 @@ def _get_color_info(
     return sample_colors, patches
 
 
-class GraphPlot(Display):
+class GraphPlot(BasePlot):
     """
     Class used to plot the FDatGrid object graph as hypersurfaces.
     A list of variables (probably depths) can be used as an argument to
@@ -157,7 +157,7 @@ class GraphPlot(Display):
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
     ) -> None:
-        Display.__init__(self)
+        BasePlot.__init__(self)
         self.fdata = fdata
         self.gradient_color_list = gradient_color_list
         if self.gradient_color_list is not None:
@@ -253,7 +253,7 @@ class GraphPlot(Display):
             fig (figure object): figure object in which the graphs are plotted.
         """
 
-        Display.clear_ax(self)
+        BasePlot.clear_ax(self)
         if domain_range is None:
             domain_range = self.fdata.domain_range
         else:
@@ -359,7 +359,7 @@ class GraphPlot(Display):
         self.axes = axes
 
 
-class ScatterPlot(Display):
+class ScatterPlot(BasePlot):
     """
     Class used to scatter the FDataGrid object.
     Args:
@@ -393,7 +393,7 @@ class ScatterPlot(Display):
         n_cols: Optional[int] = None,
         grid_points: np.ndarray = None,
     ) -> None:
-        Display.__init__(self)
+        BasePlot.__init__(self)
         self.fdata = fdata
         self.grid_points = grid_points
         self.set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
@@ -442,7 +442,7 @@ class ScatterPlot(Display):
         Returns:
             fig (figure object): figure object in which the graphs are plotted. 
         """
-        Display.clear_ax(self)
+        BasePlot.clear_ax(self)
         evaluated_points = None
 
         if self.grid_points is None:

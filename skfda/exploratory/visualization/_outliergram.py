@@ -17,14 +17,14 @@ from scipy.stats import rankdata
 
 from ... import FDataGrid
 from ..depth._depth import ModifiedBandDepth
-from ._display import Display
+from ._baseplot import BasePlot
 from ._utils import (
     _set_figure_layout_for_fdata,
     _get_figure_and_axes,
 )
 
 
-class Outliergram(Display):
+class Outliergram(BasePlot):
     """
     Outliergram method of visualization.
 
@@ -64,7 +64,7 @@ class Outliergram(Display):
         fig: Optional[Figure] = None,
         axes: Optional[Sequence[Axes]] = None,
     ) -> None:
-        Display.__init__(self)
+        BasePlot.__init__(self)
         self.fdata = fdata
         self.depth = ModifiedBandDepth()
         self.depth.fit(fdata)
@@ -102,7 +102,7 @@ class Outliergram(Display):
             scattered.
         """
 
-        Display.clear_ax(self)
+        BasePlot.clear_ax(self)
         self.axScatter = self.axes[0]
 
         for i in range(self.mei.size):

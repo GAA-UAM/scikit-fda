@@ -9,19 +9,19 @@ from matplotlib.axes import Axes
 from matplotlib.backend_bases import Event
 from matplotlib.figure import Figure
 
-from ._display import Display
+from ._baseplot import BasePlot
 from ._utils import _get_figure_and_axes, _set_figure_layout
 
 
 class MultipleDisplay:
     def __init__(
         self,
-        displays: Union[Display, List[Display]],
+        displays: Union[BasePlot, List[BasePlot]],
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
         axes: Optional[Sequence[Axes]] = None,
     ):
-        if isinstance(displays, Display):
+        if isinstance(displays, BasePlot):
             self.displays = [copy.copy(displays)]
         else:
             self.displays = []
@@ -118,9 +118,9 @@ class MultipleDisplay:
 
     def add_displays(
         self,
-        displays: Union[Display, Sequence[Display]],
+        displays: Union[BasePlot, Sequence[BasePlot]],
     ) -> None:
-        if isinstance(displays, Display):
+        if isinstance(displays, BasePlot):
             self.displays.append(displays)
         else:
             self.displays.extend(displays)

@@ -12,13 +12,13 @@ from matplotlib.figure import Figure
 
 from ...exploratory.depth.multivariate import Depth
 from ...representation._functional_data import FData
-from ._display import Display
+from ._baseplot import BasePlot
 from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
 T = TypeVar('T', bound=FData)
 
 
-class DDPlot(Display):
+class DDPlot(BasePlot):
     """
     DDPlot visualization.
 
@@ -58,7 +58,7 @@ class DDPlot(Display):
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
     ) -> None:
-        Display.__init__(self)
+        BasePlot.__init__(self)
         self.fdata = fdata
         self.depth_method = depth_method
         self.depth_method.fit(fdata)
@@ -85,7 +85,7 @@ class DDPlot(Display):
             scattered.
         """
 
-        Display.clear_ax(self)
+        BasePlot.clear_ax(self)
         self.id_function = []
         margin = 0.025
         width_aux_line = 0.35

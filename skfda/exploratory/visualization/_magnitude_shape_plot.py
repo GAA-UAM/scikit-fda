@@ -15,14 +15,14 @@ from matplotlib.figure import Figure
 
 from ... import FDataGrid
 from ..outliers import DirectionalOutlierDetector
-from ._display import Display
-from ._utils import _figure_to_svg, _get_figure_and_axes, _set_figure_layout
+from ._baseplot import BasePlot
+from ._utils import _get_figure_and_axes, _set_figure_layout
 
 __author__ = "Amanda Hernando Bernabé"
 __email__ = "amanda.hernando@estudiante.uam.es"
 
 
-class MagnitudeShapePlot(Display):
+class MagnitudeShapePlot(BasePlot):
     r"""Implementation of the magnitude-shape plot
 
     This plot, which is based on the calculation of the :func:`directional
@@ -176,9 +176,10 @@ class MagnitudeShapePlot(Display):
 
         Args:
             fdatagrid (FDataGrid): Object containing the data.
-            multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
-                Method used to order the data. Defaults to :class:`projection
-                depth <fda.depth_measures.multivariate.ProjectionDepth>`.
+            multivariate_depth (:ref:`depth measure <depth-measures>`,
+                optional): Method used to order the data. Defaults to
+                :class:`projection depth
+                <fda.depth_measures.multivariate.ProjectionDepth>`.
             pointwise_weights (array_like, optional): an array containing the
                 weights of each points of discretisati on where values have
                 been recorded.
@@ -205,7 +206,7 @@ class MagnitudeShapePlot(Display):
                 RandomState instance used by np.random. By default, it is 0.
 
         """
-        Display.__init__(self)
+        BasePlot.__init__(self)
         if fdatagrid.dim_codomain > 1:
             raise NotImplementedError(
                 "Only support 1 dimension on the codomain.")
@@ -297,7 +298,7 @@ class MagnitudeShapePlot(Display):
 
         """
 
-        Display.clear_ax(self)
+        BasePlot.clear_ax(self)
         colors = np.zeros((self.fdatagrid.n_samples, 4))
         colors[np.where(self.outliers == 1)] = self.colormap(self.outliercol)
         colors[np.where(self.outliers == 0)] = self.colormap(self.color)
@@ -347,8 +348,3 @@ class MagnitudeShapePlot(Display):
                 f"\nxlabel={repr(self.xlabel)},"
                 f"\nylabel={repr(self.ylabel)},"
                 f"\ntitle={repr(self.title)})").replace('\n', '\n    ')
-
-    def _repr_svg_(self):
-        fig = self.plot()
-        plt.close(fig)
-        return _figure_to_svg(fig)

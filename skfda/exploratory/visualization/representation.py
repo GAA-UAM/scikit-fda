@@ -33,6 +33,7 @@ from ._utils import (
     _get_figure_and_axes,
     _set_figure_layout_for_fdata,
     _set_labels,
+    ColorLike,
 )
 
 K = TypeVar('K', contravariant=True)
@@ -49,7 +50,7 @@ class Indexable(Protocol[K, V]):
 
 def _get_label_colors(
     n_labels: int,
-    group_colors: Union[Sequence[Any], Mapping[K, Any], None],
+    group_colors: Union[Sequence[ColorLike], Mapping[K, ColorLike], None],
 ) -> np.ndarray:
     """Get the colors of each label."""
     if group_colors is not None:
@@ -70,7 +71,7 @@ def _get_color_info(
     fdata: T,
     group: Optional[Sequence[K]],
     group_names: Optional[Indexable[K, str]],
-    group_colors: Optional[Indexable[K, Any]],
+    group_colors: Optional[Indexable[K, ColorLike]],
     legend: bool,
     kwargs: Any,
 ) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
@@ -207,7 +208,7 @@ class GraphPlot:
         n_points: Union[int, Tuple[int, int], None] = None,
         domain_range: Optional[DomainRangeLike] = None,
         group: Union[Sequence[Any], None] = None,
-        group_colors: Union[Sequence[Any], Mapping[K, Any], None] = None,
+        group_colors: Union[Sequence[ColorLike], Mapping[K, ColorLike], None] = None,
         group_names: Union[Sequence[str], Mapping[K, str], None] = None,
         colormap_name: str = 'autumn',
         legend: bool = False,
@@ -391,7 +392,7 @@ class ScatterPlot:
         n_cols: Optional[int] = None,
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
         group: Union[Sequence[Any], None] = None,
-        group_colors: Union[Sequence[Any], Mapping[K, Any], None] = None,
+        group_colors: Union[Sequence[ColorLike], Mapping[K, ColorLike], None] = None,
         group_names: Union[Sequence[str], Mapping[K, str], None] = None,
         legend: bool = False,
         **kwargs: Any,

@@ -20,6 +20,12 @@ svg_height_regex = re.compile(
 )
 svg_height_replacement = r'\g<1>\g<2>'
 
+ColorLike = Union[
+    Tuple[float, float, float],
+    Tuple[float, float, float, float],
+    str,
+    Sequence[float],
+]
 
 def _create_figure():
     """Create figure using the default backend."""

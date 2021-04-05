@@ -11,8 +11,8 @@ from typing import (
     Any,
     List,
     Mapping,
-    Protocol,
     Optional,
+    Protocol,
     Sequence,
     Tuple,
     TypeVar,
@@ -300,7 +300,7 @@ class GraphPlot:
             sample_colors = [None] * self.fdata.n_samples
             for i in range(self.fdata.n_samples):
                 sample_colors[i] = colormap(self.gradient_list[i])
-        
+
         self.sample_colors = sample_colors
 
         color_dict: Mapping[str, Any] = {}
@@ -333,7 +333,7 @@ class GraphPlot:
             elif len(n_points) != 2:
                 raise ValueError(
                     "n_points should be a number or a tuple of "
-                    "length 2, and has length {}.".format(len(n_points)),
+                    "length 2, and has length {0}.".format(len(n_points)),
                 )
 
             # Axes where will be evaluated

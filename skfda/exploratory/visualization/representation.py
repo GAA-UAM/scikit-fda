@@ -44,6 +44,7 @@ class Indexable(Protocol[K, V]):
     def __getitem__(self, __key: K) -> V:
         pass
 
+
 def _get_label_colors(
     n_labels: int,
     group_colors: Union[Sequence[Any], Mapping[K, Any], None],

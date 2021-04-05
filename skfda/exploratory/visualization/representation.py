@@ -17,13 +17,13 @@ from typing import (
     TypeVar,
     Union,
 )
-from typing_extensions import Protocol
 
 import matplotlib.cm
 import matplotlib.patches
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from typing_extensions import Protocol
 
 from ... import FDataGrid
 from ..._utils import _to_domain_range, constants

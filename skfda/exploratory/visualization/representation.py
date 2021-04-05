@@ -11,8 +11,6 @@ from typing import (
     Any,
     List,
     Mapping,
-    Dict,
-    Generic,
     Protocol,
     Optional,
     Sequence,

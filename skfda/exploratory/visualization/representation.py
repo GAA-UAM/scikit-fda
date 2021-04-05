@@ -17,7 +17,6 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
-    overload,
 )
 
 import matplotlib.cm
@@ -36,8 +35,8 @@ from ._utils import (
     _set_labels,
 )
 
-K = TypeVar('K')
-V = TypeVar('V')
+K = TypeVar('K', contravariant=True)
+V = TypeVar('V', covariant=True)
 T = TypeVar('T', FDataGrid, np.ndarray)
 
 
@@ -62,39 +61,6 @@ def _get_label_colors(
         group_colors = colormap(np.arange(n_labels) / (n_labels - 1))
 
     return group_colors
-
-"""
-@overload
-def _get_color_info(
-    fdata: T,
-    group: None,
-    group_names: None,
-    group_colors: None,
-    legend: bool,
-    kwargs: Any,
-) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
-
-
-@overload
-def _get_color_info(
-    fdata: T,
-    group: Sequence[int],
-    group_names: Union[Sequence[str], Mapping[K, str], None],
-    group_colors: Union[Sequence[Any], Mapping[K, Any], None],
-    legend: bool,
-    kwargs: Any,
-) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
-
-@overload
-def _get_color_info(
-    fdata: T,
-    group: Sequence[K],
-    group_names: Optional[Mapping[K, str]],
-    group_colors: Optional[Mapping[K, Any]],
-    legend: bool,
-    kwargs: Any,
-) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:"""
-
 
 def _get_color_info(
     fdata: T,

@@ -12,12 +12,12 @@ from typing import (
     List,
     Mapping,
     Optional,
-    Protocol,
     Sequence,
     Tuple,
     TypeVar,
     Union,
 )
+from typing_extensions import Protocol
 
 import matplotlib.cm
 import matplotlib.patches
@@ -298,8 +298,8 @@ class GraphPlot:
             colormap = colormap.reversed()
 
             sample_colors = [None] * self.fdata.n_samples
-            for i in range(self.fdata.n_samples):
-                sample_colors[i] = colormap(self.gradient_list[i])
+            for m in range(self.fdata.n_samples):
+                sample_colors[m] = colormap(self.gradient_list[m])
 
         self.sample_colors = sample_colors
 

@@ -47,6 +47,9 @@ class Indexable(Protocol[K, V]):
     def __getitem__(self, __key: K) -> V:
         pass
 
+    def __len__(self) -> int:
+        pass
+
 
 def _get_label_colors(
     n_labels: int,

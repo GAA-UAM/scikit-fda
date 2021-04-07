@@ -59,24 +59,23 @@ def _get_label_colors(
     if group_colors is None:
         colormap = matplotlib.cm.get_cmap()
         group_colors = colormap(np.arange(n_labels) / (n_labels - 1))
-    else:
-        if len(group_colors) != n_labels:
-            raise ValueError(
-                "There must be a color in group_colors "
-                "for each of the labels that appear in "
-                "group.",
-            )
+    elif len(group_colors) != n_labels:
+        raise ValueError(
+            "There must be a color in group_colors "
+            "for each of the labels that appear in "
+            "group.",
+        )
 
     return group_colors
 
 
 def _get_color_info(
     fdata: T,
-    group: Optional[Sequence[K]],
-    group_names: Optional[Indexable[K, str]],
-    group_colors: Optional[Indexable[K, ColorLike]],
-    legend: bool,
-    kwargs: Any,
+    group: Optional[Sequence[K]] = None,
+    group_names: Optional[Indexable[K, str]] = None,
+    group_colors: Optional[Indexable[K, ColorLike]] = None,
+    legend: bool = False,
+    kwargs: Any = None,
 ) -> Tuple[np.ndarray, Optional[List[matplotlib.patches.Patch]]]:
 
     patches = None
@@ -212,7 +211,7 @@ class GraphPlot:
         domain_range: Optional[DomainRangeLike] = None,
         group: Optional[Sequence[K]] = None,
         group_colors: Optional[Indexable[K, ColorLike]] = None,
-        group_names: Optional[Indexable[K, str]],
+        group_names: Optional[Indexable[K, str]] = None,
         colormap_name: str = 'autumn',
         legend: bool = False,
         **kwargs: Any,
@@ -396,7 +395,7 @@ class ScatterPlot:
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
         group: Optional[Sequence[K]] = None,
         group_colors: Optional[Indexable[K, ColorLike]] = None,
-        group_names: Optional[Indexable[K, str]],
+        group_names: Optional[Indexable[K, str]] = None,
         legend: bool = False,
         **kwargs: Any,
     ) -> Figure:

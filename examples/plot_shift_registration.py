@@ -63,8 +63,12 @@ fd_registered.plot()
 # however, this effect is mitigated after the registration.
 
 # sinusoidal process without variation and noise
-sine = make_sinusoidal_process(n_samples=1, phase_std=0,
-                               amplitude_std=0, error_std=0)
+sine = make_sinusoidal_process(
+    n_samples=1,
+    phase_std=0,
+    amplitude_std=0,
+    error_std=0,
+)
 
 fig = fd_basis.mean().plot()
 fd_registered.mean().plot(fig)
@@ -76,7 +80,6 @@ fig.axes[0].legend(['original mean', 'registered mean', 'sine'])
 # The values of the shifts :math:`\delta_i`, stored in the attribute `deltas_`
 # may be relevant for further analysis, as they may be considered as nuisance
 # or random effects.
-#
 
 print(shift_registration.deltas_)
 

@@ -28,7 +28,7 @@ from typing_extensions import Protocol
 from ... import FDataGrid
 from ..._utils import _to_domain_range, constants
 from ...representation._functional_data import FData
-from ...representation._typing import DomainRangeLike
+from ...representation._typing import DomainRangeLike, GridPointsLike
 from ._utils import (
     ColorLike,
     _get_figure_and_axes,
@@ -50,19 +50,19 @@ class Indexable(Protocol[K, V]):
 
 def _get_label_colors(
     n_labels: int,
-    group_colors: Union[Sequence[ColorLike], Mapping[K, ColorLike], None],
-) -> np.ndarray:
+    group_colors: Optional[Indexable[K, ColorLike]] = None,
+) -> Union[np.ndarray, None]:
     """Get the colors of each label."""
-    if group_colors is not None:
+    if group_colors is None:
+        colormap = matplotlib.cm.get_cmap()
+        group_colors = colormap(np.arange(n_labels) / (n_labels - 1))
+    else:
         if len(group_colors) != n_labels:
             raise ValueError(
                 "There must be a color in group_colors "
                 "for each of the labels that appear in "
                 "group.",
             )
-    else:
-        colormap = matplotlib.cm.get_cmap()
-        group_colors = colormap(np.arange(n_labels) / (n_labels - 1))
 
     return group_colors
 
@@ -74,7 +74,7 @@ def _get_color_info(
     group_colors: Optional[Indexable[K, ColorLike]],
     legend: bool,
     kwargs: Any,
-) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
+) -> Tuple[np.ndarray, Optional[List[matplotlib.patches.Patch]]]:
 
     patches = None
 
@@ -143,14 +143,14 @@ class GraphPlot:
 
     Args:
         fdata: functional data set that we want to plot.
-        gradient_color_list: list of real values used to determine the color
+        gradient_values: list of real values used to determine the color
             in which each of the instances will be plotted.
         max_grad: maximum value that the gradient_list can take, it will be
-            used to normalize the ``gradient_color_list``. If not
+            used to normalize the ``gradient_values``. If not
             declared it will be initialized to the maximum value of
             gradient_list
         min_grad: minimum value that the gradient_list can take, it will be
-            used to normalize the ``gradient_color_list``. If not
+            used to normalize the ``gradient_values``. If not
             declared it will be initialized to the minimum value of
             gradient_list.
 
@@ -159,14 +159,14 @@ class GraphPlot:
     def __init__(
         self,
         fdata: FData,
-        gradient_color_list: Optional[Sequence[float]] = None,
+        gradient_values: Optional[Sequence[float]] = None,
         max_grad: Optional[float] = None,
         min_grad: Optional[float] = None,
     ) -> None:
         self.fdata = fdata
-        self.gradient_color_list = gradient_color_list
-        if self.gradient_color_list is not None:
-            if len(self.gradient_color_list) != fdata.n_samples:
+        self.gradient_values = gradient_values
+        if self.gradient_values is not None:
+            if len(self.gradient_values) != fdata.n_samples:
                 raise ValueError(
                     "The length of the gradient color"
                     "list should be the same as the number"
@@ -174,21 +174,21 @@ class GraphPlot:
                 )
 
             if min_grad is None:
-                self.min_grad = min(self.gradient_color_list)
+                self.min_grad = min(self.gradient_values)
             else:
                 self.min_grad = min_grad
 
             if max_grad is None:
-                self.max_grad = max(self.gradient_color_list)
+                self.max_grad = max(self.gradient_values)
             else:
                 self.max_grad = max_grad
 
             aux_list = [
                 grad_color - self.min_grad
-                for grad_color in self.gradient_color_list
+                for grad_color in self.gradient_values
             ]
 
-            self.gradient_list: Sequence[float] = (
+            self.gradient_list = (
                 [
                     aux / (self.max_grad - self.min_grad)
                     for aux in aux_list
@@ -207,13 +207,9 @@ class GraphPlot:
         n_cols: Optional[int] = None,
         n_points: Union[int, Tuple[int, int], None] = None,
         domain_range: Optional[DomainRangeLike] = None,
-        group: Union[Sequence[Any], None] = None,
-        group_colors: Union[
-            Sequence[ColorLike],
-            Mapping[K, ColorLike],
-            None,
-        ] = None,
-        group_names: Union[Sequence[str], Mapping[K, str], None] = None,
+        group: Optional[Sequence[K]] = None,
+        group_colors: Optional[Indexable[K, ColorLike]] = None,
+        group_names: Optional[Indexable[K, str]],
         colormap_name: str = 'autumn',
         legend: bool = False,
         **kwargs: Any,
@@ -227,7 +223,7 @@ class GraphPlot:
         visualizations, one that displays the functions without any
         criteria choosing the colors and a new one that displays the
         function with a gradient of colors depending on the initial
-        gradient_color_list (normalized in gradient_list).
+        gradient_values (normalized in gradient_list).
 
         Args:
             chart: figure over
@@ -381,7 +377,7 @@ class ScatterPlot:
     def __init__(
         self,
         fdata: FData,
-        grid_points: np.ndarray = None,
+        grid_points: Optional[GridPointsLike] = None,
     ) -> None:
         self.fdata = fdata
         self.grid_points = grid_points
@@ -395,13 +391,9 @@ class ScatterPlot:
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
-        group: Union[Sequence[Any], None] = None,
-        group_colors: Union[
-            Sequence[ColorLike],
-            Mapping[K, ColorLike],
-            None,
-        ] = None,
-        group_names: Union[Sequence[str], Mapping[K, str], None] = None,
+        group: Optional[Sequence[K]] = None,
+        group_colors: Optional[Indexable[K, ColorLike]] = None,
+        group_names: Optional[Indexable[K, str]],
         legend: bool = False,
         **kwargs: Any,
     ) -> Figure:

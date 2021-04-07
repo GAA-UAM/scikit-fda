@@ -30,10 +30,10 @@ from ..._utils import _to_domain_range, constants
 from ...representation._functional_data import FData
 from ...representation._typing import DomainRangeLike
 from ._utils import (
+    ColorLike,
     _get_figure_and_axes,
     _set_figure_layout_for_fdata,
     _set_labels,
-    ColorLike,
 )
 
 K = TypeVar('K', contravariant=True)
@@ -208,7 +208,11 @@ class GraphPlot:
         n_points: Union[int, Tuple[int, int], None] = None,
         domain_range: Optional[DomainRangeLike] = None,
         group: Union[Sequence[Any], None] = None,
-        group_colors: Union[Sequence[ColorLike], Mapping[K, ColorLike], None] = None,
+        group_colors: Union[
+            Sequence[ColorLike],
+            Mapping[K, ColorLike],
+            None,
+        ] = None,
         group_names: Union[Sequence[str], Mapping[K, str], None] = None,
         colormap_name: str = 'autumn',
         legend: bool = False,
@@ -392,7 +396,11 @@ class ScatterPlot:
         n_cols: Optional[int] = None,
         domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
         group: Union[Sequence[Any], None] = None,
-        group_colors: Union[Sequence[ColorLike], Mapping[K, ColorLike], None] = None,
+        group_colors: Union[
+            Sequence[ColorLike],
+            Mapping[K, ColorLike],
+            None,
+        ] = None,
         group_names: Union[Sequence[str], Mapping[K, str], None] = None,
         legend: bool = False,
         **kwargs: Any,

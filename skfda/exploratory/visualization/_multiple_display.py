@@ -101,8 +101,6 @@ class MultipleDisplay:
         for slider in self.sliders:
             slider.on_changed(self.value_updated)
 
-        #self.slider_1 = Slider(self.fig.axes[3], 'Grid', valmin=0, valmax=3, valinit=1)
-
         return self.fig
 
     def update_annot(self, index):

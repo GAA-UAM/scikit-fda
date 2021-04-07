@@ -352,7 +352,7 @@ class GraphPlot(BasePlot):
             fdata=self.fdata,
             fig=fig,
             axes=axes,
-            n_rows=n_rows, 
+            n_rows=n_rows,
             n_cols=n_cols,
         )
         self.fig = fig

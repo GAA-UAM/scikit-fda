@@ -3,7 +3,7 @@
 This module contains the methods used to plot shapes in order to detect
 shape outliers in our dataset. In order to do this, we plot the
 Modified Band Depth and Modified Epigraph Index, that will help us detect
-this outliers. The motivation of the method is that it is easy to find
+these outliers. The motivation of the method is that it is easy to find
 magnitude outliers, but there is a necessity of capturing this other type.
 """
 
@@ -18,10 +18,7 @@ from scipy.stats import rankdata
 from ... import FDataGrid
 from ..depth._depth import ModifiedBandDepth
 from ._baseplot import BasePlot
-from ._utils import (
-    _set_figure_layout_for_fdata,
-    _get_figure_and_axes,
-)
+from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
 
 class Outliergram(BasePlot):
@@ -41,6 +38,12 @@ class Outliergram(BasePlot):
             specified. If None and ax is also None, the figure is
             initialized.
         axes: axis where the graphs are plotted. If None, see param fig.
+        n_rows: designates the number of rows of the figure
+                to plot the different dimensions of the image. Only specified
+                if fig and ax are None.
+        n_cols: designates the number of columns of the
+                figure to plot the different dimensions of the image. Only
+                specified if fig and ax are None.
     Attributes:
         mbd: result of the calculation of the Modified Band Depth on our
             dataset. Represents the mean time a curve stays between other pair
@@ -63,6 +66,9 @@ class Outliergram(BasePlot):
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
         axes: Optional[Sequence[Axes]] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+        **kwargs,
     ) -> None:
         BasePlot.__init__(self)
         self.fdata = fdata
@@ -85,7 +91,7 @@ class Outliergram(BasePlot):
         self.mei_ordered = mei_ordered
         self.compute_outliergram()
 
-        self.set_figure_and_axes(chart, fig, axes)
+        self.set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
     def plot(
         self,
@@ -101,7 +107,6 @@ class Outliergram(BasePlot):
             fig: figure object in which the depths will be
             scattered.
         """
-
         BasePlot.clear_ax(self)
         self.axScatter = self.axes[0]
 
@@ -124,7 +129,8 @@ class Outliergram(BasePlot):
         )
 
         # Set labels of graph
-        self.axScatter.set_title("Outliergram")
+        if self.fdata.dataset_name is not None:
+            self.fig.suptitle(self.fdata.dataset_name)
         self.axScatter.set_xlabel("MEI")
         self.axScatter.set_ylabel("MBD")
         self.axScatter.set_xlim([0, 1])
@@ -148,23 +154,31 @@ class Outliergram(BasePlot):
             - self.fdata.domain_range[0][0]
         )
 
-        function = rankdata(
+        # Array containing at each point the number of curves
+        # are above it.
+        num_functions_above = rankdata(
             -self.fdata.data_matrix,
             method='max',
             axis=0,
         ) - 1
 
         integrand = integrate.simps(
-            function,
+            num_functions_above,
             x=self.fdata.grid_points[0],
             axis=1,
         )
 
         integrand /= (interval_len * self.fdata.n_samples)
 
-        return integrand
+        return integrand.flatten()
 
     def compute_distances(self) -> np.ndarray:
+        """
+        Calculate the distances of each point towards the parabola.
+
+        The distances can be calculated with function:
+            d_i = a_0 + a_1* mei_i + n^2* a_2* mei_i^2 - mb_i.
+        """
         distances = []
         parable = []
         a_0 = -2 / (self.n * (self.n - 1))
@@ -180,6 +194,7 @@ class Outliergram(BasePlot):
         return distances, parable
 
     def compute_outliergram(self):
+        """Compute the parabola under which the outliers lie."""
         percentile_25 = 25
         percentile_75 = 75
         first_quartile = np.percentile(self.distances, percentile_25)
@@ -188,19 +203,42 @@ class Outliergram(BasePlot):
         self.shifted_parable = self.parable - (third_quartile + iqr)
 
     def num_instances(self) -> int:
+        """Get the number of instances that will be used for interactivity."""
         return self.fdata.n_samples
-    
+
     def set_figure_and_axes(
         self,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
         axes: Union[Axes, Sequence[Axes], None] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
     ) -> None:
+        """
+        Initialize the axes and fig of the plot.
+
+        Args:
+        chart: figure over with the graphs are plotted or axis over
+            where the graphs are plotted. If None and ax is also
+            None, the figure is initialized.
+        fig: figure over with the graphs are plotted in case ax is not
+            specified. If None and ax is also None, the figure is
+            initialized.
+        axes: axis where the graphs are plotted. If None, see param fig.
+        n_rows: designates the number of rows of the figure
+                to plot the different dimensions of the image. Only specified
+                if fig and ax are None.
+        n_cols: designates the number of columns of the
+                figure to plot the different dimensions of the image. Only
+                specified if fig and ax are None.
+        """
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         fig, axes = _set_figure_layout_for_fdata(
             fdata=self.fdata,
             fig=fig,
             axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
         )
         self.fig = fig
         self.axes = axes

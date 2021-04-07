@@ -1,6 +1,5 @@
 import collections
 import copy
-from collections import Iterable
 from typing import Any, List, Optional, Sequence, Union
 
 from IPython.display import display
@@ -25,6 +24,11 @@ class MultipleDisplay:
             None,
         ] = None,
         sliders: Union[Widget, Sequence[Widget], None] = None,
+        label_sliders: Union[
+            str,
+            Sequence[str],
+            None,
+        ] = None,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
         axes: Optional[Sequence[Axes]] = None,
@@ -49,17 +53,17 @@ class MultipleDisplay:
         self.chart = chart
 
         if criteria is not None and sliders is not None:
-            if isinstance(sliders, Iterable):
+            if isinstance(sliders, collections.Iterable):
                 if len(criteria) == len(sliders):
-                    self.set_sliders(criteria, sliders)
+                    self.set_sliders(criteria, sliders, label_sliders)
                 else:
                     raise ValueError(
                         "Size of criteria, and sliders should be equal.",
                     )
             else:
-                self.set_sliders(criteria, sliders)
-
-        self.init_axes(chart=self.chart, fig=self.fig, axes=self.axes)
+                self.set_sliders(criteria, sliders, label_sliders)
+        else:
+            self.init_axes(chart=self.chart, fig=self.fig, axes=self.axes)
 
     def plot(
         self,
@@ -94,12 +98,10 @@ class MultipleDisplay:
         self.fig.suptitle("Multiple display")
         self.fig.tight_layout()
 
-        """for slider in self.sliders:
-            slider.observe(self.value_updated, 'value')
+        for slider in self.sliders:
+            slider.on_changed(self.value_updated)
 
-            display(slider)"""
-
-        self.slider_1 = Slider(self.fig.axes[3], 'Grid', valmin=0, valmax=3, valinit=1)
+        #self.slider_1 = Slider(self.fig.axes[3], 'Grid', valmin=0, valmax=3, valinit=1)
 
         return self.fig
 
@@ -133,6 +135,10 @@ class MultipleDisplay:
                         self.previous_hovered = artist
                         break
                 break
+
+        for j in range(self.num_graphs, len(self.axes)):
+            if event.inaxes == self.axes[j]:
+                self.widget_index = j - self.num_graphs
 
         if index_axis != -1 and is_graph:
             self.update_annot(index_axis)
@@ -234,21 +240,47 @@ class MultipleDisplay:
         self,
         criteria: Union[Sequence[float], Sequence[Sequence[float]]],
         sliders: Union[Widget, Sequence[Widget]],
+        label_sliders: Union[str, Sequence[str], None] = None,
     ) -> None:
-        if isinstance(criteria[0], Iterable):
-            for c, s in zip(criteria, sliders):
-                if len(c) != len(s) or len(c) != self.length_data:
+        if isinstance(criteria[0], collections.Iterable):
+            for c in criteria:
+                if len(c) != self.length_data:
                     raise ValueError(
                         "Slider criteria should be of the same size as data",
                     )
 
             self.init_axes(chart=self.chart, fig=self.fig, extra=len(criteria))
 
-            for i in range(len(criteria)):
-                self.__add_slider(i, criteria[i], sliders[i])
-        elif len(criteria) == self.length_data:
-            self.init_axes(chart=self.chart, fig=self.fig, axes=self.axes, extra=1)
-            self.__add_slider(criteria, sliders)
+            if label_sliders is None:
+                for i in range(len(criteria)):
+                    self.__add_slider(i, criteria[i], sliders[i])
+            elif isinstance(label_sliders, str):
+                raise ValueError(
+                    "Incorrect length of slider labels.",
+                )
+            elif len(label_sliders) == len(sliders):
+                for i in range(len(criteria)):
+                    self.__add_slider(
+                        i,
+                        criteria[i],
+                        sliders[i],
+                        label_sliders[i],
+                    )
+            else:
+                raise ValueError(
+                    "Incorrect length of slider labels.",
+                )
+        elif (
+            len(criteria) == self.length_data
+            and (isinstance(label_sliders, str) or label_sliders is None)
+        ):
+            self.init_axes(
+                chart=self.chart,
+                fig=self.fig,
+                axes=self.axes,
+                extra=1,
+            )
+            self.__add_slider(0, criteria, sliders, label_sliders)
         else:
             raise ValueError(
                 "Slider criteria should be of the same size as data",
@@ -259,11 +291,15 @@ class MultipleDisplay:
         ind_ax: int,
         criterion: Sequence[float],
         widget_func: Widget = Slider,
+        label_slider: Optional[str] = None,
     ) -> None:
-        full_desc = "".join(["Filter (", str(ind_ax), ")"])
+        if label_slider is None:
+            full_desc = "".join(["Filter (", str(ind_ax), ")"])
+        else:
+            full_desc = label_slider
         self.sliders.append(
             widget_func(
-                self.fig.axes[self.length_data + ind_ax],
+                self.fig.axes[self.num_graphs + ind_ax],
                 full_desc,
                 valmin=0,
                 valmax=self.length_data - 1,
@@ -275,15 +311,14 @@ class MultipleDisplay:
         order_dic = collections.OrderedDict(sorted(dic.items()))
         self.criteria.append(order_dic.values())
 
-    def value_updated(self, change):
-        temp = change['owner'].description.split("(")[1]
-        temp = temp.split(")")[0]
-        index_criteria = int(temp)
+    def value_updated(self, value):
+        # Make the changes of the slider discrete
+        index = int(int(value / 0.5) * 0.5)
         old_index = self.index_clicked
-        self.index_clicked = list(self.criteria[index_criteria])[change['new']]
+        self.index_clicked = list(self.criteria[self.widget_index])[index]
+        self.sliders[self.widget_index].valtext.set_text('{}'.format(index))
         self.clicked = True
         if old_index == -1:
             self.reduce_points_intensity()
         else:
             self.change_points_intensity(old_index=old_index)
-

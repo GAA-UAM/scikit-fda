@@ -44,6 +44,9 @@ class MultipleDisplay:
         self.index_clicked = -1
         self.tags = []
         self.previous_hovered = None
+        self.fig = fig
+        self.axes = axes
+        self.chart = chart
 
         if criteria is not None and sliders is not None:
             if isinstance(sliders, Iterable):
@@ -56,7 +59,7 @@ class MultipleDisplay:
             else:
                 self.set_sliders(criteria, sliders)
 
-        self.init_axes(chart=chart, fig=fig, axes=axes)
+        self.init_axes(chart=self.chart, fig=self.fig, axes=self.axes)
 
     def plot(
         self,
@@ -239,12 +242,12 @@ class MultipleDisplay:
                         "Slider criteria should be of the same size as data",
                     )
 
-            self.init_axes(fig=self.fig, axes=self.axes, extra=len(criteria))
+            self.init_axes(chart=self.chart, fig=self.fig, extra=len(criteria))
 
             for i in range(len(criteria)):
                 self.__add_slider(i, criteria[i], sliders[i])
         elif len(criteria) == self.length_data:
-            self.init_axes(fig=self.fig, axes=self.axes, extra=1)
+            self.init_axes(chart=self.chart, fig=self.fig, axes=self.axes, extra=1)
             self.__add_slider(criteria, sliders)
         else:
             raise ValueError(

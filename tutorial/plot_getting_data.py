@@ -4,7 +4,8 @@ Getting the data
 
 How to get data to use in scikit-fda.
 
-isort:skip_file
+.. Disable isort
+    isort:skip_file
 
 """
 

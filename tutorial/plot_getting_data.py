@@ -4,10 +4,14 @@ Getting the data
 
 How to get data to use in scikit-fda.
 
+isort:skip_file
+
 """
 
 # Author: Carlos Ramos Carreño
 # License: MIT
+#
+# sphinx_gallery_thumbnail_number = 6
 
 ##############################################################################
 # The FDataGrid class
@@ -79,7 +83,7 @@ fd.plot()
 # In order to better understand the FDataGrid structure, you can consider the
 # following example, in which a :class:`~skfda.representation.grid.FDataGrid`
 # object is created, containing just one function (vector-valued surface)
-# :math:`\{f_i: \mathbb{R}^2 \to \mathbb{R}^4`.
+# :math:`f: \mathbb{R}^2 \to \mathbb{R}^4`.
 
 
 grid_points_surface = [
@@ -141,13 +145,50 @@ fd.plot()
 # dependency of scikit-fda, as it is used to load the example datasets.
 
 ##############################################################################
+# Once your data has been introduced as a :class:`~numpy.ndarray` instance,
+# you will need to give it the proper dimensions and use it to instantiate
+# a functional data object.
+
+##############################################################################
+# .. note::
+#
+#     :class:`Pandas DataFrames <pandas.DataFrame>` are also popular as
+#     datasets containers in the Python scientific ecosystem. If you have
+#     data in a Pandas DataFrame, you can extract its content as a Numpy
+#     array using the method :meth:`pandas.DataFrame.to_numpy` of the
+#     DataFrame.
+
+##############################################################################
+# As an example, we will load the
+# :func:`digits dataset <sklearn.datasets.load_digits>` of scikit-learn, which
+# is a preprocessed subset of the MNIST dataset, containing digit images. The
+# data is already a numpy array. As the data has been flattened into a 1D
+# vector of pixels, we need to reshape the arrays to their original 8x8 shape.
+# Then this array can be used to construct the digits as surfaces.
+
+from sklearn.datasets import load_digits
+
+X, y = load_digits(return_X_y=True)
+X = X.reshape(-1, 8, 8)
+
+fd = skfda.FDataGrid(X)
+
+# Plot the first 2 observations
+fd[0].plot()
+fd[1].plot()
+
+
+##############################################################################
 # Common datasets
 # ---------------
 #
 # scikit-fda can download and import for you several of the most popular
 # datasets in the :term:`FDA` literature, such as the Berkeley Growth
 # dataset (function :func:`~skfda.datasets.fetch_growth`) or the Canadian
-# Weather dataset (function :func:`~skfda.datasets.fetch_weather`).
+# Weather dataset (function :func:`~skfda.datasets.fetch_weather`). These
+# datasets are often useful as benchmarks, in order to compare results
+# between different algorithms, or simply as examples to use in teaching or
+# research.
 
 X, y = skfda.datasets.fetch_growth(return_X_y=True)
 
@@ -176,8 +217,71 @@ X.plot(group=y)
 #     :class:`~skfda.representation.grid.FDataGrid` instances. This
 #     behaviour can be disabled or customized to work with more packages.
 
-data = skfda.datasets.fetch_cran("poblenou", "fda.usc")
-data["poblenou"]["nox"].plot()
+data = skfda.datasets.fetch_cran("MCO", "fda.usc")
+
+data["MCO"]["intact"].plot()
+
+##############################################################################
+# Datasets from the UEA & UCR Time Series Classification Repository
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# The `UEA & UCR Time Series Classification Repository
+# <http://www.timeseriesclassification.com/>`_ is a popular repository
+# for classification problems involving time series data. The datasets used
+# can be considered also as functional observations, where the functions
+# involved have domain dimension of 1, and the grid points are
+# equispaced. Thus, they have also been used in the :term:`FDA` literature.
+# The original UCR datasets are univariate time series, while the new UEA
+# datasets incorporate also vector-valued data.
+# In scikit-fda, the function :func:`~skfda.datasets.fetch_ucr` can be used
+# to obtain both kinds of datasets as
+# :class:`~skfda.representation.grid.FDataGrid` instances.
+
+# Load ArrowHead dataset from UCR
+dataset = skfda.datasets.fetch_ucr("ArrowHead")
+dataset["data"].plot()
+
+##############################################################################
+
+# Load BasicMotions dataset from UEA
+dataset = skfda.datasets.fetch_ucr("BasicMotions")
+dataset["data"].plot()
+
+##############################################################################
+# Synthetic data
+# --------------
+#
+# Sometimes it is not enough to have real-world data at your disposal.
+# Perhaps the messy nature of real-world data makes difficult to detect when
+# a particular algorithm has a strange behaviour. Perhaps you want to see how
+# it performs under a simplified model. Maybe you want to see what happens
+# when your data has particular characteristics, for which no dataset is
+# available. Or maybe you only want to illustrate a concept without having
+# to introduce a particular set of data.
+#
+# In those cases, the ability to use generated data is desirable. To aid this
+# use case, scikit-learn provides several functions that generate data
+# according to some model. These functions are in the
+# :doc:`datasets </modules/datasets>` module and have the prefix ``make_``.
+# Maybe the most useful of those are the functions
+# :func:`skfda.datasets.make_gaussian_process` and
+# :func:`skfda.datasets.make_gaussian` which can be used to generate Gaussian
+# processes and Gaussian fields with different covariance functions.
+
+import numpy as np
+
+cov = skfda.misc.covariances.Exponential(length_scale=0.1)
+
+fd = skfda.datasets.make_gaussian_process(
+    start=0,
+    stop=4,
+    n_samples=5,
+    n_features=100,
+    mean=lambda t: np.power(t, 2),
+    cov=cov,
+)
+
+fd.plot()
 
 ##############################################################################
 # In order to know all the available functionalities to load existing and

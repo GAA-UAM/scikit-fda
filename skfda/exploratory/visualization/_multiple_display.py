@@ -1,14 +1,12 @@
 import collections
 import copy
-from typing import Any, List, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Union
 
-from IPython.display import display
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import Event
 from matplotlib.figure import Figure
 from matplotlib.widgets import Slider, Widget
-from numpy.lib.arraysetops import isin
 
 from ._baseplot import BasePlot
 from ._utils import _get_figure_and_axes, _set_figure_layout
@@ -55,13 +53,13 @@ class MultipleDisplay:
         if criteria is not None and sliders is not None:
             if isinstance(sliders, collections.Iterable):
                 if len(criteria) == len(sliders):
-                    self.set_sliders(criteria, sliders, label_sliders)
+                    self.create_sliders(criteria, sliders, label_sliders)
                 else:
                     raise ValueError(
                         "Size of criteria, and sliders should be equal.",
                     )
             else:
-                self.set_sliders(criteria, sliders, label_sliders)
+                self.create_sliders(criteria, sliders, label_sliders)
         else:
             self.init_axes(chart=self.chart, fig=self.fig, axes=self.axes)
 
@@ -234,7 +232,7 @@ class MultipleDisplay:
             else:
                 d.id_function[index].set_alpha(intensity)
 
-    def set_sliders(
+    def create_sliders(
         self,
         criteria: Union[Sequence[float], Sequence[Sequence[float]]],
         sliders: Union[Widget, Sequence[Widget]],

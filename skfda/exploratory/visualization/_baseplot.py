@@ -46,4 +46,3 @@ class BasePlot(ABC):
         self.fig = self.plot()
         plt.close(self.fig)
         return _figure_to_svg(self.fig)
-

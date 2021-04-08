@@ -23,6 +23,11 @@ Github you can find more information related to the development of the package.
    apilist
    glossary
 
+.. toctree::
+   :maxdepth: 2
+   :titlesonly:
+
+   auto_tutorial/index
 
 .. toctree::
    :maxdepth: 1

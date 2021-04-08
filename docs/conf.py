@@ -229,9 +229,9 @@ intersphinx_mapping = {
 
 sphinx_gallery_conf = {
     # path to your examples scripts
-    'examples_dirs': '../examples',
+    'examples_dirs': ['../examples', '../tutorial'],
     # path where to save gallery generated examples
-    'gallery_dirs': 'auto_examples',
+    'gallery_dirs': ['auto_examples', 'auto_tutorial'],
     'reference_url': {
         # The module you locally document uses None
         'skfda': None,

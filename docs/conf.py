@@ -227,6 +227,35 @@ intersphinx_mapping = {
     'mpldatacursor': ('https://pypi.org/project/mpldatacursor/', None),
 }
 
+
+tutorial_list = [
+    "plot_getting_data.py",
+    "plot_skfda_sklearn.py",
+]
+
+
+class SkfdaExplicitSubOrder(object):
+    """
+    Class for use within the 'within_subsection_order' key.
+
+    Inspired by Matplotlib gallery.
+
+    """
+
+    def __init__(self, src_dir: str) -> None:
+        self.src_dir = src_dir  # src_dir is unused here
+        self.ordered_list = tutorial_list
+
+    def __call__(self, filename: str) -> str:
+        """Return a string determining the sort order."""
+        if filename in self.ordered_list:
+            ind = self.ordered_list.index(filename)
+            return f"{ind:04d}"
+
+        # ensure not explicitly listed items come last.
+        return f"zzz{filename}"
+
+
 sphinx_gallery_conf = {
     # path to your examples scripts
     'examples_dirs': ['../examples', '../tutorial'],
@@ -238,6 +267,7 @@ sphinx_gallery_conf = {
     },
     'backreferences_dir': 'backreferences',
     'doc_module': 'skfda',
+    'within_subsection_order': SkfdaExplicitSubOrder,
 }
 
 autosummary_generate = True

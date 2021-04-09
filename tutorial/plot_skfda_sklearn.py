@@ -343,8 +343,9 @@ multiclass.score(X_test, y_test)
 # :func:`~sklearn.model_selection.train_test_split`. Other objects and
 # functions such as :class:`~sklearn.model_selection.KFold` can be directly
 # applied to functional data in order to split it into folds. Scorers for
-# classification or regression, such as `~sklearn.metrics.accuracy_score` can
-# be directly applied to functional data problems.
+# classification or regression, such as
+# :func:`~sklearn.metrics.accuracy_score` can be directly applied to
+# functional data problems.
 #
 # Moreover, there are plenty of libraries that aim to extend scikit-learn in
 # several directions (take a look at the `list of related projects

@@ -75,6 +75,7 @@ them to the :term:`functional data analysis` field.
 
 import skfda
 from sklearn.model_selection import train_test_split
+import sklearn
 
 X, y = skfda.datasets.fetch_growth(return_X_y=True)
 
@@ -186,7 +187,7 @@ X.plot(group=y_pred)
 #     transformations as new features of the same dataset (
 #     :class:`~sklearn.pipeline.FeatureUnion`) or that can apply different
 #     transformers to different columns of the data
-#     :class:`~sklearn.compose.ColumnTransformer`. These transformers
+#     (:class:`~sklearn.compose.ColumnTransformer`). These transformers
 #     are not yet usable with functional data.
 
 ##############################################################################
@@ -211,3 +212,142 @@ pipeline = Pipeline([
 
 pipeline.fit(X_train, y_train)
 pipeline.score(X_test, y_test)
+
+##############################################################################
+# Hyperparameter optimizers
+# +++++++++++++++++++++++++
+#
+# Some of the parameters used for the creation of an estimator need to be
+# tuned to each particular dataset in order to improve the prediction accuracy
+# and generalization. There are several techniques to do that already
+# available in scikit-learn, such as grid search cross-validation
+# (:class:`~sklearn.model_selection.GridSearchCV`) or randomized search
+# (:class:`~sklearn.model_selection.RandomizedSearchCV`). As these
+# hyperparameter optimizers only need to split the data and call ``score`` in
+# the predictor, they can be directly used with the methods in scikit-fda.
+#
+# .. note::
+#     In addition one could use any optimizer that understand the scikit-learn
+#     API such as those in `scikit-optimize
+#     <https://scikit-optimize.github.io>`_.
+
+##############################################################################
+# As an example, we will use :class:`~sklearn.model_selection.GridSearchCV`
+# to select the number of neighbors used in a
+# :class:`~skfda.ml.classification.KNeighborsClassifier`.
+
+from sklearn.model_selection import GridSearchCV
+
+X, y = skfda.datasets.fetch_growth(return_X_y=True)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+
+classifier = skfda.ml.classification.KNeighborsClassifier()
+
+grid_search = GridSearchCV(
+    estimator=classifier,
+    param_grid={"n_neighbors": range(1, 10, 2)},
+)
+
+grid_search.fit(X_train, y_train)
+n_neighbors = grid_search.best_estimator_.n_neighbors
+score = grid_search.score(X_test, y_test)
+
+print(n_neighbors, score)
+
+##############################################################################
+# Ensemble methods
+# ++++++++++++++++
+#
+# The ensemble methods :class:`~sklearn.ensemble.VotingClassifier` and
+# :class:`~sklearn.ensemble.VotingRegressor` in scikit-learn use several
+# different estimators in order to predict the targets. As this is done
+# by evaluating the passed estimators as black boxes, these predictors can
+# also be combined with scikit-fda predictors.
+#
+# .. warning::
+#     Other ensemble methods, such as
+#     :class:`~sklearn.ensemble.BaggingClassifier` or
+#     :class:`~sklearn.ensemble.AdaBoostClassifier` construct estimators
+#     that only use a subset of the features. As in :term:`FDA` the features
+#     are the evaluations of the functions at different points, these
+#     estimators cannot work with functional data unless it has been
+#     transformed to a multivariate dataset.
+
+##############################################################################
+# As an example we will use a voting classifier to classify data using as
+# classifiers a knn-classifier, a nearest centroid classifier and a
+# maximum depth classifier.
+
+from sklearn.ensemble import VotingClassifier
+
+X, y = skfda.datasets.fetch_growth(return_X_y=True)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+
+knn = skfda.ml.classification.KNeighborsClassifier()
+nearest_centroid = skfda.ml.classification.NearestCentroid()
+mdc = skfda.ml.classification.MaximumDepthClassifier()
+
+voting = VotingClassifier([
+    ("knn", knn),
+    ("nearest_centroid", nearest_centroid),
+    ("mdc", mdc),
+])
+
+voting.fit(X_train, y_train)
+voting.score(X_test, y_test)
+
+##############################################################################
+# Multiclass and multioutput classification utilities
+# +++++++++++++++++++++++++++++++++++++++++++++++++++
+#
+# The scikit-learn library also offers additional utilities that can convert
+# a binary classifier into a multiclass classifier (such as
+# :class:`~sklearn.multiclass.OneVsRestClassifier`) or to extend a single
+# output classifier or regressor to accept also multioutput (vector-valued)
+# targets.
+
+##############################################################################
+# In this example we want to use as a classifier the combination of a
+# dimensionality reduction method (
+# :class:`~skfda.preprocessing.dim_reduction.variable_selection.RKHSVariableSelection`)
+# and a SVM classifier (:class:`~sklearn.svm.SVC`). As that particular
+# dimensionality reduction method is only suitable for binary data, we use
+# :class:`~sklearn.multiclass.OneVsRestClassifier` to classify in a
+# multiclass dataset.
+
+from sklearn.multiclass import OneVsRestClassifier
+
+X, y = skfda.datasets.fetch_phoneme(return_X_y=True)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+
+pipeline = Pipeline([
+    ("dim_reduction", vs.RKHSVariableSelection(n_features_to_select=3)),
+    ("classifier", SVC()),
+])
+
+multiclass = OneVsRestClassifier(pipeline)
+
+multiclass.fit(X_train, y_train)
+multiclass.score(X_test, y_test)
+
+##############################################################################
+# Other scikit-learn utilities
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# In addition to the aforementioned objects, there are plenty of objects in
+# scikit-learn that can be applied directly to functional data. We have
+# already seen in the examples the function
+# :func:`~sklearn.model_selection.train_test_split`. Other objects and
+# functions such as :class:`~sklearn.model_selection.KFold` can be directly
+# applied to functional data in order to split it into folds. Scorers for
+# classification or regression, such as `~sklearn.metrics.accuracy_score` can
+# be directly applied to functional data problems.
+#
+# Moreover, there are plenty of libraries that aim to extend scikit-learn in
+# several directions (take a look at the `list of related projects
+# <https://scikit-learn.org/stable/related_projects.html>`_). You will
+# probably see that a lot of the functionality can be applied to scikit-fda,
+# as it uses the same API as scikit-learn.

@@ -2,7 +2,13 @@
 Getting the data
 ================
 
-How to get data to use in scikit-fda.
+In this section of the tutorial, we will dicuss how to get functional data to
+use in scikit-fda. We will briefly describe the
+:class:`~skfda.representation.grid.FDataGrid` class, which is the type that
+scikit-fda uses for storing and working with functional data in discretized
+form. We will discuss also how to import functional data from several sources
+and show how to fetch and load existing datasets popular in the :term:`FDA`
+literature.
 
 .. Disable isort
     isort:skip_file

@@ -2,7 +2,7 @@
 Basis representation
 ====================
 
-In this section of the tutorial, we will introduce the basis representation of
+In this section, we will introduce the basis representation of
 functional data. This is a very useful representation for functions that
 belong (or can be reasonably projected) to the space spanned by a finite set
 of basis functions.

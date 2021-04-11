@@ -19,9 +19,9 @@ them to the :term:`functional data analysis` field.
 # A brief summary of scikit-learn architecture
 # --------------------------------------------
 #
-# The library scikit-learn is probably the most well-known Python package
-# for machine learning. This package focuses in machine learning using
-# multivariate data, which should be stored in a numpy
+# The library `scikit-learn <https://scikit-learn.org/>`_ is probably the most
+# well-known Python package for machine learning. This package focuses in
+# machine learning using multivariate data, which should be stored in a numpy
 # :class:`~numpy.ndarray` in order to process it. However, this library has
 # defined a particular architecture that can be followed in order to provide
 # new tools that work in situations not even imagined by the original authors,

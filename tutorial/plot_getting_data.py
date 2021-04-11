@@ -2,7 +2,7 @@
 Getting the data
 ================
 
-In this section of the tutorial, we will dicuss how to get functional data to
+In this section, we will dicuss how to get functional data to
 use in scikit-fda. We will briefly describe the
 :class:`~skfda.representation.grid.FDataGrid` class, which is the type that
 scikit-fda uses for storing and working with functional data in discretized

@@ -12,6 +12,11 @@ of basis functions.
 
 """
 
+# Author: Carlos Ramos Carreño
+# License: MIT
+#
+# sphinx_gallery_thumbnail_number = 7
+
 ##############################################################################
 # Functions and vector spaces
 # ---------------------------

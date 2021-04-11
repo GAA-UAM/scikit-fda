@@ -162,7 +162,7 @@ fd.plot()
 #     :class:`Pandas DataFrames <pandas.DataFrame>` are also popular as
 #     datasets containers in the Python scientific ecosystem. If you have
 #     data in a Pandas DataFrame, you can extract its content as a Numpy
-#     array using the method :meth:`pandas.DataFrame.to_numpy` of the
+#     array using the method :meth:`~pandas.DataFrame.to_numpy` of the
 #     DataFrame.
 
 ##############################################################################

@@ -14,24 +14,27 @@ or clustering of functional data.
 In the `project page <https://github.com/GAA-UAM/scikit-fda>`_ hosted by
 Github you can find more information related to the development of the package.
 
-
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-   :titlesonly:
-
-   apilist
-   glossary
-
-.. toctree::
-
+   :caption: Using scikit-fda
+   :hidden:
+	
    auto_tutorial/index
 
 .. toctree::
    :maxdepth: 1
    :titlesonly:
+   :hidden:
 
    auto_examples/index
+
+.. toctree::
+   :maxdepth: 2
+   :titlesonly:
+   :hidden:
+   :caption: More documentation
+
+   apilist
+   glossary
 
 An exhaustive list of all the contents of the package can be found in the
 :ref:`genindex`.
@@ -61,6 +64,14 @@ In this type of installation make sure that your default Python version is
 currently supported, or change the python and pip commands by specifying a
 version, such as python3.6.
 
+How do I start?
+---------------
+
+If you want a quick overview of the package, we recommend you to try the
+new :doc:`tutorial <auto_tutorial/index>`. For articles about specific
+topics, feel free to explore the :doc:`examples <auto_examples/index>`. Want
+to check the documentation of a particular class or function? Try searching
+for it in the :doc:`API list <apilist>`.
 
 Contributions
 -------------

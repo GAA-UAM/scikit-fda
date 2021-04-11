@@ -331,8 +331,14 @@ X = X.reshape(-1, 8, 8)
 fd = skfda.FDataGrid(X)
 
 basis = skfda.representation.basis.Tensor([
-    skfda.representation.basis.Fourier(n_basis=5),  # X axis
-    skfda.representation.basis.BSpline(n_basis=6),  # Y axis
+    skfda.representation.basis.Fourier(  # X axis
+        n_basis=5,
+        domain_range=fd.domain_range[0],
+    ),
+    skfda.representation.basis.BSpline(  # Y axis
+        n_basis=6,
+        domain_range=fd.domain_range[1],
+    ),
 ])
 
 fd_basis = fd.to_basis(basis)
@@ -356,9 +362,11 @@ fd_basis[0].plot()
 # interesting behaviour, such as local features and less elsewhere.
 
 ##############################################################################
-# Here we show an example where the
+# Here we show an example where the digits dataset of scikit-learn is
+# expressed in the finite element basis. First we create the vertices and
+# simplices that we will use and we plot them.
 
-vertices = [
+vertices = np.array([
     (0, 0),
     (0, 1),
     (1, 0),
@@ -368,9 +376,9 @@ vertices = [
     (0.5, 0.75),
     (0.75, 0.5),
     (0.5, 0.5),
-]
+])
 
-cells = [
+cells = np.array([
     (0, 1, 4),
     (0, 2, 5),
     (1, 3, 6),
@@ -383,7 +391,12 @@ cells = [
     (4, 6, 8),
     (5, 7, 8),
     (6, 7, 8),
-]
+])
+
+plt.triplot(vertices[:, 0], vertices[:, 1], cells)
+
+##############################################################################
+# We now represent the digits dataset in this basis.
 
 basis = skfda.representation.basis.FiniteElement(
     vertices=vertices,
@@ -394,3 +407,45 @@ fd_basis = fd.to_basis(basis)
 
 # We only plot the first function
 fd_basis[0].plot()
+
+##############################################################################
+# Vector-valued basis
+# ^^^^^^^^^^^^^^^^^^^
+#
+# With the aforementioned bases, one could express
+# :math:`\mathbb{R}^p \to \mathbb{R}` functions. In order to express vector
+# valued functions as a basis expansion, one just need to express each
+# coordinate function as a basis expansion and multiply it by the
+# corresponding unitary vector in the coordinate direction, adding finally all
+# of them together.
+#
+# The vector-valued basis (:class:`~skfda.representation.basis.VectorValued`)
+# allows the representation of vector-valued functions doing just that.
+
+##############################################################################
+# As an example, consider the Canadian Weather dataset, including both
+# temperature and precipitation data as coordinate functions, and plotted
+# below.
+
+X, y = skfda.datasets.fetch_weather(return_X_y=True)
+
+X.plot()
+
+##############################################################################
+# We will express this dataset as a basis expansion. Temperatures
+# are now expressed in a Fourier basis, while we express precipitations as
+# B-splines.
+
+basis = skfda.representation.basis.VectorValued([
+    skfda.representation.basis.Fourier(  # First coordinate function
+        n_basis=5,
+        domain_range=X.domain_range,
+    ),
+    skfda.representation.basis.BSpline(  # Second coordinate function
+        n_basis=10,
+        domain_range=X.domain_range,
+    ),
+])
+
+X_basis = X.to_basis(basis)
+X_basis.plot()

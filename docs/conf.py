@@ -230,6 +230,7 @@ intersphinx_mapping = {
 
 tutorial_list = [
     "plot_getting_data.py",
+    "plot_basis_representation.py",
     "plot_skfda_sklearn.py",
 ]
 

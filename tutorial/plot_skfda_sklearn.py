@@ -75,7 +75,6 @@ them to the :term:`functional data analysis` field.
 
 import skfda
 from sklearn.model_selection import train_test_split
-import sklearn
 
 X, y = skfda.datasets.fetch_growth(return_X_y=True)
 

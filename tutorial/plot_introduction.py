@@ -39,9 +39,9 @@ machine learning practicioners in the Python scientific ecosystem.
 # that makes some classical multivariate methods unsuitable to work with this
 # data.
 #
-# In this setting observations can also be considered to be instances
-# of a "functional random variable", usually called stochastic processes and
-# random fields. However, some of the concepts that proved very useful to
+# In this setting, observations can also be considered to be instances
+# of a "functional random variable", usually called a stochastic process or
+# a random field. However, some of the concepts that proved very useful to
 # analyze multivariate data, such as density functions, are not applicable
 # to :term:`functional data`, while new tools, such as taking derivatives,
 # become available.
@@ -61,7 +61,7 @@ machine learning practicioners in the Python scientific ecosystem.
 #       and as a basis expansion.
 #     - Apply preprocessing methods to functional data, including smoothing,
 #       registration and dimensionality reduction.
-#     - Perform a complete exploratory analysis of de data, summarizing its
+#     - Perform a complete exploratory analysis of the data, summarizing its
 #       main properties, detecting possible outliers and visualizing the data
 #       in several ways.
 #     - Apply statistical inference tools developed for functional data, such
@@ -86,7 +86,7 @@ machine learning practicioners in the Python scientific ecosystem.
 # :term:`domain` as inputs and produces elements of the :term:`codomain` as
 # outputs.
 #
-# In :term:`FDA`, the inputs, or parameters, of a function are assumed to be
+# In :term:`FDA`, the inputs or parameters of a function are assumed to be
 # continuous parameters, and so are the outputs, or values of the function.
 # Thus, it is usual to restrict our functional observations to be functions
 # :math:`\{f_i: \mathcal{T} \subseteq \mathbb{R}^p \to \mathbb{R}^q\}_{i=1}^N`.
@@ -104,7 +104,7 @@ machine learning practicioners in the Python scientific ecosystem.
 ##############################################################################
 # As an example, the following code shows the Berkeley Growth dataset, one
 # of the classical datasets used in :term:`FDA`. The curves are heights of
-# several boys and girls measured at several points since their birth to
+# 93 boys and girls measured at several points since their birth to
 # their 18th birthday. Here the domain :math:`\mathcal{T}` is the interval
 # :math:`[0, 18]` and both the domain and codomain have a dimension of one.
 

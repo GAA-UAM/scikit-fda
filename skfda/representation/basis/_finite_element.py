@@ -2,7 +2,7 @@ from typing import Optional, TypeVar
 
 import numpy as np
 
-from .._typing import DomainRangeLike
+from .._typing import ArrayLike, DomainRangeLike
 from ._basis import Basis
 
 T = TypeVar("T", bound='FiniteElement')
@@ -67,8 +67,8 @@ class FiniteElement(Basis):
 
     def __init__(
         self,
-        vertices: np.ndarray,
-        cells: np.ndarray,
+        vertices: ArrayLike,
+        cells: ArrayLike,
         domain_range: Optional[DomainRangeLike] = None,
     ) -> None:
         super().__init__(

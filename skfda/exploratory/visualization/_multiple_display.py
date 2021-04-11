@@ -9,7 +9,7 @@ from matplotlib.figure import Figure
 from matplotlib.widgets import Slider, Widget
 
 from ._baseplot import BasePlot
-from ._utils import _get_figure_and_axes, _set_figure_layout
+from ._utils import _get_axes_shape, _get_figure_and_axes, _set_figure_layout
 
 
 class MultipleDisplay:
@@ -49,6 +49,7 @@ class MultipleDisplay:
         self.fig = fig
         self.axes = axes
         self.chart = chart
+        self.is_updating = False
 
         if criteria is not None and sliders is not None:
             if isinstance(sliders, collections.Iterable):
@@ -152,10 +153,23 @@ class MultipleDisplay:
         axes: Union[Axes, Sequence[Axes], None] = None,
         extra: int = 0,
     ) -> None:
+        widget_aspect = 1 / 4
         fig, axes = _get_figure_and_axes(chart, fig, axes)
+        if len(axes) != 0 and len(axes) != (len(self.displays) + extra):
+            raise ValueError("Invalid number of axes.")
+
+        n_rows, n_cols = _get_axes_shape(len(self.displays) + extra)
+
+        number_axes = n_rows * n_cols
         fig, axes = _set_figure_layout(
             fig=fig, axes=axes, n_axes=len(self.displays) + extra,
         )
+
+        for i in range(len(self.displays), number_axes):
+            if i >= len(self.displays) + extra:
+                axes[i].set_visible(False)
+            else:
+                axes[i].set_box_aspect(widget_aspect)
 
         self.fig = fig
         self.axes = axes
@@ -192,6 +206,12 @@ class MultipleDisplay:
                     else:
                         d.id_function[i].set_alpha(0.1)
 
+        self.is_updating = True
+        for i in range(len(self.sliders)):
+            val_widget = list(self.criteria[i]).index(self.index_clicked)
+            self.sliders[i].set_val(val_widget)
+        self.is_updating = False
+
     def restore_points_intensity(self) -> None:
         for i in range(self.length_data):
             for d in self.displays:
@@ -201,6 +221,11 @@ class MultipleDisplay:
                     d.id_function[i].set_alpha(1)
         self.point_clicked = None
         self.index_clicked = -1
+
+        self.is_updating = True
+        for i in range(len(self.sliders)):
+            self.sliders[i].set_val(0)
+        self.is_updating = False
 
     def change_points_intensity(
         self,
@@ -224,6 +249,12 @@ class MultipleDisplay:
 
             if intensity != -1:
                 self.change_display_intensity(i, intensity)
+
+        self.is_updating = True
+        for i in range(len(self.sliders)):
+            val_widget = list(self.criteria[i]).index(self.index_clicked)
+            self.sliders[i].set_val(val_widget)
+        self.is_updating = False
 
     def change_display_intensity(self, index: int, intensity: int) -> None:
         for d in self.displays:
@@ -308,11 +339,25 @@ class MultipleDisplay:
         self.criteria.append(order_dic.values())
 
     def value_updated(self, value):
+        # Used to avoid entering in an etern loop
+        if self.is_updating is True:
+            return
+        self.is_updating = True
+
         # Make the changes of the slider discrete
         index = int(int(value / 0.5) * 0.5)
         old_index = self.index_clicked
         self.index_clicked = list(self.criteria[self.widget_index])[index]
         self.sliders[self.widget_index].valtext.set_text('{}'.format(index))
+
+        # Update the other sliders values
+        for i in range(len(self.sliders)):
+            if i != self.widget_index:
+                val_widget = list(self.criteria[i]).index(self.index_clicked)
+                self.sliders[i].set_val(val_widget)
+
+        self.is_updating = False
+
         self.clicked = True
         if old_index == -1:
             self.reduce_points_intensity()

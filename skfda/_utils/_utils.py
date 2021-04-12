@@ -523,7 +523,7 @@ def _evaluate_grid(  # noqa: WPS234
         axes_per_sample = cast(Iterable[GridPointsLike], axes)
 
         axes_per_sample = list(axes_per_sample)
-        
+
         eval_points_tuple, shape_tuple = zip(
             *[
                 _one_grid_to_points(a, dim_domain=dim_domain)

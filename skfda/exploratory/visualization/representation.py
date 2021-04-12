@@ -51,24 +51,6 @@ class Indexable(Protocol[K, V]):
         pass
 
 
-def _get_label_colors(
-    n_labels: int,
-    group_colors: Optional[Indexable[K, ColorLike]] = None,
-) -> np.ndarray:
-    """Get the colors of each label."""
-    if group_colors is None:
-        colormap = matplotlib.cm.get_cmap()
-        group_colors = colormap(np.arange(n_labels) / (n_labels - 1))
-    elif len(group_colors) != n_labels:
-        raise ValueError(
-            "There must be a color in group_colors "
-            "for each of the labels that appear in "
-            "group.",
-        )
-
-    return group_colors
-
-
 def _get_color_info(
     fdata: T,
     group: Optional[Sequence[K]] = None,
@@ -77,7 +59,7 @@ def _get_color_info(
     legend: bool = False,
     kwargs: Any = None,
 ) -> Tuple[
-        Union[ColorLike, str, None],
+        Union[ColorLike, None],
         Optional[List[matplotlib.patches.Patch]
     ]]:
 
@@ -309,7 +291,7 @@ class GraphPlot:
 
         self.sample_colors = sample_colors
 
-        color_dict: Mapping[str, Union[ColorLike, str, None]] = {}
+        color_dict: Mapping[str, Union[ColorLike, None]] = {}
 
         if self.fdata.dim_domain == 1:
 
@@ -475,7 +457,7 @@ class ScatterPlot:
             self.fdata, group, group_names, group_colors, legend, kwargs,
         )
 
-        color_dict: Mapping[str, Union[ColorLike, str, None]] = {}
+        color_dict: Mapping[str, Union[ColorLike, None]] = {}
 
         if self.fdata.dim_domain == 1:
 
@@ -518,7 +500,7 @@ class ScatterPlot:
 def set_color_dict(
     sample_colors: Any,
     ind: int,
-    color_dict: Mapping[str, Union[ColorLike, str, None]],
+    color_dict: Mapping[str, Union[ColorLike, None]],
 ) -> None:
     """
     Auxiliary method used to update color_dict.

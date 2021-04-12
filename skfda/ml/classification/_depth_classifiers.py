@@ -205,6 +205,10 @@ class DDClassifier(
 
         self._classes = classes
         self.class_depth_methods_ = class_depth_methods
+        
+        if (self._classes != 2) {
+            raise ValueError
+        }
 
         dd_coordinates = [
             depth_method.predict(X)

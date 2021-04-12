@@ -152,28 +152,46 @@ class MultipleDisplay:
 
         return self.fig
 
-    def update_annot(self, index):
+    def update_annot(self, index_ax: int, index_point: int):
         """
         Auxiliary method used to update the hovering annotations.
 
         Method used to update the annotations that appear while
         hovering a scattered point. The annotations indicate
-        the coordinates of the point hovered.
+        the index and coordinates of the point hovered.
         Args:
-            index: index of the point being hovered.
+            index_ax: index of the ax being hovered.
+            index_point: index of the point being hovered.
         """
         xdata_graph = self.previous_hovered.get_offsets()[0][0]
         ydata_graph = self.previous_hovered.get_offsets()[0][1]
         xdata_aprox = "{0:.2f}".format(xdata_graph)
         ydata_aprox = "{0:.2f}".format(ydata_graph)
 
-        self.tags[index].xy = (xdata_graph, ydata_graph)
-        text = "".join(["(", str(xdata_aprox), ", ", str(ydata_aprox), ")"])
+        current_tag = self.tags[index_ax]
+        current_tag.xy = (xdata_graph, ydata_graph)
+        current_tag.xy = (xdata_graph, ydata_graph)
+        text = "".join([
+            str(index_point),
+            ": (",
+            str(xdata_aprox),
+            ", ",
+            str(ydata_aprox),
+            ")",
+        ])
 
-        self.tags[index].set_text(text)
-        self.tags[index].get_bbox_patch().set_facecolor(color='red')
+        x_axis = self.axes[index_ax].get_xlim()
+        self.x_axis = x_axis
+        self.xdata_graph = xdata_graph
+        if (xdata_graph - x_axis[0]) > (x_axis[1] - xdata_graph):
+            current_tag.set_position((-80, 20))
+        else:
+            current_tag.set_position((20, 20))
+
+        current_tag.set_text(text)
+        current_tag.get_bbox_patch().set_facecolor(color='red')
         intensity = 0.4
-        self.tags[index].get_bbox_patch().set_alpha(intensity)
+        current_tag.get_bbox_patch().set_alpha(intensity)
 
     def hover(self, event: Event):
         """
@@ -191,7 +209,8 @@ class MultipleDisplay:
         for i in range(self.num_graphs):
             if event.inaxes == self.axes[i]:
                 index_axis = i
-                for artist in self.displays[i].id_function:
+                for j in range(len(self.displays[i].id_function)):
+                    artist = self.displays[i].id_function[j]
                     if isinstance(artist, List):
                         return
                     is_graph, ind = artist.contains(event)
@@ -199,15 +218,16 @@ class MultipleDisplay:
                         return
                     if is_graph:
                         self.previous_hovered = artist
+                        index_point = j
                         break
                 break
 
-        for j in range(self.num_graphs, len(self.axes)):
-            if event.inaxes == self.axes[j]:
-                self.widget_index = j - self.num_graphs
+        for k in range(self.num_graphs, len(self.axes)):
+            if event.inaxes == self.axes[k]:
+                self.widget_index = k - self.num_graphs
 
         if index_axis != -1 and is_graph:
-            self.update_annot(index_axis)
+            self.update_annot(index_axis, index_point)
             self.tags[index_axis].set_visible(True)
             self.fig.canvas.draw_idle()
         elif self.tags[index_axis].get_visible():
@@ -285,7 +305,8 @@ class MultipleDisplay:
             self.point_clicked = event.artist
             self.change_points_intensity()
 
-    def update_index_display_picked(self) -> int:
+    def update_index_display_picked(self) -> None:
+        """Updates the index corresponding to the display picked."""
         for i in range(self.num_graphs):
             if self.axes[i] == self.point_clicked.axes:
                 self.index_clicked = self.displays[i].id_function.index(
@@ -294,6 +315,7 @@ class MultipleDisplay:
                 return
 
     def reduce_points_intensity(self) -> None:
+        """Reduce the transparency of all the points but the selected one."""
         for i in range(self.length_data):
             if i != self.index_clicked:
                 for d in self.displays:
@@ -309,6 +331,7 @@ class MultipleDisplay:
         self.is_updating = False
 
     def restore_points_intensity(self) -> None:
+        """Restore the original transparency of all the points."""
         for i in range(self.length_data):
             for d in self.displays:
                 if isinstance(d.id_function[i], list):
@@ -327,6 +350,16 @@ class MultipleDisplay:
         self,
         old_index: Union[int, None] = None,
     ) -> None:
+        """
+        Changes the intensity of the points.
+
+        Changes the intensity of the points, the highlighted one now
+        will be the selected one and the one with old_index with have
+        its transparency increased.
+        Args:
+            old_index: index of the last point clicked, as it should
+                reduce its transparency.
+        """
         if old_index is None:
             old_index = self.index_clicked
             self.update_index_display_picked()
@@ -353,6 +386,13 @@ class MultipleDisplay:
         self.is_updating = False
 
     def change_display_intensity(self, index: int, intensity: int) -> None:
+        """
+        Changes the intensity of the point selected by index in every display.
+        Args:
+            index: index of the last point clicked, as it should
+                reduce its transparency.
+            intensity: new intensity of the points.
+        """
         for d in self.displays:
             if isinstance(d.id_function[index], list):
                 d.id_function[index][0].set_alpha(intensity)
@@ -365,6 +405,13 @@ class MultipleDisplay:
         sliders: Union[Widget, Sequence[Widget]],
         label_sliders: Union[str, Sequence[str], None] = None,
     ) -> None:
+        """
+        Create the sliders with the criteria selected.
+        Args:
+            criteria: different criterion for each of the sliders.
+            sliders: widget types.
+            label_sliders: sequence of the names of each slider.
+        """
         if isinstance(criteria[0], collections.Iterable):
             for c in criteria:
                 if len(c) != self.length_data:
@@ -416,6 +463,15 @@ class MultipleDisplay:
         widget_func: Widget = Slider,
         label_slider: Optional[str] = None,
     ) -> None:
+        """
+        Adds the slider to the MultipleDisplay object.
+        Args:
+            ind_ax: index of the selected ax for the widget.
+            criterion: criterion used for the slider.
+            widget_func: widget type.
+            label_slider: names of the slider.
+        """
+
         if label_slider is None:
             full_desc = "".join(["Filter (", str(ind_ax), ")"])
         else:
@@ -430,11 +486,29 @@ class MultipleDisplay:
             ),
         )
 
+        self.fig.axes[self.num_graphs + ind_ax].annotate(
+            '0',
+            xy=(0, -0.5),
+            xycoords='axes fraction',
+            annotation_clip=False,
+        )
+        self.fig.axes[self.num_graphs + ind_ax].annotate(
+            str(self.length_data - 1),
+            xy=(0.95, -0.5),
+            xycoords='axes fraction',
+            annotation_clip=False,
+        )
+
         dic = dict(zip(criterion, range(self.length_data)))
         order_dic = collections.OrderedDict(sorted(dic.items()))
         self.criteria.append(order_dic.values())
 
-    def value_updated(self, value):
+    def value_updated(self, value: int) -> None:
+        """
+        Callback method of the widget, used to update the graphs.
+        Args:
+            value: current value of the widget.
+        """
         # Used to avoid entering in an etern loop
         if self.is_updating is True:
             return

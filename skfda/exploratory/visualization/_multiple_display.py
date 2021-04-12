@@ -13,6 +13,45 @@ from ._utils import _get_axes_shape, _get_figure_and_axes, _set_figure_layout
 
 
 class MultipleDisplay:
+    """
+    MultipleDisplay class used to combine and interact with plots.
+
+    This module is used to combine different BasePlot objects that
+    represent the same curves or surfaces, and represent them
+    together in the same figure. Besides this, it includes
+    the functionality necessary to interact with the graphics
+    by clicking the points, hovering over them... Picking the points allow
+    us to see our selected function standing out among the others in all
+    the axes. It is also possible to add widgets to interact with the
+    plots.
+    Args:
+        displays: baseplot objects that will be plotted in the fig.
+        criteria: sequence of criteria used to order the points in the
+            slider widget. The size should be equal to sliders, as each
+            criterion is for one slider.
+        sliders: sequence of widgets that will be plotted.
+        label_sliders: label of each of the sliders.
+        chart: figure over with the graphs are plotted or axis over
+            where the graphs are plotted. If None and ax is also
+            None, the figure is initialized.
+        fig: figure over with the graphs are plotted in case ax is not
+            specified. If None and ax is also None, the figure is
+            initialized.
+        axes: axis where the graphs are plotted. If None, see param fig.
+    Attributes:
+        point_clicked: artist object containing the last point clicked.
+        num_graphs: number of graphs that will be plotted.
+        length_data: number of instances or curves of the different displays.
+        clicked: boolean indicating whether a point has being clicked.
+        index_clicked: index of the function selected with the interactive
+            module or widgets.
+        tags: list of tags for each ax, that contain the information printed
+            while hovering.
+        previous_hovered: artist object containing of the last point hovered.
+        is_updating: boolean value that determines wheter a widget
+            is being updated.
+    """
+
     def __init__(
         self,
         displays: Union[BasePlot, List[BasePlot]],
@@ -67,6 +106,17 @@ class MultipleDisplay:
     def plot(
         self,
     ):
+        """
+        Plot Multiple Display method.
+
+        Plot the different BasePlot objects and widgets selected.
+        Activates the interactivity functionality of clicking and
+        hovering points. When clicking a point, the rest will be
+        made partially transparent in all the corresponding graphs.
+        Returns:
+            fig: figure object in which the displays and
+                widgets will be plotted.
+        """
         if self.num_graphs > 1:
             for d in self.displays[1:]:
                 if d.num_instances() != self.length_data:
@@ -103,6 +153,15 @@ class MultipleDisplay:
         return self.fig
 
     def update_annot(self, index):
+        """
+        Auxiliary method used to update the hovering annotations.
+
+        Method used to update the annotations that appear while
+        hovering a scattered point. The annotations indicate
+        the coordinates of the point hovered.
+        Args:
+            index: index of the point being hovered.
+        """
         xdata_graph = self.previous_hovered.get_offsets()[0][0]
         ydata_graph = self.previous_hovered.get_offsets()[0][1]
         xdata_aprox = "{0:.2f}".format(xdata_graph)
@@ -117,6 +176,16 @@ class MultipleDisplay:
         self.tags[index].get_bbox_patch().set_alpha(intensity)
 
     def hover(self, event: Event):
+        """
+        Callback function of the hovering functionality.
+
+        Callback method that activates the annotation when hovering
+        a specific point in a graph. The annotation is a description
+        of the point containing its coordinates.
+        Args:
+            event: event object containing the artist of the point
+                hovered.
+        """
         index_axis = -1
 
         for i in range(self.num_graphs):
@@ -153,20 +222,34 @@ class MultipleDisplay:
         axes: Union[Axes, Sequence[Axes], None] = None,
         extra: int = 0,
     ) -> None:
+        """
+        Initialization method for the axes and figure.
+
+        Args:
+            chart: figure over with the graphs are plotted or axis over
+                where the graphs are plotted. If None and ax is also
+                None, the figure is initialized.
+            fig: figure over with the graphs are plotted in case ax is not
+                specified. If None and ax is also None, the figure is
+                initialized.
+            axes: axis where the graphs are plotted. If None, see param fig.
+            extra: integer indicating the extra axes needed due to the
+                necessity for them to plot the sliders.
+        """
         widget_aspect = 1 / 4
         fig, axes = _get_figure_and_axes(chart, fig, axes)
-        if len(axes) != 0 and len(axes) != (len(self.displays) + extra):
+        if len(axes) != 0 and len(axes) != (self.num_graphs + extra):
             raise ValueError("Invalid number of axes.")
 
-        n_rows, n_cols = _get_axes_shape(len(self.displays) + extra)
+        n_rows, n_cols = _get_axes_shape(self.num_graphs + extra)
 
         number_axes = n_rows * n_cols
         fig, axes = _set_figure_layout(
-            fig=fig, axes=axes, n_axes=len(self.displays) + extra,
+            fig=fig, axes=axes, n_axes=self.num_graphs + extra,
         )
 
-        for i in range(len(self.displays), number_axes):
-            if i >= len(self.displays) + extra:
+        for i in range(self.num_graphs, number_axes):
+            if i >= self.num_graphs + extra:
                 axes[i].set_visible(False)
             else:
                 axes[i].set_box_aspect(widget_aspect)
@@ -175,6 +258,19 @@ class MultipleDisplay:
         self.axes = axes
 
     def pick(self, event: Event) -> None:
+        """
+        Callback function of the picking functionality.
+
+        Callback method that is activated when a point is picked.
+        If no point was clicked previously, all the points but the
+        one selected will be more transparent in all the graphs.
+        If a point was clicked already, this new point will be the
+        one highlighted among the rest. If the same point is clicked,
+        the initial state of the graphics is restored.
+        Args:
+            event: event object containing the artist of the point
+                picked.
+        """
         if self.clicked:
             self.point_clicked = event.artist
             self.change_points_intensity()
@@ -207,9 +303,9 @@ class MultipleDisplay:
                         d.id_function[i].set_alpha(0.1)
 
         self.is_updating = True
-        for i in range(len(self.sliders)):
-            val_widget = list(self.criteria[i]).index(self.index_clicked)
-            self.sliders[i].set_val(val_widget)
+        for j in range(len(self.sliders)):
+            val_widget = list(self.criteria[j]).index(self.index_clicked)
+            self.sliders[j].set_val(val_widget)
         self.is_updating = False
 
     def restore_points_intensity(self) -> None:
@@ -223,8 +319,8 @@ class MultipleDisplay:
         self.index_clicked = -1
 
         self.is_updating = True
-        for i in range(len(self.sliders)):
-            self.sliders[i].set_val(0)
+        for j in range(len(self.sliders)):
+            self.sliders[j].set_val(0)
         self.is_updating = False
 
     def change_points_intensity(
@@ -251,9 +347,9 @@ class MultipleDisplay:
                 self.change_display_intensity(i, intensity)
 
         self.is_updating = True
-        for i in range(len(self.sliders)):
-            val_widget = list(self.criteria[i]).index(self.index_clicked)
-            self.sliders[i].set_val(val_widget)
+        for j in range(len(self.sliders)):
+            val_widget = list(self.criteria[j]).index(self.index_clicked)
+            self.sliders[j].set_val(val_widget)
         self.is_updating = False
 
     def change_display_intensity(self, index: int, intensity: int) -> None:

@@ -40,7 +40,7 @@ class DDPlot(BasePlot):
         fig: figure over with the graphs are plotted in case ax is not
             specified. If None and ax is also None, the figure is
             initialized.
-        axes: axis where the graphs are plotted. If None, see param fig. 
+        axes: axis where the graphs are plotted. If None, see param fig.
     Attributes:
         depth_dist1: result of the calculation of the depth_method into our
             first distribution (dist1).

@@ -205,7 +205,7 @@ class DDClassifier(
 
         self._classes = classes
         self.class_depth_methods_ = class_depth_methods
-        
+
         if (len(self._classes) != 2):
             raise ValueError("DDClassifier only accepts two classes.")
 

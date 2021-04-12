@@ -54,7 +54,7 @@ class Indexable(Protocol[K, V]):
 def _get_label_colors(
     n_labels: int,
     group_colors: Optional[Indexable[K, ColorLike]] = None,
-) -> Union[np.ndarray, None]:
+) -> np.ndarray:
     """Get the colors of each label."""
     if group_colors is None:
         colormap = matplotlib.cm.get_cmap()
@@ -76,7 +76,10 @@ def _get_color_info(
     group_colors: Optional[Indexable[K, ColorLike]] = None,
     legend: bool = False,
     kwargs: Any = None,
-) -> Tuple[np.ndarray, Optional[List[matplotlib.patches.Patch]]]:
+) -> Tuple[
+        Union[ColorLike, str, None],
+        Optional[List[matplotlib.patches.Patch]
+    ]]:
 
     patches = None
 
@@ -306,7 +309,7 @@ class GraphPlot:
 
         self.sample_colors = sample_colors
 
-        color_dict: Mapping[str, Any] = {}
+        color_dict: Mapping[str, Union[ColorLike, str, None]] = {}
 
         if self.fdata.dim_domain == 1:
 
@@ -472,7 +475,7 @@ class ScatterPlot:
             self.fdata, group, group_names, group_colors, legend, kwargs,
         )
 
-        color_dict: Mapping[str, Any] = {}
+        color_dict: Mapping[str, Union[ColorLike, str, None]] = {}
 
         if self.fdata.dim_domain == 1:
 
@@ -515,7 +518,7 @@ class ScatterPlot:
 def set_color_dict(
     sample_colors: Any,
     ind: int,
-    color_dict: Mapping[str, Any],
+    color_dict: Mapping[str, Union[ColorLike, str, None]],
 ) -> None:
     """
     Auxiliary method used to update color_dict.

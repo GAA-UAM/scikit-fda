@@ -207,7 +207,7 @@ class DDClassifier(
         self.class_depth_methods_ = class_depth_methods
         
         if (len(self._classes) != 2):
-            raise ValueError
+            raise ValueError("DDClassifier only accepts two classes.")
 
         dd_coordinates = [
             depth_method.predict(X)

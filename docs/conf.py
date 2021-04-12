@@ -227,22 +227,59 @@ intersphinx_mapping = {
     'mpldatacursor': ('https://pypi.org/project/mpldatacursor/', None),
 }
 
+
+tutorial_list = [
+    "plot_introduction.py",
+    "plot_getting_data.py",
+    "plot_basis_representation.py",
+    "plot_skfda_sklearn.py",
+]
+
+
+class SkfdaExplicitSubOrder(object):
+    """
+    Class for use within the 'within_subsection_order' key.
+
+    Inspired by Matplotlib gallery.
+
+    """
+
+    def __init__(self, src_dir: str) -> None:
+        self.src_dir = src_dir  # src_dir is unused here
+        self.ordered_list = tutorial_list
+
+    def __call__(self, filename: str) -> str:
+        """Return a string determining the sort order."""
+        if filename in self.ordered_list:
+            ind = self.ordered_list.index(filename)
+            return f"{ind:04d}"
+
+        # ensure not explicitly listed items come last.
+        return f"zzz{filename}"
+
+
 sphinx_gallery_conf = {
     # path to your examples scripts
-    'examples_dirs': '../examples',
+    'examples_dirs': ['../examples', '../tutorial'],
     # path where to save gallery generated examples
-    'gallery_dirs': 'auto_examples',
+    'gallery_dirs': ['auto_examples', 'auto_tutorial'],
     'reference_url': {
         # The module you locally document uses None
         'skfda': None,
     },
     'backreferences_dir': 'backreferences',
     'doc_module': 'skfda',
+    'within_subsection_order': SkfdaExplicitSubOrder,
 }
 
 autosummary_generate = True
 autodoc_typehints = "description"
 napoleon_use_rtype = True
+
+autodoc_type_aliases = {
+    "ArrayLike": "ArrayLike",
+    "GridPointsLike": "Union[ArrayLike, Sequence[ArrayLike]]",
+}
 
 # Napoleon fix for attributes
 # Taken from

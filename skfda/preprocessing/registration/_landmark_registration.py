@@ -2,18 +2,27 @@
 
 This module contains methods to perform the landmark registration.
 """
+from __future__ import annotations
+
+from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
 
-from ... import FDataGrid
+from ...representation import FData, FDataGrid
+from ...representation._typing import ArrayLike, GridPointsLike
+from ...representation.extrapolation import ExtrapolationLike
 from ...representation.interpolation import SplineInterpolation
 
-__author__ = "Pablo Marcos Manchón"
-__email__ = "pablo.marcosm@estudiante.uam.es"
+_FixedLocation = Union[float, Sequence[float]]
+_LocationCallable = Callable[[np.ndarray], _FixedLocation]
 
 
-def landmark_shift_deltas(fd, landmarks, location=None):
-    r"""Returns the corresponding shifts to align the landmarks of the curves.
+def landmark_shift_deltas(
+    fd: FData,
+    landmarks: ArrayLike,
+    location: Union[_FixedLocation, _LocationCallable, None] = None,
+) -> np.ndarray:
+    r"""Return the corresponding shifts to align the landmarks of the curves.
 
         Let :math:`t^*` the time where the landmarks of the curves will be
         aligned, and :math:`t_i` the location of the landmarks for each curve.
@@ -24,10 +33,10 @@ def landmark_shift_deltas(fd, landmarks, location=None):
         :term:`domain` and the :term:`codomain`.
 
     Args:
-        fd (:class:`FData`): Functional data object.
-        landmarks (array_like): List with the landmarks of the samples.
-        location (numeric or callable, optional): Defines where
-            the landmarks will be alligned. If a numer or list is passed the
+        fd: Functional data object.
+        landmarks: List with the landmarks of the samples.
+        location: Defines where
+            the landmarks will be alligned. If a number or list is passed the
             landmarks will be alligned to it. In case of a callable is
             passed the location will be the result of the the call, the
             function should be accept as an unique parameter a numpy array
@@ -37,14 +46,13 @@ def landmark_shift_deltas(fd, landmarks, location=None):
             max shift.
 
     Returns:
-        :class:`numpy.ndarray`: Array containing the corresponding shifts.
+        Array containing the corresponding shifts.
 
     Raises:
         ValueError: If the list of landmarks does not match with the number of
             samples.
 
     Examples:
-
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
         >>> from skfda.preprocessing.registration import landmark_shift_deltas
@@ -67,32 +75,41 @@ def landmark_shift_deltas(fd, landmarks, location=None):
         FDataGrid(...)
 
     """
+    landmarks = np.atleast_1d(landmarks)
 
     if len(landmarks) != fd.n_samples:
-        raise ValueError(f"landmark list ({len(landmarks)}) must have the same"
-                         f" length than the number of samples ({fd.n_samples})")
+        raise ValueError(
+            f"landmark list ({len(landmarks)}) must have the same"
+            f" length than the number of samples ({fd.n_samples})",
+        )
 
-    landmarks = np.atleast_1d(landmarks)
+    loc_array: Union[float, Sequence[float], np.ndarray]
 
     # Parses location
     if location is None:
-        p = (np.max(landmarks, axis=0) + np.min(landmarks, axis=0)) / 2.
+        loc_array = (
+            np.max(landmarks, axis=0)
+            + np.min(landmarks, axis=0)
+        ) / 2
     elif callable(location):
-        p = location(landmarks)
+        loc_array = location(landmarks)
     else:
-        try:
-            p = np.atleast_1d(location)
-        except:
-            raise ValueError("Invalid location, must be None, a callable or a "
-                             "number in the domain")
+        loc_array = location
 
-    shifts = landmarks - p
+    loc_array = np.atleast_1d(loc_array)
 
-    return shifts
+    return landmarks - loc_array
 
 
-def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
-                   extrapolation=None, eval_points=None, **kwargs):
+def landmark_shift(
+    fd: FData,
+    landmarks: ArrayLike,
+    location: Union[_FixedLocation, _LocationCallable, None] = None,
+    *,
+    restrict_domain: bool = False,
+    extrapolation: Optional[ExtrapolationLike] = None,
+    grid_points: Optional[GridPointsLike] = None,
+) -> FDataGrid:
     r"""Perform a shift of the curves to align the landmarks.
 
         Let :math:`t^*` the time where the landmarks of the curves will be
@@ -105,9 +122,9 @@ def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
             x_i^*(t^*)=x_i(t^* + \delta_i)=x_i(t_i)
 
     Args:
-        fd (:class:`FData`): Functional data object.
-        landmarks (array_like): List with the landmarks of the samples.
-        location (numeric or callable, optional): Defines where
+        fd: Functional data object.
+        landmarks: List with the landmarks of the samples.
+        location: Defines where
             the landmarks will be alligned. If a numeric value is passed the
             landmarks will be alligned to it. In case of a callable is
             passed the location will be the result of the the call, the
@@ -116,22 +133,20 @@ def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
             By default it will be used as location :math:`\frac{1}{2}(max(
             \text{landmarks})+ min(\text{landmarks}))` wich minimizes the
             max shift.
-        restrict_domain (bool, optional): If True restricts the domain to
+        restrict_domain: If True restricts the domain to
             avoid evaluate points outside the domain using extrapolation.
             Defaults uses extrapolation.
-        extrapolation (str or Extrapolation, optional): Controls the
+        extrapolation: Controls the
             extrapolation mode for elements outside the domain range.
             By default uses the method defined in fd. See extrapolation to
             more information.
-        eval_points (array_like, optional): Set of points where
+        grid_points: Grid of points where
             the functions are evaluated in :func:`shift`.
-        **kwargs: Keyword arguments to be passed to :func:`shift`.
 
     Returns:
-        :class:`FData`: Functional data object with the registered samples.
+        Functional data object with the registered samples.
 
     Examples:
-
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
         >>> from skfda.preprocessing.registration import landmark_shift
@@ -148,16 +163,23 @@ def landmark_shift(fd, landmarks, location=None, *, restrict_domain=False,
         FDataGrid(...)
 
     """
-
     shifts = landmark_shift_deltas(fd, landmarks, location=location)
 
-    return fd.shift(shifts, restrict_domain=restrict_domain,
-                    extrapolation=extrapolation,
-                    eval_points=eval_points, **kwargs)
+    return fd.shift(
+        shifts,
+        restrict_domain=restrict_domain,
+        extrapolation=extrapolation,
+        grid_points=grid_points,
+    )
 
 
-def landmark_registration_warping(fd, landmarks, *, location=None,
-                                  eval_points=None):
+def landmark_registration_warping(
+    fd: FData,
+    landmarks: ArrayLike,
+    *,
+    location: Optional[ArrayLike] = None,
+    grid_points: Optional[GridPointsLike] = None,
+) -> FDataGrid:
     """Calculate the transformation used in landmark registration.
 
         Let :math:`t_{ij}` the time where the sample :math:`i` has the feature
@@ -169,16 +191,17 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
         See [RS05-7-3-1]_ for a detailed explanation.
 
     Args:
-        fd (:class:`FData`): Functional data object.
-        landmarks (array_like): List containing landmarks for each samples.
-        location (array_like, optional): Defines where
+        fd: Functional data object.
+        landmarks: List containing landmarks for each samples.
+        location: Defines where
             the landmarks will be alligned. By default it will be used as
             location the mean of the landmarks.
-        eval_points (array_like, optional): Set of points where
+        grid_points: Grid of points where
             the functions are evaluated to obtain a discrete
             representation of the object.
+
     Returns:
-        :class:`FDataGrid`: FDataGrid with the warpings function needed to
+        FDataGrid with the warpings function needed to
         register the functional data object.
 
     Raises:
@@ -187,12 +210,11 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
             the number of samples.
 
     References:
-
-    ..  [RS05-7-3-1] Ramsay, J., Silverman, B. W. (2005). Feature or landmark
-        registration. In *Functional Data Analysis* (pp. 132-136). Springer.
+        ..  [RS05-7-3-1] Ramsay, J., Silverman, B. W. (2005). Feature or
+            landmark registration. In *Functional Data Analysis* (pp. 132-136).
+            Springer.
 
     Examples:
-
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
         >>> from skfda.preprocessing.registration import (
@@ -216,89 +238,107 @@ def landmark_registration_warping(fd, landmarks, *, location=None,
 
         >>> fd.compose(warping)
         FDataGrid(...)
+
     """
+    landmarks = np.asarray(landmarks)
 
     if fd.dim_domain > 1:
-        raise NotImplementedError("Method only implemented for objects with"
-                                  "domain dimension up to 1.")
+        raise NotImplementedError(
+            "Method only implemented for objects with "
+            "domain dimension up to 1.",
+        )
 
     if len(landmarks) != fd.n_samples:
-        raise ValueError("The number of list of landmarks should be equal to "
-                         "the number of samples")
+        raise ValueError(
+            "The number of list of landmarks should be equal to "
+            "the number of samples",
+        )
 
-    landmarks = np.asarray(landmarks).reshape((fd.n_samples, -1))
+    landmarks = landmarks.reshape((fd.n_samples, -1))
+
+    location = (
+        np.mean(landmarks, axis=0)
+        if location is None
+        else np.asarray(location)
+    )
+
+    assert isinstance(location, np.ndarray)
 
     n_landmarks = landmarks.shape[-1]
 
     data_matrix = np.empty((fd.n_samples, n_landmarks + 2))
-
     data_matrix[:, 0] = fd.domain_range[0][0]
     data_matrix[:, -1] = fd.domain_range[0][1]
-
     data_matrix[:, 1:-1] = landmarks
 
-    if location is None:
-        grid_points = np.mean(data_matrix, axis=0)
+    if n_landmarks == len(location):
+        if grid_points is None:
+            grid_points = np.empty(n_landmarks + 2)
+            grid_points[0] = fd.domain_range[0][0]
+            grid_points[-1] = fd.domain_range[0][1]
+            grid_points[1:-1] = location
 
-    elif n_landmarks != len(location):
-
-        raise ValueError(f"Number of landmark locations should be equal than "
-                         f"the number of landmarks ({len(location)}) != "
-                         f"({n_landmarks})")
     else:
-        grid_points = np.empty(n_landmarks + 2)
-        grid_points[0] = fd.domain_range[0][0]
-        grid_points[-1] = fd.domain_range[0][1]
-        grid_points[1:-1] = location
+        raise ValueError(
+            f"Number of landmark locations should be equal than "
+            f"the number of landmarks ({len(location)}) != ({n_landmarks})",
+        )
 
     interpolation = SplineInterpolation(interpolation_order=3, monotone=True)
 
-    warping = FDataGrid(data_matrix=data_matrix,
-                        grid_points=grid_points,
-                        interpolation=interpolation,
-                        extrapolation='bounds')
+    warping = FDataGrid(
+        data_matrix=data_matrix,
+        grid_points=grid_points,
+        interpolation=interpolation,
+        extrapolation='bounds',
+    )
 
     try:
         warping_points = fd.grid_points
     except AttributeError:
-        warping_points = [np.linspace(*domain, 201)
-                          for domain in fd.domain_range]
+        warping_points = None
 
     return warping.to_grid(warping_points)
 
 
-def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
-    """Perform landmark registration of the curves.
+def landmark_registration(
+    fd: FData,
+    landmarks: ArrayLike,
+    *,
+    location: Optional[ArrayLike] = None,
+    grid_points: Optional[GridPointsLike] = None,
+) -> FDataGrid:
+    """
+    Perform landmark registration of the curves.
 
-        Let :math:`t_{ij}` the time where the sample :math:`i` has the feature
-        :math:`j` and :math:`t^*_j` the new time for the feature.
-        The registered samples will have their features aligned, i.e.,
-        :math:`x^*_i(t^*_j)=x_i(t_{ij})`.
+    Let :math:`t_{ij}` the time where the sample :math:`i` has the feature
+    :math:`j` and :math:`t^*_j` the new time for the feature.
+    The registered samples will have their features aligned, i.e.,
+    :math:`x^*_i(t^*_j)=x_i(t_{ij})`.
 
-        See [RS05-7-3]_ for a detailed explanation.
+    See [RS05-7-3]_ for a detailed explanation.
 
     Args:
-        fd (:class:`FData`): Functional data object.
-        landmarks (array_like): List containing landmarks for each samples.
-        location (array_like, optional): Defines where
+        fd: Functional data object.
+        landmarks: List containing landmarks for each samples.
+        location: Defines where
             the landmarks will be alligned. By default it will be used as
             location the mean of the landmarks.
-        eval_points (array_like, optional): Set of points where
+        grid_points: Grid of points where
             the functions are evaluated to obtain a discrete
             representation of the object. In case of objects with
             multidimensional :term:`domain` a list axis with points of
             evaluation for each dimension.
 
     Returns:
-        :class:`FData`: FData with the functional data object registered.
+        FDataGrid with the functional data object registered.
 
     References:
-
-    ..  [RS05-7-3] Ramsay, J., Silverman, B. W. (2005). Feature or landmark
-        registration. In *Functional Data Analysis* (pp. 132-136). Springer.
+        ..  [RS05-7-3] Ramsay, J., Silverman, B. W. (2005). Feature or landmark
+            registration. In *Functional Data Analysis* (pp. 132-136).
+            Springer.
 
     Examples:
-
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
         >>> from skfda.preprocessing.registration import landmark_registration
@@ -321,11 +361,14 @@ def landmark_registration(fd, landmarks, *, location=None, eval_points=None):
 
         >>> fd = fd.to_basis(BSpline(n_basis=12))
         >>> landmark_registration(fd, landmarks)
-        FDataBasis(...)
+        FDataGrid(...)
 
     """
+    warping = landmark_registration_warping(
+        fd,
+        landmarks,
+        location=location,
+        grid_points=grid_points,
+    )
 
-    warping = landmark_registration_warping(fd, landmarks, location=location,
-                                            eval_points=eval_points)
-
-    return fd.compose(warping)
+    return fd.to_grid(grid_points).compose(warping)

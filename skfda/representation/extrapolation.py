@@ -3,19 +3,38 @@
 Defines methods to evaluate points outside the :term:`domain` range.
 
 """
+from __future__ import annotations
 
-from typing import Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    NoReturn,
+    Optional,
+    Union,
+    cast,
+    overload,
+)
 
 import numpy as np
+from typing_extensions import Literal
 
+from ._typing import ArrayLike
 from .evaluator import Evaluator
+
+if TYPE_CHECKING:
+    from . import FData
+
+ExtrapolationLike = Union[
+    Evaluator,
+    Literal["bounds", "exception", "nan", "none", "periodic", "zeros"],
+]
 
 
 class PeriodicExtrapolation(Evaluator):
-    """Extends the :term:`domain` range periodically.
+    """Extend the :term:`domain` range periodically.
 
     Examples:
-
         >>> from skfda.datasets import make_sinusoidal_process
         >>> from skfda.representation.extrapolation import (
         ...     PeriodicExtrapolation)
@@ -44,7 +63,13 @@ class PeriodicExtrapolation(Evaluator):
                 [-1.086]]])
     """
 
-    def evaluate(self, fdata, eval_points, *, aligned=True):
+    def _evaluate(  # noqa: D102
+        self,
+        fdata: FData,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        *,
+        aligned: bool = True,
+    ) -> np.ndarray:
 
         domain_range = np.asarray(fdata.domain_range)
 
@@ -53,16 +78,13 @@ class PeriodicExtrapolation(Evaluator):
         eval_points %= domain_range[:, 1] - domain_range[:, 0]
         eval_points += domain_range[:, 0]
 
-        res = fdata(eval_points, aligned=aligned)
-
-        return res
+        return fdata(eval_points, aligned=aligned)  # type: ignore
 
 
 class BoundaryExtrapolation(Evaluator):
-    """Extends the :term:`domain` range using the boundary values.
+    """Extend the :term:`domain` range using the boundary values.
 
     Examples:
-
         >>> from skfda.datasets import make_sinusoidal_process
         >>> from skfda.representation.extrapolation import (
         ...     BoundaryExtrapolation)
@@ -91,25 +113,42 @@ class BoundaryExtrapolation(Evaluator):
                 [ 1.125]]])
     """
 
-    def evaluate(self, fdata, eval_points, *, aligned=True):
+    def _evaluate(  # noqa: D102
+        self,
+        fdata: FData,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        *,
+        aligned: bool = True,
+    ) -> np.ndarray:
 
         domain_range = fdata.domain_range
 
-        for i in range(fdata.dim_domain):
-            a, b = domain_range[i]
-            eval_points[eval_points[..., i] < a, i] = a
-            eval_points[eval_points[..., i] > b, i] = b
+        if aligned:
+            eval_points = np.asarray(eval_points)
 
-        res = fdata(eval_points, aligned=aligned)
+            for i in range(fdata.dim_domain):
+                a, b = domain_range[i]
+                eval_points[eval_points[..., i] < a, i] = a
+                eval_points[eval_points[..., i] > b, i] = b
+        else:
+            eval_points = cast(Iterable[ArrayLike], eval_points)
 
-        return res
+            for points_per_sample in eval_points:
+
+                points_per_sample = np.asarray(points_per_sample)
+
+                for i in range(fdata.dim_domain):
+                    a, b = domain_range[i]
+                    points_per_sample[points_per_sample[..., i] < a, i] = a
+                    points_per_sample[points_per_sample[..., i] > b, i] = b
+
+        return fdata(eval_points, aligned=aligned)  # type: ignore
 
 
 class ExceptionExtrapolation(Evaluator):
-    """Raise and exception.
+    """Raise an exception.
 
     Examples:
-
         >>> from skfda.datasets import make_sinusoidal_process
         >>> from skfda.representation.extrapolation import (
         ...     ExceptionExtrapolation)
@@ -122,7 +161,7 @@ class ExceptionExtrapolation(Evaluator):
         ...     fd([-.5, 0, 1.5]).round(3)
         ... except ValueError as e:
         ...     print(e)
-        Attempt to evaluate 2 points outside the domain range.
+        Attempt to evaluate points outside the domain range.
 
         This extrapolator is equivalent to the string `"exception"`.
 
@@ -131,16 +170,21 @@ class ExceptionExtrapolation(Evaluator):
         ...     fd([-.5, 0, 1.5]).round(3)
         ... except ValueError as e:
         ...     print(e)
-        Attempt to evaluate 2 points outside the domain range.
+        Attempt to evaluate points outside the domain range.
 
     """
 
-    def evaluate(self, fdata, eval_points, *, aligned=True):
+    def _evaluate(  # noqa: D102
+        self,
+        fdata: FData,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        *,
+        aligned: bool = True,
+    ) -> NoReturn:
 
-        n_points = eval_points.shape[-2]
-
-        raise ValueError(f"Attempt to evaluate {n_points} points outside the "
-                         f"domain range.")
+        raise ValueError(
+            "Attempt to evaluate points outside the domain range.",
+        )
 
 
 class FillExtrapolation(Evaluator):
@@ -148,7 +192,6 @@ class FillExtrapolation(Evaluator):
     Values outside the :term:`domain` range will be filled with a fixed value.
 
     Examples:
-
         >>> from skfda.datasets import make_sinusoidal_process
         >>> from skfda.representation.extrapolation import FillExtrapolation
         >>> fd = make_sinusoidal_process(n_samples=2, random_state=0)
@@ -177,34 +220,72 @@ class FillExtrapolation(Evaluator):
                 [   nan]]])
     """
 
-    def __init__(self, fill_value):
+    def __init__(self, fill_value: float) -> None:
         self.fill_value = fill_value
 
-    def _fill(self, fdata, eval_points):
-        shape = (fdata.n_samples, eval_points.shape[-2],
-                 fdata.dim_codomain)
+    def _fill(self, fdata: FData, eval_points: ArrayLike) -> np.ndarray:
+        eval_points = np.asarray(eval_points)
+
+        shape = (
+            fdata.n_samples,
+            eval_points.shape[-2],
+            fdata.dim_codomain,
+        )
         return np.full(shape, self.fill_value)
 
-    def evaluate(self, fdata, eval_points, *, aligned=True):
+    def _evaluate(  # noqa: D102
+        self,
+        fdata: FData,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        *,
+        aligned: bool = True,
+    ) -> np.ndarray:
+        from .._utils import _to_array_maybe_ragged
 
-        return self._fill(fdata, eval_points)
+        if aligned:
+            eval_points = cast(ArrayLike, eval_points)
+            return self._fill(fdata, eval_points)
 
-    def __repr__(self):
-        """repr method of FillExtrapolation"""
-        return (f"{type(self).__name__}("
-                f"fill_value={self.fill_value})")
+        eval_points = cast(Iterable[ArrayLike], eval_points)
 
-    def __eq__(self, other):
-        """Equality operator bethween FillExtrapolation instances."""
-        return (super().__eq__(other) and
+        res_list = [self._fill(fdata, p) for p in eval_points]
+
+        return _to_array_maybe_ragged(res_list)
+
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}("
+            f"fill_value={self.fill_value})"
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        return (
+            super().__eq__(other)
+            and (
                 self.fill_value == other.fill_value
                 # NaNs compare unequal. Should we distinguish between
                 # different NaN types and payloads?
-                or np.isnan(self.fill_value) and np.isnan(other.fill_value))
+                or (np.isnan(self.fill_value) and np.isnan(other.fill_value))
+            )
+        )
+
+
+@overload
+def _parse_extrapolation(
+    extrapolation: None,
+) -> None:
+    pass
+
+
+@overload
+def _parse_extrapolation(
+    extrapolation: ExtrapolationLike,
+) -> Evaluator:
+    pass
 
 
 def _parse_extrapolation(
-    extrapolation: Optional[Union[str, Evaluator]],
+    extrapolation: Optional[ExtrapolationLike],
 ) -> Optional[Evaluator]:
     """Parse the argument `extrapolation` of `FData`.
 
@@ -213,7 +294,6 @@ def _parse_extrapolation(
     Args:
         extrapolation (:class:´Extrapolator´, str or Callable): Argument
             extrapolation to be parsed.
-        fdata (:class:´FData´): Object with the default extrapolation.
 
     Returns:
         (:class:´Extrapolator´ or Callable): Extrapolation method.
@@ -225,14 +305,15 @@ def _parse_extrapolation(
     elif isinstance(extrapolation, str):
         return extrapolation_methods[extrapolation.lower()]
 
-    else:
-        return extrapolation
+    return extrapolation
 
 
 #: Dictionary with the extrapolation methods.
-extrapolation_methods = {"bounds": BoundaryExtrapolation(),
-                         "exception": ExceptionExtrapolation(),
-                         "nan": FillExtrapolation(np.nan),
-                         "none": None,
-                         "periodic": PeriodicExtrapolation(),
-                         "zeros": FillExtrapolation(0)}
+extrapolation_methods = {
+    "bounds": BoundaryExtrapolation(),
+    "exception": ExceptionExtrapolation(),
+    "nan": FillExtrapolation(np.nan),
+    "none": None,
+    "periodic": PeriodicExtrapolation(),
+    "zeros": FillExtrapolation(0),
+}

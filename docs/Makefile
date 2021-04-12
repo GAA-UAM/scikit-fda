@@ -51,6 +51,7 @@ help:
 clean:
 	rm -rf $(BUILDDIR)/*
 	rm -rf auto_examples
+	rm -rf auto_tutorial
 	rm -rf modules/autosummary
 	rm -rf modules/exploratory/visualization/autosummary
 	rm -rf modules/exploratory/autosummary

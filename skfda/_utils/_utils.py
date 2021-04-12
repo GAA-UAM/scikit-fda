@@ -8,6 +8,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Iterable,
     List,
     Optional,
     Sequence,
@@ -15,6 +16,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    overload,
 )
 
 import numpy as np
@@ -24,20 +26,22 @@ from pandas.api.indexers import check_array_indexer
 from sklearn.base import clone
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
+from typing_extensions import Literal, Protocol
 
 from ..representation._typing import (
+    ArrayLike,
     DomainRange,
     DomainRangeLike,
     GridPoints,
     GridPointsLike,
 )
-from ..representation.evaluator import Evaluator
+from ..representation.extrapolation import ExtrapolationLike
 
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
 
 if TYPE_CHECKING:
     from ..exploratory.depth import Depth
-    from ..representation import FData
+    from ..representation import FData, FDataGrid
     from ..representation.basis import Basis
     T = TypeVar("T", bound=FData)
 
@@ -72,13 +76,11 @@ class _FDataCallable():
             n_samples=new_nsamples,
         )
 
-
-def check_is_univariate(fd):
+def check_is_univariate(fd: FData) -> None:
     """Check if an FData is univariate and raises an error.
 
     Args:
-        fd (:class:`~skfda.FData`): Functional object to check if is
-            univariate.
+        fd: Functional object to check if is univariate.
 
     Raises:
         ValueError: If it is not univariate, i.e., `fd.dim_domain != 1` or
@@ -86,16 +88,27 @@ def check_is_univariate(fd):
 
     """
     if fd.dim_domain != 1 or fd.dim_codomain != 1:
-        raise ValueError(
-            f'The functional data must be univariate, i.e., '
-            f'with dim_domain=1 '
-            f'{"" if fd.dim_domain == 1 else f"(now {fd.dim_domain}) "}'
-            f'and dim_codomain=1 '
-            f'{"" if fd.dim_codomain == 1 else f"(now {fd.dim_codomain})"}',
+        domain_str = (
+            "" if fd.dim_domain == 1
+            else f"(currently is {fd.dim_domain}) "
         )
 
+        codomain_str = (
+            "" if fd.dim_codomain == 1
+            else f"(currently is  {fd.dim_codomain})"
+        )
 
-def _to_grid(X, y, eval_points=None):
+        raise ValueError(
+            f"The functional data must be univariate, i.e., "
+            f"with dim_domain=1 {domain_str}"
+            f"and dim_codomain=1 {codomain_str}",
+        )
+
+def _to_grid(
+    X: FData,
+    y: FData,
+    eval_points: Optional[np.ndarray] = None,
+) -> Tuple[FDataGrid, FDataGrid]:
     """Transform a pair of FDatas in grids to perform calculations."""
     from .. import FDataGrid
     x_is_grid = isinstance(X, FDataGrid)
@@ -130,14 +143,10 @@ def _to_grid_points(grid_points_like: GridPointsLike) -> GridPoints:
     """
     unidimensional = False
 
-    try:
-        iter(grid_points_like)
-    except TypeError:
+    if not isinstance(grid_points_like, Iterable):
         grid_points_like = [grid_points_like]
 
-    try:
-        iter(grid_points_like[0])
-    except TypeError:
+    if not isinstance(grid_points_like[0], Iterable):
         unidimensional = True
 
     if unidimensional:
@@ -164,7 +173,11 @@ def _to_domain_range(sequence: DomainRangeLike) -> DomainRange:
     return cast(DomainRange, tuple_aux)
 
 
-def _to_array_maybe_ragged(array, *, row_shape=None):
+def _to_array_maybe_ragged(
+    array: Iterable[ArrayLike],
+    *,
+    row_shape: Optional[Sequence[int]] = None,
+) -> np.ndarray:
     """
     Convert to an array where each element may or may not be of equal length.
 
@@ -172,7 +185,7 @@ def _to_array_maybe_ragged(array, *, row_shape=None):
     Otherwise it is a ragged array.
 
     """
-    def convert_row(row):
+    def convert_row(row: ArrayLike) -> np.ndarray:
         r = np.array(row)
 
         if row_shape is not None:
@@ -194,21 +207,51 @@ def _to_array_maybe_ragged(array, *, row_shape=None):
     return res
 
 
-def _cartesian_product(axes, flatten=True, return_shape=False):
-    """Compute the cartesian product of the axes.
+@overload
+def _cartesian_product(
+    axes: Sequence[np.ndarray],
+    *,
+    flatten: bool = True,
+    return_shape: Literal[False] = False,
+) -> np.ndarray:
+    pass
+
+
+@overload
+def _cartesian_product(
+    axes: Sequence[np.ndarray],
+    *,
+    flatten: bool = True,
+    return_shape: Literal[True],
+) -> Tuple[np.ndarray, Tuple[int, ...]]:
+    pass
+
+
+def _cartesian_product(  # noqa: WPS234
+    axes: Sequence[np.ndarray],
+    *,
+    flatten: bool = True,
+    return_shape: bool = False,
+) -> Union[np.ndarray, Tuple[np.ndarray, Tuple[int, ...]]]:
+    """
+    Compute the cartesian product of the axes.
 
     Computes the cartesian product of the axes and returns a numpy array of
     1 dimension with all the possible combinations, for an arbitrary number of
     dimensions.
 
     Args:
-        axes (array_like): List with axes.
-        flatten: Boolean flag. True if the product is flattened.
-        return_shape: Boolean flag. True if the shape is returned.
+        axes: List with axes.
+        flatten: Whether to return the flatten array or keep one dimension per
+            axis.
+        return_shape: If ``True`` return the shape of the array before
+            flattening.
 
     Returns:
-        (np.ndarray): Numpy 2-D array with all the possible combinations.
+        Numpy 2-D array with all the possible combinations.
         The entry (i,j) represent the j-th coordinate of the i-th point.
+        If ``return_shape`` is ``True`` returns also the shape of the array
+        before flattening.
 
     Examples:
         >>> from skfda._utils import _cartesian_product
@@ -249,8 +292,41 @@ def _same_domain(fd: Union[Basis, FData], fd2: Union[Basis, FData]) -> bool:
     return np.array_equal(fd.domain_range, fd2.domain_range)
 
 
+@overload
 def _reshape_eval_points(
     eval_points: np.ndarray,
+    *,
+    aligned: Literal[True],
+    n_samples: int,
+    dim_domain: int,
+) -> np.ndarray:
+    pass
+
+
+@overload
+def _reshape_eval_points(
+    eval_points: Sequence[np.ndarray],
+    *,
+    aligned: Literal[True],
+    n_samples: int,
+    dim_domain: int,
+) -> np.ndarray:
+    pass
+
+
+@overload
+def _reshape_eval_points(
+    eval_points: Union[np.ndarray, Sequence[np.ndarray]],
+    *,
+    aligned: bool,
+    n_samples: int,
+    dim_domain: int,
+) -> np.ndarray:
+    pass
+
+
+def _reshape_eval_points(
+    eval_points: Union[ArrayLike, Iterable[ArrayLike]],
     *,
     aligned: bool,
     n_samples: int,
@@ -276,8 +352,11 @@ def _reshape_eval_points(
     if aligned:
         eval_points = np.asarray(eval_points)
     else:
+        eval_points = cast(Iterable[ArrayLike], eval_points)
+
         eval_points = _to_array_maybe_ragged(
-            eval_points, row_shape=(-1, dim_domain),
+            eval_points,
+            row_shape=(-1, dim_domain),
         )
 
     # Case evaluation of a single value, i.e., f(0)
@@ -289,25 +368,27 @@ def _reshape_eval_points(
         eval_points = np.array([eval_points])
 
     if aligned:  # Samples evaluated at same eval points
-
-        eval_points = eval_points.reshape((
-            eval_points.shape[0],
-            dim_domain,
-        ))
+        eval_points = eval_points.reshape(
+            (eval_points.shape[0], dim_domain),
+        )
 
     else:  # Different eval_points for each sample
 
         if eval_points.shape[0] != n_samples:
             raise ValueError(
-                f'eval_points should be a list '
-                f'of length {n_samples} with the '
-                f'evaluation points for each sample.',
+                f"eval_points should be a list "
+                f"of length {n_samples} with the "
+                f"evaluation points for each sample.",
             )
 
     return eval_points
 
 
-def _one_grid_to_points(axes, *, dim_domain):
+def _one_grid_to_points(
+    axes: GridPointsLike,
+    *,
+    dim_domain: int,
+) -> Tuple[np.ndarray, Tuple[int, ...]]:
     """
     Convert a list of ndarrays, one per domain dimension, in the points.
 
@@ -318,7 +399,7 @@ def _one_grid_to_points(axes, *, dim_domain):
 
     if len(axes) != dim_domain:
         raise ValueError(
-            f'Length of axes should be {dim_domain}',
+            f"Length of axes should be {dim_domain}",
         )
 
     cartesian, shape = _cartesian_product(axes, return_shape=True)
@@ -329,17 +410,59 @@ def _one_grid_to_points(axes, *, dim_domain):
     return cartesian, shape
 
 
+class EvaluateMethod(Protocol):
+    """Evaluation method."""
+
+    def __call__(
+        self,
+        __eval_points: np.ndarray,  # noqa: WPS112
+        extrapolation: Optional[ExtrapolationLike],
+        aligned: bool,
+    ) -> np.ndarray:
+        """Evaluate a function."""
+        pass
+
+
+@overload
 def _evaluate_grid(
-    axes: Sequence[np.ndarray],
+    axes: GridPointsLike,
     *,
-    evaluate_method: Any,
+    evaluate_method: EvaluateMethod,
     n_samples: int,
     dim_domain: int,
     dim_codomain: int,
-    extrapolation: Optional[Union[str, Evaluator]] = None,
+    extrapolation: Optional[ExtrapolationLike] = None,
+    aligned: Literal[True] = True,
+) -> np.ndarray:
+    pass
+
+
+@overload
+def _evaluate_grid(
+    axes: Iterable[GridPointsLike],
+    *,
+    evaluate_method: EvaluateMethod,
+    n_samples: int,
+    dim_domain: int,
+    dim_codomain: int,
+    extrapolation: Optional[ExtrapolationLike] = None,
+    aligned: Literal[False],
+) -> np.ndarray:
+    pass
+
+
+def _evaluate_grid(  # noqa: WPS234
+    axes: Union[GridPointsLike, Iterable[GridPointsLike]],
+    *,
+    evaluate_method: EvaluateMethod,
+    n_samples: int,
+    dim_domain: int,
+    dim_codomain: int,
+    extrapolation: Optional[ExtrapolationLike] = None,
     aligned: bool = True,
 ) -> np.ndarray:
-    """Evaluate the functional object in the cartesian grid.
+    """
+    Evaluate the functional object in the cartesian grid.
 
     This method is called internally by :meth:`evaluate` when the argument
     `grid` is True.
@@ -364,6 +487,10 @@ def _evaluate_grid(
     Args:
         axes: List of axes to generated the grid where the
             object will be evaluated.
+        evaluate_method: Function used to evaluate the functional object.
+        n_samples: Number of samples.
+        dim_domain: Domain dimension.
+        dim_codomain: Codomain dimension.
         extrapolation: Controls the
             extrapolation mode for elements outside the domain range. By
             default it is used the mode defined during the instance of the
@@ -387,25 +514,32 @@ def _evaluate_grid(
     # Compute intersection points and resulting shapes
     if aligned:
 
+        axes = cast(GridPointsLike, axes)
+
         eval_points, shape = _one_grid_to_points(axes, dim_domain=dim_domain)
 
     else:
 
-        axes = list(axes)
+        axes_per_sample = cast(Iterable[GridPointsLike], axes)
 
-        if len(axes) != n_samples:
-            raise ValueError(
-                "A list of axis per sample should be provided",
-            )
-
-        eval_points, shape = zip(
-            *[_one_grid_to_points(a, dim_domain=dim_domain) for a in axes],
+        axes_per_sample = list(axes_per_sample)
+        
+        eval_points_tuple, shape_tuple = zip(
+            *[
+                _one_grid_to_points(a, dim_domain=dim_domain)
+                for a in axes_per_sample
+            ],
         )
 
-    eval_points = _to_array_maybe_ragged(eval_points)
+        if len(eval_points_tuple) != n_samples:
+            raise ValueError(
+                "Should be provided a list of axis per sample",
+            )
+
+        eval_points = _to_array_maybe_ragged(eval_points_tuple)
 
     # Evaluate the points
-    res = evaluate_method(
+    evaluated = evaluate_method(
         eval_points,
         extrapolation=extrapolation,
         aligned=aligned,
@@ -414,7 +548,7 @@ def _evaluate_grid(
     # Reshape the result
     if aligned:
 
-        res = res.reshape(
+        res = evaluated.reshape(
             [n_samples] + list(shape) + [dim_codomain],
         )
 
@@ -422,7 +556,7 @@ def _evaluate_grid(
 
         res = _to_array_maybe_ragged([
             r.reshape(list(s) + [dim_codomain])
-            for r, s in zip(res, shape)
+            for r, s in zip(evaluated, shape_tuple)
         ])
 
     return res
@@ -536,7 +670,7 @@ def _int_to_real(array: np.ndarray) -> np.ndarray:
     return array + 0.0
 
 
-def _check_array_key(array, key):
+def _check_array_key(array: np.ndarray, key: Any) -> Any:
     """Check a getitem key."""
     key = check_array_indexer(array, key)
 

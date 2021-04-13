@@ -267,10 +267,8 @@ print(n_neighbors, score)
 # .. warning::
 #     Other ensemble methods, such as
 #     :class:`~sklearn.ensemble.BaggingClassifier` or
-#     :class:`~sklearn.ensemble.AdaBoostClassifier` construct estimators
-#     that only use a subset of the features. As in :term:`FDA` the features
-#     are the evaluations of the functions at different points, these
-#     estimators cannot work with functional data unless it has been
+#     :class:`~sklearn.ensemble.AdaBoostClassifier` cannot yet
+#     be used with functional data unless it has been
 #     transformed to a multivariate dataset.
 
 ##############################################################################

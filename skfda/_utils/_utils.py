@@ -13,16 +13,20 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    TypeVar,
     Union,
     cast,
     overload,
 )
 
 import numpy as np
-from pandas.api.indexers import check_array_indexer
-from typing_extensions import Literal, Protocol
-
 import scipy.integrate
+from numpy import ndarray
+from pandas.api.indexers import check_array_indexer
+from sklearn.base import clone
+from sklearn.preprocessing import LabelEncoder
+from sklearn.utils.multiclass import check_classification_targets
+from typing_extensions import Literal, Protocol
 
 from ..representation._typing import (
     ArrayLike,
@@ -36,8 +40,10 @@ from ..representation.extrapolation import ExtrapolationLike
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
 
 if TYPE_CHECKING:
+    from ..exploratory.depth import Depth
     from ..representation import FData, FDataGrid
     from ..representation.basis import Basis
+    T = TypeVar("T", bound=FData)
 
 
 class _FDataCallable():
@@ -64,10 +70,11 @@ class _FDataCallable():
         tmp = np.empty(self.n_samples)
         new_nsamples = len(tmp[key])
 
-        return _FDataCallable(new_function,
-                              domain_range=self.domain_range,
-                              n_samples=new_nsamples)
-
+        return _FDataCallable(
+            new_function,
+            domain_range=self.domain_range,
+            n_samples=new_nsamples,
+        )
 
 def check_is_univariate(fd: FData) -> None:
     """Check if an FData is univariate and raises an error.
@@ -81,7 +88,6 @@ def check_is_univariate(fd: FData) -> None:
 
     """
     if fd.dim_domain != 1 or fd.dim_codomain != 1:
-
         domain_str = (
             "" if fd.dim_domain == 1
             else f"(currently is {fd.dim_domain}) "
@@ -97,7 +103,6 @@ def check_is_univariate(fd: FData) -> None:
             f"with dim_domain=1 {domain_str}"
             f"and dim_codomain=1 {codomain_str}",
         )
-
 
 def _to_grid(
     X: FData,
@@ -268,7 +273,6 @@ def _cartesian_product(  # noqa: WPS234
         >>> _cartesian_product(axes)
         array([[0],
                [1]])
-
     """
     cartesian = np.stack(np.meshgrid(*axes, indexing='ij'), -1)
 
@@ -364,7 +368,6 @@ def _reshape_eval_points(
         eval_points = np.array([eval_points])
 
     if aligned:  # Samples evaluated at same eval points
-
         eval_points = eval_points.reshape(
             (eval_points.shape[0], dim_domain),
         )
@@ -372,7 +375,6 @@ def _reshape_eval_points(
     else:  # Different eval_points for each sample
 
         if eval_points.shape[0] != n_samples:
-
             raise ValueError(
                 f"eval_points should be a list "
                 f"of length {n_samples} with the "
@@ -495,6 +497,10 @@ def _evaluate_grid(  # noqa: WPS234
             object.
         aligned: If False evaluates each sample
             in a different grid.
+        evaluate_method: method to use to evaluate the points
+        n_samples: number of samples
+        dim_domain: dimension of the domain
+        dim_codomain: dimensions of the codomain
 
     Returns:
         Numpy array with dim_domain + 1 dimensions with
@@ -623,18 +629,15 @@ def _pairwise_symmetric(
     **kwargs: Any,
 ) -> np.ndarray:
     """Compute pairwise a commutative function."""
+    dim1 = len(arg1)
     if arg2 is None or arg2 is arg1:
+        indices = np.triu_indices(dim1)
 
-        indices = np.triu_indices(len(arg1))
-
-        matrix = np.empty((len(arg1), len(arg1)))
+        matrix = np.empty((dim1, dim1))
 
         triang_vec = _map_in_batches(
             function,
-            (
-                arg1,
-                arg1,
-            ),
+            (arg1, arg1),
             indices,
             memory_per_batch=memory_per_batch,
             **kwargs,
@@ -648,31 +651,22 @@ def _pairwise_symmetric(
 
         return matrix
 
-    else:
+    dim2 = len(arg2)
+    indices = np.indices((dim1, dim2))
 
-        indices = np.indices((len(arg1), len(arg2)))
+    vec = _map_in_batches(
+        function,
+        (arg1, arg2),
+        (indices[0].ravel(), indices[1].ravel()),
+        memory_per_batch=memory_per_batch,
+        **kwargs,
+    )
 
-        vec = _map_in_batches(
-            function,
-            (
-                arg1,
-                arg2,
-            ),
-            (
-                indices[0].ravel(),
-                indices[1].ravel(),
-            ),
-            memory_per_batch=memory_per_batch,
-            **kwargs,
-        )
-
-        return vec.reshape((len(arg1), len(arg2)))
+    return vec.reshape((dim1, dim2))
 
 
 def _int_to_real(array: np.ndarray) -> np.ndarray:
-    """
-    Convert integer arrays to floating point.
-    """
+    """Convert integer arrays to floating point."""
     return array + 0.0
 
 
@@ -691,7 +685,9 @@ def _check_array_key(array: np.ndarray, key: Any) -> Any:
 
 def _check_estimator(estimator):
     from sklearn.utils.estimator_checks import (
-        check_get_params_invariance, check_set_params)
+        check_get_params_invariance,
+        check_set_params,
+    )
 
     name = estimator.__name__
     instance = estimator()
@@ -699,9 +695,7 @@ def _check_estimator(estimator):
     check_set_params(name, instance)
 
 
-def _classifier_get_classes(y):
-    from sklearn.utils.multiclass import check_classification_targets
-    from sklearn.preprocessing import LabelEncoder
+def _classifier_get_classes(y: ndarray) -> Tuple[ndarray, ndarray]:
 
     check_classification_targets(y)
 
@@ -711,6 +705,35 @@ def _classifier_get_classes(y):
     classes = le.classes_
 
     if classes.size < 2:
-        raise ValueError(f'The number of classes has to be greater than'
-                         f' one; got {classes.size} class')
+        raise ValueError(
+            f'The number of classes has to be greater than'
+            f'one; got {classes.size} class',
+        )
     return classes, y_ind
+
+
+def _classifier_get_depth_methods(
+    classes: ndarray,
+    X: T,
+    y_ind: ndarray,
+    depth_methods: Sequence[Depth[T]],
+) -> Sequence[Depth[T]]:
+    return [
+        clone(depth_method).fit(X[y_ind == cur_class])
+        for cur_class in range(classes.size)
+        for depth_method in depth_methods
+    ]
+
+
+def _classifier_fit_depth_methods(
+    X: T,
+    y: ndarray,
+    depth_methods: Sequence[Depth[T]],
+) -> Tuple[ndarray, Sequence[Depth[T]]]:
+    classes, y_ind = _classifier_get_classes(y)
+
+    class_depth_methods_ = _classifier_get_depth_methods(
+        classes, X, y_ind, depth_methods,
+    )
+
+    return classes, class_depth_methods_

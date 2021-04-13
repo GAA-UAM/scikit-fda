@@ -12,12 +12,20 @@ from ...representation._functional_data import FData
 
 non_close_text = '[^>]*?'
 svg_width_regex = re.compile(
-    f'(<svg {non_close_text}width="){non_close_text}("{non_close_text}>)')
+    f'(<svg {non_close_text}width="){non_close_text}("{non_close_text}>)'
+)
 svg_width_replacement = r'\g<1>100%\g<2>'
 svg_height_regex = re.compile(
-    f'(<svg {non_close_text})height="{non_close_text}"({non_close_text}>)')
+    f'(<svg {non_close_text})height="{non_close_text}"({non_close_text}>)'
+)
 svg_height_replacement = r'\g<1>\g<2>'
 
+ColorLike = Union[
+    Tuple[float, float, float],
+    Tuple[float, float, float, float],
+    str,
+    Sequence[float],
+]
 
 def _create_figure():
     """Create figure using the default backend."""
@@ -101,9 +109,14 @@ def _get_axes_shape(n_axes, n_rows=None, n_cols=None):
     return n_rows, n_cols
 
 
-def _set_figure_layout(fig=None, axes=None,
-                       dim=2, n_axes=1,
-                       n_rows=None, n_cols=None):
+def _set_figure_layout(
+    fig: Optional[Figure] = None,
+    axes: Union[Axes, Sequence[Axes], None] = None,
+    dim: int = 2,
+    n_axes: int = 1,
+    n_rows: Optional[int] = None,
+    n_cols: Optional[int] = None,
+) -> Tuple[Figure, Sequence[Axes]]:
     """Set the figure axes for plotting.
 
     Args:
@@ -168,7 +181,7 @@ def _set_figure_layout(fig=None, axes=None,
 
 def _set_figure_layout_for_fdata(
     fdata: FData,
-    fig: Optional[Figure] = None, 
+    fig: Optional[Figure] = None,
     axes: Optional[Sequence[Axes]] = None,
     n_rows: Optional[int] = None,
     n_cols: Optional[int] = None,
@@ -202,7 +215,12 @@ def _set_figure_layout_for_fdata(
                               n_rows=n_rows, n_cols=n_cols)
 
 
-def _set_labels(fdata, fig=None, axes=None, patches=None):
+def _set_labels(
+    fdata: FData,
+    fig: Optional[Figure] = None,
+    axes: Union[Axes, Sequence[Axes], None] = None,
+    patches: Optional[Sequence[matplotlib.patches.Patch]] = None,
+) -> None:
     """Set labels if any.
 
     Args:

@@ -780,9 +780,9 @@ class FData(  # noqa: WPS214
             fig (figure object): figure object in which the graphs are plotted.
 
         """
-        from ..exploratory.visualization.representation import plot_graph
+        from ..exploratory.visualization.representation import GraphPlot
 
-        return plot_graph(self, *args, **kwargs)
+        return GraphPlot(fdata=self).plot(*args, **kwargs)
 
     @abstractmethod
     def copy(

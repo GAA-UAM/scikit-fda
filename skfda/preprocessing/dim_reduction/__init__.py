@@ -1,2 +1,2 @@
-from . import projection
-from . import variable_selection
+"""Dim reduction."""
+from . import feature_extraction, projection, variable_selection

@@ -727,7 +727,6 @@ class FData(  # noqa: WPS214
                 f"({self.n_samples})",
             )
 
-        domain_range: DomainRangeLike
         if restrict_domain:
             domain = np.asarray(self.domain_range)
 
@@ -736,9 +735,6 @@ class FData(  # noqa: WPS214
 
             domain = np.hstack((a, b))
             domain_range = tuple(domain)
-
-        else:
-            domain_range = self.domain_range
 
         if len(arr_shifts) == 1:
             shifted_grid_points = tuple(
@@ -763,11 +759,15 @@ class FData(  # noqa: WPS214
                 grid=True,
             )
 
-        return self.to_grid().copy(
+        shifted = self.to_grid().copy(
             data_matrix=data_matrix,
             grid_points=grid_points,
-            domain_range=domain_range,
         )
+
+        if restrict_domain:
+            shifted = shifted.restrict(domain_range)
+
+        return shifted
 
     def plot(self, *args: Any, **kwargs: Any) -> Any:
         """Plot the FDatGrid object.

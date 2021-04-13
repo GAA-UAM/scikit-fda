@@ -306,14 +306,17 @@ class TestShiftRegistration(unittest.TestCase):
         np.testing.assert_array_almost_equal(fd_registered_2.data_matrix,
                                              fd_registered_4.data_matrix)
 
-    def test_restrict_domain(self):
+    def test_restrict_domain(self) -> None:
         reg = ShiftRegistration(restrict_domain=True)
         fd_registered_1 = reg.fit_transform(self.fd)
 
         np.testing.assert_array_almost_equal(
-            np.array(fd_registered_1.domain_range).round(3), [[0.022, 0.97]])
+            np.array(fd_registered_1.domain_range).round(3), [[0.022, 0.969]])
 
-        reg2 = ShiftRegistration(restrict_domain=True, template=reg.template_)
+        reg2 = ShiftRegistration(
+            restrict_domain=True,
+            template=reg.template_.copy(domain_range=self.fd.domain_range),
+        )
         fd_registered_2 = reg2.fit_transform(self.fd)
 
         np.testing.assert_array_almost_equal(

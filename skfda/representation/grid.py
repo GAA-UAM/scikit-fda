@@ -197,6 +197,18 @@ class FDataGrid(FData):  # noqa: WPS214
         if len(self._domain_range) != self.dim_domain:
             raise ValueError("Incorrect shape of domain_range.")
 
+        for domain_range, grid_points in zip(
+            self._domain_range,
+            self.grid_points,
+        ):
+            if (
+                domain_range[0] > grid_points[0]
+                or domain_range[-1] < grid_points[-1]
+            ):
+                raise ValueError(
+                    "Grid points must be within the domain range.",
+                )
+
         # Adjust the data matrix if the dimension of the image is one
         if self.data_matrix.ndim == 1 + self.dim_domain:
             self.data_matrix = self.data_matrix[..., np.newaxis]
@@ -468,7 +480,7 @@ class FDataGrid(FData):  # noqa: WPS214
         if self.data_matrix.shape[1:-1] != other.data_matrix.shape[1:-1]:
             raise ValueError("Error in columns dimensions")
         if not np.array_equal(self.grid_points, other.grid_points):
-            raise ValueError("Sample points for both objects must be equal")
+            raise ValueError("Grid points for both objects must be equal")
 
     def sum(  # noqa: WPS125
         self: T,
@@ -765,7 +777,7 @@ class FDataGrid(FData):  # noqa: WPS214
         ):
             raise ValueError(
                 "All the FDataGrids must be sampled in the  same "
-                "sample points.",
+                "grid points.",
             )
 
         elif any(self.n_samples != other.n_samples for other in others):
@@ -930,7 +942,7 @@ class FDataGrid(FData):  # noqa: WPS214
             data_matrix = self.data_matrix
 
         if grid_points is None:
-            # Sample points won`t be writeable
+            # Grid points won`t be writeable
             grid_points = self.grid_points
 
         if domain_range is None:
@@ -989,9 +1001,32 @@ class FDataGrid(FData):  # noqa: WPS214
             for ((a, b), (c, d)) in zip(domain_range, self.domain_range)
         )
 
-        # We could in principle eliminate points outside the new range.
+        index_list = []
+        new_grid_points = []
 
-        return self.copy(domain_range=domain_range)
+        # Eliminate points outside the new range.
+        for dr, grid_points in zip(
+            domain_range,
+            self.grid_points,
+        ):
+            keep_index = (
+                (dr[0] <= grid_points)
+                & (grid_points <= dr[1])
+            )
+
+            index_list.append(keep_index)
+
+            new_grid_points.append(
+                grid_points[keep_index],
+            )
+
+        data_matrix = self.data_matrix[tuple([slice(None)] + index_list)]
+
+        return self.copy(
+            domain_range=domain_range,
+            grid_points=new_grid_points,
+            data_matrix=data_matrix,
+        )
 
     def shift(
         self,

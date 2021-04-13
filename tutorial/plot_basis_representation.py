@@ -174,7 +174,7 @@ for n_basis in range(1, max_basis + 1):
     X_basis = X.to_basis(basis)
 
     ax = axes.ravel()[n_basis - 1]
-    fig = X_basis.plot(axes=ax)
+    fig = X_basis.plot(ax=ax)
     ax.set_title(f"{n_basis} basis functions")
 
 fig.tight_layout()

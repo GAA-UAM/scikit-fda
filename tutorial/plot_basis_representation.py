@@ -190,9 +190,11 @@ fig.tight_layout()
 # pick one that provides the best representation of the original data.
 
 ##############################################################################
-# First we will load a dataset to test the basis representations
+# First we will load a dataset to test the basis representations.
 
 X, y = skfda.datasets.fetch_phoneme(return_X_y=True)
+
+X.plot()
 
 # Select only the first 5 samples
 X = X[:5]

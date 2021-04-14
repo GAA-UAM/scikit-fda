@@ -76,7 +76,7 @@ class BasePlot(ABC):
 
     def clear_ax(self) -> None:
         """
-        Resets the basic attributes of the BasePlot.
+        Reset the basic attributes of the BasePlot.
 
         Clear the old axes of the BasePlot and reset the
         id_function list.

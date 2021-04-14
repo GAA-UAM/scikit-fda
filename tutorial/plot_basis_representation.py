@@ -194,10 +194,10 @@ fig.tight_layout()
 
 X, y = skfda.datasets.fetch_phoneme(return_X_y=True)
 
-X.plot()
-
 # Select only the first 5 samples
 X = X[:5]
+
+X.plot()
 
 ##############################################################################
 # Monomial basis

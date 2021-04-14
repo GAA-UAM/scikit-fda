@@ -6,9 +6,10 @@ common to all of them.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Union
+from typing import List, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
@@ -20,20 +21,16 @@ class BasePlot(ABC):
     BasePlot class.
 
     Attributes:
-        id_function: list of PathCollection objects corresponding
+        id_function: list of Artist objects corresponding
             to every instance of our plot. They will be used to modify
             the visualization with interactivity and widgets.
-        fig: figure over with the graph is plotted.
-        axes: axis where the graph is plotted.
     """
 
     @abstractmethod
     def __init__(
         self,
     ) -> None:
-        self.id_function = []
-        self.axes = None
-        self.fig = None
+        self.id_function: List[Artist] = []
 
     @abstractmethod
     def plot(
@@ -87,12 +84,7 @@ class BasePlot(ABC):
             self.id_function = []
 
     def _repr_svg_(self) -> str:
-        """
-        Automatically represents the object as an svg when calling it.
-
-        Returns:
-            str: string containing the xml code used to get the svg.
-        """
+        """Automatically represents the object as an svg when calling it."""
         self.fig = self.plot()
         plt.close(self.fig)
         return _figure_to_svg(self.fig)

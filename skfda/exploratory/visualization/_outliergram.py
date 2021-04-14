@@ -130,7 +130,9 @@ class Outliergram(BasePlot):
 
         # Set labels of graph
         if self.fdata.dataset_name is not None:
-            self.fig.suptitle(self.fdata.dataset_name)
+            self.axScatter.set_title(self.fdata.dataset_name)
+        else:
+            self.axScatter.set_title("Outliergram")
         self.axScatter.set_xlabel("MEI")
         self.axScatter.set_ylabel("MBD")
         self.axScatter.set_xlim([0, 1])

@@ -209,6 +209,10 @@ class MultipleDisplay:
         for i in range(self.num_graphs):
             if event.inaxes == self.axes[i]:
                 index_axis = i
+
+                if len(self.displays[i].id_function) == 0:
+                    return
+
                 for j in range(len(self.displays[i].id_function)):
                     artist = self.displays[i].id_function[j]
                     if isinstance(artist, List):
@@ -319,10 +323,11 @@ class MultipleDisplay:
         for i in range(self.length_data):
             if i != self.index_clicked:
                 for d in self.displays:
-                    if isinstance(d.id_function[i], list):
-                        d.id_function[i][0].set_alpha(0.1)
-                    else:
-                        d.id_function[i].set_alpha(0.1)
+                    if len(d.id_function) != 0:
+                        if isinstance(d.id_function[i], list):
+                            d.id_function[i][0].set_alpha(0.1)
+                        else:
+                            d.id_function[i].set_alpha(0.1)
 
         self.is_updating = True
         for j in range(len(self.sliders)):
@@ -334,10 +339,11 @@ class MultipleDisplay:
         """Restore the original transparency of all the points."""
         for i in range(self.length_data):
             for d in self.displays:
-                if isinstance(d.id_function[i], list):
-                    d.id_function[i][0].set_alpha(1)
-                else:
-                    d.id_function[i].set_alpha(1)
+                if len(d.id_function) != 0:
+                    if isinstance(d.id_function[i], list):
+                        d.id_function[i][0].set_alpha(1)
+                    else:
+                        d.id_function[i].set_alpha(1)
         self.point_clicked = None
         self.index_clicked = -1
 
@@ -394,10 +400,11 @@ class MultipleDisplay:
             intensity: new intensity of the points.
         """
         for d in self.displays:
-            if isinstance(d.id_function[index], list):
-                d.id_function[index][0].set_alpha(intensity)
-            else:
-                d.id_function[index].set_alpha(intensity)
+            if len(d.id_function) != 0:
+                if isinstance(d.id_function[index], list):
+                    d.id_function[index][0].set_alpha(intensity)
+                else:
+                    d.id_function[index].set_alpha(intensity)
 
     def create_sliders(
         self,

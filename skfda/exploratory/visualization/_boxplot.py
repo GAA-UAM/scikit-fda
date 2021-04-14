@@ -404,7 +404,6 @@ class Boxplot(FDataBoxplot, BasePlot):
         """
 
         BasePlot.clear_ax(self)
-        self.id_function = [None] * self.num_instances()
         tones = np.linspace(0.1, 1.0, len(self._prob) + 1, endpoint=False)[1:]
         color = self.colormap(tones)
 
@@ -419,12 +418,13 @@ class Boxplot(FDataBoxplot, BasePlot):
         for m in range(self.fdatagrid.dim_codomain):
 
             # Outliers
-            for i in range(len(outliers)):
-                self.id_function[index_outliers[i]] = self.axes[m].plot(
-                    outliers[i].grid_points[0],
-                    outliers[i].data_matrix[0, :, m],
+            for o in outliers:
+                self.axes[m].plot(
+                    o.grid_points[0],
+                    o.data_matrix[0, :, m],
                     color=self.outliercol,
-                    linestyle='--', zorder=1
+                    linestyle='--',
+                    zorder=1,
                 )
 
             for i in range(len(self._prob)):

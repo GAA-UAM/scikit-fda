@@ -27,6 +27,7 @@ ColorLike = Union[
     Sequence[float],
 ]
 
+
 def _create_figure():
     """Create figure using the default backend."""
     fig = plt.figure()

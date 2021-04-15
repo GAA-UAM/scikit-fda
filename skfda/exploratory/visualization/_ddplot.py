@@ -84,7 +84,6 @@ class DDPlot(BasePlot):
             fig (figure object): figure object in which the depths will be
             scattered.
         """
-
         BasePlot.clear_ax(self)
         self.id_function = []
         margin = 0.025
@@ -125,6 +124,7 @@ class DDPlot(BasePlot):
         return self.fig
 
     def num_instances(self) -> int:
+        """Get the number of instances that will be used for interactivity."""
         return self.fdata.n_samples
 
     def set_figure_and_axes(
@@ -133,6 +133,18 @@ class DDPlot(BasePlot):
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
     ) -> None:
+        """
+        Initialize the axes and fig of the plot.
+
+        Args:
+        chart: figure over with the graphs are plotted or axis over
+            where the graphs are plotted. If None and ax is also
+            None, the figure is initialized.
+        fig: figure over with the graphs are plotted in case ax is not
+            specified. If None and ax is also None, the figure is
+            initialized.
+        axes: axis where the graphs are plotted. If None, see param fig.
+        """
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         fig, axes = _set_figure_layout_for_fdata(
             fdata=self.fdata,

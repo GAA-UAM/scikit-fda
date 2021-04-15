@@ -228,11 +228,11 @@ class Outliergram(BasePlot):
             initialized.
         axes: axis where the graphs are plotted. If None, see param fig.
         n_rows: designates the number of rows of the figure
-                to plot the different dimensions of the image. Only specified
-                if fig and ax are None.
+            to plot the different dimensions of the image. Only specified
+            if fig and ax are None.
         n_cols: designates the number of columns of the
-                figure to plot the different dimensions of the image. Only
-                specified if fig and ax are None.
+            figure to plot the different dimensions of the image. Only
+            specified if fig and ax are None.
         """
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         fig, axes = _set_figure_layout_for_fdata(

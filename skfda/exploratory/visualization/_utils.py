@@ -12,12 +12,20 @@ from ...representation._functional_data import FData
 
 non_close_text = '[^>]*?'
 svg_width_regex = re.compile(
-    f'(<svg {non_close_text}width="){non_close_text}("{non_close_text}>)')
+    f'(<svg {non_close_text}width="){non_close_text}("{non_close_text}>)'
+)
 svg_width_replacement = r'\g<1>100%\g<2>'
 svg_height_regex = re.compile(
-    f'(<svg {non_close_text})height="{non_close_text}"({non_close_text}>)')
+    f'(<svg {non_close_text})height="{non_close_text}"({non_close_text}>)'
+)
 svg_height_replacement = r'\g<1>\g<2>'
 
+ColorLike = Union[
+    Tuple[float, float, float],
+    Tuple[float, float, float, float],
+    str,
+    Sequence[float],
+]
 
 def _create_figure():
     """Create figure using the default backend."""
@@ -51,7 +59,6 @@ def _get_figure_and_axes(
     axes: Union[Axes, Sequence[Axes], None] = None,
 ) -> Tuple[Figure, Sequence[Axes]]:
     """Obtain the figure and axes from the arguments."""
-    
 
     num_defined = sum(e is not None for e in (chart, fig, axes))
     if num_defined > 1:
@@ -103,14 +110,14 @@ def _get_axes_shape(n_axes, n_rows=None, n_cols=None):
 
 
 def _set_figure_layout(
-    fig: Optional[Figure] = None, 
-    axes: Optional[Sequence[Axes]] = None,
-    dim: int = 2, n_axes: int = 1,
+    fig: Optional[Figure] = None,
+    axes: Union[Axes, Sequence[Axes], None] = None,
+    dim: int = 2,
+    n_axes: int = 1,
     n_rows: Optional[int] = None,
     n_cols: Optional[int] = None,
 ) -> Tuple[Figure, Sequence[Axes]]:
     """Set the figure axes for plotting.
-
     Args:
         dim (int): dimension of the plot. Either 2 for a 2D plot or
             3 for a 3D plot.
@@ -125,13 +132,10 @@ def _set_figure_layout(
         n_cols (int, optional): designates the number of columns of the
             figure to plot the different dimensions of the image. Can only be
             passed if no axes are specified.
-
     Returns:
         (tuple): tuple containing:
-
             * fig (figure): figure object in which the graphs are plotted.
             * axes (list): axes in which the graphs are plotted.
-
     """
     if not (1 < dim < 4):
         raise NotImplementedError("Only bidimensional or tridimensional "
@@ -173,14 +177,13 @@ def _set_figure_layout(
 
 def _set_figure_layout_for_fdata(
     fdata: FData,
-    fig: Optional[Figure] = None, 
+    fig: Optional[Figure] = None,
     axes: Optional[Sequence[Axes]] = None,
     n_rows: Optional[int] = None,
     n_cols: Optional[int] = None,
 ) -> Tuple[Figure, Sequence[Axes]]:
     """Set the figure axes for plotting a
     :class:`~skfda.representation.FData` object.
-
     Args:
         fdata (FData): functional data object.
         fig (figure object): figure over with the graphs are
@@ -193,13 +196,10 @@ def _set_figure_layout_for_fdata(
         n_cols (int, optional): designates the number of columns of the
             figure to plot the different dimensions of the image. Can only be
             passed if no axes are specified.
-
     Returns:
         (tuple): tuple containing:
-
             * fig (figure): figure object in which the graphs are plotted.
             * axes (list): axes in which the graphs are plotted.
-
     """
     return _set_figure_layout(fig, axes,
                               dim=fdata.dim_domain + 1,
@@ -207,9 +207,13 @@ def _set_figure_layout_for_fdata(
                               n_rows=n_rows, n_cols=n_cols)
 
 
-def _set_labels(fdata, fig=None, axes=None, patches=None):
+def _set_labels(
+    fdata: FData,
+    fig: Optional[Figure] = None,
+    axes: Union[Axes, Sequence[Axes], None] = None,
+    patches: Optional[Sequence[matplotlib.patches.Patch]] = None,
+) -> None:
     """Set labels if any.
-
     Args:
         fdata (FData): functional data object.
         fig (figure object): figure object containing the axes that
@@ -220,7 +224,6 @@ def _set_labels(fdata, fig=None, axes=None, patches=None):
             fig is None.
         patches (list of mpatches.Patch); objects used to generate each
             entry in the legend.
-
     """
 
     # Dataset name
@@ -254,7 +257,6 @@ def _change_luminosity(color, amount=0.5):
     """
     Changes the given color luminosity by the given amount.
     Input can be matplotlib color string, hex string, or RGB tuple.
-
     Note:
         Based on https://stackoverflow.com/a/49601444/2455333
     """

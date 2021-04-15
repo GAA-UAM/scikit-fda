@@ -296,10 +296,12 @@ class ClusterPlot(BasePlot):
 
         for j in range(self.fdata.dim_codomain):
             for i in range(self.fdata.n_samples):
-                self.axes[j].plot(self.fdata.grid_points[0],
-                            self.fdata.data_matrix[i, :, j],
-                            c=colors_by_cluster[i],
-                            label=self.sample_labels[i])
+                self.id_function.append(self.axes[j].plot(
+                    self.fdata.grid_points[0],
+                    self.fdata.data_matrix[i, :, j],
+                    c=colors_by_cluster[i],
+                    label=self.sample_labels[i]
+                ))
             for i in range(self.estimator.n_clusters):
                 self.axes[j].plot(self.fdata.grid_points[0],
                             self.estimator.cluster_centers_.data_matrix[

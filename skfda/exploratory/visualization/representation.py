@@ -1,53 +1,67 @@
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
+"""Representation Module.
+This module contains the functionality related
+with plotting and scattering our different datasets.
+It allows multiple modes and colors, which could
+be set manually or automatically depending on values
+like depth measures.
+"""
+
+from typing import (
+    Any,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import matplotlib.cm
 import matplotlib.patches
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from typing_extensions import Protocol
 
 from ... import FDataGrid
 from ..._utils import _to_domain_range, constants
 from ...representation._functional_data import FData
-from ...representation._typing import DomainRangeLike
+from ...representation._typing import DomainRangeLike, GridPointsLike
 from ._baseplot import BasePlot
 from ._utils import (
+    ColorLike,
     _get_figure_and_axes,
     _set_figure_layout_for_fdata,
     _set_labels,
 )
 
+K = TypeVar('K', contravariant=True)
+V = TypeVar('V', covariant=True)
 T = TypeVar('T', FDataGrid, np.ndarray)
 
 
-def _get_label_colors(
-    n_labels: int,
-    group_colors: Union[Sequence[Any], None],
-) -> np.ndarray:
-    """Get the colors of each label"""
+class Indexable(Protocol[K, V]):
+    """Class Indexable used to type _get_color_info."""
 
-    if group_colors is not None:
-        if len(group_colors) != n_labels:
-            raise ValueError(
-                "There must be a color in group_colors "
-                "for each of the labels that appear in "
-                "group.",
-            )
-    else:
-        colormap = matplotlib.cm.get_cmap()
-        group_colors = colormap(np.arange(n_labels) / (n_labels - 1))
+    def __getitem__(self, __key: K) -> V:
+        pass
 
-    return group_colors
+    def __len__(self) -> int:
+        pass
 
 
 def _get_color_info(
     fdata: T,
-    group: Union[Sequence[int], None],
-    group_names: Union[Sequence[str], None],
-    group_colors: Union[Sequence[Any], None],
-    legend: bool,
-    kwargs: Any,
-) -> Tuple[Any, Optional[List[matplotlib.patches.Patch]]]:
+    group: Optional[Sequence[K]] = None,
+    group_names: Optional[Indexable[K, str]] = None,
+    group_colors: Optional[Indexable[K, ColorLike]] = None,
+    legend: bool = False,
+    kwargs: Any = None,
+) -> Tuple[
+        Union[ColorLike, None],
+        Optional[List[matplotlib.patches.Patch]]
+    ]:
 
     patches = None
 
@@ -197,10 +211,10 @@ class GraphPlot(BasePlot):
         self,
         *,
         n_points: Union[int, Tuple[int, int], None] = None,
-        domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
-        group: Union[Sequence[int], None] = None,
-        group_colors: Union[Sequence[Any], None] = None,
-        group_names: Union[Sequence[str], None] = None,
+        domain_range: Optional[DomainRangeLike] = None,
+        group: Optional[Sequence[K]] = None,
+        group_colors: Optional[Indexable[K, ColorLike]] = None,
+        group_names: Optional[Indexable[K, str]] = None,
         colormap_name: str = 'autumn',
         legend: bool = False,
         **kwargs: Any,
@@ -254,10 +268,11 @@ class GraphPlot(BasePlot):
         """
 
         BasePlot.clear_ax(self)
+
         if domain_range is None:
-            domain_range = self.fdata.domain_range
+            self.domain_range = self.fdata.domain_range
         else:
-            domain_range = _to_domain_range(domain_range)
+            self.domain_range = _to_domain_range(domain_range)
 
         if len(self.gradient_list) == 0:
             sample_colors, patches = _get_color_info(
@@ -269,8 +284,12 @@ class GraphPlot(BasePlot):
             colormap = colormap.reversed()
 
             sample_colors = [None] * self.fdata.n_samples
-            for i in range(self.fdata.n_samples):
-                sample_colors[i] = colormap(self.gradient_list[i])
+            for m in range(self.fdata.n_samples):
+                sample_colors[m] = colormap(self.gradient_list[m])
+
+        self.sample_colors = sample_colors
+
+        color_dict: Mapping[str, Union[ColorLike, None]] = {}
 
         if self.fdata.dim_domain == 1:
 
@@ -278,18 +297,15 @@ class GraphPlot(BasePlot):
                 self.n_points = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
 
             # Evaluates the object in a linspace
-            eval_points = np.linspace(*domain_range[0], self.n_points)
+            eval_points = np.linspace(*self.domain_range[0], self.n_points)
             mat = self.fdata(eval_points)
-
-            color_dict: Dict[str, Any] = {}
-            self.axPlot = self.axes[0]
 
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
-                    if sample_colors is not None:
-                        color_dict["color"] = sample_colors[j]
 
-                    self.id_function.append(self.axPlot.plot(
+                    set_color_dict(sample_colors, j, color_dict)
+
+                    self.id_function.append(self.axes[i].plot(
                         eval_points,
                         mat[j, ..., i].T,
                         **color_dict,
@@ -305,30 +321,30 @@ class GraphPlot(BasePlot):
                 n_points_tuple = (n_points, n_points)
             elif len(n_points) != 2:
                 raise ValueError(
-                    f"n_points should be a number or a tuple of "
-                    f"length 2, and has length {len(n_points)}",
+                    "n_points should be a number or a tuple of "
+                    "length 2, and has length {0}.".format(len(n_points)),
                 )
 
             # Axes where will be evaluated
-            x = np.linspace(*domain_range[0], n_points_tuple[0])
-            y = np.linspace(*domain_range[1], n_points_tuple[1])
+            x = np.linspace(*self.domain_range[0], n_points_tuple[0])
+            y = np.linspace(*self.domain_range[1], n_points_tuple[1])
 
             # Evaluation of the functional object
             Z = self.fdata((x, y), grid=True)
 
             X, Y = np.meshgrid(x, y, indexing='ij')
 
-            color_dict = {}
+            for k in range(self.fdata.dim_codomain):
+                for h in range(self.fdata.n_samples):
 
-            for i in range(self.fdata.dim_codomain):
-                for j in range(self.fdata.n_samples):
+                    set_color_dict(sample_colors, h, color_dict)
 
-                    if sample_colors is not None:
-                        color_dict["color"] = sample_colors[j]
-
-                    self.id_function.append(self.axes[i].plot_surface(
-                        X, Y, Z[j, ..., i],
-                        **color_dict, **kwargs,
+                    self.id_function.append(self.axes[k].plot_surface(
+                        X,
+                        Y,
+                        Z[h, ..., k],
+                        **color_dict,
+                        **kwargs,
                     ))
 
         _set_labels(self.fdata, self.fig, self.axes, patches)
@@ -391,7 +407,7 @@ class ScatterPlot(BasePlot):
         axes: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
-        grid_points: np.ndarray = None,
+        grid_points: Optional[GridPointsLike] = None,
     ) -> None:
         BasePlot.__init__(self)
         self.fdata = fdata
@@ -401,13 +417,10 @@ class ScatterPlot(BasePlot):
     def plot(
         self,
         *,
-        domain_range: Union[
-            Tuple[int, int],
-            Sequence[Tuple[int, int]],
-            None, ] = None,      
-        group: Union[Sequence[int], None] = None,
-        group_colors: Union[Sequence[Any], None] = None,
-        group_names: Union[Sequence[str], None] = None,
+        domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
+        group: Optional[Sequence[K]] = None,
+        group_colors: Optional[Indexable[K, ColorLike]] = None,
+        group_names: Optional[Indexable[K, str]] = None,
         legend: bool = False,
         **kwargs: Any,
     ) -> Figure:
@@ -464,15 +477,14 @@ class ScatterPlot(BasePlot):
             self.fdata, group, group_names, group_colors, legend, kwargs,
         )
 
-        if self.fdata.dim_domain == 1:
+        color_dict: Mapping[str, Union[ColorLike, None]] = {}
 
-            color_dict = {}
+        if self.fdata.dim_domain == 1:
 
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
 
-                    if sample_colors is not None:
-                        color_dict["color"] = sample_colors[j]
+                    set_color_dict(sample_colors, j, color_dict)
 
                     self.id_function.append(self.axes[i].scatter(
                         self.grid_points[0],
@@ -488,25 +500,21 @@ class ScatterPlot(BasePlot):
             Y = self.fdata.grid_points[1]
             X, Y = np.meshgrid(X, Y)
 
-            color_dict = {}
+            for k in range(self.fdata.dim_codomain):
+                for h in range(self.fdata.n_samples):
 
-            for i in range(self.fdata.dim_codomain):
-                for j in range(self.fdata.n_samples):
+                    set_color_dict(sample_colors, h, color_dict)
 
-                    if sample_colors is not None:
-                        color_dict["color"] = sample_colors[j]
-
-                    self.id_function.append(self.axes[i].scatter(
+                    self.id_function.append(self.axes[k].scatter(
                         X,
                         Y,
-                        evaluated_points[j, ..., i].T,
+                        evaluated_points[h, ..., k].T,
                         **color_dict,
                         picker=2,
                         **kwargs,
                     ))
 
         _set_labels(self.fdata, self.fig, self.axes, patches)
-        self.axes[0].set_title("ScatterPlot")
 
         return self.fig
 
@@ -531,3 +539,16 @@ class ScatterPlot(BasePlot):
         )
         self.fig = fig
         self.axes = axes
+
+def set_color_dict(
+    sample_colors: Any,
+    ind: int,
+    color_dict: Mapping[str, Union[ColorLike, None]],
+) -> None:
+    """
+    Auxiliary method used to update color_dict.
+    Sets the new color of the color
+    dict thanks to sample colors and index.
+    """
+    if sample_colors is not None:
+        color_dict["color"] = sample_colors[ind]

@@ -806,9 +806,9 @@ class FDataGrid(FData):  # noqa: WPS214
 
 
         """
-        from ..exploratory.visualization.representation import plot_scatter
+        from ..exploratory.visualization.representation import ScatterPlot
 
-        return plot_scatter(self, *args, **kwargs)
+        return ScatterPlot(self).plot(*args, **kwargs)
 
     def to_basis(self, basis: Basis, **kwargs: Any) -> FDataBasis:
         """Return the basis representation of the object.

@@ -195,7 +195,7 @@ class MultipleDisplay:
 
     def hover(self, event: Event):
         """
-        Callback function of the hovering functionality.
+        Activate the annotation when hovering a point.
 
         Callback method that activates the annotation when hovering
         a specific point in a graph. The annotation is a description
@@ -247,7 +247,7 @@ class MultipleDisplay:
         extra: int = 0,
     ) -> None:
         """
-        Initialization method for the axes and figure.
+        Initialize the axes and figure.
 
         Args:
             chart: figure over with the graphs are plotted or axis over
@@ -261,8 +261,8 @@ class MultipleDisplay:
                 necessity for them to plot the sliders.
         """
         widget_aspect = 1 / 4
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        if len(axes) != 0 and len(axes) != (self.num_graphs + extra):
+        fig, axes_seq = _get_figure_and_axes(chart, fig, axes)
+        if len(axes_seq) != 0 and len(axes_seq) != (self.num_graphs + extra):
             raise ValueError("Invalid number of axes.")
 
         n_rows, n_cols = _get_axes_shape(self.num_graphs + extra)
@@ -283,7 +283,7 @@ class MultipleDisplay:
 
     def pick(self, event: Event) -> None:
         """
-        Callback function of the picking functionality.
+        Activate interactive functionality when picking a point.
 
         Callback method that is activated when a point is picked.
         If no point was clicked previously, all the points but the
@@ -310,7 +310,7 @@ class MultipleDisplay:
             self.change_points_intensity()
 
     def update_index_display_picked(self) -> None:
-        """Updates the index corresponding to the display picked."""
+        """Update the index corresponding to the display picked."""
         for i in range(self.num_graphs):
             if self.axes[i] == self.point_clicked.axes:
                 self.index_clicked = self.displays[i].id_function.index(
@@ -357,7 +357,7 @@ class MultipleDisplay:
         old_index: Union[int, None] = None,
     ) -> None:
         """
-        Changes the intensity of the points.
+        Change the intensity of the points.
 
         Changes the intensity of the points, the highlighted one now
         will be the selected one and the one with old_index with have
@@ -393,7 +393,8 @@ class MultipleDisplay:
 
     def change_display_intensity(self, index: int, intensity: int) -> None:
         """
-        Changes the intensity of the point selected by index in every display.
+        Change the intensity of the point selected by index in every display.
+
         Args:
             index: index of the last point clicked, as it should
                 reduce its transparency.
@@ -414,6 +415,7 @@ class MultipleDisplay:
     ) -> None:
         """
         Create the sliders with the criteria selected.
+
         Args:
             criteria: different criterion for each of the sliders.
             sliders: widget types.
@@ -430,18 +432,18 @@ class MultipleDisplay:
 
             if label_sliders is None:
                 for i in range(len(criteria)):
-                    self.__add_slider(i, criteria[i], sliders[i])
+                    self.add_slider(i, criteria[i], sliders[i])
             elif isinstance(label_sliders, str):
                 raise ValueError(
                     "Incorrect length of slider labels.",
                 )
             elif len(label_sliders) == len(sliders):
-                for i in range(len(criteria)):
-                    self.__add_slider(
-                        i,
-                        criteria[i],
-                        sliders[i],
-                        label_sliders[i],
+                for k in range(len(criteria)):
+                    self.add_slider(
+                        k,
+                        criteria[k],
+                        sliders[k],
+                        label_sliders[k],
                     )
             else:
                 raise ValueError(
@@ -457,13 +459,13 @@ class MultipleDisplay:
                 axes=self.axes,
                 extra=1,
             )
-            self.__add_slider(0, criteria, sliders, label_sliders)
+            self.add_slider(0, criteria, sliders, label_sliders)
         else:
             raise ValueError(
                 "Slider criteria should be of the same size as data",
             )
 
-    def __add_slider(
+    def add_slider(
         self,
         ind_ax: int,
         criterion: Sequence[float],
@@ -471,14 +473,14 @@ class MultipleDisplay:
         label_slider: Optional[str] = None,
     ) -> None:
         """
-        Adds the slider to the MultipleDisplay object.
+        Add the slider to the MultipleDisplay object.
+
         Args:
             ind_ax: index of the selected ax for the widget.
             criterion: criterion used for the slider.
             widget_func: widget type.
             label_slider: names of the slider.
         """
-
         if label_slider is None:
             full_desc = "".join(["Filter (", str(ind_ax), ")"])
         else:
@@ -512,7 +514,8 @@ class MultipleDisplay:
 
     def value_updated(self, value: int) -> None:
         """
-        Callback method of the widget, used to update the graphs.
+        Update the graphs when a widget is clicked.
+
         Args:
             value: current value of the widget.
         """

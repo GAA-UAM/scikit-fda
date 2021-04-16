@@ -21,11 +21,11 @@ class BasePlot(ABC):
     BasePlot class.
 
     Attributes:
-        id_function: list of Artist objects corresponding
+        id_function: List of Artist objects corresponding
             to every instance of our plot. They will be used to modify
             the visualization with interactivity and widgets.
-        fig: figure over with the graphs are plotted.
-        axes: sequence of axes where the graphs are plotted.
+        fig: Figure over with the graphs are plotted.
+        axes: Sequence of axes where the graphs are plotted.
     """
 
     @abstractmethod
@@ -33,7 +33,7 @@ class BasePlot(ABC):
         self,
     ) -> None:
         self.id_function: List[Artist] = []
-        self.fig: Figure = None
+        self.fig: Optional[Figure] = None
         self.axes: Sequence[Axes] = []
 
     @abstractmethod

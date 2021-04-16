@@ -1,17 +1,23 @@
-from typing import List, Tuple, Union
+from __future__ import annotations
+
+from typing import List, Tuple, Union, overload
 
 import numpy as np
 from sklearn.utils import check_random_state
+from typing_extensions import Literal
 
 from ... import concatenate
 from ..._utils import RandomStateLike
 from ...datasets import make_gaussian_process
 from ...misc.metrics import lp_distance
 from ...representation import FData, FDataGrid
+from ...representation._typing import ArrayLike
 
 
-def v_sample_stat(fd: FData, weights: List[int], p: int = 2) -> float:
+def v_sample_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
     r"""
+    Compute sample statistic.
+
     Calculates a statistic that measures the variability between groups of
     samples in a :class:`skfda.representation.FData` object.
 
@@ -46,7 +52,6 @@ def v_sample_stat(fd: FData, weights: List[int], p: int = 2) -> float:
         ValueError
 
     Examples:
-
         >>> from skfda.inference.anova import v_sample_stat
         >>> from skfda.representation.grid import FDataGrid
         >>> import numpy as np
@@ -70,8 +75,8 @@ def v_sample_stat(fd: FData, weights: List[int], p: int = 2) -> float:
         [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
         anova test for functional data". *Computational Statistics  Data
         Analysis*, 47:111-112, 02 2004
-    """
 
+    """
     weights = np.asarray(weights)
     if not isinstance(fd, FData):
         raise ValueError("Argument type must inherit FData.")
@@ -83,8 +88,10 @@ def v_sample_stat(fd: FData, weights: List[int], p: int = 2) -> float:
     return np.sum(coef * lp_distance(fd[t_ind[0]], fd[t_ind[1]], p=p) ** p)
 
 
-def v_asymptotic_stat(fd: FData, weights: List[int], p: int = 2) -> float:
+def v_asymptotic_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
     r"""
+    Compute asymptitic statistic.
+
     Calculates a statistic that measures the variability between groups of
     samples in a :class:`skfda.representation.FData` object.
 
@@ -119,7 +126,6 @@ def v_asymptotic_stat(fd: FData, weights: List[int], p: int = 2) -> float:
         ValueError
 
     Examples:
-
         >>> from skfda.inference.anova import v_asymptotic_stat
         >>> from skfda.representation.grid import FDataGrid
         >>> import numpy as np
@@ -143,6 +149,7 @@ def v_asymptotic_stat(fd: FData, weights: List[int], p: int = 2) -> float:
         [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
         anova test for functional data". *Computational Statistics  Data
         Analysis*, 47:111-112, 02 2004
+
     """
     weights = np.asarray(weights)
     if not isinstance(fd, FData):
@@ -173,8 +180,9 @@ def _anova_bootstrap(
 
     for fd in fd_grouped[1:]:
         if not np.array_equal(fd.domain_range, fd_grouped[0].domain_range):
-            raise ValueError("Domain range must match for every FData in "
-                             "fd_grouped.")
+            raise ValueError(
+                "Domain range must match for every FData in fd_grouped.",
+            )
 
     start, stop = fd_grouped[0].domain_range[0]
 
@@ -197,16 +205,47 @@ def _anova_bootstrap(
 
     # Simulating n_reps observations for each of the n_groups gaussian
     # processes
-    sim = [make_gaussian_process(n_reps, n_features=n_features, start=start,
-                                 stop=stop, cov=k_est[i],
-                                 random_state=random_state)
-           for i in range(n_groups)]
+    sim = [
+        make_gaussian_process(
+            n_reps,
+            n_features=n_features,
+            start=start,
+            stop=stop,
+            cov=k_est[i],
+            random_state=random_state,
+        )
+        for i in range(n_groups)
+    ]
 
     v_samples = np.empty(n_reps)
     for i in range(n_reps):
         fd = FDataGrid([s.data_matrix[i, ..., 0] for s in sim])
         v_samples[i] = v_asymptotic_stat(fd, sizes, p=p)
     return v_samples
+
+
+@overload
+def oneway_anova(
+    *args: FData,
+    n_reps: int = 2000,
+    return_dist: Literal[False] = False,
+    random_state: RandomStateLike = None,
+    p: int = 2,
+    equal_var: bool = True,
+) -> Tuple[float, float]:
+    pass
+
+
+@overload
+def oneway_anova(
+    *args: FData,
+    n_reps: int = 2000,
+    return_dist: Literal[True],
+    random_state: RandomStateLike = None,
+    p: int = 2,
+    equal_var: bool = True,
+) -> Tuple[float, float, np.ndarray]:
+    pass
 
 
 def oneway_anova(
@@ -218,7 +257,7 @@ def oneway_anova(
     equal_var: bool = True,
 ) -> Union[Tuple[float, float], Tuple[float, float, np.ndarray]]:
     r"""
-    Performs one-way functional ANOVA.
+    Perform one-way functional ANOVA.
 
     This function implements an asymptotic method to test the following
     null hypothesis:
@@ -249,20 +288,15 @@ def oneway_anova(
 
     Args:
         args: The sample measurements for each each group.
-
         n_reps: Number of simulations for the bootstrap
             procedure. Defaults to 2000 (This value may change in future
             versions).
-
         return_dist: Flag to indicate if the function should
             return a numpy.array with the sampling distribution simulated.
-
         random_state: Random state.
-
         p: p of the lp norm. Must be greater or equal
             than 1. If p='inf' or p=np.inf it is used the L infinity metric.
             Defaults to 2.
-
         equal_var: If True (default), perform a One-way
             ANOVA assuming the same covariance operator for all the groups,
             else considers an independent covariance operator for each group.
@@ -293,8 +327,8 @@ def oneway_anova(
         [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
         anova test for functional data". *Computational Statistics  Data
         Analysis*, 47:111-112, 02 2004
-    """
 
+    """
     if len(args) < 2:
         raise ValueError("At least two groups must be passed as parameter.")
     if not all(isinstance(fd, FData) for fd in args):
@@ -303,7 +337,7 @@ def oneway_anova(
         raise ValueError("Number of simulations must be positive.")
 
     fd_groups = args
-    if not all([isinstance(fd, type(fd_groups[0])) for fd in fd_groups[1:]]):
+    if not all(isinstance(fd, type(fd_groups[0])) for fd in fd_groups[1:]):
         raise TypeError('Found mixed FData types in arguments.')
 
     for fd in fd_groups[1:]:
@@ -314,14 +348,16 @@ def oneway_anova(
         # Creating list with all the sample points
         list_sample = [fd.grid_points[0].tolist() for fd in fd_groups]
         # Checking that the all the entries in the list are the same
-        if not list_sample.count(list_sample[0]) == len(list_sample):
-            raise ValueError("All FDataGrid passed must have the same sample "
-                             "points.")
+        if list_sample.count(list_sample[0]) != len(list_sample):
+            raise ValueError(
+                "All FDataGrid passed must have the same grid points.",
+            )
     else:  # If type is FDataBasis, check same basis
         list_basis = [fd.basis for fd in fd_groups]
-        if not list_basis.count(list_basis[0]) == len(list_basis):
-            raise NotImplementedError("Not implemented for FDataBasis with "
-                                      "different basis.")
+        if list_basis.count(list_basis[0]) != len(list_basis):
+            raise NotImplementedError(
+                "Not implemented for FDataBasis with different basis.",
+            )
 
     # FData where each sample is the mean of each group
     fd_means = concatenate([fd.mean() for fd in fd_groups])
@@ -330,9 +366,13 @@ def oneway_anova(
     vn = v_sample_stat(fd_means, [fd.n_samples for fd in fd_groups], p=p)
 
     # Computing sampling distribution
-    simulation = _anova_bootstrap(fd_groups, n_reps,
-                                  random_state=random_state, p=p,
-                                  equal_var=equal_var)
+    simulation = _anova_bootstrap(
+        fd_groups,
+        n_reps,
+        random_state=random_state,
+        p=p,
+        equal_var=equal_var,
+    )
 
     p_value = np.sum(simulation > vn) / len(simulation)
 

@@ -30,7 +30,6 @@ from .._utils import _evaluate_grid, _reshape_eval_points, _to_grid_points
 from ._typing import (
     ArrayLike,
     DomainRange,
-    DomainRangeLike,
     GridPointsLike,
     LabelTuple,
     LabelTupleLike,
@@ -948,7 +947,7 @@ class FData(  # noqa: WPS214
         pass
 
     @abstractmethod
-    def __getitem__(self: T, key: Union[int, slice]) -> T:
+    def __getitem__(self: T, key: Union[int, slice, np.ndarray]) -> T:
         """Return self[key]."""
         pass
 

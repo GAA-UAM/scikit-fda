@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Tuple, Union, overload
+from typing import Tuple, Union, overload
 
 import numpy as np
 from sklearn.utils import check_random_state
@@ -85,7 +85,13 @@ def v_sample_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
 
     t_ind = np.tril_indices(fd.n_samples, -1)
     coef = weights[t_ind[1]]
-    return np.sum(coef * lp_distance(fd[t_ind[0]], fd[t_ind[1]], p=p) ** p)
+    return float(np.sum(
+        coef * lp_distance(
+            fd[t_ind[0]],
+            fd[t_ind[1]],
+            p=p,
+        ) ** p,
+    ))
 
 
 def v_asymptotic_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
@@ -163,7 +169,7 @@ def v_asymptotic_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
     coef = np.sqrt(weights[t_ind[1]] / weights[t_ind[0]])
     left_fd = fd[t_ind[1]]
     right_fd = fd[t_ind[0]] * coef
-    return np.sum(lp_distance(left_fd, right_fd, p=p) ** p)
+    return float(np.sum(lp_distance(left_fd, right_fd, p=p) ** p))
 
 
 def _anova_bootstrap(

@@ -1,28 +1,37 @@
-import sklearn.utils.validation
+from __future__ import annotations
+
+from typing import Tuple
 
 import numpy as np
 import numpy.linalg as linalg
+import sklearn.utils.validation
 
+from ...._utils import _classifier_get_classes
 from ....representation import FDataGrid
 
 
-def _rkhs_vs(X, Y, n_features_to_select: int=1):
-    '''
-    Parameters
-    ----------
-    X
-        Matrix of trajectories
-    Y
-        Vector of class labels
-    n_features_to_select
-        Number of selected features
-    '''
+def _rkhs_vs(
+    X: np.ndarray,
+    Y: np.ndarray,
+    n_features_to_select: int = 1,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    RKHS-VS implementation.
 
+    Parameters:
+        X: Matrix of trajectories
+        Y: Vector of class labels
+        n_features_to_select: Number of selected features
+
+    Returns:
+        Selected features and vector of scores.
+
+    """
     X = np.atleast_2d(X)
     assert n_features_to_select >= 1
     assert n_features_to_select <= X.shape[1]
 
-    Y = np.asarray(Y)
+    _, Y = _classifier_get_classes(Y)
 
     selected_features = np.zeros(n_features_to_select, dtype=int)
     score = np.zeros(n_features_to_select)
@@ -32,8 +41,10 @@ def _rkhs_vs(X, Y, n_features_to_select: int=1):
     class_1_trajectories = X[Y.ravel() == 1]
     class_0_trajectories = X[Y.ravel() == 0]
 
-    means = (np.mean(class_1_trajectories, axis=0) -
-             np.mean(class_0_trajectories, axis=0))
+    means = (
+        np.mean(class_1_trajectories, axis=0)
+        - np.mean(class_0_trajectories, axis=0)
+    )
 
     class_1_count = sum(Y)
     class_0_count = Y.shape[0] - class_1_count
@@ -44,9 +55,12 @@ def _rkhs_vs(X, Y, n_features_to_select: int=1):
     # The result should be casted to 2D because of bug #11502 in numpy
     variances = (
         class_1_proportion * np.atleast_2d(
-            np.cov(class_1_trajectories, rowvar=False, bias=True)) +
-        class_0_proportion * np.atleast_2d(
-            np.cov(class_0_trajectories, rowvar=False, bias=True)))
+            np.cov(class_1_trajectories, rowvar=False, bias=True),
+        )
+        + class_0_proportion * np.atleast_2d(
+            np.cov(class_0_trajectories, rowvar=False, bias=True),
+        )
+    )
 
     # The first variable maximizes |mu(t)|/sigma(t)
     mu_sigma = np.abs(means) / np.sqrt(np.diag(variances))
@@ -59,14 +73,18 @@ def _rkhs_vs(X, Y, n_features_to_select: int=1):
         aux = np.zeros_like(indexes, dtype=np.float_)
 
         for j in range(0, indexes.shape[0]):
-            new_selection = np.concatenate([selected_features[0:i],
-                                            [indexes[j]]])
+            new_selection = np.concatenate([
+                selected_features[:i],
+                [indexes[j]],
+            ])
 
             new_means = np.atleast_2d(means[new_selection])
 
             lstsq_solution = linalg.lstsq(
                 variances[new_selection[:, np.newaxis], new_selection],
-                new_means.T, rcond=None)[0]
+                new_means.T,
+                rcond=None,
+            )[0]
 
             aux[j] = new_means @ lstsq_solution
 
@@ -78,9 +96,11 @@ def _rkhs_vs(X, Y, n_features_to_select: int=1):
     return selected_features, score
 
 
-class RKHSVariableSelection(sklearn.base.BaseEstimator,
-                            sklearn.base.TransformerMixin):
-    r'''
+class RKHSVariableSelection(
+    sklearn.base.BaseEstimator,  # type: ignore
+    sklearn.base.TransformerMixin,  # type: ignore
+):
+    r"""
     Reproducing kernel variable selection.
 
     This is a filter variable selection method for binary classification
@@ -114,11 +134,9 @@ class RKHSVariableSelection(sklearn.base.BaseEstimator,
     a greedy approach, so this optimality is not always guaranteed.
 
     Parameters:
-
-        n_features_to_select (int): number of features to select.
+        n_features_to_select: number of features to select.
 
     Examples:
-
         >>> from skfda.preprocessing.dim_reduction import variable_selection
         >>> from skfda.datasets import make_gaussian_process
         >>> import skfda
@@ -166,25 +184,30 @@ class RKHSVariableSelection(sklearn.base.BaseEstimator,
         (10000, 3)
 
     References:
-
         .. [1] J. R. Berrendero, A. Cuevas, and J. L. Torrecilla, «On the Use
                of Reproducing Kernel Hilbert Spaces in Functional
                Classification», Journal of the American Statistical
                Association, vol. 113, no. 523, pp. 1210-1218, jul. 2018,
                doi: 10.1080/01621459.2017.1320287.
 
-    '''
+    """
 
-    def __init__(self, n_features_to_select: int=1):
+    def __init__(self, n_features_to_select: int = 1) -> None:
         self.n_features_to_select = n_features_to_select
 
-    def fit(self, X: FDataGrid, y):
+    def fit(  # noqa: D102
+        self,
+        X: FDataGrid,
+        y: np.ndarray,
+    ) -> RKHSVariableSelection:
 
         n_unique_labels = len(np.unique(y))
         if n_unique_labels != 2:
-            raise ValueError(f"RK-VS can only be used when there are only "
-                             f"two different labels, but there are "
-                             f"{n_unique_labels}")
+            raise ValueError(
+                f"RK-VS can only be used when there are only "
+                f"two different labels, but there are "
+                f"{n_unique_labels}",
+            )
 
         if X.dim_domain != 1 or X.dim_codomain != 1:
             raise ValueError("Domain and codomain dimensions must be 1")
@@ -193,50 +216,57 @@ class RKHSVariableSelection(sklearn.base.BaseEstimator,
 
         self._features_shape_ = X.shape[1:]
 
-        self._features_, self._scores_ = _rkhs_vs(
+        features, scores = _rkhs_vs(
             X=X,
             Y=y,
-            n_features_to_select=self.n_features_to_select)
+            n_features_to_select=self.n_features_to_select,
+        )
+
+        self._features_ = features
+        self._scores_ = scores
 
         return self
 
-    def transform(self, X: FDataGrid, Y=None):
+    def transform(  # noqa: D102
+        self,
+        X: FDataGrid,
+        Y: None = None,
+    ) -> np.ndarray:
 
         sklearn.utils.validation.check_is_fitted(self)
 
         X_matrix = sklearn.utils.validation.check_array(X.data_matrix[..., 0])
 
         if X_matrix.shape[1:] != self._features_shape_:
-            raise ValueError("The trajectories have a different number of "
-                             "points than the ones fitted")
+            raise ValueError(
+                "The trajectories have a different number of "
+                "points than the ones fitted",
+            )
 
         return X_matrix[:, self._features_]
 
-    def get_support(self, indices: bool=False):
+    def get_support(self, indices: bool = False) -> np.ndarray:
         """
-        Get a mask, or integer index, of the features selected
+        Get a mask, or integer index, of the features selected.
 
         Parameters:
-
-            indices : boolean (default False)
-                If True, the return value will be an array of integers, rather
-                than a boolean mask.
+            indices: If True, the return value will be an array of integers,
+                rather than a boolean mask.
 
         Returns:
-            support : array
-                An index that selects the retained features from a `FDataGrid`
-                object.
-                If `indices` is False, this is a boolean array of shape
-                [# input features], in which an element is True iff its
-                corresponding feature is selected for retention. If `indices`
-                is True, this is an integer array of shape [# output features]
-                whose values are indices into the input feature vector.
+            An index that selects the retained features from a `FDataGrid`
+            object.
+            If `indices` is False, this is a boolean array of shape
+            [# input features], in which an element is True iff its
+            corresponding feature is selected for retention. If `indices`
+            is True, this is an integer array of shape [# output features]
+            whose values are indices into the input feature vector.
 
         """
         features = self._features_
         if indices:
             return features
-        else:
-            mask = np.zeros(self._features_shape_[0], dtype=bool)
-            mask[features] = True
-            return mask
+
+        mask = np.zeros(self._features_shape_[0], dtype=bool)
+        mask[features] = True
+        return mask

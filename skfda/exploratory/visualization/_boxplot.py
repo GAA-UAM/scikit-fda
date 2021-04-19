@@ -378,7 +378,7 @@ class Boxplot(FDataBoxplot, BasePlot):
         self.fig = fig
         self.axes = axes
 
-    def num_instances(self) -> int:
+    def n_samples(self) -> int:
         return self.fdatagrid.n_samples
 
     def plot(self):
@@ -403,7 +403,7 @@ class Boxplot(FDataBoxplot, BasePlot):
 
         """
 
-        BasePlot.clear_ax(self)
+        self.artists = []
         tones = np.linspace(0.1, 1.0, len(self._prob) + 1, endpoint=False)[1:]
         color = self.colormap(tones)
 

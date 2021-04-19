@@ -75,7 +75,7 @@ class ParametricPlot(BasePlot):
             fig: figure object in which the ParametricPlot
             graph will be plotted.
         """
-        BasePlot.clear_ax(self)
+        self.artists = []
 
         if (
             self.fd_final.dim_domain == 1
@@ -89,7 +89,7 @@ class ParametricPlot(BasePlot):
             ax = self.axes[0]
 
             for data_matrix in self.fd_final.data_matrix:
-                self.id_function.append(ax.plot(
+                self.artists.append(ax.plot(
                     data_matrix[:, 0].tolist(),
                     data_matrix[:, 1].tolist(),
                     **kwargs,
@@ -115,9 +115,9 @@ class ParametricPlot(BasePlot):
 
         return fig
 
-    def num_instances(self) -> int:
+    def n_samples(self) -> int:
         """Get the number of instances that will be used for interactivity."""
-        return len(self.fd_final.data_matrix)
+        return self.fd_final.n_samples
 
     def set_figure_and_axes(
         self,

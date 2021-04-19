@@ -15,7 +15,7 @@ class BasePlot(ABC):
     def __init__(
         self,
     ) -> None:
-        self.id_function = []
+        self.artists = []
 
     @abstractmethod
     def plot(
@@ -24,7 +24,7 @@ class BasePlot(ABC):
         pass
 
     @abstractmethod
-    def num_instances(self) -> int:
+    def n_samples(self) -> int:
         pass
 
     @abstractmethod
@@ -35,12 +35,6 @@ class BasePlot(ABC):
         axes: Union[Axes, Sequence[Axes], None] = None,
     ) -> None:
         pass
-
-    def clear_ax(self) -> None:
-        for ax in self.axes:
-            ax.clear()
-        if len(self.id_function) != 0:
-            self.id_function = []
 
     def _repr_svg_(self):
         self.fig = self.plot()

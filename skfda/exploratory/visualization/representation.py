@@ -272,7 +272,7 @@ class GraphPlot(BasePlot):
         Returns:
             fig (figure object): figure object in which the graphs are plotted.
         """
-        BasePlot.clear_ax(self)
+        self.artists = []
 
         if domain_range is None:
             self.domain_range = self.fdata.domain_range
@@ -310,7 +310,7 @@ class GraphPlot(BasePlot):
 
                     set_color_dict(sample_colors, j, color_dict)
 
-                    self.id_function.append(self.axes[i].plot(
+                    self.artists.append(self.axes[i].plot(
                         eval_points,
                         mat[j, ..., i].T,
                         **color_dict,
@@ -344,7 +344,7 @@ class GraphPlot(BasePlot):
 
                     set_color_dict(sample_colors, h, color_dict)
 
-                    self.id_function.append(self.axes[k].plot_surface(
+                    self.artists.append(self.axes[k].plot_surface(
                         X,
                         Y,
                         Z[h, ..., k],
@@ -357,7 +357,7 @@ class GraphPlot(BasePlot):
 
         return self.fig
 
-    def num_instances(self) -> int:
+    def n_samples(self) -> int:
         """Get the number of instances that will be used for interactivity."""
         return self.fdata.n_samples
 
@@ -481,7 +481,7 @@ class ScatterPlot(BasePlot):
         Returns:
         fig: figure object in which the graphs are plotted.
         """
-        BasePlot.clear_ax(self)
+        self.artists = []
         evaluated_points = None
 
         if self.grid_points is None:
@@ -512,7 +512,7 @@ class ScatterPlot(BasePlot):
 
                     set_color_dict(sample_colors, j, color_dict)
 
-                    self.id_function.append(self.axes[i].scatter(
+                    self.artists.append(self.axes[i].scatter(
                         self.grid_points[0],
                         evaluated_points[j, ..., i].T,
                         **color_dict,
@@ -531,7 +531,7 @@ class ScatterPlot(BasePlot):
 
                     set_color_dict(sample_colors, h, color_dict)
 
-                    self.id_function.append(self.axes[k].scatter(
+                    self.artists.append(self.axes[k].scatter(
                         X,
                         Y,
                         evaluated_points[h, ..., k].T,
@@ -544,7 +544,7 @@ class ScatterPlot(BasePlot):
 
         return self.fig
 
-    def num_instances(self) -> int:
+    def n_samples(self) -> int:
         """Get the number of instances that will be used for interactivity."""
         return self.fdata.n_samples
 

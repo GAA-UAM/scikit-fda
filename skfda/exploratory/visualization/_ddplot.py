@@ -84,8 +84,8 @@ class DDPlot(BasePlot):
             fig (figure object): figure object in which the depths will be
             scattered.
         """
-        BasePlot.clear_ax(self)
-        self.id_function = []
+        self.artists = []
+        self.artists = []
         margin = 0.025
         width_aux_line = 0.35
         color_aux_line = "gray"
@@ -93,7 +93,7 @@ class DDPlot(BasePlot):
         ax = self.axes[0]
 
         for d1, d2 in zip(self.depth_dist1, self.depth_dist2):
-            self.id_function.append(ax.scatter(
+            self.artists.append(ax.scatter(
                 d1,
                 d2,
                 picker=2,
@@ -123,7 +123,7 @@ class DDPlot(BasePlot):
 
         return self.fig
 
-    def num_instances(self) -> int:
+    def n_samples(self) -> int:
         """Get the number of instances that will be used for interactivity."""
         return self.fdata.n_samples
 

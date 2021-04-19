@@ -68,7 +68,7 @@ class FPCAPlot(BasePlot):
 
         return self.fig
 
-    def num_instances(self) -> int:
+    def n_samples(self) -> int:
         return self.fdata.n_samples
 
     def set_figure_and_axes(

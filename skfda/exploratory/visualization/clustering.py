@@ -209,7 +209,7 @@ class ClusterPlot(BasePlot):
         self.fig = fig
         self.axes = axes
 
-    def num_instances(self) -> int:
+    def n_samples(self) -> int:
         return self.fdata.n_samples
 
     def _plot_clusters(self):
@@ -296,7 +296,7 @@ class ClusterPlot(BasePlot):
 
         for j in range(self.fdata.dim_codomain):
             for i in range(self.fdata.n_samples):
-                self.id_function.append(self.axes[j].plot(
+                self.artists.append(self.axes[j].plot(
                     self.fdata.grid_points[0],
                     self.fdata.data_matrix[i, :, j],
                     c=colors_by_cluster[i],
@@ -336,7 +336,7 @@ class ClusterPlot(BasePlot):
                 ax (axes object): axes in which the graphs are plotted.
         """
 
-        BasePlot.clear_ax(self)
+        self.artists = []
 
         _check_if_estimator(self.estimator)
         try:
@@ -416,7 +416,7 @@ class ClusterPlotLines(BasePlot):
         self.fig = fig
         self.axes = axes
 
-    def num_instances(self) -> int:
+    def n_samples(self) -> int:
         return self.fdata.n_samples
 
     def plot(self):
@@ -438,7 +438,7 @@ class ClusterPlotLines(BasePlot):
                 ax (axes object): axes in which the graphs are plotted.
 
         """
-        BasePlot.clear_ax(self)
+        self.artists = []
 
         _check_if_estimator(self.estimator)
 
@@ -472,7 +472,7 @@ class ClusterPlotLines(BasePlot):
 
         self.axes[0].get_xaxis().set_major_locator(MaxNLocator(integer=True))
         for i in range(self.fdata.n_samples):
-            self.id_function.append(self.axes[0].plot(
+            self.artists.append(self.axes[0].plot(
                 np.arange(self.estimator.n_clusters),
                 self.estimator.labels_[i],
                 label=self.sample_labels[i],
@@ -523,7 +523,7 @@ class ClusterPlotBars(BasePlot):
         self.fig = fig
         self.axes = axes
 
-    def num_instances(self) -> int:
+    def n_samples(self) -> int:
         return self.fdata.n_samples
 
     def plot(self):
@@ -574,7 +574,7 @@ class ClusterPlotBars(BasePlot):
                 ax (axis object): axis in which the graph is plotted.
 
         """
-        BasePlot.clear_ax(self)
+        self.artists = []
 
         _check_if_estimator(self.estimator)
 

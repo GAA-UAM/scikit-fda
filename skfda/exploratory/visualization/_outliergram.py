@@ -107,11 +107,11 @@ class Outliergram(BasePlot):
             fig: figure object in which the depths will be
             scattered.
         """
-        BasePlot.clear_ax(self)
+        self.artists = []
         self.axScatter = self.axes[0]
 
         for i in range(self.mei.size):
-            self.id_function.append(self.axScatter.scatter(
+            self.artists.append(self.axScatter.scatter(
                 self.mei[i],
                 self.mbd[i],
                 picker=2,
@@ -204,7 +204,7 @@ class Outliergram(BasePlot):
         iqr = third_quartile - first_quartile
         self.shifted_parable = self.parable - (third_quartile + iqr)
 
-    def num_instances(self) -> int:
+    def n_samples(self) -> int:
         """Get the number of instances that will be used for interactivity."""
         return self.fdata.n_samples
 

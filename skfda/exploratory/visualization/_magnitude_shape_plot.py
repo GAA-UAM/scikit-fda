@@ -301,7 +301,7 @@ class MagnitudeShapePlot(BasePlot):
 
         """
 
-        BasePlot.clear_ax(self)
+        self.artists = []
         colors = np.zeros((self.fdatagrid.n_samples, 4))
         colors[np.where(self.outliers == 1)] = self.colormap(self.outliercol)
         colors[np.where(self.outliers == 0)] = self.colormap(self.color)
@@ -309,7 +309,7 @@ class MagnitudeShapePlot(BasePlot):
         colors_rgba = [tuple(i) for i in colors]
 
         for i in range(len(self.points[:, 0].ravel())):
-            self.id_function.append(self.axes[0].scatter(
+            self.artists.append(self.axes[0].scatter(
                 self.points[:, 0].ravel()[i],
                 self.points[:, 1].ravel()[i],
                 color=colors_rgba[i],
@@ -322,7 +322,7 @@ class MagnitudeShapePlot(BasePlot):
 
         return self.fig
 
-    def num_instances(self) -> int:
+    def n_samples(self) -> int:
         return self.fdatagrid.n_samples
 
     def set_figure_and_axes(

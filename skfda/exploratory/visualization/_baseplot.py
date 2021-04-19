@@ -21,7 +21,7 @@ class BasePlot(ABC):
     BasePlot class.
 
     Attributes:
-        id_function: List of Artist objects corresponding
+        artists: List of Artist objects corresponding
             to every instance of our plot. They will be used to modify
             the visualization with interactivity and widgets.
         fig: Figure over with the graphs are plotted.
@@ -32,7 +32,7 @@ class BasePlot(ABC):
     def __init__(
         self,
     ) -> None:
-        self.id_function: List[Artist] = []
+        self.artists: List[Artist] = []
         self.fig: Optional[Figure] = None
         self.axes: Sequence[Axes] = []
 
@@ -50,7 +50,7 @@ class BasePlot(ABC):
         pass
 
     @abstractmethod
-    def num_instances(self) -> int:
+    def n_samples(self) -> int:
         """Get the number of instances that will be used for interactivity."""
         pass
 
@@ -74,18 +74,6 @@ class BasePlot(ABC):
             axes: axis where the graphs are plotted. If None, see param fig.
         """
         pass
-
-    def clear_ax(self) -> None:
-        """
-        Reset the basic attributes of the BasePlot.
-
-        Clear the old axes of the BasePlot and reset the
-        id_function list.
-        """
-        for ax in self.axes:
-            ax.clear()
-        if len(self.id_function) != 0:
-            self.id_function = []
 
     def _repr_svg_(self) -> str:
         """Automatically represents the object as an svg when calling it."""

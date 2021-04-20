@@ -31,10 +31,12 @@ class BasePlot(ABC):
     @abstractmethod
     def __init__(
         self,
+        fig: Optional[Figure] = None,
+        axes: Union[Axes, Sequence[Axes], None] = None,
     ) -> None:
         self.artists: List[Artist] = []
-        self.fig: Optional[Figure] = None
-        self.axes: Sequence[Axes] = []
+        self.fig = fig
+        self.axes = axes
 
     @abstractmethod
     def plot(

@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -34,7 +35,7 @@ class BasePlot(ABC):
         fig: Optional[Figure] = None,
         axes: Union[Axes, Sequence[Axes], None] = None,
     ) -> None:
-        self.artists: List[Artist] = []
+        self.artists: np.ndarray
         self.fig = fig
         self.axes = axes
 

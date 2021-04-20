@@ -6,11 +6,10 @@ common to all of them.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 

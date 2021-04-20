@@ -353,7 +353,7 @@ class GraphPlot(BasePlot):
                     ))
 
         _set_labels(self.fdata, self.fig, self.axes, patches)
-        self.axes[0].set_title("GraphPlot")
+        self.fig.suptitle("GraphPlot")
 
         return self.fig
 

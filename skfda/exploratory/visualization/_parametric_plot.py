@@ -102,6 +102,8 @@ class ParametricPlot(BasePlot):
 
         if self.fd_final.dataset_name is not None:
             fig.suptitle(self.fd_final.dataset_name)
+        else:
+            fig.suptitle("ParametricPlot")
 
         if self.fd_final.coordinate_names[0] is None:
             ax.set_xlabel("Function 1")

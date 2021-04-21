@@ -1,20 +1,34 @@
-import dcor
+"""Maxima Hunting dimensionality reduction and related methods."""
+from __future__ import annotations
 
-import scipy.signal
+from typing import Callable, Optional
+
+import numpy as np
 import sklearn.base
 import sklearn.utils
 
-import numpy as np
+import scipy.signal
+from dcor import rowwise, u_distance_correlation_sqr
 
 from ....representation import FDataGrid
 
+_DependenceMeasure = Callable[[np.ndarray, np.ndarray], np.ndarray]
+_LocalMaximaSelector = Callable[[np.ndarray], np.ndarray]
 
-def _compute_dependence(X, y, *, dependence_measure):
-    '''
+
+def _compute_dependence(
+    X: np.ndarray,
+    y: np.ndarray,
+    *,
+    dependence_measure: _DependenceMeasure,
+) -> np.ndarray:
+    """
+    Compute dependence between points and target.
+
     Computes the dependence of each point in each trajectory in X with the
     corresponding class label in Y.
-    '''
 
+    """
     # Move n_samples to the end
     # The shape is now input_shape + n_samples + n_output
     X = np.moveaxis(X, 0, -2)
@@ -28,13 +42,13 @@ def _compute_dependence(X, y, *, dependence_measure):
         y = np.atleast_2d(y).T
     Y = np.array([y] * len(X))
 
-    dependence_results = dcor.rowwise(dependence_measure, X, Y)
+    dependence_results = rowwise(dependence_measure, X, Y)
 
     return dependence_results.reshape(input_shape)
 
 
-def select_local_maxima(X, *, order: int=1):
-    r'''
+def select_local_maxima(X: np.ndarray, *, order: int = 1) -> np.ndarray:
+    r"""
     Compute local maxima of an array.
 
     Points near the boundary are considered maxima looking only at one side.
@@ -43,13 +57,14 @@ def select_local_maxima(X, *, order: int=1):
     considered maxima.
 
     Parameters:
-
-        X (numpy array): Where to compute the local maxima.
-        order (callable): How many points on each side to look, to check if
+        X: Where to compute the local maxima.
+        order: How many points on each side to look, to check if
             a point is a maximum in that interval.
 
-    Examples:
+    Returns:
+        Indexes of the local maxima.
 
+    Examples:
         >>> from skfda.preprocessing.dim_reduction.variable_selection.\
         ...     maxima_hunting import select_local_maxima
         >>> import numpy as np
@@ -66,9 +81,12 @@ def select_local_maxima(X, *, order: int=1):
         >>> select_local_maxima(x, order=3).astype(np.int_)
         array([ 0,  5, 10])
 
-    '''
+    """
     indexes = scipy.signal.argrelextrema(
-        X, comparator=np.greater_equal, order=order)[0]
+        X,
+        comparator=np.greater_equal,
+        order=order,
+    )[0]
 
     # Discard flat
     maxima = X[indexes]
@@ -81,8 +99,11 @@ def select_local_maxima(X, *, order: int=1):
     return indexes[is_not_flat]
 
 
-class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
-    r'''
+class MaximaHunting(
+    sklearn.base.BaseEstimator,  # type: ignore
+    sklearn.base.TransformerMixin,  # type: ignore
+):
+    r"""
     Maxima Hunting variable selection.
 
     This is a filter variable selection method for problems with a target
@@ -102,7 +123,6 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
     original article [1]_.
 
     Parameters:
-
         dependence_measure (callable): Dependence measure to use. By default,
             it uses the bias corrected squared distance correlation.
         local_maxima_selector (callable): Function to detect local maxima. The
@@ -111,7 +131,6 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
             different values of ``order``.
 
     Examples:
-
         >>> from skfda.preprocessing.dim_reduction import variable_selection
         >>> from skfda.preprocessing.dim_reduction.variable_selection.\
         ...     maxima_hunting import select_local_maxima
@@ -163,26 +182,29 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
         (10000, 1)
 
     References:
-
         .. [1] J. R. Berrendero, A. Cuevas, and J. L. Torrecilla, “Variable
                selection in functional data classification: a maxima-hunting
                proposal,” STAT SINICA, vol. 26, no. 2, pp. 619–638, 2016,
                doi: 10.5705/ss.202014.0014.
 
-    '''
+    """
 
-    def __init__(self,
-                 dependence_measure=dcor.u_distance_correlation_sqr,
-                 local_maxima_selector=select_local_maxima):
+    def __init__(
+        self,
+        dependence_measure: _DependenceMeasure = u_distance_correlation_sqr,
+        local_maxima_selector: _LocalMaximaSelector = select_local_maxima,
+    ) -> None:
         self.dependence_measure = dependence_measure
         self.local_maxima_selector = local_maxima_selector
 
-    def fit(self, X: FDataGrid, y):
+    def fit(self, X: FDataGrid, y: np.ndarray) -> MaximaHunting:  # noqa: D102
 
         self.features_shape_ = X.data_matrix.shape[1:]
         self.dependence_ = _compute_dependence(
-            X.data_matrix, y,
-            dependence_measure=self.dependence_measure)
+            X.data_matrix,
+            y,
+            dependence_measure=self.dependence_measure,
+        )
 
         self.indexes_ = self.local_maxima_selector(self.dependence_)
 
@@ -191,20 +213,26 @@ class MaximaHunting(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin):
 
         return self
 
-    def get_support(self, indices: bool=False):
+    def get_support(self, indices: bool = False) -> np.ndarray:  # noqa: D102
         if indices:
             return self.indexes_
-        else:
-            mask = np.zeros(self.features_shape_[0:-1], dtype=bool)
-            mask[self.indexes_] = True
-            return mask
 
-    def transform(self, X, y=None):
+        mask = np.zeros(self.features_shape_[:-1], dtype=bool)
+        mask[self.indexes_] = True
+        return mask
+
+    def transform(  # noqa: D102
+        self,
+        X: FDataGrid,
+        y: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
 
         sklearn.utils.validation.check_is_fitted(self)
 
         if X.data_matrix.shape[1:] != self.features_shape_:
-            raise ValueError("The trajectories have a different number of "
-                             "points than the ones fitted")
+            raise ValueError(
+                "The trajectories have a different number of "
+                "points than the ones fitted",
+            )
 
         return X.data_matrix[:, self.sorted_indexes_].reshape(X.n_samples, -1)

@@ -34,7 +34,7 @@ def _create_figure():
     return fig
 
 
-def _figure_to_svg(figure):
+def _figure_to_svg(figure: Figure) -> str:
     """Return the SVG representation of a figure."""
 
     old_canvas = figure.canvas

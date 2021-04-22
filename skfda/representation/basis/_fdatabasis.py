@@ -767,7 +767,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return composition
 
-    def __getitem__(self: T, key: Union[int, slice]) -> T:
+    def __getitem__(self: T, key: Union[int, slice, np.ndarray]) -> T:
         """Return self[key]."""
         key = _check_array_key(self.coefficients, key)
 

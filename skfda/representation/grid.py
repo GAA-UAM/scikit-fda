@@ -26,7 +26,6 @@ import findiff
 import numpy as np
 import pandas.api.extensions
 from matplotlib.figure import Figure
-from typing_extensions import Literal
 
 import scipy.stats.mstats
 
@@ -1237,7 +1236,7 @@ class FDataGrid(FData):  # noqa: WPS214
             '\n    ',
         )
 
-    def __getitem__(self: T, key: Union[int, slice]) -> T:
+    def __getitem__(self: T, key: Union[int, slice, np.ndarray]) -> T:
         """Return self[key]."""
         key = _check_array_key(self.data_matrix, key)
 

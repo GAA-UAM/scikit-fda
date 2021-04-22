@@ -7,7 +7,7 @@ these outliers. The motivation of the method is that it is easy to find
 magnitude outliers, but there is a necessity of capturing this other type.
 """
 
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
 import numpy as np
 import scipy.integrate as integrate
@@ -17,10 +17,11 @@ from scipy.stats import rankdata
 
 from ... import FDataGrid
 from ..depth._depth import ModifiedBandDepth
+from ._baseplot import BasePlot
 from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
 
-class Outliergram:
+class Outliergram(BasePlot):
     """
     Outliergram method of visualization.
 
@@ -30,14 +31,25 @@ class Outliergram:
     this curve.
     Args:
         fdata: functional data set that we want to examine.
+        chart: figure over with the graphs are plotted or axis over
+            where the graphs are plotted. If None and ax is also
+            None, the figure is initialized.
+        fig: figure over with the graphs are plotted in case ax is not
+            specified. If None and ax is also None, the figure is
+            initialized.
+        axes: axis where the graphs are plotted. If None, see param fig.
+        n_rows: designates the number of rows of the figure
+                to plot the different dimensions of the image. Only specified
+                if fig and ax are None.
+        n_cols: designates the number of columns of the
+                figure to plot the different dimensions of the image. Only
+                specified if fig and ax are None.
     Attributes:
         mbd: result of the calculation of the Modified Band Depth on our
-            dataset. Represents the mean time a curve stays between all the
-            possible pair of curves we have in our data set, being a good
-            measure of centrality.
+            dataset. Represents the mean time a curve stays between other pair
+            of curves, being a good measure of centrality.
         mei: result of the calculation of the Modified Epigraph Index on our
-            dataset. Represents the mean time a curve stays below each curve
-            in our dataset.
+            dataset. Represents the mean time a curve stays below other curve.
     References:
         López-Pintado S.,  Romo J.. (2011). A half-region depth for functional
         data, Computational Statistics & Data Analysis, volume 55
@@ -50,22 +62,39 @@ class Outliergram:
     def __init__(
         self,
         fdata: FDataGrid,
+        *,
+        chart: Union[Figure, Axes, None] = None,
+        fig: Optional[Figure] = None,
+        axes: Optional[Sequence[Axes]] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+        **kwargs,
     ) -> None:
+        BasePlot.__init__(self)
         self.fdata = fdata
         self.depth = ModifiedBandDepth()
         self.depth.fit(fdata)
         self.mbd = self.depth(fdata)
         self.mei = self.modified_epigraph_index_list()
+        if self.mbd.size != self.mei.size:
+            raise ValueError(
+                "The size of mbd and mei should be the same.",
+            )
+        self.n = self.mbd.size
+        distances, parable = self.compute_distances()
+        self.distances = distances
+        mei_ordered = self.mei[:]
+        mei_ordered, parable = (
+            list(el) for el in zip(*sorted(zip(mei_ordered, parable)))
+        )
+        self.parable = parable
+        self.mei_ordered = mei_ordered
+        self.compute_outliergram()
+
+        self.set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
     def plot(
         self,
-        chart: Union[Figure, Axes, None] = None,
-        *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
-        **kwargs,
     ) -> Figure:
         """
         Plot Outliergram.
@@ -74,57 +103,45 @@ class Outliergram:
         Epigraph Index (MEI) on the X axis. This points will create the form of
         a parabola. The shape outliers will be the points that appear far from
         this curve.
-        Args:
-            chart: figure over
-                with the graphs are plotted or axis over where the graphs are
-                plotted. If None and ax is also None, the figure is
-                initialized.
-            fig: figure over with the graphs are
-                plotted in case ax is not specified. If None and ax is also
-                None, the figure is initialized.
-            axes: axis where the graphs
-                are plotted. If None, see param fig.
-            n_rows: designates the number of rows of the figure
-                to plot the different dimensions of the image. Only specified
-                if fig and ax are None.
-            n_cols: designates the number of columns of the
-                figure to plot the different dimensions of the image. Only
-                specified if fig and ax are None.
-            kwargs: if dim_domain is 1, keyword arguments to be passed to the
-                matplotlib.pyplot.plot function; if dim_domain is 2, keyword
-                arguments to be passed to the matplotlib.pyplot.plot_surface
-                function.
         Returns:
             fig: figure object in which the depths will be
             scattered.
         """
-        fig, axes_list = _get_figure_and_axes(chart, fig, axes)
-        fig, axes_list = _set_figure_layout_for_fdata(
-            self.fdata, fig, axes_list, n_rows, n_cols,
+        self.artists = []
+        self.axScatter = self.axes[0]
+
+        for i in range(self.mei.size):
+            self.artists.append(self.axScatter.scatter(
+                self.mei[i],
+                self.mbd[i],
+                picker=2,
+            ))
+
+        self.axScatter.plot(
+            self.mei_ordered,
+            self.parable,
         )
-        self.fig = fig
-        self.axes = axes_list
 
-        ax = self.axes[0]
-
-        ax.scatter(
-            self.mei,
-            self.mbd,
-            **kwargs,
+        self.axScatter.plot(
+            self.mei_ordered,
+            self.shifted_parable,
+            linestyle='dashed',
         )
 
         # Set labels of graph
         if self.fdata.dataset_name is not None:
-            fig.suptitle(self.fdata.dataset_name)
-        ax.set_xlabel("MEI")
-        ax.set_ylabel("MBD")
-        ax.set_xlim([0, 1])
-        ax.set_ylim([
+            self.axScatter.set_title(self.fdata.dataset_name)
+        else:
+            self.axScatter.set_title("Outliergram")
+        self.axScatter.set_xlabel("MEI")
+        self.axScatter.set_ylabel("MBD")
+        self.axScatter.set_xlim([0, 1])
+        self.axScatter.set_ylim([
             self.depth.min,
             self.depth.max,
         ])
 
-        return fig
+        return self.fig
 
     def modified_epigraph_index_list(self) -> np.ndarray:
         """
@@ -139,14 +156,16 @@ class Outliergram:
             - self.fdata.domain_range[0][0]
         )
 
-        function = rankdata(
+        # Array containing at each point the number of curves
+        # are above it.
+        num_functions_above = rankdata(
             -self.fdata.data_matrix,
             method='max',
             axis=0,
         ) - 1
 
         integrand = integrate.simps(
-            function,
+            num_functions_above,
             x=self.fdata.grid_points[0],
             axis=1,
         )
@@ -154,3 +173,74 @@ class Outliergram:
         integrand /= (interval_len * self.fdata.n_samples)
 
         return integrand.flatten()
+
+    def compute_distances(self) -> np.ndarray:
+        """
+        Calculate the distances of each point towards the parabola.
+
+        The distances can be calculated with function:
+            d_i = a_0 + a_1* mei_i + n^2* a_2* mei_i^2 - mb_i.
+        """
+        distances = []
+        parable = []
+        a_0 = -2 / (self.n * (self.n - 1))
+        a_1 = (2 * (self.n + 1)) / (self.n - 1)
+        a_2 = a_0
+
+        for mbd_item, mei_item in zip(self.mbd, self.mei):
+            p_i = (
+                a_0 + a_1 * mei_item + pow(self.n, 2) * a_2 * pow(mei_item, 2)
+            )
+            distances.append(p_i - mbd_item)
+            parable.append(p_i)
+        return distances, parable
+
+    def compute_outliergram(self):
+        """Compute the parabola under which the outliers lie."""
+        percentile_25 = 25
+        percentile_75 = 75
+        first_quartile = np.percentile(self.distances, percentile_25)
+        third_quartile = np.percentile(self.distances, percentile_75)
+        iqr = third_quartile - first_quartile
+        self.shifted_parable = self.parable - (third_quartile + iqr)
+
+    def n_samples(self) -> int:
+        """Get the number of instances that will be used for interactivity."""
+        return self.fdata.n_samples
+
+    def set_figure_and_axes(
+        self,
+        chart: Union[Figure, Axes, None] = None,
+        fig: Optional[Figure] = None,
+        axes: Union[Axes, Sequence[Axes], None] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+    ) -> None:
+        """
+        Initialize the axes and fig of the plot.
+
+        Args:
+        chart: figure over with the graphs are plotted or axis over
+            where the graphs are plotted. If None and ax is also
+            None, the figure is initialized.
+        fig: figure over with the graphs are plotted in case ax is not
+            specified. If None and ax is also None, the figure is
+            initialized.
+        axes: axis where the graphs are plotted. If None, see param fig.
+        n_rows: designates the number of rows of the figure
+            to plot the different dimensions of the image. Only specified
+            if fig and ax are None.
+        n_cols: designates the number of columns of the
+            figure to plot the different dimensions of the image. Only
+            specified if fig and ax are None.
+        """
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout_for_fdata(
+            fdata=self.fdata,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
+        )
+        self.fig = fig
+        self.axes = axes

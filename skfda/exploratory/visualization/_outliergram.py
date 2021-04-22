@@ -65,7 +65,7 @@ class Outliergram(BasePlot):
         *,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
-        axes: Optional[Sequence[Axes]] = None,
+        axes: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
         **kwargs,
@@ -195,7 +195,7 @@ class Outliergram(BasePlot):
             parable.append(p_i)
         return distances, parable
 
-    def compute_outliergram(self):
+    def compute_outliergram(self) -> None:
         """Compute the parabola under which the outliers lie."""
         percentile_25 = 25
         percentile_75 = 75

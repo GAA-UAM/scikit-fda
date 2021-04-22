@@ -344,13 +344,15 @@ class GraphPlot(BasePlot):
 
                     set_color_dict(sample_colors, h, color_dict)
 
-                    self.artists = np.append(self.artists, self.axes[k].plot_surface(
-                        X,
-                        Y,
-                        Z[h, ..., k],
-                        **color_dict,
-                        **kwargs,
-                    ))
+                    self.artists = np.append(
+                        self.artists, self.axes[k].plot_surface(
+                            X,
+                            Y,
+                            Z[h, ..., k],
+                            **color_dict,
+                            **kwargs,
+                        ),
+                    )
 
         _set_labels(self.fdata, self.fig, self.axes, patches)
         self.fig.suptitle("GraphPlot")
@@ -512,13 +514,15 @@ class ScatterPlot(BasePlot):
 
                     set_color_dict(sample_colors, j, color_dict)
 
-                    self.artists = np.append(self.artists, self.axes[i].scatter(
-                        self.grid_points[0],
-                        evaluated_points[j, ..., i].T,
-                        **color_dict,
-                        picker=2,
-                        **kwargs,
-                    ))
+                    self.artists = np.append(
+                        self.artists, self.axes[i].scatter(
+                            self.grid_points[0],
+                            evaluated_points[j, ..., i].T,
+                            **color_dict,
+                            picker=2,
+                            **kwargs,
+                        ),
+                    )
 
         else:
 
@@ -531,14 +535,16 @@ class ScatterPlot(BasePlot):
 
                     set_color_dict(sample_colors, h, color_dict)
 
-                    self.artists = np.append(self.artists, self.axes[k].scatter(
-                        X,
-                        Y,
-                        evaluated_points[h, ..., k].T,
-                        **color_dict,
-                        picker=2,
-                        **kwargs,
-                    ))
+                    self.artists = np.append(
+                        self.artists, self.axes[k].scatter(
+                            X,
+                            Y,
+                            evaluated_points[h, ..., k].T,
+                            **color_dict,
+                            picker=2,
+                            **kwargs,
+                        ),
+                    )
 
         _set_labels(self.fdata, self.fig, self.axes, patches)
 

@@ -65,7 +65,7 @@ class Outliergram(BasePlot):
         *,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
-        axes: Optional[Sequence[Axes]] = None,
+        axes: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
         **kwargs,
@@ -107,11 +107,11 @@ class Outliergram(BasePlot):
             fig: figure object in which the depths will be
             scattered.
         """
-        self.artists = []
+        self.artists = np.array([])
         self.axScatter = self.axes[0]
 
         for i in range(self.mei.size):
-            self.artists.append(self.axScatter.scatter(
+            self.artists = np.append(self.artists, self.axScatter.scatter(
                 self.mei[i],
                 self.mbd[i],
                 picker=2,
@@ -195,7 +195,7 @@ class Outliergram(BasePlot):
             parable.append(p_i)
         return distances, parable
 
-    def compute_outliergram(self):
+    def compute_outliergram(self) -> None:
         """Compute the parabola under which the outliers lie."""
         percentile_25 = 25
         percentile_75 = 75

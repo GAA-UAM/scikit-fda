@@ -2,6 +2,7 @@ import collections
 import copy
 from typing import List, Optional, Sequence, Union
 
+import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import Event
@@ -304,9 +305,9 @@ class MultipleDisplay:
         """Update the index corresponding to the display picked."""
         for i in range(self.num_graphs):
             if self.axes[i] == self.point_clicked.axes:
-                self.index_clicked = self.displays[i].artists.index(
-                    self.point_clicked,
-                )
+                self.index_clicked = np.where(
+                    self.displays[i].artists == self.point_clicked,
+                )[0][0]
                 return
 
     def reduce_points_intensity(self) -> None:

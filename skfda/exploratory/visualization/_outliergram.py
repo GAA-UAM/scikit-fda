@@ -107,11 +107,11 @@ class Outliergram(BasePlot):
             fig: figure object in which the depths will be
             scattered.
         """
-        self.artists = []
+        self.artists = np.array([])
         self.axScatter = self.axes[0]
 
         for i in range(self.mei.size):
-            self.artists.append(self.axScatter.scatter(
+            self.artists = np.append(self.artists, self.axScatter.scatter(
                 self.mei[i],
                 self.mbd[i],
                 picker=2,

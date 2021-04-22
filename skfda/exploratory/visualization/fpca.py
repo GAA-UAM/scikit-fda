@@ -1,10 +1,11 @@
-from skfda.exploratory.visualization.representation import GraphPlot
 from typing import Optional, Union
 
+import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from skfda.exploratory.visualization._utils import _get_figure_and_axes
+from skfda.exploratory.visualization.representation import GraphPlot
 from skfda.representation import FData
 
 from ._baseplot import BasePlot
@@ -63,7 +64,8 @@ class FPCAPlot(BasePlot):
 
         for i in range(len(self.axes)):
             aux = self._get_component_perturbations(i)
-            GraphPlot(fdata=aux, axes=self.axes[i]).plot(**kwargs)
+            gp = GraphPlot(fdata=aux, axes=self.axes[i]).plot(**kwargs)
+            self.artists = gp.artists
             self.axes[i].set_title('Principal component ' + str(i + 1))
 
         return self.fig

@@ -7,6 +7,7 @@ a scatter plot is created of this two variables.
 
 from typing import Optional, TypeVar, Union
 
+import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
@@ -84,8 +85,7 @@ class DDPlot(BasePlot):
             fig (figure object): figure object in which the depths will be
             scattered.
         """
-        self.artists = []
-        self.artists = []
+        self.artists = np.array([])
         margin = 0.025
         width_aux_line = 0.35
         color_aux_line = "gray"
@@ -93,7 +93,7 @@ class DDPlot(BasePlot):
         ax = self.axes[0]
 
         for d1, d2 in zip(self.depth_dist1, self.depth_dist2):
-            self.artists.append(ax.scatter(
+            self.artists = np.append(self.artists, ax.scatter(
                 d1,
                 d2,
                 picker=2,

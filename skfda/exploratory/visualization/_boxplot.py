@@ -403,7 +403,7 @@ class Boxplot(FDataBoxplot, BasePlot):
 
         """
 
-        self.artists = []
+        self.artists = np.array([])
         tones = np.linspace(0.1, 1.0, len(self._prob) + 1, endpoint=False)[1:]
         color = self.colormap(tones)
 

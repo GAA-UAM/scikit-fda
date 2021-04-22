@@ -272,7 +272,7 @@ class GraphPlot(BasePlot):
         Returns:
             fig (figure object): figure object in which the graphs are plotted.
         """
-        self.artists = []
+        self.artists = np.array([])
 
         if domain_range is None:
             self.domain_range = self.fdata.domain_range
@@ -310,7 +310,7 @@ class GraphPlot(BasePlot):
 
                     set_color_dict(sample_colors, j, color_dict)
 
-                    self.artists.append(self.axes[i].plot(
+                    self.artists = np.append(self.artists, self.axes[i].plot(
                         eval_points,
                         mat[j, ..., i].T,
                         **color_dict,
@@ -344,7 +344,7 @@ class GraphPlot(BasePlot):
 
                     set_color_dict(sample_colors, h, color_dict)
 
-                    self.artists.append(self.axes[k].plot_surface(
+                    self.artists = np.append(self.artists, self.axes[k].plot_surface(
                         X,
                         Y,
                         Z[h, ..., k],
@@ -481,7 +481,7 @@ class ScatterPlot(BasePlot):
         Returns:
         fig: figure object in which the graphs are plotted.
         """
-        self.artists = []
+        self.artists = np.array([])
         evaluated_points = None
 
         if self.grid_points is None:
@@ -512,7 +512,7 @@ class ScatterPlot(BasePlot):
 
                     set_color_dict(sample_colors, j, color_dict)
 
-                    self.artists.append(self.axes[i].scatter(
+                    self.artists = np.append(self.artists, self.axes[i].scatter(
                         self.grid_points[0],
                         evaluated_points[j, ..., i].T,
                         **color_dict,
@@ -531,7 +531,7 @@ class ScatterPlot(BasePlot):
 
                     set_color_dict(sample_colors, h, color_dict)
 
-                    self.artists.append(self.axes[k].scatter(
+                    self.artists = np.append(self.artists, self.axes[k].scatter(
                         X,
                         Y,
                         evaluated_points[h, ..., k].T,

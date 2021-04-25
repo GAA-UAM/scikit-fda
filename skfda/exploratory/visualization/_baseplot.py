@@ -34,7 +34,7 @@ class BasePlot(ABC):
         fig: Optional[Figure] = None,
         axes: Union[Axes, Sequence[Axes], None] = None,
     ) -> None:
-        self.artists: np.array
+        self.artists: np.ndarray
         self.fig = fig
         self.axes = axes
 

@@ -11,6 +11,7 @@ from typing import Optional, Sequence, Union
 
 import numpy as np
 import scipy.integrate as integrate
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from scipy.stats import rankdata
@@ -107,15 +108,15 @@ class Outliergram(BasePlot):
             fig: figure object in which the depths will be
             scattered.
         """
-        self.artists = np.array([])
+        self.artists = np.zeros(self.n_samples(), dtype=Artist)
         self.axScatter = self.axes[0]
 
         for i in range(self.mei.size):
-            self.artists = np.append(self.artists, self.axScatter.scatter(
+            self.artists[i] = self.axScatter.scatter(
                 self.mei[i],
                 self.mbd[i],
                 picker=2,
-            ))
+            )
 
         self.axScatter.plot(
             self.mei_ordered,

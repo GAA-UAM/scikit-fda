@@ -8,10 +8,10 @@ magnitude outliers, but there is a necessity of capturing this other type.
 """
 
 from typing import Optional, Sequence, Union
-from matplotlib.artist import Artist
 
 import numpy as np
 import scipy.integrate as integrate
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from scipy.stats import rankdata

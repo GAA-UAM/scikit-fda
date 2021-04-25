@@ -8,6 +8,7 @@ magnitude outliers, but there is a necessity of capturing this other type.
 """
 
 from typing import Optional, Sequence, Union
+from matplotlib.artist import Artist
 
 import numpy as np
 import scipy.integrate as integrate
@@ -107,15 +108,15 @@ class Outliergram(BasePlot):
             fig: figure object in which the depths will be
             scattered.
         """
-        self.artists = np.array([])
+        self.artists = np.zeros(self.n_samples(), dtype=Artist)
         self.axScatter = self.axes[0]
 
         for i in range(self.mei.size):
-            self.artists = np.append(self.artists, self.axScatter.scatter(
+            self.artists[i] = self.axScatter.scatter(
                 self.mei[i],
                 self.mbd[i],
                 picker=2,
-            ))
+            )
 
         self.axScatter.plot(
             self.mei_ordered,
@@ -131,8 +132,7 @@ class Outliergram(BasePlot):
         # Set labels of graph
         if self.fdata.dataset_name is not None:
             self.axScatter.set_title(self.fdata.dataset_name)
-        else:
-            self.axScatter.set_title("Outliergram")
+
         self.axScatter.set_xlabel("MEI")
         self.axScatter.set_ylabel("MBD")
         self.axScatter.set_xlim([0, 1])

@@ -203,7 +203,7 @@ class Outliergram(BasePlot):
         """Get the number of instances that will be used for interactivity."""
         return self.fdata.n_samples
 
-    def __set_figure_and_axes(
+    def _set_figure_and_axes(
         self,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,

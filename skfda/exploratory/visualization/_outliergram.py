@@ -82,7 +82,7 @@ class Outliergram(BasePlot):
                 "The size of mbd and mei should be the same.",
             )
         self.n = self.mbd.size
-        distances, parable = self.compute_distances()
+        distances, parable = self.__compute_distances()
         self.distances = distances
         mei_ordered = self.mei[:]
         mei_ordered, parable = (
@@ -90,9 +90,9 @@ class Outliergram(BasePlot):
         )
         self.parable = parable
         self.mei_ordered = mei_ordered
-        self.compute_outliergram()
+        self.__compute_outliergram()
 
-        self.set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
+        self.__set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
     def plot(
         self,
@@ -174,33 +174,28 @@ class Outliergram(BasePlot):
 
         return integrand.flatten()
 
-    def compute_distances(self) -> np.ndarray:
+    def __compute_distances(self) -> np.ndarray:
         """
         Calculate the distances of each point towards the parabola.
 
         The distances can be calculated with function:
             d_i = a_0 + a_1* mei_i + n^2* a_2* mei_i^2 - mb_i.
         """
-        distances = []
-        parable = []
         a_0 = -2 / (self.n * (self.n - 1))
         a_1 = (2 * (self.n + 1)) / (self.n - 1)
         a_2 = a_0
 
-        for mbd_item, mei_item in zip(self.mbd, self.mei):
-            p_i = (
-                a_0 + a_1 * mei_item + pow(self.n, 2) * a_2 * pow(mei_item, 2)
-            )
-            distances.append(p_i - mbd_item)
-            parable.append(p_i)
+        parable = (
+            a_0 + a_1 * self.mei + pow(self.n, 2) * a_2 * pow(self.mei, 2)
+        )
+        distances = parable - self.mbd
+
         return distances, parable
 
-    def compute_outliergram(self) -> None:
+    def __compute_outliergram(self) -> None:
         """Compute the parabola under which the outliers lie."""
-        percentile_25 = 25
-        percentile_75 = 75
-        first_quartile = np.percentile(self.distances, percentile_25)
-        third_quartile = np.percentile(self.distances, percentile_75)
+        first_quartile = np.percentile(self.distances, 25)
+        third_quartile = np.percentile(self.distances, 75)
         iqr = third_quartile - first_quartile
         self.shifted_parable = self.parable - (third_quartile + iqr)
 
@@ -208,7 +203,7 @@ class Outliergram(BasePlot):
         """Get the number of instances that will be used for interactivity."""
         return self.fdata.n_samples
 
-    def set_figure_and_axes(
+    def __set_figure_and_axes(
         self,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,

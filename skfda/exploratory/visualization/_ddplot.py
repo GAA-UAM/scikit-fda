@@ -70,7 +70,7 @@ class DDPlot(BasePlot):
         self.depth_dist2 = self.depth_method(
             self.fdata, distribution=dist2,
         )
-        self.set_figure_and_axes(chart, fig, axes)
+        self.__set_figure_and_axes(chart, fig, axes)
 
     def plot(
         self,
@@ -129,7 +129,7 @@ class DDPlot(BasePlot):
         """Get the number of instances that will be used for interactivity."""
         return self.fdata.n_samples
 
-    def set_figure_and_axes(
+    def __set_figure_and_axes(
         self,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,

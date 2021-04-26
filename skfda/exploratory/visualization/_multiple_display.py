@@ -127,7 +127,7 @@ class MultipleDisplay:
 
         for disp, ax in zip(self.displays, self.axes):
             ax.clear()
-            disp.set_figure_and_axes(axes=ax)
+            disp._set_figure_and_axes(axes=ax)
             disp.plot()
             self.tags.append(
                 ax.annotate(

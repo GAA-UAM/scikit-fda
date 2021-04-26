@@ -92,7 +92,7 @@ class Outliergram(BasePlot):
         self.mei_ordered = mei_ordered
         self.__compute_outliergram()
 
-        self.__set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
+        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
     def plot(
         self,

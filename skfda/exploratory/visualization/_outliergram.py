@@ -63,8 +63,8 @@ class Outliergram(BasePlot):
     def __init__(
         self,
         fdata: FDataGrid,
-        *,
         chart: Union[Figure, Axes, None] = None,
+        *,
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         n_rows: Optional[int] = None,
@@ -82,7 +82,7 @@ class Outliergram(BasePlot):
                 "The size of mbd and mei should be the same.",
             )
         self.n = self.mbd.size
-        distances, parable = self.__compute_distances()
+        distances, parable = self._compute_distances()
         self.distances = distances
         mei_ordered = self.mei[:]
         mei_ordered, parable = (
@@ -90,7 +90,7 @@ class Outliergram(BasePlot):
         )
         self.parable = parable
         self.mei_ordered = mei_ordered
-        self.__compute_outliergram()
+        self._compute_outliergram()
 
         self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
@@ -174,7 +174,7 @@ class Outliergram(BasePlot):
 
         return integrand.flatten()
 
-    def __compute_distances(self) -> np.ndarray:
+    def _compute_distances(self) -> np.ndarray:
         """
         Calculate the distances of each point towards the parabola.
 
@@ -192,10 +192,10 @@ class Outliergram(BasePlot):
 
         return distances, parable
 
-    def __compute_outliergram(self) -> None:
+    def _compute_outliergram(self) -> None:
         """Compute the parabola under which the outliers lie."""
-        first_quartile = np.percentile(self.distances, 25)
-        third_quartile = np.percentile(self.distances, 75)
+        first_quartile = np.percentile(self.distances, 25)  # noqa: WPS432
+        third_quartile = np.percentile(self.distances, 75)  # noqa: WPS432
         iqr = third_quartile - first_quartile
         self.shifted_parable = self.parable - (third_quartile + iqr)
 

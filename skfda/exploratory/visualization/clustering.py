@@ -187,9 +187,9 @@ class ClusterPlot(BasePlot):
         self.center_width = center_width
         self.colormap = colormap
 
-        self.set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
+        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
-    def set_figure_and_axes(
+    def _set_figure_and_axes(
         self,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
@@ -402,9 +402,9 @@ class ClusterPlotLines(BasePlot):
         self.title = title
         self.colormap = colormap
 
-        self.set_figure_and_axes(chart, fig, axes)
+        self._set_figure_and_axes(chart, fig, axes)
 
-    def set_figure_and_axes(
+    def _set_figure_and_axes(
         self,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
@@ -509,9 +509,9 @@ class ClusterPlotBars(BasePlot):
         self.colormap = colormap
         self.sort = sort
 
-        self.set_figure_and_axes(chart, fig, axes)
+        self._set_figure_and_axes(chart, fig, axes)
 
-    def set_figure_and_axes(
+    def _set_figure_and_axes(
         self,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,

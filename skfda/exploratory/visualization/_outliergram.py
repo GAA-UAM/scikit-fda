@@ -77,16 +77,15 @@ class Outliergram(BasePlot):
         self.depth.fit(fdata)
         self.mbd = self.depth(fdata)
         self.mei = self.modified_epigraph_index_list()
-        if self.mbd.size != self.mei.size:
+        if len(self.mbd) != len(self.mei):
             raise ValueError(
                 "The size of mbd and mei should be the same.",
             )
         self.n = self.mbd.size
         distances, parable = self._compute_distances()
         self.distances = distances
-        mei_ordered = self.mei[:]
         mei_ordered, parable = (
-            list(el) for el in zip(*sorted(zip(mei_ordered, parable)))
+            list(el) for el in zip(*sorted(zip(self.mei, parable)))
         )
         self.parable = parable
         self.mei_ordered = mei_ordered

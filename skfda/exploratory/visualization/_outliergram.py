@@ -84,11 +84,9 @@ class Outliergram(BasePlot):
         self.n = self.mbd.size
         distances, parable = self._compute_distances()
         self.distances = distances
-        mei_ordered, parable = (
-            list(el) for el in zip(*sorted(zip(self.mei, parable)))
-        )
-        self.parable = parable
-        self.mei_ordered = mei_ordered
+        indices = np.argsort(self.mei) 
+        self.parable = parable[indices]
+        self.mei_ordered = self.mei[indices]
         self._compute_outliergram()
 
         self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)

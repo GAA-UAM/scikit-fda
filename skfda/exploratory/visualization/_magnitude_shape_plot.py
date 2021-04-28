@@ -166,8 +166,8 @@ class MagnitudeShapePlot(BasePlot):
     def __init__(
         self,
         fdatagrid: FDataGrid,
-        *,
         chart: Union[Figure, Axes, None] = None,
+        *,
         fig: Optional[Figure] = None,
         axes: Optional[Sequence[Axes]] = None,
         **kwargs,
@@ -233,7 +233,7 @@ class MagnitudeShapePlot(BasePlot):
         self.ylabel = 'VO'
         self.title = 'MS-Plot'
 
-        self.set_figure_and_axes(chart, fig, axes)
+        self._set_figure_and_axes(chart, fig, axes)
 
     @property
     def fdatagrid(self):
@@ -325,7 +325,7 @@ class MagnitudeShapePlot(BasePlot):
     def n_samples(self) -> int:
         return self.fdatagrid.n_samples
 
-    def set_figure_and_axes(
+    def _set_figure_and_axes(
         self,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,

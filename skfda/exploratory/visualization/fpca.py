@@ -43,7 +43,7 @@ class FPCAPlot(BasePlot):
         self.components = components
         self.multiple = multiple
         
-        self.set_figure_and_axes(chart, fig, axes)
+        self._set_figure_and_axes(chart, fig, axes)
 
     def plot(self, **kwargs):
         """ 
@@ -73,7 +73,7 @@ class FPCAPlot(BasePlot):
     def n_samples(self) -> int:
         return self.fdata.n_samples
 
-    def set_figure_and_axes(
+    def _set_figure_and_axes(
         self,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,

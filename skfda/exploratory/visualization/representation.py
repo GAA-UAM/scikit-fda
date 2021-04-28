@@ -210,7 +210,7 @@ class GraphPlot(BasePlot):
             )
         else:
             self.gradient_list = []
-        self.set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
+        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
     def plot(
         self,
@@ -363,7 +363,7 @@ class GraphPlot(BasePlot):
         """Get the number of instances that will be used for interactivity."""
         return self.fdata.n_samples
 
-    def set_figure_and_axes(
+    def _set_figure_and_axes(
         self,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
@@ -439,7 +439,7 @@ class ScatterPlot(BasePlot):
         BasePlot.__init__(self)
         self.fdata = fdata
         self.grid_points = grid_points
-        self.set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
+        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
     def plot(
         self,
@@ -554,7 +554,7 @@ class ScatterPlot(BasePlot):
         """Get the number of instances that will be used for interactivity."""
         return self.fdata.n_samples
 
-    def set_figure_and_axes(
+    def _set_figure_and_axes(
         self,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,

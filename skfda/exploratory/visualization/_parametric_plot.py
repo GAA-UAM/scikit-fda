@@ -59,7 +59,7 @@ class ParametricPlot(BasePlot):
         else:
             self.fd_final = self.fdata1
 
-        self.set_figure_and_axes(chart, fig, axes)
+        self._set_figure_and_axes(chart, fig, axes)
 
     def plot(
         self,
@@ -122,7 +122,7 @@ class ParametricPlot(BasePlot):
         """Get the number of instances that will be used for interactivity."""
         return self.fd_final.n_samples
 
-    def set_figure_and_axes(
+    def _set_figure_and_axes(
         self,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,

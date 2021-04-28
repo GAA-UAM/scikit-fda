@@ -323,7 +323,7 @@ class Boxplot(FDataBoxplot, BasePlot):
         self.mediancol = "black"
         self._show_full_outliers = False
 
-        self.set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
+        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
     @property
     def fdatagrid(self):
@@ -359,7 +359,7 @@ class Boxplot(FDataBoxplot, BasePlot):
             raise ValueError("show_full_outliers must be boolean type")
         self._show_full_outliers = boolean
 
-    def set_figure_and_axes(
+    def _set_figure_and_axes(
         self,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,

@@ -55,8 +55,9 @@ class DDPlot(BasePlot):
         fdata: T,
         dist1: T,
         dist2: T,
-        depth_method: Depth[T],
         chart: Union[Figure, Axes, None] = None,
+        *,
+        depth_method: Depth[T],
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
     ) -> None:

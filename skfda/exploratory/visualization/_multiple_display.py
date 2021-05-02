@@ -81,11 +81,11 @@ class MultipleDisplay:
         self.point_clicked: Artist = None
         self.num_graphs = len(self.displays)
         self.length_data = self.displays[0].n_samples()
-        self.sliders: Sequence[Widget] = []
-        self.criteria: Sequence[List[int]] = []
+        self.sliders: List[Widget] = []
+        self.criteria: List[List[int]] = []
         self.clicked = False
         self.index_clicked = -1
-        self.tags: Sequence[Annotation] = []
+        self.tags: List[Annotation] = []
         self.previous_hovered = None
         self.fig = fig
         self.axes = axes

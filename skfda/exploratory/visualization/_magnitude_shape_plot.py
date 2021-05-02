@@ -10,6 +10,7 @@ from typing import Optional, Sequence, Union
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
@@ -17,9 +18,6 @@ from ... import FDataGrid
 from ..outliers import DirectionalOutlierDetector
 from ._baseplot import BasePlot
 from ._utils import _get_figure_and_axes, _set_figure_layout
-
-__author__ = "Amanda Hernando Bernabé"
-__email__ = "amanda.hernando@estudiante.uam.es"
 
 
 class MagnitudeShapePlot(BasePlot):
@@ -109,7 +107,7 @@ class MagnitudeShapePlot(BasePlot):
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> grid_points = [ 0., 2., 4., 6., 8., 10.]
         >>> fd = skfda.FDataGrid(data_matrix, grid_points)
-        >>> MagnitudeShapePlot(fd)
+        >>> print(MagnitudeShapePlot(fd).__repr__())
         MagnitudeShapePlot(
             FDataGrid=FDataGrid(
                 array([[[ 1. ],
@@ -136,20 +134,24 @@ class MagnitudeShapePlot(BasePlot):
                         [-1. ],
                         [-1. ],
                         [-1. ]]]),
-                grid_points=(array([ 0.,  2.,  4.,  6.,  8., 10.]),),
+                grid_points=(array([  0.,   2.,   4.,   6.,   8.,  10.]),),
                 domain_range=((0.0, 10.0),),
-                ...),
+                dataset_name=None,
+                argument_names=(None,),
+                coordinate_names=(None,),
+                extrapolation=None,
+                interpolation=SplineInterpolation(interpolation_order=1, smoothness_parameter=0, monotone=False)),
             multivariate_depth=None,
             pointwise_weights=None,
             alpha=0.993,
             points=array([[ 1.66666667,  0.12777778],
-                          [ 0.        ,  0.        ],
-                          [-0.8       ,  0.17666667],
-                          [-1.74444444,  0.94395062]]),
+                [ 0.        ,  0.        ],
+                [-0.8       ,  0.17666667],
+                [-1.74444444,  0.94395062]]),
             outliers=array([False, False, False, False]),
             colormap=seismic,
             color=0.2,
-            outliercol=(0.8,),
+            outliercol=0.8,
             xlabel='MO',
             ylabel='VO',
             title='MS-Plot')
@@ -301,7 +303,7 @@ class MagnitudeShapePlot(BasePlot):
 
         """
 
-        self.artists = np.array([])
+        self.artists = np.zeros(self.n_samples(), dtype=Artist)
         colors = np.zeros((self.fdatagrid.n_samples, 4))
         colors[np.where(self.outliers == 1)] = self.colormap(self.outliercol)
         colors[np.where(self.outliers == 0)] = self.colormap(self.color)
@@ -309,13 +311,13 @@ class MagnitudeShapePlot(BasePlot):
         colors_rgba = [tuple(i) for i in colors]
 
         for i in range(len(self.points[:, 0].ravel())):
-            self.artists = np.append(self.artists, self.axes[0].scatter(
+            self.artists[i] = self.axes[0].scatter(
                 self.points[:, 0].ravel()[i],
                 self.points[:, 1].ravel()[i],
                 color=colors_rgba[i],
                 picker=True,
                 pickradius=2,
-            ))
+            )
 
         self.axes[0].set_xlabel(self.xlabel)
         self.axes[0].set_ylabel(self.ylabel)

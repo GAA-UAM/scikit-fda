@@ -98,7 +98,8 @@ class DDPlot(BasePlot):
             self.artists[i] = ax.scatter(
                 self.depth_dist1[i],
                 self.depth_dist2[i],
-                picker=2,
+                picker=True,
+                pickradius=2,
             )
 
         # Set labels of graph

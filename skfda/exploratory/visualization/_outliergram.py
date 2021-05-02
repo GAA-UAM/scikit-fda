@@ -182,7 +182,8 @@ class Outliergram(BasePlot):
         a_2 = a_0
 
         parable = (
-            a_0 + a_1 * self.mei + pow(self.n_samples(), 2) * a_2 * pow(self.mei, 2)
+            a_0 + a_1 * self.mei
+            + pow(self.n_samples(), 2) * a_2 * pow(self.mei, 2)
         )
         distances = parable - self.mbd
 

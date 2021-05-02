@@ -519,7 +519,8 @@ class ScatterPlot(BasePlot):
                             self.grid_points[0],
                             evaluated_points[j, ..., i].T,
                             **color_dict,
-                            picker=2,
+                            picker=True,
+                            pickradius=2,
                             **kwargs,
                         ),
                     )
@@ -541,7 +542,8 @@ class ScatterPlot(BasePlot):
                             Y,
                             evaluated_points[h, ..., k].T,
                             **color_dict,
-                            picker=2,
+                            picker=True,
+                            pickradius=2,
                             **kwargs,
                         ),
                     )

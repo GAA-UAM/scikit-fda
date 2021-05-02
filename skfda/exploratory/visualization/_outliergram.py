@@ -81,7 +81,6 @@ class Outliergram(BasePlot):
             raise ValueError(
                 "The size of mbd and mei should be the same.",
             )
-        self.n = self.mbd.size
         distances, parable = self._compute_distances()
         self.distances = distances
         indices = np.argsort(self.mei)
@@ -178,12 +177,12 @@ class Outliergram(BasePlot):
         The distances can be calculated with function:
             d_i = a_0 + a_1* mei_i + n^2* a_2* mei_i^2 - mb_i.
         """
-        a_0 = -2 / (self.n * (self.n - 1))
-        a_1 = (2 * (self.n + 1)) / (self.n - 1)
+        a_0 = -2 / (self.n_samples() * (self.n_samples() - 1))
+        a_1 = (2 * (self.n_samples() + 1)) / (self.n_samples() - 1)
         a_2 = a_0
 
         parable = (
-            a_0 + a_1 * self.mei + pow(self.n, 2) * a_2 * pow(self.mei, 2)
+            a_0 + a_1 * self.mei + pow(self.n_samples(), 2) * a_2 * pow(self.mei, 2)
         )
         distances = parable - self.mbd
 

@@ -55,8 +55,9 @@ class DDPlot(BasePlot):
         fdata: T,
         dist1: T,
         dist2: T,
-        depth_method: Depth[T],
         chart: Union[Figure, Axes, None] = None,
+        *,
+        depth_method: Depth[T],
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
     ) -> None:
@@ -70,7 +71,7 @@ class DDPlot(BasePlot):
         self.depth_dist2 = self.depth_method(
             self.fdata, distribution=dist2,
         )
-        self.__set_figure_and_axes(chart, fig, axes)
+        self._set_figure_and_axes(chart, fig, axes)
 
     def plot(
         self,
@@ -96,8 +97,9 @@ class DDPlot(BasePlot):
         for i in range(len(self.depth_dist1)):
             self.artists[i] = ax.scatter(
                 self.depth_dist1[i],
-                self.depth_dist1[i],
-                picker=2,
+                self.depth_dist2[i],
+                picker=True,
+                pickradius=2,
             )
 
         # Set labels of graph

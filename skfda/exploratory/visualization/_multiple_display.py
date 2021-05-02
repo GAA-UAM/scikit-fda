@@ -7,6 +7,7 @@ from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import Event
 from matplotlib.figure import Figure
+from matplotlib.text import Annotation
 from matplotlib.widgets import Slider, Widget
 
 from ._baseplot import BasePlot
@@ -49,7 +50,7 @@ class MultipleDisplay:
         tags: list of tags for each ax, that contain the information printed
             while hovering.
         previous_hovered: artist object containing of the last point hovered.
-        is_updating: boolean value that determines wheter a widget
+        is_updating: boolean value that determines whether a widget
             is being updated.
     """
 
@@ -80,11 +81,11 @@ class MultipleDisplay:
         self.point_clicked: Artist = None
         self.num_graphs = len(self.displays)
         self.length_data = self.displays[0].n_samples()
-        self.sliders = []
-        self.criteria = []
+        self.sliders: Sequence[Widget] = []
+        self.criteria: Sequence[List[int]] = []
         self.clicked = False
         self.index_clicked = -1
-        self.tags = []
+        self.tags: Sequence[Annotation] = []
         self.previous_hovered = None
         self.fig = fig
         self.axes = axes
@@ -127,7 +128,7 @@ class MultipleDisplay:
 
         for disp, ax in zip(self.displays, self.axes):
             ax.clear()
-            disp.set_figure_and_axes(axes=ax)
+            disp._set_figure_and_axes(axes=ax)
             disp.plot()
             self.tags.append(
                 ax.annotate(
@@ -474,7 +475,7 @@ class MultipleDisplay:
             full_desc = label_slider
         self.sliders.append(
             widget_func(
-                self.fig.axes[self.num_graphs + ind_ax],
+                self.axes[self.num_graphs + ind_ax],
                 full_desc,
                 valmin=0,
                 valmax=self.length_data - 1,
@@ -482,13 +483,13 @@ class MultipleDisplay:
             ),
         )
 
-        self.fig.axes[self.num_graphs + ind_ax].annotate(
+        self.axes[self.num_graphs + ind_ax].annotate(
             '0',
             xy=(0, -0.5),
             xycoords='axes fraction',
             annotation_clip=False,
         )
-        self.fig.axes[self.num_graphs + ind_ax].annotate(
+        self.axes[self.num_graphs + ind_ax].annotate(
             str(self.length_data - 1),
             xy=(0.95, -0.5),
             xycoords='axes fraction',

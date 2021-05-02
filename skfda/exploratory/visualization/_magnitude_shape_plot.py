@@ -313,7 +313,8 @@ class MagnitudeShapePlot(BasePlot):
                 self.points[:, 0].ravel()[i],
                 self.points[:, 1].ravel()[i],
                 color=colors_rgba[i],
-                picker=2,
+                picker=True,
+                pickradius=2,
             ))
 
         self.axes[0].set_xlabel(self.xlabel)

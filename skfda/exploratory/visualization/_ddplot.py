@@ -7,17 +7,20 @@ a scatter plot is created of this two variables.
 
 from typing import Optional, TypeVar, Union
 
+import numpy as np
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from ...exploratory.depth.multivariate import Depth
 from ...representation._functional_data import FData
+from ._baseplot import BasePlot
 from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
 T = TypeVar('T', bound=FData)
 
 
-class DDPlot:
+class DDPlot(BasePlot):
     """
     DDPlot visualization.
 
@@ -33,6 +36,13 @@ class DDPlot:
             we want to use to compute the depth (Depth Y).
         depth_method: method that will be used to compute the depths of the
             data with respect to the distributions.
+        chart: figure over with the graphs are plotted or axis over
+            where the graphs are plotted. If None and ax is also
+            None, the figure is initialized.
+        fig: figure over with the graphs are plotted in case ax is not
+            specified. If None and ax is also None, the figure is
+            initialized.
+        axes: axis where the graphs are plotted. If None, see param fig.
     Attributes:
         depth_dist1: result of the calculation of the depth_method into our
             first distribution (dist1).
@@ -45,8 +55,13 @@ class DDPlot:
         fdata: T,
         dist1: T,
         dist2: T,
+        chart: Union[Figure, Axes, None] = None,
+        *,
         depth_method: Depth[T],
+        fig: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
     ) -> None:
+        BasePlot.__init__(self)
         self.fdata = fdata
         self.depth_method = depth_method
         self.depth_method.fit(fdata)
@@ -56,14 +71,10 @@ class DDPlot:
         self.depth_dist2 = self.depth_method(
             self.fdata, distribution=dist2,
         )
+        self._set_figure_and_axes(chart, fig, axes)
 
     def plot(
         self,
-        chart: Union[Figure, Axes, None] = None,
-        *,
-        fig: Optional[Figure] = None,
-        ax: Optional[Axes] = None,
-        **kwargs,
     ) -> Figure:
         """
         Plot DDPlot graph.
@@ -72,41 +83,28 @@ class DDPlot:
         distributions,one in each axis. It is useful to understand how
         our data is more related with one subset of data / distribution
         than another one.
-        Args:
-            chart: figure over with the graphs are plotted or axis over
-                where the graphs are plotted. If None and ax is also
-                None, the figure is initialized.
-            fig: figure over with the graphs are plotted in case ax is not
-                specified. If None and ax is also None, the figure is
-                initialized.
-            ax: axis where the graphs are plotted. If None, see param fig.
-            kwargs: if dim_domain is 1, keyword arguments to be passed to the
-                matplotlib.pyplot.plot function; if dim_domain is 2, keyword
-                arguments to be passed to the matplotlib.pyplot.plot_surface
-                function.
         Returns:
             fig (figure object): figure object in which the depths will be
             scattered.
         """
+        self.artists = np.zeros(self.n_samples(), dtype=Artist)
         margin = 0.025
         width_aux_line = 0.35
         color_aux_line = "gray"
 
-        fig, axes = _get_figure_and_axes(chart, fig, ax)
-        fig, axes = _set_figure_layout_for_fdata(
-            self.fdata, fig, axes,
-        )
+        ax = self.axes[0]
 
-        ax = axes[0]
-
-        ax.scatter(
-            self.depth_dist1,
-            self.depth_dist2,
-            **kwargs,
-        )
+        for i in range(len(self.depth_dist1)):
+            self.artists[i] = ax.scatter(
+                self.depth_dist1[i],
+                self.depth_dist2[i],
+                picker=True,
+                pickradius=2,
+            )
 
         # Set labels of graph
-        fig.suptitle("DDPlot")
+        if self.fdata.dataset_name is not None:
+            ax.set_title(self.fdata.dataset_name)
         ax.set_xlabel("X depth")
         ax.set_ylabel("Y depth")
         ax.set_xlim(
@@ -127,4 +125,35 @@ class DDPlot:
             color=color_aux_line,
         )
 
-        return fig
+        return self.fig
+
+    def n_samples(self) -> int:
+        """Get the number of instances that will be used for interactivity."""
+        return self.fdata.n_samples
+
+    def _set_figure_and_axes(
+        self,
+        chart: Union[Figure, Axes, None] = None,
+        fig: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+    ) -> None:
+        """
+        Initialize the axes and fig of the plot.
+
+        Args:
+        chart: figure over with the graphs are plotted or axis over
+            where the graphs are plotted. If None and ax is also
+            None, the figure is initialized.
+        fig: figure over with the graphs are plotted in case ax is not
+            specified. If None and ax is also None, the figure is
+            initialized.
+        axes: axis where the graphs are plotted. If None, see param fig.
+        """
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout_for_fdata(
+            fdata=self.fdata,
+            fig=fig,
+            axes=axes,
+        )
+        self.fig = fig
+        self.axes = axes

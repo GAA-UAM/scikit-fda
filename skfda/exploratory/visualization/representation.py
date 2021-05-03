@@ -21,6 +21,7 @@ from typing import (
 import matplotlib.cm
 import matplotlib.patches
 import numpy as np
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from typing_extensions import Protocol
@@ -272,7 +273,7 @@ class GraphPlot(BasePlot):
         Returns:
             fig (figure object): figure object in which the graphs are plotted.
         """
-        self.artists = np.array([])
+        self.artists = np.zeros(self.n_samples(), dtype=Artist)
 
         if domain_range is None:
             self.domain_range = self.fdata.domain_range
@@ -305,17 +306,19 @@ class GraphPlot(BasePlot):
             eval_points = np.linspace(*self.domain_range[0], self.n_points)
             mat = self.fdata(eval_points)
 
+            ind = 0
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
 
                     set_color_dict(sample_colors, j, color_dict)
 
-                    self.artists = np.append(self.artists, self.axes[i].plot(
+                    self.artists[ind] = self.axes[i].plot(
                         eval_points,
                         mat[j, ..., i].T,
                         **color_dict,
                         **kwargs,
-                    ))
+                    )
+                    ind += 1
 
         else:
 
@@ -339,20 +342,20 @@ class GraphPlot(BasePlot):
 
             X, Y = np.meshgrid(x, y, indexing='ij')
 
+            ind = 0
             for k in range(self.fdata.dim_codomain):
                 for h in range(self.fdata.n_samples):
 
                     set_color_dict(sample_colors, h, color_dict)
 
-                    self.artists = np.append(
-                        self.artists, self.axes[k].plot_surface(
-                            X,
-                            Y,
-                            Z[h, ..., k],
-                            **color_dict,
-                            **kwargs,
-                        ),
+                    self.artists[ind] = self.axes[k].plot_surface(
+                        X,
+                        Y,
+                        Z[h, ..., k],
+                        **color_dict,
+                        **kwargs,
                     )
+                    ind += 1
 
         _set_labels(self.fdata, self.fig, self.axes, patches)
         self.fig.suptitle("GraphPlot")
@@ -361,7 +364,7 @@ class GraphPlot(BasePlot):
 
     def n_samples(self) -> int:
         """Get the number of instances that will be used for interactivity."""
-        return self.fdata.n_samples
+        return self.fdata.n_samples * self.fdata.dim_codomain
 
     def _set_figure_and_axes(
         self,
@@ -483,7 +486,7 @@ class ScatterPlot(BasePlot):
         Returns:
         fig: figure object in which the graphs are plotted.
         """
-        self.artists = np.array([])
+        self.artists = np.zeros(self.n_samples(), dtype=Artist)
         evaluated_points = None
 
         if self.grid_points is None:
@@ -509,21 +512,21 @@ class ScatterPlot(BasePlot):
 
         if self.fdata.dim_domain == 1:
 
+            ind = 0
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
 
                     set_color_dict(sample_colors, j, color_dict)
 
-                    self.artists = np.append(
-                        self.artists, self.axes[i].scatter(
-                            self.grid_points[0],
-                            evaluated_points[j, ..., i].T,
-                            **color_dict,
-                            picker=True,
-                            pickradius=2,
-                            **kwargs,
-                        ),
+                    self.artists[ind] = self.axes[i].scatter(
+                        self.grid_points[0],
+                        evaluated_points[j, ..., i].T,
+                        **color_dict,
+                        picker=True,
+                        pickradius=2,
+                        **kwargs,
                     )
+                    ind += 1
 
         else:
 
@@ -531,22 +534,22 @@ class ScatterPlot(BasePlot):
             Y = self.fdata.grid_points[1]
             X, Y = np.meshgrid(X, Y)
 
+            ind = 0
             for k in range(self.fdata.dim_codomain):
                 for h in range(self.fdata.n_samples):
 
                     set_color_dict(sample_colors, h, color_dict)
 
-                    self.artists = np.append(
-                        self.artists, self.axes[k].scatter(
-                            X,
-                            Y,
-                            evaluated_points[h, ..., k].T,
-                            **color_dict,
-                            picker=True,
-                            pickradius=2,
-                            **kwargs,
-                        ),
+                    self.artists = self.axes[k].scatter(
+                        X,
+                        Y,
+                        evaluated_points[h, ..., k].T,
+                        **color_dict,
+                        picker=True,
+                        pickradius=2,
+                        **kwargs,
                     )
+                    ind += 1
 
         _set_labels(self.fdata, self.fig, self.axes, patches)
 

@@ -79,7 +79,7 @@ class MultipleDisplay:
             for d in displays:
                 self.displays.append(copy.copy(d))
         self.point_clicked: Artist = None
-        self.num_graphs = len(self.displays)
+        self.num_graphs = sum(len(d.axes) for d in self.displays)
         self.length_data = self.displays[0].n_samples()
         self.sliders: List[Widget] = []
         self.criteria: List[List[int]] = []
@@ -126,12 +126,10 @@ class MultipleDisplay:
                         "Length of some data sets are not equal ",
                     )
 
-        for disp, ax in zip(self.displays, self.axes):
-            ax.clear()
-            disp._set_figure_and_axes(axes=ax)
-            disp.plot()
+        for i in range(self.num_graphs):
+            self.axes[i].clear()
             self.tags.append(
-                ax.annotate(
+                self.axes[i].annotate(
                     "",
                     xy=(0, 0),
                     xytext=(20, 20),
@@ -140,6 +138,14 @@ class MultipleDisplay:
                     arrowprops=dict(arrowstyle="->"),
                 ),
             )
+
+        int_index = 0
+        for disp in self.displays:
+            axes_needed = len(disp.axes)
+            end_index = axes_needed + int_index
+            disp._set_figure_and_axes(axes=self.axes[int_index:end_index])
+            disp.plot()
+            int_index = end_index
 
         self.fig.canvas.mpl_connect('motion_notify_event', self.hover)
         self.fig.canvas.mpl_connect('pick_event', self.pick)
@@ -209,25 +215,37 @@ class MultipleDisplay:
         """
         index_axis = -1
 
-        for i in range(self.num_graphs):
-            if event.inaxes == self.axes[i]:
-                index_axis = i
-
-                if len(self.displays[i].artists) == 0:
-                    return
-
-                for j in range(len(self.displays[i].artists)):
-                    artist = self.displays[i].artists[j]
-                    if isinstance(artist, List):
+        index = 0
+        for d in self.displays:
+            for i in range(len(d.axes)):
+                if event.inaxes == d.axes[i]:
+                    index_axis = index
+                    if len(d.artists) == 0:
                         return
-                    is_graph, ind = artist.contains(event)
-                    if is_graph and self.previous_hovered == artist:
+
+                    elif (
+                        isinstance(d.artists[0], List)
+                        or isinstance(d.artists[0][0], List)
+                    ):
                         return
-                    if is_graph:
-                        self.previous_hovered = artist
-                        index_point = j
-                        break
-                break
+
+                    elif isinstance(d.artists[0], Artist):
+                        artists_array = d.artists
+                    elif isinstance(d.artists[0], np.ndarray):
+                        artists_array = d.artists[i]
+                    for j in range(len(artists_array)):
+                        artist = artists_array[j]
+                        is_graph, ind = artist.contains(event)
+                        if is_graph and self.previous_hovered == artist:
+                            return
+                        if is_graph:
+                            self.previous_hovered = artist
+                            index_point = j
+                            break
+                    break
+
+                else:
+                    index += 1
 
         for k in range(self.num_graphs, len(self.axes)):
             if event.inaxes == self.axes[k]:
@@ -304,12 +322,21 @@ class MultipleDisplay:
 
     def update_index_display_picked(self) -> None:
         """Update the index corresponding to the display picked."""
-        for i in range(self.num_graphs):
-            if self.axes[i] == self.point_clicked.axes:
-                self.index_clicked = np.where(
-                    self.displays[i].artists == self.point_clicked,
-                )[0][0]
-                return
+        for d in self.displays:
+            if isinstance(d.artists[0], Artist):
+                if d.axes[0] == self.point_clicked.axes:
+                    self.index_clicked = np.where(
+                        d.artists == self.point_clicked,
+                    )[0][0]
+                    return
+            else:
+                for i in range(len(d.axes)):
+                    self.x = 0
+                    if d.axes[i] == self.point_clicked.axes:
+                        self.index_clicked = np.where(
+                            d.artists[i] == self.point_clicked,
+                        )[0][0]
+                        return
 
     def reduce_points_intensity(self) -> None:
         """Reduce the transparency of all the points but the selected one."""
@@ -317,10 +344,16 @@ class MultipleDisplay:
             if i != self.index_clicked:
                 for d in self.displays:
                     if len(d.artists) != 0:
-                        if isinstance(d.artists[i], list):
+                        if isinstance(d.artists[0], list):
                             d.artists[i][0].set_alpha(0.1)
-                        else:
+                        elif isinstance(d.artists[0], Artist):
                             d.artists[i].set_alpha(0.1)
+                        else:
+                            for a in d.artists:
+                                if isinstance(a[0], list):
+                                    a[i][0].set_alpha(0.1)
+                                elif isinstance(a[0], Artist):
+                                    a[i].set_alpha(0.1)
 
         self.is_updating = True
         for j in range(len(self.sliders)):
@@ -333,10 +366,17 @@ class MultipleDisplay:
         for i in range(self.length_data):
             for d in self.displays:
                 if len(d.artists) != 0:
-                    if isinstance(d.artists[i], list):
+                    if isinstance(d.artists[0], list):
                         d.artists[i][0].set_alpha(1)
-                    else:
+                    elif isinstance(d.artists[0], Artist):
                         d.artists[i].set_alpha(1)
+                    else:
+                        for a in d.artists:
+                            if isinstance(a[0], list):
+                                a[i][0].set_alpha(1)
+                            elif isinstance(a[0], Artist):
+                                a[i].set_alpha(1)
+
         self.point_clicked = None
         self.index_clicked = -1
 
@@ -395,10 +435,16 @@ class MultipleDisplay:
         """
         for d in self.displays:
             if len(d.artists) != 0:
-                if isinstance(d.artists[index], list):
+                if isinstance(d.artists[0], list):
                     d.artists[index][0].set_alpha(intensity)
-                else:
+                elif isinstance(d.artists[0], Artist):
                     d.artists[index].set_alpha(intensity)
+                else:
+                    for a in d.artists:
+                        if isinstance(a[0], list):
+                            a[index][0].set_alpha(intensity)
+                        elif isinstance(a[0], Artist):
+                            a[index].set_alpha(intensity)
 
     def create_sliders(
         self,

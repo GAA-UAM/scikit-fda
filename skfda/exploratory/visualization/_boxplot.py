@@ -11,8 +11,11 @@ from typing import Optional, Sequence, Union
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+
+from skfda.exploratory.depth.multivariate import Depth
 
 from ... import FDataGrid
 from ..depth import ModifiedBandDepth
@@ -245,11 +248,11 @@ class Boxplot(FDataBoxplot, BasePlot):
     def __init__(
         self,
         fdatagrid: FDataGrid,
-        depth_method = ModifiedBandDepth(),
+        depth_method: Depth = ModifiedBandDepth,
         prob: Sequence[float] = [0.5],
         factor: float = 1.5,
-        *,
         chart: Union[Figure, Axes, None] = None,
+        *,
         fig: Optional[Figure] = None,
         axes: Optional[Sequence[Axes]] = None,
         n_rows: Optional[int] = None,
@@ -286,7 +289,8 @@ class Boxplot(FDataBoxplot, BasePlot):
 
         self._envelopes = [None] * len(prob)
 
-        depth = depth_method(fdatagrid)
+        depth_func = depth_method()
+        depth = depth_func(fdatagrid)
         indices_descending_depth = (-depth).argsort(axis=0)
 
         # The median is the deepest curve
@@ -403,7 +407,7 @@ class Boxplot(FDataBoxplot, BasePlot):
 
         """
 
-        self.artists = np.array([])
+        self.artists = np.zeros(self.n_samples(), dtype=Artist)
         tones = np.linspace(0.1, 1.0, len(self._prob) + 1, endpoint=False)[1:]
         color = self.colormap(tones)
 

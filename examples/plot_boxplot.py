@@ -92,7 +92,7 @@ fd_temperatures.plot(group=fdBoxplot.outliers.astype(int),
 # previous one.
 
 fdBoxplot = Boxplot(
-    fd_temperatures, depth_method=ModifiedBandDepth(), factor=0.4)
+    fd_temperatures, depth_method=ModifiedBandDepth, factor=0.4)
 fdBoxplot.show_full_outliers = True
 
 fdBoxplot.plot()

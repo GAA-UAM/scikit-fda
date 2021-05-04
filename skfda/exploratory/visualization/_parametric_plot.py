@@ -44,8 +44,8 @@ class ParametricPlot(BasePlot):
         self,
         fdata1: FData,
         fdata2: Optional[FData] = None,
-        *,
         chart: Union[Figure, Axes, None] = None,
+        *,
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
     ) -> None:

@@ -503,7 +503,7 @@ class ScatterPlot(BasePlot):
         self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
     def plot(
-        self,        
+        self,
         **kwargs: Any,
     ) -> Figure:
         """

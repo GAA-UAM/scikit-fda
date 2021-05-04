@@ -9,7 +9,6 @@ like depth measures.
 
 from typing import (
     Any,
-    List,
     Mapping,
     Optional,
     Sequence,
@@ -61,8 +60,8 @@ def _get_color_info(
     legend: bool = False,
     kwargs: Any = None,
 ) -> Tuple[
-    Union[ColorLike, None],
-    Optional[List[matplotlib.patches.Patch]],
+    Optional[ColorLike],
+    Optional[Sequence[matplotlib.patches.Patch]],
 ]:
 
     patches = None
@@ -167,7 +166,7 @@ class GraphPlot(BasePlot):
     def __init__(
         self,
         fdata: FData,
-        gradient_color_list: Union[Sequence[float], None] = None,
+        gradient_color_list: Optional[Sequence[float]] = None,
         max_grad: Optional[float] = None,
         min_grad: Optional[float] = None,
         chart: Union[Figure, Axes, None] = None,
@@ -308,7 +307,7 @@ class GraphPlot(BasePlot):
 
         self.sample_colors = sample_colors
 
-        color_dict: Mapping[str, Union[ColorLike, None]] = {}
+        color_dict: Mapping[str, Optional[ColorLike]] = {}
 
         if self.fdata.dim_domain == 1:
 
@@ -372,7 +371,6 @@ class GraphPlot(BasePlot):
                     ind += 1
 
         _set_labels(self.fdata, self.fig, self.axes, patches)
-        self.fig.suptitle("GraphPlot")
 
         return self.fig
 
@@ -488,8 +486,7 @@ class ScatterPlot(BasePlot):
             # This can only be done for FDataGrid
             self.grid_points = self.fdata.grid_points
             self.evaluated_points = self.fdata.data_matrix
-
-        if self.evaluated_points is None:
+        else:
             self.evaluated_points = self.fdata(
                 self.grid_points, grid=True,
             )
@@ -533,7 +530,7 @@ class ScatterPlot(BasePlot):
             kwargs,
         )
 
-        color_dict: Mapping[str, Union[ColorLike, None]] = {}
+        color_dict: Mapping[str, Optional[ColorLike]] = {}
 
         if self.fdata.dim_domain == 1:
 
@@ -623,7 +620,7 @@ class ScatterPlot(BasePlot):
 def set_color_dict(
     sample_colors: Any,
     ind: int,
-    color_dict: Mapping[str, Union[ColorLike, None]],
+    color_dict: Mapping[str, Optional[ColorLike]],
 ) -> None:
     """
     Auxiliary method used to update color_dict.

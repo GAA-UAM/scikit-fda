@@ -262,15 +262,28 @@ class Boxplot(FDataBoxplot, BasePlot):
 
         Args:
             fdatagrid (FDataGrid): Object containing the data.
-            depth_method (:ref:`depth measure <depth-measures>`, optional):
-                Method used to order the data. Defaults to :func:`modified
-                band depth
+            depth_method: Method used to order the data. 
+                Defaults to :func:`modified band depth
                 <skfda.exploratory.depth.ModifiedBandDepth>`.
             prob (list of float, optional): List with float numbers (in the
                 range from 1 to 0) that indicate which central regions to
                 represent.
                 Defaults to [0.5] which represents the 50% central region.
             factor (double): Number used to calculate the outlying envelope.
+            chart: figure over with the graphs are plotted or axis over
+                where the graphs are plotted. If None and ax is also
+                None, the figure is initialized.
+            fig (figure object, optional): figure over with the graphs are
+                plotted in case ax is not specified. If None and ax is also
+                None, the figure is initialized.
+            axes (list of axis objects, optional): axis over where the graphs
+                are plotted. If None, see param fig.
+            n_rows(int, optional): designates the number of rows of the figure
+                to plot the different dimensions of the image. Only specified
+                if fig and ax are None.
+            n_cols(int, optional): designates the number of columns of the
+                figure to plot the different dimensions of the image. Only
+                specified if fig and ax are None.
 
         """
         FDataBoxplot.__init__(self, factor)
@@ -388,19 +401,6 @@ class Boxplot(FDataBoxplot, BasePlot):
     def plot(self):
         """Visualization of the functional boxplot of the fdatagrid
         (dim_domain=1).
-
-        Args:
-            fig (figure object, optional): figure over with the graphs are
-                plotted in case ax is not specified. If None and ax is also
-                None, the figure is initialized.
-            axes (list of axis objects, optional): axis over where the graphs
-                are plotted. If None, see param fig.
-            n_rows(int, optional): designates the number of rows of the figure
-                to plot the different dimensions of the image. Only specified
-                if fig and ax are None.
-            n_cols(int, optional): designates the number of columns of the
-                figure to plot the different dimensions of the image. Only
-                specified if fig and ax are None.
 
         Returns:
             fig (figure): figure object in which the graphs are plotted.

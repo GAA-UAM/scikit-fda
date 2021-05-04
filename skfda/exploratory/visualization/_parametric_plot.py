@@ -9,6 +9,7 @@ of them with domain 1 and codomain 1.
 from typing import Optional, Sequence, Union
 
 import numpy as np
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
@@ -76,7 +77,7 @@ class ParametricPlot(BasePlot):
             fig: figure object in which the ParametricPlot
             graph will be plotted.
         """
-        self.artists = np.array([])
+        self.artists = np.zeros(self.n_samples(), dtype=Artist)
 
         if (
             self.fd_final.dim_domain == 1
@@ -89,12 +90,12 @@ class ParametricPlot(BasePlot):
             self.axes = axes
             ax = self.axes[0]
 
-            for data_matrix in self.fd_final.data_matrix:
-                self.artists = np.append(self.artists, ax.plot(
-                    data_matrix[:, 0].tolist(),
-                    data_matrix[:, 1].tolist(),
+            for i in range(self.fd_final.n_samples):
+                self.artists[i] = ax.plot(
+                    self.fd_final.data_matrix[i][:, 0].tolist(),
+                    self.fd_final.data_matrix[i][:, 1].tolist(),
                     **kwargs,
-                ))
+                )
         else:
             raise ValueError(
                 "Error in data arguments,",

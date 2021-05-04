@@ -248,7 +248,7 @@ class Boxplot(FDataBoxplot, BasePlot):
     def __init__(
         self,
         fdatagrid: FDataGrid,
-        depth_method: Depth = ModifiedBandDepth,
+        depth_method: Optional[Depth] = None,
         prob: Sequence[float] = [0.5],
         factor: float = 1.5,
         chart: Union[Figure, Axes, None] = None,
@@ -262,7 +262,7 @@ class Boxplot(FDataBoxplot, BasePlot):
 
         Args:
             fdatagrid (FDataGrid): Object containing the data.
-            depth_method: Method used to order the data. 
+            depth_method: Method used to order the data.
                 Defaults to :func:`modified band depth
                 <skfda.exploratory.depth.ModifiedBandDepth>`.
             prob (list of float, optional): List with float numbers (in the
@@ -302,8 +302,9 @@ class Boxplot(FDataBoxplot, BasePlot):
 
         self._envelopes = [None] * len(prob)
 
-        depth_func = depth_method()
-        depth = depth_func(fdatagrid)
+        if depth_method is None:
+            depth_method = ModifiedBandDepth()
+        depth = depth_method(fdatagrid)
         indices_descending_depth = (-depth).argsort(axis=0)
 
         # The median is the deepest curve

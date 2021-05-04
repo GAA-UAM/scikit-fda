@@ -92,7 +92,7 @@ fd_temperatures.plot(group=fdBoxplot.outliers.astype(int),
 # previous one.
 
 fdBoxplot = Boxplot(
-    fd_temperatures, depth_method=ModifiedBandDepth, factor=0.4)
+    fd_temperatures, depth_method=ModifiedBandDepth(), factor=0.4)
 fdBoxplot.show_full_outliers = True
 
 fdBoxplot.plot()
@@ -106,7 +106,7 @@ fdBoxplot.plot()
 # :func:`~skfda.exploratory.depth.IntegratedDepth` is used and the 25% and
 # 75% central regions are specified.
 
-fdBoxplot = Boxplot(fd_temperatures, depth_method=IntegratedDepth,
+fdBoxplot = Boxplot(fd_temperatures, depth_method=IntegratedDepth(),
                     prob=[0.75, 0.5, 0.25])
 fdBoxplot.plot()
 

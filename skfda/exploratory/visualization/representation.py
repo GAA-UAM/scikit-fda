@@ -216,7 +216,7 @@ class GraphPlot(BasePlot):
                 ]
             )
         else:
-            self.gradient_list = []
+            self.gradient_list = None
 
         self.n_points = n_points
         self.domain_range = domain_range
@@ -287,7 +287,7 @@ class GraphPlot(BasePlot):
         else:
             self.domain_range = _to_domain_range(self.domain_range)
 
-        if len(self.gradient_list) == 0:
+        if self.gradient_list is None:
             sample_colors, patches = _get_color_info(
                 self.fdata,
                 self.group,

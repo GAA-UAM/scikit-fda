@@ -9,7 +9,6 @@ like depth measures.
 
 from typing import (
     Any,
-    List,
     Mapping,
     Optional,
     Sequence,
@@ -61,8 +60,8 @@ def _get_color_info(
     legend: bool = False,
     kwargs: Any = None,
 ) -> Tuple[
-    Union[ColorLike, None],
-    Optional[List[matplotlib.patches.Patch]],
+    Optional[ColorLike],
+    Optional[Sequence[matplotlib.patches.Patch]],
 ]:
 
     patches = None
@@ -158,6 +157,36 @@ class GraphPlot(BasePlot):
         n_cols(int, optional): designates the number of columns of the
             figure to plot the different dimensions of the image. Only
             specified if fig and ax are None.
+        n_points (int or tuple, optional): Number of points to evaluate in
+            the plot. In case of surfaces a tuple of length 2 can be pased
+            with the number of points to plot in each axis, otherwise the
+            same number of points will be used in the two axes. By default
+            in unidimensional plots will be used 501 points; in surfaces
+            will be used 30 points per axis, wich makes a grid with 900
+            points.
+        domain_range (tuple or list of tuples, optional): Range where the
+            function will be plotted. In objects with unidimensional domain
+            the domain range should be a tuple with the bounds of the
+            interval; in the case of surfaces a list with 2 tuples with
+            the ranges for each dimension. Default uses the domain range
+            of the functional object.
+        group (list of int): contains integers from [0 to number of
+            labels) indicating to which group each sample belongs to. Then,
+            the samples with the same label are plotted in the same color.
+            If None, the default value, each sample is plotted in the color
+            assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
+        group_colors (list of colors): colors in which groups are
+            represented, there must be one for each group. If None, each
+            group is shown with distict colors in the "Greys" colormap.
+        group_names (list of str): name of each of the groups which appear
+            in a legend, there must be one for each one. Defaults to None
+            and the legend is not shown. Implies `legend=True`.
+        colormap_name: name of the colormap to be used. By default we will
+            use autumn.
+        legend (bool): if `True`, show a legend with the groups. If
+            `group_names` is passed, it will be used for finding the names
+            to display in the legend. Otherwise, the values passed to
+            `group` will be used.
     Attributes:
         gradient_list: normalization of the values from gradient color_list
             that will be used to determine the intensity of the color
@@ -167,7 +196,7 @@ class GraphPlot(BasePlot):
     def __init__(
         self,
         fdata: FData,
-        gradient_color_list: Union[Sequence[float], None] = None,
+        gradient_color_list: Optional[Sequence[float]] = None,
         max_grad: Optional[float] = None,
         min_grad: Optional[float] = None,
         chart: Union[Figure, Axes, None] = None,
@@ -176,6 +205,13 @@ class GraphPlot(BasePlot):
         axes: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
+        n_points: Union[int, Tuple[int, int], None] = None,
+        domain_range: Optional[DomainRangeLike] = None,
+        group: Optional[Sequence[K]] = None,
+        group_colors: Optional[Indexable[K, ColorLike]] = None,
+        group_names: Optional[Indexable[K, str]] = None,
+        colormap_name: str = 'autumn',
+        legend: bool = False,
     ) -> None:
         BasePlot.__init__(self)
         self.fdata = fdata
@@ -210,19 +246,20 @@ class GraphPlot(BasePlot):
                 ]
             )
         else:
-            self.gradient_list = []
+            self.gradient_list = None
+
+        self.n_points = n_points
+        self.domain_range = domain_range
+        self.group = group
+        self.group_colors = group_colors
+        self.group_names = group_names
+        self.legend = legend
+        self.colormap_name = colormap_name
+
         self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
     def plot(
         self,
-        *,
-        n_points: Union[int, Tuple[int, int], None] = None,
-        domain_range: Optional[DomainRangeLike] = None,
-        group: Optional[Sequence[K]] = None,
-        group_colors: Optional[Indexable[K, ColorLike]] = None,
-        group_names: Optional[Indexable[K, str]] = None,
-        colormap_name: str = 'autumn',
-        legend: bool = False,
         **kwargs: Any,
     ) -> Figure:
         """
@@ -236,36 +273,6 @@ class GraphPlot(BasePlot):
         function with a gradient of colors depending on the initial
         gradient_color_list (normalized in gradient_list).
         Args:
-            n_points (int or tuple, optional): Number of points to evaluate in
-                the plot. In case of surfaces a tuple of length 2 can be pased
-                with the number of points to plot in each axis, otherwise the
-                same number of points will be used in the two axes. By default
-                in unidimensional plots will be used 501 points; in surfaces
-                will be used 30 points per axis, wich makes a grid with 900
-                points.
-            domain_range (tuple or list of tuples, optional): Range where the
-                function will be plotted. In objects with unidimensional domain
-                the domain range should be a tuple with the bounds of the
-                interval; in the case of surfaces a list with 2 tuples with
-                the ranges for each dimension. Default uses the domain range
-                of the functional object.
-            group (list of int): contains integers from [0 to number of
-                labels) indicating to which group each sample belongs to. Then,
-                the samples with the same label are plotted in the same color.
-                If None, the default value, each sample is plotted in the color
-                assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-            group_colors (list of colors): colors in which groups are
-                represented, there must be one for each group. If None, each
-                group is shown with distict colors in the "Greys" colormap.
-            group_names (list of str): name of each of the groups which appear
-                in a legend, there must be one for each one. Defaults to None
-                and the legend is not shown. Implies `legend=True`.
-            colormap_name: name of the colormap to be used. By default we will
-                use autumn.
-            legend (bool): if `True`, show a legend with the groups. If
-                `group_names` is passed, it will be used for finding the names
-                to display in the legend. Otherwise, the values passed to
-                `group` will be used.
             kwargs: if dim_domain is 1, keyword arguments to be passed to
                 the matplotlib.pyplot.plot function; if dim_domain is 2,
                 keyword arguments to be passed to the
@@ -273,20 +280,28 @@ class GraphPlot(BasePlot):
         Returns:
             fig (figure object): figure object in which the graphs are plotted.
         """
-        self.artists = np.zeros(len(self.axes), dtype=np.ndarray)
+        self.artists = np.zeros(
+            (self.n_samples(), self.fdata.dim_codomain),
+            dtype=Artist,
+        )
 
-        if domain_range is None:
+        if self.domain_range is None:
             self.domain_range = self.fdata.domain_range
         else:
-            self.domain_range = _to_domain_range(domain_range)
+            self.domain_range = _to_domain_range(self.domain_range)
 
-        if len(self.gradient_list) == 0:
+        if self.gradient_list is None:
             sample_colors, patches = _get_color_info(
-                self.fdata, group, group_names, group_colors, legend, kwargs,
+                self.fdata,
+                self.group,
+                self.group_names,
+                self.group_colors,
+                self.legend,
+                kwargs,
             )
         else:
             patches = None
-            colormap = matplotlib.cm.get_cmap(colormap_name)
+            colormap = matplotlib.cm.get_cmap(self.colormap_name)
             colormap = colormap.reversed()
 
             sample_colors = [None] * self.fdata.n_samples
@@ -295,11 +310,11 @@ class GraphPlot(BasePlot):
 
         self.sample_colors = sample_colors
 
-        color_dict: Mapping[str, Union[ColorLike, None]] = {}
+        color_dict: Mapping[str, Optional[ColorLike]] = {}
 
         if self.fdata.dim_domain == 1:
 
-            if n_points is None:
+            if self.n_points is None:
                 self.n_points = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
 
             # Evaluates the object in a linspace
@@ -307,29 +322,29 @@ class GraphPlot(BasePlot):
             mat = self.fdata(eval_points)
 
             for i in range(self.fdata.dim_codomain):
-                self.artists[i] = np.zeros(self.n_samples(), dtype=Artist)
                 for j in range(self.fdata.n_samples):
 
                     set_color_dict(sample_colors, j, color_dict)
 
-                    self.artists[i][j] = self.axes[i].plot(
+                    self.artists[j, i] = self.axes[i].plot(
                         eval_points,
                         mat[j, ..., i].T,
                         **color_dict,
                         **kwargs,
-                    )
+                    )[0]
 
         else:
 
             # Selects the number of points
-            if n_points is None:
+            if self.n_points is None:
                 n_points_tuple = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
-            elif isinstance(n_points, int):
-                n_points_tuple = (n_points, n_points)
-            elif len(n_points) != 2:
+            elif isinstance(self.n_points, int):
+                n_points_tuple = (self.n_points, self.n_points)
+            elif len(self.n_points) != 2:
                 raise ValueError(
                     "n_points should be a number or a tuple of "
-                    "length 2, and has length {0}.".format(len(n_points)),
+                    "length 2, and has "
+                    "length {0}.".format(len(self.n_points)),
                 )
 
             # Axes where will be evaluated
@@ -341,24 +356,20 @@ class GraphPlot(BasePlot):
 
             X, Y = np.meshgrid(x, y, indexing='ij')
 
-            ind = 0
             for k in range(self.fdata.dim_codomain):
-                self.artists[k] = np.zeros(self.n_samples(), dtype=Artist)
                 for h in range(self.fdata.n_samples):
 
                     set_color_dict(sample_colors, h, color_dict)
 
-                    self.artists[k][h] = self.axes[k].plot_surface(
+                    self.artists[h, k] = self.axes[k].plot_surface(
                         X,
                         Y,
                         Z[h, ..., k],
                         **color_dict,
                         **kwargs,
-                    )
-                    ind += 1
+                    )[0]
 
         _set_labels(self.fdata, self.fig, self.axes, patches)
-        self.fig.suptitle("GraphPlot")
 
         return self.fig
 
@@ -426,50 +437,6 @@ class ScatterPlot(BasePlot):
         n_cols(int, optional): designates the number of columns of the
             figure to plot the different dimensions of the image. Only
             specified if fig and ax are None.
-    """
-
-    def __init__(
-        self,
-        fdata: FData,
-        chart: Union[Figure, Axes, None] = None,
-        *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
-        grid_points: Optional[GridPointsLike] = None,
-    ) -> None:
-        BasePlot.__init__(self)
-        self.fdata = fdata
-        self.grid_points = grid_points
-
-        self.evaluated_points = None
-        if self.grid_points is None:
-            # This can only be done for FDataGrid
-            self.grid_points = self.fdata.grid_points
-            self.evaluated_points = self.fdata.data_matrix
-
-        if self.evaluated_points is None:
-            self.evaluated_points = self.fdata(
-                self.grid_points, grid=True,
-            )
-
-        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
-
-    def plot(
-        self,
-        *,
-        domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
-        group: Optional[Sequence[K]] = None,
-        group_colors: Optional[Indexable[K, ColorLike]] = None,
-        group_names: Optional[Indexable[K, str]] = None,
-        legend: bool = False,
-        **kwargs: Any,
-    ) -> Figure:
-        """
-        Scatter FDataGrid object.
-
-        Args:
         domain_range: Range where the
             function will be plotted. In objects with unidimensional domain
             the domain range should be a tuple with the bounds of the
@@ -491,6 +458,54 @@ class ScatterPlot(BasePlot):
             `group_names` is passed, it will be used for finding the names
             to display in the legend. Otherwise, the values passed to
             `group` will be used.
+    """
+
+    def __init__(
+        self,
+        fdata: FData,
+        chart: Union[Figure, Axes, None] = None,
+        *,
+        fig: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+        grid_points: Optional[GridPointsLike] = None,
+        domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
+        group: Optional[Sequence[K]] = None,
+        group_colors: Optional[Indexable[K, ColorLike]] = None,
+        group_names: Optional[Indexable[K, str]] = None,
+        legend: bool = False,
+    ) -> None:
+        BasePlot.__init__(self)
+        self.fdata = fdata
+        self.grid_points = grid_points
+
+        self.evaluated_points = None
+        if self.grid_points is None:
+            # This can only be done for FDataGrid
+            self.grid_points = self.fdata.grid_points
+            self.evaluated_points = self.fdata.data_matrix
+        else:
+            self.evaluated_points = self.fdata(
+                self.grid_points, grid=True,
+            )
+
+        self.domain_range = domain_range
+        self.group = group
+        self.group_colors = group_colors
+        self.group_names = group_names
+        self.legend = legend
+
+        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
+
+    def plot(
+        self,
+        **kwargs: Any,
+    ) -> Figure:
+        """
+        Scatter FDataGrid object.
+
+        Args:
         kwargs: if dim_domain is 1, keyword arguments to be passed to
             the matplotlib.pyplot.plot function; if dim_domain is 2,
             keyword arguments to be passed to the
@@ -498,28 +513,35 @@ class ScatterPlot(BasePlot):
         Returns:
         fig: figure object in which the graphs are plotted.
         """
-        self.artists = np.zeros(len(self.axes), dtype=np.ndarray)
-
-        if domain_range is None:
-            self.domain_range = self.fdata.domain_range
-        else:
-            self.domain_range = _to_domain_range(domain_range)
-
-        sample_colors, patches = _get_color_info(
-            self.fdata, group, group_names, group_colors, legend, kwargs,
+        self.artists = np.zeros(
+            (self.n_samples(), self.fdata.dim_codomain),
+            dtype=Artist,
         )
 
-        color_dict: Mapping[str, Union[ColorLike, None]] = {}
+        if self.domain_range is None:
+            self.domain_range = self.fdata.domain_range
+        else:
+            self.domain_range = _to_domain_range(self.domain_range)
+
+        sample_colors, patches = _get_color_info(
+            self.fdata,
+            self.group,
+            self.group_names,
+            self.group_colors,
+            self.legend,
+            kwargs,
+        )
+
+        color_dict: Mapping[str, Optional[ColorLike]] = {}
 
         if self.fdata.dim_domain == 1:
 
             for i in range(self.fdata.dim_codomain):
-                self.artists[i] = np.zeros(self.n_samples(), dtype=Artist)
                 for j in range(self.fdata.n_samples):
 
                     set_color_dict(sample_colors, j, color_dict)
 
-                    self.artists[i][j] = self.axes[i].scatter(
+                    self.artists[j, i] = self.axes[i].scatter(
                         self.grid_points[0],
                         self.evaluated_points[j, ..., i].T,
                         **color_dict,
@@ -535,12 +557,11 @@ class ScatterPlot(BasePlot):
             X, Y = np.meshgrid(X, Y)
 
             for k in range(self.fdata.dim_codomain):
-                self.artists[k] = np.zeros(self.n_samples(), dtype=Artist)
                 for h in range(self.fdata.n_samples):
 
                     set_color_dict(sample_colors, h, color_dict)
 
-                    self.artists[k][h] = self.axes[k].scatter(
+                    self.artists[h, k] = self.axes[k].scatter(
                         X,
                         Y,
                         self.evaluated_points[h, ..., k].T,
@@ -599,7 +620,7 @@ class ScatterPlot(BasePlot):
 def set_color_dict(
     sample_colors: Any,
     ind: int,
-    color_dict: Mapping[str, Union[ColorLike, None]],
+    color_dict: Mapping[str, Optional[ColorLike]],
 ) -> None:
     """
     Auxiliary method used to update color_dict.

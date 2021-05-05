@@ -47,7 +47,7 @@ class MultipleDisplay:
         clicked: boolean indicating whether a point has being clicked.
         index_clicked: index of the function selected with the interactive
             module or widgets.
-        tags: list of tags for each ax, that contain the information printed
+        tags: list of tags for each ax, that contain the information printedº
             while hovering.
         previous_hovered: artist object containing of the last point hovered.
         is_updating: boolean value that determines whether a widget
@@ -323,37 +323,26 @@ class MultipleDisplay:
     def update_index_display_picked(self) -> None:
         """Update the index corresponding to the display picked."""
         for d in self.displays:
-            if isinstance(d.artists[0], Artist):
-                if d.axes[0] == self.point_clicked.axes:
-                    self.index_clicked = np.where(
-                        d.artists == self.point_clicked,
-                    )[0][0]
-                    return
-            else:
-                for i in range(len(d.axes)):
-                    self.x = 0
-                    if d.axes[i] == self.point_clicked.axes:
+            for i in range(len(d.axes)):
+                if d.axes[i] == self.point_clicked.axes:
+                    if len(d.axes) == 1:
+                        self.x = 1
                         self.index_clicked = np.where(
-                            d.artists[i] == self.point_clicked,
+                            d.artists == self.point_clicked,
                         )[0][0]
-                        return
+                    else:
+                        self.index_clicked = np.where(
+                            d.artists[:, i] == self.point_clicked,
+                        )[0][0]
+                    return
 
     def reduce_points_intensity(self) -> None:
         """Reduce the transparency of all the points but the selected one."""
         for i in range(self.length_data):
             if i != self.index_clicked:
                 for d in self.displays:
-                    if len(d.artists) != 0:
-                        if isinstance(d.artists[0], list):
-                            d.artists[i][0].set_alpha(0.1)
-                        elif isinstance(d.artists[0], Artist):
-                            d.artists[i].set_alpha(0.1)
-                        else:
-                            for a in d.artists:
-                                if isinstance(a[0], list):
-                                    a[i][0].set_alpha(0.1)
-                                elif isinstance(a[0], Artist):
-                                    a[i].set_alpha(0.1)
+                    for artist in np.ravel(d.artists[i]):
+                        artist.set_alpha(0.1)
 
         self.is_updating = True
         for j in range(len(self.sliders)):
@@ -365,17 +354,8 @@ class MultipleDisplay:
         """Restore the original transparency of all the points."""
         for i in range(self.length_data):
             for d in self.displays:
-                if len(d.artists) != 0:
-                    if isinstance(d.artists[0], list):
-                        d.artists[i][0].set_alpha(1)
-                    elif isinstance(d.artists[0], Artist):
-                        d.artists[i].set_alpha(1)
-                    else:
-                        for a in d.artists:
-                            if isinstance(a[0], list):
-                                a[i][0].set_alpha(1)
-                            elif isinstance(a[0], Artist):
-                                a[i].set_alpha(1)
+                for artist in np.ravel(d.artists[i]):
+                    artist.set_alpha(1)
 
         self.point_clicked = None
         self.index_clicked = -1
@@ -435,16 +415,8 @@ class MultipleDisplay:
         """
         for d in self.displays:
             if len(d.artists) != 0:
-                if isinstance(d.artists[0], list):
-                    d.artists[index][0].set_alpha(intensity)
-                elif isinstance(d.artists[0], Artist):
-                    d.artists[index].set_alpha(intensity)
-                else:
-                    for a in d.artists:
-                        if isinstance(a[0], list):
-                            a[index][0].set_alpha(intensity)
-                        elif isinstance(a[0], Artist):
-                            a[index].set_alpha(intensity)
+                for artist in np.ravel(d.artists[index]):
+                    artist.set_alpha(intensity)
 
     def create_sliders(
         self,

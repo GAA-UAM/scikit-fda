@@ -6,7 +6,7 @@ one FData, with domain 1 and codomain 2, or giving two FData, both
 of them with domain 1 and codomain 1.
 """
 
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, TypeVar, Union
 
 import numpy as np
 from matplotlib.artist import Artist
@@ -15,7 +15,16 @@ from matplotlib.figure import Figure
 
 from ...representation import FData
 from ._baseplot import BasePlot
-from ._utils import _get_figure_and_axes, _set_figure_layout
+from ._utils import (
+    ColorLike,
+    _get_figure_and_axes,
+    _set_figure_layout,
+    _set_labels,
+)
+from .representation import Indexable, _get_color_info
+
+K = TypeVar('K', contravariant=True)
+V = TypeVar('V', covariant=True)
 
 
 class ParametricPlot(BasePlot):
@@ -48,6 +57,10 @@ class ParametricPlot(BasePlot):
         *,
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
+        group: Optional[Sequence[K]] = None,
+        group_colors: Optional[Indexable[K, ColorLike]] = None,
+        group_names: Optional[Indexable[K, str]] = None,
+        legend: bool = False,
     ) -> None:
         BasePlot.__init__(self)
         self.fdata1 = fdata1
@@ -60,24 +73,34 @@ class ParametricPlot(BasePlot):
         else:
             self.fd_final = self.fdata1
 
+        self.group = group
+        self.group_names = group_names
+        self.group_colors = group_colors
+        self.legend = legend
+
         self._set_figure_and_axes(chart, fig, axes)
 
     def plot(
         self,
-        **kwargs,
     ) -> Figure:
         """
         Parametric Plot graph.
 
         Plot the functions as coordinates. If two functions are passed
         it will concatenate both as coordinates of a vector-valued FData.
-        Args:
-            kwargs: optional arguments.
         Returns:
             fig: figure object in which the ParametricPlot
             graph will be plotted.
         """
         self.artists = np.zeros(self.n_samples(), dtype=Artist)
+
+        sample_colors, patches = _get_color_info(
+            self.fd_final,
+            self.group,
+            self.group_names,
+            self.group_colors,
+            self.legend,
+        )
 
         if (
             self.fd_final.dim_domain == 1
@@ -94,7 +117,7 @@ class ParametricPlot(BasePlot):
                 self.artists[i] = ax.plot(
                     self.fd_final.data_matrix[i][:, 0].tolist(),
                     self.fd_final.data_matrix[i][:, 1].tolist(),
-                    **kwargs,
+                    **color_dict,
                 )
         else:
             raise ValueError(
@@ -103,7 +126,7 @@ class ParametricPlot(BasePlot):
             )
 
         if self.fd_final.dataset_name is not None:
-            fig.suptitle(self.fd_final.dataset_name)
+            self.fig.suptitle(self.fd_final.dataset_name)
 
         if self.fd_final.coordinate_names[0] is None:
             ax.set_xlabel("Function 1")
@@ -114,6 +137,8 @@ class ParametricPlot(BasePlot):
             ax.set_ylabel("Function 2")
         else:
             ax.set_ylabel(self.fd_final.coordinate_names[1])
+
+        _set_labels(self.fdata, self.fig, self.axes, patches)
 
         return fig
 

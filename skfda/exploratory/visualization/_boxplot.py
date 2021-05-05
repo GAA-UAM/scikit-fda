@@ -248,7 +248,7 @@ class Boxplot(FDataBoxplot, BasePlot):
     def __init__(
         self,
         fdatagrid: FDataGrid,
-        depth_method: Optional[Depth] = None,
+        depth_method: Optional[Depth[FDataGrid]] = None,
         prob: Sequence[float] = [0.5],
         factor: float = 1.5,
         chart: Union[Figure, Axes, None] = None,

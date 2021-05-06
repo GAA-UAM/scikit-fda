@@ -6,7 +6,7 @@ one FData, with domain 1 and codomain 2, or giving two FData, both
 of them with domain 1 and codomain 1.
 """
 
-from typing import Optional, Sequence, TypeVar, Union
+from typing import Any, Mapping, Optional, Sequence, TypeVar, Union
 
 import numpy as np
 from matplotlib.artist import Artist
@@ -82,6 +82,7 @@ class ParametricPlot(BasePlot):
 
     def plot(
         self,
+        **kwargs: Any,
     ) -> Figure:
         """
         Parametric Plot graph.
@@ -92,7 +93,10 @@ class ParametricPlot(BasePlot):
             fig: figure object in which the ParametricPlot
             graph will be plotted.
         """
-        self.artists = np.zeros(self.n_samples(), dtype=Artist)
+        self.artists = np.zeros(
+            (self.n_samples(), 1),
+            dtype=Artist,
+        )
 
         sample_colors, patches = _get_color_info(
             self.fd_final,
@@ -100,7 +104,10 @@ class ParametricPlot(BasePlot):
             self.group_names,
             self.group_colors,
             self.legend,
+            kwargs,
         )
+
+        color_dict: Mapping[str, Union[ColorLike, None]] = {}
 
         if (
             self.fd_final.dim_domain == 1
@@ -114,10 +121,15 @@ class ParametricPlot(BasePlot):
             ax = self.axes[0]
 
             for i in range(self.fd_final.n_samples):
-                self.artists[i] = ax.plot(
+
+                if sample_colors is not None:
+                    color_dict["color"] = sample_colors[i]
+
+                self.artists[i, 0] = ax.plot(
                     self.fd_final.data_matrix[i][:, 0].tolist(),
                     self.fd_final.data_matrix[i][:, 1].tolist(),
                     **color_dict,
+                    **kwargs,
                 )
         else:
             raise ValueError(
@@ -137,8 +149,6 @@ class ParametricPlot(BasePlot):
             ax.set_ylabel("Function 2")
         else:
             ax.set_ylabel(self.fd_final.coordinate_names[1])
-
-        _set_labels(self.fdata, self.fig, self.axes, patches)
 
         return fig
 

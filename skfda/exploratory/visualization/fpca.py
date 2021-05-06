@@ -1,7 +1,5 @@
-from re import A
 from typing import Any, Optional, Union
 
-import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 

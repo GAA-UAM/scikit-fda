@@ -1,4 +1,5 @@
-from typing import Optional, Union
+from re import A
+from typing import Any, Optional, Union
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -33,10 +34,13 @@ class FPCAPlot(BasePlot):
 
     def __init__(
         self,
-        mean, components, multiple,
-        chart=None,
-        fig=None,
-        axes=None,
+        mean: FData,
+        components: FData,
+        multiple: float,
+        chart: Union[Figure, Axes, None] = None,
+        *,
+        fig: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
     ):
         BasePlot.__init__(self)
         self.mean = mean
@@ -45,7 +49,7 @@ class FPCAPlot(BasePlot):
         
         self._set_figure_and_axes(chart, fig, axes)
 
-    def plot(self, **kwargs):
+    def plot(self, **kwargs: Any):
         """ 
         Plots the perturbation graphs for the principal components.
         The perturbations are defined as variations over the mean. Adding a multiple
@@ -86,7 +90,7 @@ class FPCAPlot(BasePlot):
         self.fig = fig
         self.axes = axes
 
-    def _get_component_perturbations(self, index=0):
+    def _get_component_perturbations(self, index: int = 0):
         """ Computes the perturbations over the mean function of a principal
         component at a certain index.
 

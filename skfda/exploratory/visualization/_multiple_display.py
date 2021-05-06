@@ -6,6 +6,7 @@ import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import Event
+from matplotlib.collections import PathCollection
 from matplotlib.figure import Figure
 from matplotlib.text import Annotation
 from matplotlib.widgets import Slider, Widget
@@ -220,21 +221,13 @@ class MultipleDisplay:
             for i in range(len(d.axes)):
                 if event.inaxes == d.axes[i]:
                     index_axis = index
-                    if len(d.artists) == 0:
-                        return
 
-                    elif (
-                        isinstance(d.artists[0], List)
-                        or isinstance(d.artists[0][0], List)
-                    ):
-                        return
-
-                    elif isinstance(d.artists[0], Artist):
-                        artists_array = d.artists
-                    elif isinstance(d.artists[0], np.ndarray):
-                        artists_array = d.artists[i]
+                    artists_array = d.artists[:, i]
                     for j in range(len(artists_array)):
                         artist = artists_array[j]
+                        if not isinstance(artist, PathCollection):
+                            return
+
                         is_graph, ind = artist.contains(event)
                         if is_graph and self.previous_hovered == artist:
                             return
@@ -326,7 +319,6 @@ class MultipleDisplay:
             for i in range(len(d.axes)):
                 if d.axes[i] == self.point_clicked.axes:
                     if len(d.axes) == 1:
-                        self.x = 1
                         self.index_clicked = np.where(
                             d.artists == self.point_clicked,
                         )[0][0]

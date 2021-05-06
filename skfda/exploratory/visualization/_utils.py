@@ -1,12 +1,13 @@
 import io
 import math
 import re
-from typing import Optional, Protocol, Sequence, Tuple, TypeVar, Union
+from typing import Optional, Sequence, Tuple, TypeVar, Union
 
 import matplotlib.backends.backend_svg
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from typing_extensions import Protocol
 
 from ...representation._functional_data import FData
 

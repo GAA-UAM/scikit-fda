@@ -6,7 +6,7 @@ visualize it.
 """
 import math
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -249,7 +249,7 @@ class Boxplot(FDataBoxplot, BasePlot):
         self,
         fdatagrid: FDataGrid,
         depth_method: Optional[Depth[FDataGrid]] = None,
-        prob: Sequence[float] = [0.5],
+        prob: Tuple[float] = (0.5,),
         factor: float = 1.5,
         chart: Union[Figure, Axes, None] = None,
         *,
@@ -293,7 +293,7 @@ class Boxplot(FDataBoxplot, BasePlot):
             raise ValueError(
                 "Function only supports FDataGrid with domain dimension 1.")
 
-        if sorted(prob, reverse=True) != prob:
+        if sorted(prob, reverse=True) != list(prob):
             raise ValueError(
                 "Probabilities required to be in descending order.")
 

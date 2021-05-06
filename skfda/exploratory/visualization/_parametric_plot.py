@@ -15,12 +15,7 @@ from matplotlib.figure import Figure
 
 from ...representation import FData
 from ._baseplot import BasePlot
-from ._utils import (
-    ColorLike,
-    _get_figure_and_axes,
-    _set_figure_layout,
-    _set_labels,
-)
+from ._utils import ColorLike, _get_figure_and_axes, _set_figure_layout
 from .representation import Indexable, _get_color_info
 
 K = TypeVar('K', contravariant=True)
@@ -93,10 +88,7 @@ class ParametricPlot(BasePlot):
             fig: figure object in which the ParametricPlot
             graph will be plotted.
         """
-        self.artists = np.zeros(
-            (self.n_samples(), 1),
-            dtype=Artist,
-        )
+        self.artists = np.zeros((self.n_samples(), 1), dtype=Artist)
 
         sample_colors, patches = _get_color_info(
             self.fd_final,

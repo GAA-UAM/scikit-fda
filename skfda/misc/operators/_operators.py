@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 import abc
-from typing import Callable, Generic, TypeVar, Union
+from typing import Any, Callable, TypeVar, Union
 
 import multimethod
 import numpy as np
+from typing_extensions import Protocol
 
 from ...representation import FData
+from ...representation.basis import Basis
 
 OperatorInput = TypeVar(
     "OperatorInput",
-    bound=Union[np.ndarray, FData],
+    bound=Union[np.ndarray, FData, Basis],
     contravariant=True,
 )
 
@@ -21,7 +23,7 @@ OperatorOutput = TypeVar(
 )
 
 
-class Operator(abc.ABC, Generic[OperatorInput, OperatorOutput]):
+class Operator(Protocol[OperatorInput, OperatorOutput]):
     """Abstract class for :term:`operators`."""
 
     @abc.abstractmethod
@@ -32,7 +34,7 @@ class Operator(abc.ABC, Generic[OperatorInput, OperatorOutput]):
 
 @multimethod.multidispatch
 def gramian_matrix_optimization(
-    linear_operator: Callable[[OperatorInput], OperatorOutput],
+    linear_operator: Any,
     basis: OperatorInput,
 ) -> np.ndarray:
     """
@@ -46,7 +48,7 @@ def gramian_matrix_optimization(
 
 
 def gramian_matrix_numerical(
-    linear_operator: Callable[[OperatorInput], OperatorOutput],
+    linear_operator: Operator[OperatorInput, OperatorOutput],
     basis: OperatorInput,
 ) -> np.ndarray:
     """
@@ -65,7 +67,7 @@ def gramian_matrix_numerical(
 
 
 def gramian_matrix(
-    linear_operator: Callable[[OperatorInput], OperatorOutput],
+    linear_operator: Operator[OperatorInput, OperatorOutput],
     basis: OperatorInput,
 ) -> np.ndarray:
     r"""

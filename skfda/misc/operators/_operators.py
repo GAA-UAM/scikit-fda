@@ -16,9 +16,11 @@ OperatorInput = TypeVar(
     contravariant=True,
 )
 
+OutputType = Union[np.ndarray, Callable[[np.ndarray], np.ndarray]]
+
 OperatorOutput = TypeVar(
     "OperatorOutput",
-    bound=Union[np.ndarray, Callable[[np.ndarray], np.ndarray]],
+    bound=OutputType,
     covariant=True,
 )
 
@@ -48,7 +50,7 @@ def gramian_matrix_optimization(
 
 
 def gramian_matrix_numerical(
-    linear_operator: Operator[OperatorInput, OperatorOutput],
+    linear_operator: Operator[OperatorInput, OutputType],
     basis: OperatorInput,
 ) -> np.ndarray:
     """
@@ -67,7 +69,7 @@ def gramian_matrix_numerical(
 
 
 def gramian_matrix(
-    linear_operator: Operator[OperatorInput, OperatorOutput],
+    linear_operator: Operator[OperatorInput, OutputType],
     basis: OperatorInput,
 ) -> np.ndarray:
     r"""

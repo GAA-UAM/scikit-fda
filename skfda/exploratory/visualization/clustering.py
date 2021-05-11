@@ -353,9 +353,9 @@ class ClusterPlot(BasePlot):
         return self._plot_clusters()
 
 
-class ClusterPlotLines(BasePlot):
+class ClusterMembershipLinesPlot(BasePlot):
     """
-    Class ClusterPlotLines.
+    Class ClusterMembershipLinesPlot.
 
     Args:
         estimator (BaseEstimator object): estimator used to calculate the
@@ -488,7 +488,36 @@ class ClusterPlotLines(BasePlot):
         return self.fig
 
 
-class ClusterPlotBars(BasePlot):
+class ClusterMembershipPlot(BasePlot):
+
+    """
+    Class ClusterMembershipPlot.
+
+    Args:
+        estimator (BaseEstimator object): estimator used to calculate the
+            clusters.
+        X (FDataGrd object): contains the samples which are grouped
+            into different clusters.
+        fig (figure object, optional): figure over which the graph is
+            plotted in case ax is not specified. If None and ax is also None,
+            the figure is initialized.
+        axes (axes object, optional): axis over where the graph is  plotted.
+            If None, see param fig.
+        sample_colors (list of colors, optional): contains in order the colors
+            of each sample of the fdatagrid.
+        sample_labels (list of str, optional): contains in order the labels
+            of each sample  of the fdatagrid.
+        cluster_labels (list of str, optional): contains in order the names of
+            each cluster the samples of the fdatagrid are classified into.
+        colormap(colormap, optional): colormap from which the colors of the
+            plot are taken.
+        x_label (str): Label for the x-axis. Defaults to "Cluster".
+        y_label (str): Label for the y-axis. Defaults to
+            "Degree of membership".
+        title (str, optional): Title for the figure where the clustering
+            results are ploted.
+            Defaults to "Degrees of membership of the samples to each cluster".
+    """
 
     def __init__(
         self,

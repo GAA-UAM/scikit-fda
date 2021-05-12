@@ -286,6 +286,7 @@ class GraphPlot(BasePlot):
 
     def plot(
         self,
+        **kwargs,
     ) -> Figure:
         """
         Plot the graph.
@@ -330,6 +331,7 @@ class GraphPlot(BasePlot):
                         eval_points,
                         mat[j, ..., i].T,
                         **color_dict,
+                        **kwargs,
                     )[0]
 
         else:
@@ -365,6 +367,7 @@ class GraphPlot(BasePlot):
                         Y,
                         Z[h, ..., k],
                         **color_dict,
+                        **kwargs,
                     )[0]
 
         _set_labels(self.fdata, self.fig, self.axes, self.patches)
@@ -519,6 +522,7 @@ class ScatterPlot(BasePlot):
 
     def plot(
         self,
+        **kwargs: Any,
     ) -> Figure:
         """
         Scatter FDataGrid object.
@@ -546,6 +550,7 @@ class ScatterPlot(BasePlot):
                         **color_dict,
                         picker=True,
                         pickradius=2,
+                        **kwargs,
                     )
 
         else:
@@ -566,6 +571,7 @@ class ScatterPlot(BasePlot):
                         **color_dict,
                         picker=True,
                         pickradius=2,
+                        **kwargs,
                     )
 
         _set_labels(self.fdata, self.fig, self.axes, self.patches)

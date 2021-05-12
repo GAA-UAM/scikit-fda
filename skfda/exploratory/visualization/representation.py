@@ -187,6 +187,10 @@ class GraphPlot(BasePlot):
             `group_names` is passed, it will be used for finding the names
             to display in the legend. Otherwise, the values passed to
             `group` will be used.
+        kwargs: if dim_domain is 1, keyword arguments to be passed to
+            the matplotlib.pyplot.plot function; if dim_domain is 2,
+            keyword arguments to be passed to the
+            matplotlib.pyplot.plot_surface function.
     Attributes:
         gradient_list: normalization of the values from gradient color_list
             that will be used to determine the intensity of the color
@@ -212,6 +216,7 @@ class GraphPlot(BasePlot):
         group_names: Optional[Indexable[K, str]] = None,
         colormap_name: str = 'autumn',
         legend: bool = False,
+        **kwargs: Any,
     ) -> None:
         BasePlot.__init__(self)
         self.fdata = fdata
@@ -256,40 +261,6 @@ class GraphPlot(BasePlot):
         self.legend = legend
         self.colormap_name = colormap_name
 
-        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
-
-    def plot(
-        self,
-        **kwargs: Any,
-    ) -> Figure:
-        """
-        Plot the graph.
-
-        Plots each coordinate separately. If the :term:`domain` is one
-        dimensional, the plots will be curves, and if it is two
-        dimensional, they will be surfaces. There are two styles of
-        visualizations, one that displays the functions without any
-        criteria choosing the colors and a new one that displays the
-        function with a gradient of colors depending on the initial
-        gradient_color_list (normalized in gradient_list).
-        Args:
-            kwargs: if dim_domain is 1, keyword arguments to be passed to
-                the matplotlib.pyplot.plot function; if dim_domain is 2,
-                keyword arguments to be passed to the
-                matplotlib.pyplot.plot_surface function.
-        Returns:
-            fig (figure object): figure object in which the graphs are plotted.
-        """
-        self.artists = np.zeros(
-            (self.n_samples(), self.fdata.dim_codomain),
-            dtype=Artist,
-        )
-
-        if self.domain_range is None:
-            self.domain_range = self.fdata.domain_range
-        else:
-            self.domain_range = _to_domain_range(self.domain_range)
-
         if self.gradient_list is None:
             sample_colors, patches = _get_color_info(
                 self.fdata,
@@ -309,6 +280,35 @@ class GraphPlot(BasePlot):
                 sample_colors[m] = colormap(self.gradient_list[m])
 
         self.sample_colors = sample_colors
+        self.patches = patches
+
+        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
+
+    def plot(
+        self,
+    ) -> Figure:
+        """
+        Plot the graph.
+
+        Plots each coordinate separately. If the :term:`domain` is one
+        dimensional, the plots will be curves, and if it is two
+        dimensional, they will be surfaces. There are two styles of
+        visualizations, one that displays the functions without any
+        criteria choosing the colors and a new one that displays the
+        function with a gradient of colors depending on the initial
+        gradient_color_list (normalized in gradient_list).            
+        Returns:
+            fig (figure object): figure object in which the graphs are plotted.
+        """
+        self.artists = np.zeros(
+            (self.n_samples(), self.fdata.dim_codomain),
+            dtype=Artist,
+        )
+
+        if self.domain_range is None:
+            self.domain_range = self.fdata.domain_range
+        else:
+            self.domain_range = _to_domain_range(self.domain_range)
 
         color_dict: Mapping[str, Optional[ColorLike]] = {}
 
@@ -324,13 +324,12 @@ class GraphPlot(BasePlot):
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
 
-                    set_color_dict(sample_colors, j, color_dict)
+                    set_color_dict(self.sample_colors, j, color_dict)
 
                     self.artists[j, i] = self.axes[i].plot(
                         eval_points,
                         mat[j, ..., i].T,
                         **color_dict,
-                        **kwargs,
                     )[0]
 
         else:
@@ -359,17 +358,16 @@ class GraphPlot(BasePlot):
             for k in range(self.fdata.dim_codomain):
                 for h in range(self.fdata.n_samples):
 
-                    set_color_dict(sample_colors, h, color_dict)
+                    set_color_dict(self.sample_colors, h, color_dict)
 
                     self.artists[h, k] = self.axes[k].plot_surface(
                         X,
                         Y,
                         Z[h, ..., k],
                         **color_dict,
-                        **kwargs,
                     )[0]
 
-        _set_labels(self.fdata, self.fig, self.axes, patches)
+        _set_labels(self.fdata, self.fig, self.axes, self.patches)
 
         return self.fig
 
@@ -458,6 +456,10 @@ class ScatterPlot(BasePlot):
             `group_names` is passed, it will be used for finding the names
             to display in the legend. Otherwise, the values passed to
             `group` will be used.
+        kwargs: if dim_domain is 1, keyword arguments to be passed to
+            the matplotlib.pyplot.plot function; if dim_domain is 2,
+            keyword arguments to be passed to the
+            matplotlib.pyplot.plot_surface function.
     """
 
     def __init__(
@@ -475,6 +477,7 @@ class ScatterPlot(BasePlot):
         group_colors: Optional[Indexable[K, ColorLike]] = None,
         group_names: Optional[Indexable[K, str]] = None,
         legend: bool = False,
+        **kwargs: Any,
     ) -> None:
         BasePlot.__init__(self)
         self.fdata = fdata
@@ -496,28 +499,6 @@ class ScatterPlot(BasePlot):
         self.group_names = group_names
         self.legend = legend
 
-        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
-
-    def plot(
-        self,
-        **kwargs: Any,
-    ) -> Figure:
-        """
-        Scatter FDataGrid object.
-
-        Args:
-        kwargs: if dim_domain is 1, keyword arguments to be passed to
-            the matplotlib.pyplot.plot function; if dim_domain is 2,
-            keyword arguments to be passed to the
-            matplotlib.pyplot.plot_surface function.
-        Returns:
-        fig: figure object in which the graphs are plotted.
-        """
-        self.artists = np.zeros(
-            (self.n_samples(), self.fdata.dim_codomain),
-            dtype=Artist,
-        )
-
         if self.domain_range is None:
             self.domain_range = self.fdata.domain_range
         else:
@@ -531,6 +512,24 @@ class ScatterPlot(BasePlot):
             self.legend,
             kwargs,
         )
+        self.sample_colors = sample_colors
+        self.patches = patches
+
+        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
+
+    def plot(
+        self,
+    ) -> Figure:
+        """
+        Scatter FDataGrid object.
+
+        Returns:
+        fig: figure object in which the graphs are plotted.
+        """
+        self.artists = np.zeros(
+            (self.n_samples(), self.fdata.dim_codomain),
+            dtype=Artist,
+        )
 
         color_dict: Mapping[str, Optional[ColorLike]] = {}
 
@@ -539,7 +538,7 @@ class ScatterPlot(BasePlot):
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
 
-                    set_color_dict(sample_colors, j, color_dict)
+                    set_color_dict(self.sample_colors, j, color_dict)
 
                     self.artists[j, i] = self.axes[i].scatter(
                         self.grid_points[0],
@@ -547,7 +546,6 @@ class ScatterPlot(BasePlot):
                         **color_dict,
                         picker=True,
                         pickradius=2,
-                        **kwargs,
                     )
 
         else:
@@ -559,7 +557,7 @@ class ScatterPlot(BasePlot):
             for k in range(self.fdata.dim_codomain):
                 for h in range(self.fdata.n_samples):
 
-                    set_color_dict(sample_colors, h, color_dict)
+                    set_color_dict(self.sample_colors, h, color_dict)
 
                     self.artists[h, k] = self.axes[k].scatter(
                         X,
@@ -568,10 +566,9 @@ class ScatterPlot(BasePlot):
                         **color_dict,
                         picker=True,
                         pickradius=2,
-                        **kwargs,
                     )
 
-        _set_labels(self.fdata, self.fig, self.axes, patches)
+        _set_labels(self.fdata, self.fig, self.axes, self.patches)
 
         return self.fig
 

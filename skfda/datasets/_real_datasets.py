@@ -3,12 +3,11 @@ from typing import Any, Mapping, Optional, Tuple, Union, overload
 
 import numpy as np
 import pandas as pd
+import rdata
 from numpy import ndarray
 from pandas import DataFrame, Series
 from sklearn.utils import Bunch
 from typing_extensions import Literal
-
-import rdata
 
 from .. import FDataGrid
 
@@ -1244,6 +1243,7 @@ def fetch_handwriting(
     as_frame: Literal[True],
 ) -> Tuple[DataFrame, None]:
     pass
+
 
 def fetch_handwriting(
     return_X_y: bool = False,

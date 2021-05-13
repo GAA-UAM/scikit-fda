@@ -4,7 +4,7 @@ from ._real_datasets import (fdata_constructor, fetch_cran,
                              fetch_tecator, fetch_medflies,
                              fetch_weather, fetch_aemet,
                              fetch_octane, fetch_gait,
-                             fetch_handwrit)
+                             fetch_handwriting)
 from ._samples_generators import (make_gaussian,
                                   make_gaussian_process,
                                   make_sinusoidal_process,

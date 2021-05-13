@@ -1207,8 +1207,11 @@ def fetch_gait(
 if fetch_gait.__doc__ is not None:  # docstrings can be stripped off
     fetch_gait.__doc__ += _gait_descr + _param_descr
 
-_handwrit_descr = """
-    Data representing the X-Y coordinates of 20 writing the "fda".
+_handwriting_descr = """
+    Data representing the X-Y coordinates along time obtained while
+    writing the word "fda". The sample contains 20 instances measured over
+    2.3 seconds that had been aligned for a better understanding. Each instance
+    is formed by 1401 coordinate values.
 
     References:
         Ramsay, James O., and Silverman, Bernard W. (2006),
@@ -1217,7 +1220,7 @@ _handwrit_descr = """
 
 
 @overload
-def fetch_handwrit(
+def fetch_handwriting(
     *,
     return_X_y: Literal[False] = False,
     as_frame: bool = False,
@@ -1226,7 +1229,7 @@ def fetch_handwrit(
 
 
 @overload
-def fetch_handwrit(
+def fetch_handwriting(
     *,
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
@@ -1235,14 +1238,14 @@ def fetch_handwrit(
 
 
 @overload
-def fetch_handwrit(
+def fetch_handwriting(
     *,
     return_X_y: Literal[True],
     as_frame: Literal[True],
 ) -> Tuple[DataFrame, None]:
     pass
 
-def fetch_handwrit(
+def fetch_handwriting(
     return_X_y: bool = False,
     as_frame: bool = False,
 ) -> Union[Bunch, Tuple[FDataGrid, None], Tuple[DataFrame, None]]:
@@ -1252,7 +1255,7 @@ def fetch_handwrit(
     The data is obtained from the R package 'fda' from CRAN.
 
     """
-    descr = _handwrit_descr
+    descr = _handwriting_descr
 
     raw_data = _fetch_fda("handwrit")
 
@@ -1296,5 +1299,5 @@ def fetch_handwrit(
     )
 
 
-if fetch_handwrit.__doc__ is not None:  # docstrings can be stripped off
-    fetch_handwrit.__doc__ += _gait_descr + _param_descr
+if fetch_handwriting.__doc__ is not None:  # docstrings can be stripped off
+    fetch_handwriting.__doc__ += _handwriting_descr + _param_descr

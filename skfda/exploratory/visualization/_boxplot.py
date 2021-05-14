@@ -17,6 +17,7 @@ from matplotlib.figure import Figure
 
 from skfda.exploratory.depth.multivariate import Depth
 
+from ... import FData
 from ... import FDataGrid
 from ..depth import ModifiedBandDepth
 from ..outliers import _envelopes
@@ -247,14 +248,14 @@ class Boxplot(FDataBoxplot, BasePlot):
 
     def __init__(
         self,
-        fdatagrid: FDataGrid,
+        fdatagrid: FData,
         depth_method: Optional[Depth[FDataGrid]] = None,
-        prob: Tuple[float] = (0.5,),
+        prob: Tuple[float, ...] = (0.5,),
         factor: float = 1.5,
         chart: Union[Figure, Axes, None] = None,
         *,
         fig: Optional[Figure] = None,
-        axes: Optional[Sequence[Axes]] = None,
+        axes: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
     ):

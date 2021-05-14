@@ -19,7 +19,6 @@ from ._utils import ColorLike, _get_figure_and_axes, _set_figure_layout
 from .representation import Indexable, _get_color_info
 
 K = TypeVar('K', contravariant=True)
-V = TypeVar('V', covariant=True)
 
 
 class ParametricPlot(BasePlot):

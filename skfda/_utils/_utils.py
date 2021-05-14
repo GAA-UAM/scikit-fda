@@ -20,13 +20,14 @@ from typing import (
 )
 
 import numpy as np
-import scipy.integrate
 from numpy import ndarray
 from pandas.api.indexers import check_array_indexer
 from sklearn.base import clone
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
 from typing_extensions import Literal, Protocol
+
+import scipy.integrate
 
 from ..representation._typing import (
     ArrayLike,
@@ -45,36 +46,6 @@ if TYPE_CHECKING:
     from ..representation.basis import Basis
     T = TypeVar("T", bound=FData)
 
-
-class _FDataCallable():
-
-    def __init__(self, function, *, domain_range, n_samples=1):
-
-        self.function = function
-        self.domain_range = domain_range
-        self.n_samples = n_samples
-
-    def __call__(self, *args, **kwargs):
-
-        return self.function(*args, **kwargs)
-
-    def __len__(self):
-
-        return self.n_samples
-
-    def __getitem__(self, key):
-
-        def new_function(*args, **kwargs):
-            return self.function(*args, **kwargs)[key]
-
-        tmp = np.empty(self.n_samples)
-        new_nsamples = len(tmp[key])
-
-        return _FDataCallable(
-            new_function,
-            domain_range=self.domain_range,
-            n_samples=new_nsamples,
-        )
 
 def check_is_univariate(fd: FData) -> None:
     """Check if an FData is univariate and raises an error.
@@ -103,6 +74,7 @@ def check_is_univariate(fd: FData) -> None:
             f"with dim_domain=1 {domain_str}"
             f"and dim_codomain=1 {codomain_str}",
         )
+
 
 def _to_grid(
     X: FData,

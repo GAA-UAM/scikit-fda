@@ -465,14 +465,8 @@ class FDataGrid(FData):  # noqa: WPS214
         ])
         data_matrix = operator(self.data_matrix.astype(float))
 
-        dataset_name = (
-            f"{self.dataset_name} - {order} derivative"
-            if self.dataset_name else None
-        )
-
         return self.copy(
             data_matrix=data_matrix,
-            dataset_name=dataset_name,
         )
 
     def _check_same_dimensions(self: T, other: T) -> None:

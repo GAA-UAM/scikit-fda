@@ -290,7 +290,7 @@ class GraphPlot(BasePlot):
         visualizations, one that displays the functions without any
         criteria choosing the colors and a new one that displays the
         function with a gradient of colors depending on the initial
-        gradient_criteria (normalized in gradient_list).      
+        gradient_criteria (normalized in gradient_list).
         Returns:
             fig (figure object): figure object in which the graphs are plotted.
         """

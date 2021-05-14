@@ -6,17 +6,22 @@ package. FDataBasis and FDataGrid.
 """
 import warnings
 from builtins import isinstance
-from typing import Any, Optional, TypeVar, Union, cast
+from typing import Any, Callable, Optional, TypeVar, Union, cast
 
 import multimethod
 import numpy as np
+
 import scipy.integrate
 
 from .._utils import _same_domain, nquad_vec
 from ..representation import FData, FDataBasis, FDataGrid
+from ..representation._typing import DomainRange
 from ..representation.basis import Basis
 
-Vector = TypeVar("Vector")
+Vector = TypeVar(
+    "Vector",
+    bound=Union[np.ndarray, Callable[[np.ndarray], np.ndarray]]
+)
 
 
 def sqrt(fdatagrid: FDataGrid) -> FDataGrid:
@@ -206,10 +211,11 @@ def cumsum(fdatagrid: FDataGrid) -> FDataGrid:
 
 @multimethod.multidispatch
 def inner_product(
-    arg1: Any,
-    arg2: Any,
+    arg1: Vector,
+    arg2: Vector,
     *,
-    _matrix=False,
+    _matrix: bool = False,
+    _domain_range: Optional[DomainRange] = None,
 ) -> np.ndarray:
     r"""Return the usual (:math:`L_2`) inner product.
 
@@ -309,8 +315,13 @@ def inner_product(
         array([ 0.5 , 0.25])
 
     """
-    if callable(arg1):
-        return _inner_product_integrate(arg1, arg2, _matrix=_matrix)
+    if callable(arg1) and callable(arg2):
+        return _inner_product_integrate(
+            arg1,
+            arg2,
+            _matrix=_matrix,
+            _domain_range=_domain_range,
+        )
 
     return (
         np.einsum('n...,m...->nm...', arg1, arg2).sum(axis=-1)
@@ -323,7 +334,7 @@ def _inner_product_fdatagrid(
     arg1: FDataGrid,
     arg2: FDataGrid,
     *,
-    _matrix=False,
+    _matrix: bool = False,
 ) -> np.ndarray:
 
     if not np.array_equal(
@@ -376,9 +387,9 @@ def _inner_product_fdatabasis(
     arg1: Union[FDataBasis, Basis],
     arg2: Union[FDataBasis, Basis],
     *,
-    _matrix=False,
-    inner_product_matrix=None,
-    force_numerical=False,
+    _matrix: bool = False,
+    inner_product_matrix: Optional[np.ndarray] = None,
+    force_numerical: bool = False,
 ) -> np.ndarray:
 
     if not _same_domain(arg1, arg2):
@@ -437,17 +448,34 @@ def _inner_product_fdatabasis(
 
 
 def _inner_product_integrate(
-    arg1: FData,
-    arg2: FData,
+    arg1: Callable[[np.ndarray], np.ndarray],
+    arg2: Callable[[np.ndarray], np.ndarray],
     *,
     _matrix: bool = False,
+    _domain_range: Optional[DomainRange] = None,
 ) -> np.ndarray:
 
-    if not np.array_equal(
-        arg1.domain_range,
-        arg2.domain_range,
-    ):
-        raise ValueError("Domain range for both objects must be equal")
+    domain_range: DomainRange
+
+    if isinstance(arg1, FData) and isinstance(arg2, FData):
+        if not np.array_equal(
+            arg1.domain_range,
+            arg2.domain_range,
+        ):
+            raise ValueError("Domain range for both objects must be equal")
+
+        domain_range = arg1.domain_range
+        len_arg1 = len(arg1)
+        len_arg2 = len(arg2)
+    else:
+        # If the arguments are callables, we need to pass the domain range
+        # explicitly. This is used internally for computing the gramian
+        # matrix of operators.
+        assert _domain_range is not None
+        domain_range = _domain_range
+        left_domain = np.array(domain_range)[:, 0]
+        len_arg1 = len(arg1(left_domain))
+        len_arg2 = len(arg2(left_domain))
 
     def integrand(*args: np.ndarray) -> np.ndarray:  # noqa: WPS430
         f1 = arg1(args)[:, 0, :]
@@ -461,13 +489,13 @@ def _inner_product_integrate(
 
     integral = nquad_vec(
         integrand,
-        arg1.domain_range,
+        domain_range,
     )
 
     summation = np.sum(integral, axis=-1)
 
     if _matrix:
-        summation = summation.reshape((len(arg1), len(arg2)))
+        summation = summation.reshape((len_arg1, len_arg2))
 
     return summation
 

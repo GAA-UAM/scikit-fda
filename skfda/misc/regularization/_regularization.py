@@ -1,14 +1,24 @@
-from collections.abc import Iterable
-import itertools
-from skfda.misc.operators import gramian_matrix, Identity
+from __future__ import annotations
 
-import scipy.linalg
-from sklearn.base import BaseEstimator
+import itertools
+from typing import Any, Generic, Iterable, Union
 
 import numpy as np
+from sklearn.base import BaseEstimator
+
+import scipy.linalg
+from skfda.misc.operators import Identity, gramian_matrix
+
+from ...representation import FData
+from ...representation.basis import Basis
+from ..operators import Operator
+from ..operators._operators import OperatorInput
 
 
-class TikhonovRegularization(BaseEstimator):
+class TikhonovRegularization(
+    BaseEstimator,  # type: ignore
+    Generic[OperatorInput],
+):
     r"""
     Implements Tikhonov regularization.
 
@@ -33,7 +43,6 @@ class TikhonovRegularization(BaseEstimator):
                                   penalization.
 
     Examples:
-
         Construct a regularization that penalizes the second derivative,
         which is a measure of the curvature of the function.
 
@@ -77,21 +86,29 @@ class TikhonovRegularization(BaseEstimator):
 
     """
 
-    def __init__(self, linear_operator,
-                 *, regularization_parameter=1):
+    def __init__(
+        self,
+        linear_operator: Operator[OperatorInput, Any],
+        *,
+        regularization_parameter: float = 1,
+    ) -> None:
         self.linear_operator = linear_operator
         self.regularization_parameter = regularization_parameter
 
-    def penalty_matrix(self, basis):
-        r"""
-        Return a penalty matrix for ordinary least squares.
-
-        """
+    def penalty_matrix(
+        self,
+        basis: OperatorInput,
+    ) -> np.ndarray:
+        """Return a penalty matrix for ordinary least squares."""
         return self.regularization_parameter * gramian_matrix(
-            self.linear_operator, basis)
+            self.linear_operator,
+            basis,
+        )
 
 
-class L2Regularization(TikhonovRegularization):
+class L2Regularization(
+    TikhonovRegularization[Union[np.ndarray, FData, Basis]],
+):
     r"""
     Implements :math:`L_2` regularization.
 
@@ -113,16 +130,28 @@ class L2Regularization(TikhonovRegularization):
 
     """
 
-    def __init__(self, *, regularization_parameter=1):
+    def __init__(
+        self,
+        *,
+        regularization_parameter: float = 1,
+    ) -> None:
         return super().__init__(
             linear_operator=Identity(),
-            regularization_parameter=regularization_parameter)
+            regularization_parameter=regularization_parameter,
+        )
 
 
-def compute_penalty_matrix(basis_iterable, regularization_parameter,
-                           regularization):
+BasisTypes = Union[np.ndarray, FData, Basis]
+Regularization = TikhonovRegularization[Any]
+
+
+def compute_penalty_matrix(
+    basis_iterable: Iterable[BasisTypes],
+    regularization_parameter: Union[float, Iterable[float]],
+    regularization: Union[None, Regularization, Iterable[Regularization]],
+) -> Union[float, np.ndarray]:
     """
-    Computes the regularization matrix for a linear differential operator.
+    Compute the regularization matrix for a linear differential operator.
 
     X can be a list of mixed data.
 
@@ -137,13 +166,17 @@ def compute_penalty_matrix(basis_iterable, regularization_parameter,
 
     if not isinstance(regularization_parameter, Iterable):
         regularization_parameter = itertools.repeat(
-            regularization_parameter)
+            regularization_parameter,
+        )
 
     penalty_blocks = [
         np.zeros((len(b), len(b))) if r is None else
         a * r.penalty_matrix(b)
-        for b, r, a in zip(basis_iterable, regularization,
-                           regularization_parameter)]
+        for b, r, a in zip(
+            basis_iterable,
+            regularization,
+            regularization_parameter,
+        )]
     penalty_matrix = scipy.linalg.block_diag(*penalty_blocks)
 
     return penalty_matrix

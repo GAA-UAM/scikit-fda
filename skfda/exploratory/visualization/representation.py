@@ -7,21 +7,14 @@ be set manually or automatically depending on values
 like depth measures.
 """
 
-from typing import (
-    Any,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import Any, Mapping, Optional, Sequence, Tuple, TypeVar, Union
 
 import matplotlib.cm
 import matplotlib.patches
 import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
+from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from typing_extensions import Protocol
 
@@ -130,15 +123,15 @@ class GraphPlot(BasePlot):
     argument to display the functions wtih a gradient of colors.
     Args:
         fdata: functional data set that we want to plot.
-        gradient_color_list: list of real values used to determine the color
+        gradient_criteria: list of real values used to determine the color
             in which each of the instances will be plotted. The size
         max_grad: maximum value that the gradient_list can take, it will be
-            used to normalize the gradient_color_list in order to get values
+            used to normalize the gradient_criteria in order to get values
             thatcan be used in the funcion colormap.__call__(). If not
             declared it will be initialized to the maximum value of
             gradient_list
         min_grad: minimum value that the gradient_list can take, it will be
-            used to normalize the gradient_color_list in order to get values
+            used to normalize the gradient_criteria in order to get values
             thatcan be used in the funcion colormap.__call__(). If not
             declared it will be initialized to the minimum value of
             gradient_list.
@@ -181,7 +174,7 @@ class GraphPlot(BasePlot):
         group_names (list of str): name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown. Implies `legend=True`.
-        colormap_name: name of the colormap to be used. By default we will
+        colormap: name of the colormap to be used. By default we will
             use autumn.
         legend (bool): if `True`, show a legend with the groups. If
             `group_names` is passed, it will be used for finding the names
@@ -200,7 +193,7 @@ class GraphPlot(BasePlot):
     def __init__(
         self,
         fdata: FData,
-        gradient_color_list: Optional[Sequence[float]] = None,
+        gradient_criteria: Optional[Sequence[float]] = None,
         max_grad: Optional[float] = None,
         min_grad: Optional[float] = None,
         chart: Union[Figure, Axes, None] = None,
@@ -214,15 +207,15 @@ class GraphPlot(BasePlot):
         group: Optional[Sequence[K]] = None,
         group_colors: Optional[Indexable[K, ColorLike]] = None,
         group_names: Optional[Indexable[K, str]] = None,
-        colormap_name: str = 'autumn',
+        colormap: Union[Colormap, str, None] = 'autumn',
         legend: bool = False,
         **kwargs: Any,
     ) -> None:
         BasePlot.__init__(self)
         self.fdata = fdata
-        self.gradient_color_list = gradient_color_list
-        if self.gradient_color_list is not None:
-            if len(self.gradient_color_list) != fdata.n_samples:
+        self.gradient_criteria = gradient_criteria
+        if self.gradient_criteria is not None:
+            if len(self.gradient_criteria) != fdata.n_samples:
                 raise ValueError(
                     "The length of the gradient color",
                     "list should be the same as the number",
@@ -230,18 +223,18 @@ class GraphPlot(BasePlot):
                 )
 
             if min_grad is None:
-                self.min_grad = min(self.gradient_color_list)
+                self.min_grad = min(self.gradient_criteria)
             else:
                 self.min_grad = min_grad
 
             if max_grad is None:
-                self.max_grad = max(self.gradient_color_list)
+                self.max_grad = max(self.gradient_criteria)
             else:
                 self.max_grad = max_grad
 
             aux_list = [
                 grad_color - self.min_grad
-                for grad_color in self.gradient_color_list
+                for grad_color in self.gradient_criteria
             ]
 
             self.gradient_list: Sequence[float] = (
@@ -259,7 +252,7 @@ class GraphPlot(BasePlot):
         self.group_colors = group_colors
         self.group_names = group_names
         self.legend = legend
-        self.colormap_name = colormap_name
+        self.colormap = colormap
 
         if self.gradient_list is None:
             sample_colors, patches = _get_color_info(
@@ -272,7 +265,7 @@ class GraphPlot(BasePlot):
             )
         else:
             patches = None
-            colormap = matplotlib.cm.get_cmap(self.colormap_name)
+            colormap = matplotlib.cm.get_cmap(self.colormap)
             colormap = colormap.reversed()
 
             sample_colors = [None] * self.fdata.n_samples
@@ -297,7 +290,7 @@ class GraphPlot(BasePlot):
         visualizations, one that displays the functions without any
         criteria choosing the colors and a new one that displays the
         function with a gradient of colors depending on the initial
-        gradient_color_list (normalized in gradient_list).            
+        gradient_criteria (normalized in gradient_list).      
         Returns:
             fig (figure object): figure object in which the graphs are plotted.
         """

@@ -115,7 +115,7 @@ def _get_color_info(
 
 class GraphPlot(BasePlot):
     """
-    Class used to plot the FDatGrid object graph as hypersurfaces.
+    Class used to plot the FDataGrid object graph as hypersurfaces.
 
     When plotting functional data, we can either choose manually a color,
     a group of colors for the representations. Besides, we can use a list of
@@ -124,59 +124,59 @@ class GraphPlot(BasePlot):
     Args:
         fdata: functional data set that we want to plot.
         gradient_criteria: list of real values used to determine the color
-            in which each of the instances will be plotted. The size
+            in which each of the instances will be plotted.
         max_grad: maximum value that the gradient_list can take, it will be
-            used to normalize the gradient_criteria in order to get values
-            thatcan be used in the funcion colormap.__call__(). If not
+            used to normalize the ``gradient_criteria`` in order to get values
+            that can be used in the funcion colormap.__call__(). If not
             declared it will be initialized to the maximum value of
-            gradient_list
+            gradient_list.
         min_grad: minimum value that the gradient_list can take, it will be
-            used to normalize the gradient_criteria in order to get values
+            used to normalize the ``gradient_criteria`` in order to get values
             thatcan be used in the funcion colormap.__call__(). If not
             declared it will be initialized to the minimum value of
             gradient_list.
-        chart (figure object, axe or list of axes, optional): figure over
+        chart: figure over
             with the graphs are plotted or axis over where the graphs are
             plotted. If None and ax is also None, the figure is
             initialized.
-        fig (figure object, optional): figure over with the graphs are
+        fig: figure over with the graphs are
             plotted in case ax is not specified. If None and ax is also
             None, the figure is initialized.
-        axes (axis object, optional): axis over where the graphs
+        axes: axis over where the graphs
             are plotted. If None, see param fig.
-        n_rows (int, optional): designates the number of rows of the figure
+        n_rows: designates the number of rows of the figure
             to plot the different dimensions of the image. Only specified
             if fig and ax are None.
-        n_cols(int, optional): designates the number of columns of the
+        n_cols: designates the number of columns of the
             figure to plot the different dimensions of the image. Only
             specified if fig and ax are None.
-        n_points (int or tuple, optional): Number of points to evaluate in
+        n_points: Number of points to evaluate in
             the plot. In case of surfaces a tuple of length 2 can be pased
             with the number of points to plot in each axis, otherwise the
             same number of points will be used in the two axes. By default
             in unidimensional plots will be used 501 points; in surfaces
             will be used 30 points per axis, wich makes a grid with 900
             points.
-        domain_range (tuple or list of tuples, optional): Range where the
+        domain_range: Range where the
             function will be plotted. In objects with unidimensional domain
             the domain range should be a tuple with the bounds of the
             interval; in the case of surfaces a list with 2 tuples with
             the ranges for each dimension. Default uses the domain range
             of the functional object.
-        group (list of int): contains integers from [0 to number of
+        group: contains integers from [0 to number of
             labels) indicating to which group each sample belongs to. Then,
             the samples with the same label are plotted in the same color.
             If None, the default value, each sample is plotted in the color
             assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-        group_colors (list of colors): colors in which groups are
+        group_colors: colors in which groups are
             represented, there must be one for each group. If None, each
             group is shown with distict colors in the "Greys" colormap.
-        group_names (list of str): name of each of the groups which appear
+        group_names: name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown. Implies `legend=True`.
         colormap: name of the colormap to be used. By default we will
             use autumn.
-        legend (bool): if `True`, show a legend with the groups. If
+        legend: if `True`, show a legend with the groups. If
             `group_names` is passed, it will be used for finding the names
             to display in the legend. Otherwise, the values passed to
             `group` will be used.
@@ -247,12 +247,16 @@ class GraphPlot(BasePlot):
             self.gradient_list = None
 
         self.n_points = n_points
-        self.domain_range = domain_range
         self.group = group
         self.group_colors = group_colors
         self.group_names = group_names
         self.legend = legend
         self.colormap = colormap
+
+        if domain_range is None:
+            self.domain_range = self.fdata.domain_range
+        else:
+            self.domain_range = _to_domain_range(domain_range)
 
         if self.gradient_list is None:
             sample_colors, patches = _get_color_info(
@@ -265,8 +269,11 @@ class GraphPlot(BasePlot):
             )
         else:
             patches = None
-            colormap = matplotlib.cm.get_cmap(self.colormap)
-            colormap = colormap.reversed()
+            if self.colormap == 'autumn':
+                colormap = matplotlib.cm.get_cmap(self.colormap)
+                colormap = colormap.reversed()
+            else:
+                colormap = matplotlib.cm.get_cmap(self.colormap)
 
             sample_colors = [None] * self.fdata.n_samples
             for m in range(self.fdata.n_samples):
@@ -298,11 +305,6 @@ class GraphPlot(BasePlot):
             (self.n_samples(), self.fdata.dim_codomain),
             dtype=Artist,
         )
-
-        if self.domain_range is None:
-            self.domain_range = self.fdata.domain_range
-        else:
-            self.domain_range = _to_domain_range(self.domain_range)
 
         color_dict: Mapping[str, Optional[ColorLike]] = {}
 
@@ -621,8 +623,8 @@ def set_color_dict(
     """
     Auxiliary method used to update color_dict.
 
-    Sets the new color of the color
-    dict thanks to sample colors and index.
+    Sets the new color of the color_dict
+    thanks to sample colors and index.
     """
     if sample_colors is not None:
         color_dict["color"] = sample_colors[ind]

@@ -266,7 +266,7 @@ def _same_domain(fd: Union[Basis, FData], fd2: Union[Basis, FData]) -> bool:
 
 @overload
 def _reshape_eval_points(
-    eval_points: np.ndarray,
+    eval_points: ArrayLike,
     *,
     aligned: Literal[True],
     n_samples: int,
@@ -277,7 +277,7 @@ def _reshape_eval_points(
 
 @overload
 def _reshape_eval_points(
-    eval_points: Sequence[np.ndarray],
+    eval_points: Sequence[ArrayLike],
     *,
     aligned: Literal[True],
     n_samples: int,
@@ -288,7 +288,7 @@ def _reshape_eval_points(
 
 @overload
 def _reshape_eval_points(
-    eval_points: Union[np.ndarray, Sequence[np.ndarray]],
+    eval_points: Union[ArrayLike, Sequence[ArrayLike]],
     *,
     aligned: bool,
     n_samples: int,

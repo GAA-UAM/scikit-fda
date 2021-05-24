@@ -1,11 +1,10 @@
-from collections.abc import Iterable
 import itertools
 import warnings
-
-from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.utils.validation import check_is_fitted
+from collections.abc import Iterable
 
 import numpy as np
+from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.utils.validation import check_is_fitted
 
 from ...misc.regularization import compute_penalty_matrix
 from ...representation import FData
@@ -154,11 +153,13 @@ class LinearRegression(BaseEstimator, RegressorMixin):
             regularization_parameter=1,
             regularization=regularization)
 
-        if self.fit_intercept and hasattr(penalty_matrix, "shape"):
+        if self.fit_intercept and penalty_matrix is not None:
             # Intercept is not penalized
             penalty_matrix[0, 0] = 0
 
-        gram_inner_x_coef = inner_products.T @ inner_products + penalty_matrix
+        gram_inner_x_coef = inner_products.T @ inner_products
+        if penalty_matrix is not None:
+            gram_inner_x_coef += penalty_matrix
         inner_x_coef_y = inner_products.T @ y
 
         coef_lengths = np.array([i.shape[1] for i in inner_products_list])

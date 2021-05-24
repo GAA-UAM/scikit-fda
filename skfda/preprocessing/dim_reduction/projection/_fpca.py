@@ -1,10 +1,10 @@
 """Functional Principal Component Analysis Module."""
 
 import numpy as np
-from scipy.linalg import solve_triangular
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
+from scipy.linalg import solve_triangular
 from skfda.misc.regularization import compute_penalty_matrix
 from skfda.representation.basis import FDataBasis
 from skfda.representation.grid import FDataGrid
@@ -171,7 +171,8 @@ class FPCA(BaseEstimator, TransformerMixin):
             regularization=self.regularization)
 
         # apply regularization
-        g_matrix = (g_matrix + regularization_matrix)
+        if regularization_matrix is not None:
+            g_matrix = (g_matrix + regularization_matrix)
 
         # obtain triangulation using cholesky
         l_matrix = np.linalg.cholesky(g_matrix)
@@ -310,9 +311,14 @@ class FPCA(BaseEstimator, TransformerMixin):
             regularization_parameter=1,
             regularization=self.regularization)
 
-        fd_data = np.transpose(np.linalg.solve(
-            np.transpose(basis.data_matrix[..., 0] + regularization_matrix),
-            np.transpose(fd_data)))
+        basis_matrix = basis.data_matrix[..., 0]
+        if regularization_matrix is not None:
+            basis_matrix = basis_matrix + regularization_matrix
+
+        fd_data = np.linalg.solve(
+            basis_matrix.T,
+            fd_data.T,
+        ).T
 
         # see docstring for more information
         final_matrix = fd_data @ np.sqrt(weights_matrix) / np.sqrt(n_samples)

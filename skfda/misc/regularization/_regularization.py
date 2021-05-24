@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import itertools
-from typing import Any, Generic, Iterable, Union
+from typing import Any, Generic, Iterable, Optional, Union
 
 import numpy as np
 from sklearn.base import BaseEstimator
@@ -149,7 +149,7 @@ def compute_penalty_matrix(
     basis_iterable: Iterable[BasisTypes],
     regularization_parameter: Union[float, Iterable[float]],
     regularization: Union[None, Regularization, Iterable[Regularization]],
-) -> Union[float, np.ndarray]:
+) -> Optional[np.ndarray]:
     """
     Compute the regularization matrix for a linear differential operator.
 
@@ -158,7 +158,7 @@ def compute_penalty_matrix(
     """
     # If there is no regularization, return 0 and rely on broadcasting
     if regularization_parameter == 0 or regularization is None:
-        return 0
+        return None
 
     # Compute penalty matrix if not provided
     if not isinstance(regularization, Iterable):

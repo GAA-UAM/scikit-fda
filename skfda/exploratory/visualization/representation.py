@@ -207,7 +207,7 @@ class GraphPlot(BasePlot):
         group: Optional[Sequence[K]] = None,
         group_colors: Optional[Indexable[K, ColorLike]] = None,
         group_names: Optional[Indexable[K, str]] = None,
-        colormap: Union[Colormap, str, None] = 'autumn',
+        colormap: Union[Colormap, str, None] = None,
         legend: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -269,8 +269,8 @@ class GraphPlot(BasePlot):
             )
         else:
             patches = None
-            if self.colormap == 'autumn':
-                colormap = matplotlib.cm.get_cmap(self.colormap)
+            if self.colormap is None:
+                colormap = matplotlib.cm.get_cmap("autumn")
                 colormap = colormap.reversed()
             else:
                 colormap = matplotlib.cm.get_cmap(self.colormap)

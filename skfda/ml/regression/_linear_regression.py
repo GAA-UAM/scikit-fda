@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
+from ...misc.lstsq import solve_regularized_weighted_lstsq
 from ...misc.regularization import compute_penalty_matrix
 from ...representation import FData
 from ._coefficients import coefficient_info_from_covariate
@@ -157,15 +158,14 @@ class LinearRegression(BaseEstimator, RegressorMixin):
             # Intercept is not penalized
             penalty_matrix[0, 0] = 0
 
-        gram_inner_x_coef = inner_products.T @ inner_products
-        if penalty_matrix is not None:
-            gram_inner_x_coef += penalty_matrix
-        inner_x_coef_y = inner_products.T @ y
+        basiscoefs = solve_regularized_weighted_lstsq(
+            coefs=inner_products,
+            result=y,
+            penalty_matrix=penalty_matrix,
+        )
 
         coef_lengths = np.array([i.shape[1] for i in inner_products_list])
         coef_start = np.cumsum(coef_lengths)
-
-        basiscoefs = np.linalg.solve(gram_inner_x_coef, inner_x_coef_y)
         basiscoef_list = np.split(basiscoefs, coef_start)
 
         # Express the coefficients in functional form

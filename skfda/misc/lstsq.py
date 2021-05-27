@@ -59,7 +59,7 @@ def solve_regularized_weighted_lstsq(
     *,
     weights: Optional[np.ndarray] = None,
     penalty_matrix: Optional[np.ndarray] = None,
-    lstsq_method: LstsqMethod = lstsq_cholesky,
+    lstsq_method: LstsqMethod = lstsq_svd,
 ) -> np.ndarray:
     """
     Solve a regularized and weighted least squares problem.

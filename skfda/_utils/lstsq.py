@@ -13,7 +13,7 @@ LstsqMethodName = Literal["cholesky", "qr", "svd"]
 LstsqMethod = Union[LstsqMethodCallable, LstsqMethodName]
 
 
-def lstsq_method_cholesky(
+def lstsq_cholesky(
     coefs: np.ndarray,
     result: np.ndarray,
 ) -> np.ndarray:
@@ -23,7 +23,7 @@ def lstsq_method_cholesky(
     return scipy.linalg.solve(left, right, assume_a="pos")
 
 
-def lstsq_method_qr(
+def lstsq_qr(
     coefs: np.ndarray,
     result: np.ndarray,
 ) -> np.ndarray:
@@ -31,7 +31,7 @@ def lstsq_method_qr(
     return scipy.linalg.lstsq(coefs, result, lapack_driver="gelsy")[0]
 
 
-def lstsq_method_svd(
+def lstsq_svd(
     coefs: np.ndarray,
     result: np.ndarray,
 ) -> np.ndarray:
@@ -40,9 +40,9 @@ def lstsq_method_svd(
 
 
 method_dict: Final = {
-    "cholesky": lstsq_method_cholesky,
-    "qr": lstsq_method_qr,
-    "svd": lstsq_method_svd,
+    "cholesky": lstsq_cholesky,
+    "qr": lstsq_qr,
+    "svd": lstsq_svd,
 }
 
 
@@ -58,9 +58,8 @@ def solve_regularized_weighted_lstsq(
     result: np.ndarray,
     *,
     weights: Optional[np.ndarray] = None,
-    penalty_matrix_coef: float = 1,
     penalty_matrix: Optional[np.ndarray] = None,
-    lstsq_method: LstsqMethod = lstsq_method_cholesky,
+    lstsq_method: LstsqMethod = lstsq_cholesky,
 ) -> np.ndarray:
     """
     Solve a regularized and weighted least squares problem.
@@ -72,9 +71,8 @@ def solve_regularized_weighted_lstsq(
     """
     lstsq_method = _get_lstsq_method(lstsq_method)
 
-    if lstsq_method is not lstsq_method_cholesky and (
+    if lstsq_method is not lstsq_cholesky and (
         penalty_matrix is None
-        or penalty_matrix_coef == 0
     ):
         # Weighted least squares case
         if weights is not None:
@@ -93,6 +91,6 @@ def solve_regularized_weighted_lstsq(
         right = coefs.T @ weights @ result
 
     if penalty_matrix is not None:
-        left += penalty_matrix_coef * penalty_matrix
+        left += penalty_matrix
 
     return scipy.linalg.solve(left, right, assume_a="pos")

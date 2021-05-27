@@ -6,19 +6,18 @@ This module contains the abstract base class for all linear smoothers.
 """
 import abc
 
+import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
-import numpy as np
-
 from ... import FDataGrid
+from ..._utils import _to_grid_points
 
 
-def _check_r_to_r(f):
-    if f.dim_domain != 1 or f.dim_codomain != 1:
-        raise NotImplementedError("Only accepts functions from R to R")
-
-
-class _LinearSmoother(abc.ABC, BaseEstimator, TransformerMixin):
+class _LinearSmoother(
+    abc.ABC,
+    BaseEstimator,  # type: ignore
+    TransformerMixin,  # type: ignore
+):
     """Linear smoother.
 
     Abstract base class for all linear smoothers. The subclasses must override
@@ -26,8 +25,11 @@ class _LinearSmoother(abc.ABC, BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, *,
-                 output_points=None):
+    def __init__(
+        self,
+        *,
+        output_points=None,
+    ):
         self.output_points = output_points
 
     def hat_matrix(self, input_points=None, output_points=None):
@@ -47,16 +49,15 @@ class _LinearSmoother(abc.ABC, BaseEstimator, TransformerMixin):
             if cached_hat_matrix is None:
                 self.cached_hat_matrix = self._hat_matrix(
                     input_points=self.input_points_,
-                    output_points=self.output_points_
+                    output_points=self.output_points_,
                 )
             return self.cached_hat_matrix
 
-        else:
-            # We only cache the matrix for the fit points
-            return self._hat_matrix(
-                input_points=self.input_points_,
-                output_points=self.output_points_
-            )
+        # We only cache the matrix for the fit points
+        return self._hat_matrix(
+            input_points=self.input_points_,
+            output_points=self.output_points_,
+        )
 
     @abc.abstractmethod
     def _hat_matrix(self, input_points, output_points):
@@ -73,17 +74,18 @@ class _LinearSmoother(abc.ABC, BaseEstimator, TransformerMixin):
         Args:
             X (FDataGrid):
                 The data whose points are used to compute the matrix.
-            y : Ignored
+            y : Ignored.
+
         Returns:
             self (object)
 
         """
-        _check_r_to_r(X)
-
-        self.input_points_ = X.grid_points[0]
-        self.output_points_ = (self.output_points
-                               if self.output_points is not None
-                               else self.input_points_)
+        self.input_points_ = X.grid_points
+        self.output_points_ = (
+            _to_grid_points(self.output_points)
+            if self.output_points is not None
+            else self.input_points_
+        )
 
         # Force caching the hat matrix
         self.hat_matrix()
@@ -102,11 +104,18 @@ class _LinearSmoother(abc.ABC, BaseEstimator, TransformerMixin):
 
         """
 
-        assert all(self.input_points_ == X.grid_points[0])
+        assert all(
+            np.array_equal(i, s) for i, s in zip(
+                self.input_points_,
+                X.grid_points,
+            )
+        )
 
         # The matrix is cached
-        return X.copy(data_matrix=self.hat_matrix() @ X.data_matrix,
-                      grid_points=self.output_points_)
+        return X.copy(
+            data_matrix=self.hat_matrix() @ X.data_matrix,
+            grid_points=self.output_points_,
+        )
 
     def score(self, X, y):
         """Returns the generalized cross validation (GCV) score.

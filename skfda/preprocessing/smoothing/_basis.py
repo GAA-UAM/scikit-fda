@@ -6,122 +6,19 @@ This module contains the class for the basis smoothing.
 """
 from __future__ import annotations
 
-from enum import Enum
-from typing import Any, Callable, Iterable, Optional, Sequence, Union
+from typing import Optional, Sequence
 
 import numpy as np
+from typing_extensions import Final
 
 import scipy.linalg
 
 from ..._utils import _cartesian_product
-from ..._utils.lstsq import (
-    lstsq_method_cholesky,
-    lstsq_method_qr,
-    solve_regularized_weighted_lstsq,
-)
+from ..._utils.lstsq import LstsqMethod, solve_regularized_weighted_lstsq
 from ...misc.regularization import TikhonovRegularization
 from ...representation import FData, FDataBasis, FDataGrid
 from ...representation.basis import Basis
 from ._linear import _LinearSmoother
-
-
-class _Cholesky():
-    """Solve the linear equation using cholesky factorization."""
-
-    def __call__(
-        self,
-        *,
-        basis_values: np.ndarray,
-        weight_matrix: Optional[np.ndarray],
-        data_matrix: np.ndarray,
-        penalty_matrix: Optional[np.ndarray],
-        **_: Any,
-    ) -> np.ndarray:
-
-        return solve_regularized_weighted_lstsq(
-            coefs=basis_values,
-            result=data_matrix,
-            weights=weight_matrix,
-            penalty_matrix=penalty_matrix,
-        ).T
-
-
-class _QR():
-    """Solve the linear equation using qr factorization."""
-
-    def __call__(
-        self,
-        *,
-        basis_values: np.ndarray,
-        weight_matrix: Optional[np.ndarray],
-        data_matrix: np.ndarray,
-        penalty_matrix: Optional[np.ndarray],
-        **_: Any,
-    ) -> np.ndarray:
-
-        return solve_regularized_weighted_lstsq(
-            coefs=basis_values,
-            result=data_matrix,
-            weights=weight_matrix,
-            penalty_matrix=penalty_matrix,
-            lstsq_method=lstsq_method_qr,
-        ).T
-
-
-class _Matrix():
-    """Solve the linear equation using matrix inversion."""
-
-    def fit(
-        self,
-        estimator: BasisSmoother,
-        X: FDataGrid,
-        y: None = None,
-    ) -> BasisSmoother:
-        if estimator.return_basis:
-            estimator._cached_coef_matrix = estimator._coef_matrix(
-                estimator.input_points_,
-            )
-        else:
-            # Force caching the hat matrix
-            estimator.hat_matrix()
-
-        return estimator
-
-    def fit_transform(
-        self,
-        estimator: BasisSmoother,
-        X: FDataGrid,
-        y: None = None,
-    ) -> FData:
-        return estimator.fit(X, y).transform(X, y)
-
-    def __call__(self, *, estimator, **_):
-        pass
-
-    def transform(
-        self,
-        estimator: BasisSmoother,
-        X: FDataGrid,
-        y: None = None,
-    ) -> FData:
-        if estimator.return_basis:
-            coefficients = (
-                X.data_matrix.reshape((X.n_samples, -1))
-                @ estimator._cached_coef_matrix.T
-            )
-
-            fdatabasis = FDataBasis(
-                basis=estimator.basis,
-                coefficients=coefficients,
-            )
-
-            return fdatabasis
-        else:
-            # The matrix is cached
-            return X.copy(
-                data_matrix=estimator.hat_matrix() @ X.data_matrix,
-                grid_points=estimator.output_points_,
-            )
 
 
 class BasisSmoother(_LinearSmoother):
@@ -200,8 +97,7 @@ class BasisSmoother(_LinearSmoother):
 
         >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
-        >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
-        ...                basis, method='cholesky')
+        >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(basis)
         >>> fd_smooth = smoother.fit_transform(fd)
         >>> fd_smooth.data_matrix.round(2)
         array([[[ 3.],
@@ -216,19 +112,28 @@ class BasisSmoother(_LinearSmoother):
         >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
-        ...                basis, method='cholesky', return_basis=True)
+        ...     basis,
+        ...     method='cholesky',
+        ...     return_basis=True,
+        ... )
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
         array([[ 2.  , 0.71, 0.71]])
 
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
-        ...                basis, method='qr', return_basis=True)
+        ...     basis,
+        ...     method='qr',
+        ...     return_basis=True,
+        ... )
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
         array([[ 2.  , 0.71, 0.71]])
 
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
-        ...                basis, method='matrix', return_basis=True)
+        ...     basis,
+        ...     method='svd',
+        ...     return_basis=True,
+        ... )
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
         array([[ 2.  , 0.71, 0.71]])
@@ -248,10 +153,13 @@ class BasisSmoother(_LinearSmoother):
         >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
-        ...                basis, method='cholesky',
-        ...                regularization=TikhonovRegularization(
-        ...                    LinearDifferentialOperator([0.1, 0.2])),
-        ...                return_basis=True)
+        ...     basis,
+        ...     method='cholesky',
+        ...     regularization=TikhonovRegularization(
+        ...         LinearDifferentialOperator([0.1, 0.2]),
+        ...     ),
+        ...     return_basis=True,
+        ... )
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
         array([[ 2.04,  0.51,  0.55]])
@@ -259,10 +167,13 @@ class BasisSmoother(_LinearSmoother):
         >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
-        ...                basis, method='qr',
-        ...                regularization=TikhonovRegularization(
-        ...                    LinearDifferentialOperator([0.1, 0.2])),
-        ...                return_basis=True)
+        ...     basis,
+        ...     method='qr',
+        ...     regularization=TikhonovRegularization(
+        ...         LinearDifferentialOperator([0.1, 0.2]),
+        ...     ),
+        ...     return_basis=True,
+        ... )
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
         array([[ 2.04,  0.51,  0.55]])
@@ -270,10 +181,13 @@ class BasisSmoother(_LinearSmoother):
         >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
         >>> basis = skfda.representation.basis.Fourier((0, 1), n_basis=3)
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
-        ...                basis, method='matrix',
-        ...                regularization=TikhonovRegularization(
-        ...                    LinearDifferentialOperator([0.1, 0.2])),
-        ...                return_basis=True)
+        ...     basis,
+        ...     method='svd',
+        ...     regularization=TikhonovRegularization(
+        ...         LinearDifferentialOperator([0.1, 0.2]),
+        ...     ),
+        ...     return_basis=True,
+        ... )
         >>> fd_basis = smoother.fit_transform(fd)
         >>> fd_basis.coefficients.round(2)
         array([[ 2.04,  0.51,  0.55]])
@@ -291,13 +205,6 @@ class BasisSmoother(_LinearSmoother):
 
     _required_parameters = ["basis"]
 
-    class SolverMethod(Enum):
-        """Method used to solve the equations."""
-
-        cholesky = _Cholesky()
-        qr = _QR()
-        matrix = _Matrix()
-
     def __init__(
         self,
         basis: Basis,
@@ -306,7 +213,7 @@ class BasisSmoother(_LinearSmoother):
         weights: Optional[np.ndarray] = None,
         regularization: Optional[TikhonovRegularization[FDataGrid]] = None,
         output_points: Optional[Sequence[np.ndarray]] = None,
-        method='cholesky',
+        method: LstsqMethod = 'svd',
         return_basis: bool = False,
     ) -> None:
         self.basis = basis
@@ -315,18 +222,14 @@ class BasisSmoother(_LinearSmoother):
         self.regularization = regularization
         self.output_points = output_points
         self.method = method
-        self.return_basis = return_basis
+        self.return_basis: Final = return_basis
 
-    def _method_function(self) -> BasisSmoother.SolverMethod:
-        """Return the method function."""
-        method_function = self.method
-        if not isinstance(method_function, self.SolverMethod):
-            method_function = self.SolverMethod[
-                method_function.lower()]
-
-        return method_function.value
-
-    def _coef_matrix(self, input_points: Sequence[np.ndarray]) -> np.ndarray:
+    def _coef_matrix(
+        self,
+        input_points: Sequence[np.ndarray],
+        *,
+        data_matrix: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
         """Get the matrix that gives the coefficients."""
         from ...misc.regularization import compute_penalty_matrix
 
@@ -334,31 +237,23 @@ class BasisSmoother(_LinearSmoother):
             _cartesian_product(input_points),
         ).reshape((self.basis.n_basis, -1)).T
 
-        # If no weight matrix is given all the weights are one
-        if self.weights is not None:
-            ols_matrix = (
-                basis_values_input.T @ self.weights
-                @ basis_values_input
-            )
-        else:
-            ols_matrix = basis_values_input.T @ basis_values_input
-
         penalty_matrix = compute_penalty_matrix(
             basis_iterable=(self.basis,),
             regularization_parameter=self.smoothing_parameter,
             regularization=self.regularization,
         )
 
-        if penalty_matrix is not None:
-            ols_matrix += penalty_matrix
+        # Get the matrix for computing the coefficients if no
+        # data_matrix is passed
+        if data_matrix is None:
+            data_matrix = np.eye(basis_values_input.shape[0])
 
-        right_side = basis_values_input.T
-        if self.weights is not None:
-            right_side @= self.weights
-
-        return np.linalg.solve(
-            ols_matrix,
-            right_side,
+        return solve_regularized_weighted_lstsq(
+            coefs=basis_values_input,
+            result=data_matrix,
+            weights=self.weights,
+            penalty_matrix=penalty_matrix,
+            lstsq_method=self.method,
         )
 
     def _hat_matrix(
@@ -394,115 +289,10 @@ class BasisSmoother(_LinearSmoother):
             else self.input_points_
         )
 
-        method = self._method_function()
-        method_fit = getattr(method, "fit", None)
-        if method_fit is not None:
-            method_fit(estimator=self, X=X, y=y)
+        if not self.return_basis:
+            super().fit(X, y)
 
         return self
-
-    def fit_transform(
-        self,
-        X: FDataGrid,
-        y: None = None,
-    ):
-        """
-        Fit the estimator and smooth the data.
-
-        Args:
-            X: The data to smooth.
-            y: Ignored
-
-        Returns:
-            Smoothed data.
-
-        """
-        from ...misc.regularization import compute_penalty_matrix
-
-        self.input_points_ = X.grid_points
-        self.output_points_ = (
-            self.output_points
-            if self.output_points is not None
-            else self.input_points_
-        )
-
-        penalty_matrix = compute_penalty_matrix(
-            basis_iterable=(self.basis,),
-            regularization_parameter=self.smoothing_parameter,
-            regularization=self.regularization,
-        )
-
-        # n is the samples
-        # m is the observations
-        # k is the number of elements of the basis
-
-        # Each sample in a column (m x n)
-        data_matrix = X.data_matrix.reshape((X.n_samples, -1)).T
-
-        # Each basis in a column
-        basis_values = self.basis.evaluate(
-            _cartesian_product(self.input_points_)
-        ).reshape((self.basis.n_basis, -1)).T
-
-        # If no weight matrix is given all the weights are one
-        weight_matrix = self.weights
-
-        # We need to solve the equation
-        # (phi' W phi + lambda * R) C = phi' W Y
-        # where:
-        #  phi is the basis_values
-        #  W is the weight matrix
-        #  lambda the smoothness parameter
-        #  C the coefficient matrix (the unknown)
-        #  Y is the data_matrix
-
-        if (
-            data_matrix.shape[0] > self.basis.n_basis
-            or self.smoothing_parameter > 0
-        ):
-
-            method = self._method_function()
-
-            # If the method provides the complete transformation use it
-            method_fit_transform = getattr(method, "fit_transform", None)
-            if method_fit_transform is not None:
-                return method_fit_transform(estimator=self, X=X, y=y)
-
-            # Otherwise the method is used to compute the coefficients
-            coefficients = method(
-                estimator=self,
-                basis_values=basis_values,
-                weight_matrix=weight_matrix,
-                data_matrix=data_matrix,
-                penalty_matrix=penalty_matrix,
-            )
-
-        elif data_matrix.shape[0] == self.basis.n_basis:
-            # If the number of basis equals the number of points and no
-            # smoothing is required
-            coefficients = np.linalg.solve(basis_values, data_matrix).T
-
-        else:  # data_matrix.shape[0] < basis.n_basis
-            raise ValueError(
-                f"The number of basis functions "
-                f"({self.basis.n_basis}) "
-                f"exceed the number of points to be smoothed "
-                f"({data_matrix.shape[0]}).",
-            )
-
-        fdatabasis = FDataBasis(
-            basis=self.basis,
-            coefficients=coefficients,
-            dataset_name=X.dataset_name,
-            argument_names=X.argument_names,
-            coordinate_names=X.coordinate_names,
-            sample_names=X.sample_names,
-        )
-
-        if self.return_basis:
-            return fdatabasis
-
-        return fdatabasis.to_grid(grid_points=self.output_points_)
 
     def transform(
         self,
@@ -521,21 +311,26 @@ class BasisSmoother(_LinearSmoother):
 
         """
         assert all(
-            [all(i == s) for i, s in zip(self.input_points_, X.grid_points)],
+            np.array_equal(i, s) for i, s in zip(
+                self.input_points_,
+                X.grid_points,
+            )
         )
 
-        method = self._method_function()
+        if self.return_basis:
+            coefficients = self._coef_matrix(
+                input_points=X.grid_points,
+                data_matrix=X.data_matrix.reshape((X.n_samples, -1)).T,
+            ).T
 
-        # If the method provides the complete transformation use it
-        method_transform = getattr(method, "transform", None)
-        if method_transform is not None:
-            return method_transform(
-                estimator=self,
-                X=X,
-                y=y,
+            return FDataBasis(
+                basis=self.basis,
+                coefficients=coefficients,
+                dataset_name=X.dataset_name,
+                argument_names=X.argument_names,
+                coordinate_names=X.coordinate_names,
+                sample_names=X.sample_names,
             )
 
-        # Otherwise use fit_transform over the data
-        # Note that data leakage is not possible because the matrix only
-        # depends on the input/output points
-        return self.fit_transform(X, y)
+        else:
+            return super().transform(X, y)

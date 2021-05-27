@@ -19,7 +19,7 @@ class InnerProductTest(unittest.TestCase):
         def f(x, y, z):
             return x * y * z
 
-        t = np.linspace(0, 1, 100)
+        t = np.linspace(0, 1, 30)
 
         x2, y2, z2 = ndm(t, 2 * t, 3 * t)
 
@@ -39,9 +39,9 @@ class InnerProductTest(unittest.TestCase):
         res = 8
 
         np.testing.assert_allclose(
-            skfda.misc.inner_product(fd, fd), res, rtol=1e-5)
+            skfda.misc.inner_product(fd, fd), res, rtol=1e-4)
         np.testing.assert_allclose(
-            skfda.misc.inner_product(fd_basis, fd_basis), res, rtol=1e-5)
+            skfda.misc.inner_product(fd_basis, fd_basis), res, rtol=1e-4)
 
     def test_vector_valued(self):
 

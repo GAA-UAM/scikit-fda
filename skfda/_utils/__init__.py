@@ -1,4 +1,4 @@
-from . import constants, lstsq
+from . import constants
 from ._utils import (
     RandomStateLike,
     _cartesian_product,

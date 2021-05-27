@@ -14,7 +14,7 @@ from typing_extensions import Final
 import scipy.linalg
 
 from ..._utils import _cartesian_product
-from ..._utils.lstsq import LstsqMethod, solve_regularized_weighted_lstsq
+from ...misc.lstsq import LstsqMethod, solve_regularized_weighted_lstsq
 from ...misc.regularization import TikhonovRegularization
 from ...representation import FData, FDataBasis, FDataGrid
 from ...representation.basis import Basis

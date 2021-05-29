@@ -74,12 +74,11 @@ class _LinearSmoother(
         """Compute the hat matrix for the desired output points.
 
         Args:
-            X (FDataGrid):
-                The data whose points are used to compute the matrix.
-            y : Ignored.
+            X: The data whose points are used to compute the matrix.
+            y: Ignored.
 
         Returns:
-            self (object)
+            self
 
         """
         self.input_points_ = X.grid_points
@@ -101,12 +100,11 @@ class _LinearSmoother(
         """Multiply the hat matrix with the function values to smooth them.
 
         Args:
-            X (FDataGrid):
-                The data to smooth.
-            y : Ignored
+            X: The data to smooth.
+            y: Ignored
 
         Returns:
-            FDataGrid: Functional data smoothed.
+            Functional data smoothed.
 
         """
         assert all(
@@ -130,13 +128,11 @@ class _LinearSmoother(
         """Return the generalized cross validation (GCV) score.
 
         Args:
-            X (FDataGrid):
-                The data to smooth.
-            y (FDataGrid):
-                The target data. Typically the same as ``X``.
+            X: The data to smooth.
+            y: The target data. Typically the same as ``X``.
 
         Returns:
-            float: Generalized cross validation score.
+            Generalized cross validation score.
 
         """
         from .validation import LinearSmootherGeneralizedCVScorer

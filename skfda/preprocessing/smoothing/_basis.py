@@ -6,17 +6,18 @@ This module contains the class for the basis smoothing.
 """
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from typing import Optional
 
 import numpy as np
 from typing_extensions import Final
 
 import scipy.linalg
 
-from ..._utils import _cartesian_product
+from ..._utils import _cartesian_product, _to_grid_points
 from ...misc.lstsq import LstsqMethod, solve_regularized_weighted_lstsq
 from ...misc.regularization import TikhonovRegularization
 from ...representation import FData, FDataBasis, FDataGrid
+from ...representation._typing import GridPointsLike
 from ...representation.basis import Basis
 from ._linear import _LinearSmoother
 
@@ -62,25 +63,24 @@ class BasisSmoother(_LinearSmoother):
     [RS05-5-2-8]_
 
     Args:
-        basis: (Basis): Basis used.
-        weights (array_like, optional): Matrix to weight the
-            observations. Defaults to the identity matrix.
-        smoothing_parameter (int or float, optional): Smoothing
-            parameter. Trying with several factors in a logarithm scale is
-            suggested. If 0 no smoothing is performed. Defaults to 1.
-        regularization (int, iterable or :class:`Regularization`):
-            Regularization object. This allows the penalization of
+        basis: Basis used.
+        weights: Matrix to weight the observations. Defaults to the identity
+            matrix.
+        smoothing_parameter: Smoothing parameter. Trying with several
+            factors in a logarithm scale is suggested. If 0 no smoothing is
+            performed. Defaults to 1.
+        regularization: Regularization object. This allows the penalization of
             complicated models, which applies additional smoothing. By default
             is ``None`` meaning that no additional smoothing has to take
             place.
-        method (str): Algorithm used for calculating the coefficients using
+        method: Algorithm used for calculating the coefficients using
             the least squares method. The values admitted are 'cholesky', 'qr'
-            and 'matrix' for Cholesky and QR factorisation methods, and matrix
-            inversion respectively. The default is 'cholesky'.
-        output_points (ndarray, optional): The output points. If ommited,
-            the input points are used. If ``return_basis`` is ``True``, this
-            parameter is ignored.
-        return_basis (boolean): If ``False`` (the default) returns the smoothed
+            and 'svd' for Cholesky, QR and SVD factorisation methods
+            respectively, or a callable similar to the `lstsq` function. The
+            default is 'svd', which is the most robust but less performant one.
+        output_points: The output points. If ommited, the input points are
+            used. If ``return_basis`` is ``True``, this parameter is ignored.
+        return_basis: If ``False`` (the default) returns the smoothed
             data as an FDataGrid, like the other smoothers. If ``True`` returns
             a FDataBasis object.
 
@@ -212,7 +212,7 @@ class BasisSmoother(_LinearSmoother):
         smoothing_parameter: float = 1.0,
         weights: Optional[np.ndarray] = None,
         regularization: Optional[TikhonovRegularization[FDataGrid]] = None,
-        output_points: Optional[Sequence[np.ndarray]] = None,
+        output_points: Optional[GridPointsLike] = None,
         method: LstsqMethod = 'svd',
         return_basis: bool = False,
     ) -> None:
@@ -226,7 +226,7 @@ class BasisSmoother(_LinearSmoother):
 
     def _coef_matrix(
         self,
-        input_points: Sequence[np.ndarray],
+        input_points: GridPointsLike,
         *,
         data_matrix: Optional[np.ndarray] = None,
     ) -> np.ndarray:
@@ -234,7 +234,7 @@ class BasisSmoother(_LinearSmoother):
         from ...misc.regularization import compute_penalty_matrix
 
         basis_values_input = self.basis.evaluate(
-            _cartesian_product(input_points),
+            _cartesian_product(_to_grid_points(input_points)),
         ).reshape((self.basis.n_basis, -1)).T
 
         penalty_matrix = compute_penalty_matrix(
@@ -258,11 +258,13 @@ class BasisSmoother(_LinearSmoother):
 
     def _hat_matrix(
         self,
-        input_points: Sequence[np.ndarray],
-        output_points: Sequence[np.ndarray],
+        input_points: GridPointsLike,
+        output_points: GridPointsLike,
     ) -> np.ndarray:
         basis_values_output = self.basis.evaluate(
-            _cartesian_product(output_points),
+            _cartesian_product(
+                _to_grid_points(output_points),
+            ),
         ).reshape((self.basis.n_basis, -1)).T
 
         return basis_values_output @ self._coef_matrix(input_points)
@@ -284,7 +286,7 @@ class BasisSmoother(_LinearSmoother):
         """
         self.input_points_ = X.grid_points
         self.output_points_ = (
-            self.output_points
+            _to_grid_points(self.output_points)
             if self.output_points is not None
             else self.input_points_
         )
@@ -332,5 +334,4 @@ class BasisSmoother(_LinearSmoother):
                 sample_names=X.sample_names,
             )
 
-        else:
-            return super().transform(X, y)
+        return super().transform(X, y)

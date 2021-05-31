@@ -20,7 +20,7 @@ from ..representation.basis import Basis
 
 Vector = TypeVar(
     "Vector",
-    bound=Union[np.ndarray, Callable[[np.ndarray], np.ndarray]]
+    bound=Union[np.ndarray, Basis, Callable[[np.ndarray], np.ndarray]],
 )
 
 

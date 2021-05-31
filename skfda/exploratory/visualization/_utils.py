@@ -1,12 +1,13 @@
 import io
 import math
 import re
-from typing import Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Tuple, TypeVar, Union
 
 import matplotlib.backends.backend_svg
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from typing_extensions import Protocol
 
 from ...representation._functional_data import FData
 
@@ -26,6 +27,19 @@ ColorLike = Union[
     str,
     Sequence[float],
 ]
+
+K = TypeVar('K', contravariant=True)
+V = TypeVar('V', covariant=True)
+
+
+class Indexable(Protocol[K, V]):
+    """Class Indexable used to type _get_color_info."""
+
+    def __getitem__(self, __key: K) -> V:
+        pass
+
+    def __len__(self) -> int:
+        pass
 
 def _create_figure():
     """Create figure using the default backend."""

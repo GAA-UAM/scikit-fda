@@ -3,12 +3,11 @@ from typing import Any, Mapping, Optional, Tuple, Union, overload
 
 import numpy as np
 import pandas as pd
+import rdata
 from numpy import ndarray
 from pandas import DataFrame, Series
 from sklearn.utils import Bunch
 from typing_extensions import Literal
-
-import rdata
 
 from .. import FDataGrid
 
@@ -1206,3 +1205,99 @@ def fetch_gait(
 
 if fetch_gait.__doc__ is not None:  # docstrings can be stripped off
     fetch_gait.__doc__ += _gait_descr + _param_descr
+
+_handwriting_descr = """
+    Data representing the X-Y coordinates along time obtained while
+    writing the word "fda". The sample contains 20 instances measured over
+    2.3 seconds that had been aligned for a better understanding. Each instance
+    is formed by 1401 coordinate values.
+
+    References:
+        Ramsay, James O., and Silverman, Bernard W. (2006),
+        Functional Data Analysis, 2nd ed. , Springer, New York.
+"""
+
+
+@overload
+def fetch_handwriting(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch_handwriting(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, None]:
+    pass
+
+
+@overload
+def fetch_handwriting(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, None]:
+    pass
+
+
+def fetch_handwriting(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Union[Bunch, Tuple[FDataGrid, None], Tuple[DataFrame, None]]:
+    """
+    Load the HANDWRIT dataset.
+
+    The data is obtained from the R package 'fda' from CRAN.
+
+    """
+    descr = _handwriting_descr
+
+    raw_data = _fetch_fda("handwrit")
+
+    data = raw_data["handwrit"]
+
+    data_matrix = np.asarray(data)
+    data_matrix = np.transpose(data_matrix, axes=(1, 0, 2))
+    grid_points = np.asarray(data.coords.get('dim_0'), np.float64)
+    sample_names = np.asarray(data.coords.get('dim_1'))
+    feature_name = 'handwrit'
+
+    curves = FDataGrid(
+        data_matrix=data_matrix,
+        grid_points=grid_points,
+        dataset_name=feature_name,
+        sample_names=sample_names,
+        argument_names=("time",),
+        coordinate_names=(
+            "x coordinates",
+            "y coordinates",
+        ),
+    )
+
+    frame = None
+
+    if as_frame:
+        curves = pd.DataFrame({feature_name: curves})
+        frame = curves
+
+    if return_X_y:
+        return curves, None
+
+    return Bunch(
+        data=curves,
+        target=None,
+        frame=frame,
+        categories={},
+        feature_names=[feature_name],
+        target_names=[],
+        DESCR=descr,
+    )
+
+
+if fetch_handwriting.__doc__ is not None:  # docstrings can be stripped off
+    fetch_handwriting.__doc__ += _handwriting_descr + _param_descr

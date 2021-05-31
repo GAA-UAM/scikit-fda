@@ -1,17 +1,17 @@
+import unittest
+
+import numpy as np
+import sklearn
+
 import skfda
+import skfda.preprocessing.smoothing as smoothing
+import skfda.preprocessing.smoothing.kernel_smoothers as kernel_smoothers
+import skfda.preprocessing.smoothing.validation as validation
 from skfda._utils import _check_estimator
 from skfda.misc.operators import LinearDifferentialOperator
 from skfda.misc.regularization import TikhonovRegularization
 from skfda.representation.basis import BSpline, Monomial
 from skfda.representation.grid import FDataGrid
-import unittest
-
-import sklearn
-
-import numpy as np
-import skfda.preprocessing.smoothing as smoothing
-import skfda.preprocessing.smoothing.kernel_smoothers as kernel_smoothers
-import skfda.preprocessing.smoothing.validation as validation
 
 
 class TestSklearnEstimators(unittest.TestCase):
@@ -129,7 +129,7 @@ class TestBasisSmoother(unittest.TestCase):
             fd_basis.coefficients.round(2),
             np.array([[0.61, -0.88, 0.06, 0.02]]))
 
-    def test_vector_valued_smoothing(self):
+    def test_vector_valued_smoothing(self) -> None:
         X, _ = skfda.datasets.fetch_weather(return_X_y=True)
 
         basis_dim = skfda.representation.basis.Fourier(
@@ -138,7 +138,7 @@ class TestBasisSmoother(unittest.TestCase):
             [basis_dim] * 2
         )
 
-        for method in smoothing.BasisSmoother.SolverMethod:
+        for method in ('cholesky', 'qr', 'svd'):
             with self.subTest(method=method):
 
                 basis_smoother = smoothing.BasisSmoother(

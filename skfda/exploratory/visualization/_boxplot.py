@@ -99,7 +99,8 @@ class Boxplot(FDataBoxplot):
     functional boxplot are: the envelope of the 50% central region, the median
     curve,and the maximum non-outlying envelope. In addition, outliers can be
     detected in a functional boxplot by the 1.5 times the 50% central region
-    empirical rule, analogous to the rule for classical boxplots.
+    empirical rule, analogous to the rule for classical boxplots
+    :footcite:`sun+genton_2011_boxplots`.
 
     Args:
 
@@ -241,10 +242,7 @@ class Boxplot(FDataBoxplot):
             outliers=array([ True, False, False,  True]))
 
     References:
-
-        Sun, Y., & Genton, M. G. (2011). Functional Boxplots. Journal of
-        Computational and Graphical Statistics, 20(2), 316-334.
-        https://doi.org/10.1198/jcgs.2011.09224
+        .. footbibliography::
 
 
     """
@@ -462,7 +460,7 @@ class SurfaceBoxplot(FDataBoxplot):
     :ref:`depth measure <depth-measures>`
     for functional data, it represents the envelope of the
     50% central region, the median curve, and the maximum non-outlying
-    envelope.
+    envelope :footcite:`sun+genton_2011_boxplots`.
 
     Args:
 
@@ -558,10 +556,7 @@ class SurfaceBoxplot(FDataBoxplot):
                                        [ 5. ]]])))
 
     References:
-
-        Sun, Y., & Genton, M. G. (2011). Functional Boxplots. Journal of
-        Computational and Graphical Statistics, 20(2), 316-334.
-        https://doi.org/10.1198/jcgs.2011.09224
+        .. footbibliography::
 
     """
 

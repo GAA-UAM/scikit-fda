@@ -124,7 +124,8 @@ class DTMClassifier(
     """Distance to trimmed means (DTM) classification.
 
     Test samples are classified to the class that minimizes the distance of
-    the observation to the trimmed mean of the group.
+    the observation to the trimmed mean of the group
+    :footcite:`fraiman+muniz_2001_trimmed`.
 
     Parameters:
         proportiontocut:
@@ -173,8 +174,8 @@ class DTMClassifier(
         :class:`~skfda.ml.classification.NearestCentroid`
 
     References:
-        Fraiman, R. and Muniz, G. (2001). Trimmed means for functional
-        data. Test, 10, 419-440.
+        .. footbibliography::
+
     """
 
     def __init__(

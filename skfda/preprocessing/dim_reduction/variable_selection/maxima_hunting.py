@@ -120,7 +120,7 @@ class MaximaHunting(
 
     For a longer explanation about the method, and comparison with other
     functional variable selection methods, we refer the reader to the
-    original article [1]_.
+    original article :footcite:`berrendero+cuevas+torrecilla_2016_hunting`.
 
     Parameters:
         dependence_measure (callable): Dependence measure to use. By default,
@@ -182,10 +182,7 @@ class MaximaHunting(
         (10000, 1)
 
     References:
-        .. [1] J. R. Berrendero, A. Cuevas, and J. L. Torrecilla, “Variable
-               selection in functional data classification: a maxima-hunting
-               proposal,” STAT SINICA, vol. 26, no. 2, pp. 619–638, 2016,
-               doi: 10.5705/ss.202014.0014.
+        .. footbibliography::
 
     """
 

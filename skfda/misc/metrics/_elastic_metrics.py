@@ -38,7 +38,7 @@ def fisher_rao_distance(
 
     If the observations are distributions of random variables the distance will
     match with the usual fisher-rao distance in non-parametric form for
-    probability distributions [S11-2]_.
+    probability distributions :footcite:`srivastava++_2011_ficher-rao`.
 
     If the observations are defined in a :term:`domain` different than (0,1)
     their domains are normalized to this interval with an affine
@@ -56,9 +56,7 @@ def fisher_rao_distance(
         ValueError: If the objects are not unidimensional.
 
     References:
-        .. [S11-2] Srivastava, Anuj et. al. Registration of Functional Data
-            Using Fisher-Rao Metric (2011). In *Function Representation and
-            Metric* (pp. 5-7). arXiv:1103.3817v2.
+        .. footbibliography::
 
     """
     fdata1, fdata2 = _cast_to_grid(
@@ -121,7 +119,8 @@ def amplitude_distance(
     .. math::
         \mathcal{R}(\gamma) = \|\sqrt{\dot{\gamma}}- 1 \|_{\mathbb{L}^2}^2
 
-    See [SK16-4-10-1]_ for a detailed explanation.
+    See the :footcite:`srivastava+klassen_2016_analysis_amplitude` for a
+    detailed explanation.
 
     If the observations are defined in a :term:`domain` different than (0,1)
     their domains are normalized to this interval with an affine
@@ -142,9 +141,8 @@ def amplitude_distance(
         ValueError: If the objects are not unidimensional.
 
     References:
-        ..  [SK16-4-10-1] Srivastava, Anuj & Klassen, Eric P. (2016).
-            Functional and shape data analysis. In *Amplitude Space and a
-            Metric Structure* (pp. 107-109). Springer.
+        .. footbibliography::
+
     """
     fdata1, fdata2 = _cast_to_grid(
         fdata1,
@@ -214,7 +212,8 @@ def phase_distance(
         d_{P}(f_i, f_j) = d_{FR}(\gamma_{ij}, \gamma_{id}) =
         arcos \left ( \int_0^1 \sqrt {\dot \gamma_{ij}(t)} dt \right )
 
-    See [SK16-4-10-2]_ for a detailed explanation.
+    See :footcite:`srivastava+klassen_2016_analysis_phase` for a detailed
+    explanation.
 
     If the observations are defined in a :term:`domain` different than (0,1)
     their domains are normalized to this interval with an affine
@@ -233,9 +232,8 @@ def phase_distance(
         ValueError: If the objects are not unidimensional.
 
     References:
-        ..  [SK16-4-10-2] Srivastava, Anuj & Klassen, Eric P. (2016).
-            Functional and shape data analysis. In *Phase Space and a Metric
-            Structure* (pp. 109-111). Springer.
+        .. footbibliography::
+
     """
     fdata1, fdata2 = _cast_to_grid(
         fdata1,
@@ -295,7 +293,8 @@ def warping_distance(
         d_{\Gamma}(\gamma_i, \gamma_j) = cos^{-1} \left ( \int_0^1
         \sqrt{\dot \gamma_i(t)\dot \gamma_j(t)}dt \right )
 
-    See [SK16-4-11-2]_ for a detailed explanation.
+    See :footcite:`srivastava+klassen_2016_analysis_probability` for a detailed
+    explanation.
 
     If the warpings are not defined in [0,1], an affine transformation is maked
     to change the :term:`domain`.
@@ -312,9 +311,7 @@ def warping_distance(
         ValueError: If the objects are not unidimensional.
 
     References:
-        ..  [SK16-4-11-2] Srivastava, Anuj & Klassen, Eric P. (2016).
-            Functional and shape data analysis. In *Probability Density
-            Functions* (pp. 113-117). Springer.
+        .. footbibliography::
 
     """
     warping1, warping2 = _cast_to_grid(

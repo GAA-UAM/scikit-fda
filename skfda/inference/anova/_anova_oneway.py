@@ -33,7 +33,7 @@ def v_sample_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
     .. math::
         V_n = \sum_{i<j}^kw_i\|f_i-f_j\|^2
 
-    This statistic is defined in Cuevas[1].
+    This statistic is defined in Cuevas :footcite:`cuevas++_2004_anova`.
 
     Args:
          fd: Object containing all the samples for which we want
@@ -72,9 +72,7 @@ def v_sample_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
         0.01649448843348894
 
     References:
-        [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
-        anova test for functional data". *Computational Statistics  Data
-        Analysis*, 47:111-112, 02 2004
+        .. footbibliography::
 
     """
     weights = np.asarray(weights)
@@ -113,7 +111,7 @@ def v_asymptotic_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
     .. math::
         \sum_{i<j}^k\|f_i-f_j\sqrt{\cfrac{w_i}{w_j}}\|^2
 
-    This statistic is defined in Cuevas[1].
+    This statistic is defined in Cuevas :footcite:`cuevas++_2004_anova`.
 
     Args:
          fd: Object containing all the samples for which we want
@@ -152,9 +150,7 @@ def v_asymptotic_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
         0.0018159320335885969
 
     References:
-        [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
-        anova test for functional data". *Computational Statistics  Data
-        Analysis*, 47:111-112, 02 2004
+        .. footbibliography::
 
     """
     weights = np.asarray(weights)
@@ -290,7 +286,7 @@ def oneway_anova(
     calculated. This procedure is repeated `n_reps` times, creating a
     sampling distribution of the statistic.
 
-    This procedure is from Cuevas[1].
+    This procedure is from Cuevas :footcite:`cuevas++_2004_anova`.
 
     Args:
         args: The sample measurements for each each group.
@@ -330,9 +326,7 @@ def oneway_anova(
         [ 184.0698 212.7395  195.3663]
 
     References:
-        [1] Antonio Cuevas, Manuel Febrero-Bande, and Ricardo Fraiman. "An
-        anova test for functional data". *Computational Statistics  Data
-        Analysis*, 47:111-112, 02 2004
+        .. footbibliography::
 
     """
     if len(args) < 2:

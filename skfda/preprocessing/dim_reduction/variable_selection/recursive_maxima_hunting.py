@@ -522,7 +522,7 @@ class AsymptoticIndependenceTestStop(StoppingCondition):
     Stop when the selected point is independent from the target.
 
     It uses an asymptotic test based on the chi-squared distribution described
-    in [1]_. The test rejects independence if
+    in :footcite:`szekely+rizzo_2010_brownian`. The test rejects independence if
 
     .. math::
 
@@ -542,11 +542,7 @@ class AsymptoticIndependenceTestStop(StoppingCondition):
                               default is 0.01 (1%).
 
     References:
-
-        .. [1] G. J. Székely and M. L. Rizzo, “Brownian distance covariance,”
-               Ann. Appl. Stat., vol. 3, no. 4, pp. 1236–1265, Dec. 2009,
-               doi: 10.1214/09-AOAS312.
-
+        .. footbibliography::
 
     """
 
@@ -811,7 +807,8 @@ class RecursiveMaximaHunting(
     relevant once other points are selected. Those points would not be
     selected by :class:`MaximaHunting` alone.
 
-    This method was originally described in a special case in article [1]_.
+    This method was originally described in a special case in article
+    :footcite:`torrecilla+suarez_2016_hunting`.
     Additional information about the usage of this method can be found in
     :doc:`/modules/preprocessing/dim_reduction/recursive_maxima_hunting`.
 
@@ -880,11 +877,7 @@ class RecursiveMaximaHunting(
         (1000, 3)
 
     References:
-
-        .. [1] J. L. Torrecilla and A. Suárez, “Feature selection in
-               functional data classification with recursive maxima hunting,”
-               in Advances in Neural Information Processing Systems 29,
-               Curran Associates, Inc., 2016, pp. 4835–4843.
+        .. footbibliography::
 
     """
 

@@ -26,7 +26,8 @@ class MagnitudeShapePlot(BasePlot):
     This plot, which is based on the calculation of the :func:`directional
     outlyingness <fda.magnitude_shape_plot.directional_outlyingness>`
     of each of the samples, serves as a visualization tool for the centrality
-    of curves. Furthermore, an outlier detection procedure is included.
+    of curves. Furthermore, an outlier detection procedure is included
+    :footcite:`dai+genton_2018_visualization`.
 
     The norm of the mean of the directional outlyingness (:math:`\lVert
     \mathbf{MO}\rVert`) is plotted in the x-axis, and the variation of the
@@ -153,11 +154,7 @@ class MagnitudeShapePlot(BasePlot):
             title='MS-Plot')
 
     References:
-
-    Dai, W., & Genton, M. G. (2018). Multivariate Functional Data
-    Visualization and Outlier Detection. Journal of Computational
-    and Graphical Statistics, 27(4), 923-934.
-    https://doi.org/10.1080/10618600.2018.1473781
+        .. footbibliography::
 
     """
 

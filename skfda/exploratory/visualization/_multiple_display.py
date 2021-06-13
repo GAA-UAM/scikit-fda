@@ -540,6 +540,6 @@ class MultipleDisplay:
         if old_index == -1:
             self.reduce_points_intensity()
         else:
-            self.change_points_intensity(old_index=old_index)
             if self.index_clicked == old_index:
                 self.clicked = False
+            self.change_points_intensity(old_index=old_index)

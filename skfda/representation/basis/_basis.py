@@ -11,7 +11,7 @@ import numpy as np
 from matplotlib.figure import Figure
 
 from ..._utils import _reshape_eval_points, _same_domain, _to_domain_range
-from .._typing import DomainRange, DomainRangeLike
+from .._typing import ArrayLike, DomainRange, DomainRangeLike
 
 if TYPE_CHECKING:
     from . import FDataBasis
@@ -52,7 +52,7 @@ class Basis(ABC):
 
     def __call__(
         self,
-        eval_points: np.ndarray,
+        eval_points: ArrayLike,
         *,
         derivative: int = 0,
     ) -> np.ndarray:
@@ -126,7 +126,7 @@ class Basis(ABC):
 
     def evaluate(
         self,
-        eval_points: np.ndarray,
+        eval_points: ArrayLike,
         *,
         derivative: int = 0,
     ) -> np.ndarray:
@@ -278,7 +278,7 @@ class Basis(ABC):
         )
 
     def rescale(self: T, domain_range: Optional[DomainRangeLike] = None) -> T:
-        r"""
+        """
         Return a copy of the basis with a new :term:`domain` range.
 
         Args:
@@ -318,7 +318,10 @@ class Basis(ABC):
     def _to_R(self) -> str:  # noqa: N802
         raise NotImplementedError
 
-    def inner_product_matrix(self, other: Optional[Basis] = None) -> np.array:
+    def inner_product_matrix(
+        self,
+        other: Optional[Basis] = None,
+    ) -> np.ndarray:
         r"""
         Return the Inner Product Matrix of a pair of basis.
 
@@ -348,13 +351,13 @@ class Basis(ABC):
 
         return inner_product_matrix(self, other)
 
-    def _gram_matrix_numerical(self) -> np.array:
+    def _gram_matrix_numerical(self) -> np.ndarray:
         """Compute the Gram matrix numerically."""
         from ...misc import inner_product_matrix
 
         return inner_product_matrix(self, force_numerical=True)
 
-    def _gram_matrix(self) -> np.array:
+    def _gram_matrix(self) -> np.ndarray:
         """
         Compute the Gram matrix.
 
@@ -364,7 +367,7 @@ class Basis(ABC):
         """
         return self._gram_matrix_numerical()
 
-    def gram_matrix(self) -> np.array:
+    def gram_matrix(self) -> np.ndarray:
         r"""
         Return the Gram Matrix of a basis.
 

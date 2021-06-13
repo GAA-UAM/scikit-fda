@@ -9,10 +9,9 @@ means and derivatives.
 # Author: Miguel Carbajo Berrocal
 # License: MIT
 
-import skfda
-
 import numpy as np
 
+import skfda
 
 ##############################################################################
 # In this example we are going to explore the functional properties of the
@@ -33,11 +32,18 @@ fat = y['fat'].values
 low_fat = fat < 20
 labels = np.full(fd.n_samples, 'high fat')
 labels[low_fat] = 'low fat'
-colors = {'high fat': 'red',
-          'low fat': 'blue'}
+colors = {
+    'high fat': 'red',
+    'low fat': 'blue',
+}
 
-fig = fd.plot(group=labels, group_colors=colors,
-              linewidth=0.5, alpha=0.7, legend=True)
+fig = fd.plot(
+    group=labels,
+    group_colors=colors,
+    linewidth=0.5,
+    alpha=0.7,
+    legend=True,
+)
 
 ##############################################################################
 # The means of each group are the following ones.
@@ -47,9 +53,13 @@ mean_high = skfda.exploratory.stats.mean(fd[~low_fat])
 
 means = mean_high.concatenate(mean_low)
 
-means.dataset_name = fd.dataset_name + ' - means'
-means.plot(group=['high fat', 'low fat'], group_colors=colors,
-           linewidth=0.5, legend=True)
+means.dataset_name = f"{fd.dataset_name} - means"
+means.plot(
+    group=['high fat', 'low fat'],
+    group_colors=colors,
+    linewidth=0.5,
+    legend=True,
+)
 
 ##############################################################################
 # In this dataset, the vertical shift in the original trajectories is not
@@ -60,11 +70,23 @@ means.plot(group=['high fat', 'low fat'], group_colors=colors,
 # The first derivative is shown below:
 
 fdd = fd.derivative()
-fig = fdd.plot(group=labels, group_colors=colors,
-               linewidth=0.5, alpha=0.7, legend=True)
+fdd.dataset_name = f"{fd.dataset_name} - derivative"
+fig = fdd.plot(
+    group=labels,
+    group_colors=colors,
+    linewidth=0.5,
+    alpha=0.7,
+    legend=True,
+)
 
 ##############################################################################
 # We now show the second derivative:
 fdd = fd.derivative(order=2)
-fig = fdd.plot(group=labels, group_colors=colors,
-               linewidth=0.5, alpha=0.7, legend=True)
+fdd.dataset_name = f"{fd.dataset_name} - second derivative"
+fig = fdd.plot(
+    group=labels,
+    group_colors=colors,
+    linewidth=0.5,
+    alpha=0.7,
+    legend=True,
+)

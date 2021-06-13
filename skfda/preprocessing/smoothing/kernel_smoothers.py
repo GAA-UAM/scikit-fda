@@ -13,7 +13,6 @@ import numpy as np
 from ...misc import kernels
 from ._linear import _LinearSmoother
 
-
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
@@ -31,8 +30,8 @@ class _LinearKernelSmoother(_LinearSmoother):
 
     def _hat_matrix(self, input_points, output_points):
         return self._hat_matrix_function(
-            input_points=input_points,
-            output_points=output_points,
+            input_points=input_points[0],
+            output_points=output_points[0],
             smoothing_parameter=self.smoothing_parameter,
             kernel=self.kernel,
             weights=self.weights,

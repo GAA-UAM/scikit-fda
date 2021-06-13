@@ -363,7 +363,7 @@ class GraphPlot(BasePlot):
                         Z[h, ..., k],
                         **color_dict,
                         **kwargs,
-                    )[0]
+                    )
 
         _set_labels(self.fdata, self.fig, self.axes, self.patches)
 

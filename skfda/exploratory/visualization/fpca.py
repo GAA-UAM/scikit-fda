@@ -47,7 +47,7 @@ class FPCAPlot(BasePlot):
         
         self._set_figure_and_axes(chart, fig, axes)
 
-    def plot(self, **kwargs: Any):
+    def plot(self, **kwargs: Any) -> Figure:
         """ 
         Plots the perturbation graphs for the principal components.
         The perturbations are defined as variations over the mean. Adding a multiple

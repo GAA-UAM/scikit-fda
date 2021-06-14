@@ -1,18 +1,58 @@
+from __future__ import annotations
+
 import itertools
 import warnings
-from collections.abc import Iterable
+from typing import Any, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
 from ...misc.lstsq import solve_regularized_weighted_lstsq
-from ...misc.regularization import compute_penalty_matrix
+from ...misc.regularization import (
+    TikhonovRegularization,
+    compute_penalty_matrix,
+)
 from ...representation import FData
-from ._coefficients import coefficient_info_from_covariate
+from ...representation.basis import Basis
+from ._coefficients import CoefficientInfo, coefficient_info_from_covariate
+
+RegularizationType = Union[
+    TikhonovRegularization[Any],
+    Sequence[Optional[TikhonovRegularization[Any]]],
+    None,
+]
+
+RegularizationIterableType = Union[
+    TikhonovRegularization[Any],
+    Iterable[Optional[TikhonovRegularization[Any]]],
+    None,
+]
+
+AcceptedDataType = Union[
+    FData,
+    np.ndarray,
+]
+
+AcceptedDataCoefsType = Union[
+    CoefficientInfo[FData],
+    CoefficientInfo[np.ndarray],
+]
+
+BasisCoefsType = Sequence[Optional[Basis]]
+
+ArgcheckResultType = Tuple[
+    List[AcceptedDataType],
+    np.ndarray,
+    Optional[np.ndarray],
+    List[AcceptedDataCoefsType],
+]
 
 
-class LinearRegression(BaseEstimator, RegressorMixin):
+class LinearRegression(
+    BaseEstimator,  # type: ignore
+    RegressorMixin,  # type: ignore
+):
     r"""Linear regression with multivariate response.
 
     This is a regression algorithm equivalent to multivariate linear
@@ -38,7 +78,7 @@ class LinearRegression(BaseEstimator, RegressorMixin):
             for a functional covariate, the same basis is assumed. If this
             parameter is ``None`` (the default), it is assumed that ``None``
             is provided for all covariates.
-        fit_intercept (bool):  Whether to calculate the intercept for this
+        fit_intercept:  Whether to calculate the intercept for this
             model. If set to False, no intercept will be used in calculations
             (i.e. data is expected to be centered).
         regularization (int, iterable or :class:`Regularization`): If it is
@@ -55,14 +95,13 @@ class LinearRegression(BaseEstimator, RegressorMixin):
             ``None``.
 
     Attributes:
-        coef_ (iterable): A list containing the weight coefficient for each
+        coef\_: A list containing the weight coefficient for each
             covariate. For multivariate data, the covariate is a Numpy array.
             For functional data, the covariate is a FDataBasis object.
-        intercept_ (float): Independent term in the linear model. Set to 0.0
+        intercept\_: Independent term in the linear model. Set to 0.0
             if `fit_intercept = False`.
 
     Examples:
-
         >>> from skfda.ml.regression import LinearRegression
         >>> from skfda.representation.basis import (FDataBasis, Monomial,
         ...                                         Constant)
@@ -116,22 +155,36 @@ class LinearRegression(BaseEstimator, RegressorMixin):
 
     """
 
-    def __init__(self, *, coef_basis=None, fit_intercept=True,
-                 regularization=None):
+    def __init__(
+        self,
+        *,
+        coef_basis: Optional[BasisCoefsType] = None,
+        fit_intercept: bool = True,
+        regularization: RegularizationType = None,
+    ) -> None:
         self.coef_basis = coef_basis
         self.fit_intercept = fit_intercept
         self.regularization = regularization
 
-    def fit(self, X, y=None, sample_weight=None):
+    def fit(  # noqa: D102
+        self,
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
+        y: np.ndarray,
+        sample_weight: Optional[np.ndarray] = None,
+    ) -> LinearRegression:
 
-        X, y, sample_weight, coef_info = self._argcheck_X_y(
-            X, y, sample_weight, self.coef_basis)
+        X_new, y, sample_weight, coef_info = self._argcheck_X_y(
+            X,
+            y,
+            sample_weight,
+            self.coef_basis,
+        )
 
-        regularization = self.regularization
+        regularization: RegularizationIterableType = self.regularization
 
         if self.fit_intercept:
             new_x = np.ones((len(y), 1))
-            X = [new_x] + X
+            X_new = [new_x] + X_new
             coef_info = [coefficient_info_from_covariate(new_x, y)] + coef_info
 
             if isinstance(regularization, Iterable):
@@ -139,8 +192,10 @@ class LinearRegression(BaseEstimator, RegressorMixin):
             elif regularization is not None:
                 regularization = (None, regularization)
 
-        inner_products_list = [c.regression_matrix(x, y)
-                               for x, c in zip(X, coef_info)]
+        inner_products_list = [
+            c.regression_matrix(x, y)
+            for x, c in zip(X_new, coef_info)
+        ]
 
         # This is C @ J
         inner_products = np.concatenate(inner_products_list, axis=1)
@@ -152,7 +207,8 @@ class LinearRegression(BaseEstimator, RegressorMixin):
         penalty_matrix = compute_penalty_matrix(
             basis_iterable=(c.basis for c in coef_info),
             regularization_parameter=1,
-            regularization=regularization)
+            regularization=regularization,
+        )
 
         if self.fit_intercept and penalty_matrix is not None:
             # Intercept is not penalized
@@ -169,14 +225,16 @@ class LinearRegression(BaseEstimator, RegressorMixin):
         basiscoef_list = np.split(basiscoefs, coef_start)
 
         # Express the coefficients in functional form
-        coefs = [c.convert_from_constant_coefs(bcoefs)
-                 for c, bcoefs in zip(coef_info, basiscoef_list)]
+        coefs = [
+            c.convert_from_constant_coefs(bcoefs)
+            for c, bcoefs in zip(coef_info, basiscoef_list)
+        ]
 
         if self.fit_intercept:
             self.intercept_ = coefs[0]
             coefs = coefs[1:]
         else:
-            self.intercept_ = 0.0
+            self.intercept_ = np.zeros(1)
 
         self.coef_ = coefs
         self._coef_info = coef_info
@@ -184,15 +242,22 @@ class LinearRegression(BaseEstimator, RegressorMixin):
 
         return self
 
-    def predict(self, X):
-        from ...misc import inner_product
+    def predict(  # noqa: D102
+        self,
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
+    ) -> np.ndarray:
 
         check_is_fitted(self)
         X = self._argcheck_X(X)
 
-        result = np.sum([coef_info.inner_product(coef, x)
-                         for coef, x, coef_info
-                         in zip(self.coef_, X, self._coef_info)], axis=0)
+        result = np.sum(
+            [
+                coef_info.inner_product(coef, x)
+                for coef, x, coef_info
+                in zip(self.coef_, X, self._coef_info)
+            ],
+            axis=0,
+        )
 
         result += self.intercept_
 
@@ -201,8 +266,11 @@ class LinearRegression(BaseEstimator, RegressorMixin):
 
         return result
 
-    def _argcheck_X(self, X):
-        if isinstance(X, FData) or isinstance(X, np.ndarray):
+    def _argcheck_X(
+        self,
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
+    ) -> Sequence[AcceptedDataType]:
+        if isinstance(X, (FData, np.ndarray)):
             X = [X]
 
         X = [x if isinstance(x, FData) else np.asarray(x) for x in X]
@@ -212,41 +280,56 @@ class LinearRegression(BaseEstimator, RegressorMixin):
 
         return X
 
-    def _argcheck_X_y(self, X, y, sample_weight=None, coef_basis=None):
-        """Do some checks to types and shapes"""
-
+    def _argcheck_X_y(
+        self,
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
+        y: np.ndarray,
+        sample_weight: Optional[np.ndarray] = None,
+        coef_basis: Optional[BasisCoefsType] = None,
+    ) -> ArgcheckResultType:
+        """Do some checks to types and shapes."""
         # TODO: Add support for Dataframes
 
-        X = self._argcheck_X(X)
+        new_X = self._argcheck_X(X)
 
         if any(isinstance(i, FData) for i in y):
             raise ValueError(
-                "Some of the response variables are not scalar")
+                "Some of the response variables are not scalar",
+            )
 
         y = np.asarray(y)
 
         if coef_basis is None:
-            coef_basis = [None] * len(X)
+            coef_basis = [None] * len(new_X)
 
-        if len(coef_basis) != len(X):
-            raise ValueError("Number of regression coefficients does "
-                             "not match number of independent variables.")
+        if len(coef_basis) != len(new_X):
+            raise ValueError(
+                "Number of regression coefficients does "
+                "not match number of independent variables.",
+            )
 
-        if any(len(y) != len(x) for x in X):
-            raise ValueError("The number of samples on independent and "
-                             "dependent variables should be the same")
+        if any(len(y) != len(x) for x in new_X):
+            raise ValueError(
+                "The number of samples on independent and "
+                "dependent variables should be the same",
+            )
 
-        coef_info = [coefficient_info_from_covariate(x, y, basis=b)
-                     for x, b in zip(X, coef_basis)]
+        coef_info = [
+            coefficient_info_from_covariate(x, y, basis=b)
+            for x, b in zip(new_X, coef_basis)
+        ]
 
         if sample_weight is not None:
 
             if len(sample_weight) != len(y):
-                raise ValueError("The number of sample weights should be "
-                                 "equal to the number of samples.")
+                raise ValueError(
+                    "The number of sample weights should be "
+                    "equal to the number of samples.",
+                )
 
             if np.any(np.array(sample_weight) < 0):
                 raise ValueError(
-                    "The sample weights should be non negative values")
+                    "The sample weights should be non negative values",
+                )
 
-        return X, y, sample_weight, coef_info
+        return new_X, y, sample_weight, coef_info

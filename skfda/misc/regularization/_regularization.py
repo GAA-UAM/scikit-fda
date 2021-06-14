@@ -143,12 +143,17 @@ class L2Regularization(
 
 BasisTypes = Union[np.ndarray, FData, Basis]
 Regularization = TikhonovRegularization[Any]
+RegularizationLike = Union[
+    None,
+    Regularization,
+    Iterable[Optional[Regularization]],
+]
 
 
 def compute_penalty_matrix(
     basis_iterable: Iterable[BasisTypes],
     regularization_parameter: Union[float, Iterable[float]],
-    regularization: Union[None, Regularization, Iterable[Regularization]],
+    regularization: RegularizationLike,
 ) -> Optional[np.ndarray]:
     """
     Compute the regularization matrix for a linear differential operator.
@@ -177,6 +182,5 @@ def compute_penalty_matrix(
             regularization,
             regularization_parameter,
         )]
-    penalty_matrix = scipy.linalg.block_diag(*penalty_blocks)
 
-    return penalty_matrix
+    return scipy.linalg.block_diag(*penalty_blocks)

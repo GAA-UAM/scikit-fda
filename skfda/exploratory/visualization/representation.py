@@ -7,21 +7,14 @@ be set manually or automatically depending on values
 like depth measures.
 """
 
-from typing import (
-    Any,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import Any, Mapping, Optional, Sequence, Tuple, TypeVar, Union
 
 import matplotlib.cm
 import matplotlib.patches
 import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
+from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from typing_extensions import Protocol
 
@@ -122,7 +115,7 @@ def _get_color_info(
 
 class GraphPlot(BasePlot):
     """
-    Class used to plot the FDatGrid object graph as hypersurfaces.
+    Class used to plot the FDataGrid object graph as hypersurfaces.
 
     When plotting functional data, we can either choose manually a color,
     a group of colors for the representations. Besides, we can use a list of
@@ -130,63 +123,67 @@ class GraphPlot(BasePlot):
     argument to display the functions wtih a gradient of colors.
     Args:
         fdata: functional data set that we want to plot.
-        gradient_color_list: list of real values used to determine the color
-            in which each of the instances will be plotted. The size
+        gradient_criteria: list of real values used to determine the color
+            in which each of the instances will be plotted.
         max_grad: maximum value that the gradient_list can take, it will be
-            used to normalize the gradient_color_list in order to get values
-            thatcan be used in the funcion colormap.__call__(). If not
+            used to normalize the ``gradient_criteria`` in order to get values
+            that can be used in the function colormap.__call__(). If not
             declared it will be initialized to the maximum value of
-            gradient_list
+            gradient_list.
         min_grad: minimum value that the gradient_list can take, it will be
-            used to normalize the gradient_color_list in order to get values
-            thatcan be used in the funcion colormap.__call__(). If not
+            used to normalize the ``gradient_criteria`` in order to get values
+            that can be used in the function colormap.__call__(). If not
             declared it will be initialized to the minimum value of
             gradient_list.
-        chart (figure object, axe or list of axes, optional): figure over
+        chart: figure over
             with the graphs are plotted or axis over where the graphs are
             plotted. If None and ax is also None, the figure is
             initialized.
-        fig (figure object, optional): figure over with the graphs are
+        fig: figure over with the graphs are
             plotted in case ax is not specified. If None and ax is also
             None, the figure is initialized.
-        axes (axis object, optional): axis over where the graphs
+        axes: axis over where the graphs
             are plotted. If None, see param fig.
-        n_rows (int, optional): designates the number of rows of the figure
+        n_rows: designates the number of rows of the figure
             to plot the different dimensions of the image. Only specified
             if fig and ax are None.
-        n_cols(int, optional): designates the number of columns of the
+        n_cols: designates the number of columns of the
             figure to plot the different dimensions of the image. Only
             specified if fig and ax are None.
-        n_points (int or tuple, optional): Number of points to evaluate in
+        n_points: Number of points to evaluate in
             the plot. In case of surfaces a tuple of length 2 can be pased
             with the number of points to plot in each axis, otherwise the
             same number of points will be used in the two axes. By default
             in unidimensional plots will be used 501 points; in surfaces
             will be used 30 points per axis, wich makes a grid with 900
             points.
-        domain_range (tuple or list of tuples, optional): Range where the
+        domain_range: Range where the
             function will be plotted. In objects with unidimensional domain
             the domain range should be a tuple with the bounds of the
             interval; in the case of surfaces a list with 2 tuples with
             the ranges for each dimension. Default uses the domain range
             of the functional object.
-        group (list of int): contains integers from [0 to number of
+        group: contains integers from [0 to number of
             labels) indicating to which group each sample belongs to. Then,
             the samples with the same label are plotted in the same color.
             If None, the default value, each sample is plotted in the color
             assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-        group_colors (list of colors): colors in which groups are
+        group_colors: colors in which groups are
             represented, there must be one for each group. If None, each
             group is shown with distict colors in the "Greys" colormap.
-        group_names (list of str): name of each of the groups which appear
+        group_names: name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown. Implies `legend=True`.
-        colormap_name: name of the colormap to be used. By default we will
+        colormap: name of the colormap to be used. By default we will
             use autumn.
-        legend (bool): if `True`, show a legend with the groups. If
+        legend: if `True`, show a legend with the groups. If
             `group_names` is passed, it will be used for finding the names
             to display in the legend. Otherwise, the values passed to
             `group` will be used.
+        kwargs: if dim_domain is 1, keyword arguments to be passed to
+            the matplotlib.pyplot.plot function; if dim_domain is 2,
+            keyword arguments to be passed to the
+            matplotlib.pyplot.plot_surface function.
     Attributes:
         gradient_list: normalization of the values from gradient color_list
             that will be used to determine the intensity of the color
@@ -196,7 +193,7 @@ class GraphPlot(BasePlot):
     def __init__(
         self,
         fdata: FData,
-        gradient_color_list: Optional[Sequence[float]] = None,
+        gradient_criteria: Optional[Sequence[float]] = None,
         max_grad: Optional[float] = None,
         min_grad: Optional[float] = None,
         chart: Union[Figure, Axes, None] = None,
@@ -210,14 +207,15 @@ class GraphPlot(BasePlot):
         group: Optional[Sequence[K]] = None,
         group_colors: Optional[Indexable[K, ColorLike]] = None,
         group_names: Optional[Indexable[K, str]] = None,
-        colormap_name: str = 'autumn',
+        colormap: Union[Colormap, str, None] = None,
         legend: bool = False,
+        **kwargs: Any,
     ) -> None:
         BasePlot.__init__(self)
         self.fdata = fdata
-        self.gradient_color_list = gradient_color_list
-        if self.gradient_color_list is not None:
-            if len(self.gradient_color_list) != fdata.n_samples:
+        self.gradient_criteria = gradient_criteria
+        if self.gradient_criteria is not None:
+            if len(self.gradient_criteria) != fdata.n_samples:
                 raise ValueError(
                     "The length of the gradient color",
                     "list should be the same as the number",
@@ -225,18 +223,18 @@ class GraphPlot(BasePlot):
                 )
 
             if min_grad is None:
-                self.min_grad = min(self.gradient_color_list)
+                self.min_grad = min(self.gradient_criteria)
             else:
                 self.min_grad = min_grad
 
             if max_grad is None:
-                self.max_grad = max(self.gradient_color_list)
+                self.max_grad = max(self.gradient_criteria)
             else:
                 self.max_grad = max_grad
 
             aux_list = [
                 grad_color - self.min_grad
-                for grad_color in self.gradient_color_list
+                for grad_color in self.gradient_criteria
             ]
 
             self.gradient_list: Sequence[float] = (
@@ -249,46 +247,16 @@ class GraphPlot(BasePlot):
             self.gradient_list = None
 
         self.n_points = n_points
-        self.domain_range = domain_range
         self.group = group
         self.group_colors = group_colors
         self.group_names = group_names
         self.legend = legend
-        self.colormap_name = colormap_name
+        self.colormap = colormap
 
-        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
-
-    def plot(
-        self,
-        **kwargs: Any,
-    ) -> Figure:
-        """
-        Plot the graph.
-
-        Plots each coordinate separately. If the :term:`domain` is one
-        dimensional, the plots will be curves, and if it is two
-        dimensional, they will be surfaces. There are two styles of
-        visualizations, one that displays the functions without any
-        criteria choosing the colors and a new one that displays the
-        function with a gradient of colors depending on the initial
-        gradient_color_list (normalized in gradient_list).
-        Args:
-            kwargs: if dim_domain is 1, keyword arguments to be passed to
-                the matplotlib.pyplot.plot function; if dim_domain is 2,
-                keyword arguments to be passed to the
-                matplotlib.pyplot.plot_surface function.
-        Returns:
-            fig (figure object): figure object in which the graphs are plotted.
-        """
-        self.artists = np.zeros(
-            (self.n_samples(), self.fdata.dim_codomain),
-            dtype=Artist,
-        )
-
-        if self.domain_range is None:
+        if domain_range is None:
             self.domain_range = self.fdata.domain_range
         else:
-            self.domain_range = _to_domain_range(self.domain_range)
+            self.domain_range = _to_domain_range(domain_range)
 
         if self.gradient_list is None:
             sample_colors, patches = _get_color_info(
@@ -301,14 +269,42 @@ class GraphPlot(BasePlot):
             )
         else:
             patches = None
-            colormap = matplotlib.cm.get_cmap(self.colormap_name)
-            colormap = colormap.reversed()
+            if self.colormap is None:
+                colormap = matplotlib.cm.get_cmap("autumn")
+                colormap = colormap.reversed()
+            else:
+                colormap = matplotlib.cm.get_cmap(self.colormap)
 
             sample_colors = [None] * self.fdata.n_samples
             for m in range(self.fdata.n_samples):
                 sample_colors[m] = colormap(self.gradient_list[m])
 
         self.sample_colors = sample_colors
+        self.patches = patches
+
+        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
+
+    def plot(
+        self,
+        **kwargs,
+    ) -> Figure:
+        """
+        Plot the graph.
+
+        Plots each coordinate separately. If the :term:`domain` is one
+        dimensional, the plots will be curves, and if it is two
+        dimensional, they will be surfaces. There are two styles of
+        visualizations, one that displays the functions without any
+        criteria choosing the colors and a new one that displays the
+        function with a gradient of colors depending on the initial
+        gradient_criteria (normalized in gradient_list).
+        Returns:
+            fig (figure object): figure object in which the graphs are plotted.
+        """
+        self.artists = np.zeros(
+            (self.n_samples(), self.fdata.dim_codomain),
+            dtype=Artist,
+        )
 
         color_dict: Mapping[str, Optional[ColorLike]] = {}
 
@@ -324,7 +320,7 @@ class GraphPlot(BasePlot):
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
 
-                    set_color_dict(sample_colors, j, color_dict)
+                    set_color_dict(self.sample_colors, j, color_dict)
 
                     self.artists[j, i] = self.axes[i].plot(
                         eval_points,
@@ -359,7 +355,7 @@ class GraphPlot(BasePlot):
             for k in range(self.fdata.dim_codomain):
                 for h in range(self.fdata.n_samples):
 
-                    set_color_dict(sample_colors, h, color_dict)
+                    set_color_dict(self.sample_colors, h, color_dict)
 
                     self.artists[h, k] = self.axes[k].plot_surface(
                         X,
@@ -367,9 +363,9 @@ class GraphPlot(BasePlot):
                         Z[h, ..., k],
                         **color_dict,
                         **kwargs,
-                    )[0]
+                    )
 
-        _set_labels(self.fdata, self.fig, self.axes, patches)
+        _set_labels(self.fdata, self.fig, self.axes, self.patches)
 
         return self.fig
 
@@ -458,6 +454,10 @@ class ScatterPlot(BasePlot):
             `group_names` is passed, it will be used for finding the names
             to display in the legend. Otherwise, the values passed to
             `group` will be used.
+        kwargs: if dim_domain is 1, keyword arguments to be passed to
+            the matplotlib.pyplot.plot function; if dim_domain is 2,
+            keyword arguments to be passed to the
+            matplotlib.pyplot.plot_surface function.
     """
 
     def __init__(
@@ -475,6 +475,7 @@ class ScatterPlot(BasePlot):
         group_colors: Optional[Indexable[K, ColorLike]] = None,
         group_names: Optional[Indexable[K, str]] = None,
         legend: bool = False,
+        **kwargs: Any,
     ) -> None:
         BasePlot.__init__(self)
         self.fdata = fdata
@@ -496,28 +497,6 @@ class ScatterPlot(BasePlot):
         self.group_names = group_names
         self.legend = legend
 
-        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
-
-    def plot(
-        self,
-        **kwargs: Any,
-    ) -> Figure:
-        """
-        Scatter FDataGrid object.
-
-        Args:
-        kwargs: if dim_domain is 1, keyword arguments to be passed to
-            the matplotlib.pyplot.plot function; if dim_domain is 2,
-            keyword arguments to be passed to the
-            matplotlib.pyplot.plot_surface function.
-        Returns:
-        fig: figure object in which the graphs are plotted.
-        """
-        self.artists = np.zeros(
-            (self.n_samples(), self.fdata.dim_codomain),
-            dtype=Artist,
-        )
-
         if self.domain_range is None:
             self.domain_range = self.fdata.domain_range
         else:
@@ -531,6 +510,25 @@ class ScatterPlot(BasePlot):
             self.legend,
             kwargs,
         )
+        self.sample_colors = sample_colors
+        self.patches = patches
+
+        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
+
+    def plot(
+        self,
+        **kwargs: Any,
+    ) -> Figure:
+        """
+        Scatter FDataGrid object.
+
+        Returns:
+        fig: figure object in which the graphs are plotted.
+        """
+        self.artists = np.zeros(
+            (self.n_samples(), self.fdata.dim_codomain),
+            dtype=Artist,
+        )
 
         color_dict: Mapping[str, Optional[ColorLike]] = {}
 
@@ -539,7 +537,7 @@ class ScatterPlot(BasePlot):
             for i in range(self.fdata.dim_codomain):
                 for j in range(self.fdata.n_samples):
 
-                    set_color_dict(sample_colors, j, color_dict)
+                    set_color_dict(self.sample_colors, j, color_dict)
 
                     self.artists[j, i] = self.axes[i].scatter(
                         self.grid_points[0],
@@ -559,7 +557,7 @@ class ScatterPlot(BasePlot):
             for k in range(self.fdata.dim_codomain):
                 for h in range(self.fdata.n_samples):
 
-                    set_color_dict(sample_colors, h, color_dict)
+                    set_color_dict(self.sample_colors, h, color_dict)
 
                     self.artists[h, k] = self.axes[k].scatter(
                         X,
@@ -571,7 +569,7 @@ class ScatterPlot(BasePlot):
                         **kwargs,
                     )
 
-        _set_labels(self.fdata, self.fig, self.axes, patches)
+        _set_labels(self.fdata, self.fig, self.axes, self.patches)
 
         return self.fig
 
@@ -625,8 +623,8 @@ def set_color_dict(
     """
     Auxiliary method used to update color_dict.
 
-    Sets the new color of the color
-    dict thanks to sample colors and index.
+    Sets the new color of the color_dict
+    thanks to sample colors and index.
     """
     if sample_colors is not None:
         color_dict["color"] = sample_colors[ind]

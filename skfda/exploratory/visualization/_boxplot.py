@@ -6,7 +6,7 @@ visualize it.
 """
 import math
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Union
 
 import matplotlib
 import matplotlib.pyplot as plt

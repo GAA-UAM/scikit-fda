@@ -436,7 +436,7 @@ def fetch_growth(
     target_name = "sex"
     target_categories = ["male", "female"]
     frame = None
-
+    
     if as_frame:
         sex = pd.Categorical.from_codes(sex, categories=target_categories)
         frame = pd.DataFrame({
@@ -448,7 +448,7 @@ def fetch_growth(
 
     if return_X_y:
         return curves, sex
-
+    
     return Bunch(
         data=curves,
         target=sex,

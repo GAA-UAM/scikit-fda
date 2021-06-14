@@ -250,7 +250,7 @@ class Boxplot(FDataBoxplot, BasePlot):
         self,
         fdatagrid: FData,
         depth_method: Optional[Depth[FDataGrid]] = None,
-        prob: Tuple[float, ...] = (0.5,),
+        prob: Sequence[float] = [0.5],
         factor: float = 1.5,
         chart: Union[Figure, Axes, None] = None,
         *,
@@ -294,7 +294,7 @@ class Boxplot(FDataBoxplot, BasePlot):
             raise ValueError(
                 "Function only supports FDataGrid with domain dimension 1.")
 
-        if sorted(prob, reverse=True) != list(prob):
+        if sorted(prob, reverse=True) != prob:
             raise ValueError(
                 "Probabilities required to be in descending order.")
 
@@ -606,9 +606,6 @@ class SurfaceBoxplot(FDataBoxplot):
             fdatagrid: Object containing the data.
             method: Method used to order the data. Defaults to :class:`modified
                 band depth <skfda.exploratory.depth.ModifiedBandDepth>`.
-            prob: List with float numbers (in the range from 1 to 0)
-                that indicate which central regions to represent.
-                Defaults to [0.5] which represents the 50% central region.
             factor: Number used to calculate the outlying envelope.
 
         """
@@ -686,7 +683,7 @@ class SurfaceBoxplot(FDataBoxplot):
         """Visualization of the surface boxplot of the fdatagrid (dim_domain=2).
 
          Args:
-             fig: figure over with the graphs are plotted in case ax 
+             fig: figure over with the graphs are plotted in case ax
                 is not specified. If None and ax is also None, the figure
                 is initialized.
              axes: axis over where the graphs are plotted. If None,

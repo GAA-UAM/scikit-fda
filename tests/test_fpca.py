@@ -1,12 +1,13 @@
-from skfda import FDataGrid, FDataBasis
-from skfda.datasets import fetch_weather
-from skfda.misc.operators import LinearDifferentialOperator
-from skfda.misc.regularization import TikhonovRegularization
-from skfda.preprocessing.dim_reduction.projection import FPCA
-from skfda.representation.basis import Fourier
 import unittest
 
 import numpy as np
+
+from skfda import FDataBasis, FDataGrid
+from skfda.datasets import fetch_weather
+from skfda.misc.operators import LinearDifferentialOperator
+from skfda.misc.regularization import TikhonovRegularization
+from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
+from skfda.representation.basis import Fourier
 
 
 class FPCATestCase(unittest.TestCase):

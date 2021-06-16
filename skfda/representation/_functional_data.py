@@ -781,7 +781,7 @@ class FData(  # noqa: WPS214
         """
         from ..exploratory.visualization.representation import GraphPlot
 
-        return GraphPlot(fdata=self, *args, **kwargs).plot()
+        return GraphPlot(self, *args, **kwargs).plot()
 
     @abstractmethod
     def copy(

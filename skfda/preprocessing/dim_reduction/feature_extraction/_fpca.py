@@ -2,24 +2,25 @@
 
 from __future__ import annotations
 
-from typing import Optional, TypeVar
+from typing import Callable, Optional, TypeVar, Union
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
 from scipy.linalg import solve_triangular
-from skfda.misc.regularization import (
+
+from ....misc.regularization import (
     TikhonovRegularization,
     compute_penalty_matrix,
 )
-from skfda.representation import FData
-from skfda.representation.basis import Basis, FDataBasis
-from skfda.representation.grid import FDataGrid
-
-from ....misc.lstsq import solve_regularized_weighted_lstsq
+from ....representation import FData
+from ....representation._typing import ArrayLike
+from ....representation.basis import Basis, FDataBasis
+from ....representation.grid import FDataGrid
 
 Function = TypeVar("Function", bound=FData)
+WeightsCallable = Callable[[np.ndarray], np.ndarray]
 
 
 class FPCA(
@@ -44,7 +45,7 @@ class FPCA(
             components. We can use a different basis than the basis contained
             in the passed FDataBasis object. This parameter is only used when
             fitting a FDataBasis.
-        weights (numpy.array or callable): the weights vector used for
+        weights: the weights vector used for
             discrete integration. If none then the trapezoidal rule is used for
             computing the weights. If a callable object is passed, then the
             weight vector will be obtained by evaluating the object at the
@@ -96,7 +97,7 @@ class FPCA(
         n_components: int = 3,
         centering: bool = True,
         regularization: Optional[TikhonovRegularization[FData]] = None,
-        weights: Optional[np.ndarray] = None,
+        weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
     ) -> None:
         self.n_components = n_components

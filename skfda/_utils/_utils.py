@@ -645,6 +645,11 @@ def _int_to_real(array: np.ndarray) -> np.ndarray:
 def _check_array_key(array: np.ndarray, key: Any) -> Any:
     """Check a getitem key."""
     key = check_array_indexer(array, key)
+    if isinstance(key, tuple):
+        non_ellipsis = [i for i in key if i is not Ellipsis]
+        if len(non_ellipsis) > 1:
+            raise KeyError(key)
+        key = non_ellipsis[0]
 
     if isinstance(key, numbers.Integral):  # To accept also numpy ints
         key = int(key)

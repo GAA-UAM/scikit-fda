@@ -5,7 +5,7 @@ from typing import Callable, Optional, TypeVar, Union
 
 import numpy as np
 
-from ...misc.metrics import l2_distance, l2_norm
+from ...misc.metrics import Metric, l2_distance, l2_norm
 from ...representation import FData, FDataGrid
 from ..depth import Depth, ModifiedBandDepth
 
@@ -121,7 +121,7 @@ def geometric_median(
     X: T,
     *,
     tol: float = 1.e-8,
-    metric: Callable[[T, T], np.ndarray] = l2_distance,
+    metric: Metric[T] = l2_distance,
 ) -> T:
     r"""Compute the geometric median.
 

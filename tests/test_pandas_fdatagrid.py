@@ -353,6 +353,11 @@ class TestArithmeticOps(base.BaseArithmeticOpsTests):
 
     series_scalar_exc = None
 
+    # Bug introduced by https://github.com/pandas-dev/pandas/pull/37132
+    @pytest.mark.skip(reason="Unsupported")
+    def test_arith_frame_with_scalar(self, data, all_arithmetic_operators):
+        pass
+
     # Does not convert properly a list of FData to a FData
     @pytest.mark.skip(reason="Unsupported")
     def test_arith_series_with_array(self, dtype):

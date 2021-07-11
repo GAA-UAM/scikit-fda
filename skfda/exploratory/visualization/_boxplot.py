@@ -6,15 +6,23 @@ visualize it.
 """
 import math
 from abc import ABC, abstractmethod
+from typing import Optional, Sequence, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.artist import Artist
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
+from skfda.exploratory.depth.multivariate import Depth
+
+from ... import FData
+from ... import FDataGrid
 from ..depth import ModifiedBandDepth
 from ..outliers import _envelopes
+from ._baseplot import BasePlot
 from ._utils import (
-    _figure_to_svg,
     _get_figure_and_axes,
     _set_figure_layout_for_fdata,
     _set_labels,
@@ -74,19 +82,8 @@ class FDataBoxplot(ABC):
                              "matplotlib.colors.LinearSegmentedColormap")
         self._colormap = value
 
-    @abstractmethod
-    def plot(self, chart=None, *, fig=None, axes=None,
-             n_rows=None, n_cols=None):
-        pass
 
-    def _repr_svg_(self):
-        fig = self.plot()
-        plt.close(fig)
-
-        return _figure_to_svg(fig)
-
-
-class Boxplot(FDataBoxplot):
+class Boxplot(FDataBoxplot, BasePlot):
     r"""Representation of the functional boxplot.
 
     Class implementing the functionl boxplot which is an informative
@@ -249,24 +246,49 @@ class Boxplot(FDataBoxplot):
 
     """
 
-    def __init__(self, fdatagrid, depth_method=ModifiedBandDepth(), prob=[0.5],
-                 factor=1.5):
+    def __init__(
+        self,
+        fdatagrid: FData,
+        depth_method: Optional[Depth[FDataGrid]] = None,
+        prob: Sequence[float] = [0.5],
+        factor: float = 1.5,
+        chart: Union[Figure, Axes, None] = None,
+        *,
+        fig: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+    ):
         """Initialization of the Boxplot class.
 
         Args:
-            fdatagrid (FDataGrid): Object containing the data.
-            depth_method (:ref:`depth measure <depth-measures>`, optional):
-                Method used to order the data. Defaults to :func:`modified
-                band depth
+            fdatagrid: Object containing the data.
+            depth_method: Method used to order the data.
+                Defaults to :func:`modified band depth
                 <skfda.exploratory.depth.ModifiedBandDepth>`.
-            prob (list of float, optional): List with float numbers (in the
+            prob: List with float numbers (in the
                 range from 1 to 0) that indicate which central regions to
                 represent.
                 Defaults to [0.5] which represents the 50% central region.
-            factor (double): Number used to calculate the outlying envelope.
+            factor: Number used to calculate the outlying envelope.
+            chart: figure over with the graphs are plotted or axis over
+                where the graphs are plotted. If None and ax is also
+                None, the figure is initialized.
+            fig: figure over with the graphs are
+                plotted in case ax is not specified. If None and ax is also
+                None, the figure is initialized.
+            axes: axis over where the graphs
+                are plotted. If None, see param fig.
+            n_rows: designates the number of rows of the figure
+                to plot the different dimensions of the image. Only specified
+                if fig and ax are None.
+            n_cols: designates the number of columns of the
+                figure to plot the different dimensions of the image. Only
+                specified if fig and ax are None.
 
         """
         FDataBoxplot.__init__(self, factor)
+        BasePlot.__init__(self)
 
         if fdatagrid.dim_domain != 1:
             raise ValueError(
@@ -281,6 +303,8 @@ class Boxplot(FDataBoxplot):
 
         self._envelopes = [None] * len(prob)
 
+        if depth_method is None:
+            depth_method = ModifiedBandDepth()
         depth = depth_method(fdatagrid)
         indices_descending_depth = (-depth).argsort(axis=0)
 
@@ -318,6 +342,8 @@ class Boxplot(FDataBoxplot):
         self.mediancol = "black"
         self._show_full_outliers = False
 
+        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
+
     @property
     def fdatagrid(self):
         return self._fdatagrid
@@ -352,32 +378,38 @@ class Boxplot(FDataBoxplot):
             raise ValueError("show_full_outliers must be boolean type")
         self._show_full_outliers = boolean
 
-    def plot(self, chart=None, *, fig=None, axes=None,
-             n_rows=None, n_cols=None):
+    def _set_figure_and_axes(
+        self,
+        chart: Union[Figure, Axes, None] = None,
+        fig: Optional[Figure] = None,
+        axes: Union[Axes, Sequence[Axes], None] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+    ) -> None:
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout_for_fdata(
+            self.fdatagrid,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
+        )
+        self.fig = fig
+        self.axes = axes
+
+    def n_samples(self) -> int:
+        return self.fdatagrid.n_samples
+
+    def plot(self):
         """Visualization of the functional boxplot of the fdatagrid
         (dim_domain=1).
 
-        Args:
-            fig (figure object, optional): figure over with the graphs are
-                plotted in case ax is not specified. If None and ax is also
-                None, the figure is initialized.
-            axes (list of axis objects, optional): axis over where the graphs
-                are plotted. If None, see param fig.
-            n_rows(int, optional): designates the number of rows of the figure
-                to plot the different dimensions of the image. Only specified
-                if fig and ax are None.
-            n_cols(int, optional): designates the number of columns of the
-                figure to plot the different dimensions of the image. Only
-                specified if fig and ax are None.
-
         Returns:
-            fig (figure): figure object in which the graphs are plotted.
+            fig: figure object in which the graphs are plotted.
 
         """
 
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(
-            self.fdatagrid, fig, axes, n_rows, n_cols)
+        self.artists = np.zeros((self.n_samples(), 1), dtype=Artist)
         tones = np.linspace(0.1, 1.0, len(self._prob) + 1, endpoint=False)[1:]
         color = self.colormap(tones)
 
@@ -387,32 +419,36 @@ class Boxplot(FDataBoxplot):
             var_zorder = 4
 
         outliers = self.fdatagrid[self.outliers]
+        index_outliers = np.where(self.outliers == True)[0]
 
         for m in range(self.fdatagrid.dim_codomain):
 
             # Outliers
             for o in outliers:
-                axes[m].plot(o.grid_points[0],
-                             o.data_matrix[0, :, m],
-                             color=self.outliercol,
-                             linestyle='--', zorder=1)
+                self.axes[m].plot(
+                    o.grid_points[0],
+                    o.data_matrix[0, :, m],
+                    color=self.outliercol,
+                    linestyle='--',
+                    zorder=1,
+                )
 
             for i in range(len(self._prob)):
                 # central regions
-                axes[m].fill_between(self.fdatagrid.grid_points[0],
+                self.axes[m].fill_between(self.fdatagrid.grid_points[0],
                                      self.envelopes[i][0][..., m],
                                      self.envelopes[i][1][..., m],
                                      facecolor=color[i], zorder=var_zorder)
 
             # outlying envelope
-            axes[m].plot(self.fdatagrid.grid_points[0],
+            self.axes[m].plot(self.fdatagrid.grid_points[0],
                          self.non_outlying_envelope[0][..., m],
                          self.fdatagrid.grid_points[0],
                          self.non_outlying_envelope[1][..., m],
                          color=self.barcol, zorder=4)
 
             # central envelope
-            axes[m].plot(self.fdatagrid.grid_points[0],
+            self.axes[m].plot(self.fdatagrid.grid_points[0],
                          self.central_envelope[0][..., m],
                          self.fdatagrid.grid_points[0],
                          self.central_envelope[1][..., m],
@@ -421,23 +457,23 @@ class Boxplot(FDataBoxplot):
             # vertical lines
             index = math.ceil(len(self.fdatagrid.grid_points[0]) / 2)
             x = self.fdatagrid.grid_points[0][index]
-            axes[m].plot([x, x],
+            self.axes[m].plot([x, x],
                          [self.non_outlying_envelope[0][..., m][index],
                           self.central_envelope[0][..., m][index]],
                          color=self.barcol,
                          zorder=4)
-            axes[m].plot([x, x],
+            self.axes[m].plot([x, x],
                          [self.non_outlying_envelope[1][..., m][index],
                           self.central_envelope[1][..., m][index]],
                          color=self.barcol, zorder=4)
 
             # median sample
-            axes[m].plot(self.fdatagrid.grid_points[0], self.median[..., m],
+            self.axes[m].plot(self.fdatagrid.grid_points[0], self.median[..., m],
                          color=self.mediancol, zorder=5)
 
-        _set_labels(self.fdatagrid, fig, axes)
+        _set_labels(self.fdatagrid, self.fig, self.axes)
 
-        return fig
+        return self.fig
 
     def __repr__(self):
         """Return repr(self)."""
@@ -466,30 +502,28 @@ class SurfaceBoxplot(FDataBoxplot):
 
     Args:
 
-        fdatagrid (FDataGrid): Object containing the data.
-        method (:ref:`depth measure <depth-measures>`, optional): Method
+        fdatagrid: Object containing the data.
+        method: Method
             used to order the data. Defaults to :class:`modified band depth
             <skfda.exploratory.depth.ModifiedBandDepth>`.
-        prob (list of float, optional): List with float numbers (in the
+        prob: List with float numbers (in the
             range from 1 to 0) that indicate which central regions to
             represent.
             Defaults to [0.5] which represents the 50% central region.
-        factor (double): Number used to calculate the outlying envelope.
+        factor: Number used to calculate the outlying envelope.
 
     Attributes:
 
-        fdatagrid (FDataGrid): Object containing the data.
-        median (array, (fdatagrid.dim_codomain, lx, ly)): contains
+        fdatagrid: Object containing the data.
+        median: contains
             the median/s.
-        central_envelope (array, (fdatagrid.dim_codomain, 2, lx, ly)):
-            contains the central envelope/s.
-        non_outlying_envelope (array,(fdatagrid.dim_codomain, 2, lx, ly)):
-            contains the non-outlying envelope/s.
-        colormap (matplotlib.colors.LinearSegmentedColormap): Colormap from
+        central_envelope: contains the central envelope/s.
+        non_outlying_envelope: contains the non-outlying envelope/s.
+        colormap: Colormap from
             which the colors to represent the central regions are selected.
-        boxcol (string): Color of the box, which includes median and central
+        boxcol: Color of the box, which includes median and central
             envelope.
-        outcol (string): Color of the outlying envelope.
+        outcol: Color of the outlying envelope.
 
     Examples:
 
@@ -569,15 +603,10 @@ class SurfaceBoxplot(FDataBoxplot):
         """Initialization of the functional boxplot.
 
         Args:
-            fdatagrid (FDataGrid): Object containing the data.
-            method (:ref:`depth measure <depth-measures>`, optional): Method
-                used to order the data. Defaults to :class:`modified band depth
-                <skfda.exploratory.depth.ModifiedBandDepth>`.
-            prob (list of float, optional): List with float numbers (in the
-                range from 1 to 0) that indicate which central regions to
-                represent.
-                Defaults to [0.5] which represents the 50% central region.
-            factor (double): Number used to calculate the outlying envelope.
+            fdatagrid: Object containing the data.
+            method: Method used to order the data. Defaults to :class:`modified
+                band depth <skfda.exploratory.depth.ModifiedBandDepth>`.
+            factor: Number used to calculate the outlying envelope.
 
         """
         FDataBoxplot.__init__(self, factor)
@@ -654,20 +683,20 @@ class SurfaceBoxplot(FDataBoxplot):
         """Visualization of the surface boxplot of the fdatagrid (dim_domain=2).
 
          Args:
-             fig (figure object, optional): figure over with the graphs are
-                 plotted in case ax is not specified. If None and ax is also
-                 None, the figure is initialized.
-             axes (list of axis objects, optional): axis over where the graphs
-                 are plotted. If None, see param fig.
-             n_rows(int, optional): designates the number of rows of the figure
+             fig: figure over with the graphs are plotted in case ax
+                is not specified. If None and ax is also None, the figure
+                is initialized.
+             axes: axis over where the graphs are plotted. If None,
+                see param fig.
+             n_rows: designates the number of rows of the figure
                  to plot the different dimensions of the image. Only specified
                  if fig and ax are None.
-             n_cols(int, optional): designates the number of columns of the
+             n_cols: designates the number of columns of the
                  figure to plot the different dimensions of the image. Only
                  specified if fig and ax are None.
 
         Returns:
-            fig (figure): figure object in which the graphs are plotted.
+            fig: figure object in which the graphs are plotted.
 
         """
         fig, axes = _get_figure_and_axes(chart, fig, axes)

@@ -57,7 +57,10 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.intersphinx',
               'sphinx.ext.doctest',
               'jupyter_sphinx',
-              'sphinx.ext.autodoc.typehints']
+              'sphinx.ext.autodoc.typehints',
+              'sphinxcontrib.bibtex']
+
+bibtex_bibfiles = ['refs.bib']
 
 autodoc_default_flags = ['members', 'inherited-members']
 

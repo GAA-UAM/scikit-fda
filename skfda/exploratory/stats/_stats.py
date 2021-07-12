@@ -126,8 +126,7 @@ def geometric_median(
     r"""Compute the geometric median.
 
     The sample geometric median is the point that minimizes the :math:`L_1`
-    norm of the vector of distances to all observations
-    :footcite:`gervini_2008_estimation`:
+    norm of the vector of distances to all observations:
 
     .. math::
 
@@ -159,7 +158,9 @@ def geometric_median(
         :func:`depth_based_median`
 
     References:
-        .. footbibliography::
+        .. bibliography::
+
+            gervini_2008_estimation
 
     """
     weights = np.full(len(X), 1 / len(X))

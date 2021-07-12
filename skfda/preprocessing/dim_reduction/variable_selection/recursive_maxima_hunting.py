@@ -522,7 +522,8 @@ class AsymptoticIndependenceTestStop(StoppingCondition):
     Stop when the selected point is independent from the target.
 
     It uses an asymptotic test based on the chi-squared distribution described
-    in :footcite:`szekely+rizzo_2010_brownian`. The test rejects independence if
+    in :footcite:`szekely+rizzo_2010_brownian`. The test rejects independence
+    if
 
     .. math::
 

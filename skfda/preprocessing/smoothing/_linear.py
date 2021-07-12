@@ -116,7 +116,7 @@ class _LinearSmoother(
 
         # The matrix is cached
         return X.copy(
-            data_matrix=self.hat_matrix() @ X.data_matrix,
+            data_matrix=self.hat_matrix_ @ X.data_matrix,
             grid_points=self.output_points_,
         )
 

@@ -1,15 +1,21 @@
+from __future__ import annotations
+
+import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 
 from ._fdatabasis import FDataBasis
 
 
-class CoefficientsTransformer(BaseEstimator, TransformerMixin):
-    """
+class CoefficientsTransformer(
+    BaseEstimator,  # type:ignore
+    TransformerMixin,  # type:ignore
+):
+    r"""
     Transformer returning the coefficients of FDataBasis objects as a matrix.
 
     Attributes:
-        shape_ (tuple): original shape of coefficients per sample.
+        basis\_ (tuple): Basis used.
 
     Examples:
         >>> from skfda.representation.basis import (FDataBasis, Monomial,
@@ -26,19 +32,24 @@ class CoefficientsTransformer(BaseEstimator, TransformerMixin):
 
     """
 
-    def fit(self, X: FDataBasis, y=None):
+    def fit(  # noqa: D102
+        self,
+        X: FDataBasis,
+        y: None = None,
+    ) -> CoefficientsTransformer:
 
-        self.shape_ = X.coefficients.shape[1:]
+        self.basis_ = X.basis
 
         return self
 
-    def transform(self, X, y=None):
+    def transform(  # noqa: D102
+        self,
+        X: FDataBasis,
+        y: None = None,
+    ) -> np.ndarray:
 
         check_is_fitted(self)
 
-        assert X.coefficients.shape[1:] == self.shape_
+        assert X.basis == self.basis_
 
-        coefficients = X.coefficients.copy()
-        coefficients = coefficients.reshape((X.n_samples, -1))
-
-        return coefficients
+        return X.coefficients.copy()

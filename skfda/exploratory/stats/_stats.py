@@ -158,9 +158,9 @@ def geometric_median(
         :func:`depth_based_median`
 
     References:
-        Gervini, D. (2008). Robust functional estimation using the median and
-        spherical principal components. Biometrika, 95(3), 587–600.
-        https://doi.org/10.1093/biomet/asn031
+        .. bibliography::
+
+            gervini_2008_estimation
 
     """
     weights = np.full(len(X), 1 / len(X))

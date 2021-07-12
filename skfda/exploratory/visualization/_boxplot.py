@@ -238,10 +238,9 @@ class Boxplot(FDataBoxplot, BasePlot):
             outliers=array([ True, False, False,  True]))
 
     References:
+        .. bibliography::
 
-        Sun, Y., & Genton, M. G. (2011). Functional Boxplots. Journal of
-        Computational and Graphical Statistics, 20(2), 316-334.
-        https://doi.org/10.1198/jcgs.2011.09224
+            sun+genton_2011_boxplots
 
 
     """
@@ -498,7 +497,7 @@ class SurfaceBoxplot(FDataBoxplot):
     :ref:`depth measure <depth-measures>`
     for functional data, it represents the envelope of the
     50% central region, the median curve, and the maximum non-outlying
-    envelope.
+    envelope :footcite:`sun+genton_2011_boxplots`.
 
     Args:
 
@@ -592,10 +591,7 @@ class SurfaceBoxplot(FDataBoxplot):
                                        [ 5. ]]])))
 
     References:
-
-        Sun, Y., & Genton, M. G. (2011). Functional Boxplots. Journal of
-        Computational and Graphical Statistics, 20(2), 316-334.
-        https://doi.org/10.1198/jcgs.2011.09224
+        .. footbibliography::
 
     """
 

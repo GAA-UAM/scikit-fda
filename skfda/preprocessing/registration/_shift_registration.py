@@ -23,9 +23,10 @@ class ShiftRegistration(RegistrationTransformer):
     r"""Register a functional dataset using shift alignment.
 
     Realizes the registration of a set of curves using a shift aligment
-    [RaSi2005-7-2]_. Let :math:`\{x_i(t)\}_{i=1}^{N}` be a functional dataset,
-    calculates :math:`\delta_{i}` for each sample such that
-    :math:`x_i(t + \delta_{i})` minimizes the least squares criterion:
+    :footcite:`ramsay+silverman_2005_functional_shift`.
+    Let :math:`\{x_i(t)\}_{i=1}^{N}` be a functional dataset, calculates
+    :math:`\delta_{i}` for each sample such that :math:`x_i(t + \delta_{i})`
+    minimizes the least squares criterion:
 
     .. math::
         \text{REGSSE} = \sum_{i=1}^{N} \int_{\mathcal{T}}
@@ -34,7 +35,7 @@ class ShiftRegistration(RegistrationTransformer):
     Estimates each shift parameter :math:`\delta_i` iteratively by
     using a modified Newton-Raphson algorithm, updating the template
     :math:`\mu` in each iteration as is described in detail in
-    [RaSi2005-7-9-1]_.
+    :footcite:`ramsay+silverman_2005_functional_newton-raphson`.
 
     Method only implemented for univariate functional data.
 
@@ -54,14 +55,16 @@ class ShiftRegistration(RegistrationTransformer):
             If the template is an FData is used directly as the final
             template to the registration, if it is a callable or "mean" the
             template is computed iteratively constructing a temporal template
-            in each iteration. In [RaSi2005-7-9-1]_ is described in detail this
-            procedure. Defaults to "mean".
+            in each iteration.
+            In :footcite:`ramsay+silverman_2005_functional_newton-raphson`
+            is described in detail this procedure. Defaults to "mean".
         extrapolation: Controls the
             extrapolation mode for points outside the :term:`domain` range.
             By default uses the method defined in the data to be transformed.
             See the `extrapolation` documentation to obtain more information.
         step_size: Parameter to adjust the rate of
-            convergence in the Newton-Raphson algorithm, see [RaSi2005-7-9-1]_.
+            convergence in the Newton-Raphson algorithm, see
+            :footcite:`ramsay+silverman_2005_functional_newton-raphson`.
             Defaults to 1.
         restrict_domain: If True restricts the :term:`domain`
             to avoid the need of using extrapolation, in which
@@ -122,12 +125,8 @@ class ShiftRegistration(RegistrationTransformer):
 
 
     References:
-        ..  [RaSi2005-7-2] Ramsay, J., Silverman, B. W. (2005). Shift
-            registration. In *Functional Data Analysis* (pp. 129-132).
-            Springer.
-        ..  [RaSi2005-7-9-1] Ramsay, J., Silverman, B. W. (2005). Shift
-            registration by the Newton-Raphson algorithm. In *Functional
-            Data Analysis* (pp. 142-144). Springer.
+        .. footbibliography::
+
     """
 
     def __init__(

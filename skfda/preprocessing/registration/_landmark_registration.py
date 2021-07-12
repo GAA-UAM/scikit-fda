@@ -188,7 +188,8 @@ def landmark_registration_warping(
         :math:`h_i(t^*_j)=t_{ij}`.
         The registered samples can be obtained as :math:`x^*_i(t)=x_i(h_i(t))`.
 
-        See [RS05-7-3-1]_ for a detailed explanation.
+        See :footcite:`ramsay+silverman_2005_functional_landmark`
+        for a detailed explanation.
 
     Args:
         fd: Functional data object.
@@ -210,9 +211,7 @@ def landmark_registration_warping(
             the number of samples.
 
     References:
-        ..  [RS05-7-3-1] Ramsay, J., Silverman, B. W. (2005). Feature or
-            landmark registration. In *Functional Data Analysis* (pp. 132-136).
-            Springer.
+        .. footbibliography::
 
     Examples:
         >>> from skfda.datasets import make_multimodal_landmarks
@@ -316,7 +315,8 @@ def landmark_registration(
     The registered samples will have their features aligned, i.e.,
     :math:`x^*_i(t^*_j)=x_i(t_{ij})`.
 
-    See [RS05-7-3]_ for a detailed explanation.
+    See :footcite:`ramsay+silverman_2005_functional_landmark`
+    for a detailed explanation.
 
     Args:
         fd: Functional data object.
@@ -334,9 +334,7 @@ def landmark_registration(
         FDataGrid with the functional data object registered.
 
     References:
-        ..  [RS05-7-3] Ramsay, J., Silverman, B. W. (2005). Feature or landmark
-            registration. In *Functional Data Analysis* (pp. 132-136).
-            Springer.
+        .. footbibliography::
 
     Examples:
         >>> from skfda.datasets import make_multimodal_landmarks

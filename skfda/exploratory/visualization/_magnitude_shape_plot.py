@@ -153,11 +153,9 @@ class MagnitudeShapePlot(BasePlot):
             title='MS-Plot')
 
     References:
+        .. bibliography::
 
-    Dai, W., & Genton, M. G. (2018). Multivariate Functional Data
-    Visualization and Outlier Detection. Journal of Computational
-    and Graphical Statistics, 27(4), 923-934.
-    https://doi.org/10.1080/10618600.2018.1473781
+            dai+genton_2018_visualization
 
     """
 

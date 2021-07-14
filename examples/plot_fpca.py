@@ -9,17 +9,16 @@ Explores the two possible ways to do functional principal component analysis.
 # License: MIT
 
 import matplotlib.pyplot as plt
-import numpy as np
 
 import skfda
 from skfda.datasets import fetch_growth
-from skfda.exploratory.visualization import plot_fpca_perturbation_graphs
+from skfda.exploratory.visualization import FPCAPlot
 from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
 from skfda.representation.basis import BSpline, Fourier, Monomial
 
 ##############################################################################
-# In this example we are going to use functional principal component analysis to
-# explore datasets and obtain conclusions about said dataset using this
+# In this example we are going to use functional principal component analysis
+# to explore datasets and obtain conclusions about said dataset using this
 # technique.
 #
 # First we are going to fetch the Berkeley Growth Study data. This dataset

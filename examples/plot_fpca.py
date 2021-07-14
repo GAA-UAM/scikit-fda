@@ -74,10 +74,12 @@ fpca.components_.plot()
 # faster at an early age and boys tend to start puberty later, therefore, their
 # growth is more significant later. Girls also stop growing early
 
-plot_fpca_perturbation_graphs(basis_fd.mean(),
-                              fpca.components_,
-                              30,
-                              fig=plt.figure(figsize=(6, 2 * 4)))
+FPCAPlot(
+    basis_fd.mean(),
+    fpca.components_,
+    30,
+    fig=plt.figure(figsize=(6, 2 * 4)),
+).plot()
 
 ##############################################################################
 # We can also specify another basis for the principal components as argument

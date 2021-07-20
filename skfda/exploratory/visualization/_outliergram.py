@@ -10,14 +10,13 @@ magnitude outliers, but there is a necessity of capturing this other type.
 from typing import Optional, Sequence, Union
 
 import numpy as np
-import scipy.integrate as integrate
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from scipy.stats import rankdata
 
 from ... import FDataGrid
 from ..depth._depth import ModifiedBandDepth
+from ..stats import modified_epigraph_index
 from ._baseplot import BasePlot
 from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
@@ -75,8 +74,8 @@ class Outliergram(BasePlot):
         self.fdata = fdata
         self.depth = ModifiedBandDepth()
         self.depth.fit(fdata)
-        self.mbd = self.depth(fdata)
-        self.mei = self.modified_epigraph_index_list()
+        self.mbd = self.depth.predict(fdata)
+        self.mei = modified_epigraph_index(fdata)
         if len(self.mbd) != len(self.mei):
             raise ValueError(
                 "The size of mbd and mei should be the same.",
@@ -138,37 +137,6 @@ class Outliergram(BasePlot):
         ])
 
         return self.fig
-
-    def modified_epigraph_index_list(self) -> np.ndarray:
-        """
-        Calculate the Modified Epigraph Index of a FData.
-
-        The MEI represents the mean time a curve stays below other curve.
-        In this case we will calculate the MEI for each curve in relation
-        with all the other curves of our dataset.
-        """
-        interval_len = (
-            self.fdata.domain_range[0][1]
-            - self.fdata.domain_range[0][0]
-        )
-
-        # Array containing at each point the number of curves
-        # are above it.
-        num_functions_above = rankdata(
-            -self.fdata.data_matrix,
-            method='max',
-            axis=0,
-        ) - 1
-
-        integrand = integrate.simps(
-            num_functions_above,
-            x=self.fdata.grid_points[0],
-            axis=1,
-        )
-
-        integrand /= (interval_len * self.fdata.n_samples)
-
-        return integrand.flatten()
 
     def _compute_distances(self) -> np.ndarray:
         """

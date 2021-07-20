@@ -14,13 +14,12 @@ class OutliergramOutlierDetector(
 ):
     r"""Outlier detector using the relation between MEI and MBD.
 
-    Detects as outliers functions that have one or more points outside
-    ``factor`` times the interquartile range plus or minus the central
-    envelope, given a functional depth measure. This corresponds to the
-    points selected as outliers by the functional boxplot.
+    Detects as outliers functions that have the vertical distance to the
+    outliergram parabola greater than ``factor`` times the interquartile
+    range (IQR) of those distances plus the third quartile. This corresponds
+    to the points selected as outliers by the outliergram.
 
     Parameters:
-        depth_method (Callable): The functional depth measure used.
         factor (float): The number of times the IQR is multiplied.
 
     Example:
@@ -28,14 +27,25 @@ class OutliergramOutlierDetector(
 
         >>> import skfda
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
+        ...                [0.5, 1, -1, 3, 2, 1],
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
-        ...                [-1, -1, -0.5, 1, 1, 0.5],
+        ...                [-1, -1, -0.5, 5, 5, 0.5],
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
+        >>> data_matrix = [[0, 0, 0, 0, 0, 0],
+        ...                [1, 1, 1, 1, 1, 1],
+        ...                [2, 2, 2, 2, 2, 2],
+        ...                [3, 3, 3, 3, 3, 3],
+        ...                [9, 9, 9, -1, -1, -1],
+        ...                [4, 4, 4, 4, 4, 4],
+        ...                [5, 5, 5, 5, 5, 5],
+        ...                [6, 6, 6, 6, 6, 6],
+        ...                [7, 7, 7, 7, 7, 7],
+        ...                [8, 8, 8, 8, 8, 8]]
         >>> grid_points = [0, 2, 4, 6, 8, 10]
         >>> fd = skfda.FDataGrid(data_matrix, grid_points)
-        >>> out_detector = IQROutlierDetector()
+        >>> out_detector = OutliergramOutlierDetector()
         >>> out_detector.fit_predict(fd)
-        array([-1, 1, 1, -1])
+        array([ 1,  1,  1,  1, -1,  1,  1,  1,  1,  1])
 
     """
 

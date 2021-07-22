@@ -69,11 +69,13 @@ class Outliergram(BasePlot):
         axes: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
+        factor: float = 1.5,
         **kwargs,
     ) -> None:
         BasePlot.__init__(self)
         self.fdata = fdata
-        self.outlier_detector = OutliergramOutlierDetector()
+        self.factor = factor
+        self.outlier_detector = OutliergramOutlierDetector(factor=factor)
         self.outlier_detector.fit(fdata)
         indices = np.argsort(self.outlier_detector.mei_)
         self._parabola_ordered = self.outlier_detector.parabola_[indices]

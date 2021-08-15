@@ -386,7 +386,7 @@ class TestHistoricalLinearRegression(unittest.TestCase):
         np.testing.assert_allclose(
             regression.intercept_.data_matrix,
             self.intercept.data_matrix,
-            rtol=1e-4,
+            rtol=1e-3,
         )
 
         np.testing.assert_allclose(

@@ -369,9 +369,16 @@ class TestHistoricalLinearRegression(unittest.TestCase):
     def test_historical(self) -> None:
         """Test historical regression with data following the model."""
         regression = HistoricalLinearRegression(n_intervals=6)
-        regression.fit(self.X, self.y)
+        fit_predict_result = regression.fit_predict(self.X, self.y)
+        predict_result = regression.predict(self.X)
+
         np.testing.assert_allclose(
-            regression.predict(self.X).data_matrix,
+            predict_result.data_matrix,
+            fit_predict_result.data_matrix,
+        )
+
+        np.testing.assert_allclose(
+            predict_result.data_matrix,
             self.y.data_matrix,
             rtol=1e-1,
         )

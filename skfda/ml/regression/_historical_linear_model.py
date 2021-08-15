@@ -12,6 +12,8 @@ from ..._utils import _cartesian_product, _pairwise_symmetric
 from ...representation import FDataBasis, FDataGrid
 from ...representation.basis import Basis, FiniteElement
 
+_MeanType = Union[FDataGrid, float]
+
 
 def _pairwise_fem_inner_product(
     basis_fd: FDataBasis,
@@ -324,7 +326,7 @@ class HistoricalLinearRegression(
         self,
         X: FDataGrid,
         y: FDataGrid,
-    ) -> Tuple[FDataGrid, FDataGrid, FDataGrid, FDataGrid]:
+    ) -> Tuple[FDataGrid, FDataGrid, _MeanType, _MeanType]:
 
         X_mean: Union[FDataGrid, float] = (
             X.mean() if self.fit_intercept else 0
@@ -337,11 +339,13 @@ class HistoricalLinearRegression(
 
         return X_centered, y_centered, X_mean, y_mean
 
-    def _fit_and_return_matrix(self, X: FDataGrid, y: FDataGrid) -> np.ndarray:
+    def _fit_and_return_centered_matrix(
+        self,
+        X: FDataGrid,
+        y: FDataGrid,
+    ) -> Tuple[np.ndarray, _MeanType]:
 
         X_centered, y_centered, X_mean, y_mean = self._center_X_y(X, y)
-
-        self._X_mean = X_mean
 
         self._pred_points = y_centered.grid_points[0]
         self._pred_domain_range = y_centered.domain_range[0]
@@ -376,6 +380,7 @@ class HistoricalLinearRegression(
         )
 
         if self.fit_intercept:
+            assert isinstance(X_mean, FDataGrid)
             self.intercept_ = (
                 y_mean - self._predict_no_intercept(X_mean)
             )
@@ -384,7 +389,7 @@ class HistoricalLinearRegression(
                 data_matrix=np.zeros_like(y.data_matrix[0]),
             )
 
-        return design_matrix
+        return design_matrix, y_mean
 
     def _prediction_from_matrix(self, design_matrix: np.ndarray) -> FDataGrid:
 
@@ -405,7 +410,7 @@ class HistoricalLinearRegression(
         y: FDataGrid,
     ) -> HistoricalLinearRegression:
 
-        self._fit_and_return_matrix(X, y)
+        self._fit_and_return_centered_matrix(X, y)
         return self
 
     def fit_predict(  # noqa: D102
@@ -414,8 +419,11 @@ class HistoricalLinearRegression(
         y: FDataGrid,
     ) -> FDataGrid:
 
-        design_matrix = self._fit_and_return_matrix(X, y)
-        return self._prediction_from_matrix(design_matrix) + self.intercept_
+        design_matrix, y_mean = self._fit_and_return_centered_matrix(X, y)
+        return (
+            self._prediction_from_matrix(design_matrix)
+            + y_mean
+        )
 
     def _predict_no_intercept(self, X: FDataGrid) -> FDataGrid:
 
@@ -430,8 +438,6 @@ class HistoricalLinearRegression(
 
     def predict(self, X: FDataGrid) -> FDataGrid:  # noqa: D102
 
-        X_centered = X - self._X_mean
-
         check_is_fitted(self)
 
-        return self._predict_no_intercept(X_centered) + self.intercept_
+        return self._predict_no_intercept(X) + self.intercept_

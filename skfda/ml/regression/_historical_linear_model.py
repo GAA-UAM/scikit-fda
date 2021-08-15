@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 import scipy.integrate
@@ -320,10 +320,28 @@ class HistoricalLinearRegression(
         self.fit_intercept = fit_intercept
         self.lag = lag
 
+    def _center_X_y(
+        self,
+        X: FDataGrid,
+        y: FDataGrid,
+    ) -> Tuple[FDataGrid, FDataGrid, FDataGrid, FDataGrid]:
+
+        X_mean: Union[FDataGrid, float] = (
+            X.mean() if self.fit_intercept else 0
+        )
+        X_centered = X - X_mean
+        y_mean: Union[FDataGrid, float] = (
+            y.mean() if self.fit_intercept else 0
+        )
+        y_centered = y - y_mean
+
+        return X_centered, y_centered, X_mean, y_mean
+
     def _fit_and_return_matrix(self, X: FDataGrid, y: FDataGrid) -> np.ndarray:
 
-        X_centered = X - X.mean() if self.fit_intercept else X
-        y_centered = y - y.mean() if self.fit_intercept else y
+        X_centered, y_centered, X_mean, y_mean = self._center_X_y(X, y)
+
+        self._X_mean = X_mean
 
         self._pred_points = y_centered.grid_points[0]
         self._pred_domain_range = y_centered.domain_range[0]
@@ -358,7 +376,9 @@ class HistoricalLinearRegression(
         )
 
         if self.fit_intercept:
-            self.intercept_ = y.mean() - self._predict_no_intercept(X.mean())
+            self.intercept_ = (
+                y_mean - self._predict_no_intercept(X_mean)
+            )
         else:
             self.intercept_ = y.copy(
                 data_matrix=np.zeros_like(y.data_matrix[0]),
@@ -410,6 +430,8 @@ class HistoricalLinearRegression(
 
     def predict(self, X: FDataGrid) -> FDataGrid:  # noqa: D102
 
+        X_centered = X - self._X_mean
+
         check_is_fitted(self)
 
-        return self._predict_no_intercept(X) + self.intercept_
+        return self._predict_no_intercept(X_centered) + self.intercept_

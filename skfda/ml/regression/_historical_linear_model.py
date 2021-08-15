@@ -10,7 +10,7 @@ from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _cartesian_product, _pairwise_symmetric
 from ...representation import FDataBasis, FDataGrid
-from ...representation.basis import Basis, FiniteElement
+from ...representation.basis import Basis, FiniteElement, VectorValued
 
 _MeanType = Union[FDataGrid, float]
 
@@ -36,13 +36,9 @@ def _pairwise_fem_inner_product(
     eval_fem = basis_fd(eval_grid_fem)
     eval_fd = fd(grid)
 
-    # Only for scalar valued functions for now
-    assert eval_fem.shape[-1] == 1
-    assert eval_fd.shape[-1] == 1
-
-    prod = eval_fem[..., 0] * eval_fd[..., 0]
-
-    return scipy.integrate.simps(prod, grid, axis=1)
+    prod = eval_fem * eval_fd
+    integral = scipy.integrate.simps(prod, grid, axis=1)
+    return np.sum(integral, axis=-1)
 
 
 def _inner_product_matrix(
@@ -350,11 +346,15 @@ class HistoricalLinearRegression(
         self._pred_points = y_centered.grid_points[0]
         self._pred_domain_range = y_centered.domain_range[0]
 
-        self._basis = _create_fem_basis(
+        fem_basis = _create_fem_basis(
             start=X_centered.domain_range[0][0],
             stop=X_centered.domain_range[0][1],
             n_intervals=self.n_intervals,
             lag=self.lag,
+        )
+
+        self._basis = VectorValued(
+            [fem_basis] * X_centered.dim_codomain
         )
 
         design_matrix = _design_matrix(

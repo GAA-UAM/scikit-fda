@@ -335,6 +335,17 @@ class TestHistoricalLinearRegression(unittest.TestCase):
             cov=Gaussian(length_scale=0.4),
             random_state=self.random,
         )
+
+        np.testing.assert_almost_equal(
+            self.intercept.data_matrix[..., 0],
+            np.array([[
+                -0.44419728, -0.56909477, -0.68783434, -0.80186766, -0.91540068,
+                -1.03397827, -1.16239266, -1.30246822, -1.45134619, -1.60079727,
+                -1.73785278, -1.84672707, -1.9116814, -1.92023053, -1.86597929,
+                -1.75042757, -1.58329321, -1.38122881, -1.16517441, -0.95690171,
+            ]])
+        )
+
         self.X = make_gaussian_process(
             n_samples=self.n_samples,
             n_features=self.n_features,

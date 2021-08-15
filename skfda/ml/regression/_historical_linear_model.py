@@ -4,10 +4,9 @@ import math
 from typing import Tuple
 
 import numpy as np
+import scipy.integrate
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
-
-import scipy.integrate
 
 from ..._utils import _cartesian_product, _pairwise_symmetric
 from ...representation import FDataBasis, FDataGrid
@@ -207,7 +206,7 @@ def _create_fem_basis(
     return FiniteElement(
         vertices=final_points,
         cells=triangles,
-        domain_range=(start, stop),
+        domain_range=((start, stop),) * 2,
     )
 
 
@@ -324,9 +323,10 @@ class HistoricalLinearRegression(
     def _fit_and_return_matrix(self, X: FDataGrid, y: FDataGrid) -> np.ndarray:
 
         X_centered = X - X.mean() if self.fit_intercept else X
+        y_centered = y - y.mean() if self.fit_intercept else y
 
-        self._pred_points = y.grid_points[0]
-        self._pred_domain_range = y.domain_range[0]
+        self._pred_points = y_centered.grid_points[0]
+        self._pred_domain_range = y_centered.domain_range[0]
 
         self._basis = _create_fem_basis(
             start=X_centered.domain_range[0][0],
@@ -342,11 +342,20 @@ class HistoricalLinearRegression(
         )
         design_matrix = design_matrix.reshape(-1, design_matrix.shape[-1])
 
-        self.discretized_coef_ = np.linalg.lstsq(
+        self._coef_coefs = np.linalg.lstsq(
             design_matrix,
-            y.data_matrix[:, ..., 0].ravel(),
+            y_centered.data_matrix[:, ..., 0].ravel(),
             rcond=None,
         )[0]
+
+        self.basis_coef_ = FDataBasis(
+            basis=self._basis,
+            coefficients=self._coef_coefs,
+        )
+
+        self.coef_ = self.basis_coef_.to_grid(
+            grid_points=[X.grid_points[0]] * 2,
+        )
 
         if self.fit_intercept:
             self.intercept_ = y.mean() - self._predict_no_intercept(X.mean())
@@ -359,7 +368,7 @@ class HistoricalLinearRegression(
 
     def _prediction_from_matrix(self, design_matrix: np.ndarray) -> FDataGrid:
 
-        points = (design_matrix @ self.discretized_coef_).reshape(
+        points = (design_matrix @ self._coef_coefs).reshape(
             -1,
             len(self._pred_points),
         )

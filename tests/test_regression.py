@@ -1,11 +1,15 @@
-from skfda.misc.operators import LinearDifferentialOperator
-from skfda.misc.regularization import TikhonovRegularization
-from skfda.ml.regression import LinearRegression
-from skfda.representation.basis import (FDataBasis, Monomial,
-                                        Fourier,  BSpline)
 import unittest
 
 import numpy as np
+from scipy.integrate import cumtrapz
+
+from skfda.datasets import make_gaussian, make_gaussian_process
+from skfda.misc.covariances import Gaussian
+from skfda.misc.operators import LinearDifferentialOperator
+from skfda.misc.regularization import TikhonovRegularization
+from skfda.ml.regression import HistoricalLinearRegression, LinearRegression
+from skfda.representation.basis import BSpline, FDataBasis, Fourier, Monomial
+from skfda.representation.grid import FDataGrid
 
 
 class TestScalarLinearRegression(unittest.TestCase):
@@ -314,6 +318,76 @@ class TestScalarLinearRegression(unittest.TestCase):
         scalar = LinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y, weights)
+
+
+class TestHistoricalLinearRegression(unittest.TestCase):
+    """Tests for historical linear regression."""
+
+    def setUp(self) -> None:
+        """Generate data according to the model."""
+        self.random = np.random.RandomState(1)
+
+        self.n_samples = 50
+        self.n_features = 20
+        self.intercept = make_gaussian_process(
+            n_samples=1,
+            n_features=self.n_features,
+            cov=Gaussian(length_scale=0.4),
+            random_state=self.random,
+        )
+        self.X = make_gaussian_process(
+            n_samples=self.n_samples,
+            n_features=self.n_features,
+            cov=Gaussian(length_scale=0.4),
+            random_state=self.random,
+        )
+        self.coefficients = make_gaussian(
+            n_samples=1,
+            grid_points=[np.linspace(0, 1, self.n_features)] * 2,
+            cov=Gaussian(length_scale=1),
+            random_state=self.random,
+        )
+
+        self.create_model()
+
+    def create_model(self) -> None:
+        """Create a functional response according to historical model."""
+        integral_body = (
+            self.X.data_matrix[..., 0, np.newaxis]
+            * self.coefficients.data_matrix[..., 0]
+        )
+        integral_matrix = cumtrapz(
+            integral_body,
+            x=self.X.grid_points[0],
+            initial=0,
+            axis=1,
+        )
+        integral = np.diagonal(integral_matrix, axis1=1, axis2=2)
+        self.y = FDataGrid(self.intercept.data_matrix[..., 0] + integral)
+
+    def test_historical(self) -> None:
+        """Test historical regression with data following the model."""
+        regression = HistoricalLinearRegression(n_intervals=6)
+        regression.fit(self.X, self.y)
+        np.testing.assert_allclose(
+            regression.predict(self.X).data_matrix,
+            self.y.data_matrix,
+            atol=1e-1,
+            rtol=0,
+        )
+
+        np.testing.assert_allclose(
+            regression.intercept_.data_matrix,
+            self.intercept.data_matrix,
+            rtol=1e-2,
+        )
+
+        np.testing.assert_allclose(
+            regression.coef_.data_matrix[0, ..., 0],
+            np.triu(self.coefficients.data_matrix[0, ..., 0]),
+            atol=0.2,
+            rtol=0,
+        )
 
 
 if __name__ == '__main__':

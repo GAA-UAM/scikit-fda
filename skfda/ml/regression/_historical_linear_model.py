@@ -244,8 +244,8 @@ class HistoricalLinearRegression(
             influence the prediction.
 
     Attributes:
-        discretized_coef\_: The discretized values of the fitted
-            coefficient function.
+        basis_coef\_: The fitted coefficient function as a FDataBasis.
+        coef\_: The fitted coefficient function as a FDataGrid.
         intercept\_: Independent term in the linear model. Set to the constant
             function 0 if `fit_intercept = False`.
 

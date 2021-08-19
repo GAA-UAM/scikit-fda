@@ -8,7 +8,6 @@ from ._utils import (
     _classifier_get_classes,
     _classifier_get_depth_methods,
     _evaluate_grid,
-    _FDataCallable,
     _int_to_real,
     _pairwise_symmetric,
     _reshape_eval_points,

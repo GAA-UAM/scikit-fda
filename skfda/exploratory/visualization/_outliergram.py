@@ -10,14 +10,14 @@ magnitude outliers, but there is a necessity of capturing this other type.
 from typing import Optional, Sequence, Union
 
 import numpy as np
-import scipy.integrate as integrate
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from scipy.stats import rankdata
 
 from ... import FDataGrid
 from ..depth._depth import ModifiedBandDepth
+from ..outliers import OutliergramOutlierDetector
+from ..stats import modified_epigraph_index
 from ._baseplot import BasePlot
 from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
@@ -69,25 +69,17 @@ class Outliergram(BasePlot):
         axes: Optional[Axes] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
+        factor: float = 1.5,
         **kwargs,
     ) -> None:
         BasePlot.__init__(self)
         self.fdata = fdata
-        self.depth = ModifiedBandDepth()
-        self.depth.fit(fdata)
-        self.mbd = self.depth(fdata)
-        self.mei = self.modified_epigraph_index_list()
-        if len(self.mbd) != len(self.mei):
-            raise ValueError(
-                "The size of mbd and mei should be the same.",
-            )
-        distances, parable = self._compute_distances()
-        self.distances = distances
-        indices = np.argsort(self.mei)
-        self.parable = parable[indices]
-        self.mei_ordered = self.mei[indices]
-        self._compute_outliergram()
-
+        self.factor = factor
+        self.outlier_detector = OutliergramOutlierDetector(factor=factor)
+        self.outlier_detector.fit(fdata)
+        indices = np.argsort(self.outlier_detector.mei_)
+        self._parabola_ordered = self.outlier_detector.parabola_[indices]
+        self._mei_ordered = self.outlier_detector.mei_[indices]
         self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
     def plot(
@@ -107,21 +99,28 @@ class Outliergram(BasePlot):
         self.artists = np.zeros(self.n_samples(), dtype=Artist)
         self.axScatter = self.axes[0]
 
-        for i in range(self.mei.size):
+        for i, (mei, mbd) in enumerate(
+            zip(self.outlier_detector.mei_, self.outlier_detector.mbd_),
+        ):
             self.artists[i] = self.axScatter.scatter(
-                self.mei[i],
-                self.mbd[i],
+                mei,
+                mbd,
                 picker=2,
             )
 
         self.axScatter.plot(
-            self.mei_ordered,
-            self.parable,
+            self._mei_ordered,
+            self._parabola_ordered,
+        )
+
+        shifted_parabola = (
+            self._parabola_ordered
+            - self.outlier_detector.max_inlier_distance_
         )
 
         self.axScatter.plot(
-            self.mei_ordered,
-            self.shifted_parable,
+            self._mei_ordered,
+            shifted_parabola,
             linestyle='dashed',
         )
 
@@ -133,68 +132,11 @@ class Outliergram(BasePlot):
         self.axScatter.set_ylabel("MBD")
         self.axScatter.set_xlim([0, 1])
         self.axScatter.set_ylim([
-            self.depth.min,
-            self.depth.max,
+            0,  # Minimum MBD
+            1,  # Maximum MBD
         ])
 
         return self.fig
-
-    def modified_epigraph_index_list(self) -> np.ndarray:
-        """
-        Calculate the Modified Epigraph Index of a FData.
-
-        The MEI represents the mean time a curve stays below other curve.
-        In this case we will calculate the MEI for each curve in relation
-        with all the other curves of our dataset.
-        """
-        interval_len = (
-            self.fdata.domain_range[0][1]
-            - self.fdata.domain_range[0][0]
-        )
-
-        # Array containing at each point the number of curves
-        # are above it.
-        num_functions_above = rankdata(
-            -self.fdata.data_matrix,
-            method='max',
-            axis=0,
-        ) - 1
-
-        integrand = integrate.simps(
-            num_functions_above,
-            x=self.fdata.grid_points[0],
-            axis=1,
-        )
-
-        integrand /= (interval_len * self.fdata.n_samples)
-
-        return integrand.flatten()
-
-    def _compute_distances(self) -> np.ndarray:
-        """
-        Calculate the distances of each point towards the parabola.
-
-        The distances can be calculated with function:
-            d_i = a_0 + a_1* mei_i + n^2* a_2* mei_i^2 - mb_i.
-        """
-        a_0 = -2 / (self.n_samples() * (self.n_samples() - 1))
-        a_1 = (2 * (self.n_samples() + 1)) / (self.n_samples() - 1)
-        a_2 = a_0
-
-        parable = (
-            a_0 + a_1 * self.mei
-            + pow(self.n_samples(), 2) * a_2 * pow(self.mei, 2)
-        )
-        distances = parable - self.mbd
-
-        return distances, parable
-
-    def _compute_outliergram(self) -> None:
-        """Compute the parabola under which the outliers lie."""
-        first_quartile = np.percentile(self.distances, 25)  # noqa: WPS432
-        third_quartile = np.percentile(self.distances, 75)  # noqa: WPS432
-        iqr = third_quartile - first_quartile
-        self.shifted_parable = self.parable - (third_quartile + iqr)
 
     def n_samples(self) -> int:
         """Get the number of instances that will be used for interactivity."""

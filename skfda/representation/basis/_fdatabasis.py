@@ -348,7 +348,7 @@ class FDataBasis(FData):  # noqa: WPS214
             order,
         )
 
-        return FDataBasis(basis, coefficients)
+        return self.copy(basis=basis, coefficients=coefficients)
 
     def sum(  # noqa: WPS125
         self: T,

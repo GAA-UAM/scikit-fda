@@ -10,13 +10,12 @@ Shows the usage of the elastic registration to perform a groupwise alignment.
 
 # sphinx_gallery_thumbnail_number = 5
 
-import skfda
-from skfda.datasets import make_multimodal_samples, fetch_growth
-from skfda.preprocessing.registration import ElasticRegistration
-from skfda.preprocessing.registration.elastic import elastic_mean
-
 import numpy as np
 
+import skfda
+from skfda.datasets import fetch_growth, make_multimodal_samples
+from skfda.preprocessing.registration import ElasticRegistration
+from skfda.preprocessing.registration.elastic import elastic_mean
 
 ##############################################################################
 # In the example of pairwise alignment was shown the usage of
@@ -31,7 +30,7 @@ import numpy as np
 #
 # We will create a synthetic dataset to show the basic usage of the
 # registration.
-#
+
 fd = make_multimodal_samples(n_modes=2, stop=4, random_state=1)
 fd.plot()
 
@@ -78,15 +77,16 @@ fd = growth['data'][growth['target'] == 0]
 
 # Obtain velocity curves
 fd.interpolation = skfda.representation.interpolation.SplineInterpolation(3)
-fd = fd.to_grid(np.linspace(*fd.domain_range[0], 200)).derivative()
-fd = fd.to_grid(np.linspace(*fd.domain_range[0], 50))
-fd.plot()
+fd_derivative = fd.to_grid(np.linspace(*fd.domain_range[0], 200)).derivative()
+fd_derivative = fd_derivative.to_grid(np.linspace(*fd.domain_range[0], 50))
+fd_derivative.dataset_name = f"{fd.dataset_name} - derivative"
+fd_derivative.plot()
 
 ##############################################################################
 # We now show the aligned curves:
 
-fd_align = elastic_registration.fit_transform(fd)
-fd_align.dataset_name += " - aligned"
+fd_align = elastic_registration.fit_transform(fd_derivative)
+fd_align.dataset_name = f"{fd.dataset_name} - derivative aligned"
 
 fd_align.plot()
 
@@ -94,10 +94,10 @@ fd_align.plot()
 # * Srivastava, Anuj & Klassen, Eric P. (2016). Functional and shape data
 #   analysis. In *Functional Data and Elastic Registration* (pp. 73-122).
 #   Springer.
-# 
+#
 # * Tucker, J. D., Wu, W. and Srivastava, A. (2013). Generative Models for
-#   Functional Data using Phase and Amplitude Separation. Computational Statistics
-#   and Data Analysis, Vol. 61, 50-66.
+#   Functional Data using Phase and Amplitude Separation.
+#   Computational Statistics and Data Analysis, Vol. 61, 50-66.
 #
 # * J. S. Marron, James O. Ramsay, Laura M. Sangalli and Anuj Srivastava
 #   (2015). Functional Data Analysis of Amplitude and Phase Variation.

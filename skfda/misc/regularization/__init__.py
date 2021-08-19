@@ -1,3 +1,5 @@
-from ._regularization import (TikhonovRegularization,
-                              L2Regularization,
-                              compute_penalty_matrix)
+from ._regularization import (
+    L2Regularization,
+    TikhonovRegularization,
+    compute_penalty_matrix,
+)

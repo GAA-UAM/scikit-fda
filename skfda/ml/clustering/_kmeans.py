@@ -339,7 +339,8 @@ class BaseKMeans(
                 best_distances_to_centroids = distances_to_centroids
                 best_n_iter = n_iter
 
-        self.labels_ = best_membership
+        self._best_membership = best_membership
+        self.labels_ = self._prediction_from_membership(best_membership)
         self.cluster_centers_ = best_centroids
         self._distances_to_centers = best_distances_to_centroids
         self.inertia_ = best_inertia
@@ -347,11 +348,11 @@ class BaseKMeans(
 
         return self
 
-    def predict(
+    def _predict_membership(
         self,
         X: FDataGrid,
         sample_weight: None = None,
-    ) -> NDArrayInt:
+    ) -> MembershipType:
         """Predict the closest cluster each sample in X belongs to.
 
         Args:
@@ -380,6 +381,32 @@ class BaseKMeans(
         )
 
         return membership_matrix
+
+    @abstractmethod
+    def _prediction_from_membership(
+        self,
+        membership_matrix: MembershipType,
+    ) -> NDArrayInt:
+        pass
+
+    def predict(
+        self,
+        X: FDataGrid,
+        sample_weight: None = None,
+    ) -> NDArrayInt:
+        """Predict the closest cluster each sample in X belongs to.
+
+        Args:
+            X: Object whose samples are classified into different groups.
+            sample_weight: present here for API consistency by convention.
+
+        Returns:
+            Label of each sample.
+
+        """
+        return self._prediction_from_membership(
+            self._predict_membership(X, sample_weight),
+        )
 
     def transform(self, X: FDataGrid) -> NDArrayFloat:
         """Transform X to a cluster-distance space.
@@ -570,6 +597,12 @@ class KMeans(BaseKMeans[NDArrayInt]):
     def _create_membership(self, n_samples: int) -> NDArrayInt:
         return np.empty(n_samples, dtype=int)
 
+    def _prediction_from_membership(
+        self,
+        membership_matrix: NDArrayInt,
+    ) -> NDArrayInt:
+        return membership_matrix
+
     def _update(
         self,
         fdata: FDataGrid,
@@ -676,9 +709,11 @@ class FuzzyCMeans(BaseKMeans[NDArrayFloat]):
             degree of fuzziness in the fuzzy algorithm. Defaults to 2.
 
     Attributes:
-        labels\_: (n_samples, n_clusters)): 2-dimensional
-            matrix in which each row contains the cluster that observation
-            belongs to.
+        membership_degree\_: Matrix in which each entry contains the
+            probability of belonging to each group.
+        labels\_: Vector in which each entry contains the cluster each
+            observation belongs to (the one with the maximum membership
+            degree).
         cluster_centers\_: data_matrix of shape
             (n_clusters, ncol, dim_codomain) and contains the centroids for
             each cluster.
@@ -737,6 +772,10 @@ class FuzzyCMeans(BaseKMeans[NDArrayFloat]):
 
         self.fuzzifier = fuzzifier
 
+    @property
+    def membership_degree_(self) -> NDArrayFloat:
+        return self._best_membership
+
     def _check_params(self) -> None:
         if self.fuzzifier <= 1:
             raise ValueError("The fuzzifier parameter must be greater than 1.")
@@ -753,6 +792,12 @@ class FuzzyCMeans(BaseKMeans[NDArrayFloat]):
 
     def _create_membership(self, n_samples: int) -> NDArrayFloat:
         return np.empty((n_samples, self.n_clusters))
+
+    def _prediction_from_membership(
+        self,
+        membership_matrix: NDArrayFloat,
+    ) -> NDArrayInt:
+        return np.argmax(membership_matrix, axis=1)
 
     def _update(
         self,
@@ -797,3 +842,20 @@ class FuzzyCMeans(BaseKMeans[NDArrayFloat]):
             )
             / np.sum(membership_matrix_raised, axis=0)[slice_denominator]
         )
+
+    def predict_proba(
+        self,
+        X: FDataGrid,
+        sample_weight: None = None,
+    ) -> NDArrayFloat:
+        """Predict the probability of belonging to each cluster.
+
+        Args:
+            X: Object whose samples are classified into different groups.
+            sample_weight: present here for API consistency by convention.
+
+        Returns:
+            Probability of belonging to each cluster for each sample.
+
+        """
+        return self._predict_membership(X, sample_weight)

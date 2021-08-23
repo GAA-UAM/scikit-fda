@@ -1,5 +1,7 @@
 """Clustering Plots Module."""
 
+from __future__ import annotations
+
 from typing import Optional, Sequence, Tuple, Union
 
 import matplotlib
@@ -9,19 +11,46 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
-from sklearn.base import BaseEstimator
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
+from typing_extensions import Protocol
 
 from ..._utils import _check_compatible_fdata
-from ...ml.clustering import FuzzyCMeans
 from ...representation import FData, FDataGrid
+from ...representation._typing import NDArrayFloat, NDArrayInt
 from ._baseplot import BasePlot
 from ._utils import ColorLike, _darken, _set_labels
 
 
+class ClusteringEstimator(Protocol):
+
+    @property
+    def n_clusters(self) -> int:
+        pass
+
+    @property
+    def cluster_centers_(self) -> FDataGrid:
+        pass
+
+    @property
+    def labels_(self) -> NDArrayInt:
+        pass
+
+    def fit(self, X: FDataGrid) -> ClusteringEstimator:
+        pass
+
+    def predict(self, X: FDataGrid) -> NDArrayInt:
+        pass
+
+
+class FuzzyClusteringEstimator(ClusteringEstimator, Protocol):
+
+    def predict_proba(self, X: FDataGrid) -> NDArrayFloat:
+        pass
+
+
 def _plot_clustering_checks(
-    estimator: BaseEstimator,
+    estimator: ClusteringEstimator,
     fdata: FData,
     sample_colors: Optional[Sequence[ColorLike]],
     sample_labels: Optional[Sequence[str]],
@@ -78,25 +107,6 @@ def _plot_clustering_checks(
         raise ValueError(
             "centers_labels must contain a label for each center.",
         )
-
-
-def _check_if_estimator(
-    estimator: BaseEstimator,
-) -> None:
-    """
-    Check if the argument is an estimator.
-
-    Checks the argument *estimator* is actually an estimator that
-    implements the *fit* method.
-
-    Args:
-        estimator: estimator used to calculate the
-            clusters.
-
-    """
-    msg = ("This %(name)s instance has no attribute \"fit\".")
-    if not hasattr(estimator, "fit"):
-        raise AttributeError(msg % {'name': type(estimator).__name__})
 
 
 def _get_labels(
@@ -180,7 +190,7 @@ class ClusterPlot(BasePlot):
 
     def __init__(
         self,
-        estimator: BaseEstimator,
+        estimator: ClusteringEstimator,
         fdata: FDataGrid,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
@@ -199,8 +209,7 @@ class ClusterPlot(BasePlot):
         if colormap is None:
             colormap = plt.cm.get_cmap('rainbow')
 
-        BasePlot.__init__(
-            self,
+        super().__init__(
             chart,
             fig=fig,
             axes=axes,
@@ -214,6 +223,7 @@ class ClusterPlot(BasePlot):
         self.center_labels = center_labels
         self.center_width = center_width
         self.colormap = colormap
+        self._set_figure_and_axes(chart, fig=fig, axes=axes)
 
     def n_samples(self) -> int:
         return self.fdata.n_samples
@@ -257,14 +267,13 @@ class ClusterPlot(BasePlot):
 
         colors_by_cluster = self.cluster_colors[self.labels]
 
-        patches = []
-        for i in range(self.estimator.n_clusters):
-            patches.append(
-                mpatches.Patch(
-                    color=self.cluster_colors[i],
-                    label=self.cluster_labels[i],
-                ),
+        patches = [
+            mpatches.Patch(
+                color=self.cluster_colors[i],
+                label=self.cluster_labels[i],
             )
+            for i in range(self.estimator.n_clusters)
+        ]
 
         artists = [
             self.axes[j].plot(
@@ -310,7 +319,6 @@ class ClusterPlot(BasePlot):
         """
         self.artists = np.array([])
 
-        _check_if_estimator(self.estimator)
         try:
             check_is_fitted(self.estimator)
             _check_compatible_fdata(
@@ -320,10 +328,7 @@ class ClusterPlot(BasePlot):
         except NotFittedError:
             self.estimator.fit(self.fdata)
 
-        if isinstance(self.estimator, FuzzyCMeans):
-            self.labels = np.argmax(self.estimator.labels_, axis=1)
-        else:
-            self.labels = self.estimator.labels_
+        self.labels = self.estimator.labels_
 
         return self._plot_clusters()
 
@@ -360,14 +365,14 @@ class ClusterMembershipLinesPlot(BasePlot):
 
     def __init__(
         self,
-        estimator: BaseEstimator,
+        estimator: FuzzyClusteringEstimator,
         fdata: FDataGrid,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
         axes: Union[Axes, Sequence[Axes], None] = None,
-        sample_colors=None,
-        sample_labels=None,
-        cluster_labels=None,
+        sample_colors: Optional[Sequence[ColorLike]] = None,
+        sample_labels: Optional[Sequence[str]] = None,
+        cluster_labels: Optional[Sequence[str]] = None,
         colormap: matplotlib.colors.Colormap = None,
         x_label: Optional[str] = None,
         y_label: Optional[str] = None,
@@ -377,8 +382,7 @@ class ClusterMembershipLinesPlot(BasePlot):
         if colormap is None:
             colormap = plt.cm.get_cmap('rainbow')
 
-        BasePlot.__init__(
-            self,
+        super().__init__(
             chart,
             fig=fig,
             axes=axes,
@@ -392,14 +396,14 @@ class ClusterMembershipLinesPlot(BasePlot):
         self.y_label = y_label
         self.title = title
         self.colormap = colormap
+        self._set_figure_and_axes(chart, fig=fig, axes=axes)
 
     def n_samples(self) -> int:
         return self.fdata.n_samples
 
     def plot(self) -> Figure:
-        """Implementation of the plotting of the results of the
-        :func:`Fuzzy K-Means <fda.clustering.fuzzy_kmeans>` method.
-
+        """
+        Plot cluster membership.
 
         A kind of Parallel Coordinates plot is generated in this function with
         the membership values obtained from the algorithm. A line is plotted
@@ -412,11 +416,6 @@ class ClusterMembershipLinesPlot(BasePlot):
         """
         self.artists = np.array([])
 
-        _check_if_estimator(self.estimator)
-
-        if not isinstance(self.estimator, FuzzyCMeans):
-            raise ValueError("The estimator must be a FuzzyCMeans object.")
-
         try:
             check_is_fitted(self.estimator)
             _check_compatible_fdata(
@@ -425,6 +424,8 @@ class ClusterMembershipLinesPlot(BasePlot):
             )
         except NotFittedError:
             self.estimator.fit(self.fdata)
+
+        membership = self.estimator.predict_proba(self.fdata)
 
         _plot_clustering_checks(
             estimator=self.estimator,
@@ -449,7 +450,7 @@ class ClusterMembershipLinesPlot(BasePlot):
                 np.arange(self.estimator.n_clusters)
                 / (self.estimator.n_clusters - 1),
             )
-            labels_by_cluster = np.argmax(self.estimator.labels_, axis=1)
+            labels_by_cluster = self.estimator.labels_
             self.sample_colors = self.cluster_colors[labels_by_cluster]
 
         if self.sample_labels is None:
@@ -465,13 +466,16 @@ class ClusterMembershipLinesPlot(BasePlot):
             ]
 
         self.axes[0].get_xaxis().set_major_locator(MaxNLocator(integer=True))
-        for i in range(self.fdata.n_samples):
-            self.artists = np.append(self.artists, self.axes[0].plot(
+        self.artists = np.array([
+            self.axes[0].plot(
                 np.arange(self.estimator.n_clusters),
-                self.estimator.labels_[i],
+                membership[i],
                 label=self.sample_labels[i],
                 color=self.sample_colors[i],
-            ))
+            )
+            for i in range(self.fdata.n_samples)
+        ])
+
         self.axes[0].set_xticks(np.arange(self.estimator.n_clusters))
         self.axes[0].set_xticklabels(self.cluster_labels)
         self.axes[0].set_xlabel(self.x_label)
@@ -513,7 +517,7 @@ class ClusterMembershipPlot(BasePlot):
 
     def __init__(
         self,
-        estimator: BaseEstimator,
+        estimator: FuzzyClusteringEstimator,
         fdata: FData,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
@@ -531,8 +535,7 @@ class ClusterMembershipPlot(BasePlot):
         if colormap is None:
             colormap = plt.cm.get_cmap('rainbow')
 
-        BasePlot.__init__(
-            self,
+        super().__init__(
             chart,
             fig=fig,
             axes=axes,
@@ -547,14 +550,14 @@ class ClusterMembershipPlot(BasePlot):
         self.title = title
         self.colormap = colormap
         self.sort = sort
+        self._set_figure_and_axes(chart, fig=fig, axes=axes)
 
     def n_samples(self) -> int:
         return self.fdata.n_samples
 
     def plot(self) -> Figure:
-        """Implementation of the plotting of the results of the
-        :func:`Fuzzy K-Means <fda.clustering.fuzzy_kmeans>` method.
-
+        """
+        Plot cluster membership.
 
         A kind of barplot is generated in this function with the membership
         values obtained from the algorithm. There is a bar for each sample
@@ -569,11 +572,6 @@ class ClusterMembershipPlot(BasePlot):
         """
         self.artists = np.array([])
 
-        _check_if_estimator(self.estimator)
-
-        if not isinstance(self.estimator, FuzzyCMeans):
-            raise ValueError("The estimator must be a FuzzyCMeans object.")
-
         try:
             check_is_fitted(self.estimator)
             _check_compatible_fdata(
@@ -582,6 +580,8 @@ class ClusterMembershipPlot(BasePlot):
             )
         except NotFittedError:
             self.estimator.fit(self.fdata)
+
+        membership = self.estimator.predict_proba(self.fdata)
 
         if self.sort < -1 or self.sort >= self.estimator.n_clusters:
             raise ValueError(
@@ -622,21 +622,20 @@ class ClusterMembershipPlot(BasePlot):
                 for i in range(self.estimator.n_clusters)
             ]
 
-        patches = []
-        for i in range(self.estimator.n_clusters):
-            patches.append(
-                mpatches.Patch(
-                    color=self.cluster_colors[i],
-                    label=self.cluster_labels[i],
-                ),
+        patches = [
+            mpatches.Patch(
+                color=self.cluster_colors[i],
+                label=self.cluster_labels[i],
             )
+            for i in range(self.estimator.n_clusters)
+        ]
 
-        if self.sort != -1:
-            labels_dim = self.estimator.labels_
+        if self.sort == -1:
+            labels_dim = membership
         else:
-            sample_indices = np.argsort(-self.estimator.labels_[:, self.sort])
+            sample_indices = np.argsort(-membership[:, self.sort])
             self.sample_labels = np.copy(self.sample_labels[sample_indices])
-            labels_dim = np.copy(self.estimator.labels_[sample_indices])
+            labels_dim = np.copy(membership[sample_indices])
 
             temp_labels = np.copy(labels_dim[:, 0])
             labels_dim[:, 0] = labels_dim[:, self.sort]

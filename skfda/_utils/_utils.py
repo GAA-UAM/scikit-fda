@@ -76,19 +76,17 @@ def check_is_univariate(fd: FData) -> None:
 
 
 def _check_compatible_fdata(fdata1: FData, fdata2: FData) -> None:
-    """
-    Check that fdata is compatible.
-    """
+    """Check that fdata is compatible."""
     if (fdata1.dim_domain != fdata2.dim_domain):
         raise ValueError(
             f"Functional data has incompatible domain dimensions: "
-            f"{fdata1.dim_domain} != {fdata2.dim_domain}"
+            f"{fdata1.dim_domain} != {fdata2.dim_domain}",
         )
 
     if (fdata1.dim_codomain != fdata2.dim_codomain):
         raise ValueError(
             f"Functional data has incompatible codomain dimensions: "
-            f"{fdata1.dim_codomain} != {fdata2.dim_codomain}"
+            f"{fdata1.dim_codomain} != {fdata2.dim_codomain}",
         )
 
 

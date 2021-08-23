@@ -41,6 +41,7 @@ class Indexable(Protocol[K, V]):
     def __len__(self) -> int:
         pass
 
+
 def _create_figure():
     """Create figure using the default backend."""
     fig = plt.figure()
@@ -94,7 +95,7 @@ def _get_figure_and_axes(
         axes = fig.axes
 
     else:
-        if isinstance(axes, matplotlib.axes.Axes):
+        if isinstance(axes, Axes):
             axes = [axes]
 
         fig = axes[0].figure
@@ -277,9 +278,9 @@ def _set_labels(
                 axes[i].set_ylabel(fdata.coordinate_names[i])
 
 
-def _change_luminosity(color, amount=0.5):
+def _change_luminosity(color: ColorLike, amount: float = 0.5) -> ColorLike:
     """
-    Changes the given color luminosity by the given amount.
+    Change the given color luminosity by the given amount.
     Input can be matplotlib color string, hex string, or RGB tuple.
 
     Note:
@@ -307,9 +308,9 @@ def _change_luminosity(color, amount=0.5):
     return colorsys.hls_to_rgb(c[0], new_lightness, c[2])
 
 
-def _darken(color, amount=0):
+def _darken(color: ColorLike, amount: float = 0) -> ColorLike:
     return _change_luminosity(color, 0.5 - amount / 2)
 
 
-def _lighten(color, amount=0):
+def _lighten(color: ColorLike, amount: float = 0) -> ColorLike:
     return _change_luminosity(color, 0.5 + amount / 2)

@@ -20,14 +20,13 @@ from typing import (
 )
 
 import numpy as np
+import scipy.integrate
 from numpy import ndarray
 from pandas.api.indexers import check_array_indexer
 from sklearn.base import clone
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
 from typing_extensions import Literal, Protocol
-
-import scipy.integrate
 
 from ..representation._typing import (
     ArrayLike,
@@ -73,6 +72,23 @@ def check_is_univariate(fd: FData) -> None:
             f"The functional data must be univariate, i.e., "
             f"with dim_domain=1 {domain_str}"
             f"and dim_codomain=1 {codomain_str}",
+        )
+
+
+def _check_compatible_fdata(fdata1: FData, fdata2: FData) -> None:
+    """
+    Check that fdata is compatible.
+    """
+    if (fdata1.dim_domain != fdata2.dim_domain):
+        raise ValueError(
+            f"Functional data has incompatible domain dimensions: "
+            f"{fdata1.dim_domain} != {fdata2.dim_domain}"
+        )
+
+    if (fdata1.dim_codomain != fdata2.dim_codomain):
+        raise ValueError(
+            f"Functional data has incompatible codomain dimensions: "
+            f"{fdata1.dim_codomain} != {fdata2.dim_codomain}"
         )
 
 

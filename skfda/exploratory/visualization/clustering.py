@@ -9,22 +9,15 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
-from mpldatacursor import datacursor
 from sklearn.base import BaseEstimator
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
+from ..._utils import _check_compatible_fdata
 from ...ml.clustering import FuzzyCMeans
 from ...representation import FData, FDataGrid
 from ._baseplot import BasePlot
-from ._utils import (
-    ColorLike,
-    _darken,
-    _get_figure_and_axes,
-    _set_figure_layout,
-    _set_figure_layout_for_fdata,
-    _set_labels,
-)
+from ._utils import ColorLike, _darken, _set_labels
 
 
 def _plot_clustering_checks(
@@ -273,17 +266,21 @@ class ClusterPlot(BasePlot):
                 ),
             )
 
+        artists = [
+            self.axes[j].plot(
+                self.fdata.grid_points[0],
+                self.fdata.data_matrix[i, :, j],
+                c=colors_by_cluster[i],
+                label=self.sample_labels[i],
+            )
+            for j in range(self.fdata.dim_codomain)
+            for i in range(self.fdata.n_samples)
+        ]
+
+        self.artists = np.array(artists)
+
         for j in range(self.fdata.dim_codomain):
-            for i in range(self.fdata.n_samples):
-                self.artists = np.append(
-                    self.artists,
-                    self.axes[j].plot(
-                        self.fdata.grid_points[0],
-                        self.fdata.data_matrix[i, :, j],
-                        c=colors_by_cluster[i],
-                        label=self.sample_labels[i],
-                    ),
-                )
+
             for i in range(self.estimator.n_clusters):
                 self.axes[j].plot(
                     self.fdata.grid_points[0],
@@ -293,7 +290,6 @@ class ClusterPlot(BasePlot):
                     linewidth=self.center_width,
                 )
             self.axes[j].legend(handles=patches)
-            datacursor(formatter='{label}'.format)
 
         _set_labels(self.fdata, self.fig, self.axes)
 
@@ -317,7 +313,10 @@ class ClusterPlot(BasePlot):
         _check_if_estimator(self.estimator)
         try:
             check_is_fitted(self.estimator)
-            self.estimator._check_test_data(self.fdata)
+            _check_compatible_fdata(
+                self.estimator.cluster_centers_,
+                self.fdata,
+            )
         except NotFittedError:
             self.estimator.fit(self.fdata)
 
@@ -420,7 +419,10 @@ class ClusterMembershipLinesPlot(BasePlot):
 
         try:
             check_is_fitted(self.estimator)
-            self.estimator._check_test_data(self.fdata)
+            _check_compatible_fdata(
+                self.estimator.cluster_centers_,
+                self.fdata,
+            )
         except NotFittedError:
             self.estimator.fit(self.fdata)
 
@@ -474,7 +476,6 @@ class ClusterMembershipLinesPlot(BasePlot):
         self.axes[0].set_xticklabels(self.cluster_labels)
         self.axes[0].set_xlabel(self.x_label)
         self.axes[0].set_ylabel(self.y_label)
-        datacursor(formatter='{label}'.format)
 
         self.fig.suptitle(self.title)
         return self.fig
@@ -575,7 +576,10 @@ class ClusterMembershipPlot(BasePlot):
 
         try:
             check_is_fitted(self.estimator)
-            self.estimator._check_test_data(self.fdata)
+            _check_compatible_fdata(
+                self.estimator.cluster_centers_,
+                self.fdata,
+            )
         except NotFittedError:
             self.estimator.fit(self.fdata)
 

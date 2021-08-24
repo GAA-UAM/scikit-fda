@@ -13,7 +13,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from ._utils import _figure_to_svg
+from ._utils import _figure_to_svg, _get_figure_and_axes, _set_figure_layout
 
 
 class BasePlot(ABC):
@@ -31,12 +31,12 @@ class BasePlot(ABC):
     @abstractmethod
     def __init__(
         self,
+        chart: Union[Figure, Axes, None] = None,
+        *,
         fig: Optional[Figure] = None,
         axes: Union[Axes, Sequence[Axes], None] = None,
     ) -> None:
         self.artists: np.ndarray
-        self.fig = fig
-        self.axes = axes
 
     @abstractmethod
     def plot(
@@ -55,6 +55,19 @@ class BasePlot(ABC):
     def n_samples(self) -> int:
         """Get the number of instances that will be used for interactivity."""
         pass
+
+    def _set_figure_and_axes(
+        self,
+        chart: Union[Figure, Axes, None] = None,
+        *,
+        fig: Optional[Figure] = None,
+        axes: Union[Axes, Sequence[Axes], None] = None,
+    ) -> None:
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        fig, axes = _set_figure_layout(fig, axes)
+
+        self.fig = fig
+        self.axes = axes
 
     def _repr_svg_(self) -> str:
         """Automatically represents the object as an svg when calling it."""

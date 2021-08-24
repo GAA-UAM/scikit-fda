@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 import math
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
+import scipy.integrate
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
-import scipy.integrate
-
 from ..._utils import _cartesian_product, _pairwise_symmetric
 from ...representation import FDataBasis, FDataGrid
-from ...representation.basis import Basis, FiniteElement
+from ...representation.basis import Basis, FiniteElement, VectorValued
+
+_MeanType = Union[FDataGrid, float]
 
 
 def _pairwise_fem_inner_product(
@@ -35,13 +36,9 @@ def _pairwise_fem_inner_product(
     eval_fem = basis_fd(eval_grid_fem)
     eval_fd = fd(grid)
 
-    # Only for scalar valued functions for now
-    assert eval_fem.shape[-1] == 1
-    assert eval_fd.shape[-1] == 1
-
-    prod = eval_fem[..., 0] * eval_fd[..., 0]
-
-    return scipy.integrate.simps(prod, grid, axis=1)
+    prod = eval_fem * eval_fd
+    integral = scipy.integrate.simps(prod, grid, axis=1)
+    return np.sum(integral, axis=-1)
 
 
 def _inner_product_matrix(
@@ -207,7 +204,7 @@ def _create_fem_basis(
     return FiniteElement(
         vertices=final_points,
         cells=triangles,
-        domain_range=(start, stop),
+        domain_range=((start, stop),) * 2,
     )
 
 
@@ -247,8 +244,8 @@ class HistoricalLinearRegression(
             influence the prediction.
 
     Attributes:
-        discretized_coef\_: The discretized values of the fitted
-            coefficient function.
+        basis_coef\_: The fitted coefficient function as a FDataBasis.
+        coef\_: The fitted coefficient function as a FDataGrid.
         intercept\_: Independent term in the linear model. Set to the constant
             function 0 if `fit_intercept = False`.
 
@@ -321,18 +318,43 @@ class HistoricalLinearRegression(
         self.fit_intercept = fit_intercept
         self.lag = lag
 
-    def _fit_and_return_matrix(self, X: FDataGrid, y: FDataGrid) -> np.ndarray:
+    def _center_X_y(
+        self,
+        X: FDataGrid,
+        y: FDataGrid,
+    ) -> Tuple[FDataGrid, FDataGrid, _MeanType, _MeanType]:
 
-        X_centered = X - X.mean() if self.fit_intercept else X
+        X_mean: Union[FDataGrid, float] = (
+            X.mean() if self.fit_intercept else 0
+        )
+        X_centered = X - X_mean
+        y_mean: Union[FDataGrid, float] = (
+            y.mean() if self.fit_intercept else 0
+        )
+        y_centered = y - y_mean
 
-        self._pred_points = y.grid_points[0]
-        self._pred_domain_range = y.domain_range[0]
+        return X_centered, y_centered, X_mean, y_mean
 
-        self._basis = _create_fem_basis(
+    def _fit_and_return_centered_matrix(
+        self,
+        X: FDataGrid,
+        y: FDataGrid,
+    ) -> Tuple[np.ndarray, _MeanType]:
+
+        X_centered, y_centered, X_mean, y_mean = self._center_X_y(X, y)
+
+        self._pred_points = y_centered.grid_points[0]
+        self._pred_domain_range = y_centered.domain_range[0]
+
+        fem_basis = _create_fem_basis(
             start=X_centered.domain_range[0][0],
             stop=X_centered.domain_range[0][1],
             n_intervals=self.n_intervals,
             lag=self.lag,
+        )
+
+        self._basis = VectorValued(
+            [fem_basis] * X_centered.dim_codomain
         )
 
         design_matrix = _design_matrix(
@@ -342,24 +364,36 @@ class HistoricalLinearRegression(
         )
         design_matrix = design_matrix.reshape(-1, design_matrix.shape[-1])
 
-        self.discretized_coef_ = np.linalg.lstsq(
+        self._coef_coefs = np.linalg.lstsq(
             design_matrix,
-            y.data_matrix[:, ..., 0].ravel(),
+            y_centered.data_matrix[:, ..., 0].ravel(),
             rcond=None,
         )[0]
 
+        self.basis_coef_ = FDataBasis(
+            basis=self._basis,
+            coefficients=self._coef_coefs,
+        )
+
+        self.coef_ = self.basis_coef_.to_grid(
+            grid_points=[X.grid_points[0]] * 2,
+        )
+
         if self.fit_intercept:
-            self.intercept_ = y.mean() - self._predict_no_intercept(X.mean())
+            assert isinstance(X_mean, FDataGrid)
+            self.intercept_ = (
+                y_mean - self._predict_no_intercept(X_mean)
+            )
         else:
             self.intercept_ = y.copy(
                 data_matrix=np.zeros_like(y.data_matrix[0]),
             )
 
-        return design_matrix
+        return design_matrix, y_mean
 
     def _prediction_from_matrix(self, design_matrix: np.ndarray) -> FDataGrid:
 
-        points = (design_matrix @ self.discretized_coef_).reshape(
+        points = (design_matrix @ self._coef_coefs).reshape(
             -1,
             len(self._pred_points),
         )
@@ -376,7 +410,7 @@ class HistoricalLinearRegression(
         y: FDataGrid,
     ) -> HistoricalLinearRegression:
 
-        self._fit_and_return_matrix(X, y)
+        self._fit_and_return_centered_matrix(X, y)
         return self
 
     def fit_predict(  # noqa: D102
@@ -385,8 +419,11 @@ class HistoricalLinearRegression(
         y: FDataGrid,
     ) -> FDataGrid:
 
-        design_matrix = self._fit_and_return_matrix(X, y)
-        return self._prediction_from_matrix(design_matrix) + self.intercept_
+        design_matrix, y_mean = self._fit_and_return_centered_matrix(X, y)
+        return (
+            self._prediction_from_matrix(design_matrix)
+            + y_mean
+        )
 
     def _predict_no_intercept(self, X: FDataGrid) -> FDataGrid:
 

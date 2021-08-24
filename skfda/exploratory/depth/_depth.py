@@ -11,6 +11,7 @@ import itertools
 from typing import Optional
 
 import numpy as np
+
 import scipy.integrate
 
 from ... import FDataGrid
@@ -98,11 +99,17 @@ class IntegratedDepth(Depth[FDataGrid]):
 
     @property  # noqa: WPS125
     def max(self) -> float:  # noqa: WPS125
-        return self.multivariate_depth_.max
+        if self.multivariate_depth is None:
+            return 1
+
+        return self.multivariate_depth.max
 
     @property  # noqa: WPS125
     def min(self) -> float:  # noqa: WPS125
-        return self.multivariate_depth_.min
+        if self.multivariate_depth is None:
+            return 1 / 2
+
+        return self.multivariate_depth.min
 
 
 class ModifiedBandDepth(IntegratedDepth):

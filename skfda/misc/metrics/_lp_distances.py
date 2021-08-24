@@ -1,3 +1,4 @@
+
 """Implementation of Lp distances."""
 
 import math
@@ -179,18 +180,19 @@ def lp_distance(
         Computes the distances between an object containing functional data
         corresponding to the functions y = 1 and y = x defined over the
         interval [0, 1] and another ones containing data of the functions y
-        = 0 and y = x/2. The result then is an array 2x2 with the computed
-        l2 distance between every pair of functions.
+        = 0 and y = x/2. The result then is an array of size 2 with the
+        computed l2 distance between the functions in the same position in
+        both.
 
         >>> import skfda
         >>> import numpy as np
         >>>
         >>> x = np.linspace(0, 1, 1001)
-        >>> fd = skfda.FDataGrid([np.ones(len(x))], x)
-        >>> fd2 =  skfda.FDataGrid([np.zeros(len(x))], x)
+        >>> fd = skfda.FDataGrid([np.ones(len(x)), x], x)
+        >>> fd2 =  skfda.FDataGrid([np.zeros(len(x)), x/2], x)
         >>>
         >>> skfda.misc.metrics.lp_distance(fd, fd2, p=2).round(2)
-        array([ 1.])
+        array([ 1.  ,  0.29])
 
         If the functional data are defined over a different set of points of
         discretisation the functions returns an exception.

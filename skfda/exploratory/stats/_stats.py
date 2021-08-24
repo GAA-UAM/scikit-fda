@@ -1,11 +1,14 @@
 """Functional data descriptive statistics."""
 
 from builtins import isinstance
-from typing import Callable, Optional, TypeVar, Union
+from typing import Optional, TypeVar, Union
 
 import numpy as np
 
-from ...misc.metrics import l2_distance, l2_norm
+from scipy import integrate
+from scipy.stats import rankdata
+
+from ...misc.metrics import Metric, l2_distance, l2_norm
 from ...representation import FData, FDataGrid
 from ..depth import Depth, ModifiedBandDepth
 
@@ -72,6 +75,39 @@ def cov(X: FData) -> FDataGrid:
     return X.cov()
 
 
+def modified_epigraph_index(X: FDataGrid) -> np.ndarray:
+    """
+    Calculate the Modified Epigraph Index of a FDataGrid.
+
+    The MEI represents the mean time a curve stays below other curve.
+    In this case we will calculate the MEI for each curve in relation
+    with all the other curves of our dataset.
+
+    """
+    interval_len = (
+        X.domain_range[0][1]
+        - X.domain_range[0][0]
+    )
+
+    # Array containing at each point the number of curves
+    # are above it.
+    num_functions_above = rankdata(
+        -X.data_matrix,
+        method='max',
+        axis=0,
+    ) - 1
+
+    integrand = integrate.simps(
+        num_functions_above,
+        x=X.grid_points[0],
+        axis=1,
+    )
+
+    integrand /= (interval_len * X.n_samples)
+
+    return integrand.flatten()
+
+
 def depth_based_median(
     X: FDataGrid,
     depth_method: Optional[Depth] = None,
@@ -121,7 +157,7 @@ def geometric_median(
     X: T,
     *,
     tol: float = 1.e-8,
-    metric: Callable[[T, T], np.ndarray] = l2_distance,
+    metric: Metric[T] = l2_distance,
 ) -> T:
     r"""Compute the geometric median.
 
@@ -158,9 +194,9 @@ def geometric_median(
         :func:`depth_based_median`
 
     References:
-        Gervini, D. (2008). Robust functional estimation using the median and
-        spherical principal components. Biometrika, 95(3), 587–600.
-        https://doi.org/10.1093/biomet/asn031
+        .. footbibliography::
+
+            gervini_2008_estimation
 
     """
     weights = np.full(len(X), 1 / len(X))
@@ -186,10 +222,10 @@ def geometric_median(
 
 
 def trim_mean(
-    X: FDataGrid,
+    X: F,
     proportiontocut: float,
     *,
-    depth_method: Optional[Depth] = None,
+    depth_method: Optional[Depth[F]] = None,
 ) -> FDataGrid:
     """Compute the trimmed means based on a depth measure.
 

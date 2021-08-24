@@ -43,7 +43,8 @@ def hotelling_t2(
     covariance matrices, computed with the basis coefficients or using
     the discrete representation, depending on the input.
 
-    This statistic is defined in Pini, Stamm and Vantini[1].
+    This statistic is defined in Pini, Stamm and Vantini
+    :footcite:`pini+stamm+vantini_2018_hotellings`.
 
     Args:
         fd1: Object with the first sample.
@@ -69,9 +70,7 @@ def hotelling_t2(
         '2.00'
 
     References:
-        [1] A. Pini, A. Stamm and S. Vantini, "Hotelling's t2 in
-        separable hilbert spaces", *Jounal of Multivariate Analysis*,
-        167 (2018), pp.284-305.
+        .. footbibliography::
 
     """
     if not isinstance(fd1, FData):
@@ -165,7 +164,8 @@ def hotelling_test_ind(
     number of repetitions of the algorithm is provided then the permutations
     tested are generated randomly.
 
-    This procedure is from Pini, Stamm and Vantinni[1].
+    This procedure is from Pini, Stamm and Vantinni
+    :footcite:`pini+stamm+vantini_2018_hotellings`.
 
     Args:
         fd1: First sample of data.
@@ -202,9 +202,8 @@ def hotelling_test_ind(
         [ 2. 2. 0. 0. 2. 2.]
 
     References:
-        [1] A. Pini, A. Stamm and S. Vantini, "Hotelling's t2 in
-        separable hilbert spaces", *Jounal of Multivariate Analysis*,
-        167 (2018), pp.284-305.
+        .. footbibliography::
+
     """
     if not isinstance(fd1, FData):
         raise TypeError("Argument type must inherit FData.")

@@ -38,7 +38,7 @@ class SRSF(BaseEstimator, TransformerMixin):  # type: ignore
     This representation it is used to compute the extended non-parametric
     Fisher-Rao distance between functions, wich under the SRSF representation
     becomes the usual :math:`\mathbb{L}^2` distance between functions.
-    See [SK16-4-6]_ .
+    See :footcite:`srivastava+klassen_2016_analysis_square`.
 
     The inverse SRSF transform is defined as
 
@@ -75,9 +75,7 @@ class SRSF(BaseEstimator, TransformerMixin):  # type: ignore
         in order to achieve good results.
 
     References:
-        ..  [SK16-4-6] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
-            and shape data analysis. In *Square-Root Slope Function
-            Representation* (pp. 91-93). Springer.
+        .. footbibliography::
 
     Examples:
         Create a toy dataset and apply the transformation and its inverse.
@@ -131,7 +129,8 @@ class SRSF(BaseEstimator, TransformerMixin):  # type: ignore
         r"""Compute the square-root slope function (SRSF) transform.
 
         Let :math:`f : [a,b] \rightarrow \mathbb{R}` be an absolutely
-        continuous function, the SRSF transform is defined as [SK16-4-6-1]_:
+        continuous function, the SRSF transform is defined as
+        :footcite:`srivastava+klassen_2016_analysis_square`:
 
         .. math::
 
@@ -146,11 +145,6 @@ class SRSF(BaseEstimator, TransformerMixin):  # type: ignore
 
         Raises:
             ValueError: If functions are not univariate.
-
-        References:
-            ..  [SK16-4-6-1] Srivastava, Anuj & Klassen, Eric P. (2016).
-                Functional and shape data analysis. In *Square-Root Slope
-                Function Representation* (pp. 91-93). Springer.
 
         """
         check_is_univariate(X)
@@ -182,7 +176,7 @@ class SRSF(BaseEstimator, TransformerMixin):  # type: ignore
         r"""Compute the inverse SRSF transform.
 
         Given the srsf and the initial value the original function can be
-        obtained as [SK16-4-6-2]_ :
+        obtained as :footcite:`srivastava+klassen_2016_analysis_square`:
 
         .. math::
             f(t) = f(a) + \int_{a}^t q(t)|q(t)|dt
@@ -201,12 +195,6 @@ class SRSF(BaseEstimator, TransformerMixin):  # type: ignore
 
         Raises:
             ValueError: If functions are multidimensional.
-
-        References:
-            ..  [SK16-4-6-2] Srivastava, Anuj & Klassen, Eric P. (2016).
-                Functional and shape data analysis. In *Square-Root Slope
-                Function Representation* (pp. 91-93). Springer.
-
         """
         check_is_univariate(X)
 
@@ -298,15 +286,16 @@ def warping_mean(
     \gamma_i(b)=b`.
 
     The karcher mean :math:`\bar \gamma` is defined as the warping that
-    minimises locally the sum of Fisher-Rao squared distances.
-    [SK16-8-3-2]_.
+    minimises locally the sum of Fisher-Rao squared distances
+    :footcite:`srivastava+klassen_2016_analysis_orbit`.
 
     .. math::
         \bar \gamma = argmin_{\gamma \in \Gamma} \sum_{i=1}^{n}
          d_{FR}^2(\gamma, \gamma_i)
 
     The computation is performed using the structure of Hilbert Sphere obtained
-    after a transformation of the warpings, see [S11-3-3]_.
+    after a transformation of the warpings, see
+    :footcite:`srivastava++_2011_ficher-rao_orbit`.
 
     Args:
         warping: Set of warpings.
@@ -321,13 +310,7 @@ def warping_mean(
         the mean.
 
     References:
-        ..  [SK16-8-3-2] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
-            and shape data analysis. In *Template: Center of the Mean Orbit*
-            (pp. 274-277). Springer.
-
-        ..  [S11-3-3] Srivastava, Anuj et. al. Registration of Functional Data
-            Using Fisher-Rao Metric (2011). In *Center of an Orbit* (pp. 9-10).
-            arXiv:1103.3817v2.
+        .. footbibliography::
 
     """
     eval_points = warping.grid_points[0]
@@ -441,7 +424,8 @@ def elastic_mean(
     equivalence class which makes the mean of the warpings employed be the
     identity.
 
-    See [SK16-8-3-1]_ and [S11-3]_.
+    See :footcite:`srivastava+klassen_2016_analysis_karcher` and
+    :footcite:`srivastava++_2011_ficher-rao_karcher`.
 
     Args:
         fdatagrid: Set of functions to compute the
@@ -466,13 +450,7 @@ def elastic_mean(
             do not match with the fdatagrid.
 
     References:
-        ..  [SK16-8-3-1] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
-            and shape data analysis. In *Karcher Mean of Amplitudes*
-            (pp. 273-274). Springer.
-
-        .. [S11-3] Srivastava, Anuj et. al. Registration of Functional Data
-            Using Fisher-Rao Metric (2011). In *Karcher Mean and Function
-            Alignment* (pp. 7-10). arXiv:1103.3817v2.
+        .. footbibliography::
 
     """
     check_is_univariate(fdatagrid)
@@ -622,8 +600,8 @@ class ElasticRegistration(RegistrationTransformer):
     `elastic mean`, wich is the local minimum of the sum of squares of elastic
     distances. See :func:`~elastic_mean`.
 
-    In [SK16-4-2]_ are described extensively the algorithms employed and
-    the SRSF framework.
+    In :footcite:`srivastava+klassen_2016_analysis_elastic` are described
+    extensively the algorithms employed and the SRSF framework.
 
     Args:
         template (str, :class:`FDataGrid` or callable, optional): Template to
@@ -645,9 +623,7 @@ class ElasticRegistration(RegistrationTransformer):
             transformation.
 
     References:
-        ..  [SK16-4-2] Srivastava, Anuj & Klassen, Eric P. (2016). Functional
-            and shape data analysis. In *Functional Data and Elastic
-            Registration* (pp. 73-122). Springer.
+        .. footbibliography::
 
     Examples:
         Elastic registration of with train/test sets.

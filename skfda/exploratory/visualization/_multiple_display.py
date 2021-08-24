@@ -28,57 +28,51 @@ class MultipleDisplay:
     the axes. It is also possible to add widgets to interact with the
     plots.
     Args:
-        displays: baseplot objects that will be plotted in the fig.
-        criteria: sequence of criteria used to order the points in the
+        displays: Baseplot objects that will be plotted in the fig.
+        criteria: Sequence of criteria used to order the points in the
             slider widget. The size should be equal to sliders, as each
             criterion is for one slider.
-        sliders: sequence of widgets that will be plotted.
-        label_sliders: label of each of the sliders.
-        chart: figure over with the graphs are plotted or axis over
+        sliders: Sequence of widgets that will be plotted.
+        label_sliders: Label of each of the sliders.
+        chart: Figure over with the graphs are plotted or axis over
             where the graphs are plotted. If None and ax is also
             None, the figure is initialized.
-        fig: figure over with the graphs are plotted in case ax is not
+        fig: Figure over with the graphs are plotted in case ax is not
             specified. If None and ax is also None, the figure is
             initialized.
-        axes: axis where the graphs are plotted. If None, see param fig.
+        axes: Axis where the graphs are plotted. If None, see param fig.
     Attributes:
-        point_clicked: artist object containing the last point clicked.
-        num_graphs: number of graphs that will be plotted.
-        length_data: number of instances or curves of the different displays.
-        clicked: boolean indicating whether a point has being clicked.
-        index_clicked: index of the function selected with the interactive
+        point_clicked: Artist object containing the last point clicked.
+        num_graphs: Number of graphs that will be plotted.
+        length_data: Number of instances or curves of the different displays.
+        clicked: Boolean indicating whether a point has being clicked.
+        index_clicked: Index of the function selected with the interactive
             module or widgets.
-        tags: list of tags for each ax, that contain the information printedº
+        tags: List of tags for each ax, that contain the information printedº
             while hovering.
-        previous_hovered: artist object containing of the last point hovered.
-        is_updating: boolean value that determines whether a widget
+        previous_hovered: Artist object containing of the last point hovered.
+        is_updating: Boolean value that determines whether a widget
             is being updated.
     """
 
     def __init__(
         self,
-        displays: Union[BasePlot, List[BasePlot]],
+        displays: Union[BasePlot, Sequence[BasePlot]],
         criteria: Union[
             Sequence[float],
             Sequence[Sequence[float]],
             None,
         ] = None,
         sliders: Union[Widget, Sequence[Widget], None] = None,
-        label_sliders: Union[
-            str,
-            Sequence[str],
-            None,
-        ] = None,
+        label_sliders: Union[str, Sequence[str], None] = None,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
         axes: Optional[Sequence[Axes]] = None,
     ):
         if isinstance(displays, BasePlot):
-            self.displays = [copy.copy(displays)]
-        else:
-            self.displays = []
-            for d in displays:
-                self.displays.append(copy.copy(d))
+            displays = (displays,)
+
+        self.displays = [copy.copy(d) for d in displays]
         self.point_clicked: Artist = None
         self.num_graphs = sum(len(d.axes) for d in self.displays)
         self.length_data = self.displays[0].n_samples()
@@ -88,27 +82,28 @@ class MultipleDisplay:
         self.index_clicked = -1
         self.tags: List[Annotation] = []
         self.previous_hovered = None
-        self.fig = fig
-        self.axes = axes
-        self.chart = chart
         self.is_updating = False
 
         if criteria is not None and sliders is not None:
-            if isinstance(sliders, collections.Iterable):
-                if len(criteria) == len(sliders):
-                    self.create_sliders(criteria, sliders, label_sliders)
-                else:
+            if isinstance(sliders, Sequence):
+                if len(criteria) != len(sliders):
                     raise ValueError(
                         "Size of criteria, and sliders should be equal.",
                     )
-            else:
-                self.create_sliders(criteria, sliders, label_sliders)
-        else:
-            self.init_axes()
 
-    def plot(
-        self,
-    ):
+            self.create_sliders(
+                chart,
+                fig=fig,
+                axes=axes,
+                criteria=criteria,
+                sliders=sliders,
+                label_sliders=label_sliders,
+            )
+
+        else:
+            self.init_axes(chart, fig=fig, axes=axes)
+
+    def plot(self) -> Figure:
         """
         Plot Multiple Display method.
 
@@ -127,16 +122,21 @@ class MultipleDisplay:
                         "Length of some data sets are not equal ",
                     )
 
-        for i in range(self.num_graphs):
-            self.axes[i].clear()
+        for ax in self.axes:
+            ax.clear()
             self.tags.append(
-                self.axes[i].annotate(
+                ax.annotate(
                     "",
                     xy=(0, 0),
                     xytext=(20, 20),
                     textcoords="offset points",
-                    bbox=dict(boxstyle="round", fc="w"),
-                    arrowprops=dict(arrowstyle="->"),
+                    bbox={
+                        "boxstyle": "round",
+                        "fc": "w",
+                    },
+                    arrowprops={
+                        "arrowstyle": "->",
+                    },
                 ),
             )
 
@@ -162,7 +162,7 @@ class MultipleDisplay:
 
         return self.fig
 
-    def update_annot(self, index_ax: int, index_point: int):
+    def update_annot(self, index_ax: int, index_point: int) -> None:
         """
         Auxiliary method used to update the hovering annotations.
 
@@ -173,22 +173,12 @@ class MultipleDisplay:
             index_ax: index of the ax being hovered.
             index_point: index of the point being hovered.
         """
-        xdata_graph = self.previous_hovered.get_offsets()[0][0]
-        ydata_graph = self.previous_hovered.get_offsets()[0][1]
-        xdata_aprox = "{0:.2f}".format(xdata_graph)
-        ydata_aprox = "{0:.2f}".format(ydata_graph)
+        xdata_graph, ydata_graph = self.previous_hovered.get_offsets()[0]
 
         current_tag = self.tags[index_ax]
         current_tag.xy = (xdata_graph, ydata_graph)
         current_tag.xy = (xdata_graph, ydata_graph)
-        text = "".join([
-            str(index_point),
-            ": (",
-            str(xdata_aprox),
-            ", ",
-            str(ydata_aprox),
-            ")",
-        ])
+        text = f"{index_point}: ({xdata_graph:.2f}, {ydata_graph:.2f})"
 
         x_axis = self.axes[index_ax].get_xlim()
         self.x_axis = x_axis
@@ -203,7 +193,7 @@ class MultipleDisplay:
         intensity = 0.4
         current_tag.get_bbox_patch().set_alpha(intensity)
 
-    def hover(self, event: Event):
+    def hover(self, event: Event) -> None:
         """
         Activate the annotation when hovering a point.
 
@@ -218,13 +208,12 @@ class MultipleDisplay:
 
         index = 0
         for d in self.displays:
-            for i in range(len(d.axes)):
-                if event.inaxes == d.axes[i]:
+            for i, ax in enumerate(d.axes):
+                if event.inaxes == ax:
                     index_axis = index
 
                     artists_array = d.artists[:, i]
-                    for j in range(len(artists_array)):
-                        artist = artists_array[j]
+                    for j, artist in enumerate(artists_array):
                         if not isinstance(artist, PathCollection):
                             return
 
@@ -255,6 +244,10 @@ class MultipleDisplay:
 
     def init_axes(
         self,
+        chart: Union[Figure, Axes, None] = None,
+        *,
+        fig: Optional[Figure] = None,
+        axes: Optional[Sequence[Axes]] = None,
         extra: int = 0,
     ) -> None:
         """
@@ -265,8 +258,8 @@ class MultipleDisplay:
                 necessity for them to plot the sliders.
         """
         widget_aspect = 1 / 4
-        fig, axes = _get_figure_and_axes(self.chart, self.fig, self.axes)
-        if len(axes) != 0 and len(axes) != (self.num_graphs + extra):
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        if len(axes) not in {0, self.num_graphs + extra}:
             raise ValueError("Invalid number of axes.")
 
         n_rows, n_cols = _get_axes_shape(self.num_graphs + extra)
@@ -316,8 +309,8 @@ class MultipleDisplay:
     def update_index_display_picked(self) -> None:
         """Update the index corresponding to the display picked."""
         for d in self.displays:
-            for i in range(len(d.axes)):
-                if d.axes[i] == self.point_clicked.axes:
+            for i, a in enumerate(d.axes):
+                if a == self.point_clicked.axes:
                     if len(d.axes) == 1:
                         self.index_clicked = np.where(
                             d.artists == self.point_clicked,
@@ -337,9 +330,9 @@ class MultipleDisplay:
                         artist.set_alpha(0.1)
 
         self.is_updating = True
-        for j in range(len(self.sliders)):
-            val_widget = list(self.criteria[j]).index(self.index_clicked)
-            self.sliders[j].set_val(val_widget)
+        for criterium, slider in zip(self.criteria, self.sliders):
+            val_widget = list(criterium).index(self.index_clicked)
+            slider.set_val(val_widget)
         self.is_updating = False
 
     def restore_points_intensity(self) -> None:
@@ -381,7 +374,7 @@ class MultipleDisplay:
 
         for i in range(self.length_data):
             if i == self.index_clicked:
-                intensity = 1
+                intensity = 1.0
             elif i == old_index:
                 intensity = 0.1
             else:
@@ -391,12 +384,12 @@ class MultipleDisplay:
                 self.change_display_intensity(i, intensity)
 
         self.is_updating = True
-        for j in range(len(self.sliders)):
-            val_widget = list(self.criteria[j]).index(self.index_clicked)
-            self.sliders[j].set_val(val_widget)
+        for criterium, slider in zip(self.criteria, self.sliders):
+            val_widget = list(criterium).index(self.index_clicked)
+            slider.set_val(val_widget)
         self.is_updating = False
 
-    def change_display_intensity(self, index: int, intensity: int) -> None:
+    def change_display_intensity(self, index: int, intensity: float) -> None:
         """
         Change the intensity of the point selected by index in every display.
 
@@ -412,6 +405,10 @@ class MultipleDisplay:
 
     def create_sliders(
         self,
+        chart: Union[Figure, Axes, None] = None,
+        *,
+        fig: Optional[Figure] = None,
+        axes: Optional[Sequence[Axes]] = None,
         criteria: Union[Sequence[float], Sequence[Sequence[float]]],
         sliders: Union[Widget, Sequence[Widget]],
         label_sliders: Union[str, Sequence[str], None] = None,
@@ -424,14 +421,19 @@ class MultipleDisplay:
             sliders: widget types.
             label_sliders: sequence of the names of each slider.
         """
-        if isinstance(criteria[0], collections.Iterable):
+        if isinstance(criteria[0], Sequence):
             for c in criteria:
                 if len(c) != self.length_data:
                     raise ValueError(
                         "Slider criteria should be of the same size as data",
                     )
 
-            self.init_axes(extra=len(criteria))
+            self.init_axes(
+                chart,
+                fig=fig,
+                axes=axes,
+                extra=len(criteria),
+            )
 
             if label_sliders is None:
                 for i in range(len(criteria)):
@@ -441,10 +443,10 @@ class MultipleDisplay:
                     "Incorrect length of slider labels.",
                 )
             elif len(label_sliders) == len(sliders):
-                for k in range(len(criteria)):
+                for k, criterium in enumerate(criteria):
                     self.add_slider(
                         k,
-                        criteria[k],
+                        criterium,
                         sliders[k],
                         label_sliders[k],
                     )
@@ -456,7 +458,12 @@ class MultipleDisplay:
             len(criteria) == self.length_data
             and (isinstance(label_sliders, str) or label_sliders is None)
         ):
-            self.init_axes(extra=1)
+            self.init_axes(
+                chart,
+                fig=fig,
+                axes=axes,
+                extra=1,
+            )
             self.add_slider(0, criteria, sliders, label_sliders)
         else:
             raise ValueError(
@@ -526,13 +533,13 @@ class MultipleDisplay:
         index = int(int(value / 0.5) * 0.5)
         old_index = self.index_clicked
         self.index_clicked = list(self.criteria[self.widget_index])[index]
-        self.sliders[self.widget_index].valtext.set_text('{}'.format(index))
+        self.sliders[self.widget_index].valtext.set_text(f'{index}')
 
         # Update the other sliders values
-        for i in range(len(self.sliders)):
+        for i, (c, s) in enumerate(zip(self.criteria, self.sliders)):
             if i != self.widget_index:
-                val_widget = list(self.criteria[i]).index(self.index_clicked)
-                self.sliders[i].set_val(val_widget)
+                val_widget = list(c).index(self.index_clicked)
+                s.set_val(val_widget)
 
         self.is_updating = False
 

@@ -96,13 +96,16 @@ class Outliergram(BasePlot):
             fig: figure object in which the depths will be
             scattered.
         """
-        self.artists = np.zeros(self.n_samples(), dtype=Artist)
+        self.artists = np.zeros(
+            (self.n_samples(), 1),
+            dtype=Artist,
+        )
         self.axScatter = self.axes[0]
 
         for i, (mei, mbd) in enumerate(
             zip(self.outlier_detector.mei_, self.outlier_detector.mbd_),
         ):
-            self.artists[i] = self.axScatter.scatter(
+            self.artists[i, 0] = self.axScatter.scatter(
                 mei,
                 mbd,
                 picker=2,

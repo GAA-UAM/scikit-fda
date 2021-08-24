@@ -87,7 +87,10 @@ class DDPlot(BasePlot):
             fig (figure object): figure object in which the depths will be
             scattered.
         """
-        self.artists = np.zeros(self.n_samples(), dtype=Artist)
+        self.artists = np.zeros(
+            (self.n_samples(), 1),
+            dtype=Artist,
+        )
         margin = 0.025
         width_aux_line = 0.35
         color_aux_line = "gray"
@@ -95,7 +98,7 @@ class DDPlot(BasePlot):
         ax = self.axes[0]
 
         for i in range(len(self.depth_dist1)):
-            self.artists[i] = ax.scatter(
+            self.artists[i, 0] = ax.scatter(
                 self.depth_dist1[i],
                 self.depth_dist2[i],
                 picker=True,

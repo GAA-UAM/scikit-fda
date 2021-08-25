@@ -5,7 +5,7 @@ from typing import List, Optional, Sequence, Union
 import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
-from matplotlib.backend_bases import Event
+from matplotlib.backend_bases import Event, MouseEvent
 from matplotlib.collections import PathCollection
 from matplotlib.figure import Figure
 from matplotlib.text import Annotation
@@ -48,8 +48,6 @@ class MultipleDisplay:
         clicked: Boolean indicating whether a point has being clicked.
         index_clicked: Index of the function selected with the interactive
             module or widgets.
-        tags: List of tags for each ax, that contain the information printedº
-            while hovering.
         previous_hovered: Artist object containing of the last point hovered.
         is_updating: Boolean value that determines whether a widget
             is being updated.
@@ -80,7 +78,7 @@ class MultipleDisplay:
         self.criteria: List[List[int]] = []
         self.clicked = False
         self.index_clicked = -1
-        self.tags: List[Annotation] = []
+        self._tag = self._create_annotation()
         self.previous_hovered = None
         self.is_updating = False
 
@@ -103,6 +101,67 @@ class MultipleDisplay:
         else:
             self.init_axes(chart, fig=fig, axes=axes)
 
+    def _create_annotation(self) -> Annotation:
+        tag = Annotation(
+            "",
+            xy=(0, 0),
+            xytext=(20, 20),
+            textcoords="offset points",
+            bbox={
+                "boxstyle": "round",
+                "fc": "w",
+            },
+            arrowprops={
+                "arrowstyle": "->",
+            },
+        )
+
+        tag.get_bbox_patch().set_facecolor(color='khaki')
+        intensity = 0.8
+        tag.get_bbox_patch().set_alpha(intensity)
+
+        return tag
+
+    def _update_annotation(
+        self,
+        tag: Annotation,
+        axes: Axes,
+        index_point: int,
+    ) -> None:
+        """
+        Auxiliary method used to update the hovering annotations.
+
+        Method used to update the annotations that appear while
+        hovering a scattered point. The annotations indicate
+        the index and coordinates of the point hovered.
+        Args:
+            index_ax: index of the ax being hovered.
+            index_point: index of the point being hovered.
+        """
+        xdata_graph, ydata_graph = self.previous_hovered.get_offsets()[0]
+
+        tag.xy = (xdata_graph, ydata_graph)
+        text = f"{index_point}: ({xdata_graph:.2f}, {ydata_graph:.2f})"
+        tag.set_text(text)
+
+        x_axis = axes.get_xlim()
+        y_axis = axes.get_ylim()
+
+        label_xpos = 20
+        label_ypos = 20
+        if (xdata_graph - x_axis[0]) > (x_axis[1] - xdata_graph):
+            label_xpos = -80
+
+        if (ydata_graph - y_axis[0]) > (y_axis[1] - ydata_graph):
+            label_ypos = -20
+
+        if tag.figure:
+            tag.remove()
+        tag.figure = None
+        axes.add_artist(tag)
+        tag.set_transform(axes.transData)
+        tag.set_position((label_xpos, label_ypos))
+
     def plot(self) -> Figure:
         """
         Plot Multiple Display method.
@@ -124,21 +183,6 @@ class MultipleDisplay:
 
         for ax in self.axes:
             ax.clear()
-            self.tags.append(
-                ax.annotate(
-                    "",
-                    xy=(0, 0),
-                    xytext=(20, 20),
-                    textcoords="offset points",
-                    bbox={
-                        "boxstyle": "round",
-                        "fc": "w",
-                    },
-                    arrowprops={
-                        "arrowstyle": "->",
-                    },
-                ),
-            )
 
         int_index = 0
         for disp in self.displays:
@@ -151,8 +195,7 @@ class MultipleDisplay:
         self.fig.canvas.mpl_connect('motion_notify_event', self.hover)
         self.fig.canvas.mpl_connect('pick_event', self.pick)
 
-        for i in range(self.num_graphs):
-            self.tags[i].set_visible(False)
+        self._tag.set_visible(False)
 
         self.fig.suptitle("Multiple display")
         self.fig.tight_layout()
@@ -162,38 +205,7 @@ class MultipleDisplay:
 
         return self.fig
 
-    def update_annot(self, index_ax: int, index_point: int) -> None:
-        """
-        Auxiliary method used to update the hovering annotations.
-
-        Method used to update the annotations that appear while
-        hovering a scattered point. The annotations indicate
-        the index and coordinates of the point hovered.
-        Args:
-            index_ax: index of the ax being hovered.
-            index_point: index of the point being hovered.
-        """
-        xdata_graph, ydata_graph = self.previous_hovered.get_offsets()[0]
-
-        current_tag = self.tags[index_ax]
-        current_tag.xy = (xdata_graph, ydata_graph)
-        current_tag.xy = (xdata_graph, ydata_graph)
-        text = f"{index_point}: ({xdata_graph:.2f}, {ydata_graph:.2f})"
-
-        x_axis = self.axes[index_ax].get_xlim()
-        self.x_axis = x_axis
-        self.xdata_graph = xdata_graph
-        if (xdata_graph - x_axis[0]) > (x_axis[1] - xdata_graph):
-            current_tag.set_position((-80, 20))
-        else:
-            current_tag.set_position((20, 20))
-
-        current_tag.set_text(text)
-        current_tag.get_bbox_patch().set_facecolor(color='red')
-        intensity = 0.4
-        current_tag.get_bbox_patch().set_alpha(intensity)
-
-    def hover(self, event: Event) -> None:
+    def hover(self, event: MouseEvent) -> None:
         """
         Activate the annotation when hovering a point.
 
@@ -234,12 +246,16 @@ class MultipleDisplay:
                 self.widget_index = k - self.num_graphs
 
         if index_axis != -1 and is_graph:
-            self.update_annot(index_axis, index_point)
-            self.tags[index_axis].set_visible(True)
+            self._update_annotation(
+                self._tag,
+                self.axes[index_axis],
+                index_point,
+            )
+            self._tag.set_visible(True)
             self.fig.canvas.draw_idle()
-        elif self.tags[index_axis].get_visible():
+        elif self._tag.get_visible():
             self.previous_hovered = None
-            self.tags[index_axis].set_visible(False)
+            self._tag.set_visible(False)
             self.fig.canvas.draw_idle()
 
     def init_axes(

@@ -1,11 +1,11 @@
 import collections
 import copy
-from typing import List, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
-from matplotlib.backend_bases import Event, MouseEvent
+from matplotlib.backend_bases import Event, LocationEvent, MouseEvent
 from matplotlib.collections import PathCollection
 from matplotlib.figure import Figure
 from matplotlib.text import Annotation
@@ -43,7 +43,6 @@ class MultipleDisplay:
         axes: Axis where the graphs are plotted. If None, see param fig.
     Attributes:
         point_clicked: Artist object containing the last point clicked.
-        num_graphs: Number of graphs that will be plotted.
         length_data: Number of instances or curves of the different displays.
         clicked: Boolean indicating whether a point has being clicked.
         index_clicked: Index of the function selected with the interactive
@@ -71,22 +70,20 @@ class MultipleDisplay:
 
         self.displays = [copy.copy(d) for d in displays]
         self.point_clicked: Artist = None
-        self.num_graphs = sum(len(d.axes) for d in self.displays)
+        self._n_graphs = sum(len(d.axes) for d in self.displays)
         self.length_data = self.displays[0].n_samples()
         self.sliders: List[Widget] = []
         self.criteria: List[List[int]] = []
         self.clicked = False
         self.index_clicked = -1
         self._tag = self._create_annotation()
-        self._previous_hovered: Optional[Artist] = None
         self.is_updating = False
 
         if criteria is not None and sliders is not None:
-            if isinstance(sliders, Sequence):
-                if len(criteria) != len(sliders):
-                    raise ValueError(
-                        "Size of criteria, and sliders should be equal.",
-                    )
+            if isinstance(sliders, Sequence) and len(criteria) != len(sliders):
+                raise ValueError(
+                    "Size of criteria, and sliders should be equal.",
+                )
 
             self.create_sliders(
                 chart,
@@ -124,8 +121,10 @@ class MultipleDisplay:
     def _update_annotation(
         self,
         tag: Annotation,
+        *,
         axes: Axes,
-        index_point: int,
+        sample_number: int,
+        position: Tuple[float, float],
     ) -> None:
         """
         Auxiliary method used to update the hovering annotations.
@@ -134,13 +133,14 @@ class MultipleDisplay:
         hovering a scattered point. The annotations indicate
         the index and coordinates of the point hovered.
         Args:
-            index_ax: index of the ax being hovered.
-            index_point: index of the point being hovered.
+            tag: Annotation to update.
+            axes: Axes were the annotation belongs.
+            sample_number: Number of the current sample.
         """
-        xdata_graph, ydata_graph = self._previous_hovered.get_offsets()[0]
+        xdata_graph, ydata_graph = position
 
         tag.xy = (xdata_graph, ydata_graph)
-        text = f"{index_point}: ({xdata_graph:.2f}, {ydata_graph:.2f})"
+        text = f"{sample_number}: ({xdata_graph:.2f}, {ydata_graph:.2f})"
         tag.set_text(text)
 
         x_axis = axes.get_xlim()
@@ -173,7 +173,7 @@ class MultipleDisplay:
             fig: figure object in which the displays and
                 widgets will be plotted.
         """
-        if self.num_graphs > 1:
+        if self._n_graphs > 1:
             for d in self.displays[1:]:
                 if d.n_samples() != self.length_data:
                     raise ValueError(
@@ -204,6 +204,25 @@ class MultipleDisplay:
 
         return self.fig
 
+    def _sample_artist_from_event(
+        self,
+        event: LocationEvent,
+    ) -> Optional[Tuple[int, Artist]]:
+        for d in self.displays:
+            try:
+                i = d.axes.index(event.inaxes)
+            except ValueError:
+                continue
+
+            for j, artist in enumerate(d.artists[:, i]):
+                if not isinstance(artist, PathCollection):
+                    return None
+
+                if artist.contains(event)[0]:
+                    return j, artist
+
+        return None
+
     def hover(self, event: MouseEvent) -> None:
         """
         Activate the annotation when hovering a point.
@@ -216,39 +235,24 @@ class MultipleDisplay:
                 hovered.
 
         """
-        for d in self.displays:
-            try:
-                i = d.axes.index(event.inaxes)
-            except ValueError:
-                continue
+        found_artist = self._sample_artist_from_event(event)
 
-            for j, artist in enumerate(d.artists[:, i]):
-                if not isinstance(artist, PathCollection):
-                    return
-
-                is_graph, _ = artist.contains(event)
-                if is_graph and self._previous_hovered == artist:
-                    return
-                elif is_graph:
-                    self._previous_hovered = artist
-                    index_point = j
-                    break
-            break
-
-        for k in range(self.num_graphs, len(self.axes)):
+        for k in range(self._n_graphs, len(self.axes)):
             if event.inaxes == self.axes[k]:
-                self.widget_index = k - self.num_graphs
+                self.widget_index = k - self._n_graphs
 
-        if event.inaxes is not None and is_graph:
+        if event.inaxes is not None and found_artist is not None:
+            sample_number, artist = found_artist
+
             self._update_annotation(
                 self._tag,
-                event.inaxes,
-                index_point,
+                axes=event.inaxes,
+                sample_number=sample_number,
+                position=artist.get_offsets()[0],
             )
             self._tag.set_visible(True)
             self.fig.canvas.draw_idle()
         elif self._tag.get_visible():
-            self._previous_hovered = None
             self._tag.set_visible(False)
             self.fig.canvas.draw_idle()
 
@@ -269,18 +273,20 @@ class MultipleDisplay:
         """
         widget_aspect = 1 / 4
         fig, axes = _get_figure_and_axes(chart, fig, axes)
-        if len(axes) not in {0, self.num_graphs + extra}:
+        if len(axes) not in {0, self._n_graphs + extra}:
             raise ValueError("Invalid number of axes.")
 
-        n_rows, n_cols = _get_axes_shape(self.num_graphs + extra)
+        n_rows, n_cols = _get_axes_shape(self._n_graphs + extra)
 
         number_axes = n_rows * n_cols
         fig, axes = _set_figure_layout(
-            fig=fig, axes=axes, n_axes=self.num_graphs + extra,
+            fig=fig,
+            axes=axes,
+            n_axes=self._n_graphs + extra,
         )
 
-        for i in range(self.num_graphs, number_axes):
-            if i >= self.num_graphs + extra:
+        for i in range(self._n_graphs, number_axes):
+            if i >= self._n_graphs + extra:
                 axes[i].set_visible(False)
             else:
                 axes[i].set_box_aspect(widget_aspect)
@@ -502,7 +508,7 @@ class MultipleDisplay:
             full_desc = label_slider
         self.sliders.append(
             widget_func(
-                self.axes[self.num_graphs + ind_ax],
+                self.axes[self._n_graphs + ind_ax],
                 full_desc,
                 valmin=0,
                 valmax=self.length_data - 1,
@@ -510,13 +516,13 @@ class MultipleDisplay:
             ),
         )
 
-        self.axes[self.num_graphs + ind_ax].annotate(
+        self.axes[self._n_graphs + ind_ax].annotate(
             '0',
             xy=(0, -0.5),
             xycoords='axes fraction',
             annotation_clip=False,
         )
-        self.axes[self.num_graphs + ind_ax].annotate(
+        self.axes[self._n_graphs + ind_ax].annotate(
             str(self.length_data - 1),
             xy=(0.95, -0.5),
             xycoords='axes fraction',

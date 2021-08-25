@@ -48,7 +48,6 @@ class MultipleDisplay:
         clicked: Boolean indicating whether a point has being clicked.
         index_clicked: Index of the function selected with the interactive
             module or widgets.
-        previous_hovered: Artist object containing of the last point hovered.
         is_updating: Boolean value that determines whether a widget
             is being updated.
     """
@@ -79,7 +78,7 @@ class MultipleDisplay:
         self.clicked = False
         self.index_clicked = -1
         self._tag = self._create_annotation()
-        self.previous_hovered = None
+        self._previous_hovered: Optional[Artist] = None
         self.is_updating = False
 
         if criteria is not None and sliders is not None:
@@ -138,7 +137,7 @@ class MultipleDisplay:
             index_ax: index of the ax being hovered.
             index_point: index of the point being hovered.
         """
-        xdata_graph, ydata_graph = self.previous_hovered.get_offsets()[0]
+        xdata_graph, ydata_graph = self._previous_hovered.get_offsets()[0]
 
         tag.xy = (xdata_graph, ydata_graph)
         text = f"{index_point}: ({xdata_graph:.2f}, {ydata_graph:.2f})"
@@ -215,46 +214,41 @@ class MultipleDisplay:
         Args:
             event: event object containing the artist of the point
                 hovered.
+
         """
-        index_axis = -1
-
-        index = 0
         for d in self.displays:
-            for i, ax in enumerate(d.axes):
-                if event.inaxes == ax:
-                    index_axis = index
+            try:
+                i = d.axes.index(event.inaxes)
+            except ValueError:
+                continue
 
-                    artists_array = d.artists[:, i]
-                    for j, artist in enumerate(artists_array):
-                        if not isinstance(artist, PathCollection):
-                            return
+            for j, artist in enumerate(d.artists[:, i]):
+                if not isinstance(artist, PathCollection):
+                    return
 
-                        is_graph, ind = artist.contains(event)
-                        if is_graph and self.previous_hovered == artist:
-                            return
-                        if is_graph:
-                            self.previous_hovered = artist
-                            index_point = j
-                            break
+                is_graph, _ = artist.contains(event)
+                if is_graph and self._previous_hovered == artist:
+                    return
+                elif is_graph:
+                    self._previous_hovered = artist
+                    index_point = j
                     break
-
-                else:
-                    index += 1
+            break
 
         for k in range(self.num_graphs, len(self.axes)):
             if event.inaxes == self.axes[k]:
                 self.widget_index = k - self.num_graphs
 
-        if index_axis != -1 and is_graph:
+        if event.inaxes is not None and is_graph:
             self._update_annotation(
                 self._tag,
-                self.axes[index_axis],
+                event.inaxes,
                 index_point,
             )
             self._tag.set_visible(True)
             self.fig.canvas.draw_idle()
         elif self._tag.get_visible():
-            self.previous_hovered = None
+            self._previous_hovered = None
             self._tag.set_visible(False)
             self.fig.canvas.draw_idle()
 

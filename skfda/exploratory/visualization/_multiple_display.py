@@ -1,6 +1,6 @@
 import collections
 import copy
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Type, Union, cast
 
 import numpy as np
 from matplotlib.artist import Artist
@@ -54,12 +54,8 @@ class MultipleDisplay:
     def __init__(
         self,
         displays: Union[BasePlot, Sequence[BasePlot]],
-        criteria: Union[
-            Sequence[float],
-            Sequence[Sequence[float]],
-            None,
-        ] = None,
-        sliders: Union[Widget, Sequence[Widget], None] = None,
+        criteria: Union[Sequence[float], Sequence[Sequence[float]]] = (),
+        sliders: Union[Type[Widget], Sequence[Type[Widget]]] = (),
         label_sliders: Union[str, Sequence[str], None] = None,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
@@ -79,23 +75,113 @@ class MultipleDisplay:
         self._tag = self._create_annotation()
         self.is_updating = False
 
-        if criteria is not None and sliders is not None:
-            if isinstance(sliders, Sequence) and len(criteria) != len(sliders):
-                raise ValueError(
-                    "Size of criteria, and sliders should be equal.",
-                )
+        if len(criteria) != 0 and not isinstance(criteria[0], Sequence):
+            criteria = (criteria,)
 
-            self.create_sliders(
-                chart,
-                fig=fig,
-                axes=axes,
-                criteria=criteria,
-                sliders=sliders,
-                label_sliders=label_sliders,
+        criteria = cast(Sequence[Sequence[float]], criteria)
+
+        if not isinstance(sliders, Sequence):
+            sliders = (sliders,)
+
+        if isinstance(label_sliders, str):
+            label_sliders = (label_sliders,)
+
+        if len(criteria) != len(sliders):
+            raise ValueError(
+                f"Size of criteria, and sliders should be equal "
+                f"(have {len(criteria)} and {len(sliders)}).",
             )
 
-        else:
-            self.init_axes(chart, fig=fig, axes=axes)
+        self._init_axes(
+            chart,
+            fig=fig,
+            axes=axes,
+            extra=len(criteria),
+        )
+
+        self._create_sliders(
+            criteria=criteria,
+            sliders=sliders,
+            label_sliders=label_sliders,
+        )
+
+    def _init_axes(
+        self,
+        chart: Union[Figure, Axes, None] = None,
+        *,
+        fig: Optional[Figure] = None,
+        axes: Optional[Sequence[Axes]] = None,
+        extra: int = 0,
+    ) -> None:
+        """
+        Initialize the axes and figure.
+
+        Args:
+            chart: Figure over with the graphs are plotted or axis over
+                where the graphs are plotted. If None and ax is also
+                None, the figure is initialized.
+            fig: Figure over with the graphs are plotted in case ax is not
+                specified. If None and ax is also None, the figure is
+                initialized.
+            axes: Axis where the graphs are plotted. If None, see param fig.
+            extra: integer indicating the extra axes needed due to the
+                necessity for them to plot the sliders.
+
+        """
+        widget_aspect = 1 / 4
+        fig, axes = _get_figure_and_axes(chart, fig, axes)
+        if len(axes) not in {0, self._n_graphs + extra}:
+            raise ValueError("Invalid number of axes.")
+
+        n_rows, n_cols = _get_axes_shape(self._n_graphs + extra)
+
+        number_axes = n_rows * n_cols
+        fig, axes = _set_figure_layout(
+            fig=fig,
+            axes=axes,
+            n_axes=self._n_graphs + extra,
+        )
+
+        for i in range(self._n_graphs, number_axes):
+            if i >= self._n_graphs + extra:
+                axes[i].set_visible(False)
+            else:
+                axes[i].set_box_aspect(widget_aspect)
+
+        self.fig = fig
+        self.axes = axes
+
+    def _create_sliders(
+        self,
+        *,
+        criteria: Sequence[Sequence[float]],
+        sliders: Sequence[Type[Widget]],
+        label_sliders: Optional[Sequence[str]] = None,
+    ) -> None:
+        """
+        Create the sliders with the criteria selected.
+
+        Args:
+            criteria: Different criterion for each of the sliders.
+            sliders: Widget types.
+            label_sliders: Sequence of the names of each slider.
+
+        """
+        for c in criteria:
+            if len(c) != self.length_data:
+                raise ValueError(
+                    "Slider criteria should be of the same size as data",
+                )
+
+        for k, criterium in enumerate(criteria):
+            label = label_sliders[k] if label_sliders else None
+
+            self.add_slider(
+                k,
+                criterium,
+                sliders[k],
+                label,
+            )
 
     def _create_annotation(self) -> Annotation:
         tag = Annotation(
@@ -208,6 +294,7 @@ class MultipleDisplay:
         self,
         event: LocationEvent,
     ) -> Optional[Tuple[int, Artist]]:
+        """Get the number of sample and artist under a location event."""
         for d in self.displays:
             try:
                 i = d.axes.index(event.inaxes)
@@ -255,44 +342,6 @@ class MultipleDisplay:
         elif self._tag.get_visible():
             self._tag.set_visible(False)
             self.fig.canvas.draw_idle()
-
-    def init_axes(
-        self,
-        chart: Union[Figure, Axes, None] = None,
-        *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Sequence[Axes]] = None,
-        extra: int = 0,
-    ) -> None:
-        """
-        Initialize the axes and figure.
-
-        Args:
-            extra: integer indicating the extra axes needed due to the
-                necessity for them to plot the sliders.
-        """
-        widget_aspect = 1 / 4
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        if len(axes) not in {0, self._n_graphs + extra}:
-            raise ValueError("Invalid number of axes.")
-
-        n_rows, n_cols = _get_axes_shape(self._n_graphs + extra)
-
-        number_axes = n_rows * n_cols
-        fig, axes = _set_figure_layout(
-            fig=fig,
-            axes=axes,
-            n_axes=self._n_graphs + extra,
-        )
-
-        for i in range(self._n_graphs, number_axes):
-            if i >= self._n_graphs + extra:
-                axes[i].set_visible(False)
-            else:
-                axes[i].set_box_aspect(widget_aspect)
-
-        self.fig = fig
-        self.axes = axes
 
     def pick(self, event: Event) -> None:
         """
@@ -418,73 +467,6 @@ class MultipleDisplay:
             if len(d.artists) != 0:
                 for artist in np.ravel(d.artists[index]):
                     artist.set_alpha(intensity)
-
-    def create_sliders(
-        self,
-        chart: Union[Figure, Axes, None] = None,
-        *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Sequence[Axes]] = None,
-        criteria: Union[Sequence[float], Sequence[Sequence[float]]],
-        sliders: Union[Widget, Sequence[Widget]],
-        label_sliders: Union[str, Sequence[str], None] = None,
-    ) -> None:
-        """
-        Create the sliders with the criteria selected.
-
-        Args:
-            criteria: different criterion for each of the sliders.
-            sliders: widget types.
-            label_sliders: sequence of the names of each slider.
-        """
-        if isinstance(criteria[0], Sequence):
-            for c in criteria:
-                if len(c) != self.length_data:
-                    raise ValueError(
-                        "Slider criteria should be of the same size as data",
-                    )
-
-            self.init_axes(
-                chart,
-                fig=fig,
-                axes=axes,
-                extra=len(criteria),
-            )
-
-            if label_sliders is None:
-                for i in range(len(criteria)):
-                    self.add_slider(i, criteria[i], sliders[i])
-            elif isinstance(label_sliders, str):
-                raise ValueError(
-                    "Incorrect length of slider labels.",
-                )
-            elif len(label_sliders) == len(sliders):
-                for k, criterium in enumerate(criteria):
-                    self.add_slider(
-                        k,
-                        criterium,
-                        sliders[k],
-                        label_sliders[k],
-                    )
-            else:
-                raise ValueError(
-                    "Incorrect length of slider labels.",
-                )
-        elif (
-            len(criteria) == self.length_data
-            and (isinstance(label_sliders, str) or label_sliders is None)
-        ):
-            self.init_axes(
-                chart,
-                fig=fig,
-                axes=axes,
-                extra=1,
-            )
-            self.add_slider(0, criteria, sliders, label_sliders)
-        else:
-            raise ValueError(
-                "Slider criteria should be of the same size as data",
-            )
 
     def add_slider(
         self,

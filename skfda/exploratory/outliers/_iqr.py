@@ -61,18 +61,18 @@ class IQROutlierDetector(
         indices_descending_depth = (-depth).argsort(axis=0)
 
         # Central region and envelope must be computed for outlier detection
-        central_region = _envelopes._compute_region(
+        central_region = _envelopes.compute_region(
             X, indices_descending_depth, 0.5)
-        self._central_envelope = _envelopes._compute_envelope(central_region)
+        self._central_envelope = _envelopes.compute_envelope(central_region)
 
         # Non-outlying envelope
-        self.non_outlying_threshold_ = _envelopes._non_outlying_threshold(
+        self.non_outlying_threshold_ = _envelopes.non_outlying_threshold(
             self._central_envelope, self.factor)
 
         return self
 
     def predict(self, X: FDataGrid) -> np.ndarray:
-        outliers = _envelopes._predict_outliers(
+        outliers = _envelopes.predict_outliers(
             X,
             self.non_outlying_threshold_,
         )

@@ -14,11 +14,13 @@ try:
     NDArrayAny = NDArray[Any]
     NDArrayInt = NDArray[np.int_]
     NDArrayFloat = NDArray[np.float_]
+    NDArrayBool = NDArray[np.bool_]
 except ImportError:
     NDArray = np.ndarray  # type:ignore
     NDArrayAny = np.ndarray  # type:ignore
     NDArrayInt = np.ndarray  # type:ignore
     NDArrayFloat = np.ndarray  # type:ignore
+    NDArrayBool = np.ndarray  # type:ignore
 
 VectorType = TypeVar("VectorType")
 

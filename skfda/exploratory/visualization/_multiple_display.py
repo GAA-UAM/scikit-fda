@@ -1,6 +1,15 @@
-import collections
 import copy
-from typing import List, Optional, Sequence, Tuple, Type, Union, cast
+from functools import partial
+from typing import (
+    Generator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 import numpy as np
 from matplotlib.artist import Artist
@@ -10,8 +19,6 @@ from matplotlib.collections import PathCollection
 from matplotlib.figure import Figure
 from matplotlib.text import Annotation
 from matplotlib.widgets import Slider, Widget
-
-from _functools import partial
 
 from ._baseplot import BasePlot
 from ._utils import _get_axes_shape, _get_figure_and_axes, _set_figure_layout
@@ -51,10 +58,9 @@ class MultipleDisplay:
             initialized.
         axes: Axis where the graphs are plotted. If None, see param fig.
     Attributes:
-        point_clicked: Artist object containing the last point clicked.
         length_data: Number of instances or curves of the different displays.
         clicked: Boolean indicating whether a point has being clicked.
-        index_clicked: Index of the function selected with the interactive
+        selected_sample: Index of the function selected with the interactive
             module or widgets.
     """
 
@@ -72,13 +78,11 @@ class MultipleDisplay:
             displays = (displays,)
 
         self.displays = [copy.copy(d) for d in displays]
-        self.point_clicked: Artist = None
         self._n_graphs = sum(len(d.axes) for d in self.displays)
         self.length_data = self.displays[0].n_samples()
         self.sliders: List[Widget] = []
         self.criteria: List[List[int]] = []
-        self.clicked = False
-        self.index_clicked = -1
+        self.selected_sample: Optional[int] = None
         self._tag = self._create_annotation()
 
         if len(criteria) != 0 and not isinstance(criteria[0], Sequence):
@@ -179,14 +183,14 @@ class MultipleDisplay:
                     "Slider criteria should be of the same size as data",
                 )
 
-        for k, criterium in enumerate(criteria):
+        for k, criterion in enumerate(criteria):
             label = label_sliders[k] if label_sliders else None
 
             self.add_slider(
-                k,
-                criterium,
-                sliders[k],
-                label,
+                axes=self.axes[self._n_graphs + k],
+                criterion=criterion,
+                widget_class=sliders[k],
+                label=label,
             )
 
     def _create_annotation(self) -> Annotation:
@@ -356,149 +360,88 @@ class MultipleDisplay:
             event: event object containing the artist of the point
                 picked.
         """
-        if self.clicked:
-            self.point_clicked = event.artist
-            self.change_points_intensity()
-            self.clicked = False
-        elif self.point_clicked is None:
-            self.point_clicked = event.artist
-            self.update_index_display_picked()
-            self.reduce_points_intensity()
-        elif self.point_clicked == event.artist:
-            self.restore_points_intensity()
-        else:
-            self.point_clicked = event.artist
-            self.change_points_intensity()
+        selected_sample = self._sample_from_artist(event.artist)
 
-    def update_index_display_picked(self) -> None:
-        """Update the index corresponding to the display picked."""
+        if selected_sample is not None:
+            if self.selected_sample == selected_sample:
+                self._deselect_samples()
+            else:
+                self._select_sample(selected_sample)
+
+    def _sample_from_artist(self, artist: Artist) -> Optional[int]:
+        """Return the sample corresponding to an artist."""
         for d in self.displays:
             for i, a in enumerate(d.axes):
-                if a == self.point_clicked.axes:
+                if a == artist.axes:
                     if len(d.axes) == 1:
-                        self.index_clicked = np.where(
-                            d.artists == self.point_clicked,
-                        )[0][0]
+                        return np.where(d.artists == artist)[0][0]
                     else:
-                        self.index_clicked = np.where(
-                            d.artists[:, i] == self.point_clicked,
-                        )[0][0]
-                    return
+                        return np.where(d.artists[:, i] == artist)[0][0]
 
-    def reduce_points_intensity(self) -> None:
-        """Reduce the transparency of all the points but the selected one."""
-        for i in range(self.length_data):
-            if i != self.index_clicked:
-                for d in self.displays:
-                    for artist in np.ravel(d.artists[i]):
-                        artist.set_alpha(0.1)
+        return None
 
-        for criterium, slider in zip(self.criteria, self.sliders):
-            val_widget = list(criterium).index(self.index_clicked)
-            _set_val_noevents(slider, val_widget)
-
-    def restore_points_intensity(self) -> None:
-        """Restore the original transparency of all the points."""
+    def _visit_artists(self) -> Generator[Tuple[int, Artist], None, None]:
         for i in range(self.length_data):
             for d in self.displays:
-                for artist in np.ravel(d.artists[i]):
-                    artist.set_alpha(1)
+                yield from ((i, artist) for artist in np.ravel(d.artists[i]))
 
-        self.point_clicked = None
-        self.index_clicked = -1
+    def _select_sample(self, selected_sample: int) -> None:
+        """Reduce the transparency of all the points but the selected one."""
+        for i, artist in self._visit_artists():
+            artist.set_alpha(1.0 if i == selected_sample else 0.1)
 
-        for j in range(len(self.sliders)):
-            _set_val_noevents(self.sliders[j], 0)
-
-    def change_points_intensity(
-        self,
-        old_index: Union[int, None] = None,
-    ) -> None:
-        """
-        Change the intensity of the points.
-
-        Changes the intensity of the points, the highlighted one now
-        will be the selected one and the one with old_index with have
-        its transparency increased.
-        Args:
-            old_index: index of the last point clicked, as it should
-                reduce its transparency.
-        """
-        if old_index is None:
-            old_index = self.index_clicked
-            self.update_index_display_picked()
-
-        if self.index_clicked == old_index:
-            self.restore_points_intensity()
-            return
-
-        for i in range(self.length_data):
-            if i == self.index_clicked:
-                intensity = 1.0
-            elif i == old_index:
-                intensity = 0.1
-            else:
-                intensity = -1
-
-            if intensity != -1:
-                self.change_display_intensity(i, intensity)
-
-        for criterium, slider in zip(self.criteria, self.sliders):
-            val_widget = list(criterium).index(self.index_clicked)
+        for criterion, slider in zip(self.criteria, self.sliders):
+            val_widget = criterion.index(selected_sample)
             _set_val_noevents(slider, val_widget)
 
-    def change_display_intensity(self, index: int, intensity: float) -> None:
-        """
-        Change the intensity of the point selected by index in every display.
+        self.selected_sample = selected_sample
+        self.fig.canvas.draw_idle()
 
-        Args:
-            index: index of the last point clicked, as it should
-                reduce its transparency.
-            intensity: new intensity of the points.
-        """
-        for d in self.displays:
-            if len(d.artists) != 0:
-                for artist in np.ravel(d.artists[index]):
-                    artist.set_alpha(intensity)
+    def _deselect_samples(self) -> None:
+        """Restore the original transparency of all the points."""
+        for _, artist in self._visit_artists():
+            artist.set_alpha(1)
+
+        self.selected_sample = None
+        self.fig.canvas.draw_idle()
 
     def add_slider(
         self,
-        ind_ax: int,
+        axes: Axes,
         criterion: Sequence[float],
-        widget_func: Type[Widget] = Slider,
-        label_slider: Optional[str] = None,
+        widget_class: Type[Widget] = Slider,
+        label: Optional[str] = None,
     ) -> None:
         """
         Add the slider to the MultipleDisplay object.
 
         Args:
-            ind_ax: index of the selected ax for the widget.
-            criterion: criterion used for the slider.
-            widget_func: widget type.
-            label_slider: names of the slider.
+            axes: Axes for the widget.
+            criterion: Criterion used for the slider.
+            widget_class: Widget type.
+            label: Name of the slider.
         """
-        full_desc = (
-            f"Filter ({ind_ax}))" if label_slider is None else label_slider
-        )
+        full_desc = "" if label is None else label
 
-        widget = widget_func(
-            ax=self.axes[self._n_graphs + ind_ax],
+        widget = widget_class(
+            ax=axes,
             label=full_desc,
             valmin=0,
             valmax=self.length_data - 1,
             valinit=0,
+            valstep=1,
         )
 
         self.sliders.append(widget)
 
-        self.axes[self._n_graphs + ind_ax].annotate(
+        axes.annotate(
             '0',
             xy=(0, -0.5),
             xycoords='axes fraction',
             annotation_clip=False,
         )
 
-        self.axes[self._n_graphs + ind_ax].annotate(
+        axes.annotate(
             str(self.length_data - 1),
             xy=(0.95, -0.5),
             xycoords='axes fraction',
@@ -512,17 +455,15 @@ class MultipleDisplay:
         self.criteria.append(criterion_sample_indexes)
 
         on_changed_function = partial(
-            self.value_updated,
-            widget=widget,
+            self._value_updated,
             criterion_sample_indexes=criterion_sample_indexes,
         )
 
         widget.on_changed(on_changed_function)
 
-    def value_updated(
+    def _value_updated(
         self,
-        value: float,
-        widget: Widget,
+        value: int,
         criterion_sample_indexes: Sequence[int],
     ) -> None:
         """
@@ -530,27 +471,9 @@ class MultipleDisplay:
 
         Args:
             value: Current value of the widget.
-            widget: Current widget.
             criterion_sample_indexes: Sample numbers ordered using the
                 criterion.
 
         """
-        # Make the changes of the slider discrete
-        index = int(int(value / 0.5) * 0.5)
-        old_index = self.index_clicked
-        self.index_clicked = criterion_sample_indexes[index]
-        widget.valtext.set_text(f'{index}')
-
-        # Update the other sliders values
-        for c, s in zip(self.criteria, self.sliders):
-            if s is not widget:
-                val_widget = list(c).index(self.index_clicked)
-                _set_val_noevents(s, val_widget)
-
-        self.clicked = True
-        if old_index == -1:
-            self.reduce_points_intensity()
-        else:
-            if self.index_clicked == old_index:
-                self.clicked = False
-            self.change_points_intensity(old_index=old_index)
+        self.selected_sample = criterion_sample_indexes[value]
+        self._select_sample(self.selected_sample)

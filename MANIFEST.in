@@ -1,6 +1,7 @@
 include README.rst
 include MANIFEST.in
 include VERSION
+include skfda/py.typed
 include pyproject.toml
 include *.txt
 recursive-include deps *

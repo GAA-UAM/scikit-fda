@@ -227,7 +227,6 @@ intersphinx_mapping = {
     'sklearn': ('https://scikit-learn.org/stable', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
-    'mpldatacursor': ('https://pypi.org/project/mpldatacursor/', None),
 }
 
 

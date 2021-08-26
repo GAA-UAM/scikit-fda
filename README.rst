@@ -65,7 +65,6 @@ Requirements
 * `fdasrsf <https://github.com/jdtuck/fdasrsf_python>`_ - SRSF framework
 * `findiff <https://github.com/maroba/findiff>`_ - Finite differences
 * `matplotlib <https://github.com/matplotlib/matplotlib>`_ - Plotting with Python
-* `mpldatacursor <https://github.com/joferkington/mpldatacursor/>`_ - Interactive data cursors for matplotlib
 * `multimethod <https://github.com/coady/multimethod>`_ - Multiple dispatch
 * `numpy <https://github.com/numpy/numpy>`_ - The fundamental package for scientific computing with Python
 * `pandas <https://github.com/pandas-dev/pandas>`_ - Powerful Python data analysis toolkit

@@ -11,8 +11,17 @@ from matplotlib.figure import Figure
 from matplotlib.text import Annotation
 from matplotlib.widgets import Slider, Widget
 
+from _functools import partial
+
 from ._baseplot import BasePlot
 from ._utils import _get_axes_shape, _get_figure_and_axes, _set_figure_layout
+
+
+def _set_val_noevents(widget: Widget, val: float) -> None:
+    e = widget.eventson
+    widget.eventson = False
+    widget.set_val(val)
+    widget.eventson = e
 
 
 class MultipleDisplay:
@@ -47,8 +56,6 @@ class MultipleDisplay:
         clicked: Boolean indicating whether a point has being clicked.
         index_clicked: Index of the function selected with the interactive
             module or widgets.
-        is_updating: Boolean value that determines whether a widget
-            is being updated.
     """
 
     def __init__(
@@ -73,7 +80,6 @@ class MultipleDisplay:
         self.clicked = False
         self.index_clicked = -1
         self._tag = self._create_annotation()
-        self.is_updating = False
 
         if len(criteria) != 0 and not isinstance(criteria[0], Sequence):
             criteria = (criteria,)
@@ -128,7 +134,7 @@ class MultipleDisplay:
                 necessity for them to plot the sliders.
 
         """
-        widget_aspect = 1 / 4
+        widget_aspect = 1 / 8
         fig, axes = _get_figure_and_axes(chart, fig, axes)
         if len(axes) not in {0, self._n_graphs + extra}:
             raise ValueError("Invalid number of axes.")
@@ -266,7 +272,7 @@ class MultipleDisplay:
                         "Length of some data sets are not equal ",
                     )
 
-        for ax in self.axes:
+        for ax in self.axes[:self._n_graphs]:
             ax.clear()
 
         int_index = 0
@@ -284,9 +290,6 @@ class MultipleDisplay:
 
         self.fig.suptitle("Multiple display")
         self.fig.tight_layout()
-
-        for slider in self.sliders:
-            slider.on_changed(self.value_updated)
 
         return self.fig
 
@@ -323,10 +326,6 @@ class MultipleDisplay:
 
         """
         found_artist = self._sample_artist_from_event(event)
-
-        for k in range(self._n_graphs, len(self.axes)):
-            if event.inaxes == self.axes[k]:
-                self.widget_index = k - self._n_graphs
 
         if event.inaxes is not None and found_artist is not None:
             sample_number, artist = found_artist
@@ -394,11 +393,9 @@ class MultipleDisplay:
                     for artist in np.ravel(d.artists[i]):
                         artist.set_alpha(0.1)
 
-        self.is_updating = True
         for criterium, slider in zip(self.criteria, self.sliders):
             val_widget = list(criterium).index(self.index_clicked)
-            slider.set_val(val_widget)
-        self.is_updating = False
+            _set_val_noevents(slider, val_widget)
 
     def restore_points_intensity(self) -> None:
         """Restore the original transparency of all the points."""
@@ -410,10 +407,8 @@ class MultipleDisplay:
         self.point_clicked = None
         self.index_clicked = -1
 
-        self.is_updating = True
         for j in range(len(self.sliders)):
-            self.sliders[j].set_val(0)
-        self.is_updating = False
+            _set_val_noevents(self.sliders[j], 0)
 
     def change_points_intensity(
         self,
@@ -448,11 +443,9 @@ class MultipleDisplay:
             if intensity != -1:
                 self.change_display_intensity(i, intensity)
 
-        self.is_updating = True
         for criterium, slider in zip(self.criteria, self.sliders):
             val_widget = list(criterium).index(self.index_clicked)
-            slider.set_val(val_widget)
-        self.is_updating = False
+            _set_val_noevents(slider, val_widget)
 
     def change_display_intensity(self, index: int, intensity: float) -> None:
         """
@@ -472,7 +465,7 @@ class MultipleDisplay:
         self,
         ind_ax: int,
         criterion: Sequence[float],
-        widget_func: Widget = Slider,
+        widget_func: Type[Widget] = Slider,
         label_slider: Optional[str] = None,
     ) -> None:
         """
@@ -484,19 +477,19 @@ class MultipleDisplay:
             widget_func: widget type.
             label_slider: names of the slider.
         """
-        if label_slider is None:
-            full_desc = "".join(["Filter (", str(ind_ax), ")"])
-        else:
-            full_desc = label_slider
-        self.sliders.append(
-            widget_func(
-                self.axes[self._n_graphs + ind_ax],
-                full_desc,
-                valmin=0,
-                valmax=self.length_data - 1,
-                valinit=0,
-            ),
+        full_desc = (
+            f"Filter ({ind_ax}))" if label_slider is None else label_slider
         )
+
+        widget = widget_func(
+            ax=self.axes[self._n_graphs + ind_ax],
+            label=full_desc,
+            valmin=0,
+            valmax=self.length_data - 1,
+            valinit=0,
+        )
+
+        self.sliders.append(widget)
 
         self.axes[self._n_graphs + ind_ax].annotate(
             '0',
@@ -504,6 +497,7 @@ class MultipleDisplay:
             xycoords='axes fraction',
             annotation_clip=False,
         )
+
         self.axes[self._n_graphs + ind_ax].annotate(
             str(self.length_data - 1),
             xy=(0.95, -0.5),
@@ -511,35 +505,47 @@ class MultipleDisplay:
             annotation_clip=False,
         )
 
-        dic = dict(zip(criterion, range(self.length_data)))
-        order_dic = collections.OrderedDict(sorted(dic.items()))
-        self.criteria.append(order_dic.values())
+        criterion_sample_indexes = [
+            x for _, x in sorted(zip(criterion, range(self.length_data)))
+        ]
 
-    def value_updated(self, value: int) -> None:
+        self.criteria.append(criterion_sample_indexes)
+
+        on_changed_function = partial(
+            self.value_updated,
+            widget=widget,
+            criterion_sample_indexes=criterion_sample_indexes,
+        )
+
+        widget.on_changed(on_changed_function)
+
+    def value_updated(
+        self,
+        value: float,
+        widget: Widget,
+        criterion_sample_indexes: Sequence[int],
+    ) -> None:
         """
         Update the graphs when a widget is clicked.
 
         Args:
-            value: current value of the widget.
-        """
-        # Used to avoid entering in an etern loop
-        if self.is_updating is True:
-            return
-        self.is_updating = True
+            value: Current value of the widget.
+            widget: Current widget.
+            criterion_sample_indexes: Sample numbers ordered using the
+                criterion.
 
+        """
         # Make the changes of the slider discrete
         index = int(int(value / 0.5) * 0.5)
         old_index = self.index_clicked
-        self.index_clicked = list(self.criteria[self.widget_index])[index]
-        self.sliders[self.widget_index].valtext.set_text(f'{index}')
+        self.index_clicked = criterion_sample_indexes[index]
+        widget.valtext.set_text(f'{index}')
 
         # Update the other sliders values
-        for i, (c, s) in enumerate(zip(self.criteria, self.sliders)):
-            if i != self.widget_index:
+        for c, s in zip(self.criteria, self.sliders):
+            if s is not widget:
                 val_widget = list(c).index(self.index_clicked)
-                s.set_val(val_widget)
-
-        self.is_updating = False
+                _set_val_noevents(s, val_widget)
 
         self.clicked = True
         if old_index == -1:

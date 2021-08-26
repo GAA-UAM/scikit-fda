@@ -57,6 +57,7 @@ setup(name='scikit-fda',
           'Programming Language :: Python :: 3.8',
           'Topic :: Scientific/Engineering :: Mathematics',
           'Topic :: Software Development :: Libraries :: Python Modules',
+          'Typing :: Typed',
       ],
       install_requires=[
           'cython',

@@ -44,7 +44,6 @@ class MagnitudeShapePlot(BasePlot):
     For more information see :footcite:ts:`dai+genton_2018_visualization`.
 
     Args:
-
         fdatagrid (FDataGrid): Object containing the data.
         multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
             Method used to order the data. Defaults to :class:`projection
@@ -75,7 +74,6 @@ class MagnitudeShapePlot(BasePlot):
             RandomState instance used by np.random. By default, it is 0.
 
     Attributes:
-
         points(numpy.ndarray): 2-dimensional matrix where each row
             contains the points plotted in the graph.
         outliers (1-D array, (fdatagrid.n_samples,)): Contains 1 or 0 to denote
@@ -107,7 +105,6 @@ class MagnitudeShapePlot(BasePlot):
         MagnitudeShapePlot(fd)
 
     Example:
-
         >>> import skfda
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
         ...                [0.5, 0.5, 1, 2, 1.5, 1],

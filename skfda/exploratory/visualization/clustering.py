@@ -600,12 +600,16 @@ class ClusterMembershipPlot(BasePlot):
             center_labels=None,
         )
 
-        self.x_label, self.y_label, self.title = _get_labels(
+        x_label, y_label, title = _get_labels(
             self.x_label,
             self.y_label,
             self.title,
             "Sample",
         )
+
+        self.x_label = x_label
+        self.y_label = y_label
+        self.title = title
 
         if self.sample_labels is None:
             self.sample_labels = np.arange(self.fdata.n_samples)

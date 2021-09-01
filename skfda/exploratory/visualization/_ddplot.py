@@ -97,10 +97,10 @@ class DDPlot(BasePlot):
 
         ax = self.axes[0]
 
-        for i in range(len(self.depth_dist1)):
+        for i, d1, d2 in enumerate(zip(self.depth_dist1, self.depth_dist2)):
             self.artists[i, 0] = ax.scatter(
-                self.depth_dist1[i],
-                self.depth_dist2[i],
+                d1,
+                d2,
                 picker=True,
                 pickradius=2,
             )

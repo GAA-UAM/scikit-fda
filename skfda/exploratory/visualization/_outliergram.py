@@ -15,9 +15,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from ... import FDataGrid
-from ..depth._depth import ModifiedBandDepth
 from ..outliers import OutliergramOutlierDetector
-from ..stats import modified_epigraph_index
 from ._baseplot import BasePlot
 from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 

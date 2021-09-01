@@ -40,35 +40,36 @@ class FPCAPlot(BasePlot):
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
     ):
-        BasePlot.__init__(self)
+        super().__init__(self)
         self.mean = mean
         self.components = components
         self.multiple = multiple
-        
+
         self._set_figure_and_axes(chart, fig, axes)
 
     def plot(self, **kwargs: Any) -> Figure:
-        """ 
+        """
         Plots the perturbation graphs for the principal components.
-        The perturbations are defined as variations over the mean. Adding a multiple
-        of the principal component curve to the mean function results in the
-        positive perturbation and subtracting a multiple of the principal component
-        curve results in the negative perturbation. For each principal component
-        curve passed, a subplot with the mean and the perturbations is shown.
+
+        The perturbations are defined as variations over the mean. Adding a
+        multiple of the principal component curve to the mean function results
+        in the positive perturbation and subtracting a multiple of the
+        principal component curve results in the negative perturbation. For
+        each principal component curve passed, a subplot with the mean and
+        the perturbations is shown.
 
         Returns:
-            (FDataGrid or FDataBasis): this contains the mean function followed
-            by the positive perturbation and the negative perturbation.
-        """
+            The plotted figure.
 
+        """
         if len(self.mean) > 1:
             self.mean = self.mean.mean()
 
-        for i in range(len(self.axes)):
+        for i, axes in enumerate(self.axes):
             aux = self._get_component_perturbations(i)
-            gp = GraphPlot(fdata=aux, axes=self.axes[i]).plot(**kwargs)
+            gp = GraphPlot(fdata=aux, axes=axes).plot(**kwargs)
             self.artists = gp.artists
-            self.axes[i].set_title('Principal component ' + str(i + 1))
+            axes.set_title(f"Principal component {i + 1}")
 
         return self.fig
 
@@ -88,29 +89,24 @@ class FPCAPlot(BasePlot):
         self.fig = fig
         self.axes = axes
 
-    def _get_component_perturbations(self, index: int = 0):
-        """ Computes the perturbations over the mean function of a principal
-        component at a certain index.
+    def _get_component_perturbations(self, index: int = 0) -> FData:
+        """
+        Compute the perturbations over the mean of a principal component.
 
         Args:
-            X (FDataGrid or FDataBasis):
-                the functional data object from which we obtain the mean
-            index (int):
-                index of the component for which we want to compute the
+            index: Index of the component for which we want to compute the
                 perturbations
-            multiple (float):
-                multiple of the principal component curve to be added or
-                subtracted.
 
         Returns:
-            (FDataGrid or FDataBasis): this contains the mean function followed
-            by the positive perturbation and the negative perturbation.
+            The mean function followed by the positive perturbation and
+            the negative perturbation.
         """
         if not isinstance(self.mean, FData):
             raise AttributeError("X must be a FData object")
         perturbations = self.mean.copy()
         perturbations = perturbations.concatenate(
-            perturbations[0] + self.multiple * self.components[index])
-        perturbations = perturbations.concatenate(
-            perturbations[0] - self.multiple * self.components[index])
-        return perturbations
+            perturbations[0] + self.multiple * self.components[index],
+        )
+        return perturbations.concatenate(
+            perturbations[0] - self.multiple * self.components[index],
+        )

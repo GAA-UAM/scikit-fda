@@ -2,14 +2,14 @@ Clustering Plots
 ================
 In order to show the results of the cluster algorithms in a visual way,
 :mod:`this module <skfda.exploratory.visualization.clustering_plots>` is
-implemented. It contains the following methods:
+implemented. It contains the following classes:
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.exploratory.visualization.clustering.plot_clusters
-   skfda.exploratory.visualization.clustering.plot_cluster_lines
-   skfda.exploratory.visualization.clustering.plot_cluster_bars
+   skfda.exploratory.visualization.clustering.ClusterPlot
+   skfda.exploratory.visualization.clustering.ClusterMembershipLinesPlot
+   skfda.exploratory.visualization.clustering.ClusterMembershipPlot
 
 In the first one, the samples of the FDataGrid are divided by clusters which
 are assigned different colors. The following functions, are only valid for the

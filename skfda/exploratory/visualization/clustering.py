@@ -233,6 +233,7 @@ class ClusterPlot(BasePlot):
     def n_subplots(self) -> int:
         return self.fdata.dim_codomain
 
+    @property
     def n_samples(self) -> int:
         return self.fdata.n_samples
 
@@ -299,7 +300,7 @@ class ClusterPlot(BasePlot):
         ]
 
         self.artists = np.array(artists).reshape(
-            (self.n_subplots, self.n_samples()),
+            (self.n_subplots, self.n_samples),
         ).T
 
         for j in range(self.fdata.dim_codomain):
@@ -401,6 +402,7 @@ class ClusterMembershipLinesPlot(BasePlot):
         self.title = title
         self.colormap = colormap
 
+    @property
     def n_samples(self) -> int:
         return self.fdata.n_samples
 
@@ -545,6 +547,7 @@ class ClusterMembershipPlot(BasePlot):
         self.colormap = colormap
         self.sort = sort
 
+    @property
     def n_samples(self) -> int:
         return self.fdata.n_samples
 
@@ -555,7 +558,7 @@ class ClusterMembershipPlot(BasePlot):
     ) -> None:
 
         self.artists = np.full(
-            (self.n_samples(), self.n_subplots),
+            (self.n_samples, self.n_subplots),
             None,
             dtype=Artist,
         )
@@ -649,7 +652,7 @@ class ClusterMembershipPlot(BasePlot):
             b.remove()
             b.figure = None
 
-        for i in range(self.n_samples()):
+        for i in range(self.n_samples):
             collection = PatchCollection(
                 [
                     Rectangle(

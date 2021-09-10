@@ -80,6 +80,10 @@ class Outliergram(BasePlot):
         self._parabola_ordered = self.outlier_detector.parabola_[indices]
         self._mei_ordered = self.outlier_detector.mei_[indices]
 
+    @property
+    def n_samples(self) -> int:
+        return self.fdata.n_samples
+
     def _plot(
         self,
         fig: Figure,
@@ -87,7 +91,7 @@ class Outliergram(BasePlot):
     ) -> None:
 
         self.artists = np.zeros(
-            (self.n_samples(), 1),
+            (self.n_samples, 1),
             dtype=Artist,
         )
 
@@ -127,7 +131,3 @@ class Outliergram(BasePlot):
             0,  # Minimum MBD
             1,  # Maximum MBD
         ])
-
-    def n_samples(self) -> int:
-        """Get the number of instances that will be used for interactivity."""
-        return self.fdata.n_samples

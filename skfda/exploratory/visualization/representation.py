@@ -300,8 +300,8 @@ class GraphPlot(BasePlot):
     def n_subplots(self) -> int:
         return self.fdata.dim_codomain
 
+    @property
     def n_samples(self) -> int:
-        """Get the number of instances that will be used for interactivity."""
         return self.fdata.n_samples
 
     def _plot(
@@ -311,7 +311,7 @@ class GraphPlot(BasePlot):
     ) -> None:
 
         self.artists = np.zeros(
-            (self.n_samples(), self.fdata.dim_codomain),
+            (self.n_samples, self.fdata.dim_codomain),
             dtype=Artist,
         )
 
@@ -492,8 +492,8 @@ class ScatterPlot(BasePlot):
     def n_subplots(self) -> int:
         return self.fdata.dim_codomain
 
+    @property
     def n_samples(self) -> int:
-        """Get the number of instances that will be used for interactivity."""
         return self.fdata.n_samples
 
     def _plot(
@@ -508,7 +508,7 @@ class ScatterPlot(BasePlot):
         fig: figure object in which the graphs are plotted.
         """
         self.artists = np.zeros(
-            (self.n_samples(), self.fdata.dim_codomain),
+            (self.n_samples, self.fdata.dim_codomain),
             dtype=Artist,
         )
 

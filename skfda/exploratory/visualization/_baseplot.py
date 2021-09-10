@@ -85,6 +85,7 @@ class BasePlot(ABC):
         """Get the number of subplots that this plot uses."""
         return 1
 
+    @property
     def n_samples(self) -> Optional[int]:
         """Get the number of instances that will be used for interactivity."""
         return None

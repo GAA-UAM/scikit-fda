@@ -78,6 +78,10 @@ class DDPlot(BasePlot):
             distribution=dist2,
         )
 
+    @property
+    def n_samples(self) -> int:
+        return self.fdata.n_samples
+
     def _plot(
         self,
         fig: Figure,
@@ -95,7 +99,7 @@ class DDPlot(BasePlot):
             scattered.
         """
         self.artists = np.zeros(
-            (self.n_samples(), 1),
+            (self.n_samples, 1),
             dtype=Artist,
         )
         margin = 0.025
@@ -134,7 +138,3 @@ class DDPlot(BasePlot):
             linewidth=width_aux_line,
             color=color_aux_line,
         )
-
-    def n_samples(self) -> int:
-        """Get the number of instances that will be used for interactivity."""
-        return self.fdata.n_samples

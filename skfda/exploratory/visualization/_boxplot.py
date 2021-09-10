@@ -409,6 +409,7 @@ class Boxplot(FDataBoxplot, BasePlot):
     def n_subplots(self) -> int:
         return self.fdatagrid.dim_codomain
 
+    @property
     def n_samples(self) -> int:
         return self.fdatagrid.n_samples
 
@@ -418,7 +419,7 @@ class Boxplot(FDataBoxplot, BasePlot):
         axes: Sequence[Axes],
     ) -> None:
 
-        self.artists = np.zeros((self.n_samples(), 1), dtype=Artist)
+        self.artists = np.zeros((self.n_samples, 1), dtype=Artist)
         tones = np.linspace(0.1, 1.0, len(self._prob) + 1, endpoint=False)[1:]
         color = self.colormap(tones)
 

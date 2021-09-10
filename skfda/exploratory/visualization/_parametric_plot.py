@@ -77,13 +77,17 @@ class ParametricPlot(BasePlot):
         self.group_colors = group_colors
         self.legend = legend
 
+    @property
+    def n_samples(self) -> int:
+        return self.fd_final.n_samples
+
     def _plot(
         self,
         fig: Figure,
         axes: Axes,
     ) -> None:
 
-        self.artists = np.zeros((self.n_samples(), 1), dtype=Artist)
+        self.artists = np.zeros((self.n_samples, 1), dtype=Artist)
 
         sample_colors, patches = _get_color_info(
             self.fd_final,
@@ -130,7 +134,3 @@ class ParametricPlot(BasePlot):
             ax.set_ylabel("Function 2")
         else:
             ax.set_ylabel(self.fd_final.coordinate_names[1])
-
-    def n_samples(self) -> int:
-        """Get the number of instances that will be used for interactivity."""
-        return self.fd_final.n_samples

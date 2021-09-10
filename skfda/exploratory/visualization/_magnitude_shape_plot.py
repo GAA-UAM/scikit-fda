@@ -295,6 +295,10 @@ class MagnitudeShapePlot(BasePlot):
                 "outcol must be a number between 0 and 1.")
         self._outliercol = value
 
+    @property
+    def n_samples(self) -> int:
+        return self.fdatagrid.n_samples
+
     def _plot(
         self,
         fig: Figure,
@@ -302,7 +306,7 @@ class MagnitudeShapePlot(BasePlot):
     ) -> None:
 
         self.artists = np.zeros(
-            (self.n_samples(), 1),
+            (self.n_samples, 1),
             dtype=Artist,
         )
         colors = np.zeros((self.fdatagrid.n_samples, 4))
@@ -323,9 +327,6 @@ class MagnitudeShapePlot(BasePlot):
         axes[0].set_xlabel(self.xlabel)
         axes[0].set_ylabel(self.ylabel)
         axes[0].set_title(self.title)
-
-    def n_samples(self) -> int:
-        return self.fdatagrid.n_samples
 
     def __repr__(self) -> str:
         """Return repr(self)."""

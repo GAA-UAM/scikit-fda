@@ -80,9 +80,9 @@ class MultipleDisplay:
         self.displays = [copy.copy(d) for d in displays]
         self._n_graphs = sum(d.n_subplots for d in self.displays)
         self.length_data = next(
-            d.n_samples()
+            d.n_samples
             for d in self.displays
-            if d.n_samples() is not None
+            if d.n_samples is not None
         )
         self.sliders: List[Widget] = []
         self.criteria: List[List[int]] = []
@@ -276,8 +276,8 @@ class MultipleDisplay:
         if self._n_graphs > 1:
             for d in self.displays[1:]:
                 if (
-                    d.n_samples() is not None
-                    and d.n_samples() != self.length_data
+                    d.n_samples is not None
+                    and d.n_samples != self.length_data
                 ):
                     raise ValueError(
                         "Length of some data sets are not equal ",

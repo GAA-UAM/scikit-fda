@@ -6,7 +6,7 @@ one FData, with domain 1 and codomain 2, or giving two FData, both
 of them with domain 1 and codomain 1.
 """
 
-from typing import Any, Mapping, Optional, Sequence, TypeVar, Union
+from typing import Mapping, Optional, Sequence, TypeVar, Union
 
 import numpy as np
 from matplotlib.artist import Artist
@@ -15,7 +15,7 @@ from matplotlib.figure import Figure
 
 from ...representation import FData
 from ._baseplot import BasePlot
-from ._utils import ColorLike, _get_figure_and_axes, _set_figure_layout
+from ._utils import ColorLike
 from .representation import Indexable, _get_color_info
 
 K = TypeVar('K', contravariant=True)
@@ -56,7 +56,12 @@ class ParametricPlot(BasePlot):
         group_names: Optional[Indexable[K, str]] = None,
         legend: bool = False,
     ) -> None:
-        BasePlot.__init__(self)
+        BasePlot.__init__(
+            self,
+            chart,
+            fig=fig,
+            axes=axes,
+        )
         self.fdata1 = fdata1
         self.fdata2 = fdata2
 
@@ -72,21 +77,12 @@ class ParametricPlot(BasePlot):
         self.group_colors = group_colors
         self.legend = legend
 
-        self._set_figure_and_axes(chart, fig, axes)
-
-    def plot(
+    def _plot(
         self,
-        **kwargs: Any,
-    ) -> Figure:
-        """
-        Parametric Plot graph.
+        fig: Figure,
+        axes: Axes,
+    ) -> None:
 
-        Plot the functions as coordinates. If two functions are passed
-        it will concatenate both as coordinates of a vector-valued FData.
-        Returns:
-            fig: figure object in which the ParametricPlot
-            graph will be plotted.
-        """
         self.artists = np.zeros((self.n_samples(), 1), dtype=Artist)
 
         sample_colors, patches = _get_color_info(
@@ -95,7 +91,6 @@ class ParametricPlot(BasePlot):
             self.group_names,
             self.group_colors,
             self.legend,
-            kwargs,
         )
 
         color_dict: Mapping[str, Union[ColorLike, None]] = {}
@@ -104,12 +99,7 @@ class ParametricPlot(BasePlot):
             self.fd_final.dim_domain == 1
             and self.fd_final.dim_codomain == 2
         ):
-            fig, axes = _set_figure_layout(
-                self.fig, self.axes, dim=2, n_axes=1,
-            )
-            self.fig = fig
-            self.axes = axes
-            ax = self.axes[0]
+            ax = axes[0]
 
             for i in range(self.fd_final.n_samples):
 
@@ -120,8 +110,8 @@ class ParametricPlot(BasePlot):
                     self.fd_final.data_matrix[i][:, 0].tolist(),
                     self.fd_final.data_matrix[i][:, 1].tolist(),
                     **color_dict,
-                    **kwargs,
-                )
+                )[0]
+
         else:
             raise ValueError(
                 "Error in data arguments,",
@@ -129,7 +119,7 @@ class ParametricPlot(BasePlot):
             )
 
         if self.fd_final.dataset_name is not None:
-            self.fig.suptitle(self.fd_final.dataset_name)
+            fig.suptitle(self.fd_final.dataset_name)
 
         if self.fd_final.coordinate_names[0] is None:
             ax.set_xlabel("Function 1")
@@ -141,31 +131,6 @@ class ParametricPlot(BasePlot):
         else:
             ax.set_ylabel(self.fd_final.coordinate_names[1])
 
-        return fig
-
     def n_samples(self) -> int:
         """Get the number of instances that will be used for interactivity."""
         return self.fd_final.n_samples
-
-    def _set_figure_and_axes(
-        self,
-        chart: Union[Figure, Axes, None] = None,
-        fig: Optional[Figure] = None,
-        axes: Union[Axes, Sequence[Axes], None] = None,
-    ) -> None:
-        """
-        Initialize the axes and fig of the plot.
-
-        Args:
-        chart: figure over with the graphs are plotted or axis over
-            where the graphs are plotted. If None and ax is also
-            None, the figure is initialized.
-        fig: figure over with the graphs are plotted in case ax is not
-            specified. If None and ax is also None, the figure is
-            initialized.
-        axes: axis where the graphs are plotted. If None, see param fig.
-        """
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-
-        self.fig = fig
-        self.axes = axes

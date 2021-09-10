@@ -78,8 +78,12 @@ class MultipleDisplay:
             displays = (displays,)
 
         self.displays = [copy.copy(d) for d in displays]
-        self._n_graphs = sum(len(d.axes) for d in self.displays)
-        self.length_data = self.displays[0].n_samples()
+        self._n_graphs = sum(d.n_subplots for d in self.displays)
+        self.length_data = next(
+            d.n_samples()
+            for d in self.displays
+            if d.n_samples() is not None
+        )
         self.sliders: List[Widget] = []
         self.criteria: List[List[int]] = []
         self.selected_sample: Optional[int] = None
@@ -271,7 +275,10 @@ class MultipleDisplay:
         """
         if self._n_graphs > 1:
             for d in self.displays[1:]:
-                if d.n_samples() != self.length_data:
+                if (
+                    d.n_samples() is not None
+                    and d.n_samples() != self.length_data
+                ):
                     raise ValueError(
                         "Length of some data sets are not equal ",
                     )
@@ -281,7 +288,7 @@ class MultipleDisplay:
 
         int_index = 0
         for disp in self.displays:
-            axes_needed = len(disp.axes)
+            axes_needed = disp.n_subplots
             end_index = axes_needed + int_index
             disp._set_figure_and_axes(axes=self.axes[int_index:end_index])
             disp.plot()
@@ -303,8 +310,11 @@ class MultipleDisplay:
     ) -> Optional[Tuple[int, Artist]]:
         """Get the number of sample and artist under a location event."""
         for d in self.displays:
+            if d.artists is None:
+                continue
+
             try:
-                i = d.axes.index(event.inaxes)
+                i = d.axes_.index(event.inaxes)
             except ValueError:
                 continue
 
@@ -371,9 +381,13 @@ class MultipleDisplay:
     def _sample_from_artist(self, artist: Artist) -> Optional[int]:
         """Return the sample corresponding to an artist."""
         for d in self.displays:
-            for i, a in enumerate(d.axes):
+
+            if d.artists is None:
+                continue
+
+            for i, a in enumerate(d.axes_):
                 if a == artist.axes:
-                    if len(d.axes) == 1:
+                    if len(d.axes_) == 1:
                         return np.where(d.artists == artist)[0][0]
                     else:
                         return np.where(d.artists[:, i] == artist)[0][0]
@@ -383,6 +397,9 @@ class MultipleDisplay:
     def _visit_artists(self) -> Generator[Tuple[int, Artist], None, None]:
         for i in range(self.length_data):
             for d in self.displays:
+                if d.artists is None:
+                    continue
+
                 yield from ((i, artist) for artist in np.ravel(d.artists[i]))
 
     def _select_sample(self, selected_sample: int) -> None:

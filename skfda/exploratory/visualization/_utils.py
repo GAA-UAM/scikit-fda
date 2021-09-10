@@ -177,8 +177,8 @@ def _set_figure_layout(
 
     if len(axes) not in {0, n_axes}:
         raise ValueError(
-            f"The number of axes must be 0 (to create them) or "
-            f"equal to the number of axes needed "
+            f"The number of axes ({len(axes)}) must be 0 (to create them)"
+            f" or equal to the number of axes needed "
             f"({n_axes} in this case).",
         )
 

@@ -22,7 +22,6 @@ from ...representation._typing import NDArrayFloat, NDArrayInt
 from ..depth import Depth
 from ..outliers import DirectionalOutlierDetector
 from ._baseplot import BasePlot
-from ._utils import _get_figure_and_axes, _set_figure_layout
 
 
 class MagnitudeShapePlot(BasePlot):
@@ -211,7 +210,12 @@ class MagnitudeShapePlot(BasePlot):
             axes: axis where the graphs are plotted. If None, see param fig.
 
         """
-        BasePlot.__init__(self)
+        BasePlot.__init__(
+            self,
+            chart,
+            fig=fig,
+            axes=axes,
+        )
         if fdatagrid.dim_codomain > 1:
             raise NotImplementedError(
                 "Only support 1 dimension on the codomain.")
@@ -230,8 +234,6 @@ class MagnitudeShapePlot(BasePlot):
         self.xlabel = 'MO'
         self.ylabel = 'VO'
         self.title = 'MS-Plot'
-
-        self._set_figure_and_axes(chart, fig, axes)
 
     @property
     def fdatagrid(self) -> FDataGrid:
@@ -293,13 +295,12 @@ class MagnitudeShapePlot(BasePlot):
                 "outcol must be a number between 0 and 1.")
         self._outliercol = value
 
-    def plot(self) -> Figure:
-        """Visualization of the magnitude shape plot of the fdatagrid.
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Axes,
+    ) -> None:
 
-        Returns:
-            Figure object in which the graph is plotted.
-
-        """
         self.artists = np.zeros(
             (self.n_samples(), 1),
             dtype=Artist,
@@ -310,8 +311,8 @@ class MagnitudeShapePlot(BasePlot):
 
         colors_rgba = [tuple(i) for i in colors]
 
-        for i in range(len(self.points[:, 0].ravel())):
-            self.artists[i, 0] = self.axes[0].scatter(
+        for i, _ in enumerate(self.points[:, 0].ravel()):
+            self.artists[i, 0] = axes[0].scatter(
                 self.points[:, 0].ravel()[i],
                 self.points[:, 1].ravel()[i],
                 color=colors_rgba[i],
@@ -319,25 +320,12 @@ class MagnitudeShapePlot(BasePlot):
                 pickradius=2,
             )
 
-        self.axes[0].set_xlabel(self.xlabel)
-        self.axes[0].set_ylabel(self.ylabel)
-        self.axes[0].set_title(self.title)
-
-        return self.fig
+        axes[0].set_xlabel(self.xlabel)
+        axes[0].set_ylabel(self.ylabel)
+        axes[0].set_title(self.title)
 
     def n_samples(self) -> int:
         return self.fdatagrid.n_samples
-
-    def _set_figure_and_axes(
-        self,
-        chart: Union[Figure, Axes, None] = None,
-        fig: Optional[Figure] = None,
-        axes: Union[Axes, Sequence[Axes], None] = None,
-    ) -> None:
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout(fig, axes)
-        self.fig = fig
-        self.axes = axes
 
     def __repr__(self) -> str:
         """Return repr(self)."""

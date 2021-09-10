@@ -6,7 +6,7 @@ common to all of them.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,10 +35,23 @@ class BasePlot(ABC):
         *,
         fig: Optional[Figure] = None,
         axes: Union[Axes, Sequence[Axes], None] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
     ) -> None:
-        self.artists: np.ndarray
+        self.artists: Optional[np.ndarray] = None
+        self.chart = chart
+        self.fig = fig
+        self.axes = axes
+        self.n_rows = n_rows
+        self.n_cols = n_cols
 
-    @abstractmethod
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
+        pass
+
     def plot(
         self,
     ) -> Figure:
@@ -49,17 +62,32 @@ class BasePlot(ABC):
             Figure: figure object in which the displays and
                 widgets will be plotted.
         """
-        pass
+        fig = getattr(self, "fig_", None)
+        axes = getattr(self, "axes_", None)
+
+        if fig is None:
+            fig, axes = self._set_figure_and_axes(
+                self.chart,
+                fig=self.fig,
+                axes=self.axes,
+            )
+
+        self._plot(fig, axes)
+        return fig
+
+    @property
+    def dim(self) -> int:
+        """Get the number of dimensions for this plot."""
+        return 2
 
     @property
     def n_subplots(self) -> int:
         """Get the number of subplots that this plot uses."""
         return 1
 
-    @abstractmethod
-    def n_samples(self) -> int:
+    def n_samples(self) -> Optional[int]:
         """Get the number of instances that will be used for interactivity."""
-        pass
+        return None
 
     def _set_figure_and_axes(
         self,
@@ -67,12 +95,21 @@ class BasePlot(ABC):
         *,
         fig: Optional[Figure] = None,
         axes: Union[Axes, Sequence[Axes], None] = None,
-    ) -> None:
+    ) -> Tuple[Figure, Sequence[Axes]]:
         fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout(fig, axes)
+        fig, axes = _set_figure_layout(
+            fig=fig,
+            axes=axes,
+            dim=self.dim,
+            n_axes=self.n_subplots,
+            n_rows=self.n_rows,
+            n_cols=self.n_cols,
+        )
 
-        self.fig = fig
-        self.axes = axes
+        self.fig_ = fig
+        self.axes_ = axes
+
+        return fig, axes
 
     def _repr_svg_(self) -> str:
         """Automatically represents the object as an svg when calling it."""

@@ -238,45 +238,6 @@ def _set_figure_layout(
     return fig, axes
 
 
-def _set_figure_layout_for_fdata(
-    fdata: FData,
-    fig: Figure,
-    axes: Sequence[Axes],
-    n_rows: Optional[int] = None,
-    n_cols: Optional[int] = None,
-) -> Tuple[Figure, Sequence[Axes]]:
-    """
-    Set the figure axes for plotting a FData object.
-
-    Args:
-        fdata: functional data object.
-        fig: figure over with the graphs are plotted in case ax is not
-            specified.
-        axes: axis over where the graphs are plotted.
-        n_rows: designates the number of rows of the figure to plot the
-            different dimensions of the image. Can only be passed
-            if no axes are specified.
-        n_cols: designates the number of columns of the figure to plot
-            the different dimensions of the image. Can only be passed if
-            no axes are specified.
-
-    Returns:
-        Tuple containing:
-
-            * fig: figure object in which the graphs are plotted.
-            * axes: axes in which the graphs are plotted.
-
-    """
-    return _set_figure_layout(
-        fig,
-        axes,
-        dim=fdata.dim_domain + 1,
-        n_axes=fdata.dim_codomain,
-        n_rows=n_rows,
-        n_cols=n_cols,
-    )
-
-
 def _set_labels(
     fdata: FData,
     fig: Figure,

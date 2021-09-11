@@ -25,11 +25,7 @@ from ...representation._typing import NDArrayBool, NDArrayFloat
 from ..depth import ModifiedBandDepth
 from ..outliers import _envelopes
 from ._baseplot import BasePlot
-from ._utils import (
-    _get_figure_and_axes,
-    _set_figure_layout_for_fdata,
-    _set_labels,
-)
+from ._utils import _set_labels
 
 
 class FDataBoxplot(BasePlot):

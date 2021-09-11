@@ -4,7 +4,6 @@ from builtins import isinstance
 from typing import Optional, TypeVar, Union
 
 import numpy as np
-
 from scipy import integrate
 from scipy.stats import rankdata
 
@@ -97,13 +96,18 @@ def modified_epigraph_index(X: FDataGrid) -> np.ndarray:
         axis=0,
     ) - 1
 
-    integrand = integrate.simps(
-        num_functions_above,
-        x=X.grid_points[0],
-        axis=1,
-    )
+    integrand = num_functions_above
 
-    integrand /= (interval_len * X.n_samples)
+    for d, s in zip(X.domain_range, X.grid_points):
+        integrand = integrate.simps(
+            integrand,
+            x=s,
+            axis=1,
+        )
+        interval_len = d[1] - d[0]
+        integrand /= interval_len
+
+    integrand /= X.n_samples
 
     return integrand.flatten()
 

@@ -1,4 +1,5 @@
 import copy
+import itertools
 from functools import partial
 from typing import (
     Generator,
@@ -149,11 +150,19 @@ class MultipleDisplay:
 
         n_rows, n_cols = _get_axes_shape(self._n_graphs + extra)
 
+        dim = list(
+            itertools.chain.from_iterable(
+                [d.dim] * d.n_subplots
+                for d in self.displays
+            ),
+        ) + [2] * extra
+
         number_axes = n_rows * n_cols
         fig, axes = _set_figure_layout(
             fig=fig,
             axes=axes,
             n_axes=self._n_graphs + extra,
+            dim=dim,
         )
 
         for i in range(self._n_graphs, number_axes):

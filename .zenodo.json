@@ -1,0 +1,47 @@
+{
+    'creators': [
+        {
+            'affiliation': 'Universidad Autónoma de Madrid',
+            'name': 'Carlos Ramos Carreño',
+            'orcid': '0000-0003-2566-7058'
+        },
+        {
+            'affiliation': 'Universidad Autónoma de Madrid',
+            'name': 'Alberto Suárez',
+            'orcid': '0000-0003-4534-0909'
+        },
+        {
+            'affiliation': 'Universidad Autónoma de Madrid',
+            'name': 'José Luis Torrecilla',
+            'orcid': '0000-0003-3719-5190'
+        },
+        {
+            'name': 'Miguel Carbajo Berrocal'
+        },
+        {
+            'name': 'Pablo Marcos Manchón'
+        },
+        {
+            'name': 'Pablo Pérez Manso'
+        },
+        {
+            'name': 'Amanda Hernando Bernabé'
+        },
+        {
+            'name': 'David García Fernández'
+        },
+        {
+            'name': 'Yujian Hong'
+        },
+        {
+            'name': 'Pedro Martín Rodríguez-Ponga Eyriès'
+        },
+        {
+            'name': 'Álvaro Sánchez Romero'
+        },
+        {
+            'name': 'Elena Petrunina'
+        }
+    ],
+    'license': 'BSD 3-Clause License',
+}

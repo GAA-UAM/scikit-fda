@@ -2,45 +2,45 @@
     'creators': [
         {
             'affiliation': 'Universidad Autónoma de Madrid',
-            'name': 'Carlos Ramos Carreño',
+            'name': 'Ramos-Carreño, Carlos',
             'orcid': '0000-0003-2566-7058'
         },
         {
             'affiliation': 'Universidad Autónoma de Madrid',
-            'name': 'Alberto Suárez',
+            'name': 'Suárez, Alberto',
             'orcid': '0000-0003-4534-0909'
         },
         {
             'affiliation': 'Universidad Autónoma de Madrid',
-            'name': 'José Luis Torrecilla',
+            'name': 'Torrecilla, José Luis',
             'orcid': '0000-0003-3719-5190'
         },
         {
-            'name': 'Miguel Carbajo Berrocal'
+            'name': 'Carbajo Berrocal, Miguel'
         },
         {
-            'name': 'Pablo Marcos Manchón'
+            'name': 'Marcos Manchón, Pablo'
         },
         {
-            'name': 'Pablo Pérez Manso'
+            'name': 'Pérez Manso, Pablo'
         },
         {
-            'name': 'Amanda Hernando Bernabé'
+            'name': 'Hernando Bernabé, Amanda'
         },
         {
-            'name': 'David García Fernández'
+            'name': 'García Fernández, David'
         },
         {
-            'name': 'Yujian Hong'
+            'name': 'Hong, Yujian'
         },
         {
-            'name': 'Pedro Martín Rodríguez-Ponga Eyriès'
+            'name': 'Rodríguez-Ponga Eyriès, Pedro Martín'
         },
         {
-            'name': 'Álvaro Sánchez Romero'
+            'name': 'Sánchez Romero, Álvaro'
         },
         {
-            'name': 'Elena Petrunina'
+            'name': 'Petrunina, Elena'
         }
     ],
     'license': 'BSD 3-Clause License',

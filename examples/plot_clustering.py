@@ -12,14 +12,16 @@ calculate the results plotted.
 
 # sphinx_gallery_thumbnail_number = 6
 
-from skfda import datasets
-from skfda.exploratory.visualization.clustering import (
-    plot_clusters, plot_cluster_lines, plot_cluster_bars)
-from skfda.ml.clustering import KMeans, FuzzyCMeans
-
 import matplotlib.pyplot as plt
 import numpy as np
 
+from skfda import datasets
+from skfda.exploratory.visualization.clustering import (
+    ClusterMembershipLinesPlot,
+    ClusterMembershipPlot,
+    ClusterPlot,
+)
+from skfda.ml.clustering import FuzzyCMeans, KMeans
 
 ##############################################################################
 # First, the Canadian Weather dataset is downloaded from the package 'fda' in
@@ -81,8 +83,8 @@ print(kmeans.predict(fd))
 cluster_colors = climate_colors[np.array([0, 2, 1])]
 cluster_labels = climates.categories[np.array([0, 2, 1])]
 
-plot_clusters(kmeans, fd, cluster_colors=cluster_colors,
-              cluster_labels=cluster_labels)
+ClusterPlot(kmeans, fd, cluster_colors=cluster_colors,
+            cluster_labels=cluster_labels).plot()
 
 ##############################################################################
 # Other clustering algorithm implemented is the Fuzzy K-Means found in the
@@ -90,15 +92,15 @@ plot_clusters(kmeans, fd, cluster_colors=cluster_colors,
 # above procedure, an object of this type is instantiated  with the desired
 # data and then, the
 # :func:`~skfda.ml.clustering.FuzzyCMeans.fit` method is called.
-# Internally, the attribute ``labels_`` is calculated, which contains
+# Internally, the attribute ``membership_degree_`` is calculated, which contains
 # ´n_clusters´ elements for each sample and dimension, denoting the degree of
 # membership of each sample to each cluster. They are obtained calling the
-# method :func:`~skfda.ml.clustering.FuzzyCMeans.predict`. Also, the centroids
+# method :func:`~skfda.ml.clustering.FuzzyCMeans.predict_proba`. Also, the centroids
 # of each cluster are obtained.
 
 fuzzy_kmeans = FuzzyCMeans(n_clusters=n_clusters, random_state=seed)
 fuzzy_kmeans.fit(fd)
-print(fuzzy_kmeans.predict(fd))
+print(fuzzy_kmeans.predict_proba(fd))
 
 ##############################################################################
 # To see the information in a graphic way, the method
@@ -106,8 +108,8 @@ print(fuzzy_kmeans.predict(fd))
 # be used. It assigns each sample to the cluster whose membership value is the
 # greatest.
 
-plot_clusters(fuzzy_kmeans, fd, cluster_colors=cluster_colors,
-              cluster_labels=cluster_labels)
+ClusterPlot(fuzzy_kmeans, fd, cluster_colors=cluster_colors,
+            cluster_labels=cluster_labels).plot()
 
 ##############################################################################
 # Another plot implemented to show the results in the class
@@ -119,8 +121,8 @@ plot_clusters(fuzzy_kmeans, fd, cluster_colors=cluster_colors,
 
 colors_by_climate = colormap(climates.codes / (n_climates - 1))
 
-plot_cluster_lines(fuzzy_kmeans, fd, cluster_labels=cluster_labels,
-                   sample_colors=colors_by_climate)
+ClusterMembershipLinesPlot(fuzzy_kmeans, fd, cluster_labels=cluster_labels,
+                           sample_colors=colors_by_climate).plot()
 
 ##############################################################################
 # Finally, the function
@@ -128,8 +130,8 @@ plot_cluster_lines(fuzzy_kmeans, fd, cluster_labels=cluster_labels,
 # returns a barplot. Each sample is designated with a bar which is filled
 # proportionally to the membership values with the color of each cluster.
 
-plot_cluster_bars(fuzzy_kmeans, fd, cluster_colors=cluster_colors,
-                  cluster_labels=cluster_labels)
+ClusterMembershipPlot(fuzzy_kmeans, fd, cluster_colors=cluster_colors,
+                      cluster_labels=cluster_labels).plot()
 
 ##############################################################################
 # The possibility of sorting the bars according to a cluster is given
@@ -137,15 +139,15 @@ plot_cluster_bars(fuzzy_kmeans, fd, cluster_colors=cluster_colors,
 # [0, n_clusters).
 #
 # We can order the data using the first cluster:
-plot_cluster_bars(fuzzy_kmeans, fd, sort=0, cluster_colors=cluster_colors,
-                  cluster_labels=cluster_labels)
+ClusterMembershipPlot(fuzzy_kmeans, fd, sort=0, cluster_colors=cluster_colors,
+                      cluster_labels=cluster_labels).plot()
 
 ##############################################################################
 # Using the second cluster:
-plot_cluster_bars(fuzzy_kmeans, fd, sort=1, cluster_colors=cluster_colors,
-                  cluster_labels=cluster_labels)
+ClusterMembershipPlot(fuzzy_kmeans, fd, sort=1, cluster_colors=cluster_colors,
+                      cluster_labels=cluster_labels).plot()
 
 ##############################################################################
 # And using the third cluster:
-plot_cluster_bars(fuzzy_kmeans, fd, sort=2, cluster_colors=cluster_colors,
-                  cluster_labels=cluster_labels)
+ClusterMembershipPlot(fuzzy_kmeans, fd, sort=2, cluster_colors=cluster_colors,
+                      cluster_labels=cluster_labels).plot()

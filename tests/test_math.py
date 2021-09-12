@@ -1,9 +1,10 @@
-import skfda
-from skfda._utils import _pairwise_commutative
-from skfda.representation.basis import Monomial, Tensor, VectorValued
 import unittest
 
 import numpy as np
+
+import skfda
+from skfda._utils import _pairwise_symmetric
+from skfda.representation.basis import Monomial, Tensor, VectorValued
 
 
 def ndm(*args):
@@ -18,7 +19,7 @@ class InnerProductTest(unittest.TestCase):
         def f(x, y, z):
             return x * y * z
 
-        t = np.linspace(0, 1, 100)
+        t = np.linspace(0, 1, 30)
 
         x2, y2, z2 = ndm(t, 2 * t, 3 * t)
 
@@ -38,9 +39,9 @@ class InnerProductTest(unittest.TestCase):
         res = 8
 
         np.testing.assert_allclose(
-            skfda.misc.inner_product(fd, fd), res, rtol=1e-5)
+            skfda.misc.inner_product(fd, fd), res, rtol=1e-4)
         np.testing.assert_allclose(
-            skfda.misc.inner_product(fd_basis, fd_basis), res, rtol=1e-5)
+            skfda.misc.inner_product(fd_basis, fd_basis), res, rtol=1e-4)
 
     def test_vector_valued(self):
 
@@ -92,7 +93,7 @@ class InnerProductTest(unittest.TestCase):
 
         np.testing.assert_allclose(gram, gram_basis, rtol=1e-2)
 
-        gram_pairwise = _pairwise_commutative(
+        gram_pairwise = _pairwise_symmetric(
             skfda.misc.inner_product, X, Y)
 
         np.testing.assert_allclose(gram, gram_pairwise)

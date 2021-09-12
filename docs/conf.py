@@ -22,6 +22,9 @@ import os
 import sys
 
 import pkg_resources
+# -- Extensions to the  Napoleon GoogleDocstring class ---------------------
+from sphinx.ext.napoleon.docstring import GoogleDocstring
+
 try:
     release = pkg_resources.get_distribution('scikit-fda').version
 except pkg_resources.DistributionNotFound:
@@ -54,7 +57,10 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.intersphinx',
               'sphinx.ext.doctest',
               'jupyter_sphinx',
-              'sphinx.ext.autodoc.typehints']
+              'sphinx.ext.autodoc.typehints',
+              'sphinxcontrib.bibtex']
+
+bibtex_bibfiles = ['refs.bib']
 
 autodoc_default_flags = ['members', 'inherited-members']
 
@@ -221,32 +227,66 @@ intersphinx_mapping = {
     'sklearn': ('https://scikit-learn.org/stable', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
-    'mpldatacursor': ('https://pypi.org/project/mpldatacursor/', None),
 }
+
+
+tutorial_list = [
+    "plot_introduction.py",
+    "plot_getting_data.py",
+    "plot_basis_representation.py",
+    "plot_skfda_sklearn.py",
+]
+
+
+class SkfdaExplicitSubOrder(object):
+    """
+    Class for use within the 'within_subsection_order' key.
+
+    Inspired by Matplotlib gallery.
+
+    """
+
+    def __init__(self, src_dir: str) -> None:
+        self.src_dir = src_dir  # src_dir is unused here
+        self.ordered_list = tutorial_list
+
+    def __call__(self, filename: str) -> str:
+        """Return a string determining the sort order."""
+        if filename in self.ordered_list:
+            ind = self.ordered_list.index(filename)
+            return f"{ind:04d}"
+
+        # ensure not explicitly listed items come last.
+        return f"zzz{filename}"
+
 
 sphinx_gallery_conf = {
     # path to your examples scripts
-    'examples_dirs': '../examples',
+    'examples_dirs': ['../examples', '../tutorial'],
     # path where to save gallery generated examples
-    'gallery_dirs': 'auto_examples',
+    'gallery_dirs': ['auto_examples', 'auto_tutorial'],
     'reference_url': {
         # The module you locally document uses None
         'skfda': None,
     },
     'backreferences_dir': 'backreferences',
     'doc_module': 'skfda',
+    'within_subsection_order': SkfdaExplicitSubOrder,
 }
 
 autosummary_generate = True
 autodoc_typehints = "description"
 napoleon_use_rtype = True
 
+autodoc_type_aliases = {
+    "ArrayLike": "ArrayLike",
+    "GridPointsLike": "Union[ArrayLike, Sequence[ArrayLike]]",
+}
+
 # Napoleon fix for attributes
 # Taken from
 # https://michaelgoerz.net/notes/extending-sphinx-napoleon-docstring-sections.html
 
-# -- Extensions to the  Napoleon GoogleDocstring class ---------------------
-from sphinx.ext.napoleon.docstring import GoogleDocstring
 
 # first, we define new methods for any new sections and add them to the class
 

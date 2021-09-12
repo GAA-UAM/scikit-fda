@@ -80,10 +80,6 @@ class Tensor(Basis):
     def basis_list(self) -> Tuple[Basis, ...]:
         return self._basis_list
 
-    @property
-    def dim_domain(self) -> int:
-        return len(self.basis_list)
-
     def _evaluate(self, eval_points: np.ndarray) -> np.ndarray:
 
         matrix = np.zeros((self.n_basis, len(eval_points), self.dim_codomain))

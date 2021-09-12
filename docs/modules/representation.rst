@@ -56,14 +56,14 @@ The following classes are used to define different basis for
    skfda.representation.basis.Monomial
    skfda.representation.basis.Constant
    
-The following class, allows the construction of a basis for
-:math:`\mathbb{R}^n \to \mathbb{R}` functions from
-several :math:`\mathbb{R} \to \mathbb{R}` bases.
+The following classes, allow the construction of a basis for
+:math:`\mathbb{R}^n \to \mathbb{R}` functions.
 
 .. autosummary::
    :toctree: autosummary
 
    skfda.representation.basis.Tensor
+   skfda.representation.basis.FiniteElement
 
 The following class, allows the construction of a basis for
 :math:`\mathbb{R}^n \to \mathbb{R}^m` functions from
@@ -73,6 +73,16 @@ several :math:`\mathbb{R}^n \to \mathbb{R}` bases.
    :toctree: autosummary
 
    skfda.representation.basis.VectorValued
+   
+All the aforementioned basis inherit the basics from an
+abstract base class :class:`Basis`. Users can create their own
+basis subclassing this class and implementing the required
+methods.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.representation.basis.Basis
 
 Generic representation
 ----------------------

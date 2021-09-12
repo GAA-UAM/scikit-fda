@@ -110,3 +110,5 @@ pip-wheel-metadata/
 
 # macOS DS_Store
 .DS_Store
+.gitignore
+.vscode/settings.json

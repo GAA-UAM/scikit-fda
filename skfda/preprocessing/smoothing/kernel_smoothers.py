@@ -13,7 +13,6 @@ import numpy as np
 from ...misc import kernels
 from ._linear import _LinearSmoother
 
-
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
 
@@ -31,8 +30,8 @@ class _LinearKernelSmoother(_LinearSmoother):
 
     def _hat_matrix(self, input_points, output_points):
         return self._hat_matrix_function(
-            input_points=input_points,
-            output_points=output_points,
+            input_points=input_points[0],
+            output_points=output_points[0],
             smoothing_parameter=self.smoothing_parameter,
             kernel=self.kernel,
             weights=self.weights,
@@ -82,14 +81,14 @@ class NadarayaWatsonSmoother(_LinearKernelSmoother):
     It is a linear kernel smoothing method.
     Uses an smoothing matrix :math:`\hat{H}` for the discretisation
     points in argvals by the Nadaraya-Watson estimator. The smoothed
-    values :math:`\hat{Y}` can be calculated as :math:`\hat{
-    Y} = \hat{H}Y` where :math:`Y` is the vector of observations at the
-    points of discretisation :math:`(x_1, x_2, ..., x_n)`.
+    values :math:`\hat{X}` at the points :math:`(t_1', t_2', ..., t_m')`
+    can be calculated as :math:`\hat{X} = \hat{H}X` where :math:`X` is the
+    vector of observations at the points of discretisation
+    :math:`(t_1, t_2, ..., t_n)` and
 
     .. math::
-        \hat{H}_{i,j} = \frac{K\left(\frac{x_i-x_j}{h}\right)}{\sum_{k=1}^{
-        n}K\left(
-        \frac{x_i-x_k}{h}\right)}
+        \hat{H}_{i,j} = \frac{K\left(\frac{t_j-t_i'}{h}\right)}{\sum_{k=1}^{
+        n}K\left(\frac{t_k-t_i'}{h}\right)}
 
     where :math:`K(\cdot)` is a kernel function and :math:`h` the kernel
     window width or smoothing parameter.
@@ -161,6 +160,9 @@ class NadarayaWatsonSmoother(_LinearKernelSmoother):
                [ 0.017,  0.053,  0.238,  0.346,  0.346],
                [ 0.006,  0.022,  0.163,  0.305,  0.503]])
 
+    References:
+        Wasserman, L. (2006).   Local Regression.
+        In *All of Nonparametric Statistics* (pp. 71). Springer.
     """
 
     def _hat_matrix_function_not_normalized(self, *, delta_x,
@@ -179,19 +181,20 @@ class LocalLinearRegressionSmoother(_LinearKernelSmoother):
     It is a linear kernel smoothing method.
     Uses an smoothing matrix :math:`\hat{H}` for the discretisation
     points in argvals by the local linear regression estimator. The smoothed
-    values :math:`\hat{Y}` can be calculated as :math:`\hat{
-    Y} = \hat{H}Y` where :math:`Y` is the vector of observations at the points
-    of discretisation :math:`(x_1, x_2, ..., x_n)`.
+    values :math:`\hat{X}` at the points :math:`(t_1', t_2', ..., t_m')`
+    can be calculated as :math:`\hat{X} = \hat{H}X` where :math:`X` is the
+    vector of observations at the points of discretisation
+    :math:`(t_1, t_2, ..., t_n)` and
 
     .. math::
-        \hat{H}_{i,j} = \frac{b_i(x_j)}{\sum_{k=1}^{n}b_k(x_j)}
+        \hat{H}_{i,j} = \frac{b_j(t_i')}{\sum_{k=1}^{n}b_k(t_i')}
 
     .. math::
-        b_i(x) = K\left(\frac{x_i - x}{h}\right) S_{n,2}(x) - (x_i - x)S_{n,
-        1}(x)
+        b_j(t') = K\left(\frac{t_j - t'}{h}\right) S_{n,2}(t') -
+        (t_j - t')S_{n,1}(t')
 
     .. math::
-        S_{n,k} = \sum_{i=1}^{n}K\left(\frac{x_i-x}{h}\right)(x_i-x)^k
+        S_{n,k}(t') = \sum_{j=1}^{n}K\left(\frac{t_j-t'}{h}\right)(t_j-t')^k
 
     where :math:`K(\cdot)` is a kernel function and :math:`h` the kernel
     window width.
@@ -263,6 +266,9 @@ class LocalLinearRegressionSmoother(_LinearKernelSmoother):
                [-0.098, -0.202, -0.003,  0.651,  0.651],
                [-0.012, -0.032, -0.025,  0.154,  0.915]])
 
+    References:
+        Wasserman, L. (2006).   Local Regression.
+        In *All of Nonparametric Statistics* (pp. 77). Springer.
     """
 
     def _hat_matrix_function_not_normalized(self, *, delta_x,
@@ -276,11 +282,24 @@ class LocalLinearRegressionSmoother(_LinearKernelSmoother):
 
 
 class KNeighborsSmoother(_LinearKernelSmoother):
-    """K-nearest neighbour kernel smoother.
+    r"""K-nearest neighbour kernel smoother.
 
     It is a linear kernel smoothing method.
     Uses an smoothing matrix S for the discretisation points in argvals by
-    the k nearest neighbours estimator.
+    the :math:`k` nearest neighbours estimator.
+
+    The smoothed values :math:`\hat{X}` at the points
+    :math:`(t_1', t_2', ..., t_m')` can be calculated as
+    :math:`\hat{X} = \hat{H}X` where :math:`X` is the vector of observations
+    at the points of discretisation :math:`(t_1, t_2, ..., t_n)` and
+
+    .. math::
+
+        H_{i,j} =\frac{K\left(\frac{t_j-t_i'}{h_{ik}}\right)}{\sum_{r=1}^n
+        K\left(\frac{t_r-t_i'}{h_{ik}}\right)}
+
+    :math:`K(\cdot)` is a kernel function and :math:`h_{ik}` the is the
+    distance from :math:`t_i'` to the 𝑘-th nearest neighbor of :math:`t_i'`.
 
     Usually used with the uniform kernel, it takes the average of the closest k
     points to a given point.
@@ -359,6 +378,10 @@ class KNeighborsSmoother(_LinearKernelSmoother):
                [ 0.   ,  0.   ,  0.   ,  0.5  ,  0.5  ],
                [ 0.   ,  0.   ,  0.   ,  0.5  ,  0.5  ]])
 
+    References:
+        Frederic Ferraty, Philippe Vieu (2006).  kNN Estimator.
+        In *Nonparametric Functional Data Analysis: Theory and Practice*
+        (pp. 116). Springer.
     """
 
     def __init__(self, *, smoothing_parameter=None,
@@ -393,9 +416,5 @@ class KNeighborsSmoother(_LinearKernelSmoother):
                             axis=1, interpolation='lower') + tol
 
         rr = kernel((delta_x.T / vec).T)
-        # Applies the kernel to the result of dividing each row by the result
-        # of the previous operation, all the discretisation points
-        # corresponding to the knn are below 1 and the rest above 1 so the
-        # kernel returns values distinct to 0 only for the knn.
 
         return rr

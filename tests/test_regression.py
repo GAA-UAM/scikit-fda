@@ -1,11 +1,15 @@
-from skfda.misc.operators import LinearDifferentialOperator
-from skfda.misc.regularization import TikhonovRegularization
-from skfda.ml.regression import LinearRegression
-from skfda.representation.basis import (FDataBasis, Monomial,
-                                        Fourier,  BSpline)
 import unittest
 
 import numpy as np
+from scipy.integrate import cumtrapz
+
+from skfda.datasets import make_gaussian, make_gaussian_process
+from skfda.misc.covariances import Gaussian
+from skfda.misc.operators import LinearDifferentialOperator
+from skfda.misc.regularization import TikhonovRegularization
+from skfda.ml.regression import HistoricalLinearRegression, LinearRegression
+from skfda.representation.basis import BSpline, FDataBasis, Fourier, Monomial
+from skfda.representation.grid import FDataGrid
 
 
 class TestScalarLinearRegression(unittest.TestCase):
@@ -314,6 +318,152 @@ class TestScalarLinearRegression(unittest.TestCase):
         scalar = LinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y, weights)
+
+
+class TestHistoricalLinearRegression(unittest.TestCase):
+    """Tests for historical linear regression."""
+
+    def setUp(self) -> None:
+        """Generate data according to the model."""
+        self.random = np.random.RandomState(1)
+
+        self.n_samples = 50
+        self.n_features = 20
+        self.intercept = make_gaussian_process(
+            n_samples=1,
+            n_features=self.n_features,
+            cov=Gaussian(length_scale=0.4),
+            random_state=self.random,
+        )
+
+        self.X = make_gaussian_process(
+            n_samples=self.n_samples,
+            n_features=self.n_features,
+            cov=Gaussian(length_scale=0.4),
+            random_state=self.random,
+        )
+
+        self.coefficients = make_gaussian(
+            n_samples=1,
+            grid_points=[np.linspace(0, 1, self.n_features)] * 2,
+            cov=Gaussian(length_scale=1),
+            random_state=self.random,
+        )
+
+        self.X2 = make_gaussian_process(
+            n_samples=self.n_samples,
+            n_features=self.n_features,
+            cov=Gaussian(length_scale=0.4),
+            random_state=self.random,
+        )
+
+        self.coefficients2 = make_gaussian(
+            n_samples=1,
+            grid_points=[np.linspace(0, 1, self.n_features)] * 2,
+            cov=Gaussian(length_scale=1),
+            random_state=self.random,
+        )
+
+        self.create_model()
+        self.create_vectorial_model()
+
+    def create_model_no_intercept(
+        self,
+        X: FDataGrid,
+        coefficients: FDataGrid,
+    ) -> FDataGrid:
+        """Create a functional response according to historical model."""
+        integral_body = (
+            X.data_matrix[..., 0, np.newaxis]
+            * coefficients.data_matrix[..., 0]
+        )
+        integral_matrix = cumtrapz(
+            integral_body,
+            x=X.grid_points[0],
+            initial=0,
+            axis=1,
+        )
+        integral = np.diagonal(integral_matrix, axis1=1, axis2=2)
+        return X.copy(data_matrix=integral)
+
+    def create_model(self) -> None:
+        """Create a functional response according to historical model."""
+        model_no_intercept = self.create_model_no_intercept(
+            X=self.X,
+            coefficients=self.coefficients,
+        )
+        self.y = model_no_intercept + self.intercept
+
+    def create_vectorial_model(self) -> None:
+        """Create a functional response according to historical model."""
+        model_no_intercept = self.create_model_no_intercept(
+            X=self.X,
+            coefficients=self.coefficients,
+        )
+        model_no_intercept2 = self.create_model_no_intercept(
+            X=self.X2,
+            coefficients=self.coefficients2,
+        )
+        self.y2 = model_no_intercept + model_no_intercept2 + self.intercept
+
+    def test_historical(self) -> None:
+        """Test historical regression with data following the model."""
+        regression = HistoricalLinearRegression(n_intervals=6)
+        fit_predict_result = regression.fit_predict(self.X, self.y)
+        predict_result = regression.predict(self.X)
+
+        np.testing.assert_allclose(
+            predict_result.data_matrix,
+            fit_predict_result.data_matrix,
+        )
+
+        np.testing.assert_allclose(
+            predict_result.data_matrix,
+            self.y.data_matrix,
+            rtol=1e-1,
+        )
+
+        np.testing.assert_allclose(
+            regression.intercept_.data_matrix,
+            self.intercept.data_matrix,
+            rtol=1e-3,
+        )
+
+        np.testing.assert_allclose(
+            regression.coef_.data_matrix[0, ..., 0],
+            np.triu(self.coefficients.data_matrix[0, ..., 0]),
+            atol=0.3,
+            rtol=0,
+        )
+
+    def test_historical_vectorial(self) -> None:
+        """Test historical regression with data following the vector model."""
+        X = self.X.concatenate(self.X2, as_coordinates=True)
+
+        regression = HistoricalLinearRegression(n_intervals=10)
+        fit_predict_result = regression.fit_predict(X, self.y2)
+        predict_result = regression.predict(X)
+
+        np.testing.assert_allclose(
+            predict_result.data_matrix,
+            fit_predict_result.data_matrix,
+        )
+
+        np.testing.assert_allclose(
+            predict_result.data_matrix,
+            self.y2.data_matrix,
+            atol=1e-1,
+            rtol=0,
+        )
+
+        np.testing.assert_allclose(
+            regression.intercept_.data_matrix,
+            self.intercept.data_matrix,
+            rtol=1e-2,
+        )
+
+        # Coefficient matrix not tested as it is probably
+        # an ill-posed problem
 
 
 if __name__ == '__main__':

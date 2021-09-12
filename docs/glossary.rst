@@ -29,6 +29,12 @@ General Concepts
     domain
         The set of possible input values of a function.
         
+    domain range
+    	The valid range where a function can be evaluated. It is a Python
+    	sequence that contains, for each dimension of the domain, a tuple with
+    	the minimum and maximum values for that dimension. Usually used in
+    	plotting functions and as the domain of integration for this function.
+        
     FDA
     Functional Data Analysis
     	The branch of statistics that deals with curves, surfaces or other

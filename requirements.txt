@@ -4,6 +4,5 @@ scipy
 setuptools
 Cython
 sklearn
-mpldatacursor
 multimethod>=1.2
 findiff

@@ -22,3 +22,7 @@ it is explained the basic usage of these estimators.
    skfda.ml.classification.KNeighborsClassifier
    skfda.ml.classification.RadiusNeighborsClassifier
    skfda.ml.classification.NearestCentroid
+   skfda.ml.classification.DTMClassifier
+   skfda.ml.classification.DDClassifier
+   skfda.ml.classification.DDGClassifier
+   skfda.ml.classification.MaximumDepthClassifier

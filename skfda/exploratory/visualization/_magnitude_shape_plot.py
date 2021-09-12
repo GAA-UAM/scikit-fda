@@ -5,22 +5,28 @@ Plot. First the directional outlingness is calculated and then, an outliers
 detection method is implemented.
 
 """
+from __future__ import annotations
+
+from typing import Optional, Sequence, Union
 
 import matplotlib
-
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.artist import Artist
+from matplotlib.axes import Axes
+from matplotlib.colors import Colormap
+from matplotlib.figure import Figure
 
+from ... import FDataGrid
+from ...representation._typing import NDArrayFloat, NDArrayInt
+from ..depth import Depth
 from ..outliers import DirectionalOutlierDetector
-from ._utils import _figure_to_svg, _get_figure_and_axes, _set_figure_layout
+from ._baseplot import BasePlot
 
 
-__author__ = "Amanda Hernando Bernabé"
-__email__ = "amanda.hernando@estudiante.uam.es"
-
-
-class MagnitudeShapePlot:
-    r"""Implementation of the magnitude-shape plot
+class MagnitudeShapePlot(BasePlot):
+    r"""
+    Implementation of the magnitude-shape plot.
 
     This plot, which is based on the calculation of the :func:`directional
     outlyingness <fda.magnitude_shape_plot.directional_outlyingness>`
@@ -34,8 +40,9 @@ class MagnitudeShapePlot:
     The outliers are detected using an instance of
     :class:`DirectionalOutlierDetector`.
 
-    Args:
+    For more information see :footcite:ts:`dai+genton_2018_visualization`.
 
+    Args:
         fdatagrid (FDataGrid): Object containing the data.
         multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
             Method used to order the data. Defaults to :class:`projection
@@ -66,7 +73,6 @@ class MagnitudeShapePlot:
             RandomState instance used by np.random. By default, it is 0.
 
     Attributes:
-
         points(numpy.ndarray): 2-dimensional matrix where each row
             contains the points plotted in the graph.
         outliers (1-D array, (fdatagrid.n_samples,)): Contains 1 or 0 to denote
@@ -98,7 +104,6 @@ class MagnitudeShapePlot:
         MagnitudeShapePlot(fd)
 
     Example:
-
         >>> import skfda
         >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
         ...                [0.5, 0.5, 1, 2, 1.5, 1],
@@ -133,10 +138,10 @@ class MagnitudeShapePlot:
                         [-1. ],
                         [-1. ],
                         [-1. ]]]),
-                grid_points=(array([ 0.,  2.,  4.,  6.,  8., 10.]),),
+                grid_points=(array([  0.,   2.,   4.,   6.,   8.,  10.]),),
                 domain_range=((0.0, 10.0),),
                 ...),
-            multivariate_depth=ProjectionDepth(),
+            multivariate_depth=None,
             pointwise_weights=None,
             alpha=0.993,
             points=array([[ 1.66666667,  0.12777778],
@@ -146,55 +151,71 @@ class MagnitudeShapePlot:
             outliers=array([False, False, False, False]),
             colormap=seismic,
             color=0.2,
-            outliercol=(0.8,),
+            outliercol=0.8,
             xlabel='MO',
             ylabel='VO',
             title='MS-Plot')
 
     References:
-
-    Dai, W., & Genton, M. G. (2018). Multivariate Functional Data
-    Visualization and Outlier Detection. Journal of Computational
-    and Graphical Statistics, 27(4), 923-934.
-    https://doi.org/10.1080/10618600.2018.1473781
+        .. footbibliography::
 
     """
 
-    def __init__(self, fdatagrid, **kwargs):
+    def __init__(
+        self,
+        fdatagrid: FDataGrid,
+        chart: Union[Figure, Axes, None] = None,
+        *,
+        fig: Optional[Figure] = None,
+        axes: Optional[Sequence[Axes]] = None,
+        **kwargs,
+    ) -> None:
         """Initialization of the MagnitudeShapePlot class.
 
         Args:
-            fdatagrid (FDataGrid): Object containing the data.
-            multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
-                Method used to order the data. Defaults to :class:`projection
-                depth <fda.depth_measures.multivariate.ProjectionDepth>`.
-            pointwise_weights (array_like, optional): an array containing the
+            fdatagrid: Object containing the data.
+            multivariate_depth (:ref:`depth measure <depth-measures>`,
+                optional): Method used to order the data. Defaults to
+                :class:`projection depth
+                <fda.depth_measures.multivariate.ProjectionDepth>`.
+            pointwise_weights: an array containing the
                 weights of each points of discretisati on where values have
                 been recorded.
-            alpha (float, optional): Denotes the quantile to choose the cutoff
+            alpha: Denotes the quantile to choose the cutoff
                 value for detecting outliers Defaults to 0.993, which is used
                 in the classical boxplot.
-            assume_centered (boolean, optional): If True, the support of the
+            assume_centered: If True, the support of the
                 robust location and the covariance estimates is computed, and a
                 covariance estimate is recomputed from it, without centering
                 the data. Useful to work with data whose mean is significantly
                 equal to zero but is not exactly zero. If False, default value,
                 the robust location and covariance are directly computed with
                 the FastMCD algorithm without additional treatment.
-            support_fraction (float, 0 < support_fraction < 1, optional): The
-                proportion of points to be included in the support of the
-                raw MCD estimate.
+            support_fraction: The proportion of points to be included in the
+                support of the raw MCD estimate.
                 Default is None, which implies that the minimum value of
                 support_fraction will be used within the algorithm:
                 [n_sample + n_features + 1] / 2
-            random_state (int, RandomState instance or None, optional): If int,
-                random_state is the seed used by the random number generator;
-                If RandomState instance, random_state is the random number
-                generator; If None, the random number generator is the
-                RandomState instance used by np.random. By default, it is 0.
+            random_state: If int, random_state is the seed used by the random
+                number generator; If RandomState instance, random_state is
+                the random number generator; If None, the random number
+                generator is the RandomState instance used by np.random.
+                By default, it is 0.
+            chart: figure over with the graphs are plotted or axis over
+                where the graphs are plotted. If None and ax is also
+                None, the figure is initialized.
+            fig: figure over with the graphs are plotted in case ax is not
+                specified. If None and ax is also None, the figure is
+                initialized.
+            axes: axis where the graphs are plotted. If None, see param fig.
 
         """
-
+        BasePlot.__init__(
+            self,
+            chart,
+            fig=fig,
+            axes=axes,
+        )
         if fdatagrid.dim_codomain > 1:
             raise NotImplementedError(
                 "Only support 1 dimension on the codomain.")
@@ -209,52 +230,54 @@ class MagnitudeShapePlot:
         self._outliers = outliers
         self._colormap = plt.cm.get_cmap('seismic')
         self._color = 0.2
-        self._outliercol = 0.8,
+        self._outliercol = 0.8
         self.xlabel = 'MO'
         self.ylabel = 'VO'
         self.title = 'MS-Plot'
 
     @property
-    def fdatagrid(self):
+    def fdatagrid(self) -> FDataGrid:
         return self._fdatagrid
 
     @property
-    def multivariate_depth(self):
+    def multivariate_depth(self) -> Optional[Depth[NDArrayFloat]]:
         return self.outlier_detector.multivariate_depth
 
     @property
-    def pointwise_weights(self):
+    def pointwise_weights(self) -> Optional[NDArrayFloat]:
         return self.outlier_detector.pointwise_weights
 
     @property
-    def alpha(self):
+    def alpha(self) -> float:
         return self.outlier_detector.alpha
 
     @property
-    def points(self):
+    def points(self) -> NDArrayFloat:
         return self.outlier_detector.points_
 
     @property
-    def outliers(self):
+    def outliers(self) -> NDArrayInt:
         return self._outliers
 
     @property
-    def colormap(self):
+    def colormap(self) -> Colormap:
         return self._colormap
 
     @colormap.setter
-    def colormap(self, value):
-        if not isinstance(value, matplotlib.colors.LinearSegmentedColormap):
-            raise ValueError("colormap must be of type "
-                             "matplotlib.colors.LinearSegmentedColormap")
+    def colormap(self, value: Colormap) -> None:
+        if not isinstance(value, matplotlib.colors.Colormap):
+            raise ValueError(
+                "colormap must be of type "
+                "matplotlib.colors.Colormap",
+            )
         self._colormap = value
 
     @property
-    def color(self):
+    def color(self) -> float:
         return self._color
 
     @color.setter
-    def color(self, value):
+    def color(self, value: float) -> None:
         if value < 0 or value > 1:
             raise ValueError(
                 "color must be a number between 0 and 1.")
@@ -262,62 +285,63 @@ class MagnitudeShapePlot:
         self._color = value
 
     @property
-    def outliercol(self):
+    def outliercol(self) -> float:
         return self._outliercol
 
     @outliercol.setter
-    def outliercol(self, value):
+    def outliercol(self, value: float) -> None:
         if value < 0 or value > 1:
             raise ValueError(
                 "outcol must be a number between 0 and 1.")
         self._outliercol = value
 
-    def plot(self, chart=None, *, fig=None, axes=None,):
-        """Visualization of the magnitude shape plot of the fdatagrid.
+    @property
+    def n_samples(self) -> int:
+        return self.fdatagrid.n_samples
 
-        Args:
-            ax (axes object, optional): axes over where the graph is plotted.
-                Defaults to matplotlib current axis.
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Axes,
+    ) -> None:
 
-        Returns:
-            fig (figure object): figure object in which the graph is plotted.
-
-        """
-
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout(fig, axes)
-
+        self.artists = np.zeros(
+            (self.n_samples, 1),
+            dtype=Artist,
+        )
         colors = np.zeros((self.fdatagrid.n_samples, 4))
         colors[np.where(self.outliers == 1)] = self.colormap(self.outliercol)
         colors[np.where(self.outliers == 0)] = self.colormap(self.color)
 
         colors_rgba = [tuple(i) for i in colors]
-        axes[0].scatter(self.points[:, 0].ravel(), self.points[:, 1].ravel(),
-                        color=colors_rgba)
+
+        for i, _ in enumerate(self.points[:, 0].ravel()):
+            self.artists[i, 0] = axes[0].scatter(
+                self.points[:, 0].ravel()[i],
+                self.points[:, 1].ravel()[i],
+                color=colors_rgba[i],
+                picker=True,
+                pickradius=2,
+            )
 
         axes[0].set_xlabel(self.xlabel)
         axes[0].set_ylabel(self.ylabel)
         axes[0].set_title(self.title)
 
-        return fig
-
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return repr(self)."""
-        return (f"MagnitudeShapePlot("
-                f"\nFDataGrid={repr(self.fdatagrid)},"
-                f"\nmultivariate_depth={self.multivariate_depth},"
-                f"\npointwise_weights={repr(self.pointwise_weights)},"
-                f"\nalpha={repr(self.alpha)},"
-                f"\npoints={repr(self.points)},"
-                f"\noutliers={repr(self.outliers)},"
-                f"\ncolormap={self.colormap.name},"
-                f"\ncolor={repr(self.color)},"
-                f"\noutliercol={repr(self.outliercol)},"
-                f"\nxlabel={repr(self.xlabel)},"
-                f"\nylabel={repr(self.ylabel)},"
-                f"\ntitle={repr(self.title)})").replace('\n', '\n    ')
-
-    def _repr_svg_(self):
-        fig = self.plot()
-        plt.close(fig)
-        return _figure_to_svg(fig)
+        return (
+            f"MagnitudeShapePlot("
+            f"\nFDataGrid={repr(self.fdatagrid)},"
+            f"\nmultivariate_depth={self.multivariate_depth},"
+            f"\npointwise_weights={repr(self.pointwise_weights)},"
+            f"\nalpha={repr(self.alpha)},"
+            f"\npoints={repr(self.points)},"
+            f"\noutliers={repr(self.outliers)},"
+            f"\ncolormap={self.colormap.name},"
+            f"\ncolor={repr(self.color)},"
+            f"\noutliercol={repr(self.outliercol)},"
+            f"\nxlabel={repr(self.xlabel)},"
+            f"\nylabel={repr(self.ylabel)},"
+            f"\ntitle={repr(self.title)})"
+        ).replace('\n', '\n    ')

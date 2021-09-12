@@ -1,14 +1,19 @@
-"""Methods and classes for validation of the registration procedures"""
+"""Methods and classes for validation of the registration procedures."""
+from __future__ import annotations
 
-from typing import NamedTuple
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 
-from ..._utils import check_is_univariate, _to_grid
+from ..._utils import _to_grid, check_is_univariate
+from ...representation import FData
+from .base import RegistrationTransformer
 
 
-class RegistrationScorer():
-    r"""Cross validation scoring for registration procedures.
+class RegistrationScorer(ABC):
+    """Cross validation scoring for registration procedures.
 
     It calculates the score of a registration procedure, used to perform
     model validation or parameter selection.
@@ -40,22 +45,23 @@ class RegistrationScorer():
 
     """
 
-    def __init__(self, eval_points=None):
-        """Initialize the transformer"""
-        self.eval_points = eval_points
-
-    def __call__(self, estimator, X, y=None):
+    def __call__(
+        self,
+        estimator: RegistrationTransformer,
+        X: FData,
+        y: Optional[FData] = None,
+    ) -> float:
         """Compute the score of the transformation.
 
         Args:
-            estimator (Estimator): Registration method estimator. The estimator
+            estimator: Registration method estimator. The estimator
                 should be fitted.
-            X (:class:`FData <skfda.FData>`): Functional data to be registered.
-            y (:class:`FData <skfda.FData>`, optional): Functional data target.
-                If provided should be the same as `X` in general.
+            X: Functional data to be registered.
+            y: Functional data target. If provided should be the same as
+                `X` in general.
 
         Returns:
-            float: Cross validation score.
+            Cross validation score.
         """
         if y is None:
             y = X
@@ -65,8 +71,27 @@ class RegistrationScorer():
 
         return self.score_function(y, X_reg)
 
+    @abstractmethod
+    def score_function(
+        self,
+        X: FData,
+        y: FData,
+    ) -> float:
+        """Compute the score of the transformation performed.
 
-class AmplitudePhaseDecompositionStats(NamedTuple):
+        Args:
+            X: Original functional data.
+            y: Functional data registered.
+
+        Returns:
+            Score of the transformation.
+
+        """
+        pass
+
+
+@dataclass
+class AmplitudePhaseDecompositionStats():
     r"""Named tuple to store the values of the amplitude-phase decomposition.
 
     Values of the amplitude phase decomposition computed in
@@ -74,19 +99,22 @@ class AmplitudePhaseDecompositionStats(NamedTuple):
 
     Args:
         r_square (float): Squared correlation index :math:`R^2`.
-        mse_amp (float): Mean square error of amplitude
+        mse_amplitude (float): Mean square error of amplitude
             :math:`\text{MSE}_{amp}`.
-        mse_pha (float): Mean square error of phase :math:`\text{MSE}_{pha}`.
+        mse_phase (float): Mean square error of phase :math:`\text{MSE}_{pha}`.
         c_r (float): Constant :math:`C_R`.
 
     """
+
     r_squared: float
-    mse_amp: float
-    mse_pha: float
+    mse_amplitude: float
+    mse_phase: float
     c_r: float
 
 
-class AmplitudePhaseDecomposition(RegistrationScorer):
+class AmplitudePhaseDecomposition(
+    RegistrationScorer,
+):
     r"""Compute mean square error measures for amplitude and phase variation.
 
     Once the registration has taken place, this function computes two mean
@@ -111,15 +139,14 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
 
     .. math::
         \text{MSE}_{phase}=
-        \int \left [C_R \overline{y}^2(t) - \overline{x}^2(t) \right]dt
+        C_R \int \overline{y}^2(t) dt - \int \overline{x}^2(t) dt
 
     where the constant :math:`C_R` is defined as
 
     .. math::
 
-        C_R = 1 + \frac{\frac{1}{N}\sum_{i}^{N}\int [Dh_i(t)-\overline{Dh}(t)]
-        [ y_i^2(t)- \overline{y^2}(t) ]dt}
-        {\frac{1}{N} \sum_{i}^{N} \int y_i^2(t)dt}
+        C_R = \frac{\frac{1}{N}\sum_{i=1}^{N}\int[x_i(t)-\overline x(t)]^2dt
+        }{\frac{1}{N}\sum_{i=1}^{N}\int[y_i(t)-\overline y(t)]^2dt}
 
     whose structure is related to the covariation between the deformation
     functions :math:`Dh_i(t)` and the squared registered functions
@@ -183,7 +210,6 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
             Springer.
 
     Examples:
-
         Calculate the score of the shift registration of a sinusoidal process
         synthetically generated.
 
@@ -204,20 +230,20 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
         >>> scorer = AmplitudePhaseDecomposition()
         >>> score = scorer(shift_registration, X)
         >>> round(score, 3)
-        0.972
+        0.971
 
-        Also it is possible to get all the values of the decomposition.
+        Also it is possible to get all the values of the decomposition:
 
-        >>> scorer = AmplitudePhaseDecomposition(return_stats=True)
-        >>> stats = scorer(shift_registration, X)
+        >>> X_reg = shift_registration.transform(X)
+        >>> stats = scorer.stats(X, X_reg)
         >>> round(stats.r_squared, 3)
-        0.972
-        >>> round(stats.mse_amp, 3)
-        0.007
-        >>> round(stats.mse_pha, 3)
-        0.227
+        0.971
+        >>> round(stats.mse_amplitude, 3)
+        0.006
+        >>> round(stats.mse_phase, 3)
+        0.214
         >>> round(stats.c_r, 3)
-        1.0
+        0.976
 
 
     See also:
@@ -227,128 +253,72 @@ class AmplitudePhaseDecomposition(RegistrationScorer):
 
     """
 
-    def __init__(self, return_stats=False, eval_points=None):
-        """Initialize the transformer"""
-        super().__init__(eval_points)
-        self.return_stats = return_stats
-
-    def __call__(self, estimator, X, y=None):
-        """Compute the score of the transformation.
+    def stats(
+        self,
+        X: FData,
+        y: FData,
+    ) -> AmplitudePhaseDecompositionStats:
+        """
+        Compute the decomposition statistics.
 
         Args:
-            estimator (Estimator): Registration method estimator. The estimator
-                should be fitted.
-            X (:class:`FData <skfda.FData>`): Functional data to be registered.
-            y (:class:`FData <skfda.FData>`, optional): Functional data target.
-                If provided should be the same as `X` in general.
+            X: Original functional data.
+            y: Functional data registered.
 
         Returns:
-            float: Cross validation score.
+            The decomposition statistics.
         """
-        if y is None:
-            y = X
-
-        # Register the data
-        X_reg = estimator.transform(X)
-
-        # Pass the warpings if are generated in the transformer
-        if hasattr(estimator, 'warping_'):
-            return self.score_function(y, X_reg, warping=estimator.warping_)
-        else:
-            return self.score_function(y, X_reg)
-
-    def score_function(self, X, y, *, warping=None):
-        """Compute the score of the transformation performed.
-
-        Args:
-            X (FData): Original functional data.
-            y (FData): Functional data registered.
-
-        Returns:
-            float: Score of the transformation.
-
-        """
-        from scipy.integrate import simps
+        from ...misc.metrics import l2_distance, l2_norm
 
         check_is_univariate(X)
         check_is_univariate(y)
 
         if len(y) != len(X):
-            raise ValueError(f"the registered and unregistered curves must have "
-                             f"the same number of samples ({len(y)})!=({len(X)})")
+            raise ValueError(
+                f"The registered and unregistered curves must have "
+                f"the same number of samples ({len(y)})!=({len(X)})",
+            )
 
-        if warping is not None and len(warping) != len(X):
-            raise ValueError(f"The registered curves and the warping functions "
-                             f"must have the same number of samples "
-                             f"({len(X)})!=({len(warping)})")
+        X_mean = X.mean()
+        y_mean = y.mean()
 
-        # Creates the mesh to discretize the functions
-        if self.eval_points is None:
-            try:
-                eval_points = y.grid_points[0]
+        c_r = np.sum(l2_norm(X)**2) / np.sum(l2_norm(y)**2)
 
-            except AttributeError:
-                nfine = max(y.basis.n_basis * 10 + 1, 201)
-                eval_points = np.linspace(*y.domain_range[0], nfine)
-        else:
-            eval_points = np.asarray(self.eval_points)
+        mse_amplitude = c_r * np.mean(l2_distance(y, y.mean())**2)
+        mse_phase = (c_r * l2_norm(y_mean)**2 - l2_norm(X_mean)**2).item()
 
-        x_fine = X.evaluate(eval_points)[..., 0]
-        y_fine = y.evaluate(eval_points)[..., 0]
-        mu_fine = x_fine.mean(axis=0)  # Mean unregistered function
-        eta_fine = y_fine.mean(axis=0)  # Mean registered function
-        mu_fine_sq = np.square(mu_fine)
-        eta_fine_sq = np.square(eta_fine)
-
-        # Total mean square error of the original funtions
-        # mse_total = scipy.integrate.simps(
-        #    np.mean(np.square(x_fine - mu_fine), axis=0),
-        #    eval_points)
-
-        cr = 1.  # Constant related to the covariation between the deformation
-        # functions and y^2
-
-        # If the warping functions are not provided, are suppose independent
-        if warping is not None:
-            # Derivates warping functions
-            warping_deriv = warping.derivative()
-            dh_fine = warping_deriv(eval_points)[..., 0]
-            dh_fine_mean = dh_fine.mean(axis=0)
-            dh_fine_center = dh_fine - dh_fine_mean
-
-            y_fine_sq = np.square(y_fine)  # y^2
-            y_fine_sq_center = np.subtract(y_fine_sq, eta_fine_sq)  # y^2-E[y2]
-
-            covariate = np.inner(dh_fine_center.T, y_fine_sq_center.T)
-            covariate = covariate.mean(axis=0)
-            cr += np.divide(simps(covariate, eval_points),
-                            simps(eta_fine_sq, eval_points))
-
-        # mse due to phase variation
-        mse_pha = simps(cr * eta_fine_sq - mu_fine_sq, eval_points)
-
-        # mse due to amplitude variation
-        # mse_amp = mse_total - mse_pha
-        y_fine_center = np.subtract(y_fine, eta_fine)
-        y_fine_center_sq = np.square(y_fine_center, out=y_fine_center)
-        y_fine_center_sq_mean = y_fine_center_sq.mean(axis=0)
-
-        mse_amp = simps(y_fine_center_sq_mean, eval_points)
-
-        # Total mean square error of the original funtions
-        mse_total = mse_pha + mse_amp
+        # Should be equal to np.mean(l2_distance(X, X_mean)**2)
+        mse_total = mse_amplitude + mse_phase
 
         # squared correlation measure of proportion of phase variation
-        rsq = mse_pha / (mse_total)
+        rsq = mse_phase / mse_total
 
-        if self.return_stats is True:
-            stats = AmplitudePhaseDecompositionStats(rsq, mse_amp, mse_pha, cr)
-            return stats
+        return AmplitudePhaseDecompositionStats(
+            r_squared=rsq,
+            mse_amplitude=mse_amplitude,
+            mse_phase=mse_phase,
+            c_r=c_r,
+        )
 
-        return rsq
+    def score_function(
+        self,
+        X: FData,
+        y: FData,
+    ) -> float:
+        """Compute the score of the transformation performed.
+
+        Args:
+            X: Original functional data.
+            y: Functional data registered.
+
+        Returns:
+            Score of the transformation.
+
+        """
+        return float(self.stats(X, y).r_squared)
 
 
-class LeastSquares(AmplitudePhaseDecomposition):
+class LeastSquares(RegistrationScorer):
     r"""Cross-validated measure of the registration procedure.
 
     Computes a cross-validated measure of the level of synchronization
@@ -394,7 +364,6 @@ class LeastSquares(AmplitudePhaseDecomposition):
             (p. 18). arXiv:1103.3817v2.
 
     Examples:
-
         Calculate the score of the shift registration of a sinusoidal process
         synthetically generated.
 
@@ -414,7 +383,7 @@ class LeastSquares(AmplitudePhaseDecomposition):
         >>> scorer = LeastSquares()
         >>> score = scorer(shift_registration, X)
         >>> round(score, 3)
-        0.796
+        0.953
 
 
     See also:
@@ -424,7 +393,7 @@ class LeastSquares(AmplitudePhaseDecomposition):
 
     """
 
-    def score_function(self, X, y):
+    def score_function(self, X: FData, y: FData) -> float:
         """Compute the score of the transformation performed.
 
         Args:
@@ -435,12 +404,10 @@ class LeastSquares(AmplitudePhaseDecomposition):
             float: Score of the transformation.
 
         """
-        from ...misc.metrics import pairwise_distance, lp_distance
+        from ...misc.metrics import l2_distance
 
         check_is_univariate(X)
         check_is_univariate(y)
-
-        X, y = _to_grid(X, y, eval_points=self.eval_points)
 
         # Instead of compute f_i - 1/(N-1) sum(j!=i)f_j for each i = 1 ... N
         # It is used (1 + 1/(N-1))f_i - 1/(N-1) sum(j=1 ... N) f_j =
@@ -456,14 +423,13 @@ class LeastSquares(AmplitudePhaseDecomposition):
         mean_y = C2 * y.mean()
 
         # Compute distance to mean
-        distance = pairwise_distance(lp_distance)
-        ls_x = distance(X, mean_X).flatten()
-        ls_y = distance(y, mean_y).flatten()
+        ls_x = l2_distance(X, mean_X)**2
+        ls_y = l2_distance(y, mean_y)**2
 
         # Quotient of distance
         quotient = ls_y / ls_x
 
-        return 1 - 1. / N * quotient.sum()
+        return float(1 - np.mean(quotient))
 
 
 class SobolevLeastSquares(RegistrationScorer):
@@ -478,8 +444,8 @@ class SobolevLeastSquares(RegistrationScorer):
         {\sum_{i=1}^{N} \int\left(\dot{f}_{i}(t)-\frac{1}{N} \sum_{j=1}^{N}
         \dot{f}_{j}\right)^{2} dt}
 
-    where :math:`\dot f_i` and :math:`\dot \tilde f_i` are the derivatives of
-    the original and the registered data respectively.
+    where :math:`\dot{f}_i` and :math:`\dot{\tilde{f}}_i` are the derivatives
+    of the original and the registered data respectively.
 
     This criterion measures the total cross-sectional variance of the
     derivatives of the aligned functions, relative to the original value.
@@ -510,7 +476,6 @@ class SobolevLeastSquares(RegistrationScorer):
             (p. 18). arXiv:1103.3817v2.
 
     Examples:
-
         Calculate the score of the shift registration of a sinusoidal process
         synthetically generated.
 
@@ -530,7 +495,7 @@ class SobolevLeastSquares(RegistrationScorer):
         >>> scorer = SobolevLeastSquares()
         >>> score = scorer(shift_registration, X)
         >>> round(score, 3)
-        0.761
+        0.924
 
     See also:
         :class:`~AmplitudePhaseDecomposition`
@@ -539,7 +504,7 @@ class SobolevLeastSquares(RegistrationScorer):
 
     """
 
-    def score_function(self, X, y):
+    def score_function(self, X: FData, y: FData) -> float:
         """Compute the score of the transformation performed.
 
         Args:
@@ -550,7 +515,7 @@ class SobolevLeastSquares(RegistrationScorer):
             float: Score of the transformation.
 
         """
-        from ...misc.metrics import pairwise_distance, lp_distance
+        from ...misc.metrics import l2_distance
 
         check_is_univariate(X)
         check_is_univariate(y)
@@ -559,16 +524,11 @@ class SobolevLeastSquares(RegistrationScorer):
         X = X.derivative()
         y = y.derivative()
 
-        # Discretize if needed
-        X, y = _to_grid(X, y, eval_points=self.eval_points)
-
         # L2 distance to mean
-        distance = pairwise_distance(lp_distance)
+        sls_x = l2_distance(X, X.mean())**2
+        sls_y = l2_distance(y, y.mean())**2
 
-        sls_x = distance(X, X.mean())
-        sls_y = distance(y, y.mean())
-
-        return 1 - sls_y.sum() / sls_x.sum()
+        return float(1 - sls_y.sum() / sls_x.sum())
 
 
 class PairwiseCorrelation(RegistrationScorer):
@@ -609,7 +569,6 @@ class PairwiseCorrelation(RegistrationScorer):
             (p. 18). arXiv:1103.3817v2.
 
     Examples:
-
         Calculate the score of the shift registration of a sinusoidal process
         synthetically generated.
 
@@ -638,7 +597,10 @@ class PairwiseCorrelation(RegistrationScorer):
 
     """
 
-    def score_function(self, X, y):
+    def __init__(self, eval_points: Optional[np.ndarray] = None) -> None:
+        self.eval_points = eval_points
+
+    def score_function(self, X: FData, y: FData) -> float:
         """Compute the score of the transformation performed.
 
         Args:
@@ -659,9 +621,9 @@ class PairwiseCorrelation(RegistrationScorer):
         # corrcoefs computes the correlation between vector, without weights
         # due to the sample points
         X_corr = np.corrcoef(X.data_matrix[..., 0])
-        np.fill_diagonal(X_corr, 0.)
+        np.fill_diagonal(X_corr, 0)
 
         y_corr = np.corrcoef(y.data_matrix[..., 0])
-        np.fill_diagonal(y_corr, 0.)
+        np.fill_diagonal(y_corr, 0)
 
-        return y_corr.sum() / X_corr.sum()
+        return float(y_corr.sum() / X_corr.sum())

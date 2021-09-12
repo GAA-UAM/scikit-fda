@@ -5,11 +5,18 @@ The evaluator is the core of the FData object for extrapolation and
 evaluation of FDataGrids.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Iterable, Union, overload
 
 import numpy as np
-from typing_extensions import Protocol
+from typing_extensions import Literal, Protocol
+
+from ._typing import ArrayLike
+
+if TYPE_CHECKING:
+    from . import FData
 
 
 class Evaluator(ABC):
@@ -24,16 +31,48 @@ class Evaluator(ABC):
 
     The evaluator is called internally by :func:`evaluate`.
 
-    Should implement the methods :func:`evaluate` and
-    :func:`evaluate_composed`.
-
     """
 
     @abstractmethod
-    def evaluate(
+    def _evaluate(
         self,
-        fdata: Callable[[np.ndarray], np.ndarray],
-        eval_points: np.ndarray,
+        fdata: FData,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        *,
+        aligned: bool = True,
+    ) -> np.ndarray:
+        """
+        Evaluate the samples at evaluation points.
+
+        Must be overriden in subclasses.
+
+        """
+        pass
+
+    @overload
+    def __call__(
+        self,
+        fdata: FData,
+        eval_points: ArrayLike,
+        *,
+        aligned: Literal[True] = True,
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def __call__(
+        self,
+        fdata: FData,
+        eval_points: Iterable[ArrayLike],
+        *,
+        aligned: Literal[False],
+    ) -> np.ndarray:
+        pass
+
+    def __call__(
+        self,
+        fdata: FData,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -61,7 +100,11 @@ class Evaluator(ABC):
                 j-th evaluation point.
 
         """
-        pass
+        return self._evaluate(
+            fdata=fdata,
+            eval_points=eval_points,
+            aligned=aligned,
+        )
 
     def __repr__(self) -> str:
         return f"{type(self)}()"
@@ -76,8 +119,8 @@ class EvaluateFunction(Protocol):
 
     def __call__(
         self,
-        fdata: Callable[[np.ndarray], np.ndarray],
-        eval_points: np.ndarray,
+        fdata: FData,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -90,7 +133,7 @@ class EvaluateFunction(Protocol):
 
         Args:
             fdata: Object to evaluate.
-            eval_points (numpy.ndarray): Numpy array with shape
+            eval_points: Numpy array with shape
                 ``(number_eval_points, dim_domain)`` with the
                 evaluation points.
             aligned: Whether the input points are
@@ -98,11 +141,11 @@ class EvaluateFunction(Protocol):
                 passed.
 
         Returns:
-            (numpy.darray): Numpy 3d array with shape
-                ``(n_samples, number_eval_points, dim_codomain)`` with the
-                result of the evaluation. The entry ``(i,j,k)`` will contain
-                the value k-th image dimension of the i-th sample, at the
-                j-th evaluation point.
+            Numpy 3d array with shape
+            ``(n_samples, number_eval_points, dim_codomain)`` with the
+            result of the evaluation. The entry ``(i,j,k)`` will contain
+            the value k-th image dimension of the i-th sample, at the
+            j-th evaluation point.
 
         """
         pass
@@ -120,11 +163,12 @@ class GenericEvaluator(Evaluator):
     def __init__(self, evaluate_function: EvaluateFunction) -> None:
         self.evaluate_function = evaluate_function
 
-    def evaluate(  # noqa: D102
+    def _evaluate(  # noqa: D102
         self,
-        fdata: Callable[[np.ndarray], np.ndarray],
-        eval_points: np.ndarray,
+        fdata: FData,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
+
         return self.evaluate_function(fdata, eval_points, aligned=aligned)

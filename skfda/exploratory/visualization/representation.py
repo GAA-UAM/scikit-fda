@@ -1,30 +1,59 @@
+"""Representation Module.
+
+This module contains the functionality related
+with plotting and scattering our different datasets.
+It allows multiple modes and colors, which could
+be set manually or automatically depending on values
+like depth measures.
+"""
+
+from typing import Any, Mapping, Optional, Sequence, Tuple, TypeVar, Union
 
 import matplotlib.cm
 import matplotlib.patches
-
 import numpy as np
+from matplotlib.artist import Artist
+from matplotlib.axes import Axes
+from matplotlib.colors import Colormap
+from matplotlib.figure import Figure
+from typing_extensions import Protocol
 
-from ..._utils import _tuple_of_arrays, constants
-from ._utils import (_get_figure_and_axes, _set_figure_layout_for_fdata,
-                     _set_labels)
+from ... import FDataGrid
+from ..._utils import _to_domain_range, constants
+from ...representation._functional_data import FData
+from ...representation._typing import DomainRangeLike, GridPointsLike
+from ._baseplot import BasePlot
+from ._utils import ColorLike, _set_labels
 
-
-def _get_label_colors(n_labels, group_colors=None):
-    """Get the colors of each label"""
-
-    if group_colors is not None:
-        if len(group_colors) != n_labels:
-            raise ValueError("There must be a color in group_colors "
-                             "for each of the labels that appear in "
-                             "group.")
-    else:
-        colormap = matplotlib.cm.get_cmap()
-        group_colors = colormap(np.arange(n_labels) / (n_labels - 1))
-
-    return group_colors
+K = TypeVar('K', contravariant=True)
+V = TypeVar('V', covariant=True)
+T = TypeVar('T', FDataGrid, np.ndarray)
 
 
-def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
+class Indexable(Protocol[K, V]):
+    """Class Indexable used to type _get_color_info."""
+
+    def __getitem__(self, __key: K) -> V:
+        pass
+
+    def __len__(self) -> int:
+        pass
+
+
+def _get_color_info(
+    fdata: T,
+    group: Optional[Sequence[K]] = None,
+    group_names: Optional[Indexable[K, str]] = None,
+    group_colors: Optional[Indexable[K, ColorLike]] = None,
+    legend: bool = False,
+    kwargs: Optional[Mapping[str, Any]] = None,
+) -> Tuple[
+    Optional[ColorLike],
+    Optional[Sequence[matplotlib.patches.Patch]],
+]:
+
+    if kwargs is None:
+        kwargs = {}
 
     patches = None
 
@@ -37,13 +66,15 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
 
         if group_colors is not None:
             group_colors_array = np.array(
-                [group_colors[g] for g in group_unique])
+                [group_colors[g] for g in group_unique],
+            )
         else:
             prop_cycle = matplotlib.rcParams['axes.prop_cycle']
             cycle_colors = prop_cycle.by_key()['color']
 
             group_colors_array = np.take(
-                cycle_colors, np.arange(n_labels), mode='wrap')
+                cycle_colors, np.arange(n_labels), mode='wrap',
+            )
 
         sample_colors = group_colors_array[group_indexes]
 
@@ -51,13 +82,16 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
 
         if group_names is not None:
             group_names_array = np.array(
-                [group_names[g] for g in group_unique])
+                [group_names[g] for g in group_unique],
+            )
         elif legend is True:
             group_names_array = group_unique
 
         if group_names_array is not None:
-            patches = [matplotlib.patches.Patch(color=c, label=l)
-                       for c, l in zip(group_colors_array, group_names_array)]
+            patches = [
+                matplotlib.patches.Patch(color=c, label=l)
+                for c, l in zip(group_colors_array, group_names_array)
+            ]
 
     else:
         # In this case, each curve has a different color unless specified
@@ -77,249 +111,452 @@ def _get_color_info(fdata, group, group_names, group_colors, legend, kwargs):
     return sample_colors, patches
 
 
-def plot_graph(fdata, chart=None, *, fig=None, axes=None,
-               n_rows=None, n_cols=None, n_points=None,
-               domain_range=None,
-               group=None, group_colors=None, group_names=None,
-               legend: bool = False,
-               **kwargs):
-    """Plot the FDatGrid object graph as hypersurfaces.
+class GraphPlot(BasePlot):
+    """
+    Class used to plot the FDataGrid object graph as hypersurfaces.
 
-    Plots each coordinate separately. If the :term:`domain` is one dimensional,
-    the plots will be curves, and if it is two dimensional, they will be
-    surfaces.
-
+    When plotting functional data, we can either choose manually a color,
+    a group of colors for the representations. Besides, we can use a list of
+    variables (depths, scalar regression targets...) can be used as an
+    argument to display the functions wtih a gradient of colors.
     Args:
-        chart (figure object, axe or list of axes, optional): figure over
+        fdata: functional data set that we want to plot.
+        gradient_criteria: list of real values used to determine the color
+            in which each of the instances will be plotted.
+        max_grad: maximum value that the gradient_list can take, it will be
+            used to normalize the ``gradient_criteria`` in order to get values
+            that can be used in the function colormap.__call__(). If not
+            declared it will be initialized to the maximum value of
+            gradient_list.
+        min_grad: minimum value that the gradient_list can take, it will be
+            used to normalize the ``gradient_criteria`` in order to get values
+            that can be used in the function colormap.__call__(). If not
+            declared it will be initialized to the minimum value of
+            gradient_list.
+        chart: figure over
             with the graphs are plotted or axis over where the graphs are
             plotted. If None and ax is also None, the figure is
             initialized.
-        fig (figure object, optional): figure over with the graphs are
+        fig: figure over with the graphs are
             plotted in case ax is not specified. If None and ax is also
             None, the figure is initialized.
-        axes (list of axis objects, optional): axis over where the graphs are
-            plotted. If None, see param fig.
-        n_rows (int, optional): designates the number of rows of the figure
+        axes: axis over where the graphs
+            are plotted. If None, see param fig.
+        n_rows: designates the number of rows of the figure
             to plot the different dimensions of the image. Only specified
             if fig and ax are None.
-        n_cols(int, optional): designates the number of columns of the
+        n_cols: designates the number of columns of the
             figure to plot the different dimensions of the image. Only
             specified if fig and ax are None.
-        n_points (int or tuple, optional): Number of points to evaluate in
+        n_points: Number of points to evaluate in
             the plot. In case of surfaces a tuple of length 2 can be pased
             with the number of points to plot in each axis, otherwise the
             same number of points will be used in the two axes. By default
             in unidimensional plots will be used 501 points; in surfaces
             will be used 30 points per axis, wich makes a grid with 900
             points.
-        domain_range (tuple or list of tuples, optional): Range where the
+        domain_range: Range where the
             function will be plotted. In objects with unidimensional domain
             the domain range should be a tuple with the bounds of the
             interval; in the case of surfaces a list with 2 tuples with
             the ranges for each dimension. Default uses the domain range
             of the functional object.
-        group (list of int): contains integers from [0 to number of
+        group: contains integers from [0 to number of
             labels) indicating to which group each sample belongs to. Then,
             the samples with the same label are plotted in the same color.
             If None, the default value, each sample is plotted in the color
             assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-        group_colors (list of colors): colors in which groups are
+        group_colors: colors in which groups are
             represented, there must be one for each group. If None, each
             group is shown with distict colors in the "Greys" colormap.
-        group_names (list of str): name of each of the groups which appear
+        group_names: name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown. Implies `legend=True`.
-        legend (bool): if `True`, show a legend with the groups. If
+        colormap: name of the colormap to be used. By default we will
+            use autumn.
+        legend: if `True`, show a legend with the groups. If
             `group_names` is passed, it will be used for finding the names
             to display in the legend. Otherwise, the values passed to
             `group` will be used.
-        **kwargs: if dim_domain is 1, keyword arguments to be passed to
+        kwargs: if dim_domain is 1, keyword arguments to be passed to
             the matplotlib.pyplot.plot function; if dim_domain is 2,
             keyword arguments to be passed to the
             matplotlib.pyplot.plot_surface function.
-
-    Returns:
-        fig (figure object): figure object in which the graphs are plotted.
-
+    Attributes:
+        gradient_list: normalization of the values from gradient color_list
+            that will be used to determine the intensity of the color
+            each function will have.
     """
 
-    fig, axes = _get_figure_and_axes(chart, fig, axes)
-    fig, axes = _set_figure_layout_for_fdata(fdata, fig, axes, n_rows, n_cols)
+    def __init__(
+        self,
+        fdata: FData,
+        chart: Union[Figure, Axes, None] = None,
+        *,
+        fig: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+        n_points: Union[int, Tuple[int, int], None] = None,
+        domain_range: Optional[DomainRangeLike] = None,
+        group: Optional[Sequence[K]] = None,
+        group_colors: Optional[Indexable[K, ColorLike]] = None,
+        group_names: Optional[Indexable[K, str]] = None,
+        gradient_criteria: Optional[Sequence[float]] = None,
+        max_grad: Optional[float] = None,
+        min_grad: Optional[float] = None,
+        colormap: Union[Colormap, str, None] = None,
+        legend: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        BasePlot.__init__(
+            self,
+            chart,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
+        )
+        self.fdata = fdata
+        self.gradient_criteria = gradient_criteria
+        if self.gradient_criteria is not None:
+            if len(self.gradient_criteria) != fdata.n_samples:
+                raise ValueError(
+                    "The length of the gradient color",
+                    "list should be the same as the number",
+                    "of samples in fdata",
+                )
 
-    if domain_range is None:
-        domain_range = fdata.domain_range
-    else:
-        domain_range = _tuple_of_arrays(domain_range)
+            if min_grad is None:
+                self.min_grad = min(self.gradient_criteria)
+            else:
+                self.min_grad = min_grad
 
-    sample_colors, patches = _get_color_info(
-        fdata, group, group_names, group_colors, legend, kwargs)
+            if max_grad is None:
+                self.max_grad = max(self.gradient_criteria)
+            else:
+                self.max_grad = max_grad
 
-    if fdata.dim_domain == 1:
+            aux_list = [
+                grad_color - self.min_grad
+                for grad_color in self.gradient_criteria
+            ]
 
-        if n_points is None:
-            n_points = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
+            self.gradient_list: Sequence[float] = (
+                [
+                    aux / (self.max_grad - self.min_grad)
+                    for aux in aux_list
+                ]
+            )
+        else:
+            self.gradient_list = None
 
-        # Evaluates the object in a linspace
-        eval_points = np.linspace(*domain_range[0], n_points)
-        mat = fdata(eval_points)
+        self.n_points = n_points
+        self.group = group
+        self.group_colors = group_colors
+        self.group_names = group_names
+        self.legend = legend
+        self.colormap = colormap
 
-        color_dict = {}
+        if domain_range is None:
+            self.domain_range = self.fdata.domain_range
+        else:
+            self.domain_range = _to_domain_range(domain_range)
 
-        for i in range(fdata.dim_codomain):
-            for j in range(fdata.n_samples):
+        if self.gradient_list is None:
+            sample_colors, patches = _get_color_info(
+                self.fdata,
+                self.group,
+                self.group_names,
+                self.group_colors,
+                self.legend,
+                kwargs,
+            )
+        else:
+            patches = None
+            if self.colormap is None:
+                colormap = matplotlib.cm.get_cmap("autumn")
+                colormap = colormap.reversed()
+            else:
+                colormap = matplotlib.cm.get_cmap(self.colormap)
 
-                if sample_colors is not None:
-                    color_dict["color"] = sample_colors[j]
+            sample_colors = [None] * self.fdata.n_samples
+            for m in range(self.fdata.n_samples):
+                sample_colors[m] = colormap(self.gradient_list[m])
 
-                axes[i].plot(eval_points, mat[j, ..., i].T,
-                             **color_dict, **kwargs)
+        self.sample_colors = sample_colors
+        self.patches = patches
 
-    else:
+    @property
+    def dim(self) -> int:
+        return self.fdata.dim_domain + 1
 
-        # Selects the number of points
-        if n_points is None:
-            npoints = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
-        elif np.isscalar(npoints):
-            npoints = (npoints, npoints)
-        elif len(npoints) != 2:
-            raise ValueError(f"n_points should be a number or a tuple of "
-                             f"length 2, and has length {len(npoints)}")
+    @property
+    def n_subplots(self) -> int:
+        return self.fdata.dim_codomain
 
-        # Axes where will be evaluated
-        x = np.linspace(*domain_range[0], npoints[0])
-        y = np.linspace(*domain_range[1], npoints[1])
+    @property
+    def n_samples(self) -> int:
+        return self.fdata.n_samples
 
-        # Evaluation of the functional object
-        Z = fdata((x, y), grid=True)
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
 
-        X, Y = np.meshgrid(x, y, indexing='ij')
+        self.artists = np.zeros(
+            (self.n_samples, self.fdata.dim_codomain),
+            dtype=Artist,
+        )
 
-        color_dict = {}
+        color_dict: Mapping[str, Optional[ColorLike]] = {}
 
-        for i in range(fdata.dim_codomain):
-            for j in range(fdata.n_samples):
+        if self.fdata.dim_domain == 1:
 
-                if sample_colors is not None:
-                    color_dict["color"] = sample_colors[j]
+            if self.n_points is None:
+                self.n_points = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
 
-                axes[i].plot_surface(X, Y, Z[j, ..., i],
-                                     **color_dict, **kwargs)
+            # Evaluates the object in a linspace
+            eval_points = np.linspace(*self.domain_range[0], self.n_points)
+            mat = self.fdata(eval_points)
 
-    _set_labels(fdata, fig, axes, patches)
+            for i in range(self.fdata.dim_codomain):
+                for j in range(self.fdata.n_samples):
 
-    return fig
+                    set_color_dict(self.sample_colors, j, color_dict)
+
+                    self.artists[j, i] = axes[i].plot(
+                        eval_points,
+                        mat[j, ..., i].T,
+                        **color_dict,
+                    )[0]
+
+        else:
+
+            # Selects the number of points
+            if self.n_points is None:
+                n_points_tuple = 2 * (constants.N_POINTS_SURFACE_PLOT_AX,)
+            elif isinstance(self.n_points, int):
+                n_points_tuple = (self.n_points, self.n_points)
+            elif len(self.n_points) != 2:
+                raise ValueError(
+                    "n_points should be a number or a tuple of "
+                    "length 2, and has "
+                    "length {0}.".format(len(self.n_points)),
+                )
+
+            # Axes where will be evaluated
+            x = np.linspace(*self.domain_range[0], n_points_tuple[0])
+            y = np.linspace(*self.domain_range[1], n_points_tuple[1])
+
+            # Evaluation of the functional object
+            Z = self.fdata((x, y), grid=True)
+
+            X, Y = np.meshgrid(x, y, indexing='ij')
+
+            for k in range(self.fdata.dim_codomain):
+                for h in range(self.fdata.n_samples):
+
+                    set_color_dict(self.sample_colors, h, color_dict)
+
+                    self.artists[h, k] = axes[k].plot_surface(
+                        X,
+                        Y,
+                        Z[h, ..., k],
+                        **color_dict,
+                    )
+
+        _set_labels(self.fdata, fig, axes, self.patches)
 
 
-def plot_scatter(fdata, chart=None, *, grid_points=None,
-                 fig=None, axes=None,
-                 n_rows=None, n_cols=None, domain_range=None,
-                 group=None, group_colors=None, group_names=None,
-                 legend: bool = False,
-                 **kwargs):
-    """Plot the FDatGrid object.
+class ScatterPlot(BasePlot):
+    """
+    Class used to scatter the FDataGrid object.
 
     Args:
-        chart (figure object, axe or list of axes, optional): figure over
+        fdata: functional data set that we want to plot.
+        grid_points: points to plot.
+        chart: figure over
             with the graphs are plotted or axis over where the graphs are
             plotted. If None and ax is also None, the figure is
             initialized.
-        grid_points (ndarray): points to plot.
-        fig (figure object, optional): figure over with the graphs are
+        fig: figure over with the graphs are
             plotted in case ax is not specified. If None and ax is also
             None, the figure is initialized.
-        axes (list of axis objects, optional): axis over where the graphs are
-            plotted. If None, see param fig.
-        n_rows (int, optional): designates the number of rows of the figure
+        axes: axis over where the graphs
+            are plotted. If None, see param fig.
+        n_rows: designates the number of rows of the figure
             to plot the different dimensions of the image. Only specified
             if fig and ax are None.
-        n_cols(int, optional): designates the number of columns of the
+        n_cols: designates the number of columns of the
             figure to plot the different dimensions of the image. Only
             specified if fig and ax are None.
-        domain_range (tuple or list of tuples, optional): Range where the
+        domain_range: Range where the
             function will be plotted. In objects with unidimensional domain
             the domain range should be a tuple with the bounds of the
             interval; in the case of surfaces a list with 2 tuples with
             the ranges for each dimension. Default uses the domain range
             of the functional object.
-        group (list of int): contains integers from [0 to number of
+        group: contains integers from [0 to number of
             labels) indicating to which group each sample belongs to. Then,
             the samples with the same label are plotted in the same color.
             If None, the default value, each sample is plotted in the color
             assigned by matplotlib.pyplot.rcParams['axes.prop_cycle'].
-        group_colors (list of colors): colors in which groups are
+        group_colors: colors in which groups are
             represented, there must be one for each group. If None, each
             group is shown with distict colors in the "Greys" colormap.
-        group_names (list of str): name of each of the groups which appear
+        group_names: name of each of the groups which appear
             in a legend, there must be one for each one. Defaults to None
             and the legend is not shown. Implies `legend=True`.
-        legend (bool): if `True`, show a legend with the groups. If
+        legend: if `True`, show a legend with the groups. If
             `group_names` is passed, it will be used for finding the names
             to display in the legend. Otherwise, the values passed to
             `group` will be used.
-        **kwargs: if dim_domain is 1, keyword arguments to be passed to
+        kwargs: if dim_domain is 1, keyword arguments to be passed to
             the matplotlib.pyplot.plot function; if dim_domain is 2,
             keyword arguments to be passed to the
             matplotlib.pyplot.plot_surface function.
-
-    Returns:
-        fig (figure object): figure object in which the graphs are plotted.
-
     """
 
-    evaluated_points = None
+    def __init__(
+        self,
+        fdata: FData,
+        chart: Union[Figure, Axes, None] = None,
+        *,
+        fig: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+        grid_points: Optional[GridPointsLike] = None,
+        domain_range: Union[Tuple[int, int], DomainRangeLike, None] = None,
+        group: Optional[Sequence[K]] = None,
+        group_colors: Optional[Indexable[K, ColorLike]] = None,
+        group_names: Optional[Indexable[K, str]] = None,
+        legend: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        BasePlot.__init__(
+            self,
+            chart,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
+        )
+        self.fdata = fdata
+        self.grid_points = grid_points
 
-    if grid_points is None:
-        # This can only be done for FDataGrid
-        grid_points = fdata.grid_points
-        evaluated_points = fdata.data_matrix
+        self.evaluated_points = None
+        if self.grid_points is None:
+            # This can only be done for FDataGrid
+            self.grid_points = self.fdata.grid_points
+            self.evaluated_points = self.fdata.data_matrix
+        else:
+            self.evaluated_points = self.fdata(
+                self.grid_points, grid=True,
+            )
 
-    if evaluated_points is None:
-        evaluated_points = fdata(
-            grid_points, grid=True)
+        self.domain_range = domain_range
+        self.group = group
+        self.group_colors = group_colors
+        self.group_names = group_names
+        self.legend = legend
 
-    fig, axes = _get_figure_and_axes(chart, fig, axes)
-    fig, axes = _set_figure_layout_for_fdata(fdata, fig, axes, n_rows, n_cols)
+        if self.domain_range is None:
+            self.domain_range = self.fdata.domain_range
+        else:
+            self.domain_range = _to_domain_range(self.domain_range)
 
-    if domain_range is None:
-        domain_range = fdata.domain_range
-    else:
-        domain_range = _tuple_of_arrays(domain_range)
+        sample_colors, patches = _get_color_info(
+            self.fdata,
+            self.group,
+            self.group_names,
+            self.group_colors,
+            self.legend,
+            kwargs,
+        )
+        self.sample_colors = sample_colors
+        self.patches = patches
 
-    sample_colors, patches = _get_color_info(
-        fdata, group, group_names, group_colors, legend, kwargs)
+    @property
+    def dim(self) -> int:
+        return self.fdata.dim_domain + 1
 
-    if fdata.dim_domain == 1:
+    @property
+    def n_subplots(self) -> int:
+        return self.fdata.dim_codomain
 
-        color_dict = {}
+    @property
+    def n_samples(self) -> int:
+        return self.fdata.n_samples
 
-        for i in range(fdata.dim_codomain):
-            for j in range(fdata.n_samples):
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
+        """
+        Scatter FDataGrid object.
 
-                if sample_colors is not None:
-                    color_dict["color"] = sample_colors[j]
+        Returns:
+        fig: figure object in which the graphs are plotted.
+        """
+        self.artists = np.zeros(
+            (self.n_samples, self.fdata.dim_codomain),
+            dtype=Artist,
+        )
 
-                axes[i].scatter(grid_points[0],
-                                evaluated_points[j, ..., i].T,
-                                **color_dict, **kwargs)
+        color_dict: Mapping[str, Optional[ColorLike]] = {}
 
-    else:
+        if self.fdata.dim_domain == 1:
 
-        X = fdata.grid_points[0]
-        Y = fdata.grid_points[1]
-        X, Y = np.meshgrid(X, Y)
+            for i in range(self.fdata.dim_codomain):
+                for j in range(self.fdata.n_samples):
 
-        color_dict = {}
+                    set_color_dict(self.sample_colors, j, color_dict)
 
-        for i in range(fdata.dim_codomain):
-            for j in range(fdata.n_samples):
+                    self.artists[j, i] = axes[i].scatter(
+                        self.grid_points[0],
+                        self.evaluated_points[j, ..., i].T,
+                        **color_dict,
+                        picker=True,
+                        pickradius=2,
+                    )
 
-                if sample_colors is not None:
-                    color_dict["color"] = sample_colors[j]
+        else:
 
-                axes[i].scatter(X, Y,
-                                evaluated_points[j, ..., i].T,
-                                **color_dict, **kwargs)
+            X = self.fdata.grid_points[0]
+            Y = self.fdata.grid_points[1]
+            X, Y = np.meshgrid(X, Y)
 
-    _set_labels(fdata, fig, axes, patches)
+            for k in range(self.fdata.dim_codomain):
+                for h in range(self.fdata.n_samples):
 
-    return fig
+                    set_color_dict(self.sample_colors, h, color_dict)
+
+                    self.artists[h, k] = axes[k].scatter(
+                        X,
+                        Y,
+                        self.evaluated_points[h, ..., k].T,
+                        **color_dict,
+                        picker=True,
+                        pickradius=2,
+                    )
+
+        _set_labels(self.fdata, fig, axes, self.patches)
+
+
+def set_color_dict(
+    sample_colors: Any,
+    ind: int,
+    color_dict: Mapping[str, Optional[ColorLike]],
+) -> None:
+    """
+    Auxiliary method used to update color_dict.
+
+    Sets the new color of the color_dict
+    thanks to sample colors and index.
+    """
+    if sample_colors is not None:
+        color_dict["color"] = sample_colors[ind]

@@ -8,19 +8,17 @@ Explores the two possible ways to do functional principal component analysis.
 # Author: Yujian Hong
 # License: MIT
 
+import matplotlib.pyplot as plt
+
 import skfda
 from skfda.datasets import fetch_growth
-from skfda.exploratory.visualization import plot_fpca_perturbation_graphs
-from skfda.preprocessing.dim_reduction.projection import FPCA
+from skfda.exploratory.visualization import FPCAPlot
+from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
 from skfda.representation.basis import BSpline, Fourier, Monomial
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-
 ##############################################################################
-# In this example we are going to use functional principal component analysis to
-# explore datasets and obtain conclusions about said dataset using this
+# In this example we are going to use functional principal component analysis
+# to explore datasets and obtain conclusions about said dataset using this
 # technique.
 #
 # First we are going to fetch the Berkeley Growth Study data. This dataset
@@ -75,10 +73,13 @@ fpca.components_.plot()
 # faster at an early age and boys tend to start puberty later, therefore, their
 # growth is more significant later. Girls also stop growing early
 
-plot_fpca_perturbation_graphs(basis_fd.mean(),
-                              fpca.components_,
-                              30,
-                              fig=plt.figure(figsize=(6, 2 * 4)))
+FPCAPlot(
+    basis_fd.mean(),
+    fpca.components_,
+    30,
+    fig=plt.figure(figsize=(6, 2 * 4)),
+    n_rows=2,
+).plot()
 
 ##############################################################################
 # We can also specify another basis for the principal components as argument

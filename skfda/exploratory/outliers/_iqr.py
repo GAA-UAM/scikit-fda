@@ -1,10 +1,19 @@
+from __future__ import annotations
+
+from typing import Optional
+
+import numpy as np
 from sklearn.base import BaseEstimator, OutlierMixin
 
+from ...representation import FDataGrid
+from ..depth import Depth, ModifiedBandDepth
 from . import _envelopes
-from ..depth import ModifiedBandDepth
 
 
-class IQROutlierDetector(BaseEstimator, OutlierMixin):
+class IQROutlierDetector(
+    BaseEstimator,  # type: ignore
+    OutlierMixin,  # type: ignore
+):
     r"""Outlier detector using the interquartile range.
 
     Detects as outliers functions that have one or more points outside
@@ -32,28 +41,41 @@ class IQROutlierDetector(BaseEstimator, OutlierMixin):
 
     """
 
-    def __init__(self, *, depth_method=ModifiedBandDepth(), factor=1.5):
+    def __init__(
+        self,
+        *,
+        depth_method: Optional[Depth[FDataGrid]] = None,
+        factor: float = 1.5,
+    ) -> None:
         self.depth_method = depth_method
         self.factor = factor
 
-    def fit(self, X, y=None):
-        depth = self.depth_method(X)
+    def fit(self, X: FDataGrid, y: None = None) -> IQROutlierDetector:
+
+        depth_method = (
+            self.depth_method
+            if self.depth_method is not None
+            else ModifiedBandDepth()
+        )
+        depth = depth_method(X)
         indices_descending_depth = (-depth).argsort(axis=0)
 
         # Central region and envelope must be computed for outlier detection
-        central_region = _envelopes._compute_region(
+        central_region = _envelopes.compute_region(
             X, indices_descending_depth, 0.5)
-        self._central_envelope = _envelopes._compute_envelope(central_region)
+        self._central_envelope = _envelopes.compute_envelope(central_region)
 
         # Non-outlying envelope
-        self.non_outlying_threshold_ = _envelopes._non_outlying_threshold(
+        self.non_outlying_threshold_ = _envelopes.non_outlying_threshold(
             self._central_envelope, self.factor)
 
         return self
 
-    def predict(self, X):
-        outliers = _envelopes._predict_outliers(
-            X, self.non_outlying_threshold_)
+    def predict(self, X: FDataGrid) -> np.ndarray:
+        outliers = _envelopes.predict_outliers(
+            X,
+            self.non_outlying_threshold_,
+        )
 
         # Predict as scikit-learn outlier detectors
         predicted = ~outliers + outliers * -1

@@ -1,69 +1,78 @@
-from skfda.representation import FDataBasis, FData
-import numpy as np
 import itertools
-import scipy
+from typing import Optional, Tuple, Union, overload
+
+import numpy as np
 from sklearn.utils import check_random_state
+from typing_extensions import Literal
+
+import scipy.special
+
+from ..._utils import RandomStateLike
+from ...representation import FData, FDataBasis
 
 
-def hotelling_t2(fd1, fd2):
+def hotelling_t2(
+    fd1: FData,
+    fd2: FData,
+) -> float:
     r"""
-        Calculates Hotelling's :math:`T^2` over two samples in
-        :class:`skfda.representation.FData` objects with sizes :math:`n_1`
-        and :math:`n_2`.
+    Compute Hotelling's :math:`T^2` statistic.
 
-        .. math::
-            T^2 = n(\mathbf{m}_1 - \mathbf{m}_2)^\top \mathbf{W}^{1/2}(
-            \mathbf{W}^{1/2}\mathbf{K_{\operatorname{pooled}}} \mathbf{W}^{
-            1/2})^+
-            \mathbf{W}^{1/2} (\mathbf{m}_1 - \mathbf{m}_2),
+    Calculates Hotelling's :math:`T^2` over two samples in
+    :class:`skfda.representation.FData` objects with sizes :math:`n_1`
+    and :math:`n_2`.
 
-        where :math:`(\cdot)^{+}` indicates the Moore-Penrose pseudo-inverse
-        operator, :math:`n=n_1+n_2`, `W` is Gram matrix (identity in case of
-        discretized data), :math:`\mathbf{m}_1, \mathbf{m}_2` are the
-        means of each ample and :math:`\mathbf{K}_{\operatorname{pooled}}`
-        matrix is defined as
+    .. math::
+        T^2 = n(\mathbf{m}_1 - \mathbf{m}_2)^\top \mathbf{W}^{1/2}(
+        \mathbf{W}^{1/2}\mathbf{K_{\operatorname{pooled}}} \mathbf{W}^{
+        1/2})^+
+        \mathbf{W}^{1/2} (\mathbf{m}_1 - \mathbf{m}_2),
 
-        .. math::
-            \mathbf{K}_{\operatorname{pooled}} :=
-            \cfrac{n_1 - 1}{n_1 + n_2 - 2} \mathbf{K}_{n_1} +
-            \cfrac{n_2 - 1}{n_1 + n_2 - 2} \mathbf{K}_{n_2},
+    where :math:`(\cdot)^{+}` indicates the Moore-Penrose pseudo-inverse
+    operator, :math:`n=n_1+n_2`, `W` is Gram matrix (identity in case of
+    discretized data), :math:`\mathbf{m}_1, \mathbf{m}_2` are the
+    means of each ample and :math:`\mathbf{K}_{\operatorname{pooled}}`
+    matrix is defined as
 
-        where :math:`\mathbf{K}_{n_1}`, :math:`\mathbf{K}_{n_2}` are the sample
-        covariance matrices, computed with the basis coefficients or using
-        the discrete representation, depending on the input.
+    .. math::
+        \mathbf{K}_{\operatorname{pooled}} :=
+        \cfrac{n_1 - 1}{n_1 + n_2 - 2} \mathbf{K}_{n_1} +
+        \cfrac{n_2 - 1}{n_1 + n_2 - 2} \mathbf{K}_{n_2},
 
-        This statistic is defined in Pini, Stamm and Vantini[1].
+    where :math:`\mathbf{K}_{n_1}`, :math:`\mathbf{K}_{n_2}` are the sample
+    covariance matrices, computed with the basis coefficients or using
+    the discrete representation, depending on the input.
 
-        Args:
-            fd1 (FData): Object with the first sample.
-            fd2 (FData): Object containing second sample.
+    This statistic is defined in Pini, Stamm and Vantini
+    :footcite:`pini+stamm+vantini_2018_hotellings`.
 
-        Returns:
-            The value of the statistic.
+    Args:
+        fd1: Object with the first sample.
+        fd2: Object containing second sample.
 
-        Raises:
-            TypeError.
+    Returns:
+        The value of the statistic.
 
-        Examples:
+    Raises:
+        TypeError.
 
-            >>> from skfda.inference.hotelling import hotelling_t2
-            >>> from skfda.representation import FDataGrid, basis
+    Examples:
+        >>> from skfda.inference.hotelling import hotelling_t2
+        >>> from skfda.representation import FDataGrid, basis
 
-            >>> fd1 = FDataGrid([[1, 1, 1], [3, 3, 3]])
-            >>> fd2 = FDataGrid([[3, 3, 3], [5, 5, 5]])
-            >>> '%.2f' % hotelling_t2(fd1, fd2)
-            '2.00'
-            >>> fd1 = fd1.to_basis(basis.Fourier(n_basis=3))
-            >>> fd2 = fd2.to_basis(basis.Fourier(n_basis=3))
-            >>> '%.2f' % hotelling_t2(fd1, fd2)
-            '2.00'
+        >>> fd1 = FDataGrid([[1, 1, 1], [3, 3, 3]])
+        >>> fd2 = FDataGrid([[3, 3, 3], [5, 5, 5]])
+        >>> '%.2f' % hotelling_t2(fd1, fd2)
+        '2.00'
+        >>> fd1 = fd1.to_basis(basis.Fourier(n_basis=3))
+        >>> fd2 = fd2.to_basis(basis.Fourier(n_basis=3))
+        >>> '%.2f' % hotelling_t2(fd1, fd2)
+        '2.00'
 
-        References:
-            [1] A. Pini, A. Stamm and S. Vantini, "Hotelling's t2 in
-            separable hilbert spaces", *Jounal of Multivariate Analysis*,
-            167 (2018), pp.284-305.
+    References:
+        .. footbibliography::
 
-        """
+    """
     if not isinstance(fd1, FData):
         raise TypeError("Argument type must inherit FData.")
 
@@ -76,8 +85,9 @@ def hotelling_t2(fd1, fd2):
 
     if isinstance(fd1, FDataBasis):
         if fd1.basis != fd2.basis:
-            raise ValueError("Both FDataBasis objects must share the same "
-                             "basis.")
+            raise ValueError(
+                "Both FDataBasis objects must share the same basis.",
+            )
         # When working on basis representation we use the coefficients
         m = m.coefficients[0]
         k1 = np.cov(fd1.coefficients, rowvar=False)
@@ -95,6 +105,8 @@ def hotelling_t2(fd1, fd2):
     k_pool = ((n1 - 1) * k1 + (n2 - 1) * k2) / (n - 2)  # Combination of covs
 
     if isinstance(fd1, FDataBasis):
+        assert weights is not None
+
         # Product of pooled covariance with the weights and Moore-Penrose inv.
         k_inv = np.linalg.pinv(np.linalg.multi_dot([weights, k_pool, weights]))
         k_inv = weights.dot(k_inv).dot(weights)
@@ -102,12 +114,44 @@ def hotelling_t2(fd1, fd2):
         # If data is discrete no weights are needed
         k_inv = np.linalg.pinv(k_pool)
 
-    return n1 * n2 / n * m.T.dot(k_inv).dot(m)[0][0]
+    return float(n1 * n2 / n * m.T.dot(k_inv).dot(m)[0][0])
 
 
-def hotelling_test_ind(fd1, fd2, *, n_reps=None, random_state=None,
-                       return_dist=False):
-    r"""
+@overload
+def hotelling_test_ind(
+    fd1: FData,
+    fd2: FData,
+    *,
+    n_reps: Optional[int] = None,
+    random_state: RandomStateLike = None,
+    return_dist: Literal[False] = False,
+) -> Tuple[float, float]:
+    pass
+
+
+@overload
+def hotelling_test_ind(
+    fd1: FData,
+    fd2: FData,
+    *,
+    n_reps: Optional[int] = None,
+    random_state: RandomStateLike = None,
+    return_dist: Literal[True],
+) -> Tuple[float, float, np.ndarray]:
+    pass
+
+
+def hotelling_test_ind(
+    fd1: FData,
+    fd2: FData,
+    *,
+    n_reps: Optional[int] = None,
+    random_state: RandomStateLike = None,
+    return_dist: bool = False,
+) -> Union[Tuple[float, float], Tuple[float, float, np.ndarray]]:
+    """
+    Compute Hotelling :math:`T^2`-test.
+
     Calculate the :math:`T^2`-test for the means of two independent samples of
     functional data.
 
@@ -120,28 +164,23 @@ def hotelling_test_ind(fd1, fd2, *, n_reps=None, random_state=None,
     number of repetitions of the algorithm is provided then the permutations
     tested are generated randomly.
 
-    This procedure is from Pini, Stamm and Vantinni[1].
+    This procedure is from Pini, Stamm and Vantinni
+    :footcite:`pini+stamm+vantini_2018_hotellings`.
 
     Args:
-        fd1,fd2 (FData): Samples of data. The FData objects must have the same
+        fd1: First sample of data.
+        fd2: Second sample of data. The data objects must have the same
             type.
-
-        n_reps (int, optional): Maximum number of repetitions to compute
+        n_reps: Maximum number of repetitions to compute
             p-value. Default value is None.
-
-        random_state (optional): Random state.
-
-        return_dist (bool, optional): Flag to indicate if the function should
+        random_state: Random state.
+        return_dist: Flag to indicate if the function should
             return a numpy.array with the values of the statistic computed over
             each permutation.
-
 
     Returns:
         Value of the sample statistic, one tailed p-value and a collection of
         statistic values from permutations of the sample.
-
-    Return type:
-        (float, float, numpy.array)
 
     Raises:
         TypeError: In case of bad arguments.
@@ -163,9 +202,8 @@ def hotelling_test_ind(fd1, fd2, *, n_reps=None, random_state=None,
         [ 2. 2. 0. 0. 2. 2.]
 
     References:
-        [1] A. Pini, A. Stamm and S. Vantini, "Hotelling's t2 in
-        separable hilbert spaces", *Jounal of Multivariate Analysis*,
-        167 (2018), pp.284-305.
+        .. footbibliography::
+
     """
     if not isinstance(fd1, FData):
         raise TypeError("Argument type must inherit FData.")

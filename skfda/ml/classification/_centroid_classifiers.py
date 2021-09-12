@@ -1,30 +1,37 @@
 """Centroid-based models for supervised classification."""
+from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Generic, Optional, TypeVar
 
+from numpy import ndarray
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from ..._utils import _classifier_get_classes
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...exploratory.stats import mean, trim_mean
-from ...misc.metrics import l2_distance, lp_distance, pairwise_distance
+from ...misc.metrics import Metric, PairwiseMetric, l2_distance
+from ...representation import FData
+
+T = TypeVar("T", bound=FData)
 
 
-class NearestCentroid(BaseEstimator, ClassifierMixin):
+class NearestCentroid(
+    BaseEstimator,  # type: ignore
+    ClassifierMixin,  # type: ignore
+    Generic[T],
+):
     """Nearest centroid classifier for functional data.
 
     Each class is represented by its centroid, with test samples classified to
     the class with the nearest centroid.
 
     Parameters:
-        metric: callable, (default
-            :func:`lp_distance <skfda.metrics.lp_distance>`)
+        metric:
             The metric to use when calculating distance between test samples
             and centroids. See the documentation of the metrics module
-            for a list of available metrics. Defaults used L2 distance.
-        centroid: callable, (default
-            :func:`mean <skfda.exploratory.stats.mean>`)
+            for a list of available metrics. L2 distance is used by default.
+        centroid:
             The centroids for the samples corresponding to each class is the
             point from which the sum of the distances (according to the metric)
             of all samples that belong to that particular class are minimized.
@@ -59,73 +66,80 @@ class NearestCentroid(BaseEstimator, ClassifierMixin):
         :class:`~skfda.ml.classification.DTMClassifier`
     """
 
-    def __init__(self, metric=l2_distance, centroid=mean):
+    def __init__(
+        self,
+        metric: Metric[T] = l2_distance,
+        centroid: Callable[[T], T] = mean,
+    ):
         self.metric = metric
         self.centroid = centroid
 
-    def fit(self, X, y):
+    def fit(self, X: T, y: ndarray) -> NearestCentroid[T]:
         """Fit the model using X as training data and y as target values.
 
         Args:
-            X (:class:`FDataGrid`, array_matrix): Training data. FDataGrid
-                with the training data or array matrix with shape
-                [n_samples, n_samples] if metric='precomputed'.
-            y (array-like or sparse matrix): Target values of
-                shape = [n_samples] or [n_samples, n_outputs].
+            X: FDataGrid with the training data or array matrix with shape
+                (n_samples, n_samples) if metric='precomputed'.
+            y: Target values of
+                shape = (n_samples) or (n_samples, n_outputs).
 
         Returns:
-            self (object)
+            self
         """
-        classes_, y_ind = _classifier_get_classes(y)
+        classes, y_ind = _classifier_get_classes(y)
 
-        self.classes_ = classes_
+        self._classes = classes
         self.centroids_ = self.centroid(X[y_ind == 0])
 
-        for cur_class in range(1, self.classes_.size):
+        for cur_class in range(1, self._classes.size):
             centroid = self.centroid(X[y_ind == cur_class])
             self.centroids_ = self.centroids_.concatenate(centroid)
 
         return self
 
-    def predict(self, X):
+    def predict(self, X: T) -> ndarray:
         """Predict the class labels for the provided data.
 
         Args:
-            X (:class:`FDataGrid`): FDataGrid with the test samples.
+            X: FDataGrid with the test samples.
 
         Returns:
-            y (np.array): array of shape [n_samples] or
-            [n_samples, n_outputs] with class labels for each data sample.
+            Array of shape (n_samples) or
+                (n_samples, n_outputs) with class labels for each data sample.
         """
         sklearn_check_is_fitted(self)
 
-        return self.classes_[pairwise_distance(self.metric)(
+        return self._classes[PairwiseMetric(self.metric)(
             X,
             self.centroids_,
         ).argmin(axis=1)
         ]
 
 
-class DTMClassifier(BaseEstimator, ClassifierMixin):
+class DTMClassifier(
+    BaseEstimator,  # type: ignore
+    ClassifierMixin,  # type: ignore
+    Generic[T],
+):
     """Distance to trimmed means (DTM) classification.
 
     Test samples are classified to the class that minimizes the distance of
-    the observation to the trimmed mean of the group.
+    the observation to the trimmed mean of the group
+    :footcite:`fraiman+muniz_2001_trimmed`.
 
     Parameters:
-        proportiontocut (float): indicates the percentage of functions to
-            remove. It is not easy to determine as it varies from dataset to
+        proportiontocut:
+            Indicates the percentage of functions to remove.
+            It is not easy to determine as it varies from dataset to
             dataset.
-        depth_method (Depth, default
-            :class:`ModifiedBandDepth <skfda.depth.ModifiedBandDepth>`):
+        depth_method:
             The depth class used to order the data. See the documentation of
             the depths module for a list of available depths. By default it
             is ModifiedBandDepth.
-        metric (Callable, default
-            :func:`lp_distance <skfda.misc.metrics.lp_distance>`):
+        metric:
             Distance function between two functional objects. See the
             documentation of the metrics module for a list of available
-            metrics.
+            metrics. L2 distance is used by default.
 
     Examples:
         Firstly, we will import and split the Berkeley Growth Study dataset
@@ -157,38 +171,36 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
         0.875
 
     See also:
-        :class:`~skfda.ml.classification.MaximumDepthClassifier`
+        :class:`~skfda.ml.classification.NearestCentroid`
 
     References:
-        Fraiman, R. and Muniz, G. (2001). Trimmed means for functional
-        data. Test, 10, 419-440.
+        .. footbibliography::
+
     """
 
     def __init__(
         self,
         proportiontocut: float,
-        depth_method: Depth = None,
-        metric: Callable = lp_distance,
+        depth_method: Optional[Depth[T]] = None,
+        metric: Metric[T] = l2_distance,
     ) -> None:
         self.proportiontocut = proportiontocut
-
-        if depth_method is None:
-            self.depth_method = ModifiedBandDepth()
-        else:
-            self.depth_method = depth_method
-
+        self.depth_method = depth_method
         self.metric = metric
 
-    def fit(self, X, y):
+    def fit(self, X: T, y: ndarray) -> DTMClassifier[T]:
         """Fit the model using X as training data and y as target values.
 
         Args:
-            X (:class:`FDataGrid`): FDataGrid with the training data.
-            y (array-like): Target values of shape = [n_samples].
+            X: FDataGrid with the training data.
+            y: Target values of shape = (n_samples).
 
         Returns:
-            self (object)
+            self
         """
+        if self.depth_method is None:
+            self.depth_method = ModifiedBandDepth()
+
         self._clf = NearestCentroid(
             metric=self.metric,
             centroid=lambda fdatagrid: trim_mean(
@@ -201,14 +213,14 @@ class DTMClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def predict(self, X):
+    def predict(self, X: T) -> ndarray:
         """Predict the class labels for the provided data.
 
         Args:
-            X (:class:`FDataGrid`): FDataGrid with the test samples.
+            X: FDataGrid with the test samples.
 
         Returns:
-            y (np.array): array of shape [n_samples] or
-            [n_samples, n_outputs] with class labels for each data sample.
+            Array of shape (n_samples) or
+                (n_samples, n_outputs) with class labels for each data sample.
         """
         return self._clf.predict(X)

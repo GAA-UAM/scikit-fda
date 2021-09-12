@@ -4,6 +4,8 @@ Defines the abstract class that should be implemented by the funtional data
 objects of the package and contains some commons methods.
 """
 
+from __future__ import annotations
+
 import warnings
 from abc import ABC, abstractmethod
 from typing import (
@@ -14,25 +16,39 @@ from typing import (
     NoReturn,
     Optional,
     Sequence,
-    Tuple,
     TypeVar,
     Union,
+    cast,
+    overload,
 )
 
 import numpy as np
 import pandas.api.extensions
+from typing_extensions import Literal
 
-from .._utils import _evaluate_grid, _reshape_eval_points
+from .._utils import _evaluate_grid, _reshape_eval_points, _to_grid_points
+from ._typing import (
+    ArrayLike,
+    DomainRange,
+    GridPointsLike,
+    LabelTuple,
+    LabelTupleLike,
+)
 from .evaluator import Evaluator
-from .extrapolation import _parse_extrapolation
+from .extrapolation import ExtrapolationLike, _parse_extrapolation
 
 if TYPE_CHECKING:
     from . import FDataGrid, FDataBasis
     from .basis import Basis
 
 T = TypeVar('T', bound='FData')
-DomainRange = Tuple[Tuple[float, float], ...]
-LabelTuple = Tuple[Optional[str], ...]
+
+EvalPointsType = Union[
+    ArrayLike,
+    Iterable[ArrayLike],
+    GridPointsLike,
+    Iterable[GridPointsLike],
+]
 
 
 class FData(  # noqa: WPS214
@@ -57,16 +73,16 @@ class FData(  # noqa: WPS214
     def __init__(
         self,
         *,
-        extrapolation: Evaluator,
+        extrapolation: Optional[ExtrapolationLike] = None,
         dataset_name: Optional[str] = None,
         dataset_label: Optional[str] = None,
-        axes_labels: Optional[LabelTuple] = None,
-        argument_names: Optional[LabelTuple] = None,
-        coordinate_names: Optional[LabelTuple] = None,
-        sample_names: Optional[LabelTuple] = None,
+        axes_labels: Optional[LabelTupleLike] = None,
+        argument_names: Optional[LabelTupleLike] = None,
+        coordinate_names: Optional[LabelTupleLike] = None,
+        sample_names: Optional[LabelTupleLike] = None,
     ) -> None:
 
-        self.extrapolation = extrapolation
+        self.extrapolation = extrapolation  # type: ignore
         self.dataset_name = dataset_name
 
         if dataset_label is not None:
@@ -75,7 +91,7 @@ class FData(  # noqa: WPS214
         self.argument_names = argument_names  # type: ignore
         self.coordinate_names = coordinate_names  # type: ignore
         if axes_labels is not None:
-            self.axes_labels = axes_labels
+            self.axes_labels = axes_labels  # type: ignore
         self.sample_names = sample_names  # type: ignore
 
     @property
@@ -103,7 +119,7 @@ class FData(  # noqa: WPS214
     @argument_names.setter
     def argument_names(
         self,
-        names: Optional[LabelTuple],
+        names: Optional[LabelTupleLike],
     ) -> None:
         if names is None:
             names = (None,) * self.dim_domain
@@ -124,7 +140,7 @@ class FData(  # noqa: WPS214
     @coordinate_names.setter
     def coordinate_names(
         self,
-        names: Optional[LabelTuple],
+        names: Optional[LabelTupleLike],
     ) -> None:
         if names is None:
             names = (None,) * self.dim_codomain
@@ -150,7 +166,7 @@ class FData(  # noqa: WPS214
         return self.argument_names + self.coordinate_names
 
     @axes_labels.setter
-    def axes_labels(self, labels: LabelTuple) -> None:
+    def axes_labels(self, labels: LabelTupleLike) -> None:
         """Set the list of labels."""
         if labels is not None:
 
@@ -182,7 +198,7 @@ class FData(  # noqa: WPS214
         return self._sample_names
 
     @sample_names.setter
-    def sample_names(self, names: Optional[LabelTuple]) -> None:
+    def sample_names(self, names: Optional[LabelTupleLike]) -> None:
         if names is None:
             names = (None,) * self.n_samples
         else:
@@ -229,7 +245,7 @@ class FData(  # noqa: WPS214
 
     @property
     @abstractmethod
-    def coordinates(self: T) -> T:
+    def coordinates(self: T) -> Sequence[T]:
         r"""Return a component of the FDataGrid.
 
         If the functional object contains multivariate samples
@@ -245,7 +261,7 @@ class FData(  # noqa: WPS214
         return self._extrapolation
 
     @extrapolation.setter
-    def extrapolation(self, value: Optional[Union[str, Evaluator]]) -> None:
+    def extrapolation(self, value: Optional[ExtrapolationLike]) -> None:
         """Set the type of extrapolation."""
         self._extrapolation = _parse_extrapolation(value)
 
@@ -274,7 +290,7 @@ class FData(  # noqa: WPS214
             should be applied.
 
         """
-        index = np.zeros(eval_points.shape[:-1], dtype=np.bool)
+        index = np.zeros(eval_points.shape[:-1], dtype=np.bool_)
 
         # Checks bounds in each domain dimension
         for i, bounds in enumerate(self.domain_range):
@@ -331,7 +347,7 @@ class FData(  # noqa: WPS214
     @abstractmethod
     def _evaluate(
         self,
-        eval_points: np.ndarray,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -358,12 +374,60 @@ class FData(  # noqa: WPS214
         """
         pass
 
+    @overload
     def evaluate(
         self,
-        eval_points: np.ndarray,
+        eval_points: ArrayLike,
         *,
         derivative: int = 0,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[False] = False,
+        aligned: Literal[True] = True,
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def evaluate(
+        self,
+        eval_points: Iterable[ArrayLike],
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[False] = False,
+        aligned: Literal[False],
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def evaluate(
+        self,
+        eval_points: GridPointsLike,
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[True],
+        aligned: Literal[True] = True,
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def evaluate(
+        self,
+        eval_points: Iterable[GridPointsLike],
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[True],
+        aligned: Literal[False],
+    ) -> np.ndarray:
+        pass
+
+    def evaluate(
+        self,
+        eval_points: EvalPointsType,
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
         grid: bool = False,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -401,7 +465,7 @@ class FData(  # noqa: WPS214
                 "derivative function instead.",
                 DeprecationWarning,
             )
-            return self.derivative(order=derivative)(
+            return self.derivative(order=derivative)(  # type: ignore
                 eval_points,
                 extrapolation=extrapolation,
                 grid=grid,
@@ -409,7 +473,8 @@ class FData(  # noqa: WPS214
             )
 
         if grid:  # Evaluation of a grid performed in auxiliar function
-            return _evaluate_grid(
+
+            return _evaluate_grid(  # type: ignore
                 eval_points,
                 evaluate_method=self.evaluate,
                 n_samples=self.n_samples,
@@ -419,11 +484,18 @@ class FData(  # noqa: WPS214
                 aligned=aligned,
             )
 
+        eval_points = cast(Union[ArrayLike, Iterable[ArrayLike]], eval_points)
+
         if extrapolation is None:
             extrapolation = self.extrapolation
         else:
             # Gets the function to perform extrapolation or None
             extrapolation = _parse_extrapolation(extrapolation)
+
+        eval_points = cast(
+            Union[ArrayLike, Sequence[ArrayLike]],
+            eval_points,
+        )
 
         # Convert to array and check dimensions of eval points
         eval_points = _reshape_eval_points(
@@ -461,7 +533,7 @@ class FData(  # noqa: WPS214
                     aligned=aligned,
                 )
 
-                res_extrapolation = extrapolation.evaluate(
+                res_extrapolation = extrapolation(  # type: ignore
                     self,
                     eval_points_extrapolation,
                     aligned=aligned,
@@ -480,12 +552,60 @@ class FData(  # noqa: WPS214
             aligned=aligned,
         )
 
+    @overload
     def __call__(
         self,
-        eval_points: np.ndarray,
+        eval_points: ArrayLike,
         *,
         derivative: int = 0,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[False] = False,
+        aligned: Literal[True] = True,
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def __call__(
+        self,
+        eval_points: Iterable[ArrayLike],
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[False] = False,
+        aligned: Literal[False],
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def __call__(
+        self,
+        eval_points: GridPointsLike,
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[True],
+        aligned: Literal[True] = True,
+    ) -> np.ndarray:
+        pass
+
+    @overload
+    def __call__(
+        self,
+        eval_points: Iterable[GridPointsLike],
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[True],
+        aligned: Literal[False],
+    ) -> np.ndarray:
+        pass
+
+    def __call__(
+        self,
+        eval_points: EvalPointsType,
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
         grid: bool = False,
         aligned: bool = True,
     ) -> np.ndarray:
@@ -519,7 +639,7 @@ class FData(  # noqa: WPS214
             function at the values specified in eval_points.
 
         """
-        return self.evaluate(
+        return self.evaluate(  # type: ignore
             eval_points,
             derivative=derivative,
             extrapolation=extrapolation,
@@ -528,7 +648,7 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def derivative(self: T, order: int = 1) -> T:
+    def derivative(self: T, *, order: int = 1) -> T:
         """Differentiate a FData object.
 
         Args:
@@ -542,40 +662,111 @@ class FData(  # noqa: WPS214
 
     @abstractmethod
     def shift(
-        self: T,
-        shifts: Union[float, np.ndarray],
+        self,
+        shifts: Union[ArrayLike, float],
         *,
         restrict_domain: bool = False,
-        extrapolation: Optional[Union[str, Evaluator]] = None,
-        eval_points: np.ndarray = None,
-        **kwargs: Any,
-    ) -> T:
-        """Perform a shift of the curves.
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid_points: Optional[GridPointsLike] = None,
+    ) -> FDataGrid:
+        r"""
+        Perform a shift of the curves.
+
+        The i-th shifted function :math:`y_i` has the form
+
+        .. math::
+            y_i(t) = x_i(t + \delta_i)
+
+        where :math:`x_i` is the i-th original function and :math:`delta_i` is
+        the shift performed for that function, that must be a vector in the
+        domain space.
+
+        Note that a positive shift moves the graph of the function in the
+        negative direction and vice versa.
 
         Args:
-            shifts: List with the shift corresponding
-                for each sample or numeric with the shift to apply to all
-                samples.
-            restrict_domain: If True restricts the domain to
-                avoid evaluate points outside the domain using extrapolation.
+            shifts: List with the shifts
+                corresponding for each sample or numeric with the shift to
+                apply to all samples.
+            restrict_domain: If True restricts the domain to avoid the
+                evaluation of points outside the domain using extrapolation.
                 Defaults uses extrapolation.
             extrapolation: Controls the
                 extrapolation mode for elements outside the domain range.
                 By default uses the method defined in fd. See extrapolation to
                 more information.
-            eval_points: Set of points where
+            grid_points: Grid of points where
                 the functions are evaluated to obtain the discrete
-                representation of the object to operate. If an empty list is
-                passed it calls np.linspace with bounds equal to the ones
-                defined in fd.domain_range and the number of points the maximum
-                between 201 and 10 times the number of basis plus 1.
-            kwargs: Additional arguments.
+                representation of the object to operate. If ``None`` the
+                current grid_points are used to unificate the domain of the
+                shifted data.
 
         Returns:
-            :class:`FData` with the shifted functional data.
+            Shifted functions.
 
         """
-        pass
+        assert grid_points is not None
+        grid_points = _to_grid_points(grid_points)
+
+        arr_shifts = np.array([shifts] if np.isscalar(shifts) else shifts)
+
+        # Accept unidimensional array when the domain dimension is one or when
+        # the shift is the same for each sample
+        if arr_shifts.ndim == 1:
+            arr_shifts = (
+                arr_shifts[np.newaxis, :]  # Same shift for each sample
+                if len(arr_shifts) == self.dim_domain
+                else arr_shifts[:, np.newaxis]
+            )
+
+        if len(arr_shifts) not in {1, self.n_samples}:
+            raise ValueError(
+                f"The length of the shift vector ({len(arr_shifts)}) must "
+                f"have length equal to 1 or to the number of samples "
+                f"({self.n_samples})",
+            )
+
+        if restrict_domain:
+            domain = np.asarray(self.domain_range)
+
+            a = domain[:, 0] - np.min(np.min(arr_shifts, axis=0), 0)
+            b = domain[:, 1] - np.max(np.max(arr_shifts, axis=1), 0)
+
+            domain = np.hstack((a, b))
+            domain_range = tuple(domain)
+
+        if len(arr_shifts) == 1:
+            shifted_grid_points = tuple(
+                g + s for g, s in zip(grid_points, arr_shifts[0])
+            )
+            data_matrix = self(
+                shifted_grid_points,
+                extrapolation=extrapolation,
+                aligned=True,
+                grid=True,
+            )
+        else:
+            shifted_grid_points_per_sample = (
+                tuple(
+                    g + s for g, s in zip(grid_points, shift)
+                ) for shift in arr_shifts
+            )
+            data_matrix = self(
+                shifted_grid_points_per_sample,
+                extrapolation=extrapolation,
+                aligned=False,
+                grid=True,
+            )
+
+        shifted = self.to_grid().copy(
+            data_matrix=data_matrix,
+            grid_points=grid_points,
+        )
+
+        if restrict_domain:
+            shifted = shifted.restrict(domain_range)
+
+        return shifted
 
     def plot(self, *args: Any, **kwargs: Any) -> Any:
         """Plot the FDatGrid object.
@@ -588,28 +779,29 @@ class FData(  # noqa: WPS214
             fig (figure object): figure object in which the graphs are plotted.
 
         """
-        from ..exploratory.visualization.representation import plot_graph
+        from ..exploratory.visualization.representation import GraphPlot
 
-        return plot_graph(self, *args, **kwargs)
+        return GraphPlot(self, *args, **kwargs).plot()
 
     @abstractmethod
-    def copy(self: T, **kwargs: Any) -> T:
-        """Make a copy of the object.
-
-        Args:
-            kwargs: named args with attributes to be changed in the new copy.
-
-        Returns:
-            A copy of the FData object.
-
-        """
+    def copy(
+        self: T,
+        *,
+        deep: bool = False,  # For Pandas compatibility
+        dataset_name: Optional[str] = None,
+        argument_names: Optional[LabelTupleLike] = None,
+        coordinate_names: Optional[LabelTupleLike] = None,
+        sample_names: Optional[LabelTupleLike] = None,
+        extrapolation: Optional[ExtrapolationLike] = None,
+    ) -> T:
+        """Make a copy of the object."""
         pass
 
     @abstractmethod  # noqa: WPS125
     def sum(  # noqa: WPS125
         self: T,
         *,
-        axis: None = None,
+        axis: Optional[int] = None,
         out: None = None,
         keepdims: bool = False,
         skipna: bool = False,
@@ -676,7 +868,10 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def to_grid(self, grid_points: np.ndarray = None) -> 'FDataGrid':
+    def to_grid(
+        self,
+        grid_points: Optional[GridPointsLike] = None,
+    ) -> FDataGrid:
         """Return the discrete representation of the object.
 
         Args:
@@ -693,9 +888,9 @@ class FData(  # noqa: WPS214
     @abstractmethod
     def to_basis(
         self,
-        basis: 'Basis',
+        basis: Basis,
         **kwargs: Any,
-    ) -> 'FDataBasis':
+    ) -> FDataBasis:
         """Return the basis representation of the object.
 
         Args:
@@ -736,9 +931,8 @@ class FData(  # noqa: WPS214
         self: T,
         fd: T,
         *,
-        eval_points: np.ndarray = None,
-        **kwargs: Any,
-    ) -> T:
+        eval_points: Optional[np.ndarray] = None,
+    ) -> FData:
         """Composition of functions.
 
         Performs the composition of functions.
@@ -748,18 +942,16 @@ class FData(  # noqa: WPS214
                 have the same number of samples and image dimension equal to
                 the domain dimension of the object composed.
             eval_points: Points to perform the evaluation.
-            kwargs: Named arguments to be passed to the composition method of
-                the specific functional object.
 
         """
         pass
 
     @abstractmethod
-    def __getitem__(self: T, key: Union[int, slice]) -> T:
+    def __getitem__(self: T, key: Union[int, slice, np.ndarray]) -> T:
         """Return self[key]."""
         pass
 
-    def equals(self, other: Any) -> bool:
+    def equals(self, other: object) -> bool:
         """Whole object equality."""
         return (
             isinstance(other, type(self))  # noqa: WPS222
@@ -770,10 +962,10 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def __eq__(self, other: Any) -> np.ndarray:
+    def __eq__(self, other: object) -> np.ndarray:  # type: ignore[override]
         pass
 
-    def __ne__(self, other: Any) -> np.ndarray:
+    def __ne__(self, other: object) -> np.ndarray:  # type: ignore[override]
         """Return for `self != other` (element-wise in-equality)."""
         result = self.__eq__(other)
         if result is NotImplemented:

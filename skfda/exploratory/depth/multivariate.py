@@ -1,76 +1,101 @@
+"""Depth and outlyingness ABCs and implementations for multivariate data."""
+
+from __future__ import annotations
+
 import abc
 import math
-from scipy.special import comb
-
-import scipy.stats
-import sklearn
+from typing import Generic, Optional, TypeVar
 
 import numpy as np
+import scipy.stats
+import sklearn
+from scipy.special import comb
+from typing_extensions import Literal
+
+T = TypeVar("T", contravariant=True)
+SelfType = TypeVar("SelfType")
+_Side = Literal["left", "right"]
 
 
-class _DepthOrOutlyingness(abc.ABC, sklearn.base.BaseEstimator):
-    """
-    Abstract class representing a depth or outlyingness function.
+class _DepthOrOutlyingness(
+    abc.ABC,
+    sklearn.base.BaseEstimator,  # type: ignore
+    Generic[T],
+):
+    """Abstract class representing a depth or outlyingness function."""
 
-    """
-
-    def fit(self, X, y=None):
+    def fit(self: SelfType, X: T, y: None = None) -> SelfType:
         """
         Learn the distribution from the observations.
 
         Args:
             X: Functional dataset from which the distribution of the data is
-               inferred.
+                inferred.
             y: Unused. Kept only for convention.
 
         Returns:
-            self: Fitted estimator.
+            Fitted estimator.
 
         """
         return self
 
     @abc.abstractmethod
-    def predict(self, X):
+    def predict(self, X: T) -> np.ndarray:
         """
         Compute the depth or outlyingness inside the learned distribution.
 
         Args:
             X: Points whose depth is going to be evaluated.
 
+        Returns:
+            Depth of each observation.
+
         """
         pass
 
-    def fit_predict(self, X, y=None):
+    def fit_predict(self, X: T, y: None = None) -> np.ndarray:
         """
-        Compute the depth or outlyingness of each observation with respect to
-        the whole dataset.
+        Compute the depth or outlyingness of each observation.
+
+        This computation is done with respect to the whole dataset.
 
         Args:
             X: Dataset.
             y: Unused. Kept only for convention.
 
+        Returns:
+            Depth of each observation.
+
         """
         return self.fit(X).predict(X)
 
-    def __call__(self, X, *, distribution=None):
+    def __call__(
+        self,
+        X: T,
+        *,
+        distribution: Optional[T] = None,
+    ) -> np.ndarray:
         """
-        Allows the depth or outlyingness to be used as a function.
+        Allow the depth or outlyingness to be used as a function.
 
         Args:
             X: Points whose depth is going to be evaluated.
             distribution: Functional dataset from which the distribution of
                 the data is inferred. If ``None`` it is the same as ``X``.
 
+        Returns:
+            Depth of each observation.
+
         """
         copy = sklearn.base.clone(self)
 
         if distribution is None:
             return copy.fit_predict(X)
-        else:
-            return copy.fit(distribution).predict(X)
 
-    @property
-    def max(self):
+        return copy.fit(distribution).predict(X)
+
+    @property  # noqa: WPS125
+    def max(self) -> float:  # noqa: WPS125
         """
         Maximum (or supremum if there is no maximum) of the possibly predicted
         values.
@@ -78,8 +103,8 @@ class _DepthOrOutlyingness(abc.ABC, sklearn.base.BaseEstimator):
         """
         return 1
 
-    @property
-    def min(self):
+    @property  # noqa: WPS125
+    def min(self) -> float:  # noqa: WPS125
         """
         Minimum (or infimum if there is no maximum) of the possibly predicted
         values.
@@ -88,41 +113,41 @@ class _DepthOrOutlyingness(abc.ABC, sklearn.base.BaseEstimator):
         return 0
 
 
-class Depth(_DepthOrOutlyingness):
-    """
-    Abstract class representing a depth function.
-
-    """
-    pass
+class Depth(_DepthOrOutlyingness[T]):
+    """Abstract class representing a depth function."""
 
 
-class Outlyingness(_DepthOrOutlyingness):
-    """
-    Abstract class representing an outlyingness function.
-
-    """
-    pass
+class Outlyingness(_DepthOrOutlyingness[T]):
+    """Abstract class representing an outlyingness function."""
 
 
-def _searchsorted_one_dim(array, values, *, side='left'):
-    searched_index = np.searchsorted(array, values, side=side)
-
-    return searched_index
+def _searchsorted_one_dim(
+    array: np.ndarray,
+    values: np.ndarray,
+    *,
+    side: _Side = 'left',
+) -> np.ndarray:
+    return np.searchsorted(array, values, side=side)
 
 
 _searchsorted_vectorized = np.vectorize(
     _searchsorted_one_dim,
     signature='(n),(m),()->(m)',
-    excluded='side')
+    excluded='side',
+)
 
 
-def _searchsorted_ordered(array, values, *, side='left'):
+def _searchsorted_ordered(
+    array: np.ndarray,
+    values: np.ndarray,
+    *,
+    side: _Side = 'left',
+) -> np.ndarray:
     return _searchsorted_vectorized(array, values, side=side)
 
 
-def _cumulative_distribution(column):
-    """Calculates the cumulative distribution function of the values passed to
-    the function and evaluates it at each point.
+def _cumulative_distribution(column: np.ndarray) -> np.ndarray:
+    """Calculate the cumulative distribution function at each point.
 
     Args:
         column (numpy.darray): Array containing the values over which the
@@ -137,11 +162,14 @@ def _cumulative_distribution(column):
         array([ 0.4,  0.9,  1. ,  0.4,  0.6,  0.6,  0.9,  0.4,  0.4,  0.7])
 
     """
-    return _searchsorted_ordered(np.sort(column), column,
-                                 side='right') / len(column)
+    return _searchsorted_ordered(
+        np.sort(column),
+        column,
+        side='right',
+    ) / len(column)
 
 
-class _UnivariateFraimanMuniz(Depth):
+class _UnivariateFraimanMuniz(Depth[np.ndarray]):
     r"""
     Univariate depth used to compute the Fraiman an Muniz depth.
 
@@ -157,24 +185,26 @@ class _UnivariateFraimanMuniz(Depth):
 
     """
 
-    def fit(self, X, y=None):
+    def fit(self: SelfType, X: np.ndarray, y: None = None) -> SelfType:
         self._sorted_values = np.sort(X, axis=0)
         return self
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         cum_dist = _searchsorted_ordered(
             np.moveaxis(self._sorted_values, 0, -1),
-            np.moveaxis(X, 0, -1), side='right') / len(self._sorted_values)
+            np.moveaxis(X, 0, -1),
+            side='right',
+        ) / len(self._sorted_values)
 
         assert cum_dist.shape[-2] == 1
         return 1 - np.abs(0.5 - np.moveaxis(cum_dist, -1, 0)[..., 0])
 
-    @property
-    def min(self):
+    @property  # noqa: WPS125
+    def min(self) -> float:  # noqa: WPS125
         return 1 / 2
 
 
-class SimplicialDepth(Depth):
+class SimplicialDepth(Depth[np.ndarray]):
     r"""
     Simplicial depth.
 
@@ -183,38 +213,46 @@ class SimplicialDepth(Depth):
     :math:`p + 1` points sampled from :math:`F` contains :math:`x`.
 
     References:
-
         Liu, R. Y. (1990). On a Notion of Data Depth Based on Random
         Simplices. The Annals of Statistics, 18(1), 405–414.
 
 
     """
 
-    def fit(self, X, y=None):
+    def fit(  # noqa: D102
+        self,
+        X: np.ndarray,
+        y: None = None,
+    ) -> SimplicialDepth:
         self._dim = X.shape[-1]
 
         if self._dim == 1:
             self.sorted_values = np.sort(X, axis=0)
         else:
-            raise NotImplementedError("SimplicialDepth is currently only "
-                                      "implemented for one-dimensional data.")
+            raise NotImplementedError(
+                "SimplicialDepth is currently only "
+                "implemented for one-dimensional data.",
+            )
 
         return self
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:  # noqa: D102
 
         assert self._dim == X.shape[-1]
 
         if self._dim == 1:
             positions_left = _searchsorted_ordered(
                 np.moveaxis(self.sorted_values, 0, -1),
-                np.moveaxis(X, 0, -1))
+                np.moveaxis(X, 0, -1),
+            )
 
             positions_left = np.moveaxis(positions_left, -1, 0)[..., 0]
 
             positions_right = _searchsorted_ordered(
                 np.moveaxis(self.sorted_values, 0, -1),
-                np.moveaxis(X, 0, -1), side='right')
+                np.moveaxis(X, 0, -1),
+                side='right',
+            )
 
             positions_right = np.moveaxis(positions_right, -1, 0)[..., 0]
 
@@ -223,11 +261,13 @@ class SimplicialDepth(Depth):
 
             total_pairs = comb(len(self.sorted_values), 2)
 
-        return (total_pairs - comb(num_strictly_below, 2)
-                - comb(num_strictly_above, 2)) / total_pairs
+        return (
+            total_pairs - comb(num_strictly_below, 2)
+            - comb(num_strictly_above, 2)
+        ) / total_pairs
 
 
-class OutlyingnessBasedDepth(Depth):
+class OutlyingnessBasedDepth(Depth[T]):
     r"""
     Computes depth based on an outlyingness measure.
 
@@ -249,34 +289,37 @@ class OutlyingnessBasedDepth(Depth):
         outlyingness (Outlyingness): Outlyingness object.
 
     References:
-
         Serfling, R. (2006). Depth functions in nonparametric
         multivariate inference. DIMACS Series in Discrete Mathematics and
         Theoretical Computer Science, 72, 1.
 
     """
 
-    def __init__(self, outlyingness):
+    def __init__(self, outlyingness: Outlyingness[T]):
         self.outlyingness = outlyingness
 
-    def fit(self, X, y=None):
+    def fit(  # noqa: D102
+        self,
+        X: T,
+        y: None = None,
+    ) -> OutlyingnessBasedDepth[T]:
         self.outlyingness.fit(X)
 
         return self
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:  # noqa: D102
         outlyingness_values = self.outlyingness.predict(X)
 
         min_val = self.outlyingness.min
         max_val = self.outlyingness.max
 
-        if(math.isinf(max_val)):
+        if math.isinf(max_val):
             return 1 / (1 + outlyingness_values - min_val)
-        else:
-            return 1 - (outlyingness_values - min_val) / (max_val - min_val)
+
+        return 1 - (outlyingness_values - min_val) / (max_val - min_val)
 
 
-class StahelDonohoOutlyingness(Outlyingness):
+class StahelDonohoOutlyingness(Outlyingness[np.ndarray]):
     r"""
     Computes Stahel-Donoho outlyingness.
 
@@ -290,44 +333,47 @@ class StahelDonohoOutlyingness(Outlyingness):
     median absolute deviation.
 
     References:
-
         Zuo, Y., Cui, H., & He, X. (2004). On the Stahel-Donoho
         estimator and depth-weighted means of multivariate data. Annals of
         Statistics, 32(1), 167–188. https://doi.org/10.1214/aos/1079120132
 
     """
 
-    def fit(self, X, y=None):
+    def fit(  # noqa: D102
+        self,
+        X: np.ndarray,
+        y: None = None,
+    ) -> StahelDonohoOutlyingness:
 
         dim = X.shape[-1]
 
         if dim == 1:
             self._location = np.median(X, axis=0)
-            self._scale = scipy.stats.median_abs_deviation(
-                X, axis=0)
+            self._scale = scipy.stats.median_abs_deviation(X, axis=0)
         else:
             raise NotImplementedError("Only implemented for one dimension")
 
         return self
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:  # noqa: D102
 
         dim = X.shape[-1]
 
         if dim == 1:
             # Special case, can be computed exactly
-            return (np.abs(X - self._location) /
-                    self._scale)[..., 0]
+            return (
+                np.abs(X - self._location)
+                / self._scale
+            )[..., 0]
 
-        else:
-            raise NotImplementedError("Only implemented for one dimension")
+        raise NotImplementedError("Only implemented for one dimension")
 
-    @property
-    def max(self):
-        return np.inf
+    @property  # noqa: WPS125
+    def max(self) -> float:  # noqa: WPS125
+        return math.inf
 
 
-class ProjectionDepth(OutlyingnessBasedDepth):
+class ProjectionDepth(OutlyingnessBasedDepth[np.ndarray]):
     r"""
     Computes Projection depth.
 
@@ -338,12 +384,11 @@ class ProjectionDepth(OutlyingnessBasedDepth):
         :class:`StahelDonohoOutlyingness`: Stahel-Donoho outlyingness.
 
     References:
-
         Zuo, Y., Cui, H., & He, X. (2004). On the Stahel-Donoho
         estimator and depth-weighted means of multivariate data. Annals of
         Statistics, 32(1), 167–188. https://doi.org/10.1214/aos/1079120132
 
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(outlyingness=StahelDonohoOutlyingness())

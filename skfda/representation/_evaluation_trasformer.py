@@ -1,10 +1,22 @@
+from __future__ import annotations
+
+from typing import Optional, Union, overload
+
+import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
+from typing_extensions import Literal
+
 from ._functional_data import FData
+from ._typing import ArrayLike, GridPointsLike
+from .extrapolation import ExtrapolationLike
 from .grid import FDataGrid
 
 
-class EvaluationTransformer(BaseEstimator, TransformerMixin):
+class EvaluationTransformer(
+    BaseEstimator,  # type:ignore
+    TransformerMixin,  # type:ignore
+):
     r"""
     Transformer returning the evaluations of FData objects as a matrix.
 
@@ -25,10 +37,9 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
             the parameter has no efect. Defaults to False.
 
     Attributes:
-        shape_ (tuple): original shape of coefficients per sample.
+        shape\_ (tuple): original shape of coefficients per sample.
 
     Examples:
-
         >>> from skfda.representation import (FDataGrid, FDataBasis,
         ...                                   EvaluationTransformer)
          >>> from skfda.representation.basis import Monomial
@@ -82,32 +93,68 @@ class EvaluationTransformer(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, eval_points=None, *,
-                 extrapolation=None, grid=False):
+    @overload
+    def __init__(
+        self,
+        eval_points: ArrayLike,
+        *,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[False] = False,
+    ) -> None:
+        pass
+
+    @overload
+    def __init__(
+        self,
+        eval_points: GridPointsLike,
+        *,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: Literal[True],
+    ) -> None:
+        pass
+
+    def __init__(
+        self,
+        eval_points: Union[ArrayLike, GridPointsLike, None] = None,
+        *,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: bool = False,
+    ):
         self.eval_points = eval_points
         self.extrapolation = extrapolation
         self.grid = grid
 
-    def fit(self, X: FData, y=None):
+    def fit(  # noqa: D102
+        self,
+        X: FData,
+        y: None = None,
+    ) -> EvaluationTransformer:
 
         if self.eval_points is None and not isinstance(X, FDataGrid):
-            raise ValueError("If no eval_points are passed, the functions "
-                             "should be FDataGrid objects.")
+            raise ValueError(
+                "If no eval_points are passed, the functions "
+                "should be FDataGrid objects.",
+            )
 
         self._is_fitted = True
 
         return self
 
-    def transform(self, X, y=None):
+    def transform(  # noqa: D102
+        self,
+        X: FData,
+        y: None = None,
+    ) -> np.ndarray:
 
         check_is_fitted(self, '_is_fitted')
 
         if self.eval_points is None:
             evaluation = X.data_matrix.copy()
         else:
-            evaluation = X(self.eval_points,
-                           extrapolation=self.extrapolation, grid=self.grid)
+            evaluation = X(  # type: ignore
+                self.eval_points,
+                extrapolation=self.extrapolation,
+                grid=self.grid,
+            )
 
-        evaluation = evaluation.reshape((X.n_samples, -1))
-
-        return evaluation
+        return evaluation.reshape((X.n_samples, -1))

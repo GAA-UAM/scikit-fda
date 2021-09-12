@@ -1,79 +1,91 @@
-from matplotlib import pyplot as plt
-from skfda.representation import FDataGrid, FDataBasis, FData
-from skfda.exploratory.visualization._utils import _get_figure_and_axes
+from typing import Optional, Sequence, Union
+
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+
+from skfda.exploratory.visualization.representation import GraphPlot
+from skfda.representation import FData
+
+from ._baseplot import BasePlot
 
 
-def plot_fpca_perturbation_graphs(mean, components, multiple,
-                                  chart = None,
-                                  fig=None,
-                                  axes=None,
-                                  **kwargs):
-    """ Plots the perturbation graphs for the principal components.
-    The perturbations are defined as variations over the mean. Adding a multiple
-    of the principal component curve to the mean function results in the
-    positive perturbation and subtracting a multiple of the principal component
-    curve results in the negative perturbation. For each principal component
-    curve passed, a subplot with the mean and the perturbations is shown.
+class FPCAPlot(BasePlot):
+    """
+    FPCAPlot visualization.
 
     Args:
-        mean (FDataGrid or FDataBasis):
-            the functional data object containing the mean function.
+        mean: The functional data object containing the mean function.
             If len(mean) > 1, the mean is computed.
-        components (FDataGrid or FDataBasis):
-            the principal components
-        multiple (float):
-            multiple of the principal component curve to be added or
+        components: The principal components
+        multiple: Multiple of the principal component curve to be added or
             subtracted.
-        fig (figure object, optional):
-            figure over which the graph is plotted. If not specified it will
+        fig: Figure over which the graph is plotted. If not specified it will
             be initialized
-        axes (axes object, optional): axis over where the graph is  plotted.
-            If None, see param fig.
-
-    Returns:
-        (FDataGrid or FDataBasis): this contains the mean function followed
-        by the positive perturbation and the negative perturbation.
+        axes: Axes over where the graph is  plotted.
+            If ``None``, see param fig.
+        n_rows: Designates the number of rows of the figure.
+        n_cols: Designates the number of columns of the figure.
     """
 
-    if len(mean) > 1:
-        mean = mean.mean()
+    def __init__(
+        self,
+        mean: FData,
+        components: FData,
+        multiple: float,
+        chart: Union[Figure, Axes, None] = None,
+        *,
+        fig: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+    ):
+        super().__init__(
+            chart,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
+        )
+        self.mean = mean
+        self.components = components
+        self.multiple = multiple
 
-    fig, axes = _get_figure_and_axes(chart, fig, axes)
+    @property
+    def n_subplots(self) -> int:
+        return len(self.components)
 
-    if not axes:
-        axes = fig.subplots(nrows=len(components))
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
 
-    for i in range(len(axes)):
-        aux = _get_component_perturbations(mean, components, i, multiple)
-        aux.plot(axes[i], **kwargs)
-        axes[i].set_title('Principal component ' + str(i + 1))
+        if len(self.mean) > 1:
+            self.mean = self.mean.mean()
 
-    return fig
+        for i, ax in enumerate(axes):
+            perturbations = self._get_component_perturbations(i)
+            GraphPlot(fdata=perturbations, axes=ax).plot()
+            ax.set_title(f"Principal component {i + 1}")
 
+    def _get_component_perturbations(self, index: int = 0) -> FData:
+        """
+        Compute the perturbations over the mean of a principal component.
 
-def _get_component_perturbations(mean, components, index=0, multiple=30):
-    """ Computes the perturbations over the mean function of a principal
-    component at a certain index.
+        Args:
+            index: Index of the component for which we want to compute the
+                perturbations
 
-    Args:
-        X (FDataGrid or FDataBasis):
-            the functional data object from which we obtain the mean
-        index (int):
-            index of the component for which we want to compute the
-            perturbations
-        multiple (float):
-            multiple of the principal component curve to be added or
-            subtracted.
-
-    Returns:
-        (FDataGrid or FDataBasis): this contains the mean function followed
-        by the positive perturbation and the negative perturbation.
-    """
-    if not isinstance(mean, FData):
-        raise AttributeError("X must be a FData object")
-    perturbations = mean.copy()
-    perturbations = perturbations.concatenate(
-        perturbations[0] + multiple * components[index])
-    perturbations = perturbations.concatenate(
-        perturbations[0] - multiple * components[index])
-    return perturbations
+        Returns:
+            The mean function followed by the positive perturbation and
+            the negative perturbation.
+        """
+        if not isinstance(self.mean, FData):
+            raise AttributeError("X must be a FData object")
+        perturbations = self.mean.copy()
+        perturbations = perturbations.concatenate(
+            perturbations[0] + self.multiple * self.components[index],
+        )
+        return perturbations.concatenate(
+            perturbations[0] - self.multiple * self.components[index],
+        )

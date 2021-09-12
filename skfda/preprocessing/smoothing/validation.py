@@ -1,9 +1,7 @@
 """Defines methods for the validation of the smoothing."""
+import numpy as np
 import sklearn
 from sklearn.model_selection import GridSearchCV
-
-import numpy as np
-
 
 __author__ = "Miguel Carbajo Berrocal"
 __email__ = "miguel.carbajo@estudiante.uam.es"
@@ -17,7 +15,7 @@ def _get_input_estimation_and_matrix(estimator, X):
         estimator.fit(X)
     y_est = estimator.transform(X)
 
-    hat_matrix = estimator.hat_matrix()
+    hat_matrix = estimator.hat_matrix_
 
     return y_est, hat_matrix
 

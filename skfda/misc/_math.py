@@ -10,7 +10,6 @@ from typing import Any, Callable, Optional, TypeVar, Union, cast
 
 import multimethod
 import numpy as np
-
 import scipy.integrate
 
 from .._utils import _same_domain, nquad_vec
@@ -216,6 +215,7 @@ def inner_product(
     *,
     _matrix: bool = False,
     _domain_range: Optional[DomainRange] = None,
+    **kwargs,
 ) -> np.ndarray:
     r"""Return the usual (:math:`L_2`) inner product.
 

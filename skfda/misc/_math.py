@@ -215,7 +215,7 @@ def inner_product(
     *,
     _matrix: bool = False,
     _domain_range: Optional[DomainRange] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> np.ndarray:
     r"""Return the usual (:math:`L_2`) inner product.
 

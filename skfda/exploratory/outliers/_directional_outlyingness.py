@@ -246,7 +246,7 @@ def directional_outlyingness_stats(
     )
 
 
-class DirectionalOutlierDetector(
+class MSPlotOutlierDetector(
     BaseEstimator,  # type: ignore
     OutlierMixin,  # type: ignore
 ):
@@ -325,7 +325,7 @@ class DirectionalOutlierDetector(
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> grid_points = [0, 2, 4, 6, 8, 10]
         >>> fd = skfda.FDataGrid(data_matrix, grid_points)
-        >>> out_detector = DirectionalOutlierDetector()
+        >>> out_detector = MSPlotOutlierDetector()
         >>> out_detector.fit_predict(fd)
         array([1, 1, 1, 1])
 

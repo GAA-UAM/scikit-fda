@@ -1,10 +1,13 @@
-from skfda import FDataGrid
-from skfda.exploratory.depth.multivariate import SimplicialDepth
-from skfda.exploratory.outliers import DirectionalOutlierDetector
-from skfda.exploratory.outliers import directional_outlyingness_stats
 import unittest
 
 import numpy as np
+
+from skfda import FDataGrid
+from skfda.exploratory.depth.multivariate import SimplicialDepth
+from skfda.exploratory.outliers import (
+    MSPlotOutlierDetector,
+    directional_outlyingness_stats,
+)
 
 
 class TestsDirectionalOutlyingness(unittest.TestCase):
@@ -48,7 +51,7 @@ class TestsDirectionalOutlyingness(unittest.TestCase):
                        [-0.5, -0.5, -0.5, -1, -1, -1]]
         grid_points = [0, 2, 4, 6, 8, 10]
         fd = FDataGrid(data_matrix, grid_points)
-        out_detector = DirectionalOutlierDetector(
+        out_detector = MSPlotOutlierDetector(
             _force_asymptotic=True)
         prediction = out_detector.fit_predict(fd)
         np.testing.assert_allclose(prediction,

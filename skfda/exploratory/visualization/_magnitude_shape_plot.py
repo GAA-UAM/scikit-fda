@@ -20,7 +20,7 @@ from matplotlib.figure import Figure
 from ... import FDataGrid
 from ...representation._typing import NDArrayFloat, NDArrayInt
 from ..depth import Depth
-from ..outliers import DirectionalOutlierDetector
+from ..outliers import MSPlotOutlierDetector
 from ._baseplot import BasePlot
 
 
@@ -38,7 +38,7 @@ class MagnitudeShapePlot(BasePlot):
     directional outlyingness (:math:`VO`) in the y-axis.
 
     The outliers are detected using an instance of
-    :class:`DirectionalOutlierDetector`.
+    :class:`MSPlotOutlierDetector`.
 
     For more information see :footcite:ts:`dai+genton_2018_visualization`.
 
@@ -220,7 +220,7 @@ class MagnitudeShapePlot(BasePlot):
             raise NotImplementedError(
                 "Only support 1 dimension on the codomain.")
 
-        self.outlier_detector = DirectionalOutlierDetector(**kwargs)
+        self.outlier_detector = MSPlotOutlierDetector(**kwargs)
 
         y = self.outlier_detector.fit_predict(fdatagrid)
 

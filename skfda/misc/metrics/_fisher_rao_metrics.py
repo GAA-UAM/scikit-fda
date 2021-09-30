@@ -1,6 +1,6 @@
 """Elastic metrics."""
 
-from typing import Any, TypeVar
+from typing import Any, Optional, TypeVar
 
 import numpy as np
 import scipy.integrate
@@ -12,6 +12,7 @@ from ...preprocessing.registration import (
 from ...preprocessing.registration._warping import _normalize_scale
 from ...preprocessing.registration.elastic import SRSF
 from ...representation import FData
+from ...representation._typing import NDArrayFloat
 from ._lp_distances import l2_distance
 from ._utils import _cast_to_grid
 
@@ -22,14 +23,15 @@ def fisher_rao_distance(
     fdata1: T,
     fdata2: T,
     *,
-    eval_points: np.ndarray = None,
+    eval_points: Optional[NDArrayFloat] = None,
     _check: bool = True,
-) -> np.ndarray:
-    r"""Compute the Fisher-Rao distance between two functional objects.
+) -> NDArrayFloat:
+    r"""
+    Compute the Fisher-Rao distance between two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
     :math:`q_i` and :math:`q_j` be the corresponding SRSF
-    (see :class:`SRSF`), the fisher rao distance is defined as
+    (see :class:`SRSF`), the Fisher-Rao distance is defined as
 
     .. math::
         d_{FR}(f_i, f_j) = \| q_i - q_j \|_2 =
@@ -37,7 +39,7 @@ def fisher_rao_distance(
         sgn(\dot{f_j}(t))\sqrt{|\dot{f_j}(t)|} dt \right )^{\frac{1}{2}}
 
     If the observations are distributions of random variables the distance will
-    match with the usual fisher-rao distance in non-parametric form for
+    match with the usual Fisher-Rao distance in non-parametric form for
     probability distributions :footcite:`srivastava++_2011_ficher-rao`.
 
     If the observations are defined in a :term:`domain` different than (0,1)
@@ -87,20 +89,21 @@ def fisher_rao_distance(
     return l2_distance(fdata1_srsf, fdata2_srsf)
 
 
-def amplitude_distance(
+def fisher_rao_amplitude_distance(
     fdata1: T,
     fdata2: T,
     *,
-    lam: float = 0.0,
-    eval_points: np.ndarray = None,
+    lam: float = 0,
+    eval_points: Optional[NDArrayFloat] = None,
     _check: bool = True,
     **kwargs: Any,
-) -> np.ndarray:
-    r"""Compute the amplitude distance between two functional objects.
+) -> NDArrayFloat:
+    r"""
+    Compute the Fisher-Rao amplitude distance between two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
     :math:`q_i` and :math:`q_j` be the corresponding SRSF
-    (see :class:`SRSF`), the amplitude distance is defined as
+    (see :class:`SRSF`), the Fisher-Rao amplitude distance is defined as
 
     .. math::
         d_{A}(f_i, f_j)=min_{\gamma \in \Gamma}d_{FR}(f_i \circ \gamma,f_j)
@@ -178,7 +181,7 @@ def amplitude_distance(
     fdata2_srsf = srsf.transform(fdata2)
     distance = l2_distance(fdata1_reg_srsf, fdata2_srsf)
 
-    if lam != 0.0:
+    if lam != 0:
         # L2 norm || sqrt(Dh) - 1 ||^2
         warping_deriv = elastic_registration.warping_.derivative()
         penalty = warping_deriv(eval_points_normalized)[0, ..., 0]
@@ -192,21 +195,22 @@ def amplitude_distance(
     return distance
 
 
-def phase_distance(
+def fisher_rao_phase_distance(
     fdata1: T,
     fdata2: T,
     *,
-    lam: float = 0.0,
-    eval_points: np.ndarray = None,
+    lam: float = 0,
+    eval_points: Optional[NDArrayFloat] = None,
     _check: bool = True,
-) -> np.ndarray:
-    r"""Compute the phase distance between two functional objects.
+) -> NDArrayFloat:
+    r"""
+    Compute the Fisher-Rao phase distance between two functional objects.
 
     Let :math:`f_i` and :math:`f_j` be two functional observations, and let
     :math:`\gamma_{ij}` the corresponding warping used in the elastic
     registration to align :math:`f_i` to :math:`f_j` (see
-    :func:`elastic_registration`). The phase distance between :math:`f_i`
-    and :math:`f_j` is defined as
+    :func:`elastic_registration`). The Fisher-Rao  phase distance between
+    :math:`f_i` and :math:`f_j` is defined as
 
     .. math::
         d_{P}(f_i, f_j) = d_{FR}(\gamma_{ij}, \gamma_{id}) =
@@ -274,20 +278,21 @@ def phase_distance(
     return np.arccos(d)
 
 
-def warping_distance(
+def _fisher_rao_warping_distance(
     warping1: T,
     warping2: T,
     *,
-    eval_points: np.ndarray = None,
+    eval_points: Optional[NDArrayFloat] = None,
     _check: bool = True,
-) -> np.ndarray:
-    r"""Compute the distance between warpings functions.
+) -> NDArrayFloat:
+    r"""
+    Compute the Fisher-Rao distance between warpings functions.
 
     Let :math:`\gamma_i` and :math:`\gamma_j` be two warpings, defined in
-    :math:`\gamma_i:[a,b] \rightarrow [a,b]`. The distance in the
-    space of warping functions, :math:`\Gamma`, with the riemannian metric
-    given by the fisher-rao inner product can be computed using the structure
-    of hilbert sphere in their srsf's.
+    :math:`\gamma_i:[0,1] \rightarrow [0,1]`. The distance in the
+    space of warping functions, :math:`\Gamma`, with the Riemannian metric
+    given by the Fisher-Rao inner product can be computed using the structure
+    of Hilbert sphere in their SRSF's.
 
     .. math::
         d_{\Gamma}(\gamma_i, \gamma_j) = cos^{-1} \left ( \int_0^1
@@ -296,7 +301,7 @@ def warping_distance(
     See :footcite:`srivastava+klassen_2016_analysis_probability` for a detailed
     explanation.
 
-    If the warpings are not defined in [0,1], an affine transformation is maked
+    If the warpings are not defined in [0,1], an affine transformation is made
     to change the :term:`domain`.
 
     Args:

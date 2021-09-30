@@ -1,10 +1,10 @@
 """Metrics, norms and related utilities."""
 
-from ._elastic_metrics import (
-    amplitude_distance,
+from ._fisher_rao_metrics import (
+    _fisher_rao_warping_distance,
+    fisher_rao_amplitude_distance,
     fisher_rao_distance,
-    phase_distance,
-    warping_distance,
+    fisher_rao_phase_distance,
 )
 from ._lp_distances import (
     LpDistance,

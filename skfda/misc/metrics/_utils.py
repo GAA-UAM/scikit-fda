@@ -6,6 +6,7 @@ import numpy as np
 
 from ..._utils import _pairwise_symmetric
 from ...representation import FData, FDataGrid
+from ...representation._typing import NDArrayFloat
 from ._typing import Metric, MetricElementType, Norm, VectorType
 
 T = TypeVar("T", bound=FData)
@@ -27,7 +28,7 @@ def _check_compatible(fdata1: T, fdata2: T) -> None:
 def _cast_to_grid(
     fdata1: FData,
     fdata2: FData,
-    eval_points: np.ndarray = None,
+    eval_points: Optional[NDArrayFloat] = None,
     _check: bool = True,
 ) -> Tuple[FDataGrid, FDataGrid]:
     """Convert fdata1 and fdata2 to FDatagrid.
@@ -124,7 +125,7 @@ class NormInducedMetric(Metric[VectorType]):
     def __init__(self, norm: Norm[VectorType]):
         self.norm = norm
 
-    def __call__(self, elem1: VectorType, elem2: VectorType) -> np.ndarray:
+    def __call__(self, elem1: VectorType, elem2: VectorType) -> NDArrayFloat:
         """Compute the induced norm between two vectors."""
         return self.norm(elem1 - elem2)
 
@@ -137,7 +138,7 @@ def pairwise_metric_optimization(
     metric: Any,
     elem1: Any,
     elem2: Optional[Any],
-) -> np.ndarray:
+) -> NDArrayFloat:
     r"""
     Optimized computation of a pairwise metric.
 
@@ -173,7 +174,7 @@ class PairwiseMetric(Generic[MetricElementType]):
         self,
         elem1: MetricElementType,
         elem2: Optional[MetricElementType] = None,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         """Evaluate the pairwise metric."""
         optimized = pairwise_metric_optimization(self.metric, elem1, elem2)
 

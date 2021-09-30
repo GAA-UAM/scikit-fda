@@ -8,11 +8,11 @@ from skfda import FDataGrid
 from skfda.datasets import make_multimodal_samples, make_random_warping
 from skfda.misc.metrics import (
     PairwiseMetric,
-    amplitude_distance,
+    _fisher_rao_warping_distance,
+    fisher_rao_amplitude_distance,
     fisher_rao_distance,
+    fisher_rao_phase_distance,
     l2_distance,
-    phase_distance,
-    warping_distance,
 )
 from skfda.preprocessing.registration import (
     ElasticRegistration,
@@ -272,34 +272,34 @@ class TestElasticDistances(unittest.TestCase):
             atol=0.01,
         )
 
-    def test_amplitude_distance_limit(self) -> None:
+    def test_fisher_rao_amplitude_distance_limit(self) -> None:
         """Test limit of amplitude distance penalty."""
         f = make_multimodal_samples(n_samples=1, random_state=1)
         g = make_multimodal_samples(n_samples=1, random_state=9999)
 
-        amplitude_limit = amplitude_distance(f, g, lam=1000)
+        amplitude_limit = fisher_rao_amplitude_distance(f, g, lam=1000)
         fr_distance = fisher_rao_distance(f, g)
 
         np.testing.assert_almost_equal(amplitude_limit, fr_distance)
 
-    def test_phase_distance_id(self) -> None:
+    def test_fisher_rao_phase_distance_id(self) -> None:
         """Test of phase distance invariance."""
         f = make_multimodal_samples(n_samples=1, random_state=1)
 
-        phase = phase_distance(f, 2 * f)
+        phase = fisher_rao_phase_distance(f, 2 * f)
 
         np.testing.assert_allclose(phase, 0, atol=1e-7)
 
-    def test_warping_distance(self) -> None:
+    def test_fisher_rao_warping_distance(self) -> None:
         """Test of warping distance."""
         t = np.linspace(0, 1, 1000)
         w1 = FDataGrid([t**5], t)
         w2 = FDataGrid([t**3], t)
 
-        d = warping_distance(w1, w2)
+        d = _fisher_rao_warping_distance(w1, w2)
         np.testing.assert_allclose(d, np.arccos(np.sqrt(15) / 4), atol=1e-3)
 
-        d = warping_distance(w2, w2)
+        d = _fisher_rao_warping_distance(w2, w2)
         np.testing.assert_allclose(d, 0, atol=2e-2)
 
 

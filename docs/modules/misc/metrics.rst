@@ -45,9 +45,8 @@ analysis and registration of functional data.
    :toctree: autosummary
 
     skfda.misc.metrics.fisher_rao_distance
-    skfda.misc.metrics.amplitude_distance
-    skfda.misc.metrics.phase_distance
-    skfda.misc.metrics.warping_distance
+    skfda.misc.metrics.fisher_rao_amplitude_distance
+    skfda.misc.metrics.fisher_rao_phase_distance
 
 
 Metric induced by a norm

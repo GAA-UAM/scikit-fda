@@ -23,16 +23,17 @@ as an outlier if it has points :math:`1.5 \cdot IQR` times outside the region co
    skfda.exploratory.outliers.BoxplotOutlierDetector
 
 
-DirectionalOutlierDetector
+MSPlotOutlierDetector
 --------------------------
 
-Other more novel way of outlier detection takes into account the magnitude and shape of the curves. Curves which have
+Other more novel way of outlier detection is the one presented in the Magnitude-Shape plot, or
+MS-plot. It takes into account the magnitude and shape of the curves. Curves which have
 a very different shape or magnitude are considered outliers.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.exploratory.outliers.DirectionalOutlierDetector
+   skfda.exploratory.outliers.MSPlotOutlierDetector
 
 For this method, it is necessary to compute the mean and variation of the directional outlyingness, which can be done
 with the following function.

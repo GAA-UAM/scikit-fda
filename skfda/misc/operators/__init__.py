@@ -8,3 +8,4 @@ from ._operators import (
     gramian_matrix,
     gramian_matrix_optimization,
 )
+from ._srvf import SRSF

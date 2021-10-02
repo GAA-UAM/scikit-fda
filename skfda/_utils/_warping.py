@@ -2,16 +2,18 @@
 
 This module contains routines related to the registration procedure.
 """
+from __future__ import annotations
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
-
 from scipy.interpolate import PchipInterpolator
 
-from ..._utils import _to_domain_range, check_is_univariate
-from ...representation import FDataGrid
-from ...representation._typing import ArrayLike, DomainRangeLike
+from ..representation._typing import ArrayLike, DomainRangeLike, NDArrayFloat
+from ._utils import _to_domain_range, check_is_univariate
+
+if TYPE_CHECKING:
+    from ..representation import FDataGrid
 
 
 def invert_warping(
@@ -19,7 +21,8 @@ def invert_warping(
     *,
     output_points: Optional[ArrayLike] = None,
 ) -> FDataGrid:
-    r"""Compute the inverse of a diffeomorphism.
+    r"""
+    Compute the inverse of a diffeomorphism.
 
     Let :math:`\gamma : [a,b] \rightarrow [a,b]` be a function strictly
     increasing, calculates the corresponding inverse
@@ -44,7 +47,6 @@ def invert_warping(
     Examples:
         >>> import numpy as np
         >>> from skfda import FDataGrid
-        >>> from skfda.preprocessing.registration import invert_warping
 
         We will construct the warping :math:`\gamma : [0,1] \rightarrow [0,1]`
         wich maps t to t^3.
@@ -90,8 +92,13 @@ def invert_warping(
     return warping.copy(data_matrix=data_matrix, grid_points=output_points)
 
 
-def _normalize_scale(t: np.ndarray, a: float = 0, b: float = 1) -> np.ndarray:
-    """Perfoms an afine translation to normalize an interval.
+def normalize_scale(
+    t: NDArrayFloat,
+    a: float = 0,
+    b: float = 1,
+) -> NDArrayFloat:
+    """
+    Perfoms an afine translation to normalize an interval.
 
     Args:
         t: Array of dim 1 or 2 with at least 2 values.
@@ -116,7 +123,8 @@ def normalize_warping(
     warping: FDataGrid,
     domain_range: Optional[DomainRangeLike] = None,
 ) -> FDataGrid:
-    r"""Rescale a warping to normalize their :term:`domain`.
+    r"""
+    Rescale a warping to normalize their :term:`domain`.
 
     Given a set of warpings :math:`\gamma_i:[a,b]\rightarrow  [a,b]` it is
     used an affine traslation to change the domain of the transformation to
@@ -138,11 +146,11 @@ def normalize_warping(
         else _to_domain_range(domain_range)[0]
     )
 
-    data_matrix = _normalize_scale(
+    data_matrix = normalize_scale(
         warping.data_matrix[..., 0],
         *domain_range_tuple,
     )
-    grid_points = _normalize_scale(warping.grid_points[0], *domain_range_tuple)
+    grid_points = normalize_scale(warping.grid_points[0], *domain_range_tuple)
 
     return warping.copy(
         data_matrix=data_matrix,

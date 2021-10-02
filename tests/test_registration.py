@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.exceptions import NotFittedError
 
 from skfda import FDataGrid
-from skfda._utils import _check_estimator
+from skfda._utils import invert_warping, normalize_warping
 from skfda.datasets import (
     make_multimodal_landmarks,
     make_multimodal_samples,
@@ -13,12 +13,10 @@ from skfda.datasets import (
 from skfda.exploratory.stats import mean
 from skfda.preprocessing.registration import (
     ShiftRegistration,
-    invert_warping,
     landmark_registration,
     landmark_registration_warping,
     landmark_shift,
     landmark_shift_deltas,
-    normalize_warping,
 )
 from skfda.preprocessing.registration.validation import (
     AmplitudePhaseDecomposition,

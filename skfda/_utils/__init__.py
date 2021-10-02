@@ -20,3 +20,4 @@ from ._utils import (
     check_is_univariate,
     nquad_vec,
 )
+from ._warping import invert_warping, normalize_scale, normalize_warping

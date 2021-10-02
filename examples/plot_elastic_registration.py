@@ -14,13 +14,14 @@ import numpy as np
 
 import skfda
 from skfda.datasets import fetch_growth, make_multimodal_samples
-from skfda.preprocessing.registration import ElasticRegistration
-from skfda.preprocessing.registration.elastic import elastic_mean
+from skfda.exploratory.stats import fisher_rao_karcher_mean
+from skfda.preprocessing.registration import ElasticFisherRaoRegistration
 
 ##############################################################################
 # In the example of pairwise alignment was shown the usage of
-# :class:`~skfda.preprocessing.registration.ElasticRegistration` to align
-# a set of functional observations to a given template or a set of templates.
+# :class:`~skfda.preprocessing.registration.ElasticFisherRaoRegistration` to
+# align a set of functional observations to a given template or a set of
+# templates.
 #
 # In the groupwise alignment all the samples are aligned to the same template,
 # constructed to minimise some distance, generally a mean or a median. In the
@@ -36,7 +37,7 @@ fd.plot()
 
 ###############################################################################
 # The following figure shows the
-# :func:`~skfda.preprocessing.registration.elastic.elastic_mean` of the
+# :func:`~skfda.exploratory.stats.fisher_rao_karcher_mean` of the
 # dataset and the cross-sectional mean, which correspond to the karcher-mean
 # under the :math:`\mathbb{L}^2` distance.
 #
@@ -46,14 +47,14 @@ fd.plot()
 
 
 fig = fd.mean().plot(label="L2 mean")
-elastic_mean(fd).plot(fig=fig, label="Elastic mean")
+fisher_rao_karcher_mean(fd).plot(fig=fig, label="Elastic mean")
 fig.legend()
 
 ##############################################################################
 # In this case, the alignment completely reduces the amplitude variability
 # between the samples, aligning the maximum points correctly.
 
-elastic_registration = ElasticRegistration()
+elastic_registration = ElasticFisherRaoRegistration()
 
 fd_align = elastic_registration.fit_transform(fd)
 

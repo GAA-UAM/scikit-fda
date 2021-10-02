@@ -5,14 +5,11 @@ from typing import Any, Optional, TypeVar
 import numpy as np
 import scipy.integrate
 
-from ...preprocessing.registration import (
-    ElasticRegistration,
-    normalize_warping,
-)
-from ...preprocessing.registration._warping import _normalize_scale
-from ...preprocessing.registration.elastic import SRSF
+from ..._utils import normalize_scale, normalize_warping
+from ...preprocessing.registration import ElasticFisherRaoRegistration
 from ...representation import FData
 from ...representation._typing import NDArrayFloat
+from ..operators import SRSF
 from ._lp_distances import l2_distance
 from ._utils import _cast_to_grid
 
@@ -69,7 +66,7 @@ def fisher_rao_distance(
     )
 
     # Both should have the same grid points
-    eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
+    eval_points_normalized = normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
     fdata1 = fdata1.copy(
@@ -155,7 +152,7 @@ def fisher_rao_amplitude_distance(
     )
 
     # Both should have the same grid points
-    eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
+    eval_points_normalized = normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
     fdata1 = fdata1.copy(
@@ -167,7 +164,7 @@ def fisher_rao_amplitude_distance(
         domain_range=(0, 1),
     )
 
-    elastic_registration = ElasticRegistration(
+    elastic_registration = ElasticFisherRaoRegistration(
         template=fdata2,
         penalty=lam,
         output_points=eval_points_normalized,
@@ -216,6 +213,8 @@ def fisher_rao_phase_distance(
         d_{P}(f_i, f_j) = d_{FR}(\gamma_{ij}, \gamma_{id}) =
         arcos \left ( \int_0^1 \sqrt {\dot \gamma_{ij}(t)} dt \right )
 
+    where :math:`\gamma_{id}` is the identity warping.
+
     See :footcite:`srivastava+klassen_2016_analysis_phase` for a detailed
     explanation.
 
@@ -247,7 +246,7 @@ def fisher_rao_phase_distance(
     )
 
     # Rescale in the interval (0,1)
-    eval_points_normalized = _normalize_scale(fdata1.grid_points[0])
+    eval_points_normalized = normalize_scale(fdata1.grid_points[0])
 
     # Calculate the corresponding srsf and normalize to (0,1)
     fdata1 = fdata1.copy(
@@ -259,7 +258,7 @@ def fisher_rao_phase_distance(
         domain_range=(0, 1),
     )
 
-    elastic_registration = ElasticRegistration(
+    elastic_registration = ElasticFisherRaoRegistration(
         penalty=lam,
         template=fdata2,
         output_points=eval_points_normalized,

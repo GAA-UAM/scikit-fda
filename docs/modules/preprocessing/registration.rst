@@ -64,19 +64,7 @@ introduction to this topic along the usage of the corresponding functions.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.ElasticRegistration
-
-
-The module contains some routines related with the elastic registration, making
-a transformation of the sampling, computing different means or distances based
-on the elastic framework.
-
-.. autosummary::
-   :toctree: autosummary
-
-   skfda.preprocessing.registration.elastic.elastic_mean
-   skfda.preprocessing.registration.elastic.warping_mean
-   skfda.preprocessing.registration.elastic.SRSF
+   skfda.preprocessing.registration.ElasticFisherRaoRegistration
 
 
 Validation

@@ -14,10 +14,13 @@ Shows the usage of the elastic registration to perform a pairwise alignment.
 import matplotlib.colors as clr
 import matplotlib.pyplot as plt
 import numpy as np
-import skfda
 
-from skfda.preprocessing.registration import ElasticRegistration, invert_warping
+import skfda
 from skfda.datasets import make_multimodal_samples
+from skfda.preprocessing.registration import (
+    ElasticFisherRaoRegistration,
+    invert_warping,
+)
 
 ##############################################################################
 # Given any two functions :math:`f` and :math:`g`, we define their
@@ -53,12 +56,12 @@ fig.axes[0].legend(['$f$', '$g$'])
 # In this example :math:`g` will be used as template and :math:`f` will be
 # aligned to it. In the following figure it is shown the result of the
 # registration process, wich can be computed using
-# :class:`~skfda.preprocessing.registration.ElasticRegistration`.
+# :class:`~skfda.preprocessing.registration.ElasticFisherRaoRegistration`.
 #
 
 f, g = fd[0], fd[1]
 
-elastic_registration = ElasticRegistration(template=g)
+elastic_registration = ElasticFisherRaoRegistration(template=g)
 
 
 # Aligns f to g
@@ -155,8 +158,7 @@ for penalty, c in zip(penalties, color):
     elastic_registration.warping_.plot(fig, color=c)
 
 # Plots identity
-fig.axes[0].plot(t, t,  color='C0', linestyle="--")
-
+fig.axes[0].plot(t, t, color='C0', linestyle="--")
 
 
 ##############################################################################
@@ -196,7 +198,7 @@ fig.axes[0].legend(handles=[labels[0], labels[-1]])
 #
 
 # Registration of the sets
-elastic_registration = ElasticRegistration(template=g)
+elastic_registration = ElasticFisherRaoRegistration(template=g)
 
 fd_registered = elastic_registration.fit_transform(fd)
 

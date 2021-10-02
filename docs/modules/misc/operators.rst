@@ -12,3 +12,4 @@ The operators that are linear can also be used in the context of
 
    skfda.misc.operators.Identity
    skfda.misc.operators.LinearDifferentialOperator
+   skfda.misc.operators.SRSF

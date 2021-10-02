@@ -1,6 +1,6 @@
 """Metrics, norms and related utilities."""
 
-from ._fisher_rao_metrics import (
+from ._fisher_rao import (
     _fisher_rao_warping_distance,
     fisher_rao_amplitude_distance,
     fisher_rao_distance,

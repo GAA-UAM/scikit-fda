@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.gaussian_process.kernels as sklearn_kern
 from matplotlib.figure import Figure
+from scipy.special import gamma, kv
 
 from ..exploratory.visualization._utils import _create_figure, _figure_to_svg
 from ..representation._typing import ArrayLike, NDArrayFloat
@@ -619,3 +620,125 @@ class WhiteNoise(Covariance):
 
     def to_sklearn(self) -> sklearn_kern.Kernel:
         return sklearn_kern.WhiteKernel(noise_level=self.variance)
+
+
+class Matern(Covariance):
+    r"""
+    Matérn covariance function.
+
+    The covariance function is
+
+    .. math::
+        K(x, x') = \sigma^2 \frac{2^{1-\nu}}{\Gamma(\nu)}
+        \left( \frac{\sqrt{2\nu}|x - x'|}{l} \right)^{\nu}
+        K_{\nu}\left( \frac{\sqrt{2\nu}|x - x'|}{l} \right)
+
+    where :math:`\sigma^2` is the variance, :math:`l` is the length scale
+    and :math:`\nu` controls the smoothness of the related Gaussian process.
+    The trajectories of a Gaussian process with Matérn covariance is 
+    :math:`\lceil \nu \rceil - 1` times differentiable.
+
+
+    Heatmap plot of the covariance function:
+
+    .. jupyter-execute::
+
+        from skfda.misc.covariances import Matern
+        import matplotlib.pyplot as plt
+
+        Matern().heatmap(limits=(0, 1))
+        plt.show()
+
+    Example of Gaussian process trajectories using this covariance:
+
+    .. jupyter-execute::
+
+        from skfda.misc.covariances import Matern
+        from skfda.datasets import make_gaussian_process
+        import matplotlib.pyplot as plt
+
+        gp = make_gaussian_process(
+                n_samples=10, cov=Matern(), random_state=0)
+        gp.plot()
+        plt.show()
+
+    Default representation in a Jupyter notebook:
+
+    .. jupyter-execute::
+
+        from skfda.misc.covariances import Matern
+
+        Matern()
+
+    """
+    _latex_formula = (
+        r"K(x, x') = \sigma^2 \frac{2^{1-\nu}}{\Gamma(\nu)}"
+        r"\left( \frac{\sqrt{2\nu}|x - x'|}{l} \right)^{\nu}"
+        r"K_{\nu}\left( \frac{\sqrt{2\nu}|x - x'|}{l} \right)"
+    )
+
+    _parameters_str = [
+        ("variance", r"\sigma^2"),
+        ("length_scale", "l"),
+        ("nu", r"\nu"),
+    ]
+
+    def __init__(
+        self,
+        *,
+        variance: float = 1,
+        length_scale: float = 1,
+        nu: float = 1.5,
+    ) -> None:
+        self.variance = variance
+        self.length_scale = length_scale
+        self.nu = nu
+
+    def __call__(self, x: ArrayLike, y: ArrayLike) -> NDArrayFloat:
+        x = _transform_to_2d(x)
+        y = _transform_to_2d(y)
+
+        x_y_squared = _squared_norms(x, y)
+        x_y = np.sqrt(x_y_squared)
+
+        p = self.nu - 0.5
+        if p.is_integer():
+            # Formula for half-integers
+            p = int(p)
+            body = np.sqrt(2 * p + 1) * x_y / self.length_scale
+            exponential = np.exp(-body)
+            power_list = np.full(shape=(p,) + body.shape, fill_value=2 * body)
+            power_list = np.cumprod(power_list, axis=0)
+            power_list = np.concatenate(
+                (power_list[::-1], [np.ones_like(body)]),
+            )
+            power_list = np.moveaxis(power_list, 0, -1)
+            numerator = np.cumprod(np.arange(p, 0, -1))
+            numerator = np.concatenate(([1], numerator))
+            denom1 = np.cumprod(np.arange(2 * p, p, -1))
+            denom1 = np.concatenate((denom1[::-1], [1]))
+            denom2 = np.cumprod(np.arange(1, p + 1))
+            denom2 = np.concatenate(([1], denom2))
+
+            sum_terms = power_list * numerator / (denom1 * denom2)
+            return self.variance * exponential * np.sum(sum_terms, axis=-1)
+        elif self.nu == np.inf:
+            return self.variance * np.exp(-x_y_squared / (2 * self.length_scale ** 2))
+        else:
+            # General formula
+            scaling = 2**(1 - self.nu) / gamma(self.nu)
+            body = np.sqrt(2 * self.nu) * x_y / self.length_scale
+            power = body**self.nu
+            bessel = kv(self.nu, body)
+
+            with np.errstate(invalid='ignore'):
+                eval_cov = self.variance * scaling * power * bessel
+
+            # Values with nan are where the distance is 0
+            return np.nan_to_num(eval_cov, nan=self.variance)
+
+    def to_sklearn(self) -> sklearn_kern.Kernel:
+        return (
+            self.variance
+            * sklearn_kern.Matern(length_scale=self.length_scale, nu=self.nu)
+        )

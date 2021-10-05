@@ -15,4 +15,7 @@ from ._landmark_registration import (
     landmark_shift_deltas,
     landmark_shift_registration,
 )
-from ._shift_registration import ShiftRegistration
+from ._lstsq_shift_registration import (
+    LeastSquaresShiftRegistration,
+    ShiftRegistration,
+)

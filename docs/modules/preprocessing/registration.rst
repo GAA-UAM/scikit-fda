@@ -20,7 +20,7 @@ is shown the basic usage of this method.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.ShiftRegistration
+   skfda.preprocessing.registration.LeastSquaresShiftRegistration
 
 
 Landmark Registration

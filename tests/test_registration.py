@@ -12,7 +12,7 @@ from skfda.datasets import (
 )
 from skfda.exploratory.stats import mean
 from skfda.preprocessing.registration import (
-    ShiftRegistration,
+    LeastSquaresShiftRegistration,
     landmark_elastic_registration,
     landmark_elastic_registration_warping,
     landmark_shift_deltas,
@@ -197,7 +197,7 @@ class TestWarping(unittest.TestCase):
                                              decimal=2)
 
 
-class TestShiftRegistration(unittest.TestCase):
+class TestLeastSquaresShiftRegistration(unittest.TestCase):
     """Test shift registration"""
 
     def setUp(self):
@@ -208,7 +208,7 @@ class TestShiftRegistration(unittest.TestCase):
 
     def test_fit_transform(self):
 
-        reg = ShiftRegistration()
+        reg = LeastSquaresShiftRegistration()
 
         # Test fit transform with FDataGrid
         fd_reg = reg.fit_transform(self.fd)
@@ -233,7 +233,7 @@ class TestShiftRegistration(unittest.TestCase):
 
         fd = make_sinusoidal_process(n_samples=2, error_std=0, random_state=10)
 
-        reg = ShiftRegistration()
+        reg = LeastSquaresShiftRegistration()
         response = reg.fit(self.fd)
 
         # Check attributes and returned value
@@ -246,7 +246,7 @@ class TestShiftRegistration(unittest.TestCase):
 
     def test_inverse_transform(self):
 
-        reg = ShiftRegistration()
+        reg = LeastSquaresShiftRegistration()
         fd = reg.fit_transform(self.fd)
         fd = reg.inverse_transform(fd)
 
@@ -255,7 +255,7 @@ class TestShiftRegistration(unittest.TestCase):
 
     def test_raises(self):
 
-        reg = ShiftRegistration()
+        reg = LeastSquaresShiftRegistration()
 
         # Test not fitted
         with np.testing.assert_raises(NotFittedError):
@@ -294,16 +294,16 @@ class TestShiftRegistration(unittest.TestCase):
 
     def test_template(self):
 
-        reg = ShiftRegistration()
+        reg = LeastSquaresShiftRegistration()
         fd_registered_1 = reg.fit_transform(self.fd)
 
-        reg_2 = ShiftRegistration(template=reg.template_)
+        reg_2 = LeastSquaresShiftRegistration(template=reg.template_)
         fd_registered_2 = reg_2.fit_transform(self.fd)
 
-        reg_3 = ShiftRegistration(template=mean)
+        reg_3 = LeastSquaresShiftRegistration(template=mean)
         fd_registered_3 = reg_3.fit_transform(self.fd)
 
-        reg_4 = ShiftRegistration(template=reg.template_)
+        reg_4 = LeastSquaresShiftRegistration(template=reg.template_)
         fd_registered_4 = reg_4.fit(self.fd).transform(self.fd)
 
         np.testing.assert_array_almost_equal(fd_registered_1.data_matrix,
@@ -318,13 +318,13 @@ class TestShiftRegistration(unittest.TestCase):
                                              fd_registered_4.data_matrix)
 
     def test_restrict_domain(self) -> None:
-        reg = ShiftRegistration(restrict_domain=True)
+        reg = LeastSquaresShiftRegistration(restrict_domain=True)
         fd_registered_1 = reg.fit_transform(self.fd)
 
         np.testing.assert_array_almost_equal(
             np.array(fd_registered_1.domain_range).round(3), [[0.022, 0.969]])
 
-        reg2 = ShiftRegistration(
+        reg2 = LeastSquaresShiftRegistration(
             restrict_domain=True,
             template=reg.template_.copy(domain_range=self.fd.domain_range),
         )
@@ -334,21 +334,22 @@ class TestShiftRegistration(unittest.TestCase):
             fd_registered_2.data_matrix, fd_registered_1.data_matrix,
             decimal=3)
 
-        reg3 = ShiftRegistration(restrict_domain=True, template=mean)
+        reg3 = LeastSquaresShiftRegistration(
+            restrict_domain=True, template=mean)
         fd_registered_3 = reg3.fit_transform(self.fd)
 
         np.testing.assert_array_almost_equal(
             fd_registered_3.data_matrix, fd_registered_1.data_matrix)
 
     def test_initial_estimation(self):
-        reg = ShiftRegistration(initial=[-0.02161235, 0.03032652])
+        reg = LeastSquaresShiftRegistration(initial=[-0.02161235, 0.03032652])
         reg.fit_transform(self.fd)
 
         # Only needed 1 iteration until convergence
         self.assertEqual(reg.n_iter_, 1)
 
     def test_custom_grid_points(self):
-        reg = ShiftRegistration(grid_points=np.linspace(0, 1, 50))
+        reg = LeastSquaresShiftRegistration(grid_points=np.linspace(0, 1, 50))
         reg.fit_transform(self.fd)
 
 
@@ -358,7 +359,7 @@ class TestRegistrationValidation(unittest.TestCase):
     def setUp(self) -> None:
         """Initialize the samples."""
         self.X = make_sinusoidal_process(error_std=0, random_state=0)
-        self.shift_registration = ShiftRegistration().fit(self.X)
+        self.shift_registration = LeastSquaresShiftRegistration().fit(self.X)
 
     def test_amplitude_phase_score(self) -> None:
         """Test basic usage of AmplitudePhaseDecomposition."""

@@ -215,15 +215,17 @@ class AmplitudePhaseDecomposition(
 
         >>> from skfda.preprocessing.registration.validation import \
         ...                                         AmplitudePhaseDecomposition
-        >>> from skfda.preprocessing.registration import ShiftRegistration
+        >>> from skfda.preprocessing.registration import (
+        ...     LeastSquaresShiftRegistration,
+        ... )
         >>> from skfda.datasets import make_sinusoidal_process
         >>> X = make_sinusoidal_process(error_std=0, random_state=0)
 
         Fit the registration procedure.
 
-        >>> shift_registration = ShiftRegistration()
+        >>> shift_registration = LeastSquaresShiftRegistration()
         >>> shift_registration.fit(X)
-        ShiftRegistration(...)
+        LeastSquaresShiftRegistration(...)
 
         Compute the :math:`R^2` correlation index
 
@@ -369,15 +371,17 @@ class LeastSquares(RegistrationScorer):
 
         >>> from skfda.preprocessing.registration.validation import \
         ...                                                        LeastSquares
-        >>> from skfda.preprocessing.registration import ShiftRegistration
+        >>> from skfda.preprocessing.registration import (
+        ...     LeastSquaresShiftRegistration,
+        ... )
         >>> from skfda.datasets import make_sinusoidal_process
         >>> X = make_sinusoidal_process(error_std=0, random_state=0)
 
         Fit the registration procedure.
 
-        >>> shift_registration = ShiftRegistration()
+        >>> shift_registration = LeastSquaresShiftRegistration()
         >>> shift_registration.fit(X)
-        ShiftRegistration(...)
+        LeastSquaresShiftRegistration(...)
 
         Compute the least squares score.
         >>> scorer = LeastSquares()
@@ -481,15 +485,17 @@ class SobolevLeastSquares(RegistrationScorer):
 
         >>> from skfda.preprocessing.registration.validation import \
         ...                                                 SobolevLeastSquares
-        >>> from skfda.preprocessing.registration import ShiftRegistration
+        >>> from skfda.preprocessing.registration import (
+        ...     LeastSquaresShiftRegistration,
+        ... )
         >>> from skfda.datasets import make_sinusoidal_process
         >>> X = make_sinusoidal_process(error_std=0, random_state=0)
 
         Fit the registration procedure.
 
-        >>> shift_registration = ShiftRegistration()
+        >>> shift_registration = LeastSquaresShiftRegistration()
         >>> shift_registration.fit(X)
-        ShiftRegistration(...)
+        LeastSquaresShiftRegistration(...)
 
         Compute the sobolev least squares score.
         >>> scorer = SobolevLeastSquares()
@@ -574,15 +580,17 @@ class PairwiseCorrelation(RegistrationScorer):
 
         >>> from skfda.preprocessing.registration.validation import \
         ...                                                 PairwiseCorrelation
-        >>> from skfda.preprocessing.registration import ShiftRegistration
+        >>> from skfda.preprocessing.registration import (
+        ...     LeastSquaresShiftRegistration,
+        ... )
         >>> from skfda.datasets import make_sinusoidal_process
         >>> X = make_sinusoidal_process(error_std=0, random_state=0)
 
         Fit the registration procedure.
 
-        >>> shift_registration = ShiftRegistration()
+        >>> shift_registration = LeastSquaresShiftRegistration()
         >>> shift_registration.fit(X)
-        ShiftRegistration(...)
+        LeastSquaresShiftRegistration(...)
 
         Compute the pairwise correlation score.
         >>> scorer = PairwiseCorrelation()

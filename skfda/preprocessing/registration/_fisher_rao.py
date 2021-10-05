@@ -296,7 +296,7 @@ class ElasticRegistration(FisherRaoElasticRegistration):
         grid_dim: int = 7,
     ) -> None:
         warnings.warn(
-            "ElasticRegistration is deprecated. "
+            "ElasticRegistration has been renamed. "
             "Use FisherRaoElasticRegistration instead.",
             DeprecationWarning,
         )

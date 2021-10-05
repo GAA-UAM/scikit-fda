@@ -22,7 +22,8 @@ import skfda
 # :func:`~skfda.datasets.make_multimodal_samples`, which in this case will be
 # used to generate gaussian-like samples with a mode near to 0.
 # Each sample will be shifted to align their modes to a reference point using
-# the function :func:`~skfda.preprocessing.registration.landmark_shift`.
+# the function
+# :func:`~skfda.preprocessing.registration.landmark_shift_registration`.
 
 fd = skfda.datasets.make_multimodal_samples(random_state=1)
 fd.extrapolation = 'bounds'  #  See extrapolation for a detailed explanation.
@@ -63,7 +64,7 @@ print(landmarks)
 # The following figure shows the result of shifting the curves to align their
 # landmarks at 0.
 
-fd_registered = skfda.preprocessing.registration.landmark_shift(
+fd_registered = skfda.preprocessing.registration.landmark_shift_registration(
     fd,
     landmarks,
     location=0,
@@ -81,14 +82,14 @@ fig.axes[0].scatter(0, 1)
 # the point that minimizes the maximum amount of shift.
 
 # Curves aligned restricting the domain
-fd_restricted = skfda.preprocessing.registration.landmark_shift(
+fd_restricted = skfda.preprocessing.registration.landmark_shift_registration(
     fd,
     landmarks,
     restrict_domain=True,
 )
 
 # Curves aligned to default point without restrict domain
-fd_extrapolated = skfda.preprocessing.registration.landmark_shift(
+fd_extrapolated = skfda.preprocessing.registration.landmark_shift_registration(
     fd,
     landmarks,
 )
@@ -127,7 +128,10 @@ print(landmarks)
 # or by default will be chosen the point that minimizes the maximum amount
 # of displacement.
 
-fd_registered = skfda.preprocessing.registration.landmark_shift(fd, landmarks)
+fd_registered = skfda.preprocessing.registration.landmark_shift_registration(
+    fd,
+    landmarks,
+)
 
 fd_registered.plot()
 

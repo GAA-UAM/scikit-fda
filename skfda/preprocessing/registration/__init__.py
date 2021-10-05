@@ -12,5 +12,6 @@ from ._landmark_registration import (
     landmark_registration_warping,
     landmark_shift,
     landmark_shift_deltas,
+    landmark_shift_registration,
 )
 from ._shift_registration import ShiftRegistration

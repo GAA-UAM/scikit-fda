@@ -15,8 +15,8 @@ from skfda.preprocessing.registration import (
     ShiftRegistration,
     landmark_registration,
     landmark_registration_warping,
-    landmark_shift,
     landmark_shift_deltas,
+    landmark_shift_registration,
 )
 from skfda.preprocessing.registration.validation import (
     AmplitudePhaseDecomposition,
@@ -110,7 +110,7 @@ class TestWarping(unittest.TestCase):
         shifts = landmark_shift_deltas(fd, landmarks).round(3)
         np.testing.assert_almost_equal(shifts, [0.25, -0.25, -0.231])
 
-    def test_landmark_shift(self):
+    def test_landmark_shift_registration(self):
 
         fd = make_multimodal_samples(n_samples=3, random_state=1)
         landmarks = make_multimodal_landmarks(n_samples=3, random_state=1)
@@ -119,28 +119,40 @@ class TestWarping(unittest.TestCase):
         original_modes = fd(landmarks.reshape((3, 1, 1)),
                             aligned=False)
         # Test default location
-        fd_registered = landmark_shift(fd, landmarks)
+        fd_registered = landmark_shift_registration(fd, landmarks)
         center = (landmarks.max() + landmarks.min()) / 2
         reg_modes = fd_registered(center)
 
         # Test callable location
         np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
 
-        fd_registered = landmark_shift(fd, landmarks, location=np.mean)
+        fd_registered = landmark_shift_registration(
+            fd,
+            landmarks,
+            location=np.mean,
+        )
         center = np.mean(landmarks)
         reg_modes = fd_registered(center)
 
         np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
 
         # Test integer location
-        fd_registered = landmark_shift(fd, landmarks, location=0)
+        fd_registered = landmark_shift_registration(
+            fd,
+            landmarks,
+            location=0,
+        )
         center = np.mean(landmarks)
         reg_modes = fd_registered(0)
 
         np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
 
         # Test array location
-        fd_registered = landmark_shift(fd, landmarks, location=[0, 0.1, 0.2])
+        fd_registered = landmark_shift_registration(
+            fd,
+            landmarks,
+            location=[0, 0.1, 0.2],
+        )
         reg_modes = fd_registered([[0], [.1], [.2]], aligned=False)
 
         np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)

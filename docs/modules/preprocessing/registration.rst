@@ -36,7 +36,7 @@ by performing a translation in the time scale. See the
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.landmark_shift
+   skfda.preprocessing.registration.landmark_shift_registration
    skfda.preprocessing.registration.landmark_shift_deltas
 
 

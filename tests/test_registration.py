@@ -13,8 +13,8 @@ from skfda.datasets import (
 from skfda.exploratory.stats import mean
 from skfda.preprocessing.registration import (
     ShiftRegistration,
-    landmark_registration,
-    landmark_registration_warping,
+    landmark_elastic_registration,
+    landmark_elastic_registration_warping,
     landmark_shift_deltas,
     landmark_shift_registration,
 )
@@ -157,25 +157,26 @@ class TestWarping(unittest.TestCase):
 
         np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
 
-    def test_landmark_registration_warping(self):
+    def test_landmark_elastic_registration_warping(self):
         fd = make_multimodal_samples(n_samples=3, n_modes=2, random_state=9)
         landmarks = make_multimodal_landmarks(n_samples=3, n_modes=2,
                                               random_state=9)
         landmarks = landmarks.squeeze()
 
         # Default location
-        warping = landmark_registration_warping(fd, landmarks)
+        warping = landmark_elastic_registration_warping(fd, landmarks)
         center = (landmarks.max(axis=0) + landmarks.min(axis=0)) / 2
         np.testing.assert_almost_equal(
             warping(center)[..., 0], landmarks, decimal=1)
 
         # Fixed location
         center = [.3, .6]
-        warping = landmark_registration_warping(fd, landmarks, location=center)
+        warping = landmark_elastic_registration_warping(
+            fd, landmarks, location=center)
         np.testing.assert_almost_equal(
             warping(center)[..., 0], landmarks, decimal=3)
 
-    def test_landmark_registration(self):
+    def test_landmark_elastic_registration(self):
         fd = make_multimodal_samples(n_samples=3, n_modes=2, random_state=9)
         landmarks = make_multimodal_landmarks(n_samples=3, n_modes=2,
                                               random_state=9)
@@ -184,14 +185,14 @@ class TestWarping(unittest.TestCase):
         original_values = fd(landmarks.reshape(3, 2), aligned=False)
 
         # Default location
-        fd_reg = landmark_registration(fd, landmarks)
+        fd_reg = landmark_elastic_registration(fd, landmarks)
         center = (landmarks.max(axis=0) + landmarks.min(axis=0)) / 2
         np.testing.assert_almost_equal(fd_reg(center), original_values,
                                        decimal=2)
 
         # Fixed location
         center = [.3, .6]
-        fd_reg = landmark_registration(fd, landmarks, location=center)
+        fd_reg = landmark_elastic_registration(fd, landmarks, location=center)
         np.testing.assert_array_almost_equal(fd_reg(center), original_values,
                                              decimal=2)
 
@@ -400,7 +401,7 @@ class TestRegistrationValidation(unittest.TestCase):
         fd = make_multimodal_samples(n_samples=3, random_state=1)
         landmarks = make_multimodal_landmarks(n_samples=3, random_state=1)
         landmarks = landmarks.squeeze()
-        warping = landmark_registration_warping(fd, landmarks)
+        warping = landmark_elastic_registration_warping(fd, landmarks)
         fd_registered = fd.compose(warping)
         scorer = AmplitudePhaseDecomposition()
         ret = scorer.stats(fd, fd_registered)

@@ -191,7 +191,7 @@ def landmark_shift_registration(
     )
 
 
-def landmark_registration_warping(
+def landmark_elastic_registration_warping(
     fd: FData,
     landmarks: ArrayLike,
     *,
@@ -235,7 +235,7 @@ def landmark_registration_warping(
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
         >>> from skfda.preprocessing.registration import (
-        ...      landmark_registration_warping)
+        ...      landmark_elastic_registration_warping)
 
         We will create a data with landmarks as example
 
@@ -247,7 +247,7 @@ def landmark_registration_warping(
 
         The function will return the corresponding warping function
 
-        >>> warping = landmark_registration_warping(fd, landmarks)
+        >>> warping = landmark_elastic_registration_warping(fd, landmarks)
         >>> warping
         FDataGrid(...)
 
@@ -319,6 +319,20 @@ def landmark_registration_warping(
 
 
 def landmark_registration(
+    *args: Any,
+    **kwargs: Any,
+) -> FDataGrid:
+
+    warnings.warn(
+        "Function 'landmark_registration' has been renamed. "
+        "Use 'landmark_elastic_registration' instead.",
+        DeprecationWarning,
+    )
+
+    return landmark_elastic_registration(*args, **kwargs)
+
+
+def landmark_elastic_registration(
     fd: FData,
     landmarks: ArrayLike,
     *,
@@ -357,7 +371,9 @@ def landmark_registration(
     Examples:
         >>> from skfda.datasets import make_multimodal_landmarks
         >>> from skfda.datasets import make_multimodal_samples
-        >>> from skfda.preprocessing.registration import landmark_registration
+        >>> from skfda.preprocessing.registration import (
+        ...     landmark_elastic_registration,
+        ... )
         >>> from skfda.representation.basis import BSpline
 
         We will create a data with landmarks as example
@@ -370,17 +386,17 @@ def landmark_registration(
 
         The function will return the registered curves
 
-        >>> landmark_registration(fd, landmarks)
+        >>> landmark_elastic_registration(fd, landmarks)
         FDataGrid(...)
 
         This method will work for FDataBasis as for FDataGrids
 
         >>> fd = fd.to_basis(BSpline(n_basis=12))
-        >>> landmark_registration(fd, landmarks)
+        >>> landmark_elastic_registration(fd, landmarks)
         FDataGrid(...)
 
     """
-    warping = landmark_registration_warping(
+    warping = landmark_elastic_registration_warping(
         fd,
         landmarks,
         location=location,

@@ -47,8 +47,8 @@ See the :ref:`sphx_glr_auto_examples_plot_landmark_registration.py` example.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.landmark_registration
-   skfda.preprocessing.registration.landmark_registration_warping
+   skfda.preprocessing.registration.landmark_elastic_registration
+   skfda.preprocessing.registration.landmark_elastic_registration_warping
 
 
 Elastic Registration

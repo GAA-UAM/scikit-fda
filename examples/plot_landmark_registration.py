@@ -66,7 +66,7 @@ print(landmarks)
 #
 # After the identification of the landmarks asociated with the features of
 # each of our curves we can construct the warping function with the function
-# :func:`~skfda.preprocessing.registration.landmark_registration_warping`.
+# :func:`~skfda.preprocessing.registration.landmark_elastic_registration_warping`.
 #
 # Let :math:`h_i` be the warping function corresponding with the curve
 # :math:`i`, :math:`t_{ij}` the time where the curve :math:`i` has their
@@ -79,7 +79,7 @@ print(landmarks)
 #
 # In this case we will place the landmarks at -0.5 and 0.5.
 
-warping = skfda.preprocessing.registration.landmark_registration_warping(
+warping = skfda.preprocessing.registration.landmark_elastic_registration_warping(
     fd,
     landmarks,
     location=[-0.5, 0.5],
@@ -109,13 +109,13 @@ fig.axes[0].scatter([-0.5, 0.5], [1, 1])
 #
 # If we do not need the warping function we can obtain the registered curves
 # directly using the function
-# :func:`~skfda.preprocessing.registration.landmark_registration`.
+# :func:`~skfda.preprocessing.registration.landmark_elastic_registration`.
 #
 # If the position of the new location of the landmarks is not specified the
 # mean position is taken.
 #
 
-fd_registered = skfda.preprocessing.registration.landmark_registration(
+fd_registered = skfda.preprocessing.registration.landmark_elastic_registration(
     fd,
     landmarks,
 )

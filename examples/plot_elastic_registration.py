@@ -15,11 +15,11 @@ import numpy as np
 import skfda
 from skfda.datasets import fetch_growth, make_multimodal_samples
 from skfda.exploratory.stats import fisher_rao_karcher_mean
-from skfda.preprocessing.registration import ElasticFisherRaoRegistration
+from skfda.preprocessing.registration import FisherRaoElasticRegistration
 
 ##############################################################################
 # In the example of pairwise alignment was shown the usage of
-# :class:`~skfda.preprocessing.registration.ElasticFisherRaoRegistration` to
+# :class:`~skfda.preprocessing.registration.FisherRaoElasticRegistration` to
 # align a set of functional observations to a given template or a set of
 # templates.
 #
@@ -54,7 +54,7 @@ fig.legend()
 # In this case, the alignment completely reduces the amplitude variability
 # between the samples, aligning the maximum points correctly.
 
-elastic_registration = ElasticFisherRaoRegistration()
+elastic_registration = FisherRaoElasticRegistration()
 
 fd_align = elastic_registration.fit_transform(fd)
 

@@ -6,7 +6,7 @@ import numpy as np
 import scipy.integrate
 
 from ..._utils import normalize_scale, normalize_warping
-from ...preprocessing.registration import ElasticFisherRaoRegistration
+from ...preprocessing.registration import FisherRaoElasticRegistration
 from ...representation import FData
 from ...representation._typing import NDArrayFloat
 from ..operators import SRSF
@@ -164,7 +164,7 @@ def fisher_rao_amplitude_distance(
         domain_range=(0, 1),
     )
 
-    elastic_registration = ElasticFisherRaoRegistration(
+    elastic_registration = FisherRaoElasticRegistration(
         template=fdata2,
         penalty=lam,
         output_points=eval_points_normalized,
@@ -258,7 +258,7 @@ def fisher_rao_phase_distance(
         domain_range=(0, 1),
     )
 
-    elastic_registration = ElasticFisherRaoRegistration(
+    elastic_registration = FisherRaoElasticRegistration(
         penalty=lam,
         template=fdata2,
         output_points=eval_points_normalized,

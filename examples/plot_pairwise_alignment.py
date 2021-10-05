@@ -18,7 +18,7 @@ import numpy as np
 import skfda
 from skfda.datasets import make_multimodal_samples
 from skfda.preprocessing.registration import (
-    ElasticFisherRaoRegistration,
+    FisherRaoElasticRegistration,
     invert_warping,
 )
 
@@ -56,12 +56,12 @@ fig.axes[0].legend(['$f$', '$g$'])
 # In this example :math:`g` will be used as template and :math:`f` will be
 # aligned to it. In the following figure it is shown the result of the
 # registration process, wich can be computed using
-# :class:`~skfda.preprocessing.registration.ElasticFisherRaoRegistration`.
+# :class:`~skfda.preprocessing.registration.FisherRaoElasticRegistration`.
 #
 
 f, g = fd[0], fd[1]
 
-elastic_registration = ElasticFisherRaoRegistration(template=g)
+elastic_registration = FisherRaoElasticRegistration(template=g)
 
 
 # Aligns f to g
@@ -198,7 +198,7 @@ fig.axes[0].legend(handles=[labels[0], labels[-1]])
 #
 
 # Registration of the sets
-elastic_registration = ElasticFisherRaoRegistration(template=g)
+elastic_registration = FisherRaoElasticRegistration(template=g)
 
 fd_registered = elastic_registration.fit_transform(fd)
 

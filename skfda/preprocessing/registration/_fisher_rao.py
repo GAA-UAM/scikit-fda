@@ -18,7 +18,7 @@ from .base import RegistrationTransformer
 _MeanType = Callable[[FDataGrid], FDataGrid]
 
 
-class ElasticFisherRaoRegistration(RegistrationTransformer):
+class FisherRaoElasticRegistration(RegistrationTransformer):
     r"""Align a FDatagrid using the SRSF framework.
 
     Let :math:`f` be a function of the functional data object wich will be
@@ -82,7 +82,7 @@ class ElasticFisherRaoRegistration(RegistrationTransformer):
         Elastic registration of with train/test sets.
 
         >>> from skfda.preprocessing.registration import (
-        ...     ElasticFisherRaoRegistration,
+        ...     FisherRaoElasticRegistration,
         ... )
         >>> from skfda.datasets import make_multimodal_samples
         >>> X_train = make_multimodal_samples(n_samples=15, random_state=0)
@@ -91,9 +91,9 @@ class ElasticFisherRaoRegistration(RegistrationTransformer):
         Fit the transformer, which learns the elastic mean of the train
         set as template.
 
-        >>> elastic_registration = ElasticFisherRaoRegistration()
+        >>> elastic_registration = FisherRaoElasticRegistration()
         >>> elastic_registration.fit(X_train)
-        ElasticFisherRaoRegistration(...)
+        FisherRaoElasticRegistration(...)
 
         Registration of the test set.
 
@@ -245,14 +245,14 @@ class ElasticFisherRaoRegistration(RegistrationTransformer):
             Center the datasets taking into account the misalignment.
 
             >>> from skfda.preprocessing.registration import (
-            ...     ElasticFisherRaoRegistration,
+            ...     FisherRaoElasticRegistration,
             ... )
             >>> from skfda.datasets import make_multimodal_samples
             >>> X = make_multimodal_samples(random_state=0)
 
             Registration of the dataset.
 
-            >>> elastic_registration = ElasticFisherRaoRegistration()
+            >>> elastic_registration = FisherRaoElasticRegistration()
             >>> X = elastic_registration.fit_transform(X)
 
             Substract the elastic mean build as template during the
@@ -286,7 +286,7 @@ class ElasticFisherRaoRegistration(RegistrationTransformer):
         return X.compose(inverse_warping, eval_points=self.output_points)
 
 
-class ElasticRegistration(ElasticFisherRaoRegistration):
+class ElasticRegistration(FisherRaoElasticRegistration):
 
     def __init__(
         self,
@@ -297,7 +297,7 @@ class ElasticRegistration(ElasticFisherRaoRegistration):
     ) -> None:
         warnings.warn(
             "ElasticRegistration is deprecated. "
-            "Use ElasticFisherRaoRegistration instead.",
+            "Use FisherRaoElasticRegistration instead.",
             DeprecationWarning,
         )
         super().__init__(

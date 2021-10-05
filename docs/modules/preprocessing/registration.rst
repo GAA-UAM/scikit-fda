@@ -64,7 +64,7 @@ introduction to this topic along the usage of the corresponding functions.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.ElasticFisherRaoRegistration
+   skfda.preprocessing.registration.FisherRaoElasticRegistration
 
 
 Validation

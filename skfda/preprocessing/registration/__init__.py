@@ -6,7 +6,7 @@ functional data, in basis as well in discretized form.
 
 from ..._utils import invert_warping, normalize_warping
 from . import validation
-from ._fisher_rao import ElasticFisherRaoRegistration, ElasticRegistration
+from ._fisher_rao import ElasticRegistration, FisherRaoElasticRegistration
 from ._landmark_registration import (
     landmark_registration,
     landmark_registration_warping,

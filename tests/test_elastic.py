@@ -20,13 +20,13 @@ from skfda.misc.metrics import (
     l2_distance,
 )
 from skfda.misc.operators import SRSF
-from skfda.preprocessing.registration import ElasticFisherRaoRegistration
+from skfda.preprocessing.registration import FisherRaoElasticRegistration
 
 metric = PairwiseMetric(l2_distance)
 pairwise_fisher_rao = PairwiseMetric(fisher_rao_distance)
 
 
-class TestElasticFisherRaoRegistration(unittest.TestCase):
+class TestFisherRaoElasticRegistration(unittest.TestCase):
     """Test elastic registration."""
 
     def setUp(self) -> None:
@@ -107,7 +107,7 @@ class TestElasticFisherRaoRegistration(unittest.TestCase):
 
     def test_template_alignment(self) -> None:
         """Test alignment to 1 template."""
-        reg = ElasticFisherRaoRegistration(template=self.template)
+        reg = FisherRaoElasticRegistration(template=self.template)
         register = reg.fit_transform(self.unimodal_samples)
         distances = metric(self.template, register)
 
@@ -115,7 +115,7 @@ class TestElasticFisherRaoRegistration(unittest.TestCase):
 
     def test_one_to_one_alignment(self) -> None:
         """Test alignment to 1 sample to a template."""
-        reg = ElasticFisherRaoRegistration(template=self.template)
+        reg = FisherRaoElasticRegistration(template=self.template)
         register = reg.fit_transform(self.unimodal_samples[0])
         distances = metric(self.template, register)
 
@@ -124,7 +124,7 @@ class TestElasticFisherRaoRegistration(unittest.TestCase):
     def test_set_alignment(self) -> None:
         """Test alignment 3 curves to set with 3 templates."""
         # Should give same result than test_template_alignment
-        reg = ElasticFisherRaoRegistration(template=self.template_rep)
+        reg = FisherRaoElasticRegistration(template=self.template_rep)
         register = reg.fit_transform(self.unimodal_samples)
         distances = metric(self.template, register)
 
@@ -133,7 +133,7 @@ class TestElasticFisherRaoRegistration(unittest.TestCase):
     def test_default_alignment(self) -> None:
         """Test alignment by default."""
         # Should give same result than test_template_alignment
-        reg = ElasticFisherRaoRegistration()
+        reg = FisherRaoElasticRegistration()
         register = reg.fit_transform(self.unimodal_samples)
 
         values = register([-0.25, -0.1, 0, 0.1, 0.25])
@@ -155,7 +155,7 @@ class TestElasticFisherRaoRegistration(unittest.TestCase):
     def test_callable_alignment(self) -> None:
         """Test alignment by default."""
         # Should give same result than test_template_alignment
-        reg = ElasticFisherRaoRegistration(template=fisher_rao_karcher_mean)
+        reg = FisherRaoElasticRegistration(template=fisher_rao_karcher_mean)
         register = reg.fit_transform(self.unimodal_samples)
 
         values = register([-0.25, -0.1, 0, 0.1, 0.25])
@@ -175,7 +175,7 @@ class TestElasticFisherRaoRegistration(unittest.TestCase):
 
     def test_simmetry_of_aligment(self) -> None:
         """Check registration using inverse composition."""
-        reg = ElasticFisherRaoRegistration(template=self.template)
+        reg = FisherRaoElasticRegistration(template=self.template)
         reg.fit_transform(self.unimodal_samples)
         warping = reg.warping_
         inverse = invert_warping(warping)
@@ -186,7 +186,7 @@ class TestElasticFisherRaoRegistration(unittest.TestCase):
 
     def test_raises(self) -> None:
         """Test that the assertions raise when appropriate."""
-        reg = ElasticFisherRaoRegistration()
+        reg = FisherRaoElasticRegistration()
 
         # Inverse transform without previous transform
         with np.testing.assert_raises(ValueError):
@@ -198,7 +198,7 @@ class TestElasticFisherRaoRegistration(unittest.TestCase):
             reg.inverse_transform(self.unimodal_samples[0])
 
         # FDataGrid as template with n != 1 and n!= n_samples to transform
-        reg = ElasticFisherRaoRegistration(template=self.unimodal_samples).fit(
+        reg = FisherRaoElasticRegistration(template=self.unimodal_samples).fit(
             self.unimodal_samples[0],
         )
         with np.testing.assert_raises(ValueError):
@@ -206,7 +206,7 @@ class TestElasticFisherRaoRegistration(unittest.TestCase):
 
     def test_score(self) -> None:
         """Test score method of the transformer."""
-        reg = ElasticFisherRaoRegistration()
+        reg = FisherRaoElasticRegistration()
         reg.fit(self.unimodal_samples)
         score = reg.score(self.unimodal_samples)
         np.testing.assert_almost_equal(score, 0.999389)

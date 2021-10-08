@@ -29,63 +29,77 @@ from skfda.representation.interpolation import SplineInterpolation
 
 
 class TestWarping(unittest.TestCase):
-    """Test warpings functions"""
+    """Test warpings functions."""
 
-    def setUp(self):
-        """Initialization of samples"""
-
+    def setUp(self) -> None:
+        """Initialize samples."""
         self.time = np.linspace(-1, 1, 50)
         interpolation = SplineInterpolation(3, monotone=True)
-        self.polynomial = FDataGrid([self.time**3, self.time**5],
-                                    self.time, interpolation=interpolation)
+        self.polynomial = FDataGrid(
+            [self.time**3, self.time**5],
+            self.time,
+            interpolation=interpolation,
+        )
 
-    def test_invert_warping(self):
-
+    def test_invert_warping(self) -> None:
+        """Test that the composition with invert warping is the identity."""
         inverse = invert_warping(self.polynomial)
 
         # Check if identity
-        id = self.polynomial.compose(inverse)
+        identity = self.polynomial.compose(inverse)
 
-        np.testing.assert_array_almost_equal([self.time, self.time],
-                                             id.data_matrix[..., 0],
-                                             decimal=3)
+        np.testing.assert_array_almost_equal(
+            [self.time, self.time],
+            identity.data_matrix[..., 0],
+            decimal=3,
+        )
 
-    def test_standard_normalize_warping(self):
-        """Test normalization to (0, 1)"""
-
+    def test_standard_normalize_warping(self) -> None:
+        """Test normalization to (0, 1)."""
         normalized = normalize_warping(self.polynomial, (0, 1))
 
         # Test new domain range (0, 1)
         np.testing.assert_array_equal(normalized.domain_range, [(0, 1)])
 
-        np.testing.assert_array_almost_equal(normalized.grid_points[0],
-                                             np.linspace(0, 1, 50))
+        np.testing.assert_array_almost_equal(
+            normalized.grid_points[0],
+            np.linspace(0, 1, 50),
+        )
 
         np.testing.assert_array_almost_equal(
-            normalized(0)[..., 0], [[0.], [0.]])
+            normalized(0)[..., 0],
+            [[0], [0]],
+        )
 
         np.testing.assert_array_almost_equal(
-            normalized(1)[..., 0], [[1.], [1.]])
+            normalized(1)[..., 0],
+            [[1.0], [1.0]],
+        )
 
-    def test_standard_normalize_warping_default_value(self):
-        """Test normalization """
-
+    def test_standard_normalize_warping_default_value(self) -> None:
+        """Test normalization."""
         normalized = normalize_warping(self.polynomial)
 
         # Test new domain range (0, 1)
         np.testing.assert_array_equal(normalized.domain_range, [(-1, 1)])
 
-        np.testing.assert_array_almost_equal(normalized.grid_points[0],
-                                             np.linspace(-1, 1, 50))
+        np.testing.assert_array_almost_equal(
+            normalized.grid_points[0],
+            np.linspace(-1, 1, 50),
+        )
 
         np.testing.assert_array_almost_equal(
-            normalized(-1)[..., 0], [[-1], [-1]])
+            normalized(-1)[..., 0],
+            [[-1], [-1]],
+        )
 
         np.testing.assert_array_almost_equal(
-            normalized(1)[..., 0], [[1.], [1.]])
+            normalized(1)[..., 0],
+            [[1.0], [1.0]],
+        )
 
-    def test_normalize_warping(self):
-        """Test normalization to (a, b)"""
+    def test_normalize_warping(self) -> None:
+        """Test normalization to (a, b)."""
         a = -4
         b = 3
         domain = (a, b)
@@ -94,15 +108,17 @@ class TestWarping(unittest.TestCase):
         # Test new domain range (0, 1)
         np.testing.assert_array_equal(normalized.domain_range, [domain])
 
-        np.testing.assert_array_almost_equal(normalized.grid_points[0],
-                                             np.linspace(*domain, 50))
+        np.testing.assert_array_almost_equal(
+            normalized.grid_points[0],
+            np.linspace(*domain, 50),
+        )
 
         np.testing.assert_array_equal(normalized(a)[..., 0], [[a], [a]])
 
         np.testing.assert_array_equal(normalized(b)[..., 0], [[b], [b]])
 
-    def test_landmark_shift_deltas(self):
-
+    def test_landmark_shift_deltas(self) -> None:
+        """Test landmark shift deltas."""
         fd = make_multimodal_samples(n_samples=3, random_state=1)
         landmarks = make_multimodal_landmarks(n_samples=3, random_state=1)
         landmarks = landmarks.squeeze()
@@ -110,14 +126,16 @@ class TestWarping(unittest.TestCase):
         shifts = landmark_shift_deltas(fd, landmarks).round(3)
         np.testing.assert_almost_equal(shifts, [0.25, -0.25, -0.231])
 
-    def test_landmark_shift_registration(self):
-
+    def test_landmark_shift_registration(self) -> None:
+        """Test landmark shift registration."""
         fd = make_multimodal_samples(n_samples=3, random_state=1)
         landmarks = make_multimodal_landmarks(n_samples=3, random_state=1)
         landmarks = landmarks.squeeze()
 
-        original_modes = fd(landmarks.reshape((3, 1, 1)),
-                            aligned=False)
+        original_modes = fd(
+            landmarks.reshape((3, 1, 1)),
+            aligned=False,
+        )
         # Test default location
         fd_registered = landmark_shift_registration(fd, landmarks)
         center = (landmarks.max() + landmarks.min()) / 2
@@ -153,33 +171,47 @@ class TestWarping(unittest.TestCase):
             landmarks,
             location=[0, 0.1, 0.2],
         )
-        reg_modes = fd_registered([[0], [.1], [.2]], aligned=False)
+        reg_modes = fd_registered([[0], [0.1], [0.2]], aligned=False)
 
         np.testing.assert_almost_equal(reg_modes, original_modes, decimal=2)
 
-    def test_landmark_elastic_registration_warping(self):
+    def test_landmark_elastic_registration_warping(self) -> None:
+        """Test the warpings in landmark elastic registration."""
         fd = make_multimodal_samples(n_samples=3, n_modes=2, random_state=9)
-        landmarks = make_multimodal_landmarks(n_samples=3, n_modes=2,
-                                              random_state=9)
+        landmarks = make_multimodal_landmarks(
+            n_samples=3,
+            n_modes=2,
+            random_state=9,
+        )
         landmarks = landmarks.squeeze()
 
         # Default location
         warping = landmark_elastic_registration_warping(fd, landmarks)
         center = (landmarks.max(axis=0) + landmarks.min(axis=0)) / 2
         np.testing.assert_almost_equal(
-            warping(center)[..., 0], landmarks, decimal=1)
+            warping(center)[..., 0],
+            landmarks,
+            decimal=1,
+        )
 
         # Fixed location
-        center = [.3, .6]
+        center = [0.3, 0.6]
         warping = landmark_elastic_registration_warping(
             fd, landmarks, location=center)
         np.testing.assert_almost_equal(
-            warping(center)[..., 0], landmarks, decimal=3)
+            warping(center)[..., 0],
+            landmarks,
+            decimal=3,
+        )
 
-    def test_landmark_elastic_registration(self):
+    def test_landmark_elastic_registration(self) -> None:
+        """Test landmark elastic registration."""
         fd = make_multimodal_samples(n_samples=3, n_modes=2, random_state=9)
-        landmarks = make_multimodal_landmarks(n_samples=3, n_modes=2,
-                                              random_state=9)
+        landmarks = make_multimodal_landmarks(
+            n_samples=3,
+            n_modes=2,
+            random_state=9,
+        )
         landmarks = landmarks.squeeze()
 
         original_values = fd(landmarks.reshape(3, 2), aligned=False)
@@ -187,26 +219,35 @@ class TestWarping(unittest.TestCase):
         # Default location
         fd_reg = landmark_elastic_registration(fd, landmarks)
         center = (landmarks.max(axis=0) + landmarks.min(axis=0)) / 2
-        np.testing.assert_almost_equal(fd_reg(center), original_values,
-                                       decimal=2)
+        np.testing.assert_almost_equal(
+            fd_reg(center),
+            original_values,
+            decimal=2,
+        )
 
         # Fixed location
         center = [.3, .6]
         fd_reg = landmark_elastic_registration(fd, landmarks, location=center)
-        np.testing.assert_array_almost_equal(fd_reg(center), original_values,
-                                             decimal=2)
+        np.testing.assert_array_almost_equal(
+            fd_reg(center),
+            original_values,
+            decimal=2,
+        )
 
 
 class TestLeastSquaresShiftRegistration(unittest.TestCase):
-    """Test shift registration"""
+    """Test shift registration."""
 
-    def setUp(self):
-        """Initialization of samples"""
-        self.fd = make_sinusoidal_process(n_samples=2, error_std=0,
-                                          random_state=1)
+    def setUp(self) -> None:
+        """Initialize samples."""
+        self.fd = make_sinusoidal_process(
+            n_samples=2,
+            error_std=0,
+            random_state=1,
+        )
         self.fd.extrapolation = "periodic"
 
-    def test_fit_transform(self):
+    def test_fit_transform(self) -> None:
 
         reg = LeastSquaresShiftRegistration()
 
@@ -228,11 +269,8 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         deltas = reg.deltas_.round(3)
         np.testing.assert_array_almost_equal(deltas, [-0.022, 0.03])
 
-    def test_fit_and_transform(self):
-        """Test wrapper of shift_registration_deltas"""
-
-        fd = make_sinusoidal_process(n_samples=2, error_std=0, random_state=10)
-
+    def test_fit_and_transform(self) -> None:
+        """Test wrapper of shift_registration_deltas."""
         reg = LeastSquaresShiftRegistration()
         response = reg.fit(self.fd)
 
@@ -240,20 +278,22 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         self.assertTrue(hasattr(reg, 'template_'))
         self.assertTrue(response is reg)
 
-        fd_registered = reg.transform(fd)
         deltas = reg.deltas_.round(3)
         np.testing.assert_allclose(deltas, [0.071, -0.072])
 
-    def test_inverse_transform(self):
+    def test_inverse_transform(self) -> None:
 
         reg = LeastSquaresShiftRegistration()
         fd = reg.fit_transform(self.fd)
         fd = reg.inverse_transform(fd)
 
-        np.testing.assert_array_almost_equal(fd.data_matrix,
-                                             self.fd.data_matrix, decimal=3)
+        np.testing.assert_array_almost_equal(
+            fd.data_matrix,
+            self.fd.data_matrix,
+            decimal=3,
+        )
 
-    def test_raises(self):
+    def test_raises(self) -> None:
 
         reg = LeastSquaresShiftRegistration()
 
@@ -292,7 +332,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         with np.testing.assert_raises(ValueError):
             reg.fit_transform(self.fd)
 
-    def test_template(self):
+    def test_template(self) -> None:
 
         reg = LeastSquaresShiftRegistration()
         fd_registered_1 = reg.fit_transform(self.fd)
@@ -306,23 +346,31 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         reg_4 = LeastSquaresShiftRegistration(template=reg.template_)
         fd_registered_4 = reg_4.fit(self.fd).transform(self.fd)
 
-        np.testing.assert_array_almost_equal(fd_registered_1.data_matrix,
-                                             fd_registered_3.data_matrix)
+        np.testing.assert_array_almost_equal(
+            fd_registered_1.data_matrix,
+            fd_registered_3.data_matrix,
+        )
 
         # With the template fixed could vary the convergence
-        np.testing.assert_array_almost_equal(fd_registered_1.data_matrix,
-                                             fd_registered_2.data_matrix,
-                                             decimal=3)
+        np.testing.assert_array_almost_equal(
+            fd_registered_1.data_matrix,
+            fd_registered_2.data_matrix,
+            decimal=3,
+        )
 
-        np.testing.assert_array_almost_equal(fd_registered_2.data_matrix,
-                                             fd_registered_4.data_matrix)
+        np.testing.assert_array_almost_equal(
+            fd_registered_2.data_matrix,
+            fd_registered_4.data_matrix,
+        )
 
     def test_restrict_domain(self) -> None:
         reg = LeastSquaresShiftRegistration(restrict_domain=True)
         fd_registered_1 = reg.fit_transform(self.fd)
 
         np.testing.assert_array_almost_equal(
-            np.array(fd_registered_1.domain_range).round(3), [[0.022, 0.969]])
+            np.array(fd_registered_1.domain_range).round(3),
+            [[0.022, 0.969]],
+        )
 
         reg2 = LeastSquaresShiftRegistration(
             restrict_domain=True,
@@ -331,24 +379,30 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         fd_registered_2 = reg2.fit_transform(self.fd)
 
         np.testing.assert_array_almost_equal(
-            fd_registered_2.data_matrix, fd_registered_1.data_matrix,
-            decimal=3)
+            fd_registered_2.data_matrix,
+            fd_registered_1.data_matrix,
+            decimal=3,
+        )
 
         reg3 = LeastSquaresShiftRegistration(
-            restrict_domain=True, template=mean)
+            restrict_domain=True,
+            template=mean,
+        )
         fd_registered_3 = reg3.fit_transform(self.fd)
 
         np.testing.assert_array_almost_equal(
-            fd_registered_3.data_matrix, fd_registered_1.data_matrix)
+            fd_registered_3.data_matrix,
+            fd_registered_1.data_matrix,
+        )
 
-    def test_initial_estimation(self):
+    def test_initial_estimation(self) -> None:
         reg = LeastSquaresShiftRegistration(initial=[-0.02161235, 0.03032652])
         reg.fit_transform(self.fd)
 
         # Only needed 1 iteration until convergence
         self.assertEqual(reg.n_iter_, 1)
 
-    def test_custom_grid_points(self):
+    def test_custom_grid_points(self) -> None:
         reg = LeastSquaresShiftRegistration(grid_points=np.linspace(0, 1, 50))
         reg.fit_transform(self.fd)
 
@@ -411,7 +465,7 @@ class TestRegistrationValidation(unittest.TestCase):
         np.testing.assert_allclose(ret.r_squared, 0.9910806875)
         np.testing.assert_allclose(ret.c_r, 0.9593073773)
 
-    def test_raises_amplitude_phase(self):
+    def test_raises_amplitude_phase(self) -> None:
         scorer = AmplitudePhaseDecomposition()
 
         # Inconsistent number of functions registered
@@ -424,5 +478,4 @@ class TestRegistrationValidation(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    print()
     unittest.main()

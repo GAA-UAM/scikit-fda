@@ -152,7 +152,7 @@ class FPCA(
         )
         n_samples = X.n_samples
         # necessary in inverse_transform
-        self.n_samples_fitted_ = X.n_samples
+        self.n_samples_ = X.n_samples
 
         # check that the number of components is smaller than the sample size
         if self.n_components > X.n_samples:
@@ -332,7 +332,7 @@ class FPCA(
         n_samples, n_points_discretization = fd_data.shape
 
         # necessary for inverse_transform
-        self.n_samples_fitted_ = n_samples
+        self.n_samples_ = n_samples
 
         # if centering is True then subtract the mean function to each function
         # in FDataBasis
@@ -491,37 +491,43 @@ class FPCA(
 
     def inverse_transform(
         self,
-        pc_score: np.ndarray,
+        pc_scores: np.ndarray,
     ) -> FData:
         """
-        Compute the reconstruction of samples given their ``n_components`` first principal components score i.e. a projection coefficient onto the fitted functional principal components.
-        In other words, it maps a coefficient vector, from the fitted functional principal components space, back to the input functional space. 
-        Typically, ``pc_score`` might be an array returned by ``transform`` or ``fit_transform`` method.
+        Compute the recovery from the fitted principal components scores.
+
+        In other words, 
+        it maps ``pc_scores``, from the fitted functional PCs' space,
+        back to the input functional space.
+        ``pc_score`` might be an array returned by ``transform`` or ``fit_transform`` method.
 
         Args:
-            pc_score: ndarray of shape (n_samples, n_components). The principal components scores from which to perform the inverse transformation.
+            pc_score: ndarray (n_samples, n_components).
 
         Returns:
             A FData object in the functional input space.
 
         """
-        # check if the instance is fitted.
+        # check the instance is fitted.
 
         # input format check:
-        if isinstance(pc_score, np.ndarray):
-            if pc_score.ndim == 1:
-                pc_score = pc_score[np.newaxis, :]
+        if isinstance(pc_scores, np.ndarray):
+            if pc_scores.ndim == 1:
+                pc_scores = pc_score[np.newaxis, :]
 
-            if pc_score.shape[1] != self.n_components:
-                raise AttributeError("pc_score must be a numpy array with n_samples rows and n_components columns.")
+            if pc_scores.shape[1] != self.n_components:
+                raise AttributeError(
+                    "pc_score must be a numpy array "
+                    "with n_samples rows and n_components columns.")
         else:
             raise AttributeError("pc_score is not a numpy array.")
 
-        # inverse_transform is slightly different wether .fit is applied to FDataGrid or FDataBasis
+        # inverse_transform is slightly different wether 
+        # .fit was applied to FDataGrid or FDataBasis object
         if isinstance(self.components_, FDataGrid):
             # reconstruct the discretized functions
-            x_hat = (pc_score @ self.components_.data_matrix[:,:,0]) \
-                        @ (np.diag(np.sqrt(self.weights)) / np.sqrt(self.n_samples_fitted_))
+            x_hat = (pc_scores @ self.components_.data_matrix[:,:,0]) \
+                @ (np.diag(np.sqrt(self.weights)) / np.sqrt(self.n_samples_))
             x_hat += self.mean_.data_matrix.reshape((1,self.mean_.grid_points[0].shape[0]))
 
             # format as FDataGrid according to fitted data format
@@ -529,16 +535,10 @@ class FPCA(
                             argument_names=self.mean_.argument_names)
         elif isinstance(self.components_, FDataBasis):
             # reconstruct the basis coefficients
-            x_hat = (pc_score @ self.components_.coefficients) \
-                        @ (np.transpose(self._l_inv_j_t) / np.sqrt(self.n_samples_fitted_))
+            x_hat = (pc_scores @ self.components_.coefficients) \
+                @ (np.transpose(self._l_inv_j_t) / np.sqrt(self.n_samples_))
             x_hat += self.mean_.coefficients.reshape((1,self.mean_.coefficients.shape[1]))
             # format as FDataBasis according to fitted data format
             return FDataBasis(basis=self.mean_.basis, coefficients = x_hat,
                             argument_names=self.mean_.argument_names)
-        
-
-        
-
-        
-
         

@@ -271,6 +271,12 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
 
     def test_fit_and_transform(self) -> None:
         """Test wrapper of shift_registration_deltas."""
+        fd = make_sinusoidal_process(
+            n_samples=2,
+            error_std=0,
+            random_state=10,
+        )
+        
         reg = LeastSquaresShiftRegistration()
         response = reg.fit(self.fd)
 
@@ -278,6 +284,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         self.assertTrue(hasattr(reg, 'template_'))
         self.assertTrue(response is reg)
 
+        reg.transform(fd)
         deltas = reg.deltas_.round(3)
         np.testing.assert_allclose(deltas, [0.071, -0.072])
 

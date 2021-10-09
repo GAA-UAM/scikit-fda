@@ -496,13 +496,13 @@ class FPCA(
         """
         Compute the recovery from the fitted principal components scores.
 
-        In other words, 
+        In other words,
         it maps ``pc_scores``, from the fitted functional PCs' space,
         back to the input functional space.
-        ``pc_score`` might be an array returned by ``transform`` or ``fit_transform`` method.
+        ``pc_scores`` might be an array returned by ``transform`` method.
 
         Args:
-            pc_score: ndarray (n_samples, n_components).
+            pc_scores: ndarray (n_samples, n_components).
 
         Returns:
             A FData object in the functional input space.
@@ -513,7 +513,7 @@ class FPCA(
         # input format check:
         if isinstance(pc_scores, np.ndarray):
             if pc_scores.ndim == 1:
-                pc_scores = pc_score[np.newaxis, :]
+                pc_scores = pc_scores[np.newaxis, :]
 
             if pc_scores.shape[1] != self.n_components:
                 raise AttributeError(
@@ -522,23 +522,25 @@ class FPCA(
         else:
             raise AttributeError("pc_score is not a numpy array.")
 
-        # inverse_transform is slightly different wether 
+        # inverse_transform is slightly different wether
         # .fit was applied to FDataGrid or FDataBasis object
         if isinstance(self.components_, FDataGrid):
             # reconstruct the discretized functions
-            x_hat = (pc_scores @ self.components_.data_matrix[:,:,0]) \
+            x_hat = (pc_scores @ self.components_.data_matrix[:, :, 0]) \
                 @ (np.diag(np.sqrt(self.weights)) / np.sqrt(self.n_samples_))
-            x_hat += self.mean_.data_matrix.reshape((1,self.mean_.grid_points[0].shape[0]))
+            x_hat += self.mean_.data_matrix.reshape(
+                (1, self.mean_.grid_points[0].shape[0]))
 
             # format as FDataGrid according to fitted data format
-            return FDataGrid(data_matrix=x_hat, grid_points=self.mean_.grid_points[0],
-                            argument_names=self.mean_.argument_names)
+            return FDataGrid(data_matrix=x_hat,
+                             grid_points=self.mean_.grid_points[0],
+                             argument_names=self.mean_.argument_names)
         elif isinstance(self.components_, FDataBasis):
             # reconstruct the basis coefficients
             x_hat = (pc_scores @ self.components_.coefficients) \
                 @ (np.transpose(self._l_inv_j_t) / np.sqrt(self.n_samples_))
-            x_hat += self.mean_.coefficients.reshape((1,self.mean_.coefficients.shape[1]))
+            x_hat += self.mean_.coefficients.reshape(
+                (1, self.mean_.coefficients.shape[1]))
             # format as FDataBasis according to fitted data format
-            return FDataBasis(basis=self.mean_.basis, coefficients = x_hat,
-                            argument_names=self.mean_.argument_names)
-        
+            return FDataBasis(basis=self.mean_.basis, coefficients=x_hat,
+                              argument_names=self.mean_.argument_names)

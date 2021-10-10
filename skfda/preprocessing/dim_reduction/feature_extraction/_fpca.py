@@ -532,7 +532,8 @@ class FPCA(
                 @ (np.diag(np.sqrt(self.weights)) / np.sqrt(self.n_samples_))
             )
             x_hat += self.mean_.data_matrix.reshape(
-                (1, self.mean_.grid_points[0].shape[0]))
+                (1, self.mean_.grid_points[0].shape[0]),
+            )
 
             # format as FDataGrid according to fitted data format
             return FDataGrid(

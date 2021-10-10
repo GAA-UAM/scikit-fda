@@ -542,8 +542,10 @@ class FPCA(
             )
         elif isinstance(self.components_, FDataBasis):
             # reconstruct the basis coefficients
-            x_hat = (pc_scores @ self.components_.coefficients) \
+            x_hat = (
+                (pc_scores @ self.components_.coefficients)
                 @ (np.transpose(self._l_inv_j_t) / np.sqrt(self.n_samples_))
+            )
             x_hat += self.mean_.coefficients.reshape(
                 (1, self.mean_.coefficients.shape[1]))
             # format as FDataBasis according to fitted data format

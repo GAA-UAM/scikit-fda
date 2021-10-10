@@ -518,7 +518,8 @@ class FPCA(
             if pc_scores.shape[1] != self.n_components:
                 raise AttributeError(
                     "pc_score must be a numpy array "
-                    "with n_samples rows and n_components columns.")
+                    "with n_samples rows and n_components columns.",
+                )
         else:
             raise AttributeError("pc_score is not a numpy array.")
 

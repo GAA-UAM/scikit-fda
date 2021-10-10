@@ -535,9 +535,11 @@ class FPCA(
                 (1, self.mean_.grid_points[0].shape[0]))
 
             # format as FDataGrid according to fitted data format
-            return FDataGrid(data_matrix=x_hat,
-                             grid_points=self.mean_.grid_points[0],
-                             argument_names=self.mean_.argument_names)
+            return FDataGrid(
+                data_matrix=x_hat,
+                grid_points=self.mean_.grid_points[0],
+                argument_names=self.mean_.argument_names,
+            )
         elif isinstance(self.components_, FDataBasis):
             # reconstruct the basis coefficients
             x_hat = (pc_scores @ self.components_.coefficients) \

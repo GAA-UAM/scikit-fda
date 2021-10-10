@@ -547,7 +547,8 @@ class FPCA(
                 @ (np.transpose(self._l_inv_j_t) / np.sqrt(self.n_samples_))
             )
             x_hat += self.mean_.coefficients.reshape(
-                (1, self.mean_.coefficients.shape[1]))
+                (1, self.mean_.coefficients.shape[1]),
+            )
             # format as FDataBasis according to fitted data format
             return FDataBasis(basis=self.mean_.basis, coefficients=x_hat,
                               argument_names=self.mean_.argument_names)

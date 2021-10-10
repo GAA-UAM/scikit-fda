@@ -550,5 +550,8 @@ class FPCA(
                 (1, self.mean_.coefficients.shape[1]),
             )
             # format as FDataBasis according to fitted data format
-            return FDataBasis(basis=self.mean_.basis, coefficients=x_hat,
-                              argument_names=self.mean_.argument_names)
+            return FDataBasis(
+                basis=self.mean_.basis,
+                coefficients=x_hat,
+                argument_names=self.mean_.argument_names,
+            )

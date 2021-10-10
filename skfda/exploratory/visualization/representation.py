@@ -256,6 +256,7 @@ class GraphPlot(BasePlot):
         self.group_names = group_names
         self.legend = legend
         self.colormap = colormap
+        self.kwargs = kwargs
 
         if domain_range is None:
             self.domain_range = self.fdata.domain_range
@@ -330,6 +331,7 @@ class GraphPlot(BasePlot):
                     self.artists[j, i] = axes[i].plot(
                         eval_points,
                         mat[j, ..., i].T,
+                        **self.kwargs,
                         **color_dict,
                     )[0]
 
@@ -365,6 +367,7 @@ class GraphPlot(BasePlot):
                         X,
                         Y,
                         Z[h, ..., k],
+                        **self.kwargs,
                         **color_dict,
                     )
 

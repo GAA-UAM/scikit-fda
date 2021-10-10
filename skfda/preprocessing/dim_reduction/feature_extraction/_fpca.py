@@ -527,8 +527,10 @@ class FPCA(
         # .fit was applied to FDataGrid or FDataBasis object
         if isinstance(self.components_, FDataGrid):
             # reconstruct the discretized functions
-            x_hat = (pc_scores @ self.components_.data_matrix[:, :, 0]) \
+            x_hat = (
+                (pc_scores @ self.components_.data_matrix[:, :, 0])
                 @ (np.diag(np.sqrt(self.weights)) / np.sqrt(self.n_samples_))
+            )
             x_hat += self.mean_.data_matrix.reshape(
                 (1, self.mean_.grid_points[0].shape[0]))
 

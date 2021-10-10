@@ -522,7 +522,7 @@ class FPCA(
         else:
             raise AttributeError("pc_score is not a numpy array.")
 
-        # inverse_transform is slightly different wether
+        # inverse_transform is slightly different whether
         # .fit was applied to FDataGrid or FDataBasis object
         if isinstance(self.components_, FDataGrid):
             # reconstruct the discretized functions

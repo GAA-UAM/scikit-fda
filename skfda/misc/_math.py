@@ -14,12 +14,12 @@ import scipy.integrate
 
 from .._utils import _same_domain, nquad_vec
 from ..representation import FData, FDataBasis, FDataGrid
-from ..representation._typing import DomainRange
+from ..representation._typing import ArrayLike, DomainRange, NDArrayFloat
 from ..representation.basis import Basis
 
 Vector = TypeVar(
     "Vector",
-    bound=Union[np.ndarray, Basis, Callable[[np.ndarray], np.ndarray]],
+    bound=Union[NDArrayFloat, Basis, Callable[[ArrayLike], NDArrayFloat]],
 )
 
 
@@ -216,8 +216,9 @@ def inner_product(
     _matrix: bool = False,
     _domain_range: Optional[DomainRange] = None,
     **kwargs: Any,
-) -> np.ndarray:
-    r"""Return the usual (:math:`L_2`) inner product.
+) -> NDArrayFloat:
+    r"""
+    Return the usual (:math:`L_2`) inner product.
 
     Calculates the inner product between matching samples in two
     FDataGrid objects.
@@ -225,12 +226,12 @@ def inner_product(
     For two samples x and y the inner product is defined as:
 
     .. math::
-        <x, y> = \sum_i x_i y_i
+        \langle x, y \rangle = \sum_i x_i y_i
 
     for multivariate data and
 
     .. math::
-        <x, y> = \int_a^b x(t)y(t)dt
+        \langle x, y \rangle = \int_a^b x(t)y(t)dt
 
     for functional data.
 
@@ -242,8 +243,7 @@ def inner_product(
         arg2: Second sample.
 
     Returns:
-        numpy.darray: Vector with the inner products of each pair of
-            samples.
+        Vector with the inner products of each pair of samples.
 
     Examples:
         This function can compute the multivariate inner product.
@@ -335,7 +335,7 @@ def _inner_product_fdatagrid(
     arg2: FDataGrid,
     *,
     _matrix: bool = False,
-) -> np.ndarray:
+) -> NDArrayFloat:
 
     if not np.array_equal(
         arg1.grid_points,
@@ -388,9 +388,9 @@ def _inner_product_fdatabasis(
     arg2: Union[FDataBasis, Basis],
     *,
     _matrix: bool = False,
-    inner_product_matrix: Optional[np.ndarray] = None,
+    inner_product_matrix: Optional[NDArrayFloat] = None,
     force_numerical: bool = False,
-) -> np.ndarray:
+) -> NDArrayFloat:
 
     if not _same_domain(arg1, arg2):
         raise ValueError("Both Objects should have the same domain_range")
@@ -448,12 +448,12 @@ def _inner_product_fdatabasis(
 
 
 def _inner_product_integrate(
-    arg1: Callable[[np.ndarray], np.ndarray],
-    arg2: Callable[[np.ndarray], np.ndarray],
+    arg1: Callable[[ArrayLike], NDArrayFloat],
+    arg2: Callable[[ArrayLike], NDArrayFloat],
     *,
     _matrix: bool = False,
     _domain_range: Optional[DomainRange] = None,
-) -> np.ndarray:
+) -> NDArrayFloat:
 
     domain_range: DomainRange
 
@@ -477,7 +477,7 @@ def _inner_product_integrate(
         len_arg1 = len(arg1(left_domain))
         len_arg2 = len(arg2(left_domain))
 
-    def integrand(*args: np.ndarray) -> np.ndarray:  # noqa: WPS430
+    def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
         f1 = arg1(args)[:, 0, :]
         f2 = arg2(args)[:, 0, :]
 
@@ -504,19 +504,21 @@ def inner_product_matrix(
     arg1: Vector,
     arg2: Optional[Vector] = None,
     **kwargs: Any,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """
     Return the inner product matrix between is arguments.
 
-    If arg2 is ``None`` returns the Gram matrix.
-
     Args:
         arg1: First sample.
-        arg2: Second sample.
+        arg2: Second sample. If it is ``None`` returns the inner product
+            between the samples in ``arg1``.
         kwargs: Keyword arguments for inner product.
 
     Returns:
         Inner product matrix between samples.
+
+    See also:
+        :func:`inner_product`
 
     """
     if isinstance(arg1, Basis):
@@ -528,3 +530,140 @@ def inner_product_matrix(
         arg2 = arg1
 
     return inner_product(arg1, arg2, _matrix=True, **kwargs)
+
+
+def cosine_similarity(
+    arg1: Vector,
+    arg2: Vector,
+) -> NDArrayFloat:
+    r"""
+    Return the cosine similarity.
+
+    Calculates the cosine similarity between matching samples in two
+    FDataGrid objects.
+
+    For two samples x and y the cosine similarity is defined as:
+
+    .. math::
+        \cos \text{sim}(x, y) = \frac{\langle x, y \rangle}{
+        \sqrt{\langle x, x \rangle \langle y, y \rangle}}
+
+    where :math:`\langle {}\cdot{}, {}\cdot{} \rangle` is the inner product.
+
+    The two arguments must have the same number of samples, or one should
+    contain only one sample (and will be broadcasted).
+
+    Args:
+        arg1: First sample.
+        arg2: Second sample.
+
+    Returns:
+        Vector with the cosine similarity of each pair of samples.
+
+    Examples:
+        This function can compute the multivariate cosine similarity.
+
+        >>> import numpy as np
+        >>> from skfda.misc import cosine_similarity
+        >>>
+        >>> array1 = np.array([1, 2, 3])
+        >>> array2 = np.array([4, 5, 6])
+        >>> cosine_similarity(array1, array2)
+        0.9746318461970762
+
+        If the arrays contain more than one sample
+
+        >>> array1 = np.array([[1, 2, 3], [2, 3, 4]])
+        >>> array2 = np.array([[4, 5, 6], [1, 1, 1]])
+        >>> cosine_similarity(array1, array2)
+        array([ 0.97463185,  0.96490128])
+
+        The cosine similarity of the :math:'f(x) = x` and the constant
+        :math:`y=1` defined over the interval [0,1] is the area of the
+        triangle delimited by the the lines y = 0, x = 1 and y = x; 0.5,
+        multiplied by :math:`\sqrt{3}`.
+
+        >>> import skfda
+        >>>
+        >>> x = np.linspace(0,1,1000)
+        >>>
+        >>> fd1 = skfda.FDataGrid(x,x)
+        >>> fd2 = skfda.FDataGrid(np.ones(len(x)),x)
+        >>> cosine_similarity(fd1, fd2)
+        array([ 0.8660254])
+
+        If the FDataGrid object contains more than one sample
+
+        >>> fd1 = skfda.FDataGrid([x, np.ones(len(x))], x)
+        >>> fd2 = skfda.FDataGrid([np.ones(len(x)), x] ,x)
+        >>> cosine_similarity(fd1, fd2).round(2)
+        array([ 0.87,  0.87])
+
+        If one argument contains only one sample it is
+        broadcasted.
+
+        >>> fd1 = skfda.FDataGrid([x, np.ones(len(x))], x)
+        >>> fd2 = skfda.FDataGrid([np.ones(len(x))] ,x)
+        >>> cosine_similarity(fd1, fd2).round(2)
+        array([ 0.87,  1.  ])
+
+        It also work with basis objects
+
+        >>> basis = skfda.representation.basis.Monomial(n_basis=3)
+        >>>
+        >>> fd1 = skfda.FDataBasis(basis, [0, 1, 0])
+        >>> fd2 = skfda.FDataBasis(basis, [1, 0, 0])
+        >>> cosine_similarity(fd1, fd2)
+        array([ 0.8660254])
+
+        >>> basis = skfda.representation.basis.Monomial(n_basis=3)
+        >>>
+        >>> fd1 = skfda.FDataBasis(basis, [[0, 1, 0], [0, 0, 1]])
+        >>> fd2 = skfda.FDataBasis(basis, [1, 0, 0])
+        >>> cosine_similarity(fd1, fd2)
+        array([ 0.8660254 ,  0.74535599])
+
+        >>> basis = skfda.representation.basis.Monomial(n_basis=3)
+        >>>
+        >>> fd1 = skfda.FDataBasis(basis, [[0, 1, 0], [0, 0, 1]])
+        >>> fd2 = skfda.FDataBasis(basis, [[1, 0, 0], [0, 1, 0]])
+        >>> cosine_similarity(fd1, fd2)
+        array([ 0.8660254 ,  0.96824584])
+
+    """
+    inner_prod = inner_product(arg1, arg2)
+    norm1 = np.sqrt(inner_product(arg1, arg1))
+    norm2 = np.sqrt(inner_product(arg2, arg2))
+
+    return inner_prod / norm1 / norm2
+
+
+def cosine_similarity_matrix(
+    arg1: Vector,
+    arg2: Optional[Vector] = None,
+) -> NDArrayFloat:
+    """
+    Return the cosine similarity matrix between is arguments.
+
+    Args:
+        arg1: First sample.
+        arg2: Second sample. If it is ``None`` returns the cosine similarity
+            between the samples in ``arg1``.
+
+    Returns:
+        Cosine similarity matrix between samples.
+
+    See also:
+        :func:`cosine_similarity`
+
+    """
+    inner_matrix = inner_product_matrix(arg1, arg2)
+
+    if arg2 is None or arg2 is arg1:
+        norm1 = np.sqrt(np.diag(inner_matrix))
+        norm2 = norm1
+    else:
+        norm1 = np.sqrt(inner_product(arg1, arg1))
+        norm2 = np.sqrt(inner_product(arg2, arg2))
+
+    return inner_matrix / norm1[:, np.newaxis] / norm2[np.newaxis, :]

@@ -55,13 +55,14 @@ clean:
 	rm -rf modules/autosummary
 	rm -rf modules/exploratory/visualization/autosummary
 	rm -rf modules/exploratory/autosummary
+	rm -rf modules/inference/autosummary
 	rm -rf modules/math/autosummary
-	rm -rf modules/preprocessing/autosummary
-	rm -rf modules/representation/autosummary
 	rm -rf modules/misc/autosummary
 	rm -rf modules/ml/autosummary
 	rm -rf modules/ml/clustering/autosummary
-	rm -rf modules/inference/autosummary
+	rm -rf modules/preprocessing/autosummary
+	rm -rf modules/preprocessing/dim_reduction/autosummary
+	rm -rf modules/representation/autosummary
 	rm -rf backreferences
 
 .PHONY: html

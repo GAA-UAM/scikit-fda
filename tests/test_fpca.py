@@ -2,9 +2,10 @@
 import unittest
 
 import numpy as np
+from numpy.lib.index_tricks import nd_grid
 
 from skfda import FDataBasis, FDataGrid
-from skfda.datasets import fetch_weather
+from skfda.datasets import fetch_weather, make_multimodal_samples
 from skfda.misc.operators import LinearDifferentialOperator
 from skfda.misc.regularization import TikhonovRegularization
 from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
@@ -449,6 +450,63 @@ class FPCATestCase(unittest.TestCase):
             rtol=1e-2,
         )
 
+    def test_grid_fpca_inverse_transform(self) -> None:
+        """Compare the reconstructions to fitting non-random data."""
+
+        # Randomly, draw a true function that generates the dataset.
+        def draw_one_random_fun(n_grid) -> FDataGrid:
+            modes_location = np.random.uniform(-10., 10., size=50)
+            noise = 10**-2
+            fd_random = make_multimodal_samples(
+                start=0.,
+                stop=15.,
+                n_samples=int(1),
+                points_per_dim=n_grid,
+                n_modes=modes_location.size,
+                noise=noise,
+                modes_location=modes_location,
+                random_state=42
+            )
+            return fd_random
+
+        # test function w.r.t n_samples, n_grid
+        def test_vs_dim(n_samples, n_grid, base_fun):
+            fd_random_all_equal = base_fun
+            # Concatenate random FDataGrid 'n_sample's times
+            for _ in range(1, n_samples - 1):
+                fd_random_all_equal = fd_random_all_equal.concatenate(base_fun)
+
+            # Take the allowed maximum number of components
+            # In almost high dimension: n_components=n_samples-1 < n_samples
+            # In low dimension: n_components=n_grid << n_samples
+            fpca = FPCA(n_components=np.min([n_samples - 1, n_grid]))
+
+            # Project the non-random dataset on FPCs
+            pc_scores_fd_random_all_equal = fpca.fit_transform(
+                fd_random_all_equal
+            )
+            # Project the pc scores back to the input functional space
+            fd_random_all_equal_hat = fpca.inverse_transform(
+                pc_scores_fd_random_all_equal
+            )
+
+            # Compare fitting data to the reconstructed ones
+            np.testing.assert_allclose(
+                fd_random_all_equal.data_matrix,
+                fd_random_all_equal_hat.data_matrix
+            )
+
+        # Low dimensional case (n_samples>n_grid)
+        n_samples = int(10**3)
+        n_grid = int(10**2)
+        true_fun = draw_one_random_fun(n_grid)
+        test_vs_dim(n_samples=n_samples, n_grid=n_grid, base_fun=true_fun)
+
+        # (almotst) High dimensional case (n_samples<n_grid)
+        n_samples = int(10**2)
+        n_grid = int(10**3)
+        true_fun = draw_one_random_fun(n_grid)
+        test_vs_dim(n_samples=n_samples, n_grid=n_grid, base_fun=true_fun)
 
 if __name__ == '__main__':
     unittest.main()

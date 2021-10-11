@@ -505,7 +505,7 @@ class FPCA(
             pc_scores: ndarray (n_samples, n_components).
 
         Returns:
-            A FData object in the functional input space.
+            A FData object.
 
         """
         # check the instance is fitted.
@@ -517,19 +517,19 @@ class FPCA(
 
             if pc_scores.shape[1] != self.n_components:
                 raise AttributeError(
-                    "pc_score must be a numpy array "
+                    "pc_scores must be a numpy array "
                     "with n_samples rows and n_components columns.",
                 )
         else:
-            raise AttributeError("pc_score is not a numpy array.")
+            raise AttributeError("pc_scores is not a numpy array.")
 
         # inverse_transform is slightly different whether
         # .fit was applied to FDataGrid or FDataBasis object
         if isinstance(self.components_, FDataGrid):
             # reconstruct the discretized functions
             x_hat = (
-                (pc_scores @ self.components_.data_matrix[:, :, 0])
-                @ (np.diag(np.sqrt(self.weights)) / np.sqrt(self.n_samples_))
+                (pc_scores @ (self.components_.data_matrix[:, :, 0])
+                @ (np.diag(np.sqrt(self.weights)) / np.sqrt(self.n_samples_)))
             )
             x_hat += self.mean_.data_matrix.reshape(
                 (1, self.mean_.grid_points[0].shape[0]),
@@ -544,8 +544,8 @@ class FPCA(
         elif isinstance(self.components_, FDataBasis):
             # reconstruct the basis coefficients
             x_hat = (
-                (pc_scores @ self.components_.coefficients)
-                @ (np.transpose(self._l_inv_j_t) / np.sqrt(self.n_samples_))
+                (pc_scores @ (self.components_.coefficients)
+                @ (np.transpose(self._l_inv_j_t) / np.sqrt(self.n_samples_)))
             )
             x_hat += self.mean_.coefficients.reshape(
                 (1, self.mean_.coefficients.shape[1]),

@@ -4,10 +4,9 @@ from abc import abstractmethod
 from builtins import isinstance
 from typing import Any, TypeVar, Union, overload
 
-import numpy as np
 from typing_extensions import Final, Literal, Protocol
 
-from ...representation._typing import Vector
+from ...representation._typing import NDArrayFloat, Vector
 
 VectorType = TypeVar("VectorType", contravariant=True, bound=Vector)
 MetricElementType = TypeVar("MetricElementType", contravariant=True)
@@ -29,7 +28,7 @@ class Norm(Protocol[VectorType]):
     """Protocol for a norm of a vector."""
 
     @abstractmethod
-    def __call__(self, __vector: VectorType) -> np.ndarray:  # noqa: WPS112
+    def __call__(self, __vector: VectorType) -> NDArrayFloat:  # noqa: WPS112
         """Compute the norm of a vector."""
 
 
@@ -41,8 +40,8 @@ class Metric(Protocol[MetricElementType]):
         self,
         __e1: MetricElementType,  # noqa: WPS112
         __e2: MetricElementType,  # noqa: WPS112
-    ) -> np.ndarray:
-        """Compute the norm of a vector."""
+    ) -> NDArrayFloat:
+        """Compute the metric between two vectors."""
 
 
 _NonStringMetric = TypeVar(

@@ -1,5 +1,6 @@
 
 """Implementation of Lp distances."""
+from __future__ import annotations
 
 import math
 from typing import Optional, TypeVar, Union
@@ -8,6 +9,7 @@ import numpy as np
 from typing_extensions import Final
 
 from ...representation import FData
+from ...representation._typing import NDArrayFloat
 from ._lp_norms import LpNorm
 from ._typing import Norm
 from ._utils import NormInducedMetric, pairwise_metric_optimization
@@ -16,7 +18,8 @@ T = TypeVar("T", bound=FData)
 
 
 class LpDistance(NormInducedMetric[FData]):
-    r"""Lp distance for FDataGrid objects.
+    r"""
+    Lp distance for functional data objects.
 
     Calculates the distance between two functional objects.
 
@@ -24,7 +27,7 @@ class LpDistance(NormInducedMetric[FData]):
     as:
 
     .. math::
-        d(f, g) = d(g, f) = \| f - g \|_p
+        d(x, y) = \| x - y \|_p
 
     where :math:`\| {}\cdot{} \|_p` denotes the :func:`Lp norm <lp_norm>`.
 
@@ -74,7 +77,7 @@ class LpDistance(NormInducedMetric[FData]):
     def __init__(
         self,
         p: float,
-        vector_norm: Union[Norm[np.ndarray], float, None] = None,
+        vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
     ) -> None:
 
         self.p = p
@@ -100,7 +103,7 @@ def _pairwise_metric_optimization_lp_fdata(
     metric: LpDistance,
     elem1: FData,
     elem2: Optional[FData],
-) -> np.ndarray:
+) -> NDArrayFloat:
     from ...misc import inner_product, inner_product_matrix
 
     vector_norm = metric.vector_norm
@@ -141,8 +144,8 @@ def lp_distance(
     fdata2: T,
     *,
     p: float,
-    vector_norm: Union[Norm[np.ndarray], float, None] = None,
-) -> np.ndarray:
+    vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+) -> NDArrayFloat:
     r"""
     Lp distance for FDataGrid objects.
 

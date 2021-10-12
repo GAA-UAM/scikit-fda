@@ -34,6 +34,18 @@ value of ``p`` must be explicitly passed in each call.
 
    skfda.misc.metrics.lp_norm
    skfda.misc.metrics.lp_distance
+   
+Angular distance
+----------------
+
+The angular distance (using the normalized "angle" between functions given
+by the inner product) is also available, and useful in some contexts.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.misc.metrics.angular_distance
+	
 
 Elastic distances
 -----------------

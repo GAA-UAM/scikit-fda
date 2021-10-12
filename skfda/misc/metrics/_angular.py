@@ -66,7 +66,7 @@ class AngularDistance():
 
     def __repr__(self) -> str:
         return (
-            "{type(self).__name__}()"
+            f"{type(self).__name__}()"
         )
 
 

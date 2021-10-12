@@ -31,7 +31,8 @@ def _cast_to_grid(
     eval_points: Optional[NDArrayFloat] = None,
     _check: bool = True,
 ) -> Tuple[FDataGrid, FDataGrid]:
-    """Convert fdata1 and fdata2 to FDatagrid.
+    """
+    Convert fdata1 and fdata2 to FDatagrid.
 
     Checks if the fdatas passed as argument are unidimensional and compatible
     and converts them to FDatagrid to compute their distances.

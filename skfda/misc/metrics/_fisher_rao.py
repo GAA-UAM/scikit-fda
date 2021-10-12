@@ -1,28 +1,57 @@
 """Elastic metrics."""
 
-from typing import Any, Optional, TypeVar
+from typing import Any, Optional, Tuple, TypeVar, Union
 
 import numpy as np
 import scipy.integrate
+from typing_extensions import Final
 
 from ..._utils import normalize_scale, normalize_warping
 from ...preprocessing.registration import FisherRaoElasticRegistration
-from ...representation import FData
+from ...representation import FData, FDataGrid
 from ...representation._typing import NDArrayFloat
 from ..operators import SRSF
 from ._lp_distances import l2_distance
-from ._utils import _cast_to_grid
+from ._utils import PairwiseMetric, _cast_to_grid, pairwise_metric_optimization
 
 T = TypeVar("T", bound=FData)
 
 
-def fisher_rao_distance(
+def _transformation_for_fisher_rao(
     fdata1: T,
     fdata2: T,
     *,
     eval_points: Optional[NDArrayFloat] = None,
     _check: bool = True,
-) -> NDArrayFloat:
+) -> Tuple[FDataGrid, FDataGrid]:
+    fdata1, fdata2 = _cast_to_grid(
+        fdata1,
+        fdata2,
+        eval_points=eval_points,
+        _check=_check,
+    )
+
+    # Both should have the same grid points
+    eval_points_normalized = normalize_scale(fdata1.grid_points[0])
+
+    # Calculate the corresponding srsf and normalize to (0,1)
+    fdata1 = fdata1.copy(
+        grid_points=eval_points_normalized,
+        domain_range=(0, 1),
+    )
+    fdata2 = fdata2.copy(
+        grid_points=eval_points_normalized,
+        domain_range=(0, 1),
+    )
+
+    srsf = SRSF(initial_value=0)
+    fdata1_srsf = srsf.fit_transform(fdata1)
+    fdata2_srsf = srsf.transform(fdata2)
+
+    return fdata1_srsf, fdata2_srsf
+
+
+class FisherRaoDistance():
     r"""
     Compute the Fisher-Rao distance between two functional objects.
 
@@ -58,32 +87,50 @@ def fisher_rao_distance(
         .. footbibliography::
 
     """
-    fdata1, fdata2 = _cast_to_grid(
-        fdata1,
-        fdata2,
-        eval_points=eval_points,
-        _check=_check,
+
+    def __call__(
+        self,
+        fdata1: T,
+        fdata2: T,
+        *,
+        eval_points: Optional[NDArrayFloat] = None,
+        _check: bool = True,
+    ) -> NDArrayFloat:
+        """Compute the distance."""
+        # Return the L2 distance of the SRSF
+        return l2_distance(*_transformation_for_fisher_rao(
+            fdata1,
+            fdata2,
+            eval_points=eval_points,
+            _check=_check,
+        ))
+
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}()"
+        )
+
+
+fisher_rao_distance: Final = FisherRaoDistance()
+
+
+@pairwise_metric_optimization.register
+def _pairwise_metric_optimization_fisher_rao(
+    metric: FisherRaoDistance,
+    elem1: T,
+    elem2: Optional[T],
+) -> NDArrayFloat:
+
+    new_elem2 = elem1.copy() if elem2 is None else elem2
+
+    new_elem1, new_elem2 = _transformation_for_fisher_rao(
+        elem1,
+        new_elem2,
     )
 
-    # Both should have the same grid points
-    eval_points_normalized = normalize_scale(fdata1.grid_points[0])
+    pairwise = PairwiseMetric(l2_distance)
 
-    # Calculate the corresponding srsf and normalize to (0,1)
-    fdata1 = fdata1.copy(
-        grid_points=eval_points_normalized,
-        domain_range=(0, 1),
-    )
-    fdata2 = fdata2.copy(
-        grid_points=eval_points_normalized,
-        domain_range=(0, 1),
-    )
-
-    srsf = SRSF(initial_value=0)
-    fdata1_srsf = srsf.fit_transform(fdata1)
-    fdata2_srsf = srsf.transform(fdata2)
-
-    # Return the L2 distance of the SRSF
-    return l2_distance(fdata1_srsf, fdata2_srsf)
+    return pairwise(new_elem1, None if elem2 is None else new_elem2)
 
 
 def fisher_rao_amplitude_distance(

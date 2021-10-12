@@ -526,7 +526,7 @@ class FPCA(
         if isinstance(self.components_, FDataGrid):
             x_hat = np.matmul(
                 pc_scores,
-                self.components_.data_matrix[:,:,0]
+                self.components_.data_matrix[:, :, 0]
             )
             # uncenter
             x_hat += self.mean_.data_matrix.reshape(

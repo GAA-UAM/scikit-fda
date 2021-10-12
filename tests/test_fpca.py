@@ -2,6 +2,7 @@
 import unittest
 
 import numpy as np
+from numpy.core.fromnumeric import size
 from numpy.lib.index_tricks import nd_grid
 
 from skfda import FDataBasis, FDataGrid
@@ -9,7 +10,7 @@ from skfda.datasets import fetch_weather, make_multimodal_samples
 from skfda.misc.operators import LinearDifferentialOperator
 from skfda.misc.regularization import TikhonovRegularization
 from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
-from skfda.representation.basis import Fourier
+from skfda.representation.basis import Fourier, BSpline
 
 
 class FPCATestCase(unittest.TestCase):
@@ -451,8 +452,10 @@ class FPCATestCase(unittest.TestCase):
         )
 
     def test_grid_fpca_inverse_transform(self) -> None:
-        """Compare the reconstructions to fitting non-random data."""
-
+        """Compare the reconstructions.data_matrix to fitting data."""
+        
+        seed = 42
+        np.random.seed(seed)
         # Randomly, draw a true function that generates the dataset.
         def draw_one_random_fun(n_grid) -> FDataGrid:
             modes_location = np.random.uniform(-10., 10., size=50)
@@ -460,12 +463,12 @@ class FPCATestCase(unittest.TestCase):
             fd_random = make_multimodal_samples(
                 start=0.,
                 stop=15.,
-                n_samples=int(1),
+                n_samples=1,
                 points_per_dim=n_grid,
                 n_modes=modes_location.size,
                 noise=noise,
                 modes_location=modes_location,
-                random_state=42
+                random_state=seed
             )
             return fd_random
 
@@ -497,16 +500,80 @@ class FPCATestCase(unittest.TestCase):
             )
 
         # Low dimensional case (n_samples>n_grid)
-        n_samples = int(10**3)
-        n_grid = int(10**2)
+        n_samples = 10**3
+        n_grid = 10**2
         true_fun = draw_one_random_fun(n_grid)
         test_vs_dim(n_samples=n_samples, n_grid=n_grid, base_fun=true_fun)
 
-        # (almotst) High dimensional case (n_samples<n_grid)
-        n_samples = int(10**2)
-        n_grid = int(10**3)
+        # (almost) High dimensional case (n_samples<n_grid)
+        n_samples = 10**2
+        n_grid = 10**3
         true_fun = draw_one_random_fun(n_grid)
         test_vs_dim(n_samples=n_samples, n_grid=n_grid, base_fun=true_fun)
+    
+    def test_basis_fpca_inverse_transform(self) -> None:
+        """Compare the coef reconstructions to fitting data."""
+
+        seed = 42
+        np.random.seed(seed)
+        # Draw a true function in a given basis with random coef.
+        def draw_one_random_fun(basis):
+            coef = np.random.uniform(-10., 10., size=basis.n_basis)
+            fd_random = FDataBasis(
+                basis=basis,
+                coefficients=coef
+            )
+            return fd_random
+
+        # test function w.t.t n_samples and basis
+        def test_vs_dim(n_samples, base_fun):
+            fd_random = base_fun.copy()
+            offset = np.random.uniform(-5., 5., size=n_samples)
+            # Random offsetting base_fun and form dataset fd_random
+            for i in range(n_samples):
+                fd_i = base_fun.copy()
+                fd_i.coefficients += offset[i]
+                fd_random = fd_random.concatenate(fd_i)
+
+            # Take the allowed maximum number of components
+            # In almost high dimension: n_components=n_samples-1 < n_samples
+            # In low dimension: n_components=n_basis<<n_samples
+            fpca = FPCA(n_components=np.min([n_samples - 1, base_fun.n_basis]))
+
+            # Project non-random dataset on fitted FPCs
+            pc_scores = fpca.fit_transform(fd_random)
+
+            # Project back pc_scores to functional input space
+            fd_random_hat = fpca.inverse_transform(pc_scores)
+
+            # Compare fitting data to the reconstructed ones
+            np.testing.assert_allclose(
+                fd_random.coefficients,
+                fd_random_hat.coefficients
+            )
+
+        # Low dimensional case: n_basis<<n_samples
+        n_samples = 10**3
+        n_basis = 10**2
+        bsp = BSpline(
+            domain_range=(0., 50.),
+            n_basis=n_basis,
+            order=3
+        )
+        true_fun = draw_one_random_fun(bsp)
+        test_vs_dim(n_samples=n_samples, base_fun=true_fun)
+
+        # Following is too long:
+        # (almost) High dimensional case: n_samples<n_basis
+        # n_samples = 10**2
+        # n_basis = 10**3
+        # bsp = BSpline(
+        #     domain_range=(0., 50.),
+        #     n_basis=n_basis,
+        #     order=3
+        # )
+        # true_fun = draw_one_random_fun(bsp)
+        # test_vs_dim(n_samples=n_samples, base_fun=true_fun)
 
 if __name__ == '__main__':
     unittest.main()

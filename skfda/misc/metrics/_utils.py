@@ -210,6 +210,7 @@ class TransformationMetric(Generic[Original, Transformed], Metric[Original]):
 
     Examples:
         Compute the L2 distance between the function derivatives.
+
         >>> import skfda
         >>> from skfda.misc.metrics import l2_distance, TransformationMetric
 

@@ -532,6 +532,16 @@ def inner_product_matrix(
     return inner_product(arg1, arg2, _matrix=True, **kwargs)
 
 
+def _clip_cosine(array: NDArrayFloat) -> NDArrayFloat:
+    """Clip cosine values to prevent numerical errors."""
+    small_val = 1e-6
+
+    # If the difference is too large, there could be a problem
+    assert np.all((-1 - small_val < array) & (array < 1 + small_val))
+
+    return np.clip(array, -1, 1)
+
+
 def cosine_similarity(
     arg1: Vector,
     arg2: Vector,
@@ -635,7 +645,7 @@ def cosine_similarity(
     norm1 = np.sqrt(inner_product(arg1, arg1))
     norm2 = np.sqrt(inner_product(arg2, arg2))
 
-    return inner_prod / norm1 / norm2
+    return _clip_cosine(inner_prod / norm1 / norm2)
 
 
 def cosine_similarity_matrix(
@@ -666,4 +676,6 @@ def cosine_similarity_matrix(
         norm1 = np.sqrt(inner_product(arg1, arg1))
         norm2 = np.sqrt(inner_product(arg2, arg2))
 
-    return inner_matrix / norm1[:, np.newaxis] / norm2[np.newaxis, :]
+    return _clip_cosine(
+        inner_matrix / norm1[:, np.newaxis] / norm2[np.newaxis, :],
+    )

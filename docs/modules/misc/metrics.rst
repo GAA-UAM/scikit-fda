@@ -86,3 +86,15 @@ of objets. The following class can compute that efficiently:
    :toctree: autosummary
 
    skfda.misc.metrics.PairwiseMetric
+ 
+
+Transformation metric
+---------------------
+
+Some metrics, such as those based in derivatives, can be expressed as a
+transformation followed by another metric:
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.misc.metrics.TransformationMetric

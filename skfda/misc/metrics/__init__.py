@@ -19,5 +19,6 @@ from ._typing import PRECOMPUTED, Metric, Norm
 from ._utils import (
     NormInducedMetric,
     PairwiseMetric,
+    TransformationMetric,
     pairwise_metric_optimization,
 )

@@ -1,12 +1,12 @@
 """Utilities for norms and metrics."""
-from typing import Any, Generic, Optional, Tuple, TypeVar
+from typing import Any, Callable, Generic, Optional, Tuple, TypeVar
 
 import multimethod
 import numpy as np
 
 from ..._utils import _pairwise_symmetric
 from ...representation import FData, FDataGrid
-from ...representation._typing import NDArrayFloat
+from ...representation._typing import NDArrayFloat, Vector
 from ._typing import Metric, MetricElementType, Norm, VectorType
 
 T = TypeVar("T", bound=FData)
@@ -187,3 +187,80 @@ class PairwiseMetric(Generic[MetricElementType]):
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(metric={self.metric})"
+
+
+Original = TypeVar("Original", bound=Vector)
+Transformed = TypeVar("Transformed", bound=Vector)
+
+
+class TransformationMetric(Generic[Original, Transformed], Metric[Original]):
+    """
+    Compute a distance after transforming the data.
+
+    This is a convenience function to compute a metric after a transformation
+    is applied to the data. It can be used, for example, to compute
+    Sobolev-like metrics.
+
+    Args:
+        e1: First object.
+        e2: Second object.
+
+    Returns:
+        Distance.
+
+    Examples:
+        Compute the L2 distance between the function derivatives.
+        >>> import skfda
+        >>> from skfda.misc.metrics import l2_distance, TransformationMetric
+
+        >>> x = np.linspace(0, 1, 1001)
+        >>> fd = skfda.FDataGrid([x], x)
+        >>> fd2 = skfda.FDataGrid([x/2], x)
+
+        >>> dist = TransformationMetric(
+        ...     transformation=lambda x: x.derivative(),
+        ...     metric=l2_distance,
+        ... )
+        >>> dist(fd, fd2)
+        array([ 0.5])
+
+    """
+
+    def __init__(
+        self,
+        transformation: Callable[[Original], Transformed],
+        metric: Metric[Transformed],
+    ):
+        self.transformation = transformation
+        self.metric = metric
+
+    def __call__(
+        self,
+        e1: Original,
+        e2: Original,
+    ) -> NDArrayFloat:
+        """Compute the distance."""
+        e1_trans = self.transformation(e1)
+        e2_trans = self.transformation(e2)
+
+        return self.metric(e1_trans, e2_trans)
+
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}()"
+        )
+
+
+@pairwise_metric_optimization.register
+def _pairwise_metric_optimization_transformation_distance(
+    metric: TransformationMetric[Any, Any],
+    e1: T,
+    e2: Optional[T],
+) -> NDArrayFloat:
+
+    e1_trans = metric.transformation(e1)
+    e2_trans = None if e2 is None else metric.transformation(e2)
+
+    pairwise = PairwiseMetric(metric.metric)
+
+    return pairwise(e1_trans, e2_trans)

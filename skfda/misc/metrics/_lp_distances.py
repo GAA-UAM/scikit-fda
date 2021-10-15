@@ -14,10 +14,10 @@ from ._lp_norms import LpNorm
 from ._typing import Norm
 from ._utils import NormInducedMetric, pairwise_metric_optimization
 
-T = TypeVar("T", bound=FData)
+T = TypeVar("T", NDArrayFloat, FData)
 
 
-class LpDistance(NormInducedMetric[FData]):
+class LpDistance(NormInducedMetric[Union[NDArrayFloat, FData]]):
     r"""
     Lp distance for functional data objects.
 
@@ -85,6 +85,10 @@ class LpDistance(NormInducedMetric[FData]):
         norm = LpNorm(p=p, vector_norm=vector_norm)
 
         super().__init__(norm)
+
+    # This method is retyped here to work with either arrays or functions
+    def __call__(self, elem1: T, elem2: T) -> NDArrayFloat:  # noqa: WPS612
+        return super().__call__(elem1, elem2)
 
     def __repr__(self) -> str:
         return (

@@ -8,6 +8,8 @@ from ._utils import (
     _classifier_fit_depth_methods,
     _classifier_get_classes,
     _classifier_get_depth_methods,
+    _compute_dependence,
+    _DependenceMeasure,
     _evaluate_grid,
     _int_to_real,
     _pairwise_symmetric,

@@ -1,15 +1,27 @@
 from __future__ import annotations
 
 import operator
-from typing import Callable, NamedTuple, Optional, Tuple, Union, overload
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Union,
+    overload,
+)
 
 import numpy as np
 import sklearn.base
 import sklearn.utils.validation
-from sklearn.metrics import mutual_info_score
+from sklearn.feature_selection import (
+    mutual_info_classif,
+    mutual_info_regression,
+)
 from typing_extensions import Final, Literal
 
-from ...._utils import _compute_dependence, _DependenceMeasure
+from ...._utils import RandomStateLike, _compute_dependence, _DependenceMeasure
 from ....representation._typing import NDArrayFloat, NDArrayInt
 from ....representation.grid import FDataGrid
 
@@ -26,17 +38,23 @@ class Method(NamedTuple):
 
 def mutual_information(
     x: NDArrayFloat,
-    y: NDArrayFloat,
+    y: Union[NDArrayInt, NDArrayFloat],
+    n_neighbors: Optional[int] = None,
+    random_state: RandomStateLike = None,
 ) -> NDArrayFloat:
+    """Compute mutual information."""
+    y = y.ravel()
 
-    x = np.ravel(x)
-    y = np.ravel(y)
+    method = (
+        mutual_info_regression if issubclass(y.dtype.type, np.floating)
+        else mutual_info_classif
+    )
 
-    # Calculate bins with the Sturges rule
-    bins = int(1 + np.ceil(np.log2(len(x))))
-    c_xy = np.histogram2d(x, y, bins)[0]
-    mi = mutual_info_score(None, None, contingency=c_xy)
-    return mi
+    extra_args: Dict[str, Any] = {}
+    if n_neighbors is not None:
+        extra_args['n_neighbors'] = n_neighbors
+
+    return method(x, y, random_state=random_state, **extra_args)
 
 
 MID: Final = Method(
@@ -84,12 +102,12 @@ def _mrmr(
     )
     redundancies = np.zeros((X.shape[1], X.shape[1]))
 
-    max_index = np.argmax(relevances)
+    max_index = int(np.argmax(relevances))
     selected_features.append(indexes[max_index])
     scores.append(relevances[max_index])
     selected_relevances.append(relevances[max_index])
 
-    indexes = np.delete(indexes, max_index)
+    indexes.remove(max_index)
 
     # TODO: Vectorize
     for i in range(1, n_features_to_select):
@@ -112,12 +130,12 @@ def _mrmr(
 
         coef = criterion(relevances[indexes], W)
 
-        max_index = np.argmax(coef)
+        max_index = int(np.argmax(coef))
         selected_features.append(indexes[max_index])
         scores.append(coef[max_index])
         selected_relevances.append(relevances[max_index])
 
-        indexes = np.delete(indexes, max_index)
+        indexes.remove(max_index)
 
     return (
         np.asarray(selected_features),
@@ -179,15 +197,15 @@ class MinimumRedundancyMaximumRelevance(
         ... )
         >>> X = skfda.concatenate((X_0, X_1))
         >>>
-        >>> y = np.zeros(n_samples)
+        >>> y = np.zeros(n_samples, dtype=np.int_)
         >>> y [n_samples // 2:] = 1
 
-        Select the relevant points to distinguish the two classes
+        Select the relevant points to distinguish the two classes. You
+        may specify a method such as MIQ (the default) or MID.
 
         >>> mrmr = variable_selection.MinimumRedundancyMaximumRelevance(
         ...     n_features_to_select=3,
-        ...     dependence_measure=dcor.u_distance_correlation_sqr,
-        ...     criterion=operator.truediv,
+        ...     method="MID",
         ... )
         >>> _ = mrmr.fit(X, y)
         >>> point_mask = mrmr.get_support()
@@ -200,6 +218,18 @@ class MinimumRedundancyMaximumRelevance(
         100
         >>> X_dimred.shape
         (1000, 3)
+
+        It is also possible to specify the measure of dependence used (or
+        even different ones for relevance and redundancy) as well as the
+        function to combine relevance and redundancy (usually the division
+        or subtraction operations).
+
+        >>> mrmr = variable_selection.MinimumRedundancyMaximumRelevance(
+        ...     n_features_to_select=3,
+        ...     dependence_measure=dcor.u_distance_correlation_sqr,
+        ...     criterion=operator.truediv,
+        ... )
+        >>> _ = mrmr.fit(X, y)
 
     """
 
@@ -391,7 +421,7 @@ class MinimumRedundancyMaximumRelevance(
         indexes_unraveled = self.results_
         if indices:
             return indexes_unraveled
-        else:
-            mask = np.zeros(self.features_shape_[0], dtype=bool)
-            mask[self.results_] = True
-            return mask
+
+        mask = np.zeros(self.features_shape_[0], dtype=bool)
+        mask[self.results_] = True
+        return mask

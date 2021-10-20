@@ -75,6 +75,7 @@ them to the :term:`functional data analysis` field.
 
 import skfda
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
 X, y = skfda.datasets.fetch_growth(return_X_y=True)
 
@@ -83,6 +84,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 classifier = skfda.ml.classification.NearestCentroid()
 classifier.fit(X_train, y_train)
 classifier.centroids_.plot()
+plt.show()
 
 ##############################################################################
 # Transformers
@@ -118,6 +120,7 @@ smoother = ks.NadarayaWatsonSmoother()
 X_smooth = smoother.fit_transform(X)
 
 X_smooth.plot()
+plt.show()
 
 ##############################################################################
 # Predictors (classifiers, regressors, clusterers...)
@@ -156,6 +159,7 @@ clusterer = skfda.ml.clustering.KMeans(n_clusters=3)
 y_pred = clusterer.fit_predict(X)
 
 X.plot(group=y_pred)
+plt.show()
 
 ##############################################################################
 # Metaestimators

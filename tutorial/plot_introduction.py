@@ -89,7 +89,7 @@ machine learning practicioners in the Python scientific ecosystem.
 # In :term:`FDA`, the inputs or parameters of a function are assumed to be
 # continuous parameters, and so are the outputs, or values of the function.
 # Thus, it is usual to restrict our functional observations to be functions
-# :math:`\{f_i: \mathcal{T} \subseteq \mathbb{R}^p \to \mathbb{R}^q\}_{i=1}^N`.
+# :math:`\{x_i: \mathcal{T} \subseteq \mathbb{R}^p \to \mathbb{R}^q\}_{i=1}^N`.
 # In this case both the domain and codomain are (subsets of) vector spaces of
 # real numbers, and one could talk of the dimension of each of them as a
 # vector space (in this case the domain dimension is :math:`p` and the
@@ -98,7 +98,7 @@ machine learning practicioners in the Python scientific ecosystem.
 # The most common case of functional observation, and the one that has
 # received more attention in the functional data literature, is the case of
 # functions
-# :math:`\{f_i: \mathcal{T} \subseteq \mathbb{R} \to \mathbb{R}\}_{i=1}^N`
+# :math:`\{x_i: \mathcal{T} \subseteq \mathbb{R} \to \mathbb{R}\}_{i=1}^N`
 # (curves or trajectories).
 
 ##############################################################################
@@ -109,10 +109,12 @@ machine learning practicioners in the Python scientific ecosystem.
 # :math:`[0, 18]` and both the domain and codomain have a dimension of one.
 
 import skfda
+import matplotlib.pyplot as plt
 
 X, y = skfda.datasets.fetch_growth(return_X_y=True)
 
 X.plot()
+plt.show()
 
 ##############################################################################
 # Functions where the domain dimension is greater than one (
@@ -130,8 +132,7 @@ X.plot()
 # is two. We can see that by default each coordinate of the values of the
 # function is plotted as a separate coordinate function.
 
-import skfda
-
 X, y = skfda.datasets.fetch_weather(return_X_y=True)
 
 X.plot()
+plt.show()

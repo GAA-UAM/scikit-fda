@@ -20,6 +20,7 @@
 
 import os
 import sys
+import warnings
 
 import pkg_resources
 # -- Extensions to the  Napoleon GoogleDocstring class ---------------------
@@ -273,6 +274,13 @@ sphinx_gallery_conf = {
     'doc_module': 'skfda',
     'within_subsection_order': SkfdaExplicitSubOrder,
 }
+
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    message='Matplotlib is currently using agg, which is a'
+    ' non-GUI backend, so cannot show the figure.',
+)
 
 autosummary_generate = True
 autodoc_typehints = "description"

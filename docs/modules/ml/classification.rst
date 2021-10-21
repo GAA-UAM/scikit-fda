@@ -5,7 +5,6 @@ Classification
 
 Module with classes to perform classification of functional data.
 
-
 Nearest Neighbors
 -----------------
 
@@ -21,8 +20,29 @@ it is explained the basic usage of these estimators.
 
    skfda.ml.classification.KNeighborsClassifier
    skfda.ml.classification.RadiusNeighborsClassifier
+
+Nearest Centroid
+----------------
+
+This module contains `nearest centroid
+<https://en.wikipedia.org/wiki/Nearest_centroid_classifier>`_ estimators to
+perform classification.
+
+.. autosummary::
+   :toctree: autosummary
+
    skfda.ml.classification.NearestCentroid
    skfda.ml.classification.DTMClassifier
+
+
+Depth
+-----
+
+This module contains depth based estimators to perform classification.
+
+.. autosummary::
+   :toctree: autosummary
+
    skfda.ml.classification.DDClassifier
    skfda.ml.classification.DDGClassifier
    skfda.ml.classification.MaximumDepthClassifier

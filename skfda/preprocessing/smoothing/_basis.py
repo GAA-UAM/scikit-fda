@@ -11,13 +11,11 @@ from typing import Optional
 import numpy as np
 from typing_extensions import Final
 
-import scipy.linalg
-
 from ..._utils import _cartesian_product, _to_grid_points
 from ...misc.lstsq import LstsqMethod, solve_regularized_weighted_lstsq
 from ...misc.regularization import TikhonovRegularization
 from ...representation import FData, FDataBasis, FDataGrid
-from ...representation._typing import GridPointsLike
+from ...representation._typing import GridPointsLike, NDArrayFloat
 from ...representation.basis import Basis
 from ._linear import _LinearSmoother
 
@@ -210,7 +208,7 @@ class BasisSmoother(_LinearSmoother):
         basis: Basis,
         *,
         smoothing_parameter: float = 1.0,
-        weights: Optional[np.ndarray] = None,
+        weights: Optional[NDArrayFloat] = None,
         regularization: Optional[TikhonovRegularization[FDataGrid]] = None,
         output_points: Optional[GridPointsLike] = None,
         method: LstsqMethod = 'svd',
@@ -228,8 +226,8 @@ class BasisSmoother(_LinearSmoother):
         self,
         input_points: GridPointsLike,
         *,
-        data_matrix: Optional[np.ndarray] = None,
-    ) -> np.ndarray:
+        data_matrix: Optional[NDArrayFloat] = None,
+    ) -> NDArrayFloat:
         """Get the matrix that gives the coefficients."""
         from ...misc.regularization import compute_penalty_matrix
 
@@ -260,7 +258,7 @@ class BasisSmoother(_LinearSmoother):
         self,
         input_points: GridPointsLike,
         output_points: GridPointsLike,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         basis_values_output = self.basis.evaluate(
             _cartesian_product(
                 _to_grid_points(output_points),

@@ -6,10 +6,10 @@ This module contains the class for the basis smoothing.
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Generic, Optional, TypeVar, overload
 
 import numpy as np
-from typing_extensions import Final
+from typing_extensions import Final, Literal
 
 from ..._utils import _cartesian_product, _to_grid_points
 from ...misc.lstsq import LstsqMethod, solve_regularized_weighted_lstsq
@@ -19,8 +19,10 @@ from ...representation._typing import GridPointsLike, NDArrayFloat
 from ...representation.basis import Basis
 from ._linear import _LinearSmoother
 
+T = TypeVar("T", Literal[True], Literal[False])
 
-class BasisSmoother(_LinearSmoother):
+
+class BasisSmoother(Generic[T], _LinearSmoother):
     r"""
     Transform raw data to a smooth functional form.
 
@@ -203,6 +205,33 @@ class BasisSmoother(_LinearSmoother):
 
     _required_parameters = ["basis"]
 
+    @overload
+    def __init__(
+        self: BasisSmoother[Literal[False]],
+        basis: Basis,
+        *,
+        smoothing_parameter: float = 1.0,
+        weights: Optional[NDArrayFloat] = None,
+        regularization: Optional[TikhonovRegularization[FDataGrid]] = None,
+        output_points: Optional[GridPointsLike] = None,
+        method: LstsqMethod = 'svd',
+    ) -> None:
+        pass
+
+    @overload
+    def __init__(
+        self: BasisSmoother[T],
+        basis: Basis,
+        *,
+        smoothing_parameter: float = 1.0,
+        weights: Optional[NDArrayFloat] = None,
+        regularization: Optional[TikhonovRegularization[FDataGrid]] = None,
+        output_points: Optional[GridPointsLike] = None,
+        method: LstsqMethod = 'svd',
+        return_basis: T,
+    ) -> None:
+        pass
+
     def __init__(
         self,
         basis: Basis,
@@ -271,7 +300,7 @@ class BasisSmoother(_LinearSmoother):
         self,
         X: FDataGrid,
         y: None = None,
-    ) -> BasisSmoother:
+    ) -> BasisSmoother[T]:
         """Compute the hat matrix for the desired output points.
 
         Args:
@@ -293,6 +322,22 @@ class BasisSmoother(_LinearSmoother):
             super().fit(X, y)
 
         return self
+
+    @overload
+    def transform(
+        self: BasisSmoother[Literal[False]],
+        X: FDataGrid,
+        y: None = None,
+    ) -> FDataGrid:
+        pass
+
+    @overload
+    def transform(
+        self: BasisSmoother[Literal[True]],
+        X: FDataGrid,
+        y: None = None,
+    ) -> FDataBasis:
+        pass
 
     def transform(
         self,

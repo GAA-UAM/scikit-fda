@@ -80,12 +80,6 @@ class TestBasisSmoother(unittest.TestCase):
         basis = BSpline((0, 1), n_basis=5)
         fd = FDataGrid(data_matrix=x, grid_points=t)
 
-        reveal_type(smoothing.BasisSmoother(basis).transform(fd))
-        reveal_type(smoothing.BasisSmoother(
-            basis, return_basis=False).transform(fd))
-        reveal_type(smoothing.BasisSmoother(
-            basis, return_basis=True).transform(fd))
-
         smoother = smoothing.BasisSmoother(
             basis=basis,
             smoothing_parameter=10,

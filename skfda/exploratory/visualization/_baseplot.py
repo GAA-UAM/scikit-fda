@@ -17,6 +17,7 @@ from matplotlib.collections import PathCollection
 from matplotlib.figure import Figure
 from matplotlib.text import Annotation
 
+from ...representation import FData
 from ._utils import _figure_to_svg, _get_figure_and_axes, _set_figure_layout
 
 
@@ -142,6 +143,8 @@ class BasePlot(ABC):
             arrowprops={
                 "arrowstyle": "->",
             },
+            annotation_clip=False,
+            clip_on=False,
         )
 
         tag.get_bbox_patch().set_facecolor(color='khaki')
@@ -156,6 +159,7 @@ class BasePlot(ABC):
         *,
         axes: Axes,
         sample_number: int,
+        fdata: Optional[FData],
         position: Tuple[float, float],
     ) -> None:
         """
@@ -172,7 +176,19 @@ class BasePlot(ABC):
         xdata_graph, ydata_graph = position
 
         tag.xy = (xdata_graph, ydata_graph)
-        text = f"{sample_number}: ({xdata_graph:.2f}, {ydata_graph:.2f})"
+
+        sample_name = (
+            fdata.sample_names[sample_number]
+            if fdata is not None
+            else None
+        )
+
+        sample_descr = f" ({sample_name})" if sample_name is not None else ""
+
+        text = (
+            f"{sample_number}{sample_descr}: "
+            f"({xdata_graph:.2f}, {ydata_graph:.2f})"
+        )
         tag.set_text(text)
 
         x_axis = axes.get_xlim()
@@ -196,8 +212,8 @@ class BasePlot(ABC):
     def _sample_artist_from_event(
         self,
         event: LocationEvent,
-    ) -> Optional[Tuple[int, Artist]]:
-        """Get the number of sample and artist under a location event."""
+    ) -> Optional[Tuple[int, Optional[FData], Artist]]:
+        """Get the number, fdata and artist under a location event."""
         if self.artists is None:
             return None
 
@@ -211,7 +227,7 @@ class BasePlot(ABC):
                 return None
 
             if artist.contains(event)[0]:
-                return j, artist
+                return j, getattr(self, "fdata", None), artist
 
         return None
 
@@ -230,12 +246,13 @@ class BasePlot(ABC):
         found_artist = self._sample_artist_from_event(event)
 
         if event.inaxes is not None and found_artist is not None:
-            sample_number, artist = found_artist
+            sample_number, fdata, artist = found_artist
 
             self._update_annotation(
                 self._tag,
                 axes=event.inaxes,
                 sample_number=sample_number,
+                fdata=fdata,
                 position=artist.get_offsets()[0],
             )
             self._tag.set_visible(True)

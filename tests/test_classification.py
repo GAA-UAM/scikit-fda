@@ -16,13 +16,17 @@ class TestCentroidClassifiers(unittest.TestCase):
     def setUp(self) -> None:
         """Establish train and test data sets."""
         X, y = fetch_growth(return_X_y=True)
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+        X_train, X_test, y_train, y_test = train_test_split(
             X,
             y,
             test_size=0.25,
             stratify=y,
             random_state=0,
         )
+        self._X_train = X_train
+        self._X_test = X_test
+        self._y_train = y_train
+        self._y_test = y_test
 
     def test_dtm_independent_copy(self) -> None:
         """Check that copies are un-linked."""

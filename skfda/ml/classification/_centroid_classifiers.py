@@ -1,9 +1,8 @@
 """Centroid-based models for supervised classification."""
 from __future__ import annotations
 
-from typing import Callable, Generic, Optional, TypeVar
+from typing import Any, Callable, Generic, Optional, TypeVar
 
-from numpy import ndarray
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
@@ -12,6 +11,7 @@ from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...exploratory.stats import mean, trim_mean
 from ...misc.metrics import Metric, PairwiseMetric, l2_distance
 from ...representation import FData
+from ...representation._typing import NDArrayInt
 
 T = TypeVar("T", bound=FData)
 
@@ -74,7 +74,7 @@ class NearestCentroid(
         self.metric = metric
         self.centroid = centroid
 
-    def fit(self, X: T, y: ndarray) -> NearestCentroid[T]:
+    def fit(self, X: T, y: NDArrayInt) -> NearestCentroid[T]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -97,7 +97,7 @@ class NearestCentroid(
 
         return self
 
-    def predict(self, X: T) -> ndarray:
+    def predict(self, X: T) -> Any:
         """Predict the class labels for the provided data.
 
         Args:
@@ -116,7 +116,7 @@ class NearestCentroid(
         ]
 
 
-class DTMClassifier(NearestCentroid):
+class DTMClassifier(NearestCentroid[T]):
     """Distance to trimmed means (DTM) classification.
 
     Test samples are classified to the class that minimizes the distance of
@@ -186,11 +186,14 @@ class DTMClassifier(NearestCentroid):
         if self.depth_method is None:
             self.depth_method = ModifiedBandDepth()
 
-        super().__init__(
-            metric,
-            lambda fdatagrid: trim_mean(
+        def _centroid(fdatagrid: T) -> T:
+            return trim_mean(
                 fdatagrid,
                 self.proportiontocut,
                 depth_method=self.depth_method,
-            ),
+            )
+
+        super().__init__(
+            metric,
+            centroid=_centroid,
         )

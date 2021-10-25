@@ -97,7 +97,7 @@ class NearestCentroid(
 
         return self
 
-    def predict(self, X: T) -> Any:
+    def predict(self, X: T) -> NDArrayInt:
         """Predict the class labels for the provided data.
 
         Args:
@@ -174,6 +174,13 @@ class DTMClassifier(NearestCentroid[T]):
 
     """
 
+    def _centroid(self, fdatagrid: T) -> T:
+        return trim_mean(
+            fdatagrid,
+            self.proportiontocut,
+            depth_method=self.depth_method,
+        )
+
     def __init__(
         self,
         proportiontocut: float,
@@ -186,14 +193,7 @@ class DTMClassifier(NearestCentroid[T]):
         if self.depth_method is None:
             self.depth_method = ModifiedBandDepth()
 
-        def _centroid(fdatagrid: T) -> T:
-            return trim_mean(
-                fdatagrid,
-                self.proportiontocut,
-                depth_method=self.depth_method,
-            )
-
         super().__init__(
             metric,
-            centroid=_centroid,
+            centroid=self._centroid,
         )

@@ -1,7 +1,7 @@
 """Centroid-based models for supervised classification."""
 from __future__ import annotations
 
-from typing import Any, Callable, Generic, Optional, TypeVar
+from typing import Callable, Generic, Optional, TypeVar
 
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
@@ -174,13 +174,6 @@ class DTMClassifier(NearestCentroid[T]):
 
     """
 
-    def _centroid(self, fdatagrid: T) -> T:
-        return trim_mean(
-            fdatagrid,
-            self.proportiontocut,
-            depth_method=self.depth_method,
-        )
-
     def __init__(
         self,
         proportiontocut: float,
@@ -196,4 +189,11 @@ class DTMClassifier(NearestCentroid[T]):
         super().__init__(
             metric,
             centroid=self._centroid,
+        )
+
+    def _centroid(self, fdatagrid: T) -> T:
+        return trim_mean(
+            fdatagrid,
+            self.proportiontocut,
+            depth_method=self.depth_method,
         )

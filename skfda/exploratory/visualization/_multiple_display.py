@@ -88,7 +88,6 @@ class MultipleDisplay:
         self.sliders: List[Widget] = []
         self.criteria: List[List[int]] = []
         self.selected_sample: Optional[int] = None
-        self._tag = self._create_annotation()
 
         if len(criteria) != 0 and not isinstance(criteria[0], Sequence):
             criteria = (criteria,)
@@ -206,70 +205,6 @@ class MultipleDisplay:
                 label=label,
             )
 
-    def _create_annotation(self) -> Annotation:
-        tag = Annotation(
-            "",
-            xy=(0, 0),
-            xytext=(20, 20),
-            textcoords="offset points",
-            bbox={
-                "boxstyle": "round",
-                "fc": "w",
-            },
-            arrowprops={
-                "arrowstyle": "->",
-            },
-        )
-
-        tag.get_bbox_patch().set_facecolor(color='khaki')
-        intensity = 0.8
-        tag.get_bbox_patch().set_alpha(intensity)
-
-        return tag
-
-    def _update_annotation(
-        self,
-        tag: Annotation,
-        *,
-        axes: Axes,
-        sample_number: int,
-        position: Tuple[float, float],
-    ) -> None:
-        """
-        Auxiliary method used to update the hovering annotations.
-
-        Method used to update the annotations that appear while
-        hovering a scattered point. The annotations indicate
-        the index and coordinates of the point hovered.
-        Args:
-            tag: Annotation to update.
-            axes: Axes were the annotation belongs.
-            sample_number: Number of the current sample.
-        """
-        xdata_graph, ydata_graph = position
-
-        tag.xy = (xdata_graph, ydata_graph)
-        text = f"{sample_number}: ({xdata_graph:.2f}, {ydata_graph:.2f})"
-        tag.set_text(text)
-
-        x_axis = axes.get_xlim()
-        y_axis = axes.get_ylim()
-
-        label_xpos = 20
-        label_ypos = 20
-        if (xdata_graph - x_axis[0]) > (x_axis[1] - xdata_graph):
-            label_xpos = -80
-
-        if (ydata_graph - y_axis[0]) > (y_axis[1] - ydata_graph):
-            label_ypos = -20
-
-        if tag.figure:
-            tag.remove()
-        tag.figure = None
-        axes.add_artist(tag)
-        tag.set_transform(axes.transData)
-        tag.set_position((label_xpos, label_ypos))
-
     def plot(self) -> Figure:
         """
         Plot Multiple Display method.
@@ -303,67 +238,12 @@ class MultipleDisplay:
             disp.plot()
             int_index = end_index
 
-        self.fig.canvas.mpl_connect('motion_notify_event', self.hover)
         self.fig.canvas.mpl_connect('pick_event', self.pick)
-
-        self._tag.set_visible(False)
 
         self.fig.suptitle("Multiple display")
         self.fig.tight_layout()
 
         return self.fig
-
-    def _sample_artist_from_event(
-        self,
-        event: LocationEvent,
-    ) -> Optional[Tuple[int, Artist]]:
-        """Get the number of sample and artist under a location event."""
-        for d in self.displays:
-            if d.artists is None:
-                continue
-
-            try:
-                i = d.axes_.index(event.inaxes)
-            except ValueError:
-                continue
-
-            for j, artist in enumerate(d.artists[:, i]):
-                if not isinstance(artist, PathCollection):
-                    return None
-
-                if artist.contains(event)[0]:
-                    return j, artist
-
-        return None
-
-    def hover(self, event: MouseEvent) -> None:
-        """
-        Activate the annotation when hovering a point.
-
-        Callback method that activates the annotation when hovering
-        a specific point in a graph. The annotation is a description
-        of the point containing its coordinates.
-        Args:
-            event: event object containing the artist of the point
-                hovered.
-
-        """
-        found_artist = self._sample_artist_from_event(event)
-
-        if event.inaxes is not None and found_artist is not None:
-            sample_number, artist = found_artist
-
-            self._update_annotation(
-                self._tag,
-                axes=event.inaxes,
-                sample_number=sample_number,
-                position=artist.get_offsets()[0],
-            )
-            self._tag.set_visible(True)
-            self.fig.canvas.draw_idle()
-        elif self._tag.get_visible():
-            self._tag.set_visible(False)
-            self.fig.canvas.draw_idle()
 
     def pick(self, event: Event) -> None:
         """

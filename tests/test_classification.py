@@ -161,8 +161,7 @@ class TestClassifiers(unittest.TestCase):
 
     def test_radiusneighbors_small_raidus(self) -> None:
         """Check that an error is raised if radius too small."""
-        clf: RadiusNeighborsClassifier[FData] = RadiusNeighborsClassifier(
-            radius=1)
+        clf = RadiusNeighborsClassifier(radius=1)
         clf.fit(self._X_train, self._y_train)
 
         with np.testing.assert_raises(ValueError):

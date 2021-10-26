@@ -14,7 +14,7 @@ from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 from ..._utils import _classifier_fit_depth_methods, _classifier_get_classes
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...preprocessing.dim_reduction.feature_extraction import DDGTransformer
-from ...representation._typing import NDArrayInt, NDArrayFloat
+from ...representation._typing import NDArrayFloat, NDArrayInt
 from ...representation.grid import FData
 
 T = TypeVar("T", bound=FData)
@@ -295,20 +295,20 @@ class _ArgMaxClassifier(
     BaseEstimator,  # type: ignore
     ClassifierMixin,  # type: ignore
 ):
-    """Arg max classifier for multivariate data.
+    r"""Arg max classifier for multivariate data.
 
     Test samples are classified to the class that corresponds to the
     index of the highest coordinate.
 
     Examples:
-
         >>> import numpy as np
         >>> X = np.array([[1,5], [3,2], [4,1]])
         >>> y = np.array([1, 0, 0])
 
         We will fit am ArgMax classifier
 
-        >>> from skfda.ml.classification._depth_classifiers import _ArgMaxClassifier
+        >>> from skfda.ml.classification._depth_classifiers import \
+        ... _ArgMaxClassifier
         >>> clf = _ArgMaxClassifier()
         >>> clf.fit(X, y)
         _ArgMaxClassifier(...)

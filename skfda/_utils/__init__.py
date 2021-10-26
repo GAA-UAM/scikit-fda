@@ -13,6 +13,7 @@ from ._utils import (
     _classifier_fit_depth_methods,
     _classifier_get_classes,
     _classifier_get_depth_methods,
+    _classifier_fit_feature_transformer,
     _compute_dependence,
     _DependenceMeasure,
     _evaluate_grid,

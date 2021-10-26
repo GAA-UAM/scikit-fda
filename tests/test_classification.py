@@ -62,8 +62,10 @@ class TestClassifiers(unittest.TestCase):
 
         np.testing.assert_array_equal(  # type: ignore
             clf.predict(self._X_test),
-            [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-             1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1],
+            [
+                1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1,
+            ],
         )
 
     def test_centroid_classifier(self) -> None:
@@ -73,8 +75,10 @@ class TestClassifiers(unittest.TestCase):
 
         np.testing.assert_array_equal(  # type: ignore
             clf.predict(self._X_test),
-            [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-             1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1],
+            [
+                1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+                1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1,
+            ],
         )
 
     def test_dtm_inheritance(self) -> None:
@@ -112,8 +116,10 @@ class TestClassifiers(unittest.TestCase):
 
         np.testing.assert_array_equal(  # type: ignore
             clf.predict(self._X_test),
-            [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-             1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1],
+            [
+                1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1,
+            ],
         )
 
     def test_ddg_classifier(self) -> None:
@@ -123,8 +129,10 @@ class TestClassifiers(unittest.TestCase):
 
         np.testing.assert_array_equal(  # type: ignore
             clf.predict(self._X_test),
-            [1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1,
-             1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1],
+            [
+                1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1,
+            ],
         )
 
     def test_maximumdepth_inheritance(self) -> None:
@@ -146,8 +154,10 @@ class TestClassifiers(unittest.TestCase):
 
         np.testing.assert_array_equal(  # type: ignore
             clf.predict(self._X_test),
-            [0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1,
-             1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+            [
+                0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1,
+            ],
         )
 
     def test_radiusneighbors_classifier(self) -> None:
@@ -157,8 +167,10 @@ class TestClassifiers(unittest.TestCase):
 
         np.testing.assert_array_equal(  # type: ignore
             clf.predict(self._X_test),
-            [0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1,
-             1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1],
+            [
+                0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1,
+            ],
         )
 
     def test_radiusneighbors_small_raidus(self) -> None:

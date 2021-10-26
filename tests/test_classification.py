@@ -34,11 +34,11 @@ class TestCentroidClassifiers(unittest.TestCase):
         clf1 = clone(clf)
         clf2 = DTMClassifier(proportiontocut=0.75)
         clf1.proportiontocut = 0.75
-        clf1.fit(self.X_train, self.y_train)
-        clf2.fit(self.X_train, self.y_train)
+        clf1.fit(self._X_train, self._y_train)
+        clf2.fit(self._X_train, self._y_train)
         np.testing.assert_array_equal(
-            clf1.predict(self.X_test),
-            clf2.predict(self.X_test),
+            clf1.predict(self._X_test),
+            clf2.predict(self._X_test),
         )
 
 

@@ -99,8 +99,10 @@ class TestClassifiers(unittest.TestCase):
 
         np.testing.assert_array_equal(  # type: ignore
             clf.predict(self._X_test),
-            [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-             1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1],
+            [
+                1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1,
+            ],
         )
 
     def test_dd_classifier(self) -> None:

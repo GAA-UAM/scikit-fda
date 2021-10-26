@@ -183,15 +183,15 @@ class DTMClassifier(NearestCentroid[T]):
         self.proportiontocut = proportiontocut
         self.depth_method = depth_method
 
-        if self.depth_method is None:
-            self.depth_method = ModifiedBandDepth()
-
         super().__init__(
             metric,
             centroid=self._centroid,
         )
 
     def _centroid(self, fdatagrid: T) -> T:
+        if self.depth_method is None:
+            self.depth_method = ModifiedBandDepth()
+
         return trim_mean(
             fdatagrid,
             self.proportiontocut,

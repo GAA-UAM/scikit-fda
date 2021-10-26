@@ -9,6 +9,8 @@ from sklearn.model_selection import train_test_split
 from skfda.datasets import fetch_growth
 from skfda.ml.classification import DTMClassifier
 
+from skfda.representation import FData
+
 
 class TestCentroidClassifiers(unittest.TestCase):
     """Tests for centroid classifiers."""
@@ -30,15 +32,15 @@ class TestCentroidClassifiers(unittest.TestCase):
 
     def test_dtm_independent_copy(self) -> None:
         """Check that copies are un-linked."""
-        clf = DTMClassifier(proportiontocut=0.25)
+        clf: DTMClassifier[FData] = DTMClassifier(proportiontocut=0.25)
         clf1 = clone(clf)
-        clf2 = DTMClassifier(proportiontocut=0.75)
+        clf2: DTMClassifier[FData] = DTMClassifier(proportiontocut=0.75)
 
         clf1.proportiontocut = 0.75
         clf1.fit(self._X_train, self._y_train)
         clf2.fit(self._X_train, self._y_train)
 
-        np.testing.assert_array_equal(
+        np.testing.assert_array_equal(  # type: ignore
             clf1.predict(self._X_test),
             clf2.predict(self._X_test),
         )

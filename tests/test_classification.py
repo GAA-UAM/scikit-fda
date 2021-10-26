@@ -103,7 +103,7 @@ class TestClassifiers(unittest.TestCase):
              1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1],
         )
 
-    def test_DD_classifier(self) -> None:
+    def test_dd_classifier(self) -> None:
         """Check DD classifier."""
         clf: DDClassifier[FData] = DDClassifier(degree=2)
         clf.fit(self._X_train, self._y_train)
@@ -114,7 +114,7 @@ class TestClassifiers(unittest.TestCase):
              1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1],
         )
 
-    def test_DDG_classifier(self) -> None:
+    def test_ddg_classifier(self) -> None:
         """Check DDG classifier."""
         clf: DDGClassifier[FData] = DDGClassifier(_KNeighborsClassifier())
         clf.fit(self._X_train, self._y_train)
@@ -137,7 +137,7 @@ class TestClassifiers(unittest.TestCase):
             clf2.predict(self._X_test),
         )
 
-    def test_KNeighbors_classifier(self) -> None:
+    def test_kneighbors_classifier(self) -> None:
         """Check KNeighbors classifier."""
         clf = KNeighborsClassifier()
         clf.fit(self._X_train, self._y_train)
@@ -148,7 +148,7 @@ class TestClassifiers(unittest.TestCase):
              1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
         )
 
-    def test_RadiusNeighbors_classifier(self) -> None:
+    def test_radiusneighbors_classifier(self) -> None:
         """Check RadiusNeighbors classifier."""
         clf = RadiusNeighborsClassifier(radius=15)
         clf.fit(self._X_train, self._y_train)
@@ -159,7 +159,7 @@ class TestClassifiers(unittest.TestCase):
              1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1],
         )
 
-    def test_RadiusNeighbors_small_raidus(self) -> None:
+    def test_radiusneighbors_small_raidus(self) -> None:
         """Check that an error is raised if radius too small."""
         clf: RadiusNeighborsClassifier[FData] = RadiusNeighborsClassifier(
             radius=1)

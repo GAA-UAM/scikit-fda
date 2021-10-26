@@ -6,7 +6,6 @@ import numpy as np
 from sklearn.base import clone
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier as _KNeighborsClassifier
-from sklearn.utils.estimator_checks import parametrize_with_checks
 
 from skfda.datasets import fetch_growth
 from skfda.misc.metrics import l2_distance
@@ -82,7 +81,7 @@ class TestClassifiers(unittest.TestCase):
         """Check that DTM is a subclass of NearestCentroid."""
         clf1: NearestCentroid[FData] = NearestCentroid()
         clf2: DTMClassifier[FData] = DTMClassifier(
-            proportiontocut=0.0,
+            proportiontocut=0,
             metric=l2_distance,
         )
         clf1.fit(self._X_train, self._y_train)
@@ -140,7 +139,7 @@ class TestClassifiers(unittest.TestCase):
 
     def test_KNeighbors_classifier(self) -> None:
         """Check KNeighbors classifier."""
-        clf: KNeighborsClassifier[FData] = KNeighborsClassifier()
+        clf = KNeighborsClassifier()
         clf.fit(self._X_train, self._y_train)
 
         np.testing.assert_array_equal(  # type: ignore

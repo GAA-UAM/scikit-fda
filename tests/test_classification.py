@@ -8,7 +8,6 @@ from sklearn.model_selection import train_test_split
 
 from skfda.datasets import fetch_growth
 from skfda.ml.classification import DTMClassifier
-
 from skfda.representation import FData
 
 

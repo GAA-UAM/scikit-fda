@@ -17,7 +17,6 @@ from matplotlib.figure import Figure
 from ... import FDataGrid
 from ..outliers import OutliergramOutlierDetector
 from ._baseplot import BasePlot
-from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
 
 class Outliergram(BasePlot):
@@ -65,12 +64,14 @@ class Outliergram(BasePlot):
         *,
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
         factor: float = 1.5,
-        **kwargs,
     ) -> None:
-        BasePlot.__init__(self)
+        BasePlot.__init__(
+            self,
+            chart,
+            fig=fig,
+            axes=axes,
+        )
         self.fdata = fdata
         self.factor = factor
         self.outlier_detector = OutliergramOutlierDetector(factor=factor)
@@ -78,38 +79,32 @@ class Outliergram(BasePlot):
         indices = np.argsort(self.outlier_detector.mei_)
         self._parabola_ordered = self.outlier_detector.parabola_[indices]
         self._mei_ordered = self.outlier_detector.mei_[indices]
-        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
 
-    def plot(
+    @property
+    def n_samples(self) -> int:
+        return self.fdata.n_samples
+
+    def _plot(
         self,
-    ) -> Figure:
-        """
-        Plot Outliergram.
+        fig: Figure,
+        axes: Axes,
+    ) -> None:
 
-        Plots the Modified Band Depth (MBD) on the Y axis and the Modified
-        Epigraph Index (MEI) on the X axis. This points will create the form of
-        a parabola. The shape outliers will be the points that appear far from
-        this curve.
-        Returns:
-            fig: figure object in which the depths will be
-            scattered.
-        """
         self.artists = np.zeros(
-            (self.n_samples(), 1),
+            (self.n_samples, 1),
             dtype=Artist,
         )
-        self.axScatter = self.axes[0]
 
         for i, (mei, mbd) in enumerate(
             zip(self.outlier_detector.mei_, self.outlier_detector.mbd_),
         ):
-            self.artists[i, 0] = self.axScatter.scatter(
+            self.artists[i, 0] = axes[0].scatter(
                 mei,
                 mbd,
                 picker=2,
             )
 
-        self.axScatter.plot(
+        axes[0].plot(
             self._mei_ordered,
             self._parabola_ordered,
         )
@@ -119,7 +114,7 @@ class Outliergram(BasePlot):
             - self.outlier_detector.max_inlier_distance_
         )
 
-        self.axScatter.plot(
+        axes[0].plot(
             self._mei_ordered,
             shifted_parabola,
             linestyle='dashed',
@@ -127,55 +122,12 @@ class Outliergram(BasePlot):
 
         # Set labels of graph
         if self.fdata.dataset_name is not None:
-            self.axScatter.set_title(self.fdata.dataset_name)
+            axes[0].set_title(self.fdata.dataset_name)
 
-        self.axScatter.set_xlabel("MEI")
-        self.axScatter.set_ylabel("MBD")
-        self.axScatter.set_xlim([0, 1])
-        self.axScatter.set_ylim([
+        axes[0].set_xlabel("MEI")
+        axes[0].set_ylabel("MBD")
+        axes[0].set_xlim([0, 1])
+        axes[0].set_ylim([
             0,  # Minimum MBD
             1,  # Maximum MBD
         ])
-
-        return self.fig
-
-    def n_samples(self) -> int:
-        """Get the number of instances that will be used for interactivity."""
-        return self.fdata.n_samples
-
-    def _set_figure_and_axes(
-        self,
-        chart: Union[Figure, Axes, None] = None,
-        fig: Optional[Figure] = None,
-        axes: Union[Axes, Sequence[Axes], None] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
-    ) -> None:
-        """
-        Initialize the axes and fig of the plot.
-
-        Args:
-        chart: figure over with the graphs are plotted or axis over
-            where the graphs are plotted. If None and ax is also
-            None, the figure is initialized.
-        fig: figure over with the graphs are plotted in case ax is not
-            specified. If None and ax is also None, the figure is
-            initialized.
-        axes: axis where the graphs are plotted. If None, see param fig.
-        n_rows: designates the number of rows of the figure
-            to plot the different dimensions of the image. Only specified
-            if fig and ax are None.
-        n_cols: designates the number of columns of the
-            figure to plot the different dimensions of the image. Only
-            specified if fig and ax are None.
-        """
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(
-            fdata=self.fdata,
-            fig=fig,
-            axes=axes,
-            n_rows=n_rows,
-            n_cols=n_cols,
-        )
-        self.fig = fig
-        self.axes = axes

@@ -21,7 +21,8 @@ following:
    skfda.preprocessing.dim_reduction.variable_selection.MaximaHunting
    skfda.preprocessing.dim_reduction.variable_selection.RecursiveMaximaHunting
    skfda.preprocessing.dim_reduction.variable_selection.RKHSVariableSelection
-   
+   skfda.preprocessing.dim_reduction.variable_selection.MinimumRedundancyMaximumRelevance
+
 .. toctree::
    :hidden:
    :maxdepth: 4
@@ -29,15 +30,15 @@ following:
 
    dim_reduction/recursive_maxima_hunting
 
-Projection
-----------
-Another way to reduce the dimension is through projection. For example, in
-functional principal component analysis, we project the data samples
-into a smaller sample of functions that preserve the maximum sample
+Feature extraction
+------------------
+Other dimensionality reduction methods construct new features from
+existing ones. For example, in functional principal component
+analysis, we project the data samples into a smaller sample of
+functions that preserve most of the original
 variance.
 
-.. toctree::
-   :maxdepth: 4
-   :caption: Modules:
+.. autosummary::
+   :toctree: autosummary
 
-   dim_reduction/fpca
+   skfda.preprocessing.dim_reduction.feature_extraction.FPCA

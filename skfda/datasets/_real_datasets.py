@@ -3,11 +3,12 @@ from typing import Any, Mapping, Optional, Tuple, Union, overload
 
 import numpy as np
 import pandas as pd
-import rdata
 from numpy import ndarray
 from pandas import DataFrame, Series
 from sklearn.utils import Bunch
 from typing_extensions import Literal
+
+import rdata
 
 from .. import FDataGrid
 
@@ -130,7 +131,7 @@ def fetch_cran(
     )
 
 
-def _ucr_to_fdatagrid(data: np.ndarray) -> FDataGrid:
+def _ucr_to_fdatagrid(name: str, data: np.ndarray) -> FDataGrid:
     if data.dtype == np.object_:
         data = np.array(data.tolist())
 
@@ -142,7 +143,7 @@ def _ucr_to_fdatagrid(data: np.ndarray) -> FDataGrid:
 
     grid_points = range(data.shape[1])
 
-    return FDataGrid(data, grid_points=grid_points)
+    return FDataGrid(data, grid_points=grid_points, dataset_name=name)
 
 
 def fetch_ucr(name: str, **kwargs: Any) -> Bunch:
@@ -173,12 +174,18 @@ def fetch_ucr(name: str, **kwargs: Any) -> Bunch:
 
     dataset = repositories.ucr.fetch(name, **kwargs)
 
-    dataset['data'] = _ucr_to_fdatagrid(dataset['data'])
+    dataset['data'] = _ucr_to_fdatagrid(
+        name=dataset['name'],
+        data=dataset['data'],
+    )
     dataset.pop('feature_names')
 
     data_test = dataset.get('data_test', None)
     if data_test is not None:
-        dataset['data_test'] = _ucr_to_fdatagrid(data_test)
+        dataset['data_test'] = _ucr_to_fdatagrid(
+            name=dataset['name'],
+            data=data_test,
+        )
 
     return dataset
 
@@ -436,7 +443,7 @@ def fetch_growth(
     target_name = "sex"
     target_categories = ["male", "female"]
     frame = None
-    
+
     if as_frame:
         sex = pd.Categorical.from_codes(sex, categories=target_categories)
         frame = pd.DataFrame({
@@ -448,7 +455,7 @@ def fetch_growth(
 
     if return_X_y:
         return curves, sex
-    
+
     return Bunch(
         data=curves,
         target=sex,

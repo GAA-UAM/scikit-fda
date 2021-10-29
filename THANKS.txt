@@ -5,4 +5,10 @@ Carlos Ramos Carreño for the design, reviews and supervision, and for contribut
 Pablo Marcos Manchón for the registration functions, including integration with fdasrsf.
 Amanda Hernando Bernabé for visualization and clustering functions.
 Pablo Pérez Manso for regression and related utilities.
+Yujian Hong for the Principal Component Analysis functionalities.
+David García Fernandez for implementing Anova and Hotelling tests.
+Pedro Martín Rodríguez-Ponga Eyriès for implementing several classification methods.
+Álvaro Sánchez Romero for improving the visualization methods and adding interactive visualizations.
+Elena Petrunina for improving the documentation, and regression functions.
+Luis Alberto Rodriguez Ramirez for providing mathematical support.
 Sergio Ruiz Lozano for the design of the logo.

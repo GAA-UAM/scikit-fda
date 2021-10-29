@@ -18,6 +18,7 @@ measure of the location or central tendency of :term:`functional data`.
    skfda.exploratory.stats.trim_mean
    skfda.exploratory.stats.depth_based_median
    skfda.exploratory.stats.geometric_median
+   skfda.exploratory.stats.fisher_rao_karcher_mean
    
 Dispersion
 ----------

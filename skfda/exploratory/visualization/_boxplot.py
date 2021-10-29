@@ -7,7 +7,7 @@ visualize it.
 from __future__ import annotations
 
 import math
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Optional, Sequence, Tuple, Union
 
 import matplotlib
@@ -25,14 +25,10 @@ from ...representation._typing import NDArrayBool, NDArrayFloat
 from ..depth import ModifiedBandDepth
 from ..outliers import _envelopes
 from ._baseplot import BasePlot
-from ._utils import (
-    _get_figure_and_axes,
-    _set_figure_layout_for_fdata,
-    _set_labels,
-)
+from ._utils import _set_labels
 
 
-class FDataBoxplot(ABC):
+class FDataBoxplot(BasePlot):
     """
     Abstract class inherited by the Boxplot and SurfaceBoxplot classes.
 
@@ -47,12 +43,29 @@ class FDataBoxplot(ABC):
     """
 
     @abstractmethod
-    def __init__(self, factor: float = 1.5) -> None:
+    def __init__(
+        self,
+        chart: Union[Figure, Axes, None] = None,
+        *,
+        factor: float = 1.5,
+        fig: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
+    ) -> None:
         if factor < 0:
             raise ValueError(
                 "The number used to calculate the "
                 "outlying envelope must be positive.",
             )
+
+        super().__init__(
+            chart,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
+        )
         self._factor = factor
 
     @property
@@ -89,7 +102,7 @@ class FDataBoxplot(ABC):
         self._colormap = value
 
 
-class Boxplot(FDataBoxplot, BasePlot):
+class Boxplot(FDataBoxplot):
     r"""
     Representation of the functional boxplot.
 
@@ -118,15 +131,15 @@ class Boxplot(FDataBoxplot, BasePlot):
             indicate which central regions to represent.
             Defaults to (0.5,) which represents the 50% central region.
         factor: Number used to calculate the outlying envelope.
-        fig: figure over with the graphs are
+        fig: Figure over with the graphs are
             plotted in case ax is not specified. If None and ax is also
             None, the figure is initialized.
-        axes: axis over where the graphs
+        axes: Axis over where the graphs
             are plotted. If None, see param fig.
-        n_rows: designates the number of rows of the figure
+        n_rows: Designates the number of rows of the figure
             to plot the different dimensions of the image. Only specified
             if fig and ax are None.
-        n_cols: designates the number of columns of the
+        n_cols: Designates the number of columns of the
             figure to plot the different dimensions of the image. Only
             specified if fig and ax are None.
 
@@ -294,8 +307,14 @@ class Boxplot(FDataBoxplot, BasePlot):
                 specified if fig and ax are None.
 
         """
-        FDataBoxplot.__init__(self, factor)
-        BasePlot.__init__(self)
+        super().__init__(
+            chart,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
+            factor=factor,
+        )
 
         if fdatagrid.dim_domain != 1:
             raise ValueError(
@@ -364,8 +383,6 @@ class Boxplot(FDataBoxplot, BasePlot):
         self.mediancol = "black"
         self._show_full_outliers = False
 
-        self._set_figure_and_axes(chart, fig, axes, n_rows, n_cols)
-
     @property
     def fdatagrid(self) -> FDataGrid:
         return self._fdatagrid
@@ -400,41 +417,16 @@ class Boxplot(FDataBoxplot, BasePlot):
             raise ValueError("show_full_outliers must be boolean type")
         self._show_full_outliers = boolean
 
-    def _set_figure_and_axes(
-        self,
-        chart: Union[Figure, Axes, None] = None,
-        fig: Optional[Figure] = None,
-        axes: Union[Axes, Sequence[Axes], None] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
-    ) -> None:
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(
-            self.fdatagrid,
-            fig=fig,
-            axes=axes,
-            n_rows=n_rows,
-            n_cols=n_cols,
-        )
-        self.fig = fig
-        self.axes = axes
-
     @property
     def n_subplots(self) -> int:
         return self.fdatagrid.dim_codomain
 
-    def n_samples(self) -> int:
-        return self.fdatagrid.n_samples
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
 
-    def plot(self) -> Figure:
-        """
-        Visualize the functional boxplot of the fdatagrid (dim_domain=1).
-
-        Returns:
-            Figure object in which the graphs are plotted.
-
-        """
-        self.artists = np.zeros((self.n_samples(), 1), dtype=Artist)
         tones = np.linspace(0.1, 1.0, len(self._prob) + 1, endpoint=False)[1:]
         color = self.colormap(tones)
 
@@ -447,11 +439,11 @@ class Boxplot(FDataBoxplot, BasePlot):
 
         grid_points = self.fdatagrid.grid_points[0]
 
-        for m, axes in enumerate(self.axes):
+        for m, ax in enumerate(axes):
 
             # Outliers
             for o in outliers:
-                axes.plot(
+                ax.plot(
                     grid_points,
                     o.data_matrix[0, :, m],
                     color=self.outliercol,
@@ -461,7 +453,7 @@ class Boxplot(FDataBoxplot, BasePlot):
 
             for envelop, col in zip(self.envelopes, color):
                 # central regions
-                axes.fill_between(
+                ax.fill_between(
                     grid_points,
                     envelop[0][..., m],
                     envelop[1][..., m],
@@ -470,7 +462,7 @@ class Boxplot(FDataBoxplot, BasePlot):
                 )
 
             # outlying envelope
-            axes.plot(
+            ax.plot(
                 grid_points,
                 self.non_outlying_envelope[0][..., m],
                 grid_points,
@@ -480,7 +472,7 @@ class Boxplot(FDataBoxplot, BasePlot):
             )
 
             # central envelope
-            axes.plot(
+            ax.plot(
                 grid_points,
                 self.central_envelope[0][..., m],
                 grid_points,
@@ -492,7 +484,7 @@ class Boxplot(FDataBoxplot, BasePlot):
             # vertical lines
             index = math.ceil(len(grid_points) / 2)
             x = grid_points[index]
-            axes.plot(
+            ax.plot(
                 [x, x],
                 [
                     self.non_outlying_envelope[0][..., m][index],
@@ -501,7 +493,7 @@ class Boxplot(FDataBoxplot, BasePlot):
                 color=self.barcol,
                 zorder=4,
             )
-            axes.plot(
+            ax.plot(
                 [x, x],
                 [
                     self.non_outlying_envelope[1][..., m][index],
@@ -512,16 +504,14 @@ class Boxplot(FDataBoxplot, BasePlot):
             )
 
             # median sample
-            axes.plot(
+            ax.plot(
                 grid_points,
                 self.median[..., m],
                 color=self.mediancol,
                 zorder=5,
             )
 
-        _set_labels(self.fdatagrid, self.fig, self.axes)
-
-        return self.fig
+        _set_labels(self.fdatagrid, fig, axes)
 
     def __repr__(self) -> str:
         """Return repr(self)."""
@@ -573,6 +563,17 @@ class SurfaceBoxplot(FDataBoxplot):
         boxcol: Color of the box, which includes median and central
             envelope.
         outcol: Color of the outlying envelope.
+        fig: Figure over with the graphs are
+            plotted in case ax is not specified. If None and ax is also
+            None, the figure is initialized.
+        axes: Axis over where the graphs
+            are plotted. If None, see param fig.
+        n_rows: Designates the number of rows of the figure
+            to plot the different dimensions of the image. Only specified
+            if fig and ax are None.
+        n_cols: Designates the number of columns of the
+            figure to plot the different dimensions of the image. Only
+            specified if fig and ax are None.
 
     Examples:
         Function :math:`f : \mathbb{R^2}\longmapsto\mathbb{R}`.
@@ -647,20 +648,24 @@ class SurfaceBoxplot(FDataBoxplot):
     def __init__(
         self,
         fdatagrid: FDataGrid,
+        chart: Union[Figure, Axes, None] = None,
+        *,
         depth_method: Optional[Depth[FDataGrid]] = None,
         factor: float = 1.5,
+        fig: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
     ) -> None:
-        """
-        Initialize the functional boxplot.
 
-        Args:
-            fdatagrid: Object containing the data.
-            depth_method: Method used to order the data. Defaults to
-                :class:`~skfda.exploratory.depth.ModifiedBandDepth`.
-            factor: Number used to calculate the outlying envelope.
-
-        """
-        FDataBoxplot.__init__(self, factor)
+        super().__init__(
+            chart,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
+            factor=factor,
+        )
 
         if fdatagrid.dim_domain != 2:
             raise ValueError(
@@ -738,46 +743,15 @@ class SurfaceBoxplot(FDataBoxplot):
             raise ValueError("outcol must be a number between 0 and 1.")
         self._outcol = value
 
-    def plot(
+    @property
+    def dim(self) -> int:
+        return 3
+
+    def _plot(
         self,
-        chart: Union[Figure, Axes, None] = None,
-        *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
-    ) -> Figure:
-        """
-        Visualization of the surface boxplot of the fdatagrid (dim_domain=2).
-
-        Args:
-            chart: figure over with the graphs are plotted or axis over
-                where the graphs are plotted. If None and ax is also
-                None, the figure is initialized.
-            fig: figure over with the graphs are plotted in case ax
-                is not specified. If None and ax is also None, the figure
-                is initialized.
-            axes: axis over where the graphs are plotted. If None,
-                see param fig.
-            n_rows: designates the number of rows of the figure
-                to plot the different dimensions of the image. Only specified
-                if fig and ax are None.
-            n_cols: designates the number of columns of the
-                figure to plot the different dimensions of the image. Only
-                specified if fig and ax are None.
-
-        Returns:
-            Figure object in which the graphs are plotted.
-
-        """
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(
-            self.fdatagrid,
-            fig,
-            axes,
-            n_rows,
-            n_cols,
-        )
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
 
         x = self.fdatagrid.grid_points[0]
         lx = len(x)
@@ -918,8 +892,6 @@ class SurfaceBoxplot(FDataBoxplot):
             )
 
         _set_labels(self.fdatagrid, fig, axes)
-
-        return fig
 
     def __repr__(self) -> str:
         """Return repr(self)."""

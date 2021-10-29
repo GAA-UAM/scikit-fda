@@ -1,9 +1,8 @@
-from typing import Any, Optional, Union
+from typing import Optional, Sequence, Union
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from skfda.exploratory.visualization._utils import _get_figure_and_axes
 from skfda.exploratory.visualization.representation import GraphPlot
 from skfda.representation import FData
 
@@ -15,19 +14,17 @@ class FPCAPlot(BasePlot):
     FPCAPlot visualization.
 
     Args:
-        mean (FDataGrid or FDataBasis):
-            the functional data object containing the mean function.
+        mean: The functional data object containing the mean function.
             If len(mean) > 1, the mean is computed.
-        components (FDataGrid or FDataBasis):
-            the principal components
-        multiple (float):
-            multiple of the principal component curve to be added or
+        components: The principal components
+        multiple: Multiple of the principal component curve to be added or
             subtracted.
-        fig (figure object, optional):
-            figure over which the graph is plotted. If not specified it will
+        fig: Figure over which the graph is plotted. If not specified it will
             be initialized
-        axes (axes object, optional): axis over where the graph is  plotted.
-            If None, see param fig.
+        axes: Axes over where the graph is  plotted.
+            If ``None``, see param fig.
+        n_rows: Designates the number of rows of the figure.
+        n_cols: Designates the number of columns of the figure.
     """
 
     def __init__(
@@ -39,55 +36,37 @@ class FPCAPlot(BasePlot):
         *,
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
+        n_rows: Optional[int] = None,
+        n_cols: Optional[int] = None,
     ):
-        super().__init__(self)
+        super().__init__(
+            chart,
+            fig=fig,
+            axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
+        )
         self.mean = mean
         self.components = components
         self.multiple = multiple
 
-        self._set_figure_and_axes(chart, fig, axes)
+    @property
+    def n_subplots(self) -> int:
+        return len(self.components)
 
-    def plot(self, **kwargs: Any) -> Figure:
-        """
-        Plots the perturbation graphs for the principal components.
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
 
-        The perturbations are defined as variations over the mean. Adding a
-        multiple of the principal component curve to the mean function results
-        in the positive perturbation and subtracting a multiple of the
-        principal component curve results in the negative perturbation. For
-        each principal component curve passed, a subplot with the mean and
-        the perturbations is shown.
-
-        Returns:
-            The plotted figure.
-
-        """
         if len(self.mean) > 1:
             self.mean = self.mean.mean()
 
-        for i, axes in enumerate(self.axes):
-            aux = self._get_component_perturbations(i)
-            gp = GraphPlot(fdata=aux, axes=axes).plot(**kwargs)
-            self.artists = gp.artists
-            axes.set_title(f"Principal component {i + 1}")
-
-        return self.fig
-
-    def n_samples(self) -> int:
-        return self.fdata.n_samples
-
-    def _set_figure_and_axes(
-        self,
-        chart: Union[Figure, Axes, None] = None,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-    ) -> None:
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        if not axes:
-            axes = fig.subplots(nrows=len(self.components))
-
-        self.fig = fig
-        self.axes = axes
+        for i, ax in enumerate(axes):
+            perturbations = self._get_component_perturbations(i)
+            GraphPlot(fdata=perturbations, axes=ax).plot()
+            ax.set_title(f"Principal component {i + 1}")
 
     def _get_component_perturbations(self, index: int = 0) -> FData:
         """

@@ -15,7 +15,6 @@ from matplotlib.figure import Figure
 from ...exploratory.depth.multivariate import Depth
 from ...representation._functional_data import FData
 from ._baseplot import BasePlot
-from ._utils import _get_figure_and_axes, _set_figure_layout_for_fdata
 
 T = TypeVar('T', bound=FData)
 
@@ -61,21 +60,33 @@ class DDPlot(BasePlot):
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
     ) -> None:
-        BasePlot.__init__(self)
+        BasePlot.__init__(
+            self,
+            chart,
+            fig=fig,
+            axes=axes,
+        )
         self.fdata = fdata
         self.depth_method = depth_method
         self.depth_method.fit(fdata)
         self.depth_dist1 = self.depth_method(
-            self.fdata, distribution=dist1,
+            self.fdata,
+            distribution=dist1,
         )
         self.depth_dist2 = self.depth_method(
-            self.fdata, distribution=dist2,
+            self.fdata,
+            distribution=dist2,
         )
-        self._set_figure_and_axes(chart, fig, axes)
 
-    def plot(
+    @property
+    def n_samples(self) -> int:
+        return self.fdata.n_samples
+
+    def _plot(
         self,
-    ) -> Figure:
+        fig: Figure,
+        axes: Axes,
+    ) -> None:
         """
         Plot DDPlot graph.
 
@@ -88,16 +99,16 @@ class DDPlot(BasePlot):
             scattered.
         """
         self.artists = np.zeros(
-            (self.n_samples(), 1),
+            (self.n_samples, 1),
             dtype=Artist,
         )
         margin = 0.025
         width_aux_line = 0.35
         color_aux_line = "gray"
 
-        ax = self.axes[0]
+        ax = axes[0]
 
-        for i, d1, d2 in enumerate(zip(self.depth_dist1, self.depth_dist2)):
+        for i, (d1, d2) in enumerate(zip(self.depth_dist1, self.depth_dist2)):
             self.artists[i, 0] = ax.scatter(
                 d1,
                 d2,
@@ -127,36 +138,3 @@ class DDPlot(BasePlot):
             linewidth=width_aux_line,
             color=color_aux_line,
         )
-
-        return self.fig
-
-    def n_samples(self) -> int:
-        """Get the number of instances that will be used for interactivity."""
-        return self.fdata.n_samples
-
-    def _set_figure_and_axes(
-        self,
-        chart: Union[Figure, Axes, None] = None,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-    ) -> None:
-        """
-        Initialize the axes and fig of the plot.
-
-        Args:
-        chart: figure over with the graphs are plotted or axis over
-            where the graphs are plotted. If None and ax is also
-            None, the figure is initialized.
-        fig: figure over with the graphs are plotted in case ax is not
-            specified. If None and ax is also None, the figure is
-            initialized.
-        axes: axis where the graphs are plotted. If None, see param fig.
-        """
-        fig, axes = _get_figure_and_axes(chart, fig, axes)
-        fig, axes = _set_figure_layout_for_fdata(
-            fdata=self.fdata,
-            fig=fig,
-            axes=axes,
-        )
-        self.fig = fig
-        self.axes = axes

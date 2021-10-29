@@ -30,11 +30,17 @@ of basis functions.
 # operations.
 
 ##############################################################################
-# In order to show these operations, we create the first FDatagrid and plot
-# it.
+# In order to show the vector operations, we create two FDatagrids with
+# two functions each,
+# :math:`\mathbf{X}_1 = \{x_{1i}: \mathbb{R} \to \mathbb{R}\}, i=1,2` and
+# :math:`\mathbf{X}_2 = \{x_{2i}: \mathbb{R} \to \mathbb{R}\}, i=1,2`,
+# and plot them.
 
 import numpy as np
 import skfda
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(1, 2, figsize=(8, 3))
 
 t = np.linspace(0, 1, 100)
 
@@ -46,37 +52,44 @@ fd = skfda.FDataGrid(
     grid_points=t,
 )
 
-fd.plot()
-
-##############################################################################
-# Functions can be multiplied by an scalar. This only changes the scale of
-# the functions, but not their shape.
-
-scalar_mul = 3 * fd
-
-scalar_mul.plot()
-
-##############################################################################
-# We need two objects to show the sum. Thus we create a second FDatagrid and
-# plot it.
+fd.plot(axes=axes[0])
+axes[0].set_title(r"$\mathbf{X}_1$")
 
 fd2 = skfda.FDataGrid(
     data_matrix=[
         3 * t**2,              # First function
-        np.log(t),              # Second function
+        np.log(t + 0.1),       # Second function
     ],
     grid_points=t,
 )
 
-fd2.plot()
+fd2.plot(axes=axes[1])
+axes[1].set_title(r"$\mathbf{X}_2$")
+
+plt.show()
 
 ##############################################################################
-# We can now plot the sum of both :class:`~skfda.representation.grid.FDataGrid`
-# objects.
+# Functions can be multiplied by an scalar. This only changes the scale of
+# the functions, but not their shape. Note that all the functions in the
+# dataset are affected.
+#
+# It is also possible to add two functions together. If you do that with
+# two :class:`~skfda.representation.grid.FDataGrid` objects with the same
+# length, the corresponding functions will be added.
+
+fig, axes = plt.subplots(1, 2, figsize=(8, 3))
+
+scalar_mul = 3 * fd
+
+scalar_mul.plot(axes=axes[0])
+axes[0].set_title(r"$3 \mathbf{X}_1$")
 
 fd_sum = fd + fd2
 
-fd_sum.plot()
+fd_sum.plot(axes=axes[1])
+axes[1].set_title(r"$\mathbf{X}_1 + \mathbf{X}_2$")
+
+plt.show()
 
 ##############################################################################
 # Infinite (Schauder) basis
@@ -117,7 +130,7 @@ fd_sum.plot()
 # a truncated monomial basis (and thus it is a polynomial):
 #
 # .. math::
-#     x(t) = 3 + 2x - 4x^2 + x^3
+#     x(t) = 3 + 2t - 4t^2 + t^3
 
 basis = skfda.representation.basis.Monomial(
     n_basis=4,
@@ -132,6 +145,7 @@ fd_basis = skfda.FDataBasis(
 )
 
 fd_basis.plot()
+plt.show()
 
 ##############################################################################
 # Conversion between FDataGrid and FDataBasis
@@ -156,8 +170,6 @@ fd_basis.plot()
 # can see that as more basis functions are used, the basis representation
 # provides a better representation of the real data.
 
-import matplotlib.pyplot as plt
-
 max_basis = 9
 
 X, y = skfda.datasets.fetch_phoneme(return_X_y=True)
@@ -174,10 +186,11 @@ for n_basis in range(1, max_basis + 1):
     X_basis = X.to_basis(basis)
 
     ax = axes.ravel()[n_basis - 1]
-    fig = X_basis.plot(ax=ax)
+    fig = X_basis.plot(axes=ax)
     ax.set_title(f"{n_basis} basis functions")
 
 fig.tight_layout()
+plt.show()
 
 ##############################################################################
 # List of available basis functions
@@ -198,6 +211,7 @@ X, y = skfda.datasets.fetch_phoneme(return_X_y=True)
 X = X[:5]
 
 X.plot()
+plt.show()
 
 ##############################################################################
 # Monomial basis
@@ -214,9 +228,9 @@ X.plot()
 #
 # As a basis for functional data analysis, however, it has several issues that
 # usually make preferrable to use other basis instead. First, the usual basis
-# :math:`\{1, x, x^2, x^3, \ldots\}` is not orthogonal under the standard
-# inner product in :math:`L^2`, that is :math:`\langle x, y \rangle =
-# \int_{\mathcal{T}} x(t) y(t) dt`. This inhibits some
+# :math:`\{1, t, t^2, t^3, \ldots\}` is not orthogonal under the standard
+# inner product in :math:`L^2`, that is :math:`\langle x_1, x_2 \rangle =
+# \int_{\mathcal{T}} x_1(t) x_2(t) dt`. This inhibits some
 # performance optimizations that are available for operations that require
 # inner products. It is possible to find an orthogonal basis of polynomials,
 # but it will not be as easy to understand, losing many of its advantages.
@@ -231,6 +245,7 @@ X.plot()
 
 basis = skfda.representation.basis.Monomial(n_basis=5)
 basis.plot()
+plt.show()
 
 ##############################################################################
 # We now show how the previous observations are represented using the first
@@ -238,6 +253,7 @@ basis.plot()
 
 X_basis = X.to_basis(basis)
 X_basis.plot()
+plt.show()
 
 ##############################################################################
 # Fourier basis
@@ -264,6 +280,7 @@ X_basis.plot()
 
 basis = skfda.representation.basis.Fourier(n_basis=5)
 basis.plot()
+plt.show()
 
 ##############################################################################
 # We now show how the previous observations are represented using the first
@@ -271,6 +288,7 @@ basis.plot()
 
 X_basis = X.to_basis(basis)
 X_basis.plot()
+plt.show()
 
 ##############################################################################
 # B-spline basis
@@ -298,6 +316,7 @@ X_basis.plot()
 
 basis = skfda.representation.basis.BSpline(n_basis=5)
 basis.plot()
+plt.show()
 
 ##############################################################################
 # We now show how the previous observations are represented using the first
@@ -305,6 +324,7 @@ basis.plot()
 
 X_basis = X.to_basis(basis)
 X_basis.plot()
+plt.show()
 
 ##############################################################################
 # Constant basis
@@ -360,6 +380,7 @@ fd_basis = fd.to_basis(basis)
 
 # We only plot the first function
 fd_basis[0].plot()
+plt.show()
 
 ##############################################################################
 # Finite element basis
@@ -409,6 +430,7 @@ cells = np.array([
 ])
 
 plt.triplot(vertices[:, 0], vertices[:, 1], cells)
+plt.show()
 
 ##############################################################################
 # We now represent the digits dataset in this basis.
@@ -422,6 +444,7 @@ fd_basis = fd.to_basis(basis)
 
 # We only plot the first function
 fd_basis[0].plot()
+plt.show()
 
 ##############################################################################
 # Vector-valued basis
@@ -445,6 +468,7 @@ fd_basis[0].plot()
 X, y = skfda.datasets.fetch_weather(return_X_y=True)
 
 X.plot()
+plt.show()
 
 ##############################################################################
 # We will express this dataset as a basis expansion. Temperatures
@@ -464,3 +488,4 @@ basis = skfda.representation.basis.VectorValued([
 
 X_basis = X.to_basis(basis)
 X_basis.plot()
+plt.show()

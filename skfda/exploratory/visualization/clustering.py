@@ -8,8 +8,11 @@ import matplotlib
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
+from matplotlib.collections import PatchCollection
 from matplotlib.figure import Figure
+from matplotlib.patches import Rectangle
 from matplotlib.ticker import MaxNLocator
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
@@ -213,6 +216,8 @@ class ClusterPlot(BasePlot):
             chart,
             fig=fig,
             axes=axes,
+            n_rows=n_rows,
+            n_cols=n_cols,
         )
         self.fdata = fdata
         self.estimator = estimator
@@ -223,12 +228,20 @@ class ClusterPlot(BasePlot):
         self.center_labels = center_labels
         self.center_width = center_width
         self.colormap = colormap
-        self._set_figure_and_axes(chart, fig=fig, axes=axes)
 
+    @property
+    def n_subplots(self) -> int:
+        return self.fdata.dim_codomain
+
+    @property
     def n_samples(self) -> int:
         return self.fdata.n_samples
 
-    def _plot_clusters(self) -> Figure:
+    def _plot_clusters(
+        self,
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
         """Implement the plot of the FDataGrid samples by clusters."""
         _plot_clustering_checks(
             estimator=self.estimator,
@@ -276,7 +289,7 @@ class ClusterPlot(BasePlot):
         ]
 
         artists = [
-            self.axes[j].plot(
+            axes[j].plot(
                 self.fdata.grid_points[0],
                 self.fdata.data_matrix[i, :, j],
                 c=colors_by_cluster[i],
@@ -286,38 +299,29 @@ class ClusterPlot(BasePlot):
             for i in range(self.fdata.n_samples)
         ]
 
-        self.artists = np.array(artists)
+        self.artists = np.array(artists).reshape(
+            (self.n_subplots, self.n_samples),
+        ).T
 
         for j in range(self.fdata.dim_codomain):
 
             for i in range(self.estimator.n_clusters):
-                self.axes[j].plot(
+                axes[j].plot(
                     self.fdata.grid_points[0],
                     self.estimator.cluster_centers_.data_matrix[i, :, j],
                     c=self.center_colors[i],
                     label=self.center_labels[i],
                     linewidth=self.center_width,
                 )
-            self.axes[j].legend(handles=patches)
+            axes[j].legend(handles=patches)
 
-        _set_labels(self.fdata, self.fig, self.axes)
+        _set_labels(self.fdata, fig, axes)
 
-        return self.fig
-
-    def plot(self) -> Figure:
-        """
-        Plot of the FDataGrid samples by clusters.
-
-        The clusters are calculated with the estimator passed as a parameter.
-        If the estimator is not fitted, the fit method is called.
-        Once each sample is assigned a label the plotting can be done.
-        Each group is assigned a color described in a legend.
-
-        Returns:
-            Plotted figure.
-
-        """
-        self.artists = np.array([])
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
 
         try:
             check_is_fitted(self.estimator)
@@ -330,7 +334,7 @@ class ClusterPlot(BasePlot):
 
         self.labels = self.estimator.labels_
 
-        return self._plot_clusters()
+        self._plot_clusters(fig=fig, axes=axes)
 
 
 class ClusterMembershipLinesPlot(BasePlot):
@@ -367,6 +371,7 @@ class ClusterMembershipLinesPlot(BasePlot):
         self,
         estimator: FuzzyClusteringEstimator,
         fdata: FDataGrid,
+        *,
         chart: Union[Figure, Axes, None] = None,
         fig: Optional[Figure] = None,
         axes: Union[Axes, Sequence[Axes], None] = None,
@@ -396,25 +401,16 @@ class ClusterMembershipLinesPlot(BasePlot):
         self.y_label = y_label
         self.title = title
         self.colormap = colormap
-        self._set_figure_and_axes(chart, fig=fig, axes=axes)
 
+    @property
     def n_samples(self) -> int:
         return self.fdata.n_samples
 
-    def plot(self) -> Figure:
-        """
-        Plot cluster membership.
-
-        A kind of Parallel Coordinates plot is generated in this function with
-        the membership values obtained from the algorithm. A line is plotted
-        for each sample with the values for each cluster. See
-        `Clustering Example <../auto_examples/plot_clustering.html>`_.
-
-        Returns:
-            Plotted figure.
-
-        """
-        self.artists = np.array([])
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
 
         try:
             check_is_fitted(self.estimator)
@@ -438,7 +434,7 @@ class ClusterMembershipLinesPlot(BasePlot):
             center_labels=None,
         )
 
-        self.x_label, self.y_label, self.title = _get_labels(
+        x_label, y_label, title = _get_labels(
             self.x_label,
             self.y_label,
             self.title,
@@ -465,9 +461,9 @@ class ClusterMembershipLinesPlot(BasePlot):
                 for i in range(self.estimator.n_clusters)
             ]
 
-        self.axes[0].get_xaxis().set_major_locator(MaxNLocator(integer=True))
+        axes[0].get_xaxis().set_major_locator(MaxNLocator(integer=True))
         self.artists = np.array([
-            self.axes[0].plot(
+            axes[0].plot(
                 np.arange(self.estimator.n_clusters),
                 membership[i],
                 label=self.sample_labels[i],
@@ -476,13 +472,12 @@ class ClusterMembershipLinesPlot(BasePlot):
             for i in range(self.fdata.n_samples)
         ])
 
-        self.axes[0].set_xticks(np.arange(self.estimator.n_clusters))
-        self.axes[0].set_xticklabels(self.cluster_labels)
-        self.axes[0].set_xlabel(self.x_label)
-        self.axes[0].set_ylabel(self.y_label)
+        axes[0].set_xticks(np.arange(self.estimator.n_clusters))
+        axes[0].set_xticklabels(self.cluster_labels)
+        axes[0].set_xlabel(x_label)
+        axes[0].set_ylabel(y_label)
 
-        self.fig.suptitle(self.title)
-        return self.fig
+        fig.suptitle(title)
 
 
 class ClusterMembershipPlot(BasePlot):
@@ -520,6 +515,7 @@ class ClusterMembershipPlot(BasePlot):
         estimator: FuzzyClusteringEstimator,
         fdata: FData,
         chart: Union[Figure, Axes, None] = None,
+        *,
         fig: Optional[Figure] = None,
         axes: Union[Axes, Sequence[Axes], None] = None,
         sort: int = -1,
@@ -550,27 +546,22 @@ class ClusterMembershipPlot(BasePlot):
         self.title = title
         self.colormap = colormap
         self.sort = sort
-        self._set_figure_and_axes(chart, fig=fig, axes=axes)
 
+    @property
     def n_samples(self) -> int:
         return self.fdata.n_samples
 
-    def plot(self) -> Figure:
-        """
-        Plot cluster membership.
+    def _plot(
+        self,
+        fig: Figure,
+        axes: Sequence[Axes],
+    ) -> None:
 
-        A kind of barplot is generated in this function with the membership
-        values obtained from the algorithm. There is a bar for each sample
-        whose height is 1 (the sum of the membership values of a sample add
-        to 1), and the part proportional to each cluster is coloured with
-        the corresponding color. See
-        `Clustering Example <../auto_examples/plot_clustering.html>`_.
-
-        Returns:
-            Plotted figure.
-
-        """
-        self.artists = np.array([])
+        self.artists = np.full(
+            (self.n_samples, self.n_subplots),
+            None,
+            dtype=Artist,
+        )
 
         try:
             check_is_fitted(self.estimator)
@@ -606,10 +597,6 @@ class ClusterMembershipPlot(BasePlot):
             self.title,
             "Sample",
         )
-
-        self.x_label = x_label
-        self.y_label = y_label
-        self.title = title
 
         if self.sample_labels is None:
             self.sample_labels = np.arange(self.fdata.n_samples)
@@ -651,19 +638,41 @@ class ClusterMembershipPlot(BasePlot):
 
         conc = np.zeros((self.fdata.n_samples, 1))
         labels_dim = np.concatenate((conc, labels_dim), axis=-1)
-        for i in range(self.estimator.n_clusters):
-            self.x = self.axes[0].bar(
+        bars = [
+            axes[0].bar(
                 np.arange(self.fdata.n_samples),
                 labels_dim[:, i + 1],
                 bottom=np.sum(labels_dim[:, :(i + 1)], axis=1),
                 color=self.cluster_colors[i],
             )
+            for i in range(self.estimator.n_clusters)
+        ]
 
-        self.axes[0].set_xticks(np.arange(self.fdata.n_samples))
-        self.axes[0].set_xticklabels(self.sample_labels)
-        self.axes[0].set_xlabel(self.x_label)
-        self.axes[0].set_ylabel(self.y_label)
-        self.axes[0].legend(handles=patches)
+        for b in bars:
+            b.remove()
+            b.figure = None
 
-        self.fig.suptitle(self.title)
-        return self.fig
+        for i in range(self.n_samples):
+            collection = PatchCollection(
+                [
+                    Rectangle(
+                        bar.patches[i].get_xy(),
+                        bar.patches[i].get_width(),
+                        bar.patches[i].get_height(),
+                        color=bar.patches[i].get_facecolor(),
+                    ) for bar in bars
+                ],
+                match_original=True,
+            )
+            axes[0].add_collection(collection)
+            self.artists[i, 0] = collection
+
+        fig.canvas.draw()
+
+        axes[0].set_xticks(np.arange(self.fdata.n_samples))
+        axes[0].set_xticklabels(self.sample_labels)
+        axes[0].set_xlabel(x_label)
+        axes[0].set_ylabel(y_label)
+        axes[0].legend(handles=patches)
+
+        fig.suptitle(title)

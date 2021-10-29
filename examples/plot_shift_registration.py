@@ -14,7 +14,7 @@ process represented in a Fourier basis.
 import matplotlib.pyplot as plt
 
 from skfda.datasets import make_sinusoidal_process
-from skfda.preprocessing.registration import ShiftRegistration
+from skfda.preprocessing.registration import LeastSquaresShiftRegistration
 from skfda.representation.basis import Fourier
 
 ##############################################################################
@@ -41,14 +41,14 @@ fd_basis.plot()
 
 ##############################################################################
 # We will use the
-# :func:`~skfda.preprocessing.registration.ShiftRegistration` transformer,
-# which is suitable due to the periodicity of the dataset and the small
-# amount of amplitude variation.
+# :func:`~skfda.preprocessing.registration.LeastSquaresShiftRegistration`
+# transformer, which is suitable due to the periodicity of the dataset and
+# the small amount of amplitude variation.
 #
 # We can observe how the sinusoidal pattern is easily distinguishable
 # once the alignment has been made.
 
-shift_registration = ShiftRegistration()
+shift_registration = LeastSquaresShiftRegistration()
 fd_registered = shift_registration.fit_transform(fd_basis)
 
 fd_registered.plot()

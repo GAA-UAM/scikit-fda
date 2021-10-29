@@ -1,6 +1,7 @@
 import io
 import math
 import re
+from itertools import repeat
 from typing import Optional, Sequence, Tuple, TypeVar, Union
 
 import matplotlib.backends.backend_svg
@@ -139,10 +140,22 @@ def _get_axes_shape(
     return new_n_rows, new_n_cols
 
 
+def _projection_from_dim(dim: int) -> str:
+
+    if dim == 2:
+        return 'rectilinear'
+    elif dim == 3:
+        return '3d'
+
+    raise NotImplementedError(
+        "Only bidimensional or tridimensional plots are supported.",
+    )
+
+
 def _set_figure_layout(
     fig: Figure,
     axes: Sequence[Axes],
-    dim: int = 2,
+    dim: Union[int, Sequence[int]] = 2,
     n_axes: int = 1,
     n_rows: Optional[int] = None,
     n_cols: Optional[int] = None,
@@ -170,15 +183,10 @@ def _set_figure_layout(
             * axes (list): axes in which the graphs are plotted.
 
     """
-    if not (1 < dim < 4):
-        raise NotImplementedError(
-            "Only bidimensional or tridimensional plots are supported.",
-        )
-
     if len(axes) not in {0, n_axes}:
         raise ValueError(
-            f"The number of axes must be 0 (to create them) or "
-            f"equal to the number of axes needed "
+            f"The number of axes ({len(axes)}) must be 0 (to create them)"
+            f" or equal to the number of axes needed "
             f"({n_axes} in this case).",
         )
 
@@ -190,70 +198,44 @@ def _set_figure_layout(
             "that no axes are provided.",
         )
 
-    if dim == 2:
-        projection = 'rectilinear'
-    else:
-        projection = '3d'
-
     if len(axes) == 0:
         # Create the axes
 
         n_rows, n_cols = _get_axes_shape(n_axes, n_rows, n_cols)
-        fig.subplots(
-            nrows=n_rows,
-            ncols=n_cols,
-            subplot_kw={"projection": projection},
-        )
+
+        for i in range(n_rows):
+            for j in range(n_cols):
+                subplot_index = i * n_cols + j
+                if subplot_index < n_axes:
+                    plot_dim = (
+                        dim if isinstance(dim, int) else dim[subplot_index]
+                    )
+
+                fig.add_subplot(
+                    n_rows,
+                    n_cols,
+                    subplot_index + 1,
+                    projection=_projection_from_dim(plot_dim),
+                )
+
         axes = fig.axes
 
     else:
         # Check that the projections are right
+        projections = (
+            repeat(_projection_from_dim(dim))
+            if isinstance(dim, int)
+            else (_projection_from_dim(d) for d in dim)
+        )
 
-        if not all(a.name == projection for a in axes):
-            raise ValueError(
-                f"The projection of the axes should be {projection}",
-            )
+        for a, proj in zip(axes, projections):
+            if a.name != proj:
+                raise ValueError(
+                    f"The projection of the axes is {a.name} "
+                    f"but should be {proj}",
+                )
 
     return fig, axes
-
-
-def _set_figure_layout_for_fdata(
-    fdata: FData,
-    fig: Figure,
-    axes: Sequence[Axes],
-    n_rows: Optional[int] = None,
-    n_cols: Optional[int] = None,
-) -> Tuple[Figure, Sequence[Axes]]:
-    """
-    Set the figure axes for plotting a FData object.
-
-    Args:
-        fdata: functional data object.
-        fig: figure over with the graphs are plotted in case ax is not
-            specified.
-        axes: axis over where the graphs are plotted.
-        n_rows: designates the number of rows of the figure to plot the
-            different dimensions of the image. Can only be passed
-            if no axes are specified.
-        n_cols: designates the number of columns of the figure to plot
-            the different dimensions of the image. Can only be passed if
-            no axes are specified.
-
-    Returns:
-        Tuple containing:
-
-            * fig: figure object in which the graphs are plotted.
-            * axes: axes in which the graphs are plotted.
-
-    """
-    return _set_figure_layout(
-        fig,
-        axes,
-        dim=fdata.dim_domain + 1,
-        n_axes=fdata.dim_codomain,
-        n_rows=n_rows,
-        n_cols=n_cols,
-    )
 
 
 def _set_labels(

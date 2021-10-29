@@ -29,26 +29,30 @@ literature.
 # points.
 # This kind of functional data is easily representable in scikit-fda using
 # the :class:`~skfda.representation.grid.FDataGrid` class.
-#
 # The :class:`~skfda.representation.grid.FDataGrid` has two important
-# attributes: ``data_matrix`` and ``grid_points``. The attribute
-# ``grid_points`` is a tuple with the same length as the number of domain
-# dimensions (that is, one for curves, two for surfaces...). Each of its
-# elements is a 1D numpy :class:`~numpy.ndarray` containing the measurement
-# points for that particular dimension. The attribute ``data_matrix`` is a
+# attributes: ``data_matrix`` and ``grid_points``.
+#
+# The attribute ``grid_points`` is a tuple with the same length as the
+# number of domain dimensions (that is, one for curves, two for surfaces...).
+# Each of its elements is a 1D numpy :class:`~numpy.ndarray` containing the
+# grid points for that particular dimension,
+#  .. math::
+#     ((t_1, \ldots, t_{M_i}))_{i=1}^p,
+# where :math:`M_i` is the number of measurement points for each "argument"
+# or domain coordinate of the function :math:`i` and :math:`p` is the domain
+# dimension.
+#
+# The attribute ``data_matrix`` is a
 # numpy :class:`~numpy.ndarray` containing the measured values of the
 # functions in the grid spanned by the grid points. For functions
-# :math:`\{f_i: \mathbb{R}^p \to \mathbb{R}^q\}_{i=1}^N` this is a tensor
-# with dimensions :math:`N \times M_1 \times \ldots \times M_p \times q`,
-# where :math:`M_i` is the number of measurement points for the domain
-# dimension :math:`i`.
+# :math:`\{x_i: \mathbb{R}^p \to \mathbb{R}^q\}_{i=1}^N` this is a tensor
+# with dimensions :math:`N \times M_1 \times \ldots \times M_p \times q`.
 
 ##############################################################################
 # In order to create a :class:`~skfda.representation.grid.FDataGrid`, these
 # attributes may be provided. The attributes are converted to
 # :class:`~numpy.ndarray` when necessary.
-
-##############################################################################
+#
 # .. note::
 #
 #     The grid points can be omitted,
@@ -65,10 +69,11 @@ literature.
 ##############################################################################
 # The following example shows the creation of a
 # :class:`~skfda.representation.grid.FDataGrid` with two functions (curves)
-# :math:`\{f_i: \mathbb{R} \to \mathbb{R}\}, i=1,2` measured at the same
+# :math:`\{x_i: \mathbb{R} \to \mathbb{R}\}, i=1,2` measured at the same
 # (non-equispaced) points.
 
 import skfda
+import matplotlib.pyplot as plt
 
 grid_points = [0, 0.2, 0.5, 0.9, 1]  # Grid points of the curves
 data_matrix = [
@@ -82,6 +87,7 @@ fd = skfda.FDataGrid(
 )
 
 fd.plot()
+plt.show()
 
 ##############################################################################
 # Advanced example
@@ -90,7 +96,7 @@ fd.plot()
 # In order to better understand the FDataGrid structure, you can consider the
 # following example, in which a :class:`~skfda.representation.grid.FDataGrid`
 # object is created, containing just one function (vector-valued surface)
-# :math:`f: \mathbb{R}^2 \to \mathbb{R}^4`.
+# :math:`x: \mathbb{R}^2 \to \mathbb{R}^4`.
 
 
 grid_points_surface = [
@@ -104,7 +110,7 @@ data_matrix_surface = [
         # 0.2
         [
             # Value at (0.2, 0)
-            [1, 2, 3, 4],
+            [1, 2, 3, 4.1],
             # Value at (0.2, 1.5)
             [0, 1, -1.3, 2],
         ],
@@ -118,7 +124,7 @@ data_matrix_surface = [
         # 0.7
         [
             # Value at (0.7, 0)
-            [0, 0, 1, 1],
+            [0, 0, 1.1, 1],
             # Value at (0.7, 1.5)
             [-3, 5, -0.5, -2],
         ],
@@ -133,6 +139,7 @@ fd = skfda.FDataGrid(
 )
 
 fd.plot()
+plt.show()
 
 ##############################################################################
 # Importing data
@@ -183,6 +190,7 @@ fd = skfda.FDataGrid(X)
 # Plot the first 2 observations
 fd[0].plot()
 fd[1].plot()
+plt.show()
 
 
 ##############################################################################
@@ -200,6 +208,7 @@ fd[1].plot()
 X, y = skfda.datasets.fetch_growth(return_X_y=True)
 
 X.plot(group=y)
+plt.show()
 
 ##############################################################################
 # Datasets from CRAN
@@ -227,6 +236,7 @@ X.plot(group=y)
 data = skfda.datasets.fetch_cran("MCO", "fda.usc")
 
 data["MCO"]["intact"].plot()
+plt.show()
 
 ##############################################################################
 # Datasets from the UEA & UCR Time Series Classification Repository
@@ -247,12 +257,14 @@ data["MCO"]["intact"].plot()
 # Load ArrowHead dataset from UCR
 dataset = skfda.datasets.fetch_ucr("ArrowHead")
 dataset["data"].plot()
+plt.show()
 
 ##############################################################################
 
 # Load BasicMotions dataset from UEA
 dataset = skfda.datasets.fetch_ucr("BasicMotions")
 dataset["data"].plot()
+plt.show()
 
 ##############################################################################
 # Synthetic data
@@ -289,6 +301,7 @@ fd = skfda.datasets.make_gaussian_process(
 )
 
 fd.plot()
+plt.show()
 
 ##############################################################################
 # In order to know all the available functionalities to load existing and

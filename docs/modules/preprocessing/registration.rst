@@ -20,7 +20,7 @@ is shown the basic usage of this method.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.ShiftRegistration
+   skfda.preprocessing.registration.LeastSquaresShiftRegistration
 
 
 Landmark Registration
@@ -36,7 +36,7 @@ by performing a translation in the time scale. See the
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.landmark_shift
+   skfda.preprocessing.registration.landmark_shift_registration
    skfda.preprocessing.registration.landmark_shift_deltas
 
 
@@ -47,8 +47,8 @@ See the :ref:`sphx_glr_auto_examples_plot_landmark_registration.py` example.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.landmark_registration
-   skfda.preprocessing.registration.landmark_registration_warping
+   skfda.preprocessing.registration.landmark_elastic_registration
+   skfda.preprocessing.registration.landmark_elastic_registration_warping
 
 
 Elastic Registration
@@ -64,19 +64,7 @@ introduction to this topic along the usage of the corresponding functions.
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.registration.ElasticRegistration
-
-
-The module contains some routines related with the elastic registration, making
-a transformation of the sampling, computing different means or distances based
-on the elastic framework.
-
-.. autosummary::
-   :toctree: autosummary
-
-   skfda.preprocessing.registration.elastic.elastic_mean
-   skfda.preprocessing.registration.elastic.warping_mean
-   skfda.preprocessing.registration.elastic.SRSF
+   skfda.preprocessing.registration.FisherRaoElasticRegistration
 
 
 Validation

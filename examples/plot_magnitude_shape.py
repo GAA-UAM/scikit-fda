@@ -39,9 +39,11 @@ label_names = target.categories
 nlabels = len(label_names)
 label_colors = colormap(np.arange(nlabels) / (nlabels - 1))
 
-fd_temperatures.plot(group=target.codes,
-                     group_colors=label_colors,
-                     group_names=label_names)
+fd_temperatures.plot(
+    group=target.codes,
+    group_colors=label_colors,
+    group_names=label_names,
+)
 
 ##############################################################################
 # The MS-Plot is generated. In order to show the results, the
@@ -50,8 +52,10 @@ fd_temperatures.plot(group=target.codes,
 # between outliers or not. In particular the tones of the default colormap,
 # (which is 'seismic' and can be customized), are assigned.
 
-msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures,
-                            multivariate_depth=SimplicialDepth())
+msplot = MagnitudeShapePlot(
+    fd_temperatures,
+    multivariate_depth=SimplicialDepth(),
+)
 
 color = 0.3
 outliercol = 0.7
@@ -64,9 +68,11 @@ msplot.plot()
 # To show the utility of the plot, the curves are plotted according to the
 # distinction made by the MS-Plot (outliers or not) with the same colors.
 
-fd_temperatures.plot(group=msplot.outliers.astype(int),
-                     group_colors=msplot.colormap([color, outliercol]),
-                     group_names=['nonoutliers', 'outliers'])
+fd_temperatures.plot(
+    group=msplot.outliers.astype(int),
+    group_colors=msplot.colormap([color, outliercol]),
+    group_names=['nonoutliers', 'outliers'],
+)
 
 ##############################################################################
 # We can observe that most of the curves  pointed as outliers belong either to
@@ -82,8 +88,10 @@ fd_temperatures.plot(group=msplot.outliers.astype(int),
 # :func:`~skfda.exploratory.depth.IntegratedDepth` in the
 # MS-Plot.
 
-msplot = MagnitudeShapePlot(fdatagrid=fd_temperatures,
-                            multivariate_depth=IntegratedDepth().multivariate_depth)
+msplot = MagnitudeShapePlot(
+    fd_temperatures,
+    multivariate_depth=IntegratedDepth().multivariate_depth,
+)
 
 msplot.color = color
 msplot.outliercol = outliercol
@@ -120,5 +128,7 @@ labels[group2] = 2
 ##############################################################################
 # We now plot the curves with their corresponding color:
 
-fd_temperatures.plot(group=labels,
-                     group_colors=colormap([color, outliercol, 0.9]))
+fd_temperatures.plot(
+    group=labels,
+    group_colors=colormap([color, outliercol, 0.9]),
+)

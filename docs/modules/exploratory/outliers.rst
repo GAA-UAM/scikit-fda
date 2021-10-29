@@ -10,8 +10,8 @@ identify the outliers.
 Each of the outlier detection methods in scikit-fda has the same API as the outlier detection methods of
 `scikit-learn <https://scikit-learn.org/stable/modules/outlier_detection.html>`_.
 
-Interquartile Range Outlier Detector
-------------------------------------
+Boxplot Outlier Detector
+------------------------
 
 One of the most common ways of outlier detection is given by the functional data boxplot. An observation is marked
 as an outlier if it has points :math:`1.5 \cdot IQR` times outside the region containing the deepest 50% of the curves
@@ -20,19 +20,20 @@ as an outlier if it has points :math:`1.5 \cdot IQR` times outside the region co
 .. autosummary::
    :toctree: autosummary
 
-   skfda.exploratory.outliers.IQROutlierDetector
+   skfda.exploratory.outliers.BoxplotOutlierDetector
 
 
-DirectionalOutlierDetector
+MSPlotOutlierDetector
 --------------------------
 
-Other more novel way of outlier detection takes into account the magnitude and shape of the curves. Curves which have
+Other more novel way of outlier detection is the one presented in the Magnitude-Shape plot, or
+MS-plot. It takes into account the magnitude and shape of the curves. Curves which have
 a very different shape or magnitude are considered outliers.
 
 .. autosummary::
    :toctree: autosummary
 
-   skfda.exploratory.outliers.DirectionalOutlierDetector
+   skfda.exploratory.outliers.MSPlotOutlierDetector
 
 For this method, it is necessary to compute the mean and variation of the directional outlyingness, which can be done
 with the following function.

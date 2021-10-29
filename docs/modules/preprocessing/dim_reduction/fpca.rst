@@ -21,4 +21,4 @@ FPCA for functional data in both representations
 .. autosummary::
    :toctree: autosummary
 
-   skfda.preprocessing.dim_reduction.projection.FPCA
+   skfda.preprocessing.dim_reduction.feature_extraction.FPCA

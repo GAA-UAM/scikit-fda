@@ -5,11 +5,13 @@ from __future__ import annotations
 from typing import Callable, Optional, TypeVar, Union
 
 import numpy as np
+import scipy.integrate
+from scipy.linalg import solve_triangular
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
-from scipy.linalg import solve_triangular
-
+from ....misc import inner_product_matrix
+from ....misc.metrics import l2_norm
 from ....misc.regularization import (
     TikhonovRegularization,
     compute_penalty_matrix,
@@ -341,9 +343,8 @@ class FPCA(
             # in trapezoidal rule, suppose \deltax_k = x_k - x_{k-1}, the
             # weight vector is as follows: [\deltax_1/2, \deltax_1/2 +
             # \deltax_2/2, \deltax_2/2 + \deltax_3/2, ... , \deltax_n/2]
-            differences = np.diff(X.grid_points[0])
-            differences = np.concatenate(((0,), differences, (0,)))
-            self.weights = (differences[:-1] + differences[1:]) / 2
+            identity = np.eye(len(X.grid_points[0]))
+            self.weights = scipy.integrate.simps(identity, X.grid_points[0])
         elif callable(self.weights):
             self.weights = self.weights(X.grid_points[0])
             # if its a FDataGrid then we need to reduce the dimension to 1-D
@@ -387,6 +388,7 @@ class FPCA(
             ),
             sample_names=(None,) * self.n_components,
         )
+
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
         self.explained_variance_ = pca.explained_variance_
 
@@ -413,6 +415,7 @@ class FPCA(
 
         return (
             X.data_matrix.reshape(X.data_matrix.shape[:-1])
+            * self.weights
             @ np.transpose(
                 self.components_.data_matrix.reshape(
                     self.components_.data_matrix.shape[:-1],
@@ -524,30 +527,22 @@ class FPCA(
         # .fit was applied to FDataGrid or FDataBasis object
         # Does not work (boundary problem in x_hat and bias reconstruction)
         if isinstance(self.components_, FDataGrid):
-            x_hat = np.matmul(
-                pc_scores,
-                self.components_.data_matrix[:, :, 0]
-            )
-            # uncenter
-            x_hat += self.mean_.data_matrix.reshape(
-                (1, self.mean_.grid_points[0].shape[0]),
-            )
 
-            # format as FDataGrid according to fitted data format
-            return FDataGrid(
-                data_matrix=x_hat,
-                grid_points=self.mean_.grid_points[0],
-                argument_names=self.mean_.argument_names,
-            )
+            additional_args = {
+                "data_matrix": np.einsum(
+                    'nc,c...->n...',
+                    pc_scores,
+                    self.components_.data_matrix,
+                ),
+            }
+
         elif isinstance(self.components_, FDataBasis):
-            # reconstruct the basis coefficients
-            x_hat = np.dot(pc_scores, self.components_.coefficients)
-            x_hat += self.mean_.coefficients.reshape(
-                (1, self.mean_.coefficients.shape[1]),
-            )
-            # format as FDataBasis according to fitted data format
-            return FDataBasis(
-                basis=self.mean_.basis,
-                coefficients=x_hat,
-                argument_names=self.mean_.argument_names,
-            )
+
+            additional_args = {
+                "coefficients": pc_scores @ self.components_.coefficients,
+            }
+
+        return self.mean_.copy(
+            **additional_args,
+            sample_names=(None,) * len(pc_scores),
+        ) + self.mean_

@@ -7,7 +7,6 @@ import scipy.integrate
 from typing_extensions import Final
 
 from ..._utils import normalize_scale, normalize_warping
-from ...preprocessing.registration import FisherRaoElasticRegistration
 from ...representation import FData, FDataGrid
 from ...representation._typing import NDArrayFloat
 from ..operators import SRSF
@@ -191,6 +190,8 @@ def fisher_rao_amplitude_distance(
         .. footbibliography::
 
     """
+    from ...preprocessing.registration import FisherRaoElasticRegistration
+
     fdata1, fdata2 = _cast_to_grid(
         fdata1,
         fdata2,
@@ -285,6 +286,8 @@ def fisher_rao_phase_distance(
         .. footbibliography::
 
     """
+    from ...preprocessing.registration import FisherRaoElasticRegistration
+
     fdata1, fdata2 = _cast_to_grid(
         fdata1,
         fdata2,

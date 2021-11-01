@@ -219,6 +219,20 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
         expected = [[[-1], [-0.376241], [0.136193], [0.599291], [1]]]
         np.testing.assert_array_almost_equal(values, expected)
 
+    def test_linear(self) -> None:
+        grid_points = [i for i in range(10)]
+        data_matrix = np.array([grid_points, grid_points])
+        fd = FDataGrid(
+            data_matrix=data_matrix,
+            grid_points=grid_points,
+        )
+        elastic_registration = FisherRaoElasticRegistration()
+        fd_registered = elastic_registration.fit_transform(fd)
+        np.testing.assert_array_almost_equal(
+            fd_registered.data_matrix[..., 0],
+            data_matrix,
+        )
+
 
 class TestElasticDistances(unittest.TestCase):
     """Test elastic distances."""

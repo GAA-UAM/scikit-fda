@@ -116,13 +116,13 @@ def _fisher_rao_warping_mean(
 
     # Find psi closest to the mean
     psi_centered = psi - srsf.fit_transform(warping.mean())
-    psi_data = psi_centered.data_matrix[..., 0]
-    np.square(psi_data, out=psi_data)
-    d = psi_data.sum(axis=1).argmin()
+    psi_centered_data = psi_centered.data_matrix[..., 0]
+    np.square(psi_centered_data, out=psi_centered_data)
+    d = psi_centered_data.sum(axis=1).argmin()
 
     # Get raw values to calculate
-    mu = psi[d].data_matrix[0, ..., 0]
-    psi = psi.data_matrix[..., 0]
+    mu = np.atleast_2d(psi[d].data_matrix[0, ..., 0])
+    psi_data = psi.data_matrix[..., 0]
     vmean = np.empty((1, len(eval_points)))
 
     # Construction of shooting vectors
@@ -130,7 +130,7 @@ def _fisher_rao_warping_mean(
 
         vmean[0] = 0
         # Compute shooting vectors
-        for psi_i in psi:
+        for psi_i in psi_data:
 
             inner = scipy.integrate.simps(mu * psi_i, x=eval_points)
             inner = max(min(inner, 1), -1)

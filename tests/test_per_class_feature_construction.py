@@ -7,13 +7,14 @@ from skfda.datasets import fetch_growth
 from skfda._utils import _classifier_get_classes
 
 import unittest
-
+import pytest
 import numpy as np
 
 
 class TestPCFT(unittest.TestCase):
     
     # This test fails because the transformers do not have yet tags implemented
+    @pytest.mark.skip(reason="Tags are not yet implemented on transformers")
     def test_transform(self): 
        
         X, y = fetch_growth(return_X_y=True, as_frame=True)

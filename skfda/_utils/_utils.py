@@ -729,10 +729,11 @@ def _classifier_fit_depth_methods(
 
     return classes, class_depth_methods_
 
-def _classifier_fit_feature_transformer(
+
+def _fit_feature_transformer(
     X: T,
     y: ndarray,
-    transformer: TransformerMixin
+    transformer: TransformerMixin,
 ) -> Tuple[ndarray, Sequence[TransformerMixin]]:
     classes, y_ind = _classifier_get_classes(y)
 

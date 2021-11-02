@@ -6,10 +6,55 @@ from sklearn.base import TransformerMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 from ....representation.grid import FData
 from ...._utils import _classifier_fit_feature_transformer
-
 T = TypeVar("T", bound=FData)
 
 class PerClassFeatureTransformer(TransformerMixin):
+    r"""Per class feature transformer for functional data.
+
+    This class takes a transformer and performs the following map:
+
+    .. math::
+        \mathcal{X} &\rightarrow \mathbb{R}^G \\
+        x &\rightarrow \textbf{t} = (T_1(x), T_2(x),...,T_k(x))
+
+    Where :math:`T_i(x)` is the transformation  :math:`x` with respect to
+    the data in the :math:`i`-th group.
+ 
+    Note that :math:`\mathcal{X}` is possibly multivariate, that is,
+    :math:`\mathcal{X} = \mathcal{X}_1 \times ... \times \mathcal{X}_p`.
+
+    Parameters:
+        transformer:
+            The transformer that we want to apply to the given data.
+            It should use target data while fitting.
+            This is checked by looking at the 'stateless' and 'requires_y' tags
+    Examples:
+        Firstly, we will import and split the Berkeley Growth Study dataset
+
+        >>> from skfda.datasets import fetch_growth
+        >>> from sklearn.model_selection import train_test_split
+        >>> X, y = fetch_growth(return_X_y=True, as_frame=True)
+        >>> X = X.iloc[:, 0].values
+        >>> y = y.values.codes
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...    X, y, test_size=0.25, stratify=y, random_state=0)
+
+        >>> from skfda.preprocessing.dim_reduction.feature_extraction
+        ... import PerClassFeatureTransformer
+        
+        Then we will need to select a fda transformer, and so we will
+        use RecursiveMaximaHunting
+
+        >>> from skfda.preprocessing.dim_reduction.variable_selection
+        ... import RecursiveMaximaHunting
+
+        Finally we need to fit the data and transform it
+
+        >>> t.fit(X_train, y_train)
+        >>> x_transformed = t.transform(X_test)
+
+        x_transformed will be a vector with the transformed data      
+    """
 
     def __init__(
         self,

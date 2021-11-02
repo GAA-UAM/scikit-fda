@@ -1,12 +1,17 @@
 """Feature extraction transformers for dimensionality reduction."""
 from __future__ import annotations
-import numpy as np
+
 from typing import TypeVar
+
+import numpy as np
 from sklearn.base import TransformerMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
+
+from ...._utils import _fit_feature_transformer
 from ....representation.grid import FData
-from ...._utils import _classifier_fit_feature_transformer
+
 T = TypeVar("T", bound=FData)
+
 
 class PerClassFeatureTransformer(TransformerMixin):
     r"""Per class feature transformer for functional data.
@@ -19,7 +24,7 @@ class PerClassFeatureTransformer(TransformerMixin):
 
     Where :math:`T_i(x)` is the transformation  :math:`x` with respect to
     the data in the :math:`i`-th group.
- 
+
     Note that :math:`\mathcal{X}` is possibly multivariate, that is,
     :math:`\mathcal{X} = \mathcal{X}_1 \times ... \times \mathcal{X}_p`.
 
@@ -41,7 +46,7 @@ class PerClassFeatureTransformer(TransformerMixin):
 
         >>> from skfda.preprocessing.dim_reduction.feature_extraction
         ... import PerClassFeatureTransformer
-        
+
         Then we will need to select a fda transformer, and so we will
         use RecursiveMaximaHunting
 
@@ -53,21 +58,22 @@ class PerClassFeatureTransformer(TransformerMixin):
         >>> t.fit(X_train, y_train)
         >>> x_transformed = t.transform(X_test)
 
-        x_transformed will be a vector with the transformed data      
+        x_transformed will be a vector with the transformed data
     """
 
     def __init__(
         self,
-        transformer: TransformerMixin
+        transformer: TransformerMixin,
     ) -> None:
-        self.transformer= transformer
+        self.transformer = transformer
         self._validate_transformer()
-    
+
     def _validate_transformer(
-        self
+        self,
     ) -> None:
         """
-        Checks that the transformer passed is scikit-learn-like and that uses target data in fit
+        Check that the transformer passed is\
+        scikit-learn-like and that uses target data in fit.
 
         Args:
             None
@@ -75,30 +81,36 @@ class PerClassFeatureTransformer(TransformerMixin):
         Returns:
             None
         """
-        if not (hasattr(self.transformer, "fit") or hasattr(self.transformer, "fit_transform")) or not hasattr(
-                self.transformer, "transform"
-            ):
-                raise TypeError(
-                    "Transformer should implement fit and "
-                    "transform. '%s' (type %s) doesn't" % (self.transformer, type(self.transformer))
-                )
-        
+        if not (hasattr(self.transformer, "fit")
+                and hasattr(self.transformer, "fit_transform")
+                and hasattr(self.transformer, "transform")
+                ):
+
+            raise TypeError(
+                "Transformer should implement fit and "
+                "transform. " + str(self.transformer)
+                + " (type " + str(type(self.transformer)) + ")"
+                " doesn't",
+            )
+
         tags = self.transformer._get_tags()
-        
-        if not(tags['stateless'] and tags['requires_y']):
-                raise TypeError(
-                    "Transformer should use target data in fit."
-                    " '%s' (type %s) doesn't" % (self.transformer, type(self.transformer))
-                )
-        
-        
+
+        if not (tags['stateless'] and tags['requires_y']):
+            raise TypeError(
+                "Transformer should use target data in fit."
+                + str(self.transformer)
+                + " (type " + str(type(self.transformer)) + ")"
+                " doesn't",
+            )
+
     def fit(
         self,
         X: T,
-        y: np.ndarray
+        y: np.ndarray,
     ) -> PerClassFeatureTransformer:
         """
-        Fit the model on each class using X as training data and y as target values.
+        Fit the model on each class using X as\
+        training data and y as target values.
 
         Args:
             X: FDataGrid with the training data.
@@ -107,15 +119,16 @@ class PerClassFeatureTransformer(TransformerMixin):
         Returns:
             self
         """
-        classes, class_feature_transformers = _classifier_fit_feature_transformer(
-            X, y, self.transformer
+        classes, class_feature_transformers = _fit_feature_transformer(
+            X,
+            y,
+            self.transformer,
         )
-        
+
         self._classes = classes
         self._class_feature_transformers_ = class_feature_transformers
 
         return self
-
 
     def transform(self, X: T) -> np.ndarray:
         """
@@ -128,16 +141,15 @@ class PerClassFeatureTransformer(TransformerMixin):
             Array of shape (n_samples, G).
         """
         sklearn_check_is_fitted(self)
-        
+
         return [
-            feature_transformer.transform(X) 
+            feature_transformer.transform(X)
             for feature_transformer in self._class_feature_transformers_
         ]
 
-
     def fit_transform(self, X: T, y: np.ndarray) -> np.ndarray:
         """
-        Fits and transforms the provided data 
+        Fits and transforms the provided data\
         using the transformer specified when initializing the class.
 
         Args:

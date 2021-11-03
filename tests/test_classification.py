@@ -50,7 +50,7 @@ class TestClassifiers(unittest.TestCase):
         clf1.fit(self._X_train, self._y_train)
         clf2.fit(self._X_train, self._y_train)
 
-        np.testing.assert_array_equal(  # type: ignore
+        np.testing.assert_array_equal(
             clf1.predict(self._X_test),
             clf2.predict(self._X_test),
         )
@@ -60,9 +60,9 @@ class TestClassifiers(unittest.TestCase):
         clf: DTMClassifier[FData] = DTMClassifier(proportiontocut=0.25)
         clf.fit(self._X_train, self._y_train)
 
-        np.testing.assert_array_equal(  # type: ignore
+        np.testing.assert_array_equal(
             clf.predict(self._X_test),
-            [
+            [  # noqa: WPS317
                 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
                 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1,
             ],
@@ -73,9 +73,9 @@ class TestClassifiers(unittest.TestCase):
         clf: NearestCentroid[FData] = NearestCentroid()
         clf.fit(self._X_train, self._y_train)
 
-        np.testing.assert_array_equal(  # type: ignore
+        np.testing.assert_array_equal(
             clf.predict(self._X_test),
-            [
+            [  # noqa: WPS317
                 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
                 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1,
             ],
@@ -91,7 +91,7 @@ class TestClassifiers(unittest.TestCase):
         clf1.fit(self._X_train, self._y_train)
         clf2.fit(self._X_train, self._y_train)
 
-        np.testing.assert_array_equal(  # type: ignore
+        np.testing.assert_array_equal(
             clf1.predict(self._X_test),
             clf2.predict(self._X_test),
         )
@@ -101,9 +101,9 @@ class TestClassifiers(unittest.TestCase):
         clf: MaximumDepthClassifier[FData] = MaximumDepthClassifier()
         clf.fit(self._X_train, self._y_train)
 
-        np.testing.assert_array_equal(  # type: ignore
+        np.testing.assert_array_equal(
             clf.predict(self._X_test),
-            [
+            [  # noqa: WPS317
                 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
                 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1,
             ],
@@ -114,9 +114,9 @@ class TestClassifiers(unittest.TestCase):
         clf: DDClassifier[FData] = DDClassifier(degree=2)
         clf.fit(self._X_train, self._y_train)
 
-        np.testing.assert_array_equal(  # type: ignore
+        np.testing.assert_array_equal(
             clf.predict(self._X_test),
-            [
+            [  # noqa: WPS317
                 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
                 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1,
             ],
@@ -127,9 +127,9 @@ class TestClassifiers(unittest.TestCase):
         clf: DDGClassifier[FData] = DDGClassifier(_KNeighborsClassifier())
         clf.fit(self._X_train, self._y_train)
 
-        np.testing.assert_array_equal(  # type: ignore
+        np.testing.assert_array_equal(
             clf.predict(self._X_test),
-            [
+            [  # noqa: WPS317
                 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1,
                 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1,
             ],
@@ -142,7 +142,7 @@ class TestClassifiers(unittest.TestCase):
         clf1.fit(self._X_train, self._y_train)
         clf2.fit(self._X_train, self._y_train)
 
-        np.testing.assert_array_equal(  # type: ignore
+        np.testing.assert_array_equal(
             clf1.predict(self._X_test),
             clf2.predict(self._X_test),
         )
@@ -152,9 +152,9 @@ class TestClassifiers(unittest.TestCase):
         clf = KNeighborsClassifier()
         clf.fit(self._X_train, self._y_train)
 
-        np.testing.assert_array_equal(  # type: ignore
+        np.testing.assert_array_equal(
             clf.predict(self._X_test),
-            [
+            [  # noqa: WPS317
                 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1,
                 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1,
             ],
@@ -165,9 +165,9 @@ class TestClassifiers(unittest.TestCase):
         clf = RadiusNeighborsClassifier(radius=15)
         clf.fit(self._X_train, self._y_train)
 
-        np.testing.assert_array_equal(  # type: ignore
+        np.testing.assert_array_equal(
             clf.predict(self._X_test),
-            [
+            [  # noqa: WPS317
                 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1,
                 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1,
             ],

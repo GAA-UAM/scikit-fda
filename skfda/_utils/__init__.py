@@ -1,4 +1,9 @@
 from . import constants
+from ._sklearn_adapter import (
+    BaseEstimator,
+    InductiveTransformerMixin,
+    TransformerMixin,
+)
 from ._utils import (
     RandomStateLike,
     _cartesian_product,

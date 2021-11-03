@@ -9,7 +9,6 @@ import sklearn.gaussian_process.kernels as sklearn_kern
 from matplotlib.figure import Figure
 from scipy.special import gamma, kv
 
-from ..exploratory.visualization._utils import _create_figure, _figure_to_svg
 from ..representation._typing import ArrayLike, NDArrayFloat
 
 
@@ -74,6 +73,8 @@ class Covariance(abc.ABC):
 
     def heatmap(self, limits: Tuple[float, float] = (-1, 1)) -> Figure:
         """Return a heatmap plot of the covariance function."""
+        from ..exploratory.visualization._utils import _create_figure
+
         x = np.linspace(*limits, 1000)
 
         cov_matrix = self(x, x)
@@ -130,6 +131,8 @@ class Covariance(abc.ABC):
         return fr"\(\displaystyle {self._latex_content()}\)"
 
     def _repr_html_(self) -> str:
+        from ..exploratory.visualization._utils import _figure_to_svg
+
         fig = self.heatmap()
         heatmap = _figure_to_svg(fig)
         plt.close(fig)

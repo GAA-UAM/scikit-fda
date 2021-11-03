@@ -276,7 +276,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
             error_std=0,
             random_state=10,
         )
-        
+
         reg = LeastSquaresShiftRegistration()
         response = reg.fit(self.fd)
 
@@ -311,12 +311,9 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         reg.fit(self.fd)
         reg.set_params(restrict_domain=True)
 
-        # Test use fit or transform with restrict_domain=True
+        # Test use transform with restrict_domain=True
         with np.testing.assert_raises(AttributeError):
             reg.transform(self.fd)
-
-        with np.testing.assert_raises(AttributeError):
-            reg.fit(self.fd)
 
         # Test inverse_transform without previous transformation
         with np.testing.assert_raises(AttributeError):

@@ -2,41 +2,42 @@
 
 import unittest
 
-from pandas.core.frame import DataFrame
+from pandas import DataFrame, concat
 
 from skfda.datasets import fetch_growth
 from skfda.misc.operators import SRSF
-from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
-from skfda.preprocessing.smoothing.kernel_smoothers\
-    import NadarayaWatsonSmoother
-from skfda.preprocessing.dim_reduction.feature_extraction._fda_feature_union\
-    import FdaFeatureUnion
+from skfda.preprocessing.dim_reduction.feature_extraction import (
+    FPCA,
+    FdaFeatureUnion,
+)
+from skfda.preprocessing.smoothing.kernel_smoothers import (
+    NadarayaWatsonSmoother,
+)
 from skfda.representation import EvaluationTransformer
 
 
 class TestFdaFeatureUnion(unittest.TestCase):
 
     def setUp(self) -> None:
-        X = fetch_growth(return_X_y=True, as_frame=True)[0]
-        self.X = X.iloc[:, 0].values
+        self.X = fetch_growth(return_X_y=True)[0]
 
-    def test_incompatible_array_output(self):
+    def test_incompatible_array_output(self) -> None:
 
         u = FdaFeatureUnion(
-            [("EvaluationT", EvaluationTransformer()), ("fpca", FPCA())],
+            [("EvaluationT", EvaluationTransformer(None)), ("fpca", FPCA())],
             np_array_output=False,
         )
         self.assertRaises(TypeError, u.fit_transform, self.X)
 
-    def test_incompatible_fdatagrid_output(self):
+    def test_incompatible_fdatagrid_output(self) -> None:
 
         u = FdaFeatureUnion(
-            [("EvaluationT", EvaluationTransformer()), ("srsf", SRSF())],
+            [("EvaluationT", EvaluationTransformer(None)), ("srsf", SRSF())],
             np_array_output=True,
         )
         self.assertRaises(TypeError, u.fit_transform, self.X)
 
-    def test_correct_transformation_concat(self):
+    def test_correct_transformation_concat(self) -> None:
         u = FdaFeatureUnion(
             [("srsf1", SRSF()), ("smooth", NadarayaWatsonSmoother())],
         )
@@ -44,11 +45,12 @@ class TestFdaFeatureUnion(unittest.TestCase):
 
         t1 = SRSF().fit_transform(self.X)
         t2 = NadarayaWatsonSmoother().fit_transform(self.X)
-        t = t1.concatenate(t2)
 
-        true_frame = DataFrame({
-            t.dataset_name.lower() + " transformed": t,
-        })
+        frames = [
+            DataFrame({t1.dataset_name.lower(): t1}),
+            DataFrame({t2.dataset_name.lower(): t2}),
+        ]
+        true_frame = concat(frames, axis=1)
         result = True
         self.assertEqual(result, true_frame.equals(created_frame))
 

@@ -102,6 +102,7 @@ test_set.dataset_name = 'test set'
 #############################
 # We plot the whole dataset.
 whole_data = train_set.concatenate(test_set)
+whole_data.dataset_name = 'train and test samples'
 
 labels = []
 for i in whole_data.sample_names:

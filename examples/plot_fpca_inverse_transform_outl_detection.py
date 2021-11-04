@@ -67,7 +67,6 @@ train_set = make_gaussian_process(
     random_state=20
 )
 train_set.sample_names = ['train_' + str(i) for i in range(n_train)]
-train_set.dataset_name = 'train set'
 
 ##############################################################
 # The test set is generated according to a Gaussian process
@@ -97,12 +96,10 @@ test_set_outlier.sample_names = [
     'test_outl_' + str(i) for i in range(test_set_outlier.n_samples)]
 
 test_set = test_set_clean.concatenate(test_set_outlier)
-test_set.dataset_name = 'test set'
 
 #############################
 # We plot the whole dataset.
 whole_data = train_set.concatenate(test_set)
-whole_data.dataset_name = 'train and test samples'
 
 labels = []
 for i in whole_data.sample_names:
@@ -123,6 +120,7 @@ fig = whole_data.plot(
     alpha=0.2,
     legend=True
 )
+plt.title('train and test samples')
 fig.show()
 
 #####################################################################
@@ -203,9 +201,9 @@ plt.show()
 # We can check that the outliers are all detected with this method,
 # with no false positive (wrongly) in the test set.
 print('Flagged outliers: \n',
-    test_set[err_test>=err_thresh].sample_names)
+      test_set[err_test >= err_thresh].sample_names)
 print('Flagged nonoutliers: \n',
-    test_set[err_test<err_thresh].sample_names)
+      test_set[err_test < err_thresh].sample_names)
 
 ##############################################################################
 # We observe that the distribution of the training samples (grey) REs

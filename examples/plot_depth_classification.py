@@ -160,21 +160,21 @@ pol1 = ax.plot(
     'c',
     linewidth=1,
     label="Polynomial",
-)
+)[0]
 pol2 = ax.plot(
     ts,
     np.polyval(clf2.poly_, ts),
     'm',
     linewidth=1,
     label="Polynomial",
-)
+)[0]
 pol3 = ax.plot(
     ts,
     np.polyval(clf3.poly_, ts),
     'g',
     linewidth=1,
     label="Polynomial",
-)
+)[0]
 ax.pcolormesh(xx, yy, Z, cmap=cmap_light, shading='auto')
 
 ax.legend([pol1, pol2, pol3], ['P1', 'P2', 'P3'])

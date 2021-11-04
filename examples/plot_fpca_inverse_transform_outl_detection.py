@@ -38,9 +38,9 @@ from skfda.misc.metrics import lp_distance, lp_norm
 # - We generate a clean training dataset (not supposed to contain outliers)
 # and fit an FPCA with 'q' components on it.
 # - We also generate a test set containing
-# both nonoutliers samples and outliers.
+# both nonoutliers and outliers samples.
 # - Then, we fit an FPCA(n_components=q)
-# and compute the vector of principal components scores
+# and compute the vectors of principal components scores
 # of train and test samples.
 # - We project back the vectors of principal components scores,
 # with the inverse_transform method, to the input (training data space).
@@ -157,7 +157,11 @@ err_test = lp_distance(
 ###########################################################################
 # We plot the density of the REs,
 # both unconditionnaly (grey and blue) and conditionnaly (orange and red),
-# to the rule error >= threshold.
+# to the rule if error >= threshold then it is an outlier.
+# The threshold is computed from RE of the training samples as
+# the quantile of probability 0.99.
+# In ohter words, a sample whose RE is higher than the threshold is unlikely
+# approximated as a training sample with (low) probability 0.01.
 x_density = np.linspace(0., 1.6, num=10**3)
 density_train_err = gaussian_kde(err_train)
 density_test_err = gaussian_kde(err_test)

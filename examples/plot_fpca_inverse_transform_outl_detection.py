@@ -190,7 +190,7 @@ plt.plot(x_density, density_test_err_outl(x_density),
 
 # density estimate of the error of test samples flagged as nonoutliers
 plt.plot(x_density, density_test_err_inli(x_density),
-         abel='Error test< thresh (nonoutliers)', color='C3')
+         label='Error test< thresh (nonoutliers)', color='C3')
 
 plt.xlabel('Relative L2-norm reconstruction errors')
 plt.ylabel('Density (unormalized)')

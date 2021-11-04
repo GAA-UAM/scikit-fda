@@ -14,6 +14,7 @@ from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import LocationEvent, MouseEvent
 from matplotlib.collections import PathCollection
+from matplotlib.colors import ListedColormap
 from matplotlib.figure import Figure
 from matplotlib.text import Annotation
 
@@ -43,10 +44,10 @@ class BasePlot(ABC):
         axes: Union[Axes, Sequence[Axes], None] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
-        c: NDArrayInt = None,
-        cmap_bold=None,
-        x_label: str = None,
-        y_label: str = None,
+        c: Optional[NDArrayInt] = None,
+        cmap_bold: ListedColormap = None,
+        x_label: Optional[str] = None,
+        y_label: Optional[str] = None,
     ) -> None:
         self.artists: Optional[np.ndarray] = None
         self.chart = chart

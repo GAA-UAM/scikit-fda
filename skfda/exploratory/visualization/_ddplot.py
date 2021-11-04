@@ -10,6 +10,7 @@ from typing import Optional, TypeVar, Union
 import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
+from matplotlib.colors import ListedColormap
 from matplotlib.figure import Figure
 
 from ...exploratory.depth.multivariate import Depth
@@ -60,8 +61,8 @@ class DDPlot(BasePlot):
         depth_method: Depth[T],
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
-        c: NDArrayInt = None,
-        cmap_bold=None,
+        c: Optional[NDArrayInt] = None,
+        cmap_bold: ListedColormap = None,
         x_label: str = "X depth",
         y_label: str = "Y depth",
     ) -> None:

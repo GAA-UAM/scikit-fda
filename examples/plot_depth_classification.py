@@ -11,9 +11,8 @@ DDClassifier, and DDGClassifier is made.
 # Author: Pedro Martín Rodríguez-Ponga Eyriès
 # License: MIT
 
-# sphinx_gallery_thumbnail_number = 6
+# sphinx_gallery_thumbnail_number = 3
 
-from scipy.interpolate import lagrange
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import ListedColormap
@@ -29,6 +28,7 @@ from skfda.ml.classification import (
     MaximumDepthClassifier,
 )
 from skfda.preprocessing.dim_reduction.feature_extraction import DDGTransformer
+from skfda.representation.grid import FDataGrid
 
 ##############################################################################
 #
@@ -48,7 +48,12 @@ y = y.values.codes
 # this graph, we can see the training dataset. These growth curves will
 # be used to train the model. Hence, the predictions will be data-driven.
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.5, stratify=y, random_state=0)
+    X,
+    y,
+    test_size=0.5,
+    stratify=y,
+    random_state=0,
+)
 
 # Plot samples grouped by sex
 X_train.plot(group=y_train, group_names=categories)
@@ -115,14 +120,17 @@ clf.score(X_test, y_test)
 # | P2        | DDClassifier with degree 2           |
 # | P3        | DDClassifier with degree 3           |
 # | Colors    | DDGClassifier with nearest neighbors |
-ddg = DDGTransformer(depth_method=ModifiedBandDepth())
+ddg: DDGTransformer[FDataGrid] = DDGTransformer(
+    depth_method=ModifiedBandDepth(),
+)
 X_train_trans = ddg.fit_transform(X_train, y_train)
 
-# from https://stackoverflow.com/questions/45075638/graph-k-nn-decision-boundaries-in-matplotlib
+# Code adapted from:
+# https://stackoverflow.com/questions/45075638/graph-k-nn-decision-boundaries-in-matplotlib
 clf = KNeighborsClassifier(n_neighbors=5)
 clf.fit(X_train_trans, y_train)
 
-h = .02  # step size in the mesh
+h = 0.02  # step size in the mesh
 
 # Create color maps
 cmap_light = ListedColormap(['#FFAAAA', '#AAAAFF'])
@@ -133,8 +141,10 @@ cmap_bold = ListedColormap(['#FF0000', '#0000FF'])
 # point in the mesh [x_min, x_max]x[y_min, y_max].
 x_min, x_max = X_train_trans[:, 0].min() - 1, X_train_trans[:, 0].max() + 1
 y_min, y_max = X_train_trans[:, 1].min() - 1, X_train_trans[:, 1].max() + 1
-xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-                     np.arange(y_min, y_max, h))
+xx, yy = np.meshgrid(
+    np.arange(x_min, x_max, h),
+    np.arange(y_min, y_max, h),
+)
 Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
 
 # Put the result into a color plot
@@ -142,13 +152,29 @@ Z = Z.reshape(xx.shape)
 
 fig, ax = plt.subplots()
 
-ts = np.linspace(0 - 0.025, 1 + 0.025, 100)
-pol1, = ax.plot(ts, np.polyval(clf1.poly_, ts), 'c',
-                linewidth=1, label="Polynomial")
-pol2, = ax.plot(ts, np.polyval(clf2.poly_, ts), 'm',
-                linewidth=1, label="Polynomial")
-pol3, = ax.plot(ts, np.polyval(clf3.poly_, ts), 'g',
-                linewidth=1, label="Polynomial")
+margin = 0.025
+ts = np.linspace(- margin, 1 + margin, 100)
+pol1, = ax.plot(
+    ts,
+    np.polyval(clf1.poly_, ts),
+    'c',
+    linewidth=1,
+    label="Polynomial",
+)
+pol2, = ax.plot(
+    ts,
+    np.polyval(clf2.poly_, ts),
+    'm',
+    linewidth=1,
+    label="Polynomial",
+)
+pol3, = ax.plot(
+    ts,
+    np.polyval(clf3.poly_, ts),
+    'g',
+    linewidth=1,
+    label="Polynomial",
+)
 ax.pcolormesh(xx, yy, Z, cmap=cmap_light, shading='auto')
 
 ax.legend([pol1, pol2, pol3], ['P1', 'P2', 'P3'])

@@ -154,21 +154,21 @@ fig, ax = plt.subplots()
 
 margin = 0.025
 ts = np.linspace(- margin, 1 + margin, 100)
-pol1, = ax.plot(
+pol1 = ax.plot(
     ts,
     np.polyval(clf1.poly_, ts),
     'c',
     linewidth=1,
     label="Polynomial",
 )
-pol2, = ax.plot(
+pol2 = ax.plot(
     ts,
     np.polyval(clf2.poly_, ts),
     'm',
     linewidth=1,
     label="Polynomial",
 )
-pol3, = ax.plot(
+pol3 = ax.plot(
     ts,
     np.polyval(clf3.poly_, ts),
     'g',

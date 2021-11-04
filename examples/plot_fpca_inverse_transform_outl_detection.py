@@ -198,6 +198,14 @@ plt.title('Densities of reconstruction errors with {} components'.format(q))
 plt.legend()
 plt.show()
 
+####################################################################
+# We can check that the outliers are all detected with this method,
+# with no false positive (wrongly) in the test set.
+print('Flagged outliers: \n',
+    test_set[err_test>=err_thresh].sample_names)
+print('Flagged nonoutliers: \n',
+    test_set[err_test<err_thresh].sample_names)
+
 ##############################################################################
 # We observe that the distribution of the training samples (grey) REs
 # is unimodal and quite concentrated toward 0. This means that

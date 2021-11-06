@@ -10,8 +10,8 @@ In this example, we illustrate the utility of the inverse_transform method
 of the FPCA class to perform functional outlier detection.
 Roughly speaking, an outlier is a sample
 which is not representative of the dataset
-or different enough compared to a large part of the samples.
-The intuition is the following: if the eigen basis,
+or different enough compared to a large part of the dataset.
+The intuition is the following: if the eigenbasis,
 i.e. the q>=1 first functional principal components (FPCs), is
 sufficient to linearly approximate a clean set of
 samples, then the error between an observed sample
@@ -31,7 +31,7 @@ from scipy.stats import gaussian_kde
 from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
 from skfda.misc.covariances import Exponential, Gaussian
 from skfda.datasets import make_gaussian_process
-from skfda.misc.metrics import lp_distance, lp_norm
+from skfda.misc.metrics import l2_distance, l2_norm
 
 ##############################################################################
 # We proceed as follows:
@@ -40,11 +40,11 @@ from skfda.misc.metrics import lp_distance, lp_norm
 # - We also generate a test set containing
 # both nonoutliers and outliers samples.
 # - Then, we fit an FPCA(n_components=q)
-# and compute the vectors of principal components scores
+# and compute the principal components scores
 # of train and test samples.
-# - We project back the vectors of principal components scores,
+# - We project back the principal components scores,
 # with the inverse_transform method, to the input (training data space).
-# This step can be seen as the reverse projection from the eigen space,
+# This step can be seen as the reverse projection from the eigenspace,
 # spanned by the first FPCs, to the input (functional) space.
 # - Finally, we compute the relative L2-norm error between
 # the observed functions and their FPCs approximation.
@@ -55,18 +55,20 @@ from skfda.misc.metrics import lp_distance, lp_norm
 #
 # The train set is generated according to a Gaussian process
 # with a Gaussian (i.e. squared-exponential) covariance function.
-cov_clean = Gaussian(variance=2., length_scale=5.)
 grid_size = 5 * 10**3
+
+cov_clean = Gaussian(variance=2.0, length_scale=5.0)
 
 n_train = 10**3
 train_set = make_gaussian_process(
     n_samples=n_train,
     n_features=grid_size,
-    start=0., stop=25.,
+    start=0.0,
+    stop=25.0,
     cov=cov_clean,
     random_state=20
 )
-train_set.sample_names = ['train_' + str(i) for i in range(n_train)]
+train_set_labels = np.array(['train(nonoutliers)'] * n_train)
 
 ##############################################################
 # The test set is generated according to a Gaussian process
@@ -76,48 +78,45 @@ n_test = 50
 test_set_clean = make_gaussian_process(
     n_samples=n_test // 2,
     n_features=grid_size,
-    start=0., stop=25.,
+    start=0.0,
+    stop=25.0,
     cov=cov_clean,
     random_state=20
 )  # clean test set
-test_set_clean.sample_names = [
-    'test_clean_' + str(i) for i in range(test_set_clean.n_samples)]
+test_set_clean_labels = np.array(['test(nonoutliers)'] * (n_test // 2))
 
 cov_outlier = Exponential()
 
 test_set_outlier = make_gaussian_process(
     n_samples=n_test // 2,
     n_features=grid_size,
-    start=0., stop=25.,
+    start=0.0,
+    stop=25.0,
     cov=cov_outlier,
     random_state=20
 )  # test set with outliers
 test_set_outlier.sample_names = [
     'test_outl_' + str(i) for i in range(test_set_outlier.n_samples)]
+test_set_outlier_labels = np.array(['test(outliers)'] * (n_test // 2))
 
 test_set = test_set_clean.concatenate(test_set_outlier)
+test_set_labels = np.concatenate(
+    (test_set_clean_labels, test_set_outlier_labels)
+)
 
 #############################
 # We plot the whole dataset.
 whole_data = train_set.concatenate(test_set)
-
-labels = []
-for i in whole_data.sample_names:
-    if 'train_' in i:
-        labels.append('train(nonoutliers)')
-    elif 'test_clean' in i:
-        labels.append('test(nonoutliers)')
-    elif 'test_outl' in i:
-        labels.append('test(outliers)')
+whole_data_labels = np.concatenate((train_set_labels, test_set_labels))
 
 fig = whole_data.plot(
-    group=np.array(labels),
+    group=whole_data_labels,
     group_colors={
         'train(nonoutliers)': 'grey',
-        'test(nonoutliers)': 'C3',
+        'test(nonoutliers)': 'red',
         'test(outliers)': 'C1'},
     linewidth=0.95,
-    alpha=0.2,
+    alpha=0.3,
     legend=True
 )
 plt.title('train and test samples')
@@ -138,29 +137,27 @@ train_set_hat = fpca_clean.inverse_transform(
     fpca_clean.transform(train_set)
 )
 
-err_train = lp_distance(
+err_train = l2_distance(
     train_set,
-    train_set_hat,
-    p=2
-) / lp_norm(train_set, p=2)
+    train_set_hat
+) / l2_norm(train_set)
 
 test_set_hat = fpca_clean.inverse_transform(
     fpca_clean.transform(test_set)
 )
-err_test = lp_distance(
+err_test = l2_distance(
     test_set,
-    test_set_hat,
-    p=2
-) / lp_norm(test_set, p=2)
+    test_set_hat
+) / l2_norm(test_set)
 
 ###########################################################################
 # We plot the density of the REs,
-# both unconditionnaly (grey and blue) and conditionnaly (orange and red),
+# both unconditionaly (grey and blue) and conditionaly (orange and red),
 # to the rule if error >= threshold then it is an outlier.
 # The threshold is computed from RE of the training samples as
 # the quantile of probability 0.99.
-# In ohter words, a sample whose RE is higher than the threshold is unlikely
-# approximated as a training sample with (low) probability 0.01.
+# In other words, a sample whose RE is higher than the threshold is unlikely
+# approximated as a training sample, with probability 0.01.
 x_density = np.linspace(0., 1.6, num=10**3)
 density_train_err = gaussian_kde(err_train)
 density_test_err = gaussian_kde(err_test)
@@ -170,48 +167,69 @@ density_test_err_outl = gaussian_kde(err_test[err_test >= err_thresh])
 density_test_err_inli = gaussian_kde(err_test[err_test < err_thresh])
 
 # density estimate of train errors
-plt.plot(x_density, density_train_err(x_density),
-         label='Error train', color='grey')
+plt.plot(
+    x_density,
+    density_train_err(x_density),
+    label='Error train',
+    color='grey'
+)
 
 # density estimate of test errors
-plt.plot(x_density, density_test_err(x_density),
-         label='Error test (outliers+nonoutliers', color='C0')
+plt.plot(
+    x_density,
+    density_test_err(x_density),
+    label='Error test (outliers+nonoutliers)',
+    color='C0'
+)
 
 # outlyingness threshold
-plt.vlines(err_thresh,
-           ymax=max(density_train_err(x_density)), ymin=0.,
-           label='thresh=quantile(p=0.99)',
-           linestyles='dashed', color='black')
+plt.vlines(
+    err_thresh,
+    ymax=max(density_train_err(x_density)),
+    ymin=0.0,
+    label='thresh=quantile(p=0.99)',
+    linestyles='dashed',
+    color='black'
+)
 
 # density estimate of the error of test samples flagged as outliers
-plt.plot(x_density, density_test_err_outl(x_density),
-         label='Error test>= thresh (outliers)', color='C1')
+plt.plot(
+    x_density,
+    density_test_err_outl(x_density),
+    label='Error test>= thresh (outliers)',
+    color='C1'
+)
 
 # density estimate of the error of test samples flagged as nonoutliers
-plt.plot(x_density, density_test_err_inli(x_density),
-         label='Error test< thresh (nonoutliers)', color='C3')
+plt.plot(
+    x_density,
+    density_test_err_inli(x_density),
+    label='Error test< thresh (nonoutliers)',
+    color='red'
+)
 
 plt.xlabel('Relative L2-norm reconstruction errors')
-plt.ylabel('Density (unormalized)')
-plt.title('Densities of reconstruction errors with {} components'.format(q))
+plt.ylabel('Density (unnormalized)')
+plt.title(f'Densities of reconstruction errors with {q} components')
 plt.legend()
 plt.show()
 
 ####################################################################
 # We can check that the outliers are all detected with this method,
 # with no false positive (wrongly) in the test set.
-print('Flagged outliers: \n',
-      test_set[err_test >= err_thresh].sample_names)
-print('Flagged nonoutliers: \n',
-      test_set[err_test < err_thresh].sample_names)
+print('Flagged outliers: ')
+print(test_set_labels[err_test >= err_thresh])
+print('Flagged nonoutliers: ')
+print(test_set_labels[err_test < err_thresh])
 
 ##############################################################################
 # We observe that the distribution of the training samples (grey) REs
-# is unimodal and quite concentrated toward 0. This means that
+# is unimodal and quite skewed toward 0. This means that
 # the training samples are well recovered with 5 FPCs if we allow
-# an error rate around 0.4. On the countrary, the distribution of the
-# test samples (blue) is bimodal
-# with equivalent an magnitude order for each mode,
+# an reconsutrction error rate around 0.4.
+# On the contrary, the distribution of the
+# test samples (blue) REs is bimodal,
+# where the two modes seem to be similar,
 # meaning that half of the test samples is consistently approximated w.r.t
 # training samples and the other half is poorly approximated in the FPCs basis.
 #

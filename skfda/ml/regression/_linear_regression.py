@@ -5,6 +5,8 @@ import warnings
 from typing import Any, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
+
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
@@ -14,7 +16,7 @@ from ...misc.regularization import (
     compute_penalty_matrix,
 )
 from ...representation import FData
-from ...representation.basis import Basis
+from ...representation.basis import Basis, FDataBasis
 from ._coefficients import CoefficientInfo, coefficient_info_from_covariate
 
 RegularizationType = Union[
@@ -49,10 +51,36 @@ ArgcheckResultType = Tuple[
 ]
 
 
+class DataFrameMixin:
+    """Mixin class to add DataFrame funcionality."""
+
+    def dataframe_conversion(X: pd.DataFrame):
+        """Converts DataFrames to a list of two elements: first of all, a list with mv
+        covariates and the second, a FDataBasis object with functional data.
+
+        Args:
+            X: pandas DataFrame to convert.
+        
+        """
+        fdb = FDataBasis.concatenate(*X.iloc[:, 1].tolist())
+        X = [X.iloc[:, 0].tolist(), fdb]
+        return X
+
+
 class LinearRegression(
     BaseEstimator,  # type: ignore
-    RegressorMixin,  # type: ignore
+    RegressorMixin, # type: ignore
+    DataFrameMixin, # type: ignore
 ):
+    """
+        .. deprecated:: 0.8
+        Use covariate parameters of type pandas.FDataFrame in methods fit, predict.
+    """
+    warnings.warn(
+        "Usage of arguments of type FData, ndarray or a sequence of both is deprecated (fit, predict)."
+        "Use pandas DataFrame instead",
+        DeprecationWarning,
+    )
     r"""Linear regression with multivariate response.
 
     This is a regression algorithm equivalent to multivariate linear
@@ -153,6 +181,34 @@ class LinearRegression(
         >>> linear.predict([x, x_fd])
         array([ 11.,  10.,  12.,   6.,  10.,  13.])
 
+        Funcionality with pandas Dataframe:
+
+        >>> x_basis = Monomial(n_basis=2)
+        >>> x_fd = FDataBasis(x_basis, [[0, 2],
+        ...                             [0, 4],
+        ...                             [1, 0],
+        ...                             [2, 0],
+        ...                             [1, 2],
+        ...                             [2, 2]])
+        >>> x = [[1, 7], [2, 3], [4, 2], [1, 1], [3, 1], [2, 5]]
+        >>> cov = {'mv': x, 'fd': x_fd}
+        >>> df = pd.Dataframe(cov)
+        >>> y = [11, 10, 12, 6, 10, 13]
+        >>> linear = LinearRegression(
+        ...              coef_basis=[None, Constant()])
+        >>> _ = linear.fit(df, y)
+        >>> linear.coef_[0]
+        array([ 2.,  1.])
+        >>> linear.coef_[1]
+        FDataBasis(
+        basis=Constant(domain_range=((0, 1),), n_basis=1),
+        coefficients=[[ 1.]],
+        ...)
+        >>> linear.intercept_
+        array([ 1.])
+        >>> linear.predict(df)
+        array([ 11.,  10.,  12.,   6.,  10.,  13.])
+
     """
 
     def __init__(
@@ -168,11 +224,11 @@ class LinearRegression(
 
     def fit(  # noqa: D102
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
         y: np.ndarray,
         sample_weight: Optional[np.ndarray] = None,
     ) -> LinearRegression:
-
+        
         X_new, y, sample_weight, coef_info = self._argcheck_X_y(
             X,
             y,
@@ -244,7 +300,7 @@ class LinearRegression(
 
     def predict(  # noqa: D102
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
     ) -> np.ndarray:
 
         check_is_fitted(self)
@@ -268,10 +324,13 @@ class LinearRegression(
 
     def _argcheck_X(
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
     ) -> Sequence[AcceptedDataType]:
         if isinstance(X, (FData, np.ndarray)):
             X = [X]
+
+        if isinstance(X, pd.DataFrame):
+            X = DataFrameMixin.dataframe_conversion(X)
 
         X = [x if isinstance(x, FData) else np.asarray(x) for x in X]
 
@@ -282,7 +341,7 @@ class LinearRegression(
 
     def _argcheck_X_y(
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
         y: np.ndarray,
         sample_weight: Optional[np.ndarray] = None,
         coef_basis: Optional[BasisCoefsType] = None,

@@ -1,10 +1,11 @@
 """Feature extraction transformers for dimensionality reduction."""
 from __future__ import annotations
 
+import warnings
 from typing import TypeVar, Union
 
 from numpy import ndarray
-from pandas import DataFrame, concat
+from pandas import DataFrame
 from sklearn.base import TransformerMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
@@ -15,7 +16,7 @@ from ....representation.grid import FData, FDataGrid
 T = TypeVar("T", bound=FData)
 
 
-class PerClassFeatureTransformer(TransformerMixin):
+class PerClassTransformer(TransformerMixin):
     r"""Per class feature transformer for functional data.
 
     This class takes a transformer and performs the following map:
@@ -35,7 +36,7 @@ class PerClassFeatureTransformer(TransformerMixin):
             The transformer that we want to apply to the given data.
             It should use target data while fitting.
             This is checked by looking at the 'stateless' and 'requires_y' tags
-        np_array_output: bool
+        array_output: bool
             indicates if the transformed data is requested to be a NumPy array
             output. By default the value is False.
     Examples:
@@ -50,15 +51,15 @@ class PerClassFeatureTransformer(TransformerMixin):
         ...    X, y, test_size=0.25, stratify=y, random_state=0)
 
         >>> from skfda.preprocessing.dim_reduction.feature_extraction
-        ... import PerClassFeatureTransformer
+        ... import PerClassTransformer
 
         Then we will need to select a fda transformer, and so we will
         use RecursiveMaximaHunting
 
         >>> from skfda.preprocessing.dim_reduction.variable_selection
         ... import RecursiveMaximaHunting
-        >>> t = PerClassFeatureTransformer(RecursiveMaximaHunting(),
-        ... np_array_output=True)
+        >>> t = PerClassTransformer(RecursiveMaximaHunting(),
+        ... array_output=True)
 
         Finally we need to fit the data and transform it
 
@@ -72,11 +73,10 @@ class PerClassFeatureTransformer(TransformerMixin):
         self,
         transformer: TransformerMixin,
         *,
-        np_array_output=False,
+        array_output=False,
     ) -> None:
         self.transformer = transformer
-        self.np_array_output = np_array_output
-        self._validate_transformer()
+        self.array_output = array_output
 
     def _validate_transformer(
         self,
@@ -93,7 +93,7 @@ class PerClassFeatureTransformer(TransformerMixin):
         """
         if not (hasattr(self.transformer, "fit")
                 and hasattr(self.transformer, "transform")
-                or hasattr(self.transformer, "fit_transform")
+                and hasattr(self.transformer, "fit_transform")
                 ):
             raise TypeError(
                 "Transformer should implement fit and "
@@ -104,8 +104,8 @@ class PerClassFeatureTransformer(TransformerMixin):
 
         tags = self.transformer._get_tags()
 
-        if not (tags['stateless'] and tags['requires_y']):
-            raise TypeError(
+        if tags['stateless'] and not tags['requires_y']:
+            warnings.warn(
                 "Transformer should use target data in fit."
                 + str(self.transformer)
                 + " (type " + str(type(self.transformer)) + ")"
@@ -116,7 +116,7 @@ class PerClassFeatureTransformer(TransformerMixin):
         self,
         X: T,
         y: ndarray,
-    ) -> PerClassFeatureTransformer:
+    ) -> PerClassTransformer:
         """
         Fit the model on each class using X as\
         training data and y as target values.
@@ -128,6 +128,7 @@ class PerClassFeatureTransformer(TransformerMixin):
         Returns:
             self
         """
+        self._validate_transformer()
         classes, class_feature_transformers = _fit_feature_transformer(
             X,
             y,
@@ -156,7 +157,7 @@ class PerClassFeatureTransformer(TransformerMixin):
             for feature_transformer in self._class_feature_transformers_
         ]
 
-        if self.np_array_output:
+        if self.array_output:
             for i in transformed_data:
                 if isinstance(i, FDataGrid or FDataBasis):
                     raise TypeError(
@@ -166,28 +167,16 @@ class PerClassFeatureTransformer(TransformerMixin):
                     )
             return transformed_data
 
-        if not isinstance(transformed_data[0], FDataGrid or FDataBasis):
-            raise TypeError(
-                "Transformed instance is not of type FDataGrid or"
-                " FDataBasis. It is " + type(transformed_data[0]),
-            )
-
-        frames = [DataFrame(
-            {transformed_data[0].dataset_name.lower(): transformed_data[0]},
-        )]
-
-        for j in transformed_data[1:]:
-            if isinstance(j, FDataGrid or FDataBasis):
-                frames.append(
-                    DataFrame({j.dataset_name.lower(): j}),
-                )
-            else:
+        for j in transformed_data:
+            if not isinstance(j, FDataGrid or FDataBasis):
                 raise TypeError(
                     "Transformed instance is not of type FDataGrid or"
                     " FDataBasis. It is " + type(j),
                 )
 
-        return concat(frames, axis=1)
+        return DataFrame(
+            {'Transformed data': transformed_data},
+        )
 
     def fit_transform(self, X: T, y: ndarray) -> Union[DataFrame, ndarray]:
         """

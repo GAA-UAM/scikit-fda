@@ -6,7 +6,6 @@ from typing import Any, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
-
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
@@ -54,33 +53,41 @@ ArgcheckResultType = Tuple[
 class DataFrameMixin:
     """Mixin class to add DataFrame funcionality."""
 
-    def dataframe_conversion(X: pd.DataFrame):
-        """Converts DataFrames to a list of two elements: first of all, a list with mv
+    def dataframe_conversion(self, X: pd.DataFrame) -> List:
+        """Convert DataFrames to a list with two elements: first of all, a list with mv
         covariates and the second, a FDataBasis object with functional data.
 
         Args:
-            X: pandas DataFrame to convert.
-        
+            - X: pandas DataFrame to convert.
+
+        Returns:
+            - list with two elements: first of all, a list with mv
+            covariates and the second, a FDataBasis object with functional data.
         """
         fdb = FDataBasis.concatenate(*X.iloc[:, 1].tolist())
-        X = [X.iloc[:, 0].tolist(), fdb]
-        return X
+        return [X.iloc[:, 0].tolist(), fdb]
 
 
 class LinearRegression(
-    BaseEstimator,  # type: ignore
-    RegressorMixin, # type: ignore
-    DataFrameMixin, # type: ignore
+    BaseEstimator,   # type: ignore
+    RegressorMixin,  # type: ignore
+    DataFrameMixin,  # type: ignore
 ):
+
     """
-        .. deprecated:: 0.8
-        Use covariate parameters of type pandas.FDataFrame in methods fit, predict.
+    .. deprecated:: 0.8
+    Use covariate parameters of type pandas.FDataFrame in methods
+    fit, predict.
+
     """
+
     warnings.warn(
-        "Usage of arguments of type FData, ndarray or a sequence of both is deprecated (fit, predict)."
+        "Usage of arguments of type FData, ndarray or a sequence \
+            of both is deprecated (fit, predict)."
         "Use pandas DataFrame instead",
         DeprecationWarning,
     )
+
     r"""Linear regression with multivariate response.
 
     This is a regression algorithm equivalent to multivariate linear
@@ -228,7 +235,7 @@ class LinearRegression(
         y: np.ndarray,
         sample_weight: Optional[np.ndarray] = None,
     ) -> LinearRegression:
-        
+
         X_new, y, sample_weight, coef_info = self._argcheck_X_y(
             X,
             y,
@@ -330,7 +337,7 @@ class LinearRegression(
             X = [X]
 
         if isinstance(X, pd.DataFrame):
-            X = DataFrameMixin.dataframe_conversion(X)
+            X = self.dataframe_conversion(X)
 
         X = [x if isinstance(x, FData) else np.asarray(x) for x in X]
 

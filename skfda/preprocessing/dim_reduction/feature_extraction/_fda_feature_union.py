@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any, Union
 
 from numpy import ndarray
-from pandas import DataFrame, concat
+from pandas import DataFrame
 from sklearn.pipeline import FeatureUnion
 
 from ....representation.basis import FDataBasis
@@ -43,7 +43,7 @@ class FdaFeatureUnion(FeatureUnion):
         verbose: bool
             If True, the time elapsed while fitting each transformer will be
             printed as it is completed. By default the value is False
-        np_array_output: bool
+        array_output: bool
             indicates if the transformed data is requested to be a NumPy array
             output. By default the value is False.
 
@@ -61,7 +61,7 @@ class FdaFeatureUnion(FeatureUnion):
     ... import FdaFeatureUnion
     >>> union = FdaFeatureUnion([
     ...    ("Eval", EvaluationTransformer()),
-    ...    ("fpca", FPCA()), ], np_array_output=True)
+    ...    ("fpca", FPCA()), ], array_output=True)
     >>> union.fit_transform(X)
     """
 
@@ -72,9 +72,9 @@ class FdaFeatureUnion(FeatureUnion):
         n_jobs=None,
         transformer_weights=None,
         verbose=False,
-        np_array_output=False,
+        array_output=False,
     ) -> None:
-        self.np_array_output = np_array_output
+        self.array_output = array_output
         super().__init__(
             transformer_list,
             n_jobs=n_jobs,
@@ -84,7 +84,7 @@ class FdaFeatureUnion(FeatureUnion):
 
     def _hstack(self, Xs) -> Union[DataFrame, ndarray, Any]:
 
-        if self.np_array_output:
+        if self.array_output:
             for i in Xs:
                 if isinstance(i, FDataGrid or FDataBasis):
                     raise TypeError(
@@ -94,23 +94,11 @@ class FdaFeatureUnion(FeatureUnion):
                     )
             return super()._hstack(Xs)
 
-        if not isinstance(Xs[0], FDataGrid or FDataBasis):
-            raise TypeError(
-                "Transformed instance is not of type FDataGrid or"
-                " FDataBasis. It is " + type(Xs[0]),
-            )
-
-        frames = [DataFrame({Xs[0].dataset_name.lower(): Xs[0]})]
-
-        for j in Xs[1:]:
-            if isinstance(j, FDataGrid or FDataBasis):
-                frames.append(
-                    DataFrame({j.dataset_name.lower(): j}),
-                )
-            else:
+        for j in Xs:
+            if not isinstance(j, FDataGrid or FDataBasis):
                 raise TypeError(
                     "Transformed instance is not of type FDataGrid or"
                     " FDataBasis. It is " + type(j),
                 )
 
-        return concat(frames, axis=1)
+        return DataFrame({'Transformed data': Xs})

@@ -2,7 +2,8 @@
 
 import unittest
 
-from pandas import DataFrame, concat
+from pandas import DataFrame
+from pandas.testing import assert_frame_equal
 
 from skfda.datasets import fetch_growth
 from skfda.misc.operators import SRSF
@@ -17,27 +18,30 @@ from skfda.representation import EvaluationTransformer
 
 
 class TestFdaFeatureUnion(unittest.TestCase):
+    """Check the Fda Feature Union module."""
 
     def setUp(self) -> None:
+        """Fetch the Berkeley Growth Study dataset."""
         self.X = fetch_growth(return_X_y=True)[0]
 
     def test_incompatible_array_output(self) -> None:
-
+        """Check that the transformer returns a ndarray."""
         u = FdaFeatureUnion(
             [("EvaluationT", EvaluationTransformer(None)), ("fpca", FPCA())],
-            np_array_output=False,
+            array_output=False,
         )
         self.assertRaises(TypeError, u.fit_transform, self.X)
 
     def test_incompatible_fdatagrid_output(self) -> None:
-
+        """Check that the transformer returns a fdatagrid."""
         u = FdaFeatureUnion(
             [("EvaluationT", EvaluationTransformer(None)), ("srsf", SRSF())],
-            np_array_output=True,
+            array_output=True,
         )
         self.assertRaises(TypeError, u.fit_transform, self.X)
 
     def test_correct_transformation_concat(self) -> None:
+        """Check that the transformation is done correctly."""
         u = FdaFeatureUnion(
             [("srsf1", SRSF()), ("smooth", NadarayaWatsonSmoother())],
         )
@@ -46,13 +50,8 @@ class TestFdaFeatureUnion(unittest.TestCase):
         t1 = SRSF().fit_transform(self.X)
         t2 = NadarayaWatsonSmoother().fit_transform(self.X)
 
-        frames = [
-            DataFrame({t1.dataset_name.lower(): t1}),
-            DataFrame({t2.dataset_name.lower(): t2}),
-        ]
-        true_frame = concat(frames, axis=1)
-        result = True
-        self.assertEqual(result, true_frame.equals(created_frame))
+        true_frame = DataFrame({"Transformed data": [t1, t2]})
+        assert_frame_equal(true_frame, created_frame)
 
 
 if __name__ == '__main__':

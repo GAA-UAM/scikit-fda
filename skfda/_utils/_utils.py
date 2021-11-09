@@ -23,7 +23,7 @@ import numpy as np
 import scipy.integrate
 from numpy import ndarray
 from pandas.api.indexers import check_array_indexer
-from sklearn.base import TransformerMixin, clone
+from sklearn.base import clone
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
 from typing_extensions import Literal, Protocol
@@ -728,21 +728,6 @@ def _classifier_fit_depth_methods(
     )
 
     return classes, class_depth_methods_
-
-
-def _fit_feature_transformer(
-    X: T,
-    y: ndarray,
-    transformer: TransformerMixin,
-) -> Tuple[ndarray, Sequence[TransformerMixin]]:
-    classes, y_ind = _classifier_get_classes(y)
-
-    class_feature_transformers = [
-        clone(transformer).fit(X[y_ind == cur_class], y[y_ind == cur_class])
-        for cur_class in range(classes.size)
-    ]
-
-    return classes, class_feature_transformers
 
 
 _DependenceMeasure = Callable[[np.ndarray, np.ndarray], np.ndarray]

@@ -11,7 +11,6 @@ from ._utils import (
     _compute_dependence,
     _DependenceMeasure,
     _evaluate_grid,
-    _fit_feature_transformer,
     _int_to_real,
     _pairwise_symmetric,
     _reshape_eval_points,

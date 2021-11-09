@@ -4,7 +4,7 @@ from __future__ import annotations
 import warnings
 from typing import TypeVar, Union
 
-from numpy import ndarray
+import numpy as np
 from pandas import DataFrame
 from sklearn.base import TransformerMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
@@ -115,7 +115,7 @@ class PerClassTransformer(TransformerMixin):
     def fit(
         self,
         X: T,
-        y: ndarray,
+        y: np.ndarray,
     ) -> PerClassTransformer:
         """
         Fit the model on each class using X as\
@@ -140,7 +140,7 @@ class PerClassTransformer(TransformerMixin):
 
         return self
 
-    def transform(self, X: T) -> Union[DataFrame, ndarray]:
+    def transform(self, X: T) -> Union[DataFrame, np.ndarray]:
         """
         Transform the provided data using the already fitted transformer.
 
@@ -152,10 +152,12 @@ class PerClassTransformer(TransformerMixin):
             including the transformed data.
         """
         sklearn_check_is_fitted(self)
-        transformed_data = [
-            feature_transformer.transform(X)
-            for feature_transformer in self._class_feature_transformers_
-        ]
+
+        transformed_data = np.empty((93, 0))
+        for feature_transformer in self._class_feature_transformers_:
+            elem = feature_transformer.transform(X)
+            data = np.array(elem)
+            transformed_data = np.hstack((transformed_data, data))
 
         if self.array_output:
             for i in transformed_data:
@@ -165,7 +167,7 @@ class PerClassTransformer(TransformerMixin):
                         "FDataBasis that can't be concatenated on a NumPy "
                         "array.",
                     )
-            return transformed_data
+            return np.array(transformed_data)
 
         for j in transformed_data:
             if not isinstance(j, FDataGrid or FDataBasis):
@@ -178,7 +180,11 @@ class PerClassTransformer(TransformerMixin):
             {'Transformed data': transformed_data},
         )
 
-    def fit_transform(self, X: T, y: ndarray) -> Union[DataFrame, ndarray]:
+    def fit_transform(
+        self,
+        X: T,
+        y: np.ndarray,
+    ) -> Union[DataFrame, np.ndarray]:
         """
         Fits and transforms the provided data\
         using the transformer specified when initializing the class.

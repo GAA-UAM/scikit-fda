@@ -23,17 +23,20 @@ import numpy as np
 import scipy.integrate
 from numpy import ndarray
 from pandas.api.indexers import check_array_indexer
-from sklearn.base import TransformerMixin, clone
+from sklearn.base import clone
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
 from typing_extensions import Literal, Protocol
 
+from .._utils._sklearn_adapter import TransformerMixin
 from ..representation._typing import (
     ArrayLike,
     DomainRange,
     DomainRangeLike,
     GridPoints,
     GridPointsLike,
+    NDArrayInt,
+    NDArrayFloat,
 )
 from ..representation.extrapolation import ExtrapolationLike
 
@@ -731,10 +734,10 @@ def _classifier_fit_depth_methods(
 
 
 def _fit_feature_transformer(
-    X: T,
-    y: ndarray,
+    X: Union[NDArrayInt, NDArrayFloat],
+    y: Union[NDArrayInt, NDArrayFloat],
     transformer: TransformerMixin,
-) -> Tuple[ndarray, Sequence[TransformerMixin]]:
+) -> Tuple[Union[NDArrayInt, NDArrayFloat], Sequence[TransformerMixin]]:
     classes, y_ind = _classifier_get_classes(y)
 
     class_feature_transformers = [

@@ -30,14 +30,17 @@ class TestPCT(unittest.TestCase):
         t.fit_transform(self.X, self.y)
         transformed = t.transform(self.X)
 
+        manual = np.empty((93, 0))
         classes, y_ind = _classifier_get_classes(self.y)
         for cur_class in range(classes.size):
             feature_transformer = RecursiveMaximaHunting().fit(
                 self.X[y_ind == cur_class],
                 self.y[y_ind == cur_class],
             )
-            a = feature_transformer.transform(self.X)
-            np.testing.assert_array_equal(transformed[cur_class], a)
+            aux = np.array(feature_transformer.transform(self.X))
+            manual = np.hstack((manual, aux))
+
+        np.testing.assert_array_equal(transformed, manual)
 
     def test_not_transformer_argument(self) -> None:
 

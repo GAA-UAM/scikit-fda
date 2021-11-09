@@ -35,8 +35,8 @@ from ..representation._typing import (
     DomainRangeLike,
     GridPoints,
     GridPointsLike,
-    NDArrayInt,
     NDArrayFloat,
+    NDArrayInt,
 )
 from ..representation.extrapolation import ExtrapolationLike
 

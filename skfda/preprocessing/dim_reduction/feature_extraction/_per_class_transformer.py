@@ -40,33 +40,41 @@ class PerClassTransformer(TransformerMixin):
             indicates if the transformed data is requested to be a NumPy array
             output. By default the value is False.
     Examples:
-        Firstly, we will import and split the Berkeley Growth Study dataset
+        Firstly, we will import the Berkeley Growth Study dataset
 
         >>> from skfda.datasets import fetch_growth
-        >>> from sklearn.model_selection import train_test_split
         >>> X, y = fetch_growth(return_X_y=True, as_frame=True)
         >>> X = X.iloc[:, 0].values
         >>> y = y.values.codes
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...    X, y, test_size=0.25, stratify=y, random_state=0)
 
         >>> from skfda.preprocessing.dim_reduction.feature_extraction
         ... import PerClassTransformer
 
         Then we will need to select a fda transformer, and so we will
-        use RecursiveMaximaHunting
+        use RecursiveMaximaHunting. We need to fit the data and transform it
 
         >>> from skfda.preprocessing.dim_reduction.variable_selection
         ... import RecursiveMaximaHunting
         >>> t = PerClassTransformer(RecursiveMaximaHunting(),
         ... array_output=True)
+        >>> x_transformed = t.fit_transform(X, y)
 
-        Finally we need to fit the data and transform it
+        x_transformed will be a vector with the transformed data.
+        We will split the generated data and fit a KNN classifier.
 
-        >>> t.fit(X_train, y_train)
-        >>> x_transformed = t.transform(X_test)
+        >>> from sklearn.model_selection import train_test_split
+        >>> from sklearn.neighbors import KNeighborsClassifier
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ... x_transformed, y, test_size=0.25, stratify=y, random_state=0)
+        >>> neigh = KNeighborsClassifier()
+        >>> neigh.fit(X_train, y_train)
 
-        x_transformed will be a vector with the transformed data
+        Finally we can predict and check the score
+        >>> neigh.predict(X_test)
+            [0 0 1 0 1 1 1 0 0 0 0 1 1 0 0 0 0 1 1 1 1 1 1 1]
+
+        >>> neigh.score(X_test, y_test)
+            0.958
     """
 
     def __init__(
@@ -107,6 +115,7 @@ class PerClassTransformer(TransformerMixin):
         if tags['stateless'] and not tags['requires_y']:
             warnings.warn(
                 "Transformer should use target data in fit."
+                + "requires_y tag should be enabled and stateless disabled"
                 + str(self.transformer)
                 + " (type " + str(type(self.transformer)) + ")"
                 " doesn't",
@@ -153,7 +162,7 @@ class PerClassTransformer(TransformerMixin):
         """
         sklearn_check_is_fitted(self)
 
-        transformed_data = np.empty((93, 0))
+        transformed_data = np.empty((len(X), 0))
         for feature_transformer in self._class_feature_transformers_:
             elem = feature_transformer.transform(X)
             data = np.array(elem)

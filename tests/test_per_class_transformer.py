@@ -1,4 +1,4 @@
-"""Test to check the per class feature transformer module."""
+"""Test to check the per class transformer module."""
 
 import unittest
 
@@ -16,13 +16,16 @@ from skfda.preprocessing.dim_reduction.variable_selection import (
 
 
 class TestPCT(unittest.TestCase):
+    """Tests for PCT module."""
+
     def setUp(self) -> None:
+        """Fetch the Berkeley Growth Study dataset."""
         X, y = fetch_growth(return_X_y=True, as_frame=True)
         self.X = X.iloc[:, 0].values
         self.y = y.values.codes
 
     def test_transform(self) -> None:
-
+        """Check the data transformation is done correctly."""
         t = PerClassTransformer(
             RecursiveMaximaHunting(),
             array_output=True,
@@ -43,7 +46,7 @@ class TestPCT(unittest.TestCase):
         np.testing.assert_array_equal(transformed, manual)
 
     def test_not_transformer_argument(self) -> None:
-
+        """Check that invalid arguments in fit raise exception."""
         t = PerClassTransformer(KNeighborsClassifier())
         self.assertRaises(
             TypeError,

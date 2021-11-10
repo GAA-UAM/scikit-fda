@@ -47,16 +47,20 @@ class PerClassTransformer(TransformerMixin):
         >>> X = X.iloc[:, 0].values
         >>> y = y.values.codes
 
-        >>> from skfda.preprocessing.dim_reduction.feature_extraction
-        ... import PerClassTransformer
+        >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
+        ...     PerClassTransformer,
+        ... )
 
         Then we will need to select a fda transformer, and so we will
         use RecursiveMaximaHunting. We need to fit the data and transform it
 
-        >>> from skfda.preprocessing.dim_reduction.variable_selection
-        ... import RecursiveMaximaHunting
-        >>> t = PerClassTransformer(RecursiveMaximaHunting(),
-        ... array_output=True)
+        >>> from skfda.preprocessing.dim_reduction.variable_selection import (
+        ...     RecursiveMaximaHunting,
+        ... )
+        >>> t = PerClassTransformer(
+        ...     RecursiveMaximaHunting(),
+        ...     array_output=True,
+        ... )
         >>> x_transformed = t.fit_transform(X, y)
 
         x_transformed will be a vector with the transformed data.
@@ -65,7 +69,12 @@ class PerClassTransformer(TransformerMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from sklearn.neighbors import KNeighborsClassifier
         >>> X_train, X_test, y_train, y_test = train_test_split(
-        ... x_transformed, y, test_size=0.25, stratify=y, random_state=0)
+        ...     x_transformed,
+        ...     y,
+        ...     test_size=0.25,
+        ...     stratify=y,
+        ...     random_state=0,
+        ... )
         >>> neigh = KNeighborsClassifier()
         >>> neigh.fit(X_train, y_train)
 
@@ -99,10 +108,11 @@ class PerClassTransformer(TransformerMixin):
         Returns:
             None
         """
-        if not (hasattr(self.transformer, "fit")
-                and hasattr(self.transformer, "transform")
-                and hasattr(self.transformer, "fit_transform")
-                ):
+        if not (
+            hasattr(self.transformer, "fit")
+            and hasattr(self.transformer, "transform")
+            and hasattr(self.transformer, "fit_transform")
+        ):
             raise TypeError(
                 "Transformer should implement fit and "
                 "transform. " + str(self.transformer)
@@ -112,7 +122,7 @@ class PerClassTransformer(TransformerMixin):
 
         tags = self.transformer._get_tags()
 
-        if tags['stateless'] and not tags['requires_y']:
+        if tags['stateless'] or not tags['requires_y']:
             warnings.warn(
                 "Transformer should use target data in fit."
                 + "requires_y tag should be enabled and stateless disabled"
@@ -170,20 +180,13 @@ class PerClassTransformer(TransformerMixin):
 
         if self.array_output:
             for i in transformed_data:
-                if isinstance(i, FDataGrid or FDataBasis):
+                if isinstance(i, (FDataGrid, FDataBasis)):
                     raise TypeError(
                         "There are transformed instances of FDataGrid or "
                         "FDataBasis that can't be concatenated on a NumPy "
                         "array.",
                     )
             return np.array(transformed_data)
-
-        for j in transformed_data:
-            if not isinstance(j, FDataGrid or FDataBasis):
-                raise TypeError(
-                    "Transformed instance is not of type FDataGrid or"
-                    " FDataBasis. It is " + type(j),
-                )
 
         return DataFrame(
             {'Transformed data': transformed_data},

@@ -8,7 +8,6 @@ from pandas.testing import assert_frame_equal
 from skfda.datasets import fetch_growth
 from skfda.misc.operators import SRSF
 from skfda.preprocessing.dim_reduction.feature_extraction import (
-    FPCA,
     FdaFeatureUnion,
 )
 from skfda.preprocessing.smoothing.kernel_smoothers import (
@@ -24,18 +23,10 @@ class TestFdaFeatureUnion(unittest.TestCase):
         """Fetch the Berkeley Growth Study dataset."""
         self.X = fetch_growth(return_X_y=True)[0]
 
-    def test_incompatible_array_output(self) -> None:
-        """Check that the transformer returns a ndarray."""
-        u = FdaFeatureUnion(
-            [("EvaluationT", EvaluationTransformer(None)), ("fpca", FPCA())],
-            array_output=False,
-        )
-        self.assertRaises(TypeError, u.fit_transform, self.X)
-
     def test_incompatible_fdatagrid_output(self) -> None:
         """Check that the transformer returns a fdatagrid."""
         u = FdaFeatureUnion(
-            [("EvaluationT", EvaluationTransformer(None)), ("srsf", SRSF())],
+            [("eval", EvaluationTransformer(None)), ("srsf", SRSF())],
             array_output=True,
         )
         self.assertRaises(TypeError, u.fit_transform, self.X)

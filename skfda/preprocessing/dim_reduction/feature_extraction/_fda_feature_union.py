@@ -53,16 +53,46 @@ class FdaFeatureUnion(FeatureUnion):
     >>> X = fetch_growth(return_X_y=True)[0]
 
     Then we need to import the transformers we want to use
-    >>> from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
+    >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
+    ...     FPCA,
+    ...     FdaFeatureUnion,
+    ... )
     >>> from skfda.representation import EvaluationTransformer
 
-    Finally we import the union and apply fit and transform
-    >>> from skfda.preprocessing.dim_reduction.feature_extraction
-    ... import FdaFeatureUnion
-    >>> union = FdaFeatureUnion([
-    ...    ("Eval", EvaluationTransformer()),
-    ...    ("fpca", FPCA()), ], array_output=True)
-    >>> union.fit_transform(X)
+    Finally we apply fit and transform
+    >>> union = FdaFeatureUnion(
+    ...     [
+    ...        ("eval", EvaluationTransformer()),
+    ...        ("fpca", FPCA()),
+    ...     ],
+    ...     array_output=True,
+    ... )
+    >>> transformed_data = union.fit_transform(X)
+    >>> transformed_data
+        [[ 81.3       ,  84.2       ,  86.4       , ..., 105.84283261,
+            -34.60733887, -14.97276458],
+           [ 76.2       ,  80.4       ,  83.2       , ..., -11.42260839,
+            -17.01293819,  24.77047871],
+           [ 76.8       ,  79.8       ,  82.6       , ..., -33.81180503,
+            -23.312921  ,   7.67421522],
+           ...,
+           [ 68.6       ,  73.6       ,  78.6       , ..., -19.49404628,
+             12.76825883,   0.70188222],
+           [ 79.9       ,  82.6       ,  84.8       , ...,  19.28399897,
+             31.49601648,   6.54012077],
+           [ 76.1       ,  78.4       ,  82.3       , ...,  17.71973789,
+             27.7332045 ,  -1.70532625]]
+
+    We can also concatenate the result with the
+    original data on a Pandas DataFrame.
+    >>> from pandas.core.frame import DataFrame
+    >>> DataFrame({
+    ...     "Data": [transformed_data, X.data_matrix]
+    ... })
+        Data
+        0  [[81.3, 84.2, 86.4, 88.9, 91.4, 101.1, 109.5, ...
+        1  [[[81.3], [84.2], [86.4], [88.9], [91.4], [101...
+
     """
 
     def __init__(
@@ -86,19 +116,12 @@ class FdaFeatureUnion(FeatureUnion):
 
         if self.array_output:
             for i in Xs:
-                if isinstance(i, FDataGrid or FDataBasis):
+                if isinstance(i, (FDataGrid, FDataBasis)):
                     raise TypeError(
                         "There are transformed instances of FDataGrid or "
                         "FDataBasis that can't be concatenated on a NumPy "
                         "array.",
                     )
             return super()._hstack(Xs)
-
-        for j in Xs:
-            if not isinstance(j, FDataGrid or FDataBasis):
-                raise TypeError(
-                    "Transformed instance is not of type FDataGrid or"
-                    " FDataBasis. It is " + type(j),
-                )
 
         return DataFrame({'Transformed data': Xs})

@@ -109,9 +109,9 @@ class PerClassTransformer(TransformerMixin):
             None
         """
         if not (
-            hasattr(self.transformer, "fit")
-            and hasattr(self.transformer, "transform")
-            and hasattr(self.transformer, "fit_transform")
+            hasattr(self.transformer, "fit")  # noqa: WPS421
+            and hasattr(self.transformer, "transform")  # noqa: WPS421
+            and hasattr(self.transformer, "fit_transform")  # noqa: WPS421
         ):
             raise TypeError(
                 "Transformer should implement fit and "
@@ -120,7 +120,7 @@ class PerClassTransformer(TransformerMixin):
                 " doesn't",
             )
 
-        tags = self.transformer._get_tags()
+        tags = self.transformer._get_tags()  # noqa: WPS437
 
         if tags['stateless'] or not tags['requires_y']:
             warnings.warn(

@@ -25,9 +25,9 @@ from typing import (
 import findiff
 import numpy as np
 import pandas.api.extensions
-from matplotlib.figure import Figure
-
+import scipy.integrate
 import scipy.stats.mstats
+from matplotlib.figure import Figure
 
 from .._utils import (
     _check_array_key,
@@ -44,6 +44,7 @@ from ._typing import (
     GridPoints,
     GridPointsLike,
     LabelTupleLike,
+    NDArrayFloat,
 )
 from .basis import Basis
 from .evaluator import Evaluator
@@ -467,6 +468,21 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self.copy(
             data_matrix=data_matrix,
+        )
+
+    def integrate(self: T) -> NDArrayFloat:
+        """
+        Integration of the FDataGrid object.
+
+        It is done on the whole domain range.
+            Returns:
+                ndarray of shape (n_samples, n_dimensions)\
+                with the integrated data.
+        """
+        return scipy.integrate.simps(
+            self.data_matrix,
+            x=self.grid_points[0],
+            axis=-2,
         )
 
     def _check_same_dimensions(self: T, other: T) -> None:

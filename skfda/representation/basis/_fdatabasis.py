@@ -20,10 +20,16 @@ import pandas.api.extensions
 
 from skfda._utils._utils import _to_array_maybe_ragged
 
-from ..._utils import _check_array_key, _int_to_real, constants
+from ..._utils import _check_array_key, _int_to_real, constants, nquad_vec
 from .. import grid
 from .._functional_data import FData
-from .._typing import ArrayLike, DomainRange, GridPointsLike, LabelTupleLike
+from .._typing import (
+    ArrayLike,
+    DomainRange,
+    GridPointsLike,
+    LabelTupleLike,
+    NDArrayFloat,
+)
 from ..extrapolation import ExtrapolationLike
 from . import Basis
 
@@ -349,6 +355,29 @@ class FDataBasis(FData):  # noqa: WPS214
         )
 
         return self.copy(basis=basis, coefficients=coefficients)
+
+    def integrate(self: T, interval: DomainRange) -> NDArrayFloat:
+        """
+        Integration for the FDataBasis object.
+
+        It is done on the domain range that is passed as argument.
+            Args:
+                interval: domain range where we want to integrate.
+
+            Returns:
+                ndarray of shape (n_samples, n_dimensions)\
+                with the integrated data.
+        """
+        integrated = nquad_vec(
+            self,
+            [interval],
+        )
+        integrated_values = np.empty((1, 1))
+
+        for i in integrated:
+            integrated_values = np.concatenate([integrated_values, i])
+
+        return integrated_values[1:]
 
     def sum(  # noqa: WPS125
         self: T,

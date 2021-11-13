@@ -67,7 +67,7 @@ class LogisticRegression(
 
         self.p = p
 
-    def fit(
+    def fit(  # noqa: D102
         self,
         X: FData,
         y: ndarray,
@@ -122,13 +122,16 @@ class LogisticRegression(
 
         return self
 
-    def predict(self, X: FData) -> ndarray:
+    def predict(self, X: FData) -> ndarray:  # noqa: D102
+        check_is_fitted(self)
         return self._wrapper(self._mvlr.predict, X)
 
-    def predict_log_proba(self, X: FData) -> ndarray:
+    def predict_log_proba(self, X: FData) -> ndarray:  # noqa: D102
+        check_is_fitted(self)
         return self._wrapper(self._mvlr.predict_log_proba, X)
 
-    def predict_proba(self, X: FData) -> ndarray:
+    def predict_proba(self, X: FData) -> ndarray:  # noqa: D102
+        check_is_fitted(self)
         return self._wrapper(self._mvlr.predict_proba, X)
 
     def _argcheck_X(
@@ -210,8 +213,6 @@ class LogisticRegression(
         .. warning::
             This function can't be called before fit.
         """
-
-        check_is_fitted(self)
 
         X = self._argcheck_X(X)
 

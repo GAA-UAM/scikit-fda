@@ -5,8 +5,8 @@ from ._depth_classifiers import (
     DDGClassifier,
     MaximumDepthClassifier,
 )
+from ._logistic_regression import LogisticRegression
 from ._neighbors_classifiers import (
     KNeighborsClassifier,
     RadiusNeighborsClassifier,
 )
-from ._logistic_regression import LogisticRegression

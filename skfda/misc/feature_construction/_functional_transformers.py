@@ -59,7 +59,7 @@ def occupation_measure(
     intervals: Sequence[Tuple],
 ) -> np.ndarray:
     r"""
-    Take functional data as a grid and calculate the occupation measure.
+    Calculate the occupation measure of a grid.
 
     It performs the following map.
         ..math:
@@ -83,6 +83,8 @@ def occupation_measure(
     transformed_intervals = []
     for i, interval in enumerate(intervals):
         a, b = interval
+        if b < a:
+            a, b = b, a
         curves_intervals = []
         for c in curves:
             first = None
@@ -105,3 +107,55 @@ def occupation_measure(
         transformed_intervals = transformed_intervals + [curves_intervals]
 
     return np.asarray(transformed_intervals, dtype=list)
+
+
+def number_up_crossings(  # noqa: WPS231
+    data: FDataGrid,
+    intervals: Sequence[Tuple],
+) -> np.ndarray:
+    r"""
+    Calculate the number of up crossings to a level of a FDataGrid.
+
+    Args:
+            data: FDataGrid where we want to calculate
+            the number of up crossings.
+            intervals: sequence of tuples containing the
+            intervals we want to consider for the crossings.
+    Returns:
+            ndarray of shape (n_dimensions, n_samples)\
+            with the values of the counters.
+    """
+    curves = data.data_matrix
+    transformed_counters = []
+    for index, interval in enumerate(intervals):
+        a, b = interval
+        if b < a:
+            a, b = b, a
+        curves_counters = []
+        for c in curves:
+            counter = 0
+            inside_interval = False
+            size_curve = c.shape[0]
+            for i in range(0, size_curve - 1):
+                if (
+                    # Check that the chunk of function grows
+                    c[i][index] < c[i + 1][index]  # noqa: WPS408
+                    and (
+                        # First point <= a, second >= a
+                        (c[i][index] <= a and c[i + 1][index] >= a)
+                        # First point inside interval, second >=a
+                        or (a <= c[i][index] <= b and c[i + 1][index] >= a)
+                    )
+                ):
+                    # Last pair of points where not inside interval
+                    if inside_interval is False:
+                        counter += 1
+                        inside_interval = True
+                else:
+                    inside_interval = False
+
+            curves_counters = curves_counters + [counter]
+
+        transformed_counters = transformed_counters + [curves_counters]
+
+    return np.asarray(transformed_counters, dtype=list)

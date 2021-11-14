@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import reduce
 from typing import Sequence, Tuple, Union
 
 import numpy as np
@@ -49,7 +50,7 @@ def local_averages(
             ]
         else:
             integrated_data = integrated_data + [
-                data.integrate(interval),
+                data.integrate(interval=interval),
             ]
     return np.asarray(integrated_data[1:])
 
@@ -68,12 +69,12 @@ def occupation_measure(
         where :math:`{T_1,\dots,T_p}` are disjoint intervals in
         :math:`\mathbb{R}` and | | stands for the Lebesgue measure.
 
-    Args:
+        Args:
             data: FDataGrid where we want to calculate
             the occupation measure.
             intervals: sequence of tuples containing the
             intervals we want to consider.
-    Returns:
+        Returns:
             ndarray of shape (n_dimensions, n_samples)\
             with the transformed data.
     """
@@ -116,12 +117,12 @@ def number_up_crossings(  # noqa: WPS231
     r"""
     Calculate the number of up crossings to a level of a FDataGrid.
 
-    Args:
+        Args:
             data: FDataGrid where we want to calculate
             the number of up crossings.
             intervals: sequence of tuples containing the
             intervals we want to consider for the crossings.
-    Returns:
+        Returns:
             ndarray of shape (n_dimensions, n_samples)\
             with the values of the counters.
     """
@@ -159,3 +160,64 @@ def number_up_crossings(  # noqa: WPS231
         transformed_counters = transformed_counters + [curves_counters]
 
     return np.asarray(transformed_counters, dtype=list)
+
+
+def moments_of_norm(
+    data: FDataGrid,
+) -> np.ndarray:
+    r"""
+    Calculate the moments of the norm of the process of a FDataGrid.
+
+    It performs the following map:
+    :math:`f_1(X)=\mathbb{E}(||X||),\dots,f_p(X)=\mathbb{E}(||X||^p)`.
+
+        Args:
+            data: FDataGrid where we want to calculate
+            the moments of the norm of the process.
+        Returns:
+            ndarray of shape (n_dimensions, n_samples)\
+            with the values of the moments.
+    """
+    curves = data.data_matrix
+    norms = []
+    for c in curves:  # noqa: WPS426
+        x, y = c.shape
+        curve_norms = []
+        for i in range(0, y):  # noqa: WPS426
+            curve_norms = curve_norms + [
+                reduce(lambda a, b: a + b[i], c, 0) / x,
+            ]
+        norms = norms + [curve_norms]
+    return np.asarray(norms, dtype=list)
+
+
+def moments_of_process(
+    data: FDataGrid,
+) -> np.ndarray:
+    r"""
+    Calculate the moments of the process of a FDataGrid.
+
+    It performs the following map:
+    .. math::
+        f_1(X)=\int_a^b X(t,\omega)dP(\omega),\dots,f_p(X)=\int_a^b \\
+        X^p(t,\omega)dP(\omega).
+
+        Args:
+            data: FDataGrid where we want to calculate
+            the moments of the process.
+        Returns:
+            ndarray of shape (n_dimensions, n_samples)\
+            with the values of the moments.
+    """
+    norm = moments_of_norm(data)
+    curves = data.data_matrix
+    moments = []
+    for i, c in enumerate(curves):  # noqa: WPS426
+        x, y = c.shape
+        curve_moments = []
+        for j in range(0, y):  # noqa: WPS426
+            curve_moments = curve_moments + [
+                reduce(lambda a, b: a + ((b[j] - norm[i][j]) ** 2), c, 0) / x,
+            ]
+        moments = moments + [curve_moments]
+    return np.asarray(moments, dtype=list)

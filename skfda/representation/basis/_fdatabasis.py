@@ -356,18 +356,25 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return self.copy(basis=basis, coefficients=coefficients)
 
-    def integrate(self: T, interval: DomainRange) -> NDArrayFloat:
+    def integrate(
+        self: T,
+        *,
+        interval: Optional[DomainRange] = None,
+    ) -> NDArrayFloat:
         """
         Integration for the FDataBasis object.
 
         It is done on the domain range that is passed as argument.
             Args:
                 interval: domain range where we want to integrate.
+                By default is None as we integrate on the whole domain.
 
             Returns:
                 ndarray of shape (n_samples, n_dimensions)\
                 with the integrated data.
         """
+        if interval is None:
+            interval = self.basis.domain_range[0]
         integrated = nquad_vec(
             self,
             [interval],

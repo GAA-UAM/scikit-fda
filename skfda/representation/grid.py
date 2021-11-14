@@ -470,18 +470,28 @@ class FDataGrid(FData):  # noqa: WPS214
             data_matrix=data_matrix,
         )
 
-    def integrate(self: T) -> NDArrayFloat:
+    def integrate(
+        self: T,
+        *,
+        interval: Optional[DomainRange] = None,
+    ) -> NDArrayFloat:
         """
         Integration of the FDataGrid object.
 
-        It is done on the whole domain range.
+        It is done on the domain range that is passed as argument.
+            Args:
+                interval: domain range where we want to integrate.
+                By default is None as we integrate on the whole domain.
             Returns:
                 ndarray of shape (n_samples, n_dimensions)\
                 with the integrated data.
         """
+        if interval is None:
+            interval = self.grid_points[0]
+
         return scipy.integrate.simps(
             self.data_matrix,
-            x=self.grid_points[0],
+            x=interval,
             axis=-2,
         )
 

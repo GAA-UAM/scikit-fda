@@ -1,7 +1,7 @@
 """Feature extraction union for dimensionality reduction."""
 from __future__ import annotations
 
-from typing import Any, Union
+from typing import Union
 
 from numpy import ndarray
 from pandas import DataFrame
@@ -50,49 +50,44 @@ class FdaFeatureUnion(FeatureUnion):
     Examples:
     Firstly we will import the Berkeley Growth Study data set
     >>> from skfda.datasets import fetch_growth
-    >>> X = fetch_growth(return_X_y=True)[0]
+    >>> X,y = fetch_growth(return_X_y=True)
 
-    Then we need to import the transformers we want to use
+    Then we need to import the transformers we want to use. In our case we
+    will use FPCA and Minimum Redundancy Maximum Relevance.
+    Evaluation Transformer returns the original curve, and as it is helpful,
+    we will concatenate it to the already metioned transformers.
     >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
     ...     FPCA,
     ...     FdaFeatureUnion,
     ... )
+    >>> from skfda.preprocessing.dim_reduction.variable_selection import (
+    ...     MinimumRedundancyMaximumRelevance,
+    ... )
     >>> from skfda.representation import EvaluationTransformer
 
-    Finally we apply fit and transform
+    Finally we apply fit and transform.
     >>> union = FdaFeatureUnion(
     ...     [
-    ...        ("eval", EvaluationTransformer()),
+    ...        ("mrmr", MinimumRedundancyMaximumRelevance()),
     ...        ("fpca", FPCA()),
+    ...        ("eval", EvaluationTransformer()),
     ...     ],
     ...     array_output=True,
     ... )
-    >>> transformed_data = union.fit_transform(X)
-    >>> transformed_data
-        [[ 81.3       ,  84.2       ,  86.4       , ..., 105.84283261,
-            -34.60733887, -14.97276458],
-           [ 76.2       ,  80.4       ,  83.2       , ..., -11.42260839,
-            -17.01293819,  24.77047871],
-           [ 76.8       ,  79.8       ,  82.6       , ..., -33.81180503,
-            -23.312921  ,   7.67421522],
-           ...,
-           [ 68.6       ,  73.6       ,  78.6       , ..., -19.49404628,
-             12.76825883,   0.70188222],
-           [ 79.9       ,  82.6       ,  84.8       , ...,  19.28399897,
-             31.49601648,   6.54012077],
-           [ 76.1       ,  78.4       ,  82.3       , ...,  17.71973789,
-             27.7332045 ,  -1.70532625]]
-
-    We can also concatenate the result with the
-    original data on a Pandas DataFrame.
-    >>> from pandas.core.frame import DataFrame
-    >>> DataFrame({
-    ...     "Data": [transformed_data, X.data_matrix]
-    ... })
-        Data
-        0  [[81.3, 84.2, 86.4, 88.9, 91.4, 101.1, 109.5, ...
-        1  [[[81.3], [84.2], [86.4], [88.9], [91.4], [101...
-
+    >>> union.fit_transform(X,y)
+      [[194.3       , 105.84, -34.61, ..., 193.8       ,
+        194.3       , 195.1       ],
+       [177.4       , -11.42, -17.01, ..., 176.1       ,
+        177.4       , 178.7       ],
+       [171.2       , -33.81, -23.31 , ..., 170.9       ,
+        171.2       , 171.5       ],
+       ...,
+       [166.3       , -19.49  12.77, ..., 166.        ,
+        166.3       , 166.8       ],
+       [168.4       ,  19.28,  31.5, ..., 168.3       ,
+        168.4       , 168.6       ],
+       [168.9       ,  17.72,  27.73 , ..., 168.6       ,
+        168.9       , 169.2       ]]
     """
 
     def __init__(
@@ -112,7 +107,7 @@ class FdaFeatureUnion(FeatureUnion):
             verbose=verbose,
         )
 
-    def _hstack(self, Xs) -> Union[DataFrame, ndarray, Any]:
+    def _hstack(self, Xs) -> Union[DataFrame, ndarray]:
 
         if self.array_output:
             for i in Xs:

@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import Callable, Tuple
 
-from numpy import append, array, ndarray, zeros
-from numpy.core.fromnumeric import argmax, mean
+import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.linear_model import LogisticRegression as mvLogisticRegression
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _classifier_get_classes
-from ...representation import FData, FDataGrid
+from ...representation import FDataGrid
+from ...representation._typing import NDArrayAny, NDArrayInt
 
 
 class LogisticRegression(
@@ -20,17 +20,18 @@ class LogisticRegression(
 
     This class implements the sequential “greedy” algorithm
     for functional logistic regression proposed in
-    https://arxiv.org/abs/1812.00721.
+    :footcite:ts:`bueno+larraz_2021_functional`.
 
     .. warning::
-        For now, only functional data whith one dimensional domains
-        are supported.
+        For now, only binary classification for functional
+        data with one dimensional domains is supported.
 
     Args:
-        p (int): number of points (and coefficients) to be selected by
-        the algoritm.
+        p: number of points (and coefficients) to be selected by
+        the algorithm.
 
     Attributes:
+        classes\_: A list containing the name of the classes
         points\_: A list containing the selected points.
         coef\_: A list containing the coefficient for each selected point.
         intercept\_: Independent term.
@@ -39,16 +40,21 @@ class LogisticRegression(
         >>> from numpy import array
         >>> from skfda.datasets import make_gaussian_process
         >>> from skfda.ml.classification import LogisticRegression
-
-        >>> fd1 = make_gaussian_process(n_samples = 50, n_features = 100,
-        ...                             noise = 0.5, random_state = 0)
-        >>> fd2 = make_gaussian_process(n_samples=50, n_features = 100,
-        ...                             mean = array([1]*100), noise = 0.5,
-        ...                             random_state=0)
-
+        >>> fd1 = make_gaussian_process(
+        ...         n_samples=50,
+        ...         n_features=100,
+        ...         noise=0.5,
+        ...         random_state=0,
+        ... )
+        >>> fd2 = make_gaussian_process(
+        ...         n_samples=50,
+        ...         n_features = 100,
+        ...         mean = np.array([1]*100),
+        ...         noise = 0.5,
+        ...         random_state=0
+        ... )
         >>> fd = fd1.concatenate(fd2)
         >>> y = 50*[0] + 50*[1]
-
         >>> lr = LogisticRegression(p=2)
         >>> _ = lr.fit(fd[::2], y[::2])
         >>> lr.coef_.round(2)
@@ -57,6 +63,9 @@ class LogisticRegression(
         array([ 0.11,  0.  ])
         >>> lr.score(fd[1::2],y[1::2])
         0.92
+
+        References:
+            .. footbibliography::
 
     """
 
@@ -69,8 +78,8 @@ class LogisticRegression(
 
     def fit(  # noqa: D102
         self,
-        X: FData,
-        y: ndarray,
+        X: FDataGrid,
+        y: NDArrayAny,
     ) -> LogisticRegression:
 
         X, classes, y_ind = self._argcheck_X_y(X, y)
@@ -80,83 +89,73 @@ class LogisticRegression(
         n_samples = len(y)
         n_features = len(X.grid_points[0])
 
-        ts = zeros((self.p, ))  # set of indexes of the selected points
+        selected_indexes = np.zeros(self.p, dtype=np.intc)
 
         mvlr = mvLogisticRegression()  # multivariate logistic regression
-        ts_values = [[] for _ in range(n_samples)]
 
-        LL = zeros((n_features, ))
+        x_mv = np.zeros((n_samples, self.p))
+        LL = np.zeros(n_features)
         for q in range(self.p):
             for t in range(n_features):
 
-                x_mv = self._multivariate_append(
-                    ts_values,
-                    X.data_matrix[:, t, 0],
-                )
-                mvlr.fit(x_mv, y_ind)
+                x_mv[:, q] = X.data_matrix[:, t, 0]
+                mvlr.fit(x_mv[:, :self.p + 1], y_ind)
 
                 # log-likelihood function at t
                 log_probs = mvlr.predict_log_proba(x_mv)
-                log_probs = array(
+                log_probs = np.array(
                     [log_probs[i, y[i]] for i in range(n_samples)],
                 )
-                LL[t] = mean(log_probs)
+                LL[t] = np.mean(log_probs)
 
-            tmax = argmax(LL)
-            ts[q] = tmax
-            ts_values = self._multivariate_append(
-                ts_values,
-                X.data_matrix[:, tmax, 0],
-            )
+            tmax = np.argmax(LL)
+            selected_indexes[q] = tmax
+            x_mv[:, q] = X.data_matrix[:, tmax, 0]
 
         # fit for the complete set of points
-        mvlr.fit(ts_values, y_ind)
+        mvlr.fit(x_mv, y_ind)
+
         self.coef_ = mvlr.coef_
         self.intercept_ = mvlr.intercept_
         self._mvlr = mvlr
 
-        self._ts = ts
-        self.points_ = array(
-            [X.grid_points[0][int(t)] for t in ts],  # noqa: WPS441
-        )
+        self._selected_indexes = selected_indexes
+        self.points_ = X.grid_points[0][selected_indexes]
 
         return self
 
-    def predict(self, X: FData) -> ndarray:  # noqa: D102
+    def predict(self, X: FDataGrid) -> NDArrayInt:  # noqa: D102
         check_is_fitted(self)
         return self._wrapper(self._mvlr.predict, X)
 
-    def predict_log_proba(self, X: FData) -> ndarray:  # noqa: D102
+    def predict_log_proba(self, X: FDataGrid) -> NDArrayInt:  # noqa: D102
         check_is_fitted(self)
         return self._wrapper(self._mvlr.predict_log_proba, X)
 
-    def predict_proba(self, X: FData) -> ndarray:  # noqa: D102
+    def predict_proba(self, X: FDataGrid) -> NDArrayInt:  # noqa: D102
         check_is_fitted(self)
         return self._wrapper(self._mvlr.predict_proba, X)
 
-    def _argcheck_X(
+    def _argcheck_X(  # noqa: N802
         self,
-        X: FData,
+        X: FDataGrid,
     ) -> FDataGrid:
 
-        X = X.to_grid()
-
-        dim = len(X.grid_points)
-        if dim > 1:
+        if X.dim_domain > 1:
             raise ValueError(
                 f'The dimension of the domain has to be one'
-                f'; got {dim} dimensions',
+                f'; got {X.dim_domain} dimensions',
             )
 
         return X
 
-    def _argcheck_X_y(
+    def _argcheck_X_y(  # noqa: N802
         self,
-        X: FData,
-        y: ndarray,
-    ) -> Tuple[FDataGrid, ndarray, ndarray]:
+        X: FDataGrid,
+        y: NDArrayAny,
+    ) -> Tuple[FDataGrid, NDArrayAny, NDArrayAny]:
 
-        self._argcheck_X(X)
+        X = self._argcheck_X(X)
 
         classes, y_ind = _classifier_get_classes(y)
 
@@ -174,37 +173,11 @@ class LogisticRegression(
 
         return (X, classes, y_ind)
 
-    def _to_multivariate(
-        self,
-        ts: ndarray,
-        X: FData,
-    ) -> ndarray:
-        """Transform the data for multivariate logistic regression."""
-        X = self._argcheck_X(X)
-
-        return array([X.data_matrix[:, int(t), 0] for t in ts]).T
-
-    def _multivariate_append(
-        self,
-        a: ndarray,
-        b: ndarray,
-    ) -> ndarray:
-        """Append two arrays in a particular manner.
-
-        Args:
-            a: ndarray of shape (n, m).
-            b: ndarray of shape (n,).
-
-        Returns:
-            Array of shape (n, m + 1)
-        """
-        return append(a, b.reshape(-1, 1), axis=1)
-
     def _wrapper(
         self,
-        method: Callable[[ndarray], ndarray],
-        X: FData,
-    ):
+        method: Callable[[NDArrayAny], NDArrayAny],
+        X: FDataGrid,
+    ) -> NDArrayAny:
         """Wrap multivariate logistic regression method.
 
         This function transforms functional data in order to pass
@@ -213,9 +186,8 @@ class LogisticRegression(
         .. warning::
             This function can't be called before fit.
         """
-
         X = self._argcheck_X(X)
 
-        ts_values = self._to_multivariate(self._ts, X)
+        x_mv = X.data_matrix[:, self._selected_indexes, 0]
 
-        return method(ts_values)
+        return method(x_mv)

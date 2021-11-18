@@ -76,13 +76,14 @@ class PerClassTransformer(TransformerMixin):
         ...     random_state=0,
         ... )
         >>> neigh = KNeighborsClassifier()
-        >>> neigh.fit(X_train, y_train)
+        >>> neigh = neigh.fit(X_train, y_train)
 
         Finally we can predict and check the score
         >>> neigh.predict(X_test)
-            [0 0 1 0 1 1 1 0 0 0 0 1 1 0 0 0 0 1 1 1 1 1 1 1]
+            array([0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0,
+            1, 1, 1, 1, 1, 1, 1], dtype=int8)
 
-        >>> neigh.score(X_test, y_test)
+        >>> round(neigh.score(X_test, y_test), 3)
             0.958
     """
 
@@ -125,7 +126,7 @@ class PerClassTransformer(TransformerMixin):
         if tags['stateless'] or not tags['requires_y']:
             warnings.warn(
                 "Transformer should use target data in fit."
-                + "requires_y tag should be enabled and stateless disabled"
+                + " requires_y tag should be enabled and stateless disabled"
                 + str(self.transformer)
                 + " (type " + str(type(self.transformer)) + ")"
                 " doesn't",

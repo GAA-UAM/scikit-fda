@@ -64,6 +64,7 @@ class FdaFeatureUnion(FeatureUnion):
     ...     MinimumRedundancyMaximumRelevance,
     ... )
     >>> from skfda.representation import EvaluationTransformer
+    >>> import numpy as np
 
     Finally we apply fit and transform.
     >>> union = FdaFeatureUnion(
@@ -74,20 +75,14 @@ class FdaFeatureUnion(FeatureUnion):
     ...     ],
     ...     array_output=True,
     ... )
-    >>> union.fit_transform(X,y)
-      [[194.3       , 105.84, -34.61, ..., 193.8       ,
-        194.3       , 195.1       ],
-       [177.4       , -11.42, -17.01, ..., 176.1       ,
-        177.4       , 178.7       ],
-       [171.2       , -33.81, -23.31 , ..., 170.9       ,
-        171.2       , 171.5       ],
-       ...,
-       [166.3       , -19.49  12.77, ..., 166.        ,
-        166.3       , 166.8       ],
-       [168.4       ,  19.28,  31.5, ..., 168.3       ,
-        168.4       , 168.6       ],
-       [168.9       ,  17.72,  27.73 , ..., 168.6       ,
-        168.9       , 169.2       ]]
+    >>> np.around(union.fit_transform(X,y), decimals = 2)
+      array([[194.3 , 105.84, -34.61, ..., 193.8 , 194.3 , 195.1 ],
+            [177.4 , -11.42, -17.01, ..., 176.1 , 177.4 , 178.7 ],
+            [171.2 , -33.81, -23.31, ..., 170.9 , 171.2 , 171.5 ],
+            ...,
+            [166.3 , -19.49,  12.77, ..., 166.  , 166.3 , 166.8 ],
+            [168.4 ,  19.28,  31.5 , ..., 168.3 , 168.4 , 168.6 ],
+            [168.9 ,  17.72,  27.73, ..., 168.6 , 168.9 , 169.2 ]])
     """
 
     def __init__(

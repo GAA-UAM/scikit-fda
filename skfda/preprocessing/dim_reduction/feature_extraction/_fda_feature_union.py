@@ -53,11 +53,10 @@ class FdaFeatureUnion(FeatureUnion):
     >>> X,y = fetch_growth(return_X_y=True)
 
     Then we need to import the transformers we want to use. In our case we
-    will use FPCA and Minimum Redundancy Maximum Relevance.
+    will use Minimum Redundancy Maximum Relevance.
     Evaluation Transformer returns the original curve, and as it is helpful,
-    we will concatenate it to the already metioned transformers.
+    we will concatenate it to the already metioned transformer.
     >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
-    ...     FPCA,
     ...     FdaFeatureUnion,
     ... )
     >>> from skfda.preprocessing.dim_reduction.variable_selection import (
@@ -70,19 +69,18 @@ class FdaFeatureUnion(FeatureUnion):
     >>> union = FdaFeatureUnion(
     ...     [
     ...        ("mrmr", MinimumRedundancyMaximumRelevance()),
-    ...        ("fpca", FPCA()),
     ...        ("eval", EvaluationTransformer()),
     ...     ],
     ...     array_output=True,
     ... )
     >>> np.around(union.fit_transform(X,y), decimals = 2)
-      array([[194.3 , 105.84, -34.61, ..., 193.8 , 194.3 , 195.1 ],
-            [177.4 , -11.42, -17.01, ..., 176.1 , 177.4 , 178.7 ],
-            [171.2 , -33.81, -23.31, ..., 170.9 , 171.2 , 171.5 ],
+      array([[ 194.3,   81.3,   84.2, ...,  193.8,  194.3,  195.1],
+            [ 177.4,   76.2,   80.4, ...,  176.1,  177.4,  178.7],
+            [ 171.2,   76.8,   79.8, ...,  170.9,  171.2,  171.5],
             ...,
-            [166.3 , -19.49,  12.77, ..., 166.  , 166.3 , 166.8 ],
-            [168.4 ,  19.28,  31.5 , ..., 168.3 , 168.4 , 168.6 ],
-            [168.9 ,  17.72,  27.73, ..., 168.6 , 168.9 , 169.2 ]])
+            [ 166.3,   68.6,   73.6, ...,  166. ,  166.3,  166.8],
+            [ 168.4,   79.9,   82.6, ...,  168.3,  168.4,  168.6],
+            [ 168.9,   76.1,   78.4, ...,  168.6,  168.9,  169.2]])
     """
 
     def __init__(

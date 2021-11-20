@@ -8,7 +8,7 @@ from pandas.testing import assert_frame_equal
 from skfda.datasets import fetch_growth
 from skfda.misc.operators import SRSF
 from skfda.preprocessing.dim_reduction.feature_extraction import (
-    FdaFeatureUnion,
+    FDAFeatureUnion,
 )
 from skfda.preprocessing.smoothing.kernel_smoothers import (
     NadarayaWatsonSmoother,
@@ -16,7 +16,7 @@ from skfda.preprocessing.smoothing.kernel_smoothers import (
 from skfda.representation import EvaluationTransformer
 
 
-class TestFdaFeatureUnion(unittest.TestCase):
+class TestFDAFeatureUnion(unittest.TestCase):
     """Check the Fda Feature Union module."""
 
     def setUp(self) -> None:
@@ -25,7 +25,7 @@ class TestFdaFeatureUnion(unittest.TestCase):
 
     def test_incompatible_fdatagrid_output(self) -> None:
         """Check that the transformer returns a fdatagrid."""
-        u = FdaFeatureUnion(
+        u = FDAFeatureUnion(
             [("eval", EvaluationTransformer(None)), ("srsf", SRSF())],
             array_output=True,
         )
@@ -33,7 +33,7 @@ class TestFdaFeatureUnion(unittest.TestCase):
 
     def test_correct_transformation_concat(self) -> None:
         """Check that the transformation is done correctly."""
-        u = FdaFeatureUnion(
+        u = FDAFeatureUnion(
             [("srsf1", SRSF()), ("smooth", NadarayaWatsonSmoother())],
         )
         created_frame = u.fit_transform(self.X)

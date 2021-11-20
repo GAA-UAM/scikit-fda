@@ -10,7 +10,7 @@ from sklearn.pipeline import FeatureUnion
 from ....representation import FData
 
 
-class FdaFeatureUnion(FeatureUnion):  # type: ignore
+class FDAFeatureUnion(FeatureUnion):  # type: ignore
     """Concatenates results of multiple functional transformer objects.
 
     This estimator applies a list of transformer objects in parallel to the
@@ -56,7 +56,7 @@ class FdaFeatureUnion(FeatureUnion):  # type: ignore
     Evaluation Transformer returns the original curve, and as it is helpful,
     we will concatenate it to the already metioned transformer.
     >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
-    ...     FdaFeatureUnion,
+    ...     FDAFeatureUnion,
     ... )
     >>> from skfda.preprocessing.dim_reduction.variable_selection import (
     ...     MinimumRedundancyMaximumRelevance,
@@ -65,7 +65,7 @@ class FdaFeatureUnion(FeatureUnion):  # type: ignore
     >>> import numpy as np
 
     Finally we apply fit and transform.
-    >>> union = FdaFeatureUnion(
+    >>> union = FDAFeatureUnion(
     ...     [
     ...        ("mrmr", MinimumRedundancyMaximumRelevance()),
     ...        ("eval", EvaluationTransformer()),

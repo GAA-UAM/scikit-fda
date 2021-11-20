@@ -7,11 +7,10 @@ from numpy import ndarray
 from pandas import DataFrame
 from sklearn.pipeline import FeatureUnion
 
-from ....representation.basis import FDataBasis
-from ....representation.grid import FDataGrid
+from ....representation import FData
 
 
-class FdaFeatureUnion(FeatureUnion):
+class FdaFeatureUnion(FeatureUnion):  # type: ignore
     """Concatenates results of multiple functional transformer objects.
 
     This estimator applies a list of transformer objects in parallel to the
@@ -73,7 +72,7 @@ class FdaFeatureUnion(FeatureUnion):
     ...     ],
     ...     array_output=True,
     ... )
-    >>> np.around(union.fit_transform(X,y), decimals = 2)
+    >>> np.around(union.fit_transform(X,y), decimals=2)
       array([[ 194.3,   81.3,   84.2, ...,  193.8,  194.3,  195.1],
             [ 177.4,   76.2,   80.4, ...,  176.1,  177.4,  178.7],
             [ 171.2,   76.8,   79.8, ...,  170.9,  171.2,  171.5],
@@ -104,7 +103,7 @@ class FdaFeatureUnion(FeatureUnion):
 
         if self.array_output:
             for i in Xs:
-                if isinstance(i, (FDataGrid, FDataBasis)):
+                if isinstance(i, FData):
                     raise TypeError(
                         "There are transformed instances of FDataGrid or "
                         "FDataBasis that can't be concatenated on a NumPy "

@@ -67,7 +67,13 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
     Finally we apply fit and transform.
     >>> union = FDAFeatureUnion(
     ...     [
-    ...        ("mrmr", MinimumRedundancyMaximumRelevance()),
+    ...        (
+    ...         "mrmr",
+    ...         MinimumRedundancyMaximumRelevance(
+    ...                                           n_features_to_select=1,
+    ...                                           method="MID",
+    ...                                           ),
+    ...        ),
     ...        ("eval", EvaluationTransformer()),
     ...     ],
     ...     array_output=True,

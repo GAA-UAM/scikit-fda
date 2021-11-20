@@ -736,7 +736,7 @@ def _classifier_fit_depth_methods(
 def _fit_feature_transformer(
     X: Union[NDArrayInt, NDArrayFloat],
     y: Union[NDArrayInt, NDArrayFloat],
-    transformer: TransformerMixin,
+    transformer: TransformerMixin,  # type: ignore
 ) -> Tuple[Union[NDArrayInt, NDArrayFloat], Sequence[TransformerMixin]]:
     classes, y_ind = _classifier_get_classes(y)
 

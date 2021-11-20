@@ -27,7 +27,7 @@ class TestPCT(unittest.TestCase):
     def test_transform(self) -> None:
         """Check the data transformation is done correctly."""
         t = PerClassTransformer(
-            RecursiveMaximaHunting(),
+            RecursiveMaximaHunting(),  # type: ignore
             array_output=True,
         )
         t.fit_transform(self.X, self.y)
@@ -36,7 +36,7 @@ class TestPCT(unittest.TestCase):
         manual = np.empty((93, 0))
         classes, y_ind = _classifier_get_classes(self.y)
         for cur_class in range(classes.size):
-            feature_transformer = RecursiveMaximaHunting().fit(
+            feature_transformer = RecursiveMaximaHunting().fit(  # type: ignore
                 self.X[y_ind == cur_class],
                 self.y[y_ind == cur_class],
             )
@@ -47,7 +47,7 @@ class TestPCT(unittest.TestCase):
 
     def test_not_transformer_argument(self) -> None:
         """Check that invalid arguments in fit raise exception."""
-        t = PerClassTransformer(KNeighborsClassifier())
+        t = PerClassTransformer(KNeighborsClassifier())  # type: ignore
         self.assertRaises(
             TypeError,
             t.fit,

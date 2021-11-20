@@ -16,7 +16,7 @@ from ....representation.grid import FData, FDataGrid
 T = TypeVar("T", bound=FData)
 
 
-class PerClassTransformer(TransformerMixin):
+class PerClassTransformer(TransformerMixin):  # type: ignore
     r"""Per class feature transformer for functional data.
 
     This class takes a transformer and performs the following map:

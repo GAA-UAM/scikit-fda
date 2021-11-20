@@ -92,10 +92,10 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
         self,
         transformer_list,
         *,
-        n_jobs=None,
-        transformer_weights=None,
-        verbose=False,
-        array_output=False,
+        n_jobs: int = None,
+        transformer_weights: dict = None,
+        verbose: bool = False,
+        array_output: bool = False,
     ) -> None:
         self.array_output = array_output
         super().__init__(
@@ -105,7 +105,7 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
             verbose=verbose,
         )
 
-    def _hstack(self, Xs) -> Union[DataFrame, ndarray]:
+    def _hstack(self, Xs: ndarray) -> Union[DataFrame, ndarray]:
 
         if self.array_output:
             for i in Xs:

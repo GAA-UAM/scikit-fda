@@ -34,12 +34,15 @@ class TestFDAFeatureUnion(unittest.TestCase):
     def test_correct_transformation_concat(self) -> None:
         """Check that the transformation is done correctly."""
         u = FDAFeatureUnion(
-            [("srsf1", SRSF()), ("smooth", NadarayaWatsonSmoother())],
+            [
+                ("srsf1", SRSF()),
+                ("smooth", NadarayaWatsonSmoother()),  # type: ignore
+            ],
         )
         created_frame = u.fit_transform(self.X)
 
         t1 = SRSF().fit_transform(self.X)
-        t2 = NadarayaWatsonSmoother().fit_transform(self.X)
+        t2 = NadarayaWatsonSmoother().fit_transform(self.X)  # type: ignore
 
         true_frame = DataFrame({"Transformed data": [t1, t2]})
         assert_frame_equal(true_frame, created_frame)

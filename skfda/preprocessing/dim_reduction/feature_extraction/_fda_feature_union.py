@@ -90,10 +90,10 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
 
     def __init__(
         self,
-        transformer_list,
+        transformer_list: list,
         *,
-        n_jobs: int = None,
-        transformer_weights: dict = None,
+        n_jobs: int = 1,
+        transformer_weights: dict = None,  # type: ignore
         verbose: bool = False,
         array_output: bool = False,
     ) -> None:

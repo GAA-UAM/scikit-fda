@@ -91,7 +91,7 @@ class PerClassTransformer(TransformerMixin):  # type: ignore
         self,
         transformer: TransformerMixin,
         *,
-        array_output=False,
+        array_output: bool = False,
     ) -> None:
         self.transformer = transformer
         self.array_output = array_output

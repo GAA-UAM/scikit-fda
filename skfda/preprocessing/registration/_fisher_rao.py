@@ -1,24 +1,32 @@
-
+"""Fisher-Rao elastic registration."""
 from __future__ import annotations
 
 import warnings
-from typing import Any, Callable, Optional, Union
+from typing import Callable, Optional, TypeVar, Union
 
 from sklearn.utils.validation import check_is_fitted
 
 from ... import FDataGrid
-from ..._utils import check_is_univariate, invert_warping, normalize_scale
+from ..._utils import (
+    _check_compatible_fdatagrid,
+    check_is_univariate,
+    invert_warping,
+    normalize_scale,
+)
 from ...exploratory.stats import fisher_rao_karcher_mean
 from ...exploratory.stats._fisher_rao import _elastic_alignment_array
 from ...misc.operators import SRSF
 from ...representation._typing import ArrayLike
 from ...representation.interpolation import SplineInterpolation
-from .base import RegistrationTransformer
+from .base import InductiveRegistrationTransformer
 
 _MeanType = Callable[[FDataGrid], FDataGrid]
+SelfType = TypeVar("SelfType", bound="FisherRaoElasticRegistration")
 
 
-class FisherRaoElasticRegistration(RegistrationTransformer):
+class FisherRaoElasticRegistration(
+    InductiveRegistrationTransformer[FDataGrid, FDataGrid],
+):
     r"""Align a FDatagrid using the SRSF framework.
 
     Let :math:`f` be a function of the functional data object wich will be
@@ -57,16 +65,16 @@ class FisherRaoElasticRegistration(RegistrationTransformer):
     extensively the algorithms employed and the SRSF framework.
 
     Args:
-        template (str, :class:`FDataGrid` or callable, optional): Template to
+        template: Template to
             align the curves. Can contain 1 sample to align all the curves to
             it or the same number of samples than the fdatagrid. By default
             `elastic mean`, in which case :func:`elastic_mean` is called.
-        penalty_term (float, optional): Controls the amount of elasticity.
+        penalty_term: Controls the amount of elasticity.
             Defaults to 0.
-        output_points (array_like, optional): Set of points where the
+        output_points: Set of points where the
             functions are evaluated, by default uses the sample points of the
             fdatagrid which will be transformed.
-        grid_dim (int, optional): Dimension of the grid used in the DP
+        grid_dim: Dimension of the grid used in the DP
             alignment algorithm. Defaults 7.
 
     Attributes:
@@ -115,46 +123,32 @@ class FisherRaoElasticRegistration(RegistrationTransformer):
         self.output_points = output_points
         self.grid_dim = grid_dim
 
-    def fit(self, X: FDataGrid, y: None = None) -> RegistrationTransformer:
-        """Fit the transformer.
+    def fit(self: SelfType, X: FDataGrid, y: None = None) -> SelfType:
 
-        Learns the template used during the transformation.
+        # Points of discretization
+        if self.output_points is None:
+            self._output_points = X.grid_points[0]
+        else:
+            self._output_points = self.output_points
 
-        Args:
-            X: Functional observations used as training samples. If the
-                template provided is a FDataGrid this argument is ignored, as
-                it is not necessary to learn the template from the training
-                data.
-            y: Present for API conventions.
-
-        Returns:
-            self.
-
-        """
         if isinstance(self.template, FDataGrid):
             self.template_ = self.template  # Template already constructed
         else:
             self.template_ = self.template(X)
 
+        _check_compatible_fdatagrid(X, self.template_)
+
         # Constructs the SRSF of the template
-        srsf = SRSF(output_points=self.output_points, initial_value=0)
+        srsf = SRSF(output_points=self._output_points, initial_value=0)
         self._template_srsf = srsf.fit_transform(self.template_)
 
         return self
 
     def transform(self, X: FDataGrid, y: None = None) -> FDataGrid:
-        """Apply elastic registration to the data.
 
-        Args:
-            X: Functional data to be registered.
-            y: Present for API conventions.
-
-        Returns:
-            Registered samples.
-
-        """
-        check_is_fitted(self, '_template_srsf')
+        check_is_fitted(self)
         check_is_univariate(X)
+        _check_compatible_fdatagrid(X, self.template_)
 
         if (
             len(self._template_srsf) != 1
@@ -287,6 +281,7 @@ class FisherRaoElasticRegistration(RegistrationTransformer):
 
 
 class ElasticRegistration(FisherRaoElasticRegistration):
+    """Deprecated name for FisherRaoElasticRegistration."""
 
     def __init__(
         self,

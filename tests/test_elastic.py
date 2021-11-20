@@ -44,6 +44,33 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
         t = np.linspace(-3, 3, 9)
         self.dummy_sample = FDataGrid([np.sin(t)], t)
 
+    def test_fit_wrong_dimension(self) -> None:
+        """Checks that template and fit data is compatible."""
+        reg = FisherRaoElasticRegistration(template=self.template)
+
+        unimodal_samples = make_multimodal_samples(
+            n_samples=3,
+            points_per_dim=10,
+            random_state=1,
+        )
+
+        with self.assertRaises(ValueError):
+            reg.fit(unimodal_samples)
+
+    def test_transform_wrong_dimension(self) -> None:
+        """Checks that template and transform data is compatible."""
+        reg = FisherRaoElasticRegistration(template=self.template)
+
+        unimodal_samples = make_multimodal_samples(
+            n_samples=3,
+            points_per_dim=10,
+            random_state=1,
+        )
+
+        reg.fit(self.unimodal_samples)
+        with self.assertRaises(ValueError):
+            reg.transform(unimodal_samples)
+
     def test_to_srsf(self) -> None:
         """Test to srsf."""
         # Checks SRSF conversion
@@ -218,6 +245,20 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
         values = mean([-1, -0.5, 0, 0.5, 1])
         expected = [[[-1], [-0.376241], [0.136193], [0.599291], [1]]]
         np.testing.assert_array_almost_equal(values, expected)
+
+    def test_linear(self) -> None:
+        grid_points = [i for i in range(10)]
+        data_matrix = np.array([grid_points, grid_points])
+        fd = FDataGrid(
+            data_matrix=data_matrix,
+            grid_points=grid_points,
+        )
+        elastic_registration = FisherRaoElasticRegistration()
+        fd_registered = elastic_registration.fit_transform(fd)
+        np.testing.assert_array_almost_equal(
+            fd_registered.data_matrix[..., 0],
+            data_matrix,
+        )
 
 
 class TestElasticDistances(unittest.TestCase):

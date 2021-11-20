@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from typing import Callable, Generic, Optional, TypeVar
 
-from numpy import ndarray
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
@@ -12,6 +11,7 @@ from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...exploratory.stats import mean, trim_mean
 from ...misc.metrics import Metric, PairwiseMetric, l2_distance
 from ...representation import FData
+from ...representation._typing import NDArrayInt
 
 T = TypeVar("T", bound=FData)
 
@@ -74,7 +74,7 @@ class NearestCentroid(
         self.metric = metric
         self.centroid = centroid
 
-    def fit(self, X: T, y: ndarray) -> NearestCentroid[T]:
+    def fit(self, X: T, y: NDArrayInt) -> NearestCentroid[T]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -97,7 +97,7 @@ class NearestCentroid(
 
         return self
 
-    def predict(self, X: T) -> ndarray:
+    def predict(self, X: T) -> NDArrayInt:
         """Predict the class labels for the provided data.
 
         Args:
@@ -116,11 +116,7 @@ class NearestCentroid(
         ]
 
 
-class DTMClassifier(
-    BaseEstimator,  # type: ignore
-    ClassifierMixin,  # type: ignore
-    Generic[T],
-):
+class DTMClassifier(NearestCentroid[T]):
     """Distance to trimmed means (DTM) classification.
 
     Test samples are classified to the class that minimizes the distance of
@@ -186,41 +182,18 @@ class DTMClassifier(
     ) -> None:
         self.proportiontocut = proportiontocut
         self.depth_method = depth_method
-        self.metric = metric
 
-    def fit(self, X: T, y: ndarray) -> DTMClassifier[T]:
-        """Fit the model using X as training data and y as target values.
+        super().__init__(
+            metric,
+            centroid=self._centroid,
+        )
 
-        Args:
-            X: FDataGrid with the training data.
-            y: Target values of shape = (n_samples).
-
-        Returns:
-            self
-        """
+    def _centroid(self, fdatagrid: T) -> T:
         if self.depth_method is None:
             self.depth_method = ModifiedBandDepth()
 
-        self._clf = NearestCentroid(
-            metric=self.metric,
-            centroid=lambda fdatagrid: trim_mean(
-                fdatagrid,
-                self.proportiontocut,
-                depth_method=self.depth_method,
-            ),
+        return trim_mean(
+            fdatagrid,
+            self.proportiontocut,
+            depth_method=self.depth_method,
         )
-        self._clf.fit(X, y)
-
-        return self
-
-    def predict(self, X: T) -> ndarray:
-        """Predict the class labels for the provided data.
-
-        Args:
-            X: FDataGrid with the test samples.
-
-        Returns:
-            Array of shape (n_samples) or
-                (n_samples, n_outputs) with class labels for each data sample.
-        """
-        return self._clf.predict(X)

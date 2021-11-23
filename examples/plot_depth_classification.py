@@ -4,8 +4,8 @@ Classification
 
 This example shows the use of the depth based classifications methods
 applied to the Berkeley Growth Study data. An attempt to show the
-differences and similarities between MaximumDepthClassifier,
-DDClassifier, and DDGClassifier is made.
+differences and similarities between `MaximumDepthClassifier`,
+`DDClassifier`, and `DDGClassifier` is made.
 """
 
 # Author: Pedro Martín Rodríguez-Ponga Eyriès
@@ -68,17 +68,19 @@ X_test.plot()
 ##############################################################################
 #
 # As said above, we are trying to compare three different methods:
-# MaximumDepthClassifier, DDClassifier, and DDGClassifier. They all use a depth
-# which in our example is :class:`~skfda.representation.depth.
-# ModifiedBandDepth` for consistency. With this depth we can create a DDPlot.
-# In a DDPlot, a growth curve is mapped to :math:`[0,1]x[0,1]` where the first
+# MaximumDepthClassifier, DDClassifier, and `DDGClassifier`. They all use a depth
+# which in our example is
+# :class:`~skfda.representation.depth.ModifiedBandDepth` for consistency. With
+# this depth we can create a `DDPlot`.
+#
+# In a `DDPlot`, a growth curve is mapped to :math:`[0,1]\times[0,1]` where the first
 # coordinate corresponds to the depth in the class of all boys and the second
 # to that of all girls. Note that the dots will be blue if the true sex is
 # female and red otherwise.
 
 ##############################################################################
 #
-# Below we can see how a DDPlot is used to classify with
+# Below we can see how a `DDPlot` is used to classify with
 # MaximumDepthClassifier. In this case it is quite straighforward, a person is
 # classified to the class where it is deeper. This means that if a point is
 # above the diagonal it is a girl and otherwise it is a boy.
@@ -112,8 +114,8 @@ DDPlot(
 
 ##############################################################################
 #
-# Next we use DDClassifier with polynomes of degrees one, two, and three. Here,
-# if a point in the DDPlot is above the polynome, the classifier will predict
+# Next we use `DDClassifier` with polynomes of degrees one, two, and three. Here,
+# if a point in the `DDPlot` is above the polynome, the classifier will predict
 # that it is a girl and otherwise, a boy.
 clf1 = DDClassifier(degree=1, depth_method=ModifiedBandDepth())
 clf1.fit(X_train, y_train)
@@ -121,21 +123,18 @@ print(clf1.predict(X_test))
 print('The score is {0:2.2%}'.format(clf1.score(X_test, y_test)))
 
 ##############################################################################
-#
 clf2 = DDClassifier(degree=2, depth_method=ModifiedBandDepth())
 clf2.fit(X_train, y_train)
 print(clf2.predict(X_test))
 print('The score is {0:2.2%}'.format(clf2.score(X_test, y_test)))
 
 ##############################################################################
-#
 clf3 = DDClassifier(degree=3, depth_method=ModifiedBandDepth())
 clf3.fit(X_train, y_train)
 print(clf3.predict(X_test))
 print('The score is {0:2.2%}'.format(clf3.score(X_test, y_test)))
 
 ##############################################################################
-#
 fig, ax = plt.subplots()
 
 
@@ -184,10 +183,7 @@ DDPlot(
 
 ##############################################################################
 #
-# DDClassifier used with :class:`~sklearn.neighbors.KNeighborsClassifier`.
-
-##############################################################################
-#
+# `DDClassifier` used with :class:`~sklearn.neighbors.KNeighborsClassifier`.
 clf = DDGClassifier(
     KNeighborsClassifier(n_neighbors=5),
     depth_method=ModifiedBandDepth(),
@@ -257,7 +253,7 @@ DDPlot(
 # example, if they are blue it means that the true sex is female. One can see
 # that none of the built classifiers is perfect.
 #
-# Next, we will use DDGClassifier together with a neural network:
+# Next, we will use `DDGClassifier` together with a neural network:
 # :class:`~sklearn.neural_network.MLPClassifier`.
 clf = DDGClassifier(
     MLPClassifier(
@@ -273,7 +269,6 @@ print(clf.predict(X_test))
 print('The score is {0:2.2%}'.format(clf.score(X_test, y_test)))
 
 ##############################################################################
-#
 clf1 = KNeighborsClassifier(n_neighbors=5)
 clf2 = MLPClassifier(
     solver='lbfgs',

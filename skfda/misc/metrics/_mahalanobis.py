@@ -157,7 +157,7 @@ class FMahalanobisDistance(BaseEstimator):  # type: ignore
             / (self.ev_ + self.alpha)**2,
         )
 
-    def mahalanobis_depth(self, e1: FData):
+    def mahalanobis_depth(self, e1: FData) -> NDArrayFloat:
         """Compute the Mahalanobis depth of a given observations.
 
         Args:

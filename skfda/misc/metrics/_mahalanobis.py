@@ -55,33 +55,8 @@ class FMahalanobisDistance(BaseEstimator):  # type: ignore
         >>> fmah = FMahalanobisDistance(2)
         >>> fmah.fit(fd)
         FMahalanobisDistance(n_components=2)
-        >>> fmah.ef_
-        FDataGrid(
-            array([[[-0.63245553],
-                    [ 1.26491106]],
-                   [[ 1.26491106],
-                    [ 0.63245553]]]),
-            grid_points=(array([ 0., 1.]),),
-            domain_range=((0.0, 1.0),),
-            dataset_name=None,
-            argument_names=(None,),
-            coordinate_names=(None,),
-            extrapolation=None,
-            interpolation=SplineInterpolation(interpolation_order=1,
-                smoothness_parameter=0, monotone=False))
-        >>> fmah.ev_
-        array([ 1.25000000e+00, 2.39701829e-95])
-        >>> fmah.mean_
-        FDataGrid(
-            array([[[ 0.5], [ 1. ]]]),
-        grid_points=(array([ 0.,  1.]),),
-        domain_range=((0.0, 1.0),),
-        dataset_name=None,
-        argument_names=(None,),
-        coordinate_names=(None,),
-        extrapolation=None,
-        interpolation=SplineInterpolation(interpolation_order=1,
-            smoothness_parameter=0, monotone=False))
+        >>> fmah.mahalanobis_distance(fd[0], fd[1])
+        1.9968038359080937
 
     References:
         .. footbibliography::

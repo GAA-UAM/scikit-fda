@@ -68,15 +68,15 @@ X_test.plot()
 ##############################################################################
 #
 # As said above, we are trying to compare three different methods:
-# MaximumDepthClassifier, DDClassifier, and `DDGClassifier`. They all use a depth
-# which in our example is
+# MaximumDepthClassifier, DDClassifier, and `DDGClassifier`. They all use a
+# depth which in our example is
 # :class:`~skfda.representation.depth.ModifiedBandDepth` for consistency. With
 # this depth we can create a `DDPlot`.
 #
-# In a `DDPlot`, a growth curve is mapped to :math:`[0,1]\times[0,1]` where the first
-# coordinate corresponds to the depth in the class of all boys and the second
-# to that of all girls. Note that the dots will be blue if the true sex is
-# female and red otherwise.
+# In a `DDPlot`, a growth curve is mapped to :math:`[0,1]\times[0,1]` where the
+# first coordinate corresponds to the depth in the class of all boys and the
+# second to that of all girls. Note that the dots will be blue if the true sex
+# is female and red otherwise.
 
 ##############################################################################
 #
@@ -114,9 +114,9 @@ DDPlot(
 
 ##############################################################################
 #
-# Next we use `DDClassifier` with polynomes of degrees one, two, and three. Here,
-# if a point in the `DDPlot` is above the polynome, the classifier will predict
-# that it is a girl and otherwise, a boy.
+# Next we use `DDClassifier` with polynomes of degrees one, two, and three.
+# Here, if a point in the `DDPlot` is above the polynome, the classifier will
+# predict that it is a girl and otherwise, a boy.
 clf1 = DDClassifier(degree=1, depth_method=ModifiedBandDepth())
 clf1.fit(X_train, y_train)
 print(clf1.predict(X_test))
@@ -318,7 +318,7 @@ for axis in axs:
 
 ##############################################################################
 #
-# We can compare the behavior of two `DDGClassifier` based classifiers. The one
-# on the left corresponds to nearest neighbors and the one on the right to a
-# neural network. Interestingly, the neural network almost coincides with
+# We can compare the behavior of two `DDGClassifier` based classifiers. The
+# one on the left corresponds to nearest neighbors and the one on the right to
+# a neural network. Interestingly, the neural network almost coincides with
 # `MaximumDepthClassifier`.

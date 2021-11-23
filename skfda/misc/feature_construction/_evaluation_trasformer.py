@@ -41,8 +41,8 @@ class EvaluationTransformer(
         shape\_ (tuple): original shape of coefficients per sample.
 
     Examples:
-        >>> from skfda.representation import (FDataGrid, FDataBasis,
-        ...                                   EvaluationTransformer)
+        >>> from skfda.representation import (FDataGrid, FDataBasis)
+        >>> from skfda.misc.feature_construction import EvaluationTransformer
          >>> from skfda.representation.basis import Monomial
 
         Functional data object with 2 samples

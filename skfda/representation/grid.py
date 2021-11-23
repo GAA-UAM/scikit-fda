@@ -485,6 +485,13 @@ class FDataGrid(FData):  # noqa: WPS214
             Returns:
                 ndarray of shape (n_samples, n_dimensions)\
                 with the integrated data.
+        Examples:
+            Integration on the whole domain
+
+            >>> fdata = FDataGrid([1,2,4,5,8], range(5))
+            >>> fdata.integrate()
+            array([[ 15.]])
+
         """
         if interval is None:
             interval = self.grid_points[0]

@@ -70,7 +70,7 @@ class FMahalanobisDistance(BaseEstimator):  # type: ignore
             interpolation=SplineInterpolation(interpolation_order=1,
                 smoothness_parameter=0, monotone=False))
         >>> fmah.ev_
-        array([ 1.25000000e+00, 1.95219693e-33])
+        array([ 1.25000000e+00, 2.39701829e-95])
         >>> fmah.mean_
         FDataGrid(
             array([[[ 0.5], [ 1. ]]]),

@@ -225,7 +225,11 @@ class FPCA(
         )
 
         # initialize the pca module provided by scikit-learn
-        pca = PCA(n_components=self.n_components)
+        pca = PCA(
+            n_components=self.n_components,
+            svd_solver='randomized',
+            random_state=1,
+        )
         pca.fit(final_matrix)
 
         # we choose solve to obtain the component coefficients for the
@@ -373,7 +377,11 @@ class FPCA(
         # see docstring for more information
         final_matrix = fd_data @ np.sqrt(weights_matrix)
 
-        pca = PCA(n_components=self.n_components)
+        pca = PCA(
+            n_components=self.n_components,
+            svd_solver='randomized',
+            random_state=1,
+        )
         pca.fit(final_matrix)
         self.components_ = X.copy(
             data_matrix=np.transpose(

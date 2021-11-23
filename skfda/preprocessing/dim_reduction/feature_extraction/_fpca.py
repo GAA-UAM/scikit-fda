@@ -10,8 +10,6 @@ from scipy.linalg import solve_triangular
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
-from ....misc import inner_product_matrix
-from ....misc.metrics import l2_norm
 from ....misc.regularization import (
     TikhonovRegularization,
     compute_penalty_matrix,
@@ -152,7 +150,6 @@ class FPCA(
             if self.components_basis
             else X.basis.n_basis
         )
-        n_samples = X.n_samples
         # necessary in inverse_transform
         self.n_samples_ = X.n_samples
 
@@ -224,7 +221,7 @@ class FPCA(
 
         # the final matrix, C(L-1Jt)t for svd or (L-1Jt)-1CtC(L-1Jt)t for PCA
         final_matrix = (
-            X.coefficients @ np.transpose(l_inv_j_t) / np.sqrt(n_samples)
+            X.coefficients @ np.transpose(l_inv_j_t)
         )
 
         # initialize the pca module provided by scikit-learn
@@ -289,9 +286,8 @@ class FPCA(
         please view the referenced book, chapter 8.
 
         In summary, we are performing standard multivariate PCA over
-        :math:`\frac{1}{\sqrt{N}} \mathbf{X} \mathbf{W}^{1/2}` where :math:`N`
-        is the number of samples in the dataset, :math:`\mathbf{X}` is the data
-        matrix and :math:`\mathbf{W}` is the weight matrix (this matrix
+        :math:`\mathbf{X} \mathbf{W}^{1/2}` where :math:`\mathbf{X}` is the
+        data matrix and :math:`\mathbf{W}` is the weight matrix (this matrix
         defines the numerical integration). By default the weight matrix is
         obtained using the trapezoidal rule.
 
@@ -375,7 +371,7 @@ class FPCA(
         ).T
 
         # see docstring for more information
-        final_matrix = fd_data @ np.sqrt(weights_matrix) / np.sqrt(n_samples)
+        final_matrix = fd_data @ np.sqrt(weights_matrix)
 
         pca = PCA(n_components=self.n_components)
         pca.fit(final_matrix)

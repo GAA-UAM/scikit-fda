@@ -41,9 +41,9 @@ class EvaluationTransformer(
         shape\_ (tuple): original shape of coefficients per sample.
 
     Examples:
-        >>> from skfda.representation import (FDataGrid, FDataBasis)
+        >>> from skfda.representation import FDataGrid, FDataBasis
         >>> from skfda.misc.feature_construction import EvaluationTransformer
-         >>> from skfda.representation.basis import Monomial
+        >>> from skfda.representation.basis import Monomial
 
         Functional data object with 2 samples
         representing a function :math:`f : \mathbb{R}\longmapsto\mathbb{R}`.
@@ -51,7 +51,7 @@ class EvaluationTransformer(
         >>> data_matrix = [[1, 2], [2, 3]]
         >>> grid_points = [2, 4]
         >>> fd = FDataGrid(data_matrix, grid_points)
-        >>>
+
         >>> transformer = EvaluationTransformer()
         >>> transformer.fit_transform(fd)
         array([[ 1., 2.],

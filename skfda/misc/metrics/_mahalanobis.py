@@ -141,4 +141,4 @@ class FMahalanobisDistance(BaseEstimator):  # type: ignore
         Returns:
             Depth of the observations.
         """
-        return 1 / (1 + self.mahalanobis(e1, self.mean_))
+        return 1 / (1 + self.mahalanobis_distance(e1, self.mean_))

@@ -52,7 +52,7 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
     >>> X,y = fetch_growth(return_X_y=True)
 
     Then we need to import the transformers we want to use. In our case we
-    will use Minimum Redundancy Maximum Relevance.
+    will use Generalized depth-versus-depth transformer.
     Evaluation Transformer returns the original curve, and as it is helpful,
     we will concatenate it to the already metioned transformer.
     >>> from skfda.preprocessing.dim_reduction.feature_extraction import (

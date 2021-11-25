@@ -7,7 +7,6 @@ from typing import Tuple, Union
 
 import numpy as np
 
-from ..._utils import constants
 from ...representation import FDataBasis, FDataGrid
 
 
@@ -179,13 +178,14 @@ def occupation_measure(
         :math:`\mathbb{R}` and | | stands for the Lebesgue measure.
 
         Args:
-            data: FDataGrid where we want to calculate
+            data: FDataGrid or FDataBasis where we want to calculate
             the occupation measure.
-            intervals: sequence of sequence of tuples containing the
+            intervals: ndarray of tuples containing the
             intervals we want to consider. The shape should be
             (n_sequences,2)
             n_points: Number of points to evaluate in the domain.
-            By default will be used 501 points.
+            By default will be used the points defined on the FDataGrid.
+            On a FDataBasis this value should be specified.
         Returns:
             ndarray of shape (n_intervals, n_samples)
             with the transformed data.
@@ -207,10 +207,16 @@ def occupation_measure(
 
         Finally we call to the occupation measure function with the
         intervals that we want to consider. In our case (0.0, 1.0)
-        and (2.0, 3.0)
+        and (2.0, 3.0). We need also to specify the number of points
+        we want that the function takes into account to interpolate.
+        We are going to use 501 points.
         >>> from skfda.misc.feature_construction import occupation_measure
         >>> np.around(
-        ...     occupation_measure(fd_grid, [(0.0, 1.0), (2.0, 3.0)]),
+        ...     occupation_measure(
+        ...         fd_grid,
+        ...         [(0.0, 1.0), (2.0, 3.0)],
+        ...         n_points=501,
+        ...     ),
         ...     decimals=2,
         ... )
         array([[[ 0.98],
@@ -223,17 +229,23 @@ def occupation_measure(
 
     """
     if n_points is None:
-        n_points = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
-
-    lower_functional_limit, upper_functional_limit = data.domain_range[0]
-    domain_size = upper_functional_limit - lower_functional_limit
+        if isinstance(data, FDataBasis):
+            raise ValueError(
+                "Number of points to consider, should be given "
+                + " as an argument for a FDataBasis. Instead None was passed.",
+            )
+        else:
+            grid = data.grid_points
+    else:
+        lower_functional_limit, upper_functional_limit = data.domain_range[0]
+        domain_size = upper_functional_limit - lower_functional_limit
 
     if isinstance(data, FDataGrid):
         time_x_coord_cumulative = np.empty((0, data.data_matrix.shape[0], 1))
     else:
         time_x_coord_cumulative = np.empty((0, data.coefficients.shape[0], 1))
 
-    for interval in intervals:
+    for interval in intervals:  # noqa: WPS426
 
         y1, y2 = interval
         if y2 < y1:
@@ -243,19 +255,33 @@ def occupation_measure(
             )
 
         function_x_coordinates = np.empty((1, 1))
+        if n_points is None:
+            function_x_coordinates = reduce(
+                lambda a, b: np.concatenate(
+                    (
+                        a,
+                        np.array([[b]]),
+                    ),
+                ),
+                grid[0],
+                function_x_coordinates,
+            )[1:]
+        else:
+            for x_coordinate in np.arange(
+                lower_functional_limit,
+                upper_functional_limit,
+                domain_size / n_points,
+            ):
+                function_x_coordinates = np.concatenate(
+                    (function_x_coordinates, np.array([[x_coordinate]])),
+                )
 
-        for x_coordinate in np.arange(
-            lower_functional_limit,
-            upper_functional_limit,
-            domain_size / n_points,
-        ):
-            function_x_coordinates = np.concatenate(
-                (function_x_coordinates, np.array([[x_coordinate]])),
+        if n_points is None:
+            function_y_coordinates = data.data_matrix
+        else:
+            function_y_coordinates = data._evaluate(  # noqa: WPS437
+                function_x_coordinates,
             )
-
-        function_y_coordinates = data._evaluate(  # noqa: WPS437
-            function_x_coordinates,
-        )
 
         time_x_coord_interval = np.empty((0, 1))
         for curve_y_coordinates in function_y_coordinates:

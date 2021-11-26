@@ -205,7 +205,7 @@ class FPCA(
         # apply regularization
         if regularization_matrix is not None:
             # using += would have a different behavior
-            g_matrix = (g_matrix + regularization_matrix)
+            g_matrix = (g_matrix + regularization_matrix)  # noqa: WPS350
 
         # obtain triangulation using cholesky
         l_matrix = np.linalg.cholesky(g_matrix)
@@ -368,7 +368,7 @@ class FPCA(
 
         basis_matrix = basis.data_matrix[..., 0]
         if regularization_matrix is not None:
-            basis_matrix = basis_matrix + regularization_matrix
+            basis_matrix += regularization_matrix
 
         fd_data = np.linalg.solve(
             basis_matrix.T,

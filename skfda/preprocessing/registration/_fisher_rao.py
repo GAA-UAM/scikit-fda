@@ -7,7 +7,12 @@ from typing import Callable, Optional, TypeVar, Union
 from sklearn.utils.validation import check_is_fitted
 
 from ... import FDataGrid
-from ..._utils import check_is_univariate, invert_warping, normalize_scale
+from ..._utils import (
+    _check_compatible_fdatagrid,
+    check_is_univariate,
+    invert_warping,
+    normalize_scale,
+)
 from ...exploratory.stats import fisher_rao_karcher_mean
 from ...exploratory.stats._fisher_rao import _elastic_alignment_array
 from ...misc.operators import SRSF
@@ -120,21 +125,30 @@ class FisherRaoElasticRegistration(
 
     def fit(self: SelfType, X: FDataGrid, y: None = None) -> SelfType:
 
+        # Points of discretization
+        if self.output_points is None:
+            self._output_points = X.grid_points[0]
+        else:
+            self._output_points = self.output_points
+
         if isinstance(self.template, FDataGrid):
             self.template_ = self.template  # Template already constructed
         else:
             self.template_ = self.template(X)
 
+        _check_compatible_fdatagrid(X, self.template_)
+
         # Constructs the SRSF of the template
-        srsf = SRSF(output_points=self.output_points, initial_value=0)
+        srsf = SRSF(output_points=self._output_points, initial_value=0)
         self._template_srsf = srsf.fit_transform(self.template_)
 
         return self
 
     def transform(self, X: FDataGrid, y: None = None) -> FDataGrid:
 
-        check_is_fitted(self, '_template_srsf')
+        check_is_fitted(self)
         check_is_univariate(X)
+        _check_compatible_fdatagrid(X, self.template_)
 
         if (
             len(self._template_srsf) != 1

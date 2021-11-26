@@ -204,6 +204,7 @@ class FPCA(
 
         # apply regularization
         if regularization_matrix is not None:
+            # using += would have a different behavior
             g_matrix = (g_matrix + regularization_matrix)
 
         # obtain triangulation using cholesky

@@ -6,6 +6,7 @@ from typing import Callable, Optional, Union
 
 import numpy as np
 from sklearn.base import BaseEstimator
+from sklearn.utils.validation import check_is_fitted
 
 from ...representation import FData
 from ...representation._typing import ArrayLike, NDArrayFloat
@@ -70,7 +71,6 @@ class FMahalanobisDistance(BaseEstimator):  # type: ignore
         weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
         alpha: float = 0.001,
-        k: int = 10,
     ) -> None:
         self.n_components = n_components
         self.centering = centering
@@ -78,7 +78,6 @@ class FMahalanobisDistance(BaseEstimator):  # type: ignore
         self.weights = weights
         self.components_basis = components_basis
         self.alpha = alpha
-        self.k = k
 
     def fit(
         self,
@@ -127,6 +126,8 @@ class FMahalanobisDistance(BaseEstimator):  # type: ignore
         Returns:
             Squared functional Mahalanobis distances of the observations.
         """
+        check_is_fitted(self)
+
         return np.sum(
             self.ev_ * inner_product(e1 - e2, self.ef_) ** 2
             / (self.ev_ + self.alpha)**2,

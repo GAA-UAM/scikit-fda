@@ -43,26 +43,26 @@ class LogisticRegression(
         >>> fd1 = make_gaussian_process(
         ...         n_samples=50,
         ...         n_features=100,
-        ...         noise=0.5,
+        ...         noise=0.7,
         ...         random_state=0,
         ... )
         >>> fd2 = make_gaussian_process(
         ...         n_samples=50,
         ...         n_features = 100,
-        ...         mean = np.array([1]*100),
-        ...         noise = 0.5,
+        ...         mean = array([1]*100),
+        ...         noise = 0.7,
         ...         random_state=0
         ... )
         >>> fd = fd1.concatenate(fd2)
         >>> y = 50*[0] + 50*[1]
-        >>> lr = LogisticRegression(p=2)
+        >>> lr = LogisticRegression()
         >>> _ = lr.fit(fd[::2], y[::2])
         >>> lr.coef_.round(2)
-        array([[ 2.41,  1.68]])
+        array([[ 1.28,  1.17,  1.27,  1.27,  0.96]])
         >>> lr.points_.round(2)
-        array([ 0.11,  0.  ])
+        array([ 0.11,  0.06,  0.07,  0.03,  0.  ])
         >>> lr.score(fd[1::2],y[1::2])
-        0.92
+        0.94
 
         References:
             .. footbibliography::
@@ -99,10 +99,10 @@ class LogisticRegression(
             for t in range(n_features):
 
                 x_mv[:, q] = X.data_matrix[:, t, 0]
-                mvlr.fit(x_mv[:, :self.p + 1], y_ind)
+                mvlr.fit(x_mv[:, :q + 1], y_ind)
 
                 # log-likelihood function at t
-                log_probs = mvlr.predict_log_proba(x_mv)
+                log_probs = mvlr.predict_log_proba(x_mv[:, :q + 1])
                 log_probs = np.array(
                     [log_probs[i, y[i]] for i in range(n_samples)],
                 )

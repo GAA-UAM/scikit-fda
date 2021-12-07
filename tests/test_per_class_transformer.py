@@ -15,7 +15,7 @@ from skfda.preprocessing.dim_reduction.variable_selection import (
 )
 
 
-class TestPCT(unittest.TestCase):
+class TestPerClassTransformer(unittest.TestCase):
     """Tests for PCT module."""
 
     def setUp(self) -> None:

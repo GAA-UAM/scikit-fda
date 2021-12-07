@@ -14,9 +14,12 @@ from ....representation.basis import FDataBasis
 from ....representation.grid import FData, FDataGrid
 
 T = TypeVar("T", bound=FData)
+Input = TypeVar("Input")
+Output = TypeVar("Output")
+Target = TypeVar("Target")
 
 
-class PerClassTransformer(TransformerMixin):  # type: ignore
+class PerClassTransformer(TransformerMixin):
     r"""Per class feature transformer for functional data.
 
     This class takes a transformer and performs the following map:
@@ -32,15 +35,15 @@ class PerClassTransformer(TransformerMixin):  # type: ignore
     :math:`\mathcal{X} = \mathcal{X}_1 \times ... \times \mathcal{X}_p`.
 
     Parameters:
-        transformer: TransformerMixin
+        transformer:
             The transformer that we want to apply to the given data.
             It should use target data while fitting.
             This is checked by looking at the 'stateless' and 'requires_y' tags
-        array_output: bool
-            indicates if the transformed data is requested to be a NumPy array
+        array_output:
+            Indicates if the transformed data is requested to be a NumPy array
             output. By default the value is False.
     Examples:
-        Firstly, we will import the Berkeley Growth Study dataset
+        Firstly, we will import the Berkeley Growth Study dataset:
 
         >>> from skfda.datasets import fetch_growth
         >>> X, y = fetch_growth(return_X_y=True, as_frame=True)
@@ -52,7 +55,7 @@ class PerClassTransformer(TransformerMixin):  # type: ignore
         ... )
 
         Then we will need to select a fda transformer, and so we will
-        use RecursiveMaximaHunting. We need to fit the data and transform it
+        use RecursiveMaximaHunting. We need to fit the data and transform it:
 
         >>> from skfda.preprocessing.dim_reduction.variable_selection import (
         ...     RecursiveMaximaHunting,
@@ -63,7 +66,7 @@ class PerClassTransformer(TransformerMixin):  # type: ignore
         ... )
         >>> x_transformed = t.fit_transform(X, y)
 
-        x_transformed will be a vector with the transformed data.
+        ``x_transformed`` will be a vector with the transformed data.
         We will split the generated data and fit a KNN classifier.
 
         >>> from sklearn.model_selection import train_test_split
@@ -78,7 +81,7 @@ class PerClassTransformer(TransformerMixin):  # type: ignore
         >>> neigh = KNeighborsClassifier()
         >>> neigh = neigh.fit(X_train, y_train)
 
-        Finally we can predict and check the score
+        Finally we can predict and check the score:
         >>> neigh.predict(X_test)
             array([0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0,
             1, 1, 1, 1, 1, 1, 1], dtype=int8)
@@ -89,7 +92,7 @@ class PerClassTransformer(TransformerMixin):  # type: ignore
 
     def __init__(
         self,
-        transformer: TransformerMixin,
+        transformer: TransformerMixin[Input, Output, Target],
         *,
         array_output: bool = False,
     ) -> None:
@@ -100,8 +103,10 @@ class PerClassTransformer(TransformerMixin):  # type: ignore
         self,
     ) -> None:
         """
-        Check that the transformer passed is\
-        scikit-learn-like and that uses target data in fit.
+        Check that the transformer passed is valid.
+
+        Check that it is scikit-learn-like and that
+        uses target data in fit.
 
         Args:
             None
@@ -125,11 +130,10 @@ class PerClassTransformer(TransformerMixin):  # type: ignore
 
         if tags['stateless'] or not tags['requires_y']:
             warnings.warn(
-                "Transformer should use target data in fit."
-                + " requires_y tag should be enabled and stateless disabled"
-                + str(self.transformer)
-                + " (type " + str(type(self.transformer)) + ")"
-                " doesn't",
+                f"Parameter ``transformer`` with type"  # noqa: WPS237
+                f" {type(self.transformer)} should use class information."
+                f" It should have the ``requires_y`` tag set to ``True`` and"
+                f" the ``stateless`` tag set to ``False``",
             )
 
     def fit(
@@ -138,8 +142,9 @@ class PerClassTransformer(TransformerMixin):  # type: ignore
         y: np.ndarray,
     ) -> PerClassTransformer:
         """
-        Fit the model on each class using X as\
-        training data and y as target values.
+        Fit the model on each class.
+
+        It uses X as training data and y as target values.
 
         Args:
             X: FDataGrid with the training data.
@@ -168,7 +173,7 @@ class PerClassTransformer(TransformerMixin):  # type: ignore
             X: FDataGrid with the test samples.
 
         Returns:
-            Eiter array of shape (n_samples, G) or a Data Frame \
+            Eiter array of shape (n_samples, G) or a Data Frame
             including the transformed data.
         """
         sklearn_check_is_fitted(self)
@@ -199,8 +204,9 @@ class PerClassTransformer(TransformerMixin):  # type: ignore
         y: np.ndarray,
     ) -> Union[DataFrame, np.ndarray]:
         """
-        Fits and transforms the provided data\
-        using the transformer specified when initializing the class.
+        Fits and transforms the provided data.
+
+        It uses the transformer specified when initializing the class.
 
         Args:
             X: FDataGrid with the samples.

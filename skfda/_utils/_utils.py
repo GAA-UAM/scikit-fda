@@ -48,6 +48,10 @@ if TYPE_CHECKING:
     from ..representation.basis import Basis
     T = TypeVar("T", bound=FData)
 
+Input = TypeVar("Input")
+Output = TypeVar("Output")
+Target = TypeVar("Target")
+
 
 def check_is_univariate(fd: FData) -> None:
     """Check if an FData is univariate and raises an error.
@@ -749,7 +753,7 @@ def _classifier_fit_depth_methods(
 def _fit_feature_transformer(
     X: Union[NDArrayInt, NDArrayFloat],
     y: Union[NDArrayInt, NDArrayFloat],
-    transformer: TransformerMixin,  # type: ignore
+    transformer: TransformerMixin[Input, Output, Target],
 ) -> Tuple[Union[NDArrayInt, NDArrayFloat], Sequence[TransformerMixin]]:
     classes, y_ind = _classifier_get_classes(y)
 

@@ -483,24 +483,28 @@ class FDataGrid(FData):  # noqa: WPS214
                 interval: domain range where we want to integrate.
                 By default is None as we integrate on the whole domain.
             Returns:
-                ndarray of shape (n_samples, n_dimensions)\
-                with the integrated data.
+                ndarray of with the integrated data.
         Examples:
             Integration on the whole domain
 
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.integrate()
-            array([[ 15.]])
+            array([ 15.])
 
         """
-        if interval is None:
-            interval = self.grid_points[0]
+        if interval is not None:
+            self.restrict(interval)
 
-        return scipy.integrate.simps(
-            self.data_matrix,
-            x=interval,
-            axis=-2,
-        )
+        integrand = self.data_matrix
+
+        for g in self.grid_points[::-1]:
+            integrand = scipy.integrate.simps(
+                integrand,
+                x=g,
+                axis=-2,
+            )
+
+        return np.sum(integrand, axis=-1)
 
     def _check_same_dimensions(self: T, other: T) -> None:
         if self.data_matrix.shape[1:-1] != other.data_matrix.shape[1:-1]:

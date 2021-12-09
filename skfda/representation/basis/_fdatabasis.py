@@ -374,10 +374,10 @@ class FDataBasis(FData):  # noqa: WPS214
                 with the integrated data.
         """
         if interval is None:
-            interval = self.basis.domain_range[0]
+            interval = self.basis.domain_range
         integrated = nquad_vec(
             self,
-            [interval],
+            interval,
         )
         integrated_values = np.empty((1, 1))
 

@@ -33,6 +33,7 @@ from ._typing import (
     GridPointsLike,
     LabelTuple,
     LabelTupleLike,
+    NDArrayFloat,
 )
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike, _parse_extrapolation
@@ -657,6 +658,23 @@ class FData(  # noqa: WPS214
         Returns:
             Functional object containg the derivative.
 
+        """
+        pass
+
+    @abstractmethod
+    def integrate(
+        self: T,
+        *,
+        interval: Optional[DomainRange] = None,
+    ) -> NDArrayFloat:
+        """Integration of the FData object.
+
+        Args:
+            interval: domain range where we want to integrate.
+            By default is None as we integrate on the whole domain.
+
+        Returns:
+            ndarray of shape with the integrated data.
         """
         pass
 

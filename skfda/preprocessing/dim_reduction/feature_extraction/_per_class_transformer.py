@@ -6,20 +6,20 @@ from typing import TypeVar, Union
 
 import numpy as np
 from pandas import DataFrame
-from sklearn.base import TransformerMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ...._utils import _fit_feature_transformer
+from ...._utils import TransformerMixin, _fit_feature_transformer
+from ....representation._typing import NDArrayInt
 from ....representation.basis import FDataBasis
 from ....representation.grid import FData, FDataGrid
 
 T = TypeVar("T", bound=FData)
 Input = TypeVar("Input")
 Output = TypeVar("Output")
-Target = TypeVar("Target")
+Target = TypeVar("Target", bound=NDArrayInt)
 
 
-class PerClassTransformer(TransformerMixin):
+class PerClassTransformer(TransformerMixin[Input, Output, Target]):
     r"""Per class feature transformer for functional data.
 
     This class takes a transformer and performs the following map:

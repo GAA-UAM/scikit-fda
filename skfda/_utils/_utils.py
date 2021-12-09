@@ -750,11 +750,15 @@ def _classifier_fit_depth_methods(
     return classes, class_depth_methods_
 
 
-def _fit_feature_transformer(
+def _fit_feature_transformer(  # noqa: WPS320 WPS234
     X: Union[NDArrayInt, NDArrayFloat],
     y: Union[NDArrayInt, NDArrayFloat],
     transformer: TransformerMixin[Input, Output, Target],
-) -> Tuple[Union[NDArrayInt, NDArrayFloat], Sequence[TransformerMixin]]:
+) -> Tuple[
+    Union[NDArrayInt, NDArrayFloat],
+    Sequence[TransformerMixin[Input, Output, Target]],
+]:
+
     classes, y_ind = _classifier_get_classes(y)
 
     class_feature_transformers = [

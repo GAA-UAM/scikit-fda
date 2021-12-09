@@ -28,10 +28,11 @@ compared the training samples (nonoutliers).
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import gaussian_kde
-from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
-from skfda.misc.covariances import Exponential, Gaussian
+
 from skfda.datasets import make_gaussian_process
+from skfda.misc.covariances import Exponential, Gaussian
 from skfda.misc.metrics import l2_distance, l2_norm
+from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
 
 ##############################################################################
 # We proceed as follows:
@@ -55,7 +56,7 @@ from skfda.misc.metrics import l2_distance, l2_norm
 #
 # The train set is generated according to a Gaussian process
 # with a Gaussian (i.e. squared-exponential) covariance function.
-grid_size = 5 * 10**3
+grid_size = 100
 
 cov_clean = Gaussian(variance=2.0, length_scale=5.0)
 

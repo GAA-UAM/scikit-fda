@@ -305,7 +305,7 @@ class _ArgMaxClassifier(
         >>> X = np.array([[1,5], [3,2], [4,1]])
         >>> y = np.array([1, 0, 0])
 
-        We will fit am ArgMax classifier
+        We will fit an ArgMax classifier
 
         >>> from skfda.ml.classification._depth_classifiers import \
         ... _ArgMaxClassifier

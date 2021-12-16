@@ -17,7 +17,7 @@ from ..regularization._regularization import TikhonovRegularization
 WeightsCallable = Callable[[np.ndarray], np.ndarray]
 
 
-class FMahalanobisDistance(BaseEstimator):  # type: ignore
+class MahalanobisDistance(BaseEstimator):  # type: ignore
     r"""Functional Mahalanobis distance.
 
     Class that implements functional Mahalanobis distance for both
@@ -25,12 +25,12 @@ class FMahalanobisDistance(BaseEstimator):  # type: ignore
     :footcite:`berrendero+bueno-larraz+cuevas_2020_mahalanobis`.
 
     Parameters:
-        n_components: Number of eigenfunctions to keep from
+        n_components: Number of eigenvectors to keep from
             functional principal component analysis. Defaults to 10.
         centering: If ``True`` then calculate the mean of the functional
             data object and center the data first. Defaults to ``True``.
         regularization: Regularization object to be applied.
-        components_basis: The basis in which we want the eigenfunctions.
+        components_basis: The basis in which we want the eigenvectors.
             We can use a different basis than the basis contained in the
             passed FDataBasis object. This parameter is only used when
             fitting a FDataBasis.
@@ -42,21 +42,21 @@ class FMahalanobisDistance(BaseEstimator):  # type: ignore
             parameter is only used when fitting a FDataGrid.
 
     Attributes:
-        ef\_: Eigenfunctions of the covariance operator.
+        ef\_: eigenvectors of the covariance operator.
         ev\_: Eigenvalues of the covariance operator.
         mean\_: Mean of the stochastic process.
 
     Examples:
-        >>> from skfda.misc.metrics import FMahalanobisDistance
+        >>> from skfda.misc.metrics import MahalanobisDistance
         >>> import numpy as np
         >>> from skfda.representation.grid import FDataGrid
         >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
         >>> grid_points = [0, 1]
         >>> fd = FDataGrid(data_matrix, grid_points)
-        >>> fmah = FMahalanobisDistance(2)
-        >>> fmah.fit(fd)
-        FMahalanobisDistance(n_components=2)
-        >>> fmah.mahalanobis_distance(fd[0], fd[1])
+        >>> mah = MahalanobisDistance(2)
+        >>> mah.fit(fd)
+        MahalanobisDistance(n_components=2)
+        >>> mah(fd[0], fd[1])
         1.9968038359080937
 
     References:
@@ -83,10 +83,10 @@ class FMahalanobisDistance(BaseEstimator):  # type: ignore
         self,
         X: FData,
         y: None = None,
-    ) -> FMahalanobisDistance:
+    ) -> MahalanobisDistance:
         """Fit the functional Mahalanobis distance to X.
 
-        We extract the eigenfunctions and corresponding eigenvalues
+        We extract the eigenvectors and corresponding eigenvalues
         of the covariance operator by using FPCA.
 
         Args:
@@ -112,7 +112,7 @@ class FMahalanobisDistance(BaseEstimator):  # type: ignore
 
         return self
 
-    def mahalanobis_distance(
+    def __call__(
         self,
         e1: FData,
         e2: FData,
@@ -132,14 +132,3 @@ class FMahalanobisDistance(BaseEstimator):  # type: ignore
             self.ev_ * inner_product(e1 - e2, self.ef_) ** 2
             / (self.ev_ + self.alpha)**2,
         )
-
-    def mahalanobis_depth(self, e1: FData) -> NDArrayFloat:
-        """Compute the Mahalanobis depth of a given observations.
-
-        Args:
-            e1: First object.
-
-        Returns:
-            Depth of the observations.
-        """
-        return 1 / (1 + self.mahalanobis_distance(e1, self.mean_))

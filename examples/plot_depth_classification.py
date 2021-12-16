@@ -2,7 +2,7 @@
 Depth based classification
 ==========================
 
-This example shows the use of the depth based classifications methods
+This example shows the use of the depth based classification methods
 applied to the Berkeley Growth Study data. An attempt to show the
 differences and similarities between `MaximumDepthClassifier`,
 `DDClassifier`, and `DDGClassifier` is made.

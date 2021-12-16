@@ -50,28 +50,9 @@ ArgcheckResultType = Tuple[
 ]
 
 
-class DataFrameMixin:
-    """Mixin class to add DataFrame funcionality."""
-
-    def dataframe_conversion(self, X: pd.DataFrame) -> List:
-        """Convert DataFrames to a list with two elements: first of all, a list with mv
-        covariates and the second, a FDataBasis object with functional data.
-
-        Args:
-            - X: pandas DataFrame to convert.
-
-        Returns:
-            - list with two elements: first of all, a list with mv
-            covariates and the second, a FDataBasis object with functional data.
-        """
-        fdb = FDataBasis.concatenate(*X.iloc[:, 1].tolist())
-        return [X.iloc[:, 0].tolist(), fdb]
-
-
 class LinearRegression(
     BaseEstimator,   # type: ignore
     RegressorMixin,  # type: ignore
-    DataFrameMixin,  # type: ignore
 ):
 
     """
@@ -399,3 +380,17 @@ class LinearRegression(
                 )
 
         return new_X, y, sample_weight, coef_info
+    
+    def dataframe_conversion(self, X: pd.DataFrame) -> List:
+        """Convert DataFrames to a list with two elements: first of all, a list with mv
+        covariates and the second, a FDataBasis object with functional data
+
+        Args:
+            - X: pandas DataFrame to convert
+
+        Returns:
+            - list with two elements: first of all, a list with mv
+            covariates and the second, a FDataBasis object with functional data
+        """
+        fdb = FDataBasis.concatenate(*X.iloc[:, 1].tolist())
+        return [X.iloc[:, 0].tolist(), fdb]

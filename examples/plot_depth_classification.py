@@ -1,6 +1,6 @@
 """
-Classification
-==============
+Depth based classification
+==========================
 
 This example shows the use of the depth based classifications methods
 applied to the Berkeley Growth Study data. An attempt to show the
@@ -63,7 +63,7 @@ X_train.plot(group=y_train, group_names=categories)
 #
 # Below are the growth graphs of those individuals that we would like to
 # classify. Some of them will be male and some female.
-X_test.plot()
+X_test.plot().show()
 
 ##############################################################################
 #
@@ -104,7 +104,7 @@ DDPlot(
     cmap_bold=cmap_bold,
     x_label="Boy class depth",
     y_label="Girl class depth",
-).plot()
+).plot().show()
 
 ##############################################################################
 #
@@ -179,7 +179,7 @@ DDPlot(
     cmap_bold=cmap_bold,
     x_label="Boy class depth",
     y_label="Girl class depth",
-).plot()
+).plot().show()
 
 ##############################################################################
 #
@@ -197,13 +197,20 @@ print('The score is {0:2.2%}'.format(clf.score(X_test, y_test)))
 #
 # The other elements of the graph are the decision boundaries:
 #
+# +--------------+--------------------------------------+
 # | Boundary     | Classifier                           |
-# | ------------ | ------------------------------------ |
+# +==============+======================================+
 # | MaxDepth     | MaximumDepthClassifier               |
+# +--------------+--------------------------------------+
 # | P1           | DDClassifier with degree 1           |
+# +--------------+--------------------------------------+
 # | P2           | DDClassifier with degree 2           |
+# +--------------+--------------------------------------+
 # | P3           | DDClassifier with degree 3           |
+# +--------------+--------------------------------------+
 # | NearestClass | DDGClassifier with nearest neighbors |
+# +--------------+--------------------------------------+
+
 ddg: DDGTransformer[FDataGrid] = DDGTransformer(
     depth_method=ModifiedBandDepth(),
 )
@@ -244,7 +251,7 @@ DDPlot(
     cmap_bold=cmap_bold,
     x_label="Boy class depth",
     y_label="Girl class depth",
-).plot()
+).plot().show()
 
 ##############################################################################
 #
@@ -300,7 +307,7 @@ DDPlot(
     cmap_bold=cmap_bold,
     x_label="Boy class depth",
     y_label="Girl class depth",
-).plot()
+).plot().show()
 DDPlot(
     fdata=X_test,
     dist1=X_train[np.invert(index)],
@@ -311,7 +318,7 @@ DDPlot(
     cmap_bold=cmap_bold,
     x_label="Boy class depth",
     y_label="Girl class depth",
-).plot()
+).plot().show()
 
 for axis in axs:
     axis.label_outer()

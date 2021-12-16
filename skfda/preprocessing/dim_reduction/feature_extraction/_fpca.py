@@ -61,7 +61,6 @@ class FPCA(
             of variance explained by each principal component.
         mean\_ (FData): mean of the train data.
 
-
     Examples:
         Construct an artificial FDataBasis object and run FPCA with this
         object. The resulting principal components are not compared because
@@ -89,7 +88,6 @@ class FPCA(
         >>> fd = FDataGrid(data_matrix, grid_points)
         >>> fpca_grid = FPCA(2)
         >>> fpca_grid = fpca_grid.fit(fd)
-
     """
 
     def __init__(

@@ -14,7 +14,11 @@ from .._utils import (
     normalize_warping,
 )
 from ..misc import covariances
-from ..representation._typing import DomainRangeLike, GridPointsLike
+from ..representation._typing import (
+    DomainRangeLike,
+    GridPointsLike,
+    NDArrayFloat,
+)
 from ..representation.interpolation import SplineInterpolation
 
 MeanCallable = Callable[[np.ndarray], np.ndarray]
@@ -285,7 +289,7 @@ def make_multimodal_samples(
     std: float = 0.05,
     mode_std: float = 0.02,
     noise: float = 0,
-    modes_location: Optional[Sequence[float]] = None,
+    modes_location: Optional[Union[Sequence[float], NDArrayFloat]] = None,
     random_state: RandomStateLike = None,
 ) -> FDataGrid:
     r"""

@@ -84,7 +84,7 @@ class DDGTransformer(
         TEST, 26. 119-142.
     """
 
-    def __init__(
+    def __init__(  # noqa: WPS234
         self,
         depth_method: Union[Depth[T], Sequence[Depth[T]], None] = None,
     ) -> None:
@@ -127,6 +127,6 @@ class DDGTransformer(
         sklearn_check_is_fitted(self)
 
         return np.transpose([
-            depth_method.predict(X)
+            depth_method.transform(X)
             for depth_method in self.class_depth_methods_
         ])

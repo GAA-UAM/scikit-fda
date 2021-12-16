@@ -59,6 +59,8 @@ class FPCA(
             each of the selected components.
         explained_variance_ratio\_ (array_like): this contains the percentage
             of variance explained by each principal component.
+        singular_values\_: The singular values corresponding to each of the
+            selected components. 
         mean\_ (FData): mean of the train data.
 
     Examples:
@@ -241,6 +243,7 @@ class FPCA(
 
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
         self.explained_variance_ = pca.explained_variance_
+        self.singular_values_ = pca.singular_values_
         self.components_ = X.copy(
             basis=components_basis,
             coefficients=component_coefficients.T,
@@ -394,6 +397,7 @@ class FPCA(
 
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
         self.explained_variance_ = pca.explained_variance_
+        self.singular_values_ = pca.singular_values_
 
         return self
 

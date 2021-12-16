@@ -236,15 +236,11 @@ class GraphPlot(BasePlot):
             else:
                 self.max_grad = max_grad
 
-            aux_list = [
-                grad_color - self.min_grad
-                for grad_color in self.gradient_criteria
-            ]
-
             self.gradient_list: Optional[Sequence[float]] = (
                 [
-                    aux / (self.max_grad - self.min_grad)
-                    for aux in aux_list
+                    (grad_color - self.min_grad)
+                    / (self.max_grad - self.min_grad)
+                    for grad_color in self.gradient_criteria
                 ]
             )
         else:
@@ -280,9 +276,7 @@ class GraphPlot(BasePlot):
             else:
                 colormap = matplotlib.cm.get_cmap(self.colormap)
 
-            sample_colors = [
-                colormap(g for g in self.gradient_list),
-            ]
+            sample_colors = colormap(self.gradient_list)
 
         self.sample_colors = sample_colors
         self.patches = patches

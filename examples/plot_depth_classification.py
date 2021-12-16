@@ -57,7 +57,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 # Plot samples grouped by sex
-X_train.plot(group=y_train, group_names=categories)
+X_train.plot(group=y_train, group_names=categories).show()
 
 ##############################################################################
 #

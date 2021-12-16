@@ -54,9 +54,8 @@ class LinearRegression(
     BaseEstimator,   # type: ignore
     RegressorMixin,  # type: ignore
 ):
+    """.. deprecated:: 0.8.
 
-    """
-    .. deprecated:: 0.8
     Use covariate parameters of type pandas.FDataFrame in methods
     fit, predict.
 
@@ -380,16 +379,18 @@ class LinearRegression(
                 )
 
         return new_X, y, sample_weight, coef_info
-    
+
     def dataframe_conversion(self, X: pd.DataFrame) -> List:
-        """Convert DataFrames to a list with two elements: first of all, a list with mv
-        covariates and the second, a FDataBasis object with functional data
+        """Convert DataFrames to a list with two elements.
+
+        First of all, a list with mv covariates and the second,
+        a FDataBasis object with functional data
 
         Args:
-            - X: pandas DataFrame to convert
+            X: pandas DataFrame to convert
 
         Returns:
-            - list with two elements: first of all, a list with mv
+            list with two elements: first of all, a list with mv
             covariates and the second, a FDataBasis object with functional data
         """
         fdb = FDataBasis.concatenate(*X.iloc[:, 1].tolist())

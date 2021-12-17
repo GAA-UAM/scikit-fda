@@ -11,9 +11,8 @@ from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 from ...._utils import TransformerMixin, _fit_feature_transformer
 from ....representation._typing import NDArrayInt
 from ....representation.basis import FDataBasis
-from ....representation.grid import FData, FDataGrid
+from ....representation.grid import FDataGrid
 
-T = TypeVar("T", bound=FData)
 Input = TypeVar("Input")
 Output = TypeVar("Output")
 Target = TypeVar("Target", bound=NDArrayInt)
@@ -42,6 +41,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
         array_output:
             Indicates if the transformed data is requested to be a NumPy array
             output. By default the value is False.
+
     Examples:
         Firstly, we will import the Berkeley Growth Study dataset:
 
@@ -60,34 +60,91 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
         >>> from skfda.preprocessing.dim_reduction.variable_selection import (
         ...     RecursiveMaximaHunting,
         ... )
-        >>> t = PerClassTransformer(
+        >>> t1 = PerClassTransformer(
         ...     RecursiveMaximaHunting(),
         ...     array_output=True,
         ... )
-        >>> x_transformed = t.fit_transform(X, y)
+        >>> x_transformed1 = t1.fit_transform(X, y)
 
-        ``x_transformed`` will be a vector with the transformed data.
+        ``x_transformed1`` will be a vector with the transformed data.
         We will split the generated data and fit a KNN classifier.
 
         >>> from sklearn.model_selection import train_test_split
         >>> from sklearn.neighbors import KNeighborsClassifier
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     x_transformed,
+        >>> X_train1, X_test1, y_train1, y_test1 = train_test_split(
+        ...     x_transformed1,
         ...     y,
         ...     test_size=0.25,
         ...     stratify=y,
         ...     random_state=0,
         ... )
-        >>> neigh = KNeighborsClassifier()
-        >>> neigh = neigh.fit(X_train, y_train)
+        >>> neigh1 = KNeighborsClassifier()
+        >>> neigh1 = neigh1.fit(X_train1, y_train1)
 
         Finally we can predict and check the score:
-        >>> neigh.predict(X_test)
+        >>> neigh1.predict(X_test1)
             array([0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0,
             1, 1, 1, 1, 1, 1, 1], dtype=int8)
 
-        >>> round(neigh.score(X_test, y_test), 3)
+        >>> round(neigh1.score(X_test1, y_test1), 3)
             0.958
+
+
+
+        We can also use a transformer that returns a FData object
+        when predicting.
+        In our example we are going to use the Nadaraya Watson Smoother.
+
+        >>> from skfda.preprocessing.smoothing.kernel_smoothers import (
+        ...     NadarayaWatsonSmoother,
+        ... )
+        >>> t2 = PerClassTransformer(
+        ...     NadarayaWatsonSmoother(),
+        ... )
+        >>> x_transformed2 = t2.fit_transform(X, y)
+
+        ``x_transformed2`` will be a DataFrame with the transformed data.
+        Each row on the frame contains a FDataGrid describing a transformed
+        curve.
+        We need to convert the DataFrame into a FDataGrid with all the
+        samples, so we can train a classifier. We also need to duplicate
+        the outputs as we have the double amount of data curves:
+
+        >>> for i, curve_grid in enumerate(x_transformed2.iloc[:,0].values):
+        ...     if i == 0:
+        ...         X_transformed_grid = curve_grid
+        ...     else:
+        ...         X_transformed_grid = X_transformed_grid.concatenate(
+        ...                                 curve_grid,
+        ...                              )
+
+        >>> y = np.concatenate((y,y))
+
+
+        ``X_transformed_grid`` contains a FDataGrid with all the transformed
+        curves. Now we are able to use it to fit a KNN classifier.
+        Again we split the data into train and test.
+        >>> X_train2, X_test2, y_train2, y_test2 = train_test_split(
+        ...     X_transformed_grid,
+        ...     y,
+        ...     test_size=0.25,
+        ...     stratify=y,
+        ...     random_state=0,
+        ... )
+
+        This time we need a functional data classifier.
+        We fit the classifier and predict.
+        >>> from skfda.ml.classification import KNeighborsClassifier
+        >>> neigh2 = KNeighborsClassifier()
+        >>> neigh2 = neigh2.fit(X_train2, y_train2)
+        >>> neigh2.predict(X_test2)
+            array([1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1,
+            0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0,
+            1, 1, 1, 0, 0], dtype=int8)
+
+        >>> round(neigh2.score(X_test2, y_test2), 3)
+            0.957
+
     """
 
     def __init__(
@@ -138,9 +195,9 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
     def fit(
         self,
-        X: T,
+        X: Input,
         y: np.ndarray,
-    ) -> PerClassTransformer:
+    ) -> PerClassTransformer[Input, Output, Target]:
         """
         Fit the model on each class.
 
@@ -165,7 +222,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
         return self
 
-    def transform(self, X: T) -> Union[DataFrame, np.ndarray]:
+    def transform(self, X: Input) -> Union[DataFrame, np.ndarray]:
         """
         Transform the provided data using the already fitted transformer.
 
@@ -178,10 +235,16 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
         """
         sklearn_check_is_fitted(self)
 
-        transformed_data = np.empty((len(X), 0))
-        for feature_transformer in self._class_feature_transformers_:
+        for j, feature_transformer in enumerate(
+            self._class_feature_transformers_,
+        ):
             elem = feature_transformer.transform(X)
             data = np.array(elem)
+            if j == 0:
+                if self.array_output:
+                    transformed_data = np.empty((len(X), 0))
+                else:
+                    transformed_data = np.empty((0))
             transformed_data = np.hstack((transformed_data, data))
 
         if self.array_output:
@@ -200,7 +263,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
     def fit_transform(
         self,
-        X: T,
+        X: Input,
         y: np.ndarray,
     ) -> Union[DataFrame, np.ndarray]:
         """

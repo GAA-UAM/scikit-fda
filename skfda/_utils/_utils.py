@@ -763,7 +763,7 @@ def _fit_feature_transformer(  # noqa: WPS320 WPS234
 
     class_feature_transformers = [
         clone(transformer).fit(X[y_ind == cur_class], y[y_ind == cur_class])
-        for cur_class in range(classes.size)
+        for cur_class, _ in enumerate(classes)
     ]
 
     return classes, class_feature_transformers

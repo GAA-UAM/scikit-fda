@@ -4,8 +4,10 @@ Depth based classification
 
 This example shows the use of the depth based classification methods
 applied to the Berkeley Growth Study data. An attempt to show the
-differences and similarities between `MaximumDepthClassifier`,
-`DDClassifier`, and `DDGClassifier` is made.
+differences and similarities between
+:class:`~skfda.ml.classification.MaximumDepthClassifier`,
+:class:`~skfda.ml.classification.DDClassifier`,
+and :class:`~skfda.ml.classification.DDGClassifier` is made.
 """
 
 # Author: Pedro Martín Rodríguez-Ponga Eyriès
@@ -32,10 +34,9 @@ from skfda.preprocessing.dim_reduction.feature_extraction import DDGTransformer
 from skfda.representation.grid import FDataGrid
 
 ##############################################################################
-#
 # The Berkeley Growth Study data contains the heights of 39 boys and 54 girls
 # from age 1 to 18 and the ages at which they were collected. Males are
-# assigned the numeric value 0 while females are coded to a 1. In our
+# assigned the numeric value 0 while females are assigned a 1. In our
 # comparison of the different methods, we will try to learn the sex of a person
 # by using its growth curve.
 X, y = datasets.fetch_growth(return_X_y=True, as_frame=True)
@@ -44,7 +45,6 @@ categories = y.values.categories
 y = y.values.codes
 
 ##############################################################################
-#
 # As in many ML algorithms, we split the dataset into train and test. In this
 # graph, we can see the training dataset. These growth curves will be used to
 # train the model. Hence, the predictions will be data-driven.
@@ -60,30 +60,31 @@ X_train, X_test, y_train, y_test = train_test_split(
 X_train.plot(group=y_train, group_names=categories).show()
 
 ##############################################################################
-#
 # Below are the growth graphs of those individuals that we would like to
 # classify. Some of them will be male and some female.
 X_test.plot().show()
 
 ##############################################################################
-#
 # As said above, we are trying to compare three different methods:
-# MaximumDepthClassifier, DDClassifier, and `DDGClassifier`. They all use a
+# :class:`~skfda.ml.classification.MaximumDepthClassifier`,
+# :class:`~skfda.ml.classification.DDClassifier`, and
+# :class:`~skfda.ml.classification.DDGClassifier`. They all use a
 # depth which in our example is
 # :class:`~skfda.representation.depth.ModifiedBandDepth` for consistency. With
-# this depth we can create a `DDPlot`.
+# this depth we can create a :class:`~skfda.exploratory.visualization.DDPlot`.
 #
-# In a `DDPlot`, a growth curve is mapped to :math:`[0,1]\times[0,1]` where the
-# first coordinate corresponds to the depth in the class of all boys and the
-# second to that of all girls. Note that the dots will be blue if the true sex
-# is female and red otherwise.
+# In a :class:`~skfda.exploratory.visualization.DDPlot`, a growth curve is
+# mapped to :math:`[0,1]\times[0,1]` where the first coordinate corresponds
+# to the depth in the class of all boys and the second to that of all girls.
+# Note that the dots will be blue if the true sex is female and red otherwise.
 
 ##############################################################################
-#
-# Below we can see how a `DDPlot` is used to classify with
-# MaximumDepthClassifier. In this case it is quite straighforward, a person is
-# classified to the class where it is deeper. This means that if a point is
-# above the diagonal it is a girl and otherwise it is a boy.
+# Below we can see how a :class:`~skfda.exploratory.visualization.DDPlot` is
+# used to classify with
+# :class:`~skfda.ml.classification.MaximumDepthClassifier`. In this case it is
+# quite straighforward, a person is classified to the class where it is
+# deeper. This means that if a point is above the diagonal it is a girl and
+# otherwise it is a boy.
 clf = MaximumDepthClassifier(depth_method=ModifiedBandDepth())
 clf.fit(X_train, y_train)
 print(clf.predict(X_test))
@@ -107,16 +108,15 @@ DDPlot(
 ).plot().show()
 
 ##############################################################################
-#
 # We can see that we have used the classification predictions to compute the
 # score (obtained by comparing to the real known sex). This will also be done
 # for the rest of the classifiers.
 
 ##############################################################################
-#
-# Next we use `DDClassifier` with polynomes of degrees one, two, and three.
-# Here, if a point in the `DDPlot` is above the polynome, the classifier will
-# predict that it is a girl and otherwise, a boy.
+# Next we use :class:`~skfda.ml.classification.DDClassifier` with polynomes
+# of degrees one, two, and three. Here, if a point in the
+# :class:`~skfda.exploratory.visualization.DDPlot` is above the polynome,
+# the classifier will predict that it is a girl and otherwise, a boy.
 clf1 = DDClassifier(degree=1, depth_method=ModifiedBandDepth())
 clf1.fit(X_train, y_train)
 print(clf1.predict(X_test))
@@ -182,8 +182,8 @@ DDPlot(
 ).plot().show()
 
 ##############################################################################
-#
-# `DDClassifier` used with :class:`~sklearn.neighbors.KNeighborsClassifier`.
+# :class:`~skfda.ml.classification.DDClassifier` used with
+# :class:`~sklearn.neighbors.KNeighborsClassifier`.
 clf = DDGClassifier(
     KNeighborsClassifier(n_neighbors=5),
     depth_method=ModifiedBandDepth(),
@@ -194,7 +194,6 @@ print('The score is {0:2.2%}'.format(clf.score(X_test, y_test)))
 
 
 ##############################################################################
-#
 # The other elements of the graph are the decision boundaries:
 #
 # +--------------+--------------------------------------+
@@ -254,14 +253,13 @@ DDPlot(
 ).plot().show()
 
 ##############################################################################
-#
 # In the above graph, we can see the obtained classifiers from the train set.
 # The dots are all part of the test set and have their real color so, for
 # example, if they are blue it means that the true sex is female. One can see
 # that none of the built classifiers is perfect.
 #
-# Next, we will use `DDGClassifier` together with a neural network:
-# :class:`~sklearn.neural_network.MLPClassifier`.
+# Next, we will use :class:`~skfda.ml.classification.DDGClassifier` together
+# with a neural network: :class:`~sklearn.neural_network.MLPClassifier`.
 clf = DDGClassifier(
     MLPClassifier(
         solver='lbfgs',
@@ -324,8 +322,8 @@ for axis in axs:
     axis.label_outer()
 
 ##############################################################################
-#
-# We can compare the behavior of two `DDGClassifier` based classifiers. The
+# We can compare the behavior of two
+# :class:`~skfda.ml.classification.DDGClassifier` based classifiers. The
 # one on the left corresponds to nearest neighbors and the one on the right to
 # a neural network. Interestingly, the neural network almost coincides with
-# `MaximumDepthClassifier`.
+# :class:`~skfda.ml.classification.MaximumDepthClassifier`.

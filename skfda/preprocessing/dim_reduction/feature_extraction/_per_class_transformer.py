@@ -235,27 +235,25 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
         """
         sklearn_check_is_fitted(self)
 
-        for j, feature_transformer in enumerate(
-            self._class_feature_transformers_,
-        ):
-            elem = feature_transformer.transform(X)
-            data = np.array(elem)
-            if j == 0:
-                if self.array_output:
-                    transformed_data = np.empty((len(X), 0))
-                else:
-                    transformed_data = np.empty((0))
-            transformed_data = np.hstack((transformed_data, data))
+        transformed_data = [
+            feature_transformer.transform(X)
+            for feature_transformer in self._class_feature_transformers_
+        ]
 
         if self.array_output:
-            for i in transformed_data:
-                if isinstance(i, (FDataGrid, FDataBasis)):
+            for i, data in enumerate(transformed_data):
+                if isinstance(data, (FDataGrid, FDataBasis)):
                     raise TypeError(
                         "There are transformed instances of FDataGrid or "
                         "FDataBasis that can't be concatenated on a NumPy "
                         "array.",
                     )
-            return np.array(transformed_data)
+                elif i == 0:
+                    transformed_array = data
+                else:
+                    transformed_array = np.hstack((transformed_array, data))
+
+            return transformed_array
 
         return DataFrame(
             {'Transformed data': transformed_data},

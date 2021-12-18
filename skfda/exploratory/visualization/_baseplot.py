@@ -14,10 +14,12 @@ from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.backend_bases import LocationEvent, MouseEvent
 from matplotlib.collections import PathCollection
+from matplotlib.colors import ListedColormap
 from matplotlib.figure import Figure
 from matplotlib.text import Annotation
 
 from ...representation import FData
+from ...representation._typing import NDArrayInt
 from ._utils import _figure_to_svg, _get_figure_and_axes, _set_figure_layout
 
 
@@ -42,6 +44,10 @@ class BasePlot(ABC):
         axes: Union[Axes, Sequence[Axes], None] = None,
         n_rows: Optional[int] = None,
         n_cols: Optional[int] = None,
+        c: Optional[NDArrayInt] = None,
+        cmap_bold: ListedColormap = None,
+        x_label: Optional[str] = None,
+        y_label: Optional[str] = None,
     ) -> None:
         self.artists: Optional[np.ndarray] = None
         self.chart = chart
@@ -50,6 +56,10 @@ class BasePlot(ABC):
         self.n_rows = n_rows
         self.n_cols = n_cols
         self._tag = self._create_annotation()
+        self.c = c
+        self.cmap_bold = cmap_bold
+        self.x_label = x_label
+        self.y_label = y_label
 
     def _plot(
         self,
@@ -77,6 +87,10 @@ class BasePlot(ABC):
                 fig=self.fig,
                 axes=self.axes,
             )
+        if self.x_label is not None:
+            axes[0].set_xlabel(self.x_label)
+        if self.y_label is not None:
+            axes[0].set_ylabel(self.y_label)
 
         self._plot(fig, axes)
 

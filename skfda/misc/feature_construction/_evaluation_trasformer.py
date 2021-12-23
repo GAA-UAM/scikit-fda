@@ -4,10 +4,11 @@ from __future__ import annotations
 from typing import Optional, TypeVar, Union, overload
 
 import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 from typing_extensions import Literal
 
+from ..._utils import TransformerMixin
 from ...representation._functional_data import FData
 from ...representation._typing import ArrayLike, GridPointsLike, NDArrayInt
 from ...representation.extrapolation import ExtrapolationLike

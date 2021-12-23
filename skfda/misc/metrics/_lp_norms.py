@@ -7,11 +7,14 @@ import numpy as np
 import scipy.integrate
 from typing_extensions import Final
 
+from skfda.representation._typing import NDArrayFloat
+
 from ...representation import FData, FDataBasis
+from ...representation._typing import NDArrayFloat
 from ._typing import Norm
 
 
-class LpNorm(Norm[FData]):
+class LpNorm():
     r"""
     Norm of all the observations in a FDataGrid object.
 
@@ -86,7 +89,7 @@ class LpNorm(Norm[FData]):
     def __init__(
         self,
         p: float,
-        vector_norm: Union[Norm[np.ndarray], float, None] = None,
+        vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
     ) -> None:
 
         # Checks that the lp normed is well defined
@@ -102,9 +105,12 @@ class LpNorm(Norm[FData]):
             f"p={self.p}, vector_norm={self.vector_norm})"
         )
 
-    def __call__(self, fdata: FData) -> np.ndarray:
+    def __call__(self, vector: Union[NDArrayFloat, FData]) -> NDArrayFloat:
         """Compute the Lp norm of a functional data object."""
         from ...misc import inner_product
+
+        if isinstance(vector, np.ndarray):
+            return np.linalg.norm(vector, ord=self.p, axis=-1)
 
         vector_norm = self.vector_norm
 
@@ -113,27 +119,27 @@ class LpNorm(Norm[FData]):
 
         # Special case, the inner product is heavily optimized
         if self.p == vector_norm == 2:
-            return np.sqrt(inner_product(fdata, fdata))
+            return np.sqrt(inner_product(vector, vector))
 
-        if isinstance(fdata, FDataBasis):
+        if isinstance(vector, FDataBasis):
             if self.p != 2:
                 raise NotImplementedError
 
-            start, end = fdata.domain_range[0]
+            start, end = vector.domain_range[0]
             integral = scipy.integrate.quad_vec(
-                lambda x: np.power(np.abs(fdata(x)), self.p),
+                lambda x: np.power(np.abs(vector(x)), self.p),
                 start,
                 end,
             )
             res = np.sqrt(integral[0]).flatten()
 
         else:
-            data_matrix = fdata.data_matrix
+            data_matrix = vector.data_matrix
             original_shape = data_matrix.shape
             data_matrix = data_matrix.reshape(-1, original_shape[-1])
 
             data_matrix = (np.linalg.norm(
-                fdata.data_matrix,
+                vector.data_matrix,
                 ord=vector_norm,
                 axis=-1,
                 keepdims=True,
@@ -149,13 +155,13 @@ class LpNorm(Norm[FData]):
                     axis=tuple(range(1, data_matrix.ndim)),
                 )
 
-            elif fdata.dim_domain == 1:
+            elif vector.dim_domain == 1:
 
                 # Computes the norm, approximating the integral with Simpson's
                 # rule.
                 res = scipy.integrate.simps(
                     data_matrix[..., 0] ** self.p,
-                    x=fdata.grid_points,
+                    x=vector.grid_points,
                 ) ** (1 / self.p)
 
             else:
@@ -174,11 +180,11 @@ linf_norm: Final = LpNorm(math.inf)
 
 
 def lp_norm(
-    fdata: FData,
+    vector: Union[NDArrayFloat, FData],
     *,
     p: float,
-    vector_norm: Union[Norm[np.ndarray], float, None] = None,
-) -> np.ndarray:
+    vector_norm: Union[Norm[NDArrayFloat], float, None] = None,
+) -> NDArrayFloat:
     r"""Calculate the norm of all the observations in a FDataGrid object.
 
     For each observation f the Lp norm is defined as:
@@ -218,7 +224,7 @@ def lp_norm(
         :class:`LpNorm` in those cases.
 
     Args:
-        fdata: FData object.
+        vector: Vector object.
         p: p of the lp norm. Must be greater or equal
             than 1. If ``p=math.inf`` it is used the L infinity metric.
             Defaults to 2.
@@ -261,4 +267,4 @@ def lp_norm(
         :class:`LpNorm`
 
     """
-    return LpNorm(p=p, vector_norm=vector_norm)(fdata)
+    return LpNorm(p=p, vector_norm=vector_norm)(vector)

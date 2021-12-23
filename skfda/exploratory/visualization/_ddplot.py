@@ -10,10 +10,12 @@ from typing import Optional, TypeVar, Union
 import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
+from matplotlib.colors import ListedColormap
 from matplotlib.figure import Figure
 
 from ...exploratory.depth.multivariate import Depth
 from ...representation._functional_data import FData
+from ...representation._typing import NDArrayInt
 from ._baseplot import BasePlot
 
 T = TypeVar('T', bound=FData)
@@ -59,16 +61,22 @@ class DDPlot(BasePlot):
         depth_method: Depth[T],
         fig: Optional[Figure] = None,
         axes: Optional[Axes] = None,
+        c: Optional[NDArrayInt] = None,
+        cmap_bold: ListedColormap = None,
+        x_label: str = "X depth",
+        y_label: str = "Y depth",
     ) -> None:
-        BasePlot.__init__(
-            self,
+        super().__init__(
             chart,
             fig=fig,
             axes=axes,
+            c=c,
+            cmap_bold=cmap_bold,
+            x_label=x_label,
+            y_label=y_label,
         )
         self.fdata = fdata
         self.depth_method = depth_method
-        self.depth_method.fit(fdata)
         self.depth_dist1 = self.depth_method(
             self.fdata,
             distribution=dist1,
@@ -91,7 +99,7 @@ class DDPlot(BasePlot):
         Plot DDPlot graph.
 
         Plot the depth of our fdata elements in the two different
-        distributions,one in each axis. It is useful to understand how
+        distributions, one in each axis. It is useful to understand how
         our data is more related with one subset of data / distribution
         than another one.
         Returns:
@@ -103,24 +111,23 @@ class DDPlot(BasePlot):
             dtype=Artist,
         )
         margin = 0.025
-        width_aux_line = 0.35
+        width_aux_line = 1
         color_aux_line = "gray"
 
         ax = axes[0]
 
-        for i, (d1, d2) in enumerate(zip(self.depth_dist1, self.depth_dist2)):
-            self.artists[i, 0] = ax.scatter(
-                d1,
-                d2,
-                picker=True,
-                pickradius=2,
-            )
+        self.artists[:, 0] = ax.scatter(
+            self.depth_dist1,
+            self.depth_dist2,
+            c=self.c,
+            cmap=self.cmap_bold,
+            picker=True,
+            pickradius=2,
+        )
 
         # Set labels of graph
         if self.fdata.dataset_name is not None:
             ax.set_title(self.fdata.dataset_name)
-        ax.set_xlabel("X depth")
-        ax.set_ylabel("Y depth")
         ax.set_xlim(
             [
                 self.depth_method.min - margin,

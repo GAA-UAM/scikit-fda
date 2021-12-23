@@ -11,12 +11,10 @@ import itertools
 from typing import Optional
 
 import numpy as np
-
 import scipy.integrate
 
 from ... import FDataGrid
-from . import multivariate
-from .multivariate import Depth, _UnivariateFraimanMuniz
+from .multivariate import Depth, SimplicialDepth, _UnivariateFraimanMuniz
 
 
 class IntegratedDepth(Depth[FDataGrid]):
@@ -75,9 +73,9 @@ class IntegratedDepth(Depth[FDataGrid]):
         self.multivariate_depth_.fit(X.data_matrix)
         return self
 
-    def predict(self, X: FDataGrid) -> np.ndarray:  # noqa: D102
+    def transform(self, X: FDataGrid) -> np.ndarray:  # noqa: D102
 
-        pointwise_depth = self.multivariate_depth_.predict(X.data_matrix)
+        pointwise_depth = self.multivariate_depth_.transform(X.data_matrix)
 
         interval_len = (
             self._domain_range[0][1]
@@ -113,7 +111,7 @@ class IntegratedDepth(Depth[FDataGrid]):
 
 
 class ModifiedBandDepth(IntegratedDepth):
-    r"""
+    """
     Implementation of Modified Band Depth for functional data.
 
     The band depth of each sample is obtained by computing the fraction of time
@@ -144,11 +142,11 @@ class ModifiedBandDepth(IntegratedDepth):
     """
 
     def __init__(self) -> None:
-        super().__init__(multivariate_depth=multivariate.SimplicialDepth())
+        super().__init__(multivariate_depth=SimplicialDepth())
 
 
 class BandDepth(Depth[FDataGrid]):
-    r"""
+    """
     Implementation of Band Depth for functional data.
 
     The band depth of each sample is obtained by computing the fraction of the
@@ -188,7 +186,7 @@ class BandDepth(Depth[FDataGrid]):
         self._distribution = X
         return self
 
-    def predict(self, X: FDataGrid) -> np.ndarray:  # noqa: D102
+    def transform(self, X: FDataGrid) -> np.ndarray:  # noqa: D102
 
         num_in = 0
         n_total = 0

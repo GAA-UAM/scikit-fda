@@ -76,7 +76,7 @@ def check_is_univariate(fd: FData) -> None:
 
 
 def _check_compatible_fdata(fdata1: FData, fdata2: FData) -> None:
-    """Check that fdata is compatible."""
+    """Check that two FData are compatible."""
     if (fdata1.dim_domain != fdata2.dim_domain):
         raise ValueError(
             f"Functional data has incompatible domain dimensions: "
@@ -87,6 +87,19 @@ def _check_compatible_fdata(fdata1: FData, fdata2: FData) -> None:
         raise ValueError(
             f"Functional data has incompatible codomain dimensions: "
             f"{fdata1.dim_codomain} != {fdata2.dim_codomain}",
+        )
+
+
+def _check_compatible_fdatagrid(fdata1: FDataGrid, fdata2: FDataGrid) -> None:
+    """Check that two FDataGrid are compatible."""
+    _check_compatible_fdata(fdata1, fdata2)
+    if not all(
+        np.array_equal(g1, g2)
+        for g1, g2 in zip(fdata1.grid_points, fdata2.grid_points)
+    ):
+        raise ValueError(
+            f"Incompatible grid points between template and "
+            f"data: {fdata1.grid_points} != {fdata2.grid_points}",
         )
 
 
@@ -728,3 +741,39 @@ def _classifier_fit_depth_methods(
     )
 
     return classes, class_depth_methods_
+
+
+_DependenceMeasure = Callable[[np.ndarray, np.ndarray], np.ndarray]
+
+
+def _compute_dependence(
+    X: np.ndarray,
+    y: np.ndarray,
+    *,
+    dependence_measure: _DependenceMeasure,
+) -> np.ndarray:
+    """
+    Compute dependence between points and target.
+
+    Computes the dependence of each point in each trajectory in X with the
+    corresponding class label in Y.
+
+    """
+    from dcor import rowwise
+
+    # Move n_samples to the end
+    # The shape is now input_shape + n_samples + n_output
+    X = np.moveaxis(X, 0, -2)
+
+    input_shape = X.shape[:-2]
+
+    # Join input in a list for rowwise
+    X = X.reshape(-1, X.shape[-2], X.shape[-1])
+
+    if y.ndim == 1:
+        y = np.atleast_2d(y).T
+    Y = np.array([y] * len(X))
+
+    dependence_results = rowwise(dependence_measure, X, Y)
+
+    return dependence_results.reshape(input_shape)

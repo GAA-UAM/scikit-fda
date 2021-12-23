@@ -10,7 +10,7 @@ from ..depth import Depth, ModifiedBandDepth
 from . import _envelopes
 
 
-class IQROutlierDetector(
+class BoxplotOutlierDetector(
     BaseEstimator,  # type: ignore
     OutlierMixin,  # type: ignore
 ):
@@ -35,7 +35,7 @@ class IQROutlierDetector(
         ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
         >>> grid_points = [0, 2, 4, 6, 8, 10]
         >>> fd = skfda.FDataGrid(data_matrix, grid_points)
-        >>> out_detector = IQROutlierDetector()
+        >>> out_detector = BoxplotOutlierDetector()
         >>> out_detector.fit_predict(fd)
         array([-1, 1, 1, -1])
 
@@ -50,7 +50,7 @@ class IQROutlierDetector(
         self.depth_method = depth_method
         self.factor = factor
 
-    def fit(self, X: FDataGrid, y: None = None) -> IQROutlierDetector:
+    def fit(self, X: FDataGrid, y: None = None) -> BoxplotOutlierDetector:
 
         depth_method = (
             self.depth_method

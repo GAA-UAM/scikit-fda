@@ -6,6 +6,7 @@ from typing import Any, Callable, TypeVar
 import numpy as np
 import pytest
 
+import skfda
 from skfda import FDataGrid
 
 
@@ -71,3 +72,24 @@ def test_out_ufunc(monary: Callable[..., Any]) -> None:
     fd_monary_build = FDataGrid(monary(data_matrix_copy))
 
     assert fd.equals(fd_monary_build)
+
+
+class TestOperators(unittest.TestCase):
+    """Tests for operators."""
+
+    def test_commutativity(self) -> None:
+        """Test that operations with numpy arrays commute."""
+        X = FDataGrid([[1, 2, 3], [4, 5, 6]])
+        arr = np.array([1, 2])
+
+        self.assertTrue((arr + X).equals((X + arr)))
+
+    def test_commutativity_basis(self) -> None:
+        """Test that operations with numpy arrays for basis commute."""
+        X = FDataGrid([[1, 2, 3], [4, 5, 6]])
+        arr = np.array([1, 2])
+        basis = skfda.representation.basis.Fourier(n_basis=5)
+
+        X_basis = X.to_basis(basis)
+
+        self.assertTrue((arr * X_basis).equals((X_basis * arr)))

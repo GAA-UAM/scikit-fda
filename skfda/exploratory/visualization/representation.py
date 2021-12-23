@@ -7,7 +7,7 @@ be set manually or automatically depending on values
 like depth measures.
 """
 
-from typing import Any, Mapping, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Any, Dict, Optional, Sequence, Tuple, TypeVar, Union
 
 import matplotlib.cm
 import matplotlib.patches
@@ -19,7 +19,7 @@ from matplotlib.figure import Figure
 from typing_extensions import Protocol
 
 from ... import FDataGrid
-from ..._utils import _to_domain_range, constants
+from ..._utils import _to_domain_range, _to_grid_points, constants
 from ...representation._functional_data import FData
 from ...representation._typing import DomainRangeLike, GridPointsLike
 from ._baseplot import BasePlot
@@ -46,7 +46,7 @@ def _get_color_info(
     group_names: Optional[Indexable[K, str]] = None,
     group_colors: Optional[Indexable[K, ColorLike]] = None,
     legend: bool = False,
-    kwargs: Optional[Mapping[str, Any]] = None,
+    kwargs: Optional[Dict[str, Any]] = None,
 ) -> Tuple[
     Optional[ColorLike],
     Optional[Sequence[matplotlib.patches.Patch]],
@@ -98,11 +98,11 @@ def _get_color_info(
         # otherwise
 
         if 'color' in kwargs:
-            sample_colors = fdata.n_samples * [kwargs.get("color")]
+            sample_colors = len(fdata) * [kwargs.get("color")]
             kwargs.pop('color')
 
         elif 'c' in kwargs:
-            sample_colors = fdata.n_samples * [kwargs.get("c")]
+            sample_colors = len(fdata) * [kwargs.get("c")]
             kwargs.pop('c')
 
         else:
@@ -209,8 +209,7 @@ class GraphPlot(BasePlot):
         legend: bool = False,
         **kwargs: Any,
     ) -> None:
-        BasePlot.__init__(
-            self,
+        super().__init__(
             chart,
             fig=fig,
             axes=axes,
@@ -237,15 +236,11 @@ class GraphPlot(BasePlot):
             else:
                 self.max_grad = max_grad
 
-            aux_list = [
-                grad_color - self.min_grad
-                for grad_color in self.gradient_criteria
-            ]
-
-            self.gradient_list: Sequence[float] = (
+            self.gradient_list: Optional[Sequence[float]] = (
                 [
-                    aux / (self.max_grad - self.min_grad)
-                    for aux in aux_list
+                    (grad_color - self.min_grad)
+                    / (self.max_grad - self.min_grad)
+                    for grad_color in self.gradient_criteria
                 ]
             )
         else:
@@ -257,6 +252,7 @@ class GraphPlot(BasePlot):
         self.group_names = group_names
         self.legend = legend
         self.colormap = colormap
+        self.kwargs = kwargs
 
         if domain_range is None:
             self.domain_range = self.fdata.domain_range
@@ -280,9 +276,7 @@ class GraphPlot(BasePlot):
             else:
                 colormap = matplotlib.cm.get_cmap(self.colormap)
 
-            sample_colors = [None] * self.fdata.n_samples
-            for m in range(self.fdata.n_samples):
-                sample_colors[m] = colormap(self.gradient_list[m])
+            sample_colors = colormap(self.gradient_list)
 
         self.sample_colors = sample_colors
         self.patches = patches
@@ -310,12 +304,14 @@ class GraphPlot(BasePlot):
             dtype=Artist,
         )
 
-        color_dict: Mapping[str, Optional[ColorLike]] = {}
+        color_dict: Dict[str, Optional[ColorLike]] = {}
 
         if self.fdata.dim_domain == 1:
 
             if self.n_points is None:
                 self.n_points = constants.N_POINTS_UNIDIMENSIONAL_PLOT_MESH
+
+            assert isinstance(self.n_points, int)
 
             # Evaluates the object in a linspace
             eval_points = np.linspace(*self.domain_range[0], self.n_points)
@@ -329,6 +325,7 @@ class GraphPlot(BasePlot):
                     self.artists[j, i] = axes[i].plot(
                         eval_points,
                         mat[j, ..., i].T,
+                        **self.kwargs,
                         **color_dict,
                     )[0]
 
@@ -364,6 +361,7 @@ class GraphPlot(BasePlot):
                         X,
                         Y,
                         Z[h, ..., k],
+                        **self.kwargs,
                         **color_dict,
                     )
 
@@ -436,8 +434,7 @@ class ScatterPlot(BasePlot):
         legend: bool = False,
         **kwargs: Any,
     ) -> None:
-        BasePlot.__init__(
-            self,
+        super().__init__(
             chart,
             fig=fig,
             axes=axes,
@@ -445,14 +442,13 @@ class ScatterPlot(BasePlot):
             n_cols=n_cols,
         )
         self.fdata = fdata
-        self.grid_points = grid_points
 
-        self.evaluated_points = None
-        if self.grid_points is None:
+        if grid_points is None:
             # This can only be done for FDataGrid
             self.grid_points = self.fdata.grid_points
             self.evaluated_points = self.fdata.data_matrix
         else:
+            self.grid_points = _to_grid_points(grid_points)
             self.evaluated_points = self.fdata(
                 self.grid_points, grid=True,
             )
@@ -507,7 +503,7 @@ class ScatterPlot(BasePlot):
             dtype=Artist,
         )
 
-        color_dict: Mapping[str, Optional[ColorLike]] = {}
+        color_dict: Dict[str, Optional[ColorLike]] = {}
 
         if self.fdata.dim_domain == 1:
 
@@ -550,7 +546,7 @@ class ScatterPlot(BasePlot):
 def set_color_dict(
     sample_colors: Any,
     ind: int,
-    color_dict: Mapping[str, Optional[ColorLike]],
+    color_dict: Dict[str, Optional[ColorLike]],
 ) -> None:
     """
     Auxiliary method used to update color_dict.

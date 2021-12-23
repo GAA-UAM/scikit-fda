@@ -43,7 +43,7 @@ clusters given a metric between their elements, in order to cluster together
 elements that are close from each other. This is repeated until a desired
 number of clusters is obtained. The resulting hierarchy of clusters can be
 represented as a tree, called a dendogram. The following hierarchical
-clusterings are supported: 
+clusterings are supported:
 
 .. autosummary::
    :toctree: autosummary

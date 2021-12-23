@@ -241,19 +241,14 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
         ]
 
         if self.array_output:
-            for i, data in enumerate(transformed_data):
+            for data in transformed_data:
                 if isinstance(data, (FDataGrid, FDataBasis)):
                     raise TypeError(
                         "There are transformed instances of FDataGrid or "
                         "FDataBasis that can't be concatenated on a NumPy "
                         "array.",
                     )
-                elif i == 0:
-                    transformed_array = data
-                else:
-                    transformed_array = np.hstack((transformed_array, data))
-
-            return transformed_array
+            return np.hstack(transformed_data)
 
         return DataFrame(
             {'Transformed data': transformed_data},

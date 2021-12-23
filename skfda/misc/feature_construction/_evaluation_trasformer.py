@@ -1,7 +1,7 @@
 """Evaluation Transformer Module."""
 from __future__ import annotations
 
-from typing import Optional, Union, overload
+from typing import Optional, TypeVar, Union, overload
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -9,14 +9,18 @@ from sklearn.utils.validation import check_is_fitted
 from typing_extensions import Literal
 
 from ...representation._functional_data import FData
-from ...representation._typing import ArrayLike, GridPointsLike
+from ...representation._typing import ArrayLike, GridPointsLike, NDArrayInt
 from ...representation.extrapolation import ExtrapolationLike
 from ...representation.grid import FDataGrid
+
+Input = TypeVar("Input")
+Output = TypeVar("Output")
+Target = TypeVar("Target", bound=NDArrayInt)
 
 
 class EvaluationTransformer(
     BaseEstimator,  # type:ignore
-    TransformerMixin,  # type:ignore
+    TransformerMixin[Input, Output, Target],
 ):
     r"""
     Transformer returning the evaluations of FData objects as a matrix.
@@ -130,16 +134,6 @@ class EvaluationTransformer(
         X: FData,
         y: None = None,
     ) -> EvaluationTransformer:
-        """
-        Fit the model by doing some checkings.
-
-        Args:
-            X: FData with the training data.
-            y: Target values of shape = (n_samples). By default is None
-
-        Returns:
-            self
-        """
         if self.eval_points is None and not isinstance(X, FDataGrid):
             raise ValueError(
                 "If no eval_points are passed, the functions "
@@ -155,16 +149,6 @@ class EvaluationTransformer(
         X: FData,
         y: None = None,
     ) -> np.ndarray:
-        """
-        Transform the provided data using the already fitted transformer.
-
-        Args:
-            X: FDataGrid with the test samples.
-            y: Target values of shape = (n_samples). By default is None
-
-        Returns:
-            Array of shape (n_samples, G)
-        """
         check_is_fitted(self, '_is_fitted')
 
         if self.eval_points is None:

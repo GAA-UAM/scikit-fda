@@ -49,7 +49,7 @@ def local_averages(
         Then we decide how many intervals we want to consider (in our case 2)
         and call the function with the dataset.
         >>> import numpy as np
-        >>> from skfda.misc.feature_construction import local_averages
+        >>> from skfda.exploratory.stats import local_averages
         >>> np.around(local_averages(X, 2), decimals=2)
         array([[  993.98,   950.82,   911.93,   946.44,   887.3 ,   930.18,
                   927.89,   959.72,   928.14,  1002.57,   953.22,   971.53,
@@ -64,22 +64,15 @@ def local_averages(
     """
     domain_range = data.domain_range
 
-    x, y = domain_range[0]
-    interval_size = (y - x) / n_intervals
-
-    integrated_data = [[]]
-    for i in np.arange(x, y, interval_size):
+    left, right = domain_range[0]
+    interval_size = (right - left) / n_intervals
+    integrated_data = []
+    for i in np.arange(left, right, interval_size):
         interval = (i, i + interval_size)
-        if isinstance(data, FDataGrid):
-            data_grid = data.restrict(interval)
-            integrated_data = integrated_data + [
-                data_grid.integrate(),
-            ]
-        else:
-            integrated_data = integrated_data + [
-                data.integrate(interval=interval),
-            ]
-    return np.asarray(integrated_data[1:])
+        integrated_data = integrated_data + [
+            data.integrate(interval=(interval,)),
+        ]
+    return np.asarray(integrated_data)
 
 
 def _calculate_curve_occupation_(
@@ -160,7 +153,7 @@ def occupation_measure(
         and (2.0, 3.0). We need also to specify the number of points
         we want that the function takes into account to interpolate.
         We are going to use 501 points.
-        >>> from skfda.misc.feature_construction import occupation_measure
+        >>> from skfda.exploratory.stats import occupation_measure
         >>> np.around(
         ...     occupation_measure(
         ...         fd_grid,
@@ -229,7 +222,7 @@ def occupation_measure(
         if n_points is None:
             function_y_coordinates = data.data_matrix
         else:
-            function_y_coordinates = data._evaluate(  # noqa: WPS437
+            function_y_coordinates = data(
                 function_x_coordinates,
             )
 
@@ -252,34 +245,9 @@ def occupation_measure(
     return time_x_coord_cumulative
 
 
-def _n_curve_crossings(
-    c: np.ndarray,
-    index: int,
-    interval: Tuple,
-) -> int:
-    a, b = interval
-    counter = 0
-    inside_interval = False
-    size_curve = c.shape[0]
-
-    for i in range(0, size_curve - 1):
-        p1 = c[i][index]
-        p2 = c[i + 1][index]
-        if p1 < p2:  # Check that the chunk of function grows
-            if p2 >= a and (p1 <= a or a <= p1 <= b):
-                # Last pair of points where not inside interval
-                if inside_interval is False:
-                    counter += 1
-                    inside_interval = True
-        else:
-            inside_interval = False
-
-    return counter
-
-
 def number_up_crossings(
     data: FDataGrid,
-    intervals: np.ndarray,
+    levels: np.ndarray,
 ) -> np.ndarray:
     r"""
     Calculate the number of up crossings to a level of a FDataGrid.
@@ -298,60 +266,92 @@ def number_up_crossings(
         Args:
             data: FDataGrid where we want to calculate
             the number of up crossings.
-            intervals: sequence of tuples containing the
-            intervals we want to consider for the crossings.
+            levels: sequence of numbers including the levels
+            we want to consider for the crossings.
         Returns:
-            ndarray of shape (n_dimensions, n_samples)\
+            ndarray of shape (n_levels, n_samples)\
             with the values of the counters.
 
     Example:
 
-    We import the Phoneme dataset and for simplicity we use
-    the first 200 samples.
-    >>> from skfda.datasets import fetch_phoneme
-    >>> dataset = fetch_phoneme()
-    >>> X = dataset['data'][:200]
+    We import the Medflies dataset and for simplicity we use
+    the first 50 samples.
+    >>> from skfda.datasets import fetch_medflies
+    >>> dataset = fetch_medflies()
+    >>> X = dataset['data'][:50]
 
-    Then we decide the interval we want to consider (in our case (5.0,7.5))
+    Then we decide the level we want to consider (in our case 40)
     and call the function with the dataset. The output will be the number of
-    times each curve cross the interval (5.0,7.5) growing.
-    >>> from skfda.misc.feature_construction import number_up_crossings
-    >>> number_up_crossings(X, [(5.0,7.5)])
-    array([[1, 20, 69, 64, 42, 33, 14, 3, 35, 31, 0, 4, 67, 6, 12, 16, 22, 1,
-            25, 30, 2, 27, 61, 0, 11, 20, 3, 36, 28, 1, 67, 36, 12, 29, 2,
-            16, 25, 1, 24, 57, 65, 26, 20, 18, 43, 0, 35, 40, 0, 2, 56, 4,
-            21, 28, 1, 0, 19, 24, 1, 2, 8, 63, 0, 2, 3, 3, 0, 8, 3, 2, 10,
-            62, 72, 19, 36, 46, 0, 1, 2, 18, 1, 10, 67, 60, 20, 21, 23, 12,
-            3, 30, 21, 1, 57, 64, 15, 4, 4, 17, 0, 2, 31, 0, 5, 24, 56, 8,
-            11, 14, 17, 1, 25, 1, 3, 61, 10, 33, 17, 1, 12, 18, 0, 2, 57, 4,
-            6, 5, 2, 0, 7, 17, 4, 23, 60, 62, 2, 19, 21, 0, 42, 28, 0, 10,
-            29, 74, 34, 29, 7, 0, 25, 23, 0, 15, 19, 1, 43, 1, 11, 9, 4, 0,
-            0, 2, 1, 54, 55, 14, 14, 6, 1, 24, 20, 2, 27, 55, 62, 32, 26, 24,
-            37, 0, 26, 28, 1, 3, 41, 64, 8, 6, 27, 12, 1, 5, 16, 0, 0, 61,
-            62, 1, 3, 7]], dtype=object)
+    times each curve cross the level 40 growing.
+    >>> from skfda.exploratory.stats import number_up_crossings
+    >>> import numpy as np
+    >>> number_up_crossings(X, np.asarray([40]))
+    array([[[6],
+            [3],
+            [7],
+            [7],
+            [3],
+            [4],
+            [5],
+            [7],
+            [4],
+            [6],
+            [4],
+            [4],
+            [5],
+            [6],
+            [0],
+            [5],
+            [1],
+            [6],
+            [0],
+            [7],
+            [0],
+            [6],
+            [2],
+            [5],
+            [6],
+            [5],
+            [8],
+            [4],
+            [3],
+            [7],
+            [1],
+            [3],
+            [0],
+            [5],
+            [2],
+            [7],
+            [2],
+            [5],
+            [5],
+            [5],
+            [4],
+            [4],
+            [1],
+            [2],
+            [3],
+            [5],
+            [3],
+            [3],
+            [5],
+            [2]]])
     """
     curves = data.data_matrix
-    if curves.shape[2] != len(intervals):
-        raise ValueError(
-            "Sequence of intervals should have the "
-            + "same number of dimensions as the data samples",
-        )
-    transformed_counters = []
-    for index, interval in enumerate(intervals):
-        a, b = interval
-        if b < a:
-            raise ValueError(
-                "Interval limits (a,b) should satisfy a <= b. "
-                + str(interval) + " doesn't",
-            )
-        curves_counters = []
-        for c in curves:
-            counter = _n_curve_crossings(c, index, interval)
-            curves_counters = curves_counters + [counter]
 
-        transformed_counters = transformed_counters + [curves_counters]
+    distances = np.asarray([
+        level - curves
+        for level in levels
+    ])
 
-    return np.asarray(transformed_counters, dtype=list)
+    points_greater = distances >= 0
+    points_smaller = distances <= 0
+    points_smaller_rotated = np.roll(points_smaller, -1, axis=2)
+
+    return np.sum(
+        points_greater & points_smaller_rotated,
+        axis=2,
+    )
 
 
 def moments_of_norm(
@@ -378,7 +378,7 @@ def moments_of_norm(
 
     Then we call the function with the dataset.
     >>> import numpy as np
-    >>> from skfda.misc.feature_construction import moments_of_norm
+    >>> from skfda.exploratory.stats import moments_of_norm
     >>> np.around(moments_of_norm(X), decimals=2)
         array([[  4.69,   4.06],
                [  6.15,   3.99],
@@ -455,7 +455,7 @@ def moments_of_process(
 
     Then we call the function with the dataset.
     >>> import numpy as np
-    >>> from skfda.misc.feature_construction import moments_of_process
+    >>> from skfda.exploratory.stats import moments_of_process
     >>> np.around(moments_of_process(X), decimals=2)
         array([[ 5.2430e+01,  2.2500e+00],
                [ 7.7800e+01,  2.9200e+00],

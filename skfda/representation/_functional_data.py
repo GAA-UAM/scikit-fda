@@ -667,7 +667,8 @@ class FData(  # noqa: WPS214
         *,
         interval: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
-        """Integration of the FData object.
+        """
+        Integration of the FData object.
 
         Args:
             interval: domain range where we want to integrate.

@@ -367,16 +367,10 @@ def _inner_product_fdatagrid(
             [0, 1],
         )
 
-    integrand = d1 * d2
+    integrand = arg1 * arg2
+    return integrand.integrate()
+    
 
-    for g in arg1.grid_points[::-1]:
-        integrand = scipy.integrate.simps(
-            integrand,
-            x=g,
-            axis=-2,
-        )
-
-    return np.sum(integrand, axis=-1)
 
 
 @inner_product.register(FDataBasis, FDataBasis)

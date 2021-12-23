@@ -361,20 +361,27 @@ class FDataBasis(FData):  # noqa: WPS214
         *,
         interval: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
-        """
-        Integration for the FDataBasis object.
+        """Examples.
 
-        It is done on the domain range that is passed as argument.
-            Args:
-                interval: domain range where we want to integrate.
-                By default is None as we integrate on the whole domain.
 
-            Returns:
-                ndarray of shape (n_samples, n_dimensions)\
-                with the integrated data.
+        We first create the data basis.
+            >>> from skfda.representation.basis import FDataBasis, Monomial
+            >>> basis = Monomial(n_basis=4)
+            >>> coefficients = [1, 1, 3, .5]
+            >>> fdata = FDataBasis(basis, coefficients)
+
+        Then we can integrate on the whole domain.
+            >>> fdata.integrate()
+            array([[ 2.625]])
+
+        Or we can do it on a given domain.
+            >>> fdata.integrate(interval = ((0.5, 1),))
+            array([[ 1.8671875]])
+
         """
         if interval is None:
             interval = self.basis.domain_range
+
         integrated = nquad_vec(
             self,
             interval,

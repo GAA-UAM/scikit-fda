@@ -28,12 +28,15 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
 from typing_extensions import Literal, Protocol
 
+from .._utils._sklearn_adapter import TransformerMixin
 from ..representation._typing import (
     ArrayLike,
     DomainRange,
     DomainRangeLike,
     GridPoints,
     GridPointsLike,
+    NDArrayFloat,
+    NDArrayInt,
 )
 from ..representation.extrapolation import ExtrapolationLike
 
@@ -44,6 +47,10 @@ if TYPE_CHECKING:
     from ..representation import FData, FDataGrid
     from ..representation.basis import Basis
     T = TypeVar("T", bound=FData)
+
+Input = TypeVar("Input")
+Output = TypeVar("Output")
+Target = TypeVar("Target")
 
 
 def check_is_univariate(fd: FData) -> None:
@@ -741,6 +748,25 @@ def _classifier_fit_depth_methods(
     )
 
     return classes, class_depth_methods_
+
+
+def _fit_feature_transformer(  # noqa: WPS320 WPS234
+    X: Union[NDArrayInt, NDArrayFloat],
+    y: Union[NDArrayInt, NDArrayFloat],
+    transformer: TransformerMixin[Input, Output, Target],
+) -> Tuple[
+    Union[NDArrayInt, NDArrayFloat],
+    Sequence[TransformerMixin[Input, Output, Target]],
+]:
+
+    classes, y_ind = _classifier_get_classes(y)
+
+    class_feature_transformers = [
+        clone(transformer).fit(X[y_ind == cur_class], y[y_ind == cur_class])
+        for cur_class, _ in enumerate(classes)
+    ]
+
+    return classes, class_feature_transformers
 
 
 _DependenceMeasure = Callable[[np.ndarray, np.ndarray], np.ndarray]

@@ -20,7 +20,7 @@ class LogisticRegression(
 
     This class implements the sequential “greedy” algorithm
     for functional logistic regression proposed in
-    :footcite:ts:`bueno+larraz_2021_functional`.
+    :footcite:ts:`bueno++_2021_functional`.
 
     .. warning::
         For now, only binary classification for functional

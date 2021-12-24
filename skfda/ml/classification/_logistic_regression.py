@@ -20,15 +20,16 @@ class LogisticRegression(
 
     This class implements the sequential “greedy” algorithm
     for functional logistic regression proposed in
-    :footcite:ts:`bueno++_2021_functional`.
+    :footcite:ts:`bueno+larraz_2021_functional`.
 
     .. warning::
         For now, only binary classification for functional
         data with one dimensional domains is supported.
 
     Args:
-        p: number of points (and coefficients) to be selected by
-        the algorithm.
+        p:
+            number of points (and coefficients) to be selected by
+            the algorithm.
 
     Attributes:
         classes\_: A list containing the name of the classes
@@ -91,7 +92,8 @@ class LogisticRegression(
 
         selected_indexes = np.zeros(self.p, dtype=np.intc)
 
-        mvlr = mvLogisticRegression()  # multivariate logistic regression
+        # multivariate logistic regression
+        mvlr = mvLogisticRegression(penalty='l2')
 
         x_mv = np.zeros((n_samples, self.p))
         LL = np.zeros(n_features)
@@ -103,8 +105,8 @@ class LogisticRegression(
 
                 # log-likelihood function at t
                 log_probs = mvlr.predict_log_proba(x_mv[:, :q + 1])
-                log_probs = np.array(
-                    [log_probs[i, y[i]] for i in range(n_samples)],
+                log_probs = np.concatenate(
+                    (log_probs[y_ind == 0, 0], log_probs[y_ind == 1, 1]),
                 )
                 LL[t] = np.mean(log_probs)
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from functools import reduce
 from typing import Tuple, Union
 
 import numpy as np
@@ -75,33 +74,40 @@ def local_averages(
     return np.asarray(integrated_data)
 
 
-def _calculate_curve_occupation_(
+def _calculate_curves_occupation_(
     curve_y_coordinates: np.ndarray,
     curve_x_coordinates: np.ndarray,
     interval: Tuple,
 ) -> np.ndarray:
     y1, y2 = interval
-    first_x_coord = 0
-    last_x_coord = 0
-    time_x_coord_counter = 0
-    inside_interval = False
 
-    for j, y_coordinate in enumerate(curve_y_coordinates[1:]):
-        y_coordinate = y_coordinate[0]
+    # Reshape original curves so they have one dimension less
+    new_shape = curve_y_coordinates.shape[1::-1]
+    curve_y_coordinates = curve_y_coordinates.reshape(
+        new_shape[::-1],
+    )
 
-        if y1 <= y_coordinate <= y2 and not inside_interval:
-            inside_interval = True
-            first_x_coord = curve_x_coordinates[j][0]
-            last_x_coord = curve_x_coordinates[j][0]
-        elif y1 <= y_coordinate <= y2:
-            last_x_coord = curve_x_coordinates[j][0]
-        elif inside_interval:
-            inside_interval = False
-            time_x_coord_counter += last_x_coord - first_x_coord
-            first_x_coord = 0
-            last_x_coord = 0
+    # Calculate interval sizes on the X axis
+    x_rotated = np.roll(curve_x_coordinates, 1)
+    intervals_x_axis = curve_x_coordinates - x_rotated
 
-    return np.array([[time_x_coord_counter]])
+    # Calculate which points are inside the interval given (y1,y2) on Y axis
+    greater_than_y1 = curve_y_coordinates >= y1
+    less_than_y2 = curve_y_coordinates <= y2
+    inside_interval_bools = greater_than_y1 & less_than_y2
+
+    # Correct booleans so they are not repeated
+    bools_interval = np.roll(
+        inside_interval_bools, 1, axis=1,
+    ) & inside_interval_bools
+
+    # Calculate intervals on X axis where the points are inside Y axis interval
+    intervals_x_inside = np.multiply(bools_interval, intervals_x_axis)
+
+    # Delete first element of each interval as it will be a negative number
+    intervals_x_inside = np.delete(intervals_x_inside, 0, axis=1)
+
+    return np.sum(intervals_x_inside, axis=1)
 
 
 def occupation_measure(
@@ -162,87 +168,43 @@ def occupation_measure(
         ...     ),
         ...     decimals=2,
         ... )
-        array([[[ 0.98],
-                [ 0.48],
-                [ 6.25]],
-        <BLANKLINE>
-               [[ 0.98],
-                [ 0.48],
-                [ 0.  ]]])
+        array([[ 1.  ,  0.5 ,  6.27],
+               [ 0.98,  0.48,  0.  ]])
 
     """
-    if n_points is None:
-        if isinstance(data, FDataBasis):
-            raise ValueError(
-                "Number of points to consider, should be given "
-                + " as an argument for a FDataBasis. Instead None was passed.",
-            )
-        else:
-            grid = data.grid_points
-    else:
-        lower_functional_limit, upper_functional_limit = data.domain_range[0]
-        domain_size = upper_functional_limit - lower_functional_limit
+    if isinstance(data, FDataBasis) and n_points is None:
+        raise ValueError(
+            "Number of points to consider, should be given "
+            + " as an argument for a FDataBasis. Instead None was passed.",
+        )
 
-    if isinstance(data, FDataGrid):
-        time_x_coord_cumulative = np.empty((0, data.data_matrix.shape[0], 1))
-    else:
-        time_x_coord_cumulative = np.empty((0, data.coefficients.shape[0], 1))
-
-    for interval in intervals:  # noqa: WPS426
-
-        y1, y2 = interval
+    for interval_check in intervals:
+        y1, y2 = interval_check
         if y2 < y1:
             raise ValueError(
                 "Interval limits (a,b) should satisfy a <= b. "
-                + str(interval) + " doesn't",
+                + str(interval_check) + " doesn't",
             )
 
-        function_x_coordinates = np.empty((1, 1))
-        if n_points is None:
-            function_x_coordinates = reduce(
-                lambda a, b: np.concatenate(
-                    (
-                        a,
-                        np.array([[b]]),
-                    ),
-                ),
-                grid[0],
-                function_x_coordinates,
-            )[1:]
-        else:
-            for x_coordinate in np.arange(
-                lower_functional_limit,
-                upper_functional_limit,
-                domain_size / n_points,
-            ):
-                function_x_coordinates = np.concatenate(
-                    (function_x_coordinates, np.array([[x_coordinate]])),
-                )
-
-        if n_points is None:
-            function_y_coordinates = data.data_matrix
-        else:
-            function_y_coordinates = data(
-                function_x_coordinates,
-            )
-
-        time_x_coord_interval = np.empty((0, 1))
-        for curve_y_coordinates in function_y_coordinates:
-
-            time_x_coord_count = _calculate_curve_occupation_(  # noqa: WPS317
-                curve_y_coordinates,
-                function_x_coordinates,
-                (y1, y2),
-            )
-            time_x_coord_interval = np.concatenate(
-                (time_x_coord_interval, time_x_coord_count),
-            )
-
-        time_x_coord_cumulative = np.concatenate(
-            (time_x_coord_cumulative, np.array([time_x_coord_interval])),
+    if n_points is None:
+        function_x_coordinates = data.grid_points[0]
+        function_y_coordinates = data.data_matrix
+    else:
+        function_x_coordinates = np.arange(
+            data.domain_range[0][0],
+            data.domain_range[0][1],
+            (data.domain_range[0][1] - data.domain_range[0][0]) / n_points,
         )
+        function_y_coordinates = data(function_x_coordinates)
 
-    return time_x_coord_cumulative
+    return np.asarray([
+        _calculate_curves_occupation_(  # noqa: WPS317
+            function_y_coordinates,
+            function_x_coordinates,
+            interval,
+        )
+        for interval in intervals
+    ])
 
 
 def number_up_crossings(

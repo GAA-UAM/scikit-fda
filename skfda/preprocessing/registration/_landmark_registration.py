@@ -42,9 +42,8 @@ def landmark_shift_deltas(
             passed the location will be the result of the the call, the
             function should be accept as an unique parameter a numpy array
             with the list of landmarks.
-            By default it will be used as location :math:`\frac{1}{2}(max(
-            \text{landmarks})+ min(\text{landmarks}))` wich minimizes the
-            max shift.
+            By default it will be used as location the mean of the original
+            locations of the landmarks.
 
     Returns:
         Array containing the corresponding shifts.
@@ -68,7 +67,7 @@ def landmark_shift_deltas(
 
         >>> shifts = landmark_shift_deltas(fd, landmarks)
         >>> shifts.round(3)
-        array([ 0.25 , -0.25 , -0.231])
+        array([ 0.327, -0.173, -0.154])
 
         The registered samples can be obtained with a shift
 
@@ -88,10 +87,7 @@ def landmark_shift_deltas(
 
     # Parses location
     if location is None:
-        loc_array = (
-            np.max(landmarks, axis=0)
-            + np.min(landmarks, axis=0)
-        ) / 2
+        loc_array = np.mean(landmarks)
     elif callable(location):
         loc_array = location(landmarks)
     else:

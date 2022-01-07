@@ -201,14 +201,14 @@ class BasePlot(ABC):
 
         text = (
             f"{sample_number}{sample_descr}: "
-            f"({xdata_graph:.2f}, {ydata_graph:.2f})"
+            f"({xdata_graph:.3g}, {ydata_graph:.3g})"
         )
         tag.set_text(text)
 
         x_axis = axes.get_xlim()
         y_axis = axes.get_ylim()
 
-        label_xpos = 20
+        label_xpos = -60
         label_ypos = 20
         if (xdata_graph - x_axis[0]) > (x_axis[1] - xdata_graph):
             label_xpos = -80

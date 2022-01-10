@@ -27,6 +27,7 @@ jobs:
 
     - name: Run tests
       run: |
+        pip3 debug --verbose .
         pip3 install --upgrade-strategy eager -vv .
         coverage run --source=skfda/ setup.py test;
 

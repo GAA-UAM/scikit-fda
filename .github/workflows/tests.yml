@@ -27,7 +27,7 @@ jobs:
 
     - name: Run tests
       run: |
-        pip3 install --upgrade-strategy eager .
+        pip3 install --upgrade-strategy eager -vvv .
         coverage run --source=skfda/ setup.py test;
 
     - name: Upload coverage to Codecov

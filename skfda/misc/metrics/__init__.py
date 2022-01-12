@@ -22,3 +22,5 @@ from ._utils import (
     TransformationMetric,
     pairwise_metric_optimization,
 )
+
+from ._sdtw_distances import sdtwDivergence, sdtw_divergence

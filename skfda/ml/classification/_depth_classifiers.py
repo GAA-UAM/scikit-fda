@@ -113,7 +113,7 @@ class DDClassifier(
             raise ValueError("DDClassifier only accepts two classes.")
 
         dd_coordinates = [
-            depth_method.predict(X)
+            depth_method.transform(X)
             for depth_method in self.class_depth_methods_
         ]
 
@@ -160,7 +160,7 @@ class DDClassifier(
         sklearn_check_is_fitted(self)
 
         dd_coordinates = [
-            depth_method.predict(X)
+            depth_method.transform(X)
             for depth_method in self.class_depth_methods_
         ]
 
@@ -251,7 +251,7 @@ class DDGClassifier(
         (2017) The DDG-classifier in the functional setting. TEST, 26. 119-142.
     """
 
-    def __init__(
+    def __init__(  # noqa: WPS234
         self,
         multivariate_classifier: ClassifierMixin = None,
         depth_method: Union[Depth[T], Sequence[Depth[T]], None] = None,

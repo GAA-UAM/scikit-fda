@@ -16,6 +16,7 @@ from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
+from matplotlib.patches import Ellipse
 
 from ... import FDataGrid
 from ...representation._typing import NDArrayFloat, NDArrayInt
@@ -71,6 +72,7 @@ class MagnitudeShapePlot(BasePlot):
             If RandomState instance, random_state is the random number
             generator; If None, the random number generator is the
             RandomState instance used by np.random. By default, it is 0.
+        ellipsoid: Whether to draw the non outlying ellipsoid.
 
     Attributes:
         points(numpy.ndarray): 2-dimensional matrix where each row
@@ -168,6 +170,7 @@ class MagnitudeShapePlot(BasePlot):
         *,
         fig: Optional[Figure] = None,
         axes: Optional[Sequence[Axes]] = None,
+        ellipsoid: bool = True,
         **kwargs: Any,
     ) -> None:
 
@@ -186,6 +189,8 @@ class MagnitudeShapePlot(BasePlot):
         y = self.outlier_detector.fit_predict(fdata)
 
         outliers = (y == -1)
+
+        self.ellipsoid = ellipsoid
 
         self._fdata = fdata
         self._outliers = outliers
@@ -275,6 +280,34 @@ class MagnitudeShapePlot(BasePlot):
         colors[np.where(self.outliers == 0)] = self.colormap(self.color)
 
         colors_rgba = [tuple(i) for i in colors]
+
+        if self.ellipsoid:
+            center = self.outlier_detector.cov_.location_
+            prec = self.outlier_detector.cov_.get_precision()
+
+            K = (
+                self.outlier_detector.cutoff_value_
+                / self.outlier_detector.scaling_
+            )
+
+            eigvals, eigvecs = np.linalg.eigh(prec)
+
+            a, b = np.sqrt(K / eigvals)
+            if eigvecs[0, 1] * eigvecs[1, 0] > 0:
+                eigvecs[:, 0] *= -1
+
+            angle = np.rad2deg(np.arctan2(eigvecs[1, 0], eigvecs[0, 0]))
+
+            ellipse = Ellipse(
+                xy=center,
+                width=2 * a,
+                height=2 * b,
+                angle=angle,
+                facecolor='C0',
+                alpha=0.1,
+            )
+
+            axes[0].add_patch(ellipse)
 
         for i, _ in enumerate(self.points[:, 0].ravel()):
             self.artists[i, 0] = axes[0].scatter(

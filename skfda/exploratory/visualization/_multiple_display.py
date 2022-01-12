@@ -86,13 +86,13 @@ class MultipleDisplay:
             if d.n_samples is not None
         )
         self.sliders: List[Widget] = []
-        self.criteria: List[List[int]] = []
         self.selected_sample: Optional[int] = None
 
         if len(criteria) != 0 and not isinstance(criteria[0], Sequence):
             criteria = (criteria,)
 
         criteria = cast(Sequence[Sequence[float]], criteria)
+        self.criteria = criteria
 
         if not isinstance(sliders, Sequence):
             sliders = (sliders,)
@@ -297,7 +297,7 @@ class MultipleDisplay:
             artist.set_alpha(1.0 if i == selected_sample else 0.1)
 
         for criterion, slider in zip(self.criteria, self.sliders):
-            val_widget = criterion.index(selected_sample)
+            val_widget = criterion[selected_sample]
             _set_val_noevents(slider, val_widget)
 
         self.selected_sample = selected_sample
@@ -329,57 +329,60 @@ class MultipleDisplay:
         """
         full_desc = "" if label is None else label
 
+        ordered_criterion_values, ordered_criterion_indexes = zip(
+            *sorted(zip(criterion, range(self.length_data))),
+        )
+
         widget = widget_class(
             ax=axes,
             label=full_desc,
-            valmin=0,
-            valmax=self.length_data - 1,
-            valinit=0,
-            valstep=1,
+            valmin=ordered_criterion_values[0],
+            valmax=ordered_criterion_values[-1],
+            valinit=ordered_criterion_values[0],
+            valstep=ordered_criterion_values,
+            valfmt="%.3g",
         )
 
         self.sliders.append(widget)
 
         axes.annotate(
-            '0',
+            f"{ordered_criterion_values[0]:.3g}",
             xy=(0, -0.5),
             xycoords='axes fraction',
             annotation_clip=False,
         )
 
         axes.annotate(
-            str(self.length_data - 1),
+            f"{ordered_criterion_values[-1]:.3g}",
             xy=(0.95, -0.5),
             xycoords='axes fraction',
             annotation_clip=False,
         )
 
-        criterion_sample_indexes = [
-            x for _, x in sorted(zip(criterion, range(self.length_data)))
-        ]
-
-        self.criteria.append(criterion_sample_indexes)
-
         on_changed_function = partial(
             self._value_updated,
-            criterion_sample_indexes=criterion_sample_indexes,
+            ordered_criterion_values=ordered_criterion_values,
+            ordered_criterion_indexes=ordered_criterion_indexes,
         )
 
         widget.on_changed(on_changed_function)
 
     def _value_updated(
         self,
-        value: int,
-        criterion_sample_indexes: Sequence[int],
+        value: float,
+        ordered_criterion_values: Sequence[float],
+        ordered_criterion_indexes: Sequence[int],
     ) -> None:
         """
         Update the graphs when a widget is clicked.
 
         Args:
             value: Current value of the widget.
-            criterion_sample_indexes: Sample numbers ordered using the
+            ordered_criterion_values: Ordered values of the criterion.
+            ordered_criterion_indexes: Sample numbers ordered using the
                 criterion.
 
         """
-        self.selected_sample = criterion_sample_indexes[value]
+        value_index = int(np.searchsorted(ordered_criterion_values, value))
+        self.selected_sample = ordered_criterion_indexes[value_index]
         self._select_sample(self.selected_sample)

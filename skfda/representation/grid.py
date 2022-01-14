@@ -45,6 +45,7 @@ from ._typing import (
     GridPointsLike,
     LabelTupleLike,
     NDArrayFloat,
+    NDArrayInt,
 )
 from .basis import Basis
 from .evaluator import Evaluator
@@ -1290,7 +1291,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
         new_inputs = [
             i.data_matrix if isinstance(i, FDataGrid)
-            else i for i in inputs
+            else self._get_op_matrix(i) for i in inputs
         ]
 
         outputs = kwargs.pop('out', None)
@@ -1322,6 +1323,28 @@ class FDataGrid(FData):  # noqa: WPS214
     #####################################################################
     # Pandas ExtensionArray methods
     #####################################################################
+
+    def _take_allow_fill(
+        self: T,
+        indices: NDArrayInt,
+        fill_value: T,
+    ) -> T:
+        result = self.copy()
+        result.data_matrix = np.full(
+            (len(indices),) + self.data_matrix.shape[1:],
+            np.nan,
+        )
+
+        positive_mask = indices >= 0
+        result.data_matrix[positive_mask] = self.data_matrix[
+            indices[positive_mask]
+        ]
+
+        if fill_value is not self.dtype.na_value:
+            result.data_matrix[~positive_mask] = fill_value.data_matrix[0]
+
+        return result
+
     @property
     def dtype(self) -> FDataGridDType:
         """The dtype for this extension array, FDataGridDType"""

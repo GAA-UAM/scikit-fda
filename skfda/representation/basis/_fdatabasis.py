@@ -29,6 +29,7 @@ from .._typing import (
     GridPointsLike,
     LabelTupleLike,
     NDArrayFloat,
+    NDArrayInt,
 )
 from ..extrapolation import ExtrapolationLike
 from . import Basis
@@ -909,6 +910,27 @@ class FDataBasis(FData):  # noqa: WPS214
     #####################################################################
     # Pandas ExtensionArray methods
     #####################################################################
+    def _take_allow_fill(
+        self: T,
+        indices: NDArrayInt,
+        fill_value: T,
+    ) -> T:
+        result = self.copy()
+        result.coefficients = np.full(
+            (len(indices),) + self.coefficients.shape[1:],
+            np.nan,
+        )
+
+        positive_mask = indices >= 0
+        result.coefficients[positive_mask] = self.coefficients[
+            indices[positive_mask]
+        ]
+
+        if fill_value is not self.dtype.na_value:
+            result.coefficients[~positive_mask] = fill_value.coefficients[0]
+
+        return result
+
     @property
     def dtype(self) -> FDataBasisDType:
         """The dtype for this extension array, FDataGridDType"""

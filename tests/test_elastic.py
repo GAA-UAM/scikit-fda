@@ -44,6 +44,33 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
         t = np.linspace(-3, 3, 9)
         self.dummy_sample = FDataGrid([np.sin(t)], t)
 
+    def test_fit_wrong_dimension(self) -> None:
+        """Checks that template and fit data is compatible."""
+        reg = FisherRaoElasticRegistration(template=self.template)
+
+        unimodal_samples = make_multimodal_samples(
+            n_samples=3,
+            points_per_dim=10,
+            random_state=1,
+        )
+
+        with self.assertRaises(ValueError):
+            reg.fit(unimodal_samples)
+
+    def test_transform_wrong_dimension(self) -> None:
+        """Checks that template and transform data is compatible."""
+        reg = FisherRaoElasticRegistration(template=self.template)
+
+        unimodal_samples = make_multimodal_samples(
+            n_samples=3,
+            points_per_dim=10,
+            random_state=1,
+        )
+
+        reg.fit(self.unimodal_samples)
+        with self.assertRaises(ValueError):
+            reg.transform(unimodal_samples)
+
     def test_to_srsf(self) -> None:
         """Test to srsf."""
         # Checks SRSF conversion

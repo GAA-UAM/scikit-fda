@@ -34,6 +34,7 @@ from ._typing import (
     LabelTuple,
     LabelTupleLike,
     NDArrayFloat,
+    NDArrayInt,
 )
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike, _parse_extrapolation
@@ -1068,6 +1069,24 @@ class FData(  # noqa: WPS214
 
         return array
 
+    def __array_ufunc__(
+        self,
+        ufunc: Any,
+        method: str,
+        *inputs: Any,
+        **kwargs: Any,
+    ) -> Any:
+        """Prevent NumPy from converting to array just to do operations."""
+
+        # Make normal multiplication by scalar use the __mul__ method
+        if ufunc == np.multiply and method == "__call__" and len(inputs) == 2:
+            if isinstance(inputs[0], np.ndarray):
+                inputs = inputs[::-1]
+
+            return inputs[0] * inputs[1]
+
+        return NotImplemented
+
     #####################################################################
     # Pandas ExtensionArray methods
     #####################################################################
@@ -1119,9 +1138,17 @@ class FData(  # noqa: WPS214
             "Factorization does not make sense for functional data",
         )
 
+    @abstractmethod
+    def _take_allow_fill(
+        self: T,
+        indices: NDArrayInt,
+        fill_value: T,
+    ) -> T:
+        pass
+
     def take(
         self: T,
-        indices: Sequence[int],
+        indices: Union[int, Sequence[int], NDArrayInt],
         allow_fill: bool = False,
         fill_value: Optional[T] = None,
         axis: int = 0,
@@ -1167,28 +1194,44 @@ class FData(  # noqa: WPS214
             numpy.take
             pandas.api.extensions.take
         """
-        from pandas.core.algorithms import take
-
         # The axis parameter must exist, because sklearn tries to use take
         # instead of __getitem__
         if axis != 0:
             raise ValueError(f"Axis must be 0, not {axis}")
 
-        # If the ExtensionArray is backed by an ndarray, then
-        # just pass that here instead of coercing to object.
-        data = np.asarray(self)
-        if allow_fill and fill_value is None:
+        arr_indices = np.atleast_1d(indices)
+
+        if fill_value is None:
             fill_value = self.dtype.na_value
-        # fill value should always be translated from the scalar
-        # type for the array, to the physical storage type for
-        # the data, before passing to take.
-        result = take(
-            data,
-            indices,
-            fill_value=fill_value,
-            allow_fill=allow_fill,
-        )
-        return self._from_sequence(result, dtype=self.dtype)
+
+        non_empty_take_msg = "cannot do a non-empty take from an empty axes"
+
+        if allow_fill:
+            if (arr_indices < -1).any():
+                raise ValueError("Invalid indexes")
+
+            positive_mask = arr_indices >= 0
+            if len(self) == 0 and positive_mask.any():
+                raise IndexError(non_empty_take_msg)
+
+            sample_names = np.zeros(len(arr_indices), dtype=object)
+            result = self._take_allow_fill(arr_indices, fill_value)
+
+            sample_names[positive_mask] = np.array(self.sample_names)[
+                arr_indices[positive_mask]
+            ]
+
+            if fill_value is not self.dtype.na_value:
+                sample_names[~positive_mask] = fill_value.sample_names[0]
+
+            result.sample_names = tuple(sample_names)
+        else:
+            if len(self) == 0 and len(arr_indices) != 0:
+                raise IndexError(non_empty_take_msg)
+
+            result = self[arr_indices]
+
+        return result
 
     @classmethod
     def _concat_same_type(
@@ -1217,6 +1260,7 @@ class FData(  # noqa: WPS214
             if copy:
                 new_obj = self.copy()
             return new_obj
+
         return super().astype(dtype)
 
     def _reduce(self, name: str, skipna: bool = True, **kwargs: Any) -> Any:

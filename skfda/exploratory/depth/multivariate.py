@@ -40,7 +40,7 @@ class _DepthOrOutlyingness(
         return self
 
     @abc.abstractmethod
-    def predict(self, X: T) -> np.ndarray:
+    def transform(self, X: T) -> np.ndarray:
         """
         Compute the depth or outlyingness inside the learned distribution.
 
@@ -53,7 +53,7 @@ class _DepthOrOutlyingness(
         """
         pass
 
-    def fit_predict(self, X: T, y: None = None) -> np.ndarray:
+    def fit_transform(self, X: T, y: None = None) -> np.ndarray:
         """
         Compute the depth or outlyingness of each observation.
 
@@ -67,7 +67,7 @@ class _DepthOrOutlyingness(
             Depth of each observation.
 
         """
-        return self.fit(X).predict(X)
+        return self.fit(X).transform(X)
 
     def __call__(
         self,
@@ -90,9 +90,9 @@ class _DepthOrOutlyingness(
         copy = sklearn.base.clone(self)
 
         if distribution is None:
-            return copy.fit_predict(X)
+            return copy.fit_transform(X)
 
-        return copy.fit(distribution).predict(X)
+        return copy.fit(distribution).transform(X)
 
     @property  # noqa: WPS125
     def max(self) -> float:  # noqa: WPS125
@@ -189,7 +189,7 @@ class _UnivariateFraimanMuniz(Depth[np.ndarray]):
         self._sorted_values = np.sort(X, axis=0)
         return self
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
+    def transform(self, X: np.ndarray) -> np.ndarray:
         cum_dist = _searchsorted_ordered(
             np.moveaxis(self._sorted_values, 0, -1),
             np.moveaxis(X, 0, -1),
@@ -236,7 +236,7 @@ class SimplicialDepth(Depth[np.ndarray]):
 
         return self
 
-    def predict(self, X: np.ndarray) -> np.ndarray:  # noqa: D102
+    def transform(self, X: np.ndarray) -> np.ndarray:  # noqa: D102
 
         assert self._dim == X.shape[-1]
 
@@ -307,8 +307,8 @@ class OutlyingnessBasedDepth(Depth[T]):
 
         return self
 
-    def predict(self, X: np.ndarray) -> np.ndarray:  # noqa: D102
-        outlyingness_values = self.outlyingness.predict(X)
+    def transform(self, X: np.ndarray) -> np.ndarray:  # noqa: D102
+        outlyingness_values = self.outlyingness.transform(X)
 
         min_val = self.outlyingness.min
         max_val = self.outlyingness.max
@@ -355,7 +355,7 @@ class StahelDonohoOutlyingness(Outlyingness[np.ndarray]):
 
         return self
 
-    def predict(self, X: np.ndarray) -> np.ndarray:  # noqa: D102
+    def transform(self, X: np.ndarray) -> np.ndarray:  # noqa: D102
 
         dim = X.shape[-1]
 

@@ -28,12 +28,15 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
 from typing_extensions import Literal, Protocol
 
+from .._utils._sklearn_adapter import TransformerMixin
 from ..representation._typing import (
     ArrayLike,
     DomainRange,
     DomainRangeLike,
     GridPoints,
     GridPointsLike,
+    NDArrayFloat,
+    NDArrayInt,
 )
 from ..representation.extrapolation import ExtrapolationLike
 
@@ -44,6 +47,10 @@ if TYPE_CHECKING:
     from ..representation import FData, FDataGrid
     from ..representation.basis import Basis
     T = TypeVar("T", bound=FData)
+
+Input = TypeVar("Input")
+Output = TypeVar("Output")
+Target = TypeVar("Target")
 
 
 def check_is_univariate(fd: FData) -> None:
@@ -76,7 +83,7 @@ def check_is_univariate(fd: FData) -> None:
 
 
 def _check_compatible_fdata(fdata1: FData, fdata2: FData) -> None:
-    """Check that fdata is compatible."""
+    """Check that two FData are compatible."""
     if (fdata1.dim_domain != fdata2.dim_domain):
         raise ValueError(
             f"Functional data has incompatible domain dimensions: "
@@ -87,6 +94,19 @@ def _check_compatible_fdata(fdata1: FData, fdata2: FData) -> None:
         raise ValueError(
             f"Functional data has incompatible codomain dimensions: "
             f"{fdata1.dim_codomain} != {fdata2.dim_codomain}",
+        )
+
+
+def _check_compatible_fdatagrid(fdata1: FDataGrid, fdata2: FDataGrid) -> None:
+    """Check that two FDataGrid are compatible."""
+    _check_compatible_fdata(fdata1, fdata2)
+    if not all(
+        np.array_equal(g1, g2)
+        for g1, g2 in zip(fdata1.grid_points, fdata2.grid_points)
+    ):
+        raise ValueError(
+            f"Incompatible grid points between template and "
+            f"data: {fdata1.grid_points} != {fdata2.grid_points}",
         )
 
 
@@ -728,6 +748,25 @@ def _classifier_fit_depth_methods(
     )
 
     return classes, class_depth_methods_
+
+
+def _fit_feature_transformer(  # noqa: WPS320 WPS234
+    X: Union[NDArrayInt, NDArrayFloat],
+    y: Union[NDArrayInt, NDArrayFloat],
+    transformer: TransformerMixin[Input, Output, Target],
+) -> Tuple[
+    Union[NDArrayInt, NDArrayFloat],
+    Sequence[TransformerMixin[Input, Output, Target]],
+]:
+
+    classes, y_ind = _classifier_get_classes(y)
+
+    class_feature_transformers = [
+        clone(transformer).fit(X[y_ind == cur_class], y[y_ind == cur_class])
+        for cur_class, _ in enumerate(classes)
+    ]
+
+    return classes, class_feature_transformers
 
 
 _DependenceMeasure = Callable[[np.ndarray, np.ndarray], np.ndarray]

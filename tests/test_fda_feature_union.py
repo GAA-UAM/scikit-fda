@@ -6,6 +6,7 @@ from pandas import DataFrame
 from pandas.testing import assert_frame_equal
 
 from skfda.datasets import fetch_growth
+from skfda.misc.feature_construction import EvaluationTransformer
 from skfda.misc.operators import SRSF
 from skfda.preprocessing.dim_reduction.feature_extraction import (
     FDAFeatureUnion,
@@ -13,7 +14,6 @@ from skfda.preprocessing.dim_reduction.feature_extraction import (
 from skfda.preprocessing.smoothing.kernel_smoothers import (
     NadarayaWatsonSmoother,
 )
-from skfda.representation import EvaluationTransformer
 
 
 class TestFDAFeatureUnion(unittest.TestCase):

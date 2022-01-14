@@ -369,8 +369,6 @@ def _inner_product_fdatagrid(
 
     integrand = arg1 * arg2
     return integrand.integrate()
-    
-
 
 
 @inner_product.register(FDataBasis, FDataBasis)

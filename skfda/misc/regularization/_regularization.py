@@ -4,9 +4,9 @@ import itertools
 from typing import Any, Generic, Iterable, Optional, Union
 
 import numpy as np
+import scipy.linalg
 from sklearn.base import BaseEstimator
 
-import scipy.linalg
 from skfda.misc.operators import Identity, gramian_matrix
 
 from ...representation import FData
@@ -38,9 +38,11 @@ class TikhonovRegularization(
     provides several common linear operators.
 
     Parameters:
-        linear_operator: linear operator used for regularization.
-        regularization_parameter: scaling parameter (:math:`\lambda`) of the
-                                  penalization.
+        linear_operator: Linear operator used for regularization. By default
+            the second derivative, which is related with the function
+            curvature, is penalized.
+        regularization_parameter: Scaling parameter (:math:`\lambda`) of the
+            penalization.
 
     Examples:
         Construct a regularization that penalizes the second derivative,
@@ -88,7 +90,7 @@ class TikhonovRegularization(
 
     def __init__(
         self,
-        linear_operator: Operator[OperatorInput, Any],
+        linear_operator: Optional[Operator[OperatorInput, Any]] = None,
         *,
         regularization_parameter: float = 1,
     ) -> None:
@@ -100,8 +102,16 @@ class TikhonovRegularization(
         basis: OperatorInput,
     ) -> np.ndarray:
         """Return a penalty matrix for ordinary least squares."""
+        from ..operators import LinearDifferentialOperator
+
+        linear_operator = (
+            LinearDifferentialOperator(2)
+            if self.linear_operator is None
+            else self.linear_operator
+        )
+
         return self.regularization_parameter * gramian_matrix(
-            self.linear_operator,
+            linear_operator,
             basis,
         )
 

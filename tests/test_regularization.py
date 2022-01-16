@@ -224,6 +224,42 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
         )
 
 
+class TestDefaultTikhonovRegularization(unittest.TestCase):
+    """Test default value of Tikhonov regularization."""
+
+    def test_basis_default(self) -> None:
+        """Test that in basis smoothing."""
+        data_matrix = np.linspace([0, 1, 2, 3], [1, 2, 3, 4], 100)
+
+        fd = skfda.FDataGrid(data_matrix.T)
+
+        smoother = skfda.preprocessing.smoothing.BasisSmoother(
+            basis=skfda.representation.basis.BSpline(
+                n_basis=10,
+                domain_range=fd.domain_range,
+            ),
+            regularization=TikhonovRegularization(),
+        )
+
+        smoother2 = skfda.preprocessing.smoothing.BasisSmoother(
+            basis=skfda.representation.basis.BSpline(
+                n_basis=10,
+                domain_range=fd.domain_range,
+            ),
+            regularization=TikhonovRegularization(
+                LinearDifferentialOperator(2),
+            ),
+        )
+
+        fd_basis = smoother.fit_transform(fd)
+        fd_basis2 = smoother2.fit_transform(fd)
+
+        np.testing.assert_allclose(
+            fd_basis.data_matrix,
+            fd_basis2.data_matrix,
+        )
+
+
 class TestEndpointsDifferenceRegularization(unittest.TestCase):
     """Test regularization with a callable."""
 

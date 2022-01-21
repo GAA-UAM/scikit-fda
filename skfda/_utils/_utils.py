@@ -48,9 +48,9 @@ if TYPE_CHECKING:
     from ..representation.basis import Basis
     T = TypeVar("T", bound=FData)
 
-Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
-Output = TypeVar("Output", bound=Union[FData, NDArrayFloat])
-Target = TypeVar("Target", bound=NDArrayInt)
+    Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
+    Output = TypeVar("Output", bound=Union[FData, NDArrayFloat])
+    Target = TypeVar("Target", bound=NDArrayInt)
 
 
 def check_is_univariate(fd: FData) -> None:

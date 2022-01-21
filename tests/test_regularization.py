@@ -11,12 +11,16 @@ from sklearn.linear_model import Ridge
 from sklearn.model_selection._split import train_test_split
 
 import skfda
-from skfda.misc.operators import LinearDifferentialOperator, gramian_matrix
+from skfda.misc.operators import (
+    Identity,
+    LinearDifferentialOperator,
+    gramian_matrix,
+)
 from skfda.misc.operators._linear_differential_operator import (
     _monomial_evaluate_constant_linear_diff_op,
 )
 from skfda.misc.operators._operators import gramian_matrix_numerical
-from skfda.misc.regularization import L2Regularization, TikhonovRegularization
+from skfda.misc.regularization import L2Regularization
 from skfda.ml.regression import LinearRegression
 from skfda.representation.basis import (
     Basis,
@@ -224,8 +228,8 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
         )
 
 
-class TestDefaultTikhonovRegularization(unittest.TestCase):
-    """Test default value of Tikhonov regularization."""
+class TestDefaultL2Regularization(unittest.TestCase):
+    """Test default value of L2 regularization."""
 
     def test_basis_default(self) -> None:
         """Test that in basis smoothing."""
@@ -238,7 +242,7 @@ class TestDefaultTikhonovRegularization(unittest.TestCase):
                 n_basis=10,
                 domain_range=fd.domain_range,
             ),
-            regularization=TikhonovRegularization(),
+            regularization=L2Regularization(),
         )
 
         smoother2 = skfda.preprocessing.smoothing.BasisSmoother(
@@ -246,8 +250,8 @@ class TestDefaultTikhonovRegularization(unittest.TestCase):
                 n_basis=10,
                 domain_range=fd.domain_range,
             ),
-            regularization=TikhonovRegularization(
-                LinearDifferentialOperator(2),
+            regularization=L2Regularization(
+                Identity(),
             ),
         )
 
@@ -274,7 +278,7 @@ class TestEndpointsDifferenceRegularization(unittest.TestCase):
                 n_basis=10,
                 domain_range=fd.domain_range,
             ),
-            regularization=TikhonovRegularization(
+            regularization=L2Regularization(
                 lambda x: x(1)[:, 0] - x(0)[:, 0],
             ),
             smoothing_parameter=10000,

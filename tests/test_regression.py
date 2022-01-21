@@ -6,7 +6,7 @@ from scipy.integrate import cumtrapz
 from skfda.datasets import make_gaussian, make_gaussian_process
 from skfda.misc.covariances import Gaussian
 from skfda.misc.operators import LinearDifferentialOperator
-from skfda.misc.regularization import TikhonovRegularization
+from skfda.misc.regularization import L2Regularization
 from skfda.ml.regression import HistoricalLinearRegression, LinearRegression
 from skfda.representation.basis import BSpline, FDataBasis, Fourier, Monomial
 from skfda.representation.grid import FDataGrid
@@ -129,8 +129,8 @@ class TestScalarLinearRegression(unittest.TestCase):
         y = 2 + y_sum + y_integral
 
         scalar = LinearRegression(
-            regularization=[TikhonovRegularization(lambda x: x),
-                            TikhonovRegularization(
+            regularization=[L2Regularization(lambda x: x),
+                            L2Regularization(
                                 LinearDifferentialOperator(2))])
         scalar.fit(X, y)
 
@@ -177,7 +177,7 @@ class TestScalarLinearRegression(unittest.TestCase):
 
         scalar = LinearRegression(
             coef_basis=[beta_basis],
-            regularization=TikhonovRegularization(
+            regularization=L2Regularization(
                 LinearDifferentialOperator(2)))
         scalar.fit(x_fd, y)
         np.testing.assert_allclose(scalar.coef_[0].coefficients,
@@ -213,7 +213,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         y_reg = [5.333, 3.419, 2.697, 11.366]
 
         scalar_reg = LinearRegression(
-            regularization=TikhonovRegularization(
+            regularization=L2Regularization(
                 LinearDifferentialOperator(2)))
         scalar_reg.fit(x_fd, y)
         np.testing.assert_allclose(scalar_reg.coef_[0].coefficients,

@@ -691,7 +691,11 @@ def _check_array_key(array: NDArrayAny, key: Any) -> Any:
 
     if isinstance(key, numbers.Integral):  # To accept also numpy ints
         key = int(key)
-        key = range(len(array))[key]
+        if key < 0:
+            key = len(array) + key
+
+        if not 0 <= key < len(array):
+            raise IndexError("index out of bounds")
 
         return slice(key, key + 1)
 

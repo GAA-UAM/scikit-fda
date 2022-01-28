@@ -803,10 +803,10 @@ class FDataGrid(FData):  # noqa: WPS214
         """Scatter plot of the FDatGrid object.
 
         Args:
-            args: positional arguments to be passed to the
-                matplotlib.pyplot.scatter function.
-            kwargs: keyword arguments to be passed to the
-                matplotlib.pyplot.scatter function.
+            args: Positional arguments to be passed to the class
+                :class:`~skfda.exploratory.visualization.representation.ScatterPlot`.
+            kwargs: Keyword arguments to be passed to the class
+                :class:`~skfda.exploratory.visualization.representation.ScatterPlot`.
 
         Returns:
             Figure object in which the graphs are plotted.

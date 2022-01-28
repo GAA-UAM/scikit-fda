@@ -263,9 +263,10 @@ def inner_product(
         >>> inner_product(array1, array2)
         array([32, 9])
 
-        The inner product of the :math:'f(x) = x` and the constant
-        :math:`y=1` defined over the interval [0,1] is the area of the
-        triangle delimited by the the lines y = 0, x = 1 and y = x; 0.5.
+        The inner product of the :math:`f(x) = x` and the constant
+        :math:`y=1` defined over the interval :math:`[0,1]` is the area of
+        the triangle delimited by the the lines :math:`y = 0`, :math:`x = 1`
+        and :math:`y = x`, that is, :math:`0.5`.
 
         >>> import skfda
         >>>
@@ -588,7 +589,7 @@ def cosine_similarity(
         >>> cosine_similarity(array1, array2)
         array([ 0.97463185,  0.96490128])
 
-        The cosine similarity of the :math:'f(x) = x` and the constant
+        The cosine similarity of the :math:`f(x) = x` and the constant
         :math:`y=1` defined over the interval [0,1] is the area of the
         triangle delimited by the the lines y = 0, x = 1 and y = x; 0.5,
         multiplied by :math:`\sqrt{3}`.

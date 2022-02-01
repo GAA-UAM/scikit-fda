@@ -99,10 +99,13 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
         In our example we are going to use the Nadaraya Watson Smoother.
 
         >>> from skfda.preprocessing.smoothing.kernel_smoothers import (
-        ...     NadarayaWatsonSmoother,
+        ...     KernelSmoother,
+        ... )
+        >>> from skfda.misc.hat_matrix import (
+        ...     NadarayaWatsonHatMatrix,
         ... )
         >>> t2 = PerClassTransformer(
-        ...     NadarayaWatsonSmoother(),
+        ...     KernelSmoother(kernel_estimator=NadarayaWatsonHatMatrix()),
         ... )
         >>> x_transformed2 = t2.fit_transform(X, y)
 

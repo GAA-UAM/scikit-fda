@@ -34,3 +34,11 @@ it is explained the basic usage of these estimators.
 
    skfda.ml.regression.KNeighborsRegressor
    skfda.ml.regression.RadiusNeighborsRegressor
+
+Kernel regression
+-----------------
+
+.. autosummary::
+   :toctree: autosummary
+
+    skfda.ml.regression.KernelRegression

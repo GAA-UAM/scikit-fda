@@ -1,3 +1,4 @@
+"""Miscellaneous functions and objects."""
 from . import covariances, kernels, lstsq, metrics, operators, regularization
 from ._math import (
     cosine_similarity,
@@ -10,4 +11,10 @@ from ._math import (
     log2,
     log10,
     sqrt,
+)
+from .hat_matrix import (
+    HatMatrix,
+    KNeighborsHatMatrix,
+    LocalLinearRegressionHatMatrix,
+    NadarayaWatsonHatMatrix,
 )

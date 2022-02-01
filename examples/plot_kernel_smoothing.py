@@ -1,6 +1,6 @@
 """
-Kernel Smoothing
-================
+Kernel Smoothing.
+=================
 
 This example uses different kernel smoothing methods over the phoneme data
 set and shows how cross validations scores vary over a range of different
@@ -15,6 +15,7 @@ import matplotlib.pylab as plt
 import numpy as np
 
 import skfda
+import skfda.misc.hat_matrix as hm
 import skfda.preprocessing.smoothing.kernel_smoothers as ks
 import skfda.preprocessing.smoothing.validation as val
 
@@ -31,7 +32,7 @@ import skfda.preprocessing.smoothing.validation as val
 dataset = skfda.datasets.fetch_phoneme()
 fd = dataset['data'][:300]
 
-fd[0:5].plot()
+fd[:5].plot()
 
 ##############################################################################
 # Here we show the general cross validation scores for different values of the
@@ -58,32 +59,35 @@ n_neighbors = np.arange(1, 24)
 # and we could compare the results of the different smoothers.
 
 scale_factor = (
-    (fd.domain_range[0][1] - fd.domain_range[0][0])
-    / len(fd.grid_points[0])
+    (fd.domain_range[0][1] - fd.domain_range[0][0]) / len(fd.grid_points[0])
 )
 
 bandwidth = n_neighbors * scale_factor
 
 # K-nearest neighbours kernel smoothing.
+
 knn = val.SmoothingParameterSearch(
-    ks.KNeighborsSmoother(),
+    ks.KernelSmoother(kernel_estimator=hm.KNeighborsHatMatrix()),
     n_neighbors,
+    param_name='kernel_estimator__bandwidth',
 )
 knn.fit(fd)
 knn_fd = knn.transform(fd)
 
 # Local linear regression kernel smoothing.
 llr = val.SmoothingParameterSearch(
-    ks.LocalLinearRegressionSmoother(),
+    ks.KernelSmoother(kernel_estimator=hm.LocalLinearRegressionHatMatrix()),
     bandwidth,
+    param_name='kernel_estimator__bandwidth',
 )
 llr.fit(fd)
 llr_fd = llr.transform(fd)
 
 # Nadaraya-Watson kernel smoothing.
 nw = val.SmoothingParameterSearch(
-    ks.NadarayaWatsonSmoother(),
+    ks.KernelSmoother(kernel_estimator=hm.NadarayaWatsonHatMatrix()),
     bandwidth,
+    param_name='kernel_estimator__bandwidth',
 )
 nw.fit(fd)
 nw_fd = nw.transform(fd)
@@ -112,7 +116,6 @@ ax.plot(
     label='Nadaraya-Watson',
 )
 ax.legend()
-fig
 
 ##############################################################################
 # We can plot the smoothed curves corresponding to the 11th element of the
@@ -138,7 +141,6 @@ ax.legend(
     ],
     title='Smoothing method',
 )
-fig
 
 ##############################################################################
 # We can compare the curve before and after the smoothing.
@@ -153,24 +155,23 @@ fd[10].plot()
 
 fig = fd[10].scatter(s=0.5)
 nw_fd[10].plot(fig=fig, color='green')
-fig
 
 ##############################################################################
 # Now, we can see the effects of a proper smoothing. We can plot the same 5
 # samples from the beginning using the Nadaraya-Watson kernel smoother with
 # the best choice of parameter.
 
-nw_fd[0:5].plot()
+nw_fd[:5].plot()
 
 ##############################################################################
 # We can also appreciate the effects of undersmoothing and oversmoothing in
 # the following plots.
 
-fd_us = ks.NadarayaWatsonSmoother(
-    smoothing_parameter=2 * scale_factor,
+fd_us = ks.KernelSmoother(
+    kernel_estimator=hm.NadarayaWatsonHatMatrix(bandwidth=2 * scale_factor),
 ).fit_transform(fd[10])
-fd_os = ks.NadarayaWatsonSmoother(
-    smoothing_parameter=15 * scale_factor,
+fd_os = ks.KernelSmoother(
+    kernel_estimator=hm.NadarayaWatsonHatMatrix(bandwidth=15 * scale_factor),
 ).fit_transform(fd[10])
 
 ##############################################################################

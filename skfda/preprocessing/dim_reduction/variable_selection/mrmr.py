@@ -26,6 +26,10 @@ from ....representation._typing import NDArrayFloat, NDArrayInt
 from ....representation.grid import FDataGrid
 
 _Criterion = Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]
+_CriterionLike = Union[
+    _Criterion,
+    Literal["difference", "quotient"],
+]
 
 
 class Method(NamedTuple):
@@ -135,7 +139,7 @@ def _mrmr(
         scores.append(coef[max_index])
         selected_relevances.append(relevances[max_index])
 
-        indexes.remove(max_index)
+        indexes.remove(indexes[max_index])
 
     return (
         np.asarray(selected_features),
@@ -148,8 +152,29 @@ class MinimumRedundancyMaximumRelevance(
     sklearn.base.BaseEstimator,  # type: ignore
     sklearn.base.TransformerMixin,  # type: ignore
 ):
-    """
+    r"""
     Minimum redundancy maximum relevance (mRMR) method.
+
+    This is a greedy version of mRMR that selects the variables iteratively.
+    This method considers the relevance of a variable as well as its redundancy
+    with respect of the already selected ones.    
+
+    It uses a dependence measure between random variables to compute the
+    dependence between the candidate variable and the target (for the
+    relevance) and another to compute the dependence between two variables
+    (for the redundancy).
+    It combines both measurements using a criterion such as the difference or
+    the quotient, and then selects the variable that maximizes that quantity.
+    For example, using the quotient criterion and the same dependence function
+    :math:`D` for relevance and redundancy, the variable selected at the
+    :math:`i`-th step would be :math:`X(t_i)` with
+
+    .. math::
+        t_i = \underset {t}{\operatorname {arg\,max}} \frac{D(X(t), y)}
+        {\frac{1}{i-1}\sum_{j < i} D(X(t), X(t_j))}.
+
+    For further discussion of the applicability of this method to functional
+    data see :footcite:`berrendero++_2016_mrmr`.
 
     Parameters:
         n_features_to_select: Number of features to select.
@@ -160,8 +185,9 @@ class MinimumRedundancyMaximumRelevance(
             relevance.
         redundancy_dependence_measure: Dependence measure used to compute
             redundancy.
-        criterion: Criterion to combine relevance and redundancy. Common
-            choices include the difference and the quotient.
+        criterion: Criterion to combine relevance and redundancy. It must be
+            a Python callable with two inputs. As common choices include the
+            difference and the quotient, both can be especified as strings.
 
     Examples:
         >>> from skfda.preprocessing.dim_reduction import variable_selection
@@ -227,9 +253,23 @@ class MinimumRedundancyMaximumRelevance(
         >>> mrmr = variable_selection.MinimumRedundancyMaximumRelevance(
         ...     n_features_to_select=3,
         ...     dependence_measure=dcor.u_distance_correlation_sqr,
-        ...     criterion=operator.truediv,
+        ...     criterion="quotient",
         ... )
         >>> _ = mrmr.fit(X, y)
+
+        As a toy example illustrating the customizability of this method,
+        consider the following:
+
+        >>> mrmr = variable_selection.MinimumRedundancyMaximumRelevance(
+        ...     n_features_to_select=3,
+        ...     relevance_dependence_measure=dcor.u_distance_covariance_sqr,
+        ...     redundancy_dependence_measure=dcor.u_distance_correlation_sqr,
+        ...     criterion=lambda rel, red: 0.5 * rel / red,
+        ... )
+        >>> _ = mrmr.fit(X, y)
+
+    References:
+        .. footbibliography::
 
     """
 
@@ -256,7 +296,7 @@ class MinimumRedundancyMaximumRelevance(
         *,
         n_features_to_select: int = 1,
         dependence_measure: _DependenceMeasure,
-        criterion: _Criterion,
+        criterion: _CriterionLike,
     ) -> None:
         pass
 
@@ -267,7 +307,7 @@ class MinimumRedundancyMaximumRelevance(
         n_features_to_select: int = 1,
         relevance_dependence_measure: _DependenceMeasure,
         redundancy_dependence_measure: _DependenceMeasure,
-        criterion: _Criterion,
+        criterion: _CriterionLike,
     ) -> None:
         pass
 
@@ -279,7 +319,7 @@ class MinimumRedundancyMaximumRelevance(
         dependence_measure: Optional[_DependenceMeasure] = None,
         relevance_dependence_measure: Optional[_DependenceMeasure] = None,
         redundancy_dependence_measure: Optional[_DependenceMeasure] = None,
-        criterion: Optional[_Criterion] = None,
+        criterion: Optional[_CriterionLike] = None,
     ) -> None:
         self.n_features_to_select = n_features_to_select
         self.method = method
@@ -324,9 +364,7 @@ class MinimumRedundancyMaximumRelevance(
             self.redundancy_dependence_measure_ = (
                 method.redundancy_dependence_measure
             )
-            self.criterion_ = (
-                method.criterion
-            )
+            self.criterion_ = method.criterion
 
         else:
             if self.criterion is None:
@@ -334,9 +372,12 @@ class MinimumRedundancyMaximumRelevance(
                     "You must specify a criterion parameter",
                 )
 
-            self.criterion_ = (
-                self.criterion
-            )
+            if self.criterion == "difference":
+                self.criterion = operator.sub
+            elif self.criterion == "quotient":
+                self.criterion_ = operator.truediv
+            else:
+                self.criterion_ = self.criterion
 
             if self.dependence_measure:
                 if (

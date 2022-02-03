@@ -2,20 +2,23 @@
 from __future__ import annotations
 
 import warnings
-from typing import TypeVar, Union
+from typing import Any, Mapping, TypeVar, Union
 
 import numpy as np
 from pandas import DataFrame
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from ...._utils import TransformerMixin, _fit_feature_transformer
-from ....representation._typing import NDArrayInt
+from ....representation import FData
+from ....representation._typing import NDArrayFloat, NDArrayInt
 from ....representation.basis import FDataBasis
 from ....representation.grid import FDataGrid
 
-Input = TypeVar("Input")
-Output = TypeVar("Output")
+Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
+Output = TypeVar("Output", bound=Union[DataFrame, NDArrayFloat])
 Target = TypeVar("Target", bound=NDArrayInt)
+
+TransformerOutput = Union[FData, NDArrayFloat]
 
 
 class PerClassTransformer(TransformerMixin[Input, Output, Target]):
@@ -149,12 +152,26 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
     def __init__(
         self,
-        transformer: TransformerMixin[Input, Output, Target],
+        transformer: TransformerMixin[Input, TransformerOutput, Target],
         *,
         array_output: bool = False,
     ) -> None:
         self.transformer = transformer
         self.array_output = array_output
+
+    def _more_tags(self) -> Mapping[str, Any]:
+        parent_tags = super()._more_tags()
+        transformer_tags = self.transformer._get_tags()  # noqa: WPS437
+
+        return {
+            **parent_tags,
+            'allow_nan': transformer_tags['allow_nan'],
+            'non_deterministic': transformer_tags['non_deterministic'],
+            'pairwise': transformer_tags['pairwise'],
+            'requires_positive_X': transformer_tags['requires_positive_X'],
+            'requires_y': True,
+            'X_types': transformer_tags['X_types'],
+        }
 
     def _validate_transformer(
         self,
@@ -185,18 +202,25 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
         tags = self.transformer._get_tags()  # noqa: WPS437
 
-        if tags['stateless'] or not tags['requires_y']:
+        if tags['stateless']:
             warnings.warn(
-                f"Parameter ``transformer`` with type"  # noqa: WPS237
-                f" {type(self.transformer)} should use class information."
-                f" It should have the ``requires_y`` tag set to ``True`` and"
-                f" the ``stateless`` tag set to ``False``",
+                f"Parameter 'transformer' with type "
+                f"{type(self.transformer)} should use the data for "
+                f" fitting."
+                f"It should have the 'stateless' tag set to 'False'",
             )
 
-    def fit(
+        if tags['requires_y']:
+            warnings.warn(
+                f"Parameter 'transformer' with type "  # noqa: WPS237
+                f"{type(self.transformer)} should not use the class label."
+                f"It should have the 'requires_y' tag set to 'False'",
+            )
+
+    def fit(  # type: ignore[override]
         self,
         X: Input,
-        y: np.ndarray,
+        y: Target,
     ) -> PerClassTransformer[Input, Output, Target]:
         """
         Fit the model on each class.
@@ -222,7 +246,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
         return self
 
-    def transform(self, X: Input) -> Union[DataFrame, np.ndarray]:
+    def transform(self, X: Input) -> Output:
         """
         Transform the provided data using the already fitted transformer.
 
@@ -254,11 +278,11 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
             {'Transformed data': transformed_data},
         )
 
-    def fit_transform(
+    def fit_transform(  # type: ignore[override]
         self,
         X: Input,
-        y: np.ndarray,
-    ) -> Union[DataFrame, np.ndarray]:
+        y: Target,
+    ) -> Output:
         """
         Fits and transforms the provided data.
 

@@ -35,6 +35,7 @@ from ..representation._typing import (
     DomainRangeLike,
     GridPoints,
     GridPointsLike,
+    NDArrayAny,
     NDArrayFloat,
     NDArrayInt,
 )
@@ -48,9 +49,9 @@ if TYPE_CHECKING:
     from ..representation.basis import Basis
     T = TypeVar("T", bound=FData)
 
-Input = TypeVar("Input")
-Output = TypeVar("Output")
-Target = TypeVar("Target")
+    Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
+    Output = TypeVar("Output", bound=Union[FData, NDArrayFloat])
+    Target = TypeVar("Target", bound=NDArrayInt)
 
 
 def check_is_univariate(fd: FData) -> None:
@@ -113,7 +114,7 @@ def _check_compatible_fdatagrid(fdata1: FDataGrid, fdata2: FDataGrid) -> None:
 def _to_grid(
     X: FData,
     y: FData,
-    eval_points: Optional[np.ndarray] = None,
+    eval_points: Optional[NDArrayFloat] = None,
 ) -> Tuple[FDataGrid, FDataGrid]:
     """Transform a pair of FDatas in grids to perform calculations."""
     from .. import FDataGrid
@@ -305,7 +306,7 @@ def _reshape_eval_points(
     aligned: Literal[True],
     n_samples: int,
     dim_domain: int,
-) -> np.ndarray:
+) -> NDArrayFloat:
     pass
 
 
@@ -316,7 +317,7 @@ def _reshape_eval_points(
     aligned: Literal[True],
     n_samples: int,
     dim_domain: int,
-) -> np.ndarray:
+) -> NDArrayFloat:
     pass
 
 
@@ -327,7 +328,7 @@ def _reshape_eval_points(
     aligned: bool,
     n_samples: int,
     dim_domain: int,
-) -> np.ndarray:
+) -> NDArrayFloat:
     pass
 
 
@@ -337,7 +338,7 @@ def _reshape_eval_points(
     aligned: bool,
     n_samples: int,
     dim_domain: int,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """Convert and reshape the eval_points to ndarray.
 
     Args:
@@ -394,7 +395,7 @@ def _one_grid_to_points(
     axes: GridPointsLike,
     *,
     dim_domain: int,
-) -> Tuple[np.ndarray, Tuple[int, ...]]:
+) -> Tuple[NDArrayFloat, Tuple[int, ...]]:
     """
     Convert a list of ndarrays, one per domain dimension, in the points.
 
@@ -421,10 +422,10 @@ class EvaluateMethod(Protocol):
 
     def __call__(
         self,
-        __eval_points: np.ndarray,  # noqa: WPS112
+        __eval_points: NDArrayFloat,  # noqa: WPS112
         extrapolation: Optional[ExtrapolationLike],
         aligned: bool,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         """Evaluate a function."""
         pass
 
@@ -439,7 +440,7 @@ def _evaluate_grid(
     dim_codomain: int,
     extrapolation: Optional[ExtrapolationLike] = None,
     aligned: Literal[True] = True,
-) -> np.ndarray:
+) -> NDArrayFloat:
     pass
 
 
@@ -453,7 +454,7 @@ def _evaluate_grid(
     dim_codomain: int,
     extrapolation: Optional[ExtrapolationLike] = None,
     aligned: Literal[False],
-) -> np.ndarray:
+) -> NDArrayFloat:
     pass
 
 
@@ -466,7 +467,7 @@ def _evaluate_grid(  # noqa: WPS234
     dim_codomain: int,
     extrapolation: Optional[ExtrapolationLike] = None,
     aligned: bool = True,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """
     Evaluate the functional object in the cartesian grid.
 
@@ -569,13 +570,13 @@ def _evaluate_grid(  # noqa: WPS234
 
 
 def nquad_vec(
-    func: Callable[[np.ndarray], np.ndarray],
+    func: Callable[[NDArrayFloat], NDArrayFloat],
     ranges: Sequence[Tuple[float, float]],
-) -> np.ndarray:
+) -> NDArrayFloat:
     """Perform multiple integration of vector valued functions."""
     initial_depth = len(ranges) - 1
 
-    def integrate(*args: Any, depth: int) -> np.ndarray:  # noqa: WPS430
+    def integrate(*args: Any, depth: int) -> NDArrayFloat:  # noqa: WPS430
 
         if depth == 0:
             f = functools.partial(func, *args)
@@ -587,13 +588,16 @@ def nquad_vec(
     return integrate(depth=initial_depth)
 
 
+ArrayT = TypeVar("ArrayT", bound=NDArrayAny)
+
+
 def _map_in_batches(
-    function: Callable[..., np.ndarray],
-    arguments: Tuple[Union[FData, np.ndarray], ...],
-    indexes: Tuple[np.ndarray, ...],
+    function: Callable[..., ArrayT],
+    arguments: Tuple[Union[FData, NDArrayAny], ...],
+    indexes: Tuple[NDArrayInt, ...],
     memory_per_batch: Optional[int] = None,
     **kwargs: Any,
-) -> np.ndarray:
+) -> ArrayT:
     """
     Map a function over samples of FData or ndarray tuples efficiently.
 
@@ -614,7 +618,7 @@ def _map_in_batches(
 
     assert all(n_indexes == len(i) for i in indexes)
 
-    batches: List[np.ndarray] = []
+    batches: List[ArrayT] = []
 
     for pos in range(0, n_indexes, n_elements_per_batch_allowed):
         batch_args = tuple(
@@ -628,12 +632,12 @@ def _map_in_batches(
 
 
 def _pairwise_symmetric(
-    function: Callable[..., np.ndarray],
-    arg1: Union[FData, np.ndarray],
-    arg2: Optional[Union[FData, np.ndarray]] = None,
+    function: Callable[..., ArrayT],
+    arg1: Union[FData, NDArrayAny],
+    arg2: Optional[Union[FData, NDArrayAny]] = None,
     memory_per_batch: Optional[int] = None,
     **kwargs: Any,
-) -> np.ndarray:
+) -> ArrayT:
     """Compute pairwise a commutative function."""
     dim1 = len(arg1)
     if arg2 is None or arg2 is arg1:
@@ -671,12 +675,12 @@ def _pairwise_symmetric(
     return vec.reshape((dim1, dim2))
 
 
-def _int_to_real(array: np.ndarray) -> np.ndarray:
+def _int_to_real(array: Union[NDArrayInt, NDArrayFloat]) -> NDArrayFloat:
     """Convert integer arrays to floating point."""
     return array + 0.0
 
 
-def _check_array_key(array: np.ndarray, key: Any) -> Any:
+def _check_array_key(array: NDArrayAny, key: Any) -> Any:
     """Check a getitem key."""
     key = check_array_indexer(array, key)
     if isinstance(key, tuple):
@@ -687,7 +691,11 @@ def _check_array_key(array: np.ndarray, key: Any) -> Any:
 
     if isinstance(key, numbers.Integral):  # To accept also numpy ints
         key = int(key)
-        key = range(len(array))[key]
+        if key < 0:
+            key = len(array) + key
+
+        if not 0 <= key < len(array):
+            raise IndexError("index out of bounds")
 
         return slice(key, key + 1)
 
@@ -706,7 +714,7 @@ def _check_estimator(estimator):
     check_set_params(name, instance)
 
 
-def _classifier_get_classes(y: ndarray) -> Tuple[ndarray, ndarray]:
+def _classifier_get_classes(y: ndarray) -> Tuple[ndarray, NDArrayInt]:
 
     check_classification_targets(y)
 
@@ -751,8 +759,8 @@ def _classifier_fit_depth_methods(
 
 
 def _fit_feature_transformer(  # noqa: WPS320 WPS234
-    X: Union[NDArrayInt, NDArrayFloat],
-    y: Union[NDArrayInt, NDArrayFloat],
+    X: Input,
+    y: Target,
     transformer: TransformerMixin[Input, Output, Target],
 ) -> Tuple[
     Union[NDArrayInt, NDArrayFloat],
@@ -773,11 +781,11 @@ _DependenceMeasure = Callable[[np.ndarray, np.ndarray], np.ndarray]
 
 
 def _compute_dependence(
-    X: np.ndarray,
-    y: np.ndarray,
+    X: Union[NDArrayInt, NDArrayFloat],
+    y: Union[NDArrayInt, NDArrayFloat],
     *,
     dependence_measure: _DependenceMeasure,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """
     Compute dependence between points and target.
 

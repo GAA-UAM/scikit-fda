@@ -17,11 +17,8 @@ When dealing with multivariate data, a common choice for the regularization
 is to penalize the squared Euclidean norm, or :math:`L_2` norm, of the vectors
 in order to obtain simpler solutions. This can be done in scikit-fda for
 both multivariate and functional data using the :class:`L2Regularization`
-class.
-
-A more flexible generalization of this approach is the so called Tikhonov
-regularization, available as :class:`TikhonovRegularization`, in which the
-squared :math:`L_2` norm is penalized after a particular linear operator is
+class. A more flexible generalization of this approach is to penalize the
+squared :math:`L_2` norm after a particular linear operator is
 applied. This for example allows to penalize the second derivative of a curve,
 which is a measure of its curvature, because the differential operator
 is linear. As arbitrary Python callables can be used as operators (provided
@@ -33,4 +30,3 @@ linear operations.
    :toctree: autosummary
 
    skfda.misc.regularization.L2Regularization
-   skfda.misc.regularization.TikhonovRegularization

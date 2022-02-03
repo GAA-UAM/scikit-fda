@@ -24,6 +24,7 @@ from typing import (
 
 import numpy as np
 import pandas.api.extensions
+from matplotlib.figure import Figure
 from typing_extensions import Literal
 
 from .._utils import _evaluate_grid, _reshape_eval_points, _to_grid_points
@@ -787,15 +788,17 @@ class FData(  # noqa: WPS214
 
         return shifted
 
-    def plot(self, *args: Any, **kwargs: Any) -> Any:
+    def plot(self, *args: Any, **kwargs: Any) -> Figure:
         """Plot the FDatGrid object.
 
         Args:
-            args: positional arguments for :func:`plot_graph`.
-            kwargs: keyword arguments for :func:`plot_graph`.
+            args: Positional arguments to be passed to the class
+                :class:`~skfda.exploratory.visualization.representation.GraphPlot`.
+            kwargs: Keyword arguments to be passed to the class
+                :class:`~skfda.exploratory.visualization.representation.GraphPlot`.
 
         Returns:
-            fig (figure object): figure object in which the graphs are plotted.
+            Figure object in which the graphs are plotted.
 
         """
         from ..exploratory.visualization.representation import GraphPlot

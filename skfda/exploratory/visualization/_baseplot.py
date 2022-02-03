@@ -252,6 +252,7 @@ class BasePlot(ABC):
         Callback method that activates the annotation when hovering
         a specific point in a graph. The annotation is a description
         of the point containing its coordinates.
+
         Args:
             event: event object containing the artist of the point
                 hovered.

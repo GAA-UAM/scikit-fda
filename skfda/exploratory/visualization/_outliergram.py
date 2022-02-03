@@ -23,10 +23,13 @@ class Outliergram(BasePlot):
     """
     Outliergram method of visualization.
 
-    Plots the Modified Band Depth (MBD) on the Y axis and the Modified
-    Epigraph Index (MEI) on the X axis. This points will create the form of
-    a parabola. The shape outliers will be the points that appear far from
-    this curve.
+    Plots the :class:`Modified Band Depth 
+    (MBD)<skfda.exploratory.depth.ModifiedBandDepth>` on the Y axis and the
+    :func:`Modified Epigraph Index
+    (MEI)<skfda.exploratory.stats.modified_epigraph_index>` on the X axis.
+    These points will create the form of a parabola.
+    The shape outliers will be the points that appear far from this curve.
+
     Args:
         fdata: functional data set that we want to examine.
         chart: figure over with the graphs are plotted or axis over

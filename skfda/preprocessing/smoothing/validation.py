@@ -24,22 +24,22 @@ class LinearSmootherLeaveOneOutScorer():
     r"""Leave-one-out cross validation scoring method for linear smoothers.
 
     It calculates the cross validation score for every sample in a FDataGrid
-    object given a linear smoother with a smoothing matrix :math:`\hat{H}^\nu`
-    calculated with a parameter :math:`\nu`:
+    object given a linear smoother with a smoothing matrix
+    :math:`\mathbf{S}(h)` calculated with a parameter :math:`h`:
 
     .. math::
-        CV(\nu)=\frac{1}{n} \sum_i \left(y_i - \hat{y}_i^{\nu(
-        -i)}\right)^2
+        CV_{loo}(h)=\frac{1}{M} \sum_m \left(x(t_m) - \hat{x}(t_m; h)^{(-m)}
+        \right)^2,
 
-    Where :math:`\hat{y}_i^{\nu(-i)}` is the adjusted :math:`y_i` when the
-    the pair of values :math:`(x_i,y_i)` are excluded in the smoothing. This
+    where :math:`\hat{x}(t_m; h)^{(-m)}` is the estimated :math:`x(t_m)` when
+    the point :math:`t_m` is excluded in the smoothing. This
     would require to recalculate the smoothing matrix n times. Fortunately
     the above formula can be expressed in a way where the smoothing matrix
     does not need to be calculated again.
 
     .. math::
-        CV(\nu)=\frac{1}{n} \sum_i \left(\frac{y_i - \hat{y}_i^\nu}{1 -
-        \hat{H}_{ii}^\nu}\right)^2
+        CV_{loo}(h)=\frac{1}{M} \sum_{m=1}^{M}
+        \left(\frac{x(t_m) - \hat{x}(t_m; h)}{1 - S_{mm}(h)}\right)^2,
 
     Args:
         estimator (Estimator): Linear smoothing estimator.
@@ -64,19 +64,19 @@ class LinearSmootherGeneralizedCVScorer():
     r"""Generalized cross validation scoring method for linear smoothers.
 
     It calculates the general cross validation score for every sample in a
-    FDataGrid object given a smoothing matrix :math:`\hat{H}^\nu`
-    calculated with a parameter :math:`\nu`:
+    FDataGrid object given a smoothing matrix :math:`\mathbf{S}(h)`
+    calculated with a parameter :math:`h`:
 
     .. math::
-        GCV(\nu)=\Xi(\nu,n)\frac{1}{n} \sum_i \left(y_i - \hat{
-        y}_i^\nu\right)^2
+        GCV(h)=\Xi(\mathbf{S}(h))\frac{1}{M} \sum_{m=1}^{M}
+        \left(x(t_m) - \hat{x}(t_m; h)\right)^2,
 
-    Where :math:`\hat{y}_i^{\nu}` is the adjusted :math:`y_i` and
+    Where :math:`\hat{x}(t_m; h)` is the adjusted :math:`x(t_m)` and
     :math:`\Xi` is a penalization function. By default the penalization
     function is:
 
     .. math::
-        \Xi(\nu,n) = \left( 1 - \frac{tr(\hat{H}^\nu)}{n} \right)^{-2}
+        \Xi(\mathbf{S}(h)) = \frac{1}{(1 - \text{tr}(\mathbf{S}(h))/M)^2}.
 
     but others such as the Akaike's information criterion can be considered.
 

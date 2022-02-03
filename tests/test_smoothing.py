@@ -9,7 +9,7 @@ import skfda.preprocessing.smoothing.kernel_smoothers as kernel_smoothers
 import skfda.preprocessing.smoothing.validation as validation
 from skfda._utils import _check_estimator
 from skfda.misc.operators import LinearDifferentialOperator
-from skfda.misc.regularization import TikhonovRegularization
+from skfda.misc.regularization import L2Regularization
 from skfda.representation.basis import BSpline, Monomial
 from skfda.representation.grid import FDataGrid
 
@@ -82,7 +82,7 @@ class TestBasisSmoother(unittest.TestCase):
         smoother = smoothing.BasisSmoother(
             basis=basis,
             smoothing_parameter=10,
-            regularization=TikhonovRegularization(
+            regularization=L2Regularization(
                 LinearDifferentialOperator(2)),
             method='cholesky',
             return_basis=True)
@@ -100,7 +100,7 @@ class TestBasisSmoother(unittest.TestCase):
         smoother = smoothing.BasisSmoother(
             basis=basis,
             smoothing_parameter=10,
-            regularization=TikhonovRegularization(
+            regularization=L2Regularization(
                 LinearDifferentialOperator(2)),
             method='qr',
             return_basis=True)
@@ -120,7 +120,7 @@ class TestBasisSmoother(unittest.TestCase):
         smoother = smoothing.BasisSmoother(
             basis=basis,
             smoothing_parameter=1,
-            regularization=TikhonovRegularization(
+            regularization=L2Regularization(
                 LinearDifferentialOperator(2)),
             return_basis=True)
         fd_basis = smoother.fit_transform(fd)
@@ -143,7 +143,7 @@ class TestBasisSmoother(unittest.TestCase):
 
                 basis_smoother = smoothing.BasisSmoother(
                     basis,
-                    regularization=TikhonovRegularization(
+                    regularization=L2Regularization(
                         LinearDifferentialOperator(2)),
                     return_basis=True,
                     smoothing_parameter=1,
@@ -151,7 +151,7 @@ class TestBasisSmoother(unittest.TestCase):
 
                 basis_smoother_dim = smoothing.BasisSmoother(
                     basis_dim,
-                    regularization=TikhonovRegularization(
+                    regularization=L2Regularization(
                         LinearDifferentialOperator(2)),
                     return_basis=True,
                     smoothing_parameter=1,

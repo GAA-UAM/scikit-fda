@@ -2,14 +2,15 @@
 import unittest
 
 import numpy as np
+from sklearn.decomposition import PCA
+
 import skfda
 from skfda import FDataBasis, FDataGrid
 from skfda.datasets import fetch_weather
 from skfda.misc.operators import LinearDifferentialOperator
-from skfda.misc.regularization import TikhonovRegularization
+from skfda.misc.regularization import L2Regularization
 from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
 from skfda.representation.basis import Basis, BSpline, Fourier
-from sklearn.decomposition import PCA
 
 
 class FPCATestCase(unittest.TestCase):
@@ -65,7 +66,7 @@ class FPCATestCase(unittest.TestCase):
 
         fpca = FPCA(
             n_components=n_components,
-            regularization=TikhonovRegularization(
+            regularization=L2Regularization(
                 LinearDifferentialOperator(2),
                 regularization_parameter=1e5,
             ),
@@ -119,7 +120,7 @@ class FPCATestCase(unittest.TestCase):
 
         fpca = FPCA(
             n_components=n_components,
-            regularization=TikhonovRegularization(
+            regularization=L2Regularization(
                 LinearDifferentialOperator(2),
                 regularization_parameter=1e5,
             ),
@@ -438,7 +439,7 @@ class FPCATestCase(unittest.TestCase):
         fpca = FPCA(
             n_components=n_components,
             weights=[1] * 365,
-            regularization=TikhonovRegularization(
+            regularization=L2Regularization(
                 LinearDifferentialOperator(2),
             ),
         )

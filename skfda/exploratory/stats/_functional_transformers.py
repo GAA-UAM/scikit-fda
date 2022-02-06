@@ -61,14 +61,17 @@ def local_averages(
                  158.01,  160.1 ,  155.95,  157.95,  163.53,  162.29,  153.1 ,
                  178.48,  161.75]])
     """
-    domain_range = data.domain_range
+    left, right = data.domain_range[0]
 
-    left, right = domain_range[0]
-    interval_size = (right - left) / n_intervals
-    integrated_data = []
-    for i in np.arange(left, right, interval_size):
-        interval = (i, i + interval_size)
-        integrated_data = integrated_data + [
-            data.integrate(interval=(interval,)) / interval_size,
-        ]
+    intervals, step = np.linspace(
+        left,
+        right,
+        num=n_intervals + 1,
+        retstep=True,
+    )
+
+    integrated_data = [
+        data.integrate(interval=((intervals[i], intervals[i + 1]))) / step
+        for i in np.arange(0, n_intervals)
+    ]
     return np.asarray(integrated_data)

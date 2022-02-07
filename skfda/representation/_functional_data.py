@@ -34,13 +34,14 @@ from ._typing import (
     GridPointsLike,
     LabelTuple,
     LabelTupleLike,
+    NDArrayFloat,
     NDArrayInt,
 )
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike, _parse_extrapolation
 
 if TYPE_CHECKING:
-    from . import FDataGrid, FDataBasis
+    from . import FDataBasis, FDataGrid
     from .basis import Basis
 
 T = TypeVar('T', bound='FData')
@@ -663,6 +664,23 @@ class FData(  # noqa: WPS214
         pass
 
     @abstractmethod
+    def integrate(
+        self: T,
+        *,
+        interval: Optional[DomainRange] = None,
+    ) -> NDArrayFloat:
+        """Integration of the FData object.
+
+        Args:
+            interval: domain range where we want to integrate.
+            By default is None as we integrate on the whole domain.
+
+        Returns:
+            ndarray of shape with the integrated data.
+        """
+        pass
+
+    @abstractmethod
     def shift(
         self,
         shifts: Union[ArrayLike, float],
@@ -1061,7 +1079,6 @@ class FData(  # noqa: WPS214
         **kwargs: Any,
     ) -> Any:
         """Prevent NumPy from converting to array just to do operations."""
-
         # Make normal multiplication by scalar use the __mul__ method
         if ufunc == np.multiply and method == "__call__" and len(inputs) == 2:
             if isinstance(inputs[0], np.ndarray):

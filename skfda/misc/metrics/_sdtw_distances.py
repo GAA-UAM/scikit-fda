@@ -14,7 +14,7 @@ from ...representation._typing import NDArrayFloat, GridPointsLike, ArrayLike
 # from ._utils import pairwise_metric_optimization
 
 from skfda._utils._utils import _check_compatible_fdata
-from skfda.misc.metrics import sdtw_fast as sdtw_fast
+from skfda.misc.metrics import _sdtw_numba
 from skfda.misc._math import half_sq_euclidean
 
 
@@ -114,7 +114,7 @@ def _sdtw_divergence(
 
     # For developers and PR:
     # final format of fdata1 and fdata2 is required to be FDataGrid,
-    # sharing the same domain and codomain dimensions.
+    # sharing the same domain(1D) and codomain dimensions(1D...nD).
     # No need for _check_compatible and _cast_to_grid:
     # => would raise an error in the following situation:
     # if fdata1.domain_range[0] != fdata1.grid_points[0].domain_range[0]
@@ -152,7 +152,7 @@ def _sdtw_divergence(
         if isinstance(cost, List):
             if not len(cost) == 3:
                 raise ValueError(
-                    "When the alignment cost matrices are pre-computed,"
+                    "If the alignment cost matrices are pre-computed,"
                     " then 'cost' must be a list of three two-dimensional"
                     " numpy arrays"
                 )
@@ -162,7 +162,7 @@ def _sdtw_divergence(
                 for idx, c in enumerate(cost):
                     if not (isinstance(c, NDArrayFloat) and c.ndim == 2):
                         raise ValueError(
-                            "The elements of cost must all be "
+                            "The elements of 'cost' must all be "
                             "two-dimensional numpy arrays. "
                             "The {}-th element does not satisfy the expected "
                             "format".format(idx)
@@ -235,9 +235,9 @@ def _sdtw_divergence(
 
     # for nonnegativity, symmetry, unicity of div(X,Y)=0 at X=Y
     return(
-        sdtw_fast._sdtw_C_cy(cost_12, gamma)
-        - 0.5 * sdtw_fast._sdtw_C_cy(cost_11, gamma)
-        - 0.5 * sdtw_fast._sdtw_C_cy(cost_22, gamma)
+        _sdtw_numba._sdtw(cost_12, gamma)
+        - 0.5 * _sdtw_numba._sdtw(cost_11, gamma)
+        - 0.5 * _sdtw_numba._sdtw(cost_22, gamma)
     )
 
 

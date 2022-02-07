@@ -72,6 +72,6 @@ def local_averages(
 
     integrated_data = [
         data.integrate(interval=((intervals[i], intervals[i + 1]))) / step
-        for i in np.arange(0, n_intervals)
+        for i in range(n_intervals)
     ]
     return np.asarray(integrated_data)

@@ -61,13 +61,6 @@ class LinearRegression(
 
     """
 
-    warnings.warn(
-        "Usage of arguments of type FData, ndarray or a sequence \
-            of both is deprecated (fit, predict)."
-        "Use pandas DataFrame instead",
-        DeprecationWarning,
-    )
-
     r"""Linear regression with multivariate response.
 
     This is a regression algorithm equivalent to multivariate linear
@@ -168,18 +161,39 @@ class LinearRegression(
         >>> linear.predict([x, x_fd])
         array([ 11.,  10.,  12.,   6.,  10.,  13.])
 
-        Funcionality with pandas Dataframe:
+        Funcionality with pandas Dataframe.
+
+        First example:
+
+        >>> x_basis = Monomial(n_basis=3)
+        >>> cov_list = [ ( FDataBasis(x_basis, [0, 0, 1]) ),
+        ...              ( FDataBasis(x_basis, [0, 1, 0]) ),
+        ...              ( FDataBasis(x_basis, [0, 1, 1]) ),
+        ...              ( FDataBasis(x_basis, [1, 0, 1]) )]
+        >>> y = [2, 3, 4, 5]
+        >>> df = pd.DataFrame(cov_list)
+        >>> linear = LinearRegression()
+        >>> _ = linear.fit(df, y)
+        >>> linear.coef_[0]
+        FDataBasis(
+            basis=Monomial(domain_range=((0, 1),), n_basis=3),
+            coefficients=[[-15.  96. -90.]],
+            ...)
+        >>> linear.intercept_
+        array([ 1.])
+        >>> linear.predict(df)
+        array([ 2.,  3.,  4.,  5.])
+
+        Second example:
 
         >>> x_basis = Monomial(n_basis=2)
-        >>> x_fd = FDataBasis(x_basis, [[0, 2],
-        ...                             [0, 4],
-        ...                             [1, 0],
-        ...                             [2, 0],
-        ...                             [1, 2],
-        ...                             [2, 2]])
-        >>> x = [[1, 7], [2, 3], [4, 2], [1, 1], [3, 1], [2, 5]]
-        >>> cov = {'mv': x, 'fd': x_fd}
-        >>> df = pd.Dataframe(cov)
+        >>> cov_list = [ ( 1, 7, FDataBasis(x_basis, [0, 2]) ),
+        ...              ( 2, FDataBasis(x_basis, [0, 4]), 3 ),
+        ...              ( 4, FDataBasis(x_basis, [1, 0]), 2 ),
+        ...              ( 1, FDataBasis(x_basis, [2, 0]), 1 ),
+        ...              ( FDataBasis(x_basis, [1, 2]), 3, 1 ),
+        ...              ( 2, FDataBasis(x_basis, [2, 2]), 5 ) ]
+        >>> df = pd.DataFrame(cov_list)
         >>> y = [11, 10, 12, 6, 10, 13]
         >>> linear = LinearRegression(
         ...              coef_basis=[None, Constant()])
@@ -313,11 +327,20 @@ class LinearRegression(
         self,
         X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
     ) -> Sequence[AcceptedDataType]:
+
+        if not isinstance(X, pd.DataFrame):
+            warnings.warn(
+                "Usage of arguments of type FData, ndarray or a sequence \
+                    of both is deprecated (fit, predict)."
+                "Use pandas DataFrame instead",
+                DeprecationWarning,
+            )
+
         if isinstance(X, (FData, np.ndarray)):
             X = [X]
 
         if isinstance(X, pd.DataFrame):
-            X = self.dataframe_conversion(X)
+            X = self.__dataframe_conversion(X)
 
         X = [x if isinstance(x, FData) else np.asarray(x) for x in X]
 
@@ -334,7 +357,6 @@ class LinearRegression(
         coef_basis: Optional[BasisCoefsType] = None,
     ) -> ArgcheckResultType:
         """Do some checks to types and shapes."""
-        # TODO: Add support for Dataframes
 
         new_X = self._argcheck_X(X)
 
@@ -380,7 +402,7 @@ class LinearRegression(
 
         return new_X, y, sample_weight, coef_info
 
-    def dataframe_conversion(self, X: pd.DataFrame) -> List:
+    def __dataframe_conversion(self, X: pd.DataFrame) -> List:
         """Convert DataFrames to a list with two elements.
 
         First of all, a list with mv covariates and the second,
@@ -390,8 +412,36 @@ class LinearRegression(
             X: pandas DataFrame to convert
 
         Returns:
-            list with two elements: first of all, a list with mv
-            covariates and the second, a FDataBasis object with functional data
+            List: first of all, a list with mv covariates
+            and the second, a list of FDataBasis object with functional data
         """
-        fdb = FDataBasis.concatenate(*X.iloc[:, 1].tolist())
-        return [X.iloc[:, 0].tolist(), fdb]
+        mv_final = []
+        fdb_list = []
+        final = []
+
+        for obs in X.values.tolist():
+            mv = []
+            fdb = []
+            for i in range(len(obs)):
+                if (isinstance(obs[i], FData)):
+                    fdb.append(obs[i])
+                else:
+                    mv.append(obs[i])
+
+            if (len(mv) != 0):
+                mv_final.append(mv)
+
+            if (len(fdb) != 0):
+                fdb_list.append(fdb)
+
+        if (len(mv_final) != 0):
+            final.append(mv_final)
+
+        if (len(fdb_list) != 0):
+            fdb_df = pd.DataFrame(fdb_list)
+
+            for c in range(fdb_df.shape[1]):
+                column = FDataBasis.concatenate(*fdb_df.iloc[:, c].tolist())
+                final.append(column)
+
+        return final

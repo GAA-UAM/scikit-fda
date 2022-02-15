@@ -324,7 +324,8 @@ def inner_product(
         )
 
     return (
-        np.einsum('n...,m...->nm...', arg1, arg2).sum(axis=-1)
+        np.dot(arg1, arg2.T)
+        # np.einsum('n...,m...->nm...', arg1, arg2).sum(axis=-1)
         if _matrix else (arg1 * arg2).sum(axis=-1)
     )
 
@@ -679,38 +680,4 @@ def cosine_similarity_matrix(
     return _clip_cosine(
         inner_matrix / norm1[:, np.newaxis] / norm2[np.newaxis, :],
     )
-
-def half_sq_euclidean(
-    arg1: NDArrayFloat,
-    arg2: Optional[NDArrayFloat] = None,
-) -> NDArrayFloat:
-    """
-    Return the half squared Euclidean row distance between
-    two matrices.
-    
-    Args:
-        arg1: First sample (n_samples_1, n_features).
-        arg2: Second sample (n_samples_2, n_features).
-            If it is ``None`` returns the half squared Euclidean distance
-            between the rows of ``arg1``.
-
-    The distance is taken w.r.t matrix rows.
-    """
-    if arg2 is not None:
-        # np.dot(X, Y.T)=inner_product_matrix(X, Y) but np ~1.6 faster
-        cost_12 = -1 * np.dot(arg1, arg2.T)
-
-        # np.sum(arg1 ** 2, axis=1)=diag(inner_product_matrix(X, X))
-        cost_12 += (0.5 * np.sum(arg1 ** 2, axis=1))[:, np.newaxis]
-        cost_12 += 0.5 * np.sum(arg2 ** 2, axis=1)
-        
-        return cost_12
-    else:
-        cost_11 = -1 * np.dot(arg1, arg1.T)
-        # half sum of squares on each row
-        sos_row = 0.5 * np.sum(arg1 ** 2, axis=1)
-        cost_11 += sos_row[:, np.newaxis]
-        cost_11 += sos_row
-
-        return cost_11
         

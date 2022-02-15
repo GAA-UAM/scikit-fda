@@ -25,6 +25,7 @@ from typing import (
 import findiff
 import numpy as np
 import pandas.api.extensions
+import scipy.integrate
 import scipy.stats.mstats
 from matplotlib.figure import Figure
 
@@ -43,6 +44,7 @@ from ._typing import (
     GridPoints,
     GridPointsLike,
     LabelTupleLike,
+    NDArrayFloat,
     NDArrayInt,
 )
 from .basis import Basis
@@ -468,6 +470,35 @@ class FDataGrid(FData):  # noqa: WPS214
         return self.copy(
             data_matrix=data_matrix,
         )
+
+    def integrate(
+        self: T,
+        *,
+        interval: Optional[DomainRange] = None,
+    ) -> NDArrayFloat:
+        """Examples.
+
+        Integration on the whole domain.
+
+            >>> fdata = FDataGrid([1,2,4,5,8], range(5))
+            >>> fdata.integrate()
+            array([ 15.])
+        """
+        if interval is not None:
+            data = self.restrict(interval)
+        else:
+            data = self
+
+        integrand = data.data_matrix
+
+        for g in data.grid_points[::-1]:
+            integrand = scipy.integrate.simps(
+                integrand,
+                x=g,
+                axis=-2,
+            )
+
+        return np.sum(integrand, axis=-1)
 
     def _check_same_dimensions(self: T, other: T) -> None:
         if self.data_matrix.shape[1:-1] != other.data_matrix.shape[1:-1]:

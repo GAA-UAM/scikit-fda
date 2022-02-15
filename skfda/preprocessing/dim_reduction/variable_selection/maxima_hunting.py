@@ -7,7 +7,6 @@ import numpy as np
 import scipy.signal
 import sklearn.base
 import sklearn.utils
-
 from dcor import u_distance_correlation_sqr
 
 from ...._utils import _compute_dependence, _DependenceMeasure
@@ -167,11 +166,11 @@ class MaximaHunting(
         self.dependence_measure = dependence_measure
         self.local_maxima_selector = local_maxima_selector
 
-    def fit(
+    def fit(  # noqa: D102
         self,
         X: FDataGrid,
         y: Union[NDArrayInt, NDArrayFloat],
-    ) -> MaximaHunting:  # noqa: D102
+    ) -> MaximaHunting:
 
         self.features_shape_ = X.data_matrix.shape[1:]
         self.dependence_ = _compute_dependence(

@@ -15,7 +15,7 @@ from ...representation._typing import NDArrayFloat, GridPointsLike, ArrayLike
 
 from skfda._utils._utils import _check_compatible_fdata
 from skfda.misc.metrics import _sdtw_numba
-from skfda.misc._math import half_sq_euclidean
+from skfda.misc._math import inner_product_matrix, inner_product
 
 
 def _check_shape_postive_cost_mat(cost, expected_shape, shape_only=False):
@@ -100,6 +100,42 @@ def _check_input_fdata(fdata1, fdata2):
     #     raise ValueError(
     #         "Both fdata1 and fdata2 must contain a single sample"
     #     )
+
+
+def half_sq_euclidean(
+    arg1: NDArrayFloat,
+    arg2: Optional[NDArrayFloat] = None,
+) -> NDArrayFloat:
+    """
+    Return the half squared Euclidean row distance between
+    two matrices of size (n1, d) and (n2, d).
+
+    Args:
+        arg1: First sample (n_samples_1, n_features).
+        arg2: Second sample (n_samples_2, n_features).
+            If it is ``None`` returns the half squared Euclidean distance
+            between the rows of ``arg1``.
+
+    The distance is taken w.r.t matrix rows.
+    """
+    if arg2 is not None:
+        # np.dot(X, Y.T)=inner_product_matrix(X, Y) but np ~1.6 faster
+        # X.shape is (n_X, d) and Y.shape is (n_Y, d)
+        cost_12 = -1 * inner_product_matrix(arg1, arg2)
+
+        # np.sum(X ** 2, axis=1)=inner_product(X, X)
+        cost_12 += (0.5 * inner_product(arg1, arg1))[:, np.newaxis]
+        cost_12 += 0.5 * inner_product(arg2, arg2)
+
+        return cost_12
+    else:
+        cost_11 = -1 * inner_product_matrix(arg1, arg2)
+        # half Sum Of Squares on each row
+        sos_row = 0.5 * inner_product(arg1, arg1)
+        cost_11 += sos_row[:, np.newaxis]
+        cost_11 += sos_row
+
+        return cost_11
 
 
 def _sdtw_divergence(

@@ -26,14 +26,13 @@ class KernelRegression(
     .. math::
         \hat{y} = \hat{H}y
 
-    Where :math:`\hat{H}` is the matrix described in
+    Where :math:`\hat{H}` is a matrix described in
     :class:`~skfda.misc.HatMatrix`.
 
     Args:
-        kernel_estimator (:class:`~skfda.misc.HatMatrix`, optional):
-            Method used to calculate the hat matrix
+        kernel_estimator: Method used to calculate the hat matrix
             (default = :class:`~skfda.misc.NadarayaWatsonHatMatrix`).
-        metric (function, optional): The metric used to calculate the distances
+        metric: Metric used to calculate the distances
             (default = :func:`L2 distance <skfda.misc.metrics.distance_l2>`).
 
     Examples:
@@ -67,7 +66,7 @@ class KernelRegression(
         self,
         *,
         kernel_estimator: Optional[HatMatrix] = None,
-        metric: Metric = l2_distance,
+        metric: Metric[FData] = l2_distance,
     ):
 
         self.kernel_estimator = kernel_estimator
@@ -84,7 +83,7 @@ class KernelRegression(
         self.y_train_ = y
         self.weights_ = weight
 
-        if not self.kernel_estimator:
+        if self.kernel_estimator is None:
             self.kernel_estimator = NadarayaWatsonHatMatrix()
 
         return self
@@ -97,7 +96,7 @@ class KernelRegression(
         check_is_fitted(self)
         delta_x = PairwiseMetric(self.metric)(X, self.X_train_)
 
-        return self.kernel_estimator.prediction(
+        return self.kernel_estimator(
             delta_x=delta_x,
             X_train=self.X_train_,
             y_train=self.y_train_,

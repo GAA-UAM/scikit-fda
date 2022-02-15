@@ -28,7 +28,7 @@ class KernelSmoother(_LinearSmoother):
     .. math::
         \hat{X} = \hat{H} X
 
-    where :math:`\hat{H}` is the matrix described in
+    where :math:`\hat{H}` is a matrix described in
     :class:`~skfda.misc.HatMatrix`.
 
     Examples:
@@ -95,11 +95,11 @@ class KernelSmoother(_LinearSmoother):
                [ 0.006,  0.022,  0.163,  0.305,  0.503]])
 
     Args:
-        kernel_estimator (:class:`~skfda.misc.HatMatrix`): Method used to
+        kernel_estimator: Method used to
             calculate the hat matrix (default =
             :class:`~skfda.misc.NadarayaWatsonHatMatrix`)
-        weights (iterable): weight coefficients for each point.
-        output_points (GridPointsLike) : The output points. If omitted, the
+        weights: weight coefficients for each point.
+        output_points: The output points. If omitted, the
             input points are used.
 
     So far only non parametric methods are implemented because we are only
@@ -121,17 +121,19 @@ class KernelSmoother(_LinearSmoother):
 
     def _hat_matrix(
         self,
-        input_points: Optional[GridPointsLike] = None,
-        output_points: Optional[GridPointsLike] = None,
+        input_points: GridPointsLike,
+        output_points: GridPointsLike,
     ) -> np.ndarray:
 
-        if not self.kernel_estimator:
+        if self.kernel_estimator is None:
             self.kernel_estimator = NadarayaWatsonHatMatrix()
 
         delta_x = np.subtract.outer(output_points[0], input_points[0])
-        return self.kernel_estimator(delta_x, self.weights, _cv=self._cv)
 
-    def _more_tags(self):
-        return {
-            'X_types': [],
-        }
+        return self.kernel_estimator(
+            delta_x=delta_x,
+            weights=self.weights,
+            X_train=input_points,
+            X=output_points,
+            _cv=self._cv,
+        )

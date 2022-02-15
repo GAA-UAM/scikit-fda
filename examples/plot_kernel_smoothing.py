@@ -1,6 +1,6 @@
 """
-Kernel Smoothing.
-=================
+Kernel Smoothing
+================
 
 This example uses different kernel smoothing methods over the phoneme data
 set and shows how cross validations scores vary over a range of different
@@ -16,11 +16,10 @@ import numpy as np
 
 import skfda
 import skfda.misc.hat_matrix as hm
-import skfda.preprocessing.smoothing.kernel_smoothers as ks
 import skfda.preprocessing.smoothing.validation as val
+from skfda.preprocessing.smoothing import KernelSmoother
 
 ##############################################################################
-#
 # For this example, we will use the
 # :func:`phoneme <skfda.datasets.fetch_phoneme>` dataset. This dataset
 # contains the log-periodograms of several phoneme pronunciations. The phoneme
@@ -67,7 +66,7 @@ bandwidth = n_neighbors * scale_factor
 # K-nearest neighbours kernel smoothing.
 
 knn = val.SmoothingParameterSearch(
-    ks.KernelSmoother(kernel_estimator=hm.KNeighborsHatMatrix()),
+    KernelSmoother(kernel_estimator=hm.KNeighborsHatMatrix()),
     n_neighbors,
     param_name='kernel_estimator__bandwidth',
 )
@@ -76,7 +75,7 @@ knn_fd = knn.transform(fd)
 
 # Local linear regression kernel smoothing.
 llr = val.SmoothingParameterSearch(
-    ks.KernelSmoother(kernel_estimator=hm.LocalLinearRegressionHatMatrix()),
+    KernelSmoother(kernel_estimator=hm.LocalLinearRegressionHatMatrix()),
     bandwidth,
     param_name='kernel_estimator__bandwidth',
 )
@@ -85,7 +84,7 @@ llr_fd = llr.transform(fd)
 
 # Nadaraya-Watson kernel smoothing.
 nw = val.SmoothingParameterSearch(
-    ks.KernelSmoother(kernel_estimator=hm.NadarayaWatsonHatMatrix()),
+    KernelSmoother(kernel_estimator=hm.NadarayaWatsonHatMatrix()),
     bandwidth,
     param_name='kernel_estimator__bandwidth',
 )
@@ -167,10 +166,10 @@ nw_fd[:5].plot()
 # We can also appreciate the effects of undersmoothing and oversmoothing in
 # the following plots.
 
-fd_us = ks.KernelSmoother(
+fd_us = KernelSmoother(
     kernel_estimator=hm.NadarayaWatsonHatMatrix(bandwidth=2 * scale_factor),
 ).fit_transform(fd[10])
-fd_os = ks.KernelSmoother(
+fd_os = KernelSmoother(
     kernel_estimator=hm.NadarayaWatsonHatMatrix(bandwidth=15 * scale_factor),
 ).fit_transform(fd[10])
 

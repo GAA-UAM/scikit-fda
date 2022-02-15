@@ -1,11 +1,12 @@
 """Test kernel regression method."""
 import unittest
-from typing import Tuple
+from typing import Callable, Optional, Tuple
 
 import numpy as np
 import sklearn
 
-import skfda
+from skfda import FData
+from skfda.datasets import fetch_tecator
 from skfda.misc.hat_matrix import (
     KNeighborsHatMatrix,
     LocalLinearRegressionHatMatrix,
@@ -13,12 +14,19 @@ from skfda.misc.hat_matrix import (
 )
 from skfda.misc.kernels import normal, uniform
 from skfda.misc.metrics import l2_distance
-from skfda.ml.regression._kernel_regression import KernelRegression
-from skfda.representation.basis import FDataBasis
+from skfda.ml.regression import KernelRegression
+from skfda.representation.basis import FDataBasis, Fourier
 from skfda.representation.grid import FDataGrid
 
 
-def _nw_alt(fd_train, fd_test, y_train, *, bandwidth, kernel=None):
+def _nw_alt(
+    fd_train: FData,
+    fd_test: FData,
+    y_train: np.ndarray,
+    *,
+    bandwidth: float,
+    kernel: Optional[Callable] = None,
+) -> np.ndarray:
     if kernel is None:
         kernel = normal
 
@@ -30,7 +38,14 @@ def _nw_alt(fd_train, fd_test, y_train, *, bandwidth, kernel=None):
     return y
 
 
-def _knn_alt(fd_train, fd_test, y_train, *, bandwidth, kernel=None):
+def _knn_alt(
+    fd_train: FData,
+    fd_test: FData,
+    y_train: np.ndarray,
+    *,
+    bandwidth: int,
+    kernel: Optional[Callable] = None,
+) -> np.ndarray:
     if kernel is None:
         kernel = uniform
 
@@ -38,14 +53,22 @@ def _knn_alt(fd_train, fd_test, y_train, *, bandwidth, kernel=None):
 
     for i in range(fd_test.n_samples):
         d = l2_distance(fd_train, fd_test[i])
-        h = sorted(d)[bandwidth - 1] + 1.0e-15
+        tol = np.finfo(np.float64).eps
+        h = sorted(d)[bandwidth - 1] + tol
         w = kernel(d / h)
         y[i] = (w @ y_train) / sum(w)
 
     return y
 
 
-def _llr_alt(fd_train, fd_test, y_train, *, bandwidth, kernel=None):
+def _llr_alt(
+    fd_train: FDataBasis,
+    fd_test: FDataBasis,
+    y_train: np.ndarray,
+    *,
+    bandwidth: float,
+    kernel: Optional[Callable] = None,
+) -> np.ndarray:
     if kernel is None:
         kernel = normal
 
@@ -70,11 +93,11 @@ def _llr_alt(fd_train, fd_test, y_train, *, bandwidth, kernel=None):
 
 
 def _create_data_basis() -> Tuple[FDataBasis, FDataBasis, np.ndarray]:
-    X, y = skfda.datasets.fetch_tecator(return_X_y=True, as_frame=True)
+    X, y = fetch_tecator(return_X_y=True, as_frame=True)
     fd = X.iloc[:, 0].values
     fat = y['fat'].values
 
-    basis = skfda.representation.basis.BSpline(
+    basis = Fourier(
         n_basis=10,
         domain_range=fd.domain_range,
     )
@@ -91,7 +114,7 @@ def _create_data_basis() -> Tuple[FDataBasis, FDataBasis, np.ndarray]:
 
 
 def _create_data_grid() -> Tuple[FDataGrid, FDataGrid, np.ndarray]:
-    X, y = skfda.datasets.fetch_tecator(return_X_y=True, as_frame=True)
+    X, y = fetch_tecator(return_X_y=True, as_frame=True)
     fd = X.iloc[:, 0].values
     fat = y['fat'].values
 
@@ -103,6 +126,14 @@ def _create_data_grid() -> Tuple[FDataGrid, FDataGrid, np.ndarray]:
     )
 
     return fd_train, fd_test, y_train
+
+
+def _create_data_r() -> Tuple[FDataGrid, FDataGrid, np.ndarray]:
+    X, y = fetch_tecator(return_X_y=True, as_frame=True)
+    fd = X.iloc[:, 0].values
+    fat = y['fat'].values
+
+    return fd[:100], fd[100:110], fat[:100]
 
 
 class TestKernelRegression(unittest.TestCase):
@@ -229,3 +260,53 @@ class TestKernelRegression(unittest.TestCase):
             ),
             y_basis,
         )
+
+    def test_nw_r(self) -> None:
+        """Comparison of NW's results with results from fda.usc."""
+        X_train, X_test, y_train = _create_data_r()
+
+        nw = KernelRegression(
+            kernel_estimator=NadarayaWatsonHatMatrix(bandwidth=1),
+        )
+        nw.fit(X_train, y_train)
+
+        y = nw.predict(X_test)
+        result_R = [
+            18.245093,
+            22.976695,
+            9.429236,
+            16.852003,
+            16.568529,
+            8.520466,
+            14.943808,
+            15.344949,
+            8.646862,
+            16.576900,
+        ]
+
+        np.testing.assert_almost_equal(y, result_R, decimal=3)
+
+    def test_knn_r(self) -> None:
+        """Comparison of NW's results with results from fda.usc."""
+        X_train, X_test, y_train = _create_data_r()
+
+        knn = KernelRegression(
+            kernel_estimator=KNeighborsHatMatrix(bandwidth=3),
+        )
+        knn.fit(X_train, y_train)
+
+        y = knn.predict(X_test)
+        result_R = [
+            20.400000,
+            24.166667,
+            10.900000,
+            20.466667,
+            16.900000,
+            5.433333,
+            14.400000,
+            11.966667,
+            9.033333,
+            19.633333,
+        ]
+
+        np.testing.assert_almost_equal(y, result_R, decimal=6)

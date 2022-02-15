@@ -9,7 +9,7 @@ kernel smoothing and kernel regression.
 """
 
 import abc
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
@@ -17,6 +17,7 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from skfda.representation._functional_data import FData
 from skfda.representation.basis import FDataBasis
 
+from ..representation._typing import GridPoints, GridPointsLike
 from . import kernels
 
 
@@ -35,35 +36,45 @@ class HatMatrix(
         self,
         *,
         bandwidth: Optional[float] = None,
-        kernel: Optional[Callable] = None,
+        kernel: Callable[[np.ndarray], np.ndarray] = kernels.normal,
     ):
         self.bandwidth = bandwidth
         self.kernel = kernel
 
     def __call__(
         self,
+        *,
         delta_x: np.ndarray,
+        X_train: Optional[Union[FData, GridPointsLike]] = None,
+        X: Optional[Union[FData, GridPointsLike]] = None,
+        y_train: Optional[np.ndarray] = None,
         weights: Optional[np.ndarray] = None,
         _cv: bool = False,
     ) -> np.ndarray:
-        """
-        Hat matrix.
+        r"""
+        Calculate the hat matrix or the prediction.
 
-        Calculate and return matrix for smoothing (for all methods) and
-        regression (for Nadaraya-Watson and K-Nearest Neighbours)
+        If y_train is given, the estimation for X is calculated, otherwise,
+        hat matrix, :math:`\hat{H]`, is returned. The prediction, :math:`y`,
+        can be calculated as :math:`y = \hat{H} \dot y_train`.
 
         Args:
-            delta_x (np.ndarray): Matrix of distances between points or
-                functions
-            weights (np.ndarray, optional): Weights to be applied to the
-                resulting matrix columns
+            delta_x: Matrix of distances between points or
+                functions.
+            X_train: Training data.
+            X: Test samples.
+            y_train: Target values for X_train.
+            weights: Weights to be applied to the
+                resulting matrix columns.
 
         Returns:
-            hat matrix (np.ndarray)
+            The prediction if y_train is given, hat matrix otherwise.
 
         """
         # Obtain the non-normalized matrix
-        matrix = self._hat_matrix_function_not_normalized(delta_x=delta_x)
+        matrix = self._hat_matrix_function_not_normalized(
+            delta_x=delta_x,
+        )
 
         # Adjust weights
         if weights is not None:
@@ -76,40 +87,13 @@ class HatMatrix(
         # Renormalize weights
         rs = np.sum(matrix, axis=1)
         rs[rs == 0] = 1
-        return (matrix.T / rs).T
 
-    def prediction(
-        self,
-        *,
-        delta_x: np.ndarray,
-        y_train: np.ndarray,
-        X_train: Optional[FData] = None,
-        X: Optional[FData] = None,
-        weights: Optional[np.ndarray] = None,
-    ) -> np.ndarray:
-        """
-        Prediction.
+        matrix = (matrix.T / rs).T
 
-        Return the resulting :math:`y` array, by default calculates the hat
-        matrix and  multiplies it by y_train (except for regression using
-        Local Linear Regression method).
+        if y_train is None:
+            return matrix
 
-        Args:
-            delta_x (np.ndarray): Matrix of distances between points or
-                functions
-            y_train (np.ndarray): Scalar response from for functional data
-            X_train (FData , optional): Functional data. Only used in
-                regression with Local Linear Regression method
-            X (FData, optional): Functional data. Only used in regression
-                with Local Linear Regression method
-            weights (np.ndarray, optional): Weights to be applied to the
-                resulting matrix columns
-
-        Returns:
-            prediction (np.ndarray)
-
-        """
-        return np.dot(self.__call__(delta_x=delta_x, weights=weights), y_train)
+        return matrix @ y_train
 
     @abc.abstractmethod
     def _hat_matrix_function_not_normalized(
@@ -124,60 +108,29 @@ class NadarayaWatsonHatMatrix(HatMatrix):
     r"""Nadaraya-Watson method.
 
     Creates the matrix :math:`\hat{H}`, used in the kernel smoothing and kernel
-    regression algorithms, as explained below.
-
-    For **kernel smoothing** algorithm the matrix :math:`\hat{H}` has the
-    following expression for each cell
-    :footcite:`wasserman_2006_nonparametric_nw`:
+    regression algorithms, as explained below
 
     .. math::
-        \hat{H}_{i,j} = \frac{K\left(\frac{t_j-t_i'}{h}\right)}{\sum_{k=1}^{
-        n}K\left(\frac{t_k-t_i'}{h}\right)}
+        \hat{H}_{i,j} = \frac{K\left(\frac{d(e_j-e_i')}{h}\right)}{\sum_{k=1}^{
+        n}K\left(\frac{d(e_k-e_i')}{h}\right)}
 
-    where :math:`t = (t_1, t_2, ..., t_n)` are points of discretisation and
-    :math:`t' = (t_1', t_2', ..., t_m')` are the points for which it is desired
-    to estimate the smoothed value.
+    For smoothing, :math:`e_i` are the points of discretisation
+    and :math:`e'_i` are the points for which it is desired to estimate the
+    smoothed value. The distance :math:`d` is the absolute value
+    function :footcite:`wasserman_2006_nonparametric_nw`.
 
-    The result can be obtained as
+    For regression, :math:`e_i` is the functional data and :math:`e_i'`
+    are the functions for which it is desired to estimate the scalar value.
+    Here, :math:`d` is some functional distance
+    :footcite:`ferraty+vieu_2006_nonparametric_nw`.
 
-    .. math::
-        \hat{X} = \hat{H}X
-
-    where :math:`X = (x_1, x_2, ..., x_n)` is the vector of observations at the
-    points :math:`t` and
-    :math:`\hat{X} = (\hat{x}_1, \hat{x}_2, ..., \hat{x}_m)` are the estimated
-    values for the points :math:`t'`.
-
-    For **kernel regression** algorithm
-    :footcite:`ferraty+vieu_2006_nonparametric_nw`:,
-
-    .. math::
-        \hat{H}_{i,j} = \frac{K\left(\frac{d(f_j-f_i')}{h}\right)}{\sum_{k=1}^{
-        n}K\left(\frac{d(f_k-f_i')}{h}\right)}
-
-    where :math:`d(\cdot, \cdot)` is some functional distance
-    (see :class:`~skfda.misc.metrics.LpDistance`),
-    :math:`(f_1, f_2, ..., f_n)` is the functional data and the functions
-    :math:`(f_1', f_2', ..., f_m')` are the functions for which it is desired
-    to estimate the scalar value.
-
-    The result can be obtained as
-
-    .. math::
-        \hat{Y} = \hat{H}Y
-
-    where :math:`Y = (y_1, y_2, ..., y_n)` is the vector of scalar values
-    corresponding to the dataset and
-    :math:`\hat{Y} = (\hat{y}_1, \hat{y}_2, ..., \hat{y}_m)` are the estimated
-    values
-
-    In both cases, :math:`K(\cdot)` is a kernel function and :math:`h` the
-    kernel window width or smoothing parameter.
+    In both cases :math:`K(\cdot)` is a kernel function and :math:`h` is the
+    bandwidth.
 
     Args:
-        bandwidth (float, optional): Window width of the kernel
+        bandwidth: Window width of the kernel
             (also called h or bandwidth).
-        kernel (function, optional): Kernel function. By default a normal
+        kernel: Kernel function. By default a normal
             kernel.
 
     References:
@@ -195,9 +148,6 @@ class NadarayaWatsonHatMatrix(HatMatrix):
             percentage = 15
             self.bandwidth = np.percentile(delta_x, percentage)
 
-        if self.kernel is None:
-            self.kernel = kernels.normal
-
         return self.kernel(delta_x / self.bandwidth)
 
 
@@ -207,9 +157,15 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
     Creates the matrix :math:`\hat{H}`, used in the kernel smoothing and kernel
     regression algorithms, as explained below.
 
-    For **kernel smoothing** algorithm the matrix :math:`\hat{H}` has the
-    following expression for each cell
-    :footcite:`wasserman_2006_nonparametric_llr`:
+    For **kernel smoothing** algorithm to estimate the smoothed value for
+    :math:`t_j` the following error must be minimised
+
+    .. math::
+        AWSE(a, b) = \sum_{i=1}^n \left[ \left(y_i -
+        \left(a +  b (t_i - t'_j) \right) \right)^2
+        K \left( \frac {|t_i - t'_j|}{h} \right) \right ]
+
+    which gives the following expression for each cell
 
     .. math::
         \hat{H}_{i,j} = \frac{b_j(t_i')}{\sum_{k=1}^{n}b_k(t_i')}
@@ -223,50 +179,39 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
     where :math:`t = (t_1, t_2, ..., t_n)` are points of discretisation and
     :math:`t' = (t_1', t_2', ..., t_m')` are the points for which it is desired
-    to estimate the smoothed value.
+    to estimate the smoothed value
+    :footcite:`wasserman_2006_nonparametric_llr`.
 
-    The result can be obtained as
+    For **kernel regression** algorithm:
 
-    .. math::
-        \hat{X} = \hat{H}X
-
-    where :math:`X = (x_1, x_2, ..., x_n)` is the vector of observations at the
-    points :math:`t` and
-    :math:`\hat{X} = (\hat{x}_1, \hat{x}_2, ..., \hat{x}_m)` are the estimated
-    values for the points :math:`t'`.
-
-    For **kernel regression** algorithm
-    :footcite:`baillo+grane+2008+llr`:
-
-    Given functional data, :math:`(f_1, f_2, ..., f_n)` where each function
+    Given functional data, :math:`(x_1, x_2, ..., x_n)` where each function
     is expressed in a orthonormal basis with :math:`J` elements and scalar
     response :math:`Y = (y_1, y_2, ..., y_n)`.
 
     It is desired to estimate the values
     :math:`\hat{Y} = (\hat{y}_1, \hat{y}'_2, ..., \hat{y}'_m)`
-    for the data :math:`(f'_1, f'_2, ..., f'_m)` (expressed in the same basis).
+    for the data :math:`(x'_1, x'_2, ..., x'_m)` (expressed in the same basis).
 
     For each :math:`f'_k` the estimation :math:`\hat{y}_k` is obtained by
-    taking the value :math:`a^k` from the vector
-    :math:`(a^k, b_1^k, ..., b_J^k)` which minimizes the following expression
+    taking the value :math:`a_k` from the vector
+    :math:`(a_k, b_{1k}, ..., b_{Jk})` which minimizes the following expression
 
     .. math::
-        AWSE(a^k, b_1^k, ..., b_J^k) = \sum_{i=1}^n \left(y_i -
-        \left(a + \sum_{j=1}^J b_j^k c_{ij}^k \right) \right)^2
-        K \left( \frac {d(f_i - f'_k)}{h} \right) 1/h
+        AWSE(a_k, b_{1k}, ..., b_{Jk}) = \sum_{i=1}^n \left(y_i -
+        \left(a + \sum_{j=1}^J b_{jk} c_{ijk} \right) \right)^2
+        K \left( \frac {d(x_i - x'_k)}{h} \right)
 
-    Where:
+    Where :math:`c_{ij}^k` is the :math:`j`-th coefficient in a truncated basis
+    expansion of :math:`x_i - x'_k = \sum_{j=1}^J c_{ij}^k` and :math:`d` some
+    functional distance :footcite:`baillo+grane_2008_llr`
 
-    -   :math:`K(\cdot)` is a kernel function, :math:`h`
-        the kernel window width or bandwidth and :math:`d` some
-        functional distance
-    -   :math:`c_{ij}^k` is the :math:`j`-th coefficient in a truncated basis
-        expansion of :math:`f_i - f'_k = \sum_{j=1}^J c_{ij}^k`
+    For both cases, :math:`K(\cdot)` is a kernel function and :math:`h` the
+    bandwidth.
 
     Args:
-        bandwidth (float, optional): Window width of the kernel
-            (also called h or bandwidth).
-        kernel (function, optional): Kernel function. By default a normal
+        bandwidth: Window width of the kernel
+            (also called h).
+        kernel: Kernel function. By default a normal
             kernel.
 
     References:
@@ -274,54 +219,76 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
     """
 
-    def prediction(
+    def __call__(  # noqa: D102
         self,
         *,
         delta_x: np.ndarray,
-        X_train: FDataBasis,
-        y_train: np.ndarray,
-        X: FDataBasis,
+        X_train: Optional[Union[FDataBasis, GridPoints]] = None,
+        X: Optional[Union[FDataBasis, GridPoints]] = None,
+        y_train: Optional[np.ndarray] = None,
         weights: Optional[np.ndarray] = None,
+        _cv: bool = False,
     ) -> np.ndarray:
-        """
-        Prediction.
 
-        Return the resulting :math:`y` array
-
-        Args:
-            delta_x: np.ndarray
-            X_train: np.ndarray
-            y_train: np.ndarray
-            X: np.ndarray
-            weights: np.ndarray
-
-        Returns:
-            np.ndarray
-        """
         if self.bandwidth is None:
             percentage = 15
             self.bandwidth = np.percentile(delta_x, percentage)
 
-        if self.kernel is None:
-            self.kernel = kernels.normal
+        # Regression
+        if isinstance(X_train, FDataBasis):
+
+            if y_train is None:
+                y_train = np.identity(X_train.n_samples)
+
+            m1 = X_train.coefficients
+            m2 = X.coefficients
+
+            return self._solve_least_squares(
+                delta_x=delta_x,
+                m1=m1,
+                m2=m2,
+                y_train=y_train,
+            )
+
+        # Smoothing
+        else:
+
+            return super().__call__(
+                delta_x=delta_x,
+                X_train=X_train,
+                X=X,
+                y_train=y_train,
+                weights=weights,
+                _cv=_cv,
+            )
+
+    def _solve_least_squares(
+        self,
+        delta_x: np.ndarray,
+        m1: np.ndarray,
+        m2: np.ndarray,
+        y_train: np.ndarray,
+    ) -> np.ndarray:
 
         W = np.sqrt(self.kernel(delta_x / self.bandwidth))
 
-        # Creating the matrices of coefficients
-        m1 = X_train.coefficients
-        m2 = X.coefficients
-
-        # Adding a column of ones to X_train coefficients
+        # Adding a column of ones to m1
         m1 = np.concatenate(
             (
-                np.ones(X_train.n_samples)[:, np.newaxis],
+                np.ones(m1.shape[0])[:, np.newaxis],
                 m1,
             ),
             axis=1,
         )
 
-        # Adding a column of zeros to X coefficients
-        m2 = np.concatenate((np.zeros(X.n_samples)[:, np.newaxis], m2), axis=1)
+        # Adding a column of zeros to m2
+        m2 = np.concatenate(
+            (
+                np.zeros(m2.shape[0])[:, np.newaxis],
+                m2,
+            ),
+            axis=1,
+        )
 
         # Subtract previous matrices obtaining a 3D matrix
         # The i-th element contains the matrix X_train - X[i]
@@ -330,13 +297,15 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         # A x = b
         # Where x = (a, b_1, ..., b_J)
         A = (C.T * W.T).T
-        b = W * y_train
+        b = np.einsum('ij, j... -> ij...', W, y_train)
 
+        # For Ax = b calculates x that minimize the square error
         # From https://stackoverflow.com/questions/42534237/broadcasted-lstsq-least-squares  # noqa: E501
         u, s, vT = np.linalg.svd(A, full_matrices=False)
 
-        uTb = np.einsum('ijk,ij->ik', u, b)
-        x = np.einsum('ijk,ij->ik', vT, uTb / s)
+        uTb = np.einsum('ijk, ij...->ik...', u, b)
+        uTbs = (uTb.T / s.T).T
+        x = np.einsum('ijk,ij...->ik...', vT, uTbs)
 
         return x[:, 0]
 
@@ -349,9 +318,6 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         if self.bandwidth is None:
             percentage = 15
             self.bandwidth = np.percentile(delta_x, percentage)
-
-        if self.kernel is None:
-            self.kernel = kernels.normal
 
         k = self.kernel(delta_x / self.bandwidth)
 
@@ -368,64 +334,30 @@ class KNeighborsHatMatrix(HatMatrix):
     Creates the matrix :math:`\hat{H}`, used in the kernel smoothing and kernel
     regression algorithms, as explained below.
 
-    For **kernel smoothing** algorithm the matrix :math:`\hat{H}` has the
-    following expression for each cell
-
     .. math::
-        \hat{H}_{i,j} = \frac{K\left(\frac{t_j-t_i'}{h}\right)}{\sum_{k=1}^{
-        n}K\left(\frac{t_k-t_i'}{h}\right)}
+        \hat{H}_{i,j} = \frac{K\left(\frac{d(e_j-e_i')}{h}\right)}{\sum_{k=1}^{
+        n}K\left(\frac{d(e_k-e_i')}{h_{ik}}\right)}
 
-    where :math:`t = (t_1, t_2, ..., t_n)` are points of discretisation and
-    :math:`t' = (t_1', t_2', ..., t_m')` are the points for which it is desired
-    to estimate the smoothed value.
+    For smoothing, :math:`e_i` are the points of discretisation
+    and :math:`e'_i` are the points for which it is desired to estimate the
+    smoothed value. The distance :math:`d` is the absolute value.
 
-    The result can be obtained as
+    For regression, :math:`e_i` are the functional data and :math:`e_i'`
+    are the functions for which it is desired to estimate the scalar value.
+    Here, :math:`d` is some functional distance.
 
-    .. math::
-        \hat{X} = \hat{H}X
+    In both cases, :math:`K(\cdot)` is a kernel function and
+    :math:`h_{ik}` is calculated as the distance from :math:`e_i'` to it's
+    :math:`k`-th nearest neighbor in :math:`\{e_1, ..., e_n\}`
+    :footcite:`ferraty+vieu_2006_nonparametric_knn`.
 
-    where :math:`X = (x_1, x_2, ..., x_n)` is the vector of observations at the
-    points :math:`t` and
-    :math:`\hat{X} = (\hat{x}_1, \hat{x}_2, ..., \hat{x}_m)` are the estimated
-    values for the points :math:`t'`.
-
-
-    For **kernel regression** algorithm
-    :footcite:`ferraty+vieu_2006_nonparametric_knn`,
-
-    .. math::
-        \hat{H}_{i,j} = \frac{K\left(\frac{d(f_j-f_i')}{h_{ik}}\right)}
-        {\sum_{k=1}^{n}K\left(\frac{d(f_k-f_i')}{h_{ik}}\right)}
-
-    where :math:`d(\cdot, \cdot)` is some functional distance
-    (see :class:`~skfda.misc.metrics.LpDistance`),
-    :math:`F = (f_1, f_2, ..., f_n)` is the functional data and the functions
-    :math:`F' = (f_1', f_2', ..., f_m')` are the functions for which it is
-    wanted to estimate the scalar value.
-
-    The result can be obtained as
-
-    .. math::
-        \hat{Y} = \hat{H}Y
-
-    where :math:`Y = (y_1, y_2, ..., y_n)` is the vector of scalar values
-    corresponding to the dataset and
-    :math:`\hat{Y} = (\hat{y}_1, \hat{y}_2, ..., \hat{y}_m)` are the estimated
-    values
-
-    In both cases, :math:`K(\cdot)` is a kernel function, for smoothing,
-    :math:`h_{ik}` is calculated as the distance from :math:`t_i'` to it's 𝑘-th
-    nearest neighbor in :math:`t`, and for regression, :math:`h_{ik}` is
-    calculated as the distance from :math:`f_i'` to it's 𝑘-th  nearest neighbor
-    in :math:`F`.
-
-    Usually used with the uniform kernel, it takes the average of the closest k
+    Used with the uniform kernel, it takes the average of the closest k
     points to a given point.
 
     Args:
-        bandwidth (int, optional): Number of nearest neighbours. By
+        bandwidth: Number of nearest neighbours. By
             default it takes the 5% closest points.
-        kernel (function, optional): Kernel function. By default a uniform
+        kernel: Kernel function. By default a uniform
             kernel to perform a 'usual' k nearest neighbours estimation.
 
     References:
@@ -433,14 +365,19 @@ class KNeighborsHatMatrix(HatMatrix):
 
     """
 
+    def __init__(
+        self,
+        *,
+        bandwidth: Optional[int] = None,
+        kernel: Callable[[np.ndarray], np.ndarray] = kernels.uniform,
+    ):
+        super().__init__(bandwidth=bandwidth, kernel=kernel)
+
     def _hat_matrix_function_not_normalized(
         self,
         *,
         delta_x: np.ndarray,
     ) -> np.ndarray:
-
-        if self.kernel is None:
-            self.kernel = kernels.uniform
 
         input_points_len = delta_x.shape[1]
 
@@ -456,7 +393,7 @@ class KNeighborsHatMatrix(HatMatrix):
 
         # Tolerance to avoid points landing outside the kernel window due to
         # computation error
-        tol = 1.0e-15
+        tol = np.finfo(np.float64).eps
 
         # For each row in the distances matrix, it calculates the furthest
         # point within the k nearest neighbours

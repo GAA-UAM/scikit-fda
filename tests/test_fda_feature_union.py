@@ -11,7 +11,7 @@ from skfda.misc.operators import SRSF
 from skfda.preprocessing.dim_reduction.feature_extraction import (
     FDAFeatureUnion,
 )
-from skfda.preprocessing.smoothing.kernel_smoothers import KernelSmoother
+from skfda.preprocessing.smoothing import KernelSmoother
 from skfda.representation import EvaluationTransformer
 
 

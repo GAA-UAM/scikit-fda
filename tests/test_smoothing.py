@@ -6,16 +6,17 @@ import sklearn
 
 import skfda
 import skfda.preprocessing.smoothing as smoothing
-import skfda.preprocessing.smoothing.kernel_smoothers as kernel_smoothers
 import skfda.preprocessing.smoothing.validation as validation
 from skfda._utils import _check_estimator
 from skfda.misc.hat_matrix import (
+    HatMatrix,
     KNeighborsHatMatrix,
     LocalLinearRegressionHatMatrix,
     NadarayaWatsonHatMatrix,
 )
 from skfda.misc.operators import LinearDifferentialOperator
 from skfda.misc.regularization import L2Regularization
+from skfda.preprocessing.smoothing import KernelSmoother
 from skfda.representation.basis import BSpline, Monomial
 from skfda.representation.grid import FDataGrid
 
@@ -23,9 +24,9 @@ from skfda.representation.grid import FDataGrid
 class TestSklearnEstimators(unittest.TestCase):
     """Test for sklearn estimators."""
 
-    def test_kernel_smoothing(self):
+    def test_kernel_smoothing(self) -> None:
         """Test if estimator adheres to scikit-learn conventions."""
-        _check_estimator(kernel_smoothers.KernelSmoother)
+        _check_estimator(KernelSmoother)
 
 
 class _LinearSmootherLeaveOneOutScorerAlternative:
@@ -33,7 +34,7 @@ class _LinearSmootherLeaveOneOutScorerAlternative:
 
     def __call__(
         self,
-        estimator: kernel_smoothers.KernelSmoother,
+        estimator: KernelSmoother,
         X: FDataGrid,
         y: FDataGrid,
     ) -> None:
@@ -51,7 +52,7 @@ class TestLeaveOneOut(unittest.TestCase):
 
     def _test_generic(
         self,
-        estimator: kernel_smoothers.KernelSmoother,
+        estimator: KernelSmoother,
     ) -> None:
         loo_scorer = validation.LinearSmootherLeaveOneOutScorer()
         loo_scorer_alt = _LinearSmootherLeaveOneOutScorerAlternative()
@@ -83,27 +84,85 @@ class TestLeaveOneOut(unittest.TestCase):
 
     def test_nadaraya_watson(self) -> None:
         """Test Leave-One-Out with Nadaraya Watson method."""
-        self._test_generic(
-            kernel_smoothers.KernelSmoother(
-                kernel_estimator=NadarayaWatsonHatMatrix(),
-            ),
+        self._test_generic(KernelSmoother(
+            kernel_estimator=NadarayaWatsonHatMatrix(),
+        ),
         )
 
     def test_local_linear_regression(self) -> None:
         """Test Leave-One-Out with Local Linear Regression method."""
-        self._test_generic(
-            kernel_smoothers.KernelSmoother(
-                kernel_estimator=LocalLinearRegressionHatMatrix(),
-            ),
+        self._test_generic(KernelSmoother(
+            kernel_estimator=LocalLinearRegressionHatMatrix(),
+        ),
         )
 
     def test_knn(self) -> None:
         """Test Leave-One-Out with KNNeighbours method."""
-        self._test_generic(
-            kernel_smoothers.KernelSmoother(
-                kernel_estimator=KNeighborsHatMatrix(),
-            ),
+        self._test_generic(KernelSmoother(
+            kernel_estimator=KNeighborsHatMatrix(),
+        ),
         )
+
+
+class TestKernelSmoother(unittest.TestCase):
+    """Test Kernel Smoother.
+
+    Comparison of results with fda.usc R library
+    """
+
+    def _test_hat_matrix(
+        self,
+        kernel_estimator: HatMatrix,
+    ) -> np.ndarray:
+        return KernelSmoother(  # noqa: WPS437
+            kernel_estimator=kernel_estimator,
+        )._hat_matrix(
+            input_points=[[1, 2, 3, 4, 5]],
+            output_points=[[1, 2, 3, 4, 5]],
+        )
+
+    def test_nw(self) -> None:
+        """Comparison of NW hat matrix with the one obtained from fda.usc."""
+        hat_matrix = self._test_hat_matrix(
+            NadarayaWatsonHatMatrix(bandwidth=10),
+        )
+        hat_matrix_r = [
+            [0.206001865, 0.204974427, 0.201922755, 0.196937264, 0.190163689],
+            [0.201982911, 0.202995354, 0.201982911, 0.198975777, 0.194063047],
+            [0.198003042, 0.200995474, 0.202002968, 0.200995474, 0.198003042],
+            [0.194063047, 0.198975777, 0.201982911, 0.202995354, 0.201982911],
+            [0.190163689, 0.196937264, 0.201922755, 0.204974427, 0.206001865],
+        ]
+        np.testing.assert_allclose(hat_matrix, hat_matrix_r)
+
+    def test_llr(self) -> None:
+        """Test LLR."""
+        hat_matrix = self._test_hat_matrix(
+            LocalLinearRegressionHatMatrix(bandwidth=10),
+        )
+
+        # For a straight line the estimated results should coincide with
+        # the real values
+        # r(x) = 3x + 2
+        np.testing.assert_allclose(
+            np.dot(hat_matrix, [5, 8, 11, 14, 17]),
+            [5, 8, 11, 14, 17],
+        )
+
+    def test_knn(self) -> None:
+        """Comparison of KNN hat matrix with the one obtained from fda.usc."""
+        hat_matrix = self._test_hat_matrix(
+            KNeighborsHatMatrix(bandwidth=2),
+        )
+
+        hat_matrix_r = [
+            [0.500000000, 0.500000000, 0.000000000, 0.000000000, 0.000000000],
+            [0.333333333, 0.333333333, 0.333333333, 0.000000000, 0.000000000],
+            [0.000000000, 0.333333333, 0.333333333, 0.333333333, 0.000000000],
+            [0.000000000, 0.000000000, 0.333333333, 0.333333333, 0.333333333],
+            [0.000000000, 0.000000000, 0.000000000, 0.500000000, 0.500000000],
+        ]
+        np.testing.assert_allclose(hat_matrix, hat_matrix_r)
 
 
 class TestBasisSmoother(unittest.TestCase):

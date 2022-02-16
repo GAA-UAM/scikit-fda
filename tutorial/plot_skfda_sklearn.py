@@ -108,7 +108,7 @@ plt.show()
 # As these methods discard information of the original data they usually are
 # not reversible.
 
-import skfda.preprocessing.smoothing.kernel_smoothers as ks
+import skfda.preprocessing.smoothing as ks
 from skfda.misc.hat_matrix import NadarayaWatsonHatMatrix
 X, y = skfda.datasets.fetch_phoneme(return_X_y=True)
 

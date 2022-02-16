@@ -6,7 +6,6 @@ from typing import Any, Mapping, TypeVar, Union
 
 import numpy as np
 from pandas import DataFrame
-from sklearn.model_selection import train_test_split
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from ...._utils import TransformerMixin, _fit_feature_transformer

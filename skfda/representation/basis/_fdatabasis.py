@@ -364,7 +364,6 @@ class FDataBasis(FData):  # noqa: WPS214
     ) -> NDArrayFloat:
         """Examples.
 
-
         We first create the data basis.
             >>> from skfda.representation.basis import FDataBasis, Monomial
             >>> basis = Monomial(n_basis=4)
@@ -387,12 +386,8 @@ class FDataBasis(FData):  # noqa: WPS214
             self,
             interval,
         )
-        integrated_values = np.empty((1, 1))
 
-        for i in integrated:
-            integrated_values = np.concatenate([integrated_values, i])
-
-        return integrated_values[1:]
+        return integrated[0]
 
     def sum(  # noqa: WPS125
         self: T,

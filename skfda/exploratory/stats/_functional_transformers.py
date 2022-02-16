@@ -6,7 +6,7 @@ from typing import Union
 
 import numpy as np
 
-from ...representation import FDataGrid
+from ...representation import FDataBasis, FDataGrid
 
 
 def local_averages(
@@ -75,6 +75,7 @@ def local_averages(
         for i in range(n_intervals)
     ]
     return np.asarray(integrated_data)
+
 
 def number_up_crossings(
     data: FDataGrid,

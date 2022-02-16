@@ -53,6 +53,7 @@ class TestLeaveOneOut(unittest.TestCase):
     def _test_generic(
         self,
         estimator: KernelSmoother,
+        smoothing_param_name: str = 'kernel_estimator__bandwidth',
     ) -> None:
         loo_scorer = validation.LinearSmootherLeaveOneOutScorer()
         loo_scorer_alt = _LinearSmootherLeaveOneOutScorerAlternative()
@@ -63,7 +64,7 @@ class TestLeaveOneOut(unittest.TestCase):
         grid = validation.SmoothingParameterSearch(
             estimator,
             [2, 3],
-            param_name='kernel_estimator__bandwidth',
+            param_name=smoothing_param_name,
             scoring=loo_scorer,
         )
 
@@ -73,7 +74,7 @@ class TestLeaveOneOut(unittest.TestCase):
         grid_alt = validation.SmoothingParameterSearch(
             estimator,
             [2, 3],
-            param_name='kernel_estimator__bandwidth',
+            param_name=smoothing_param_name,
             scoring=loo_scorer_alt,
         )
 
@@ -98,9 +99,11 @@ class TestLeaveOneOut(unittest.TestCase):
 
     def test_knn(self) -> None:
         """Test Leave-One-Out with KNNeighbours method."""
-        self._test_generic(KernelSmoother(
-            kernel_estimator=KNeighborsHatMatrix(),
-        ),
+        self._test_generic(
+            KernelSmoother(
+                kernel_estimator=KNeighborsHatMatrix(),
+            ),
+            smoothing_param_name='kernel_estimator__n_neighbors',
         )
 
 
@@ -152,7 +155,7 @@ class TestKernelSmoother(unittest.TestCase):
     def test_knn(self) -> None:
         """Comparison of KNN hat matrix with the one obtained from fda.usc."""
         hat_matrix = self._test_hat_matrix(
-            KNeighborsHatMatrix(bandwidth=2),
+            KNeighborsHatMatrix(n_neighbors=2),
         )
 
         hat_matrix_r = [

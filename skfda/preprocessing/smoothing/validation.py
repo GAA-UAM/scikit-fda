@@ -195,13 +195,13 @@ class SmoothingParameterSearch(GridSearchCV):
         ...         KernelSmoother(
         ...             kernel_estimator=KNeighborsHatMatrix()),
         ...         [2,3],
-        ...         param_name='kernel_estimator__bandwidth')
+        ...         param_name='kernel_estimator__n_neighbors')
         >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-11.67, -12.37])
         >>> round(grid.best_score_, 2)
         -11.67
-        >>> grid.best_params_['kernel_estimator__bandwidth']
+        >>> grid.best_params_['kernel_estimator__n_neighbors']
         2
         >>> grid.best_estimator_.hat_matrix().round(2)
         array([[ 0.5 , 0.5 , 0.  , 0.  , 0.  ],
@@ -227,7 +227,7 @@ class SmoothingParameterSearch(GridSearchCV):
         ...         KernelSmoother(
         ...             kernel_estimator=KNeighborsHatMatrix()),
         ...         [2,3],
-        ...         param_name='kernel_estimator__bandwidth',
+        ...         param_name='kernel_estimator__n_neighbors',
         ...         scoring=LinearSmootherLeaveOneOutScorer())
         >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
@@ -236,7 +236,7 @@ class SmoothingParameterSearch(GridSearchCV):
         ...         KernelSmoother(
         ...             kernel_estimator=KNeighborsHatMatrix()),
         ...         [2,3],
-        ...         param_name='kernel_estimator__bandwidth',
+        ...         param_name='kernel_estimator__n_neighbors',
         ...         scoring=LinearSmootherGeneralizedCVScorer(
         ...                         akaike_information_criterion))
         >>> _ = grid.fit(fd)
@@ -246,7 +246,7 @@ class SmoothingParameterSearch(GridSearchCV):
         ...         KernelSmoother(
         ...             kernel_estimator=KNeighborsHatMatrix()),
         ...         [2,3],
-        ...         param_name='kernel_estimator__bandwidth',
+        ...         param_name='kernel_estimator__n_neighbors',
         ...         scoring=LinearSmootherGeneralizedCVScorer(
         ...                         finite_prediction_error))
         >>> _ = grid.fit(fd)
@@ -256,7 +256,7 @@ class SmoothingParameterSearch(GridSearchCV):
         ...         KernelSmoother(
         ...             kernel_estimator=KNeighborsHatMatrix()),
         ...         [2,3],
-        ...         param_name='kernel_estimator__bandwidth',
+        ...         param_name='kernel_estimator__n_neighbors',
         ...         scoring=LinearSmootherGeneralizedCVScorer(shibata))
         >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
@@ -265,7 +265,7 @@ class SmoothingParameterSearch(GridSearchCV):
         ...         KernelSmoother(
         ...             kernel_estimator=KNeighborsHatMatrix()),
         ...         [2,3],
-        ...         param_name='kernel_estimator__bandwidth',
+        ...         param_name='kernel_estimator__n_neighbors',
         ...         scoring=LinearSmootherGeneralizedCVScorer(rice))
         >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
@@ -280,7 +280,7 @@ class SmoothingParameterSearch(GridSearchCV):
         ...             kernel_estimator=KNeighborsHatMatrix(),
         ...             output_points=output_points),
         ...         [2,3],
-        ...         param_name='kernel_estimator__bandwidth')
+        ...         param_name='kernel_estimator__n_neighbors')
         >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-11.67, -12.37])

@@ -18,20 +18,22 @@ class KernelRegression(
 ):
     r"""Kernel regression with scalar response.
 
-    Let :math:`fd_1 = (f_1, f_2, ..., f_n)` be the functional data set and
+    Let :math:`fd_1 = (X_1, X_2, ..., X_n)` be the functional data set and
     :math:`y = (y_1, y_2, ..., y_n)` be the scalar response corresponding
     to each function in :math:`fd_1`. Then, the estimation for the
-    functions in :math:`fd_2 = (g_1, g_2, ..., g_n)` can be calculated as
+    functions in :math:`fd_2 = (X'_1, X'_2, ..., X'_n)` can be
+    calculated as
 
     .. math::
         \hat{y} = \hat{H}y
 
     Where :math:`\hat{H}` is a matrix described in
-    :class:`~skfda.misc.HatMatrix`.
+    :class:`~skfda.misc.hat_matrix.HatMatrix`.
 
     Args:
         kernel_estimator: Method used to calculate the hat matrix
-            (default = :class:`~skfda.misc.NadarayaWatsonHatMatrix`).
+            (default =
+            :class:`~skfda.misc.hat_matrix.NadarayaWatsonHatMatrix`).
         metric: Metric used to calculate the distances
             (default = :func:`L2 distance <skfda.misc.metrics.distance_l2>`).
 
@@ -54,7 +56,7 @@ class KernelRegression(
         >>> estimator.predict(fd_2)
         array([ 2.02723928,  4.        ,  5.97276072])
 
-        >>> kernel_estimator = KNeighborsHatMatrix(bandwidth=2)
+        >>> kernel_estimator = KNeighborsHatMatrix(n_neighbors=2)
         >>> estimator = KernelRegression(kernel_estimator=kernel_estimator)
         >>> _ = estimator.fit(fd_1, y)
         >>> estimator.predict(fd_2)

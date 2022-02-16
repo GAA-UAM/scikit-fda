@@ -37,6 +37,9 @@ it is explained the basic usage of these estimators.
 
 Kernel regression
 -----------------
+This module includes the implementation of Kernel Regression for FData with a scalar as a response variable.  It is a
+non-parametric technique that uses :class:`~skfda.misc.hat_matrix.HatMatrix` object.
+
 
 .. autosummary::
    :toctree: autosummary

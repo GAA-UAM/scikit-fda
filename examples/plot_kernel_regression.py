@@ -58,7 +58,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 n_neighbors = np.array(range(1, 100))
 knn = GridSearchCV(
     KernelRegression(kernel_estimator=KNeighborsHatMatrix()),
-    param_grid={'kernel_estimator__bandwidth': n_neighbors},
+    param_grid={'kernel_estimator__n_neighbors': n_neighbors},
 )
 
 
@@ -69,7 +69,7 @@ knn = GridSearchCV(
 knn.fit(X_train, y_train)
 print(
     'KNN bandwidth:',
-    knn.best_params_['kernel_estimator__bandwidth'],
+    knn.best_params_['kernel_estimator__n_neighbors'],
 )
 
 ##############################################################################
@@ -175,13 +175,13 @@ Xd_train, Xd_test, y_train, y_test = train_test_split(
 # K-Nearest Neighbours
 knn = GridSearchCV(
     KernelRegression(kernel_estimator=KNeighborsHatMatrix()),
-    param_grid={'kernel_estimator__bandwidth': n_neighbors},
+    param_grid={'kernel_estimator__n_neighbors': n_neighbors},
 )
 
 knn.fit(Xd_train, y_train)
 print(
     'KNN bandwidth:',
-    knn.best_params_['kernel_estimator__bandwidth'],
+    knn.best_params_['kernel_estimator__n_neighbors'],
 )
 
 y_pred = knn.predict(Xd_test)

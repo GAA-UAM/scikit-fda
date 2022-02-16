@@ -188,7 +188,7 @@ class TestKernelRegression(unittest.TestCase):
         # Test KNN method with basis representation, n_neighbours=3 and
         # uniform kernel
         knn_basis = KernelRegression(
-            kernel_estimator=KNeighborsHatMatrix(bandwidth=3),
+            kernel_estimator=KNeighborsHatMatrix(n_neighbors=3),
         )
         knn_basis.fit(fd_train_basis, y_train_basis)
         y_basis = knn_basis.predict(fd_test_basis)
@@ -206,7 +206,7 @@ class TestKernelRegression(unittest.TestCase):
         # Test KNN method with grid representation, n_neighbours=3 and
         # uniform kernel
         knn_grid = KernelRegression(
-            kernel_estimator=KNeighborsHatMatrix(bandwidth=3),
+            kernel_estimator=KNeighborsHatMatrix(n_neighbors=3),
         )
         knn_grid.fit(fd_train_grid, y_train_grid)
         y_grid = knn_grid.predict(fd_test_grid)
@@ -224,7 +224,10 @@ class TestKernelRegression(unittest.TestCase):
         # Test KNN method with basis representation, n_neighbours=10 and
         # normal kernel
         knn_basis = KernelRegression(
-            kernel_estimator=KNeighborsHatMatrix(bandwidth=10, kernel=normal),
+            kernel_estimator=KNeighborsHatMatrix(
+                n_neighbors=10,
+                kernel=normal,
+            ),
         )
         knn_basis.fit(fd_train_basis, y_train_basis)
         y_basis = knn_basis.predict(fd_test_basis)
@@ -291,7 +294,7 @@ class TestKernelRegression(unittest.TestCase):
         X_train, X_test, y_train = _create_data_r()
 
         knn = KernelRegression(
-            kernel_estimator=KNeighborsHatMatrix(bandwidth=3),
+            kernel_estimator=KNeighborsHatMatrix(n_neighbors=3),
         )
         knn.fit(X_train, y_train)
 

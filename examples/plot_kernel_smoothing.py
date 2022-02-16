@@ -68,7 +68,7 @@ bandwidth = n_neighbors * scale_factor
 knn = val.SmoothingParameterSearch(
     KernelSmoother(kernel_estimator=hm.KNeighborsHatMatrix()),
     n_neighbors,
-    param_name='kernel_estimator__bandwidth',
+    param_name='kernel_estimator__n_neighbors',
 )
 knn.fit(fd)
 knn_fd = knn.transform(fd)

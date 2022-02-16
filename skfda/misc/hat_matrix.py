@@ -146,7 +146,7 @@ class NadarayaWatsonHatMatrix(HatMatrix):
 
         if self.bandwidth is None:
             percentage = 15
-            self.bandwidth = np.percentile(delta_x, percentage)
+            self.bandwidth = np.percentile(np.abs(delta_x), percentage)
 
         return self.kernel(delta_x / self.bandwidth)
 
@@ -184,25 +184,25 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
     For **kernel regression** algorithm:
 
-    Given functional data, :math:`(x_1, x_2, ..., x_n)` where each function
+    Given functional data, :math:`(X_1, X_2, ..., X_n)` where each function
     is expressed in a orthonormal basis with :math:`J` elements and scalar
     response :math:`Y = (y_1, y_2, ..., y_n)`.
 
     It is desired to estimate the values
-    :math:`\hat{Y} = (\hat{y}_1, \hat{y}'_2, ..., \hat{y}'_m)`
-    for the data :math:`(x'_1, x'_2, ..., x'_m)` (expressed in the same basis).
+    :math:`\hat{Y} = (\hat{y}_1, \hat{y}_2, ..., \hat{y}_m)`
+    for the data :math:`(X'_1, X'_2, ..., X'_m)` (expressed in the same basis).
 
-    For each :math:`f'_k` the estimation :math:`\hat{y}_k` is obtained by
+    For each :math:`X'_k` the estimation :math:`\hat{y}_k` is obtained by
     taking the value :math:`a_k` from the vector
     :math:`(a_k, b_{1k}, ..., b_{Jk})` which minimizes the following expression
 
     .. math::
         AWSE(a_k, b_{1k}, ..., b_{Jk}) = \sum_{i=1}^n \left(y_i -
         \left(a + \sum_{j=1}^J b_{jk} c_{ijk} \right) \right)^2
-        K \left( \frac {d(x_i - x'_k)}{h} \right)
+        K \left( \frac {d(X_i - X'_k)}{h} \right)
 
     Where :math:`c_{ij}^k` is the :math:`j`-th coefficient in a truncated basis
-    expansion of :math:`x_i - x'_k = \sum_{j=1}^J c_{ij}^k` and :math:`d` some
+    expansion of :math:`X_i - X'_k = \sum_{j=1}^J c_{ij}^k` and :math:`d` some
     functional distance :footcite:`baillo+grane_2008_llr`
 
     For both cases, :math:`K(\cdot)` is a kernel function and :math:`h` the
@@ -232,7 +232,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
         if self.bandwidth is None:
             percentage = 15
-            self.bandwidth = np.percentile(delta_x, percentage)
+            self.bandwidth = np.percentile(np.abs(delta_x), percentage)
 
         # Regression
         if isinstance(X_train, FDataBasis):
@@ -253,7 +253,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         # Smoothing
         else:
 
-            return super().__call__(
+            return super().__call__(  # noqa: WPS503
                 delta_x=delta_x,
                 X_train=X_train,
                 X=X,
@@ -317,7 +317,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
         if self.bandwidth is None:
             percentage = 15
-            self.bandwidth = np.percentile(delta_x, percentage)
+            self.bandwidth = np.percentile(np.abs(delta_x), percentage)
 
         k = self.kernel(delta_x / self.bandwidth)
 
@@ -348,15 +348,15 @@ class KNeighborsHatMatrix(HatMatrix):
 
     In both cases, :math:`K(\cdot)` is a kernel function and
     :math:`h_{ik}` is calculated as the distance from :math:`e_i'` to it's
-    :math:`k`-th nearest neighbor in :math:`\{e_1, ..., e_n\}`
+    :math:`k`-th nearest neighbour in :math:`\{e_1, ..., e_n\}`
     :footcite:`ferraty+vieu_2006_nonparametric_knn`.
 
     Used with the uniform kernel, it takes the average of the closest k
     points to a given point.
 
     Args:
-        bandwidth: Number of nearest neighbours. By
-            default it takes the 5% closest points.
+        n_neighbors: Number of nearest neighbours. By
+            default it takes the 5% closest elements.
         kernel: Kernel function. By default a uniform
             kernel to perform a 'usual' k nearest neighbours estimation.
 
@@ -368,10 +368,11 @@ class KNeighborsHatMatrix(HatMatrix):
     def __init__(
         self,
         *,
-        bandwidth: Optional[int] = None,
+        n_neighbors: Optional[int] = None,
         kernel: Callable[[np.ndarray], np.ndarray] = kernels.uniform,
     ):
-        super().__init__(bandwidth=bandwidth, kernel=kernel)
+        self.n_neighbors = n_neighbors
+        self.kernel = kernel
 
     def _hat_matrix_function_not_normalized(
         self,
@@ -381,14 +382,14 @@ class KNeighborsHatMatrix(HatMatrix):
 
         input_points_len = delta_x.shape[1]
 
-        if self.bandwidth is None:
-            self.bandwidth = np.floor(
+        if self.n_neighbors is None:
+            self.n_neighbors = np.floor(
                 np.percentile(
                     range(1, input_points_len),
                     5,
                 ),
             )
-        elif self.bandwidth <= 0:
+        elif self.n_neighbors <= 0:
             raise ValueError('h must be greater than 0')
 
         # Tolerance to avoid points landing outside the kernel window due to
@@ -399,7 +400,7 @@ class KNeighborsHatMatrix(HatMatrix):
         # point within the k nearest neighbours
         vec = np.percentile(
             np.abs(delta_x),
-            self.bandwidth / input_points_len * 100,
+            self.n_neighbors / input_points_len * 100,
             axis=1,
             interpolation='lower',
         ) + tol

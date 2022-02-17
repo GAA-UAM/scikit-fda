@@ -5,7 +5,6 @@ from GPy.kern import Kern
 from GPy.models import GPRegression
 from scipy.linalg import logm
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.model_selection import GridSearchCV
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _classifier_get_classes
@@ -18,8 +17,8 @@ class GaussianClassifier(
 ):
 
     def __init__(self, kernel: Kern, regularizer: float) -> None:
-        self.kernel = kernel
-        self.regularizer = regularizer
+        self._kernel_ = kernel
+        self._regularizer_ = regularizer
 
     def fit(self, X: FDataGrid, y: np.ndarray) -> GaussianClassifier:
         """Fit the model using X as training data and y as target values.
@@ -31,16 +30,13 @@ class GaussianClassifier(
         Returns:
             self
         """
-        self._classes, self._y_ind = _classifier_get_classes(y)
+        self._classes, self._y_ind = _classifier_get_classes(y)  # noqa:WPS414
 
         self._cov_kernels_, self._means = self._fit_kernels_and_means(X)
 
-        self.X = X
-        self.y = y
-
         self._priors = self._calculate_priors(y)
         self._log_priors = np.log(self._priors)  # Calculates prior logartithms
-        self._covariances = self._calculate_covariances(X, y)
+        self._covariances = self._calculate_covariances(X)
 
         # Calculates logarithmic covariance -> -1/2 * log|sum|
         self._log_cov = self._calculate_log_covariances()
@@ -58,10 +54,16 @@ class GaussianClassifier(
             for each data sample.
         """
         check_is_fitted(self)
-        return np.asarray([
-            self._calculate_log_likelihood_ratio(curve)
+        likelihoods = [
+            self._calculate_log_likelihood(curve)
             for curve in X.data_matrix
+        ]
+
+        predictions = np.asarray([
+            np.where(likelihood == max(likelihood))
+            for likelihood in likelihoods
         ])
+        return np.reshape(predictions, predictions.size)
 
     def _calculate_priors(self, y: np.ndarray) -> np.ndarray:
         """
@@ -118,7 +120,7 @@ class GaussianClassifier(
         """
         return np.asarray([
             -0.5 * np.trace(
-                logm(cov + self.regularizer * np.eye(cov.shape[0])),
+                logm(cov + self._regularizer_ * np.eye(cov.shape[0])),
             )
             for cov in self._covariances
         ])
@@ -148,41 +150,32 @@ class GaussianClassifier(
             class_n_centered = class_n - class_n.mean()
             data = class_n_centered.data_matrix[:, :, 0]
 
-            reg_n = GPRegression(grid, data.T, kernel=self.kernel)
+            reg_n = GPRegression(grid, data.T, kernel=self._kernel_)
             reg_n.optimize()
 
             kernels = kernels + [reg_n.kern]
             means = means + [class_n.gmean().data_matrix[0]]
         return np.asarray(kernels), np.asarray(means)
 
-    def _calculate_log_likelihood_ratio(self, curve: np.ndarray) -> np.ndarray:
+    def _calculate_log_likelihood(self, curve: np.ndarray) -> np.ndarray:
         """
-        Calculate the log likelihood quadratic discriminant analysis ratio.
+        Calculate the log likelihood quadratic discriminant analysis.
 
         Args:
-            curve: sample where we want to calculate the ratio.
+            curve: sample where we want to calculate the discriminant.
 
         Returns:
-            A ndarray with the ratios corresponding to the output classes.
+            A ndarray with the log likelihoods corresponding to the
+            output classes.
         """
         # Calculates difference wrt. the mean (x - un)
         data_mean = curve - self._means
-
-        """
-        ¿COMO SE REALIZA EL GRID SEARCH?
-        """
-        param_gr = {
-            'regularizer': [10, 1, 0.1, 0.01, 0.001, 0.0001],
-        }
-        cross_val = GridSearchCV(self, param_gr)
-        cross_val = cross_val.fit(self.X, self.y)
-        print(cross_val.best_score_)
 
         # Calculates mahalanobis distance (-1/2*(x - un).T*inv(sum)*(x - un))
         mahalanobis = []
         for j in range(0, self._classes.size):
             mh = -0.5 * data_mean[j].T @ np.linalg.solve(
-                self._covariances[j] + self.regularizer * np.eye(
+                self._covariances[j] + self._regularizer_ * np.eye(
                     self._covariances[j].shape[0],
                 ),
                 data_mean[j],
@@ -190,10 +183,6 @@ class GaussianClassifier(
             mahalanobis = mahalanobis + [mh[0][0]]
 
         # Calculates the log_likelihood
-        log_likelihood = self._log_cov + np.asarray(
+        return self._log_cov + np.asarray(
             mahalanobis,
         ) + self._log_priors
-        """
-        ¿COMO SE CALCULAN TODOS LOS RATIOS?
-        """
-        return log_likelihood[1] / log_likelihood[0]

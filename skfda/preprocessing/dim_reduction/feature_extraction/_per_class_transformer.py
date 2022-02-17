@@ -85,24 +85,24 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
         >>> neigh1 = neigh1.fit(X_train1, y_train1)
 
         Finally we can predict and check the score:
+
         >>> neigh1.predict(X_test1)
-            array([0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0,
-            1, 1, 1, 1, 1, 1, 1], dtype=int8)
+        array([0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
+            1, 1, 1], dtype=int8)
 
         >>> round(neigh1.score(X_test1, y_test1), 3)
-            0.958
-
-
+        0.958
 
         We can also use a transformer that returns a FData object
         when predicting.
         In our example we are going to use the Nadaraya Watson Smoother.
 
-        >>> from skfda.preprocessing.smoothing.kernel_smoothers import (
-        ...     NadarayaWatsonSmoother,
+        >>> from skfda.preprocessing.smoothing import KernelSmoother
+        >>> from skfda.misc.hat_matrix import (
+        ...     NadarayaWatsonHatMatrix,
         ... )
         >>> t2 = PerClassTransformer(
-        ...     NadarayaWatsonSmoother(),
+        ...     KernelSmoother(kernel_estimator=NadarayaWatsonHatMatrix()),
         ... )
         >>> x_transformed2 = t2.fit_transform(X, y)
 
@@ -120,13 +120,13 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
         ...         X_transformed_grid = X_transformed_grid.concatenate(
         ...                                 curve_grid,
         ...                              )
-
         >>> y = np.concatenate((y,y))
 
 
         ``X_transformed_grid`` contains a FDataGrid with all the transformed
         curves. Now we are able to use it to fit a KNN classifier.
         Again we split the data into train and test.
+
         >>> X_train2, X_test2, y_train2, y_test2 = train_test_split(
         ...     X_transformed_grid,
         ...     y,
@@ -137,16 +137,17 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
         This time we need a functional data classifier.
         We fit the classifier and predict.
+
         >>> from skfda.ml.classification import KNeighborsClassifier
         >>> neigh2 = KNeighborsClassifier()
         >>> neigh2 = neigh2.fit(X_train2, y_train2)
         >>> neigh2.predict(X_test2)
-            array([1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1,
-            0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0,
-            1, 1, 1, 0, 0], dtype=int8)
+        array([1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1,
+        0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0,
+        1, 1, 1, 0, 0], dtype=int8)
 
         >>> round(neigh2.score(X_test2, y_test2), 3)
-            0.957
+        0.957
 
     """
 

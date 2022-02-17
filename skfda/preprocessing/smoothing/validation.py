@@ -1,14 +1,19 @@
 """Defines methods for the validation of the smoothing."""
+from typing import Callable, Iterable, Optional, Tuple, Union
+
 import numpy as np
 import sklearn
 from sklearn.model_selection import GridSearchCV
 
-__author__ = "Miguel Carbajo Berrocal"
-__email__ = "miguel.carbajo@estudiante.uam.es"
+from skfda import FDataGrid
+from skfda.preprocessing.smoothing._linear import _LinearSmoother
 
 
-def _get_input_estimation_and_matrix(estimator, X):
-    """Returns the smoothed data evaluated at the input points & the matrix"""
+def _get_input_estimation_and_matrix(
+    estimator: _LinearSmoother,
+    X: FDataGrid,
+) -> Tuple[FDataGrid, np.ndarray]:
+    """Return the smoothed data evaluated at the input points & the matrix."""
     if estimator.output_points is not None:
         estimator = sklearn.base.clone(estimator)
         estimator.output_points = None
@@ -20,7 +25,7 @@ def _get_input_estimation_and_matrix(estimator, X):
     return y_est, hat_matrix
 
 
-class LinearSmootherLeaveOneOutScorer():
+class LinearSmootherLeaveOneOutScorer:
     r"""Leave-one-out cross validation scoring method for linear smoothers.
 
     It calculates the cross validation score for every sample in a FDataGrid
@@ -52,15 +57,24 @@ class LinearSmootherLeaveOneOutScorer():
 
     """
 
-    def __call__(self, estimator, X, y):
-
+    def __call__(
+        self,
+        estimator: _LinearSmoother,
+        X: FDataGrid,
+        y: FDataGrid,
+    ) -> float:
+        """Calculate Leave-One-Out score for linear smoothers."""
         y_est, hat_matrix = _get_input_estimation_and_matrix(estimator, X)
 
-        return -np.mean(((y.data_matrix[..., 0] - y_est.data_matrix[..., 0])
-                         / (1 - hat_matrix.diagonal())) ** 2)
+        return -np.mean(
+            (
+                (y.data_matrix[..., 0] - y_est.data_matrix[..., 0])
+                / (1 - hat_matrix.diagonal())
+            ) ** 2,
+        )
 
 
-class LinearSmootherGeneralizedCVScorer():
+class LinearSmootherGeneralizedCVScorer:
     r"""Generalized cross validation scoring method for linear smoothers.
 
     It calculates the general cross validation score for every sample in a
@@ -91,21 +105,32 @@ class LinearSmootherGeneralizedCVScorer():
 
     """
 
-    def __init__(self, penalization_function=None):
+    def __init__(
+        self,
+        penalization_function: Callable[[np.ndarray], float] = None,
+    ):
         self.penalization_function = penalization_function
 
-    def __call__(self, estimator, X, y):
+    def __call__(
+        self,
+        estimator: _LinearSmoother,
+        X: FDataGrid,
+        y: FDataGrid,
+    ) -> float:
+        """Calculate Leave-One-Out score with penalization function."""
         y_est, hat_matrix = _get_input_estimation_and_matrix(estimator, X)
 
         if self.penalization_function is None:
-            def penalization_function(hat_matrix):
-                return (1 - hat_matrix.diagonal().mean()) ** -2
-        else:
-            penalization_function = self.penalization_function
+            self.penalization_function = _default_penalization_function
 
-        return -(np.mean(((y.data_matrix[..., 0] - y_est.data_matrix[..., 0])
-                          / (1 - hat_matrix.diagonal())) ** 2)
-                 * penalization_function(hat_matrix))
+        return -(
+            np.mean(
+                (
+                    (y.data_matrix[..., 0] - y_est.data_matrix[..., 0])
+                    / (1 - hat_matrix.diagonal())
+                ) ** 2,
+            ) * self.penalization_function(hat_matrix)
+        )
 
 
 class SmoothingParameterSearch(GridSearchCV):
@@ -162,17 +187,21 @@ class SmoothingParameterSearch(GridSearchCV):
         smoothing by means of the k-nearest neighbours method.
 
         >>> import skfda
-        >>> from skfda.preprocessing.smoothing import kernel_smoothers
+        >>> from skfda.preprocessing.smoothing import KernelSmoother
+        >>> from skfda.misc.hat_matrix import KNeighborsHatMatrix
         >>> x = np.linspace(-2, 2, 5)
         >>> fd = skfda.FDataGrid(x ** 2, x)
         >>> grid = SmoothingParameterSearch(
-        ...            kernel_smoothers.KNeighborsSmoother(), [2,3])
+        ...         KernelSmoother(
+        ...             kernel_estimator=KNeighborsHatMatrix()),
+        ...         [2,3],
+        ...         param_name='kernel_estimator__n_neighbors')
         >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-11.67, -12.37])
         >>> round(grid.best_score_, 2)
         -11.67
-        >>> grid.best_params_['smoothing_parameter']
+        >>> grid.best_params_['kernel_estimator__n_neighbors']
         2
         >>> grid.best_estimator_.hat_matrix().round(2)
         array([[ 0.5 , 0.5 , 0.  , 0.  , 0.  ],
@@ -195,33 +224,48 @@ class SmoothingParameterSearch(GridSearchCV):
         general cross validation using other penalization functions.
 
         >>> grid = SmoothingParameterSearch(
-        ...         kernel_smoothers.KNeighborsSmoother(), [2,3],
+        ...         KernelSmoother(
+        ...             kernel_estimator=KNeighborsHatMatrix()),
+        ...         [2,3],
+        ...         param_name='kernel_estimator__n_neighbors',
         ...         scoring=LinearSmootherLeaveOneOutScorer())
         >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-4.2, -5.5])
         >>> grid = SmoothingParameterSearch(
-        ...         kernel_smoothers.KNeighborsSmoother(), [2,3],
+        ...         KernelSmoother(
+        ...             kernel_estimator=KNeighborsHatMatrix()),
+        ...         [2,3],
+        ...         param_name='kernel_estimator__n_neighbors',
         ...         scoring=LinearSmootherGeneralizedCVScorer(
         ...                         akaike_information_criterion))
         >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([ -9.35, -10.71])
         >>> grid = SmoothingParameterSearch(
-        ...         kernel_smoothers.KNeighborsSmoother(), [2,3],
+        ...         KernelSmoother(
+        ...             kernel_estimator=KNeighborsHatMatrix()),
+        ...         [2,3],
+        ...         param_name='kernel_estimator__n_neighbors',
         ...         scoring=LinearSmootherGeneralizedCVScorer(
         ...                         finite_prediction_error))
         >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([ -9.8, -11. ])
         >>> grid = SmoothingParameterSearch(
-        ...         kernel_smoothers.KNeighborsSmoother(), [2,3],
+        ...         KernelSmoother(
+        ...             kernel_estimator=KNeighborsHatMatrix()),
+        ...         [2,3],
+        ...         param_name='kernel_estimator__n_neighbors',
         ...         scoring=LinearSmootherGeneralizedCVScorer(shibata))
         >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-7.56, -9.17])
         >>> grid = SmoothingParameterSearch(
-        ...         kernel_smoothers.KNeighborsSmoother(), [2,3],
+        ...         KernelSmoother(
+        ...             kernel_estimator=KNeighborsHatMatrix()),
+        ...         [2,3],
+        ...         param_name='kernel_estimator__n_neighbors',
         ...         scoring=LinearSmootherGeneralizedCVScorer(rice))
         >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
@@ -232,9 +276,11 @@ class SmoothingParameterSearch(GridSearchCV):
 
         >>> output_points = np.linspace(-2, 2, 9)
         >>> grid = SmoothingParameterSearch(
-        ...            kernel_smoothers.KNeighborsSmoother(
-        ...                output_points=output_points
-        ...            ), [2,3])
+        ...         KernelSmoother(
+        ...             kernel_estimator=KNeighborsHatMatrix(),
+        ...             output_points=output_points),
+        ...         [2,3],
+        ...         param_name='kernel_estimator__n_neighbors')
         >>> _ = grid.fit(fd)
         >>> np.array(grid.cv_results_['mean_test_score']).round(2)
         array([-11.67, -12.37])
@@ -250,89 +296,128 @@ class SmoothingParameterSearch(GridSearchCV):
                 [ 2.5 ]]])
     """
 
-    def __init__(self, estimator, param_values, *, scoring=None, n_jobs=None,
-                 verbose=0, pre_dispatch='2*n_jobs',
-                 error_score=np.nan):
-        super().__init__(estimator=estimator, scoring=scoring,
-                         param_grid={'smoothing_parameter': param_values},
-                         n_jobs=n_jobs,
-                         refit=True, cv=[(slice(None), slice(None))],
-                         verbose=verbose, pre_dispatch=pre_dispatch,
-                         error_score=error_score, return_train_score=False)
+    def __init__(
+        self,
+        estimator: _LinearSmoother,
+        param_values: Iterable,
+        *,
+        param_name: str = 'smoothing_parameter',
+        scoring: Optional[Callable] = None,
+        n_jobs: Optional[int] = None,
+        verbose: int = 0,
+        pre_dispatch: Optional[Union[int, str]] = '2*n_jobs',
+        error_score: Union[str, float] = np.nan,
+    ):
+        super().__init__(
+            estimator=estimator,
+            scoring=scoring,
+            param_grid={param_name: param_values},
+            n_jobs=n_jobs,
+            refit=True,
+            cv=[(slice(None), slice(None))],
+            verbose=verbose,
+            pre_dispatch=pre_dispatch,
+            error_score=error_score,
+            return_train_score=False,
+        )
         self.param_values = param_values
 
-    def fit(self, X, y=None, groups=None, **fit_params):
+    def fit(  # noqa: D102
+        self,
+        X,
+        y=None,
+        groups=None,
+        **fit_params,
+    ):
         if y is None:
             y = X
 
         return super().fit(X, y=y, groups=groups, **fit_params)
 
 
-def akaike_information_criterion(hat_matrix):
-    r"""Akaike's information criterion for cross validation.
+def _default_penalization_function(hat_matrix: np.ndarray) -> float:
+    return (1 - hat_matrix.diagonal().mean()) ** -2
+
+
+def akaike_information_criterion(hat_matrix: np.ndarray) -> float:
+    r"""Akaike's information criterion for cross validation
+    :footcite:`febrero-bande+oviedo_2012_fda.usc`.
 
     .. math::
         \Xi(\nu,n) = \exp\left(2 * \frac{tr(\hat{H}^\nu)}{n}\right)
 
     Args:
-        hat_matrix (numpy.darray): Smoothing matrix whose penalization
+        hat_matrix: Smoothing matrix whose penalization
             score is desired.
 
     Returns:
-         float: penalization given by the Akaike's information criterion.
+        Penalization given by the Akaike's information criterion.
+
+    .. footbibliography::
 
     """
     return np.exp(2 * hat_matrix.diagonal().mean())
 
 
-def finite_prediction_error(hat_matrix):
-    r"""Finite prediction error for cross validation.
+def finite_prediction_error(hat_matrix: np.ndarray) -> float:
+    r"""Finite prediction error for cross validation
+    :footcite:`febrero-bande+oviedo_2012_fda.usc`.
 
     .. math::
         \Xi(\nu,n) = \frac{1 + \frac{tr(\hat{H}^\nu)}{n}}{1 -
         \frac{tr(\hat{H}^\nu)}{n}}
 
     Args:
-        hat_matrix (numpy.darray): Smoothing matrix whose penalization
+        hat_matrix: Smoothing matrix whose penalization
             score is desired.
 
     Returns:
-         float: penalization given by the finite prediction error.
+         Penalization given by the finite prediction error.
+
+    .. footbibliography::
 
     """
-    return ((1 + hat_matrix.diagonal().mean())
-            / (1 - hat_matrix.diagonal().mean()))
+    return (
+        (1 + hat_matrix.diagonal().mean())
+        / (1 - hat_matrix.diagonal().mean())
+    )
 
 
-def shibata(hat_matrix):
-    r"""Shibata's model selector for cross validation.
+def shibata(hat_matrix: np.ndarray) -> float:
+    r"""Shibata's model selector for cross validation
+    :footcite:`febrero-bande+oviedo_2012_fda.usc`.
 
     .. math::
         \Xi(\nu,n) = 1 + 2 * \frac{tr(\hat{H}^\nu)}{n}
 
     Args:
-        hat_matrix (numpy.darray): Smoothing matrix whose penalization
+        hat_matrix: Smoothing matrix whose penalization
             score is desired.
 
     Returns:
-         float: penalization given by the Shibata's model selector.
+        Penalization given by the Shibata's model selector.
+
+    .. footbibliography::
 
     """
     return 1 + 2 * hat_matrix.diagonal().mean()
 
 
-def rice(hat_matrix):
-    r"""Rice's bandwidth selector for cross validation.
+def rice(hat_matrix: np.ndarray) -> float:
+    r"""Rice's bandwidth selector for cross validation
+    :footcite:`febrero-bande+oviedo_2012_fda.usc`.
 
     .. math::
         \Xi(\nu,n) = \left(1 - 2 * \frac{tr(\hat{H}^\nu)}{n}\right)^{-1}
 
     Args:
-        hat_matrix (numpy.darray): Smoothing matrix whose penalization
+        hat_matrix: Smoothing matrix whose penalization
             score is desired.
 
     Returns:
-         float: penalization given by the Rice's bandwidth selector.
+         Penalization given by the Rice's bandwidth selector.
+
+    .. footbibliography::
 
     """
     return (1 - 2 * hat_matrix.diagonal().mean()) ** -1

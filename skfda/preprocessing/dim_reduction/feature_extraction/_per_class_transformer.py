@@ -95,14 +95,13 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
         We can also use a transformer that returns a FData object
         when predicting.
-        In our example we are going to use the Nadaraya Watson Smoother.
+        In our example we are going to use the Fisher Rao Elastic Registration.
 
-        >>> from skfda.preprocessing.smoothing import KernelSmoother
-        >>> from skfda.misc.hat_matrix import (
-        ...     NadarayaWatsonHatMatrix,
+        >>> from skfda.preprocessing.registration import (
+        ...     FisherRaoElasticRegistration,
         ... )
         >>> t2 = PerClassTransformer(
-        ...     KernelSmoother(kernel_estimator=NadarayaWatsonHatMatrix()),
+        ...     FisherRaoElasticRegistration(),
         ... )
         >>> x_transformed2 = t2.fit_transform(X, y)
 
@@ -142,12 +141,12 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
         >>> neigh2 = KNeighborsClassifier()
         >>> neigh2 = neigh2.fit(X_train2, y_train2)
         >>> neigh2.predict(X_test2)
-        array([1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1,
-        0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0,
-        1, 1, 1, 0, 0], dtype=int8)
+        array([1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0,
+        0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1,
+        1, 0, 0], dtype=int8)
 
         >>> round(neigh2.score(X_test2, y_test2), 3)
-        0.957
+        0.851
 
     """
 
@@ -205,7 +204,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
         if tags['stateless']:
             warnings.warn(
-                f"Parameter 'transformer' with type "
+                f"Parameter 'transformer' with type "  # noqa:WPS237
                 f"{type(self.transformer)} should use the data for "
                 f" fitting."
                 f"It should have the 'stateless' tag set to 'False'",

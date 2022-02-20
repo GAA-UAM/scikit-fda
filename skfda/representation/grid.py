@@ -44,6 +44,7 @@ from ._typing import (
     GridPoints,
     GridPointsLike,
     LabelTupleLike,
+    NDArrayBool,
     NDArrayFloat,
     NDArrayInt,
 )
@@ -404,7 +405,7 @@ class FDataGrid(FData):  # noqa: WPS214
         eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
         return self.interpolation(  # type: ignore
             self,
@@ -413,7 +414,8 @@ class FDataGrid(FData):  # noqa: WPS214
         )
 
     def derivative(self: T, *, order: int = 1) -> T:
-        """Differentiate a FDataGrid object.
+        """
+        Differentiate a FDataGrid object.
 
         It is calculated using central finite differences when possible. In
         the extremes, forward and backward finite differences with accuracy
@@ -650,7 +652,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self.interpolation == other.interpolation
 
-    def __eq__(self, other: object) -> np.ndarray:  # type: ignore[override]
+    def __eq__(self, other: object) -> NDArrayBool:  # type: ignore[override]
         """Elementwise equality of FDataGrid."""
         if not isinstance(other, type(self)) or self.dtype != other.dtype:
             if other is pandas.NA:
@@ -676,8 +678,8 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def _get_op_matrix(
         self,
-        other: Union[T, np.ndarray, float],
-    ) -> Union[None, float, np.ndarray]:
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> Union[None, float, NDArrayFloat, NDArrayInt]:
         if isinstance(other, numbers.Real):
             return float(other)
         elif isinstance(other, np.ndarray):
@@ -698,7 +700,10 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return None
 
-    def __add__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __add__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
@@ -706,11 +711,17 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=self.data_matrix + data_matrix)
 
-    def __radd__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __radd__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         return self.__add__(other)
 
-    def __sub__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __sub__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
@@ -718,7 +729,10 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=self.data_matrix - data_matrix)
 
-    def __rsub__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __rsub__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
@@ -726,7 +740,10 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self.copy(data_matrix=data_matrix - self.data_matrix)
 
-    def __mul__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __mul__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
@@ -734,11 +751,17 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=self.data_matrix * data_matrix)
 
-    def __rmul__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __rmul__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         return self.__mul__(other)
 
-    def __truediv__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __truediv__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
@@ -746,7 +769,10 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=self.data_matrix / data_matrix)
 
-    def __rtruediv__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __rtruediv__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
@@ -1261,7 +1287,10 @@ class FDataGrid(FData):  # noqa: WPS214
             '\n    ',
         )
 
-    def __getitem__(self: T, key: Union[int, slice, np.ndarray]) -> T:
+    def __getitem__(
+        self: T,
+        key: Union[int, slice, NDArrayInt, NDArrayBool],
+    ) -> T:
         """Return self[key]."""
         key = _check_array_key(self.data_matrix, key)
 
@@ -1363,7 +1392,7 @@ class FDataGrid(FData):  # noqa: WPS214
             p.nbytes for p in self.grid_points
         )
 
-    def isna(self) -> np.ndarray:
+    def isna(self) -> NDArrayBool:
         """
         Return a 1-D array indicating if each value is missing.
 

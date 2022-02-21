@@ -44,30 +44,29 @@ class MagnitudeShapePlot(BasePlot):
     For more information see :footcite:ts:`dai+genton_2018_visualization`.
 
     Args:
-        fdata (FDataGrid): Object containing the data.
-        multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
+        fdata: Object containing the data.
+        multivariate_depth:
             Method used to order the data. Defaults to :class:`projection
             depth <fda.depth_measures.multivariate.ProjectionDepth>`.
-        pointwise_weights (array_like, optional): an array containing the
+        pointwise_weights: an array containing the
             weights of each points of discretisation where values have
             been recorded.
-        alpha (float, optional): Denotes the quantile to choose the cutoff
-            value for detecting outliers Defaults to 0.993, which is used
-            in the classical boxplot.
-        assume_centered (boolean, optional): If True, the support of the
+        cutoff_factor: Factor that multiplies the cutoff value, in order to
+            consider more or less curves as outliers.
+        assume_centered: If True, the support of the
             robust location and the covariance estimates is computed, and a
             covariance estimate is recomputed from it, without centering
             the data. Useful to work with data whose mean is significantly
             equal to zero but is not exactly zero. If False, default value,
             the robust location and covariance are directly computed with
             the FastMCD algorithm without additional treatment.
-        support_fraction (float, 0 < support_fraction < 1, optional): The
+        support_fraction: The
             proportion of points to be included in the support of the
             raw MCD estimate.
             Default is None, which implies that the minimum value of
             support_fraction will be used within the algorithm:
             [n_sample + n_features + 1] / 2
-        random_state (int, RandomState instance or None, optional): If int,
+        random_state: If int,
             random_state is the seed used by the random number generator;
             If RandomState instance, random_state is the random number
             generator; If None, the random number generator is the

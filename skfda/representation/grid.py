@@ -413,16 +413,26 @@ class FDataGrid(FData):  # noqa: WPS214
             aligned=aligned,
         )
 
-    def derivative(self: T, *, order: int = 1) -> T:
+    def derivative(
+        self: T,
+        *,
+        order: int = 1,
+        method: Optional[Basis] = None,
+    ) -> T:
         """
         Differentiate a FDataGrid object.
 
-        It is calculated using central finite differences when possible. In
-        the extremes, forward and backward finite differences with accuracy
-        2 are used.
+        By default, it is calculated using central finite differences when
+        possible. In the extremes, forward and backward finite differences
+        with accuracy 2 are used.
 
         Args:
             order: Order of the derivative. Defaults to one.
+            method: Method to use to compute the derivative. If ``None``
+                (the default), finite differences are used. In a basis
+                object is passed the grid is converted to a basis
+                representation and the derivative is evaluated using that
+                representation.
 
         Returns:
             Derivative function.
@@ -461,13 +471,21 @@ class FDataGrid(FData):  # noqa: WPS214
         if order_list.ndim != 1 or len(order_list) != self.dim_domain:
             raise ValueError("The order for each partial should be specified.")
 
-        operator = findiff.FinDiff(*[
-            (1 + i, *z)
-            for i, z in enumerate(
-                zip(self.grid_points, order_list),
+        if method is None:
+            operator = findiff.FinDiff(*[
+                (1 + i, *z)
+                for i, z in enumerate(
+                    zip(self.grid_points, order_list),
+                )
+            ])
+            data_matrix = operator(self.data_matrix.astype(float))
+        else:
+            data_matrix = self.to_basis(method).derivative(
+                order=order,
+            )(
+                self.grid_points,
+                grid=True,
             )
-        ])
-        data_matrix = operator(self.data_matrix.astype(float))
 
         return self.copy(
             data_matrix=data_matrix,

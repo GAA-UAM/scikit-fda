@@ -144,7 +144,7 @@ class MagnitudeShapePlot(BasePlot):
                 ...),
             multivariate_depth=None,
             pointwise_weights=None,
-            alpha=0.993,
+            cutoff_factor=1,
             points=array([[ 1.66666667,  0.12777778],
                           [ 0.        ,  0.        ],
                           [-0.8       ,  0.17666667],
@@ -213,8 +213,8 @@ class MagnitudeShapePlot(BasePlot):
         return self.outlier_detector.pointwise_weights
 
     @property
-    def alpha(self) -> float:
-        return self.outlier_detector.alpha
+    def cutoff_factor(self) -> float:
+        return self.outlier_detector.cutoff_factor
 
     @property
     def points(self) -> NDArrayFloat:
@@ -328,7 +328,7 @@ class MagnitudeShapePlot(BasePlot):
             f"\nfdata={repr(self.fdata)},"
             f"\nmultivariate_depth={self.multivariate_depth},"
             f"\npointwise_weights={repr(self.pointwise_weights)},"
-            f"\nalpha={repr(self.alpha)},"
+            f"\ncutoff_factor={repr(self.cutoff_factor)},"
             f"\npoints={repr(self.points)},"
             f"\noutliers={repr(self.outliers)},"
             f"\ncolormap={self.colormap.name},"

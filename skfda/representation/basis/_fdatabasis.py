@@ -912,6 +912,11 @@ class FDataBasis(FData):  # noqa: WPS214
         """Right division for FDataBasis object."""
         return NotImplemented
 
+    def __neg__(self: T) -> T:
+        """Negation of FData object."""
+        return self._copy_op(other=None, coefficients=-self.coefficients)
+
+
     #####################################################################
     # Pandas ExtensionArray methods
     #####################################################################

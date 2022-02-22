@@ -1065,6 +1065,11 @@ class FData(  # noqa: WPS214
         """Right division for FData object."""
         pass
 
+    @abstractmethod
+    def __neg__(self: T) -> T:
+        """Negation of FData object."""
+        pass
+
     def __iter__(self: T) -> Iterator[T]:
         """Iterate over the samples."""
         yield from (self[i] for i in range(self.n_samples))

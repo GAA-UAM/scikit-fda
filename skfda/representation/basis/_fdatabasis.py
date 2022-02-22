@@ -914,7 +914,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
     def __neg__(self: T) -> T:
         """Negation of FData object."""
-        return self._copy_op(other=None, coefficients=-self.coefficients)
+        return self.copy(coefficients=-self.coefficients)
 
 
     #####################################################################

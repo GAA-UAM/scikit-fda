@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 
+from ..._utils import check_is_univariate
 from ...representation import FDataBasis, FDataGrid
+from ...representation._typing import NDArrayFloat
 
 
 def local_averages(
@@ -80,9 +82,15 @@ def local_averages(
 def _calculate_curves_occupation_(
     curve_y_coordinates: np.ndarray,
     curve_x_coordinates: np.ndarray,
-    interval: Tuple,
-) -> np.ndarray:
+    interval: Tuple[float, float],
+) -> NDArrayFloat:
     y1, y2 = interval
+
+    if y2 < y1:
+        raise ValueError(
+            "Interval limits (a,b) should satisfy a <= b. "
+            + str(interval) + " doesn't",
+        )
 
     # Reshape original curves so they have one dimension less
     new_shape = curve_y_coordinates.shape[1::-1]
@@ -91,34 +99,25 @@ def _calculate_curves_occupation_(
     )
 
     # Calculate interval sizes on the X axis
-    x_rotated = np.roll(curve_x_coordinates, 1)
-    intervals_x_axis = curve_x_coordinates - x_rotated
+    intervals_x_axis = curve_x_coordinates[1:] - curve_x_coordinates[:-1]
 
     # Calculate which points are inside the interval given (y1,y2) on Y axis
     greater_than_y1 = curve_y_coordinates >= y1
     less_than_y2 = curve_y_coordinates <= y2
     inside_interval_bools = greater_than_y1 & less_than_y2
 
-    # Correct booleans so they are not repeated
-    bools_interval = np.roll(
-        inside_interval_bools, 1, axis=1,
-    ) & inside_interval_bools
-
     # Calculate intervals on X axis where the points are inside Y axis interval
-    intervals_x_inside = np.multiply(bools_interval, intervals_x_axis)
-
-    # Delete first element of each interval as it will be a negative number
-    intervals_x_inside = np.delete(intervals_x_inside, 0, axis=1)
+    intervals_x_inside = inside_interval_bools * intervals_x_axis
 
     return np.sum(intervals_x_inside, axis=1)
 
 
 def occupation_measure(
     data: Union[FDataGrid, FDataBasis],
-    intervals: np.ndarray,
+    intervals: Sequence[Tuple[float, float]],
     *,
-    n_points: Union[int, None] = None,
-) -> np.ndarray:
+    n_points: Optional[int] = None,
+) -> NDArrayFloat:
     r"""
     Calculate the occupation measure of a grid.
 
@@ -171,8 +170,8 @@ def occupation_measure(
         ...     ),
         ...     decimals=2,
         ... )
-        array([[ 1.  ,  0.5 ,  6.27],
-               [ 0.98,  0.48,  0.  ]])
+        array([[ 1.  ,  0.5 ,  6.29],
+               [ 1.  ,  0.5 ,  0.  ]])
 
     """
     if isinstance(data, FDataBasis) and n_points is None:
@@ -181,13 +180,7 @@ def occupation_measure(
             + " as an argument for a FDataBasis. Instead None was passed.",
         )
 
-    for interval_check in intervals:
-        y1, y2 = interval_check
-        if y2 < y1:
-            raise ValueError(
-                "Interval limits (a,b) should satisfy a <= b. "
-                + str(interval_check) + " doesn't",
-            )
+    check_is_univariate(data)
 
     if n_points is None:
         function_x_coordinates = data.grid_points[0]
@@ -198,7 +191,7 @@ def occupation_measure(
             data.domain_range[0][1],
             (data.domain_range[0][1] - data.domain_range[0][0]) / n_points,
         )
-        function_y_coordinates = data(function_x_coordinates)
+        function_y_coordinates = data(function_x_coordinates[1:])
 
     return np.asarray([
         _calculate_curves_occupation_(  # noqa: WPS317

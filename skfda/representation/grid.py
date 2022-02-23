@@ -798,6 +798,10 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=data_matrix / self.data_matrix)
 
+    def __neg__(self: T) -> T:
+        """Negation of FData object."""
+        return self.copy(data_matrix=-self.data_matrix)
+
     def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
         """Join samples from a similar FDataGrid object.
 

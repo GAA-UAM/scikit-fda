@@ -2,16 +2,23 @@ import itertools
 from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
-import sklearn.utils
-
 import scipy.integrate
+import sklearn.utils
 from scipy.stats import multivariate_normal
 
 from .. import FDataGrid
-from .._utils import RandomStateLike, _cartesian_product, _to_grid_points
+from .._utils import (
+    RandomStateLike,
+    _cartesian_product,
+    _to_grid_points,
+    normalize_warping,
+)
 from ..misc import covariances
-from ..preprocessing.registration import normalize_warping
-from ..representation._typing import DomainRangeLike, GridPointsLike
+from ..representation._typing import (
+    DomainRangeLike,
+    GridPointsLike,
+    NDArrayFloat,
+)
 from ..representation.interpolation import SplineInterpolation
 
 MeanCallable = Callable[[np.ndarray], np.ndarray]
@@ -282,7 +289,7 @@ def make_multimodal_samples(
     std: float = 0.05,
     mode_std: float = 0.02,
     noise: float = 0,
-    modes_location: Optional[Sequence[float]] = None,
+    modes_location: Optional[Union[Sequence[float], NDArrayFloat]] = None,
     random_state: RandomStateLike = None,
 ) -> FDataGrid:
     r"""

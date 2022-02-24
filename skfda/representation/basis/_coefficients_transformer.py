@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-import numpy as np
+from typing import Optional
+
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 
+from .._typing import NDArrayFloat
 from ._fdatabasis import FDataBasis
 
 
@@ -29,8 +31,15 @@ class CoefficientsTransformer(
         >>> transformer.fit_transform(fd)
         array([[ 0.5,  1. ,  2. ,  0.5],
                [ 1.5,  1. ,  4. ,  0.5]])
+                >>> transformer = CoefficientsTransformer(n_components=2)
+        >>> transformer.fit_transform(fd)
+        array([[ 0.5,  1. ],
+               [ 1.5,  1. ]])
 
     """
+
+    def __init__(self, n_components: Optional[int] = None) -> None:
+        self.n_components = n_components
 
     def fit(  # noqa: D102
         self,
@@ -46,10 +55,10 @@ class CoefficientsTransformer(
         self,
         X: FDataBasis,
         y: None = None,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
         check_is_fitted(self)
 
         assert X.basis == self.basis_
 
-        return X.coefficients.copy()
+        return X.coefficients[:, :self.n_components].copy()

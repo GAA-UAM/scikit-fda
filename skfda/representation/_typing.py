@@ -1,8 +1,9 @@
 """Common types."""
 from typing import Any, Optional, Sequence, Tuple, TypeVar, Union
 
-import numpy as np
 from typing_extensions import Protocol
+
+import numpy as np
 
 try:
     from numpy.typing import ArrayLike

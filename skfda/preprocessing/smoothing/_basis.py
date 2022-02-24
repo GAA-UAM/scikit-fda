@@ -11,13 +11,11 @@ from typing import Optional
 import numpy as np
 from typing_extensions import Final
 
-import scipy.linalg
-
 from ..._utils import _cartesian_product, _to_grid_points
 from ...misc.lstsq import LstsqMethod, solve_regularized_weighted_lstsq
-from ...misc.regularization import TikhonovRegularization
+from ...misc.regularization import L2Regularization
 from ...representation import FData, FDataBasis, FDataGrid
-from ...representation._typing import GridPointsLike
+from ...representation._typing import GridPointsLike, NDArrayFloat
 from ...representation.basis import Basis
 from ._linear import _LinearSmoother
 
@@ -147,7 +145,7 @@ class BasisSmoother(_LinearSmoother):
         We can penalize approximations that are not smooth enough using some
         kind of regularization:
 
-        >>> from skfda.misc.regularization import TikhonovRegularization
+        >>> from skfda.misc.regularization import L2Regularization
         >>> from skfda.misc.operators import LinearDifferentialOperator
         >>>
         >>> fd = skfda.FDataGrid(data_matrix=x, grid_points=t)
@@ -155,7 +153,7 @@ class BasisSmoother(_LinearSmoother):
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...     basis,
         ...     method='cholesky',
-        ...     regularization=TikhonovRegularization(
+        ...     regularization=L2Regularization(
         ...         LinearDifferentialOperator([0.1, 0.2]),
         ...     ),
         ...     return_basis=True,
@@ -169,7 +167,7 @@ class BasisSmoother(_LinearSmoother):
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...     basis,
         ...     method='qr',
-        ...     regularization=TikhonovRegularization(
+        ...     regularization=L2Regularization(
         ...         LinearDifferentialOperator([0.1, 0.2]),
         ...     ),
         ...     return_basis=True,
@@ -183,7 +181,7 @@ class BasisSmoother(_LinearSmoother):
         >>> smoother = skfda.preprocessing.smoothing.BasisSmoother(
         ...     basis,
         ...     method='svd',
-        ...     regularization=TikhonovRegularization(
+        ...     regularization=L2Regularization(
         ...         LinearDifferentialOperator([0.1, 0.2]),
         ...     ),
         ...     return_basis=True,
@@ -210,8 +208,8 @@ class BasisSmoother(_LinearSmoother):
         basis: Basis,
         *,
         smoothing_parameter: float = 1.0,
-        weights: Optional[np.ndarray] = None,
-        regularization: Optional[TikhonovRegularization[FDataGrid]] = None,
+        weights: Optional[NDArrayFloat] = None,
+        regularization: Optional[L2Regularization[FDataGrid]] = None,
         output_points: Optional[GridPointsLike] = None,
         method: LstsqMethod = 'svd',
         return_basis: bool = False,
@@ -228,8 +226,8 @@ class BasisSmoother(_LinearSmoother):
         self,
         input_points: GridPointsLike,
         *,
-        data_matrix: Optional[np.ndarray] = None,
-    ) -> np.ndarray:
+        data_matrix: Optional[NDArrayFloat] = None,
+    ) -> NDArrayFloat:
         """Get the matrix that gives the coefficients."""
         from ...misc.regularization import compute_penalty_matrix
 
@@ -260,7 +258,7 @@ class BasisSmoother(_LinearSmoother):
         self,
         input_points: GridPointsLike,
         output_points: GridPointsLike,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         basis_values_output = self.basis.evaluate(
             _cartesian_product(
                 _to_grid_points(output_points),

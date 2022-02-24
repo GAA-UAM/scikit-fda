@@ -75,6 +75,7 @@ them to the :term:`functional data analysis` field.
 
 import skfda
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
 X, y = skfda.datasets.fetch_growth(return_X_y=True)
 
@@ -83,6 +84,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 classifier = skfda.ml.classification.NearestCentroid()
 classifier.fit(X_train, y_train)
 classifier.centroids_.plot()
+plt.show()
 
 ##############################################################################
 # Transformers
@@ -100,13 +102,14 @@ classifier.centroids_.plot()
 
 ##############################################################################
 # As an example consider the smoothing method
-# :class:`skfda.preprocessing.smoothing.NadarayaWatson`. Smoothing methods
-# attempt to remove noise from the data leveraging its continuous nature.
+# :class:`skfda.preprocessing.smoothing.NadarayaWatsonHatMatrix`. Smoothing
+# methods attempt to remove noise from the data leveraging its continuous
+# nature.
 # As these methods discard information of the original data they usually are
 # not reversible.
 
-import skfda.preprocessing.smoothing.kernel_smoothers as ks
-
+import skfda.preprocessing.smoothing as ks
+from skfda.misc.hat_matrix import NadarayaWatsonHatMatrix
 X, y = skfda.datasets.fetch_phoneme(return_X_y=True)
 
 # Keep the first 5 functions
@@ -114,10 +117,11 @@ X = X[:5]
 
 X.plot()
 
-smoother = ks.NadarayaWatsonSmoother()
+smoother = ks.KernelSmoother(kernel_estimator=NadarayaWatsonHatMatrix())
 X_smooth = smoother.fit_transform(X)
 
 X_smooth.plot()
+plt.show()
 
 ##############################################################################
 # Predictors (classifiers, regressors, clusterers...)
@@ -156,6 +160,7 @@ clusterer = skfda.ml.clustering.KMeans(n_clusters=3)
 y_pred = clusterer.fit_predict(X)
 
 X.plot(group=y_pred)
+plt.show()
 
 ##############################################################################
 # Metaestimators
@@ -196,6 +201,7 @@ X.plot(group=y_pred)
 # to classify the data.
 
 from skfda.preprocessing.dim_reduction import variable_selection as vs
+from skfda.preprocessing.registration import LeastSquaresShiftRegistration
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 
@@ -204,7 +210,7 @@ X, y = skfda.datasets.fetch_growth(return_X_y=True)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 pipeline = Pipeline([
-    ("registration", skfda.preprocessing.registration.ShiftRegistration()),
+    ("registration", LeastSquaresShiftRegistration()),
     ("dim_reduction", vs.RKHSVariableSelection(n_features_to_select=3)),
     ("classifier", SVC()),
 ])

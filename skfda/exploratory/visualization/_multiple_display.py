@@ -86,14 +86,13 @@ class MultipleDisplay:
             if d.n_samples is not None
         )
         self.sliders: List[Widget] = []
-        self.criteria: List[List[int]] = []
         self.selected_sample: Optional[int] = None
-        self._tag = self._create_annotation()
 
         if len(criteria) != 0 and not isinstance(criteria[0], Sequence):
             criteria = (criteria,)
 
         criteria = cast(Sequence[Sequence[float]], criteria)
+        self.criteria = criteria
 
         if not isinstance(sliders, Sequence):
             sliders = (sliders,)
@@ -206,70 +205,6 @@ class MultipleDisplay:
                 label=label,
             )
 
-    def _create_annotation(self) -> Annotation:
-        tag = Annotation(
-            "",
-            xy=(0, 0),
-            xytext=(20, 20),
-            textcoords="offset points",
-            bbox={
-                "boxstyle": "round",
-                "fc": "w",
-            },
-            arrowprops={
-                "arrowstyle": "->",
-            },
-        )
-
-        tag.get_bbox_patch().set_facecolor(color='khaki')
-        intensity = 0.8
-        tag.get_bbox_patch().set_alpha(intensity)
-
-        return tag
-
-    def _update_annotation(
-        self,
-        tag: Annotation,
-        *,
-        axes: Axes,
-        sample_number: int,
-        position: Tuple[float, float],
-    ) -> None:
-        """
-        Auxiliary method used to update the hovering annotations.
-
-        Method used to update the annotations that appear while
-        hovering a scattered point. The annotations indicate
-        the index and coordinates of the point hovered.
-        Args:
-            tag: Annotation to update.
-            axes: Axes were the annotation belongs.
-            sample_number: Number of the current sample.
-        """
-        xdata_graph, ydata_graph = position
-
-        tag.xy = (xdata_graph, ydata_graph)
-        text = f"{sample_number}: ({xdata_graph:.2f}, {ydata_graph:.2f})"
-        tag.set_text(text)
-
-        x_axis = axes.get_xlim()
-        y_axis = axes.get_ylim()
-
-        label_xpos = 20
-        label_ypos = 20
-        if (xdata_graph - x_axis[0]) > (x_axis[1] - xdata_graph):
-            label_xpos = -80
-
-        if (ydata_graph - y_axis[0]) > (y_axis[1] - ydata_graph):
-            label_ypos = -20
-
-        if tag.figure:
-            tag.remove()
-        tag.figure = None
-        axes.add_artist(tag)
-        tag.set_transform(axes.transData)
-        tag.set_position((label_xpos, label_ypos))
-
     def plot(self) -> Figure:
         """
         Plot Multiple Display method.
@@ -303,67 +238,12 @@ class MultipleDisplay:
             disp.plot()
             int_index = end_index
 
-        self.fig.canvas.mpl_connect('motion_notify_event', self.hover)
         self.fig.canvas.mpl_connect('pick_event', self.pick)
-
-        self._tag.set_visible(False)
 
         self.fig.suptitle("Multiple display")
         self.fig.tight_layout()
 
         return self.fig
-
-    def _sample_artist_from_event(
-        self,
-        event: LocationEvent,
-    ) -> Optional[Tuple[int, Artist]]:
-        """Get the number of sample and artist under a location event."""
-        for d in self.displays:
-            if d.artists is None:
-                continue
-
-            try:
-                i = d.axes_.index(event.inaxes)
-            except ValueError:
-                continue
-
-            for j, artist in enumerate(d.artists[:, i]):
-                if not isinstance(artist, PathCollection):
-                    return None
-
-                if artist.contains(event)[0]:
-                    return j, artist
-
-        return None
-
-    def hover(self, event: MouseEvent) -> None:
-        """
-        Activate the annotation when hovering a point.
-
-        Callback method that activates the annotation when hovering
-        a specific point in a graph. The annotation is a description
-        of the point containing its coordinates.
-        Args:
-            event: event object containing the artist of the point
-                hovered.
-
-        """
-        found_artist = self._sample_artist_from_event(event)
-
-        if event.inaxes is not None and found_artist is not None:
-            sample_number, artist = found_artist
-
-            self._update_annotation(
-                self._tag,
-                axes=event.inaxes,
-                sample_number=sample_number,
-                position=artist.get_offsets()[0],
-            )
-            self._tag.set_visible(True)
-            self.fig.canvas.draw_idle()
-        elif self._tag.get_visible():
-            self._tag.set_visible(False)
-            self.fig.canvas.draw_idle()
 
     def pick(self, event: Event) -> None:
         """
@@ -417,7 +297,7 @@ class MultipleDisplay:
             artist.set_alpha(1.0 if i == selected_sample else 0.1)
 
         for criterion, slider in zip(self.criteria, self.sliders):
-            val_widget = criterion.index(selected_sample)
+            val_widget = criterion[selected_sample]
             _set_val_noevents(slider, val_widget)
 
         self.selected_sample = selected_sample
@@ -449,57 +329,60 @@ class MultipleDisplay:
         """
         full_desc = "" if label is None else label
 
+        ordered_criterion_values, ordered_criterion_indexes = zip(
+            *sorted(zip(criterion, range(self.length_data))),
+        )
+
         widget = widget_class(
             ax=axes,
             label=full_desc,
-            valmin=0,
-            valmax=self.length_data - 1,
-            valinit=0,
-            valstep=1,
+            valmin=ordered_criterion_values[0],
+            valmax=ordered_criterion_values[-1],
+            valinit=ordered_criterion_values[0],
+            valstep=ordered_criterion_values,
+            valfmt="%.3g",
         )
 
         self.sliders.append(widget)
 
         axes.annotate(
-            '0',
+            f"{ordered_criterion_values[0]:.3g}",
             xy=(0, -0.5),
             xycoords='axes fraction',
             annotation_clip=False,
         )
 
         axes.annotate(
-            str(self.length_data - 1),
+            f"{ordered_criterion_values[-1]:.3g}",
             xy=(0.95, -0.5),
             xycoords='axes fraction',
             annotation_clip=False,
         )
 
-        criterion_sample_indexes = [
-            x for _, x in sorted(zip(criterion, range(self.length_data)))
-        ]
-
-        self.criteria.append(criterion_sample_indexes)
-
         on_changed_function = partial(
             self._value_updated,
-            criterion_sample_indexes=criterion_sample_indexes,
+            ordered_criterion_values=ordered_criterion_values,
+            ordered_criterion_indexes=ordered_criterion_indexes,
         )
 
         widget.on_changed(on_changed_function)
 
     def _value_updated(
         self,
-        value: int,
-        criterion_sample_indexes: Sequence[int],
+        value: float,
+        ordered_criterion_values: Sequence[float],
+        ordered_criterion_indexes: Sequence[int],
     ) -> None:
         """
         Update the graphs when a widget is clicked.
 
         Args:
             value: Current value of the widget.
-            criterion_sample_indexes: Sample numbers ordered using the
+            ordered_criterion_values: Ordered values of the criterion.
+            ordered_criterion_indexes: Sample numbers ordered using the
                 criterion.
 
         """
-        self.selected_sample = criterion_sample_indexes[value]
+        value_index = int(np.searchsorted(ordered_criterion_values, value))
+        self.selected_sample = ordered_criterion_indexes[value_index]
         self._select_sample(self.selected_sample)

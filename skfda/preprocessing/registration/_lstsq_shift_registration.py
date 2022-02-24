@@ -1,6 +1,7 @@
-"""Class to apply Shift Registration to functional data"""
+"""Shift registration of functional data by least squares."""
 from __future__ import annotations
 
+import warnings
 from typing import Callable, Optional, Tuple, TypeVar, Union
 
 import numpy as np
@@ -11,16 +12,19 @@ from ... import FData, FDataGrid
 from ..._utils import check_is_univariate
 from ...misc._math import inner_product
 from ...misc.metrics._lp_norms import l2_norm
-from ...representation._typing import ArrayLike, GridPointsLike
+from ...representation._typing import ArrayLike, GridPointsLike, NDArrayFloat
 from ...representation.extrapolation import ExtrapolationLike
-from .base import RegistrationTransformer
+from .base import InductiveRegistrationTransformer
 
+SelfType = TypeVar("SelfType", bound="LeastSquaresShiftRegistration[FData]")
 T = TypeVar("T", bound=FData)
 TemplateFunction = Callable[[FDataGrid], FDataGrid]
 
 
-class ShiftRegistration(RegistrationTransformer):
-    r"""Register a functional dataset using shift alignment.
+class LeastSquaresShiftRegistration(
+    InductiveRegistrationTransformer[T, T],
+):
+    r"""Register data using shift alignment by least squares criterion.
 
     Realizes the registration of a set of curves using a shift aligment
     :footcite:`ramsay+silverman_2005_functional_shift`.
@@ -92,7 +96,9 @@ class ShiftRegistration(RegistrationTransformer):
         the method.
 
     Examples:
-        >>> from skfda.preprocessing.registration import ShiftRegistration
+        >>> from skfda.preprocessing.registration import (
+        ...     LeastSquaresShiftRegistration,
+        ... )
         >>> from skfda.datasets import make_sinusoidal_process
         >>> from skfda.representation.basis import Fourier
 
@@ -101,7 +107,7 @@ class ShiftRegistration(RegistrationTransformer):
 
         >>> fd = make_sinusoidal_process(n_samples=10, error_std=0,
         ...                              random_state=1)
-        >>> reg = ShiftRegistration(extrapolation="periodic")
+        >>> reg = LeastSquaresShiftRegistration(extrapolation="periodic")
         >>> fd_registered = reg.fit_transform(fd)
         >>> fd_registered
         FDataGrid(...)
@@ -153,7 +159,7 @@ class ShiftRegistration(RegistrationTransformer):
         self,
         fd: FData,
         template: Union[Literal["mean"], FData, TemplateFunction],
-    ) -> Tuple[np.ndarray, FDataGrid]:
+    ) -> Tuple[NDArrayFloat, FDataGrid]:
         """Compute the shifts to perform the registration.
 
         Args:
@@ -249,51 +255,26 @@ class ShiftRegistration(RegistrationTransformer):
         return delta, template_iter
 
     def fit_transform(self, X: T, y: None = None) -> T:
-        """Fit the estimator and transform the data.
 
-        Args:
-            X: Functional dataset to be transformed.
-            y: not used, present for API consistency by convention.
-
-        Returns:
-            Functional data registered.
-
-        """
         deltas, template = self._compute_deltas(X, self.template)
 
         self.deltas_ = deltas
         self.template_ = template
 
-        return X.shift(
+        shifted = X.shift(
             self.deltas_,
             restrict_domain=self.restrict_domain,
             extrapolation=self.extrapolation,
             grid_points=self.grid_points,
         )
+        shifted.argument_names = None
+        return shifted
 
-    def fit(self, X: FData, y: None = None) -> ShiftRegistration:
-        """Fit the estimator.
-
-        Args:
-            X: Functional dataset used to construct the template for
-                the alignment.
-            y: not used, present for API consistency by convention.
-
-        Returns:
-            self
-
-        Raises:
-            AttributeError: If this method is call when restrict_domain=True.
-
-        """
-        if self.restrict_domain:
-            raise AttributeError(
-                "fit and predict are not available when "
-                "restrict_domain=True, fitting and "
-                "transformation should be done together. Use "
-                "an extrapolation method with "
-                "restrict_domain=False or fit_predict",
-            )
+    def fit(
+        self: SelfType,
+        X: FData,
+        y: None = None,
+    ) -> SelfType:
 
         # If the template is an FData, fit doesnt learn anything
         if isinstance(self.template, FData):
@@ -307,25 +288,10 @@ class ShiftRegistration(RegistrationTransformer):
         return self
 
     def transform(self, X: FData, y: None = None) -> FDataGrid:
-        """Register the data.
 
-        Transforms the data using the template previously learned during
-        fitting.
-
-        Args:
-            X: Functional dataset to be transformed.
-            y: not used, present for API consistency by convention.
-
-        Returns:
-            Functional data registered.
-
-        Raises:
-            AttributeError: If this method is call when restrict_domain=True.
-
-        """
         if self.restrict_domain:
             raise AttributeError(
-                "fit and predict are not available when "
+                "transform is not available when "
                 "restrict_domain=True, fitting and "
                 "transformation should be done together. Use "
                 "an extrapolation method with "
@@ -338,15 +304,18 @@ class ShiftRegistration(RegistrationTransformer):
         deltas, _ = self._compute_deltas(X, self.template_)
         self.deltas_ = deltas
 
-        return X.shift(
+        shifted = X.shift(
             deltas,
             restrict_domain=self.restrict_domain,
             extrapolation=self.extrapolation,
             grid_points=self.grid_points,
         )
+        shifted.argument_names = None
+        return shifted
 
     def inverse_transform(self, X: FData, y: None = None) -> FDataGrid:
-        """Applies the inverse transformation.
+        """
+        Apply the inverse transformation.
 
         Applies the opossite shift used in the last call to `transform`.
 
@@ -358,24 +327,25 @@ class ShiftRegistration(RegistrationTransformer):
             Functional data registered.
 
         Examples:
+            Creates a synthetic functional dataset.
 
-        Creates a synthetic functional dataset.
+            >>> from skfda.preprocessing.registration import (
+            ...     LeastSquaresShiftRegistration,
+            ... )
+            >>> from skfda.datasets import make_sinusoidal_process
+            >>> fd = make_sinusoidal_process(error_std=0, random_state=1)
+            >>> fd.extrapolation = 'periodic'
 
-        >>> from skfda.preprocessing.registration import ShiftRegistration
-        >>> from skfda.datasets import make_sinusoidal_process
-        >>> fd = make_sinusoidal_process(error_std=0, random_state=1)
-        >>> fd.extrapolation = 'periodic'
+            Dataset registration and centering.
 
-        Dataset registration and centering.
+            >>> reg = LeastSquaresShiftRegistration()
+            >>> fd_registered = reg.fit_transform(fd)
+            >>> fd_centered = fd_registered - fd_registered.mean()
 
-        >>> reg = ShiftRegistration()
-        >>> fd_registered = reg.fit_transform(fd)
-        >>> fd_centered = fd_registered - fd_registered.mean()
+            Reverse the translation applied during the registration.
 
-        Reverse the translation applied during the registration.
-
-        >>> reg.inverse_transform(fd_centered)
-        FDataGrid(...)
+            >>> reg.inverse_transform(fd_centered)
+            FDataGrid(...)
 
         """
         deltas = getattr(self, "deltas_", None)
@@ -396,4 +366,35 @@ class ShiftRegistration(RegistrationTransformer):
             restrict_domain=self.restrict_domain,
             extrapolation=self.extrapolation,
             grid_points=self.grid_points,
+        )
+
+
+class ShiftRegistration(LeastSquaresShiftRegistration[T]):
+    """Deprecated name for LeastSquaresShiftRegistration."""
+
+    def __init__(
+        self,
+        max_iter: int = 5,
+        tol: float = 1e-2,
+        template: Union[Literal["mean"], FData, TemplateFunction] = "mean",
+        extrapolation: Optional[ExtrapolationLike] = None,
+        step_size: float = 1,
+        restrict_domain: bool = False,
+        initial: Union[Literal["zeros"], ArrayLike] = "zeros",
+        grid_points: Optional[GridPointsLike] = None,
+    ) -> None:
+        warnings.warn(
+            "ShiftRegistration has been renamed. "
+            "Use LeastSquaresShiftRegistration instead.",
+            DeprecationWarning,
+        )
+        super().__init__(
+            max_iter=max_iter,
+            tol=tol,
+            template=template,
+            extrapolation=extrapolation,
+            step_size=step_size,
+            restrict_domain=restrict_domain,
+            initial=initial,
+            grid_points=grid_points,
         )

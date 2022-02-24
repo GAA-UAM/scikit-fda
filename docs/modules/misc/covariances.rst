@@ -14,4 +14,5 @@ processes. These functions can be used as covariances in
    skfda.misc.covariances.Gaussian
    skfda.misc.covariances.Linear
    skfda.misc.covariances.Polynomial
+   skfda.misc.covariances.Matern
    skfda.misc.covariances.WhiteNoise

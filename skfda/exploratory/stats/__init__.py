@@ -1,3 +1,5 @@
+from ._fisher_rao import _fisher_rao_warping_mean, fisher_rao_karcher_mean
+from ._functional_transformers import local_averages
 from ._stats import (
     cov,
     depth_based_median,

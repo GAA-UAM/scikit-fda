@@ -1,53 +1,22 @@
 """Maxima Hunting dimensionality reduction and related methods."""
 from __future__ import annotations
 
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 import numpy as np
+import scipy.signal
 import sklearn.base
 import sklearn.utils
+from dcor import u_distance_correlation_sqr
 
-import scipy.signal
-from dcor import rowwise, u_distance_correlation_sqr
-
+from ...._utils import _compute_dependence, _DependenceMeasure
 from ....representation import FDataGrid
+from ....representation._typing import NDArrayFloat, NDArrayInt
 
-_DependenceMeasure = Callable[[np.ndarray, np.ndarray], np.ndarray]
-_LocalMaximaSelector = Callable[[np.ndarray], np.ndarray]
-
-
-def _compute_dependence(
-    X: np.ndarray,
-    y: np.ndarray,
-    *,
-    dependence_measure: _DependenceMeasure,
-) -> np.ndarray:
-    """
-    Compute dependence between points and target.
-
-    Computes the dependence of each point in each trajectory in X with the
-    corresponding class label in Y.
-
-    """
-    # Move n_samples to the end
-    # The shape is now input_shape + n_samples + n_output
-    X = np.moveaxis(X, 0, -2)
-
-    input_shape = X.shape[:-2]
-
-    # Join input in a list for rowwise
-    X = X.reshape(-1, X.shape[-2], X.shape[-1])
-
-    if y.ndim == 1:
-        y = np.atleast_2d(y).T
-    Y = np.array([y] * len(X))
-
-    dependence_results = rowwise(dependence_measure, X, Y)
-
-    return dependence_results.reshape(input_shape)
+_LocalMaximaSelector = Callable[[FDataGrid], NDArrayInt]
 
 
-def select_local_maxima(X: np.ndarray, *, order: int = 1) -> np.ndarray:
+def select_local_maxima(X: FDataGrid, *, order: int = 1) -> NDArrayInt:
     r"""
     Compute local maxima of an array.
 
@@ -65,11 +34,12 @@ def select_local_maxima(X: np.ndarray, *, order: int = 1) -> np.ndarray:
         Indexes of the local maxima.
 
     Examples:
+        >>> from skfda import FDataGrid
         >>> from skfda.preprocessing.dim_reduction.variable_selection.\
         ...     maxima_hunting import select_local_maxima
         >>> import numpy as np
 
-        >>> x = np.array([2, 1, 1, 1, 2, 3, 3, 3, 2, 3, 4, 3, 2])
+        >>> x = FDataGrid(np.array([2, 1, 1, 1, 2, 3, 3, 3, 2, 3, 4, 3, 2]))
         >>> select_local_maxima(x).astype(np.int_)
         array([ 0,  5,  7, 10])
 
@@ -77,22 +47,24 @@ def select_local_maxima(X: np.ndarray, *, order: int = 1) -> np.ndarray:
         if a point is still a maxima, effectively eliminating small local
         maxima.
 
-        >>> x = np.array([2, 1, 1, 1, 2, 3, 3, 3, 2, 3, 4, 3, 2])
+        >>> x = FDataGrid(np.array([2, 1, 1, 1, 2, 3, 3, 3, 2, 3, 4, 3, 2]))
         >>> select_local_maxima(x, order=3).astype(np.int_)
         array([ 0,  5, 10])
 
     """
+    X_array = X.data_matrix[0, ..., 0]
+
     indexes = scipy.signal.argrelextrema(
-        X,
+        X_array,
         comparator=np.greater_equal,
         order=order,
     )[0]
 
     # Discard flat
-    maxima = X[indexes]
+    maxima = X_array[indexes]
 
-    left_points = np.take(X, indexes - 1, mode='clip')
-    right_points = np.take(X, indexes + 1, mode='clip')
+    left_points = np.take(X_array, indexes - 1, mode='clip')
+    right_points = np.take(X_array, indexes + 1, mode='clip')
 
     is_not_flat = (maxima > left_points) | (maxima > right_points)
 
@@ -194,7 +166,11 @@ class MaximaHunting(
         self.dependence_measure = dependence_measure
         self.local_maxima_selector = local_maxima_selector
 
-    def fit(self, X: FDataGrid, y: np.ndarray) -> MaximaHunting:  # noqa: D102
+    def fit(  # noqa: D102
+        self,
+        X: FDataGrid,
+        y: Union[NDArrayInt, NDArrayFloat],
+    ) -> MaximaHunting:
 
         self.features_shape_ = X.data_matrix.shape[1:]
         self.dependence_ = _compute_dependence(
@@ -203,14 +179,19 @@ class MaximaHunting(
             dependence_measure=self.dependence_measure,
         )
 
-        self.indexes_ = self.local_maxima_selector(self.dependence_)
+        self.indexes_ = self.local_maxima_selector(
+            FDataGrid(
+                self.dependence_,
+                grid_points=X.grid_points,
+            ),
+        )
 
         sorting_indexes = np.argsort(self.dependence_[self.indexes_])[::-1]
         self.sorted_indexes_ = self.indexes_[sorting_indexes]
 
         return self
 
-    def get_support(self, indices: bool = False) -> np.ndarray:  # noqa: D102
+    def get_support(self, indices: bool = False) -> NDArrayInt:  # noqa: D102
         if indices:
             return self.indexes_
 
@@ -221,8 +202,8 @@ class MaximaHunting(
     def transform(  # noqa: D102
         self,
         X: FDataGrid,
-        y: Optional[np.ndarray] = None,
-    ) -> np.ndarray:
+        y: Optional[Union[NDArrayInt, NDArrayFloat]] = None,
+    ) -> NDArrayFloat:
 
         sklearn.utils.validation.check_is_fitted(self)
 

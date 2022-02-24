@@ -10,23 +10,20 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
 from ...misc.lstsq import solve_regularized_weighted_lstsq
-from ...misc.regularization import (
-    TikhonovRegularization,
-    compute_penalty_matrix,
-)
+from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData
 from ...representation.basis import Basis, FDataBasis
 from ._coefficients import CoefficientInfo, coefficient_info_from_covariate
 
 RegularizationType = Union[
-    TikhonovRegularization[Any],
-    Sequence[Optional[TikhonovRegularization[Any]]],
+    L2Regularization[Any],
+    Sequence[Optional[L2Regularization[Any]]],
     None,
 ]
 
 RegularizationIterableType = Union[
-    TikhonovRegularization[Any],
-    Iterable[Optional[TikhonovRegularization[Any]]],
+    L2Regularization[Any],
+    Iterable[Optional[L2Regularization[Any]]],
     None,
 ]
 

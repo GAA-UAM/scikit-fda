@@ -5,15 +5,14 @@ from __future__ import annotations
 from typing import Callable, Optional, TypeVar, Union
 
 import numpy as np
+import scipy.integrate
+from scipy.linalg import solve_triangular
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
-from scipy.linalg import solve_triangular
-
-from ....misc.regularization import (
-    TikhonovRegularization,
-    compute_penalty_matrix,
-)
+from ....misc import inner_product_matrix
+from ....misc.metrics import l2_norm
+from ....misc.regularization import L2Regularization, compute_penalty_matrix
 from ....representation import FData
 from ....representation._typing import ArrayLike
 from ....representation.basis import Basis, FDataBasis
@@ -59,6 +58,8 @@ class FPCA(
             each of the selected components.
         explained_variance_ratio\_ (array_like): this contains the percentage
             of variance explained by each principal component.
+        singular_values\_: The singular values corresponding to each of the
+            selected components. 
         mean\_ (FData): mean of the train data.
 
 
@@ -96,7 +97,7 @@ class FPCA(
         self,
         n_components: int = 3,
         centering: bool = True,
-        regularization: Optional[TikhonovRegularization[FData]] = None,
+        regularization: Optional[L2Regularization[FData]] = None,
         weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
     ) -> None:
@@ -151,6 +152,8 @@ class FPCA(
             else X.basis.n_basis
         )
         n_samples = X.n_samples
+        # necessary in inverse_transform
+        self.n_samples_ = X.n_samples
 
         # check that the number of components is smaller than the sample size
         if self.n_components > X.n_samples:
@@ -220,7 +223,7 @@ class FPCA(
 
         # the final matrix, C(L-1Jt)t for svd or (L-1Jt)-1CtC(L-1Jt)t for PCA
         final_matrix = (
-            X.coefficients @ np.transpose(l_inv_j_t) / np.sqrt(n_samples)
+            X.coefficients @ np.transpose(l_inv_j_t)
         )
 
         # initialize the pca module provided by scikit-learn
@@ -237,6 +240,7 @@ class FPCA(
 
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
         self.explained_variance_ = pca.explained_variance_
+        self.singular_values_ = pca.singular_values_
         self.components_ = X.copy(
             basis=components_basis,
             coefficients=component_coefficients.T,
@@ -326,6 +330,9 @@ class FPCA(
         # get the number of samples and the number of points of descretization
         n_samples, n_points_discretization = fd_data.shape
 
+        # necessary for inverse_transform
+        self.n_samples_ = n_samples
+
         # if centering is True then subtract the mean function to each function
         # in FDataBasis
         X = self._center_if_necessary(X)
@@ -336,9 +343,8 @@ class FPCA(
             # in trapezoidal rule, suppose \deltax_k = x_k - x_{k-1}, the
             # weight vector is as follows: [\deltax_1/2, \deltax_1/2 +
             # \deltax_2/2, \deltax_2/2 + \deltax_3/2, ... , \deltax_n/2]
-            differences = np.diff(X.grid_points[0])
-            differences = np.concatenate(((0,), differences, (0,)))
-            self.weights = (differences[:-1] + differences[1:]) / 2
+            identity = np.eye(len(X.grid_points[0]))
+            self.weights = scipy.integrate.simps(identity, X.grid_points[0])
         elif callable(self.weights):
             self.weights = self.weights(X.grid_points[0])
             # if its a FDataGrid then we need to reduce the dimension to 1-D
@@ -369,7 +375,7 @@ class FPCA(
         ).T
 
         # see docstring for more information
-        final_matrix = fd_data @ np.sqrt(weights_matrix) / np.sqrt(n_samples)
+        final_matrix = fd_data @ np.sqrt(weights_matrix)
 
         pca = PCA(n_components=self.n_components)
         pca.fit(final_matrix)
@@ -382,8 +388,10 @@ class FPCA(
             ),
             sample_names=(None,) * self.n_components,
         )
+
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
         self.explained_variance_ = pca.explained_variance_
+        self.singular_values_ = pca.singular_values_
 
         return self
 
@@ -408,6 +416,7 @@ class FPCA(
 
         return (
             X.data_matrix.reshape(X.data_matrix.shape[:-1])
+            * self.weights
             @ np.transpose(
                 self.components_.data_matrix.reshape(
                     self.components_.data_matrix.shape[:-1],
@@ -480,3 +489,61 @@ class FPCA(
 
         """
         return self.fit(X, y).transform(X, y)
+
+    def inverse_transform(
+        self,
+        pc_scores: np.ndarray,
+    ) -> FData:
+        """
+        Compute the recovery from the fitted principal components scores.
+
+        In other words,
+        it maps ``pc_scores``, from the fitted functional PCs' space,
+        back to the input functional space.
+        ``pc_scores`` might be an array returned by ``transform`` method.
+
+        Args:
+            pc_scores: ndarray (n_samples, n_components).
+
+        Returns:
+            A FData object.
+
+        """
+        # check the instance is fitted.
+
+        # input format check:
+        if isinstance(pc_scores, np.ndarray):
+            if pc_scores.ndim == 1:
+                pc_scores = pc_scores[np.newaxis, :]
+
+            if pc_scores.shape[1] != self.n_components:
+                raise AttributeError(
+                    "pc_scores must be a numpy array "
+                    "with n_samples rows and n_components columns.",
+                )
+        else:
+            raise AttributeError("pc_scores is not a numpy array.")
+
+        # inverse_transform is slightly different whether
+        # .fit was applied to FDataGrid or FDataBasis object
+        # Does not work (boundary problem in x_hat and bias reconstruction)
+        if isinstance(self.components_, FDataGrid):
+
+            additional_args = {
+                "data_matrix": np.einsum(
+                    'nc,c...->n...',
+                    pc_scores,
+                    self.components_.data_matrix,
+                ),
+            }
+
+        elif isinstance(self.components_, FDataBasis):
+
+            additional_args = {
+                "coefficients": pc_scores @ self.components_.coefficients,
+            }
+
+        return self.mean_.copy(
+            **additional_args,
+            sample_names=(None,) * len(pc_scores),
+        ) + self.mean_

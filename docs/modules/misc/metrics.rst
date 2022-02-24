@@ -34,6 +34,18 @@ value of ``p`` must be explicitly passed in each call.
 
    skfda.misc.metrics.lp_norm
    skfda.misc.metrics.lp_distance
+   
+Angular distance
+----------------
+
+The angular distance (using the normalized "angle" between functions given
+by the inner product) is also available, and useful in some contexts.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.misc.metrics.angular_distance
+	
 
 Elastic distances
 -----------------
@@ -45,9 +57,8 @@ analysis and registration of functional data.
    :toctree: autosummary
 
     skfda.misc.metrics.fisher_rao_distance
-    skfda.misc.metrics.amplitude_distance
-    skfda.misc.metrics.phase_distance
-    skfda.misc.metrics.warping_distance
+    skfda.misc.metrics.fisher_rao_amplitude_distance
+    skfda.misc.metrics.fisher_rao_phase_distance
 
 
 Metric induced by a norm
@@ -75,3 +86,15 @@ of objets. The following class can compute that efficiently:
    :toctree: autosummary
 
    skfda.misc.metrics.PairwiseMetric
+ 
+
+Transformation metric
+---------------------
+
+Some metrics, such as those based in derivatives, can be expressed as a
+transformation followed by another metric:
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.misc.metrics.TransformationMetric

@@ -44,6 +44,7 @@ from ._typing import (
     GridPoints,
     GridPointsLike,
     LabelTupleLike,
+    NDArrayBool,
     NDArrayFloat,
     NDArrayInt,
 )
@@ -404,7 +405,7 @@ class FDataGrid(FData):  # noqa: WPS214
         eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
         return self.interpolation(  # type: ignore
             self,
@@ -412,15 +413,26 @@ class FDataGrid(FData):  # noqa: WPS214
             aligned=aligned,
         )
 
-    def derivative(self: T, *, order: int = 1) -> T:
-        """Differentiate a FDataGrid object.
+    def derivative(
+        self: T,
+        *,
+        order: int = 1,
+        method: Optional[Basis] = None,
+    ) -> T:
+        """
+        Differentiate a FDataGrid object.
 
-        It is calculated using central finite differences when possible. In
-        the extremes, forward and backward finite differences with accuracy
-        2 are used.
+        By default, it is calculated using central finite differences when
+        possible. In the extremes, forward and backward finite differences
+        with accuracy 2 are used.
 
         Args:
             order: Order of the derivative. Defaults to one.
+            method: Method to use to compute the derivative. If ``None``
+                (the default), finite differences are used. In a basis
+                object is passed the grid is converted to a basis
+                representation and the derivative is evaluated using that
+                representation.
 
         Returns:
             Derivative function.
@@ -459,13 +471,21 @@ class FDataGrid(FData):  # noqa: WPS214
         if order_list.ndim != 1 or len(order_list) != self.dim_domain:
             raise ValueError("The order for each partial should be specified.")
 
-        operator = findiff.FinDiff(*[
-            (1 + i, *z)
-            for i, z in enumerate(
-                zip(self.grid_points, order_list),
+        if method is None:
+            operator = findiff.FinDiff(*[
+                (1 + i, *z)
+                for i, z in enumerate(
+                    zip(self.grid_points, order_list),
+                )
+            ])
+            data_matrix = operator(self.data_matrix.astype(float))
+        else:
+            data_matrix = self.to_basis(method).derivative(
+                order=order,
+            )(
+                self.grid_points,
+                grid=True,
             )
-        ])
-        data_matrix = operator(self.data_matrix.astype(float))
 
         return self.copy(
             data_matrix=data_matrix,
@@ -650,7 +670,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self.interpolation == other.interpolation
 
-    def __eq__(self, other: object) -> np.ndarray:  # type: ignore[override]
+    def __eq__(self, other: object) -> NDArrayBool:  # type: ignore[override]
         """Elementwise equality of FDataGrid."""
         if not isinstance(other, type(self)) or self.dtype != other.dtype:
             if other is pandas.NA:
@@ -676,8 +696,8 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def _get_op_matrix(
         self,
-        other: Union[T, np.ndarray, float],
-    ) -> Union[None, float, np.ndarray]:
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> Union[None, float, NDArrayFloat, NDArrayInt]:
         if isinstance(other, numbers.Real):
             return float(other)
         elif isinstance(other, np.ndarray):
@@ -698,7 +718,10 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return None
 
-    def __add__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __add__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
@@ -706,11 +729,17 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=self.data_matrix + data_matrix)
 
-    def __radd__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __radd__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         return self.__add__(other)
 
-    def __sub__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __sub__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
@@ -718,7 +747,10 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=self.data_matrix - data_matrix)
 
-    def __rsub__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __rsub__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
@@ -726,7 +758,10 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self.copy(data_matrix=data_matrix - self.data_matrix)
 
-    def __mul__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __mul__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
@@ -734,11 +769,17 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=self.data_matrix * data_matrix)
 
-    def __rmul__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __rmul__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         return self.__mul__(other)
 
-    def __truediv__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __truediv__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
@@ -746,13 +787,20 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self._copy_op(other, data_matrix=self.data_matrix / data_matrix)
 
-    def __rtruediv__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __rtruediv__(
+        self: T,
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
+    ) -> T:
 
         data_matrix = self._get_op_matrix(other)
         if data_matrix is None:
             return NotImplemented
 
         return self._copy_op(other, data_matrix=data_matrix / self.data_matrix)
+
+    def __neg__(self: T) -> T:
+        """Negation of FData object."""
+        return self.copy(data_matrix=-self.data_matrix)
 
     def concatenate(self: T, *others: T, as_coordinates: bool = False) -> T:
         """Join samples from a similar FDataGrid object.
@@ -1261,7 +1309,10 @@ class FDataGrid(FData):  # noqa: WPS214
             '\n    ',
         )
 
-    def __getitem__(self: T, key: Union[int, slice, np.ndarray]) -> T:
+    def __getitem__(
+        self: T,
+        key: Union[int, slice, NDArrayInt, NDArrayBool],
+    ) -> T:
         """Return self[key]."""
         key = _check_array_key(self.data_matrix, key)
 
@@ -1363,7 +1414,7 @@ class FDataGrid(FData):  # noqa: WPS214
             p.nbytes for p in self.grid_points
         )
 
-    def isna(self) -> np.ndarray:
+    def isna(self) -> NDArrayBool:
         """
         Return a 1-D array indicating if each value is missing.
 

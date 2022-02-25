@@ -28,6 +28,7 @@ from .._typing import (
     DomainRange,
     GridPointsLike,
     LabelTupleLike,
+    NDArrayBool,
     NDArrayFloat,
     NDArrayInt,
 )
@@ -123,7 +124,7 @@ class FDataBasis(FData):  # noqa: WPS214
     @classmethod
     def from_data(
         cls,
-        data_matrix: np.ndarray,
+        data_matrix: Union[NDArrayFloat, NDArrayInt],
         *,
         basis: Basis,
         grid_points: Optional[GridPointsLike] = None,
@@ -262,7 +263,7 @@ class FDataBasis(FData):  # noqa: WPS214
         eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
         if aligned:
 
@@ -442,28 +443,7 @@ class FDataBasis(FData):  # noqa: WPS214
             sample_names=(None,),
         )
 
-    def gmean(self: T, eval_points: Optional[np.ndarray] = None) -> T:
-        """Compute the geometric mean of the functional data object.
-
-        A numerical approach its used. The object its transformed into its
-        discrete representation and then the geometric mean is computed and
-        then the object is taken back to the basis representation.
-
-        Args:
-            eval_points: Set of points where the
-                functions are evaluated to obtain the discrete
-                representation of the object. If none are passed it calls
-                numpy.linspace with bounds equal to the ones defined in
-                self.domain_range and the number of points the maximum
-                between 501 and 10 times the number of basis.
-
-        Returns:
-            Geometric mean of the original object.
-
-        """
-        return self.to_grid(eval_points).gmean().to_basis(self.basis)
-
-    def var(self: T, eval_points: Optional[np.ndarray] = None) -> T:
+    def var(self: T, eval_points: Optional[NDArrayFloat] = None) -> T:
         """Compute the variance of the functional data object.
 
         A numerical approach its used. The object its transformed into its
@@ -484,7 +464,7 @@ class FDataBasis(FData):  # noqa: WPS214
         """
         return self.to_grid(eval_points).var().to_basis(self.basis)
 
-    def cov(self, eval_points: Optional[np.ndarray] = None) -> FData:
+    def cov(self, eval_points: Optional[NDArrayFloat] = None) -> FData:
         """Compute the covariance of the functional data object.
 
         A numerical approach its used. The object its transformed into its
@@ -564,7 +544,7 @@ class FDataBasis(FData):  # noqa: WPS214
     def to_basis(
         self,
         basis: Optional[Basis] = None,
-        eval_points: Optional[np.ndarray] = None,
+        eval_points: Optional[NDArrayFloat] = None,
         **kwargs: Any,
     ) -> FDataBasis:
         """
@@ -592,7 +572,7 @@ class FDataBasis(FData):  # noqa: WPS214
         *,
         deep: bool = False,  # For Pandas compatibility
         basis: Optional[Basis] = None,
-        coefficients: Optional[np.ndarray] = None,
+        coefficients: Optional[NDArrayFloat] = None,
         dataset_name: Optional[str] = None,
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
@@ -651,7 +631,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
     def _array_to_R(  # noqa: N802
         self,
-        coefficients: np.ndarray,
+        coefficients: NDArrayFloat,
         transpose: bool = False,
     ) -> str:
         if len(coefficients.shape) == 1:
@@ -707,7 +687,7 @@ class FDataBasis(FData):  # noqa: WPS214
             and np.array_equal(self.coefficients, other.coefficients)
         )
 
-    def __eq__(self, other: object) -> np.ndarray:  # type: ignore[override]
+    def __eq__(self, other: object) -> NDArrayBool:  # type: ignore[override]
         """Elementwise equality of FDataBasis."""
         if not isinstance(other, type(self)) or self.dtype != other.dtype:
             if other is pandas.NA:
@@ -776,7 +756,7 @@ class FDataBasis(FData):  # noqa: WPS214
         self,
         fd: FData,
         *,
-        eval_points: Optional[np.ndarray] = None,
+        eval_points: Optional[NDArrayFloat] = None,
         **kwargs: Any,
     ) -> FData:
         """
@@ -806,7 +786,10 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return composition
 
-    def __getitem__(self: T, key: Union[int, slice, np.ndarray]) -> T:
+    def __getitem__(
+        self: T,
+        key: Union[int, slice, NDArrayInt, NDArrayBool],
+    ) -> T:
         """Return self[key]."""
         key = _check_array_key(self.coefficients, key)
 
@@ -815,7 +798,10 @@ class FDataBasis(FData):  # noqa: WPS214
             sample_names=np.array(self.sample_names)[key],
         )
 
-    def __add__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __add__(
+        self: T,
+        other: T,
+    ) -> T:
         """Addition for FDataBasis object."""
         if isinstance(other, FDataBasis) and self.basis == other.basis:
 
@@ -827,7 +813,10 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return NotImplemented
 
-    def __radd__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __radd__(
+        self: T,
+        other: T,
+    ) -> T:
         """Addition for FDataBasis object."""
         if isinstance(other, FDataBasis) and self.basis == other.basis:
 
@@ -839,7 +828,10 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return NotImplemented
 
-    def __sub__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __sub__(
+        self: T,
+        other: T,
+    ) -> T:
         """Subtraction for FDataBasis object."""
         if isinstance(other, FDataBasis) and self.basis == other.basis:
 
@@ -851,7 +843,10 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return NotImplemented
 
-    def __rsub__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __rsub__(
+        self: T,
+        other: T,
+    ) -> T:
         """Right subtraction for FDataBasis object."""
         if isinstance(other, FDataBasis) and self.basis == other.basis:
 
@@ -863,7 +858,10 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return NotImplemented
 
-    def _mul_scalar(self: T, other: Union[np.ndarray, float]) -> T:
+    def _mul_scalar(
+        self: T,
+        other: Union[NDArrayFloat, NDArrayInt, float],
+    ) -> T:
         """Multiplication by scalar."""
         try:
             vector = np.atleast_1d(other)
@@ -881,15 +879,24 @@ class FDataBasis(FData):  # noqa: WPS214
             coefficients=self.coefficients * vector,
         )
 
-    def __mul__(self: T, other: Union[np.ndarray, float]) -> T:
+    def __mul__(
+        self: T,
+        other: Union[NDArrayFloat, NDArrayInt, float],
+    ) -> T:
         """Multiplication for FDataBasis object."""
         return self._mul_scalar(other)
 
-    def __rmul__(self: T, other: Union[np.ndarray, float]) -> T:
+    def __rmul__(
+        self: T,
+        other: Union[NDArrayFloat, NDArrayInt, float],
+    ) -> T:
         """Multiplication for FDataBasis object."""
         return self._mul_scalar(other)
 
-    def __truediv__(self: T, other: Union[np.ndarray, float]) -> T:
+    def __truediv__(
+        self: T,
+        other: Union[NDArrayFloat, NDArrayInt, float],
+    ) -> T:
         """Division for FDataBasis object."""
         try:
             other = 1 / np.asarray(other)
@@ -898,9 +905,17 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return self._mul_scalar(other)
 
-    def __rtruediv__(self: T, other: Union[np.ndarray, float]) -> T:
+    def __rtruediv__(
+        self: T,
+        other: Union[NDArrayFloat, NDArrayInt, float],
+    ) -> T:
         """Right division for FDataBasis object."""
         return NotImplemented
+
+    def __neg__(self: T) -> T:
+        """Negation of FData object."""
+        return self.copy(coefficients=-self.coefficients)
+
 
     #####################################################################
     # Pandas ExtensionArray methods
@@ -938,7 +953,7 @@ class FDataBasis(FData):  # noqa: WPS214
         """
         return self.coefficients.nbytes
 
-    def isna(self) -> np.ndarray:
+    def isna(self) -> NDArrayBool:
         """
         Return a 1-D array indicating if each value is missing.
 

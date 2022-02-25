@@ -62,7 +62,7 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
     ...     DDGTransformer,
     ... )
     >>> from skfda.exploratory.depth import ModifiedBandDepth
-    >>> from skfda.representation import EvaluationTransformer
+    >>> from skfda.misc.feature_construction import EvaluationTransformer
     >>> import numpy as np
 
     Finally we apply fit and transform.

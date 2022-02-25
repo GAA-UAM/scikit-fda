@@ -173,7 +173,10 @@ def geometric_median(
         \underset{y \in L(\mathcal{T})}{\arg \min}
         \sum_{i=1}^N \left \| x_i-y \right \|
 
-    It uses the corrected Weiszfeld algorithm to compute the median.
+    The geometric median in the functional case is also described in
+    :footcite:`gervini_2008_estimation`.
+    Instead of the proposed algorithm, however, the current implementation
+    uses the corrected Weiszfeld algorithm to compute the median.
 
     Args:
         X: Object containing different samples of a
@@ -199,8 +202,6 @@ def geometric_median(
 
     References:
         .. footbibliography::
-
-            gervini_2008_estimation
 
     """
     weights = np.full(len(X), 1 / len(X))

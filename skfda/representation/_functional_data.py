@@ -24,6 +24,7 @@ from typing import (
 
 import numpy as np
 import pandas.api.extensions
+from matplotlib.figure import Figure
 from typing_extensions import Literal
 
 from .._utils import _evaluate_grid, _reshape_eval_points, _to_grid_points
@@ -33,13 +34,15 @@ from ._typing import (
     GridPointsLike,
     LabelTuple,
     LabelTupleLike,
+    NDArrayBool,
+    NDArrayFloat,
     NDArrayInt,
 )
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike, _parse_extrapolation
 
 if TYPE_CHECKING:
-    from . import FDataGrid, FDataBasis
+    from . import FDataBasis, FDataGrid
     from .basis import Basis
 
 T = TypeVar('T', bound='FData')
@@ -276,7 +279,7 @@ class FData(  # noqa: WPS214
         """
         pass
 
-    def _extrapolation_index(self, eval_points: np.ndarray) -> np.ndarray:
+    def _extrapolation_index(self, eval_points: NDArrayFloat) -> NDArrayBool:
         """Check the points that need to be extrapolated.
 
         Args:
@@ -302,12 +305,12 @@ class FData(  # noqa: WPS214
 
     def _join_evaluation(
         self,
-        index_matrix: np.ndarray,
-        index_ext: np.ndarray,
-        index_ev: np.ndarray,
-        res_extrapolation: np.ndarray,
-        res_evaluation: np.ndarray,
-    ) -> np.ndarray:
+        index_matrix: NDArrayBool,
+        index_ext: NDArrayBool,
+        index_ev: NDArrayBool,
+        res_extrapolation: NDArrayFloat,
+        res_evaluation: NDArrayFloat,
+    ) -> NDArrayFloat:
         """Join the points evaluated.
 
         This method is used internally by :func:`evaluate` to join the result
@@ -351,7 +354,7 @@ class FData(  # noqa: WPS214
         eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         """Define the evaluation of the FData.
 
         Evaluates the samples of an FData object at several points.
@@ -384,7 +387,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[False] = False,
         aligned: Literal[True] = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     @overload
@@ -396,7 +399,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[False] = False,
         aligned: Literal[False],
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     @overload
@@ -408,7 +411,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[True],
         aligned: Literal[True] = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     @overload
@@ -420,7 +423,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[True],
         aligned: Literal[False],
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     def evaluate(
@@ -431,7 +434,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: bool = False,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         """Evaluate the object at a list of values or a grid.
 
         Args:
@@ -562,7 +565,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[False] = False,
         aligned: Literal[True] = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     @overload
@@ -574,7 +577,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[False] = False,
         aligned: Literal[False],
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     @overload
@@ -586,7 +589,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[True],
         aligned: Literal[True] = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     @overload
@@ -598,7 +601,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[True],
         aligned: Literal[False],
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     def __call__(
@@ -609,7 +612,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: bool = False,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         """Evaluate the :term:`functional object`.
 
         Evaluate the object or its derivatives at a list of values or a
@@ -658,6 +661,23 @@ class FData(  # noqa: WPS214
         Returns:
             Functional object containg the derivative.
 
+        """
+        pass
+
+    @abstractmethod
+    def integrate(
+        self: T,
+        *,
+        interval: Optional[DomainRange] = None,
+    ) -> NDArrayFloat:
+        """Integration of the FData object.
+
+        Args:
+            interval: domain range where we want to integrate.
+            By default is None as we integrate on the whole domain.
+
+        Returns:
+            ndarray of shape with the integrated data.
         """
         pass
 
@@ -769,15 +789,17 @@ class FData(  # noqa: WPS214
 
         return shifted
 
-    def plot(self, *args: Any, **kwargs: Any) -> Any:
+    def plot(self, *args: Any, **kwargs: Any) -> Figure:
         """Plot the FDatGrid object.
 
         Args:
-            args: positional arguments for :func:`plot_graph`.
-            kwargs: keyword arguments for :func:`plot_graph`.
+            args: Positional arguments to be passed to the class
+                :class:`~skfda.exploratory.visualization.representation.GraphPlot`.
+            kwargs: Keyword arguments to be passed to the class
+                :class:`~skfda.exploratory.visualization.representation.GraphPlot`.
 
         Returns:
-            fig (figure object): figure object in which the graphs are plotted.
+            Figure object in which the graphs are plotted.
 
         """
         from ..exploratory.visualization.representation import GraphPlot
@@ -932,7 +954,7 @@ class FData(  # noqa: WPS214
         self: T,
         fd: T,
         *,
-        eval_points: Optional[np.ndarray] = None,
+        eval_points: Optional[NDArrayFloat] = None,
     ) -> FData:
         """Composition of functions.
 
@@ -948,7 +970,10 @@ class FData(  # noqa: WPS214
         pass
 
     @abstractmethod
-    def __getitem__(self: T, key: Union[int, slice, np.ndarray]) -> T:
+    def __getitem__(
+        self: T,
+        key: Union[int, slice, NDArrayInt],
+    ) -> T:
         """Return self[key]."""
         pass
 
@@ -963,10 +988,10 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def __eq__(self, other: object) -> np.ndarray:  # type: ignore[override]
+    def __eq__(self, other: object) -> NDArrayBool:  # type: ignore[override]
         pass
 
-    def __ne__(self, other: object) -> np.ndarray:  # type: ignore[override]
+    def __ne__(self, other: object) -> NDArrayBool:  # type: ignore[override]
         """Return for `self != other` (element-wise in-equality)."""
         result = self.__eq__(other)
         if result is NotImplemented:
@@ -976,7 +1001,7 @@ class FData(  # noqa: WPS214
 
     def _copy_op(
         self: T,
-        other: Union[T, np.ndarray, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
         **kwargs: Any,
     ) -> T:
 
@@ -989,43 +1014,60 @@ class FData(  # noqa: WPS214
         return base_copy.copy(**kwargs)
 
     @abstractmethod
-    def __add__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __add__(self: T, other: T) -> T:
         """Addition for FData object."""
         pass
 
     @abstractmethod
-    def __radd__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __radd__(self: T, other: T) -> T:
         """Addition for FData object."""
         pass
 
     @abstractmethod
-    def __sub__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __sub__(self: T, other: T) -> T:
         """Subtraction for FData object."""
         pass
 
     @abstractmethod
-    def __rsub__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __rsub__(self: T, other: T) -> T:
         """Right subtraction for FData object."""
         pass
 
     @abstractmethod
-    def __mul__(self: T, other: Union[np.ndarray, float]) -> T:
+    def __mul__(
+        self: T,
+        other: Union[NDArrayFloat, NDArrayInt, float],
+    ) -> T:
         """Multiplication for FData object."""
         pass
 
     @abstractmethod
-    def __rmul__(self: T, other: Union[np.ndarray, float]) -> T:
+    def __rmul__(
+        self: T,
+        other: Union[NDArrayFloat, NDArrayInt, float],
+    ) -> T:
         """Multiplication for FData object."""
         pass
 
     @abstractmethod
-    def __truediv__(self: T, other: Union[np.ndarray, float]) -> T:
+    def __truediv__(
+        self: T,
+        other: Union[NDArrayFloat, NDArrayInt, float],
+    ) -> T:
         """Division for FData object."""
         pass
 
     @abstractmethod
-    def __rtruediv__(self: T, other: Union[np.ndarray, float]) -> T:
+    def __rtruediv__(
+        self: T,
+        other: Union[NDArrayFloat, NDArrayInt, float],
+    ) -> T:
         """Right division for FData object."""
+        pass
+
+    @abstractmethod
+    def __neg__(self: T) -> T:
+        """Negation of FData object."""
         pass
 
     def __iter__(self: T) -> Iterator[T]:
@@ -1058,7 +1100,6 @@ class FData(  # noqa: WPS214
         **kwargs: Any,
     ) -> Any:
         """Prevent NumPy from converting to array just to do operations."""
-
         # Make normal multiplication by scalar use the __mul__ method
         if ufunc == np.multiply and method == "__call__" and len(inputs) == 2:
             if isinstance(inputs[0], np.ndarray):

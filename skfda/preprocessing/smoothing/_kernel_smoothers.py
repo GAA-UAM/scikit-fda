@@ -9,9 +9,9 @@ from typing import Optional
 
 import numpy as np
 
-from skfda.misc.hat_matrix import HatMatrix, NadarayaWatsonHatMatrix
-from skfda.representation._typing import GridPointsLike
-
+from ..._utils._utils import _to_grid_points
+from ...misc.hat_matrix import HatMatrix, NadarayaWatsonHatMatrix
+from ...representation._typing import GridPointsLike, NDArrayFloat
 from ._linear import _LinearSmoother
 
 
@@ -111,7 +111,7 @@ class KernelSmoother(_LinearSmoother):
         self,
         *,
         kernel_estimator: Optional[HatMatrix] = None,
-        weights: Optional[np.ndarray] = None,
+        weights: Optional[NDArrayFloat] = None,
         output_points: Optional[GridPointsLike] = None,
     ):
         self.kernel_estimator = kernel_estimator
@@ -123,7 +123,10 @@ class KernelSmoother(_LinearSmoother):
         self,
         input_points: GridPointsLike,
         output_points: GridPointsLike,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
+
+        input_points = _to_grid_points(input_points)
+        output_points = _to_grid_points(output_points)
 
         if self.kernel_estimator is None:
             self.kernel_estimator = NadarayaWatsonHatMatrix()

@@ -128,6 +128,15 @@ def occupation_measure(
         where :math:`{T_1,\dots,T_p}` are disjoint intervals in
         :math:`\mathbb{R}` and | | stands for the Lebesgue measure.
 
+    The calculations are based on the grid of points of the x axis. In case of
+    FDataGrid the original grid is taken unless n_points is specified. In case
+    of FDataBasis the number of points of the x axis to be considered is passed
+    through the n_points parameter compulsory.
+    If the result of this function is not accurate enough try to increase the
+    grid of points of the x axis. Either by increasing n_points or passing a
+    FDataGrid with more x grid points per curve.
+
+
         Args:
             data: FDataGrid or FDataBasis where we want to calculate
             the occupation measure.

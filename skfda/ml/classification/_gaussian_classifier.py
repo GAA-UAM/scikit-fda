@@ -15,6 +15,78 @@ class GaussianClassifier(
     BaseEstimator,  # type: ignore
     ClassifierMixin,  # type: ignore
 ):
+    """Gaussian process based classifer for functional data.
+
+    This classifier is based on the assumption that the data is part
+    of a gaussian process and depending on the output label, the covariance
+    and mean parameters are different for each class. This means that curves
+    classified with one determined label come from a distinct gaussian process
+    compared with data that is classified with a different label.
+
+    The training phase of the classifier will try to approximate the two
+    main parameters of a gaussian process for each class. The covariance
+    will be estimated by fitting the initial kernel passed on the creation of
+    the GaussianClassifier object.
+    The result of the training function will be two arrays, one of means and
+    another one of covariances. Both with length (n_classes).
+
+    The prediction phase instead uses a quadratic discriminant classifier to
+    predict which gaussian process of the fitted ones correspond the most with
+    each curve passed.
+
+
+    Parameters:
+        kernel: initial kernel to be fitted with the training data.
+
+        regularizer: parameter that regularizes the covariance matrices
+        in order to avoid Singular matrices. It is multiplied by a numpy
+        eye matrix and then added to the covariance one.
+
+
+    Examples:
+        Firstly, we will import and split the Berkeley Growth Study dataset
+
+        >>> from skfda.datasets import fetch_growth
+        >>> from sklearn.model_selection import train_test_split
+        >>> X, y = fetch_growth(return_X_y=True, as_frame=True)
+        >>> X = X.iloc[:, 0].values
+        >>> y = y.values.codes
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     X,
+        ...     y,
+        ...     test_size=0.3,
+        ...     stratify=y,
+        ...     random_state=0,
+        ... )
+
+        Then we need to choose and import a kernel so it can be fitted with
+        the data in the training phase. As we know the Growth dataset tends
+        to be approximately linear, we will use a linear kernel. We create
+        the kernel with mean 1 and variance 6 as an example.
+
+        >>> from GPy.kern import Linear
+        >>> linear = Linear(1, variances=6)
+
+        We will fit the Gaussian Process classifier with training data. We
+        use as regularizer parameter a low value as 0.05.
+
+
+        >>> gaussian = GaussianClassifier(linear, 0.05)
+        >>> gaussian = gaussian.fit(X_train, y_train)
+
+
+        We can predict the class of new samples
+
+        >>> gaussian.predict(X_test)
+        array([0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1,
+               0, 1, 1, 0, 1, 0, 0, 0, 1, 1])
+
+        Finally, we calculate the mean accuracy for the test data
+
+        >>> round(gaussian.score(X_test, y_test), 2)
+        0.93
+
+    """
 
     def __init__(self, kernel: Kern, regularizer: float) -> None:
         self._kernel_ = kernel
@@ -32,7 +104,9 @@ class GaussianClassifier(
         """
         self._classes, self._y_ind = _classifier_get_classes(y)  # noqa:WPS414
 
-        self._cov_kernels_, self._means = self._fit_kernels_and_means(X)
+        self._cov_kernels_, self._means = self._fit_kernels_and_means(
+            X,
+        )
 
         self._priors = self._calculate_priors(y)
         self._log_priors = np.log(self._priors)  # Calculates prior logartithms
@@ -148,9 +222,9 @@ class GaussianClassifier(
         for cur_class in range(0, self._classes.size):
             class_n = X[self._y_ind == cur_class]
             class_n_centered = class_n - class_n.mean()
-            data = class_n_centered.data_matrix[:, :, 0]
+            data_matrix = class_n_centered.data_matrix[:, :, 0]
 
-            reg_n = GPRegression(grid, data.T, kernel=self._kernel_)
+            reg_n = GPRegression(grid, data_matrix.T, kernel=self._kernel_)
             reg_n.optimize()
 
             kernels = kernels + [reg_n.kern]

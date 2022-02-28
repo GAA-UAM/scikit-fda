@@ -110,6 +110,7 @@ class LinearRegression(
         >>> from skfda.ml.regression import LinearRegression
         >>> from skfda.representation.basis import (FDataBasis, Monomial,
         ...                                         Constant)
+        >>> import pandas as pd
 
         Multivariate linear regression can be used with functions expressed in
         a basis. Also, a functional basis for the weights can be specified:
@@ -325,10 +326,10 @@ class LinearRegression(
         X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
     ) -> Sequence[AcceptedDataType]:
 
-        if not isinstance(X, pd.DataFrame):
+        if isinstance(X, List) and any(isinstance(x, FData) for x in X):
             warnings.warn(
-                "Usage of arguments of type FData, ndarray or a sequence \
-                    of both is deprecated (fit, predict)."
+                "Usage of arguments of type sequence of "
+                "FData, ndarray is deprecated (fit, predict). "
                 "Use pandas DataFrame instead",
                 DeprecationWarning,
             )
@@ -399,7 +400,7 @@ class LinearRegression(
 
         return new_X, y, sample_weight, coef_info
 
-    def __dataframe_conversion(self, X: pd.DataFrame) -> List:
+    def __dataframe_conversion(self, X: pd.DataFrame) -> List[AcceptedDataType]:
         """Convert DataFrames to a list with two elements.
 
         First of all, a list with mv covariates and the second,

@@ -128,16 +128,14 @@ class GaussianClassifier(
             for each data sample.
         """
         check_is_fitted(self)
-        likelihoods = [
-            self._calculate_log_likelihood(curve)
-            for curve in X.data_matrix
-        ]
 
-        predictions = np.asarray([
-            np.where(likelihood == max(likelihood))
-            for likelihood in likelihoods
-        ])
-        return np.reshape(predictions, predictions.size)
+        return np.argmax(
+            [
+                self._calculate_log_likelihood(curve)
+                for curve in X.data_matrix
+            ],
+            axis=1,
+        )
 
     def _calculate_priors(self, y: np.ndarray) -> np.ndarray:
         """
@@ -228,7 +226,7 @@ class GaussianClassifier(
             reg_n.optimize()
 
             kernels = kernels + [reg_n.kern]
-            means = means + [class_n.gmean().data_matrix[0]]
+            means = means + [class_n.mean().data_matrix[0]]
         return np.asarray(kernels), np.asarray(means)
 
     def _calculate_log_likelihood(self, curve: np.ndarray) -> np.ndarray:

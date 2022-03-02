@@ -77,9 +77,9 @@ class GaussianClassifier(
 
         We can predict the class of new samples
 
-        >>> gaussian.predict(X_test)
-        array([0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1,
-               0, 1, 1, 0, 1, 0, 0, 0, 1, 1])
+        >>> list(gaussian.predict(X_test))
+        [0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1,
+         1, 0, 1, 0, 0, 0, 1, 1]
 
         Finally, we calculate the mean accuracy for the test data
 

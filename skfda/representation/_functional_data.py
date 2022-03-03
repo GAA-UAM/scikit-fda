@@ -670,14 +670,23 @@ class FData(  # noqa: WPS214
         *,
         interval: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
-        """Integration of the FData object.
+        """
+        Integration of the FData object.
+
+        The integration is performed over the whole domain. Thus, for a
+        function of several variables this will be a multiple integral.
+
+        For a vector valued function the vector of integrals will be
+        returned.
 
         Args:
             interval: domain range where we want to integrate.
             By default is None as we integrate on the whole domain.
 
         Returns:
-            ndarray of shape with the integrated data.
+            NumPy array of size (``n_samples``, ``dim_codomain``)
+            with the integrated data.
+
         """
         pass
 

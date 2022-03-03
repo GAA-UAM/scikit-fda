@@ -363,21 +363,37 @@ class FDataBasis(FData):  # noqa: WPS214
         *,
         interval: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
-        """Examples.
+        """
+        Integration of the FData object.
 
-        We first create the data basis.
-            >>> from skfda.representation.basis import FDataBasis, Monomial
-            >>> basis = Monomial(n_basis=4)
-            >>> coefficients = [1, 1, 3, .5]
-            >>> fdata = FDataBasis(basis, coefficients)
+        The integration is performed over the whole domain. Thus, for a
+        function of several variables this will be a multiple integral.
 
-        Then we can integrate on the whole domain.
-            >>> fdata.integrate()
-            array([[ 2.625]])
+        For a vector valued function the vector of integrals will be
+        returned.
 
-        Or we can do it on a given domain.
-            >>> fdata.integrate(interval = ((0.5, 1),))
-            array([[ 1.8671875]])
+        Args:
+            interval: domain range where we want to integrate.
+            By default is None as we integrate on the whole domain.
+
+        Returns:
+            NumPy array of size (``n_samples``, ``dim_codomain``)
+            with the integrated data.
+
+        Examples:
+            We first create the data basis.
+                >>> from skfda.representation.basis import FDataBasis, Monomial
+                >>> basis = Monomial(n_basis=4)
+                >>> coefficients = [1, 1, 3, .5]
+                >>> fdata = FDataBasis(basis, coefficients)
+
+            Then we can integrate on the whole domain.
+                >>> fdata.integrate()
+                array([[ 2.625]])
+
+            Or we can do it on a given domain.
+                >>> fdata.integrate(interval = ((0.5, 1),))
+                array([[ 1.8671875]])
 
         """
         if interval is None:
@@ -915,7 +931,6 @@ class FDataBasis(FData):  # noqa: WPS214
     def __neg__(self: T) -> T:
         """Negation of FData object."""
         return self.copy(coefficients=-self.coefficients)
-
 
     #####################################################################
     # Pandas ExtensionArray methods

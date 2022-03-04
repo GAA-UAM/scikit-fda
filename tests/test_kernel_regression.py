@@ -318,7 +318,7 @@ class TestKernelRegression(unittest.TestCase):
 class TestNonOthonormalBasisLLR(unittest.TestCase):
     """Test LocalLinearRegression method with non orthonormal basis."""
 
-    def test_llr_non_orthonormal(self):
+    def test_llr_non_orthonormal(self) -> None:
         """Test LocalLinearRegression with monomial basis."""
         coef1 = [[1, 5, 8], [4, 6, 6], [9, 4, 1]]
         coef2 = [[6, 3, 5]]

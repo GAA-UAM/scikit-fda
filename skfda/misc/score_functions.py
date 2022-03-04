@@ -908,5 +908,5 @@ def _r2_score_fdatabasis(
         start,
         end,
     )
-    print(integral)
+
     return integral[0] / (end - start)

@@ -6,10 +6,10 @@ import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
-from skfda.misc.hat_matrix import HatMatrix, NadarayaWatsonHatMatrix
-from skfda.misc.metrics import PairwiseMetric, l2_distance
-from skfda.misc.metrics._typing import Metric
-from skfda.representation._functional_data import FData
+from ...misc.hat_matrix import HatMatrix, NadarayaWatsonHatMatrix
+from ...misc.metrics import PairwiseMetric, l2_distance
+from ...misc.metrics._typing import Metric
+from ...representation._functional_data import FData
 
 
 class KernelRegression(

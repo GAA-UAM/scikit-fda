@@ -15,7 +15,7 @@ from skfda.misc.hat_matrix import (
 from skfda.misc.kernels import normal, uniform
 from skfda.misc.metrics import l2_distance
 from skfda.ml.regression import KernelRegression
-from skfda.representation.basis import FDataBasis, Fourier
+from skfda.representation.basis import FDataBasis, Fourier, Monomial
 from skfda.representation.grid import FDataGrid
 
 
@@ -80,7 +80,7 @@ def _llr_alt(
 
         C = np.concatenate(
             (
-                (np.ones(fd_train.n_samples))[:, np.newaxis],
+                np.ones(fd_train.n_samples)[:, np.newaxis],
                 (fd_train - fd_test[i]).coefficients,
             ),
             axis=1,
@@ -313,3 +313,25 @@ class TestKernelRegression(unittest.TestCase):
         ]
 
         np.testing.assert_almost_equal(y, result_R, decimal=6)
+
+
+class TestNonOthonormalBasisLLR(unittest.TestCase):
+    """Test LocalLinearRegression method with non orthonormal basis."""
+
+    def test_llr_non_orthonormal(self):
+        """Test LocalLinearRegression with monomial basis."""
+        coef1 = [[1, 5, 8], [4, 6, 6], [9, 4, 1]]
+        coef2 = [[6, 3, 5]]
+        basis = Monomial(n_basis=3, domain_range=(0, 3))
+
+        X_train = FDataBasis(coefficients=coef1, basis=basis)
+        X = FDataBasis(coefficients=coef2, basis=basis)
+        y_train = np.array([8, 6, 1])
+
+        llr = LocalLinearRegressionHatMatrix(
+            bandwidth=100,
+            kernel=uniform,
+        )
+        kr = KernelRegression(kernel_estimator=llr)
+        kr.fit(X_train, y_train)
+        np.testing.assert_almost_equal(kr.predict(X), 4.35735166)

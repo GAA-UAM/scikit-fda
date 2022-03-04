@@ -10,8 +10,6 @@ from scipy.linalg import solve_triangular
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
-from ....misc import inner_product_matrix
-from ....misc.metrics import l2_norm
 from ....misc.regularization import L2Regularization, compute_penalty_matrix
 from ....representation import FData
 from ....representation._typing import ArrayLike

@@ -14,31 +14,33 @@ from ..depth import Depth, ModifiedBandDepth
 F = TypeVar('F', bound=FData)
 
 
-def mean(X: F) -> F:
+def mean(
+    X: F,
+    weight: Optional[np.ndarray] = None,
+) -> F:
     """Compute the mean of all the samples in a FData object.
-
     Args:
         X: Object containing all the samples whose mean is wanted.
-
-
+        weight: Sample weight. By default, uniform weight are
+        used.
     Returns:
         A :term:`functional data object` with just one sample representing
         the mean of all the samples in the original object.
-
     """
-    return X.mean()
+    if weight is None:
+        return X.mean()
+    else:
+        weight = (X.n_samples / sum(weight)) * weight
+        return (X * weight).mean()
 
 
-def var(X: FData) -> FDataGrid:
+def var(X: FDataGrid) -> FDataGrid:
     """Compute the variance of a set of samples in a FDataGrid object.
-
     Args:
         X: Object containing all the set of samples whose variance is desired.
-
     Returns:
         A :term:`functional data object` with just one sample representing the
         variance of all the samples in the original object.
-
     """
     return X.var()
 

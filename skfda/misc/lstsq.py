@@ -7,15 +7,17 @@ import numpy as np
 import scipy.linalg
 from typing_extensions import Final, Literal
 
+from ..representation._typing import NDArrayFloat
+
 LstsqMethodCallable = Callable[[np.ndarray, np.ndarray], np.ndarray]
 LstsqMethodName = Literal["cholesky", "qr", "svd"]
 LstsqMethod = Union[LstsqMethodCallable, LstsqMethodName]
 
 
 def lstsq_cholesky(
-    coefs: np.ndarray,
-    result: np.ndarray,
-) -> np.ndarray:
+    coefs: NDArrayFloat,
+    result: NDArrayFloat,
+) -> NDArrayFloat:
     """Solve OLS problem using a Cholesky decomposition."""
     left = coefs.T @ coefs
     right = coefs.T @ result
@@ -23,17 +25,17 @@ def lstsq_cholesky(
 
 
 def lstsq_qr(
-    coefs: np.ndarray,
-    result: np.ndarray,
-) -> np.ndarray:
+    coefs: NDArrayFloat,
+    result: NDArrayFloat,
+) -> NDArrayFloat:
     """Solve OLS problem using a QR decomposition."""
     return scipy.linalg.lstsq(coefs, result, lapack_driver="gelsy")[0]
 
 
 def lstsq_svd(
-    coefs: np.ndarray,
-    result: np.ndarray,
-) -> np.ndarray:
+    coefs: NDArrayFloat,
+    result: NDArrayFloat,
+) -> NDArrayFloat:
     """Solve OLS problem using a SVD decomposition."""
     return scipy.linalg.lstsq(coefs, result, lapack_driver="gelsd")[0]
 
@@ -53,13 +55,13 @@ def _get_lstsq_method(
 
 
 def solve_regularized_weighted_lstsq(
-    coefs: np.ndarray,
-    result: np.ndarray,
+    coefs: NDArrayFloat,
+    result: NDArrayFloat,
     *,
-    weights: Optional[np.ndarray] = None,
-    penalty_matrix: Optional[np.ndarray] = None,
+    weights: Optional[NDArrayFloat] = None,
+    penalty_matrix: Optional[NDArrayFloat] = None,
     lstsq_method: LstsqMethod = lstsq_svd,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """
     Solve a regularized and weighted least squares problem.
 

@@ -34,6 +34,7 @@ from ._typing import (
     GridPointsLike,
     LabelTuple,
     LabelTupleLike,
+    NDArrayBool,
     NDArrayFloat,
     NDArrayInt,
 )
@@ -278,7 +279,7 @@ class FData(  # noqa: WPS214
         """
         pass
 
-    def _extrapolation_index(self, eval_points: np.ndarray) -> np.ndarray:
+    def _extrapolation_index(self, eval_points: NDArrayFloat) -> NDArrayBool:
         """Check the points that need to be extrapolated.
 
         Args:
@@ -304,12 +305,12 @@ class FData(  # noqa: WPS214
 
     def _join_evaluation(
         self,
-        index_matrix: np.ndarray,
-        index_ext: np.ndarray,
-        index_ev: np.ndarray,
-        res_extrapolation: np.ndarray,
-        res_evaluation: np.ndarray,
-    ) -> np.ndarray:
+        index_matrix: NDArrayBool,
+        index_ext: NDArrayBool,
+        index_ev: NDArrayBool,
+        res_extrapolation: NDArrayFloat,
+        res_evaluation: NDArrayFloat,
+    ) -> NDArrayFloat:
         """Join the points evaluated.
 
         This method is used internally by :func:`evaluate` to join the result
@@ -353,7 +354,7 @@ class FData(  # noqa: WPS214
         eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         """Define the evaluation of the FData.
 
         Evaluates the samples of an FData object at several points.
@@ -386,7 +387,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[False] = False,
         aligned: Literal[True] = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     @overload
@@ -398,7 +399,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[False] = False,
         aligned: Literal[False],
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     @overload
@@ -410,7 +411,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[True],
         aligned: Literal[True] = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     @overload
@@ -422,7 +423,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[True],
         aligned: Literal[False],
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     def evaluate(
@@ -433,7 +434,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: bool = False,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         """Evaluate the object at a list of values or a grid.
 
         Args:
@@ -564,7 +565,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[False] = False,
         aligned: Literal[True] = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     @overload
@@ -576,7 +577,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[False] = False,
         aligned: Literal[False],
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     @overload
@@ -588,7 +589,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[True],
         aligned: Literal[True] = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     @overload
@@ -600,7 +601,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[True],
         aligned: Literal[False],
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     def __call__(
@@ -611,7 +612,7 @@ class FData(  # noqa: WPS214
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: bool = False,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         """Evaluate the :term:`functional object`.
 
         Evaluate the object or its derivatives at a list of values or a
@@ -669,14 +670,23 @@ class FData(  # noqa: WPS214
         *,
         interval: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
-        """Integration of the FData object.
+        """
+        Integration of the FData object.
+
+        The integration is performed over the whole domain. Thus, for a
+        function of several variables this will be a multiple integral.
+
+        For a vector valued function the vector of integrals will be
+        returned.
 
         Args:
             interval: domain range where we want to integrate.
             By default is None as we integrate on the whole domain.
 
         Returns:
-            ndarray of shape with the integrated data.
+            NumPy array of size (``n_samples``, ``dim_codomain``)
+            with the integrated data.
+
         """
         pass
 
@@ -953,7 +963,7 @@ class FData(  # noqa: WPS214
         self: T,
         fd: T,
         *,
-        eval_points: Optional[np.ndarray] = None,
+        eval_points: Optional[NDArrayFloat] = None,
     ) -> FData:
         """Composition of functions.
 
@@ -969,7 +979,10 @@ class FData(  # noqa: WPS214
         pass
 
     @abstractmethod
-    def __getitem__(self: T, key: Union[int, slice, np.ndarray]) -> T:
+    def __getitem__(
+        self: T,
+        key: Union[int, slice, NDArrayInt],
+    ) -> T:
         """Return self[key]."""
         pass
 
@@ -984,10 +997,10 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def __eq__(self, other: object) -> np.ndarray:  # type: ignore[override]
+    def __eq__(self, other: object) -> NDArrayBool:  # type: ignore[override]
         pass
 
-    def __ne__(self, other: object) -> np.ndarray:  # type: ignore[override]
+    def __ne__(self, other: object) -> NDArrayBool:  # type: ignore[override]
         """Return for `self != other` (element-wise in-equality)."""
         result = self.__eq__(other)
         if result is NotImplemented:
@@ -997,7 +1010,7 @@ class FData(  # noqa: WPS214
 
     def _copy_op(
         self: T,
-        other: Union[T, np.ndarray, float],
+        other: Union[T, NDArrayFloat, NDArrayInt, float],
         **kwargs: Any,
     ) -> T:
 
@@ -1010,43 +1023,60 @@ class FData(  # noqa: WPS214
         return base_copy.copy(**kwargs)
 
     @abstractmethod
-    def __add__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __add__(self: T, other: T) -> T:
         """Addition for FData object."""
         pass
 
     @abstractmethod
-    def __radd__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __radd__(self: T, other: T) -> T:
         """Addition for FData object."""
         pass
 
     @abstractmethod
-    def __sub__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __sub__(self: T, other: T) -> T:
         """Subtraction for FData object."""
         pass
 
     @abstractmethod
-    def __rsub__(self: T, other: Union[T, np.ndarray, float]) -> T:
+    def __rsub__(self: T, other: T) -> T:
         """Right subtraction for FData object."""
         pass
 
     @abstractmethod
-    def __mul__(self: T, other: Union[np.ndarray, float]) -> T:
+    def __mul__(
+        self: T,
+        other: Union[NDArrayFloat, NDArrayInt, float],
+    ) -> T:
         """Multiplication for FData object."""
         pass
 
     @abstractmethod
-    def __rmul__(self: T, other: Union[np.ndarray, float]) -> T:
+    def __rmul__(
+        self: T,
+        other: Union[NDArrayFloat, NDArrayInt, float],
+    ) -> T:
         """Multiplication for FData object."""
         pass
 
     @abstractmethod
-    def __truediv__(self: T, other: Union[np.ndarray, float]) -> T:
+    def __truediv__(
+        self: T,
+        other: Union[NDArrayFloat, NDArrayInt, float],
+    ) -> T:
         """Division for FData object."""
         pass
 
     @abstractmethod
-    def __rtruediv__(self: T, other: Union[np.ndarray, float]) -> T:
+    def __rtruediv__(
+        self: T,
+        other: Union[NDArrayFloat, NDArrayInt, float],
+    ) -> T:
         """Right division for FData object."""
+        pass
+
+    @abstractmethod
+    def __neg__(self: T) -> T:
+        """Negation of FData object."""
         pass
 
     def __iter__(self: T) -> Iterator[T]:

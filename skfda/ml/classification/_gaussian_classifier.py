@@ -65,7 +65,7 @@ class GaussianClassifier(
         the kernel with mean 1 and variance 6 as an example.
 
         >>> from GPy.kern import Linear
-        >>> linear = Linear(1, variances=6)
+        >>> linear = Linear(input_dim=1, variances=6)
 
         We will fit the Gaussian Process classifier with training data. We
         use as regularizer parameter a low value as 0.05.
@@ -89,8 +89,8 @@ class GaussianClassifier(
     """
 
     def __init__(self, kernel: Kern, regularizer: float) -> None:
-        self._kernel_ = kernel
-        self._regularizer_ = regularizer
+        self.kernel = kernel
+        self.regularizer = regularizer
 
     def fit(self, X: FDataGrid, y: np.ndarray) -> GaussianClassifier:
         """Fit the model using X as training data and y as target values.
@@ -102,18 +102,27 @@ class GaussianClassifier(
         Returns:
             self
         """
-        self._classes, self._y_ind = _classifier_get_classes(y)  # noqa:WPS414
+        classes, y_ind = _classifier_get_classes(y)
+        self.classes = classes
+        self.y_ind = y_ind
 
-        self._cov_kernels_, self._means = self._fit_kernels_and_means(
-            X,
+        cov_kernels, means = self._fit_gaussian_process(X)
+        self.cov_kernels = cov_kernels
+        self.means = means
+
+        self.priors_ = self._calculate_priors(y)
+        self._log_priors = np.log(self.priors_)
+
+        self._regularized_covariances = (
+            self._covariances
+            + self.regularizer * np.eye(len(X.grid_points[0]))
         )
 
-        self._priors = self._calculate_priors(y)
-        self._log_priors = np.log(self._priors)  # Calculates prior logartithms
-        self._covariances = self._calculate_covariances(X)
-
         # Calculates logarithmic covariance -> -1/2 * log|sum|
-        self._log_cov = self._calculate_log_covariances()
+        self._log_determinant_covariances = np.asarray([
+            np.trace(logm(regularized_covariance))
+            for regularized_covariance in self._regularized_covariances
+        ])
 
         return self
 
@@ -147,57 +156,10 @@ class GaussianClassifier(
         Returns:
             Numpy array with the respective prior of each class.
         """
-        return np.asarray([
-            np.count_nonzero(y == cur_class) / y.size
-            for cur_class in range(0, self._classes.size)
-        ])
+        _, counts = np.unique(y, return_counts=True)
+        return counts / len(y)
 
-    def _calculate_covariances(
-        self,
-        X: FDataGrid,
-    ) -> np.ndarray:
-        """
-        Calculate the covariance matrices for each class.
-
-        It bases the calculation on the kernels that where already
-        fitted with data of the corresponding classes.
-
-        Args:
-            X: FDataGrid with the training data.
-
-        Returns:
-            Numpy array with the covariance matrices.
-        """
-        covariance = []
-        for i in range(0, self._classes.size):
-            class_data = X[self._y_ind == i].data_matrix
-            # Data needs to be two-dimensional
-            class_data_r = class_data.reshape(
-                class_data.shape[0],
-                class_data.shape[1],
-            )
-            # Caculate covariance matrix
-            covariance = covariance + [self._cov_kernels_[i].K(class_data_r.T)]
-        return np.asarray(covariance)
-
-    def _calculate_log_covariances(self) -> np.ndarray:
-        """
-        Calculate the logarithm of the covariance matrices for each class.
-
-        A regularizer parameter has been used to avoid singular matrices.
-
-        Returns:
-            Numpy array with the logarithmic computation of the
-            covariance matrices.
-        """
-        return np.asarray([
-            -0.5 * np.trace(
-                logm(cov + self._regularizer_ * np.eye(cov.shape[0])),
-            )
-            for cov in self._covariances
-        ])
-
-    def _fit_kernels_and_means(
+    def _fit_gaussian_process(
         self,
         X: FDataGrid,
     ) -> np.ndarray:
@@ -217,44 +179,58 @@ class GaussianClassifier(
         grid = X.grid_points[0][:, np.newaxis]
         kernels = []
         means = []
-        for cur_class in range(0, self._classes.size):
-            class_n = X[self._y_ind == cur_class]
-            class_n_centered = class_n - class_n.mean()
-            data_matrix = class_n_centered.data_matrix[:, :, 0]
+        covariance = []
+        for class_index, _ in enumerate(self.classes):
+            X_class = X[self.y_ind == class_index]
+            X_class_mean = X_class.mean()
+            X_class_centered = X_class - X_class_mean
+            # OJO! Datos sin centrar y centrados
+            data_matrix = X_class_centered.data_matrix[:, :, 0]
+            data_matrix_2 = X_class.data_matrix[:, :, 0]
 
-            reg_n = GPRegression(grid, data_matrix.T, kernel=self._kernel_)
-            reg_n.optimize()
+            regressor = GPRegression(grid, data_matrix.T, kernel=self.kernel)
+            regressor.optimize()
 
-            kernels = kernels + [reg_n.kern]
-            means = means + [class_n.mean().data_matrix[0]]
+            data_matrix_2d = data_matrix_2.reshape(
+                data_matrix_2.shape[0],
+                data_matrix_2.shape[1],
+            )
+
+            kernels = kernels + [regressor.kern]
+            means = means + [X_class_mean.data_matrix[0]]
+            covariance = covariance + [
+                regressor.kern.K(data_matrix_2d.T),
+            ]
+
+        self._covariances = np.asarray(covariance)
+
         return np.asarray(kernels), np.asarray(means)
 
-    def _calculate_log_likelihood(self, curve: np.ndarray) -> np.ndarray:
+    def _calculate_log_likelihood(self, X: np.ndarray) -> np.ndarray:
         """
         Calculate the log likelihood quadratic discriminant analysis.
 
         Args:
-            curve: sample where we want to calculate the discriminant.
+            X: sample where we want to calculate the discriminant.
 
         Returns:
             A ndarray with the log likelihoods corresponding to the
             output classes.
         """
         # Calculates difference wrt. the mean (x - un)
-        data_mean = curve - self._means
+        X_centered = X - self.means
 
         # Calculates mahalanobis distance (-1/2*(x - un).T*inv(sum)*(x - un))
-        mahalanobis = []
-        for j in range(0, self._classes.size):
-            mh = -0.5 * data_mean[j].T @ np.linalg.solve(
-                self._covariances[j] + self._regularizer_ * np.eye(
-                    self._covariances[j].shape[0],
-                ),
-                data_mean[j],
-            )
-            mahalanobis = mahalanobis + [mh[0][0]]
+        mahalanobis_distance = np.ravel(
+            np.transpose(X_centered, axes=(0, 2, 1))
+            @ np.linalg.solve(
+                self._regularized_covariances,
+                X_centered,
+            ),
+        )
 
-        # Calculates the log_likelihood
-        return self._log_cov + np.asarray(
-            mahalanobis,
-        ) + self._log_priors
+        return (
+            -0.5 * self._log_determinant_covariances
+            - 0.5 * mahalanobis_distance
+            + self._log_priors
+        )

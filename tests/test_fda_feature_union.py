@@ -2,7 +2,7 @@
 
 import unittest
 
-from pandas import DataFrame
+import pandas as pd
 from pandas.testing import assert_frame_equal
 
 from skfda.datasets import fetch_growth
@@ -47,7 +47,13 @@ class TestFDAFeatureUnion(unittest.TestCase):
             kernel_estimator=NadarayaWatsonHatMatrix(),
         ).fit_transform(self.X)  # type: ignore
 
-        true_frame = DataFrame({"Transformed data": [t1, t2]})
+        true_frame = pd.concat(
+            [
+                pd.DataFrame(t1),
+                pd.DataFrame(t2),
+            ],
+            axis=1,
+        )
         assert_frame_equal(true_frame, created_frame)
 
 

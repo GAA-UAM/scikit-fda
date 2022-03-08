@@ -259,7 +259,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
         return pd.concat(
             [
-                pd.DataFrame(data)  # noqa: WPS441
+                pd.DataFrame({'0': data})  # noqa: WPS441
                 for data in transformed_data
             ],
             axis=1,

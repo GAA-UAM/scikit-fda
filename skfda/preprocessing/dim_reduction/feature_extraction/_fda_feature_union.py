@@ -123,7 +123,7 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
 
         return pd.concat(
             [
-                pd.DataFrame(data)
+                pd.DataFrame({0: data})
                 for data in Xs
             ],
             axis=1,

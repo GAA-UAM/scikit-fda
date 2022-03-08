@@ -49,8 +49,8 @@ class TestFDAFeatureUnion(unittest.TestCase):
 
         true_frame = pd.concat(
             [
-                pd.DataFrame(t1),
-                pd.DataFrame(t2),
+                pd.DataFrame({0: t1}),
+                pd.DataFrame({0: t2}),
             ],
             axis=1,
         )

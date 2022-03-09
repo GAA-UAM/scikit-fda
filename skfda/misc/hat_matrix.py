@@ -250,11 +250,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
             # Calculate new coefficients taking into account cross-products
             # if the basis is orthonormal, C would not change
-            C = np.einsum(
-                'ijk, kl -> ijl',
-                C,
-                inner_product_matrix,
-            )
+            C = C @ inner_product_matrix
 
             # Adding a column of ones in the first position of all matrices
             dims = (C.shape[0], C.shape[1], 1)

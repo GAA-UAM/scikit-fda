@@ -254,7 +254,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
             # Adding a column of ones in the first position of all matrices
             dims = (C.shape[0], C.shape[1], 1)
-            C = np.c_[np.ones(dims), C]
+            C = np.concatenate((np.ones(dims), C), axis=-1)
 
             return self._solve_least_squares(
                 delta_x=delta_x,

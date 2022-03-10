@@ -111,17 +111,17 @@ class NadarayaWatsonHatMatrix(HatMatrix):
     regression algorithms, as explained below
 
     .. math::
-        \hat{H}_{i,j} = \frac{K\left(\frac{d(e_j-e_i')}{h}\right)}{\sum_{k=1}^{
-        n}K\left(\frac{d(e_k-e_i')}{h}\right)}
+        \hat{H}_{i,j} = \frac{K\left(\frac{d(x_j-x_i')}{h}\right)}{\sum_{k=1}^{
+        n}K\left(\frac{d(x_k-x_i')}{h}\right)}
 
-    For smoothing, :math:`e_i` are the points of discretisation
-    and :math:`e'_i` are the points for which it is desired to estimate the
-    smoothed value. The distance :math:`d` is the absolute value
+    For smoothing, :math:`\{x_1, ..., x_n\}` are the points with known value
+    and :math:`\{x_1', ..., x_m'\}` are the points for which it is desired to
+    estimate the smoothed value. The distance :math:`d` is the absolute value
     function :footcite:`wasserman_2006_nonparametric_nw`.
 
-    For regression, :math:`e_i` is the functional data and :math:`e_i'`
-    are the functions for which it is desired to estimate the scalar value.
-    Here, :math:`d` is some functional distance
+    For regression, :math:`\{x_1, ..., x_n\}` is the functional data and
+    :math:`\{x_1', ..., x_m'\}` are the functions for which it is desired to
+    estimate the scalar value. Here, :math:`d` is some functional distance
     :footcite:`ferraty+vieu_2006_nonparametric_nw`.
 
     In both cases :math:`K(\cdot)` is a kernel function and :math:`h` is the
@@ -158,12 +158,12 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
     regression algorithms, as explained below.
 
     For **kernel smoothing** algorithm to estimate the smoothed value for
-    :math:`t_j` the following error must be minimised
+    :math:`t_i'` the following error must be minimised
 
     .. math::
-        AWSE(a, b) = \sum_{i=1}^n \left[ \left(y_i -
-        \left(a +  b (t_i - t'_j) \right) \right)^2
-        K \left( \frac {|t_i - t'_j|}{h} \right) \right ]
+        AWSE(a, b) = \sum_{j=1}^n \left[ \left(y_j -
+        \left(a +  b (t_j - t'_i) \right) \right)^2
+        K \left( \frac {|t_j - t'_i|}{h} \right) \right ]
 
     which gives the following expression for each cell
 
@@ -171,26 +171,26 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         \hat{H}_{i,j} = \frac{b_j(t_i')}{\sum_{k=1}^{n}b_k(t_i')}
 
     .. math::
-        b_j(e') = K\left(\frac{t_j - t'}{h}\right) S_{n,2}(t') -
+        b_j(t') = K\left(\frac{t_j - t'}{h}\right) S_{n,2}(t') -
         (t_j - t')S_{n,1}(t')
 
     .. math::
         S_{n,k}(t') = \sum_{j=1}^{n}K\left(\frac{t_j-t'}{h}\right)(t_j-t')^k
 
-    where :math:`t = (t_1, t_2, ..., t_n)` are points of discretisation and
-    :math:`t' = (t_1', t_2', ..., t_m')` are the points for which it is desired
-    to estimate the smoothed value
+    where :math:`t = \{t_1, t_2, ..., t_n\}` are points with known value and
+    :math:`t' = \{t_1', t_2', ..., t_m'\}` are the points for which it is
+    desired to estimate the smoothed value
     :footcite:`wasserman_2006_nonparametric_llr`.
 
     For **kernel regression** algorithm:
 
-    Given functional data, :math:`(X_1, X_2, ..., X_n)` where each function
+    Given functional data, :math:`\{X_1, X_2, ..., X_n\}` where each function
     is expressed in a orthonormal basis with :math:`J` elements and scalar
-    response :math:`Y = (y_1, y_2, ..., y_n)`.
+    response :math:`Y = \{y_1, y_2, ..., y_n\}`.
 
     It is desired to estimate the values
-    :math:`\hat{Y} = (\hat{y}_1, \hat{y}_2, ..., \hat{y}_m)`
-    for the data :math:`(X'_1, X'_2, ..., X'_m)` (expressed in the same basis).
+    :math:`\hat{Y} = \{\hat{y}_1, \hat{y}_2, ..., \hat{y}_m\}`
+    for the data :math:`\{X'_1, X'_2, ..., X'_m\}` (expressed in the same basis).
 
     For each :math:`X'_k` the estimation :math:`\hat{y}_k` is obtained by
     taking the value :math:`a_k` from the vector
@@ -198,7 +198,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
     .. math::
         AWSE(a_k, b_{1k}, ..., b_{Jk}) = \sum_{i=1}^n \left(y_i -
-        \left(a + \sum_{j=1}^J b_{jk} c_{ijk} \right) \right)^2
+        \left(a + \sum_{j=1}^J b_{jk} c_{ij}^k \right) \right)^2
         K \left( \frac {d(X_i - X'_k)}{h} \right)
 
     Where :math:`c_{ij}^k` is the :math:`j`-th coefficient in a truncated basis
@@ -335,24 +335,24 @@ class KNeighborsHatMatrix(HatMatrix):
     regression algorithms, as explained below.
 
     .. math::
-        \hat{H}_{i,j} = \frac{K\left(\frac{d(e_j-e_i')}{h}\right)}{\sum_{k=1}^{
-        n}K\left(\frac{d(e_k-e_i')}{h_{ik}}\right)}
+        \hat{H}_{i,j} = \frac{K\left(\frac{d(x_j-x_i')}{h_i}\right)}
+        {\sum_{k=1}^{n}K\left(\frac{d(x_k-x_i')}{h_{i}}\right)}
 
-    For smoothing, :math:`e_i` are the points of discretisation
-    and :math:`e'_i` are the points for which it is desired to estimate the
-    smoothed value. The distance :math:`d` is the absolute value.
+    For smoothing, :math:`\{x_1, ..., x_n\}` are the points with known value
+    and :math:`\{x_1', ..., x_m'\}` are the points for which it is desired to
+    estimate the smoothed value. The distance :math:`d` is the absolute value.
 
-    For regression, :math:`e_i` are the functional data and :math:`e_i'`
-    are the functions for which it is desired to estimate the scalar value.
-    Here, :math:`d` is some functional distance.
+    For regression, :math:`\{x_1, ..., x_n\}` are the functional data and
+    :math:`\{x_1', ..., x_m'\}` are the functions for which it is desired to
+    estimate the scalar value. Here, :math:`d` is some functional distance.
 
     In both cases, :math:`K(\cdot)` is a kernel function and
-    :math:`h_{ik}` is calculated as the distance from :math:`e_i'` to it's
-    :math:`k`-th nearest neighbour in :math:`\{e_1, ..., e_n\}`
+    :math:`h_{i}` is calculated as the distance from :math:`x_i'` to its
+    :math:`n\_neighbors`-th nearest neighbor in :math:`\{x_1, ..., x_n\}`
     :footcite:`ferraty+vieu_2006_nonparametric_knn`.
 
-    Used with the uniform kernel, it takes the average of the closest k
-    points to a given point.
+    Used with the uniform kernel, it takes the average of the closest
+    :math:`n\_neighbors` points to a given point.
 
     Args:
         n_neighbors: Number of nearest neighbours. By

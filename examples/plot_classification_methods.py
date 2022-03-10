@@ -12,7 +12,7 @@ Gaussian classifier are compared.
 # Author:Álvaro Castillo García
 # License: MIT
 
-from GPy.kern import Linear
+from GPy.kern import RBF
 from sklearn.model_selection import train_test_split
 
 from skfda.datasets import fetch_growth
@@ -112,12 +112,12 @@ X_test.plot(group=centroid_pred, group_names=categories).show()
 
 ##############################################################################
 # The fourth method considered is a Gaussian Process based Classifier.
-# As the data set tends to be linear we have selected a linear kernel with
-# initial parameters: variance=6 and mean=1
+# We have selected a gaussian kernel with initial parameters: variance=6 and
+# mean=1
 # As regularizer a small value 0.05 has been chosen.
 
 gaussian = GaussianClassifier(
-    kernel=Linear(1, variances=6),
+    kernel=RBF(input_dim=1, variance=6, lengthscale=1),
     regularizer=0.05,
 )
 gaussian.fit(X_train, y_train)

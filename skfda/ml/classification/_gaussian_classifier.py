@@ -60,31 +60,30 @@ class GaussianClassifier(
         ... )
 
         Then we need to choose and import a kernel so it can be fitted with
-        the data in the training phase. As we know the Growth dataset tends
-        to be approximately linear, we will use a linear kernel. We create
-        the kernel with mean 1 and variance 6 as an example.
+        the data in the training phase. We will use a gaussian kernel with
+        mean 1 and variance 6 as an example.
 
-        >>> from GPy.kern import Linear
-        >>> linear = Linear(input_dim=1, variances=6)
+        >>> from GPy.kern import RBF
+        >>> rbf = RBF(input_dim=1, variance=6, lengthscale=1)
 
         We will fit the Gaussian Process classifier with training data. We
         use as regularizer parameter a low value as 0.05.
 
 
-        >>> gaussian = GaussianClassifier(linear, 0.05)
+        >>> gaussian = GaussianClassifier(rbf, 0.05)
         >>> gaussian = gaussian.fit(X_train, y_train)
 
 
         We can predict the class of new samples
 
         >>> list(gaussian.predict(X_test))
-        [0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1,
-         1, 0, 1, 0, 0, 0, 1, 1]
+        [0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1,
+         1, 0, 1, 0, 1, 0, 1, 1]
 
         Finally, we calculate the mean accuracy for the test data
 
         >>> round(gaussian.score(X_test, y_test), 2)
-        0.93
+        0.96
 
     """
 
@@ -107,8 +106,8 @@ class GaussianClassifier(
         self.y_ind = y_ind
 
         cov_kernels, means = self._fit_gaussian_process(X)
-        self.cov_kernels = cov_kernels
-        self.means = means
+        self.cov_kernels_ = cov_kernels
+        self.means_ = means
 
         self.priors_ = self._calculate_priors(y)
         self._log_priors = np.log(self.priors_)
@@ -139,10 +138,7 @@ class GaussianClassifier(
         check_is_fitted(self)
 
         return np.argmax(
-            [
-                self._calculate_log_likelihood(curve)
-                for curve in X.data_matrix
-            ],
+            self._calculate_log_likelihood(X.data_matrix),
             axis=1,
         )
 
@@ -184,22 +180,18 @@ class GaussianClassifier(
             X_class = X[self.y_ind == class_index]
             X_class_mean = X_class.mean()
             X_class_centered = X_class - X_class_mean
-            # OJO! Datos sin centrar y centrados
+
             data_matrix = X_class_centered.data_matrix[:, :, 0]
-            data_matrix_2 = X_class.data_matrix[:, :, 0]
+
+            grid_points = X_class.grid_points[0][:, np.newaxis]
 
             regressor = GPRegression(grid, data_matrix.T, kernel=self.kernel)
             regressor.optimize()
 
-            data_matrix_2d = data_matrix_2.reshape(
-                data_matrix_2.shape[0],
-                data_matrix_2.shape[1],
-            )
-
-            kernels = kernels + [regressor.kern]
-            means = means + [X_class_mean.data_matrix[0]]
-            covariance = covariance + [
-                regressor.kern.K(data_matrix_2d.T),
+            kernels += [regressor.kern]
+            means += [X_class_mean.data_matrix[0]]
+            covariance += [
+                regressor.kern.K(grid_points),
             ]
 
         self._covariances = np.asarray(covariance)
@@ -218,19 +210,22 @@ class GaussianClassifier(
             output classes.
         """
         # Calculates difference wrt. the mean (x - un)
-        X_centered = X - self.means
+        X_centered = X[:, np.newaxis, :, :] - self.means_[np.newaxis, :, :, :]
 
         # Calculates mahalanobis distance (-1/2*(x - un).T*inv(sum)*(x - un))
-        mahalanobis_distance = np.ravel(
-            np.transpose(X_centered, axes=(0, 2, 1))
+        mahalanobis_distances = np.reshape(
+            np.transpose(X_centered, axes=(0, 1, 3, 2))
             @ np.linalg.solve(
                 self._regularized_covariances,
                 X_centered,
             ),
+            (-1, self.classes.size),
         )
 
-        return (
-            -0.5 * self._log_determinant_covariances
-            - 0.5 * mahalanobis_distance
-            + self._log_priors
+        return np.asarray(
+            (
+                -0.5 * self._log_determinant_covariances
+                - 0.5 * mahalanobis_distances
+                + self._log_priors
+            ),
         )

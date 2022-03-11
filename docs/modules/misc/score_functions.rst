@@ -1,7 +1,7 @@
 Scoring methods for regression with functional response.
 ========================================================
 
-The functions in this module are a generalisation for functional data of
+The functions in this module are a generalization for functional data of
 the regression metrics of the sklearn library
 (https://scikit-learn.org/stable/modules/model_evaluation.html#regression-metrics).
 Only scores that support multioutput are included.

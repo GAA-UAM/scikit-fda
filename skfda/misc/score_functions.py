@@ -1,7 +1,7 @@
 """Score functions for FData."""
 import warnings
 from functools import singledispatch
-from typing import Optional, Union
+from typing import Optional, Union, overload
 
 import numpy as np
 import scipy.integrate
@@ -26,7 +26,8 @@ class ScoreFunction(Protocol):
         multioutput: Literal['uniform_average', 'raw_values']
         = 'uniform_average',
         squared: Optional[bool] = None,
-    ) -> Union[NDArrayFloat, FDataGrid, float]: ...
+    ) -> Union[NDArrayFloat, FDataGrid, float]:
+        ...
 
 
 def _domain_measure(fd: FData) -> float:
@@ -38,15 +39,37 @@ def _domain_measure(fd: FData) -> float:
 
 def _var(
     x: FDataGrid,
-    weight: Optional[NDArrayFloat] = None,
+    weights: Optional[NDArrayFloat] = None,
 ) -> FDataGrid:
-    if weight is None:
+    if weights is None:
         return var(x)
 
     return mean(
-        np.power(x - mean(x, weight=weight), 2),
-        weight=weight,
+        np.power(x - mean(x, weights=weights), 2),
+        weights=weights,
     )
+
+
+@overload
+def explained_variance_score(
+    y_true: NDArrayFloat,
+    y_pred: NDArrayFloat,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+) -> float:
+    ...
+
+
+@overload
+def explained_variance_score(
+    y_true: NDArrayFloat,
+    y_pred: NDArrayFloat,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['raw_values'],
+) -> NDArrayFloat:
+    ...
 
 
 @singledispatch
@@ -112,17 +135,17 @@ def explained_variance_score(
     Returns:
         Explained variance score.
 
-        float:
-            if multioutput = 'uniform_average' or
-            :math:`y\_pred` and :math:`y\_true` are
-            :class:`~skfda.representation.FDataBasis` objects.
-        FDataGrid:
-            if both :math:`y\_pred` and :math:`y\_true` are
-            :class:`~skfda.representation.FDataGrid`
-            objects and multioutput = 'raw_values'.
-        ndarray:
-            if both :math:`y\_pred` and :math:`y\_true` are ndarray and
-            multioutput = 'raw_values'.
+        If multioutput = 'uniform_average' or
+        :math:`y\_pred` and :math:`y\_true` are
+        :class:`~skfda.representation.FDataBasis` objects, float is returned.
+
+        If both :math:`y\_pred` and :math:`y\_true` are
+        :class:`~skfda.representation.FDataGrid`
+        objects and multioutput = 'raw_values',
+        :class:`~skfda.representation.FDataGrid` is returned.
+
+        If both :math:`y\_pred` and :math:`y\_true` are ndarray and
+        multioutput = 'raw_values', ndarray.
 
     """
     return sklearn.metrics.explained_variance_score(
@@ -131,6 +154,28 @@ def explained_variance_score(
         sample_weight=sample_weight,
         multioutput=multioutput,
     )
+
+
+@overload
+def _explained_variance_score_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+) -> float:
+    ...
+
+
+@overload
+def _explained_variance_score_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['raw_values'],
+) -> FDataGrid:
+    ...
 
 
 @explained_variance_score.register
@@ -142,15 +187,15 @@ def _explained_variance_score_fdatagrid(
     multioutput: Literal['uniform_average', 'raw_values'] = 'uniform_average',
 ) -> Union[float, FDataGrid]:
 
-    num = _var(y_true - y_pred, weight=sample_weight)
-    den = _var(y_true, weight=sample_weight)
+    num = _var(y_true - y_pred, weights=sample_weight)
+    den = _var(y_true, weights=sample_weight)
 
     # Divisions by zero allowed
     with np.errstate(divide='ignore', invalid='ignore'):
         score = 1 - num / den
 
-    # 0 / 0 divisions should be 1 in this context and the score, 0
-    score.data_matrix[np.isnan(score.data_matrix)] = 0
+    # 0 / 0 divisions should be 0 in this context, and the score, 1
+    score.data_matrix[np.isnan(score.data_matrix)] = 1
 
     if multioutput == 'raw_values':
         return score
@@ -199,22 +244,51 @@ def _explaied_variance_score_fdatabasis(
             weights=sample_weight,
             axis=0,
         )
-        # Divisions by zero allowed
-        with np.errstate(divide='ignore', invalid='ignore'):
-            score = 1 - num / den
 
-        # 0 / 0 divisions should be 1 in this context and the score, 0
-        score[np.isnan(score)] = 0
+        # 0/0 case, the score is 1.
+        if num == 0 and den == 0:
+            return 1
+
+        # r/0 case, r!= 0. Return -inf outside this function
+        if num != 0 and den == 0:
+            raise ValueError
+
+        score = 1 - num / den
 
         return score[0][0]
 
-    integral = scipy.integrate.quad_vec(
-        _ev_func,
-        start,
-        end,
-    )
+    try:
+        integral = scipy.integrate.quad_vec(
+            _ev_func,
+            start,
+            end,
+        )
+    except ValueError:
+        return float('-inf')
 
     return integral[0] / (end - start)
+
+
+@overload
+def mean_absolute_error(
+    y_true: NDArrayFloat,
+    y_pred: NDArrayFloat,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+) -> float:
+    ...
+
+
+@overload
+def mean_absolute_error(
+    y_true: NDArrayFloat,
+    y_pred: NDArrayFloat,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['raw_values'],
+) -> NDArrayFloat:
+    ...
 
 
 @singledispatch
@@ -267,17 +341,17 @@ def mean_absolute_error(
     Returns:
         Mean absolute error.
 
-        float:
-            if multioutput = 'uniform_average' or
-            :math:`y\_pred` and :math:`y\_true` are
-            :class:`~skfda.representation.FDataBasis` objects.
-        FDataGrid:
-            if both :math:`y\_pred` and :math:`y\_true` are
-            :class:`~skfda.representation.FDataGrid`
-            objects and multioutput = 'raw_values'.
-        ndarray:
-            if both :math:`y\_pred` and :math:`y\_true` are ndarray and
-            multioutput = 'raw_values'.
+        If multioutput = 'uniform_average' or
+        :math:`y\_pred` and :math:`y\_true` are
+        :class:`~skfda.representation.FDataBasis` objects, float is returned.
+
+        If both :math:`y\_pred` and :math:`y\_true` are
+        :class:`~skfda.representation.FDataGrid`
+        objects and multioutput = 'raw_values',
+        :class:`~skfda.representation.FDataGrid` is returned.
+
+        If both :math:`y\_pred` and :math:`y\_true` are ndarray and
+        multioutput = 'raw_values', ndarray.
 
     """
     return sklearn.metrics.mean_absolute_error(
@@ -286,6 +360,28 @@ def mean_absolute_error(
         sample_weight=sample_weight,
         multioutput=multioutput,
     )
+
+
+@overload
+def _mean_absolute_error_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+) -> float:
+    ...
+
+
+@overload
+def _mean_absolute_error_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['raw_values'],
+) -> FDataGrid:
+    ...
 
 
 @mean_absolute_error.register
@@ -297,7 +393,7 @@ def _mean_absolute_error_fdatagrid(
     multioutput: Literal['uniform_average', 'raw_values'] = 'uniform_average',
 ) -> Union[float, FDataGrid]:
 
-    error = mean(np.abs(y_true - y_pred), weight=sample_weight)
+    error = mean(np.abs(y_true - y_pred), weights=sample_weight)
 
     if multioutput == 'raw_values':
         return error
@@ -332,6 +428,28 @@ def _mean_absolute_error_fdatabasis(
     )
 
     return integral[0] / (end - start)
+
+
+@overload
+def mean_absolute_percentage_error(
+    y_true: NDArrayFloat,
+    y_pred: NDArrayFloat,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+) -> float:
+    ...
+
+
+@overload
+def mean_absolute_percentage_error(
+    y_true: NDArrayFloat,
+    y_pred: NDArrayFloat,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['raw_values'],
+) -> NDArrayFloat:
+    ...
 
 
 @singledispatch
@@ -387,17 +505,17 @@ def mean_absolute_percentage_error(
     Returns:
         Mean absolute percentage error.
 
-        float:
-            if multioutput = 'uniform_average' or
-            :math:`y\_pred` and :math:`y\_true` are
-            :class:`~skfda.representation.FDataBasis` objects.
-        FDataGrid:
-            if both :math:`y\_pred` and :math:`y\_true` are
-            :class:`~skfda.representation.FDataGrid`
-            objects and multioutput = 'raw_values'.
-        ndarray:
-            if both :math:`y\_pred` and :math:`y\_true` are ndarray and
-            multioutput = 'raw_values'.
+        If multioutput = 'uniform_average' or
+        :math:`y\_pred` and :math:`y\_true` are
+        :class:`~skfda.representation.FDataBasis` objects, float is returned.
+
+        If both :math:`y\_pred` and :math:`y\_true` are
+        :class:`~skfda.representation.FDataGrid`
+        objects and multioutput = 'raw_values',
+        :class:`~skfda.representation.FDataGrid` is returned.
+
+        If both :math:`y\_pred` and :math:`y\_true` are ndarray and
+        multioutput = 'raw_values', ndarray.
 
     """
     return sklearn.metrics.mean_absolute_percentage_error(
@@ -406,6 +524,28 @@ def mean_absolute_percentage_error(
         sample_weight=sample_weight,
         multioutput=multioutput,
     )
+
+
+@overload
+def _mean_absolute_percentage_error_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+) -> float:
+    ...
+
+
+@overload
+def _mean_absolute_percentage_error_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['raw_values'],
+) -> FDataGrid:
+    ...
 
 
 @mean_absolute_percentage_error.register
@@ -424,7 +564,7 @@ def _mean_absolute_percentage_error_fdatagrid(
 
     mape = np.abs(y_pred - y_true) / np.maximum(np.abs(y_true), epsilon)
 
-    error = mean(mape, weight=sample_weight)
+    error = mean(mape, weights=sample_weight)
 
     if multioutput == 'raw_values':
         return error
@@ -467,6 +607,30 @@ def _mean_absolute_percentage_error_fdatabasis(
     )
 
     return integral[0] / (end - start)
+
+
+@overload
+def mean_squared_error(
+    y_true: NDArrayFloat,
+    y_pred: NDArrayFloat,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+    squared: bool = True,
+) -> float:
+    ...
+
+
+@overload
+def mean_squared_error(
+    y_true: NDArrayFloat,
+    y_pred: NDArrayFloat,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['raw_values'],
+    squared: bool = True,
+) -> NDArrayFloat:
+    ...
 
 
 @singledispatch
@@ -521,17 +685,17 @@ def mean_squared_error(
     Returns:
         Mean squared error.
 
-        float:
-            if multioutput = 'uniform_average' or
-            :math:`y\_pred` and :math:`y\_true` are
-            :class:`~skfda.representation.FDataBasis` objects.
-        FDataGrid:
-            if both :math:`y\_pred` and :math:`y\_true` are
-            :class:`~skfda.representation.FDataGrid`
-            objects and multioutput = 'raw_values'.
-        ndarray:
-            if both :math:`y\_pred` and :math:`y\_true` are ndarray and
-            multioutput = 'raw_values'.
+        If multioutput = 'uniform_average' or
+        :math:`y\_pred` and :math:`y\_true` are
+        :class:`~skfda.representation.FDataBasis` objects, float is returned.
+
+        If both :math:`y\_pred` and :math:`y\_true` are
+        :class:`~skfda.representation.FDataGrid`
+        objects and multioutput = 'raw_values',
+        :class:`~skfda.representation.FDataGrid` is returned.
+
+        If both :math:`y\_pred` and :math:`y\_true` are ndarray and
+        multioutput = 'raw_values', ndarray.
 
     """
     return mean_squared_error(
@@ -541,6 +705,30 @@ def mean_squared_error(
         multioutput=multioutput,
         squared=squared,
     )
+
+
+@overload
+def _mean_squared_error_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+    squared: bool = True,
+) -> float:
+    ...
+
+
+@overload
+def _mean_squared_error_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['raw_values'],
+    squared: bool = True,
+) -> FDataGrid:
+    ...
 
 
 @mean_squared_error.register
@@ -555,7 +743,7 @@ def _mean_squared_error_fdatagrid(
 
     error = mean(
         np.power(y_true - y_pred, 2),
-        weight=sample_weight,
+        weights=sample_weight,
     )
 
     if not squared:
@@ -601,6 +789,30 @@ def _mean_squared_error_fdatabasis(
     )
 
     return integral[0] / (end - start)
+
+
+@overload
+def mean_squared_log_error(
+    y_true: NDArrayFloat,
+    y_pred: NDArrayFloat,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+    squared: bool = True,
+) -> float:
+    ...
+
+
+@overload
+def mean_squared_log_error(
+    y_true: NDArrayFloat,
+    y_pred: NDArrayFloat,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['raw_values'],
+    squared: bool = True,
+) -> NDArrayFloat:
+    ...
 
 
 @singledispatch
@@ -660,17 +872,17 @@ def mean_squared_log_error(
     Returns:
         Mean squared log error.
 
-        float:
-            if multioutput = 'uniform_average' or
-            :math:`y\_pred` and :math:`y\_true` are
-            :class:`~skfda.representation.FDataBasis` objects.
-        FDataGrid:
-            if both :math:`y\_pred` and :math:`y\_true` are
-            :class:`~skfda.representation.FDataGrid`
-            objects and multioutput = 'raw_values'.
-        ndarray:
-            if both :math:`y\_pred` and :math:`y\_true` are ndarray and
-            multioutput = 'raw_values'.
+        If multioutput = 'uniform_average' or
+        :math:`y\_pred` and :math:`y\_true` are
+        :class:`~skfda.representation.FDataBasis` objects, float is returned.
+
+        If both :math:`y\_pred` and :math:`y\_true` are
+        :class:`~skfda.representation.FDataGrid`
+        objects and multioutput = 'raw_values',
+        :class:`~skfda.representation.FDataGrid` is returned.
+
+        If both :math:`y\_pred` and :math:`y\_true` are ndarray and
+        multioutput = 'raw_values', ndarray.
 
     """
     return sklearn.metrics.mean_squared_log_error(
@@ -680,6 +892,30 @@ def mean_squared_log_error(
         multioutput=multioutput,
         squared=squared,
     )
+
+
+@overload
+def _mean_squared_log_error_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+    squared: bool = True,
+) -> float:
+    ...
+
+
+@overload
+def _mean_squared_log_error_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['raw_values'],
+    squared: bool = True,
+) -> FDataGrid:
+    ...
 
 
 @mean_squared_log_error.register
@@ -746,6 +982,28 @@ def _mean_squared_log_error_fdatabasis(
     return integral[0] / (end - start)
 
 
+@overload
+def r2_score(
+    y_true: NDArrayFloat,
+    y_pred: NDArrayFloat,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+) -> float:
+    ...
+
+
+@overload
+def r2_score(
+    y_true: NDArrayFloat,
+    y_pred: NDArrayFloat,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['raw_values'],
+) -> NDArrayFloat:
+    ...
+
+
 @singledispatch
 def r2_score(
     y_true: Union[FData, NDArrayFloat],
@@ -799,17 +1057,17 @@ def r2_score(
     Returns:
         R2 score
 
-        float:
-            if multioutput = 'uniform_average' or
-            :math:`y\_pred` and :math:`y\_true` are
-            :class:`~skfda.representation.FDataBasis` objects.
-        FDataGrid:
-            if both :math:`y\_pred` and :math:`y\_true` are
-            :class:`~skfda.representation.FDataGrid`
-            objects and multioutput = 'raw_values'.
-        ndarray:
-            if both :math:`y\_pred` and :math:`y\_true` are ndarray and
-            multioutput = 'raw_values'.
+        If multioutput = 'uniform_average' or
+        :math:`y\_pred` and :math:`y\_true` are
+        :class:`~skfda.representation.FDataBasis` objects, float is returned.
+
+        If both :math:`y\_pred` and :math:`y\_true` are
+        :class:`~skfda.representation.FDataGrid`
+        objects and multioutput = 'raw_values',
+        :class:`~skfda.representation.FDataGrid` is returned.
+
+        If both :math:`y\_pred` and :math:`y\_true` are ndarray and
+        multioutput = 'raw_values', ndarray.
 
     """
     return sklearn.metrics.r2_score(
@@ -818,6 +1076,28 @@ def r2_score(
         sample_weight=sample_weight,
         multioutput=multioutput,
     )
+
+
+@overload
+def _r2_score_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['uniform_average'] = 'uniform_average',
+) -> float:
+    ...
+
+
+@overload
+def _r2_score_fdatagrid(
+    y_true: FDataGrid,
+    y_pred: FDataGrid,
+    *,
+    sample_weight: Optional[NDArrayFloat] = None,
+    multioutput: Literal['raw_values'],
+) -> FDataGrid:
+    ...
 
 
 @r2_score.register
@@ -836,21 +1116,17 @@ def _r2_score_fdatagrid(
 
     ss_res = mean(
         np.power(y_true - y_pred, 2),
-        weight=sample_weight,
+        weights=sample_weight,
     )
 
-    ss_tot = mean(
-        (y_true - mean(y_true, weight=sample_weight))
-        * (y_true - mean(y_true, weight=sample_weight)),
-        weight=sample_weight,
-    )
+    ss_tot = _var(y_true, weights=sample_weight)
 
     # Divisions by zero allowed
     with np.errstate(divide='ignore', invalid='ignore'):
         score = 1 - ss_res / ss_tot
 
-    # 0 / 0 divisions should be 1 in this context and the score, 0
-    score.data_matrix[np.isnan(score.data_matrix)] = 0
+    # 0 / 0 divisions should be 0 in this context and the score, 1
+    score.data_matrix[np.isnan(score.data_matrix)] = 1
 
     if multioutput == 'raw_values':
         return score
@@ -894,19 +1170,27 @@ def _r2_score_fdatabasis(
             weights=sample_weight,
             axis=0,
         )
-        # Divisions by zero allowed
-        with np.errstate(divide='ignore', invalid='ignore'):
-            score = 1 - ss_res / ss_tot
 
-        # 0 / 0 divisions should be 1 in this context and the score, 0
-        score[np.isnan(score)] = 0
+        # 0/0 case, the score is 1.
+        if ss_res == 0 and ss_tot == 0:
+            return 1
+
+        # r/0 case, r!= 0. Return -inf outside this function
+        if ss_res != 0 and ss_tot == 0:
+            raise ValueError
+
+        score = 1 - ss_res/ss_tot
 
         return score[0][0]
 
-    integral = scipy.integrate.quad_vec(
-        _r2_func,
-        start,
-        end,
-    )
+    try:
+        integral = scipy.integrate.quad_vec(
+            _r2_func,
+            start,
+            end,
+        )
+
+    except ValueError:
+        return float('-inf')
 
     return integral[0] / (end - start)

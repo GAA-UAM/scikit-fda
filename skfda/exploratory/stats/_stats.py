@@ -16,22 +16,22 @@ F = TypeVar('F', bound=FData)
 
 def mean(
     X: F,
-    weight: Optional[np.ndarray] = None,
+    weights: Optional[np.ndarray] = None,
 ) -> F:
     """Compute the mean of all the samples in a FData object.
     Args:
         X: Object containing all the samples whose mean is wanted.
-        weight: Sample weight. By default, uniform weight are
+        weights: Sample weight. By default, uniform weight are
         used.
     Returns:
         A :term:`functional data object` with just one sample representing
         the mean of all the samples in the original object.
     """
-    if weight is None:
+    if weights is None:
         return X.mean()
     else:
-        weight = (X.n_samples / sum(weight)) * weight
-        return (X * weight).mean()
+        weight = (1 / sum(weights)) * weights
+        return sum(X * weight)
 
 
 def var(X: FDataGrid) -> FDataGrid:

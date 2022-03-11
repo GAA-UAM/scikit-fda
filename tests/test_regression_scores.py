@@ -394,15 +394,22 @@ class TestScoreZeroDenominator(unittest.TestCase):
         y_true_grid = y_true_basis.to_grid(grid_points=grid_points)
         y_pred_grid = y_pred_basis.to_grid(grid_points=grid_points)
 
+        # 0/0 for FDataGrid
         np.testing.assert_almost_equal(
             r2_score(
                 y_true_grid,
                 y_pred_grid,
                 multioutput='raw_values',
-            ).evaluate(1),
-            [[[0]]],
+            ).data_matrix.flatten(),
+            
+            sklearn.metrics.r2_score(
+                y_true_grid.data_matrix.squeeze(),
+                y_pred_grid.data_matrix.squeeze(),
+                multioutput='raw_values',
+            )
         )
 
+        # 0/0 for FDataBasis
         np.testing.assert_almost_equal(
             r2_score(y_true_basis, y_pred_basis),
             -16.5,
@@ -418,6 +425,8 @@ class TestScoreZeroDenominator(unittest.TestCase):
         )
 
         y_pred_grid = y_pred_basis.to_grid(grid_points=grid_points)
+
+        # r/0 for FDataGrid (r != 0)
         np.testing.assert_almost_equal(
             r2_score(
                 y_true_grid,
@@ -425,6 +434,15 @@ class TestScoreZeroDenominator(unittest.TestCase):
                 multioutput='raw_values',
             ).evaluate(1),
             [[[float('-inf')]]],
+        )
+
+        # r/0 for FDataBasis (r != 0)
+        np.testing.assert_almost_equal(
+            r2_score(
+                y_true_basis,
+                y_pred_basis,
+            ),
+            float('-inf'),
         )
 
     def test_zero_ev(self) -> None:
@@ -451,13 +469,25 @@ class TestScoreZeroDenominator(unittest.TestCase):
         y_true_grid = y_true_basis.to_grid(grid_points=grid_points)
         y_pred_grid = y_pred_basis.to_grid(grid_points=grid_points)
 
+        # 0/0 for FDataGrid
         np.testing.assert_almost_equal(
             explained_variance_score(
                 y_true_grid,
                 y_pred_grid,
                 multioutput='raw_values',
-            ).evaluate(1),
-            [[[0]]],
+            ).data_matrix.flatten(),
+
+            sklearn.metrics.explained_variance_score(
+                y_true_grid.data_matrix.squeeze(),
+                y_pred_grid.data_matrix.squeeze(),
+                multioutput='raw_values',
+            )
+        )
+
+        # 0/0 for FDataBasis
+        np.testing.assert_almost_equal(
+            explained_variance_score(y_true_basis, y_pred_basis),
+            -3,
         )
 
         # Case when numerator is non-zero and denominator is zero (in t = 1)
@@ -467,6 +497,8 @@ class TestScoreZeroDenominator(unittest.TestCase):
             coefficients=basis_coef_pred,
         )
         y_pred_grid = y_pred_basis.to_grid(grid_points=grid_points)
+
+        # r/0 for FDataGrid (r != 0)
         np.testing.assert_almost_equal(
             explained_variance_score(
                 y_true_grid,
@@ -474,6 +506,15 @@ class TestScoreZeroDenominator(unittest.TestCase):
                 multioutput='raw_values',
             ).evaluate(1),
             [[[float('-inf')]]],
+        )
+
+        # r/0 for FDataBasis (r != 0)
+        np.testing.assert_almost_equal(
+            explained_variance_score(
+                y_true_basis,
+                y_pred_basis,
+            ),
+            float('-inf'),
         )
 
     def test_zero_mape(self) -> None:

@@ -337,11 +337,11 @@ class KNeighborsHatMatrix(HatMatrix):
 
     In both cases, :math:`K(\cdot)` is a kernel function and
     :math:`h_{i}` is calculated as the distance from :math:`x_i'` to its
-    :math:`n\_neighbors`-th nearest neighbor in :math:`\{x_1, ..., x_n\}`
+    ``n\_neighbors``-th nearest neighbor in :math:`\{x_1, ..., x_n\}`
     :footcite:`ferraty+vieu_2006_nonparametric_knn`.
 
     Used with the uniform kernel, it takes the average of the closest
-    :math:`n\_neighbors` points to a given point.
+    ``n\_neighbors`` points to a given point.
 
     Args:
         n_neighbors: Number of nearest neighbours. By

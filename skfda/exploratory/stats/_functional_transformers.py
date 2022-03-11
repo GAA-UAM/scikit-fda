@@ -7,6 +7,7 @@ from typing import Union
 import numpy as np
 
 from ...representation import FDataBasis, FDataGrid
+from ...representation._typing import NDArrayFloat, NDArrayInt
 
 
 def local_averages(
@@ -79,8 +80,8 @@ def local_averages(
 
 def number_up_crossings(
     data: FDataGrid,
-    levels: np.ndarray,
-) -> np.ndarray:
+    levels: NDArrayFloat,
+) -> NDArrayInt:
     r"""
     Calculate the number of up crossings to a level of a FDataGrid.
 
@@ -101,16 +102,16 @@ def number_up_crossings(
             levels: sequence of numbers including the levels
             we want to consider for the crossings.
         Returns:
-            ndarray of shape (n_levels, n_samples)\
+            ndarray of shape (n_samples, len(levels))\
             with the values of the counters.
 
     Example:
 
     We import the Medflies dataset and for simplicity we use
-    the first 50 samples.
+    the first 5 samples.
     >>> from skfda.datasets import fetch_medflies
     >>> dataset = fetch_medflies()
-    >>> X = dataset['data'][:50]
+    >>> X = dataset['data'][:5]
 
     Then we decide the level we want to consider (in our case 40)
     and call the function with the dataset. The output will be the number of
@@ -118,58 +119,13 @@ def number_up_crossings(
     >>> from skfda.exploratory.stats import number_up_crossings
     >>> import numpy as np
     >>> number_up_crossings(X, np.asarray([40]))
-    array([[[6],
-            [3],
-            [7],
-            [7],
-            [3],
-            [4],
-            [5],
-            [7],
-            [4],
-            [6],
-            [4],
-            [4],
-            [5],
-            [6],
-            [0],
-            [5],
-            [1],
-            [6],
-            [0],
-            [7],
-            [0],
-            [6],
-            [2],
-            [5],
-            [6],
-            [5],
-            [8],
-            [4],
-            [3],
-            [7],
-            [1],
-            [3],
-            [0],
-            [5],
-            [2],
-            [7],
-            [2],
-            [5],
-            [5],
-            [5],
-            [4],
-            [4],
-            [1],
-            [2],
-            [3],
-            [5],
-            [3],
-            [3],
-            [5],
-            [2]]])
+    array([[6],
+           [3],
+           [7],
+           [7],
+           [3]])
     """
-    curves = data.data_matrix
+    curves = data.data_matrix[:, :, 0]
 
     distances = np.asarray([
         level - curves
@@ -178,9 +134,15 @@ def number_up_crossings(
 
     points_greater = distances >= 0
     points_smaller = distances <= 0
-    points_smaller_rotated = np.roll(points_smaller, -1, axis=2)
+    points_smaller_rotated = np.concatenate(
+        [
+            points_smaller[:, :, 1:],
+            points_smaller[:, :, :1],
+        ],
+        axis=2,
+    )
 
     return np.sum(
         points_greater & points_smaller_rotated,
         axis=2,
-    )
+    ).T

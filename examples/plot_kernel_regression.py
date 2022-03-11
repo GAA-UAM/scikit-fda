@@ -109,8 +109,8 @@ nw_res = r2_score(y_pred, y_test)
 print('Score NW:', nw_res)
 
 ##############################################################################
-# For Local Linear Regression, FDataBasis representation with an orthonormal
-# basis should be used (for the previous cases it is possible to use either
+# For Local Linear Regression, FDataBasis representation with a basis should be
+# used (for the previous cases it is possible to use either
 # FDataGrid or FDataBasis).
 #
 # For basis, Fourier basis with 10 elements has been selected. Note that the

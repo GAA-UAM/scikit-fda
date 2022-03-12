@@ -80,36 +80,33 @@ def local_averages(
 
 
 def _calculate_curves_occupation_(
-    curve_y_coordinates: np.ndarray,
-    curve_x_coordinates: np.ndarray,
-    interval: Tuple[float, float],
+    curve_y_coordinates: NDArrayFloat,
+    curve_x_coordinates: NDArrayFloat,
+    intervals: Sequence[Tuple[float, float]],
 ) -> NDArrayFloat:
-    y1, y2 = interval
 
-    if y2 < y1:
+    y1, y2 = np.asarray(intervals).T
+
+    if any(np.greater(y1, y2)):
         raise ValueError(
-            "Interval limits (a,b) should satisfy a <= b. "
-            + str(interval) + " doesn't",
+            "Interval limits (a,b) should satisfy a <= b.",
         )
 
     # Reshape original curves so they have one dimension less
-    new_shape = curve_y_coordinates.shape[1::-1]
-    curve_y_coordinates = curve_y_coordinates.reshape(
-        new_shape[::-1],
-    )
+    curve_y_coordinates = curve_y_coordinates[:, :, 0]
 
     # Calculate interval sizes on the X axis
     intervals_x_axis = curve_x_coordinates[1:] - curve_x_coordinates[:-1]
 
     # Calculate which points are inside the interval given (y1,y2) on Y axis
-    greater_than_y1 = curve_y_coordinates >= y1
-    less_than_y2 = curve_y_coordinates <= y2
+    greater_than_y1 = curve_y_coordinates >= y1[:, np.newaxis, np.newaxis]
+    less_than_y2 = curve_y_coordinates <= y2[:, np.newaxis, np.newaxis]
     inside_interval_bools = greater_than_y1 & less_than_y2
 
     # Calculate intervals on X axis where the points are inside Y axis interval
     intervals_x_inside = inside_interval_bools * intervals_x_axis
 
-    return np.sum(intervals_x_inside, axis=1)
+    return np.sum(intervals_x_inside, axis=2)
 
 
 def occupation_measure(
@@ -139,13 +136,13 @@ def occupation_measure(
 
         Args:
             data: FDataGrid or FDataBasis where we want to calculate
-            the occupation measure.
+                the occupation measure.
             intervals: ndarray of tuples containing the
-            intervals we want to consider. The shape should be
-            (n_sequences,2)
+                intervals we want to consider. The shape should be
+                (n_sequences,2)
             n_points: Number of points to evaluate in the domain.
-            By default will be used the points defined on the FDataGrid.
-            On a FDataBasis this value should be specified.
+                By default will be used the points defined on the FDataGrid.
+                On a FDataBasis this value should be specified.
         Returns:
             ndarray of shape (n_intervals, n_samples)
             with the transformed data.
@@ -179,8 +176,8 @@ def occupation_measure(
         ...     ),
         ...     decimals=2,
         ... )
-        array([[ 1.  ,  0.5 ,  6.29],
-               [ 1.  ,  0.5 ,  0.  ]])
+        array([[ 0.98,  0.5 ,  6.28],
+               [ 1.02,  0.52,  0.  ]])
 
     """
     if isinstance(data, FDataBasis) and n_points is None:
@@ -195,18 +192,15 @@ def occupation_measure(
         function_x_coordinates = data.grid_points[0]
         function_y_coordinates = data.data_matrix
     else:
-        function_x_coordinates = np.arange(
+        function_x_coordinates = np.linspace(
             data.domain_range[0][0],
             data.domain_range[0][1],
-            (data.domain_range[0][1] - data.domain_range[0][0]) / n_points,
+            num=n_points,
         )
         function_y_coordinates = data(function_x_coordinates[1:])
 
-    return np.asarray([
-        _calculate_curves_occupation_(  # noqa: WPS317
-            function_y_coordinates,
-            function_x_coordinates,
-            interval,
-        )
-        for interval in intervals
-    ])
+    return _calculate_curves_occupation_(  # noqa: WPS317
+        function_y_coordinates,
+        function_x_coordinates,
+        intervals,
+    )

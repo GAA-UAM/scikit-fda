@@ -190,7 +190,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
     It is desired to estimate the values
     :math:`\hat{Y} = \{\hat{y}_1, \hat{y}_2, ..., \hat{y}_m\}`
-    for the data :math:`\{X'_1, X'_2, ..., X'_m\}` 
+    for the data :math:`\{X'_1, X'_2, ..., X'_m\}`
     (expressed in the same basis).
 
     For each :math:`X'_k` the estimation :math:`\hat{y}_k` is obtained by

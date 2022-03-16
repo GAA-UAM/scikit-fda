@@ -4,9 +4,10 @@ from __future__ import annotations
 from typing import Callable, Optional, Union
 
 import numpy as np
+import scipy.linalg
 from typing_extensions import Final, Literal
 
-import scipy.linalg
+from ..representation._typing import NDArrayFloat
 
 LstsqMethodCallable = Callable[[np.ndarray, np.ndarray], np.ndarray]
 LstsqMethodName = Literal["cholesky", "qr", "svd"]
@@ -14,9 +15,9 @@ LstsqMethod = Union[LstsqMethodCallable, LstsqMethodName]
 
 
 def lstsq_cholesky(
-    coefs: np.ndarray,
-    result: np.ndarray,
-) -> np.ndarray:
+    coefs: NDArrayFloat,
+    result: NDArrayFloat,
+) -> NDArrayFloat:
     """Solve OLS problem using a Cholesky decomposition."""
     left = coefs.T @ coefs
     right = coefs.T @ result
@@ -24,17 +25,17 @@ def lstsq_cholesky(
 
 
 def lstsq_qr(
-    coefs: np.ndarray,
-    result: np.ndarray,
-) -> np.ndarray:
+    coefs: NDArrayFloat,
+    result: NDArrayFloat,
+) -> NDArrayFloat:
     """Solve OLS problem using a QR decomposition."""
     return scipy.linalg.lstsq(coefs, result, lapack_driver="gelsy")[0]
 
 
 def lstsq_svd(
-    coefs: np.ndarray,
-    result: np.ndarray,
-) -> np.ndarray:
+    coefs: NDArrayFloat,
+    result: NDArrayFloat,
+) -> NDArrayFloat:
     """Solve OLS problem using a SVD decomposition."""
     return scipy.linalg.lstsq(coefs, result, lapack_driver="gelsd")[0]
 
@@ -54,15 +55,18 @@ def _get_lstsq_method(
 
 
 def solve_regularized_weighted_lstsq(
-    coefs: np.ndarray,
-    result: np.ndarray,
+    coefs: NDArrayFloat,
+    result: NDArrayFloat,
     *,
-    weights: Optional[np.ndarray] = None,
-    penalty_matrix: Optional[np.ndarray] = None,
+    weights: Optional[NDArrayFloat] = None,
+    penalty_matrix: Optional[NDArrayFloat] = None,
     lstsq_method: LstsqMethod = lstsq_svd,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """
     Solve a regularized and weighted least squares problem.
+
+    If weights is a 1-D array it is converted to 2-D array with weights on the
+    diagonal.
 
     If the penalty matrix is not ``None`` and nonzero, there
     is a closed solution. Otherwise the problem can be reduced
@@ -76,7 +80,12 @@ def solve_regularized_weighted_lstsq(
     ):
         # Weighted least squares case
         if weights is not None:
-            weights_chol = scipy.linalg.cholesky(weights)
+
+            if weights.ndim == 1:
+                weights_chol = np.diag(np.sqrt(weights))
+            else:
+                weights_chol = scipy.linalg.cholesky(weights)
+
             coefs = weights_chol @ coefs
             result = weights_chol @ result
 

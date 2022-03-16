@@ -21,13 +21,16 @@ class Fourier(Basis):
         \phi_0(t) = \frac{1}{\sqrt{2}}
 
     .. math::
-        \phi_{2n -1}(t) = sin\left(\frac{2 \pi n}{T} t\right)
+        \phi_{2n -1}(t) = \frac{sin\left(\frac{2 \pi n}{T} t\right)}
+                                                    {\sqrt{\frac{T}{2}}}
 
     .. math::
-        \phi_{2n}(t) = cos\left(\frac{2 \pi n}{T} t\right)
+        \phi_{2n}(t) = \frac{cos\left(\frac{2 \pi n}{T} t\right)}
+                                                    {\sqrt{\frac{T}{2}}}
 
-    Actually this basis functions are not orthogonal but not orthonormal. To
-    achieve this they are divided by its norm: :math:`\sqrt{\frac{T}{2}}`.
+
+    This basis will be orthonormal if the period coincides with the length
+    of the interval in which it is defined.
 
     Parameters:
         domain_range: A tuple of length 2 containing the initial and

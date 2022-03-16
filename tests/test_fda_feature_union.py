@@ -2,18 +2,17 @@
 
 import unittest
 
-from pandas import DataFrame
+import pandas as pd
 from pandas.testing import assert_frame_equal
 
 from skfda.datasets import fetch_growth
 from skfda.misc.feature_construction import EvaluationTransformer
+from skfda.misc.hat_matrix import NadarayaWatsonHatMatrix
 from skfda.misc.operators import SRSF
 from skfda.preprocessing.dim_reduction.feature_extraction import (
     FDAFeatureUnion,
 )
-from skfda.preprocessing.smoothing.kernel_smoothers import (
-    NadarayaWatsonSmoother,
-)
+from skfda.preprocessing.smoothing import KernelSmoother
 
 
 class TestFDAFeatureUnion(unittest.TestCase):
@@ -36,15 +35,25 @@ class TestFDAFeatureUnion(unittest.TestCase):
         u = FDAFeatureUnion(
             [
                 ("srsf1", SRSF()),
-                ("smooth", NadarayaWatsonSmoother()),  # type: ignore
+                ("smooth", KernelSmoother(
+                    kernel_estimator=NadarayaWatsonHatMatrix(),
+                )),  # type: ignore
             ],
         )
         created_frame = u.fit_transform(self.X)
 
         t1 = SRSF().fit_transform(self.X)
-        t2 = NadarayaWatsonSmoother().fit_transform(self.X)  # type: ignore
+        t2 = KernelSmoother(
+            kernel_estimator=NadarayaWatsonHatMatrix(),
+        ).fit_transform(self.X)  # type: ignore
 
-        true_frame = DataFrame({"Transformed data": [t1, t2]})
+        true_frame = pd.concat(
+            [
+                pd.DataFrame({0: t1}),
+                pd.DataFrame({0: t2}),
+            ],
+            axis=1,
+        )
         assert_frame_equal(true_frame, created_frame)
 
 

@@ -107,23 +107,25 @@ def number_up_crossings(
 
     Example:
 
-    We import the Medflies dataset and for simplicity we use
-    the first 5 samples.
-    >>> from skfda.datasets import fetch_medflies
-    >>> dataset = fetch_medflies()
-    >>> X = dataset['data'][:5]
-
-    Then we decide the level we want to consider (in our case 40)
-    and call the function with the dataset. The output will be the number of
-    times each curve cross the level 40 growing.
+    For this example we will use a well known function so the correct
+    functioning of this method can be checked.
+    We will create and use a DataFrame with a sample extracted from
+    the Bessel Function of first type and order 0.
+    First of all we import the Bessel Function and create the X axis
+    data grid. Then we create the FdataGrid
     >>> from skfda.exploratory.stats import number_up_crossings
+    >>> from scipy.special import jv
     >>> import numpy as np
-    >>> number_up_crossings(X, np.asarray([40]))
-    array([[6],
-           [3],
-           [7],
-           [7],
-           [3]])
+    >>> x_grid = np.linspace(0, 14, 14)
+    >>> fd_grid = FDataGrid(
+    ...     data_matrix=[jv([0], x_grid)],
+    ...     grid_points=x_grid,
+    ... )
+
+    Finall we evaluate the number of up crossings method with the FDataGrid
+    created.
+    >>> number_up_crossings(fd_grid, np.asarray([0]))
+    array([[2]])  
     """
     curves = data.data_matrix[:, :, 0]
 

@@ -16,6 +16,7 @@ from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
+from matplotlib.patches import Ellipse
 
 from ... import FDataGrid
 from ...representation._typing import NDArrayFloat, NDArrayInt
@@ -43,34 +44,34 @@ class MagnitudeShapePlot(BasePlot):
     For more information see :footcite:ts:`dai+genton_2018_visualization`.
 
     Args:
-        fdata (FDataGrid): Object containing the data.
-        multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
+        fdata: Object containing the data.
+        multivariate_depth:
             Method used to order the data. Defaults to :class:`projection
             depth <fda.depth_measures.multivariate.ProjectionDepth>`.
-        pointwise_weights (array_like, optional): an array containing the
+        pointwise_weights: an array containing the
             weights of each points of discretisation where values have
             been recorded.
-        alpha (float, optional): Denotes the quantile to choose the cutoff
-            value for detecting outliers Defaults to 0.993, which is used
-            in the classical boxplot.
-        assume_centered (boolean, optional): If True, the support of the
+        cutoff_factor: Factor that multiplies the cutoff value, in order to
+            consider more or less curves as outliers.
+        assume_centered: If True, the support of the
             robust location and the covariance estimates is computed, and a
             covariance estimate is recomputed from it, without centering
             the data. Useful to work with data whose mean is significantly
             equal to zero but is not exactly zero. If False, default value,
             the robust location and covariance are directly computed with
             the FastMCD algorithm without additional treatment.
-        support_fraction (float, 0 < support_fraction < 1, optional): The
+        support_fraction: The
             proportion of points to be included in the support of the
             raw MCD estimate.
             Default is None, which implies that the minimum value of
             support_fraction will be used within the algorithm:
             [n_sample + n_features + 1] / 2
-        random_state (int, RandomState instance or None, optional): If int,
+        random_state: If int,
             random_state is the seed used by the random number generator;
             If RandomState instance, random_state is the random number
             generator; If None, the random number generator is the
             RandomState instance used by np.random. By default, it is 0.
+        ellipsoid: Whether to draw the non outlying ellipsoid.
 
     Attributes:
         points(numpy.ndarray): 2-dimensional matrix where each row
@@ -143,7 +144,7 @@ class MagnitudeShapePlot(BasePlot):
                 ...),
             multivariate_depth=None,
             pointwise_weights=None,
-            alpha=0.993,
+            cutoff_factor=1,
             points=array([[ 1.66666667,  0.12777778],
                           [ 0.        ,  0.        ],
                           [-0.8       ,  0.17666667],
@@ -168,6 +169,7 @@ class MagnitudeShapePlot(BasePlot):
         *,
         fig: Optional[Figure] = None,
         axes: Optional[Sequence[Axes]] = None,
+        ellipsoid: bool = True,
         **kwargs: Any,
     ) -> None:
 
@@ -186,6 +188,8 @@ class MagnitudeShapePlot(BasePlot):
         y = self.outlier_detector.fit_predict(fdata)
 
         outliers = (y == -1)
+
+        self.ellipsoid = ellipsoid
 
         self._fdata = fdata
         self._outliers = outliers
@@ -209,8 +213,8 @@ class MagnitudeShapePlot(BasePlot):
         return self.outlier_detector.pointwise_weights
 
     @property
-    def alpha(self) -> float:
-        return self.outlier_detector.alpha
+    def cutoff_factor(self) -> float:
+        return self.outlier_detector.cutoff_factor
 
     @property
     def points(self) -> NDArrayFloat:
@@ -276,6 +280,34 @@ class MagnitudeShapePlot(BasePlot):
 
         colors_rgba = [tuple(i) for i in colors]
 
+        if self.ellipsoid:
+            center = self.outlier_detector.cov_.location_
+            prec = self.outlier_detector.cov_.get_precision()
+
+            K = (
+                self.outlier_detector.cutoff_value_
+                / self.outlier_detector.scaling_
+            )
+
+            eigvals, eigvecs = np.linalg.eigh(prec)
+
+            a, b = np.sqrt(K / eigvals)
+            if eigvecs[0, 1] * eigvecs[1, 0] > 0:
+                eigvecs[:, 0] *= -1
+
+            angle = np.rad2deg(np.arctan2(eigvecs[1, 0], eigvecs[0, 0]))
+
+            ellipse = Ellipse(
+                xy=center,
+                width=2 * a,
+                height=2 * b,
+                angle=angle,
+                facecolor='C0',
+                alpha=0.1,
+            )
+
+            axes[0].add_patch(ellipse)
+
         for i, _ in enumerate(self.points[:, 0].ravel()):
             self.artists[i, 0] = axes[0].scatter(
                 self.points[:, 0].ravel()[i],
@@ -296,7 +328,7 @@ class MagnitudeShapePlot(BasePlot):
             f"\nfdata={repr(self.fdata)},"
             f"\nmultivariate_depth={self.multivariate_depth},"
             f"\npointwise_weights={repr(self.pointwise_weights)},"
-            f"\nalpha={repr(self.alpha)},"
+            f"\ncutoff_factor={repr(self.cutoff_factor)},"
             f"\npoints={repr(self.points)},"
             f"\noutliers={repr(self.outliers)},"
             f"\ncolormap={self.colormap.name},"

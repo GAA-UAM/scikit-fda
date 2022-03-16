@@ -119,6 +119,7 @@ class GraphPlot(BasePlot):
     a group of colors for the representations. Besides, we can use a list of
     variables (depths, scalar regression targets...) can be used as an
     argument to display the functions wtih a gradient of colors.
+
     Args:
         fdata: functional data set that we want to plot.
         gradient_criteria: list of real values used to determine the color

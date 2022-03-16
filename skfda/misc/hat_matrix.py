@@ -25,10 +25,11 @@ class HatMatrix(
     RegressorMixin,
 ):
     """
-    Kernel estimators.
+    Hat Matrix.
 
-    This module includes three types of kernel estimators that are used in
-    KernelSmoother and KernelRegression classes.
+    Base class for :class:`~skfda.misc.hat_matrix.NadarayaWatsonHatMatrix`,
+    :class:`~skfda.misc.hat_matrix.LocalLinearRegressionHatMatrix` and
+    :class:`~skfda.misc.hat_matrix.KNeighborsHatMatrix`.
     """
 
     def __init__(
@@ -337,11 +338,11 @@ class KNeighborsHatMatrix(HatMatrix):
 
     In both cases, :math:`K(\cdot)` is a kernel function and
     :math:`h_{i}` is calculated as the distance from :math:`x_i'` to its
-    ``n\_neighbors``-th nearest neighbor in :math:`\{x_1, ..., x_n\}`
+    ``n_neighbors``-th nearest neighbor in :math:`\{x_1, ..., x_n\}`
     :footcite:`ferraty+vieu_2006_nonparametric_knn`.
 
     Used with the uniform kernel, it takes the average of the closest
-    ``n\_neighbors`` points to a given point.
+    ``n_neighbors`` points to a given point.
 
     Args:
         n_neighbors: Number of nearest neighbours. By

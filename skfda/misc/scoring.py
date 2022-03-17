@@ -199,29 +199,23 @@ def _explained_variance_score_fdatabasis(
 
     def _ev_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
         num = np.average(
-            np.power(
-                (
-                    (y_true(x) - y_pred(x))
-                    - np.average(
-                        y_true(x) - y_pred(x),
-                        weights=sample_weight,
-                        axis=0,
-                    )
-                ),
-                2,
-            ),
+            (
+                (y_true(x) - y_pred(x))
+                - np.average(
+                    y_true(x) - y_pred(x),
+                    weights=sample_weight,
+                    axis=0,
+                )
+            ) ** 2,
             weights=sample_weight,
             axis=0,
         )
 
         den = np.average(
-            np.power(
-                (
-                    y_true(x)
-                    - np.average(y_true(x), weights=sample_weight, axis=0)
-                ),
-                2,
-            ),
+            (
+                y_true(x)
+                - np.average(y_true(x), weights=sample_weight, axis=0)
+            ) ** 2,
             weights=sample_weight,
             axis=0,
         )
@@ -697,7 +691,7 @@ def _mean_squared_error_fdatabasis(
     def _mse_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
 
         error = np.average(
-            np.power(y_true(x) - y_pred(x), 2),
+            (y_true(x) - y_pred(x)) ** 2,
             weights=sample_weight,
             axis=0,
         )
@@ -867,7 +861,7 @@ def _mean_squared_log_error_fdatabasis(
             )
 
         error = np.average(
-            np.power(np.log1p(y_true(x)) - np.log1p(y_pred(x)), 2),
+            (np.log1p(y_true(x)) - np.log1p(y_pred(x))) ** 2,
             weights=sample_weight,
             axis=0,
         )
@@ -1039,19 +1033,16 @@ def _r2_score_fdatabasis(
 
     def _r2_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
         ss_res = np.average(
-            np.power(y_true(x) - y_pred(x), 2),
+            (y_true(x) - y_pred(x)) ** 2,
             weights=sample_weight,
             axis=0,
         )
 
         ss_tot = np.average(
-            np.power(
-                (
-                    y_true(x)
-                    - np.average(y_true(x), weights=sample_weight, axis=0)
-                ),
-                2,
-            ),
+            (
+                y_true(x)
+                - np.average(y_true(x), weights=sample_weight, axis=0)
+            ) ** 2,
             weights=sample_weight,
             axis=0,
         )

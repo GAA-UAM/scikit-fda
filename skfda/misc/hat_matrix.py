@@ -27,9 +27,12 @@ class HatMatrix(
     """
     Hat Matrix.
 
-    Base class for :class:`~skfda.misc.hat_matrix.NadarayaWatsonHatMatrix`,
-    :class:`~skfda.misc.hat_matrix.LocalLinearRegressionHatMatrix` and
-    :class:`~skfda.misc.hat_matrix.KNeighborsHatMatrix`.
+    Base class for different hat matrices.
+
+    See also:
+        :class:`~skfda.misc.hat_matrix.NadarayaWatsonHatMatrix`
+        :class:`~skfda.misc.hat_matrix.LocalLinearRegressionHatMatrix`
+        :class:`~skfda.misc.hat_matrix.KNeighborsHatMatrix`
     """
 
     def __init__(

@@ -30,8 +30,8 @@ def mean(
     if weights is None:
         return X.mean()
     else:
-        weight = (1 / sum(weights)) * weights
-        return sum(X * weight)
+        weight = (1 / np.sum(weights)) * weights
+        return np.sum(X * weight)
 
 
 def var(X: FDataGrid) -> FDataGrid:

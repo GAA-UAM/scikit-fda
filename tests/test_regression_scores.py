@@ -20,6 +20,7 @@ from skfda.representation._typing import NDArrayFloat
 from skfda.representation.basis import BSpline, Fourier, Monomial
 
 
+
 def _create_data_grid(n: int) -> Tuple[FDataGrid, FDataGrid]:
     X, y = fetch_tecator(return_X_y=True, as_frame=True)
     fd = X.iloc[:, 0].values
@@ -76,12 +77,8 @@ class TestScoreFunctionsGrid(unittest.TestCase):
             )
 
             score_sklearn = sklearn_function(
-                y_true.data_matrix.reshape(
-                    (y_true.data_matrix.shape[0], -1),
-                ),
-                y_pred.data_matrix.reshape(
-                    (y_pred.data_matrix.shape[0], -1),
-                ),
+                y_true.data_matrix.squeeze(),
+                y_pred.data_matrix.squeeze(),
                 multioutput='raw_values',
                 sample_weight=weight,
             )
@@ -95,21 +92,15 @@ class TestScoreFunctionsGrid(unittest.TestCase):
             )
 
             score_sklearn = sklearn_function(
-                y_true.data_matrix.reshape(
-                    (y_true.data_matrix.shape[0], -1),
-                ),
-                y_pred.data_matrix.reshape(
-                    (y_pred.data_matrix.shape[0], -1),
-                ),
+                y_true.data_matrix.squeeze(),
+                y_pred.data_matrix.squeeze(),
                 multioutput='raw_values',
                 sample_weight=weight,
                 squared=False,
             )
 
         np.testing.assert_allclose(
-            score.data_matrix.reshape(
-                (score.data_matrix.shape[0], -1),
-            )[0],
+            score.data_matrix.squeeze(),
             score_sklearn,
         )
 
@@ -249,11 +240,7 @@ class TestScoreFunctionGridBasis(unittest.TestCase):
                 squared=False,
             )
 
-        np.testing.assert_almost_equal(
-            score_grid,
-            score_basis,
-            decimal=precision,
-        )
+        self.assertAlmostEqual(score_basis, score_grid, places=precision)
 
     def test_explained_variance_score(self) -> None:
         """Explained variance score for FDataGrid and FDataBasis."""
@@ -318,7 +305,7 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         # integrate 1 - num/den
         # where     num = (1/2x -1/2x^2)^2
         # and       den = (1.5 + 1.5x + 1.5x^2)^2
-        np.testing.assert_almost_equal(ev, 0.992968)
+        self.assertAlmostEqual(ev, 0.992968, places=6)
 
     def test_mean_absolut_error_basis(self) -> None:
         """Test Mean Absolute Error for FDataBasis."""
@@ -327,7 +314,7 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         mae = mean_absolute_error(y_true, y_pred)
 
         # integrate 1/2 * | -x + x^2|
-        np.testing.assert_almost_equal(mae, 0.8055555555)
+        self.assertAlmostEqual(mae, 0.8055555555)
 
     def test_mean_absolute_percentage_error_basis(self) -> None:
         """Test Mean Absolute Percentage Error for FDataBasis."""
@@ -336,7 +323,7 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         mape = mean_absolute_percentage_error(y_true, y_pred)
 
         # integrate |1/2 * (-x  + x^2) / (4 + 5x + 6x^2)|
-        np.testing.assert_almost_equal(mape, 0.0199192187)
+        self.assertAlmostEqual(mape, 0.0199192187)
 
     def test_mean_squared_error_basis(self) -> None:
         """Test Mean Squared Error for FDataBasis."""
@@ -345,7 +332,7 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         mse = mean_squared_error(y_true, y_pred)
 
         # integrate 1/2 * (-x + x^2)^2
-        np.testing.assert_almost_equal(mse, 2.85)
+        self.assertAlmostEqual(mse, 2.85)
 
     def test_mean_squared_log_error_basis(self) -> None:
         """Test Mean Squared Log Error for FDataBasis."""
@@ -354,7 +341,7 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         msle = mean_squared_log_error(y_true, y_pred)
 
         # integrate 1/2*(log(1 + 4 + 5x + 6x^2) - log(1 + 4 + 6x + 5x^2))^2
-        np.testing.assert_almost_equal(msle, 0.00107583)
+        self.assertAlmostEqual(msle, 0.00107583)
 
     def test_r2_score_basis(self) -> None:
         """Test R2 Score for FDataBasis."""
@@ -365,7 +352,7 @@ class TestScoreFunctionsBasis(unittest.TestCase):
         # integrate 1 - num/den
         # where     num = 1/2*(-x + x^2)^2,
         # and       den = (1.5 + 1.5x + 1.5x^2)^2
-        np.testing.assert_almost_equal(r2, 0.9859362)
+        self.assertAlmostEqual(r2, 0.9859362)
 
 
 class TestScoreZeroDenominator(unittest.TestCase):
@@ -400,7 +387,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
                 y_true_grid,
                 y_pred_grid,
                 multioutput='raw_values',
-            ).data_matrix.flatten(),
+            ).data_matrix.squeeze(),
             
             sklearn.metrics.r2_score(
                 y_true_grid.data_matrix.squeeze(),
@@ -410,7 +397,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
         )
 
         # 0/0 for FDataBasis
-        np.testing.assert_almost_equal(
+        self.assertAlmostEqual(
             r2_score(y_true_basis, y_pred_basis),
             -16.5,
         )
@@ -437,7 +424,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
         )
 
         # r/0 for FDataBasis (r != 0)
-        np.testing.assert_almost_equal(
+        self.assertAlmostEqual(
             r2_score(
                 y_true_basis,
                 y_pred_basis,
@@ -485,7 +472,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
         )
 
         # 0/0 for FDataBasis
-        np.testing.assert_almost_equal(
+        self.assertAlmostEqual(
             explained_variance_score(y_true_basis, y_pred_basis),
             -3,
         )
@@ -509,7 +496,7 @@ class TestScoreZeroDenominator(unittest.TestCase):
         )
 
         # r/0 for FDataBasis (r != 0)
-        np.testing.assert_almost_equal(
+        self.assertAlmostEqual(
             explained_variance_score(
                 y_true_basis,
                 y_pred_basis,

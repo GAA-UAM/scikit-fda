@@ -19,6 +19,7 @@ def mean(
     weights: Optional[np.ndarray] = None,
 ) -> F:
     """Compute the mean of all the samples in a FData object.
+
     Args:
         X: Object containing all the samples whose mean is wanted.
         weights: Sample weight. By default, uniform weight are
@@ -26,21 +27,24 @@ def mean(
     Returns:
         A :term:`functional data object` with just one sample representing
         the mean of all the samples in the original object.
+
     """
     if weights is None:
         return X.mean()
-    else:
-        weight = (1 / np.sum(weights)) * weights
-        return np.sum(X * weight)
+
+    weight = (1 / np.sum(weights)) * weights
+    return (X * weight).sum()
 
 
 def var(X: FDataGrid) -> FDataGrid:
     """Compute the variance of a set of samples in a FDataGrid object.
+
     Args:
         X: Object containing all the set of samples whose variance is desired.
     Returns:
         A :term:`functional data object` with just one sample representing the
         variance of all the samples in the original object.
+
     """
     return X.var()
 

@@ -1,7 +1,7 @@
-"""Score functions for FData."""
+"""Scoring methods for FData."""
 import warnings
 from functools import singledispatch
-from typing import Optional, Union, overload, TypeVar
+from typing import Optional, TypeVar, Union, overload
 
 import numpy as np
 import scipy.integrate
@@ -10,9 +10,9 @@ from typing_extensions import Literal, Protocol
 
 from .. import FData
 from ..exploratory.stats import mean, var
+from ..representation import FDataBasis, FDataGrid
+from ..representation._functional_data import EvalPointsType
 from ..representation._typing import NDArrayFloat
-from ..representation.basis import FDataBasis
-from ..representation.grid import FDataGrid
 
 DataType = TypeVar('DataType', FDataGrid, FDataBasis, NDArrayFloat)
 DataTypeRawValues = TypeVar('DataTypeRawValues', FDataGrid, NDArrayFloat)
@@ -21,7 +21,7 @@ DataTypeRawValues = TypeVar('DataTypeRawValues', FDataGrid, NDArrayFloat)
 class ScoreFunction(Protocol):
     """Type definition for score functions."""
 
-    def __call__(
+    def __call__(   # noqa: D102
         self,
         y_true: Union[FData, NDArrayFloat],
         y_pred: Union[FData, NDArrayFloat],
@@ -30,7 +30,7 @@ class ScoreFunction(Protocol):
         = 'uniform_average',
         squared: Optional[bool] = None,
     ) -> Union[NDArrayFloat, FDataGrid, float]:
-        ...
+        ...  # noqa: WPS428
 
 
 def _domain_measure(fd: FData) -> float:
@@ -61,7 +61,7 @@ def explained_variance_score(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['uniform_average'] = 'uniform_average',
 ) -> float:
-    ...
+    ...  # noqa: WPS428
 
 
 @overload
@@ -72,7 +72,7 @@ def explained_variance_score(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['raw_values'],
 ) -> DataTypeRawValues:
-    ...
+    ...  # noqa: WPS428
 
 
 @singledispatch
@@ -197,7 +197,7 @@ def _explained_variance_score_fdatabasis(
 
     start, end = y_true.domain_range[0]
 
-    def _ev_func(x):  # noqa: WPS430
+    def _ev_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
         num = np.average(
             np.power(
                 (
@@ -261,7 +261,7 @@ def mean_absolute_error(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['uniform_average'] = 'uniform_average',
 ) -> float:
-    ...
+    ...  # noqa: WPS428
 
 
 @overload
@@ -272,7 +272,7 @@ def mean_absolute_error(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['raw_values'],
 ) -> DataTypeRawValues:
-    ...
+    ...  # noqa: WPS428
 
 
 @singledispatch
@@ -376,7 +376,7 @@ def _mean_absolute_error_fdatabasis(
 
     start, end = y_true.domain_range[0]
 
-    def _mae_func(x):  # noqa: WPS430
+    def _mae_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
         error = np.average(
             np.abs(y_true(x) - y_pred(x)),
             weights=sample_weight,
@@ -405,7 +405,7 @@ def mean_absolute_percentage_error(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['uniform_average'] = 'uniform_average',
 ) -> float:
-    ...
+    ...  # noqa: WPS428
 
 
 @overload
@@ -416,7 +416,7 @@ def mean_absolute_percentage_error(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['raw_values'],
 ) -> DataTypeRawValues:
-    ...
+    ...  # noqa: WPS428
 
 
 @singledispatch
@@ -528,7 +528,7 @@ def _mean_absolute_percentage_error_fdatabasis(
     sample_weight: Optional[NDArrayFloat] = None,
 ) -> float:
 
-    def _mape_func(x):  # noqa: WPS430
+    def _mape_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
 
         epsilon = np.finfo(np.float64).eps
         if np.any(np.abs(y_true(x)) < epsilon):
@@ -567,7 +567,7 @@ def mean_squared_error(
     multioutput: Literal['uniform_average'] = 'uniform_average',
     squared: bool = True,
 ) -> float:
-    ...
+    ...  # noqa: WPS428
 
 
 @overload
@@ -579,7 +579,7 @@ def mean_squared_error(
     multioutput: Literal['raw_values'],
     squared: bool = True,
 ) -> DataTypeRawValues:
-    ...
+    ...  # noqa: WPS428
 
 
 @singledispatch
@@ -694,7 +694,7 @@ def _mean_squared_error_fdatabasis(
 
     start, end = y_true.domain_range[0]
 
-    def _mse_func(x):  # noqa: WPS430
+    def _mse_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
 
         error = np.average(
             np.power(y_true(x) - y_pred(x), 2),
@@ -728,7 +728,7 @@ def mean_squared_log_error(
     multioutput: Literal['uniform_average'] = 'uniform_average',
     squared: bool = True,
 ) -> float:
-    ...
+    ...  # noqa: WPS428
 
 
 @overload
@@ -740,7 +740,7 @@ def mean_squared_log_error(
     multioutput: Literal['raw_values'],
     squared: bool = True,
 ) -> DataTypeRawValues:
-    ...
+    ...  # noqa: WPS428
 
 
 @singledispatch
@@ -858,7 +858,7 @@ def _mean_squared_log_error_fdatabasis(
 
     start, end = y_true.domain_range[0]
 
-    def _msle_func(x):  # noqa: WPS430
+    def _msle_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
 
         if np.any(y_true(x) < 0) or np.any(y_pred(x) < 0):
             raise ValueError(
@@ -897,7 +897,7 @@ def r2_score(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['uniform_average'] = 'uniform_average',
 ) -> float:
-    ...
+    ...  # noqa: WPS428
 
 
 @overload
@@ -908,7 +908,7 @@ def r2_score(
     sample_weight: Optional[NDArrayFloat] = None,
     multioutput: Literal['raw_values'],
 ) -> DataTypeRawValues:
-    ...
+    ...  # noqa: WPS428
 
 
 @singledispatch
@@ -1037,7 +1037,7 @@ def _r2_score_fdatabasis(
             'R^2 score is not well-defined with less than two samples.',
         )
 
-    def _r2_func(x):  # noqa: WPS430
+    def _r2_func(x: EvalPointsType) -> NDArrayFloat:  # noqa: WPS430
         ss_res = np.average(
             np.power(y_true(x) - y_pred(x), 2),
             weights=sample_weight,
@@ -1064,7 +1064,7 @@ def _r2_score_fdatabasis(
         if ss_res != 0 and ss_tot == 0:
             raise ValueError
 
-        score = 1 - ss_res/ss_tot
+        score = 1 - ss_res / ss_tot
 
         # Score only contains 1 function
         return score[0]

@@ -1,4 +1,4 @@
-"""Test for Score Functions module."""
+"""Test for scoring module."""
 import unittest
 from typing import Optional, Tuple
 
@@ -7,7 +7,7 @@ import sklearn
 
 from skfda import FDataBasis, FDataGrid
 from skfda.datasets import fetch_tecator
-from skfda.misc.score_functions import (
+from skfda.misc.scoring import (
     ScoreFunction,
     explained_variance_score,
     mean_absolute_error,
@@ -18,7 +18,6 @@ from skfda.misc.score_functions import (
 )
 from skfda.representation._typing import NDArrayFloat
 from skfda.representation.basis import BSpline, Fourier, Monomial
-
 
 
 def _create_data_grid(n: int) -> Tuple[FDataGrid, FDataGrid]:
@@ -388,12 +387,11 @@ class TestScoreZeroDenominator(unittest.TestCase):
                 y_pred_grid,
                 multioutput='raw_values',
             ).data_matrix.squeeze(),
-            
             sklearn.metrics.r2_score(
                 y_true_grid.data_matrix.squeeze(),
                 y_pred_grid.data_matrix.squeeze(),
                 multioutput='raw_values',
-            )
+            ),
         )
 
         # 0/0 for FDataBasis
@@ -463,12 +461,11 @@ class TestScoreZeroDenominator(unittest.TestCase):
                 y_pred_grid,
                 multioutput='raw_values',
             ).data_matrix.flatten(),
-
             sklearn.metrics.explained_variance_score(
                 y_true_grid.data_matrix.squeeze(),
                 y_pred_grid.data_matrix.squeeze(),
                 multioutput='raw_values',
-            )
+            ),
         )
 
         # 0/0 for FDataBasis

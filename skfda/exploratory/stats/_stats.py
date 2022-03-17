@@ -22,8 +22,8 @@ def mean(
 
     Args:
         X: Object containing all the samples whose mean is wanted.
-        weights: Sample weight. By default, uniform weight are
-        used.
+        weights: Sample weight. By default, uniform weight are used.
+
     Returns:
         A :term:`functional data object` with just one sample representing
         the mean of all the samples in the original object.
@@ -41,6 +41,7 @@ def var(X: FDataGrid) -> FDataGrid:
 
     Args:
         X: Object containing all the set of samples whose variance is desired.
+
     Returns:
         A :term:`functional data object` with just one sample representing the
         variance of all the samples in the original object.

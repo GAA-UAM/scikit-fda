@@ -171,14 +171,15 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         \hat{H}_{i,j} = \frac{b_j(t_i')}{\sum_{k=1}^{n}b_k(t_i')}
 
     .. math::
-        b_j(t') = K\left(\frac{t_j - t'}{h}\right) S_{n,2}(t') -
-        (t_j - t')S_{n,1}(t')
+        b_j(t_i') = K\left(\frac{t_j - t_i'}{h}\right) S_{n,2}(t_i') -
+        (t_j - t_i')S_{n,1}(t_i')
 
     .. math::
-        S_{n,k}(t') = \sum_{j=1}^{n}K\left(\frac{t_j-t'}{h}\right)(t_j-t')^k
+        S_{n,k}(t_i') = \sum_{j=1}^{n}K\left(\frac{t_j-t_i'}{h}\right)
+        (t_j-t_i')^k
 
-    where :math:`t = \{t_1, t_2, ..., t_n\}` are points with known value and
-    :math:`t' = \{t_1', t_2', ..., t_m'\}` are the points for which it is
+    where :math:`\{t_1, t_2, ..., t_n\}` are points with known value and
+    :math:`\{t_1', t_2', ..., t_m'\}` are the points for which it is
     desired to estimate the smoothed value
     :footcite:`wasserman_2006_nonparametric_llr`.
 
@@ -199,11 +200,11 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
     .. math::
         AWSE(a_k, b_{1k}, ..., b_{Jk}) = \sum_{i=1}^n \left(y_i -
-        \left(a + \sum_{j=1}^J b_{jk} c_{ij}^k \right) \right)^2
+        \left(a_k + \sum_{j=1}^J b_{jk} c_{ik}^j \right) \right)^2
         K \left( \frac {d(X_i - X'_k)}{h} \right)
 
-    Where :math:`c_{ij}^k` is the :math:`j`-th coefficient in a truncated basis
-    expansion of :math:`X_i - X'_k = \sum_{j=1}^J c_{ij}^k` and :math:`d` some
+    Where :math:`c_{ik}^j` is the :math:`j`-th coefficient in a truncated basis
+    expansion of :math:`X_i - X'_k = \sum_{j=1}^J c_{ik}^j` and :math:`d` some
     functional distance :footcite:`baillo+grane_2008_llr`
 
     For both cases, :math:`K(\cdot)` is a kernel function and :math:`h` the

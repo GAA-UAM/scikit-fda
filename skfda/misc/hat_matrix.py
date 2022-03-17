@@ -14,10 +14,9 @@ from typing import Callable, Optional, Union
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 
-from skfda.representation._functional_data import FData
-from skfda.representation.basis import FDataBasis
-
-from ..representation._typing import GridPoints, GridPointsLike
+from ..representation._functional_data import FData
+from ..representation._typing import GridPoints, GridPointsLike, NDArrayFloat
+from ..representation.basis import FDataBasis
 from . import kernels
 
 
@@ -36,7 +35,7 @@ class HatMatrix(
         self,
         *,
         bandwidth: Optional[float] = None,
-        kernel: Callable[[np.ndarray], np.ndarray] = kernels.normal,
+        kernel: Callable[[NDArrayFloat], NDArrayFloat] = kernels.normal,
     ):
         self.bandwidth = bandwidth
         self.kernel = kernel
@@ -44,13 +43,13 @@ class HatMatrix(
     def __call__(
         self,
         *,
-        delta_x: np.ndarray,
+        delta_x: NDArrayFloat,
         X_train: Optional[Union[FData, GridPointsLike]] = None,
         X: Optional[Union[FData, GridPointsLike]] = None,
-        y_train: Optional[np.ndarray] = None,
-        weights: Optional[np.ndarray] = None,
+        y_train: Optional[NDArrayFloat] = None,
+        weights: Optional[NDArrayFloat] = None,
         _cv: bool = False,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         r"""
         Calculate the hat matrix or the prediction.
 
@@ -99,8 +98,8 @@ class HatMatrix(
     def _hat_matrix_function_not_normalized(
         self,
         *,
-        delta_x: np.ndarray,
-    ) -> np.ndarray:
+        delta_x: NDArrayFloat,
+    ) -> NDArrayFloat:
         pass
 
 
@@ -141,8 +140,8 @@ class NadarayaWatsonHatMatrix(HatMatrix):
     def _hat_matrix_function_not_normalized(
         self,
         *,
-        delta_x: np.ndarray,
-    ) -> np.ndarray:
+        delta_x: NDArrayFloat,
+    ) -> NDArrayFloat:
 
         if self.bandwidth is None:
             percentage = 15
@@ -185,7 +184,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
     For **kernel regression** algorithm:
 
     Given functional data, :math:`(X_1, X_2, ..., X_n)` where each function
-    is expressed in a orthonormal basis with :math:`J` elements and scalar
+    is expressed in a basis with :math:`J` elements and scalar
     response :math:`Y = (y_1, y_2, ..., y_n)`.
 
     It is desired to estimate the values
@@ -222,13 +221,13 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
     def __call__(  # noqa: D102
         self,
         *,
-        delta_x: np.ndarray,
+        delta_x: NDArrayFloat,
         X_train: Optional[Union[FDataBasis, GridPoints]] = None,
         X: Optional[Union[FDataBasis, GridPoints]] = None,
-        y_train: Optional[np.ndarray] = None,
-        weights: Optional[np.ndarray] = None,
+        y_train: Optional[NDArrayFloat] = None,
+        weights: Optional[NDArrayFloat] = None,
         _cv: bool = False,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
         if self.bandwidth is None:
             percentage = 15
@@ -243,10 +242,23 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
             m1 = X_train.coefficients
             m2 = X.coefficients
 
+            # Subtract previous matrices obtaining a 3D matrix
+            # The i-th element contains the matrix X_train - X[i]
+            C = m1 - m2[:, np.newaxis]
+
+            inner_product_matrix = X_train.basis.inner_product_matrix()
+
+            # Calculate new coefficients taking into account cross-products
+            # if the basis is orthonormal, C would not change
+            C = C @ inner_product_matrix
+
+            # Adding a column of ones in the first position of all matrices
+            dims = (C.shape[0], C.shape[1], 1)
+            C = np.concatenate((np.ones(dims), C), axis=-1)
+
             return self._solve_least_squares(
                 delta_x=delta_x,
-                m1=m1,
-                m2=m2,
+                coefs=C,
                 y_train=y_train,
             )
 
@@ -264,39 +276,16 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
     def _solve_least_squares(
         self,
-        delta_x: np.ndarray,
-        m1: np.ndarray,
-        m2: np.ndarray,
-        y_train: np.ndarray,
-    ) -> np.ndarray:
+        delta_x: NDArrayFloat,
+        coefs: NDArrayFloat,
+        y_train: NDArrayFloat,
+    ) -> NDArrayFloat:
 
         W = np.sqrt(self.kernel(delta_x / self.bandwidth))
 
-        # Adding a column of ones to m1
-        m1 = np.concatenate(
-            (
-                np.ones(m1.shape[0])[:, np.newaxis],
-                m1,
-            ),
-            axis=1,
-        )
-
-        # Adding a column of zeros to m2
-        m2 = np.concatenate(
-            (
-                np.zeros(m2.shape[0])[:, np.newaxis],
-                m2,
-            ),
-            axis=1,
-        )
-
-        # Subtract previous matrices obtaining a 3D matrix
-        # The i-th element contains the matrix X_train - X[i]
-        C = m1 - m2[:, np.newaxis]
-
         # A x = b
-        # Where x = (a, b_1, ..., b_J)
-        A = (C.T * W.T).T
+        # Where x = (a, b_1, ..., b_J).
+        A = (coefs.T * W.T).T
         b = np.einsum('ij, j... -> ij...', W, y_train)
 
         # For Ax = b calculates x that minimize the square error
@@ -312,8 +301,8 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
     def _hat_matrix_function_not_normalized(
         self,
         *,
-        delta_x: np.ndarray,
-    ) -> np.ndarray:
+        delta_x: NDArrayFloat,
+    ) -> NDArrayFloat:
 
         if self.bandwidth is None:
             percentage = 15
@@ -369,7 +358,7 @@ class KNeighborsHatMatrix(HatMatrix):
         self,
         *,
         n_neighbors: Optional[int] = None,
-        kernel: Callable[[np.ndarray], np.ndarray] = kernels.uniform,
+        kernel: Callable[[NDArrayFloat], NDArrayFloat] = kernels.uniform,
     ):
         self.n_neighbors = n_neighbors
         self.kernel = kernel
@@ -377,8 +366,8 @@ class KNeighborsHatMatrix(HatMatrix):
     def _hat_matrix_function_not_normalized(
         self,
         *,
-        delta_x: np.ndarray,
-    ) -> np.ndarray:
+        delta_x: NDArrayFloat,
+    ) -> NDArrayFloat:
 
         input_points_len = delta_x.shape[1]
 

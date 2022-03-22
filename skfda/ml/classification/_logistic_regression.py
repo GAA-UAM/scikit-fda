@@ -1,5 +1,4 @@
 from __future__ import annotations
-import string
 
 from typing import Callable, Tuple
 
@@ -80,7 +79,7 @@ class LogisticRegression(
     def __init__(
         self,
         p: int = 5,
-        solver: string = 'lbfgs',
+        solver: str = 'lbfgs',
         max_iter: int = 100,
     ) -> None:
 

@@ -104,7 +104,11 @@ class LogisticRegression(
         selected_indexes = np.zeros(self.p, dtype=np.intc)
 
         # multivariate logistic regression
-        mvlr = mvLogisticRegression(penalty='l2', solver=self.solver, max_iter=self.max_iter)
+        mvlr = mvLogisticRegression(
+            penalty='l2', 
+            solver=self.solver, 
+            max_iter=self.max_iter,
+        )
 
         x_mv = np.zeros((n_samples, self.p))
         LL = np.zeros(n_features)

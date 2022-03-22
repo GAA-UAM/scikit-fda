@@ -104,8 +104,8 @@ class LogisticRegression(
 
         # multivariate logistic regression
         mvlr = mvLogisticRegression(
-            penalty='l2', 
-            solver=self.solver, 
+            penalty='l2',
+            solver=self.solver,
             max_iter=self.max_iter,
         )
 

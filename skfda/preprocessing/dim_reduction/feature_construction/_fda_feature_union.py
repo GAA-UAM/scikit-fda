@@ -55,14 +55,16 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
     will use Generalized depth-versus-depth transformer.
     Evaluation Transformer returns the original curve, and as it is helpful,
     we will concatenate it to the already metioned transformer.
-    >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
+    >>> from skfda.preprocessing.dim_reduction.feature_construction import (
     ...     FDAFeatureUnion,
     ... )
-    >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
+    >>> from skfda.preprocessing.dim_reduction.feature_construction import (
     ...     DDGTransformer,
     ... )
     >>> from skfda.exploratory.depth import ModifiedBandDepth
-    >>> from skfda.misc.feature_construction import EvaluationTransformer
+    >>> from skfda.preprocessing.dim_reduction.feature_construction import (
+    ...     EvaluationTransformer
+    ... )
     >>> import numpy as np
 
     Finally we apply fit and transform.

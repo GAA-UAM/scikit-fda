@@ -53,7 +53,7 @@ class DDGTransformer(
         >>> X_train, X_test, y_train, y_test = train_test_split(
         ...     fd, y, test_size=0.25, stratify=y, random_state=0)
 
-        >>> from skfda.preprocessing.dim_reduction.feature_extraction import \
+        >>> from skfda.preprocessing.dim_reduction.feature_construction import\
         ... DDGTransformer
         >>> from sklearn.pipeline import make_pipeline
         >>> from sklearn.neighbors import KNeighborsClassifier

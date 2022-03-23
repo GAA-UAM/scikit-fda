@@ -53,7 +53,8 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
         >>> X = X.iloc[:, 0].values
         >>> y = y.values.codes
 
-        >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
+        >>> from skfda.preprocessing.dim_reduction.feature_construction\
+        ... import (
         ...     PerClassTransformer,
         ... )
 

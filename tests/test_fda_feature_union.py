@@ -6,10 +6,10 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 
 from skfda.datasets import fetch_growth
-from skfda.misc.feature_construction import EvaluationTransformer
 from skfda.misc.hat_matrix import NadarayaWatsonHatMatrix
 from skfda.misc.operators import SRSF
-from skfda.preprocessing.dim_reduction.feature_extraction import (
+from skfda.preprocessing.dim_reduction.feature_construction import (
+    EvaluationTransformer,
     FDAFeatureUnion,
 )
 from skfda.preprocessing.smoothing import KernelSmoother

@@ -30,7 +30,7 @@ from skfda.ml.classification import (
     DDGClassifier,
     MaximumDepthClassifier,
 )
-from skfda.preprocessing.dim_reduction.feature_extraction import DDGTransformer
+from skfda.preprocessing.dim_reduction.feature_construction import DDGTransformer
 from skfda.representation.grid import FDataGrid
 
 ##############################################################################

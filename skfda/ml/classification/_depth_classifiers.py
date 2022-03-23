@@ -13,7 +13,7 @@ from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from ..._utils import _classifier_fit_depth_methods, _classifier_get_classes
 from ...exploratory.depth import Depth, ModifiedBandDepth
-from ...preprocessing.dim_reduction.feature_extraction import DDGTransformer
+from ...preprocessing.dim_reduction.feature_construction import DDGTransformer
 from ...representation._typing import NDArrayFloat, NDArrayInt
 from ...representation.grid import FData
 

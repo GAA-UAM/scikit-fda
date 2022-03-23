@@ -4,7 +4,8 @@ from __future__ import annotations
 import importlib
 from typing import Any
 
-from . import feature_extraction, variable_selection
+from . import feature_construction, variable_selection
+from ._fpca import FPCA
 
 
 def __getattr__(name: str) -> Any:

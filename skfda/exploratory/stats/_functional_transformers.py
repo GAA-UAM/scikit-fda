@@ -291,7 +291,7 @@ def number_up_crossings(
     We will create and use a DataFrame with a sample extracted from
     the Bessel Function of first type and order 0.
     First of all we import the Bessel Function and create the X axis
-    data grid. Then we create the FdataGrid
+    data grid. Then we create the FdataGrid.
     >>> from skfda.exploratory.stats import number_up_crossings
     >>> from scipy.special import jv
     >>> import numpy as np
@@ -300,8 +300,23 @@ def number_up_crossings(
     ...     data_matrix=[jv([0], x_grid)],
     ...     grid_points=x_grid,
     ... )
+    >>> fd_grid.data_matrix
+    array([[[ 1.        ],
+            [ 0.73041066],
+            [ 0.13616752],
+            [-0.32803875],
+            [-0.35967936],
+            [-0.04652559],
+            [ 0.25396879],
+            [ 0.26095573],
+            [ 0.01042895],
+            [-0.22089135],
+            [-0.2074856 ],
+            [ 0.0126612 ],
+            [ 0.20089319],
+            [ 0.17107348]]])
 
-    Finall we evaluate the number of up crossings method with the FDataGrid
+    Finally we evaluate the number of up crossings method with the FDataGrid
     created.
     >>> number_up_crossings(fd_grid, np.asarray([0]))
     array([[2]])

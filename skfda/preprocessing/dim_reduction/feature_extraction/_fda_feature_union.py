@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from typing import Union
 
+import pandas as pd
 from numpy import ndarray
-from pandas import DataFrame
 from sklearn.pipeline import FeatureUnion
 
 from ....representation import FData
@@ -109,7 +109,7 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
             verbose=verbose,
         )
 
-    def _hstack(self, Xs: ndarray) -> Union[DataFrame, ndarray]:
+    def _hstack(self, Xs: ndarray) -> Union[pd.DataFrame, ndarray]:
 
         if self.array_output:
             for i in Xs:
@@ -121,4 +121,10 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
                     )
             return super()._hstack(Xs)
 
-        return DataFrame({'Transformed data': Xs})
+        return pd.concat(
+            [
+                pd.DataFrame({0: data})
+                for data in Xs
+            ],
+            axis=1,
+        )

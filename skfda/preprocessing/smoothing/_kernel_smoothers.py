@@ -30,7 +30,7 @@ class KernelSmoother(_LinearSmoother):
         \hat{X} = \hat{H} X
 
     where :math:`\hat{H}` is a matrix described in
-    :class:`~skfda.misc.HatMatrix`.
+    :class:`~skfda.misc.hat_matrix.HatMatrix`.
 
     Examples:
         >>> from skfda import FDataGrid

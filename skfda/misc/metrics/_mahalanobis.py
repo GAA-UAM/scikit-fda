@@ -42,8 +42,8 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
             parameter is only used when fitting a FDataGrid.
 
     Attributes:
-        ef\_: eigenvectors of the covariance operator.
-        ev\_: Eigenvalues of the covariance operator.
+        eigen_vectors\_: Eigenvectors of the covariance operator.
+        eigen_values\_: Eigenvalues of the covariance operator.
         mean\_: Mean of the stochastic process.
 
     Examples:
@@ -53,10 +53,10 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         >>> data_matrix = np.array([[1.0, 0.0], [0.0, 2.0]])
         >>> grid_points = [0, 1]
         >>> fd = FDataGrid(data_matrix, grid_points)
-        >>> mah = MahalanobisDistance(2)
-        >>> mah.fit(fd)
+        >>> mahalanobis = MahalanobisDistance(2)
+        >>> mahalanobis.fit(fd)
         MahalanobisDistance(n_components=2)
-        >>> mah(fd[0], fd[1])
+        >>> mahalanobis(fd[0], fd[1])
         1.9968038359080937
 
     References:
@@ -106,8 +106,8 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
             self.components_basis,
         )
         fpca.fit(X)
-        self.ev_ = fpca.explained_variance_
-        self.ef_ = fpca.components_
+        self.eigen_values_ = fpca.explained_variance_
+        self.eigen_vectors_ = fpca.components_
         self.mean_ = fpca.mean_
 
         return self
@@ -129,6 +129,7 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         check_is_fitted(self)
 
         return np.sum(
-            self.ev_ * inner_product(e1 - e2, self.ef_) ** 2
-            / (self.ev_ + self.alpha)**2,
+            self.eigen_values_
+            * inner_product(e1 - e2, self.eigen_vectors_) ** 2
+            / (self.eigen_values_ + self.alpha)**2,
         )

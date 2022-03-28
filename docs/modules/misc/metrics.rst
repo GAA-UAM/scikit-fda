@@ -69,7 +69,7 @@ distance:
 .. autosummary::
    :toctree: autosummary
 
-    skfda.misc.metrics.FMahalanobisDistance
+    skfda.misc.metrics.MahalanobisDistance
 
 
 

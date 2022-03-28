@@ -59,7 +59,7 @@ class FPCA(
         explained_variance_ratio\_ (array_like): this contains the percentage
             of variance explained by each principal component.
         singular_values\_: The singular values corresponding to each of the
-            selected components. 
+            selected components.
         mean\_ (FData): mean of the train data.
 
     Examples:
@@ -368,7 +368,7 @@ class FPCA(
 
         basis_matrix = basis.data_matrix[..., 0]
         if regularization_matrix is not None:
-            basis_matrix += regularization_matrix
+            basis_matrix = basis_matrix + regularization_matrix
 
         fd_data = np.linalg.solve(
             basis_matrix.T,

@@ -15,7 +15,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 
 from ..representation._functional_data import FData
-from ..representation._typing import GridPoints, GridPointsLike, NDArrayFloat
+from ..representation._typing import GridPointsLike, NDArrayFloat
 from ..representation.basis import FDataBasis
 from . import kernels
 

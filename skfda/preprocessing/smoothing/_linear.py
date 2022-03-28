@@ -119,7 +119,7 @@ class _LinearSmoother(
 
         hat_matrix = np.reshape(
             self.hat_matrix_,
-            (*dims,)
+            dims,
         )
 
         data_matrix = np.einsum(

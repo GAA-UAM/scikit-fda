@@ -9,9 +9,9 @@ from typing import Optional
 
 import numpy as np
 
-from ..._utils._utils import _to_grid_points, _cartesian_product
+from ..._utils._utils import _cartesian_product, _to_grid_points
 from ...misc.hat_matrix import HatMatrix, NadarayaWatsonHatMatrix
-from ...misc.metrics import PairwiseMetric, l2_distance, Metric
+from ...misc.metrics import Metric, PairwiseMetric, l2_distance
 from ...representation._typing import GridPointsLike, NDArrayFloat, Vector
 from ._linear import _LinearSmoother
 

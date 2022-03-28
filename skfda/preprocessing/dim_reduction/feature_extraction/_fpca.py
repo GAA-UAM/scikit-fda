@@ -10,10 +10,9 @@ from scipy.linalg import solve_triangular
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
-from ....misc.regularization import (
-    TikhonovRegularization,
-    compute_penalty_matrix,
-)
+from ....misc import inner_product_matrix
+from ....misc.metrics import l2_norm
+from ....misc.regularization import L2Regularization, compute_penalty_matrix
 from ....representation import FData
 from ....representation._typing import ArrayLike
 from ....representation.basis import Basis, FDataBasis
@@ -96,7 +95,7 @@ class FPCA(
         self,
         n_components: int = 3,
         centering: bool = True,
-        regularization: Optional[TikhonovRegularization[FData]] = None,
+        regularization: Optional[L2Regularization[FData]] = None,
         weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
     ) -> None:

@@ -29,6 +29,7 @@ class ParametricPlot(BasePlot):
     two different functions as coordinates, this can be done giving
     one FData, with domain 1 and codomain 2, or giving two FData, both
     of them with domain 1 and codomain 1.
+
     Args:
         fdata1: functional data set that we will use for the graph. If it has
             a dim_codomain = 1, the fdata2 will be needed.

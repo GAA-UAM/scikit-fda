@@ -145,7 +145,7 @@ class NadarayaWatsonHatMatrix(HatMatrix):
 
         if self.bandwidth is None:
             percentage = 15
-            self.bandwidth = np.percentile(np.abs(delta_x), percentage)
+            self.bandwidth = np.percentile(delta_x, percentage)
 
         return self.kernel(delta_x / self.bandwidth)
 
@@ -222,8 +222,8 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: Optional[Union[FDataBasis, GridPoints]] = None,
-        X: Optional[Union[FDataBasis, GridPoints]] = None,
+        X_train: Optional[Union[FDataBasis, NDArrayFloat]] = None,
+        X: Optional[Union[FDataBasis, NDArrayFloat]] = None,
         y_train: Optional[NDArrayFloat] = None,
         weights: Optional[NDArrayFloat] = None,
         _cv: bool = False,
@@ -231,21 +231,45 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
         if self.bandwidth is None:
             percentage = 15
-            self.bandwidth = np.percentile(np.abs(delta_x), percentage)
+            self.bandwidth = np.percentile(delta_x, percentage)
 
-        # Regression
+        # Smoothing for functions of one variable
+        if not isinstance(X_train, FDataBasis) and X_train[0].shape[0] == 1:
+            delta_x = np.subtract.outer(
+                X.flatten(),
+                X_train.flatten(),
+            )
+
+            return super().__call__(  # noqa: WPS503
+                delta_x=delta_x,
+                X_train=X_train,
+                X=X,
+                y_train=y_train,
+                weights=weights,
+                _cv=_cv,
+            )
+
+        # Regression and smoothing for multivariable functions
         if isinstance(X_train, FDataBasis):
+            m1 = X_train.coefficients
+            m2 = X.coefficients
 
             if y_train is None:
                 y_train = np.identity(X_train.n_samples)
 
-            m1 = X_train.coefficients
-            m2 = X.coefficients
+        else:
+            m1 = X_train
+            m2 = X
 
-            # Subtract previous matrices obtaining a 3D matrix
-            # The i-th element contains the matrix X_train - X[i]
-            C = m1 - m2[:, np.newaxis]
+            if y_train is None:
+                y_train = np.identity(X_train.shape[0])
 
+        # Subtract previous matrices obtaining a 3D matrix
+        # The i-th element contains the matrix X_train - X[i]
+        C = m1 - m2[:, np.newaxis]
+
+        # Inner product matrix only is applicable in regression
+        if isinstance(X_train, FDataBasis):
             inner_product_matrix = X_train.basis.inner_product_matrix()
 
             # Calculate new coefficients taking into account cross-products
@@ -256,27 +280,15 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
                 inner_product_matrix,
             )
 
-            # Adding a column of ones in the first position of all matrices
-            dims = (C.shape[0], C.shape[1], 1)
-            C = np.c_[np.ones(dims), C]
+        # Adding a column of ones in the first position of all matrices
+        dims = (C.shape[0], C.shape[1], 1)
+        C = np.c_[np.ones(dims), C]
 
-            return self._solve_least_squares(
-                delta_x=delta_x,
-                coefs=C,
-                y_train=y_train,
-            )
-
-        # Smoothing
-        else:
-
-            return super().__call__(  # noqa: WPS503
-                delta_x=delta_x,
-                X_train=X_train,
-                X=X,
-                y_train=y_train,
-                weights=weights,
-                _cv=_cv,
-            )
+        return self._solve_least_squares(
+            delta_x=delta_x,
+            coefs=C,
+            y_train=y_train,
+        )
 
     def _solve_least_squares(
         self,
@@ -392,7 +404,7 @@ class KNeighborsHatMatrix(HatMatrix):
         # For each row in the distances matrix, it calculates the furthest
         # point within the k nearest neighbours
         vec = np.percentile(
-            np.abs(delta_x),
+            delta_x,
             self.n_neighbors / input_points_len * 100,
             axis=1,
             interpolation='lower',

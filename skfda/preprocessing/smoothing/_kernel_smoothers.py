@@ -9,9 +9,10 @@ from typing import Optional
 
 import numpy as np
 
-from ..._utils._utils import _to_grid_points
+from ..._utils._utils import _to_grid_points, _cartesian_product
 from ...misc.hat_matrix import HatMatrix, NadarayaWatsonHatMatrix
-from ...representation._typing import GridPointsLike, NDArrayFloat
+from ...misc.metrics import PairwiseMetric, l2_distance, Metric
+from ...representation._typing import GridPointsLike, NDArrayFloat, Vector
 from ._linear import _LinearSmoother
 
 
@@ -113,10 +114,12 @@ class KernelSmoother(_LinearSmoother):
         kernel_estimator: Optional[HatMatrix] = None,
         weights: Optional[NDArrayFloat] = None,
         output_points: Optional[GridPointsLike] = None,
+        metric: Metric[Vector] = l2_distance,
     ):
         self.kernel_estimator = kernel_estimator
         self.weights = weights
         self.output_points = output_points
+        self.metric = metric
         self._cv = False  # For testing purposes only
 
     def _hat_matrix(
@@ -125,18 +128,18 @@ class KernelSmoother(_LinearSmoother):
         output_points: GridPointsLike,
     ) -> NDArrayFloat:
 
-        input_points = _to_grid_points(input_points)
-        output_points = _to_grid_points(output_points)
+        input_points = _cartesian_product(_to_grid_points(input_points))
+        output_points = _cartesian_product(_to_grid_points(output_points))
 
         if self.kernel_estimator is None:
             self.kernel_estimator = NadarayaWatsonHatMatrix()
 
-        delta_x = np.subtract.outer(output_points[0], input_points[0])
+        delta_x = PairwiseMetric(self.metric)(output_points, input_points)
 
         return self.kernel_estimator(
             delta_x=delta_x,
             weights=self.weights,
-            X_train=input_points,
-            X=output_points,
+            X_train=np.array(input_points),
+            X=np.array(output_points),
             _cv=self._cv,
         )

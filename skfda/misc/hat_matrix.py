@@ -25,10 +25,14 @@ class HatMatrix(
     RegressorMixin,
 ):
     """
-    Kernel estimators.
+    Hat Matrix.
 
-    This module includes three types of kernel estimators that are used in
-    KernelSmoother and KernelRegression classes.
+    Base class for different hat matrices.
+
+    See also:
+        :class:`~skfda.misc.hat_matrix.NadarayaWatsonHatMatrix`
+        :class:`~skfda.misc.hat_matrix.LocalLinearRegressionHatMatrix`
+        :class:`~skfda.misc.hat_matrix.KNeighborsHatMatrix`
     """
 
     def __init__(
@@ -110,17 +114,17 @@ class NadarayaWatsonHatMatrix(HatMatrix):
     regression algorithms, as explained below
 
     .. math::
-        \hat{H}_{i,j} = \frac{K\left(\frac{d(e_j-e_i')}{h}\right)}{\sum_{k=1}^{
-        n}K\left(\frac{d(e_k-e_i')}{h}\right)}
+        \hat{H}_{i,j} = \frac{K\left(\frac{d(x_j-x_i')}{h}\right)}{\sum_{k=1}^{
+        n}K\left(\frac{d(x_k-x_i')}{h}\right)}
 
-    For smoothing, :math:`e_i` are the points of discretisation
-    and :math:`e'_i` are the points for which it is desired to estimate the
-    smoothed value. The distance :math:`d` is the absolute value
+    For smoothing, :math:`\{x_1, ..., x_n\}` are the points with known value
+    and :math:`\{x_1', ..., x_m'\}` are the points for which it is desired to
+    estimate the smoothed value. The distance :math:`d` is the absolute value
     function :footcite:`wasserman_2006_nonparametric_nw`.
 
-    For regression, :math:`e_i` is the functional data and :math:`e_i'`
-    are the functions for which it is desired to estimate the scalar value.
-    Here, :math:`d` is some functional distance
+    For regression, :math:`\{x_1, ..., x_n\}` is the functional data and
+    :math:`\{x_1', ..., x_m'\}` are the functions for which it is desired to
+    estimate the scalar value. Here, :math:`d` is some functional distance
     :footcite:`ferraty+vieu_2006_nonparametric_nw`.
 
     In both cases :math:`K(\cdot)` is a kernel function and :math:`h` is the
@@ -157,12 +161,12 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
     regression algorithms, as explained below.
 
     For **kernel smoothing** algorithm to estimate the smoothed value for
-    :math:`t_j` the following error must be minimised
+    :math:`t_i'` the following error must be minimised
 
     .. math::
-        AWSE(a, b) = \sum_{i=1}^n \left[ \left(y_i -
-        \left(a +  b (t_i - t'_j) \right) \right)^2
-        K \left( \frac {|t_i - t'_j|}{h} \right) \right ]
+        AWSE(a, b) = \sum_{j=1}^n \left[ \left(y_j -
+        \left(a +  b (t_j - t'_i) \right) \right)^2
+        K \left( \frac {|t_j - t'_i|}{h} \right) \right ]
 
     which gives the following expression for each cell
 
@@ -170,26 +174,28 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         \hat{H}_{i,j} = \frac{b_j(t_i')}{\sum_{k=1}^{n}b_k(t_i')}
 
     .. math::
-        b_j(e') = K\left(\frac{t_j - t'}{h}\right) S_{n,2}(t') -
-        (t_j - t')S_{n,1}(t')
+        b_j(t_i') = K\left(\frac{t_j - t_i'}{h}\right) S_{n,2}(t_i') -
+        (t_j - t_i')S_{n,1}(t_i')
 
     .. math::
-        S_{n,k}(t') = \sum_{j=1}^{n}K\left(\frac{t_j-t'}{h}\right)(t_j-t')^k
+        S_{n,k}(t_i') = \sum_{j=1}^{n}K\left(\frac{t_j-t_i'}{h}\right)
+        (t_j-t_i')^k
 
-    where :math:`t = (t_1, t_2, ..., t_n)` are points of discretisation and
-    :math:`t' = (t_1', t_2', ..., t_m')` are the points for which it is desired
-    to estimate the smoothed value
+    where :math:`\{t_1, t_2, ..., t_n\}` are points with known value and
+    :math:`\{t_1', t_2', ..., t_m'\}` are the points for which it is
+    desired to estimate the smoothed value
     :footcite:`wasserman_2006_nonparametric_llr`.
 
     For **kernel regression** algorithm:
 
-    Given functional data, :math:`(X_1, X_2, ..., X_n)` where each function
-    is expressed in a basis with :math:`J` elements and scalar
-    response :math:`Y = (y_1, y_2, ..., y_n)`.
+    Given functional data, :math:`\{X_1, X_2, ..., X_n\}` where each function
+    is expressed in a orthonormal basis with :math:`J` elements and scalar
+    response :math:`Y = \{y_1, y_2, ..., y_n\}`.
 
     It is desired to estimate the values
-    :math:`\hat{Y} = (\hat{y}_1, \hat{y}_2, ..., \hat{y}_m)`
-    for the data :math:`(X'_1, X'_2, ..., X'_m)` (expressed in the same basis).
+    :math:`\hat{Y} = \{\hat{y}_1, \hat{y}_2, ..., \hat{y}_m\}`
+    for the data :math:`\{X'_1, X'_2, ..., X'_m\}`
+    (expressed in the same basis).
 
     For each :math:`X'_k` the estimation :math:`\hat{y}_k` is obtained by
     taking the value :math:`a_k` from the vector
@@ -197,11 +203,11 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
     .. math::
         AWSE(a_k, b_{1k}, ..., b_{Jk}) = \sum_{i=1}^n \left(y_i -
-        \left(a + \sum_{j=1}^J b_{jk} c_{ijk} \right) \right)^2
+        \left(a_k + \sum_{j=1}^J b_{jk} c_{ik}^j \right) \right)^2
         K \left( \frac {d(X_i - X'_k)}{h} \right)
 
-    Where :math:`c_{ij}^k` is the :math:`j`-th coefficient in a truncated basis
-    expansion of :math:`X_i - X'_k = \sum_{j=1}^J c_{ij}^k` and :math:`d` some
+    Where :math:`c_{ik}^j` is the :math:`j`-th coefficient in a truncated basis
+    expansion of :math:`X_i - X'_k = \sum_{j=1}^J c_{ik}^j` and :math:`d` some
     functional distance :footcite:`baillo+grane_2008_llr`
 
     For both cases, :math:`K(\cdot)` is a kernel function and :math:`h` the
@@ -274,15 +280,11 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
             # Calculate new coefficients taking into account cross-products
             # if the basis is orthonormal, C would not change
-            C = np.einsum(
-                'ijk, kl -> ijl',
-                C,
-                inner_product_matrix,
-            )
-
+            C = C @ inner_product_matrix  # noqa: WPS350
+            
         # Adding a column of ones in the first position of all matrices
         dims = (C.shape[0], C.shape[1], 1)
-        C = np.c_[np.ones(dims), C]
+        C = np.concatenate((np.ones(dims), C), axis=-1)
 
         return self._solve_least_squares(
             delta_x=delta_x,
@@ -340,24 +342,24 @@ class KNeighborsHatMatrix(HatMatrix):
     regression algorithms, as explained below.
 
     .. math::
-        \hat{H}_{i,j} = \frac{K\left(\frac{d(e_j-e_i')}{h}\right)}{\sum_{k=1}^{
-        n}K\left(\frac{d(e_k-e_i')}{h_{ik}}\right)}
+        \hat{H}_{i,j} = \frac{K\left(\frac{d(x_j-x_i')}{h_i}\right)}
+        {\sum_{k=1}^{n}K\left(\frac{d(x_k-x_i')}{h_{i}}\right)}
 
-    For smoothing, :math:`e_i` are the points of discretisation
-    and :math:`e'_i` are the points for which it is desired to estimate the
-    smoothed value. The distance :math:`d` is the absolute value.
+    For smoothing, :math:`\{x_1, ..., x_n\}` are the points with known value
+    and :math:`\{x_1', ..., x_m'\}` are the points for which it is desired to
+    estimate the smoothed value. The distance :math:`d` is the absolute value.
 
-    For regression, :math:`e_i` are the functional data and :math:`e_i'`
-    are the functions for which it is desired to estimate the scalar value.
-    Here, :math:`d` is some functional distance.
+    For regression, :math:`\{x_1, ..., x_n\}` are the functional data and
+    :math:`\{x_1', ..., x_m'\}` are the functions for which it is desired to
+    estimate the scalar value. Here, :math:`d` is some functional distance.
 
     In both cases, :math:`K(\cdot)` is a kernel function and
-    :math:`h_{ik}` is calculated as the distance from :math:`e_i'` to it's
-    :math:`k`-th nearest neighbour in :math:`\{e_1, ..., e_n\}`
+    :math:`h_{i}` is calculated as the distance from :math:`x_i'` to its
+    ``n_neighbors``-th nearest neighbor in :math:`\{x_1, ..., x_n\}`
     :footcite:`ferraty+vieu_2006_nonparametric_knn`.
 
-    Used with the uniform kernel, it takes the average of the closest k
-    points to a given point.
+    Used with the uniform kernel, it takes the average of the closest
+    ``n_neighbors`` points to a given point.
 
     Args:
         n_neighbors: Number of nearest neighbours. By

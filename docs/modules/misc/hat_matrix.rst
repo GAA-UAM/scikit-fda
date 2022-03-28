@@ -13,6 +13,7 @@ See the links below for more information.
 .. autosummary::
     :toctree: autosummary
 
+     skfda.misc.hat_matrix.HatMatrix
      skfda.misc.hat_matrix.NadarayaWatsonHatMatrix
      skfda.misc.hat_matrix.LocalLinearRegressionHatMatrix
      skfda.misc.hat_matrix.KNeighborsHatMatrix

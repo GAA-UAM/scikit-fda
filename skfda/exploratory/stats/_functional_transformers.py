@@ -8,7 +8,7 @@ import numpy as np
 
 from ..._utils import check_is_univariate
 from ...representation import FDataBasis, FDataGrid
-from ...representation._typing import NDArrayFloat
+from ...representation._typing import NDArrayFloat, NDArrayInt
 
 
 def local_averages(
@@ -255,3 +255,90 @@ def occupation_measure(
         function_x_coordinates,
         intervals,
     )
+
+
+def number_up_crossings(
+    data: FDataGrid,
+    levels: NDArrayFloat,
+) -> NDArrayInt:
+    r"""
+    Calculate the number of up crossings to a level of a FDataGrid.
+
+    Let f_1(X) = N_i, where N_i is the number of up crossings of X
+    to a level c_i \in \mathbb{R}, i = 1,\dots,p.
+
+    Recall that the process X(t) is said to have an up crossing of c
+    at :math:`t_0 > 0` if for some :math:`\epsilon >0`, X(t) $\leq$
+    c if t :math:'\in (t_0 - \epsilon, t_0) and X(t) $\geq$ c if
+    :math:`t\in (t_0, t_0+\epsilon)`.
+
+    If the trajectories are differentiable, then
+    :math:`N_i = card\{t \in[a,b]: X(t) = c_i, X' (t) > 0\}.`
+
+        Args:
+            data: FDataGrid where we want to calculate
+            the number of up crossings.
+            levels: sequence of numbers including the levels
+            we want to consider for the crossings.
+        Returns:
+            ndarray of shape (n_samples, len(levels))\
+            with the values of the counters.
+
+    Example:
+
+    For this example we will use a well known function so the correct
+    functioning of this method can be checked.
+    We will create and use a DataFrame with a sample extracted from
+    the Bessel Function of first type and order 0.
+    First of all we import the Bessel Function and create the X axis
+    data grid. Then we create the FdataGrid.
+    >>> from skfda.exploratory.stats import number_up_crossings
+    >>> from scipy.special import jv
+    >>> import numpy as np
+    >>> x_grid = np.linspace(0, 14, 14)
+    >>> fd_grid = FDataGrid(
+    ...     data_matrix=[jv([0], x_grid)],
+    ...     grid_points=x_grid,
+    ... )
+    >>> fd_grid.data_matrix
+    array([[[ 1.        ],
+            [ 0.73041066],
+            [ 0.13616752],
+            [-0.32803875],
+            [-0.35967936],
+            [-0.04652559],
+            [ 0.25396879],
+            [ 0.26095573],
+            [ 0.01042895],
+            [-0.22089135],
+            [-0.2074856 ],
+            [ 0.0126612 ],
+            [ 0.20089319],
+            [ 0.17107348]]])
+
+    Finally we evaluate the number of up crossings method with the FDataGrid
+    created.
+    >>> number_up_crossings(fd_grid, np.asarray([0]))
+    array([[2]])
+    """
+    curves = data.data_matrix[:, :, 0]
+
+    distances = np.asarray([
+        level - curves
+        for level in levels
+    ])
+
+    points_greater = distances >= 0
+    points_smaller = distances <= 0
+    points_smaller_rotated = np.concatenate(
+        [
+            points_smaller[:, :, 1:],
+            points_smaller[:, :, :1],
+        ],
+        axis=2,
+    )
+
+    return np.sum(
+        points_greater & points_smaller_rotated,
+        axis=2,
+    ).T

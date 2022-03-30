@@ -11,11 +11,11 @@ from ..._utils import _classifier_get_classes
 from ...representation import FDataGrid
 
 
-class GaussianClassifier(
+class ParametrizedFunctionalQDA(
     BaseEstimator,  # type: ignore
     ClassifierMixin,  # type: ignore
 ):
-    """Gaussian process based classifer for functional data.
+    """Parametrized functional quadratic discriminant analysis.
 
     This classifier is based on the assumption that the data is part
     of a gaussian process and depending on the output label, the covariance
@@ -26,7 +26,7 @@ class GaussianClassifier(
     The training phase of the classifier will try to approximate the two
     main parameters of a gaussian process for each class. The covariance
     will be estimated by fitting the initial kernel passed on the creation of
-    the GaussianClassifier object.
+    the ParametrizedFunctionalQDA object.
     The result of the training function will be two arrays, one of means and
     another one of covariances. Both with length (n_classes).
 
@@ -66,23 +66,22 @@ class GaussianClassifier(
         >>> from GPy.kern import RBF
         >>> rbf = RBF(input_dim=1, variance=6, lengthscale=1)
 
-        We will fit the Gaussian Process classifier with training data. We
+        We will fit the ParametrizedFunctionalQDA with training data. We
         use as regularizer parameter a low value as 0.05.
 
-
-        >>> gaussian = GaussianClassifier(rbf, 0.05)
-        >>> gaussian = gaussian.fit(X_train, y_train)
+        >>> pfqda = ParametrizedFunctionalQDA(rbf, 0.05)
+        >>> pfqda = pfqda.fit(X_train, y_train)
 
 
         We can predict the class of new samples
 
-        >>> list(gaussian.predict(X_test))
+        >>> list(pfqda.predict(X_test))
         [0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1,
          1, 0, 1, 0, 1, 0, 1, 1]
 
         Finally, we calculate the mean accuracy for the test data
 
-        >>> round(gaussian.score(X_test, y_test), 2)
+        >>> round(pfqda.score(X_test, y_test), 2)
         0.96
 
     """
@@ -91,7 +90,7 @@ class GaussianClassifier(
         self.kernel = kernel
         self.regularizer = regularizer
 
-    def fit(self, X: FDataGrid, y: np.ndarray) -> GaussianClassifier:
+    def fit(self, X: FDataGrid, y: np.ndarray) -> ParametrizedFunctionalQDA:
         """Fit the model using X as training data and y as target values.
 
         Args:

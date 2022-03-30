@@ -5,7 +5,7 @@ from ._depth_classifiers import (
     DDGClassifier,
     MaximumDepthClassifier,
 )
-from ._gaussian_classifier import GaussianClassifier
+from ._parametrized_functional_qda import ParametrizedFunctionalQDA
 from ._logistic_regression import LogisticRegression
 from ._neighbors_classifiers import (
     KNeighborsClassifier,

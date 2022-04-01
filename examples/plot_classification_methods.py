@@ -18,10 +18,10 @@ from sklearn.model_selection import train_test_split
 from skfda.datasets import fetch_growth
 from skfda.exploratory.depth import ModifiedBandDepth
 from skfda.ml.classification import (
-    GaussianClassifier,
     KNeighborsClassifier,
     MaximumDepthClassifier,
     NearestCentroid,
+    ParametrizedFunctionalQDA,
 )
 
 ##############################################################################
@@ -111,12 +111,13 @@ X_test.plot(group=centroid_pred, group_names=categories).show()
 
 
 ##############################################################################
-# The fourth method considered is a Gaussian Process based Classifier.
+# The fourth method considered is a Parametrized functional quadratic
+# discriminant.
 # We have selected a gaussian kernel with initial parameters: variance=6 and
 # mean=1
 # As regularizer a small value 0.05 has been chosen.
 
-gaussian = GaussianClassifier(
+gaussian = ParametrizedFunctionalQDA(
     kernel=RBF(input_dim=1, variance=6, lengthscale=1),
     regularizer=0.05,
 )

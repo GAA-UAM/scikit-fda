@@ -116,7 +116,6 @@ class ParametrizedFunctionalQDA(
             + self.regularizer * np.eye(len(X.grid_points[0]))
         )
 
-        # Calculates logarithmic covariance -> -1/2 * log|sum|
         self._log_determinant_covariances = np.asarray([
             np.trace(logm(regularized_covariance))
             for regularized_covariance in self._regularized_covariances

@@ -136,7 +136,7 @@ plt.show()
 #
 # Predictors should implement the ``fit_predict`` method for fitting the
 # estimators and predicting the targets in one step and/or the ``predict``
-# method for predicting the targets of possibly non previously bserved data.
+# method for predicting the targets of possibly non previously observed data.
 # Usually :term:`sklearn:transductive` estimators implement only the former
 # one, while :term:`sklearn:inductive` estimators implement the latter one (or
 # both).

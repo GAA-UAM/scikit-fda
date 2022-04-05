@@ -11,7 +11,7 @@ from sklearn.utils.validation import check_is_fitted
 from ...representation import FData
 from ...representation._typing import ArrayLike, NDArrayFloat
 from ...representation.basis import Basis
-from .._math import inner_product
+from .._math import inner_product_matrix
 from ..regularization._regularization import TikhonovRegularization
 
 WeightsCallable = Callable[[np.ndarray], np.ndarray]
@@ -57,7 +57,7 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         >>> mahalanobis.fit(fd)
         MahalanobisDistance(n_components=2)
         >>> mahalanobis(fd[0], fd[1])
-        1.9968038359080937
+        array([ 1.99680384])
 
     References:
         .. footbibliography::
@@ -130,6 +130,7 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
 
         return np.sum(
             self.eigen_values_
-            * inner_product(e1 - e2, self.eigen_vectors_) ** 2
+            * inner_product_matrix(e1 - e2, self.eigen_vectors_) ** 2
             / (self.eigen_values_ + self.alpha)**2,
+            axis=1,
         )

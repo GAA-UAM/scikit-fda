@@ -4,7 +4,8 @@ from __future__ import annotations
 from typing import Callable, Generic, Optional, TypeVar
 
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
+from sklearn.exceptions import NotFittedError
+from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _classifier_get_classes
 from ...exploratory.depth import Depth, ModifiedBandDepth
@@ -86,6 +87,12 @@ class NearestCentroid(
         Returns:
             self
         """
+        if hasattr(self.metric, 'fit'):  # noqa: WPS421
+            try:
+                check_is_fitted(self.metric)
+            except NotFittedError:
+                self.metric.fit(X)
+
         classes, y_ind = _classifier_get_classes(y)
 
         self._classes = classes
@@ -107,7 +114,7 @@ class NearestCentroid(
             Array of shape (n_samples) or
                 (n_samples, n_outputs) with class labels for each data sample.
         """
-        sklearn_check_is_fitted(self)
+        check_is_fitted(self)
 
         return self._classes[PairwiseMetric(self.metric)(
             X,

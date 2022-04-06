@@ -8,13 +8,18 @@ from the center (larger values) outwards(smaller ones).
 from __future__ import annotations
 
 import itertools
-from typing import Optional
+from typing import Optional, TypeVar
 
 import numpy as np
 import scipy.integrate
 
 from ... import FDataGrid
+from ...misc.metrics import Metric, l2_distance
+from ...representation import FData
+from ...representation._typing import NDArrayFloat
 from .multivariate import Depth, SimplicialDepth, _UnivariateFraimanMuniz
+
+T = TypeVar("T", bound=FData)
 
 
 class IntegratedDepth(Depth[FDataGrid]):
@@ -211,3 +216,72 @@ class BandDepth(Depth[FDataGrid]):
             n_total += 1
 
         return num_in / n_total
+
+
+class DistanceBasedDepth(Depth[FDataGrid]):
+    r"""
+    Functional depth based on a metric.
+
+    Parameters:
+        metric:
+            The metric to use as M in the following depth calculation
+            .. math::
+                D(x) = [1 + M^2(x, \mu)]^{-1}.
+
+            as explained in :footcite:`serfling+zuo_2000_depth_function`.
+
+    Examples:
+        >>> import skfda
+        >>> from skfda.exploratory.depth import DistanceBasedDepth
+        >>> from skfda.misc.metrics import MahalanobisDistance
+        >>> data_matrix = [[1, 1, 2, 3, 2.5, 2],
+        ...                [0.5, 0.5, 1, 2, 1.5, 1],
+        ...                [-1, -1, -0.5, 1, 1, 0.5],
+        ...                [-0.5, -0.5, -0.5, -1, -1, -1]]
+        >>> grid_points = [0, 2, 4, 6, 8, 10]
+        >>> fd = skfda.FDataGrid(data_matrix, grid_points)
+        >>> depth = DistanceBasedDepth(MahalanobisDistance(2))
+        >>> depth(fd)
+        array([ 0.41897777,  0.8058132 ,  0.31097392,  0.31723619])
+
+    References:
+        .. footbibliography::
+    """
+
+    def __init__(
+        self,
+        metric: Metric[T] = l2_distance,
+    ) -> None:
+        self.metric = metric
+
+    def fit(  # noqa: D102
+        self,
+        X: T,
+        y: None = None,
+    ) -> DistanceBasedDepth:
+        """Fit the model using X as training data.
+
+        Args:
+            X: FDataGrid with the training data or array matrix with shape
+                (n_samples, n_samples) if metric='precomputed'.
+            y: Ignored.
+
+        Returns:
+            self
+        """
+        if hasattr(self.metric, 'fit'):  # noqa: WPS421
+            self.metric.fit(X)
+        self.mean_ = X.mean()
+
+        return self
+
+    def transform(self, X: T) -> NDArrayFloat:  # noqa: D102
+        """Compute the depth of given observations.
+
+        Args:
+            X: FDataGrid with the observations to use in the calculation.
+
+        Returns:
+            Array with the depths.
+        """
+        return 1 / (1 + self.metric(X, self.mean_))

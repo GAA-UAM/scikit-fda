@@ -4,7 +4,6 @@ from __future__ import annotations
 from typing import Callable, Generic, Optional, TypeVar
 
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _classifier_get_classes
@@ -88,10 +87,7 @@ class NearestCentroid(
             self
         """
         if hasattr(self.metric, 'fit'):  # noqa: WPS421
-            try:
-                check_is_fitted(self.metric)
-            except NotFittedError:
-                self.metric.fit(X)
+            self.metric.fit(X)
 
         classes, y_ind = _classifier_get_classes(y)
 

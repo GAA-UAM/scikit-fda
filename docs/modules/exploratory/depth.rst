@@ -35,10 +35,11 @@ The following classes implement depth functions for functional data:
    skfda.exploratory.depth.IntegratedDepth
    skfda.exploratory.depth.BandDepth
    skfda.exploratory.depth.ModifiedBandDepth
+   skfda.exploratory.depth.DistanceBasedDepth
 
 Most of them support functional data with more than one dimension
 on the :term:`domain` and on the :term:`codomain`.
-   
+
 Multivariate depths
 ^^^^^^^^^^^^^^^^^^^
 
@@ -52,7 +53,7 @@ Thus we also provide some multivariate depth functions:
 
 .. autosummary::
    :toctree: autosummary
-   
+
    skfda.exploratory.depth.multivariate.ProjectionDepth
    skfda.exploratory.depth.multivariate.SimplicialDepth
 
@@ -78,7 +79,7 @@ data case:
 
 .. autosummary::
    :toctree: autosummary
-   
+
    skfda.exploratory.depth.multivariate.StahelDonohoOutlyingness
 
 Conversion
@@ -90,7 +91,7 @@ The following class define a depth based on an outlyingness measure.
 
 .. autosummary::
    :toctree: autosummary
-   
+
    skfda.exploratory.depth.OutlyingnessBasedDepth
 
 

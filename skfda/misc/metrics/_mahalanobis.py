@@ -30,21 +30,20 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         centering: If ``True`` then calculate the mean of the functional
             data object and center the data first. Defaults to ``True``.
         regularization: Regularization object to be applied.
-        components_basis: The basis in which we want the eigenvectors.
-            We can use a different basis than the basis contained in the
-            passed FDataBasis object. This parameter is only used when
-            fitting a FDataBasis.
-        weights: the weights vector used for discrete integration.
+        weights: The weights vector used for discrete integration.
             If none then the trapezoidal rule is used for computing the
             weights. If a callable object is passed, then the weight
             vector will be obtained by evaluating the object at the sample
             points of the passed FDataGrid object in the fit method. This
             parameter is only used when fitting a FDataGrid.
-
-    Attributes:
-        eigen_vectors\_: Eigenvectors of the covariance operator.
-        eigen_values\_: Eigenvalues of the covariance operator.
-        mean\_: Mean of the stochastic process.
+        components_basis: The basis in which we want the eigenvectors.
+            We can use a different basis than the basis contained in the
+            passed FDataBasis object. This parameter is only used when
+            fitting a FDataBasis.
+        alpha: Hyperparameter that controls the smoothness of the
+            aproximation.
+        eigen_vectors: Eigenvectors of the covariance operator.
+        eigen_values: Eigenvalues of the covariance operator.
 
     Examples:
         >>> from skfda.misc.metrics import MahalanobisDistance
@@ -71,6 +70,8 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
         alpha: float = 0.001,
+        eigen_values: Optional[NDArrayFloat] = None,
+        eigen_vectors: Optional[FData] = None,
     ) -> None:
         self.n_components = n_components
         self.centering = centering
@@ -78,6 +79,8 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         self.weights = weights
         self.components_basis = components_basis
         self.alpha = alpha
+        self.eigen_values = eigen_values
+        self.eigen_vectors = eigen_vectors
 
     def fit(
         self,
@@ -98,17 +101,24 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         """
         from ...preprocessing.dim_reduction.feature_extraction import FPCA
 
-        fpca = FPCA(
-            self.n_components,
-            self.centering,
-            self.regularization,
-            self.weights,
-            self.components_basis,
-        )
-        fpca.fit(X)
-        self.eigen_values_ = fpca.explained_variance_
-        self.eigen_vectors_ = fpca.components_
-        self.mean_ = fpca.mean_
+        if self.eigen_values is None or self.eigen_vectors is None:
+            fpca = FPCA(
+                self.n_components,
+                self.centering,
+                self.regularization,
+                self.weights,
+                self.components_basis,
+            )
+            fpca.fit(X)
+            self.eigen_values_ = fpca.explained_variance_
+            self.eigen_vectors_ = fpca.components_
+
+        elif not (
+            hasattr(self, 'eigen_values_')  # noqa: WPS421
+            and hasattr(self, 'eigen_vectors_')  # noqa: WPS421
+        ):
+            self.eigen_values_ = self.eigen_values
+            self.eigen_vectors_ = self.eigen_vectors
 
         return self
 

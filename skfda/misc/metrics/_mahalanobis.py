@@ -18,7 +18,7 @@ WeightsCallable = Callable[[np.ndarray], np.ndarray]
 
 
 class MahalanobisDistance(BaseEstimator):  # type: ignore
-    r"""Functional Mahalanobis distance.
+    """Functional Mahalanobis distance.
 
     Class that implements functional Mahalanobis distance for both
     basis and grid representations of the data

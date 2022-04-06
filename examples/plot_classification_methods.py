@@ -125,7 +125,7 @@ pfqda.fit(X_train, y_train)
 pfqda_pred = pfqda.predict(X_test)
 print(pfqda_pred)
 print('The score of Parametrized Functional QDA is {0:2.2%}'.format(
-    pfqda_pred.score(X_test, y_test),
+    pfqda.score(X_test, y_test),
 ))
 
 # Plot the prediction

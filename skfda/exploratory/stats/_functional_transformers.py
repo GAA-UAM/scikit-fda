@@ -9,7 +9,6 @@ import numpy as np
 from ..._utils import check_is_univariate
 from ...representation import FDataBasis, FDataGrid
 from ...representation._typing import NDArrayFloat, NDArrayInt
-from ...representation import FDataGrid
 
 
 def local_averages(
@@ -343,6 +342,7 @@ def number_up_crossings(
         points_greater & points_smaller_rotated,
         axis=2,
     ).T
+
 
 def moments_of_norm(
     data: FDataGrid,

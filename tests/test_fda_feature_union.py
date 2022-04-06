@@ -8,7 +8,7 @@ from pandas.testing import assert_frame_equal
 from skfda.datasets import fetch_growth
 from skfda.misc.hat_matrix import NadarayaWatsonHatMatrix
 from skfda.misc.operators import SRSF
-from skfda.preprocessing.dim_reduction.feature_construction import (
+from skfda.preprocessing.feature_construction import (
     EvaluationTransformer,
     FDAFeatureUnion,
 )

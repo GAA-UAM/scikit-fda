@@ -8,11 +8,11 @@ import numpy as np
 import pandas as pd
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ...._utils import TransformerMixin, _fit_feature_transformer
-from ....representation import FData
-from ....representation._typing import NDArrayFloat, NDArrayInt
-from ....representation.basis import FDataBasis
-from ....representation.grid import FDataGrid
+from ..._utils import TransformerMixin, _fit_feature_transformer
+from ...representation import FData
+from ...representation._typing import NDArrayFloat, NDArrayInt
+from ...representation.basis import FDataBasis
+from ...representation.grid import FDataGrid
 
 Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
 Output = TypeVar("Output", bound=Union[pd.DataFrame, NDArrayFloat])
@@ -53,8 +53,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
         >>> X = X.iloc[:, 0].values
         >>> y = y.values.codes
 
-        >>> from skfda.preprocessing.dim_reduction.feature_construction\
-        ... import (
+        >>> from skfda.preprocessing.feature_construction import (
         ...     PerClassTransformer,
         ... )
 

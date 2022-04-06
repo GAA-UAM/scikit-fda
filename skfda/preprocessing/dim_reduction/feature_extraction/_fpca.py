@@ -12,10 +12,7 @@ from sklearn.decomposition import PCA
 
 from ....misc import inner_product_matrix
 from ....misc.metrics import l2_norm
-from ....misc.regularization import (
-    TikhonovRegularization,
-    compute_penalty_matrix,
-)
+from ....misc.regularization import L2Regularization, compute_penalty_matrix
 from ....representation import FData
 from ....representation._typing import ArrayLike
 from ....representation.basis import Basis, FDataBasis
@@ -61,6 +58,8 @@ class FPCA(
             each of the selected components.
         explained_variance_ratio\_ (array_like): this contains the percentage
             of variance explained by each principal component.
+        singular_values\_: The singular values corresponding to each of the
+            selected components. 
         mean\_ (FData): mean of the train data.
 
 
@@ -98,7 +97,7 @@ class FPCA(
         self,
         n_components: int = 3,
         centering: bool = True,
-        regularization: Optional[TikhonovRegularization[FData]] = None,
+        regularization: Optional[L2Regularization[FData]] = None,
         weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
     ) -> None:
@@ -224,7 +223,7 @@ class FPCA(
 
         # the final matrix, C(L-1Jt)t for svd or (L-1Jt)-1CtC(L-1Jt)t for PCA
         final_matrix = (
-            X.coefficients @ np.transpose(l_inv_j_t) / np.sqrt(n_samples)
+            X.coefficients @ np.transpose(l_inv_j_t)
         )
 
         # initialize the pca module provided by scikit-learn
@@ -241,6 +240,7 @@ class FPCA(
 
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
         self.explained_variance_ = pca.explained_variance_
+        self.singular_values_ = pca.singular_values_
         self.components_ = X.copy(
             basis=components_basis,
             coefficients=component_coefficients.T,
@@ -375,7 +375,7 @@ class FPCA(
         ).T
 
         # see docstring for more information
-        final_matrix = fd_data @ np.sqrt(weights_matrix) / np.sqrt(n_samples)
+        final_matrix = fd_data @ np.sqrt(weights_matrix)
 
         pca = PCA(n_components=self.n_components)
         pca.fit(final_matrix)
@@ -391,6 +391,7 @@ class FPCA(
 
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
         self.explained_variance_ = pca.explained_variance_
+        self.singular_values_ = pca.singular_values_
 
         return self
 

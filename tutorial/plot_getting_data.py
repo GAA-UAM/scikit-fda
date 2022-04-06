@@ -36,8 +36,10 @@ literature.
 # number of domain dimensions (that is, one for curves, two for surfaces...).
 # Each of its elements is a 1D numpy :class:`~numpy.ndarray` containing the
 # grid points for that particular dimension,
-#  .. math::
+#
+# .. math::
 #     ((t_1, \ldots, t_{M_i}))_{i=1}^p,
+#
 # where :math:`M_i` is the number of measurement points for each "argument"
 # or domain coordinate of the function :math:`i` and :math:`p` is the domain
 # dimension.
@@ -54,7 +56,6 @@ literature.
 # :class:`~numpy.ndarray` when necessary.
 #
 # .. note::
-#
 #     The grid points can be omitted,
 #     and in that case their number is inferred from the dimensions of
 #     ``data_matrix`` and they are automatically assigned as equispaced points
@@ -165,7 +166,6 @@ plt.show()
 
 ##############################################################################
 # .. note::
-#
 #     :class:`Pandas DataFrames <pandas.DataFrame>` are also popular as
 #     datasets containers in the Python scientific ecosystem. If you have
 #     data in a Pandas DataFrame, you can extract its content as a Numpy
@@ -226,7 +226,6 @@ plt.show()
 
 ##############################################################################
 # .. note::
-#
 #     Functional data objects from some packages, such as
 #     `fda.usc <https://cran.r-project.org/web/packages/fda.usc/index.html>`_
 #     are automatically recognized as such and converted to

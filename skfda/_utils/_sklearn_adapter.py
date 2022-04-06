@@ -6,9 +6,13 @@ from typing import Any, Generic, Optional, TypeVar, overload
 import sklearn.base
 
 SelfType = TypeVar("SelfType")
+TransformerNoTarget = TypeVar(
+    "TransformerNoTarget",
+    bound="TransformerMixin[Any, Any, None]",
+)
 Input = TypeVar("Input")
 Output = TypeVar("Output")
-Target = TypeVar("Target")
+Target = TypeVar("Target", contravariant=True)
 
 
 class BaseEstimator(
@@ -21,22 +25,43 @@ class BaseEstimator(
 class TransformerMixin(
     ABC,
     Generic[Input, Output, Target],
-    sklearn.base.TransformerMixin,  # type: ignore[misc]
+    # sklearn.base.TransformerMixin, # Inherit in the future
 ):
+
+    @overload
+    def fit(
+        self: TransformerNoTarget,
+        X: Input,
+    ) -> TransformerNoTarget:
+        pass
+
+    @overload
+    def fit(
+        self: SelfType,
+        X: Input,
+        y: Target,
+    ) -> SelfType:
+        pass
 
     def fit(
         self: SelfType,
         X: Input,
         y: Optional[Target] = None,
     ) -> SelfType:
-
         return self
 
-    @overload  # type: ignore[misc]
+    @overload
+    def fit_transform(
+        self: TransformerNoTarget,
+        X: Input,
+    ) -> Output:
+        pass
+
+    @overload
     def fit_transform(
         self,
         X: Input,
-        y: Optional[Target] = None,
+        y: Target,
     ) -> Output:
         pass
 
@@ -46,8 +71,10 @@ class TransformerMixin(
         y: Optional[Target] = None,
         **fit_params: Any,
     ) -> Output:
-
-        return super().fit_transform(X, y, **fit_params)
+        if y is None:
+            return self.fit(X, **fit_params).transform(X)  # type: ignore
+        else:
+            return self.fit(X, y, **fit_params).transform(X)  # type: ignore
 
 
 class InductiveTransformerMixin(
@@ -59,5 +86,4 @@ class InductiveTransformerMixin(
         self: SelfType,
         X: Input,
     ) -> Output:
-
         pass

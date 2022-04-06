@@ -124,7 +124,7 @@ class TestWarping(unittest.TestCase):
         landmarks = landmarks.squeeze()
 
         shifts = landmark_shift_deltas(fd, landmarks).round(3)
-        np.testing.assert_almost_equal(shifts, [0.25, -0.25, -0.231])
+        np.testing.assert_almost_equal(shifts, [0.327, -0.173, -0.154])
 
     def test_landmark_shift_registration(self) -> None:
         """Test landmark shift registration."""
@@ -138,7 +138,7 @@ class TestWarping(unittest.TestCase):
         )
         # Test default location
         fd_registered = landmark_shift_registration(fd, landmarks)
-        center = (landmarks.max() + landmarks.min()) / 2
+        center = np.mean(landmarks)
         reg_modes = fd_registered(center)
 
         # Test callable location

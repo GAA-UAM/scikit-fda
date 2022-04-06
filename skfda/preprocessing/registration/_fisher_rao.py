@@ -7,11 +7,17 @@ from typing import Callable, Optional, TypeVar, Union
 from sklearn.utils.validation import check_is_fitted
 
 from ... import FDataGrid
-from ..._utils import check_is_univariate, invert_warping, normalize_scale
+from ..._utils import (
+    _check_compatible_fdatagrid,
+    check_is_univariate,
+    invert_warping,
+    normalize_scale,
+)
 from ...exploratory.stats import fisher_rao_karcher_mean
 from ...exploratory.stats._fisher_rao import _elastic_alignment_array
 from ...misc.operators import SRSF
 from ...representation._typing import ArrayLike
+from ...representation.basis import Basis
 from ...representation.interpolation import SplineInterpolation
 from .base import InductiveRegistrationTransformer
 
@@ -22,7 +28,8 @@ SelfType = TypeVar("SelfType", bound="FisherRaoElasticRegistration")
 class FisherRaoElasticRegistration(
     InductiveRegistrationTransformer[FDataGrid, FDataGrid],
 ):
-    r"""Align a FDatagrid using the SRSF framework.
+    r"""
+    Align a FDatagrid using the SRSF framework.
 
     Let :math:`f` be a function of the functional data object wich will be
     aligned to the template :math:`g`. Calculates the warping wich minimises
@@ -71,6 +78,11 @@ class FisherRaoElasticRegistration(
             fdatagrid which will be transformed.
         grid_dim: Dimension of the grid used in the DP
             alignment algorithm. Defaults 7.
+        derivative_method: Method to use to compute the derivative. If ``None``
+            (the default), finite differences are used. In a basis
+            object is passed the grid is converted to a basis
+            representation and the derivative is evaluated using that
+            representation.
 
     Attributes:
         template\_: Template learned during fitting,
@@ -112,29 +124,44 @@ class FisherRaoElasticRegistration(
         penalty: float = 0,
         output_points: Optional[ArrayLike] = None,
         grid_dim: int = 7,
+        derivative_method: Optional[Basis] = None,
     ) -> None:
         self.template = template
         self.penalty = penalty
         self.output_points = output_points
         self.grid_dim = grid_dim
+        self.derivative_method = derivative_method
 
     def fit(self: SelfType, X: FDataGrid, y: None = None) -> SelfType:
+
+        # Points of discretization
+        if self.output_points is None:
+            self._output_points = X.grid_points[0]
+        else:
+            self._output_points = self.output_points
 
         if isinstance(self.template, FDataGrid):
             self.template_ = self.template  # Template already constructed
         else:
             self.template_ = self.template(X)
 
+        _check_compatible_fdatagrid(X, self.template_)
+
         # Constructs the SRSF of the template
-        srsf = SRSF(output_points=self.output_points, initial_value=0)
-        self._template_srsf = srsf.fit_transform(self.template_)
+        self._srsf = SRSF(
+            output_points=self._output_points,
+            initial_value=0,
+            method=self.derivative_method,
+        )
+        self._template_srsf = self._srsf.fit_transform(self.template_)
 
         return self
 
     def transform(self, X: FDataGrid, y: None = None) -> FDataGrid:
 
-        check_is_fitted(self, '_template_srsf')
+        check_is_fitted(self)
         check_is_univariate(X)
+        _check_compatible_fdatagrid(X, self.template_)
 
         if (
             len(self._template_srsf) != 1
@@ -147,8 +174,7 @@ class FisherRaoElasticRegistration(
                 "same number of samples than X.",
             )
 
-        srsf = SRSF(output_points=self.output_points, initial_value=0)
-        fdatagrid_srsf = srsf.fit_transform(X)
+        fdatagrid_srsf = self._srsf.fit_transform(X)
 
         # Points of discretization
         if self.output_points is None:

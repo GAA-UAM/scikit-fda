@@ -6,7 +6,7 @@ Classification methods.
 Shows a comparison between different classification methods.
 The Berkeley Growth Study dataset is used as input data.
 Classification methods KNN, Maximum Depth, Nearest Centroid and
-Gaussian classifier are compared.
+Parametric Functional QDA are compared.
 """
 
 # Author:Álvaro Castillo García
@@ -117,16 +117,16 @@ X_test.plot(group=centroid_pred, group_names=categories).show()
 # mean=1
 # As regularizer a small value 0.05 has been chosen.
 
-gaussian = ParametrizedFunctionalQDA(
+pfqda = ParametrizedFunctionalQDA(
     kernel=RBF(input_dim=1, variance=6, lengthscale=1),
     regularizer=0.05,
 )
-gaussian.fit(X_train, y_train)
-gaussian_pred = gaussian.predict(X_test)
-print(gaussian_pred)
-print('The score of Gaussian Process Classifier is {0:2.2%}'.format(
-    gaussian.score(X_test, y_test),
+pfqda.fit(X_train, y_train)
+pfqda_pred = pfqda.predict(X_test)
+print(pfqda_pred)
+print('The score of Parametrized Functional QDA is {0:2.2%}'.format(
+    pfqda_pred.score(X_test, y_test),
 ))
 
 # Plot the prediction
-X_test.plot(group=gaussian_pred, group_names=categories).show()
+X_test.plot(group=pfqda_pred, group_names=categories).show()

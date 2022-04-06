@@ -134,7 +134,7 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
             e2: Second object.
 
         Returns:
-            Squared functional Mahalanobis distances of the observations.
+            Squared functional Mahalanobis distance between two observations.
         """
         check_is_fitted(self)
 

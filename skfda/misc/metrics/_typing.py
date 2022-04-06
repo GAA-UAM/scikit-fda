@@ -6,7 +6,6 @@ from typing import Any, TypeVar, Union, overload
 
 from typing_extensions import Final, Literal, Protocol
 
-from ...representation import FData
 from ...representation._typing import NDArrayFloat, Vector
 
 VectorType = TypeVar("VectorType", contravariant=True, bound=Vector)
@@ -35,13 +34,6 @@ class Norm(Protocol[VectorType]):
 
 class Metric(Protocol[MetricElementType]):
     """Protocol for a metric between two elements of a metric space."""
-
-    def fit(
-        self,
-        X: FData,
-        y: None,
-    ) -> Metric[Any]:
-        """Fit the metric using some data."""
 
     @abstractmethod
     def __call__(

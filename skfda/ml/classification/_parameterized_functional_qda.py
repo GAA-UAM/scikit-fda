@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Tuple
+
 import numpy as np
 from GPy.kern import Kern
 from GPy.models import GPRegression
@@ -9,26 +11,27 @@ from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _classifier_get_classes
 from ...representation import FDataGrid
+from ...representation._typing import NDArrayFloat, NDArrayInt
 
 
-class ParametrizedFunctionalQDA(
+class ParameterizedFunctionalQDA(
     BaseEstimator,  # type: ignore
     ClassifierMixin,  # type: ignore
 ):
     """Parametrized functional quadratic discriminant analysis.
 
     This classifier is based on the assumption that the data is part
-    of a gaussian process and depending on the output label, the covariance
+    of a Gaussian process and depending on the output label, the covariance
     and mean parameters are different for each class. This means that curves
-    classified with one determined label come from a distinct gaussian process
+    classified with one determined label come from a distinct Gaussian process
     compared with data that is classified with a different label.
 
     The training phase of the classifier will try to approximate the two
-    main parameters of a gaussian process for each class. The covariance
+    main parameters of a Gaussian process for each class. The covariance
     will be estimated by fitting the initial kernel passed on the creation of
-    the ParametrizedFunctionalQDA object.
+    the ParameterizedFunctionalQDA object.
     The result of the training function will be two arrays, one of means and
-    another one of covariances. Both with length (n_classes).
+    another one of covariances. Both with length (``n_classes``).
 
     The prediction phase instead uses a quadratic discriminant classifier to
     predict which gaussian process of the fitted ones correspond the most with
@@ -36,11 +39,12 @@ class ParametrizedFunctionalQDA(
 
 
     Parameters:
-        kernel: initial kernel to be fitted with the training data.
+        kernel: Initial kernel to be fitted with the training data. For now,
+        only kernels that belongs to the GPy module are allowed.
 
-        regularizer: parameter that regularizes the covariance matrices
-        in order to avoid Singular matrices. It is multiplied by a numpy
-        eye matrix and then added to the covariance one.
+        regularizer: Parameter that regularizes the covariance matrices in
+        order to avoid Singular matrices. It is multiplied by the identity
+        matrix and then added to the covariance one.
 
 
     Examples:
@@ -60,16 +64,19 @@ class ParametrizedFunctionalQDA(
         ... )
 
         Then we need to choose and import a kernel so it can be fitted with
-        the data in the training phase. We will use a gaussian kernel with
-        mean 1 and variance 6 as an example.
+        the data in the training phase. We will use a Gaussian kernel. The
+        variance and lengthscale parameters will be optimized during the
+        training phase. Therefore, the initial values do not matter too much.
+        We will use random values such as 1 for the mean and 6 for the
+        variance.
 
         >>> from GPy.kern import RBF
         >>> rbf = RBF(input_dim=1, variance=6, lengthscale=1)
 
-        We will fit the ParametrizedFunctionalQDA with training data. We
-        use as regularizer parameter a low value as 0.05.
+        We will fit the ParameterizedFunctionalQDA with training data. We
+        use as regularizer parameter a low value such as 0.05.
 
-        >>> pfqda = ParametrizedFunctionalQDA(rbf, 0.05)
+        >>> pfqda = ParameterizedFunctionalQDA(rbf, 0.05)
         >>> pfqda = pfqda.fit(X_train, y_train)
 
 
@@ -90,8 +97,9 @@ class ParametrizedFunctionalQDA(
         self.kernel = kernel
         self.regularizer = regularizer
 
-    def fit(self, X: FDataGrid, y: np.ndarray) -> ParametrizedFunctionalQDA:
-        """Fit the model using X as training data and y as target values.
+    def fit(self, X: FDataGrid, y: np.ndarray) -> ParameterizedFunctionalQDA:
+        """
+        Fit the model using X as training data and y as target values.
 
         Args:
             X: FDataGrid with the training data.
@@ -123,8 +131,9 @@ class ParametrizedFunctionalQDA(
 
         return self
 
-    def predict(self, X: FDataGrid) -> np.ndarray:
-        """Predict the class labels for the provided data.
+    def predict(self, X: FDataGrid) -> NDArrayInt:
+        """
+        Predict the class labels for the provided data.
 
         Args:
             X: FDataGrid with the test samples.
@@ -140,7 +149,7 @@ class ParametrizedFunctionalQDA(
             axis=1,
         )
 
-    def _calculate_priors(self, y: np.ndarray) -> np.ndarray:
+    def _calculate_priors(self, y: np.ndarray) -> NDArrayFloat:
         """
         Calculate the prior probability of each class.
 
@@ -156,7 +165,7 @@ class ParametrizedFunctionalQDA(
     def _fit_gaussian_process(
         self,
         X: FDataGrid,
-    ) -> np.ndarray:
+    ) -> Tuple[NDArrayFloat, NDArrayFloat]:
         """
         Fit the kernel to the data in each class.
 
@@ -196,7 +205,7 @@ class ParametrizedFunctionalQDA(
 
         return np.asarray(kernels), np.asarray(means)
 
-    def _calculate_log_likelihood(self, X: np.ndarray) -> np.ndarray:
+    def _calculate_log_likelihood(self, X: np.ndarray) -> NDArrayFloat:
         """
         Calculate the log likelihood quadratic discriminant analysis.
 

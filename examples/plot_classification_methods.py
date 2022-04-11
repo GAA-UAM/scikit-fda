@@ -1,17 +1,22 @@
 """
 Classification methods.
-
 ==================================
 
-Shows a comparison between different classification methods.
+Shows a comparison between the accuracies of different classification
+methods.
+There has been selected one method of each kind present in the library.
+In particular, there is one based on depths, Maximum Depth Classifier,
+another one based on centroids, Nearest Centroid Classifier, another one
+based on the K-Nearest Neighbors, K-Nearest Neighbors Classifier, and
+finally, one based on the quadratic discriminant analysis, Parameterized
+Functional QDA.
+
 The Berkeley Growth Study dataset is used as input data.
-Classification methods KNN, Maximum Depth, Nearest Centroid and
-Parametric Functional QDA are compared.
 """
 
 # Author:Álvaro Castillo García
 # License: MIT
-
+import matplotlib.pyplot as plt
 from GPy.kern import RBF
 from sklearn.model_selection import train_test_split
 
@@ -21,7 +26,7 @@ from skfda.ml.classification import (
     KNeighborsClassifier,
     MaximumDepthClassifier,
     NearestCentroid,
-    ParametrizedFunctionalQDA,
+    ParameterizedFunctionalQDA,
 )
 
 ##############################################################################
@@ -62,7 +67,7 @@ X_test.plot().show()
 # :class:`~skfda.ml.classification.MaximumDepthClassifier`,
 # :class:`~skfda.ml.classification.KNeighborsClassifier`,
 # :class:`~skfda.ml.classification.NearestCentroid` and
-# :class:`~skfda.ml.classification.GaussianClassifier`
+# :class:`~skfda.ml.classification.ParameterizedFunctionalQDA`
 
 
 ##############################################################################
@@ -77,9 +82,6 @@ print('The score of Maximum Depth Classifier is {0:2.2%}'.format(
     depth.score(X_test, y_test),
 ))
 
-# Plot the prediction
-X_test.plot(group=depth_pred, group_names=categories).show()
-
 
 ##############################################################################
 # The second method to consider is the K-Nearest Neighbours Classifier.
@@ -90,9 +92,6 @@ knn.fit(X_train, y_train)
 knn_pred = knn.predict(X_test)
 print(knn_pred)
 print('The score of KNN is {0:2.2%}'.format(knn.score(X_test, y_test)))
-
-# Plot the prediction
-X_test.plot(group=knn_pred, group_names=categories).show()
 
 
 ##############################################################################
@@ -106,27 +105,55 @@ print('The score of Nearest Centroid Classifier is {0:2.2%}'.format(
     centroid.score(X_test, y_test),
 ))
 
-# Plot the prediction
-X_test.plot(group=centroid_pred, group_names=categories).show()
-
 
 ##############################################################################
-# The fourth method considered is a Parametrized functional quadratic
+# The fourth method considered is a Parameterized functional quadratic
 # discriminant.
 # We have selected a gaussian kernel with initial parameters: variance=6 and
-# mean=1
+# mean=1. The selection of the initial parameters does not really affect the
+# results as the algorithm will automatically optimize them.
 # As regularizer a small value 0.05 has been chosen.
 
-pfqda = ParametrizedFunctionalQDA(
+pfqda = ParameterizedFunctionalQDA(
     kernel=RBF(input_dim=1, variance=6, lengthscale=1),
     regularizer=0.05,
 )
 pfqda.fit(X_train, y_train)
 pfqda_pred = pfqda.predict(X_test)
 print(pfqda_pred)
-print('The score of Parametrized Functional QDA is {0:2.2%}'.format(
+print('The score of Parameterized Functional QDA is {0:2.2%}'.format(
     pfqda.score(X_test, y_test),
 ))
 
-# Plot the prediction
-X_test.plot(group=pfqda_pred, group_names=categories).show()
+
+##############################################################################
+# As it can be seen, the classifier with the lowest score is the Maximum
+# Depth Classifier. It obtains a 82.14% accuracy for the test set.
+# KNN and Parameterized Functional QDA can be seen as the best classifiers
+# for this problem, with an accuracy of 96.43%.
+# Instead, the Nearest Centroid Classifier is not as good as the others.
+# However, it obtains an accuracy of 85.71% for the test set.
+# It can be concluded that all classifiers work well for this problem, as they
+# achieve more than an 80% of score, but the most robust ones are KNN and
+# Parameterized Functional QDA.
+# The figure below shows the results of the classification for the test set on
+# the four methods considered.
+# It can be seen that the curves are similarly classified by all of them.
+
+
+fig, axs = plt.subplots(2, 2)
+plt.subplots_adjust(hspace=0.45, bottom=0.06)
+
+X_test.plot(group=centroid_pred, group_names=categories, axes=axs[0][1])
+axs[0][1].set_title('Nearest Centroid Classifier', loc='left')
+
+X_test.plot(group=depth_pred, group_names=categories, axes=axs[0][0])
+axs[0][0].set_title('Maximum Depth Classifier', loc='left')
+
+X_test.plot(group=knn_pred, group_names=categories, axes=axs[1][0])
+axs[1][0].set_title('KNN', loc='left')
+
+X_test.plot(group=pfqda_pred, group_names=categories, axes=axs[1][1])
+axs[1][1].set_title('Parameterized Functional QDA', loc='left')
+
+plt.show()

@@ -10,6 +10,7 @@ from ...misc._math import inner_product
 from ...representation.basis import Basis, FDataBasis
 
 CovariateType = TypeVar("CovariateType")
+ResponseType = TypeVar("ResponseType")
 
 
 class CoefficientInfo(abc.ABC, Generic[CovariateType]):
@@ -24,8 +25,10 @@ class CoefficientInfo(abc.ABC, Generic[CovariateType]):
     def __init__(
         self,
         basis: CovariateType,
+        ybasis: ResponseType,
     ) -> None:
         self.basis = basis
+        self.ybasis = ybasis
 
     @abc.abstractmethod
     def regression_matrix(
@@ -89,6 +92,19 @@ class CoefficientInfoNdarray(CoefficientInfo[np.ndarray]):
 
         return np.atleast_2d(X)
 
+    # inner_product_matrices
+    def regression_matrices(  # noqa: D102
+        self,
+        X: np.ndarray,
+        y: FDataBasis,
+    ) -> tuple[np.ndarray]:
+
+        inner_ybasis = y.basis.inner_product_matrix(self.ybasis)
+        inner_bbasis = inner_product(self.basis, self.basis)
+        inner_ybbasis = y.basis.inner_product_matrix(self.basis)
+
+        return inner_ybasis, inner_ybbasis, inner_bbasis
+
     def convert_from_constant_coefs(  # noqa: D102
         self,
         coefs: np.ndarray,
@@ -126,6 +142,19 @@ class CoefficientInfoFDataBasis(CoefficientInfo[FDataBasis]):
         self.inner_basis = X.basis.inner_product_matrix(self.basis)
         return xcoef @ self.inner_basis
 
+    # inner_product_matrices
+    def regression_matrices(  # noqa: D102
+        self,
+        X: FDataBasis,
+        y: FDataBasis,
+    ) -> tuple[np.ndarray]:
+
+        inner_ybasis = y.basis.inner_product_matrix(self.ybasis)
+        inner_ybbasis = y.basis.inner_product_matrix(self.basis)
+        inner_bbasis = X.basis.inner_product_matrix(self.basis)
+
+        return inner_ybasis, inner_ybbasis, inner_bbasis
+
     def convert_from_constant_coefs(  # noqa: D102
         self,
         coefs: np.ndarray,
@@ -155,25 +184,44 @@ def coefficient_info_from_covariate(
 @coefficient_info_from_covariate.register(np.ndarray)
 def _coefficient_info_from_covariate_ndarray(
     X: np.ndarray,
-    y: np.ndarray,
+    y: np.ndarray | FDataBasis,
+    ybasis: Basis = None,
     **_: Any,
 ) -> CoefficientInfo[np.ndarray]:
-    return CoefficientInfoNdarray(basis=np.identity(X.shape[1], dtype=X.dtype))
+
+    if ybasis is None and isinstance(y, FDataBasis):
+        ybasis = y.basis
+
+    if not isinstance(y, FDataBasis):
+        ybasis = np.identity(y.shape[0], dtype=y.dtype)
+
+    return CoefficientInfoNdarray(
+        basis=np.identity(len(X), dtype=X.dtype),
+        ybasis=ybasis,
+    )
 
 
 @coefficient_info_from_covariate.register(FDataBasis)
 def _coefficient_info_from_covariate_fdatabasis(
     X: FDataBasis,
-    y: np.ndarray,
+    y: np.ndarray | FDataBasis,
     *,
     basis: Basis,
+    ybasis: Basis = None,
     **_: Any,
 ) -> CoefficientInfoFDataBasis:
 
     if basis is None:
         basis = X.basis
 
+    if ybasis is None and isinstance(y, FDataBasis):
+        ybasis = y.basis
+
     if not isinstance(basis, Basis):
         raise TypeError(f"basis must be a Basis object, not {type(basis)}")
 
-    return CoefficientInfoFDataBasis(basis=basis.to_basis())
+    if not isinstance(y, FDataBasis):
+        ybasis = np.identity(y.shape[0], dtype=y.dtype)
+        return CoefficientInfoFDataBasis(basis=basis.to_basis(), ybasis=ybasis)
+
+    return CoefficientInfoFDataBasis(basis=basis.to_basis(), ybasis=ybasis.to_basis())

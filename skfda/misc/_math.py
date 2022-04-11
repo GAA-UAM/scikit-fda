@@ -381,12 +381,16 @@ def _inner_product_fdatabasis(
     arg2: Union[FDataBasis, Basis],
     *,
     _matrix: bool = False,
+    _domain_range: Optional[DomainRange] = None,
     inner_product_matrix: Optional[NDArrayFloat] = None,
     force_numerical: bool = False,
 ) -> NDArrayFloat:
 
     if not _same_domain(arg1, arg2):
         raise ValueError("Both Objects should have the same domain_range")
+
+    if _domain_range and not np.array_equal(arg1.domain_range, _domain_range):
+        raise ValueError("_domain_range should be the same as arg objects")
 
     if isinstance(arg1, Basis):
         arg1 = arg1.to_basis()

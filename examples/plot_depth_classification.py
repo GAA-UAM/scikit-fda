@@ -30,8 +30,7 @@ from skfda.ml.classification import (
     DDGClassifier,
     MaximumDepthClassifier,
 )
-from skfda.preprocessing.dim_reduction.feature_construction import DDGTransformer
-from skfda.representation.grid import FDataGrid
+from skfda.preprocessing.feature_construction import FDAFeatureUnion
 
 ##############################################################################
 # The Berkeley Growth Study data contains the heights of 39 boys and 54 girls
@@ -210,7 +209,7 @@ print('The score is {0:2.2%}'.format(clf.score(X_test, y_test)))
 # | NearestClass | DDGClassifier with nearest neighbors |
 # +--------------+--------------------------------------+
 
-ddg: DDGTransformer[FDataGrid] = DDGTransformer(
+ddg = FDAFeatureUnion(
     depth_method=ModifiedBandDepth(),
 )
 X_train_trans = ddg.fit_transform(X_train, y_train)

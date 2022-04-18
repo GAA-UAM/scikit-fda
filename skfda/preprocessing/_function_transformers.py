@@ -1,7 +1,10 @@
-from typing import Optional, Sequence, Tuple
+"""Function transformers for feature construction techniques."""
+from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 from sklearn.preprocessing import FunctionTransformer
+
+from skfda.representation.grid import FDataBasis, FDataGrid
 
 from ..exploratory.stats._functional_transformers import (
     local_averages,
@@ -99,7 +102,7 @@ class LocalAveragesTransformer(FunctionTransformer):
         self.n_intervals = n_intervals
         super().__init__()
 
-    def transform(self, X) -> np.ndarray:
+    def transform(self, X: Union[FDataGrid, FDataBasis]) -> np.ndarray:
         """
         Compute the local averages of a given data.
 
@@ -168,7 +171,7 @@ class OccupationMeasureTransformer(FunctionTransformer):
         self.n_points = n_points
         super().__init__()
 
-    def transform(self, X) -> NDArrayFloat:
+    def transform(self, X: Union[FDataGrid, FDataBasis]) -> NDArrayFloat:
         """
         Compute the occupation measure of a grid.
 
@@ -232,7 +235,7 @@ class NumberUpCrossingsTransformer(FunctionTransformer):
         self.levels = levels
         super().__init__()
 
-    def transform(self, X) -> NDArrayInt:
+    def transform(self, X: FDataGrid) -> NDArrayInt:
         """
         Compute the number of up crossings of a given data.
 
@@ -241,7 +244,7 @@ class NumberUpCrossingsTransformer(FunctionTransformer):
                 the number of up crossings.
 
         Returns:
-            ndarray of shape (n_samples, len(levels))\
+            ndarray of shape (n_samples, len(levels))
             with the values of the counters.
         """
         return number_up_crossings(X, self.levels)

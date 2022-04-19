@@ -7,12 +7,10 @@ import numpy as np
 from skfda._utils import _classifier_get_classes
 from skfda.datasets import fetch_growth
 from skfda.ml.classification import KNeighborsClassifier
-from skfda.preprocessing.feature_construction import (
-    PerClassTransformer,
-)
 from skfda.preprocessing.dim_reduction.variable_selection import (
     RecursiveMaximaHunting,
 )
+from skfda.preprocessing.feature_construction import PerClassTransformer
 
 
 class TestPerClassTransformer(unittest.TestCase):

@@ -20,11 +20,11 @@ class ParameterizedFunctionalQDA(
 ):
     """Parametrized functional quadratic discriminant analysis.
 
-    This classifier is based on the assumption that the data is part
-    of a Gaussian process and depending on the output label, the covariance
-    and mean parameters are different for each class. This means that curves
-    classified with one determined label come from a distinct Gaussian process
-    compared with data that is classified with a different label.
+    It is based on the assumption that the data is part of a Gaussian process
+    and depending on the output label, the covariance and mean parameters are
+    different for each class. This means that curves classified with one
+    determined label come from a distinct Gaussian process compared with data
+    that is classified with a different label.
 
     The training phase of the classifier will try to approximate the two
     main parameters of a Gaussian process for each class. The covariance
@@ -37,6 +37,9 @@ class ParameterizedFunctionalQDA(
     predict which gaussian process of the fitted ones correspond the most with
     each curve passed.
 
+    Warning:
+        This classifier is experimental as it does not come from a
+        peer-published paper.
 
     Parameters:
         kernel: Initial kernel to be fitted with the training data. For now,

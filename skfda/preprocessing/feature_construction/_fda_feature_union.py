@@ -52,34 +52,36 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
     >>> X,y = fetch_growth(return_X_y=True)
 
     Then we need to import the transformers we want to use. In our case we
-    will use the Coefficients transformer.
-    Evaluation Transformer returns the original curve, and as it is helpful,
-    we will concatenate it to the already metioned transformer.
+    will use the Minimum redundancy maximum relevance method to select
+    important features. We will concatenate to the results of the previous
+    method the original curves with an Evaluation Transfomer.
     >>> from skfda.preprocessing.feature_construction import (
     ...     FDAFeatureUnion,
     ... )
-    >>> from skfda.preprocessing.dim_reduction import FPCA
+    >>> from skfda.preprocessing.dim_reduction.variable_selection import (
+    ...     MinimumRedundancyMaximumRelevance,
+    ... )
     >>> from skfda.preprocessing.feature_construction import (
-    ...     EvaluationTransformer
+    ...     EvaluationTransformer,
     ... )
     >>> import numpy as np
 
     Finally we apply fit and transform.
     >>> union = FDAFeatureUnion(
     ...     [
-    ...        ("fpca", FPCA()),
+    ...        ("mrmr", MinimumRedundancyMaximumRelevance()),
     ...        ("eval", EvaluationTransformer()),
     ...     ],
     ...     array_output=True,
     ... )
     >>> np.around(union.fit_transform(X,y), decimals=2)
-      array([[ 52.92, -12.67,  -6.18, ..., 193.8 , 194.3 , 195.1 ],
-            [ -5.89,  -7.33,  12.59, ..., 176.1 , 177.4 , 178.7 ],
-            [-18.82, -13.11,   0.97, ..., 170.9 , 171.2 , 171.5 ],
-            ...,
-            [ -8.54,   5.99,   2.17, ..., 166.  , 166.3 , 166.8 ],
-            [ 12.06,  17.22,   6.26, ..., 168.3 , 168.4 , 168.6 ],
-            [ 10.87,  14.92,   1.8 , ..., 168.6 , 168.9 , 169.2 ]])
+    array([[ 194.3,   81.3,   84.2, ...,  193.8,  194.3,  195.1],
+           [ 177.4,   76.2,   80.4, ...,  176.1,  177.4,  178.7],
+           [ 171.2,   76.8,   79.8, ...,  170.9,  171.2,  171.5],
+           ...,
+           [ 166.3,   68.6,   73.6, ...,  166. ,  166.3,  166.8],
+           [ 168.4,   79.9,   82.6, ...,  168.3,  168.4,  168.6],
+           [ 168.9,   76.1,   78.4, ...,  168.6,  168.9,  169.2]])
     """
 
     def __init__(

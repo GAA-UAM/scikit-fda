@@ -1,8 +1,8 @@
 import warnings
 
-from ..feature_extraction import FPCA
+from .. import FPCA
 
 warnings.warn(
-    'The module "projection" is deprecated. Please use "feature_extraction"',
+    'The module "projection" is deprecated. Please use "dim_reduction"',
     category=DeprecationWarning,
 )

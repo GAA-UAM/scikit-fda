@@ -3,12 +3,12 @@ from typing import Optional, Sequence, Tuple
 
 from sklearn.preprocessing import FunctionTransformer
 
-from ....exploratory.stats._functional_transformers import (
+from ...exploratory.stats._functional_transformers import (
     local_averages,
     number_up_crossings,
     occupation_measure,
 )
-from ....representation._typing import NDArrayFloat
+from ...representation._typing import NDArrayFloat
 
 
 class LocalAveragesTransformer(FunctionTransformer):
@@ -29,7 +29,7 @@ class LocalAveragesTransformer(FunctionTransformer):
         Then we decide how many intervals we want to consider (in our case 2)
         and call the function with the dataset.
         >>> import numpy as np
-        >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
+        >>> from skfda.preprocessing.feature_construction import (
         ...     LocalAveragesTransformer,
         ... )
         >>> local_averages = LocalAveragesTransformer(2)
@@ -136,7 +136,7 @@ class OccupationMeasureTransformer(FunctionTransformer):
         and (2.0, 3.0). We need also to specify the number of points
         we want that the function takes into account to interpolate.
         We are going to use 501 points.
-        >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
+        >>> from skfda.preprocessing.feature_construction import (
         ...     OccupationMeasureTransformer,
         ... )
         >>> occupation_measure = OccupationMeasureTransformer(
@@ -175,7 +175,7 @@ class NumberUpCrossingsTransformer(FunctionTransformer):
     the Bessel Function of first type and order 0.
     First of all we import the Bessel Function and create the X axis
     data grid. Then we create the FdataGrid.
-    >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
+    >>> from skfda.preprocessing.feature_construction import (
     ...     NumberUpCrossingsTransformer,
     ... )
     >>> from scipy.special import jv

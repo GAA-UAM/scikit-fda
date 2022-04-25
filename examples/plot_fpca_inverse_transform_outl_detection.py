@@ -32,7 +32,7 @@ from scipy.stats import gaussian_kde
 from skfda.datasets import make_gaussian_process
 from skfda.misc.covariances import Exponential, Gaussian
 from skfda.misc.metrics import l2_distance, l2_norm
-from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
+from skfda.preprocessing.dim_reduction import FPCA
 
 ##############################################################################
 # We proceed as follows:

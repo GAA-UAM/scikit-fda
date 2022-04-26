@@ -5,8 +5,9 @@ from __future__ import annotations
 from typing import Callable, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import scipy.integrate
 
-from ..._utils import check_is_univariate
+from ..._utils import check_is_univariate, nquad_vec
 from ...representation import FDataBasis, FDataGrid
 from ...representation._typing import NDArrayFloat, NDArrayInt
 
@@ -344,137 +345,167 @@ def number_up_crossings(
     ).T
 
 
-def moments_of_norm(
-    data: FDataGrid,
+def moments(
+    data: Union[FDataBasis, FDataGrid],
     p: int,
+    c: Optional[float] = 0,
 ) -> np.ndarray:
     r"""
-    Calculate the moments of the norm of the process of a FDataGrid.
+    Calculate the moments of a dataset.
 
     It performs the following map:
-    :math:`f_1(X)=\mathbb{E}(||X||),\dots,f_p(X)=\mathbb{E}(||X||^p)`.
+    :math:`f_1(X)=\int_{-\infty}^\infty\left(x - c \right)^n f(x) dx`.
 
         Args:
-            data: FDataGrid where we want to calculate
-            the moments of the norm of the process.
+            data: FDataGrid or FDataBasis where we want to calculate
+            a particular moment.
+            p: order of the moment.
+            c: value around which we want to calculate the moments.
+
         Returns:
-            ndarray of shape (n_dimensions, n_samples)\
-            with the values of the moments.
+            ndarray of shape (n_dimensions, n_samples)
+            with the values of the specified moment.
 
     Example:
 
-    We import the Canadian Weather dataset
+    For this example, we will calculate the first moment of the
+    curves around the value 0. We will use the Canadian Weather
+    data set.
+    And so, first we import it.
     >>> from skfda.datasets import fetch_weather
     >>> X = fetch_weather(return_X_y=True)[0]
 
-    Then we call the function with the dataset.
+    Then we call the function with the dataset and the specified moment
+    order.
     >>> import numpy as np
-    >>> from skfda.exploratory.stats import moments_of_norm
-    >>> np.around(moments_of_norm(X, 1), decimals=2)
-        array([[  7.05,   4.06],
-               [  8.98,   3.99],
-               [  8.38,   4.04],
-               [  8.13,   3.46],
-               [  9.17,   3.29],
-               [  9.95,   3.09],
-               [ 11.55,   2.2 ],
-               [ 10.92,   2.46],
-               [ 10.84,   2.55],
-               [ 10.53,   3.31],
-               [ 10.02,   3.04],
-               [ 10.97,   2.58],
-               [ 11.01,   2.5 ],
-               [ 10.15,   2.14],
-               [ 10.18,   2.62],
-               [ 10.36,   1.93],
-               [ 12.36,   1.4 ],
-               [ 12.28,   1.23],
-               [ 13.13,   1.12],
-               [ 11.62,   1.02],
-               [ 12.05,   1.11],
-               [ 13.5 ,   0.99],
-               [ 10.16,   1.27],
-               [  8.83,   1.1 ],
-               [ 10.32,   0.74],
-               [  9.96,   3.16],
-               [  9.62,   2.33],
-               [  8.4 ,   1.67],
-               [  7.02,   7.1 ],
-               [ 10.06,   0.74],
-               [ 14.29,   0.9 ],
-               [ 14.47,   0.73],
-               [ 13.05,   1.14],
-               [ 15.97,   0.71],
-               [ 17.65,   0.39]])
+    >>> from skfda.exploratory.stats import moments
+    >>> np.around(moments(X, 1), decimals=2)
+        array([[ 1175.73,   751.62],
+               [ 1461.09,   739.39],
+               [ 1384.83,   750.58],
+               [ 1539.13,   644.97],
+               [ 1339.4 ,   626.75],
+               [ 1290.5 ,   581.54],
+               [ -467.02,   437.43],
+               [  950.21,   488.32],
+               [  790.6 ,   499.32],
+               [ 1100.51,   634.14],
+               [ 1088.21,   586.63],
+               [ 1467.25,   492.74],
+               [ 1399.31,   484.8 ],
+               [ 1647.07,   419.07],
+               [ 1652.64,   504.02],
+               [  789.49,   382.02],
+               [  803.42,   262.25],
+               [  333.59,   244.46],
+               [ -767.34,   233.5 ],
+               [  796.91,   187.26],
+               [  433.72,   210.78],
+               [ -207.19,   199.69],
+               [  637.24,   238.12],
+               [  916.25,   208.4 ],
+               [ 1733.84,   145.82],
+               [ 1922.21,   591.72],
+               [ 1852.65,   430.36],
+               [  849.19,   322.  ],
+               [ 1398.36,  1405.86],
+               [   53.39,   149.07],
+               [ -617.71,   180.6 ],
+               [ -484.52,   149.91],
+               [-1219.  ,   225.17],
+               [-1284.82,   144.51],
+               [-2552.93,    82.2 ]])
     """
-    return moments(data, lambda x: pow(np.abs(x), 1))
+    return expected_value(
+        data,
+        lambda x: x,
+        lambda x: pow(np.abs(x - c), p),
+    )
 
 
-def moments(
-    data: FDataGrid,
+def expected_value(
+    data: Union[FDataBasis, FDataGrid],
     f: Callable[[np.ndarray], np.ndarray],
+    g: Callable[[np.ndarray], np.ndarray],
 ) -> np.ndarray:
     """
-    Calculate the moments of a FDataGrid.
+    Calculate the expected value of a function.
 
         Args:
-            data: FDataGrid where we want to calculate
-            the moments.
-            f: function that specifies the moments to be calculated.
+            data: FDataGrid or FDataBasis where we want to calculate
+            the expectation.
+            f: function that specifies the weights to be applied.
+            g: function that specifies the moments to be calculated.
         Returns:
-            ndarray of shape (n_dimensions, n_samples)\
-            with the values of the moments.
+            ndarray of shape (n_dimensions, n_samples)
+            with the values of the expectations.
 
     Example:
-    We will use this funtion to calculate the moments of the
-    norm of a FDataGrid.
-    We will first import the Canadian Weather dataset.
+    We will use this funtion to calculate the first moment of the
+    Canadian Weather dataset.
+    We will start by importing it.
     >>> from skfda.datasets import fetch_weather
     >>> X = fetch_weather(return_X_y=True)[0]
 
-    We will define a function that calculates the moments of the norm.
-    >>> f = lambda x: pow(np.abs(x), 1)
+    We will define a function that calculates the first moment around
+    the value c = 0.
+    >>> f = lambda x: x
+    >>> g = lambda x: pow(np.abs(x - 0), 1)
 
     Then we call the function with the dataset and the function.
     >>> import numpy as np
-    >>> from skfda.exploratory.stats import moments
+    >>> from skfda.exploratory.stats import expected_value
 
-    >>> np.around(moments(X, f), decimals=2)
-    array([[  7.05,   4.06],
-           [  8.98,   3.99],
-           [  8.38,   4.04],
-           [  8.13,   3.46],
-           [  9.17,   3.29],
-           [  9.95,   3.09],
-           [ 11.55,   2.2 ],
-           [ 10.92,   2.46],
-           [ 10.84,   2.55],
-           [ 10.53,   3.31],
-           [ 10.02,   3.04],
-           [ 10.97,   2.58],
-           [ 11.01,   2.5 ],
-           [ 10.15,   2.14],
-           [ 10.18,   2.62],
-           [ 10.36,   1.93],
-           [ 12.36,   1.4 ],
-           [ 12.28,   1.23],
-           [ 13.13,   1.12],
-           [ 11.62,   1.02],
-           [ 12.05,   1.11],
-           [ 13.5 ,   0.99],
-           [ 10.16,   1.27],
-           [  8.83,   1.1 ],
-           [ 10.32,   0.74],
-           [  9.96,   3.16],
-           [  9.62,   2.33],
-           [  8.4 ,   1.67],
-           [  7.02,   7.1 ],
-           [ 10.06,   0.74],
-           [ 14.29,   0.9 ],
-           [ 14.47,   0.73],
-           [ 13.05,   1.14],
-           [ 15.97,   0.71],
-           [ 17.65,   0.39]])
+    >>> np.around(expected_value(X, f, g), decimals=2)
+    array([[ 1175.73,   751.62],
+           [ 1461.09,   739.39],
+           [ 1384.83,   750.58],
+           [ 1539.13,   644.97],
+           [ 1339.4 ,   626.75],
+           [ 1290.5 ,   581.54],
+           [ -467.02,   437.43],
+           [  950.21,   488.32],
+           [  790.6 ,   499.32],
+           [ 1100.51,   634.14],
+           [ 1088.21,   586.63],
+           [ 1467.25,   492.74],
+           [ 1399.31,   484.8 ],
+           [ 1647.07,   419.07],
+           [ 1652.64,   504.02],
+           [  789.49,   382.02],
+           [  803.42,   262.25],
+           [  333.59,   244.46],
+           [ -767.34,   233.5 ],
+           [  796.91,   187.26],
+           [  433.72,   210.78],
+           [ -207.19,   199.69],
+           [  637.24,   238.12],
+           [  916.25,   208.4 ],
+           [ 1733.84,   145.82],
+           [ 1922.21,   591.72],
+           [ 1852.65,   430.36],
+           [  849.19,   322.  ],
+           [ 1398.36,  1405.86],
+           [   53.39,   149.07],
+           [ -617.71,   180.6 ],
+           [ -484.52,   149.91],
+           [-1219.  ,   225.17],
+           [-1284.82,   144.51],
+           [-2552.93,    82.2 ]])
 
     """
-    return np.mean(f(data.data_matrix), axis=1)
+    # TODO: decidir nombre de la funcion
+    domain_range = data.domain_range[0][1] - data.domain_range[0][0]
+
+    if isinstance(data, FDataGrid):
+        return scipy.integrate.simpson(
+            g(data.grid_points[0][:, np.newaxis]) * f(data.data_matrix),
+            x=data.grid_points[0],
+            axis=1,
+        ) / domain_range
+
+    integrated = nquad_vec(
+        data,
+        data.domain_range,
+    ) / domain_range
+    return integrated.reshape(integrated.shape[0], integrated.shape[2])

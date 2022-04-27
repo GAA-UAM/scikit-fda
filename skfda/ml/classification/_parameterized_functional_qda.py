@@ -18,7 +18,7 @@ class ParameterizedFunctionalQDA(
     BaseEstimator,  # type: ignore
     ClassifierMixin,  # type: ignore
 ):
-    """Parametrized functional quadratic discriminant analysis.
+    """Parameterized functional quadratic discriminant analysis.
 
     It is based on the assumption that the data is part of a Gaussian process
     and depending on the output label, the covariance and mean parameters are

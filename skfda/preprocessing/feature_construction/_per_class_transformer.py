@@ -5,17 +5,17 @@ import warnings
 from typing import Any, Mapping, TypeVar, Union
 
 import numpy as np
-from pandas import DataFrame
+import pandas as pd
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ...._utils import TransformerMixin, _fit_feature_transformer
-from ....representation import FData
-from ....representation._typing import NDArrayFloat, NDArrayInt
-from ....representation.basis import FDataBasis
-from ....representation.grid import FDataGrid
+from ..._utils import TransformerMixin, _fit_feature_transformer
+from ...representation import FData
+from ...representation._typing import NDArrayFloat, NDArrayInt
+from ...representation.basis import FDataBasis
+from ...representation.grid import FDataGrid
 
 Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
-Output = TypeVar("Output", bound=Union[DataFrame, NDArrayFloat])
+Output = TypeVar("Output", bound=Union[pd.DataFrame, NDArrayFloat])
 Target = TypeVar("Target", bound=NDArrayInt)
 
 TransformerOutput = Union[FData, NDArrayFloat]
@@ -53,7 +53,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
         >>> X = X.iloc[:, 0].values
         >>> y = y.values.codes
 
-        >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
+        >>> from skfda.preprocessing.feature_construction import (
         ...     PerClassTransformer,
         ... )
 
@@ -95,40 +95,23 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
         We can also use a transformer that returns a FData object
         when predicting.
-        In our example we are going to use the Nadaraya Watson Smoother.
+        In our example we are going to use the Fisher Rao Elastic Registration.
 
-        >>> from skfda.preprocessing.smoothing import KernelSmoother
-        >>> from skfda.misc.hat_matrix import (
-        ...     NadarayaWatsonHatMatrix,
+        >>> from skfda.preprocessing.registration import (
+        ...     FisherRaoElasticRegistration,
         ... )
         >>> t2 = PerClassTransformer(
-        ...     KernelSmoother(kernel_estimator=NadarayaWatsonHatMatrix()),
+        ...     FisherRaoElasticRegistration(),
         ... )
         >>> x_transformed2 = t2.fit_transform(X, y)
 
         ``x_transformed2`` will be a DataFrame with the transformed data.
-        Each row on the frame contains a FDataGrid describing a transformed
-        curve.
-        We need to convert the DataFrame into a FDataGrid with all the
-        samples, so we can train a classifier. We also need to duplicate
-        the outputs as we have the double amount of data curves:
-
-        >>> for i, curve_grid in enumerate(x_transformed2.iloc[:,0].values):
-        ...     if i == 0:
-        ...         X_transformed_grid = curve_grid
-        ...     else:
-        ...         X_transformed_grid = X_transformed_grid.concatenate(
-        ...                                 curve_grid,
-        ...                              )
-        >>> y = np.concatenate((y,y))
-
-
-        ``X_transformed_grid`` contains a FDataGrid with all the transformed
-        curves. Now we are able to use it to fit a KNN classifier.
+        Each column of the frame contains a FDataGrid describing a transformed
+        curve. Now we are able to use it to fit a KNN classifier.
         Again we split the data into train and test.
 
         >>> X_train2, X_test2, y_train2, y_test2 = train_test_split(
-        ...     X_transformed_grid,
+        ...     x_transformed2.iloc[:, 0].values,
         ...     y,
         ...     test_size=0.25,
         ...     stratify=y,
@@ -142,12 +125,11 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
         >>> neigh2 = KNeighborsClassifier()
         >>> neigh2 = neigh2.fit(X_train2, y_train2)
         >>> neigh2.predict(X_test2)
-        array([1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1,
-        0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0,
-        1, 1, 1, 0, 0], dtype=int8)
+        array([1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
+               1, 1, 1], dtype=int8)
 
         >>> round(neigh2.score(X_test2, y_test2), 3)
-        0.957
+        0.917
 
     """
 
@@ -205,7 +187,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
         if tags['stateless']:
             warnings.warn(
-                f"Parameter 'transformer' with type "
+                f"Parameter 'transformer' with type "  # noqa:WPS237
                 f"{type(self.transformer)} should use the data for "
                 f" fitting."
                 f"It should have the 'stateless' tag set to 'False'",
@@ -275,8 +257,12 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
                     )
             return np.hstack(transformed_data)
 
-        return DataFrame(
-            {'Transformed data': transformed_data},
+        return pd.concat(
+            [
+                pd.DataFrame({'0': data})  # noqa: WPS441
+                for data in transformed_data
+            ],
+            axis=1,
         )
 
     def fit_transform(  # type: ignore[override]

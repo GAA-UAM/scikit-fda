@@ -30,6 +30,12 @@ class LogisticRegression(
         p:
             number of points (and coefficients) to be selected by
             the algorithm.
+        solver:
+            Algorithm to use in the multivariate logistic regresion 
+            optimization problem. For more info check the parameter
+            "solver" in sklearn.linear_model.LogisticRegression.
+        max_iter:
+            Maximum number of iterations taken for the solver to converge.
 
     Attributes:
         classes\_: A list containing the name of the classes
@@ -73,9 +79,13 @@ class LogisticRegression(
     def __init__(
         self,
         p: int = 5,
+        solver: str = 'lbfgs',
+        max_iter: int = 100,
     ) -> None:
 
         self.p = p
+        self.max_iter = 100
+        self.solver = solver
 
     def fit(  # noqa: D102
         self,
@@ -93,7 +103,11 @@ class LogisticRegression(
         selected_indexes = np.zeros(self.p, dtype=np.intc)
 
         # multivariate logistic regression
-        mvlr = mvLogisticRegression(penalty='l2')
+        mvlr = mvLogisticRegression(
+            penalty='l2',
+            solver=self.solver,
+            max_iter=self.max_iter,
+        )
 
         x_mv = np.zeros((n_samples, self.p))
         LL = np.zeros(n_features)

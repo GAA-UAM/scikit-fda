@@ -496,13 +496,27 @@ class FDataGrid(FData):  # noqa: WPS214
         *,
         interval: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
-        """Examples.
+        """
+        Integration of the FData object.
 
-        Integration on the whole domain.
+        The integration is performed over the whole domain. Thus, for a
+        function of several variables this will be a multiple integral.
 
+        For a vector valued function the vector of integrals will be
+        returned.
+
+        Args:
+            interval: domain range where we want to integrate.
+            By default is None as we integrate on the whole domain.
+
+        Returns:
+            NumPy array of size (``n_samples``, ``dim_codomain``)
+            with the integrated data.
+
+        Examples:
             >>> fdata = FDataGrid([1,2,4,5,8], range(5))
             >>> fdata.integrate()
-            array([ 15.])
+            array([[ 15.]])
         """
         if interval is not None:
             data = self.restrict(interval)
@@ -518,7 +532,7 @@ class FDataGrid(FData):  # noqa: WPS214
                 axis=-2,
             )
 
-        return np.sum(integrand, axis=-1)
+        return integrand
 
     def _check_same_dimensions(self: T, other: T) -> None:
         if self.data_matrix.shape[1:-1] != other.data_matrix.shape[1:-1]:

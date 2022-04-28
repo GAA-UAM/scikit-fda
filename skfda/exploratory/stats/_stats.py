@@ -9,6 +9,7 @@ from scipy.stats import rankdata
 
 from ...misc.metrics import Metric, l2_distance, l2_norm
 from ...representation import FData, FDataGrid
+from ...representation._typing import NDArrayFloat
 from ..depth import Depth, ModifiedBandDepth
 
 F = TypeVar('F', bound=FData)
@@ -16,7 +17,7 @@ F = TypeVar('F', bound=FData)
 
 def mean(
     X: F,
-    weights: Optional[np.ndarray] = None,
+    weights: Optional[NDArrayFloat] = None,
 ) -> F:
     """Compute the mean of all the samples in a FData object.
 

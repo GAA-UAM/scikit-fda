@@ -10,11 +10,11 @@ from scipy.linalg import solve_triangular
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
-from ....misc.regularization import L2Regularization, compute_penalty_matrix
-from ....representation import FData
-from ....representation._typing import ArrayLike
-from ....representation.basis import Basis, FDataBasis
-from ....representation.grid import FDataGrid
+from ...misc.regularization import L2Regularization, compute_penalty_matrix
+from ...representation import FData
+from ...representation._typing import ArrayLike
+from ...representation.basis import Basis, FDataBasis
+from ...representation.grid import FDataGrid
 
 Function = TypeVar("Function", bound=FData)
 WeightsCallable = Callable[[np.ndarray], np.ndarray]

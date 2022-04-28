@@ -28,7 +28,6 @@ class ScoreFunction(Protocol):
         sample_weight: Optional[NDArrayFloat] = None,
         multioutput: Literal['uniform_average', 'raw_values']
         = 'uniform_average',
-        squared: Optional[bool] = None,
     ) -> Union[NDArrayFloat, FDataGrid, float]:
         ...  # noqa: WPS428
 

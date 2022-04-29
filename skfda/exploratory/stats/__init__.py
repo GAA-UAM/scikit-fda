@@ -1,11 +1,12 @@
 """Statistics."""
 from ._fisher_rao import _fisher_rao_warping_mean, fisher_rao_karcher_mean
 from ._functional_transformers import (
-    expected_value,
     local_averages,
-    moments,
     number_up_crossings,
     occupation_measure,
+    unconditional_central_moments,
+    unconditional_expected_value,
+    unconditional_moments,
 )
 from ._stats import (
     cov,

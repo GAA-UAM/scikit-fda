@@ -345,161 +345,135 @@ def number_up_crossings(
     ).T
 
 
-def moments(
+def unconditional_central_moments(
     data: Union[FDataBasis, FDataGrid],
     p: int,
-    c: Optional[float] = 0,
 ) -> np.ndarray:
-    r"""
-    Calculate the moments of a dataset.
-
-    It performs the following map:
-    :math:`f_1(X)=\int_{-\infty}^\infty\left(x - c \right)^n f(x) dx`.
+    """
+    Calculate the unconditional central moments of a dataset.
 
         Args:
             data: FDataGrid or FDataBasis where we want to calculate
-            a particular moment.
+            a particular central moment.
             p: order of the moment.
-            c: value around which we want to calculate the moments.
 
         Returns:
-            ndarray of shape (n_dimensions, n_samples)
-            with the values of the specified moment.
+            ndarray of shape (n_dimensions, n_samples) with the values of the
+            specified moment.
 
     Example:
 
-    For this example, we will calculate the first moment of the
-    curves around the value 0. We will use the Canadian Weather
-    data set.
-    And so, first we import it.
+    We will calculate the first unconditional central moment of the Canadian
+    Weather data set. In order to simplify the example, we will use only the
+    first five samples.
+    First we proceed to import the data set.
     >>> from skfda.datasets import fetch_weather
     >>> X = fetch_weather(return_X_y=True)[0]
 
-    Then we call the function with the dataset and the specified moment
-    order.
+    Then we call the function with the samples that we want to consider and the
+    specified moment order.
     >>> import numpy as np
-    >>> from skfda.exploratory.stats import moments
-    >>> np.around(moments(X, 1), decimals=2)
-        array([[ 1175.73,   751.62],
-               [ 1461.09,   739.39],
-               [ 1384.83,   750.58],
-               [ 1539.13,   644.97],
-               [ 1339.4 ,   626.75],
-               [ 1290.5 ,   581.54],
-               [ -467.02,   437.43],
-               [  950.21,   488.32],
-               [  790.6 ,   499.32],
-               [ 1100.51,   634.14],
-               [ 1088.21,   586.63],
-               [ 1467.25,   492.74],
-               [ 1399.31,   484.8 ],
-               [ 1647.07,   419.07],
-               [ 1652.64,   504.02],
-               [  789.49,   382.02],
-               [  803.42,   262.25],
-               [  333.59,   244.46],
-               [ -767.34,   233.5 ],
-               [  796.91,   187.26],
-               [  433.72,   210.78],
-               [ -207.19,   199.69],
-               [  637.24,   238.12],
-               [  916.25,   208.4 ],
-               [ 1733.84,   145.82],
-               [ 1922.21,   591.72],
-               [ 1852.65,   430.36],
-               [  849.19,   322.  ],
-               [ 1398.36,  1405.86],
-               [   53.39,   149.07],
-               [ -617.71,   180.6 ],
-               [ -484.52,   149.91],
-               [-1219.  ,   225.17],
-               [-1284.82,   144.51],
-               [-2552.93,    82.2 ]])
+    >>> from skfda.exploratory.stats import unconditional_central_moments
+    >>> np.around(unconditional_central_moments(X[:5], 1), decimals=2)
+        array([[ 0.02, -0.02],
+               [ 0.03, -0.02],
+               [ 0.03, -0.01],
+               [ 0.02, -0.  ],
+               [ 0.03,  0.01]])
     """
-    return expected_value(
+    mean = np.mean(data.data_matrix, axis=1)
+    return unconditional_expected_value(
         data,
-        lambda x: x,
-        lambda x: pow(np.abs(x - c), p),
+        lambda x: pow((x - mean[:, np.newaxis, :]), p),
     )
 
 
-def expected_value(
+def unconditional_moments(
     data: Union[FDataBasis, FDataGrid],
-    f: Callable[[np.ndarray], np.ndarray],
-    g: Callable[[np.ndarray], np.ndarray],
+    p: int,
 ) -> np.ndarray:
-    """
-    Calculate the expected value of a function.
+    r"""
+    Calculate the specified unconditional moment of a dataset.
+
+    It performs the following map:
+    :math:`f(X)=\int_a^b f_1(X(t))dt,\dots,f_p(X(t))dt=\int_a^b  f^p(X(t))dt`.
 
         Args:
             data: FDataGrid or FDataBasis where we want to calculate
-            the expectation.
-            f: function that specifies the weights to be applied.
-            g: function that specifies the moments to be calculated.
+            a particular unconditional moment.
+            p: order of the moment.
+
         Returns:
-            ndarray of shape (n_dimensions, n_samples)
-            with the values of the expectations.
+            ndarray of shape (n_dimensions, n_samples) with the values of the
+            specified moment.
 
     Example:
-    We will use this funtion to calculate the first moment of the
-    Canadian Weather dataset.
-    We will start by importing it.
+
+    We will calculate the first unconditional moment of the Canadian Weather
+    data set. In order to simplify the example, we will use only the first
+    five samples.
+    First we proceed to import the data set.
     >>> from skfda.datasets import fetch_weather
     >>> X = fetch_weather(return_X_y=True)[0]
 
-    We will define a function that calculates the first moment around
-    the value c = 0.
-    >>> f = lambda x: x
-    >>> g = lambda x: pow(np.abs(x - 0), 1)
+    Then we call the function with the samples that we want to consider and the
+    specified moment order.
+    >>> import numpy as np
+    >>> from skfda.exploratory.stats import unconditional_moments
+    >>> np.around(unconditional_moments(X[:5], 1), decimals=2)
+        array([[ 4.7 ,  4.03],
+               [ 6.16,  3.96],
+               [ 5.52,  4.01],
+               [ 6.82,  3.44],
+               [ 5.25,  3.29]])
+    """
+    return unconditional_expected_value(
+        data,
+        lambda x: pow(x, p),
+    )
+
+
+def unconditional_expected_value(
+    data: Union[FDataBasis, FDataGrid],
+    function: Callable[[np.ndarray], np.ndarray],
+) -> np.ndarray:
+    """
+    Calculate the unconditional expected value of a function.
+
+        Args:
+            data: FDataGrid or FDataBasis where we want to calculate
+            the expected value.
+            f: function that specifies how the expected value to is calculated.
+            It has to be a function of X(t).
+        Returns:
+            ndarray of shape (n_dimensions, n_samples) with the values of the
+            expectations.
+
+    Example:
+    We will use this funtion to calculate the logarithmic first moment
+    of the first 5 samples of the Berkeley Growth dataset.
+    We will start by importing it.
+    >>> from skfda.datasets import fetch_growth
+    >>> X = fetch_growth(return_X_y=True)[0]
+
+    We will define a function that calculates the inverse first moment.
+    >>> import numpy as np
+    >>> f = lambda x: pow(np.log(x), 1)
 
     Then we call the function with the dataset and the function.
-    >>> import numpy as np
-    >>> from skfda.exploratory.stats import expected_value
-
-    >>> np.around(expected_value(X, f, g), decimals=2)
-    array([[ 1175.73,   751.62],
-           [ 1461.09,   739.39],
-           [ 1384.83,   750.58],
-           [ 1539.13,   644.97],
-           [ 1339.4 ,   626.75],
-           [ 1290.5 ,   581.54],
-           [ -467.02,   437.43],
-           [  950.21,   488.32],
-           [  790.6 ,   499.32],
-           [ 1100.51,   634.14],
-           [ 1088.21,   586.63],
-           [ 1467.25,   492.74],
-           [ 1399.31,   484.8 ],
-           [ 1647.07,   419.07],
-           [ 1652.64,   504.02],
-           [  789.49,   382.02],
-           [  803.42,   262.25],
-           [  333.59,   244.46],
-           [ -767.34,   233.5 ],
-           [  796.91,   187.26],
-           [  433.72,   210.78],
-           [ -207.19,   199.69],
-           [  637.24,   238.12],
-           [  916.25,   208.4 ],
-           [ 1733.84,   145.82],
-           [ 1922.21,   591.72],
-           [ 1852.65,   430.36],
-           [  849.19,   322.  ],
-           [ 1398.36,  1405.86],
-           [   53.39,   149.07],
-           [ -617.71,   180.6 ],
-           [ -484.52,   149.91],
-           [-1219.  ,   225.17],
-           [-1284.82,   144.51],
-           [-2552.93,    82.2 ]])
-
+    >>> from skfda.exploratory.stats import unconditional_expected_value
+    >>> np.around(unconditional_expected_value(X[:5], f), decimals=2)
+        array([[ 4.96],
+               [ 4.88],
+               [ 4.85],
+               [ 4.9 ],
+               [ 4.84]])
     """
-    # TODO: decidir nombre de la funcion
     domain_range = data.domain_range[0][1] - data.domain_range[0][0]
 
     if isinstance(data, FDataGrid):
         return scipy.integrate.simpson(
-            g(data.grid_points[0][:, np.newaxis]) * f(data.data_matrix),
+            function(data.data_matrix),
             x=data.grid_points[0],
             axis=1,
         ) / domain_range

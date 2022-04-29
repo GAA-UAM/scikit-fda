@@ -1,17 +1,20 @@
 """Function transformers for feature construction techniques."""
 from typing import Optional, Sequence, Tuple
 
-from sklearn.preprocessing import FunctionTransformer
+from sklearn.base import BaseEstimator
 
+from ..._utils import TransformerMixin
 from ...exploratory.stats._functional_transformers import (
     local_averages,
     number_up_crossings,
     occupation_measure,
 )
-from ...representation._typing import NDArrayFloat
+from ...representation._typing import NDArrayFloat, Union
+from ...representation.basis import FDataBasis
+from ...representation.grid import FDataGrid
 
 
-class LocalAveragesTransformer(FunctionTransformer):
+class LocalAveragesTransformer(BaseEstimator, TransformerMixin):
     """
     Transformer that works as an adapter for the local_averages function.
 
@@ -20,11 +23,11 @@ class LocalAveragesTransformer(FunctionTransformer):
 
     Example:
         We import the Berkeley Growth Study dataset.
-        We will use only the first 30 samples to make the
+        We will use only the first 3 samples to make the
         example easy.
         >>> from skfda.datasets import fetch_growth
         >>> dataset = fetch_growth(return_X_y=True)[0]
-        >>> X = dataset[:30]
+        >>> X = dataset[:3]
 
         Then we decide how many intervals we want to consider (in our case 2)
         and call the function with the dataset.
@@ -36,75 +39,31 @@ class LocalAveragesTransformer(FunctionTransformer):
         >>> np.around(local_averages.fit_transform(X), decimals=2)
         array([[[ 116.94],
                 [ 111.86],
-                [ 107.29],
-                [ 111.35],
-                [ 104.39],
-                [ 109.43],
-                [ 109.16],
-                [ 112.91],
-                [ 109.19],
-                [ 117.95],
-                [ 112.14],
-                [ 114.3 ],
-                [ 111.48],
-                [ 114.85],
-                [ 116.25],
-                [ 114.6 ],
-                [ 111.02],
-                [ 113.57],
-                [ 108.88],
-                [ 109.6 ],
-                [ 109.7 ],
-                [ 108.54],
-                [ 109.18],
-                [ 106.92],
-                [ 109.44],
-                [ 109.84],
-                [ 115.32],
-                [ 108.16],
-                [ 119.29],
-                [ 110.62]],
+                [ 107.29]],
                [[ 177.26],
                 [ 157.62],
-                [ 154.97],
-                [ 163.83],
-                [ 156.66],
-                [ 157.67],
-                [ 155.31],
-                [ 169.02],
-                [ 154.18],
-                [ 174.43],
-                [ 161.33],
-                [ 170.14],
-                [ 164.1 ],
-                [ 170.1 ],
-                [ 166.65],
-                [ 168.72],
-                [ 166.85],
-                [ 167.22],
-                [ 159.4 ],
-                [ 162.76],
-                [ 155.7 ],
-                [ 158.01],
-                [ 160.1 ],
-                [ 155.95],
-                [ 157.95],
-                [ 163.53],
-                [ 162.29],
-                [ 153.1 ],
-                [ 178.48],
-                [ 161.75]]])
-
+                [ 154.97]]])
     """
 
     def __init__(self, n_intervals: int):
-        super().__init__(
-            func=local_averages,
-            kw_args={'n_intervals': n_intervals},
-        )
+        self.n_intervals = n_intervals
+
+    def transform(self, X: Union[FDataGrid, FDataBasis]) -> NDArrayFloat:
+        """
+        Transform the provided data using the local_averages function.
+
+        Args:
+            X: FDataGrid or FDataBasis with the samples that are going to be
+                transformed.
+
+        Returns:
+            Array of shape (n_intervals, n_samples, n_dimensions) including
+            the transformed data.
+        """
+        return local_averages(X, self.n_intervals)
 
 
-class OccupationMeasureTransformer(FunctionTransformer):
+class OccupationMeasureTransformer(BaseEstimator, TransformerMixin):
     """
     Transformer that works as an adapter for the occupation_measure function.
 
@@ -155,13 +114,25 @@ class OccupationMeasureTransformer(FunctionTransformer):
         *,
         n_points: Optional[int] = None,
     ):
-        super().__init__(
-            func=occupation_measure,
-            kw_args={'intervals': intervals, 'n_points': n_points},
-        )
+        self.intervals = intervals
+        self.n_points = n_points
+
+    def transform(self, X: Union[FDataGrid, FDataBasis]) -> NDArrayFloat:
+        """
+        Transform the provided data using the occupation_measure function.
+
+        Args:
+            X: FDataGrid or FDataBasis with the samples that are going to be
+                transformed.
+
+        Returns:
+            Array of shape (n_intervals, n_samples) including the transformed
+            data.
+        """
+        return occupation_measure(X, self.intervals, n_points=self.n_points)
 
 
-class NumberUpCrossingsTransformer(FunctionTransformer):
+class NumberUpCrossingsTransformer(BaseEstimator, TransformerMixin):
     """
     Transformer that works as an adapter for the number_up_crossings function.
 
@@ -210,7 +181,16 @@ class NumberUpCrossingsTransformer(FunctionTransformer):
 
     def __init__(self, levels: NDArrayFloat):
         self.levels = levels
-        super().__init__(
-            func=number_up_crossings,
-            kw_args={'levels': levels},
-        )
+
+    def transform(self, X: FDataGrid) -> NDArrayFloat:
+        """
+        Transform the provided data using the number_up_crossings function.
+
+        Args:
+            X: FDataGrid with the samples that are going to be transformed.
+
+        Returns:
+            Array of shape (n_samples, len(levels)) including the transformed
+            data.
+        """
+        return number_up_crossings(X, self.levels)

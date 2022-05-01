@@ -347,15 +347,15 @@ def number_up_crossings(
 
 def unconditional_central_moments(
     data: Union[FDataBasis, FDataGrid],
-    p: int,
-) -> np.ndarray:
+    n: int,
+) -> NDArrayFloat:
     """
     Calculate the unconditional central moments of a dataset.
 
         Args:
             data: FDataGrid or FDataBasis where we want to calculate
             a particular central moment.
-            p: order of the moment.
+            n: order of the moment.
 
         Returns:
             ndarray of shape (n_dimensions, n_samples) with the values of the
@@ -384,14 +384,14 @@ def unconditional_central_moments(
     mean = np.mean(data.data_matrix, axis=1)
     return unconditional_expected_value(
         data,
-        lambda x: pow((x - mean[:, np.newaxis, :]), p),
+        lambda x: pow((x - mean[:, np.newaxis, :]), n),
     )
 
 
 def unconditional_moments(
     data: Union[FDataBasis, FDataGrid],
-    p: int,
-) -> np.ndarray:
+    n: int,
+) -> NDArrayFloat:
     r"""
     Calculate the specified unconditional moment of a dataset.
 
@@ -401,7 +401,7 @@ def unconditional_moments(
         Args:
             data: FDataGrid or FDataBasis where we want to calculate
             a particular unconditional moment.
-            p: order of the moment.
+            n: order of the moment.
 
         Returns:
             ndarray of shape (n_dimensions, n_samples) with the values of the
@@ -429,14 +429,14 @@ def unconditional_moments(
     """
     return unconditional_expected_value(
         data,
-        lambda x: pow(x, p),
+        lambda x: pow(x, n),
     )
 
 
 def unconditional_expected_value(
     data: Union[FDataBasis, FDataGrid],
     function: Callable[[np.ndarray], np.ndarray],
-) -> np.ndarray:
+) -> NDArrayFloat:
     """
     Calculate the unconditional expected value of a function.
 

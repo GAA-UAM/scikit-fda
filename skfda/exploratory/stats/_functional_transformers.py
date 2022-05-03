@@ -34,9 +34,8 @@ def local_averages(
         calculate the local averages.
         n_intervals: number of intervals we want to consider.
     Returns:
-        ndarray of shape (n_intervals, n_samples, n_dimensions)
-        with the transformed data for FDataBasis and (n_intervals, n_samples)
-        for FDataGrid.
+        ndarray of shape (n_intervals, n_samples) with the
+        transformed data.
 
     Example:
 
@@ -52,12 +51,8 @@ def local_averages(
         >>> import numpy as np
         >>> from skfda.exploratory.stats import local_averages
         >>> np.around(local_averages(X, 2), decimals=2)
-        array([[[ 116.94],
-                [ 111.86],
-                [ 107.29]],
-               [[ 177.26],
-                [ 157.62],
-                [ 154.97]]])
+        array([[ 116.94,  111.86,  107.29],
+               [ 177.26,  157.62,  154.97]])
     """
     left, right = data.domain_range[0]
 
@@ -72,7 +67,7 @@ def local_averages(
         data.integrate(interval=((intervals[i], intervals[i + 1]))) / step
         for i in range(n_intervals)
     ]
-    return np.asarray(integrated_data)
+    return np.asarray(integrated_data)[:, :, 0]
 
 
 def _calculate_curves_occupation_(

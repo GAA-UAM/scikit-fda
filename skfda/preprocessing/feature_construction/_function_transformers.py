@@ -37,12 +37,8 @@ class LocalAveragesTransformer(BaseEstimator, TransformerMixin):
         ... )
         >>> local_averages = LocalAveragesTransformer(2)
         >>> np.around(local_averages.fit_transform(X), decimals=2)
-        array([[[ 116.94],
-                [ 111.86],
-                [ 107.29]],
-               [[ 177.26],
-                [ 157.62],
-                [ 154.97]]])
+        array([[ 116.94,  111.86,  107.29],
+               [ 177.26,  157.62,  154.97]])
     """
 
     def __init__(self, n_intervals: int):

@@ -403,7 +403,7 @@ class LinearRegression(
 
     def __dataframe_conversion(
         self,
-        X: pd.DataFrame
+        X: pd.DataFrame,
     ) -> List[AcceptedDataType]:
         """Convert DataFrames to a list with two elements.
 
@@ -417,7 +417,6 @@ class LinearRegression(
             List: first of all, a list with mv covariates
             and the second, a list of FDataBasis object with functional data
         """
-
         mv_list = []
         fd_list = []
         final = []

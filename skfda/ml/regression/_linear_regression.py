@@ -164,12 +164,13 @@ class LinearRegression(
         First example:
 
         >>> x_basis = Monomial(n_basis=3)
-        >>> cov_list = [ ( FDataBasis(x_basis, [0, 0, 1]) ),
-        ...              ( FDataBasis(x_basis, [0, 1, 0]) ),
-        ...              ( FDataBasis(x_basis, [0, 1, 1]) ),
-        ...              ( FDataBasis(x_basis, [1, 0, 1]) )]
+        >>> x_fd = FDataBasis(x_basis, [[0, 0, 1],
+        ...                             [0, 1, 0],
+        ...                             [0, 1, 1],
+        ...                             [1, 0, 1]])
+        >>> cov_dict = { "fd": x_fd }
         >>> y = [2, 3, 4, 5]
-        >>> df = pd.DataFrame(cov_list)
+        >>> df = pd.DataFrame(cov_dict)
         >>> linear = LinearRegression()
         >>> _ = linear.fit(df, y)
         >>> linear.coef_[0]
@@ -185,11 +186,11 @@ class LinearRegression(
         Second example:
 
         >>> x_basis = Monomial(n_basis=2)
-        >>> cov_list = [ ( 1, 7, FDataBasis(x_basis, [0, 2]) ),
+        >>> cov_list = [ ( 1, FDataBasis(x_basis, [0, 2]), 7 ),
         ...              ( 2, FDataBasis(x_basis, [0, 4]), 3 ),
         ...              ( 4, FDataBasis(x_basis, [1, 0]), 2 ),
         ...              ( 1, FDataBasis(x_basis, [2, 0]), 1 ),
-        ...              ( FDataBasis(x_basis, [1, 2]), 3, 1 ),
+        ...              ( 3, FDataBasis(x_basis, [1, 2]), 1 ),
         ...              ( 2, FDataBasis(x_basis, [2, 2]), 5 ) ]
         >>> df = pd.DataFrame(cov_list)
         >>> y = [11, 10, 12, 6, 10, 13]
@@ -337,7 +338,7 @@ class LinearRegression(
         if isinstance(X, (FData, np.ndarray)):
             X = [X]
 
-        if isinstance(X, pd.DataFrame):
+        elif isinstance(X, pd.DataFrame):
             X = self.__dataframe_conversion(X)
 
         X = [x if isinstance(x, FData) else np.asarray(x) for x in X]
@@ -400,7 +401,10 @@ class LinearRegression(
 
         return new_X, y, sample_weight, coef_info
 
-    def __dataframe_conversion(self, X: pd.DataFrame) -> List[AcceptedDataType]:
+    def __dataframe_conversion(
+        self,
+        X: pd.DataFrame
+    ) -> List[AcceptedDataType]:
         """Convert DataFrames to a list with two elements.
 
         First of all, a list with mv covariates and the second,
@@ -413,30 +417,30 @@ class LinearRegression(
             List: first of all, a list with mv covariates
             and the second, a list of FDataBasis object with functional data
         """
-        mv_final = []
-        fdb_list = []
+
+        mv_list = []
+        fd_list = []
         final = []
 
         for obs in X.values.tolist():
             mv = []
-            fdb = []
             for i in range(len(obs)):
-                if (isinstance(obs[i], FData)):
-                    fdb.append(obs[i])
+                cov = obs[i]
+                if (isinstance(cov, FData)):
+                    fd_list.append(cov)
+                elif (isinstance(cov, (np.ndarray, list))):
+                    mv_list.append(cov)
                 else:
-                    mv.append(obs[i])
+                    mv.append(cov)
 
             if (len(mv) != 0):
-                mv_final.append(mv)
+                mv_list.append(mv)
 
-            if (len(fdb) != 0):
-                fdb_list.append(fdb)
+        if (len(mv_list) != 0):
+            final.append(mv_list)
 
-        if (len(mv_final) != 0):
-            final.append(mv_final)
-
-        if (len(fdb_list) != 0):
-            fdb_df = pd.DataFrame(fdb_list)
+        if (len(fd_list) != 0):
+            fdb_df = pd.DataFrame(fd_list)
 
             for c in range(fdb_df.shape[1]):
                 column = FDataBasis.concatenate(*fdb_df.iloc[:, c].tolist())

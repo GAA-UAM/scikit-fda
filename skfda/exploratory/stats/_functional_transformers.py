@@ -34,8 +34,8 @@ def local_averages(
         calculate the local averages.
         n_intervals: number of intervals we want to consider.
     Returns:
-        ndarray of shape (n_intervals, n_samples) with the
-        transformed data.
+        ndarray of shape (n_samples, n_intervals, n_dimensions) with
+        the transformed data.
 
     Example:
 
@@ -51,8 +51,12 @@ def local_averages(
         >>> import numpy as np
         >>> from skfda.exploratory.stats import local_averages
         >>> np.around(local_averages(X, 2), decimals=2)
-        array([[ 116.94,  111.86,  107.29],
-               [ 177.26,  157.62,  154.97]])
+        array([[[ 116.94],
+                [ 177.26]],
+               [[ 111.86],
+                [ 157.62]],
+               [[ 107.29],
+                [ 154.97]]])
     """
     left, right = data.domain_range[0]
 
@@ -67,7 +71,7 @@ def local_averages(
         data.integrate(interval=((intervals[i], intervals[i + 1]))) / step
         for i in range(n_intervals)
     ]
-    return np.asarray(integrated_data)[:, :, 0]
+    return np.transpose(integrated_data, (1, 0, 2))
 
 
 def _calculate_curves_occupation_(
@@ -167,8 +171,9 @@ def occupation_measure(
         ...     ),
         ...     decimals=2,
         ... )
-        array([[ 0.98,  0.5 ,  6.28],
-               [ 1.02,  0.52,  0.  ]])
+        array([[ 0.98,  1.02],
+               [ 0.5 ,  0.52],
+               [ 6.28,  0.  ]])
 
     """
     if isinstance(data, FDataBasis) and n_points is None:
@@ -194,7 +199,7 @@ def occupation_measure(
         function_y_coordinates,
         function_x_coordinates,
         intervals,
-    )
+    ).T
 
 
 def number_up_crossings(

@@ -37,8 +37,9 @@ class LocalAveragesTransformer(BaseEstimator, TransformerMixin):
         ... )
         >>> local_averages = LocalAveragesTransformer(2)
         >>> np.around(local_averages.fit_transform(X), decimals=2)
-        array([[ 116.94,  111.86,  107.29],
-               [ 177.26,  157.62,  154.97]])
+        array([[ 116.94,  177.26],
+               [ 111.86,  157.62],
+               [ 107.29,  154.97]])
     """
 
     def __init__(self, n_intervals: int):
@@ -49,14 +50,16 @@ class LocalAveragesTransformer(BaseEstimator, TransformerMixin):
         Transform the provided data using the local_averages function.
 
         Args:
-            X: FDataGrid or FDataBasis with the samples that are going to be
-                transformed.
+            X: FDataGrid with the samples that are going to be transformed.
 
         Returns:
-            Array of shape (n_intervals, n_samples, n_dimensions) including
+            Array of shape (n_samples, n_intervals) including
             the transformed data.
         """
-        return local_averages(X, self.n_intervals)
+        return local_averages(
+            X,
+            self.n_intervals,
+        ).reshape(X.data_matrix.shape[0], -1)
 
 
 class OccupationMeasureTransformer(BaseEstimator, TransformerMixin):
@@ -66,7 +69,7 @@ class OccupationMeasureTransformer(BaseEstimator, TransformerMixin):
     Args:
         intervals: ndarray of tuples containing the
             intervals we want to consider. The shape should be
-            (n_sequences,2)
+            (n_sequences, 2)
         n_points: Number of points to evaluate in the domain.
             By default will be used the points defined on the FDataGrid.
             On a FDataBasis this value should be specified.
@@ -100,8 +103,9 @@ class OccupationMeasureTransformer(BaseEstimator, TransformerMixin):
         ... )
 
         >>> np.around(occupation_measure.fit_transform(fd_grid), decimals=2)
-        array([[ 0.98,  0.5 ,  6.28],
-               [ 1.02,  0.52,  0.  ]])
+        array([[ 0.98,  1.02],
+               [ 0.5 ,  0.52],
+               [ 6.28,  0.  ]])
     """
 
     def __init__(

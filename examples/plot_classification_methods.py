@@ -1,5 +1,5 @@
 """
-Classification methods.
+Classification methods
 ==================================
 
 Shows a comparison between the accuracies of different classification
@@ -95,7 +95,7 @@ print('The score of KNN is {0:2.2%}'.format(knn.score(X_test, y_test)))
 
 
 ##############################################################################
-# The third method we are going to use is the Nearest Centroid Classifier
+# The third method we are going to use is the Nearest Centroid Classifier.
 
 centroid = NearestCentroid()
 centroid.fit(X_train, y_train)
@@ -136,6 +136,9 @@ print('The score of Parameterized Functional QDA is {0:2.2%}'.format(
 # It can be concluded that all classifiers work well for this problem, as they
 # achieve more than an 80% of score, but the most robust ones are KNN and
 # Parameterized Functional QDA.
+
+
+##############################################################################
 # The figure below shows the results of the classification for the test set on
 # the four methods considered.
 # It can be seen that the curves are similarly classified by all of them.

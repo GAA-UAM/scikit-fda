@@ -55,3 +55,12 @@ Classifier based on logistic regression.
    :toctree: autosummary
 
    skfda.ml.classification.LogisticRegression
+
+Parameterized functional quadratic discriminant analysis
+--------------------------------------------------------
+Classifier based on the quadratic discriminant analysis.
+
+.. autosummary::
+   :toctree: autosummary
+
+   skfda.ml.classification.ParameterizedFunctionalQDA

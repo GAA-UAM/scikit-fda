@@ -426,7 +426,7 @@ class LinearRegression(
         for obs in X.values.tolist():
             mv = []
             for i in enumerate(obs):
-                cov = obs[i]
+                cov = obs[i[0]]
                 if (isinstance(cov, FData)):
                     fd_list.append(cov)
                 elif (isinstance(cov, (np.ndarray, list))):

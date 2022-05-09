@@ -186,13 +186,15 @@ class LinearRegression(
         Second example:
 
         >>> x_basis = Monomial(n_basis=2)
-        >>> cov_list = [ ( 1, FDataBasis(x_basis, [0, 2]), 7 ),
-        ...              ( 2, FDataBasis(x_basis, [0, 4]), 3 ),
-        ...              ( 4, FDataBasis(x_basis, [1, 0]), 2 ),
-        ...              ( 1, FDataBasis(x_basis, [2, 0]), 1 ),
-        ...              ( 3, FDataBasis(x_basis, [1, 2]), 1 ),
-        ...              ( 2, FDataBasis(x_basis, [2, 2]), 5 ) ]
-        >>> df = pd.DataFrame(cov_list)
+        >>> x_fd = FDataBasis(x_basis, [[0, 2],
+        ...                             [0, 4],
+        ...                             [1, 0],
+        ...                             [2, 0],
+        ...                             [1, 2],
+        ...                             [2, 2]])
+        >>> x = [[1, 7], [2, 3], [4, 2], [1, 1], [3, 1], [2, 5]]
+        >>> cov_dict = { "fd": x_fd, "mult": x }
+        >>> df = pd.DataFrame(cov_dict)
         >>> y = [11, 10, 12, 6, 10, 13]
         >>> linear = LinearRegression(
         ...              coef_basis=[None, Constant()])
@@ -423,7 +425,7 @@ class LinearRegression(
 
         for obs in X.values.tolist():
             mv = []
-            for i in range(len(obs)):
+            for i in enumerate(obs):
                 cov = obs[i]
                 if (isinstance(cov, FData)):
                     fd_list.append(cov)

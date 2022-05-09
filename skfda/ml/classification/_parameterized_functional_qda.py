@@ -31,7 +31,7 @@ class ParameterizedFunctionalQDA(
     will be estimated by fitting the initial kernel passed on the creation of
     the ParameterizedFunctionalQDA object.
     The result of the training function will be two arrays, one of means and
-    another one of covariances. Both with length (``n_classes``).
+    another one of covariances. Both with length ``n_classes``.
 
     The prediction phase instead uses a quadratic discriminant classifier to
     predict which gaussian process of the fitted ones correspond the most with
@@ -43,11 +43,11 @@ class ParameterizedFunctionalQDA(
 
     Parameters:
         kernel: Initial kernel to be fitted with the training data. For now,
-        only kernels that belongs to the GPy module are allowed.
+            only kernels that belongs to the GPy module are allowed.
 
         regularizer: Parameter that regularizes the covariance matrices in
-        order to avoid Singular matrices. It is multiplied by the identity
-        matrix and then added to the covariance one.
+            order to avoid Singular matrices. It is multiplied by the identity
+            matrix and then added to the covariance one.
 
 
     Examples:
@@ -83,13 +83,13 @@ class ParameterizedFunctionalQDA(
         >>> pfqda = pfqda.fit(X_train, y_train)
 
 
-        We can predict the class of new samples
+        We can predict the class of new samples.
 
         >>> list(pfqda.predict(X_test))
         [0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1,
          1, 0, 1, 0, 1, 0, 1, 1]
 
-        Finally, we calculate the mean accuracy for the test data
+        Finally, we calculate the mean accuracy for the test data.
 
         >>> round(pfqda.score(X_test, y_test), 2)
         0.96

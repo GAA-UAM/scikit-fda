@@ -74,7 +74,7 @@ def local_averages(
     return np.transpose(integrated_data, (1, 0, 2))
 
 
-def _calculate_curves_occupation_(
+def _calculate_curves_occupation(
     curve_y_coordinates: NDArrayFloat,
     curve_x_coordinates: NDArrayFloat,
     intervals: Sequence[Tuple[float, float]],
@@ -94,14 +94,23 @@ def _calculate_curves_occupation_(
     intervals_x_axis = curve_x_coordinates[1:] - curve_x_coordinates[:-1]
 
     # Calculate which points are inside the interval given (y1,y2) on Y axis
-    greater_than_y1 = curve_y_coordinates >= y1[:, np.newaxis, np.newaxis]
-    less_than_y2 = curve_y_coordinates <= y2[:, np.newaxis, np.newaxis]
+    greater_than_y1 = (
+        curve_y_coordinates[:, :, np.newaxis]
+        >= y1[np.newaxis, np.newaxis, :]
+    )
+    less_than_y2 = (
+        curve_y_coordinates[:, :, np.newaxis]
+        <= y2[np.newaxis, np.newaxis, :]
+    )
     inside_interval_bools = greater_than_y1 & less_than_y2
 
     # Calculate intervals on X axis where the points are inside Y axis interval
-    intervals_x_inside = inside_interval_bools * intervals_x_axis
+    intervals_x_inside = (
+        inside_interval_bools
+        * intervals_x_axis[:, np.newaxis]
+    )
 
-    return np.sum(intervals_x_inside, axis=2)
+    return np.sum(intervals_x_inside, axis=1)
 
 
 def occupation_measure(
@@ -139,7 +148,7 @@ def occupation_measure(
                 By default will be used the points defined on the FDataGrid.
                 On a FDataBasis this value should be specified.
         Returns:
-            ndarray of shape (n_intervals, n_samples)
+            ndarray of shape (n_samples, n_intervals)
             with the transformed data.
 
     Example:
@@ -195,11 +204,11 @@ def occupation_measure(
         )
         function_y_coordinates = data(function_x_coordinates[1:])
 
-    return _calculate_curves_occupation_(  # noqa: WPS317
+    return _calculate_curves_occupation(  # noqa: WPS317
         function_y_coordinates,
         function_x_coordinates,
         intervals,
-    ).T
+    )
 
 
 def number_up_crossings(

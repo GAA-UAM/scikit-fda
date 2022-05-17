@@ -40,3 +40,13 @@ the data with clarity. To better understand the data, we need to use
 while still preserving the most relevant information.
 :doc:`Here <preprocessing/dim_reduction>` you can learn more about the
 dimension reduction methods available in the library.
+
+Feature construction
+--------------------
+
+It is crucial to create features from the original ones so they can be
+used as input for the machine learning techniques developed, improving
+the quality of the predictions. To construct new features from the curves,
+we need to use *feature construction* methods.
+:doc:`Here <preprocessing/feature_construction>` you can learn more about the
+feature construction methods available in the library.

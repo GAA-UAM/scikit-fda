@@ -22,9 +22,10 @@ features in parallel.
 Per class transformer
 ---------------------
 
-This method deals with the extraction of features depending on the class
-label of each observation. It will apply a different transformation to each
-set of observations belonging to different classes.
+This method deals with the extraction of features using the information of
+the target classes It applies as many transformations as classes
+to every observation. Each transformation is fitted using only the training
+data of a particular class.
 
 .. autosummary::
    :toctree: autosummary

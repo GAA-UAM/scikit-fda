@@ -44,9 +44,10 @@ dimension reduction methods available in the library.
 Feature construction
 --------------------
 
-It is crucial to create features from the original ones so they can be
-used as input for the machine learning techniques developed, improving
-the quality of the predictions. To construct new features from the curves,
-we need to use *feature construction* methods.
+When dealing with functional data we might want to construct new features
+that can be used as additional inputs to the machine learning algorithms.
+The expectation is that these features make explicit characteristics that
+facilitate the learning process. To construct new features from the curves,
+*feature construction* methods are available.
 :doc:`Here <preprocessing/feature_construction>` you can learn more about the
 feature construction methods available in the library.

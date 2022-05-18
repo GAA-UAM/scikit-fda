@@ -2,7 +2,7 @@
 Classification methods
 ==================================
 
-Shows a comparison between the accuracies of different classification
+It shows a comparison between the accuracies of different classification
 methods.
 There has been selected one method of each kind present in the library.
 In particular, there is one based on depths, Maximum Depth Classifier,
@@ -16,6 +16,7 @@ The Berkeley Growth Study dataset is used as input data.
 
 # Author:Álvaro Castillo García
 # License: MIT
+
 import matplotlib.pyplot as plt
 from GPy.kern import RBF
 from sklearn.model_selection import train_test_split

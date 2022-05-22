@@ -62,6 +62,7 @@ class FPCA(
             selected components.
         mean\_ (FData): mean of the train data.
 
+
     Examples:
         Construct an artificial FDataBasis object and run FPCA with this
         object. The resulting principal components are not compared because
@@ -89,6 +90,7 @@ class FPCA(
         >>> fd = FDataGrid(data_matrix, grid_points)
         >>> fpca_grid = FPCA(2)
         >>> fpca_grid = fpca_grid.fit(fd)
+
     """
 
     def __init__(
@@ -149,6 +151,7 @@ class FPCA(
             if self.components_basis
             else X.basis.n_basis
         )
+        n_samples = X.n_samples
         # necessary in inverse_transform
         self.n_samples_ = X.n_samples
 
@@ -203,8 +206,7 @@ class FPCA(
 
         # apply regularization
         if regularization_matrix is not None:
-            # using += would have a different behavior
-            g_matrix = (g_matrix + regularization_matrix)  # noqa: WPS350
+            g_matrix = (g_matrix + regularization_matrix)
 
         # obtain triangulation using cholesky
         l_matrix = np.linalg.cholesky(g_matrix)
@@ -287,8 +289,9 @@ class FPCA(
         please view the referenced book, chapter 8.
 
         In summary, we are performing standard multivariate PCA over
-        :math:`\mathbf{X} \mathbf{W}^{1/2}` where :math:`\mathbf{X}` is the
-        data matrix and :math:`\mathbf{W}` is the weight matrix (this matrix
+        :math:`\frac{1}{\sqrt{N}} \mathbf{X} \mathbf{W}^{1/2}` where :math:`N`
+        is the number of samples in the dataset, :math:`\mathbf{X}` is the data
+        matrix and :math:`\mathbf{W}` is the weight matrix (this matrix
         defines the numerical integration). By default the weight matrix is
         obtained using the trapezoidal rule.
 
@@ -374,11 +377,7 @@ class FPCA(
         # see docstring for more information
         final_matrix = fd_data @ np.sqrt(weights_matrix)
 
-        pca = PCA(
-            n_components=self.n_components,
-            svd_solver='randomized',
-            random_state=1,
-        )
+        pca = PCA(n_components=self.n_components)
         pca.fit(final_matrix)
         self.components_ = X.copy(
             data_matrix=np.transpose(

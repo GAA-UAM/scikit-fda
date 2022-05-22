@@ -99,7 +99,7 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         Returns:
             self
         """
-        from ...preprocessing.dim_reduction.feature_extraction import FPCA
+        from ...preprocessing.dim_reduction import FPCA
 
         if self.eigenvalues is None or self.eigenvectors is None:
             fpca = FPCA(

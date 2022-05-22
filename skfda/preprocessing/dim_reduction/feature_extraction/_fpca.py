@@ -225,11 +225,7 @@ class FPCA(
         )
 
         # initialize the pca module provided by scikit-learn
-        pca = PCA(
-            n_components=self.n_components,
-            svd_solver='randomized',
-            random_state=1,
-        )
+        pca = PCA(n_components=self.n_components)
         pca.fit(final_matrix)
 
         # we choose solve to obtain the component coefficients for the

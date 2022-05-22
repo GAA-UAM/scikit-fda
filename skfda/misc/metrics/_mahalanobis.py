@@ -42,8 +42,8 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
             fitting a FDataBasis.
         alpha: Hyperparameter that controls the smoothness of the
             aproximation.
-        eigen_vectors: Eigenvectors of the covariance operator.
-        eigen_values: Eigenvalues of the covariance operator.
+        eigenvectors: Eigenvectors of the covariance operator.
+        eigenvalues: Eigenvalues of the covariance operator.
 
     Examples:
         >>> from skfda.misc.metrics import MahalanobisDistance
@@ -70,8 +70,8 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
         alpha: float = 0.001,
-        eigen_values: Optional[NDArrayFloat] = None,
-        eigen_vectors: Optional[FData] = None,
+        eigenvalues: Optional[NDArrayFloat] = None,
+        eigenvectors: Optional[FData] = None,
     ) -> None:
         self.n_components = n_components
         self.centering = centering
@@ -79,8 +79,8 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         self.weights = weights
         self.components_basis = components_basis
         self.alpha = alpha
-        self.eigen_values = eigen_values
-        self.eigen_vectors = eigen_vectors
+        self.eigenvalues = eigenvalues
+        self.eigenvectors = eigenvectors
 
     def fit(
         self,
@@ -101,7 +101,7 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         """
         from ...preprocessing.dim_reduction.feature_extraction import FPCA
 
-        if self.eigen_values is None or self.eigen_vectors is None:
+        if self.eigenvalues is None or self.eigenvectors is None:
             fpca = FPCA(
                 self.n_components,
                 self.centering,
@@ -110,15 +110,15 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
                 self.components_basis,
             )
             fpca.fit(X)
-            self.eigen_values_ = fpca.explained_variance_
-            self.eigen_vectors_ = fpca.components_
+            self.eigenvalues_ = fpca.explained_variance_
+            self.eigenvectors_ = fpca.components_
 
         elif not (
-            hasattr(self, 'eigen_values_')  # noqa: WPS421
-            and hasattr(self, 'eigen_vectors_')  # noqa: WPS421
+            hasattr(self, 'eigenvalues_')  # noqa: WPS421
+            and hasattr(self, 'eigenvectors_')  # noqa: WPS421
         ):
-            self.eigen_values_ = self.eigen_values
-            self.eigen_vectors_ = self.eigen_vectors
+            self.eigenvalues_ = self.eigenvalues
+            self.eigenvectors_ = self.eigenvectors
 
         return self
 
@@ -139,8 +139,8 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         check_is_fitted(self)
 
         return np.sum(
-            self.eigen_values_
-            * inner_product_matrix(e1 - e2, self.eigen_vectors_) ** 2
-            / (self.eigen_values_ + self.alpha)**2,
+            self.eigenvalues_
+            * inner_product_matrix(e1 - e2, self.eigenvectors_) ** 2
+            / (self.eigenvalues_ + self.alpha)**2,
             axis=1,
         )

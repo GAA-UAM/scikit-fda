@@ -59,7 +59,7 @@ class FPCA(
         explained_variance_ratio\_ (array_like): this contains the percentage
             of variance explained by each principal component.
         singular_values\_: The singular values corresponding to each of the
-            selected components.
+            selected components. 
         mean\_ (FData): mean of the train data.
 
 

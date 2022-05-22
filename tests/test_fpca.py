@@ -9,7 +9,7 @@ from skfda import FDataBasis, FDataGrid
 from skfda.datasets import fetch_weather
 from skfda.misc.operators import LinearDifferentialOperator
 from skfda.misc.regularization import L2Regularization
-from skfda.preprocessing.dim_reduction.feature_extraction import FPCA
+from skfda.preprocessing.dim_reduction import FPCA
 from skfda.representation.basis import Basis, BSpline, Fourier
 
 

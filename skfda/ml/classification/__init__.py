@@ -10,3 +10,4 @@ from ._neighbors_classifiers import (
     KNeighborsClassifier,
     RadiusNeighborsClassifier,
 )
+from ._parameterized_functional_qda import ParameterizedFunctionalQDA

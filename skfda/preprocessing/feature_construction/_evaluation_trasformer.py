@@ -47,7 +47,9 @@ class EvaluationTransformer(
 
     Examples:
         >>> from skfda.representation import FDataGrid, FDataBasis
-        >>> from skfda.misc.feature_construction import EvaluationTransformer
+        >>> from skfda.preprocessing.feature_construction import (
+        ...     EvaluationTransformer,
+        ... )
         >>> from skfda.representation.basis import Monomial
 
         Functional data object with 2 samples

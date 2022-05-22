@@ -113,13 +113,6 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
             self.eigenvalues_ = fpca.explained_variance_
             self.eigenvectors_ = fpca.components_
 
-        elif not (
-            hasattr(self, 'eigenvalues_')  # noqa: WPS421
-            and hasattr(self, 'eigenvectors_')  # noqa: WPS421
-        ):
-            self.eigenvalues_ = self.eigenvalues
-            self.eigenvectors_ = self.eigenvectors
-
         return self
 
     def __call__(
@@ -136,7 +129,11 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         Returns:
             Squared functional Mahalanobis distance between two observations.
         """
-        check_is_fitted(self)
+        if self.eigenvalues is not None and self.eigenvectors is not None:
+            self.eigenvalues_ = self.eigenvalues
+            self.eigenvectors_ = self.eigenvectors
+        else:
+            check_is_fitted(self)
 
         return np.sum(
             self.eigenvalues_

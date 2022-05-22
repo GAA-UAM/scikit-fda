@@ -269,7 +269,7 @@ class DistanceBasedDepth(Depth[FDataGrid]):
         Returns:
             self
         """
-        fit = getattr(self.metric, 'fit', lambda: None)
+        fit = getattr(self.metric, 'fit', lambda X: None)
         fit(X)
 
         self.mean_ = X.mean()

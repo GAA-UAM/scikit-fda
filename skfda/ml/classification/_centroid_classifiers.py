@@ -86,7 +86,7 @@ class NearestCentroid(
         Returns:
             self
         """
-        fit = getattr(self.metric, 'fit', lambda: None)
+        fit = getattr(self.metric, 'fit', lambda X: None)
         fit(X)
 
         classes, y_ind = _classifier_get_classes(y)

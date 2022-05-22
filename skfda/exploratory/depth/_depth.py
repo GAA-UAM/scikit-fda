@@ -226,7 +226,7 @@ class DistanceBasedDepth(Depth[FDataGrid]):
         metric:
             The metric to use as M in the following depth calculation
             .. math::
-                D(x) = [1 + M^2(x, \mu)]^{-1}.
+                D(x) = [1 + M(x, \mu)]^{-1}.
 
             as explained in :footcite:`serfling+zuo_2000_depth_function`.
 
@@ -269,8 +269,9 @@ class DistanceBasedDepth(Depth[FDataGrid]):
         Returns:
             self
         """
-        if hasattr(self.metric, 'fit'):  # noqa: WPS421
-            self.metric.fit(X)
+        fit = getattr(self.metric, 'fit', lambda: None)
+        fit(X)
+
         self.mean_ = X.mean()
 
         return self

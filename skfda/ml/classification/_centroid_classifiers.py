@@ -86,8 +86,8 @@ class NearestCentroid(
         Returns:
             self
         """
-        if hasattr(self.metric, 'fit'):  # noqa: WPS421
-            self.metric.fit(X)
+        fit = getattr(self.metric, 'fit', lambda: None)
+        fit(X)
 
         classes, y_ind = _classifier_get_classes(y)
 

@@ -31,7 +31,7 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
             data object and center the data first. Defaults to ``True``.
         regularization: Regularization object to be applied.
         weights: The weights vector used for discrete integration.
-            If none then the trapezoidal rule is used for computing the
+            If none then Simpson's rule is used for computing the
             weights. If a callable object is passed, then the weight
             vector will be obtained by evaluating the object at the sample
             points of the passed FDataGrid object in the fit method. This

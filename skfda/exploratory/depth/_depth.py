@@ -15,6 +15,7 @@ import scipy.integrate
 
 from ... import FDataGrid
 from ...misc.metrics import Metric, l2_distance
+from ...misc.metrics._utils import _fit_metric
 from ...representation import FData
 from ...representation._typing import NDArrayFloat
 from .multivariate import Depth, SimplicialDepth, _UnivariateFraimanMuniz
@@ -269,8 +270,7 @@ class DistanceBasedDepth(Depth[FDataGrid]):
         Returns:
             self
         """
-        fit = getattr(self.metric, 'fit', lambda X: None)
-        fit(X)
+        _fit_metric(self.metric, X)
 
         self.mean_ = X.mean()
 

@@ -10,6 +10,7 @@ from ..._utils import _classifier_get_classes
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...exploratory.stats import mean, trim_mean
 from ...misc.metrics import Metric, PairwiseMetric, l2_distance
+from ...misc.metrics._utils import _fit_metric
 from ...representation import FData
 from ...representation._typing import NDArrayInt
 
@@ -86,8 +87,7 @@ class NearestCentroid(
         Returns:
             self
         """
-        fit = getattr(self.metric, 'fit', lambda X: None)
-        fit(X)
+        _fit_metric(self.metric, X)
 
         classes, y_ind = _classifier_get_classes(y)
 

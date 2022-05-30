@@ -6,6 +6,7 @@ from typing import Callable, Optional, Union
 
 import numpy as np
 from sklearn.base import BaseEstimator
+from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
 from ...representation import FData
@@ -113,6 +114,10 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
             self.eigenvalues_ = fpca.explained_variance_
             self.eigenvectors_ = fpca.components_
 
+        else:
+            self.eigenvalues_ = self.eigenvalues
+            self.eigenvectors_ = self.eigenvectors
+
         return self
 
     def __call__(
@@ -129,15 +134,20 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
         Returns:
             Squared functional Mahalanobis distance between two observations.
         """
-        if self.eigenvalues is not None and self.eigenvectors is not None:
-            self.eigenvalues_ = self.eigenvalues
-            self.eigenvectors_ = self.eigenvectors
-        else:
+        try:
             check_is_fitted(self)
+            eigenvalues = self.eigenvalues_
+            eigenvectors = self.eigenvectors_
+        except NotFittedError:
+            if self.eigenvalues is not None and self.eigenvectors is not None:
+                eigenvalues = self.eigenvalues
+                eigenvectors = self.eigenvectors
+            else:
+                raise NotFittedError
 
         return np.sum(
-            self.eigenvalues_
-            * inner_product_matrix(e1 - e2, self.eigenvectors_) ** 2
-            / (self.eigenvalues_ + self.alpha)**2,
+            eigenvalues
+            * inner_product_matrix(e1 - e2, eigenvectors) ** 2
+            / (eigenvalues + self.alpha)**2,
             axis=1,
         )

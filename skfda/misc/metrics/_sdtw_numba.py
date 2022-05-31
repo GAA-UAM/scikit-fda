@@ -14,7 +14,7 @@ def _soft_min_argmin(x, y, z):
     return min_xyz - np.log(nn)
 
 
-@njit(cache=True, fastmath=True)
+@njit(cache=True, fastmath=False)
 def _sdtw(cost_mat, gamma=1.0):
     """soft-dtw divergence with dynamic recursion"""
 

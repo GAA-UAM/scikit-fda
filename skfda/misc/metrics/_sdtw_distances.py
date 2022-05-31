@@ -3,14 +3,12 @@ Implementation of soft Dynamic-Time-Warping (sDTW) divergence.
 """
 from __future__ import annotations
 
-from typing import Optional, Union, Callable, Tuple
-from numba.core.types.scalars import Boolean
+from typing import Dict, Optional, Union, Callable, Tuple
 
 import numpy as np
-from typing_extensions import Final
 
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayFloat, GridPointsLike
+from ...representation._typing import NDArrayFloat
 
 from skfda._utils._utils import _check_compatible_fdata
 from skfda.misc.metrics import _sdtw_numba
@@ -19,8 +17,8 @@ from skfda.misc._math import inner_product_matrix, inner_product
 
 def _check_shape_postive_cost_mat(
     cost: NDArrayFloat,
-    expected_shape: Tuple,
-    shape_only: Boolean = False
+    expected_shape: Tuple[int, int],
+    shape_only: bool = False
 ) -> None:
     """check that matrix 'cost' is nonnegative and has expected shape"""
     n1, n2 = expected_shape
@@ -37,24 +35,30 @@ def _check_shape_postive_cost_mat(
             )
 
 
-def _check_indiscernable_sym(
-    cost: NDArrayFloat,
-    X: NDArrayFloat,
-    Y: NDArrayFloat
+def _check_indiscernable(
+    cost_XX: NDArrayFloat,
+    cost_YY: NDArrayFloat,
+    cost_was_callable: bool = False,
 ) -> None:
     """check that cost returns a symmetric matrix with zero diag"""
     # indiscernability: cost(x_t, x_t) = 0 for any t
     if (
-        np.all(np.diag(cost(X, X)) != 0)
-        or np.all(np.diag(cost(Y, Y)) != 0)
+        np.all(np.diag(cost_XX) != 0)
+        or np.all(np.diag(cost_YY) != 0)
     ):
         raise ValueError(
             "The cost between two identical objects "
-            "must be zero (i.e cost(X, X) is zero diagonal)"
+            "must be zero (i.e cost(X, X) must be zero-diagonal)"
         )
 
-    # symmetry: cost(X, Y) = cost(y, X).T
-    if not np.allclose(cost(X, Y), cost(Y, X).T):
+
+def _check_symmetry(
+    cost_XY: NDArrayFloat,
+    cost_YX: NDArrayFloat,
+) -> None:
+    """check that cost_XY==cost_YX.T"""
+
+    if not np.allclose(cost_XY, cost_YX.T):
         raise ValueError(
             "The cost function does not return a symmetric matrix"
         )
@@ -79,7 +83,7 @@ def _check_input_fdata(
             "fdata1 and fdata2 must have their domain dimension equal to one"
         )
 
-    if not (fdata1.n_samples == 1 & fdata2.n_samples == 1):
+    if not (fdata1.n_samples == 1 and fdata2.n_samples == 1):
         raise ValueError(
             "Both fdata1 and fdata2 must each contain a single sample"
         )
@@ -102,8 +106,10 @@ def half_sq_euclidean(
     The distance is taken w.r.t matrix rows.
     """
     if arg2 is not None:
-        # np.dot(X, Y.T)=inner_product_matrix(X, Y) but np ~1.6 faster
-        # X.shape is (n_X, d) and Y.shape is (n_Y, d)
+        # sq_euclidean(X, Y) =
+        # DotProduct(sigma_0_bounds=(10**-10, 10**10)) =
+        # diag(np.dot(X, X.T)) + diag(np.dot(Y, Y.T)) - 2*np.dot(X, Y.T)
+        # np.dot(X, Y.T)=inner_product_matrix(X, Y)
         cost_12 = -1 * inner_product_matrix(arg1, arg2)
 
         # np.sum(X ** 2, axis=1)=inner_product(X, X)
@@ -126,8 +132,10 @@ def _sdtw_divergence(
     fdata2: FDataGrid,
     *,
     gamma: float = 1.0,
-    cost: Union[Tuple[NDArrayFloat], Callable] = None,
-    check_cost: Boolean = False,
+    cost: Union[Tuple[NDArrayFloat], Callable[[
+        NDArrayFloat, NDArrayFloat, NDArrayFloat]]] = None,
+    check_cost: bool = False,
+    **kwargs_cost: Dict
 ) -> float:
 
     # fdata1 and fdata2 are only required to be one-dimensional.
@@ -136,104 +144,126 @@ def _sdtw_divergence(
 
     _check_input_fdata(fdata1, fdata2)
 
-    n1, n2 = fdata1.grid_points[0].size, fdata2.grid_points[0].size
+    n1, n2 = len(fdata1.grid_points[0]), len(fdata2.grid_points[0])
 
     if gamma <= 0:
         raise ValueError(
             f"gamma was set to {gamma} but must be positive"
         )
 
-    # cost must satisfy:shape=(n1, n2),nonnegativity,indiscernability
-    # and symmetry
-    if cost is not None:
-        if isinstance(cost, tuple):
-            if not len(cost) == 3:
-                raise ValueError(
-                    "When the alignment cost matrices are pre-computed, "
-                    "then 'cost' must be a list of three two-dimensional "
-                    "numpy arrays"
-                )
-            else:
-                # shape of cost_12, cost_11 and cost_22
-                expected_shapes = [(n1, n2), (n1, n1), (n2, n2)]
-                for idx, c in enumerate(cost):
-                    if not (isinstance(c, NDArrayFloat) and c.ndim == 2):
-                        raise ValueError(
-                            "The elements of 'cost' must all be "
-                            "two-dimensional numpy arrays. "
-                            f"The {idx}-th element does not satisfy the "
-                            "expected format"
-                        )
+    # booleans to remember the input format of cost if given
+    cost_was_tuple = isinstance(cost, tuple)
+    cost_was_callable = isinstance(cost, Callable)
 
-                    if not c.shape == (n1, n2):
-                        raise ValueError(
-                            f"Cost matrix must have shape ({n1}, {n2})"
-                        )
-
-                    _check_shape_postive_cost_mat(
-                        cost=c,
-                        expected_shape=expected_shapes[idx],
-                        shape_only=not(check_cost)
-                    )
-
-            cost_12, cost_11, cost_22 = cost[0], cost[1], cost[2]
-
-        elif isinstance(cost, Callable):
-            cost_12 = cost(
-                fdata1.data_matrix[0, :, :],
-                fdata2.data_matrix[0, :, :]
-            )
-
-            # check nonnegativity and/or shape
-            _check_shape_postive_cost_mat(
-                cost_12,
-                expected_shape=(n1, n2),
-                shape_only=not(check_cost)
-            )
-
-            if check_cost:
-                # check indiscernability and symmetry
-                _check_indiscernable_sym(
-                    cost,
-                    fdata1.data_matrix[0, :, :],
-                    fdata2.data_matrix[0, :, :]
-                )
-
-            cost_11 = cost(
-                fdata1.data_matrix[0, :, :],
-                fdata1.data_matrix[0, :, :]
-            )
-            cost_22 = cost(
-                fdata2.data_matrix[0, :, :],
-                fdata2.data_matrix[0, :, :]
-            )
-
-        else:
+    if cost_was_tuple:
+        if len(cost) != 3:
             raise ValueError(
-                "Cost must be either "
-                "a list of three numpy arrays "
-                "or a callable that returns a numpy array"
+                "When the alignment cost matrices are pre-computed, "
+                "then 'cost' must be a tuple of three two-dimensional "
+                "numpy arrays."
             )
 
-    else:  # default cost: 0.5 * squared Euclidean
+    elif cost_was_callable:
+        # pre-computation for the symmetry check
+        # of the cross-product part of the cost
+        if check_cost:
+            cost_21 = cost(
+                fdata2.data_matrix[0],
+                fdata1.data_matrix[0],
+                **kwargs_cost
+            )
 
+        # compute the cost matrices
+        cost = (
+            cost(
+                fdata1.data_matrix[0],
+                fdata2.data_matrix[0],
+                **kwargs_cost
+            ),
+            cost(
+                fdata1.data_matrix[0],
+                fdata1.data_matrix[0],
+                **kwargs_cost
+            ),
+            cost(
+                fdata2.data_matrix[0],
+                fdata2.data_matrix[0],
+                **kwargs_cost
+            )
+        )
+
+        # cost_12 = cost(
+        #     fdata1.data_matrix[0],
+        #     fdata2.data_matrix[0],
+        #     **kwargs_cost
+        # )
+        # cost_11 = cost(
+        #     fdata1.data_matrix[0],
+        #     fdata1.data_matrix[0],
+        #     **kwargs_cost
+        # )
+        # cost_22 = cost(
+        #     fdata2.data_matrix[0],
+        #     fdata2.data_matrix[0],
+        #     **kwargs_cost
+        # )
+
+        # cost = (cost_12, cost_11, cost_22)
+
+    elif cost is None:
+        # default cost: 0.5 * squared Euclidean:
         # 0.5 * squared euclidean
         # or global kernel alignment (depends on gamma !=0)
         # 0.5 * diag(X@X.T) + 0.5 * diag(Y@Y.T) - X@Y.T
-        # <=> sq_euclidean = DotProduct(sigma_0_bounds=(10**-10, 10**10))
-        # <=> diag(np.dot(X, X.T)) + diag(np.dot(Y, Y.T)) - 2*np.dot(X, Y.T)
-        cost_11 = half_sq_euclidean(fdata1.data_matrix[0, :, :])
-        cost_22 = half_sq_euclidean(fdata2.data_matrix[0, :, :])
-        cost_12 = half_sq_euclidean(
-            fdata1.data_matrix[0, :, :],
-            fdata2.data_matrix[0, :, :]
+
+        cost = (
+            half_sq_euclidean(
+                fdata1.data_matrix[0],
+                fdata2.data_matrix[0]
+            ),
+            half_sq_euclidean(
+                fdata1.data_matrix[0],
+                fdata1.data_matrix[0]
+            ),
+            half_sq_euclidean(
+                fdata2.data_matrix[0],
+                fdata2.data_matrix[0]
+            )
         )
+
+    else:
+        raise ValueError(
+            "Cost must be a tuple containing three numpy arrays "
+            "or a Callable that returns a numpy array."
+        )
+
+    # now for any initial input format of cost, cost has become a 3-tuple
+    if check_cost and (cost_was_callable or cost_was_tuple):
+
+        expected_shapes = [(n1, n2), (n1, n1), (n2, n2)]
+        for idx, c in enumerate(cost):
+            _check_shape_postive_cost_mat(
+                cost=c,
+                expected_shape=expected_shapes[idx],
+                shape_only=False
+            )
+
+        _check_indiscernable(
+            cost_XX=cost[1],
+            cost_YY=cost[2]
+        )
+
+        if cost_was_callable:
+            _check_symmetry(
+                cost_XY=cost[0],
+                cost_YX=cost_21
+            )
 
     # for nonnegativity, symmetry, unicity of div(X,Y)=0 at X=Y
     return(
-        _sdtw_numba._sdtw(cost_12, gamma)
-        - 0.5 * _sdtw_numba._sdtw(cost_11, gamma)
-        - 0.5 * _sdtw_numba._sdtw(cost_22, gamma)
+        _sdtw_numba._sdtw(cost[0], gamma)
+        - 0.5 * _sdtw_numba._sdtw(cost[1], gamma)
+        - 0.5 * _sdtw_numba._sdtw(cost[2], gamma)
     )
 
 
@@ -276,23 +306,18 @@ class sdtwDivergence():
     triangle inequality. See :footcite:`Blondel_2021_sdtw_div`.
 
     Args:
-        fdata1: First FData object.
-        fdata2: Second FData object.
+        fdata1: First FDataGrid object.
+        fdata2: Second FDataGrid object.
         gamma: smoothing parameter, must be positive.
         cost: Either a two-dimensional numpy array or a callable.
             If it is an array, then it must have shape ``(n1, n2)``
             where ``n1`` is the grid size of fdata1 and equivalently for
-            ``n2``. When fdata1 and fdata2 are FDataBasis, then ``cost``
-            must be shaped according to the grid size(s) of ``eval_points``.
-            If it is a callable, then it must take two two-dimensional numpy
-            arrays (equivalent to the ``data_matirx`` attribute of an
-            FDataGrid object) as inputs and return a ``(n1, n2)`` numpy array.
+            ``n2``. If it is a callable, then it must take two
+            two-dimensional numpy arrays (equivalent to the ``data_matirx``
+            attribute of an FDataGrid object) as inputs and return a
+            ``(n1, n2)`` numpy array.
         check_cost: Wheter to check the mathematical properties of
             ``cost`` (function or matrix).
-        eval_points: Tuple of two one-dimensional numpy arrays with points of
-            evaluation if fdata1 and fdata2 are FDataBasis.
-            If the tuple contains a single array, it is used to convert
-            both fdata1 and fdata2 into FDataGrid objects.
 
     Returns:
         soft Dynamic-Time-Warping divergence value.
@@ -304,7 +329,8 @@ class sdtwDivergence():
     def __init__(
         self,
         gamma: float = 1.0,
-        cost: Union[Tuple[NDArrayFloat], Callable] = None,
+        cost: Union[Tuple[NDArrayFloat], Callable[[
+            NDArrayFloat, NDArrayFloat, NDArrayFloat]]] = None,
     ) -> None:
 
         self.gamma = gamma
@@ -315,8 +341,7 @@ class sdtwDivergence():
         fdata1: FDataGrid,
         fdata2: FDataGrid,
         *,
-        eval_points: Optional[Union[Tuple, GridPointsLike]] = None,
-        check_cost: Optional[Boolean] = False
+        check_cost: Optional[bool] = False
     ) -> NDArrayFloat:
         """Compute the soft-DTW divergence."""
         return _sdtw_divergence(
@@ -325,7 +350,6 @@ class sdtwDivergence():
             gamma=self.gamma,
             cost=self.cost,
             check_cost=check_cost,
-            eval_points=eval_points
         )
 
     def __repr__(self) -> str:
@@ -333,8 +357,6 @@ class sdtwDivergence():
             f"{type(self).__name__}()"
         )
 
-
-sdtw_divergence: Final = sdtwDivergence()
 
 # @pairwise_metric_optimization.register
 # def _pairwise_metric_optimization_sdtw(

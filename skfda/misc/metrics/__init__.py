@@ -23,4 +23,4 @@ from ._utils import (
     pairwise_metric_optimization,
 )
 
-from ._sdtw_distances import sdtwDivergence, sdtw_divergence
+from ._sdtw_distances import sdtwDivergence

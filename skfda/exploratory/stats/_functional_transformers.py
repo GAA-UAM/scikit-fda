@@ -71,7 +71,7 @@ def local_averages(
         data.integrate(interval=((intervals[i], intervals[i + 1]))) / step
         for i in range(n_intervals)
     ]
-    return np.transpose(integrated_data, (1, 0, 2))
+    return np.swapaxes(integrated_data, 0, 1)
 
 
 def _calculate_curves_occupation(

@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Callable, Optional, Sequence, Tuple, Union
 
 import numpy as np
-import scipy.integrate
 
 from ..._utils import check_is_univariate, nquad_vec
 from ...representation import FDataBasis, FDataGrid
@@ -346,15 +345,23 @@ def number_up_crossings(
 
 
 def unconditional_central_moments(
-    data: Union[FDataBasis, FDataGrid],
+    data: FDataGrid,
     n: int,
 ) -> NDArrayFloat:
-    """
+    r"""
     Calculate the unconditional central moments of a dataset.
 
+    The unconditional central moments are defined as the unconditional
+    moments where the mean is subtracted from each sample before the
+    integration. They are calculated as follows:
+
+    .. math::
+        f(X)=\int_a^b \left(X_1(t) - \mu_1\right)^ndt,\dots,
+        \left(X_p(t) - \mu_p\right)^ndt=\int_a^b  \left(X(t) - \mu\right)^ndt
+
         Args:
-            data: FDataGrid or FDataBasis where we want to calculate
-            a particular central moment.
+            data: FDataGrid where we want to calculate
+            a particular unconditional central moment.
             n: order of the moment.
 
         Returns:
@@ -375,16 +382,19 @@ def unconditional_central_moments(
     >>> import numpy as np
     >>> from skfda.exploratory.stats import unconditional_central_moments
     >>> np.around(unconditional_central_moments(X[:5], 1), decimals=2)
-        array([[ 0.02, -0.02],
-               [ 0.03, -0.02],
-               [ 0.03, -0.01],
-               [ 0.02, -0.  ],
-               [ 0.03,  0.01]])
+        array([[0.01, 0.01],
+               [0.02, 0.01],
+               [0.02, 0.01],
+               [0.02, 0.01],
+               [0.01, 0.01]])
     """
-    mean = np.mean(data.data_matrix, axis=1)
+    mean = data.integrate() / (
+        data.domain_range[0][1] - data.domain_range[0][0]
+    )
+
     return unconditional_expected_value(
         data,
-        lambda x: pow((x - mean[:, np.newaxis, :]), n),
+        lambda x: np.power(x - mean[:, np.newaxis, :], n),
     )
 
 
@@ -429,7 +439,7 @@ def unconditional_moments(
     """
     return unconditional_expected_value(
         data,
-        lambda x: pow(x, n),
+        lambda x: np.power(x, n),
     )
 
 
@@ -458,7 +468,7 @@ def unconditional_expected_value(
 
     We will define a function that calculates the inverse first moment.
     >>> import numpy as np
-    >>> f = lambda x: pow(np.log(x), 1)
+    >>> f = lambda x: np.power(np.log(x), 1)
 
     Then we call the function with the dataset and the function.
     >>> from skfda.exploratory.stats import unconditional_expected_value
@@ -469,17 +479,17 @@ def unconditional_expected_value(
                [ 4.9 ],
                [ 4.84]])
     """
-    domain_range = data.domain_range[0][1] - data.domain_range[0][0]
+    domain_range = np.prod(
+        [
+            (iterval[1] - iterval[0])
+            for iterval in data.domain_range
+        ],
+    )
 
     if isinstance(data, FDataGrid):
-        return scipy.integrate.simpson(
-            function(data.data_matrix),
-            x=data.grid_points[0],
-            axis=1,
-        ) / domain_range
+        return function(data).integrate() / domain_range
 
-    integrated = nquad_vec(
-        data,
-        data.domain_range,
+    return nquad_vec(
+        function,
+        data.integrate(),
     ) / domain_range
-    return integrated.reshape(integrated.shape[0], integrated.shape[2])

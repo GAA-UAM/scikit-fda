@@ -1,5 +1,9 @@
+"""Depth."""
 from . import multivariate
-from ._depth import (IntegratedDepth,
-                     ModifiedBandDepth,
-                     BandDepth)
+from ._depth import (
+    BandDepth,
+    DistanceBasedDepth,
+    IntegratedDepth,
+    ModifiedBandDepth,
+)
 from .multivariate import Depth, Outlyingness, OutlyingnessBasedDepth

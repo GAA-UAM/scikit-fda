@@ -143,7 +143,7 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
                 eigenvalues = self.eigenvalues
                 eigenvectors = self.eigenvectors
             else:
-                raise NotFittedError
+                raise
 
         return np.sum(
             eigenvalues

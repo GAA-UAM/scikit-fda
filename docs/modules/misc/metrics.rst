@@ -17,7 +17,7 @@ for ``p``, and use this instance to evaluate the norm or distance over
 
    skfda.misc.metrics.LpNorm
    skfda.misc.metrics.LpDistance
-   
+
 As the :math:`L_1`, :math:`L_2` and :math:`L_{\infty}` norms are very common
 in :term:`FDA`, instances for these have been created, called respectively
 ``l1_norm``, ``l2_norm`` and ``linf_norm``. The same is true for metrics,
@@ -34,7 +34,7 @@ value of ``p`` must be explicitly passed in each call.
 
    skfda.misc.metrics.lp_norm
    skfda.misc.metrics.lp_distance
-   
+
 Angular distance
 ----------------
 
@@ -45,7 +45,7 @@ by the inner product) is also available, and useful in some contexts.
    :toctree: autosummary
 
    skfda.misc.metrics.angular_distance
-	
+
 
 Elastic distances
 -----------------
@@ -59,6 +59,18 @@ analysis and registration of functional data.
     skfda.misc.metrics.fisher_rao_distance
     skfda.misc.metrics.fisher_rao_amplitude_distance
     skfda.misc.metrics.fisher_rao_phase_distance
+
+Mahalanobis distance
+--------------------
+
+The following class implements a functional version of the Mahalanobis
+distance:
+
+.. autosummary::
+   :toctree: autosummary
+
+    skfda.misc.metrics.MahalanobisDistance
+
 
 
 Metric induced by a norm
@@ -74,7 +86,7 @@ to construct a metric from a norm in this way:
    :toctree: autosummary
 
    skfda.misc.metrics.NormInducedMetric
-   
+
 
 Pairwise metric
 ---------------
@@ -86,7 +98,7 @@ of objets. The following class can compute that efficiently:
    :toctree: autosummary
 
    skfda.misc.metrics.PairwiseMetric
- 
+
 
 Transformation metric
 ---------------------

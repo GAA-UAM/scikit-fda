@@ -382,11 +382,11 @@ def unconditional_central_moments(
     >>> import numpy as np
     >>> from skfda.exploratory.stats import unconditional_central_moments
     >>> np.around(unconditional_central_moments(X[:5], 1), decimals=2)
-        array([[0.01, 0.01],
-               [0.02, 0.01],
-               [0.02, 0.01],
-               [0.02, 0.01],
-               [0.01, 0.01]])
+    array([[ 0.01,  0.01],
+           [ 0.02,  0.01],
+           [ 0.02,  0.01],
+           [ 0.02,  0.01],
+           [ 0.01,  0.01]])
     """
     mean = data.integrate() / (
         data.domain_range[0][1] - data.domain_range[0][0]
@@ -394,7 +394,7 @@ def unconditional_central_moments(
 
     return unconditional_expected_value(
         data,
-        lambda x: np.power(x - mean[:, np.newaxis, :], n),
+        lambda x: np.power(x - mean, n),
     )
 
 
@@ -431,11 +431,11 @@ def unconditional_moments(
     >>> import numpy as np
     >>> from skfda.exploratory.stats import unconditional_moments
     >>> np.around(unconditional_moments(X[:5], 1), decimals=2)
-        array([[ 4.7 ,  4.03],
-               [ 6.16,  3.96],
-               [ 5.52,  4.01],
-               [ 6.82,  3.44],
-               [ 5.25,  3.29]])
+    array([[ 4.7 ,  4.03],
+           [ 6.16,  3.96],
+           [ 5.52,  4.01],
+           [ 6.82,  3.44],
+           [ 5.25,  3.29]])
     """
     return unconditional_expected_value(
         data,

@@ -725,6 +725,17 @@ class FDataGrid(FData):  # noqa: WPS214
                 )
 
                 return other[other_index]
+            elif other.shape == (
+                self.n_samples,
+                self.dim_codomain,
+            ):
+                other_index = (
+                    (slice(None),) + (np.newaxis,)
+                    * (self.data_matrix.ndim - 2)
+                    + (slice(None),)
+                )
+
+                return other[other_index]
 
         elif isinstance(other, FDataGrid):
             self._check_same_dimensions(other)

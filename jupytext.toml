@@ -1,0 +1,2 @@
+preferred_jupytext_formats_read = "py:sphinx"
+sphinx_convert_rst2md = true

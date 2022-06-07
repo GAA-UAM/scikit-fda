@@ -355,8 +355,8 @@ original_gen_binder_rst = sphinx_gallery.binder.gen_binder_rst
 
 def patched_gen_binder_rst(*args, **kwargs):
     return original_gen_binder_rst(*args, **kwargs).replace(
-        "auto_",
-        ".py",
+        "../examples/auto_",
+        "",
     ).replace(
         ".ipynb",
         ".py",

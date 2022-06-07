@@ -353,11 +353,14 @@ def unconditional_central_moments(
 
     The unconditional central moments are defined as the unconditional
     moments where the mean is subtracted from each sample before the
-    integration. They are calculated as follows:
+    integration. The n-th unconditional central moment is calculated as
+    follows, where p is the number of observations:
 
     .. math::
-        f(X)=\int_a^b \left(X_1(t) - \mu_1\right)^ndt,\dots,
-        \left(X_p(t) - \mu_p\right)^ndt=\int_a^b  \left(X(t) - \mu\right)^ndt
+        f_1(x(t))=\frac{1}{\left(b-a\right)}\int_a^b
+        \left(x_1(t) - \mu_1\right)^n dt, \dots,
+        f_p(x(t))=\frac{1}{\left(b-a\right)}\int_a^b
+        \left(x_p(t) - \mu_p\right)^n dt
 
         Args:
             data: FDataGrid where we want to calculate
@@ -405,9 +408,12 @@ def unconditional_moments(
     r"""
     Calculate the specified unconditional moment of a dataset.
 
-    It performs the following map:
-    :math:`f(X)=\int_a^b f_1(X(t))dt,\dots,f_p(X(t))dt=\int_a^b  f^p(X(t))dt`.
-
+    The n-th unconditional moments of p real-valued continuous functions
+    are calculated as:
+    .. math::
+        f_1(x(t))=\frac{1}{\left( b-a\right)}\int_a^b \left(x_1(t)\right)^ndt,
+        \dots,
+        f_p(x(t))=\frac{1}{\left( b-a\right)}\int_a^b  \left(x_p(t)\right)^n dt
         Args:
             data: FDataGrid or FDataBasis where we want to calculate
             a particular unconditional moment.
@@ -447,9 +453,16 @@ def unconditional_expected_value(
     data: Union[FDataBasis, FDataGrid],
     function: Callable[[np.ndarray], np.ndarray],
 ) -> NDArrayFloat:
-    """
+    r"""
     Calculate the unconditional expected value of a function.
 
+    Next formula shows for a defined transformation :math: `g(x(t))`
+    and p observations, how the unconditional expected values are calculated:
+    .. math::
+            f_1(x(t))=\frac{1}{\left( b-a\right)}\int_a^b g
+            \left(x_1(t)\right)dt,\dots,
+            f_p(x(t))=\frac{1}{\left( b-a\right)}\int_a^b g
+            \left(x_p(t)\right) dt
         Args:
             data: FDataGrid or FDataBasis where we want to calculate
             the expected value.

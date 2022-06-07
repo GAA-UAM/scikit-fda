@@ -47,41 +47,45 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
             output. By default the value is False.
 
     Examples:
-    Firstly we will import the Berkeley Growth Study data set
-    >>> from skfda.datasets import fetch_growth
-    >>> X,y = fetch_growth(return_X_y=True)
+        Firstly we will import the Berkeley Growth Study data set:
 
-    Then we need to import the transformers we want to use. In our case we
-    will use the Recursive Maxima Hunting method to select important features.
-    We will concatenate to the results of the previous method the original
-    curves with an Evaluation Transfomer.
-    >>> from skfda.preprocessing.feature_construction import (
-    ...     FDAFeatureUnion,
-    ... )
-    >>> from skfda.preprocessing.dim_reduction.variable_selection import (
-    ...     RecursiveMaximaHunting,
-    ... )
-    >>> from skfda.preprocessing.feature_construction import (
-    ...     EvaluationTransformer,
-    ... )
-    >>> import numpy as np
+        >>> from skfda.datasets import fetch_growth
+        >>> X,y = fetch_growth(return_X_y=True)
 
-    Finally we apply fit and transform.
-    >>> union = FDAFeatureUnion(
-    ...     [
-    ...        ("rmh", RecursiveMaximaHunting()),
-    ...        ("eval", EvaluationTransformer()),
-    ...     ],
-    ...     array_output=True,
-    ... )
-    >>> np.around(union.fit_transform(X,y), decimals=2)
-    array([[ 195.1,  141.1,  163.8, ...,  193.8,  194.3,  195.1],
-           [ 178.7,  133. ,  148.1, ...,  176.1,  177.4,  178.7],
-           [ 171.5,  126.5,  143.6, ...,  170.9,  171.2,  171.5],
-            ...,
-           [ 166.8,  132.8,  152.2, ...,  166. ,  166.3,  166.8],
-           [ 168.6,  139.4,  161.6, ...,  168.3,  168.4,  168.6],
-           [ 169.2,  138.1,  161.7, ...,  168.6,  168.9,  169.2]])
+        Then we need to import the transformers we want to use. In our case we
+        will use the Recursive Maxima Hunting method to select important
+        features.
+        We will concatenate to the results of the previous method the original
+        curves with an Evaluation Transfomer.
+
+        >>> from skfda.preprocessing.feature_construction import (
+        ...     FDAFeatureUnion,
+        ... )
+        >>> from skfda.preprocessing.dim_reduction.variable_selection import (
+        ...     RecursiveMaximaHunting,
+        ... )
+        >>> from skfda.preprocessing.feature_construction import (
+        ...     EvaluationTransformer,
+        ... )
+        >>> import numpy as np
+
+        Finally we apply fit and transform.
+
+        >>> union = FDAFeatureUnion(
+        ...     [
+        ...        ("rmh", RecursiveMaximaHunting()),
+        ...        ("eval", EvaluationTransformer()),
+        ...     ],
+        ...     array_output=True,
+        ... )
+        >>> np.around(union.fit_transform(X,y), decimals=2)
+        array([[ 195.1,  141.1,  163.8, ...,  193.8,  194.3,  195.1],
+               [ 178.7,  133. ,  148.1, ...,  176.1,  177.4,  178.7],
+               [ 171.5,  126.5,  143.6, ...,  170.9,  171.2,  171.5],
+                ...,
+               [ 166.8,  132.8,  152.2, ...,  166. ,  166.3,  166.8],
+               [ 168.6,  139.4,  161.6, ...,  168.3,  168.4,  168.6],
+               [ 169.2,  138.1,  161.7, ...,  168.6,  168.9,  169.2]])
     """
 
     def __init__(

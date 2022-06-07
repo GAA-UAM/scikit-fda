@@ -350,25 +350,17 @@ GoogleDocstring._parse = patched_parse
 # Binder integration
 # Taken from
 # https://stanczakdominik.github.io/posts/simple-binder-usage-with-sphinx-gallery-through-jupytext/
-def patched_gen_binder_rst(fpath, binder_conf, gallery_conf):
-    """Generate the RST + link for the Binder badge.
-    ...
-    """
-    binder_conf = sphinx_gallery.binder.check_binder_conf(binder_conf)
-    binder_url = sphinx_gallery.binder.gen_binder_url(
-        fpath, binder_conf, gallery_conf)
+original_gen_binder_rst = sphinx_gallery.binder.gen_binder_rst
 
-    # I added the line below:
-    binder_url = binder_url.replace(
-        gallery_conf['gallery_dirs'] + os.path.sep, "").replace("ipynb", "py")
 
-    rst = (
-        "\n"
-        "  .. container:: binder-badge\n\n"
-        "    .. image:: https://mybinder.org/badge_logo.svg\n"
-        "      :target: {}\n"
-        "      :width: 150 px\n").format(binder_url)
-    return rst
+def patched_gen_binder_rst(*args, **kwargs):
+    return original_gen_binder_rst(*args, **kwargs).replace(
+        "auto_",
+        ".py",
+    ).replace(
+        ".ipynb",
+        ".py",
+    )
 
 
 #  # And then we finish our monkeypatching misdeed by redirecting

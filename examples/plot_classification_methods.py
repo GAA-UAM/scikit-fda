@@ -138,6 +138,19 @@ print('The score of Parameterized Functional QDA is {0:2.2%}'.format(
 # achieve more than an 80% of score, but the most robust ones are KNN and
 # Parameterized Functional QDA.
 
+##############################################################################
+# +--------------------------------+--------------------+
+# | Classification method          | Accuracy           |
+# +================================+====================+
+# | Maximum Depth Classifier       | 82.14%             |
+# +--------------------------------+--------------------+
+# | Nearest Centroid Classifier    | 85.71%             |
+# +--------------------------------+--------------------+
+# | K-Nearest-Neighbors            | 96.43%             |
+# +--------------------------------+--------------------+
+# | Parameterized Functional QDA   | 96.43%             |
+# +--------------------------------+--------------------+
+
 
 ##############################################################################
 # The figure below shows the results of the classification for the test set on

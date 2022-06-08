@@ -13,6 +13,7 @@ this category deal with this problem.
    preprocessing/smoothing
    preprocessing/registration
    preprocessing/dim_reduction
+   preprocessing/feature_construction
 
 Smoothing
 ---------

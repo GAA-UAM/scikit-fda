@@ -146,7 +146,32 @@ def _ucr_to_fdatagrid(name: str, data: np.ndarray) -> FDataGrid:
     return FDataGrid(data, grid_points=grid_points, dataset_name=name)
 
 
-def fetch_ucr(name: str, **kwargs: Any) -> Bunch:
+@overload
+def fetch_ucr(
+    name: str,
+    *,
+    return_X_y: Literal[False] = False,
+    **kwargs: Any,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch_ucr(
+    name: str,
+    *,
+    return_X_y: Literal[True],
+    **kwargs: Any,
+) -> Tuple[FDataGrid, ndarray]:
+    pass
+
+
+def fetch_ucr(
+    name: str,
+    *,
+    return_X_y: bool = False,
+    **kwargs: Any,
+) -> Union[Bunch, Tuple[FDataGrid, ndarray]]:
     """
     Fetch a dataset from the UCR.
 
@@ -180,12 +205,8 @@ def fetch_ucr(name: str, **kwargs: Any) -> Bunch:
     )
     dataset.pop('feature_names')
 
-    data_test = dataset.get('data_test', None)
-    if data_test is not None:
-        dataset['data_test'] = _ucr_to_fdatagrid(
-            name=dataset['name'],
-            data=data_test,
-        )
+    if return_X_y:
+        return dataset['data'], dataset['target']
 
     return dataset
 

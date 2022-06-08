@@ -3,11 +3,11 @@ from __future__ import annotations
 
 from typing import Union
 
+import pandas as pd
 from numpy import ndarray
-from pandas import DataFrame
 from sklearn.pipeline import FeatureUnion
 
-from ....representation import FData
+from ...representation import FData
 
 
 class FDAFeatureUnion(FeatureUnion):  # type: ignore
@@ -52,44 +52,36 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
     >>> X,y = fetch_growth(return_X_y=True)
 
     Then we need to import the transformers we want to use. In our case we
-    will use Generalized depth-versus-depth transformer.
-    Evaluation Transformer returns the original curve, and as it is helpful,
-    we will concatenate it to the already metioned transformer.
-    >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
+    will use the Recursive Maxima Hunting method to select important features.
+    We will concatenate to the results of the previous method the original
+    curves with an Evaluation Transfomer.
+    >>> from skfda.preprocessing.feature_construction import (
     ...     FDAFeatureUnion,
     ... )
-    >>> from skfda.preprocessing.dim_reduction.feature_extraction import (
-    ...     DDGTransformer,
+    >>> from skfda.preprocessing.dim_reduction.variable_selection import (
+    ...     RecursiveMaximaHunting,
     ... )
-    >>> from skfda.exploratory.depth import ModifiedBandDepth
-    >>> from skfda.misc.feature_construction import EvaluationTransformer
+    >>> from skfda.preprocessing.feature_construction import (
+    ...     EvaluationTransformer,
+    ... )
     >>> import numpy as np
 
     Finally we apply fit and transform.
     >>> union = FDAFeatureUnion(
     ...     [
-    ...        (
-    ...             'ddgtransformer',
-    ...             DDGTransformer(depth_method=[ModifiedBandDepth()]),
-    ...        ),
+    ...        ("rmh", RecursiveMaximaHunting()),
     ...        ("eval", EvaluationTransformer()),
     ...     ],
     ...     array_output=True,
     ... )
     >>> np.around(union.fit_transform(X,y), decimals=2)
-      array([[ 2.100e-01,  9.000e-02,  8.130e+01, ...,  1.938e+02,  1.943e+02,
-               1.951e+02],
-             [ 4.600e-01,  3.800e-01,  7.620e+01, ...,  1.761e+02,  1.774e+02,
-               1.787e+02],
-             [ 2.000e-01,  3.300e-01,  7.680e+01, ...,  1.709e+02,  1.712e+02,
-               1.715e+02],
-             ...,
-             [ 3.900e-01,  5.100e-01,  6.860e+01, ...,  1.660e+02,  1.663e+02,
-               1.668e+02],
-             [ 2.600e-01,  2.700e-01,  7.990e+01, ...,  1.683e+02,  1.684e+02,
-               1.686e+02],
-             [ 3.300e-01,  3.200e-01,  7.610e+01, ...,  1.686e+02,  1.689e+02,
-               1.692e+02]])
+    array([[ 195.1,  141.1,  163.8, ...,  193.8,  194.3,  195.1],
+           [ 178.7,  133. ,  148.1, ...,  176.1,  177.4,  178.7],
+           [ 171.5,  126.5,  143.6, ...,  170.9,  171.2,  171.5],
+            ...,
+           [ 166.8,  132.8,  152.2, ...,  166. ,  166.3,  166.8],
+           [ 168.6,  139.4,  161.6, ...,  168.3,  168.4,  168.6],
+           [ 169.2,  138.1,  161.7, ...,  168.6,  168.9,  169.2]])
     """
 
     def __init__(
@@ -109,7 +101,7 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
             verbose=verbose,
         )
 
-    def _hstack(self, Xs: ndarray) -> Union[DataFrame, ndarray]:
+    def _hstack(self, Xs: ndarray) -> Union[pd.DataFrame, ndarray]:
 
         if self.array_output:
             for i in Xs:
@@ -121,4 +113,10 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
                     )
             return super()._hstack(Xs)
 
-        return DataFrame({'Transformed data': Xs})
+        return pd.concat(
+            [
+                pd.DataFrame({0: data})
+                for data in Xs
+            ],
+            axis=1,
+        )

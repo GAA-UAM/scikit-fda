@@ -9,6 +9,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from ..._utils import check_is_univariate
 from ...representation import FDataGrid
 from ...representation._typing import ArrayLike
+from ...representation.basis import Basis
 from ._operators import Operator
 
 
@@ -49,6 +50,11 @@ class SRSF(
             inverse transformation. If `None` there are stored the initial
             values of the functions during the transformation to apply
             during the inverse transformation. Defaults None.
+        method: Method to use to compute the derivative. If ``None``
+            (the default), finite differences are used. In a basis
+            object is passed the grid is converted to a basis
+            representation and the derivative is evaluated using that
+            representation.
 
     Attributes:
         eval_points: Set of points where the
@@ -95,11 +101,14 @@ class SRSF(
 
     def __init__(
         self,
+        *,
         output_points: Optional[ArrayLike] = None,
         initial_value: Optional[float] = None,
+        method: Optional[Basis] = None,
     ) -> None:
         self.output_points = output_points
         self.initial_value = initial_value
+        self.method = method
 
     def __call__(self, vector: FDataGrid) -> FDataGrid:
         return self.fit_transform(vector)
@@ -148,7 +157,7 @@ class SRSF(
         else:
             output_points = np.asarray(self.output_points)
 
-        g = X.derivative()
+        g = X.derivative(method=self.method)
 
         # Evaluation with the corresponding interpolation
         data_matrix = g(output_points)[..., 0]

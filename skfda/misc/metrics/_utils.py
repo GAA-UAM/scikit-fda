@@ -265,3 +265,14 @@ def _pairwise_metric_optimization_transformation_distance(
     pairwise = PairwiseMetric(metric.metric)
 
     return pairwise(e1_trans, e2_trans)
+
+
+def _fit_metric(metric: Metric[T], X: T) -> None:
+    """Fits a metric if it has a fit method.
+
+    Args:
+        metric: The metric to fit.
+        X: FData with the training data.
+    """
+    fit = getattr(metric, 'fit', lambda X: None)
+    fit(X)

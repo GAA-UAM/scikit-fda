@@ -287,29 +287,27 @@ class MSPlotOutlierDetector(
     detecting outliers under a normal distribution.
 
     Parameters:
-        multivariate_depth (:ref:`depth measure <depth-measures>`, optional):
-            Method used to order the data. Defaults to :class:`projection
-            depth <fda.depth_measures.multivariate.ProjectionDepth>`.
-        pointwise_weights (array_like, optional): an array containing the
+        multivariate_depth: Method used to order the data. Defaults
+            to :class:`projection depth
+            <fda.depth_measures.multivariate.ProjectionDepth>`.
+        pointwise_weights: an array containing the
             weights of each points of discretisati on where values have
             been recorded.
-        alpha (float, optional): Denotes the quantile to choose the cutoff
-            value for detecting outliers Defaults to 0.993, which is used
-            in the classical boxplot.
-        assume_centered (boolean, optional): If True, the support of the
+        cutoff_factor: Factor that multiplies the cutoff value, in order to
+            consider more or less curves as outliers.
+        assume_centered: If True, the support of the
             robust location and the covariance estimates is computed, and a
             covariance estimate is recomputed from it, without centering
             the data. Useful to work with data whose mean is significantly
             equal to zero but is not exactly zero. If False, default value,
             the robust location and covariance are directly computed with
             the FastMCD algorithm without additional treatment.
-        support_fraction (float, 0 < support_fraction < 1, optional): The
-            proportion of points to be included in the support of the
-            raw MCD estimate.
+        support_fraction: The proportion of points to be included in the
+            support of the raw MCD estimate.
             Default is None, which implies that the minimum value of
             support_fraction will be used within the algorithm:
             [n_sample + n_features + 1] / 2
-        random_state (int, RandomState instance or None, optional): If int,
+        random_state: If int,
             random_state is the seed used by the random number generator;
             If RandomState instance, random_state is the random number
             generator; If None, the random number generator is the
@@ -345,7 +343,7 @@ class MSPlotOutlierDetector(
         support_fraction: Optional[float] = None,
         num_resamples: int = 1000,
         random_state: RandomStateLike = 0,
-        alpha: float = 0.993,
+        cutoff_factor: float = 1,
         _force_asymptotic: bool = False,
     ) -> None:
         self.multivariate_depth = multivariate_depth
@@ -354,7 +352,7 @@ class MSPlotOutlierDetector(
         self.support_fraction = support_fraction
         self.num_resamples = num_resamples
         self.random_state = random_state
-        self.alpha = alpha
+        self.cutoff_factor = cutoff_factor
         self._force_asymptotic = _force_asymptotic
 
     def _compute_points(self, X: FDataGrid) -> NDArrayFloat:
@@ -445,7 +443,7 @@ class MSPlotOutlierDetector(
         # Calculation of the cutoff value and scaling factor to identify
         # outliers.
         scaling = estimated_c * dfd / estimated_m / dfn
-        cutoff_value = scipy.stats.f.ppf(self.alpha, dfn, dfd, loc=0, scale=1)
+        cutoff_value = scipy.stats.f.ppf(0.993, dfn, dfd, loc=0, scale=1)
 
         return scaling, cutoff_value
 
@@ -515,7 +513,7 @@ class MSPlotOutlierDetector(
             )
 
         self.scaling_ = scaling
-        self.cutoff_value_ = cutoff_value
+        self.cutoff_value_ = cutoff_value * self.cutoff_factor
 
         rmd_2 = self.cov_.mahalanobis(self.points_)
 

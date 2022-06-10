@@ -18,6 +18,7 @@ The Berkeley Growth Study dataset is used as input data.
 # License: MIT
 
 import matplotlib.pyplot as plt
+import pandas as pd
 from GPy.kern import RBF
 from sklearn.model_selection import train_test_split
 
@@ -138,18 +139,32 @@ print('The score of Parameterized Functional QDA is {0:2.2%}'.format(
 # achieve more than an 80% of score, but the most robust ones are KNN and
 # Parameterized Functional QDA.
 
-##############################################################################
-# +--------------------------------+--------------------+
-# | Classification method          | Accuracy           |
-# +================================+====================+
-# | Maximum Depth Classifier       | 82.14%             |
-# +--------------------------------+--------------------+
-# | Nearest Centroid Classifier    | 85.71%             |
-# +--------------------------------+--------------------+
-# | K-Nearest-Neighbors            | 96.43%             |
-# +--------------------------------+--------------------+
-# | Parameterized Functional QDA   | 96.43%             |
-# +--------------------------------+--------------------+
+accuracies = pd.DataFrame({
+    'Classification methods':
+        [
+            'Maximum Depth Classifier',
+            'K-Nearest-Neighbors',
+            'Nearest Centroid Classifier',
+            'Parameterized Functional QDA',
+        ],
+    'Accuracy':
+        [
+            '{0:2.2%}'.format(
+                depth.score(X_test, y_test),
+            ),
+            '{0:2.2%}'.format(
+                knn.score(X_test, y_test),
+            ),
+            '{0:2.2%}'.format(
+                centroid.score(X_test, y_test),
+            ),
+            '{0:2.2%}'.format(
+                pfqda.score(X_test, y_test),
+            ),
+        ],
+})
+
+print(accuracies)
 
 
 ##############################################################################

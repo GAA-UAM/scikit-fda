@@ -7,7 +7,7 @@ from typing import Callable, Optional, Sequence, Tuple, Union
 import numpy as np
 
 from ..._utils import check_is_univariate, nquad_vec
-from ...representation import FDataBasis, FDataGrid
+from ...representation import FData, FDataBasis, FDataGrid
 from ...representation._typing import NDArrayFloat, NDArrayInt
 
 
@@ -450,7 +450,7 @@ def unconditional_moments(
 
 
 def unconditional_expected_value(
-    data: Union[FDataBasis, FDataGrid],
+    data: FData,
     function: Callable[[np.ndarray], np.ndarray],
 ) -> NDArrayFloat:
     r"""
@@ -492,7 +492,7 @@ def unconditional_expected_value(
                [ 4.9 ],
                [ 4.84]])
     """
-    domain_range = np.prod(
+    lebesgue_measure = np.prod(
         [
             (iterval[1] - iterval[0])
             for iterval in data.domain_range
@@ -500,9 +500,13 @@ def unconditional_expected_value(
     )
 
     if isinstance(data, FDataGrid):
-        return function(data).integrate() / domain_range
+        return function(data).integrate() / lebesgue_measure
+
+    def integrand(*args: NDArrayFloat):
+        f1 = data(args)[:, 0, :]
+        return function(f1)
 
     return nquad_vec(
-        function,
-        data.integrate(),
-    ) / domain_range
+        integrand,
+        data.domain_range,
+    ) / lebesgue_measure

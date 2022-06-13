@@ -164,7 +164,7 @@ accuracies = pd.DataFrame({
         ],
 })
 
-print(accuracies)
+accuracies
 
 
 ##############################################################################

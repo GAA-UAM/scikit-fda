@@ -37,17 +37,18 @@ def local_averages(
         ndarray of shape (n_samples, n_intervals, n_dimensions) with
         the transformed data.
 
-    Example:
-
+    Examples:
         We import the Berkeley Growth Study dataset.
         We will use only the first 3 samples to make the
-        example easy.
+        example easy
+
         >>> from skfda.datasets import fetch_growth
         >>> dataset = fetch_growth(return_X_y=True)[0]
         >>> X = dataset[:3]
 
         Then we decide how many intervals we want to consider (in our case 2)
         and call the function with the dataset.
+
         >>> import numpy as np
         >>> from skfda.exploratory.stats import local_averages
         >>> np.around(local_averages(X, 2), decimals=2)
@@ -151,9 +152,10 @@ def occupation_measure(
             ndarray of shape (n_samples, n_intervals)
             with the transformed data.
 
-    Example:
+    Examples:
         We will create the FDataGrid that we will use to extract
-        the occupation measure
+        the occupation measure.
+
         >>> from skfda.representation import FDataGrid
         >>> import numpy as np
         >>> t = np.linspace(0, 10, 100)
@@ -171,6 +173,7 @@ def occupation_measure(
         and (2.0, 3.0). We need also to specify the number of points
         we want that the function takes into account to interpolate.
         We are going to use 501 points.
+
         >>> from skfda.exploratory.stats import occupation_measure
         >>> np.around(
         ...     occupation_measure(
@@ -238,42 +241,43 @@ def number_up_crossings(
             ndarray of shape (n_samples, len(levels))\
             with the values of the counters.
 
-    Example:
+    Examples:
+        For this example we will use a well known function so the correct
+        functioning of this method can be checked.
+        We will create and use a DataFrame with a sample extracted from
+        the Bessel Function of first type and order 0.
+        First of all we import the Bessel Function and create the X axis
+        data grid. Then we create the FdataGrid.
 
-    For this example we will use a well known function so the correct
-    functioning of this method can be checked.
-    We will create and use a DataFrame with a sample extracted from
-    the Bessel Function of first type and order 0.
-    First of all we import the Bessel Function and create the X axis
-    data grid. Then we create the FdataGrid.
-    >>> from skfda.exploratory.stats import number_up_crossings
-    >>> from scipy.special import jv
-    >>> import numpy as np
-    >>> x_grid = np.linspace(0, 14, 14)
-    >>> fd_grid = FDataGrid(
-    ...     data_matrix=[jv([0], x_grid)],
-    ...     grid_points=x_grid,
-    ... )
-    >>> fd_grid.data_matrix
-    array([[[ 1.        ],
-            [ 0.73041066],
-            [ 0.13616752],
-            [-0.32803875],
-            [-0.35967936],
-            [-0.04652559],
-            [ 0.25396879],
-            [ 0.26095573],
-            [ 0.01042895],
-            [-0.22089135],
-            [-0.2074856 ],
-            [ 0.0126612 ],
-            [ 0.20089319],
-            [ 0.17107348]]])
+        >>> from skfda.exploratory.stats import number_up_crossings
+        >>> from scipy.special import jv
+        >>> import numpy as np
+        >>> x_grid = np.linspace(0, 14, 14)
+        >>> fd_grid = FDataGrid(
+        ...     data_matrix=[jv([0], x_grid)],
+        ...     grid_points=x_grid,
+        ... )
+        >>> fd_grid.data_matrix
+        array([[[ 1.        ],
+                [ 0.73041066],
+                [ 0.13616752],
+                [-0.32803875],
+                [-0.35967936],
+                [-0.04652559],
+                [ 0.25396879],
+                [ 0.26095573],
+                [ 0.01042895],
+                [-0.22089135],
+                [-0.2074856 ],
+                [ 0.0126612 ],
+                [ 0.20089319],
+                [ 0.17107348]]])
 
-    Finally we evaluate the number of up crossings method with the FDataGrid
-    created.
-    >>> number_up_crossings(fd_grid, np.asarray([0]))
-    array([[2]])
+        Finally we evaluate the number of up crossings method with the
+        FDataGrid created.
+
+        >>> number_up_crossings(fd_grid, np.asarray([0]))
+        array([[2]])
     """
     curves = data.data_matrix[:, :, 0]
 

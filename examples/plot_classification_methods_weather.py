@@ -161,7 +161,7 @@ accuracies = pd.DataFrame({
         ],
 })
 
-print(accuracies)
+accuracies
 
 
 # The figure below shows the results of the classification for the test set on

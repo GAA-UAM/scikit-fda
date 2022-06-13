@@ -23,6 +23,9 @@ import sys
 import warnings
 
 import pkg_resources
+# Patch sphinx_gallery.binder.gen_binder_rst so as to point to .py file in
+# repository
+import sphinx_gallery.binder
 # -- Extensions to the  Napoleon GoogleDocstring class ---------------------
 from sphinx.ext.napoleon.docstring import GoogleDocstring
 
@@ -261,6 +264,9 @@ class SkfdaExplicitSubOrder(object):
         return f"zzz{filename}"
 
 
+rtd_version = os.environ.get("READTHEDOCS_VERSION", "latest")
+branch = "master" if rtd_version == "stable" else "develop"
+
 sphinx_gallery_conf = {
     # path to your examples scripts
     'examples_dirs': ['../examples', '../tutorial'],
@@ -273,6 +279,14 @@ sphinx_gallery_conf = {
     'backreferences_dir': 'backreferences',
     'doc_module': 'skfda',
     'within_subsection_order': SkfdaExplicitSubOrder,
+    'binder': {
+        'org': 'GAA-UAM',
+        'repo': 'scikit-fda',
+        'branch': branch,
+        'binderhub_url': 'https://mybinder.org',
+        'dependencies': ['../binder/requirements.txt'],
+        'notebooks_dir': '../examples',
+    },
 }
 
 warnings.filterwarnings(
@@ -331,3 +345,25 @@ def patched_parse(self):
 
 GoogleDocstring._unpatched_parse = GoogleDocstring._parse
 GoogleDocstring._parse = patched_parse
+
+
+# Binder integration
+# Taken from
+# https://stanczakdominik.github.io/posts/simple-binder-usage-with-sphinx-gallery-through-jupytext/
+original_gen_binder_rst = sphinx_gallery.binder.gen_binder_rst
+
+
+def patched_gen_binder_rst(*args, **kwargs):
+    return original_gen_binder_rst(*args, **kwargs).replace(
+        "../examples/auto_",
+        "",
+    ).replace(
+        ".ipynb",
+        ".py",
+    )
+
+
+#  # And then we finish our monkeypatching misdeed by redirecting
+
+# sphinx-gallery to use our function:
+sphinx_gallery.binder.gen_binder_rst = patched_gen_binder_rst

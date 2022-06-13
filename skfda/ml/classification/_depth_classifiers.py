@@ -5,6 +5,7 @@ from itertools import combinations
 from typing import Generic, Optional, Sequence, TypeVar, Union
 
 import numpy as np
+import pandas as pd
 from scipy.interpolate import lagrange
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from sklearn.metrics import accuracy_score
@@ -13,7 +14,9 @@ from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from ..._utils import _classifier_fit_depth_methods, _classifier_get_classes
 from ...exploratory.depth import Depth, ModifiedBandDepth
-from ...preprocessing.dim_reduction.feature_extraction import DDGTransformer
+from ...preprocessing.feature_construction._per_class_transformer import (
+    PerClassTransformer,
+)
 from ...representation._typing import NDArrayFloat, NDArrayInt
 from ...representation.grid import FData
 
@@ -257,7 +260,10 @@ class DDGClassifier(
         depth_method: Union[Depth[T], Sequence[Depth[T]], None] = None,
     ) -> None:
         self.multivariate_classifier = multivariate_classifier
-        self.depth_method = depth_method
+        if depth_method is None:
+            self.depth_method = ModifiedBandDepth()
+        else:
+            self.depth_method = depth_method
 
     def fit(self, X: T, y: NDArrayInt) -> DDGClassifier[T]:
         """Fit the model using X as training data and y as target values.
@@ -270,7 +276,7 @@ class DDGClassifier(
             self
         """
         self._pipeline = make_pipeline(
-            DDGTransformer(self.depth_method),
+            PerClassTransformer(self.depth_method),
             clone(self.multivariate_classifier),
         )
 
@@ -305,7 +311,7 @@ class _ArgMaxClassifier(
         >>> X = np.array([[1,5], [3,2], [4,1]])
         >>> y = np.array([1, 0, 0])
 
-        We will fit am ArgMax classifier
+        We will fit an ArgMax classifier
 
         >>> from skfda.ml.classification._depth_classifiers import \
         ... _ArgMaxClassifier
@@ -333,16 +339,18 @@ class _ArgMaxClassifier(
         self._classes = classes
         return self
 
-    def predict(self, X: NDArrayFloat) -> NDArrayInt:
+    def predict(self, X: Union[NDArrayFloat, pd.DataFrame]) -> NDArrayInt:
         """Predict the class labels for the provided data.
 
         Args:
-            X: Array with the test samples.
+            X: Array with the test samples or a pandas DataFrame.
 
         Returns:
             Array of shape (n_samples) with class labels
                 for each data sample.
         """
+        if isinstance(X, pd.DataFrame):
+            X = X.to_numpy()
         return self._classes[np.argmax(X, axis=1)]
 
 

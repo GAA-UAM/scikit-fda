@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, Tuple, Union
+from typing import Callable, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
-from ..._utils import check_is_univariate
-from ...representation import FDataBasis, FDataGrid
+from ..._utils import check_is_univariate, nquad_vec
+from ...representation import FData, FDataBasis, FDataGrid
 from ...representation._typing import NDArrayFloat, NDArrayInt
 
 
@@ -37,17 +37,18 @@ def local_averages(
         ndarray of shape (n_samples, n_intervals, n_dimensions) with
         the transformed data.
 
-    Example:
-
+    Examples:
         We import the Berkeley Growth Study dataset.
         We will use only the first 3 samples to make the
-        example easy.
+        example easy
+
         >>> from skfda.datasets import fetch_growth
         >>> dataset = fetch_growth(return_X_y=True)[0]
         >>> X = dataset[:3]
 
         Then we decide how many intervals we want to consider (in our case 2)
         and call the function with the dataset.
+
         >>> import numpy as np
         >>> from skfda.exploratory.stats import local_averages
         >>> np.around(local_averages(X, 2), decimals=2)
@@ -151,9 +152,10 @@ def occupation_measure(
             ndarray of shape (n_samples, n_intervals)
             with the transformed data.
 
-    Example:
+    Examples:
         We will create the FDataGrid that we will use to extract
-        the occupation measure
+        the occupation measure.
+
         >>> from skfda.representation import FDataGrid
         >>> import numpy as np
         >>> t = np.linspace(0, 10, 100)
@@ -171,6 +173,7 @@ def occupation_measure(
         and (2.0, 3.0). We need also to specify the number of points
         we want that the function takes into account to interpolate.
         We are going to use 501 points.
+
         >>> from skfda.exploratory.stats import occupation_measure
         >>> np.around(
         ...     occupation_measure(
@@ -238,42 +241,43 @@ def number_up_crossings(
             ndarray of shape (n_samples, len(levels))\
             with the values of the counters.
 
-    Example:
+    Examples:
+        For this example we will use a well known function so the correct
+        functioning of this method can be checked.
+        We will create and use a DataFrame with a sample extracted from
+        the Bessel Function of first type and order 0.
+        First of all we import the Bessel Function and create the X axis
+        data grid. Then we create the FdataGrid.
 
-    For this example we will use a well known function so the correct
-    functioning of this method can be checked.
-    We will create and use a DataFrame with a sample extracted from
-    the Bessel Function of first type and order 0.
-    First of all we import the Bessel Function and create the X axis
-    data grid. Then we create the FdataGrid.
-    >>> from skfda.exploratory.stats import number_up_crossings
-    >>> from scipy.special import jv
-    >>> import numpy as np
-    >>> x_grid = np.linspace(0, 14, 14)
-    >>> fd_grid = FDataGrid(
-    ...     data_matrix=[jv([0], x_grid)],
-    ...     grid_points=x_grid,
-    ... )
-    >>> fd_grid.data_matrix
-    array([[[ 1.        ],
-            [ 0.73041066],
-            [ 0.13616752],
-            [-0.32803875],
-            [-0.35967936],
-            [-0.04652559],
-            [ 0.25396879],
-            [ 0.26095573],
-            [ 0.01042895],
-            [-0.22089135],
-            [-0.2074856 ],
-            [ 0.0126612 ],
-            [ 0.20089319],
-            [ 0.17107348]]])
+        >>> from skfda.exploratory.stats import number_up_crossings
+        >>> from scipy.special import jv
+        >>> import numpy as np
+        >>> x_grid = np.linspace(0, 14, 14)
+        >>> fd_grid = FDataGrid(
+        ...     data_matrix=[jv([0], x_grid)],
+        ...     grid_points=x_grid,
+        ... )
+        >>> fd_grid.data_matrix
+        array([[[ 1.        ],
+                [ 0.73041066],
+                [ 0.13616752],
+                [-0.32803875],
+                [-0.35967936],
+                [-0.04652559],
+                [ 0.25396879],
+                [ 0.26095573],
+                [ 0.01042895],
+                [-0.22089135],
+                [-0.2074856 ],
+                [ 0.0126612 ],
+                [ 0.20089319],
+                [ 0.17107348]]])
 
-    Finally we evaluate the number of up crossings method with the FDataGrid
-    created.
-    >>> number_up_crossings(fd_grid, np.asarray([0]))
-    array([[2]])
+        Finally we evaluate the number of up crossings method with the
+        FDataGrid created.
+
+        >>> number_up_crossings(fd_grid, np.asarray([0]))
+        array([[2]])
     """
     curves = data.data_matrix[:, :, 0]
 
@@ -296,3 +300,171 @@ def number_up_crossings(
         points_greater & points_smaller_rotated,
         axis=2,
     ).T
+
+
+def unconditional_central_moments(
+    data: FDataGrid,
+    n: int,
+) -> NDArrayFloat:
+    r"""
+    Calculate the unconditional central moments of a dataset.
+
+    The unconditional central moments are defined as the unconditional
+    moments where the mean is subtracted from each sample before the
+    integration. The n-th unconditional central moment is calculated as
+    follows, where p is the number of observations:
+
+    .. math::
+        f_1(x(t))=\frac{1}{\left(b-a\right)}\int_a^b
+        \left(x_1(t) - \mu_1\right)^n dt, \dots,
+        f_p(x(t))=\frac{1}{\left(b-a\right)}\int_a^b
+        \left(x_p(t) - \mu_p\right)^n dt
+
+        Args:
+            data: FDataGrid where we want to calculate
+            a particular unconditional central moment.
+            n: order of the moment.
+
+        Returns:
+            ndarray of shape (n_dimensions, n_samples) with the values of the
+            specified moment.
+
+    Example:
+
+    We will calculate the first unconditional central moment of the Canadian
+    Weather data set. In order to simplify the example, we will use only the
+    first five samples.
+    First we proceed to import the data set.
+    >>> from skfda.datasets import fetch_weather
+    >>> X = fetch_weather(return_X_y=True)[0]
+
+    Then we call the function with the samples that we want to consider and the
+    specified moment order.
+    >>> import numpy as np
+    >>> from skfda.exploratory.stats import unconditional_central_moments
+    >>> np.around(unconditional_central_moments(X[:5], 1), decimals=2)
+    array([[ 0.01,  0.01],
+           [ 0.02,  0.01],
+           [ 0.02,  0.01],
+           [ 0.02,  0.01],
+           [ 0.01,  0.01]])
+    """
+    mean = data.integrate() / (
+        data.domain_range[0][1] - data.domain_range[0][0]
+    )
+
+    return unconditional_expected_value(
+        data,
+        lambda x: np.power(x - mean, n),
+    )
+
+
+def unconditional_moments(
+    data: Union[FDataBasis, FDataGrid],
+    n: int,
+) -> NDArrayFloat:
+    r"""
+    Calculate the specified unconditional moment of a dataset.
+
+    The n-th unconditional moments of p real-valued continuous functions
+    are calculated as:
+    .. math::
+        f_1(x(t))=\frac{1}{\left( b-a\right)}\int_a^b \left(x_1(t)\right)^ndt,
+        \dots,
+        f_p(x(t))=\frac{1}{\left( b-a\right)}\int_a^b  \left(x_p(t)\right)^n dt
+        Args:
+            data: FDataGrid or FDataBasis where we want to calculate
+            a particular unconditional moment.
+            n: order of the moment.
+
+        Returns:
+            ndarray of shape (n_dimensions, n_samples) with the values of the
+            specified moment.
+
+    Example:
+
+    We will calculate the first unconditional moment of the Canadian Weather
+    data set. In order to simplify the example, we will use only the first
+    five samples.
+    First we proceed to import the data set.
+    >>> from skfda.datasets import fetch_weather
+    >>> X = fetch_weather(return_X_y=True)[0]
+
+    Then we call the function with the samples that we want to consider and the
+    specified moment order.
+    >>> import numpy as np
+    >>> from skfda.exploratory.stats import unconditional_moments
+    >>> np.around(unconditional_moments(X[:5], 1), decimals=2)
+    array([[ 4.7 ,  4.03],
+           [ 6.16,  3.96],
+           [ 5.52,  4.01],
+           [ 6.82,  3.44],
+           [ 5.25,  3.29]])
+    """
+    return unconditional_expected_value(
+        data,
+        lambda x: np.power(x, n),
+    )
+
+
+def unconditional_expected_value(
+    data: FData,
+    function: Callable[[np.ndarray], np.ndarray],
+) -> NDArrayFloat:
+    r"""
+    Calculate the unconditional expected value of a function.
+
+    Next formula shows for a defined transformation :math: `g(x(t))`
+    and p observations, how the unconditional expected values are calculated:
+    .. math::
+            f_1(x(t))=\frac{1}{\left( b-a\right)}\int_a^b g
+            \left(x_1(t)\right)dt,\dots,
+            f_p(x(t))=\frac{1}{\left( b-a\right)}\int_a^b g
+            \left(x_p(t)\right) dt
+        Args:
+            data: FDataGrid or FDataBasis where we want to calculate
+            the expected value.
+            f: function that specifies how the expected value to is calculated.
+            It has to be a function of X(t).
+        Returns:
+            ndarray of shape (n_dimensions, n_samples) with the values of the
+            expectations.
+
+    Example:
+    We will use this funtion to calculate the logarithmic first moment
+    of the first 5 samples of the Berkeley Growth dataset.
+    We will start by importing it.
+    >>> from skfda.datasets import fetch_growth
+    >>> X = fetch_growth(return_X_y=True)[0]
+
+    We will define a function that calculates the inverse first moment.
+    >>> import numpy as np
+    >>> f = lambda x: np.power(np.log(x), 1)
+
+    Then we call the function with the dataset and the function.
+    >>> from skfda.exploratory.stats import unconditional_expected_value
+    >>> np.around(unconditional_expected_value(X[:5], f), decimals=2)
+        array([[ 4.96],
+               [ 4.88],
+               [ 4.85],
+               [ 4.9 ],
+               [ 4.84]])
+    """
+    lebesgue_measure = np.prod(
+        [
+            (iterval[1] - iterval[0])
+            for iterval in data.domain_range
+        ],
+    )
+
+    if isinstance(data, FDataGrid):
+        return function(data).integrate() / lebesgue_measure
+
+    def integrand(*args: NDArrayFloat):
+        f1 = data(args)[:, 0, :]
+        return function(f1)
+
+    return nquad_vec(
+        integrand,
+        data.domain_range,
+    ) / lebesgue_measure

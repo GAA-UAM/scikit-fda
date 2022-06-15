@@ -51,13 +51,6 @@ class LinearRegression(
     BaseEstimator,   # type: ignore
     RegressorMixin,  # type: ignore
 ):
-    """.. deprecated:: 0.8.
-
-    Use covariate parameters of type pandas.FDataFrame in methods
-    fit, predict.
-
-    """
-
     r"""Linear regression with multivariate response.
 
     This is a regression algorithm equivalent to multivariate linear
@@ -72,6 +65,10 @@ class LinearRegression(
 
     where the covariates can be either multivariate or functional and the
     response is multivariate.
+
+    .. deprecated:: 0.8.
+        Use covariate parameters of type pandas.DataFrame in methods
+        fit, predict.
 
     .. warning::
         For now, only scalar responses are supported.

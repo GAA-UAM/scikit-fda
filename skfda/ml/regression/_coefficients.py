@@ -106,18 +106,6 @@ class CoefficientInfoNdarray(CoefficientInfo[np.ndarray]):
 
         return inner_product(coefs, X)
 
-    def inner_product_matrices(  # noqa: D102
-        self,
-        X: np.ndarray,
-        y: FDataBasis,
-    ) -> tuple[np.ndarray]:
-
-        inner_ybasis = self.ybasis.basis.inner_product_matrix()
-        inner_ybbasis = self.ybasis.basis.inner_product_matrix(self.basis)
-        inner_bbasis = self.basis.basis.inner_product_matrix()
-
-        return inner_ybasis, inner_ybbasis, inner_bbasis
-
 
 class CoefficientInfoFDataBasis(CoefficientInfo[FDataBasis]):
     """

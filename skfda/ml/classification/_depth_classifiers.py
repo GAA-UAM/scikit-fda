@@ -14,7 +14,9 @@ from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from ..._utils import _classifier_fit_depth_methods, _classifier_get_classes
 from ...exploratory.depth import Depth, ModifiedBandDepth
-from ...preprocessing.feature_construction import PerClassTransformer
+from ...preprocessing.feature_construction._per_class_transformer import (
+    PerClassTransformer,
+)
 from ...representation._typing import NDArrayFloat, NDArrayInt
 from ...representation.grid import FData
 
@@ -309,7 +311,7 @@ class _ArgMaxClassifier(
         >>> X = np.array([[1,5], [3,2], [4,1]])
         >>> y = np.array([1, 0, 0])
 
-        We will fit am ArgMax classifier
+        We will fit an ArgMax classifier
 
         >>> from skfda.ml.classification._depth_classifiers import \
         ... _ArgMaxClassifier

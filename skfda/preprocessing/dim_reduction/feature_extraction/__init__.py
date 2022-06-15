@@ -1,3 +1,4 @@
+"""Feature extraction."""
 import warnings
 
 from .. import FPCA

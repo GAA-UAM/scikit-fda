@@ -1501,7 +1501,10 @@ def fetch_mco(
     data = raw_dataset["MCO"]
 
     curves = data['intact']
-    target = pd.Series(data['classintact'])
+    target = pd.Series(
+        data['classintact'].rename_categories(["control", "treatment"]),
+        name="group",
+    )
     feature_name = curves.dataset_name.lower()
     target_names = target.values.tolist()
 
@@ -1511,7 +1514,7 @@ def fetch_mco(
         curves = pd.DataFrame({feature_name: curves})
         frame = pd.concat([curves, target], axis=1)
     else:
-        target = target.values.to_numpy().astype(np.int_)
+        target = target.values.codes
 
     if return_X_y:
         return curves, target

@@ -8,6 +8,7 @@ from ._real_datasets import (
     fetch_medflies,
     fetch_octane,
     fetch_phoneme,
+    fetch_physionet,
     fetch_tecator,
     fetch_ucr,
     fetch_weather,

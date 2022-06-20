@@ -1329,3 +1329,104 @@ def fetch_handwriting(
 
 if fetch_handwriting.__doc__ is not None:  # docstrings can be stripped off
     fetch_handwriting.__doc__ += _handwriting_descr + _param_descr
+
+_nox_descr_template = """
+    NOx levels measured every hour by a control station in Poblenou in 
+    Barcelona (Spain) {cite}.
+
+    References:
+        {bibliography}
+
+"""
+
+_nox_descr = _nox_descr_template.format(
+    cite="[1]",
+    bibliography="[1] M. Febrero, P. Galeano, and W. González‐Manteiga, "
+    "“Outlier detection in functional data by depth measures, with "
+    "application to identify abnormal NOx levels,” Environmetrics, vol. 19, "
+    "no. 4, pp. 331–345, Jun. 2008, doi: 10.1002/env.878.",
+)
+
+
+@overload
+def fetch_nox(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch_nox(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    pass
+
+
+@overload
+def fetch_nox(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, DataFrame]:
+    pass
+
+
+def fetch_nox(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, DataFrame]]:
+    """
+    Load the NOx dataset.
+
+    The data is obtained from the R package 'fda.usc'.
+
+    """
+    descr = _nox_descr
+
+    raw_dataset = _fetch_fda_usc("poblenou")
+
+    data = raw_dataset["poblenou"]
+
+    curves = data['nox']
+    target = data['df'].iloc[:, 2]
+    weekend = (
+        (data['df'].iloc[:, 1] == "6")
+        | (data['df'].iloc[:, 1] == "7")
+    )
+    target[weekend] = "1"
+    target = pd.Series(
+        target.values.codes.astype(np.bool_),
+        name="festive day",
+    )
+    curves.coordinate_names = ["$mglm^3$"]
+    feature_name = curves.dataset_name.lower()
+    target_names = target.values.tolist()
+
+    frame = None
+
+    if as_frame:
+        curves = pd.DataFrame({feature_name: curves})
+        frame = pd.concat([curves, target], axis=1)
+    else:
+        target = target.values
+
+    if return_X_y:
+        return curves, target
+
+    return Bunch(
+        data=curves,
+        target=target,
+        frame=frame,
+        categories={},
+        feature_names=[feature_name],
+        target_names=target_names,
+        DESCR=descr,
+    )
+
+
+if fetch_tecator.__doc__ is not None:  # docstrings can be stripped off
+    fetch_tecator.__doc__ += _tecator_descr + _param_descr

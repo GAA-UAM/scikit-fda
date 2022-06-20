@@ -6,6 +6,7 @@ from ._real_datasets import (
     fetch_growth,
     fetch_handwriting,
     fetch_medflies,
+    fetch_nox,
     fetch_octane,
     fetch_phoneme,
     fetch_tecator,

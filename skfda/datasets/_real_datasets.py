@@ -1329,3 +1329,102 @@ def fetch_handwriting(
 
 if fetch_handwriting.__doc__ is not None:  # docstrings can be stripped off
     fetch_handwriting.__doc__ += _handwriting_descr + _param_descr
+
+_mco_descr_template = """
+    The mithochondiral calcium overload (MCO) was measured in two groups
+    (control and treatment) every 10 seconds during an hour in isolated mouse
+    cardiac cells. In fact, due to technical reasons, the original experiment
+    [see {cite}] was performed twice, using both the
+    "intact", original cells and "permeabilized" cells (a condition related
+    to the mitochondrial membrane).
+    
+    References:
+        {bibliography}
+
+"""
+
+_mco_descr = _mco_descr_template.format(
+    cite="Ruiz-Meana et. al. (2003)",
+    bibliography="[1] M. Ruiz-Meana, D. Garcia-Dorado, P. Pina, J. Inserte, "
+    "L. Agulló, and J. Soler-Soler, “Cariporide preserves mitochondrial "
+    "proton gradient and delays ATP depletion in cardiomyocytes during "
+    "ischemic conditions,” Am. J. Physiol. Heart Circ. Physiol., vol. 285, "
+    "no. 3, pp. H999-1006, Sep. 2003, doi: 10.1152/ajpheart.00035.2003.",
+)
+
+
+@overload
+def fetch_mco(
+    *,
+    return_X_y: Literal[False] = False,
+    as_frame: bool = False,
+) -> Bunch:
+    pass
+
+
+@overload
+def fetch_mco(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[False] = False,
+) -> Tuple[FDataGrid, ndarray]:
+    pass
+
+
+@overload
+def fetch_mco(
+    *,
+    return_X_y: Literal[True],
+    as_frame: Literal[True],
+) -> Tuple[DataFrame, DataFrame]:
+    pass
+
+
+def fetch_mco(
+    return_X_y: bool = False,
+    as_frame: bool = False,
+) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, DataFrame]]:
+    """
+    Load the mithochondiral calcium overload (MCO) dataset.
+
+    The data is obtained from the R package 'fda.usc'.
+
+    """
+    descr = _mco_descr
+
+    raw_dataset = _fetch_fda_usc("MCO")
+
+    data = raw_dataset["MCO"]
+
+    curves = data['intact']
+    target = pd.Series(data['classintact'])
+    feature_name = curves.dataset_name.lower()
+    target_names = target.values.tolist()
+
+    frame = None
+
+    if as_frame:
+        curves = pd.DataFrame({feature_name: curves})
+        frame = pd.concat([curves, target], axis=1)
+    else:
+        target = target.values.to_numpy().astype(np.int_)
+
+    if return_X_y:
+        return curves, target
+
+    return Bunch(
+        data=curves,
+        target=target,
+        frame=frame,
+        categories={},
+        feature_names=[feature_name],
+        target_names=target_names,
+        DESCR=descr,
+    )
+
+
+if fetch_mco.__doc__ is not None:  # docstrings can be stripped off
+    fetch_mco.__doc__ += _mco_descr_template.format(
+        cite=":footcite:`ruiz++_2003_cariporide`",
+        bibliography=":footbibliography:"
+    ) + _param_descr

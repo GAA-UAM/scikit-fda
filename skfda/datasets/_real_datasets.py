@@ -1387,8 +1387,7 @@ def fetch_mco(
     """
     Load the mithochondiral calcium overload (MCO) dataset.
 
-    The data is obtained from the R package 'fda.usc', which takes it from
-    http://lib.stat.cmu.edu/datasets/tecator.
+    The data is obtained from the R package 'fda.usc'.
 
     """
     descr = _mco_descr

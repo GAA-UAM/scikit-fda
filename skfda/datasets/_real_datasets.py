@@ -1331,7 +1331,7 @@ if fetch_handwriting.__doc__ is not None:  # docstrings can be stripped off
     fetch_handwriting.__doc__ += _handwriting_descr + _param_descr
 
 _nox_descr_template = """
-    NOx levels measured every hour by a control station in Poblenou in 
+    NOx levels measured every hour by a control station in Poblenou in
     Barcelona (Spain) {cite}.
 
     References:
@@ -1431,7 +1431,7 @@ def fetch_nox(
 if fetch_nox.__doc__ is not None:  # docstrings can be stripped off
     fetch_nox.__doc__ += _nox_descr_template.format(
         cite=":footcite:`febrero++_2008_outlier`",
-        bibliography=":footbibliography:"
+        bibliography=".. footbibliography::"
     ) + _param_descr
 
 _mco_descr_template = """
@@ -1441,7 +1441,7 @@ _mco_descr_template = """
     [see {cite}] was performed twice, using both the
     "intact", original cells and "permeabilized" cells (a condition related
     to the mitochondrial membrane).
-    
+
     References:
         {bibliography}
 
@@ -1533,5 +1533,5 @@ def fetch_mco(
 if fetch_mco.__doc__ is not None:  # docstrings can be stripped off
     fetch_mco.__doc__ += _mco_descr_template.format(
         cite=":footcite:`ruiz++_2003_cariporide`",
-        bibliography=":footbibliography:"
+        bibliography=".. footbibliography::",
     ) + _param_descr

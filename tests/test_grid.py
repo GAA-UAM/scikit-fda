@@ -7,7 +7,6 @@ import scipy.stats.mstats
 
 import numpy as np
 
-
 class TestFDataGrid(unittest.TestCase):
 
     # def setUp(self): could be defined for set up before any test
@@ -151,7 +150,7 @@ class TestFDataGrid(unittest.TestCase):
             fd.data_matrix)
 
     def test_add(self):
-        fd1 = FDataGrid([[1, 2, 3, 4], [2, 3, 4, 5]])
+        fd1 = FDataGrid([[1, 2, 3, 4], [2, 3, 4, 5]], [0, 1, 2, 3])
 
         fd2 = fd1 + fd1
         np.testing.assert_array_equal(fd2.data_matrix[..., 0],
@@ -160,6 +159,10 @@ class TestFDataGrid(unittest.TestCase):
         fd2 = fd1 + 2
         np.testing.assert_array_equal(fd2.data_matrix[..., 0],
                                       [[3, 4, 5, 6], [4, 5, 6, 7]])
+
+        fd2 = fd1 + (lambda x: x)
+        np.testing.assert_array_equal(fd2.data_matrix[..., 0],
+                                      [[1, 3, 5, 7], [2, 4, 6, 8]])
 
         fd2 = fd1 + np.array(2)
         np.testing.assert_array_equal(fd2.data_matrix[..., 0],

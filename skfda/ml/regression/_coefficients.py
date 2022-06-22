@@ -94,7 +94,10 @@ class CoefficientInfoNdarray(CoefficientInfo[np.ndarray]):
     def convert_from_constant_coefs(  # noqa: D102
         self,
         coefs: np.ndarray,
-    ) -> np.ndarray:
+    ) -> np.ndarray | FDataBasis:
+
+        if self.ybasis is not None:
+            return FDataBasis(self.basis.basis, coefs)
 
         return coefs
 
@@ -158,25 +161,31 @@ def coefficient_info_from_covariate(
 def _coefficient_info_from_covariate_ndarray(
     X: np.ndarray,
     y: np.ndarray | FDataBasis,
-    basis: Basis,
+    basis: Basis = None,
     **_: Any,
 ) -> CoefficientInfo[np.ndarray]:
 
-    if isinstance(y, FDataBasis):
-        y_basis = y.basis
+    y_basis = None
 
+    if isinstance(y, FDataBasis):
         if basis is None:
             basis = y.basis
+
+        y_basis = y.basis.to_basis()
 
         if not isinstance(basis, Basis):
             raise TypeError(f"basis must be a Basis object, not {type(basis)}")
 
         return CoefficientInfoNdarray(
             basis=basis.to_basis(),
-            ybasis=y_basis.to_basis(),
+            ybasis=y_basis,
         )
 
-    return CoefficientInfoNdarray(basis=np.identity(X.shape[1], dtype=X.dtype))
+    return CoefficientInfoNdarray(
+        basis=np.identity(X.shape[1]),
+        dtype=X.dtype,
+        ybasis=y_basis,
+    )
 
 
 @coefficient_info_from_covariate.register(FDataBasis)

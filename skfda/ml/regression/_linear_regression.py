@@ -67,8 +67,9 @@ class LinearRegression(
     response is multivariate.
 
     .. deprecated:: 0.8.
-        Use covariate parameters of type pandas.DataFrame in methods
-        fit, predict.
+        Usage of arguments of type sequence of FData, ndarray is deprecated
+        in methods fit, predict.
+        Use covariate parameters of type pandas.DataFrame instead.
 
     .. warning::
         For now, only scalar responses are supported.

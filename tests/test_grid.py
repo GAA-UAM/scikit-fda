@@ -151,6 +151,21 @@ class TestFDataGrid(unittest.TestCase):
 
     def test_add(self):
         fd1 = FDataGrid([[1, 2, 3, 4], [2, 3, 4, 5]], [0, 1, 2, 3])
+        fd_2d_in = FDataGrid([
+            [[[0], [0]], [[0], [0]]],
+            [[[1], [1]], [[1], [1]]]],
+            [[0, 1], [0, 1]]
+        )
+        fd_2d_out = FDataGrid([
+            [[0, 0], [1, 1]],
+            [[1, 1], [0, 0]]],
+            [[0, 1]]
+        )
+        fd_2d_in_out = FDataGrid([
+            [[[0, 0], [0, 1]], [[1, 0], [1, 1]]],
+            [[[1, 1], [1, 0]], [[0, 1], [0, 0]]]],
+            [[0, 1], [0, 1]]
+        )
 
         fd2 = fd1 + fd1
         np.testing.assert_array_equal(fd2.data_matrix[..., 0],
@@ -163,6 +178,24 @@ class TestFDataGrid(unittest.TestCase):
         fd2 = fd1 + (lambda x: x)
         np.testing.assert_array_equal(fd2.data_matrix[..., 0],
                                       [[1, 3, 5, 7], [2, 4, 6, 8]])
+
+        fd2 = fd_2d_in + np.max
+        np.testing.assert_array_equal(fd2.data_matrix[..., 0], [
+            [[0, 1], [1, 1]],
+            [[1, 2], [2, 2]]    
+        ])
+
+        fd2 = fd_2d_out + (lambda x: np.array([x, x]))
+        np.testing.assert_array_equal(fd2.data_matrix, [
+            [[0, 0], [2, 2]],
+            [[1, 1], [1, 1]]
+        ])
+
+        fd2 = fd_2d_in_out + (lambda x: x)
+        np.testing.assert_array_equal(fd2.data_matrix, [
+            [[[0, 0], [1, 1]], [[1, 1], [2, 2]]],
+            [[[1, 1], [2, 0]], [[0, 2], [1, 1]]]
+        ])
 
         fd2 = fd1 + np.array(2)
         np.testing.assert_array_equal(fd2.data_matrix[..., 0],

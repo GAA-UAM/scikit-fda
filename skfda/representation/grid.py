@@ -711,7 +711,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def _get_op_matrix(
         self,
-        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable],
+        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable[[Union[float, NDArrayFloat]], Union[float, NDArrayFloat]]],
     ) -> Union[None, float, NDArrayFloat, NDArrayInt]:
         if isinstance(other, numbers.Real):
             return float(other)
@@ -742,13 +742,14 @@ class FDataGrid(FData):  # noqa: WPS214
             return other.data_matrix
 
         elif isinstance(other, Callable):
-            return np.array([[other(x) for x in _gp] for _gp in self.grid_points]).T
+            coordinates = np.array(np.meshgrid(*self.grid_points, indexing='ij')).T.reshape(-1, self.dim_domain)
+            return np.array([other(x) for x in coordinates]).reshape((1,) + self.data_matrix.shape[1:])
 
         return None
 
     def __add__(
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable],
+        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable[[Union[float, NDArrayFloat]], Union[float, NDArrayFloat]]],
     ) -> T:
 
         data_matrix = self._get_op_matrix(other)
@@ -759,14 +760,14 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def __radd__(
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable],
+        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable[[Union[float, NDArrayFloat]], Union[float, NDArrayFloat]]],
     ) -> T:
 
         return self.__add__(other)
 
     def __sub__(
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable],
+        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable[[Union[float, NDArrayFloat]], Union[float, NDArrayFloat]]],
     ) -> T:
 
         data_matrix = self._get_op_matrix(other)
@@ -777,7 +778,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def __rsub__(
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable],
+        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable[[Union[float, NDArrayFloat]], Union[float, NDArrayFloat]]],
     ) -> T:
 
         data_matrix = self._get_op_matrix(other)
@@ -788,7 +789,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def __mul__(
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable],
+        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable[[Union[float, NDArrayFloat]], Union[float, NDArrayFloat]]],
     ) -> T:
 
         data_matrix = self._get_op_matrix(other)
@@ -799,14 +800,14 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def __rmul__(
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable],
+        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable[[Union[float, NDArrayFloat]], Union[float, NDArrayFloat]]],
     ) -> T:
 
         return self.__mul__(other)
 
     def __truediv__(
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable],
+        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable[[Union[float, NDArrayFloat]], Union[float, NDArrayFloat]]],
     ) -> T:
 
         data_matrix = self._get_op_matrix(other)
@@ -817,7 +818,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def __rtruediv__(
         self: T,
-        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable],
+        other: Union[T, NDArrayFloat, NDArrayInt, float, Callable[[Union[float, NDArrayFloat]], Union[float, NDArrayFloat]]],
     ) -> T:
 
         data_matrix = self._get_op_matrix(other)

@@ -6,10 +6,13 @@ import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.linear_model import LogisticRegression as mvLogisticRegression
 from sklearn.utils.validation import check_is_fitted
+from typing_extensions import Literal
 
 from ..._utils import _classifier_get_classes
 from ...representation import FDataGrid
 from ...representation._typing import NDArrayAny, NDArrayInt
+
+Solver = Literal["newton-cg", "lbfgs", "liblinear", "sag", "saga"]
 
 
 class LogisticRegression(
@@ -28,7 +31,7 @@ class LogisticRegression(
 
     Args:
         p:
-            number of points (and coefficients) to be selected by
+            Number of points (and coefficients) to be selected by
             the algorithm.
         solver:
             Algorithm to use in the multivariate logistic regresion 
@@ -79,11 +82,15 @@ class LogisticRegression(
     def __init__(
         self,
         p: int = 5,
-        solver: str = 'lbfgs',
+        penalty: Literal["l1", "l2", "elasticnet", None] = None,
+        C: float = 1,
+        solver: Solver = 'lbfgs',
         max_iter: int = 100,
     ) -> None:
 
         self.p = p
+        self.penalty = penalty
+        self.C = C
         self.max_iter = 100
         self.solver = solver
 
@@ -102,9 +109,12 @@ class LogisticRegression(
 
         selected_indexes = np.zeros(self.p, dtype=np.intc)
 
+        penalty = 'none' if self.penalty is None else self.penalty
+
         # multivariate logistic regression
         mvlr = mvLogisticRegression(
-            penalty='l2',
+            penalty=penalty,
+            C=self.C,
             solver=self.solver,
             max_iter=self.max_iter,
         )

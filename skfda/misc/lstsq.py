@@ -3,9 +3,10 @@ from __future__ import annotations
 
 from typing import Callable, Optional, Union
 
+from typing_extensions import Final, Literal
+
 import numpy as np
 import scipy.linalg
-from typing_extensions import Final, Literal
 
 from ..representation._typing import NDArrayFloat
 
@@ -83,11 +84,12 @@ def solve_regularized_weighted_lstsq(
 
             if weights.ndim == 1:
                 weights_chol = np.diag(np.sqrt(weights))
+                coefs = weights_chol * coefs
+                result = weights_chol * result
             else:
                 weights_chol = scipy.linalg.cholesky(weights)
-
-            coefs = weights_chol @ coefs
-            result = weights_chol @ result
+                coefs = weights_chol @ coefs
+                result = weights_chol @ result
 
         return lstsq_method(coefs, result)
 

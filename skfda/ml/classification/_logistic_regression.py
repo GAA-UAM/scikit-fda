@@ -68,11 +68,11 @@ class LogisticRegression(
         >>> lr = LogisticRegression()
         >>> _ = lr.fit(fd[::2], y[::2])
         >>> lr.coef_.round(2)
-        array([[ 1.28,  1.17,  1.27,  1.27,  0.96]])
+        array([[ 18.91,  19.69,  19.9 ,   6.09,  12.49]])
         >>> lr.points_.round(2)
-        array([ 0.11,  0.06,  0.07,  0.03,  0.  ])
+        array([ 0.11,  0.06,  0.07,  0.02,  0.03])
         >>> lr.score(fd[1::2],y[1::2])
-        0.94
+        0.92
 
         References:
             .. footbibliography::

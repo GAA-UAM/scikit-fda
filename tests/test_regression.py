@@ -224,29 +224,6 @@ class TestScalarLinearRegression(unittest.TestCase):
         y_pred = scalar_reg.predict(x_fd)
         np.testing.assert_allclose(y_pred, y_reg, atol=0.001)
 
-    def test_error_X_not_FData(self):
-        """Tests that at least one of the explanatory variables
-        is an FData object. """
-
-        x_fd = np.identity(7)
-        y = np.zeros(7)
-
-        scalar = LinearRegression(coef_basis=[Fourier(n_basis=5)])
-
-        with np.testing.assert_warns(UserWarning):
-            scalar.fit([x_fd], y)
-
-    def test_error_y_is_FData(self):
-        """Tests that none of the explained variables is an FData object
-        """
-        x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
-        y = list(FDataBasis(Monomial(n_basis=7), np.identity(7)))
-
-        scalar = LinearRegression(coef_basis=[Fourier(n_basis=5)])
-
-        with np.testing.assert_raises(ValueError):
-            scalar.fit([x_fd], y)
-
     def test_error_X_beta_len_distinct(self):
         """ Test that the number of beta bases and explanatory variables
         are not different """

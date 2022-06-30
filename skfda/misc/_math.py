@@ -531,11 +531,6 @@ def inner_product_matrix(
 
 def _clip_cosine(array: NDArrayFloat) -> NDArrayFloat:
     """Clip cosine values to prevent numerical errors."""
-    small_val = 1e-6
-
-    # If the difference is too large, there could be a problem
-    assert np.all((-1 - small_val < array) & (array < 1 + small_val))
-
     return np.clip(array, -1, 1)
 
 

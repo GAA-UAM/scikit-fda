@@ -124,7 +124,9 @@ class TestClassifiers(unittest.TestCase):
 
     def test_ddg_classifier(self) -> None:
         """Check DDG classifier."""
-        clf: DDGClassifier[FData] = DDGClassifier(_KNeighborsClassifier())
+        clf: DDGClassifier[FData] = DDGClassifier(
+            multivariate_classifier=_KNeighborsClassifier(),
+        )
         clf.fit(self._X_train, self._y_train)
 
         np.testing.assert_array_equal(
@@ -137,7 +139,9 @@ class TestClassifiers(unittest.TestCase):
 
     def test_maximumdepth_inheritance(self) -> None:
         """Check that MaximumDepth is a subclass of DDG."""
-        clf1: DDGClassifier[FData] = DDGClassifier(_ArgMaxClassifier())
+        clf1: DDGClassifier[FData] = DDGClassifier(
+            multivariate_classifier=_ArgMaxClassifier(),
+        )
         clf2: MaximumDepthClassifier[FData] = MaximumDepthClassifier()
         clf1.fit(self._X_train, self._y_train)
         clf2.fit(self._X_train, self._y_train)

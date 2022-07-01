@@ -184,8 +184,8 @@ DDPlot(
 # :class:`~skfda.ml.classification.DDClassifier` used with
 # :class:`~sklearn.neighbors.KNeighborsClassifier`.
 clf = DDGClassifier(
-    KNeighborsClassifier(n_neighbors=5),
     depth_method=ModifiedBandDepth(),
+    multivariate_classifier=KNeighborsClassifier(n_neighbors=5),
 )
 clf.fit(X_train, y_train)
 print(clf.predict(X_test))
@@ -259,13 +259,13 @@ DDPlot(
 # Next, we will use :class:`~skfda.ml.classification.DDGClassifier` together
 # with a neural network: :class:`~sklearn.neural_network.MLPClassifier`.
 clf = DDGClassifier(
-    MLPClassifier(
+    depth_method=ModifiedBandDepth(),
+    multivariate_classifier=MLPClassifier(
         solver='lbfgs',
         alpha=1e-5,
         hidden_layer_sizes=(6, 2),
         random_state=1,
     ),
-    depth_method=ModifiedBandDepth(),
 )
 clf.fit(X_train, y_train)
 print(clf.predict(X_test))

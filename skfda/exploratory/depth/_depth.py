@@ -227,6 +227,7 @@ class DistanceBasedDepth(Depth[FDataGrid], BaseEstimator):
     Parameters:
         metric:
             The metric to use as M in the following depth calculation
+
             .. math::
                 D(x) = [1 + M(x, \mu)]^{-1}.
 

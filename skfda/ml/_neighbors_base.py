@@ -203,6 +203,7 @@ class NeighborsMixin:
                 sklearn_metric = self.metric
             elif self.precompute_metric:
                 sklearn_metric = "precomputed"
+                _fit_metric(self.metric, X)
                 self._fit_X = X.copy()
 
                 def X_transform(X): return np.zeros(shape=(len(X), len(X)))

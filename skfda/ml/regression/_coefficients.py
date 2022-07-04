@@ -24,10 +24,10 @@ class CoefficientInfo(abc.ABC, Generic[CovariateType]):
     def __init__(
         self,
         basis,
-        ybasis=None,
+        y_basis=None,
     ) -> None:
         self.basis = basis
-        self.ybasis = ybasis
+        self.y_basis = y_basis
 
     @abc.abstractmethod
     def regression_matrix(
@@ -96,16 +96,19 @@ class CoefficientInfoNdarray(CoefficientInfo[np.ndarray]):
         coefs: np.ndarray,
     ) -> np.ndarray | FDataBasis:
 
-        if self.ybasis is not None:
+        if self.y_basis is not None:
             return FDataBasis(self.basis.basis, coefs)
 
         return coefs
 
     def inner_product(  # noqa: D102
         self,
-        coefs: np.ndarray,
+        coefs: np.ndarray | FDataBasis,
         X: np.ndarray,
     ) -> np.ndarray:
+
+        if isinstance(coefs, FDataBasis):
+            return inner_product(X, coefs.coefficients)
 
         return inner_product(coefs, X)
 
@@ -178,13 +181,12 @@ def _coefficient_info_from_covariate_ndarray(
 
         return CoefficientInfoNdarray(
             basis=basis.to_basis(),
-            ybasis=y_basis,
+            y_basis=y_basis,
         )
 
     return CoefficientInfoNdarray(
-        basis=np.identity(X.shape[1]),
-        dtype=X.dtype,
-        ybasis=y_basis,
+        basis=np.identity(X.shape[1], dtype=X.dtype),
+        y_basis=y_basis,
     )
 
 

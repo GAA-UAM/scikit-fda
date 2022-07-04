@@ -158,10 +158,12 @@ class LinearRegression(
         coef_basis: Optional[BasisCoefsType] = None,
         fit_intercept: bool = True,
         regularization: RegularizationType = None,
+        y_regularization: RegularizationType = None,
     ) -> None:
         self.coef_basis = coef_basis
         self.fit_intercept = fit_intercept
         self.regularization = regularization
+        self.y_regularization = y_regularization
 
     def fit(  # noqa: D102
         self,
@@ -177,29 +179,12 @@ class LinearRegression(
             self.coef_basis,
         )
 
-        regularization: RegularizationIterableType = self.regularization
+        regularization, y_regularization, lambdas = self._check_regularization(
+            self.regularization, self.y_regularization, self.y_nbasis,
+        )
 
         if self.fit_intercept:
-            new_x = np.ones((len(y), 1))
-            X_new = [new_x] + X_new
-            coef_info = [coefficient_info_from_covariate(new_x, y)] + coef_info
-
-            if isinstance(regularization, Iterable):
-                regularization = itertools.chain([None], regularization)
-            elif regularization is not None:
-                regularization = (None, regularization)
-
-        inner_products_list = [
-            c.regression_matrix(x, y)
-            for x, c in zip(X_new, coef_info)
-        ]
-
-        # This is C @ J
-        inner_products = np.concatenate(inner_products_list, axis=1)
-
-        if sample_weight is not None:
-            inner_products = inner_products * np.sqrt(sample_weight)
-            y = y * np.sqrt(sample_weight)
+            X_new, coef_info = self._concatenate_intercept(X_new, y, coef_info)
 
         penalty_matrix = compute_penalty_matrix(
             basis_iterable=(c.basis for c in coef_info),
@@ -207,19 +192,70 @@ class LinearRegression(
             regularization=regularization,
         )
 
+        y_penalty_matrix = compute_penalty_matrix(
+            basis_iterable=(c.y_basis for c in coef_info),
+            regularization_parameter=1,
+            regularization=y_regularization,
+        )
+
         if self.fit_intercept and penalty_matrix is not None:
             # Intercept is not penalized
             penalty_matrix[0, 0] = 0
 
-        basiscoefs = solve_regularized_weighted_lstsq(
-            coefs=inner_products,
-            result=y,
-            penalty_matrix=penalty_matrix,
-        )
+        if self.functional_response:
+            lambda_matrix = np.diag(lambdas)
+            J_phi_theta = self.y_basis.inner_product_matrix(self.coef_basis[0])
+            J_theta = self.coef_basis[0].inner_product_matrix()
 
-        coef_lengths = np.array([i.shape[1] for i in inner_products_list])
-        coef_start = np.cumsum(coef_lengths)
-        basiscoef_list = np.split(basiscoefs, coef_start)
+            X_col_gram_mat = X_new.T @ X_new
+            J_theta_kron_X_col_gram_mat = np.kron(J_theta, X_col_gram_mat)
+
+            if penalty_matrix is not None:
+                reg_matrix = np.kron(penalty_matrix, lambda_matrix)
+                J_theta_kron_X_col_gram_mat += reg_matrix
+
+            if y_penalty_matrix is not None:
+                y_reg_matrix = np.kron(
+                    y_penalty_matrix,
+                    X_col_gram_mat,
+                ) * self.y_lambda_parameter
+
+                J_theta_kron_X_col_gram_mat += y_reg_matrix
+
+            Xt_c_J_phi_theta = X_new.T @ y.coefficients @ J_phi_theta
+            vec_Xt_c_J_phi_theta = np.reshape(Xt_c_J_phi_theta, (-1, 1), order='F')
+
+            basiscoefs = np.linalg.solve(
+                J_theta_kron_X_col_gram_mat,
+                vec_Xt_c_J_phi_theta,
+            )
+
+            basiscoef_list = np.reshape(
+                basiscoefs,
+                (X_new.shape[1], -1),
+                order='F',
+            )
+        else:
+            inner_products_list = [
+                c.regression_matrix(x, y)
+                for x, c in zip(X_new, coef_info)
+            ]
+            # This is C @ J
+            inner_products = np.concatenate(inner_products_list, axis=1)
+
+            if sample_weight is not None:
+                inner_products = inner_products * np.sqrt(sample_weight)
+                y = y * np.sqrt(sample_weight)
+
+            basiscoefs = solve_regularized_weighted_lstsq(
+                coefs=inner_products,
+                result=y,
+                penalty_matrix=penalty_matrix,
+            )
+
+            coef_lengths = np.array([i.shape[1] for i in inner_products_list])
+            coef_start = np.cumsum(coef_lengths)
+            basiscoef_list = np.split(basiscoefs, coef_start)
 
         # Express the coefficients in functional form
         coefs = [
@@ -230,8 +266,10 @@ class LinearRegression(
         if self.fit_intercept:
             self.intercept_ = coefs[0]
             coefs = coefs[1:]
+            self.basis_coefs = basiscoef_list[1:]
         else:
-            self.intercept_ = np.zeros(1)
+            self.intercept_ = np.zeros(self.y_nbasis)
+            self.basis_coefs = basiscoef_list
 
         self.coef_ = coefs
         self._coef_info = coef_info
@@ -247,21 +285,77 @@ class LinearRegression(
         check_is_fitted(self)
         X = self._argcheck_X(X)
 
-        result = np.sum(
-            [
-                coef_info.inner_product(coef, x)
-                for coef, x, coef_info
-                in zip(self.coef_, X, self._coef_info)
-            ],
-            axis=0,
-        )
+        if self.functional_response:
+            result_list = np.dot(X, self.basis_coefs)
+            result = [
+                coef_info.convert_from_constant_coefs(arr)
+                for arr, coef_info
+                in zip(result_list, self._coef_info)
+            ]
+        else:
+            result = np.sum(
+                [
+                    coef_info.inner_product(coef, x)
+                    for coef, x, coef_info
+                    in zip(self.coef_, X, self._coef_info)
+                ],
+                axis=0,
+            )
+        
+        if self.fit_intercept:
+            result += self.intercept_
 
-        result += self.intercept_
-
-        if self._target_ndim == 1:
+        if self._target_ndim == 1 and not self.functional_response:
             result = result.ravel()
 
         return result
+
+    def _check_regularization(
+        self,
+        regularization: RegularizationType,
+        y_regularization: RegularizationType,
+        dimension: int,
+    ):
+
+        if isinstance(regularization, Iterable):
+            lambdas = list(
+                map(lambda reg: reg.regularization_parameter, regularization),
+            )
+        elif regularization is not None:
+            lambda_parameter = regularization.regularization_parameter
+            lambdas = [lambda_parameter] * dimension
+        else:
+            lambdas = [0] * dimension
+
+        if self.fit_intercept:
+            if self.functional_response:
+                lambdas = [0] + lambdas
+            else:
+                if isinstance(regularization, Iterable):
+                    regularization = itertools.chain([None], regularization)
+                elif regularization is not None:
+                    regularization = (None, regularization)
+
+        if y_regularization is not None:
+            self.y_lambda_parameter = y_regularization.regularization_parameter
+
+        return regularization, y_regularization, lambdas
+
+    def _concatenate_intercept(
+        self,
+        X: Sequence[AcceptedDataType],
+        y: AcceptedDataType,
+        coef_info: List[AcceptedDataCoefsType],
+    ):
+        new_x = np.ones((len(y), 1))
+        if self.functional_response:
+            X_new = np.insert(X, 0, new_x.T, axis=1)
+        else:
+            X_new = [new_x] + X
+
+        c_info = [coefficient_info_from_covariate(new_x, y)] + coef_info
+
+        return X_new, c_info
 
     def _argcheck_X(
         self,
@@ -272,15 +366,12 @@ class LinearRegression(
 
         X = [x if isinstance(x, FData) else np.asarray(x) for x in X]
 
-        if all(not isinstance(i, FData) for i in X):
-            warnings.warn("All the covariates are scalar.")
-
         return X
 
     def _argcheck_X_y(
         self,
         X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
-        y: np.ndarray,
+        y: Union[AcceptedDataType, Sequence[AcceptedDataType]],
         sample_weight: Optional[np.ndarray] = None,
         coef_basis: Optional[BasisCoefsType] = None,
     ) -> ArgcheckResultType:
@@ -289,27 +380,38 @@ class LinearRegression(
 
         new_X = self._argcheck_X(X)
 
-        if any(isinstance(i, FData) for i in y):
-            raise ValueError(
-                "Some of the response variables are not scalar",
-            )
+        if isinstance(y, FData):
+            self.functional_response = True
+            new_X = np.asarray(new_X)
+            self.y_nbasis = y.n_basis
+            self.y_basis = y.basis
+            if coef_basis is None:
+                self.coef_basis = [y.basis]
 
-        y = np.asarray(y)
+            if not isinstance(self.y_basis, Basis):
+                raise TypeError(
+                    f"y basis must be a Basis object, not {type(self.y_basis)}",
+                )
+        else:
+            self.functional_response = False
+            self.y_nbasis = 1
+            y = np.asarray(y)
 
         if coef_basis is None:
             coef_basis = [None] * len(new_X)
 
         if len(coef_basis) != len(new_X):
-            raise ValueError(
+            coef_basis = coef_basis * len(new_X)
+            """raise ValueError(
                 "Number of regression coefficients does "
                 "not match number of independent variables.",
-            )
+            )"""
 
-        if any(len(y) != len(x) for x in new_X):
+        """if any(len(y) != len(x) for x in new_X):
             raise ValueError(
                 "The number of samples on independent and "
                 "dependent variables should be the same",
-            )
+            )"""
 
         coef_info = [
             coefficient_info_from_covariate(x, y, basis=b)

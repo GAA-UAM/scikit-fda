@@ -127,8 +127,9 @@ class KNeighborsClassifier(
         metric='l2',
         metric_params=None,
         n_jobs=1,
-        multivariate_metric=False,
-    ):
+        precompute_metric: bool = False,
+        multivariate_metric: bool = False,
+    ) -> None:
         super().__init__(
             n_neighbors=n_neighbors,
             weights=weights,
@@ -137,6 +138,7 @@ class KNeighborsClassifier(
             metric=metric,
             metric_params=metric_params,
             n_jobs=n_jobs,
+            precompute_metric=precompute_metric,
             multivariate_metric=multivariate_metric,
         )
 

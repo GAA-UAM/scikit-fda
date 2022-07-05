@@ -271,7 +271,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         X = [[3, 4, 1], [5, 1, 6], [3, 2, 8]]
 
         y_fd = FDataBasis(y_basis, [[47, 22, 24], [43, 47, 39], [40, 53, 51]])
-        beta_coef_compare = [[6, 3, 1], [7, 2, 4], [1, 5, 5]]
+        beta_coef_compare = [[3, 1.5, 0.5], [3.5, 1, 2], [0.5, 2.5, 2.5]]
         y_pred_coef_compare = [[16.5, 9, 8]]
 
         funct_reg = LinearRegression(regularization=None,
@@ -292,7 +292,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         X = [[3, 4, 1], [5, 1, 6], [3, 2, 8]]
 
         y_fd = FDataBasis(y_basis, [[47, 22, 24], [43, 47, 39], [40, 53, 51]])
-        beta_coef_compare = [[6, 3, 1], [7, 2, 4], [1, 5, 5]]
+        beta_coef_compare = [[5.7694, 3.0259, 1.4407], [6.6883, 1.9385, 3.5799], [1.1985, 4.9522, 4.8118]]
         y_pred_coef_compare = [[31.883, 17.906, 16.293]]
 
         funct_reg = LinearRegression(regularization=L2Regularization(),
@@ -313,7 +313,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         X = [[3, 4, 1], [5, 1, 6], [3, 2, 8]]
 
         y_fd = FDataBasis(y_basis, [[47, 22, 24], [43, 47, 39], [40, 53, 51]])
-        beta_coef_compare = [[6, 3, 1], [7, 2, 4], [1, 5, 5]]
+        beta_coef_compare = [[2.9398, 1.5080, 0.6242], [3.4204, 0.9834, 1.8839], [0.5517, 2.4875, 2.4477]]
         y_pred_coef_compare = [[16.212, 8.978, 8.088]]
 
         funct_reg = LinearRegression(regularization=L2Regularization(),
@@ -329,8 +329,7 @@ class TestScalarLinearRegression(unittest.TestCase):
     def test_regression_functional_response_multivariate_covariates_R_fda(self):
         """ Test a example with Canadian Weather comparing with R fda package.
         Code used in R:
-        >>> daybasis65 <- create.fourier.basis(rangeval=c(0, 365), nbasis=65,
-        ...                 axes=list('axesIntervals'))
+        >>> daybasis65 <- create.fourier.basis(rangeval=c(0, 365), nbasis=65, axes=list('axesIntervals'))
         >>> Temp.fd <- with(CanadianWeather, smooth.basisPar(day.5,
         ...                 dailyAv[,,'Temperature.C'], daybasis65)$fd)
         >>> TempRgn.f <- fRegress(Temp.fd ~ region, CanadianWeather)
@@ -389,12 +388,11 @@ class TestScalarLinearRegression(unittest.TestCase):
         funct_reg = LinearRegression()
         funct_reg.fit(X, y_fd)
 
-        np.testing.assert_allclose(funct_reg.coef_[0].T, beta_const_coef_R, atol=0.001)
-        np.testing.assert_allclose(funct_reg.coef_[1].T, beta_atlantic_coef_R, atol=0.001)
-        np.testing.assert_allclose(funct_reg.coef_[2].T, beta_continental_coef_R, atol=0.001)
-        np.testing.assert_allclose(funct_reg.coef_[3].T, beta_pacific_coef_R, atol=0.01)
-        np.testing.assert_equal(funct_reg.coef_basis[0], y_basis)
-
+        np.testing.assert_allclose(funct_reg.basis_coefs[0], beta_const_coef_R, atol=0.001)
+        np.testing.assert_allclose(funct_reg.basis_coefs[1], beta_atlantic_coef_R, atol=0.001)
+        np.testing.assert_allclose(funct_reg.basis_coefs[2], beta_continental_coef_R, atol=0.001)
+        np.testing.assert_allclose(funct_reg.basis_coefs[3], beta_pacific_coef_R, atol=0.001)
+        np.testing.assert_equal(funct_reg.coef_basis[0], y_fd.basis)
 
     def test_error_X_beta_len_distinct(self):
         """ Test that the number of beta bases and explanatory variables

@@ -266,12 +266,13 @@ class LinearRegression(
         if self.fit_intercept:
             self.intercept_ = coefs[0]
             coefs = coefs[1:]
-            self.basis_coefs = basiscoef_list[1:]
+            self._coef_info_intercept = coef_info[0]
+            coef_info = coef_info[1:]
         else:
             self.intercept_ = np.zeros(self.y_nbasis)
-            self.basis_coefs = basiscoef_list
 
         self.coef_ = coefs
+        self.basis_coefs = basiscoef_list
         self._coef_info = coef_info
         self._target_ndim = y.ndim
 

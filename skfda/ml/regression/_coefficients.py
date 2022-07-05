@@ -103,12 +103,9 @@ class CoefficientInfoNdarray(CoefficientInfo[np.ndarray]):
 
     def inner_product(  # noqa: D102
         self,
-        coefs: np.ndarray | FDataBasis,
+        coefs: np.ndarray,
         X: np.ndarray,
     ) -> np.ndarray:
-
-        if isinstance(coefs, FDataBasis):
-            return inner_product(X, coefs.coefficients)
 
         return inner_product(coefs, X)
 

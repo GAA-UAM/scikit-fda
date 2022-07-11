@@ -329,18 +329,18 @@ class TestScalarLinearRegression(unittest.TestCase):
     def test_regression_functional_response_multivariate_covariates_R_fda(self):
         """ Test a example with Canadian Weather comparing with R fda package.
         Code used in R:
-        >>> daybasis65 <- create.fourier.basis(rangeval=c(0, 365), nbasis=65, axes=list('axesIntervals'))
-        >>> Temp.fd <- with(CanadianWeather, smooth.basisPar(day.5,
-        ...                 dailyAv[,,'Temperature.C'], daybasis65)$fd)
-        >>> TempRgn.f <- fRegress(Temp.fd ~ region, CanadianWeather)
-        >>> write.table(t(round(TempRgn.f$betaestlist$const$fd$coefs, digits=4)),
-        ...     file="", sep = ",", col.names = FALSE, row.names = FALSE)
-        >>> write.table(t(round(TempRgn.f$betaestlist$region.Atlantic$fd$coefs, digits=4)),
-        ...     file="", sep = ",", col.names = FALSE, row.names = FALSE)
-        >>> write.table(t(round(TempRgn.f$betaestlist$region.Continental$fd$coefs, digits=4)),
-        ...     file="", sep = ",", col.names = FALSE, row.names = FALSE)
-        >>> write.table(t(round(TempRgn.f$betaestlist$region.Pacific$fd$coefs, digits=4)),
-        ...     file="", sep = ",", col.names = FALSE, row.names = FALSE)
+            daybasis65 <- create.fourier.basis(rangeval=c(0, 365), nbasis=65, axes=list('axesIntervals'))
+            Temp.fd <- with(CanadianWeather, smooth.basisPar(day.5,
+                             dailyAv[,,'Temperature.C'], daybasis65)$fd)
+             TempRgn.f <- fRegress(Temp.fd ~ region, CanadianWeather)
+             write.table(t(round(TempRgn.f$betaestlist$const$fd$coefs, digits=4)),
+                 file="", sep = ",", col.names = FALSE, row.names = FALSE)
+             write.table(t(round(TempRgn.f$betaestlist$region.Atlantic$fd$coefs, digits=4)),
+                 file="", sep = ",", col.names = FALSE, row.names = FALSE)
+             write.table(t(round(TempRgn.f$betaestlist$region.Continental$fd$coefs, digits=4)),
+                 file="", sep = ",", col.names = FALSE, row.names = FALSE)
+             write.table(t(round(TempRgn.f$betaestlist$region.Pacific$fd$coefs, digits=4)),
+                 file="", sep = ",", col.names = FALSE, row.names = FALSE)
 
         """
 

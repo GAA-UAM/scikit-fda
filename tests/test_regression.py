@@ -115,29 +115,13 @@ class TestScalarLinearRegression(unittest.TestCase):
     def test_regression_df_multivariate(self):  # noqa: D102
 
         multivariate1 = [0, 2, 1, 3, 4, 2, 3]
-
         multivariate2 = [0, 7, 7, 9, 16, 14, 5]
-
         multivariate = [list(obs) for obs in zip(multivariate1, multivariate2)]
 
-        x_fd = FDataBasis(
-            Monomial(n_basis=3), [
-                [
-                    1, 0, 0,
-                ], [
-                    0, 1, 0,
-                ], [
-                    0, 0, 1,
-                ], [
-                    1, 0, 1,
-                ], [
-                    1, 0, 0,
-                ], [
-                    0, 1, 0,
-                ], [
-                    0, 0, 1,
-                ],
-            ])
+        x_basis = Monomial(n_basis=3)
+        x_fd = FDataBasis(x_basis, [[1, 0, 0], [0, 1, 0], [0, 0, 1],
+                                    [1, 0, 1], [1, 0, 0], [0, 1, 0],
+                                    [0, 0, 1]])
 
         cov_dict = {"fd": x_fd, "mult1": multivariate1, "mult2": multivariate2}
 
@@ -175,42 +159,13 @@ class TestScalarLinearRegression(unittest.TestCase):
 
     def test_regression_df_grouped_multivariate(self):  # noqa: D102
 
-        multivariate = [
-            [
-                0, 0,
-            ], [
-                2, 7,
-            ], [
-                1, 7,
-            ], [
-                3, 9,
-            ], [
-                4, 16,
-            ], [
-                2, 14,
-            ], [
-                3, 5,
-            ],
-        ]
+        multivariate = [[0, 0], [2, 7], [1, 7], [3, 9],
+                        [4, 16], [2, 14], [3, 5]]
 
-        x_fd = FDataBasis(
-            Monomial(n_basis=3), [
-                [
-                    1, 0, 0,
-                ], [
-                    0, 1, 0,
-                ], [
-                    0, 0, 1,
-                ], [
-                    1, 0, 1,
-                ], [
-                    1, 0, 0,
-                ], [
-                    0, 1, 0,
-                ], [
-                    0, 0, 1,
-                ],
-            ])
+        x_basis = Monomial(n_basis=3)
+        x_fd = FDataBasis(x_basis, [[1, 0, 0], [0, 1, 0], [0, 0, 1],
+                                    [1, 0, 1], [1, 0, 0], [0, 1, 0],
+                                    [0, 0, 1]])
 
         cov_dict = {"fd": x_fd, "mult": multivariate}
 

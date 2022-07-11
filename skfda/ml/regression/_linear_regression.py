@@ -339,7 +339,7 @@ class LinearRegression(
             X = [X]
 
         elif isinstance(X, pd.DataFrame):
-            X = self.__dataframe_conversion(X)
+            X = self._dataframe_conversion(X)
 
         X = [x if isinstance(x, FData) else np.asarray(x) for x in X]
 
@@ -401,7 +401,7 @@ class LinearRegression(
 
         return new_X, y, sample_weight, coef_info
 
-    def __dataframe_conversion(
+    def _dataframe_conversion(
         self,
         X: pd.DataFrame,
     ) -> List[AcceptedDataType]:

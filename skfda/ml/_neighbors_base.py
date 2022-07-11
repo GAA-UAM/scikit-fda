@@ -1,16 +1,24 @@
 """Base classes for the neighbor estimators"""
+from __future__ import annotations
 
 from abc import ABC
+from typing import Any, Callable, Mapping, Tuple
 
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
+from typing_extensions import Literal
+
+from skfda.misc.metrics._utils import PairwiseMetric
 
 from .. import FData, FDataGrid
 from ..misc.metrics import l2_distance
+from ..misc.metrics._typing import Metric
+from ..misc.metrics._utils import _fit_metric
+from ..representation._typing import GridPoints, NDArrayFloat, NDArrayInt
 
 
-def _to_multivariate(fdatagrid):
+def _to_multivariate(fdatagrid: FDataGrid) -> NDArrayFloat:
     r"""Returns the data matrix of a fdatagrid in flatten form compatible with
     sklearn.
 
@@ -25,7 +33,12 @@ def _to_multivariate(fdatagrid):
     return fdatagrid.data_matrix.reshape(fdatagrid.n_samples, -1)
 
 
-def _from_multivariate(data_matrix, grid_points, shape, **kwargs):
+def _from_multivariate(
+    data_matrix: NDArrayFloat,
+    grid_points: GridPoints,
+    shape: Tuple[int, ...],
+    **kwargs: Any,
+) -> FDataGrid:
     r"""Constructs a FDatagrid from the data matrix flattened.
 
     Args:
@@ -42,7 +55,10 @@ def _from_multivariate(data_matrix, grid_points, shape, **kwargs):
     return FDataGrid(data_matrix.reshape(shape), grid_points, **kwargs)
 
 
-def _to_multivariate_metric(metric, grid_points):
+def _to_multivariate_metric(
+    metric: Metric[FDataGrid],
+    grid_points: GridPoints,
+) -> Metric[NDArrayFloat]:
     r"""Transform a metric between FDatagrid in a sklearn compatible one.
 
     Given a metric between FDatagrids returns a compatible metric used to
@@ -82,11 +98,17 @@ def _to_multivariate_metric(metric, grid_points):
     # Shape -> (n_samples = 1, domain_dims...., image_dimension (-1))
     shape = [1] + [len(axis) for axis in grid_points] + [-1]
 
-    def multivariate_metric(x, y, **kwargs):
+    def multivariate_metric(
+        x: NDArrayFloat,
+        y: NDArrayFloat,
+        **kwargs: Any,
+    ) -> NDArrayFloat:
 
-        return metric(_from_multivariate(x, grid_points, shape),
-                      _from_multivariate(y, grid_points, shape),
-                      **kwargs)
+        return metric(
+            _from_multivariate(x, grid_points, shape),
+            _from_multivariate(y, grid_points, shape),
+            **kwargs,
+        )
 
     return multivariate_metric
 
@@ -94,11 +116,20 @@ def _to_multivariate_metric(metric, grid_points):
 class NeighborsBase(ABC, BaseEstimator):
     """Base class for nearest neighbors estimators."""
 
-    def __init__(self, n_neighbors=None, radius=None,
-                 weights='uniform', algorithm='auto',
-                 leaf_size=30, metric='l2', metric_params=None,
-                 n_jobs=None, multivariate_metric=False):
-        """Initializes the nearest neighbors estimator"""
+    def __init__(
+        self,
+        n_neighbors: int | None = None,
+        radius: float | None = None,
+        weights: Literal["uniform", "distance"] | Callable[[NDArrayFloat], NDArrayFloat] = "uniform",
+        algorithm: Literal["auto", "ball_tree", "kd_tree", "brute"] = "auto",
+        leaf_size: int = 30,
+        metric: Literal["precomputed", "l2"] | Metric[FDataGrid] = 'l2',
+        metric_params: Mapping[str, Any] | None = None,
+        n_jobs: int | None = None,
+        precompute_metric: bool = False,
+        multivariate_metric: bool = False,
+    ):
+        """Initializes the nearest neighbors estimator."""
 
         self.n_neighbors = n_neighbors
         self.radius = radius
@@ -108,9 +139,10 @@ class NeighborsBase(ABC, BaseEstimator):
         self.metric = metric
         self.metric_params = metric_params
         self.n_jobs = n_jobs
+        self.precompute_metric = precompute_metric
         self.multivariate_metric = multivariate_metric
 
-    def _check_is_fitted(self):
+    def _check_is_fitted(self) -> None:
         """Check if the estimator is fitted.
 
         Raises:
@@ -119,7 +151,10 @@ class NeighborsBase(ABC, BaseEstimator):
         """
         sklearn_check_is_fitted(self, ['estimator_'])
 
-    def _transform_to_multivariate(self, X):
+    def _transform_to_multivariate(
+        self,
+        X: FDataGrid | None,
+    ) -> NDArrayFloat | None:
         """Transform the input data to array form. If the metric is
         precomputed it is not transformed.
 
@@ -131,9 +166,13 @@ class NeighborsBase(ABC, BaseEstimator):
 
 
 class NeighborsMixin:
-    """Mixin class to train the neighbors models"""
+    """Mixin class to train the neighbors models."""
 
-    def fit(self, X, y=None):
+    def fit(
+        self,
+        X: FDataGrid | NDArrayFloat,
+        y: NDArrayFloat | NDArrayInt | None = None,
+    ) -> NeighborsMixin:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -157,20 +196,32 @@ class NeighborsMixin:
             self._grid_points = X.grid_points
             self._shape = X.data_matrix.shape[1:]
 
-            if not self.multivariate_metric:
+            X_transform = self._transform_to_multivariate
+
+            if self.multivariate_metric:
+                _fit_metric(self.metric, X)
+                sklearn_metric = self.metric
+            elif self.precompute_metric:
+                sklearn_metric = "precomputed"
+                _fit_metric(self.metric, X)
+                self._fit_X = X.copy()
+
+                def X_transform(X): return np.zeros(shape=(len(X), len(X)))
+            else:
                 # Constructs sklearn metric to manage vector
                 if self.metric == 'l2':
                     metric = l2_distance
                 else:
                     metric = self.metric
 
-                sklearn_metric = _to_multivariate_metric(metric,
-                                                         self._grid_points)
-            else:
-                sklearn_metric = self.metric
+                _fit_metric(metric, X)
+                sklearn_metric = _to_multivariate_metric(
+                    metric,
+                    self._grid_points,
+                )
 
             self.estimator_ = self._init_estimator(sklearn_metric)
-            self.estimator_.fit(self._transform_to_multivariate(X), y)
+            self.estimator_.fit(X_transform(X), y)
 
         return self
 
@@ -429,7 +480,12 @@ class NeighborsClassifierMixin:
         """
         self._check_is_fitted()
 
-        X = self._transform_to_multivariate(X)
+        if self.precompute_metric:
+            X = PairwiseMetric(
+                l2_distance if self.metric == "l2" else self.metric,
+            )(X, self._fit_X)
+        else:
+            X = self._transform_to_multivariate(X)
 
         return self.estimator_.predict(X)
 
@@ -483,8 +539,10 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
 
         """
         if len(X) != y.n_samples:
-            raise ValueError("The response and dependent variable must "
-                             "contain the same number of samples,")
+            raise ValueError(
+                "The response and dependent variable must "
+                "contain the same number of samples.",
+            )
 
         # If metric is precomputed no different with the Sklearn stimator
         if self.metric == 'precomputed':
@@ -501,8 +559,10 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
                 else:
                     metric = self.metric
 
-                sklearn_metric = _to_multivariate_metric(metric,
-                                                         self._grid_points)
+                sklearn_metric = _to_multivariate_metric(
+                    metric,
+                    self._grid_points,
+                )
             else:
                 sklearn_metric = self.metric
 

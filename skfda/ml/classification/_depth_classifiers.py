@@ -1,15 +1,26 @@
 """Depth-based models for supervised classification."""
 from __future__ import annotations
 
+from collections import defaultdict
+from contextlib import suppress
 from itertools import combinations
-from typing import Generic, Optional, Sequence, TypeVar, Union
+from typing import (
+    Any,
+    Generic,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
 from scipy.interpolate import lagrange
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from sklearn.metrics import accuracy_score
-from sklearn.pipeline import make_pipeline
+from sklearn.pipeline import FeatureUnion, make_pipeline
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
 from ..._utils import _classifier_fit_depth_methods, _classifier_get_classes
@@ -214,18 +225,26 @@ class DDGClassifier(
 
         >>> from skfda.datasets import fetch_growth
         >>> from sklearn.model_selection import train_test_split
+
         >>> dataset = fetch_growth()
         >>> fd = dataset['data']
         >>> y = dataset['target']
         >>> X_train, X_test, y_train, y_test = train_test_split(
         ...     fd, y, test_size=0.25, stratify=y, random_state=0)
 
+        >>> from skfda.exploratory.depth import (
+        ...     ModifiedBandDepth,
+        ...     IntegratedDepth,
+        ... )
         >>> from sklearn.neighbors import KNeighborsClassifier
 
         We will fit a DDG-classifier using KNN
 
         >>> from skfda.ml.classification import DDGClassifier
-        >>> clf = DDGClassifier(KNeighborsClassifier())
+        >>> clf = DDGClassifier(
+        ...     depth_method=ModifiedBandDepth(),
+        ...     multivariate_classifier=KNeighborsClassifier(),
+        ... )
         >>> clf.fit(X_train, y_train)
         DDGClassifier(...)
 
@@ -237,6 +256,24 @@ class DDGClassifier(
 
         Finally, we calculate the mean accuracy for the test data
 
+        >>> clf.score(X_test, y_test)
+        0.875
+
+        It is also possible to use several depth functions to increase the
+        number of features available to the classifier
+
+        >>> clf = DDGClassifier(
+        ...     depth_method=[
+        ...         ("mbd", ModifiedBandDepth()),
+        ...         ("id", IntegratedDepth()),
+        ...     ],
+        ...     multivariate_classifier=KNeighborsClassifier(),
+        ... )
+        >>> clf.fit(X_train, y_train)
+        DDGClassifier(...)
+        >>> clf.predict(X_test)
+        array([1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1,
+               1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
         >>> clf.score(X_test, y_test)
         0.875
 
@@ -256,14 +293,72 @@ class DDGClassifier(
 
     def __init__(  # noqa: WPS234
         self,
+        *,
         multivariate_classifier: ClassifierMixin = None,
-        depth_method: Union[Depth[T], Sequence[Depth[T]], None] = None,
+        depth_method: Union[Depth[T], Sequence[Tuple[str, Depth[T]]], None] = None,
     ) -> None:
         self.multivariate_classifier = multivariate_classifier
-        if depth_method is None:
-            self.depth_method = ModifiedBandDepth()
-        else:
-            self.depth_method = depth_method
+        self.depth_method = depth_method
+
+    def get_params(self, deep: bool = True) -> Mapping[str, Any]:
+        params = BaseEstimator.get_params(self, deep=deep)
+        if deep and isinstance(self.depth_method, Sequence):
+            for name, depth in self.depth_method:
+                depth_params = depth.get_params(deep=deep)
+
+                for key, value in depth_params.items():
+                    params[f"depth_method__{name}__{key}"] = value
+
+        return params
+
+    # Copied from scikit-learn's _BaseComposition with minor modifications
+    def _set_params(self, attr, **params):
+        # Ensure strict ordering of parameter setting:
+        # 1. All steps
+        if attr in params:
+            setattr(self, attr, params.pop(attr))
+        # 2. Replace items with estimators in params
+        items = getattr(self, attr)
+        if isinstance(items, list) and items:
+            # Get item names used to identify valid names in params
+            # `zip` raises a TypeError when `items` does not contains
+            # elements of length 2
+            with suppress(TypeError):
+                item_names, _ = zip(*items)
+                item_params = defaultdict(dict)
+                for name in list(params.keys()):
+                    if name.startswith(f"{attr}__"):
+                        key, delim, sub_key = name.partition("__")
+                        if "__" not in sub_key and sub_key in item_names:
+                            self._replace_estimator(
+                                attr,
+                                sub_key,
+                                params.pop(name),
+                            )
+                        else:
+                            key, delim, sub_key = sub_key.partition("__")
+                            item_params[key][sub_key] = params.pop(name)
+
+                for name, estimator in items:
+                    estimator.set_params(**item_params[name])
+
+        # 3. Step parameters and other initialisation arguments
+        super().set_params(**params)
+        return self
+
+    # Copied from scikit-learn's _BaseComposition
+    def _replace_estimator(self, attr, name, new_val):
+        # assumes `name` is a valid estimator name
+        new_estimators = list(getattr(self, attr))
+        for i, (estimator_name, _) in enumerate(new_estimators):
+            if estimator_name == name:
+                new_estimators[i] = (name, new_val)
+                break
+        setattr(self, attr, new_estimators)
+
+    def set_params(self, **params: Mapping[str, Any]):
+
+        return self._set_params("depth_method", **params)
 
     def fit(self, X: T, y: NDArrayInt) -> DDGClassifier[T]:
         """Fit the model using X as training data and y as target values.
@@ -275,8 +370,22 @@ class DDGClassifier(
         Returns:
             self
         """
+        depth_method = (
+            ModifiedBandDepth()
+            if self.depth_method is None
+            else self.depth_method
+        )
+
+        if isinstance(depth_method, Sequence):
+            transformer = FeatureUnion([
+                (name, PerClassTransformer(depth))
+                for name, depth in depth_method
+            ])
+        else:
+            transformer = PerClassTransformer(depth_method)
+
         self._pipeline = make_pipeline(
-            PerClassTransformer(self.depth_method),
+            transformer,
             clone(self.multivariate_classifier),
         )
 
@@ -403,4 +512,7 @@ class MaximumDepthClassifier(DDGClassifier[T]):
     """
 
     def __init__(self, depth_method: Optional[Depth[T]] = None) -> None:
-        super().__init__(_ArgMaxClassifier(), depth_method)
+        super().__init__(
+            multivariate_classifier=_ArgMaxClassifier(),
+            depth_method=depth_method,
+        )

@@ -5,6 +5,8 @@ from typing import Any, Generic, Optional, TypeVar, overload
 
 import sklearn.base
 
+from ..representation._typing import NDArrayFloat
+
 SelfType = TypeVar("SelfType")
 TransformerNoTarget = TypeVar(
     "TransformerNoTarget",
@@ -87,3 +89,17 @@ class InductiveTransformerMixin(
         X: Input,
     ) -> Output:
         pass
+
+
+class ClassifierMixin(
+    ABC,
+    Generic[Input, Target],
+    sklearn.base.ClassifierMixin,  # type: ignore[misc]
+):
+    def score(
+        self,
+        X: Input,
+        y: Target,
+        sample_weight: NDArrayFloat | None = None,
+    ) -> NDArrayFloat:
+        return super().score(X, y, sample_weight=sample_weight)

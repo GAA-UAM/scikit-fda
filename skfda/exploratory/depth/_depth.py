@@ -14,6 +14,7 @@ import numpy as np
 import scipy.integrate
 
 from ... import FDataGrid
+from ..._utils._sklearn_adapter import BaseEstimator
 from ...misc.metrics import Metric, l2_distance
 from ...misc.metrics._utils import _fit_metric
 from ...representation import FData
@@ -219,13 +220,14 @@ class BandDepth(Depth[FDataGrid]):
         return num_in / n_total
 
 
-class DistanceBasedDepth(Depth[FDataGrid]):
+class DistanceBasedDepth(Depth[FDataGrid], BaseEstimator):
     r"""
     Functional depth based on a metric.
 
     Parameters:
         metric:
             The metric to use as M in the following depth calculation
+
             .. math::
                 D(x) = [1 + M(x, \mu)]^{-1}.
 

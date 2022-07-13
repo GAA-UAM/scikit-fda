@@ -81,5 +81,5 @@ setup(name='scikit-fda',
       ],
       setup_requires=pytest_runner,
       tests_require=['pytest'],
-      test_suite='tests',
+      test_suite='skfda.tests',
       zip_safe=False)

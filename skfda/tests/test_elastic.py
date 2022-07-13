@@ -93,16 +93,16 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
 
         data_matrix = [
             [  # noqa: WPS317
-                [0], [-0.23449228], [-0.83464009],
+                [0.0], [-0.23449228], [-0.83464009],
                 [-1.38200046], [-1.55623723], [-1.38200046],
-                [-0.83464009], [-0.23449228], [0],
+                [-0.83464009], [-0.23449228], [0.0],
             ],
         ]
 
         np.testing.assert_almost_equal(data_matrix, srsf.data_matrix)
 
     def test_from_srsf_with_output_points(self) -> None:
-        """Test from srsf."""
+        """Test from srsf and explicit output points."""
         # Checks SRSF conversion
         srsf_transformer = SRSF(
             initial_value=0,
@@ -112,16 +112,16 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
 
         data_matrix = [
             [  # noqa: WPS317
-                [0], [-0.23449228], [-0.83464009],
+                [0.0], [-0.23449228], [-0.83464009],
                 [-1.38200046], [-1.55623723], [-1.38200046],
-                [-0.83464009], [-0.23449228], [0],
+                [-0.83464009], [-0.23449228], [0.0],
             ],
         ]
 
         np.testing.assert_almost_equal(data_matrix, srsf.data_matrix)
 
     def test_srsf_conversion(self) -> None:
-        """Converts to srsf and pull backs."""
+        """Convert to srsf and pull back."""
         srsf = SRSF()
 
         converted = srsf.fit_transform(self.unimodal_samples)
@@ -180,7 +180,7 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
         np.testing.assert_allclose(values, expected, atol=1e-4)
 
     def test_callable_alignment(self) -> None:
-        """Test alignment by default."""
+        """Test callable template."""
         # Should give same result than test_template_alignment
         reg = FisherRaoElasticRegistration(template=fisher_rao_karcher_mean)
         register = reg.fit_transform(self.unimodal_samples)
@@ -243,11 +243,17 @@ class TestFisherRaoElasticRegistration(unittest.TestCase):
         warping = make_random_warping(start=-1, random_state=0)
         mean = _fisher_rao_warping_mean(warping)
         values = mean([-1, -0.5, 0, 0.5, 1])
-        expected = [[[-1], [-0.376241], [0.136193], [0.599291], [1]]]
+        expected = [[[-1.0], [-0.376241], [0.136193], [0.599291], [1.0]]]
         np.testing.assert_array_almost_equal(values, expected)
 
     def test_linear(self) -> None:
-        grid_points = [i for i in range(10)]
+        """
+        Test alignment of two equal (linear) functions.
+
+        In this case no alignment should take place.
+
+        """
+        grid_points = list(range(10))
         data_matrix = np.array([grid_points, grid_points])
         fd = FDataGrid(
             data_matrix=data_matrix,
@@ -279,11 +285,11 @@ class TestElasticDistances(unittest.TestCase):
     def test_fisher_rao_invariance(self) -> None:
         """Test invariance of fisher rao metric: d(f,g)= d(foh, goh)."""
         t = np.linspace(0, np.pi, 1000)
-        id = FDataGrid([t], t)
-        cos = np.cos(id)
-        sin = np.sin(id)
-        gamma = normalize_warping(np.sqrt(id), (0, np.pi))
-        gamma2 = normalize_warping(np.square(id), (0, np.pi))
+        identity = FDataGrid([t], t)
+        cos = np.cos(identity)
+        sin = np.sin(identity)
+        gamma = normalize_warping(np.sqrt(identity), (0, np.pi))
+        gamma2 = normalize_warping(np.square(identity), (0, np.pi))
 
         distance_original = fisher_rao_distance(cos, sin)
 
@@ -342,5 +348,4 @@ class TestElasticDistances(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    print()
     unittest.main()

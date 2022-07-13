@@ -382,6 +382,11 @@ class LinearRegression(
         new_X = self._argcheck_X(X)
 
         if isinstance(y, FData):
+            if y.n_samples != len(new_X):
+                raise ValueError(
+                    "The number of samples on independent and "
+                    "dependent variables should be the same",
+                )
             self.functional_response = True
             new_X = np.asarray(new_X)
             self.y_nbasis = y.n_basis
@@ -394,6 +399,11 @@ class LinearRegression(
                     f"y basis must be a Basis object, not {type(self.y_basis)}",
                 )
         else:
+            if any(len(y) != len(x) for x in new_X):
+                raise ValueError(
+                    "The number of samples on independent and "
+                    "dependent variables should be the same",
+                )
             self.functional_response = False
             self.y_nbasis = 1
             y = np.asarray(y)
@@ -403,16 +413,6 @@ class LinearRegression(
 
         if len(coef_basis) != len(new_X):
             coef_basis = coef_basis * len(new_X)
-            """raise ValueError(
-                "Number of regression coefficients does "
-                "not match number of independent variables.",
-            )"""
-
-        """if any(len(y) != len(x) for x in new_X):
-            raise ValueError(
-                "The number of samples on independent and "
-                "dependent variables should be the same",
-            )"""
 
         coef_info = [
             coefficient_info_from_covariate(x, y, basis=b)

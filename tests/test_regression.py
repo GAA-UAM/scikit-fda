@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 from scipy.integrate import cumtrapz
+from sklearn.preprocessing import OneHotEncoder
 
 from skfda import datasets
 from skfda.datasets import make_gaussian, make_gaussian_process
@@ -350,10 +351,10 @@ class TestScalarLinearRegression(unittest.TestCase):
         y_basis = Fourier(n_basis=65)
         y_fd = fd.coordinates[0].to_basis(y_basis)
 
-        # 35 observations of lenght 3
-        atlantic    = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        continental = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,1,1,0,0,0]
-        pacific     = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0]
+        enc = OneHotEncoder(handle_unknown='ignore')
+        enc.fit([['Atlantic'], ['Continental'], ['Pacific']])
+        X = np.array(y_weather).reshape(-1,1)
+        X = enc.transform(X).toarray().tolist()
 
         beta_const_coef_R = [-225.5085,-110.817,-243.4708,4.6815,21.4488,10.3784,2.6317,1.7571,
         2.4812,-1.5179,1.4451,-0.6581,2.8287,0.4106,1.5839,-1.711,0.5587,-2.2268,2.4745,-0.5179,
@@ -383,8 +384,6 @@ class TestScalarLinearRegression(unittest.TestCase):
         0.8854,-0.966,1.6884,1.6327,-0.1843,0.1531,-0.7279,0.8348,-0.4336,-0.1253,-1.0069,0.2815,
         -0.3406,1.4044,-1.6412,0.4354,-1.2269,0.9194,1.0373,0.7552,1.088]
 
-        X = list(map(list, zip(*[atlantic, continental, pacific])))
-
         funct_reg = LinearRegression()
         funct_reg.fit(X, y_fd)
 
@@ -394,25 +393,9 @@ class TestScalarLinearRegression(unittest.TestCase):
         np.testing.assert_allclose(funct_reg.basis_coefs[3], beta_pacific_coef_R, atol=0.001)
         np.testing.assert_equal(funct_reg.coef_basis[0], y_fd.basis)
 
-    def test_error_X_beta_len_distinct(self) -> None:
-        """ Test that the number of beta bases and explanatory variables
-        are not different """
-
-        x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
-        y = [1 for _ in range(7)]
-        beta = Fourier(n_basis=5)
-
-        scalar = LinearRegression(coef_basis=[beta])
-        with np.testing.assert_raises(ValueError):
-            scalar.fit([x_fd, x_fd], y)
-
-        scalar = LinearRegression(coef_basis=[beta, beta])
-        with np.testing.assert_raises(ValueError):
-            scalar.fit([x_fd], y)
-
     def test_error_y_X_samples_different(self) -> None:
         """ Test that the number of response samples and explanatory samples
-        are not different """
+        are not different when response is scalar """
 
         x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
         y = [1 for _ in range(8)]
@@ -429,6 +412,19 @@ class TestScalarLinearRegression(unittest.TestCase):
         scalar = LinearRegression(coef_basis=[beta])
         with np.testing.assert_raises(ValueError):
             scalar.fit([x_fd], y)
+
+    def test_error_functional_response_y_X_samples_different(self) -> None:
+        """ Test that the number of response samples and explanatory samples
+        are not different when response is functional """
+
+        y_basis = Monomial(n_basis=2)
+        X = [[1, 2], [3, 4], [5, 6], [1, 0]]
+
+        y_fd = FDataBasis(y_basis, [[1, 2], [3, 4], [5, 6]])
+
+        funct_reg = LinearRegression()
+        with np.testing.assert_raises(ValueError):
+            funct_reg.fit(X, y_fd)
 
     def test_error_beta_not_basis(self) -> None:
         """ Test that all beta are Basis objects. """

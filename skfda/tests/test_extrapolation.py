@@ -1,179 +1,209 @@
-"""Test to check the extrapolation module"""
+"""Test to check the extrapolation module."""
 
-from skfda import FDataGrid, FDataBasis
-from skfda.datasets import make_sinusoidal_process
-from skfda.representation.basis import Fourier
-from skfda.representation.extrapolation import (
-    PeriodicExtrapolation, BoundaryExtrapolation, ExceptionExtrapolation,
-    FillExtrapolation)
 import unittest
 
 import numpy as np
 
+from skfda import FDataBasis, FDataGrid
+from skfda.datasets import make_sinusoidal_process
+from skfda.representation.basis import Fourier
+from skfda.representation.extrapolation import (
+    BoundaryExtrapolation,
+    ExceptionExtrapolation,
+    FillExtrapolation,
+    PeriodicExtrapolation,
+)
 
-class TestBasis(unittest.TestCase):
 
-    def setUp(self):
+class TestExtrapolation(unittest.TestCase):
+    """Extrapolation tests."""
+
+    def setUp(self) -> None:
+        """Create example data."""
         self.grid = make_sinusoidal_process(n_samples=2, random_state=0)
         self.basis = self.grid.to_basis(Fourier())
         self.dummy_data = [[1, 2, 3], [2, 3, 4]]
 
-    def test_constructor_FDataBasis_setting(self):
+    def test_constructor_fdatabasis_setting(self) -> None:
+        """Check argument normalization in constructor for FDataBasis."""
         coeff = self.dummy_data
         basis = Fourier(n_basis=3)
 
         a = FDataBasis(basis, coeff)
-        np.testing.assert_equal(a.extrapolation, None)
+        self.assertEqual(a.extrapolation, None)
 
-        a = FDataBasis(basis, coeff, extrapolation=PeriodicExtrapolation())
-        np.testing.assert_equal(a.extrapolation, PeriodicExtrapolation())
+        a = FDataBasis(basis, coeff, extrapolation="periodic")
+        self.assertEqual(a.extrapolation, PeriodicExtrapolation())
 
-        np.testing.assert_equal(
-            a.extrapolation == BoundaryExtrapolation(), False)
+        self.assertNotEqual(a.extrapolation, BoundaryExtrapolation())
 
         a = FDataBasis(basis, coeff, extrapolation=BoundaryExtrapolation())
-        np.testing.assert_equal(a.extrapolation, BoundaryExtrapolation())
+        self.assertEqual(a.extrapolation, BoundaryExtrapolation())
 
-        a = FDataBasis(basis, coeff, extrapolation=ExceptionExtrapolation())
-        np.testing.assert_equal(a.extrapolation, ExceptionExtrapolation())
+        a = FDataBasis(basis, coeff, extrapolation="exception")
+        self.assertEqual(a.extrapolation, ExceptionExtrapolation())
 
         a = FDataBasis(basis, coeff, extrapolation=FillExtrapolation(0))
-        np.testing.assert_equal(a.extrapolation, FillExtrapolation(0))
+        self.assertEqual(a.extrapolation, FillExtrapolation(0))
+        self.assertNotEqual(a.extrapolation, FillExtrapolation(1))
 
-        np.testing.assert_equal(a.extrapolation == FillExtrapolation(1), False)
-
-    def test_FDataBasis_setting(self):
-        coeff = self.dummy_data
-        basis = Fourier(n_basis=3)
-        a = FDataBasis(basis, coeff)
-
-        a.extrapolation = "periodic"
-        np.testing.assert_equal(a.extrapolation, PeriodicExtrapolation())
-
-        a.extrapolation = "bounds"
-        np.testing.assert_equal(a.extrapolation, BoundaryExtrapolation())
-
-        a.extrapolation = "exception"
-        np.testing.assert_equal(a.extrapolation, ExceptionExtrapolation())
-
-        a.extrapolation = "zeros"
-        np.testing.assert_equal(a.extrapolation, FillExtrapolation(0))
-
-        a.extrapolation = "nan"
-        np.testing.assert_equal(a.extrapolation, FillExtrapolation(np.nan))
-
-    def test_constructor_FDataGrid_setting(self):
+    def test_constructor_fdatagrid_setting(self) -> None:
+        """Check argument normalization in constructor for FDataGrid."""
         data = self.dummy_data
 
         a = FDataGrid(data)
-        np.testing.assert_equal(a.extrapolation, None)
+        self.assertEqual(a.extrapolation, None)
 
-        a = FDataGrid(data, extrapolation=PeriodicExtrapolation())
-        np.testing.assert_equal(a.extrapolation, PeriodicExtrapolation())
+        a = FDataGrid(data, extrapolation="periodic")
+        self.assertEqual(a.extrapolation, PeriodicExtrapolation())
 
         a = FDataGrid(data, extrapolation=BoundaryExtrapolation())
-        np.testing.assert_equal(a.extrapolation, BoundaryExtrapolation())
+        self.assertEqual(a.extrapolation, BoundaryExtrapolation())
 
-        np.testing.assert_equal(
-            a.extrapolation == ExceptionExtrapolation(), False)
+        self.assertNotEqual(a.extrapolation, ExceptionExtrapolation())
 
-        a = FDataGrid(data, extrapolation=ExceptionExtrapolation())
-        np.testing.assert_equal(a.extrapolation, ExceptionExtrapolation())
+        a = FDataGrid(data, extrapolation="exception")
+        self.assertEqual(a.extrapolation, ExceptionExtrapolation())
 
         a = FDataGrid(data, extrapolation=FillExtrapolation(0))
-        np.testing.assert_equal(a.extrapolation, FillExtrapolation(0))
-        np.testing.assert_equal(a.extrapolation == FillExtrapolation(1), False)
+        self.assertEqual(a.extrapolation, FillExtrapolation(0))
+        self.assertNotEqual(a.extrapolation, FillExtrapolation(1))
 
-    def test_FDataGrid_setting(self):
+    def test_setting(self) -> None:
+        """Check argument in setter."""
         data = self.dummy_data
         a = FDataGrid(data)
 
         a.extrapolation = PeriodicExtrapolation()
-        np.testing.assert_equal(a.extrapolation, PeriodicExtrapolation())
+        self.assertEqual(a.extrapolation, PeriodicExtrapolation())
 
         a.extrapolation = "bounds"
-        np.testing.assert_equal(a.extrapolation, BoundaryExtrapolation())
+        self.assertEqual(a.extrapolation, BoundaryExtrapolation())
 
-        a.extrapolation = "exception"
-        np.testing.assert_equal(a.extrapolation, ExceptionExtrapolation())
+        a.extrapolation = ExceptionExtrapolation()
+        self.assertEqual(a.extrapolation, ExceptionExtrapolation())
 
         a.extrapolation = "zeros"
-        np.testing.assert_equal(a.extrapolation, FillExtrapolation(0))
+        self.assertEqual(a.extrapolation, FillExtrapolation(0))
 
-        np.testing.assert_equal(a.extrapolation == FillExtrapolation(1), False)
+        self.assertNotEqual(a.extrapolation, FillExtrapolation(1))
 
-    def test_periodic(self):
+    def test_periodic(self) -> None:
+        """Test periodic extrapolation."""
         self.grid.extrapolation = PeriodicExtrapolation()
-        data = self.grid([-.5, 0, 1.5]).round(3)
+        data = self.grid([-0.5, 0, 1.5])
 
-        np.testing.assert_almost_equal(data[..., 0],
-                                       [[-0.724,  0.976, -0.724],
-                                        [-1.086,  0.759, -1.086]])
+        np.testing.assert_allclose(
+            data[..., 0],
+            [
+                [-0.723516, 0.976450, -0.723516],
+                [-1.085999, 0.759385, -1.085999],
+            ],
+            rtol=1e-6,
+        )
 
         self.basis.extrapolation = "periodic"
-        data = self.basis([-.5, 0, 1.5]).round(3)
+        data = self.basis([-0.5, 0, 1.5])
 
-        np.testing.assert_almost_equal(data[..., 0],
-                                       [[-0.69,  0.692, -0.69],
-                                        [-1.021,  1.056, -1.021]])
+        np.testing.assert_allclose(
+            data[..., 0],
+            [
+                [-0.690170, 0.691735, -0.690170],
+                [-1.020821, 1.056383, -1.020821],
+            ],
+            rtol=1e-6,
+        )
 
-    def test_boundary(self):
+    def test_boundary(self) -> None:
+        """Test boundary-copying extrapolation."""
         self.grid.extrapolation = "bounds"
-        data = self.grid([-.5, 0, 1.5]).round(3)
+        data = self.grid([-0.5, 0, 1.5])
 
-        np.testing.assert_almost_equal(data[..., 0],
-                                       [[0.976,  0.976,  0.797],
-                                        [0.759,  0.759,  1.125]])
+        np.testing.assert_allclose(
+            data[..., 0],
+            [
+                [0.976450, 0.976450, 0.796817],
+                [0.759385, 0.759385, 1.125063],
+            ],
+            rtol=1e-6,
+        )
 
         self.basis.extrapolation = "bounds"
-        data = self.basis([-.5, 0, 1.5]).round(3)
+        data = self.basis([-0.5, 0, 1.5])
 
-        np.testing.assert_almost_equal(data[..., 0],
-                                       [[0.692, 0.692, 0.692],
-                                        [1.056, 1.056, 1.056]])
+        np.testing.assert_allclose(
+            data[..., 0],
+            [
+                [0.691735, 0.691735, 0.691735],
+                [1.056383, 1.056383, 1.056383],
+            ],
+            rtol=1e-6,
+        )
 
-    def test_exception(self):
+    def test_exception(self) -> None:
+        """Test no extrapolation (exception)."""
         self.grid.extrapolation = "exception"
 
         with np.testing.assert_raises(ValueError):
-            self.grid([-.5, 0, 1.5])
+            self.grid([-0.5, 0, 1.5])
 
         self.basis.extrapolation = "exception"
 
         with np.testing.assert_raises(ValueError):
-            self.basis([-.5, 0, 1.5])
+            self.basis([-0.5, 0, 1.5])
 
-    def test_zeros(self):
+    def test_zeros(self) -> None:
+        """Test zeros extrapolation."""
         self.grid.extrapolation = "zeros"
-        data = self.grid([-.5, 0, 1.5]).round(3)
+        data = self.grid([-0.5, 0, 1.5])
 
-        np.testing.assert_almost_equal(data[..., 0],
-                                       [[0.,  0.976,  0.],
-                                        [0.,  0.759,  0.]])
+        np.testing.assert_allclose(
+            data[..., 0],
+            [
+                [0, 0.976450, 0],
+                [0, 0.759385, 0],
+            ],
+            rtol=1e-6,
+        )
 
         self.basis.extrapolation = "zeros"
-        data = self.basis([-.5, 0, 1.5]).round(3)
+        data = self.basis([-0.5, 0, 1.5])
 
-        np.testing.assert_almost_equal(data[..., 0],
-                                       [[0, 0.692, 0],
-                                        [0, 1.056, 0]])
+        np.testing.assert_allclose(
+            data[..., 0],
+            [
+                [0, 0.691735, 0],
+                [0, 1.056383, 0],
+            ],
+            rtol=1e-6,
+        )
 
-    def test_nan(self):
+    def test_nan(self) -> None:
+        """Test nan extrapolation."""
         self.grid.extrapolation = "nan"
-        data = self.grid([-.5, 0, 1.5]).round(3)
+        data = self.grid([-0.5, 0, 1.5])
 
-        np.testing.assert_almost_equal(data[..., 0],
-                                       [[np.nan,  0.976,  np.nan],
-                                        [np.nan,  0.759,  np.nan]])
+        np.testing.assert_allclose(
+            data[..., 0],
+            [
+                [np.nan, 0.976450, np.nan],
+                [np.nan, 0.759385, np.nan],
+            ],
+            rtol=1e-6,
+        )
 
         self.basis.extrapolation = "nan"
-        data = self.basis([-.5, 0, 1.5]).round(3)
+        data = self.basis([-0.5, 0, 1.5])
 
-        np.testing.assert_almost_equal(data[..., 0],
-                                       [[np.nan, 0.692, np.nan],
-                                        [np.nan, 1.056, np.nan]])
+        np.testing.assert_allclose(
+            data[..., 0],
+            [
+                [np.nan, 0.691735, np.nan],
+                [np.nan, 1.056383, np.nan],
+            ],
+            rtol=1e-6,
+        )
 
 
 if __name__ == '__main__':
-    print()
     unittest.main()

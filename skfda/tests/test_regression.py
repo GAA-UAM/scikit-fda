@@ -14,7 +14,8 @@ from skfda.representation.basis import BSpline, FDataBasis, Fourier, Monomial
 from skfda.representation.grid import FDataGrid
 
 
-class TestScalarLinearRegression(unittest.TestCase):
+class TestLinearRegression(unittest.TestCase):
+    """Tests for linear regression."""
 
     def test_regression_single_explanatory(self) -> None:
 
@@ -227,8 +228,9 @@ class TestScalarLinearRegression(unittest.TestCase):
         np.testing.assert_allclose(y_pred, y_reg, atol=0.001)
 
     def test_regression_functional_response_multivariate_covariates_1(self) -> None:
-        """ Test the most basic example of functional regression with
-        multivariate covariates """
+        """Test the most basic example of functional regression with
+        multivariate covariates.
+        """
 
         y_basis = Monomial(n_basis=2)
         X = [[1, 2], [3, 4], [5, 6]]
@@ -246,7 +248,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         np.testing.assert_allclose(y_pred[0].coefficients, y_pred_coef_compare, atol=0.01)
 
     def test_regression_functional_response_multivariate_covariates_2(self) -> None:
-        """ Test a example of functional regression with multivariate covariates """
+        """Test a example of functional regression with multivariate covariates."""
 
         y_basis = Monomial(n_basis=3)
         X = [[3, 4, 1], [5, 1, 6], [3, 2, 8]]
@@ -265,8 +267,9 @@ class TestScalarLinearRegression(unittest.TestCase):
         np.testing.assert_allclose(y_pred[0].coefficients, y_pred_coef_compare, atol=0.01)
 
     def test_regression_functional_response_multivariate_covariates_y_regularization(self) -> None:
-        """ Test a example of functional regression with multivariate covariates and 
-        beta regularization """
+        """Test a example of functional regression with multivariate covariates and 
+        beta regularization.
+        """
 
         y_basis = Monomial(n_basis=3)
         X = [[3, 4, 1], [5, 1, 6], [3, 2, 8]]
@@ -287,7 +290,8 @@ class TestScalarLinearRegression(unittest.TestCase):
 
     def test_regression_functional_response_multivariate_covariates_regularization(self) -> None:
         """ Test a example of functional regression with multivariate covariates and 
-        response regularization """
+        response regularization.
+        """
 
         y_basis = Monomial(n_basis=3)
         X = [[3, 4, 1], [5, 1, 6], [3, 2, 8]]
@@ -308,7 +312,8 @@ class TestScalarLinearRegression(unittest.TestCase):
 
     def test_regression_functional_response_multivariate_covariates_both_regularization(self) -> None:
         """ Test a example of functional regression with multivariate covariates, 
-        beta and response regularization """
+        beta and response regularization.
+        """
 
         y_basis = Monomial(n_basis=3)
         X = [[3, 4, 1], [5, 1, 6], [3, 2, 8]]
@@ -328,7 +333,7 @@ class TestScalarLinearRegression(unittest.TestCase):
         np.testing.assert_allclose(y_pred[0].coefficients, y_pred_coef_compare, atol=0.01)
 
     def test_regression_functional_response_multivariate_covariates_R_fda(self) -> None:
-        """ Test a example with Canadian Weather comparing with R fda package.
+        """Test a example with Canadian Weather comparing with R fda package.
         Code used in R:
             daybasis65 <- create.fourier.basis(rangeval=c(0, 365), nbasis=65, axes=list('axesIntervals'))
             Temp.fd <- with(CanadianWeather, smooth.basisPar(day.5,
@@ -342,7 +347,6 @@ class TestScalarLinearRegression(unittest.TestCase):
                  file="", sep = ",", col.names = FALSE, row.names = FALSE)
              write.table(t(round(TempRgn.f$betaestlist$region.Pacific$fd$coefs, digits=4)),
                  file="", sep = ",", col.names = FALSE, row.names = FALSE)
-
         """
 
         X_weather, y_weather = datasets.fetch_weather(return_X_y=True, as_frame=True)
@@ -394,8 +398,9 @@ class TestScalarLinearRegression(unittest.TestCase):
         np.testing.assert_equal(funct_reg.coef_basis[0], y_fd.basis)
 
     def test_error_y_X_samples_different(self) -> None:
-        """ Test that the number of response samples and explanatory samples
-        are not different when response is scalar """
+        """Test that the number of response samples and explanatory samples
+        are not different when response is scalar.
+        """
 
         x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
         y = [1 for _ in range(8)]
@@ -414,8 +419,9 @@ class TestScalarLinearRegression(unittest.TestCase):
             scalar.fit([x_fd], y)
 
     def test_error_functional_response_y_X_samples_different(self) -> None:
-        """ Test that the number of response samples and explanatory samples
-        are not different when response is functional """
+        """Test that the number of response samples and explanatory samples
+        are not different when response is functional.
+        """
 
         y_basis = Monomial(n_basis=2)
         X = [[1, 2], [3, 4], [5, 6], [1, 0]]
@@ -427,7 +433,7 @@ class TestScalarLinearRegression(unittest.TestCase):
             funct_reg.fit(X, y_fd)
 
     def test_error_beta_not_basis(self) -> None:
-        """ Test that all beta are Basis objects. """
+        """Test that all beta are Basis objects."""
 
         x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
         y = [1 for _ in range(7)]
@@ -438,8 +444,9 @@ class TestScalarLinearRegression(unittest.TestCase):
             scalar.fit([x_fd], y)
 
     def test_error_weights_lenght(self) -> None:
-        """ Test that the number of weights is equal to the
-        number of samples """
+        """Test that the number of weights is equal to the
+        number of samples.
+        """
 
         x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
         y = [1 for _ in range(7)]
@@ -451,7 +458,7 @@ class TestScalarLinearRegression(unittest.TestCase):
             scalar.fit([x_fd], y, weights)
 
     def test_error_weights_negative(self) -> None:
-        """ Test that none of the weights are negative. """
+        """ Test that none of the weights are negative."""
 
         x_fd = FDataBasis(Monomial(n_basis=7), np.identity(7))
         y = [1 for _ in range(7)]

@@ -10,10 +10,7 @@ Shows the usage of the k-nearest neighbors classifier.
 
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.model_selection import (
-    GridSearchCV,
-    train_test_split,
-)
+from sklearn.model_selection import GridSearchCV, train_test_split
 
 import skfda
 from skfda.ml.classification import KNeighborsClassifier
@@ -30,7 +27,6 @@ from skfda.ml.classification import KNeighborsClassifier
 # We will try to predict sex from their growth curves.
 #
 # The following figure shows the growth curves grouped by sex.
-#
 
 X, y = skfda.datasets.fetch_growth(return_X_y=True, as_frame=True)
 X = X.iloc[:, 0].values
@@ -76,7 +72,6 @@ X_train, X_test, y_train, y_test = train_test_split(
 # :class:`~sklearn.neighbors.KNeighborsClassifier`, but it's input is
 # a :class:`~skfda.representation.grid.FDataGrid` with
 # functional observations instead of an array with multivariate data.
-#
 
 knn = KNeighborsClassifier(n_neighbors=5)
 knn.fit(X_train, y_train)
@@ -214,14 +209,14 @@ print("Best score:", gscv2.best_score_)
 print("Mean score time (milliseconds)")
 print(
     "L2 distance:{time}(ms)".format(
-        time=1000 * np.mean(gscv.cv_results_["mean_score_time"])
-    )
+        time=1000 * np.mean(gscv.cv_results_["mean_score_time"]),
+    ),
 )
 
 print(
     "Euclidean distance:{time}(ms)".format(
-        time=1000 * np.mean(gscv2.cv_results_["mean_score_time"])
-    )
+        time=1000 * np.mean(gscv2.cv_results_["mean_score_time"]),
+    ),
 )
 
 ##############################################################################

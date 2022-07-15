@@ -1,3 +1,4 @@
+"""Tests for outlying measures."""
 import unittest
 
 import numpy as np

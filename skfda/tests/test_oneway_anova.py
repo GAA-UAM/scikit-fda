@@ -19,8 +19,6 @@ class OnewayAnovaTests(unittest.TestCase):
     def test_oneway_anova_args(self) -> None:
         """Check behavior of test with invalid args."""
         with self.assertRaises(ValueError):
-            oneway_anova()
-        with self.assertRaises(ValueError):
             oneway_anova(FDataGrid([0]), n_reps=-2)
 
     def test_v_stats_args(self) -> None:

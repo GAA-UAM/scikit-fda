@@ -34,7 +34,7 @@ class TestPerClassTransformer(unittest.TestCase):
         manual = np.empty((93, 0))
         classes, y_ind = _classifier_get_classes(self.y)
         for cur_class in range(classes.size):
-            feature_transformer = RecursiveMaximaHunting().fit(  # type: ignore
+            feature_transformer = RecursiveMaximaHunting().fit(
                 self.X[y_ind == cur_class],
                 self.y[y_ind == cur_class],
             )

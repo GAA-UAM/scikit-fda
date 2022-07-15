@@ -3,7 +3,7 @@ import unittest
 from typing import Callable, Optional, Tuple
 
 import numpy as np
-import sklearn
+import sklearn.model_selection
 
 from skfda import FData
 from skfda.datasets import fetch_tecator
@@ -18,15 +18,17 @@ from skfda.ml.regression import KernelRegression
 from skfda.representation.basis import FDataBasis, Fourier, Monomial
 from skfda.representation.grid import FDataGrid
 
+FloatArray = np.typing.NDArray[np.float_]
+
 
 def _nw_alt(
     fd_train: FData,
     fd_test: FData,
-    y_train: np.ndarray,
+    y_train: FloatArray,
     *,
     bandwidth: float,
-    kernel: Optional[Callable] = None,
-) -> np.ndarray:
+    kernel: Optional[Callable[[FloatArray], FloatArray]] = None,
+) -> FloatArray:
     if kernel is None:
         kernel = normal
 
@@ -41,11 +43,11 @@ def _nw_alt(
 def _knn_alt(
     fd_train: FData,
     fd_test: FData,
-    y_train: np.ndarray,
+    y_train: FloatArray,
     *,
     bandwidth: int,
-    kernel: Optional[Callable] = None,
-) -> np.ndarray:
+    kernel: Optional[Callable[[FloatArray], FloatArray]] = None,
+) -> FloatArray:
     if kernel is None:
         kernel = uniform
 
@@ -64,11 +66,11 @@ def _knn_alt(
 def _llr_alt(
     fd_train: FDataBasis,
     fd_test: FDataBasis,
-    y_train: np.ndarray,
+    y_train: FloatArray,
     *,
     bandwidth: float,
-    kernel: Optional[Callable] = None,
-) -> np.ndarray:
+    kernel: Optional[Callable[[FloatArray], FloatArray]] = None,
+) -> FloatArray:
     if kernel is None:
         kernel = normal
 
@@ -92,7 +94,8 @@ def _llr_alt(
     return y
 
 
-def _create_data_basis() -> Tuple[FDataBasis, FDataBasis, np.ndarray]:
+def _create_data_basis(
+) -> Tuple[FDataBasis, FDataBasis, FloatArray]:
     X, y = fetch_tecator(return_X_y=True, as_frame=True)
     fd = X.iloc[:, 0].values
     fat = y['fat'].values
@@ -113,7 +116,8 @@ def _create_data_basis() -> Tuple[FDataBasis, FDataBasis, np.ndarray]:
     return fd_train, fd_test, y_train
 
 
-def _create_data_grid() -> Tuple[FDataGrid, FDataGrid, np.ndarray]:
+def _create_data_grid(
+) -> Tuple[FDataGrid, FDataGrid, FloatArray]:
     X, y = fetch_tecator(return_X_y=True, as_frame=True)
     fd = X.iloc[:, 0].values
     fat = y['fat'].values
@@ -128,7 +132,8 @@ def _create_data_grid() -> Tuple[FDataGrid, FDataGrid, np.ndarray]:
     return fd_train, fd_test, y_train
 
 
-def _create_data_r() -> Tuple[FDataGrid, FDataGrid, np.ndarray]:
+def _create_data_r(
+) -> Tuple[FDataGrid, FDataGrid, FloatArray]:
     X, y = fetch_tecator(return_X_y=True, as_frame=True)
     fd = X.iloc[:, 0].values
     fat = y['fat'].values

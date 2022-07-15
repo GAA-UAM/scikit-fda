@@ -81,12 +81,12 @@ knn.fit(X_train, y_train)
 # Once it is fitted, we can predict labels for the test samples.
 #
 # To predict the label of a test sample, the classifier will calculate the
-# k-nearest neighbors and will asign the class shared by most of those k
-# neighbors. In this case, we have set the number of neighbours to 5
+# k-nearest neighbors and will assign the class shared by most of those k
+# neighbors. In this case, we have set the number of neighbors to 5
 # (:math:`k=5`).
 # By default, it will use the
 # :math:`\mathbb{L}^2` distance between functions, to determine the
-# neighbourhood of a sample. However, it can be used with
+# neighborhood of a sample. However, it can be used with
 # any of the functional metrics described in
 # :doc:`/modules/misc/metrics`.
 
@@ -151,13 +151,14 @@ ax.set_ylim((0.9, 1))
 
 ##############################################################################
 #
-# We can also check the accuracy of the classifier for number of neighbors
-# selected (11) using the
-# :func:`~skfda.ml.classification.KNeighborsClassifier.score` method.
+# By default, after performing the cross validation, the classifier will
+# be fitted to the whole training data provided in the call to
+# :func:`~skfda.ml.classification.KNeighborsClassifier.fit`.
+# Therefore, to check the accuracy of the classifier for the number of
+# neighbors selected (11), we can simply call the
+# :func:`~sklearn.model_selection.GridSearchCV.score` method.
 
-knn = KNeighborsClassifier(n_neighbors=11)
-knn.fit(X_train, y_train)
-score = knn.score(X_test, y_test)
+score = gscv.score(X_test, y_test)
 print(score)
 
 ##############################################################################
@@ -167,9 +168,9 @@ print(score)
 # metrics with similar results.
 #
 # For example, in the case of the :math:`\mathbb{L}^2` distance,
-# by appoximating the integral as a Riemann sum,
+# by approximating the integral as a Riemann sum,
 # we can derive that the value of said integral is proportional to the
-# eucleadian distance between vectors.
+# Euclidian distance between vectors.
 #
 # .. math::
 #   \|f - g \|_{\mathbb{L}^2} =  \left ( \int_a^b |f(x) - g(x)|^2 dx \right )
@@ -221,5 +222,5 @@ print(
 
 ##############################################################################
 #
-# This classifier can be used with multivariate funcional data, as surfaces
+# This classifier can be used with multivariate functional data, as surfaces
 # or curves in :math:`\mathbb{R}^N`, if the metric supports it too.

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Tuple, Union, overload
+from typing import Sequence, Tuple, TypeVar, overload
 
 import numpy as np
 from sklearn.utils import check_random_state
@@ -11,7 +11,7 @@ from ..._utils import RandomStateLike
 from ...datasets import make_gaussian_process
 from ...misc.metrics import lp_distance
 from ...representation import FData, FDataGrid
-from ...representation._typing import ArrayLike
+from ...representation._typing import ArrayLike, NDArrayFloat
 
 
 def v_sample_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
@@ -169,12 +169,12 @@ def v_asymptotic_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
 
 
 def _anova_bootstrap(
-    fd_grouped: Tuple[FData, ...],
+    fd_grouped: Sequence[FData],
     n_reps: int,
     random_state: RandomStateLike = None,
     p: int = 2,
     equal_var: bool = True,
-) -> np.ndarray:
+) -> NDArrayFloat:
 
     n_groups = len(fd_grouped)
     if n_groups < 2:
@@ -221,14 +221,18 @@ def _anova_bootstrap(
 
     v_samples = np.empty(n_reps)
     for i in range(n_reps):
-        fd = FDataGrid([s.data_matrix[i, ..., 0] for s in sim])
-        v_samples[i] = v_asymptotic_stat(fd, sizes, p=p)
+        fdatagrid = FDataGrid([s.data_matrix[i, ..., 0] for s in sim])
+        v_samples[i] = v_asymptotic_stat(fdatagrid, sizes, p=p)
     return v_samples
+
+
+T = TypeVar("T", bound=FData)
 
 
 @overload
 def oneway_anova(
-    *args: FData,
+    first: T,
+    *rest: T,
     n_reps: int = 2000,
     return_dist: Literal[False] = False,
     random_state: RandomStateLike = None,
@@ -240,24 +244,26 @@ def oneway_anova(
 
 @overload
 def oneway_anova(
-    *args: FData,
+    first: T,
+    *rest: T,
     n_reps: int = 2000,
     return_dist: Literal[True],
     random_state: RandomStateLike = None,
     p: int = 2,
     equal_var: bool = True,
-) -> Tuple[float, float, np.ndarray]:
+) -> Tuple[float, float, NDArrayFloat]:
     pass
 
 
 def oneway_anova(
-    *args: FData,
+    first: T,
+    *rest: T,
     n_reps: int = 2000,
     return_dist: bool = False,
     random_state: RandomStateLike = None,
     p: int = 2,
     equal_var: bool = True,
-) -> Union[Tuple[float, float], Tuple[float, float, np.ndarray]]:
+) -> Tuple[float, float] | Tuple[float, float, NDArrayFloat]:
     r"""
     Perform one-way functional ANOVA.
 
@@ -289,7 +295,8 @@ def oneway_anova(
     This procedure is from Cuevas :footcite:`cuevas++_2004_anova`.
 
     Args:
-        args: The sample measurements for each each group.
+        first: First group of functions.
+        rest: Remaining groups.
         n_reps: Number of simulations for the bootstrap
             procedure. Defaults to 2000 (This value may change in future
             versions).
@@ -329,22 +336,15 @@ def oneway_anova(
         .. footbibliography::
 
     """
-    if len(args) < 2:
-        raise ValueError("At least two groups must be passed as parameter.")
-    if not all(isinstance(fd, FData) for fd in args):
-        raise ValueError("Argument type must inherit FData.")
     if n_reps < 1:
         raise ValueError("Number of simulations must be positive.")
 
-    fd_groups = args
-    if not all(isinstance(fd, type(fd_groups[0])) for fd in fd_groups[1:]):
-        raise TypeError('Found mixed FData types in arguments.')
-
-    for fd in fd_groups[1:]:
-        if not np.array_equal(fd.domain_range, fd_groups[0].domain_range):
+    for fd in rest:
+        if not np.array_equal(fd.domain_range, first.domain_range):
             raise ValueError("Domain range must match for every FData passed.")
 
-    if isinstance(fd_groups[0], FDataGrid):
+    fd_groups = [first, *rest]
+    if isinstance(first, FDataGrid):
         # Creating list with all the sample points
         list_sample = [fd.grid_points[0].tolist() for fd in fd_groups]
         # Checking that the all the entries in the list are the same

@@ -170,7 +170,7 @@ print(score)
 # For example, in the case of the :math:`\mathbb{L}^2` distance,
 # by approximating the integral as a Riemann sum,
 # we can derive that the value of said integral is proportional to the
-# Euclidian distance between vectors.
+# Euclidean distance between vectors.
 #
 # .. math::
 #   \|f - g \|_{\mathbb{L}^2} =  \left ( \int_a^b |f(x) - g(x)|^2 dx \right )

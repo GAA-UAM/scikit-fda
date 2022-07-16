@@ -32,7 +32,15 @@ from skfda.representation.basis import (
 
 LinearDifferentialOperatorInput = Union[
     int,
-    Sequence[Union[float, Callable[[np.ndarray], np.ndarray]]],
+    Sequence[
+        Union[
+            float,
+            Callable[
+                [np.typing.NDArray[np.float_]],
+                np.typing.NDArray[np.float_],
+            ],
+        ],
+    ],
     None,
 ]
 
@@ -45,7 +53,7 @@ class TestLinearDifferentialOperatorRegularization(unittest.TestCase):
         basis: Basis,
         linear_diff_op: LinearDifferentialOperatorInput,
         atol: float = 0,
-        result: Optional[np.ndarray] = None,
+        result: Optional[np.typing.NDArray[np.float_]] = None,
     ) -> None:
 
         operator = LinearDifferentialOperator(linear_diff_op)

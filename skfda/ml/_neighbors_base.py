@@ -1,21 +1,62 @@
 """Base classes for the neighbor estimators"""
 from __future__ import annotations
 
-from abc import ABC
-from typing import Any, Callable, Mapping, Tuple
+from typing import (
+    Any,
+    Callable,
+    Generic,
+    Mapping,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import numpy as np
-from sklearn.base import BaseEstimator, RegressorMixin
+import sklearn.neighbors
+from scipy.sparse import csr_matrix
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 from typing_extensions import Literal
 
 from skfda.misc.metrics._utils import PairwiseMetric
 
 from .. import FData, FDataGrid
+from .._utils._sklearn_adapter import (
+    BaseEstimator,
+    ClassifierMixin,
+    RegressorMixin,
+)
 from ..misc.metrics import l2_distance
 from ..misc.metrics._typing import Metric
 from ..misc.metrics._utils import _fit_metric
 from ..representation._typing import GridPoints, NDArrayFloat, NDArrayInt
+
+FDataType = TypeVar("FDataType", bound="FData")
+SelfType = TypeVar("SelfType", bound="NeighborsBase[Any, Any]")
+SelfTypeRegressor = TypeVar(
+    "SelfTypeRegressor",
+    bound="NeighborsRegressorMixin[Any, Any]",
+)
+Input = TypeVar("Input", contravariant=True, bound=Union[NDArrayFloat, FData])
+Target = TypeVar("Target")
+TargetClassification = TypeVar("TargetClassification", bound=NDArrayInt)
+TargetRegression = TypeVar(
+    "TargetRegression",
+    bound=Union[NDArrayFloat, FData],
+)
+TargetRegressionMultivariate = TypeVar(
+    "TargetRegressionMultivariate",
+    bound=NDArrayFloat,
+)
+TargetRegressionFData = TypeVar(
+    "TargetRegressionFData",
+    bound=FData,
+)
+
+WeightsType = Union[
+    Literal["uniform", "distance"],
+    Callable[[NDArrayFloat], NDArrayFloat],
+]
 
 
 def _to_multivariate(fdatagrid: FDataGrid) -> NDArrayFloat:
@@ -59,19 +100,20 @@ def _to_multivariate_metric(
     metric: Metric[FDataGrid],
     grid_points: GridPoints,
 ) -> Metric[NDArrayFloat]:
-    r"""Transform a metric between FDatagrid in a sklearn compatible one.
+    """
+    Transform a metric between FDatagrid in a sklearn compatible one.
 
     Given a metric between FDatagrids returns a compatible metric used to
     wrap the sklearn routines.
 
     Args:
-        metric (pyfunc): Metric of the module `mics.metrics`. Must accept
+        metric: Metric of the module `mics.metrics`. Must accept
             two FDataGrids and return a float representing the distance.
-        grid_points (array_like): Array of arrays with the sample points of
+        grid_points: Array of arrays with the sample points of
             the FDataGrids.
 
     Returns:
-        (pyfunc): sklearn vector metric.
+        Scikit-learn vector metric.
 
     Examples:
 
@@ -96,7 +138,7 @@ def _to_multivariate_metric(
 
     """
     # Shape -> (n_samples = 1, domain_dims...., image_dimension (-1))
-    shape = [1] + [len(axis) for axis in grid_points] + [-1]
+    shape = (1,) + tuple(len(axis) for axis in grid_points) + (-1,)
 
     def multivariate_metric(
         x: NDArrayFloat,
@@ -113,14 +155,14 @@ def _to_multivariate_metric(
     return multivariate_metric
 
 
-class NeighborsBase(ABC, BaseEstimator):
+class NeighborsBase(BaseEstimator, Generic[Input, Target]):
     """Base class for nearest neighbors estimators."""
 
     def __init__(
         self,
         n_neighbors: int | None = None,
         radius: float | None = None,
-        weights: Literal["uniform", "distance"] | Callable[[NDArrayFloat], NDArrayFloat] = "uniform",
+        weights: WeightsType = "uniform",
         algorithm: Literal["auto", "ball_tree", "kd_tree", "brute"] = "auto",
         leaf_size: int = 30,
         metric: Literal["precomputed", "l2"] | Metric[FDataGrid] = 'l2',
@@ -129,8 +171,6 @@ class NeighborsBase(ABC, BaseEstimator):
         precompute_metric: bool = False,
         multivariate_metric: bool = False,
     ):
-        """Initializes the nearest neighbors estimator."""
-
         self.n_neighbors = n_neighbors
         self.radius = radius
         self.weights = weights
@@ -143,7 +183,8 @@ class NeighborsBase(ABC, BaseEstimator):
         self.multivariate_metric = multivariate_metric
 
     def _check_is_fitted(self) -> None:
-        """Check if the estimator is fitted.
+        """
+        Check if the estimator is fitted.
 
         Raises:
             NotFittedError: If the estimator is not fitted.
@@ -164,24 +205,22 @@ class NeighborsBase(ABC, BaseEstimator):
 
         return X
 
-
-class NeighborsMixin:
-    """Mixin class to train the neighbors models."""
-
     def fit(
-        self,
-        X: FDataGrid | NDArrayFloat,
-        y: NDArrayFloat | NDArrayInt | None = None,
-    ) -> NeighborsMixin:
-        """Fit the model using X as training data and y as target values.
+        self: SelfType,
+        X: Input,
+        y: Target | None = None,
+    ) -> SelfType:
+        """
+        Fit the model using X as training data and y as target values.
 
         Args:
-            X (:class:`FDataGrid`, array_matrix): Training data. FDataGrid
-                with the training data or array matrix with shape
-                [n_samples, n_samples] if metric='precomputed'.
-            y (array-like or sparse matrix): Target values of
-                shape = [n_samples] or [n_samples, n_outputs].
+            X: Training data. FDataGrid with the training data or array matrix
+                with shape [n_samples, n_samples] if metric='precomputed'.
+            y: Target values of shape = [n_samples] or [n_samples, n_outputs].
                 In the case of unsupervised search, this parameter is ignored.
+
+        Returns:
+            Self.
 
         Note:
             This method wraps the corresponding sklearn routine in the module
@@ -226,23 +265,50 @@ class NeighborsMixin:
         return self
 
 
-class KNeighborsMixin:
-    """Mixin class for K-Neighbors"""
+class KNeighborsMixin(NeighborsBase[Input, Target]):
+    """Mixin class for K-Neighbors."""
 
-    def kneighbors(self, X=None, n_neighbors=None, return_distance=True):
-        """Finds the K-neighbors of a point.
+    @overload
+    def kneighbors(
+        self,
+        X: FDataGrid | NDArrayFloat | None = None,
+        n_neighbors: int | None = None,
+        *,
+        return_distance: Literal[True] = True,
+    ) -> Tuple[NDArrayFloat, NDArrayInt]:
+        pass
+
+    @overload
+    def kneighbors(
+        self,
+        X: FDataGrid | NDArrayFloat | None = None,
+        n_neighbors: int | None = None,
+        *,
+        return_distance: Literal[False],
+    ) -> NDArrayInt:
+        pass
+
+    def kneighbors(
+        self,
+        X: FDataGrid | NDArrayFloat | None = None,
+        n_neighbors: int | None = None,
+        *,
+        return_distance: bool = True,
+    ) -> NDArrayInt | Tuple[NDArrayFloat, NDArrayInt]:
+        """
+        Find the K-neighbors of a point.
+
         Returns indices of and distances to the neighbors of each point.
 
         Args:
-            X (:class:`FDataGrid` or matrix): FDatagrid with the query
-                functions or  matrix (n_query, n_indexed) if
-                metric == 'precomputed'. If not provided, neighbors of each
-                indexed point are returned. In this case, the query point is
-                not considered its own neighbor.
-            n_neighbors (int): Number of neighbors to get (default is the value
+            X: FDatagrid with the query functions or  matrix
+                (n_query, n_indexed) if metric == 'precomputed'. If not
+                provided, neighbors of each indexed point are returned. In
+                this case, the query point is not considered its own neighbor.
+            n_neighbors: Number of neighbors to get (default is the value
                 passed to the constructor).
-        return_distance (boolean, optional): Defaults to True. If False,
-            distances will not be returned.
+            return_distance: Defaults to True. If False,
+                distances will not be returned.
 
         Returns:
             dist : array
@@ -287,21 +353,25 @@ class KNeighborsMixin:
 
         return self.estimator_.kneighbors(X, n_neighbors, return_distance)
 
-    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity'):
-        """Computes the (weighted) graph of k-Neighbors for points in X
+    def kneighbors_graph(
+        self,
+        X: FDataGrid | NDArrayFloat | None = None,
+        n_neighbors: int | None = None,
+        mode: Literal["connectivity", "distance"] = "connectivity",
+    ) -> csr_matrix:
+        """
+        Compute the (weighted) graph of k-Neighbors for points in X.
 
         Args:
-            X (:class:`FDataGrid` or matrix): FDatagrid with the query
-                functions or  matrix (n_query, n_indexed) if
-                metric == 'precomputed'. If not provided, neighbors of each
-                indexed point are returned. In this case, the query point is
-                not considered its own neighbor.
-            n_neighbors (int): Number of neighbors to get (default is the value
+            X: FDatagrid with the query functions or  matrix
+                (n_query, n_indexed) if metric == 'precomputed'. If not
+                provided, neighbors of each indexed point are returned. In
+                this case, the query point is not considered its own neighbor.
+            n_neighbors: Number of neighbors to get (default is the value
                 passed to the constructor).
-            mode ('connectivity' or 'distance', optional): Type of returned
-                matrix: 'connectivity' will return the connectivity matrix with
-                ones and zeros, in 'distance' the edges are distance between
-                points.
+            mode: Type of returned matrix: 'connectivity' will return the
+                connectivity matrix with ones and zeros, in 'distance' the
+                edges are distance between points.
 
         Returns:
             Sparse matrix in CSR format, shape = [n_samples, n_samples_fit]
@@ -346,12 +416,18 @@ class KNeighborsMixin:
         return self.estimator_.kneighbors_graph(X, n_neighbors, mode)
 
 
-class RadiusNeighborsMixin:
-    """Mixin Class for Raius Neighbors"""
+class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
+    """Mixin Class for Raius Neighbors."""
 
-    def radius_neighbors(self, X=None, radius=None, return_distance=True):
-        """Finds the neighbors within a given radius of a fdatagrid or
-        fdatagrids.
+    def radius_neighbors(
+        self,
+        X: FDataGrid | NDArrayFloat | None = None,
+        radius: float | None = None,
+        return_distance: bool = True,
+    ) -> NDArrayInt | Tuple[NDArrayFloat, NDArrayInt]:  # TODO: Fix return type
+        """
+        Find the neighbors within a given radius of a fdatagrid.
+
         Return the indices and distances of each point from the dataset
         lying in a ball with size ``radius`` around the points of the query
         array. Points lying on the boundary are included in the results.
@@ -359,16 +435,15 @@ class RadiusNeighborsMixin:
         query point.
 
         Args:
-            X (:class:`FDataGrid`, optional): fdatagrid with the sample or
-                samples whose neighbors will be returned. If not provided,
-                neighbors of each indexed point are returned. In this case, the
-                query point is not considered its own neighbor.
-            radius (float, optional): Limiting distance of neighbors to return.
+            X: Sample or samples whose neighbors will be returned. If not
+                provided, neighbors of each indexed point are returned. In this
+                case, the query point is not considered its own neighbor.
+            radius: Limiting distance of neighbors to return.
                 (default is the value passed to the constructor).
-            return_distance (boolean, optional). Defaults to True. If False,
-                distances will not be returned
+            return_distance: Defaults to True. If False, distances will not be
+                returned.
 
-        Returns
+        Returns:
             (array, shape (n_samples): dist : array of arrays representing the
                 distances to each point, only present if return_distance=True.
                 The distance values are computed according to the ``metric``
@@ -407,7 +482,6 @@ class RadiusNeighborsMixin:
             kneighbors
 
         Notes:
-
             Because the number of neighbors of each point is not necessarily
             equal, the results for multiple query points cannot be fit in a
             standard data array.
@@ -423,23 +497,32 @@ class RadiusNeighborsMixin:
         X = self._transform_to_multivariate(X)
 
         return self.estimator_.radius_neighbors(
-            X=X, radius=radius, return_distance=return_distance)
+            X=X,
+            radius=radius,
+            return_distance=return_distance,
+        )
 
-    def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity'):
-        """Computes the (weighted) graph of Neighbors for points in X
+    def radius_neighbors_graph(
+        self,
+        X: FDataGrid | NDArrayFloat | None = None,
+        radius: float | None = None,
+        mode: Literal["connectivity", "distance"] = 'connectivity',
+    ) -> csr_matrix:
+        """
+        Compute the (weighted) graph of Neighbors for points in X.
+
         Neighborhoods are restricted the points at a distance lower than
         radius.
 
         Args:
-            X  (:class:`FDataGrid`):  The query sample or samples. If not
-                provided, neighbors of each indexed point are returned. In this
-                case, the query point is not considered its own neighbor.
-            radius (float): Radius of neighborhoods. (default is the value
-                passed to the constructor).
-            mode ('connectivity' or 'distance', optional): Type of returned
-                matrix: 'connectivity' will return the connectivity matrix with
-                ones and zeros, in 'distance' the edges are distance between
-                points.
+            X:  The query sample or samples. If not provided, neighbors of
+                each indexed point are returned. In this case, the query
+                point is not considered its own neighbor.
+            radius: Radius of neighborhoods. (default is the value passed
+                to the constructor).
+            mode: Type of returned matrix: 'connectivity' will return the
+                connectivity matrix with ones and zeros, in 'distance'
+                the edges are distance between points.
 
         Returns:
             sparse matrix in CSR format, shape = [n_samples, n_samples]
@@ -448,30 +531,46 @@ class RadiusNeighborsMixin:
         Notes:
             This method wraps the corresponding sklearn routine in the module
             ``sklearn.neighbors``.
+
         """
         self._check_is_fitted()
 
         X = self._transform_to_multivariate(X)
 
-        return self.estimator_.radius_neighbors_graph(X=X, radius=radius,
-                                                      mode=mode)
+        return self.estimator_.radius_neighbors_graph(
+            X=X,
+            radius=radius,
+            mode=mode,
+        )
 
 
-class NeighborsClassifierMixin:
-    """Mixin class for classifiers based in nearest neighbors"""
+class NeighborsClassifierMixin(
+    NeighborsBase[Input, Target],
+    ClassifierMixin[Input, Target],
+):
+    """Mixin class for classifiers based in nearest neighbors."""
 
-    def predict(self, X):
-        """Predict the class labels for the provided data.
+    def fit(
+        self: SelfType,
+        X: Input,
+        y: Target,
+    ) -> SelfType:
+        return super().fit(X, y)
+
+    def predict(
+        self,
+        X: Input,
+    ) -> Target:
+        """
+        Predict the class labels for the provided data.
 
         Args:
-            X (:class:`FDataGrid` or array-like): FDataGrid with the test
-                samples or array (n_query, n_indexed) if metric ==
+            X: Test samples or array (n_query, n_indexed) if metric ==
                 'precomputed'.
 
         Returns:
-
-            (np.array): y : array of shape [n_samples] or
-            [n_samples, n_outputs] with class labels for each data sample.
+            Array of shape [n_samples] or [n_samples, n_outputs] with class
+            labels for each data sample.
 
         Notes:
             This method wraps the corresponding sklearn routine in the module
@@ -490,35 +589,59 @@ class NeighborsClassifierMixin:
         return self.estimator_.predict(X)
 
 
-class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
-    """Mixin class for the regressors based on neighbors"""
+class NeighborsRegressorMixin(
+    NeighborsBase[Input, TargetRegression],
+    RegressorMixin[Input, TargetRegression],
+):
+    """Mixin class for the regressors based on neighbors."""
 
-    def _mean_regressor(self, X, weights=None):
-        """
-        Default regressor using weighted average.
-
-        """
-
+    def _average(
+        self,
+        X: TargetRegression,
+        weights: NDArrayFloat | None = None,
+    ) -> TargetRegression:
+        """Compute weighted average."""
         if weights is None:
-            return X.mean()
+            return np.mean(X, axis=0)
+
+        weights /= np.sum(weights)
+
+        return np.sum(X * weights, axis=0)
+
+    def _prediction_from_neighbors(
+        self,
+        neighbors: TargetRegression,
+        distance: NDArrayFloat,
+    ) -> TargetRegression:
+
+        if self.weights == 'uniform':
+            weights = None
+        elif self.weights == 'distance':
+            weights = self._distance_weights(distance)
         else:
-            weights /= np.sum(weights)
+            weights = self.weights(distance)
 
-            return (X * weights).sum()
+        return self._average(neighbors, weights)
 
-    def fit(self, X, y):
-        """Fit the model using X as training data and y as responses.
+    def fit(
+        self: SelfTypeRegressor,
+        X: Input,
+        y: TargetRegression,
+    ) -> SelfTypeRegressor:
+        """
+        Fit the model using X as training data and y as responses.
 
         Args:
-            X (:class:`FDataGrid`, array_matrix): Training data. FDataGrid
+            X: Training data. FDataGrid
                 with the training data or array matrix with shape
                 [n_samples, n_samples] if metric='precomputed'.
-            Y (:class:`FData` or array_like): Training data. FData
+            y: Training data. FData
                 with the training respones (functional response case)
                 or array matrix with length `n_samples` in the multivariate
                 response case.
+
         Returns:
-            Estimator: self.
+            Self.
 
         """
         self._functional = isinstance(y, FData)
@@ -528,16 +651,12 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
         else:
             return super().fit(X, y)
 
-    def _functional_fit(self, X, y):
-        """Fit the model using X as training data.
-
-        Args:
-            X (:class:`FDataGrid`, array_matrix): Training data. FDataGrid
-                with the training data or array matrix with shape
-                [n_samples, n_samples] if metric='precomputed'.
-
-
-        """
+    def _functional_fit(
+        self: SelfTypeRegressor,
+        X: Input,
+        y: Target,
+    ) -> SelfTypeRegressor:
+        """Fit the functional response model."""
         if len(X) != y.n_samples:
             raise ValueError(
                 "The response and dependent variable must "
@@ -569,59 +688,41 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
             self.estimator_ = self._init_estimator(sklearn_metric)
             self.estimator_.fit(self._transform_to_multivariate(X))
 
-        if self.regressor == 'mean':
-            self._regressor = self._mean_regressor
-        else:
-            self._regressor = self.regressor
-
-        # Choose proper local regressor
-        if self.weights == 'uniform':
-            self._local_regressor = self._uniform_local_regression
-        elif self.weights == 'distance':
-            self._local_regressor = self._distance_local_regression
-        else:
-            self._local_regressor = self._weighted_local_regression
-
         # Store the responses
         self._y = y
 
         return self
 
-    def _uniform_local_regression(self, neighbors, distance=None):
-        """Perform local regression with uniform weights"""
-        return self._regressor(neighbors)
-
-    def _distance_local_regression(self, neighbors, distance):
-        """Perform local regression using distances as weights"""
-        idx = distance == 0.
+    def _distance_weights(
+        self,
+        distance: NDArrayFloat,
+    ) -> NDArrayFloat:
+        """Return weights based on distance reciprocal."""
+        idx = (distance == 0)
         if np.any(idx):
             weights = distance
-            weights[idx] = 1. / np.sum(idx)
-            weights[~idx] = 0.
+            weights[idx] = 1
+            weights[~idx] = 0
         else:
-            weights = 1. / distance
-            weights /= np.sum(weights)
+            weights = 1 / distance
 
-        return self._regressor(neighbors, weights)
+        return weights
 
-    def _weighted_local_regression(self, neighbors, distance):
-        """Perform local regression using custom weights"""
-
-        weights = self.weights(distance)
-
-        return self._regressor(neighbors, weights)
-
-    def predict(self, X):
-        """Predict the target for the provided data
+    def predict(
+        self,
+        X: Input,
+    ) -> TargetRegression:
+        """
+        Predict the target for the provided data.
 
         Args:
-            X (:class:`FDataGrid` or array-like): FDataGrid with the test
+            X: FDataGrid with the test
                 samples or array (n_query, n_indexed) if metric ==
                 'precomputed'.
 
         Returns:
-            y : array of shape = [n_samples] or [n_samples, n_outputs]
-                or :class:`FData` containing as many samples as X.
+            array of shape = [n_samples] or [n_samples, n_outputs]
+            or :class:`FData` containing as many samples as X.
 
         """
         self._check_is_fitted()
@@ -629,32 +730,24 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
         # Choose type of prediction
         if self._functional:
             return self._functional_predict(X)
-        else:
-            return self._multivariate_predict(X)
 
-    def _multivariate_predict(self, X):
-        """Predict the target for the provided data
-        Parameters
-        ----------
-        X (:class:`FDataGrid` or array-like): FDataGrid with the test
-            samples or array (n_query, n_indexed) if metric ==
-            'precomputed'.
-        Returns
-        -------
-        y : array of int, shape = [n_samples] or [n_samples, n_outputs]
-            Target values
-        Notes
-        -----
-        This method wraps the corresponding sklearn routine in the module
-        ``sklearn.neighbors``.
+        return self._multivariate_predict(X)
 
-        """
+    def _multivariate_predict(
+        self: NeighborsRegressorMixin[Input, TargetRegressionMultivariate],
+        X: FDataGrid | NDArrayFloat,
+    ) -> TargetRegressionMultivariate:
+        """Predict a multivariate target."""
         X = self._transform_to_multivariate(X)
 
         return self.estimator_.predict(X)
 
-    def _init_estimator(self, sklearn_metric):
-        """Initialize the sklearn nearest neighbors estimator.
+    def _init_estimator(
+        self,
+        sklearn_metric: Literal["precomputed"] | Metric[NDArrayFloat],
+    ) -> sklearn.neighbors.NearestNeighbors:
+        """
+        Initialize the sklearn nearest neighbors estimator.
 
         Args:
             sklearn_metric: (pyfunc or 'precomputed'): Metric compatible with
@@ -666,30 +759,24 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
 
         """
         if self._functional:
-            from sklearn.neighbors import NearestNeighbors as _NearestNeighbors
 
-            return _NearestNeighbors(
-                n_neighbors=self.n_neighbors, radius=self.radius,
-                algorithm=self.algorithm, leaf_size=self.leaf_size,
-                metric=sklearn_metric, metric_params=self.metric_params,
-                n_jobs=self.n_jobs)
-        else:
-            return self._init_multivariate_estimator(sklearn_metric)
+            return sklearn.neighbors.NearestNeighbors(
+                n_neighbors=self.n_neighbors,
+                radius=self.radius,
+                algorithm=self.algorithm,
+                leaf_size=self.leaf_size,
+                metric=sklearn_metric,
+                metric_params=self.metric_params,
+                n_jobs=self.n_jobs,
+            )
 
-    def _functional_predict(self, X):
-        """Predict functional responses.
+        return self._init_multivariate_estimator(sklearn_metric)
 
-        Args:
-            X (:class:`FDataGrid` or array-like): FDataGrid with the test
-                samples or array (n_query, n_indexed) if metric ==
-                'precomputed'.
-
-        Returns
-
-            y : :class:`FDataGrid` containing as many samples as X.
-
-        """
-
+    def _functional_predict(
+        self,
+        X: Input,
+    ) -> TargetRegression:
+        """Predict functional responses."""
         X = self._transform_to_multivariate(X)
 
         distances, neighbors = self._query(X)
@@ -697,34 +784,47 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
         if len(neighbors[0]) == 0:
             pred = self._outlier_response(neighbors)
         else:
-            pred = self._local_regressor(self._y[neighbors[0]], distances[0])
+            pred = self._prediction_from_neighbors(
+                self._y[neighbors[0]], distances[0])
 
         for i, idx in enumerate(neighbors[1:]):
             if len(idx) == 0:
                 new_pred = self._outlier_response(neighbors)
             else:
-                new_pred = self._local_regressor(self._y[idx],
-                                                 distances[i + 1])
+                new_pred = self._prediction_from_neighbors(
+                    self._y[idx],
+                    distances[i + 1],
+                )
 
             pred = pred.concatenate(new_pred)
 
         return pred
 
-    def _outlier_response(self, neighbors):
-        """Response in case of no neighbors"""
+    def _outlier_response(
+        self,
+        neighbors: TargetRegression,
+    ) -> TargetRegression:
+        """Response in case of no neighbors."""
+        outlier_response = getattr(self, "outlier_response", None)
 
-        if (not hasattr(self, "outlier_response") or
-                self.outlier_response is None):
+        if outlier_response is None:
             index = np.where([len(n) == 0 for n in neighbors])[0]
 
-            raise ValueError(f"No neighbors found for test samples  {index}, "
-                             "you can try using larger radius, give a reponse "
-                             "for outliers, or consider removing them from "
-                             "your dataset.")
-        else:
-            return self.outlier_response
+            raise ValueError(
+                f"No neighbors found for test samples  {index}, "
+                "you can try using larger radius, give a reponse "
+                "for outliers, or consider removing them from "
+                "your dataset.",
+            )
 
-    def score(self, X, y, sample_weight=None):
+        return outlier_response
+
+    def score(
+        self,
+        X: Input,
+        y: TargetRegression,
+        sample_weight: NDArrayFloat | None = None,
+    ) -> float:
         r"""Return the coefficient of determination R^2 of the prediction.
 
         In the multivariate response case, the coefficient :math:`R^2` is
@@ -754,23 +854,28 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
         features, would get a R^2 score of 0.0.
 
         Args:
-            X (FDataGrid): Test samples to be predicted.
-            y (FData or array-like): True responses of the test samples.
-            sample_weight (array_like, shape = [n_samples], optional): Sample
-                weights.
+            X: Test samples to be predicted.
+            y: True responses of the test samples.
+            sample_weight: Sample weights.
 
         Returns:
-            (float): Coefficient of determination.
+            Coefficient of determination.
 
         """
         if self._functional:
             return self._functional_score(X, y, sample_weight=sample_weight)
-        else:
-            # Default sklearn multivariate score
-            return super().score(X, y, sample_weight=sample_weight)
 
-    def _functional_score(self, X, y, sample_weight=None):
-        r"""Return an extension of the coefficient of determination R^2.
+        # Default sklearn multivariate score
+        return super().score(X, y, sample_weight=sample_weight)
+
+    def _functional_score(
+        self: NeighborsRegressorMixin[Input, TargetRegressionFData],
+        X: Input,
+        y: TargetRegressionFData,
+        sample_weight: NDArrayFloat | None = None,
+    ) -> float:
+        r"""
+        Return an extension of the coefficient of determination R^2.
 
         The coefficient is defined as
 
@@ -787,23 +892,24 @@ class NeighborsRegressorMixin(NeighborsMixin, RegressorMixin):
         features, would get a R^2 score of 0.0.
 
         Args:
-            X (FDataGrid): Test samples to be predicted.
-            y (FData): True responses of the test samples.
+            X: Test samples to be predicted.
+            y: True responses of the test samples.
             sample_weight (array_like, shape = [n_samples], optional): Sample
                 weights.
 
         Returns:
-            (float): Coefficient of determination.
+            Coefficient of determination.
 
         """
-
         # TODO: If it is created a module in ml.regression with other
         # score metrics, move it.
         from scipy.integrate import simps
 
         if y.dim_codomain != 1 or y.dim_domain != 1:
-            raise ValueError("Score not implemented for multivariate "
-                             "functional data.")
+            raise ValueError(
+                "Score not implemented for multivariate "
+                "functional data.",
+            )
 
         # Make prediction
         pred = self.predict(X)

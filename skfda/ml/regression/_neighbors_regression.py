@@ -13,7 +13,7 @@ from .._neighbors_base import (
 )
 
 
-class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
+class KNeighborsRegressor(NeighborsRegressorMixin,
                           KNeighborsMixin):
     """Regression based on k-nearest neighbors.
 
@@ -173,7 +173,7 @@ class KNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
         return self.estimator_.kneighbors(X)
 
 
-class RadiusNeighborsRegressor(NeighborsBase, NeighborsRegressorMixin,
+class RadiusNeighborsRegressor(NeighborsRegressorMixin,
                                RadiusNeighborsMixin):
     """Regression based on neighbors within a fixed radius.
 

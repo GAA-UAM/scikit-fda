@@ -2,17 +2,12 @@
 from sklearn.base import OutlierMixin
 
 from ...misc.metrics import l2_distance
-from ...ml._neighbors_base import (
-    KNeighborsMixin,
-    NeighborsBase,
-    NeighborsMixin,
-    _to_multivariate_metric,
-)
+from ...ml._neighbors_base import KNeighborsMixin, _to_multivariate_metric
 
 
-class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
-                         OutlierMixin):
-    """Unsupervised Outlier Detection.
+class LocalOutlierFactor(KNeighborsMixin, OutlierMixin):
+    """
+    Unsupervised Outlier Detection.
 
     Unsupervised Outlier Detection using Local Outlier Factor (LOF).
 
@@ -289,8 +284,10 @@ class LocalOutlierFactor(NeighborsBase, NeighborsMixin, KNeighborsMixin,
                     metric = l2_distance
                 else:
                     metric = self.metric
-                sklearn_metric = _to_multivariate_metric(metric,
-                                                         self._grid_points)
+                sklearn_metric = _to_multivariate_metric(
+                    metric,
+                    self._grid_points,
+                )
             else:
                 sklearn_metric = self.metric
 

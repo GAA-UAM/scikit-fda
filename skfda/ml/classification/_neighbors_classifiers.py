@@ -8,18 +8,13 @@ from sklearn.neighbors import (
 
 from .._neighbors_base import (
     KNeighborsMixin,
-    NeighborsBase,
     NeighborsClassifierMixin,
-    NeighborsMixin,
     RadiusNeighborsMixin,
 )
 
 
 class KNeighborsClassifier(
-    NeighborsBase,
-    NeighborsMixin,
     KNeighborsMixin,
-    ClassifierMixin,
     NeighborsClassifierMixin,
 ):
     """Classifier implementing the k-nearest neighbors vote.
@@ -185,10 +180,7 @@ class KNeighborsClassifier(
 
 
 class RadiusNeighborsClassifier(
-    NeighborsBase,
-    NeighborsMixin,
     RadiusNeighborsMixin,
-    ClassifierMixin,
     NeighborsClassifierMixin,
 ):
     """Classifier implementing a vote among neighbors within a given radius.

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Optional, TypeVar, overload
+from typing import Any, Generic, TypeVar, overload
 
 import sklearn.base
 
@@ -12,9 +12,10 @@ TransformerNoTarget = TypeVar(
     "TransformerNoTarget",
     bound="TransformerMixin[Any, Any, None]",
 )
-Input = TypeVar("Input")
-Output = TypeVar("Output")
+Input = TypeVar("Input", contravariant=True)
+Output = TypeVar("Output", covariant=True)
 Target = TypeVar("Target", contravariant=True)
+TargetPrediction = TypeVar("TargetPrediction")
 
 
 class BaseEstimator(
@@ -48,7 +49,7 @@ class TransformerMixin(
     def fit(
         self: SelfType,
         X: Input,
-        y: Optional[Target] = None,
+        y: Target | None = None,
     ) -> SelfType:
         return self
 
@@ -70,7 +71,7 @@ class TransformerMixin(
     def fit_transform(
         self,
         X: Input,
-        y: Optional[Target] = None,
+        y: Target | None = None,
         **fit_params: Any,
     ) -> Output:
         if y is None:
@@ -93,13 +94,55 @@ class InductiveTransformerMixin(
 
 class ClassifierMixin(
     ABC,
-    Generic[Input, Target],
+    Generic[Input, TargetPrediction],
     sklearn.base.ClassifierMixin,  # type: ignore[misc]
 ):
+    def fit(
+        self: SelfType,
+        X: Input,
+        y: TargetPrediction,
+    ) -> SelfType:
+        return self
+
+    @abstractmethod
+    def predict(
+        self: SelfType,
+        X: Input,
+    ) -> TargetPrediction:
+        pass
+
     def score(
         self,
         X: Input,
         y: Target,
         sample_weight: NDArrayFloat | None = None,
-    ) -> NDArrayFloat:
+    ) -> float:
+        return super().score(X, y, sample_weight=sample_weight)
+
+
+class RegressorMixin(
+    ABC,
+    Generic[Input, TargetPrediction],
+    sklearn.base.RegressorMixin,  # type: ignore[misc]
+):
+    def fit(
+        self: SelfType,
+        X: Input,
+        y: TargetPrediction,
+    ) -> SelfType:
+        return self
+
+    @abstractmethod
+    def predict(
+        self: SelfType,
+        X: Input,
+    ) -> TargetPrediction:
+        pass
+
+    def score(
+        self,
+        X: Input,
+        y: Target,
+        sample_weight: NDArrayFloat | None = None,
+    ) -> float:
         return super().score(X, y, sample_weight=sample_weight)

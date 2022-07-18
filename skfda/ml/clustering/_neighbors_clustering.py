@@ -1,15 +1,9 @@
 """Unsupervised learner for implementing neighbor searches."""
 
-from .._neighbors_base import (
-    KNeighborsMixin,
-    NeighborsBase,
-    NeighborsMixin,
-    RadiusNeighborsMixin,
-)
+from .._neighbors_base import KNeighborsMixin, RadiusNeighborsMixin
 
 
-class NearestNeighbors(NeighborsBase, NeighborsMixin, KNeighborsMixin,
-                       RadiusNeighborsMixin):
+class NearestNeighbors(KNeighborsMixin, RadiusNeighborsMixin):
     """Unsupervised learner for implementing neighbor searches.
 
     Parameters

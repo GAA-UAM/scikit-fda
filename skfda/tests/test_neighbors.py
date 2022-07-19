@@ -20,7 +20,7 @@ from skfda.representation.basis import Fourier
 
 class TestNeighbors(unittest.TestCase):
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Create test data."""
         random_state = np.random.RandomState(0)
         modes_location = np.concatenate((
@@ -188,21 +188,6 @@ class TestNeighbors(unittest.TestCase):
             self.X.data_matrix,
         )
 
-    def test_knn_functional_response_sklearn(self):
-        # Check sklearn metric
-        knnr = KNeighborsRegressor(
-            n_neighbors=1,
-            metric='euclidean',
-            multivariate_metric=True,
-        )
-        knnr.fit(self.X, self.X)
-
-        res = knnr.predict(self.X)
-        np.testing.assert_array_almost_equal(
-            res.data_matrix,
-            self.X.data_matrix,
-        )
-
     def test_knn_functional_response_precomputed(self):
         knnr = KNeighborsRegressor(
             n_neighbors=4,
@@ -239,7 +224,7 @@ class TestNeighbors(unittest.TestCase):
         knnr.fit(self.X, response)
 
         res = knnr.predict(self.X)
-        np.testing.assert_array_almost_equal(
+        np.testing.assert_allclose(
             res.coefficients, response.coefficients,
         )
 
@@ -324,22 +309,6 @@ class TestNeighbors(unittest.TestCase):
             np.array([[0, 3], [1, 2], [2, 1], [3, 0]]),
         )
 
-    def test_search_neighbors_sklearn(self):
-
-        nn = NearestNeighbors(
-            metric='euclidean',
-            multivariate_metric=True,
-            n_neighbors=2,
-        )
-        nn.fit(self.X[:4], self.y[:4])
-
-        _, neighbors = nn.kneighbors(self.X[:4])
-
-        np.testing.assert_array_almost_equal(
-            neighbors,
-            np.array([[0, 3], [1, 2], [2, 1], [3, 0]]),
-        )
-
     def test_score_scalar_response(self):
 
         neigh = KNeighborsRegressor()
@@ -408,16 +377,6 @@ class TestNeighbors(unittest.TestCase):
         lof3 = LocalOutlierFactor(metric='precomputed')
         res3 = lof3.fit_predict(distances)
         np.testing.assert_array_equal(expected, res3)
-
-        # With multivariate sklearn
-        lof4 = LocalOutlierFactor(metric='euclidean', multivariate_metric=True)
-        res4 = lof4.fit_predict(self.fd_lof)
-        np.testing.assert_array_equal(expected, res4)
-
-        # Other way of call fit_predict, undocumented in sklearn
-        lof5 = LocalOutlierFactor(novelty=True)
-        res5 = lof5.fit(self.fd_lof).predict()
-        np.testing.assert_array_equal(expected, res5)
 
         # Check values of negative outlier factor
         negative_lof = [  # noqa: WPS317

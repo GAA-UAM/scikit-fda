@@ -142,7 +142,7 @@ class RegressorMixin(
     def score(
         self,
         X: Input,
-        y: Target,
+        y: TargetPrediction,
         sample_weight: NDArrayFloat | None = None,
     ) -> float:
         return super().score(X, y, sample_weight=sample_weight)

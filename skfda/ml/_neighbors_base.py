@@ -57,102 +57,7 @@ WeightsType = Union[
     Literal["uniform", "distance"],
     Callable[[NDArrayFloat], NDArrayFloat],
 ]
-
-
-def _to_multivariate(fdatagrid: FDataGrid) -> NDArrayFloat:
-    r"""Returns the data matrix of a fdatagrid in flatten form compatible with
-    sklearn.
-
-    Args:
-        fdatagrid (:class:`FDataGrid`): Grid to be converted to matrix
-
-    Returns:
-        (np.array): Numpy array with size (n_samples, points), where
-            points = prod([len(d) for d in fdatagrid.grid_points]
-
-    """
-    return fdatagrid.data_matrix.reshape(fdatagrid.n_samples, -1)
-
-
-def _from_multivariate(
-    data_matrix: NDArrayFloat,
-    grid_points: GridPoints,
-    shape: Tuple[int, ...],
-    **kwargs: Any,
-) -> FDataGrid:
-    r"""Constructs a FDatagrid from the data matrix flattened.
-
-    Args:
-        data_matrix (np.array): Data Matrix flattened as multivariate vector
-            compatible with sklearn.
-        grid_points (array_like): List with sample points for each dimension.
-        shape (tuple): Shape of the data_matrix.
-        **kwargs: Named params to be passed to the FDataGrid constructor.
-
-    Returns:
-        (:class:`FDataGrid`): FDatagrid with the data.
-
-    """
-    return FDataGrid(data_matrix.reshape(shape), grid_points, **kwargs)
-
-
-def _to_multivariate_metric(
-    metric: Metric[FDataGrid],
-    grid_points: GridPoints,
-) -> Metric[NDArrayFloat]:
-    """
-    Transform a metric between FDatagrid in a sklearn compatible one.
-
-    Given a metric between FDatagrids returns a compatible metric used to
-    wrap the sklearn routines.
-
-    Args:
-        metric: Metric of the module `mics.metrics`. Must accept
-            two FDataGrids and return a float representing the distance.
-        grid_points: Array of arrays with the sample points of
-            the FDataGrids.
-
-    Returns:
-        Scikit-learn vector metric.
-
-    Examples:
-
-        >>> import numpy as np
-        >>> from skfda import FDataGrid
-        >>> from skfda.misc.metrics import l2_distance
-        >>> from skfda.ml._neighbors_base import _to_multivariate_metric
-
-        Calculate the Lp distance between fd and fd2.
-
-        >>> x = np.linspace(0, 1, 101)
-        >>> fd = FDataGrid([np.ones(len(x))], x)
-        >>> fd2 =  FDataGrid([np.zeros(len(x))], x)
-        >>> l2_distance(fd, fd2).round(2)
-        array([ 1.])
-
-        Creation of the sklearn-style metric.
-
-        >>> sklearn_l2_distance = _to_multivariate_metric(l2_distance, [x])
-        >>> sklearn_l2_distance(np.ones(len(x)), np.zeros(len(x))).round(2)
-        array([ 1.])
-
-    """
-    # Shape -> (n_samples = 1, domain_dims...., image_dimension (-1))
-    shape = (1,) + tuple(len(axis) for axis in grid_points) + (-1,)
-
-    def multivariate_metric(
-        x: NDArrayFloat,
-        y: NDArrayFloat,
-        **kwargs: Any,
-    ) -> NDArrayFloat:
-
-        return metric(
-            _from_multivariate(x, grid_points, shape),
-            _from_multivariate(y, grid_points, shape),
-            **kwargs,
-        )
-
-    return multivariate_metric
+AlgorithmType = Literal["auto", "ball_tree", "kd_tree", "brute"]
 
 
 class NeighborsBase(BaseEstimator, Generic[Input, Target]):
@@ -163,12 +68,11 @@ class NeighborsBase(BaseEstimator, Generic[Input, Target]):
         n_neighbors: int | None = None,
         radius: float | None = None,
         weights: WeightsType = "uniform",
-        algorithm: Literal["auto", "ball_tree", "kd_tree", "brute"] = "auto",
+        algorithm: AlgorithmType = "auto",
         leaf_size: int = 30,
-        metric: Literal["precomputed", "l2"] | Metric[FDataGrid] = 'l2',
+        metric: Literal["precomputed"] | Metric[Input] = l2_distance,
         metric_params: Mapping[str, Any] | None = None,
         n_jobs: int | None = None,
-        precompute_metric: bool = False,
         multivariate_metric: bool = False,
     ):
         self.n_neighbors = n_neighbors
@@ -179,7 +83,6 @@ class NeighborsBase(BaseEstimator, Generic[Input, Target]):
         self.metric = metric
         self.metric_params = metric_params
         self.n_jobs = n_jobs
-        self.precompute_metric = precompute_metric
         self.multivariate_metric = multivariate_metric
 
     def _check_is_fitted(self) -> None:
@@ -190,20 +93,7 @@ class NeighborsBase(BaseEstimator, Generic[Input, Target]):
             NotFittedError: If the estimator is not fitted.
 
         """
-        sklearn_check_is_fitted(self, ['estimator_'])
-
-    def _transform_to_multivariate(
-        self,
-        X: FDataGrid | None,
-    ) -> NDArrayFloat | None:
-        """Transform the input data to array form. If the metric is
-        precomputed it is not transformed.
-
-        """
-        if X is not None and self.metric != 'precomputed':
-            X = _to_multivariate(X)
-
-        return X
+        sklearn_check_is_fitted(self, ['_estimator'])
 
     def fit(
         self: SelfType,
@@ -227,42 +117,52 @@ class NeighborsBase(BaseEstimator, Generic[Input, Target]):
             ``sklearn.neighbors``.
 
         """
-        # If metric is precomputed no diferences with the Sklearn stimator
+        # If metric is precomputed no diferences with the Sklearn estimator
+        self._estimator = self._init_estimator()
+
+        self._fitted_with_distances = False
+
         if self.metric == 'precomputed':
-            self.estimator_ = self._init_estimator(self.metric)
-            self.estimator_.fit(X, y)
+            self._fitted_with_distances = True
+            self._estimator.fit(X, y)
         else:
-            self._grid_points = X.grid_points
-            self._shape = X.data_matrix.shape[1:]
+            self._fit_X = X.copy()
+            self._estimator.fit(np.zeros(shape=(len(X), len(X))), y)
 
-            X_transform = self._transform_to_multivariate
-
-            if self.multivariate_metric:
-                _fit_metric(self.metric, X)
-                sklearn_metric = self.metric
-            elif self.precompute_metric:
-                sklearn_metric = "precomputed"
-                _fit_metric(self.metric, X)
-                self._fit_X = X.copy()
-
-                def X_transform(X): return np.zeros(shape=(len(X), len(X)))
-            else:
-                # Constructs sklearn metric to manage vector
-                if self.metric == 'l2':
-                    metric = l2_distance
-                else:
-                    metric = self.metric
-
-                _fit_metric(metric, X)
-                sklearn_metric = _to_multivariate_metric(
-                    metric,
-                    self._grid_points,
-                )
-
-            self.estimator_ = self._init_estimator(sklearn_metric)
-            self.estimator_.fit(X_transform(X), y)
+        if isinstance(y, FData):
+            self._fit_y = y.copy()
 
         return self
+
+    def _refit_with_distances(self) -> None:
+        if not self._fitted_with_distances:
+            distances = PairwiseMetric(self.metric)(self._fit_X)
+            self._estimator.fit(distances, self._fit_y)
+            self._fitted_with_distances = True
+
+    def _X_to_distances(
+        self,
+        X: Input,
+    ) -> NDArrayFloat:
+
+        if self.metric == 'precomputed':
+            return X
+
+        return PairwiseMetric(self.metric)(X, self._fit_X)
+
+    def _init_estimator(
+        self,
+    ) -> sklearn.neighbors.NearestNeighbors:
+        """Initialize the sklearn nearest neighbors estimator."""
+        return sklearn.neighbors.NearestNeighbors(
+            n_neighbors=self.n_neighbors,
+            radius=self.radius,
+            algorithm=self.algorithm,
+            leaf_size=self.leaf_size,
+            metric="precomputed",
+            metric_params=self.metric_params,
+            n_jobs=self.n_jobs,
+        )
 
 
 class KNeighborsMixin(NeighborsBase[Input, Target]):
@@ -349,9 +249,12 @@ class KNeighborsMixin(NeighborsBase[Input, Target]):
 
         """
         self._check_is_fitted()
-        X = self._transform_to_multivariate(X)
+        if X is None:
+            self._refit_with_distances()
+        else:
+            X = self._X_to_distances(X)
 
-        return self.estimator_.kneighbors(X, n_neighbors, return_distance)
+        return self._estimator.kneighbors(X, n_neighbors, return_distance)
 
     def kneighbors_graph(
         self,
@@ -410,19 +313,42 @@ class KNeighborsMixin(NeighborsBase[Input, Target]):
 
         """
         self._check_is_fitted()
+        if X is None:
+            self._refit_with_distances()
+        else:
+            X = self._X_to_distances(X)
 
-        X = self._transform_to_multivariate(X)
-
-        return self.estimator_.kneighbors_graph(X, n_neighbors, mode)
+        return self._estimator.kneighbors_graph(X, n_neighbors, mode)
 
 
 class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
     """Mixin Class for Raius Neighbors."""
 
+    @overload
     def radius_neighbors(
         self,
         X: FDataGrid | NDArrayFloat | None = None,
         radius: float | None = None,
+        *,
+        return_distance: Literal[True] = True,
+    ) -> Tuple[NDArrayFloat, NDArrayInt]:  # TODO: Fix return type
+        pass
+
+    @overload
+    def radius_neighbors(
+        self,
+        X: FDataGrid | NDArrayFloat | None = None,
+        radius: float | None = None,
+        *,
+        return_distance: Literal[False],
+    ) -> NDArrayInt:
+        pass
+
+    def radius_neighbors(
+        self,
+        X: FDataGrid | NDArrayFloat | None = None,
+        radius: float | None = None,
+        *,
         return_distance: bool = True,
     ) -> NDArrayInt | Tuple[NDArrayFloat, NDArrayInt]:  # TODO: Fix return type
         """
@@ -493,10 +419,12 @@ class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
 
         """
         self._check_is_fitted()
+        if X is None:
+            self._refit_with_distances()
+        else:
+            X = self._X_to_distances(X)
 
-        X = self._transform_to_multivariate(X)
-
-        return self.estimator_.radius_neighbors(
+        return self._estimator.radius_neighbors(
             X=X,
             radius=radius,
             return_distance=return_distance,
@@ -534,10 +462,12 @@ class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
 
         """
         self._check_is_fitted()
+        if X is None:
+            self._refit_with_distances()
+        else:
+            X = self._X_to_distances(X)
 
-        X = self._transform_to_multivariate(X)
-
-        return self.estimator_.radius_neighbors_graph(
+        return self._estimator.radius_neighbors_graph(
             X=X,
             radius=radius,
             mode=mode,
@@ -579,14 +509,30 @@ class NeighborsClassifierMixin(
         """
         self._check_is_fitted()
 
-        if self.precompute_metric:
-            X = PairwiseMetric(
-                l2_distance if self.metric == "l2" else self.metric,
-            )(X, self._fit_X)
-        else:
-            X = self._transform_to_multivariate(X)
+        X_dist = self._X_to_distances(X)
 
-        return self.estimator_.predict(X)
+        return self._estimator.predict(X_dist)
+
+    def predict_proba(
+        self,
+        X: Input,
+    ) -> NDArrayFloat:
+        """Calculate probability estimates for the test data X.
+
+        Args:
+            X: FDataGrid with the test samples or array (n_query, n_indexed)
+                if metric == 'precomputed'.
+
+        Returns:
+            p: The class probabilities of the input samples. Classes are
+                ordered by lexicographic order.
+
+        """
+        self._check_is_fitted()
+
+        X_dist = self._X_to_distances(X)
+
+        return self._estimator.predict_proba(X_dist)
 
 
 class NeighborsRegressorMixin(
@@ -635,63 +581,16 @@ class NeighborsRegressorMixin(
             X: Training data. FDataGrid
                 with the training data or array matrix with shape
                 [n_samples, n_samples] if metric='precomputed'.
-            y: Training data. FData
-                with the training respones (functional response case)
-                or array matrix with length `n_samples` in the multivariate
-                response case.
+            y: Training data. FData with the training respones (functional
+                response case) or array matrix with length `n_samples` in
+                the multivariate response case.
 
         Returns:
             Self.
 
         """
         self._functional = isinstance(y, FData)
-
-        if self._functional:
-            return self._functional_fit(X, y)
-        else:
-            return super().fit(X, y)
-
-    def _functional_fit(
-        self: SelfTypeRegressor,
-        X: Input,
-        y: Target,
-    ) -> SelfTypeRegressor:
-        """Fit the functional response model."""
-        if len(X) != y.n_samples:
-            raise ValueError(
-                "The response and dependent variable must "
-                "contain the same number of samples.",
-            )
-
-        # If metric is precomputed no different with the Sklearn stimator
-        if self.metric == 'precomputed':
-            self.estimator_ = self._init_estimator(self.metric)
-            self.estimator_.fit(X)
-        else:
-            self._grid_points = X.grid_points
-            self._shape = X.data_matrix.shape[1:]
-
-            if not self.multivariate_metric:
-
-                if self.metric == 'l2':
-                    metric = l2_distance
-                else:
-                    metric = self.metric
-
-                sklearn_metric = _to_multivariate_metric(
-                    metric,
-                    self._grid_points,
-                )
-            else:
-                sklearn_metric = self.metric
-
-            self.estimator_ = self._init_estimator(sklearn_metric)
-            self.estimator_.fit(self._transform_to_multivariate(X))
-
-        # Store the responses
-        self._y = y
-
-        return self
+        return super().fit(X, y)
 
     def _distance_weights(
         self,
@@ -735,64 +634,34 @@ class NeighborsRegressorMixin(
 
     def _multivariate_predict(
         self: NeighborsRegressorMixin[Input, TargetRegressionMultivariate],
-        X: FDataGrid | NDArrayFloat,
+        X: Input,
     ) -> TargetRegressionMultivariate:
         """Predict a multivariate target."""
-        X = self._transform_to_multivariate(X)
+        X_dist = self._X_to_distances(X)
 
-        return self.estimator_.predict(X)
-
-    def _init_estimator(
-        self,
-        sklearn_metric: Literal["precomputed"] | Metric[NDArrayFloat],
-    ) -> sklearn.neighbors.NearestNeighbors:
-        """
-        Initialize the sklearn nearest neighbors estimator.
-
-        Args:
-            sklearn_metric: (pyfunc or 'precomputed'): Metric compatible with
-                sklearn API or matrix (n_samples, n_samples) with precomputed
-                distances.
-
-        Returns:
-            Sklearn K Neighbors estimator initialized.
-
-        """
-        if self._functional:
-
-            return sklearn.neighbors.NearestNeighbors(
-                n_neighbors=self.n_neighbors,
-                radius=self.radius,
-                algorithm=self.algorithm,
-                leaf_size=self.leaf_size,
-                metric=sklearn_metric,
-                metric_params=self.metric_params,
-                n_jobs=self.n_jobs,
-            )
-
-        return self._init_multivariate_estimator(sklearn_metric)
+        return self._estimator.predict(X_dist)
 
     def _functional_predict(
         self,
         X: Input,
     ) -> TargetRegression:
         """Predict functional responses."""
-        X = self._transform_to_multivariate(X)
-
         distances, neighbors = self._query(X)
 
         if len(neighbors[0]) == 0:
             pred = self._outlier_response(neighbors)
         else:
             pred = self._prediction_from_neighbors(
-                self._y[neighbors[0]], distances[0])
+                self._fit_y[neighbors[0]],
+                distances[0],
+            )
 
         for i, idx in enumerate(neighbors[1:]):
             if len(idx) == 0:
                 new_pred = self._outlier_response(neighbors)
             else:
                 new_pred = self._prediction_from_neighbors(
-                    self._y[idx],
+                    self._fit_y[idx],
                     distances[i + 1],
                 )
 

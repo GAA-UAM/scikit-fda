@@ -178,7 +178,7 @@ class LinearRegression(
         self.regularization = regularization
         self.y_regularization = y_regularization
 
-    def fit(  # noqa: D102
+    def fit(  # noqa: D102, WPS210
         self,
         X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
         y: np.ndarray,
@@ -303,14 +303,14 @@ class LinearRegression(
             result_list = np.dot(X, self.basis_coefs)
             result = [
                 coef_info.convert_from_constant_coefs(arr)
-                for arr, coef_info
+                for arr, coef_info  # noqa: WPS361
                 in zip(result_list, self._coef_info)
             ]
         else:
             result = np.sum(
                 [
                     coef_info.inner_product(coef, x)
-                    for coef, x, coef_info
+                    for coef, x, coef_info  # noqa: WPS361
                     in zip(self.coef_, X, self._coef_info)
                 ],
                 axis=0,
@@ -374,7 +374,7 @@ class LinearRegression(
 
         return X_new, c_info
 
-    def _argcheck_X(
+    def _argcheck_X(  # noqa: N802
         self,
         X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
     ) -> Sequence[AcceptedDataType]:
@@ -383,7 +383,7 @@ class LinearRegression(
 
         return [x if isinstance(x, FData) else np.asarray(x) for x in X]
 
-    def _argcheck_X_y(
+    def _argcheck_X_y(  # noqa: N802, WPS238
         self,
         X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
         y: Union[AcceptedDataType, Sequence[AcceptedDataType]],
@@ -394,9 +394,10 @@ class LinearRegression(
         # TODO: Add support for Dataframes
 
         new_X = self._argcheck_X(X)
+        len_new_X = len(new_X)
 
         if isinstance(y, FData):
-            if y.n_samples != len(new_X):
+            if y.n_samples != len_new_X:
                 raise ValueError(
                     "The number of samples on independent and "
                     "dependent variables should be the same",
@@ -425,13 +426,10 @@ class LinearRegression(
             y = np.asarray(y)
 
         if coef_basis is None:
-            coef_basis = [None] * len(new_X)
+            coef_basis = [None] * len_new_X
 
-        if len(coef_basis) != len(new_X):
-            if isinstance(coef_basis, Sequence):
-                coef_basis = coef_basis * len(new_X)
-            else:
-                coef_basis = [coef_basis] * len(new_X)
+        if len(coef_basis) != len_new_X:
+            coef_basis = coef_basis * len_new_X
 
         coef_info = [
             coefficient_info_from_covariate(x, y, basis=b)

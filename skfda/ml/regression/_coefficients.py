@@ -161,7 +161,7 @@ def coefficient_info_from_covariate(
 def _coefficient_info_from_covariate_ndarray(
     X: np.ndarray,
     y: np.ndarray | FDataBasis,
-    basis: Basis = None,
+    basis: Basis | None = None,
     **_: Any,
 ) -> CoefficientInfo[np.ndarray]:
 
@@ -203,4 +203,3 @@ def _coefficient_info_from_covariate_fdatabasis(
         raise TypeError(f"basis must be a Basis object, not {type(basis)}")
 
     return CoefficientInfoFDataBasis(basis=basis.to_basis())
-

@@ -36,12 +36,26 @@ AcceptedDataCoefsType = Union[
     CoefficientInfo[np.ndarray],
 ]
 
-BasisCoefsType = Sequence[Optional[Basis]]
+BasisCoefsType = Union[
+    Optional[Basis],
+    Sequence[Optional[Basis]],
+]
 
 ArgcheckResultType = Tuple[
     List[AcceptedDataType],
     np.ndarray,
     Optional[np.ndarray],
+    List[AcceptedDataCoefsType],
+]
+
+CheckRegularizationResultType = Tuple[
+    RegularizationType,
+    RegularizationType,
+    List[float],
+]
+
+ConcatenateInterceptResultType = Tuple[
+    Sequence[AcceptedDataType],
     List[AcceptedDataCoefsType],
 ]
 
@@ -223,7 +237,9 @@ class LinearRegression(
                 J_theta_kron_X_col_gram_mat += y_reg_matrix
 
             Xt_c_J_phi_theta = X_new.T @ y.coefficients @ J_phi_theta
-            vec_Xt_c_J_phi_theta = np.reshape(Xt_c_J_phi_theta, (-1, 1), order='F')
+            vec_Xt_c_J_phi_theta = np.reshape(
+                Xt_c_J_phi_theta, (-1, 1), order='F',
+            )
 
             basiscoefs = np.linalg.solve(
                 J_theta_kron_X_col_gram_mat,
@@ -231,9 +247,7 @@ class LinearRegression(
             )
 
             basiscoef_list = np.reshape(
-                basiscoefs,
-                (X_new.shape[1], -1),
-                order='F',
+                basiscoefs, (X_new.shape[1], -1), order='F',
             )
         else:
             inner_products_list = [
@@ -302,7 +316,7 @@ class LinearRegression(
                 ],
                 axis=0,
             )
-        
+
         if self.fit_intercept:
             result += self.intercept_
 
@@ -316,12 +330,10 @@ class LinearRegression(
         regularization: RegularizationType,
         y_regularization: RegularizationType,
         dimension: int,
-    ):
+    ) -> CheckRegularizationResultType:
 
         if isinstance(regularization, Iterable):
-            lambdas = list(
-                map(lambda reg: reg.regularization_parameter, regularization),
-            )
+            lambdas = [reg.regularization_parameter for reg in regularization]
         elif regularization is not None:
             lambda_parameter = regularization.regularization_parameter
             lambdas = [lambda_parameter] * dimension
@@ -347,7 +359,7 @@ class LinearRegression(
         X: Sequence[AcceptedDataType],
         y: AcceptedDataType,
         coef_info: List[AcceptedDataCoefsType],
-    ):
+    ) -> ConcatenateInterceptResultType:
         new_x = np.ones((len(y), 1))
         if self.functional_response:
             X_new = np.insert(X, 0, new_x.T, axis=1)
@@ -365,9 +377,7 @@ class LinearRegression(
         if isinstance(X, (FData, np.ndarray)):
             X = [X]
 
-        X = [x if isinstance(x, FData) else np.asarray(x) for x in X]
-
-        return X
+        return [x if isinstance(x, FData) else np.asarray(x) for x in X]
 
     def _argcheck_X_y(
         self,
@@ -396,7 +406,8 @@ class LinearRegression(
 
             if not isinstance(self.y_basis, Basis):
                 raise TypeError(
-                    f"y basis must be a Basis object, not {type(self.y_basis)}",
+                    "y basis must be a Basis object, "
+                    f"not {type(self.y_basis)}",
                 )
         else:
             if any(len(y) != len(x) for x in new_X):

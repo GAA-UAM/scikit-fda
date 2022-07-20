@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import itertools
-import warnings
 from typing import Any, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -333,7 +332,12 @@ class LinearRegression(
     ) -> CheckRegularizationResultType:
 
         if isinstance(regularization, Iterable):
-            lambdas = [reg.regularization_parameter for reg in regularization]
+            lambdas = []
+            for reg in regularization:
+                if reg is None:
+                    lambdas = lambdas + [0]
+                else:
+                    lambdas = lambdas + [reg.regularization_parameter]
         elif regularization is not None:
             lambda_parameter = regularization.regularization_parameter
             lambdas = [lambda_parameter] * dimension
@@ -405,9 +409,10 @@ class LinearRegression(
                 self.coef_basis = [y.basis]
 
             if not isinstance(self.y_basis, Basis):
+                basis_type = type(self.y_basis)
                 raise TypeError(
                     "y basis must be a Basis object, "
-                    f"not {type(self.y_basis)}",
+                    f"not {basis_type}",
                 )
         else:
             if any(len(y) != len(x) for x in new_X):
@@ -423,7 +428,10 @@ class LinearRegression(
             coef_basis = [None] * len(new_X)
 
         if len(coef_basis) != len(new_X):
-            coef_basis = coef_basis * len(new_X)
+            if isinstance(coef_basis, Sequence):
+                coef_basis = coef_basis * len(new_X)
+            else:
+                coef_basis = [coef_basis] * len(new_X)
 
         coef_info = [
             coefficient_info_from_covariate(x, y, basis=b)

@@ -154,7 +154,8 @@ def coefficient_info_from_covariate(
     **_: Any,
 ) -> CoefficientInfo[CovariateType]:
     """Make a coefficient info object from a covariate."""
-    raise ValueError(f"Invalid type of covariate = {type(X)}.")
+    X_type = type(X)
+    raise ValueError(f"Invalid type of covariate = {X_type}.")
 
 
 @coefficient_info_from_covariate.register(np.ndarray)
@@ -174,7 +175,8 @@ def _coefficient_info_from_covariate_ndarray(
         y_basis = y.basis.to_basis()
 
         if not isinstance(basis, Basis):
-            raise TypeError(f"basis must be a Basis object, not {type(basis)}")
+            basis_type = type(basis)
+            raise TypeError(f"basis must be a Basis object, not {basis_type}")
 
         return CoefficientInfoNdarray(
             basis=basis.to_basis(),
@@ -200,6 +202,7 @@ def _coefficient_info_from_covariate_fdatabasis(
         basis = X.basis
 
     if not isinstance(basis, Basis):
-        raise TypeError(f"basis must be a Basis object, not {type(basis)}")
+        basis_type = type(basis)
+        raise TypeError(f"basis must be a Basis object, not {basis_type}")
 
     return CoefficientInfoFDataBasis(basis=basis.to_basis())

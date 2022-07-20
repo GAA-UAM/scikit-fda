@@ -208,7 +208,7 @@ class LocalOutlierFactor(
         X: Input,
         y: None = None,
     ) -> SelfType:
-        super().fit(X, y)
+        super()._fit(X, y, fit_with_zeros=False)
         self._store_fit_data()
 
         return self
@@ -264,8 +264,6 @@ class LocalOutlierFactor(
 
         self._estimator = self._init_estimator()
 
-        self._fitted_with_distances = False
-
         if self.metric == 'precomputed':
             res = self._estimator.fit_predict(X, y)
         else:
@@ -273,6 +271,7 @@ class LocalOutlierFactor(
             res = self._estimator.fit_predict(X_dist, y)
 
         self._store_fit_data()
+        self._fitted_with_distances = True
 
         return res
 

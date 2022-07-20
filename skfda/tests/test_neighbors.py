@@ -441,8 +441,8 @@ class TestNeighbors(unittest.TestCase):
         with np.testing.assert_raises(AttributeError):
             lof.predict(self.fd_lof[5:])
 
-    def _weights(self, weights_):
-        return np.array([w == 0 for w in weights_], dtype=float)
+    def _weights(self, weights):
+        return np.array([w == np.min(weights) for w in weights], dtype=float)
 
 
 if __name__ == '__main__':

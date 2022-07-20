@@ -1,6 +1,7 @@
 """Base classes for the neighbor estimators"""
 from __future__ import annotations
 
+import copy
 from typing import (
     Any,
     Callable,
@@ -71,9 +72,7 @@ class NeighborsBase(BaseEstimator, Generic[Input, Target]):
         algorithm: AlgorithmType = "auto",
         leaf_size: int = 30,
         metric: Literal["precomputed"] | Metric[Input] = l2_distance,
-        metric_params: Mapping[str, Any] | None = None,
         n_jobs: int | None = None,
-        multivariate_metric: bool = False,
     ):
         self.n_neighbors = n_neighbors
         self.radius = radius
@@ -81,9 +80,7 @@ class NeighborsBase(BaseEstimator, Generic[Input, Target]):
         self.algorithm = algorithm
         self.leaf_size = leaf_size
         self.metric = metric
-        self.metric_params = metric_params
         self.n_jobs = n_jobs
-        self.multivariate_metric = multivariate_metric
 
     def _check_is_fitted(self) -> None:
         """
@@ -117,20 +114,32 @@ class NeighborsBase(BaseEstimator, Generic[Input, Target]):
             ``sklearn.neighbors``.
 
         """
+        return self._fit(X, y)
+
+    def _fit(
+        self: SelfType,
+        X: Input,
+        y: Target | None = None,
+        fit_with_zeros: bool = True,
+    ) -> SelfType:
         # If metric is precomputed no diferences with the Sklearn estimator
         self._estimator = self._init_estimator()
 
-        self._fitted_with_distances = False
+        self._fitted_with_distances = True
 
         if self.metric == 'precomputed':
-            self._fitted_with_distances = True
+            if isinstance(y, FData):  # For functional response regression
+                self._fit_y = copy.deepcopy(y)
             self._estimator.fit(X, y)
         else:
-            self._fit_X = X.copy()
-            self._estimator.fit(np.zeros(shape=(len(X), len(X))), y)
-
-        if isinstance(y, FData):
-            self._fit_y = y.copy()
+            self._fit_X = copy.deepcopy(X)
+            self._fit_y = copy.deepcopy(y)
+            if fit_with_zeros:
+                self._fitted_with_distances = False
+                self._estimator.fit(np.zeros(shape=(len(X), len(X))), y)
+            else:
+                distances = PairwiseMetric(self.metric)(X)
+                self._estimator.fit(distances, y)
 
         return self
 
@@ -160,7 +169,6 @@ class NeighborsBase(BaseEstimator, Generic[Input, Target]):
             algorithm=self.algorithm,
             leaf_size=self.leaf_size,
             metric="precomputed",
-            metric_params=self.metric_params,
             n_jobs=self.n_jobs,
         )
 

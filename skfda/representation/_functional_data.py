@@ -604,6 +604,18 @@ class FData(  # noqa: WPS214
     ) -> NDArrayFloat:
         pass
 
+    @overload
+    def __call__(
+        self,
+        eval_points: EvalPointsType,
+        *,
+        derivative: int = 0,
+        extrapolation: Optional[ExtrapolationLike] = None,
+        grid: bool = False,
+        aligned: bool = True,
+    ) -> NDArrayFloat:
+        pass
+
     def __call__(
         self,
         eval_points: EvalPointsType,

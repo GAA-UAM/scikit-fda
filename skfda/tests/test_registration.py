@@ -1,3 +1,4 @@
+"""Tests for registration (alignment)."""
 import unittest
 
 import numpy as np
@@ -197,7 +198,10 @@ class TestWarping(unittest.TestCase):
         # Fixed location
         center = [0.3, 0.6]
         warping = landmark_elastic_registration_warping(
-            fd, landmarks, location=center)
+            fd,
+            landmarks,
+            location=center,
+        )
         np.testing.assert_almost_equal(
             warping(center)[..., 0],
             landmarks,
@@ -226,7 +230,7 @@ class TestWarping(unittest.TestCase):
         )
 
         # Fixed location
-        center = [.3, .6]
+        center = [0.3, 0.6]
         fd_reg = landmark_elastic_registration(fd, landmarks, location=center)
         np.testing.assert_array_almost_equal(
             fd_reg(center),
@@ -249,7 +253,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
 
     def test_fit_transform(self) -> None:
 
-        reg = LeastSquaresShiftRegistration()
+        reg = LeastSquaresShiftRegistration[FDataGrid]()
 
         # Test fit transform with FDataGrid
         fd_reg = reg.fit_transform(self.fd)

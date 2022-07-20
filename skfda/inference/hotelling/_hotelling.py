@@ -1,14 +1,16 @@
+from __future__ import annotations
+
 import itertools
-from typing import Optional, Tuple, Union, overload
+from typing import Tuple, overload
 
 import numpy as np
+import scipy.special
 from sklearn.utils import check_random_state
 from typing_extensions import Literal
 
-import scipy.special
-
 from ..._utils import RandomStateLike
 from ...representation import FData, FDataBasis
+from ...representation._typing import NDArrayFloat
 
 
 def hotelling_t2(
@@ -122,7 +124,7 @@ def hotelling_test_ind(
     fd1: FData,
     fd2: FData,
     *,
-    n_reps: Optional[int] = None,
+    n_reps: int | None = None,
     random_state: RandomStateLike = None,
     return_dist: Literal[False] = False,
 ) -> Tuple[float, float]:
@@ -134,10 +136,10 @@ def hotelling_test_ind(
     fd1: FData,
     fd2: FData,
     *,
-    n_reps: Optional[int] = None,
+    n_reps: int | None = None,
     random_state: RandomStateLike = None,
     return_dist: Literal[True],
-) -> Tuple[float, float, np.ndarray]:
+) -> Tuple[float, float, NDArrayFloat]:
     pass
 
 
@@ -145,10 +147,10 @@ def hotelling_test_ind(
     fd1: FData,
     fd2: FData,
     *,
-    n_reps: Optional[int] = None,
+    n_reps: int | None = None,
     random_state: RandomStateLike = None,
     return_dist: bool = False,
-) -> Union[Tuple[float, float], Tuple[float, float, np.ndarray]]:
+) -> Tuple[float, float] | Tuple[float, float, NDArrayFloat]:
     """
     Compute Hotelling :math:`T^2`-test.
 
@@ -214,9 +216,9 @@ def hotelling_test_ind(
     if n_reps is not None and n_reps < 1:
         raise ValueError("Number of repetitions must be positive.")
 
-    n1, n2 = fd1.n_samples, fd2.n_samples
+    n1 = fd1.n_samples
     t2_0 = hotelling_t2(fd1, fd2)
-    n = n1 + n2
+    n = n1 + fd2.n_samples
     sample = fd1.concatenate(fd2)
     indices = np.arange(n)
 

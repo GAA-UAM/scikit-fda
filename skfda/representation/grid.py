@@ -1529,7 +1529,10 @@ class _CoordinateIterator(Sequence[T]):
         """Create an iterator through the image coordinates."""
         self._fdatagrid = fdatagrid
 
-    def __getitem__(self, key: Union[int, slice]) -> T:
+    def __getitem__(
+        self,
+        key: Union[int, slice, NDArrayInt, NDArrayBool],
+    ) -> T:
         """Get a specific coordinate."""
         s_key = key
         if isinstance(s_key, int):
@@ -1539,7 +1542,7 @@ class _CoordinateIterator(Sequence[T]):
 
         return self._fdatagrid.copy(
             data_matrix=self._fdatagrid.data_matrix[..., key],
-            coordinate_names=coordinate_names,
+            coordinate_names=tuple(coordinate_names),
         )
 
     def __len__(self) -> int:

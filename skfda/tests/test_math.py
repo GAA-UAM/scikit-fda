@@ -22,7 +22,7 @@ class InnerProductTest(unittest.TestCase):
 
     def test_several_variables(self) -> None:
         """Test inner_product with functions of several variables."""
-        def f(
+        def f(  # noqa: WPS430
             x: NDArrayFloat,
             y: NDArrayFloat,
             z: NDArrayFloat,
@@ -65,10 +65,10 @@ class InnerProductTest(unittest.TestCase):
 
     def test_vector_valued(self) -> None:
         """Test inner_product with vector valued functions."""
-        def f(x: NDArrayFloat) -> NDArrayFloat:
+        def f(x: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
             return x**2
 
-        def g(y: NDArrayFloat) -> NDArrayFloat:
+        def g(y: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
             return 3 * y
 
         t = np.linspace(0, 1, 100)
@@ -128,7 +128,10 @@ class InnerProductTest(unittest.TestCase):
         np.testing.assert_allclose(gram, gram_basis, rtol=1e-2)
 
         gram_pairwise = _pairwise_symmetric(
-            skfda.misc.inner_product, X, Y)
+            skfda.misc.inner_product,
+            X,
+            Y,
+        )
 
         np.testing.assert_allclose(gram, gram_pairwise)
 
@@ -137,6 +140,7 @@ class CosineSimilarityVectorTest(unittest.TestCase):
     """Tests for cosine similarity for vectors."""
 
     def setUp(self) -> None:
+        """Create examples."""
         self.arr = np.array([
             [0, 0, 1],
             [1, 1, 1],
@@ -175,7 +179,6 @@ class CosineSimilarityVectorTest(unittest.TestCase):
 
     def test_cosine_similarity_matrix_one(self) -> None:
         """Matrix example for vectors with one input."""
-
         for arr2 in (None, self.arr):
 
             np.testing.assert_allclose(

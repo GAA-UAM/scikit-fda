@@ -198,7 +198,7 @@ class LinearRegression(
         ...     fit_intercept=False,
         ... )
         >>> _ = funct_linear.fit(X, y)
-        >>> linear.coef_[0]
+        >>> funct_linear.coef_[0]
         FDataBasis(
         basis=Monomial(domain_range=((0, 1),), n_basis=3),
         coefficients=[[6. 3. 1.]],

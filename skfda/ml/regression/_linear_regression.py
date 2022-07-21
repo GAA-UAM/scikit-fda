@@ -63,13 +63,13 @@ class LinearRegression(
     BaseEstimator,  # type: ignore
     RegressorMixin,  # type: ignore
 ):
-    r"""Linear regression with multivariate response.
+    r"""Linear regression with multivariate and functional response.
 
     This is a regression algorithm equivalent to multivariate linear
     regression, but accepting also functional data expressed in a basis
     expansion.
 
-    The model assumed by this method is:
+    The model assumed by this method, when the response is scalar, is:
 
     .. math::
         y = w_0 + w_1 x_1 + \ldots + w_p x_p + \int w_{p+1}(t) x_{p+1}(t) dt \
@@ -78,8 +78,16 @@ class LinearRegression(
     where the covariates can be either multivariate or functional and the
     response is multivariate.
 
+    Otherwise, the model assumed, when the response is functional, is:
+
+    .. math::
+        y(t) = \boldsymbol{\beta}^T(t)\boldsymbol{X}
+
+    where the covariates are multivariate and the response is functional.
+
     .. warning::
-        For now, only scalar responses are supported.
+        For now, only multivariate convariates are supported when the
+        response is functional.
 
     Args:
         coef_basis (iterable): Basis of the coefficient functions of the
@@ -103,6 +111,18 @@ class LinearRegression(
             numpy.sin) means :math:`1 + sin(x)D^{2}`. If not supplied this
             defaults to 2. Only used if penalty_matrix is
             ``None``.
+        y_regularization (int, iterable or :class:`Regularization`): If it is
+            not a :class:`Regularization` object, linear differential
+            operator regularization is assumed. If it
+            is an integer, it indicates the order of the
+            derivative used in the computing of the penalty matrix. For
+            instance 2 means that the differential operator is
+            :math:`f''(x)`. If it is an iterable, it consists on coefficients
+            representing the differential operator used in the computing of
+            the penalty matrix. For instance the tuple (1, 0,
+            numpy.sin) means :math:`1 + sin(x)D^{2}`. If not supplied this
+            defaults to 2. Only used if y_penalty_matrix is
+            ``None``.
 
     Attributes:
         coef\_: A list containing the weight coefficient for each
@@ -110,6 +130,8 @@ class LinearRegression(
             For functional data, the covariate is a FDataBasis object.
         intercept\_: Independent term in the linear model. Set to 0.0
             if `fit_intercept = False`.
+        coef_info\_: A list containing information about coefficient for
+            each covariate.
 
     Examples:
         >>> from skfda.ml.regression import LinearRegression
@@ -162,6 +184,30 @@ class LinearRegression(
         array([ 1.])
         >>> linear.predict([x, x_fd])
         array([ 11.,  10.,  12.,   6.,  10.,  13.])
+
+        Response can be functional when covariates are multivariate:
+
+        >>> y_basis = Monomial(n_basis=3)
+        >>> X = [[3, 4, 1], [5, 1, 6], [3, 2, 8]]
+        >>> y = FDataBasis(y_basis, [[47, 22, 24],
+        ...                          [43, 47, 39],
+        ...                          [40, 53, 51]])
+        >>> funct_linear = LinearRegression(
+        ...     regularization=None,
+        ...     y_regularization=None,
+        ...     fit_intercept=False,
+        ... )
+        >>> _ = funct_linear.fit(X, y)
+        >>> linear.coef_[0]
+        FDataBasis(
+        basis=Monomial(domain_range=((0, 1),), n_basis=3),
+        coefficients=[[6. 3. 1.]],
+        ...)
+        >>> funct_linear.predict([[3,4,1]])
+        [FDataBasis(
+        basis=Monomial(domain_range=((0, 1),), n_basis=3),
+        coefficients=[[47. 22. 24.]],
+        ...)]
 
     """
 
@@ -279,7 +325,6 @@ class LinearRegression(
         if self.fit_intercept:
             self.intercept_ = coefs[0]
             coefs = coefs[1:]
-            self._coef_info_intercept = coef_info[0]
             coef_info = coef_info[1:]
         else:
             self.intercept_ = np.zeros(self.y_nbasis)

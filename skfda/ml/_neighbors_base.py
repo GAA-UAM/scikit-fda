@@ -1,17 +1,8 @@
-"""Base classes for the neighbor estimators"""
+"""Base classes for the neighbor estimators."""
 from __future__ import annotations
 
 import copy
-from typing import (
-    Any,
-    Callable,
-    Generic,
-    Mapping,
-    Tuple,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import Any, Callable, Generic, Tuple, TypeVar, Union, overload
 
 import numpy as np
 import sklearn.neighbors
@@ -30,7 +21,7 @@ from .._utils._sklearn_adapter import (
 from ..misc.metrics import l2_distance
 from ..misc.metrics._typing import Metric
 from ..misc.metrics._utils import _fit_metric
-from ..representation._typing import GridPoints, NDArrayFloat, NDArrayInt
+from ..representation._typing import NDArrayFloat, NDArrayInt
 
 FDataType = TypeVar("FDataType", bound="FData")
 SelfType = TypeVar("SelfType", bound="NeighborsBase[Any, Any]")
@@ -95,7 +86,7 @@ class NeighborsBase(BaseEstimator, Generic[Input, Target]):
     def fit(
         self: SelfType,
         X: Input,
-        y: Target | None = None,
+        y: Target,
     ) -> SelfType:
         """
         Fit the model using X as training data and y as target values.
@@ -119,7 +110,7 @@ class NeighborsBase(BaseEstimator, Generic[Input, Target]):
     def _fit(
         self: SelfType,
         X: Input,
-        y: Target | None = None,
+        y: Target,
         fit_with_zeros: bool = True,
     ) -> SelfType:
         # If metric is precomputed no diferences with the Sklearn estimator
@@ -129,9 +120,10 @@ class NeighborsBase(BaseEstimator, Generic[Input, Target]):
 
         if self.metric == 'precomputed':
             if isinstance(y, FData):  # For functional response regression
-                self._fit_y = copy.deepcopy(y)
+                self._fit_y: Target = copy.deepcopy(y)
             self._estimator.fit(X, y)
         else:
+            _fit_metric(self.metric, X)
             self._fit_X = copy.deepcopy(X)
             self._fit_y = copy.deepcopy(y)
             if fit_with_zeros:
@@ -145,6 +137,7 @@ class NeighborsBase(BaseEstimator, Generic[Input, Target]):
 
     def _refit_with_distances(self) -> None:
         if not self._fitted_with_distances:
+            assert self.metric != "precomputed"
             distances = PairwiseMetric(self.metric)(self._fit_X)
             self._estimator.fit(distances, self._fit_y)
             self._fitted_with_distances = True
@@ -179,7 +172,7 @@ class KNeighborsMixin(NeighborsBase[Input, Target]):
     @overload
     def kneighbors(
         self,
-        X: FDataGrid | NDArrayFloat | None = None,
+        X: Input | None = None,
         n_neighbors: int | None = None,
         *,
         return_distance: Literal[True] = True,
@@ -189,7 +182,7 @@ class KNeighborsMixin(NeighborsBase[Input, Target]):
     @overload
     def kneighbors(
         self,
-        X: FDataGrid | NDArrayFloat | None = None,
+        X: Input | None = None,
         n_neighbors: int | None = None,
         *,
         return_distance: Literal[False],
@@ -198,7 +191,7 @@ class KNeighborsMixin(NeighborsBase[Input, Target]):
 
     def kneighbors(
         self,
-        X: FDataGrid | NDArrayFloat | None = None,
+        X: Input | None = None,
         n_neighbors: int | None = None,
         *,
         return_distance: bool = True,
@@ -259,14 +252,18 @@ class KNeighborsMixin(NeighborsBase[Input, Target]):
         self._check_is_fitted()
         if X is None:
             self._refit_with_distances()
-        else:
-            X = self._X_to_distances(X)
 
-        return self._estimator.kneighbors(X, n_neighbors, return_distance)
+        X_dist = None if X is None else self._X_to_distances(X)
+
+        return self._estimator.kneighbors(  # type: ignore [no-any-return]
+            X_dist,
+            n_neighbors,
+            return_distance,
+        )
 
     def kneighbors_graph(
         self,
-        X: FDataGrid | NDArrayFloat | None = None,
+        X: Input | None = None,
         n_neighbors: int | None = None,
         mode: Literal["connectivity", "distance"] = "connectivity",
     ) -> csr_matrix:
@@ -323,10 +320,10 @@ class KNeighborsMixin(NeighborsBase[Input, Target]):
         self._check_is_fitted()
         if X is None:
             self._refit_with_distances()
-        else:
-            X = self._X_to_distances(X)
 
-        return self._estimator.kneighbors_graph(X, n_neighbors, mode)
+        X_dist = None if X is None else self._X_to_distances(X)
+
+        return self._estimator.kneighbors_graph(X_dist, n_neighbors, mode)
 
 
 class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
@@ -335,7 +332,7 @@ class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
     @overload
     def radius_neighbors(
         self,
-        X: FDataGrid | NDArrayFloat | None = None,
+        X: Input | None = None,
         radius: float | None = None,
         *,
         return_distance: Literal[True] = True,
@@ -345,7 +342,7 @@ class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
     @overload
     def radius_neighbors(
         self,
-        X: FDataGrid | NDArrayFloat | None = None,
+        X: Input | None = None,
         radius: float | None = None,
         *,
         return_distance: Literal[False],
@@ -354,7 +351,7 @@ class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
 
     def radius_neighbors(
         self,
-        X: FDataGrid | NDArrayFloat | None = None,
+        X: Input | None = None,
         radius: float | None = None,
         *,
         return_distance: bool = True,
@@ -429,18 +426,20 @@ class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
         self._check_is_fitted()
         if X is None:
             self._refit_with_distances()
-        else:
-            X = self._X_to_distances(X)
 
-        return self._estimator.radius_neighbors(
-            X=X,
-            radius=radius,
-            return_distance=return_distance,
+        X_dist = None if X is None else self._X_to_distances(X)
+
+        return (  # type: ignore [no-any-return]
+            self._estimator.radius_neighbors(
+                X_dist,
+                radius=radius,
+                return_distance=return_distance,
+            )
         )
 
     def radius_neighbors_graph(
         self,
-        X: FDataGrid | NDArrayFloat | None = None,
+        X: Input | None = None,
         radius: float | None = None,
         mode: Literal["connectivity", "distance"] = 'connectivity',
     ) -> csr_matrix:
@@ -472,11 +471,11 @@ class RadiusNeighborsMixin(NeighborsBase[Input, Target]):
         self._check_is_fitted()
         if X is None:
             self._refit_with_distances()
-        else:
-            X = self._X_to_distances(X)
+
+        X_dist = None if X is None else self._X_to_distances(X)
 
         return self._estimator.radius_neighbors_graph(
-            X=X,
+            X_dist,
             radius=radius,
             mode=mode,
         )
@@ -487,13 +486,6 @@ class NeighborsClassifierMixin(
     ClassifierMixin[Input, Target],
 ):
     """Mixin class for classifiers based in nearest neighbors."""
-
-    def fit(
-        self: SelfType,
-        X: Input,
-        y: Target,
-    ) -> SelfType:
-        return super().fit(X, y)
 
     def predict(
         self,
@@ -519,28 +511,31 @@ class NeighborsClassifierMixin(
 
         X_dist = self._X_to_distances(X)
 
-        return self._estimator.predict(X_dist)
+        return self._estimator.predict(X_dist)  # type: ignore [no-any-return]
 
     def predict_proba(
         self,
         X: Input,
     ) -> NDArrayFloat:
-        """Calculate probability estimates for the test data X.
+        """
+        Calculate probability estimates for the test data X.
 
         Args:
             X: FDataGrid with the test samples or array (n_query, n_indexed)
                 if metric == 'precomputed'.
 
         Returns:
-            p: The class probabilities of the input samples. Classes are
-                ordered by lexicographic order.
+            The class probabilities of the input samples. Classes are
+            ordered by lexicographic order.
 
         """
         self._check_is_fitted()
 
         X_dist = self._X_to_distances(X)
 
-        return self._estimator.predict_proba(X_dist)
+        return (  # type: ignore [no-any-return]
+            self._estimator.predict_proba(X_dist)
+        )
 
 
 class NeighborsRegressorMixin(
@@ -556,11 +551,11 @@ class NeighborsRegressorMixin(
     ) -> TargetRegression:
         """Compute weighted average."""
         if weights is None:
-            return np.mean(X, axis=0)
+            return np.mean(X, axis=0)  # type: ignore [no-any-return]
 
         weights /= np.sum(weights)
 
-        return np.sum(X * weights, axis=0)
+        return np.sum(X * weights, axis=0)  # type: ignore [no-any-return]
 
     def _prediction_from_neighbors(
         self,
@@ -647,10 +642,10 @@ class NeighborsRegressorMixin(
         """Predict a multivariate target."""
         X_dist = self._X_to_distances(X)
 
-        return self._estimator.predict(X_dist)
+        return self._estimator.predict(X_dist)  # type: ignore [no-any-return]
 
     def _functional_predict(
-        self,
+        self: NeighborsRegressorMixin[FData, Any],
         X: Input,
     ) -> TargetRegression:
         """Predict functional responses."""

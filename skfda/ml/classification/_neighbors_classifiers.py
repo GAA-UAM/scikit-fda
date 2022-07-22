@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TypeVar, Union
+from typing import TypeVar, Union, overload
 
 from sklearn.neighbors import (
     KNeighborsClassifier as _KNeighborsClassifier,
@@ -24,12 +24,11 @@ from .._neighbors_base import (
 )
 
 Input = TypeVar("Input", contravariant=True, bound=Union[NDArrayFloat, FData])
-Target = TypeVar("Target", bound=NDArrayInt)
 
 
 class KNeighborsClassifier(
-    KNeighborsMixin[Input, Target],
-    NeighborsClassifierMixin[Input, Target],
+    KNeighborsMixin[Input, NDArrayInt],
+    NeighborsClassifierMixin[Input, NDArrayInt],
 ):
     """
     Classifier implementing the k-nearest neighbors vote.
@@ -119,8 +118,35 @@ class KNeighborsClassifier(
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
     """
 
+    @overload
+    def __init__(
+        self: KNeighborsClassifier[NDArrayFloat],
+        *,
+        n_neighbors: int = 5,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Literal["precomputed"],
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
     def __init__(
         self,
+        *,
+        n_neighbors: int = 5,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Literal["precomputed"] | Metric[Input] = l2_distance,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    def __init__(
+        self,
+        *,
         n_neighbors: int = 5,
         weights: WeightsType = 'uniform',
         algorithm: AlgorithmType = 'auto',
@@ -150,8 +176,8 @@ class KNeighborsClassifier(
 
 
 class RadiusNeighborsClassifier(
-    RadiusNeighborsMixin[Input, Target],
-    NeighborsClassifierMixin[Input, Target],
+    RadiusNeighborsMixin[Input, NDArrayInt],
+    NeighborsClassifierMixin[Input, NDArrayInt],
 ):
     """
     Classifier implementing a vote among neighbors within a given radius.
@@ -163,20 +189,20 @@ class RadiusNeighborsClassifier(
             Possible values:
 
             - 'uniform': uniform weights. All points in each neighborhood
-            are weighted equally.
+                are weighted equally.
             - 'distance': weight points by the inverse of their distance.
-            in this case, closer neighbors of a query point will have a
-            greater influence than neighbors which are further away.
+                in this case, closer neighbors of a query point will have a
+                greater influence than neighbors which are further away.
             - [callable]: a user-defined function which accepts an
-            array of distances, and returns an array of the same shape
-            containing the weights.
+                array of distances, and returns an array of the same shape
+                containing the weights.
 
         algorithm: Algorithm used to compute the nearest neighbors:
 
             - 'ball_tree' will use :class:`sklearn.neighbors.BallTree`.
             - 'brute' will use a brute-force search.
             - 'auto' will attempt to decide the most appropriate algorithm.
-            based on the values passed to :meth:`fit` method.
+                based on the values passed to :meth:`fit` method.
 
         leaf_size: Leaf size passed to BallTree or KDTree. This can affect the
             speed of the construction and query, as well as the memory
@@ -233,8 +259,37 @@ class RadiusNeighborsClassifier(
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
     """
 
+    @overload
+    def __init__(
+        self: RadiusNeighborsClassifier[NDArrayFloat],
+        *,
+        radius: float = 1.0,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Literal["precomputed"],
+        outlier_label=None,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
     def __init__(
         self,
+        *,
+        radius: float = 1.0,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Metric[Input] = l2_distance,
+        outlier_label=None,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    def __init__(
+        self,
+        *,
         radius: float = 1.0,
         weights: WeightsType = 'uniform',
         algorithm: AlgorithmType = 'auto',

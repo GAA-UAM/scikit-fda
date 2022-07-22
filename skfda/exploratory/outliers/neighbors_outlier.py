@@ -1,7 +1,7 @@
 """Neighbors outlier detection methods."""
 from __future__ import annotations
 
-from typing import Any, TypeVar, Union
+from typing import Any, TypeVar, Union, overload
 
 from sklearn.base import OutlierMixin
 from sklearn.neighbors import LocalOutlierFactor as _LocalOutlierFactor
@@ -20,7 +20,7 @@ Input = TypeVar("Input", contravariant=True, bound=Union[NDArrayFloat, FData])
 
 class LocalOutlierFactor(
     KNeighborsMixin[Input, None],
-    OutlierMixin,  # type: ignore
+    OutlierMixin,  # type: ignore[misc]
 ):
     r"""
     Unsupervised Outlier Detection.
@@ -166,8 +166,37 @@ class LocalOutlierFactor(
         :class:`~skfda.ml.clustering.NearestNeighbors`
     """
 
+    @overload
+    def __init__(
+        self: LocalOutlierFactor[NDArrayFloat],
+        *,
+        n_neighbors: int = 20,
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Literal["precomputed"],
+        contamination: float | Literal["auto"] = "auto",
+        novelty: bool = False,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
     def __init__(
         self,
+        *,
+        n_neighbors: int = 20,
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Metric[Input] = l2_distance,
+        contamination: float | Literal["auto"] = "auto",
+        novelty: bool = False,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    def __init__(
+        self,
+        *,
         n_neighbors: int = 20,
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
@@ -199,16 +228,18 @@ class LocalOutlierFactor(
 
     def _store_fit_data(self) -> None:
         """Store the parameters created during the fit."""
-        self.negative_outlier_factor_ = self._estimator.negative_outlier_factor_
+        self.negative_outlier_factor_ = (
+            self._estimator.negative_outlier_factor_
+        )
         self.n_neighbors_ = self._estimator.n_neighbors_
         self.offset_ = self._estimator.offset_
 
-    def fit(
+    def fit(  # noqa: D102
         self: SelfType,
         X: Input,
         y: None = None,
     ) -> SelfType:
-        super()._fit(X, y, fit_with_zeros=False)
+        self._fit(X, y, fit_with_zeros=False)
         self._store_fit_data()
 
         return self
@@ -228,8 +259,9 @@ class LocalOutlierFactor(
 
         Parameters:
             X: FDataGrid containing the query sample or samples to compute the
-                Local Outlier Factor w.r.t. to the training samples or array with
-                the distances to the training samples if metric='precomputed'.
+                Local Outlier Factor w.r.t. to the training samples or array
+                with the distances to the training samples if
+                metric='precomputed'.
 
         Returns:
             Returns -1 for anomalies/outliers and +1 for inliers.
@@ -238,7 +270,7 @@ class LocalOutlierFactor(
         self._check_is_fitted()
         X_dist = self._X_to_distances(X)
 
-        return self._estimator.predict(X_dist)
+        return self._estimator.predict(X_dist)  # type: ignore[no-any-return]
 
     def fit_predict(
         self,
@@ -273,7 +305,7 @@ class LocalOutlierFactor(
         self._store_fit_data()
         self._fitted_with_distances = True
 
-        return res
+        return res  # type: ignore[no-any-return]
 
     def decision_function(
         self,
@@ -303,7 +335,9 @@ class LocalOutlierFactor(
         self._check_is_fitted()
         X_dist = self._X_to_distances(X)
 
-        return self._estimator.decision_function(X_dist)
+        return (  # type: ignore[no-any-return]
+            self._estimator.decision_function(X_dist)
+        )
 
     def score_samples(
         self,
@@ -336,4 +370,6 @@ class LocalOutlierFactor(
         self._check_is_fitted()
         X_dist = self._X_to_distances(X)
 
-        return self._estimator.score_samples(X_dist)
+        return (  # type: ignore[no-any-return]
+            self._estimator.score_samples(X_dist)
+        )

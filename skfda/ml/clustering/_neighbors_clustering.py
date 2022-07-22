@@ -1,7 +1,7 @@
 """Unsupervised learner for implementing neighbor searches."""
 from __future__ import annotations
 
-from typing import TypeVar, Union
+from typing import Any, TypeVar, Union, overload
 
 from typing_extensions import Literal
 
@@ -17,6 +17,7 @@ from .._neighbors_base import (
 )
 
 Input = TypeVar("Input", contravariant=True, bound=Union[NDArrayFloat, FData])
+SelfType = TypeVar("SelfType", bound="NearestNeighbors[Any]")
 
 
 class NearestNeighbors(
@@ -104,9 +105,35 @@ class NearestNeighbors(
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
 
     """
+    @overload
+    def __init__(
+        self: NearestNeighbors[NDArrayFloat],
+        *,
+        n_neighbors: int = 5,
+        radius: float = 1.0,
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Literal["precomputed"],
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
+    def __init__(
+        self,
+        *,
+        n_neighbors: int = 5,
+        radius: float = 1.0,
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Metric[Input] = l2_distance,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
 
     def __init__(
         self,
+        *,
         n_neighbors: int = 5,
         radius: float = 1.0,
         algorithm: AlgorithmType = 'auto',
@@ -122,3 +149,11 @@ class NearestNeighbors(
             metric=metric,
             n_jobs=n_jobs,
         )
+
+    # There is actually a change here: the default parameter!!
+    def fit(  # noqa: WPS612, D102
+        self: SelfType,
+        X: Input,
+        y: None = None,
+    ) -> SelfType:
+        return super().fit(X, y)

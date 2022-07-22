@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Tuple, TypeVar, Union
+from typing import Tuple, TypeVar, Union, overload
 
 from sklearn.neighbors import (
     KNeighborsRegressor as _KNeighborsRegressor,
@@ -150,9 +150,36 @@ class KNeighborsRegressor(
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
 
     """
+    @overload
+    def __init__(
+        self: KNeighborsRegressor[NDArrayFloat, Target],
+        *,
+        n_neighbors: int = 5,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Literal["precomputed"],
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
 
+    @overload
     def __init__(
         self,
+        *,
+        n_neighbors: int = 5,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Metric[Input] = l2_distance,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    # Not useless: it restrict the inputs.
+    def __init__(  # noqa: WPS612
+        self,
+        *,
         n_neighbors: int = 5,
         weights: WeightsType = 'uniform',
         algorithm: AlgorithmType = 'auto',
@@ -307,9 +334,37 @@ class RadiusNeighborsRegressor(
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
 
     """
+    @overload
+    def __init__(
+        self: RadiusNeighborsRegressor[NDArrayFloat, Target],
+        *,
+        radius: float = 1.0,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Literal["precomputed"],
+        outlier_response=None,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
+    def __init__(
+        self,
+        *,
+        radius: float = 1.0,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Literal["precomputed"] | Metric[Input] = l2_distance,
+        outlier_response=None,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
 
     def __init__(
         self,
+        *,
         radius: float = 1.0,
         weights: WeightsType = 'uniform',
         algorithm: AlgorithmType = 'auto',

@@ -201,7 +201,7 @@ class LinearRegression(
         >>> funct_linear.coef_[0]
         FDataBasis(
         basis=Monomial(domain_range=((0, 1),), n_basis=3),
-        coefficients=[[6. 3. 1.]],
+        coefficients=[[ 6.  3.  1.]],
         dataset_name=None,
         argument_names=(None,),
         coordinate_names=(None,),
@@ -209,7 +209,7 @@ class LinearRegression(
         >>> funct_linear.predict([[3,4,1]])
         [FDataBasis(
         basis=Monomial(domain_range=((0, 1),), n_basis=3),
-        coefficients=[[47. 22. 24.]],
+        coefficients=[[ 47.  22.  24.]],
         dataset_name=None,
         argument_names=(None,),
         coordinate_names=(None,),

@@ -23,8 +23,10 @@ from .._neighbors_base import (
     WeightsType,
 )
 
-Input = TypeVar("Input", contravariant=True, bound=Union[NDArrayFloat, FData])
-Target = TypeVar("Target", bound=Union[NDArrayFloat, FData])
+InputBound = Union[NDArrayFloat, FData]
+Input = TypeVar("Input", contravariant=True, bound=InputBound)
+TargetBound = Union[NDArrayFloat, FData]
+Target = TypeVar("Target", bound=TargetBound)
 
 
 class KNeighborsRegressor(
@@ -150,6 +152,7 @@ class KNeighborsRegressor(
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
 
     """
+
     @overload
     def __init__(
         self: KNeighborsRegressor[NDArrayFloat, Target],
@@ -159,6 +162,18 @@ class KNeighborsRegressor(
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
         metric: Literal["precomputed"],
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
+    def __init__(
+        self: KNeighborsRegressor[InputBound, Target],
+        *,
+        n_neighbors: int = 5,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
         n_jobs: int | None = None,
     ) -> None:
         pass
@@ -334,6 +349,7 @@ class RadiusNeighborsRegressor(
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
 
     """
+
     @overload
     def __init__(
         self: RadiusNeighborsRegressor[NDArrayFloat, Target],
@@ -350,13 +366,26 @@ class RadiusNeighborsRegressor(
 
     @overload
     def __init__(
+        self: RadiusNeighborsRegressor[InputBound, Target],
+        *,
+        radius: float = 1.0,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        outlier_response=None,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
+    def __init__(
         self,
         *,
         radius: float = 1.0,
         weights: WeightsType = 'uniform',
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
-        metric: Literal["precomputed"] | Metric[Input] = l2_distance,
+        metric: Metric[Input] = l2_distance,
         outlier_response=None,
         n_jobs: int | None = None,
     ) -> None:

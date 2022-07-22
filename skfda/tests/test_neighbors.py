@@ -129,13 +129,13 @@ class TestNeighbors(unittest.TestCase):
 
     def test_kneighbors(self) -> None:
         """Test k neighbor searches for all k-neighbors estimators."""
-        nn = NearestNeighbors[FDataGrid]()
+        nn = NearestNeighbors()
         nn.fit(self.X)
 
-        lof = LocalOutlierFactor[FDataGrid](n_neighbors=5)
+        lof = LocalOutlierFactor(n_neighbors=5)
         lof.fit(self.X)
 
-        knn = KNeighborsClassifier[FDataGrid]()
+        knn = KNeighborsClassifier()
         knn.fit(self.X, self.y)
 
         knnr = KNeighborsRegressor[FDataGrid, np.typing.NDArray[np.float_]]()
@@ -167,10 +167,10 @@ class TestNeighbors(unittest.TestCase):
 
     def test_radius_neighbors(self) -> None:
         """Test query with radius."""
-        nn = NearestNeighbors[FDataGrid](radius=0.1)
+        nn = NearestNeighbors(radius=0.1)
         nn.fit(self.X)
 
-        knn = RadiusNeighborsClassifier[FDataGrid](radius=0.1)
+        knn = RadiusNeighborsClassifier(radius=0.1)
         knn.fit(self.X, self.y)
 
         knnr = RadiusNeighborsRegressor[
@@ -413,7 +413,7 @@ class TestNeighbors(unittest.TestCase):
         expected[:2] = -1
 
         # With default l2 distance
-        lof = LocalOutlierFactor[FDataGrid]()
+        lof = LocalOutlierFactor()
         res = lof.fit_predict(self.fd_lof)
         np.testing.assert_array_equal(expected, res)
 
@@ -460,7 +460,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_lof_decision_function(self) -> None:
         """Test decision function and score samples of LOF."""
-        lof = LocalOutlierFactor[FDataGrid](novelty=True)
+        lof = LocalOutlierFactor(novelty=True)
         lof.fit(self.fd_lof[5:])
 
         score = lof.score_samples(self.fd_lof[:5])
@@ -480,7 +480,7 @@ class TestNeighbors(unittest.TestCase):
 
     def test_lof_exceptions(self) -> None:
         """Test error due to novelty attribute."""
-        lof = LocalOutlierFactor[FDataGrid](novelty=True)
+        lof = LocalOutlierFactor(novelty=True)
 
         # Error in fit_predict function
         with np.testing.assert_raises(AttributeError):

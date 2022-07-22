@@ -23,7 +23,8 @@ from .._neighbors_base import (
     WeightsType,
 )
 
-Input = TypeVar("Input", contravariant=True, bound=Union[NDArrayFloat, FData])
+InputBound = Union[NDArrayFloat, FData]
+Input = TypeVar("Input", contravariant=True, bound=InputBound)
 
 
 class KNeighborsClassifier(
@@ -133,13 +134,25 @@ class KNeighborsClassifier(
 
     @overload
     def __init__(
+        self: KNeighborsClassifier[InputBound],
+        *,
+        n_neighbors: int = 5,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
+    def __init__(
         self,
         *,
         n_neighbors: int = 5,
         weights: WeightsType = 'uniform',
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
-        metric: Literal["precomputed"] | Metric[Input] = l2_distance,
+        metric: Metric[Input] = l2_distance,
         n_jobs: int | None = None,
     ) -> None:
         pass
@@ -268,6 +281,19 @@ class RadiusNeighborsClassifier(
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
         metric: Literal["precomputed"],
+        outlier_label=None,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
+    def __init__(
+        self: RadiusNeighborsClassifier[InputBound],
+        *,
+        radius: float = 1.0,
+        weights: WeightsType = 'uniform',
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
         outlier_label=None,
         n_jobs: int | None = None,
     ) -> None:

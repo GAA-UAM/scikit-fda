@@ -16,7 +16,8 @@ from .._neighbors_base import (
     RadiusNeighborsMixin,
 )
 
-Input = TypeVar("Input", contravariant=True, bound=Union[NDArrayFloat, FData])
+InputBound = Union[NDArrayFloat, FData]
+Input = TypeVar("Input", contravariant=True, bound=InputBound)
 SelfType = TypeVar("SelfType", bound="NearestNeighbors[Any]")
 
 
@@ -114,6 +115,19 @@ class NearestNeighbors(
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
         metric: Literal["precomputed"],
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
+    def __init__(
+        self: NearestNeighbors[InputBound],
+        *,
+        n_neighbors: int = 5,
+        radius: float = 1.0,
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
+        metric: Metric[Input] = l2_distance,
         n_jobs: int | None = None,
     ) -> None:
         pass

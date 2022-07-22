@@ -15,7 +15,8 @@ from ...representation import FData
 from ...representation._typing import NDArrayFloat, NDArrayInt
 
 SelfType = TypeVar("SelfType", bound="LocalOutlierFactor[Any]")
-Input = TypeVar("Input", contravariant=True, bound=Union[NDArrayFloat, FData])
+InputBound = Union[NDArrayFloat, FData]
+Input = TypeVar("Input", contravariant=True, bound=InputBound)
 
 
 class LocalOutlierFactor(
@@ -174,6 +175,19 @@ class LocalOutlierFactor(
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
         metric: Literal["precomputed"],
+        contamination: float | Literal["auto"] = "auto",
+        novelty: bool = False,
+        n_jobs: int | None = None,
+    ) -> None:
+        pass
+
+    @overload
+    def __init__(
+        self: LocalOutlierFactor[InputBound],
+        *,
+        n_neighbors: int = 20,
+        algorithm: AlgorithmType = 'auto',
+        leaf_size: int = 30,
         contamination: float | Literal["auto"] = "auto",
         novelty: bool = False,
         n_jobs: int | None = None,

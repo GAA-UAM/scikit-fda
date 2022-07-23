@@ -12,7 +12,6 @@ from skfda.exploratory.outliers import LocalOutlierFactor  # Pending theory
 from skfda.misc.metrics import PairwiseMetric, l2_distance
 from skfda.ml.classification import (
     KNeighborsClassifier,
-    NearestCentroid,
     RadiusNeighborsClassifier,
 )
 from skfda.ml.clustering import NearestNeighbors
@@ -74,12 +73,9 @@ class TestNeighbors(unittest.TestCase):
         classifiers: Sequence[
             KNeighborsClassifier[FDataGrid]
             | RadiusNeighborsClassifier[FDataGrid]
-            | NearestCentroid[FDataGrid]
         ] = (
             KNeighborsClassifier(),
             RadiusNeighborsClassifier(radius=0.1),
-            NearestCentroid(),
-            NearestCentroid[FDataGrid](metric=l2_distance, centroid=np.mean),
         )
 
         for neigh in classifiers:
@@ -301,26 +297,18 @@ class TestNeighbors(unittest.TestCase):
 
     def test_radius_outlier_functional_response(self) -> None:
         """Test response with no neighbors."""
+        # Test response
         knnr = RadiusNeighborsRegressor[
             FDataGrid,
-            FDataBasis,
-        ](radius=0.001)
-        knnr.fit(self.X[3:6], self.X[3:6])
-
-        # No value given
-        with np.testing.assert_raises(ValueError):
-            knnr.predict(self.X[:10])
-
-        # Test response
-        knnr = RadiusNeighborsRegressor(
+            FDataGrid,
+        ](
             radius=0.001,
-            outlier_response=self.X[0],
         )
         knnr.fit(self.X[:6], self.X[:6])
 
         res = knnr.predict(self.X[:7])
         np.testing.assert_array_almost_equal(
-            self.X[0].data_matrix, res[6].data_matrix,
+            res[6].data_matrix, np.nan,
         )
 
     def test_functional_regressor_exceptions(self) -> None:

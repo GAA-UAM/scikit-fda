@@ -652,7 +652,8 @@ class NeighborsRegressorMixin(
         distances, neighbors = self._query(X)
 
         if len(neighbors[0]) == 0:
-            pred = self._outlier_response(neighbors)
+            # TODO: Make public somehow
+            pred = self._fit_y.dtype._na_repr()  # noqa: WPS437
         else:
             pred = self._prediction_from_neighbors(
                 self._fit_y[neighbors[0]],
@@ -661,7 +662,7 @@ class NeighborsRegressorMixin(
 
         for i, idx in enumerate(neighbors[1:]):
             if len(idx) == 0:
-                new_pred = self._outlier_response(neighbors)
+                new_pred = self._fit_y.dtype._na_repr()  # noqa: WPS437
             else:
                 new_pred = self._prediction_from_neighbors(
                     self._fit_y[idx],
@@ -671,25 +672,6 @@ class NeighborsRegressorMixin(
             pred = pred.concatenate(new_pred)
 
         return pred
-
-    def _outlier_response(
-        self,
-        neighbors: TargetRegression,
-    ) -> TargetRegression:
-        """Response in case of no neighbors."""
-        outlier_response = getattr(self, "outlier_response", None)
-
-        if outlier_response is None:
-            index = np.where([len(n) == 0 for n in neighbors])[0]
-
-            raise ValueError(
-                f"No neighbors found for test samples  {index}, "
-                "you can try using larger radius, give a reponse "
-                "for outliers, or consider removing them from "
-                "your dataset.",
-            )
-
-        return outlier_response
 
     def score(
         self,

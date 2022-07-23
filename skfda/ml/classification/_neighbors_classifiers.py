@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TypeVar, Union, overload
+from typing import Sequence, TypeVar, Union, overload
 
 from sklearn.neighbors import (
     KNeighborsClassifier as _KNeighborsClassifier,
@@ -25,6 +25,7 @@ from .._neighbors_base import (
 
 InputBound = Union[NDArrayFloat, FData]
 Input = TypeVar("Input", contravariant=True, bound=InputBound)
+OutlierLabelType = Union[int, str, Sequence[int], Sequence[str], None]
 
 
 class KNeighborsClassifier(
@@ -157,7 +158,8 @@ class KNeighborsClassifier(
     ) -> None:
         pass
 
-    def __init__(
+    # Not useless, it restricts parameters
+    def __init__(  # noqa: WPS612
         self,
         *,
         n_neighbors: int = 5,
@@ -224,7 +226,7 @@ class RadiusNeighborsClassifier(
         metric: The distance metric to use for the tree. The default metric is
             the L2 distance. See the documentation of the metrics module
             for a list of available metrics.
-        outlier_label (int, optional):
+        outlier_label:
             Label, which is given for outlier samples (samples with no
             neighbors on given radius).
             If set to None, ValueError is raised, when outlier is detected.
@@ -281,7 +283,7 @@ class RadiusNeighborsClassifier(
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
         metric: Literal["precomputed"],
-        outlier_label=None,
+        outlier_label: OutlierLabelType = None,
         n_jobs: int | None = None,
     ) -> None:
         pass
@@ -294,7 +296,7 @@ class RadiusNeighborsClassifier(
         weights: WeightsType = 'uniform',
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
-        outlier_label=None,
+        outlier_label: OutlierLabelType = None,
         n_jobs: int | None = None,
     ) -> None:
         pass
@@ -308,7 +310,7 @@ class RadiusNeighborsClassifier(
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
         metric: Metric[Input] = l2_distance,
-        outlier_label=None,
+        outlier_label: OutlierLabelType = None,
         n_jobs: int | None = None,
     ) -> None:
         pass
@@ -321,7 +323,7 @@ class RadiusNeighborsClassifier(
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
         metric: Literal["precomputed"] | Metric[Input] = l2_distance,
-        outlier_label=None,
+        outlier_label: OutlierLabelType = None,
         n_jobs: int | None = None,
     ) -> None:
         super().__init__(

@@ -271,8 +271,6 @@ class RadiusNeighborsRegressor(
         metric: The distance metric to use for the tree.  The default metric is
             the L2 distance. See the documentation of the metrics module
             for a list of available metrics.
-        outlier_response: Default response in the functional response case for
-            test samples without neighbors.
         n_jobs: The number of parallel jobs to run for neighbors search.
             ``None`` means 1 unless in a :obj:`joblib.parallel_backend`
             context.
@@ -359,7 +357,6 @@ class RadiusNeighborsRegressor(
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
         metric: Literal["precomputed"],
-        outlier_response=None,
         n_jobs: int | None = None,
     ) -> None:
         pass
@@ -372,7 +369,6 @@ class RadiusNeighborsRegressor(
         weights: WeightsType = 'uniform',
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
-        outlier_response=None,
         n_jobs: int | None = None,
     ) -> None:
         pass
@@ -386,7 +382,6 @@ class RadiusNeighborsRegressor(
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
         metric: Metric[Input] = l2_distance,
-        outlier_response=None,
         n_jobs: int | None = None,
     ) -> None:
         pass
@@ -399,7 +394,6 @@ class RadiusNeighborsRegressor(
         algorithm: AlgorithmType = 'auto',
         leaf_size: int = 30,
         metric: Literal["precomputed"] | Metric[Input] = l2_distance,
-        outlier_response=None,
         n_jobs: int | None = None,
     ) -> None:
         """Initialize the classifier."""
@@ -411,7 +405,6 @@ class RadiusNeighborsRegressor(
             metric=metric,
             n_jobs=n_jobs,
         )
-        self.outlier_response = outlier_response
 
     def _init_estimator(self) -> _RadiusNeighborsRegressor:
         return _RadiusNeighborsRegressor(

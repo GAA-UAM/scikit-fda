@@ -383,7 +383,7 @@ class LinearRegression(
     ) -> CheckRegularizationResultType:
 
         if isinstance(regularization, Iterable):
-            lambdas = []
+            lambdas: List[float] = []
             for reg in regularization:
                 if reg is None:
                     lambdas = lambdas + [0]

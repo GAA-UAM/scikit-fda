@@ -106,6 +106,7 @@ class NearestNeighbors(
         https://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
 
     """
+
     @overload
     def __init__(
         self: NearestNeighbors[NDArrayFloat],
@@ -145,7 +146,8 @@ class NearestNeighbors(
     ) -> None:
         pass
 
-    def __init__(
+    # Parameters are important
+    def __init__(  # noqa: WPS612
         self,
         *,
         n_neighbors: int = 5,

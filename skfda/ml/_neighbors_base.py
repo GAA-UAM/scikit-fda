@@ -12,7 +12,7 @@ from typing_extensions import Literal
 
 from skfda.misc.metrics._utils import PairwiseMetric
 
-from .. import FData, FDataGrid
+from .. import FData, FDataGrid, concatenate
 from .._utils._sklearn_adapter import (
     BaseEstimator,
     ClassifierMixin,
@@ -142,7 +142,7 @@ class NeighborsBase(BaseEstimator, Generic[Input, Target]):
             self._estimator.fit(distances, self._fit_y)
             self._fitted_with_distances = True
 
-    def _X_to_distances(
+    def _X_to_distances(  # noqa: N802
         self,
         X: Input,
     ) -> NDArrayFloat:
@@ -651,27 +651,17 @@ class NeighborsRegressorMixin(
         """Predict functional responses."""
         distances, neighbors = self._query(X)
 
-        if len(neighbors[0]) == 0:
-            # TODO: Make public somehow
-            pred = self._fit_y.dtype._na_repr()  # noqa: WPS437
-        else:
-            pred = self._prediction_from_neighbors(
-                self._fit_y[neighbors[0]],
-                distances[0],
+        iterable = (
+            self._fit_y.dtype._na_repr()  # noqa: WPS437
+            if len(idx) == 0
+            else self._prediction_from_neighbors(
+                self._fit_y[idx],
+                dist,
             )
+            for idx, dist in zip(neighbors, distances)
+        )
 
-        for i, idx in enumerate(neighbors[1:]):
-            if len(idx) == 0:
-                new_pred = self._fit_y.dtype._na_repr()  # noqa: WPS437
-            else:
-                new_pred = self._prediction_from_neighbors(
-                    self._fit_y[idx],
-                    distances[i + 1],
-                )
-
-            pred = pred.concatenate(new_pred)
-
-        return pred
+        return concatenate(iterable)  # type: ignore[no-any-return]
 
     def score(
         self,
@@ -772,7 +762,7 @@ class NeighborsRegressorMixin(
         v = y - y.mean()
 
         # Discretize to integrate and make squares if needed
-        if type(u) != FDataGrid:
+        if not isinstance(u, FDataGrid):
             u = u.to_grid()
             v = v.to_grid()
 

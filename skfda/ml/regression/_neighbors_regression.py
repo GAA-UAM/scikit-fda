@@ -386,7 +386,8 @@ class RadiusNeighborsRegressor(
     ) -> None:
         pass
 
-    def __init__(
+    # Parameters are important
+    def __init__(  # noqa: WPS612
         self,
         *,
         radius: float = 1.0,

@@ -190,19 +190,22 @@ class LinearRegression(
         ...                             [2, 0],
         ...                             [1, 2],
         ...                             [2, 2]])
-        >>> x = [[1, 7], [2, 3], [4, 2], [1, 1], [3, 1], [2, 5]]
-        >>> cov_dict = { "fd": x_fd, "mult": x }
+        >>> mult1 = np.asarray([1, 2, 4, 1, 3, 2])
+        >>> mult2 = np.asarray([7, 3, 2, 1, 1, 5])
+        >>> cov_dict = {"fd": x_fd, "m1": mult1, "m2": mult2}
         >>> df = pd.DataFrame(cov_dict)
         >>> y = [11, 10, 12, 6, 10, 13]
         >>> linear = LinearRegression(
         ...              coef_basis=[None, Constant()])
         >>> _ = linear.fit(df, y)
         >>> linear.coef_[0]
-        array([ 2.,  1.])
+        array([2.])
         >>> linear.coef_[1]
+        array([1.])
+        >>> linear.coef_[2]
         FDataBasis(
         basis=Constant(domain_range=((0, 1),), n_basis=1),
-        coefficients=[[ 1.]],
+        coefficients=[[1.]],
         ...)
         >>> linear.intercept_
         array([ 1.])
@@ -341,12 +344,32 @@ class LinearRegression(
         elif isinstance(X, pd.DataFrame):
             X = self._dataframe_conversion(X)
 
-        X = [x if isinstance(x, FData) else np.asarray(x) for x in X]
+        X = [
+            x if isinstance(x, FData)
+            else self._check_and_convert(x) for x in X
+        ]
 
         if all(not isinstance(i, FData) for i in X):
             warnings.warn("All the covariates are scalar.")
 
         return X
+
+    def _check_and_convert(
+        self,
+        X: AcceptedDataType,
+    ) -> np.ndarray:
+        """Check if the input array is 1D and converts it to a 2D array.
+
+        Args:
+            X: multivariate array to check and convert.
+
+        Returns:
+            np.ndarray: numpy 2D array.
+        """
+        new_X = np.asarray(X)
+        if len(new_X.shape) == 1:
+            new_X = new_X[:, np.newaxis]
+        return new_X
 
     def _argcheck_X_y(
         self,
@@ -405,44 +428,12 @@ class LinearRegression(
         self,
         X: pd.DataFrame,
     ) -> List[AcceptedDataType]:
-        """Convert DataFrames to a list with two elements.
-
-        First of all, a list with mv covariates and the second,
-        a FDataBasis object with functional data
+        """Convert DataFrames to a list with input columns.
 
         Args:
-            X: pandas DataFrame to convert
+            X: pandas DataFrame to convert.
 
         Returns:
-            List: first of all, a list with mv covariates
-            and the second, a list of FDataBasis object with functional data
+            List: list which elements are the input DataFrame columns.
         """
-        mv_list = []
-        fd_list = []
-        final = []
-
-        for obs in X.values.tolist():
-            mv = []
-            for i in enumerate(obs):
-                cov = obs[i[0]]
-                if (isinstance(cov, FData)):
-                    fd_list.append(cov)
-                elif (isinstance(cov, (np.ndarray, list))):
-                    mv_list.append(cov)
-                else:
-                    mv.append(cov)
-
-            if (len(mv) != 0):
-                mv_list.append(mv)
-
-        if (len(mv_list) != 0):
-            final.append(mv_list)
-
-        if (len(fd_list) != 0):
-            fdb_df = pd.DataFrame(fd_list)
-
-            for c in range(fdb_df.shape[1]):
-                column = FDataBasis.concatenate(*fdb_df.iloc[:, c].tolist())
-                final.append(column)
-
-        return final
+        return [v.values for k, v in X.items()]

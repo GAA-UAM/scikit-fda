@@ -9,7 +9,7 @@ from skfda.misc.covariances import Gaussian
 from skfda.misc.operators import LinearDifferentialOperator
 from skfda.misc.regularization import L2Regularization
 from skfda.ml.regression import HistoricalLinearRegression, LinearRegression
-from skfda.representation.basis import BSpline, FDataBasis, Fourier, Monomial
+from skfda.representation.basis import BSpline, FDataBasis, Fourier, Monomial, Constant
 from skfda.representation.grid import FDataGrid
 
 
@@ -112,6 +112,45 @@ class TestScalarLinearRegression(unittest.TestCase):
         y_pred = scalar.predict(X)
         np.testing.assert_allclose(y_pred, y, atol=0.01)
 
+    def test_same_result_1d_2d_multivariate_arrays(self):
+        """Test if the results using 1D and 2D arrays are the same.
+
+        1D and 2D multivariate arrays are allowed in LinearRegression
+        interface, and the result must be the same.
+        """
+        multivariate1 = np.asarray([1, 2, 4, 1, 3, 2])
+        multivariate2 = np.asarray([7, 3, 2, 1, 1, 5])
+        multivariate = [[1, 7], [2, 3], [4, 2], [1, 1], [3, 1], [2, 5]]
+
+        x_basis = Monomial(n_basis=2)
+        x_fd = FDataBasis(
+            x_basis,
+            [[0, 2], [0, 4], [1, 0], [2, 0], [1, 2], [2, 2]],
+        )
+
+        y = [11, 10, 12, 6, 10, 13]
+
+        linear = LinearRegression(coef_basis=[None, Constant()])
+        linear.fit([multivariate, x_fd], y)
+
+        linear2 = LinearRegression(coef_basis=[None, None, Constant()])
+        linear2.fit([multivariate1, multivariate2, x_fd], y)
+
+        np.testing.assert_equal(
+            linear.coef_[0][0],
+            linear2.coef_[0],
+        )
+
+        np.testing.assert_equal(
+            linear.coef_[0][1],
+            linear2.coef_[1],
+        )
+
+        np.testing.assert_equal(
+            linear.coef_[1],
+            linear2.coef_[2],
+        )
+
     def test_regression_df_multivariate(self):  # noqa: D102
 
         multivariate1 = [0, 2, 1, 3, 4, 2, 3]
@@ -145,55 +184,15 @@ class TestScalarLinearRegression(unittest.TestCase):
         )
 
         np.testing.assert_allclose(
-            scalar.coef_[0], coefs_multivariate, atol=0.01,
+            scalar.coef_[1], coefs_multivariate[0], atol=0.01,
         )
 
         np.testing.assert_allclose(
-            scalar.coef_[1].coefficients,
-            coefs_functions.coefficients,
-            atol=0.01,
-        )
-
-        y_pred = scalar.predict(df)
-        np.testing.assert_allclose(y_pred, y, atol=0.01)
-
-    def test_regression_df_grouped_multivariate(self):  # noqa: D102
-
-        multivariate = [[0, 0], [2, 7], [1, 7], [3, 9],
-                        [4, 16], [2, 14], [3, 5]]
-
-        x_basis = Monomial(n_basis=3)
-        x_fd = FDataBasis(x_basis, [[1, 0, 0], [0, 1, 0], [0, 0, 1],
-                                    [1, 0, 1], [1, 0, 0], [0, 1, 0],
-                                    [0, 0, 1]])
-
-        cov_dict = {"fd": x_fd, "mult": multivariate}
-
-        df = pd.DataFrame(cov_dict)
-
-        # y = 2 + sum([3, 1] * array) + int(3 * function)  # noqa: E800
-        intercept = 2
-        coefs_multivariate = np.array([3, 1])
-        coefs_functions = FDataBasis(
-            Monomial(n_basis=3), [[3, 0, 0]],
-        )
-        y_integral = np.array([3, 3 / 2, 1, 4, 3, 3 / 2, 1])
-        y_sum = multivariate @ coefs_multivariate
-        y = 2 + y_sum + y_integral
-
-        scalar = LinearRegression()
-        scalar.fit(df, y)
-
-        np.testing.assert_allclose(
-            scalar.intercept_, intercept, atol=0.01,
+            scalar.coef_[2], coefs_multivariate[1], atol=0.01,
         )
 
         np.testing.assert_allclose(
-            scalar.coef_[0], coefs_multivariate, atol=0.01,
-        )
-
-        np.testing.assert_allclose(
-            scalar.coef_[1].coefficients,
+            scalar.coef_[0].coefficients,
             coefs_functions.coefficients,
             atol=0.01,
         )

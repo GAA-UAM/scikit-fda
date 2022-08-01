@@ -198,7 +198,7 @@ class MagnitudeShapePlot(BasePlot):
         self._outliercol = 0.8
         self.xlabel = 'MO'
         self.ylabel = 'VO'
-        self.title = 'MS-Plot'
+        self.title = "" if self.fdata.dataset_name is None else self.fdata.dataset_name
 
     @property
     def fdata(self) -> FDataGrid:

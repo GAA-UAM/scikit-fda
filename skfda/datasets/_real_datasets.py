@@ -945,7 +945,7 @@ def fetch_aemet(  # noqa: WPS210
         data_matrix=data_matrix,
         grid_points=np.arange(0, days_in_year) + 0.5,
         domain_range=(0, days_in_year),
-        dataset_name="aemet",
+        dataset_name="AEMET",
         sample_names=data["df"].iloc[:, 1],
         argument_names=("day",),
         coordinate_names=(

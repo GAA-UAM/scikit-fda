@@ -109,8 +109,8 @@ class KernelSmoother(_LinearSmoother):
 
     def __init__(
         self,
-        *,
         kernel_estimator: Optional[HatMatrix] = None,
+        *,
         weights: Optional[NDArrayFloat] = None,
         output_points: Optional[GridPointsLike] = None,
     ):

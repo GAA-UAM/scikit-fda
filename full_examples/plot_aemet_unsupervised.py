@@ -2,12 +2,13 @@
 Meteorological data: data visualization, clustering, and functional PCA
 =======================================================================
 
-Shows the use of unsupervised tools
+Shows the use of data visualization tools, clustering and functional
+principal component analysis (FPCA).
 """
 
 # License: MIT
 
-# sphinx_gallery_thumbnail_number = 2
+# sphinx_gallery_thumbnail_number = 4
 
 from __future__ import annotations
 

@@ -2,9 +2,8 @@
 Spectrometric data: derivatives, regression, and variable selection
 ===================================================================
 
-Shows the use of functional preprocessing tools such as
-smoothing and registration, and functional classification
-methods.
+Shows the use of derivatives, functional regression and
+variable selection for functional data.
 """
 
 # License: MIT

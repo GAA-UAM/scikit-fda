@@ -1,4 +1,6 @@
 -r ./requirements.txt
+basemap
+basemap-data
 Sphinx>=3
 sphinx_rtd_theme
 sphinx-gallery

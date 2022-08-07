@@ -3,9 +3,9 @@ from typing import Callable, Optional, TypeVar, Union
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
+from sklearn.linear_model import LinearRegression
 
 from ...misc.regularization import L2Regularization
-from ._linear_regression import LinearRegression
 from ...preprocessing.dim_reduction import FPCA
 from ...representation import FData
 from ...representation._typing import ArrayLike
@@ -24,8 +24,8 @@ class FPCARegression(BaseEstimator, RegressorMixin):
 
     Args:
         n_components: Number of principal components to keep.
-        centering: If True then the data is centered before applying the
-            principal components analysis. Defaults to True.
+        intercept: If True, the linear model is calculated with an intercept.
+            Defaults to True.
         regularization: Regularization parameter for the principal component
             analysis. If None then no regularization is applied. Defaults to
             None.
@@ -39,18 +39,32 @@ class FPCARegression(BaseEstimator, RegressorMixin):
     Attributes:
         n\_components\_: :class:`int`
             Number of components actually used.
+    Examples:
+        >>> import skfda
+        >>> dataset = skfda.datasets.fetch_growth()
+        >>> fd = dataset["data"]
+        >>> y = dataset["target"]
+
+        >>> reg = skfda.ml.regression.FPCARegression(n_components=2)
+        >>> reg.fit(fd, y)
+        FPCARegression()
+        >>> score = reg.score(fd, y)
+
+        >>> reg.predict(fd) # doctest:+ELLIPSIS
+        array([...])
+
     """
 
     def __init__(
         self,
         n_components: int = 2,
-        centering: bool = True,
+        intercept: bool = True,
         regularization: Optional[L2Regularization[FData]] = None,
         weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
     ) -> None:
-        self.n_components_ = n_components
-        self.centering = centering
+        self.n_components = n_components
+        self.intercept = intercept
         self.regularization = regularization
         self.weights = weights
         self.components_basis = components_basis
@@ -71,8 +85,8 @@ class FPCARegression(BaseEstimator, RegressorMixin):
 
         """
         self._fpca = FPCA(
-            n_components=self.n_components_,
-            centering=self.centering,
+            n_components=self.n_components,
+            centering=True,
             regularization=self.regularization,
             weights=self.weights,
             components_basis=self.components_basis,
@@ -82,7 +96,7 @@ class FPCARegression(BaseEstimator, RegressorMixin):
 
         # If the variables are not centered, an intercept term has to be
         # calculated
-        self._linear_model = LinearRegression(fit_intercept=not self.centering)
+        self._linear_model = LinearRegression(fit_intercept=self.intercept)
         self._linear_model.fit(self._fpca.transform(X), y)
 
         return self

@@ -37,19 +37,28 @@ class FPCARegression(BaseEstimator, RegressorMixin):
             It is only used if the input data is a FDataBasis object.
 
     Attributes:
-        n\_components\_: :class:`int`
-            Number of components actually used.
+        n\_components\_: (int) Number of principal components used.
+        components\_: (FData) Principal components.
+        explained\_variance\_: (array_like) Amount of variance explained by
+            each of the selected components.
+        explained\_variance\_ratio\_: (array_like) Percentage of variance
+            explained by each of the selected components.
+        singular\_values\_: Singular values associated to each
+            of the selected components.
+
     Examples:
+        Using the Berkeley Growth Study dataset, we can fit the model.
         >>> import skfda
         >>> dataset = skfda.datasets.fetch_growth()
         >>> fd = dataset["data"]
         >>> y = dataset["target"]
-
         >>> reg = skfda.ml.regression.FPCARegression(n_components=2)
         >>> reg.fit(fd, y)
         FPCARegression()
-        >>> score = reg.score(fd, y)
 
+        Then, we can predict the target values and calculate the
+        score.
+        >>> score = reg.score(fd, y)
         >>> reg.predict(fd) # doctest:+ELLIPSIS
         array([...])
 
@@ -81,7 +90,7 @@ class FPCARegression(BaseEstimator, RegressorMixin):
             y: Target values.
 
         Returns:
-            self: object
+            self
 
         """
         self._fpca = FPCA(
@@ -98,6 +107,12 @@ class FPCARegression(BaseEstimator, RegressorMixin):
         # calculated
         self._linear_model = LinearRegression(fit_intercept=self.intercept)
         self._linear_model.fit(self._fpca.transform(X), y)
+
+        self.n_components_ = self.n_components
+        self.components_ = self._fpca.components_
+        self.explained_variance_ = self._fpca.explained_variance_
+        self.explained_variance_ratio_ = self._fpca.explained_variance_ratio_
+        self.singular_values_ = self._fpca.singular_values_
 
         return self
 

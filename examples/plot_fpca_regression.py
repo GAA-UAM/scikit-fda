@@ -2,7 +2,7 @@
 Functional Principal Component Analysis Regression.
 ===================================================
 
-This example explores the use of the functional principal component analysis 
+This example explores the use of the functional principal component analysis
 (FPCA) in regression problems.
 
 """
@@ -17,7 +17,7 @@ import skfda
 from skfda.ml.regression import FPCARegression
 
 ##############################################################################
-# In ths example, we will demonstrate the use of the FPCA regression method
+# In this example, we will demonstrate the use of the FPCA regression method
 # using the :func:`tecator <skfda.datasets.fetch_tecator>` dataset.
 # This data set contains 215 samples. Each of those samples is comprised of
 # a spectrum of absorbances and the contents of water, fat and protein.
@@ -81,8 +81,8 @@ print("Best cross-validation score:", gscv.best_score_)
 # very slowly with the number of components.
 #
 # This phenomenon can be seen in the following plot, and confirms that
-# FPCA alredy provides a good approximation of the data with
-# a small number of components
+# FPCA already provides a good approximation of the data with
+# a small number of components.
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)

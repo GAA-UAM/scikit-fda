@@ -122,5 +122,6 @@ print(score)
 
 ##############################################################################
 # We can plot the final version of the tree to explain every prediction.
-plot_tree(pipeline.named_steps["classifier"], precision=6)
+fig, ax = plt.subplots(figsize=(10, 10))
+plot_tree(pipeline.named_steps["classifier"], precision=6, filled=True, ax=ax)
 plt.show()

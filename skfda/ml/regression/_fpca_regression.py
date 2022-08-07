@@ -2,8 +2,8 @@ from typing import Callable, Optional, TypeVar, Union
 
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.utils.validation import check_is_fitted
 from sklearn.linear_model import LinearRegression
+from sklearn.utils.validation import check_is_fitted
 
 from ...misc.regularization import L2Regularization
 from ...preprocessing.dim_reduction import FPCA
@@ -15,7 +15,10 @@ Function = TypeVar("Function", bound=FData)
 WeightsCallable = Callable[[np.ndarray], np.ndarray]
 
 
-class FPCARegression(BaseEstimator, RegressorMixin):
+class FPCARegression(
+    BaseEstimator,      # type: ignore
+    RegressorMixin,     # type: ignore
+):
     r"""Regression using Functional Principal Components Analysis.
 
     Performs Functional Principal Components Analysis to reduce the dimension

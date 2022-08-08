@@ -175,12 +175,16 @@ fpca.components_ *= -1
 X_red = fpca.transform(X)
 
 ##############################################################################
-# We now plot the first two principal components.
+# We now plot the first two principal components as perturbations over the
+# mean.
+#
+# The ``factor`` parameters is a number that multiplies each component in
+# order to make their effect more noticeable.
 fig = plt.figure(figsize=(8, 4))
 FPCAPlot(
     fpca.mean_,
     fpca.components_,
-    multiple=50,
+    factor=50,
     fig=fig,
 ).plot()
 plt.show()

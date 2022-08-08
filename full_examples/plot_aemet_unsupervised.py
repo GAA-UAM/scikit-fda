@@ -117,6 +117,7 @@ def plot_cluster_points(
         ax.scatter(
             x[selection],
             y[selection],
+            s=64,
             color=color_map[cluster],
             edgecolors='white',
         )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Callable, Optional, TypeVar, Union
 
 import numpy as np
@@ -10,8 +11,6 @@ from scipy.linalg import solve_triangular
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
-from ...misc import inner_product_matrix
-from ...misc.metrics import l2_norm
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData
 from ...representation._typing import ArrayLike
@@ -37,23 +36,26 @@ class FPCA(
     Parameters:
         n_components: Number of principal components to keep from
             functional principal component analysis. Defaults to 3.
-        centering: If ``True`` then calculate the mean of the functional
-            data object and center the data first. Defaults to ``True``.
+        centering: Set to ``False`` when the functional data is already known
+            to be centered and there is no need to center it. Otherwise,
+            the mean of the functional data object is calculated and, the data,
+            centered before fitting . Defaults to ``True``.
         regularization: Regularization object to be applied.
         components_basis: The basis in which we want the principal
             components. We can use a different basis than the basis contained
             in the passed FDataBasis object. This parameter is only used when
             fitting a FDataBasis.
         weights: the weights vector used for
-            discrete integration. If none then the trapezoidal rule is used for
+            discrete integration. If none then Simpson's rule is used for
             computing the weights. If a callable object is passed, then the
             weight vector will be obtained by evaluating the object at the
             sample points of the passed FDataGrid object in the fit method.
             This parameter is only used when fitting a FDataGrid.
 
+            ..deprecated:: 0.7.2
+
     Attributes:
-        components\_ (FData): this contains the principal components in a
-            basis representation.
+        components\_ (FData): this contains the principal components.
         explained_variance\_ (array_like): The amount of variance explained by
             each of the selected components.
         explained_variance_ratio\_ (array_like): this contains the percentage
@@ -99,11 +101,16 @@ class FPCA(
         weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
     ) -> None:
-        self.n_components = n_components
-        self.centering = centering
-        self.regularization = regularization
-        self.weights = weights
-        self.components_basis = components_basis
+        self._n_components = n_components
+        self._centering = centering
+        self._regularization = regularization
+        self._weights = weights
+        self._components_basis = components_basis
+        if weights is not None:
+            warnings.warn(
+                "The weights parameter is deprecated and will be removed.",
+                DeprecationWarning,
+            )
 
     def _center_if_necessary(
         self,
@@ -115,7 +122,7 @@ class FPCA(
         if learn_mean:
             self.mean_ = X.mean()
 
-        return X - self.mean_ if self.centering else X
+        return X - self.mean_ if self._centering else X
 
     def _fit_basis(
         self,
@@ -145,15 +152,15 @@ class FPCA(
         # the maximum number of components is established by the target basis
         # if the target basis is available.
         n_basis = (
-            self.components_basis.n_basis
-            if self.components_basis
+            self._components_basis.n_basis
+            if self._components_basis
             else X.basis.n_basis
         )
         # necessary in inverse_transform
         self.n_samples_ = X.n_samples
 
         # check that the number of components is smaller than the sample size
-        if self.n_components > X.n_samples:
+        if self._n_components > X.n_samples:
             raise AttributeError(
                 "The sample size must be bigger than the "
                 "number of components",
@@ -161,7 +168,7 @@ class FPCA(
 
         # check that we do not exceed limits for n_components as it should
         # be smaller than the number of attributes of the basis
-        if self.n_components > n_basis:
+        if self._n_components > n_basis:
             raise AttributeError(
                 "The number of components should be "
                 "smaller than the number of attributes of "
@@ -173,7 +180,7 @@ class FPCA(
         X = self._center_if_necessary(X)
 
         # setup principal component basis if not given
-        components_basis = self.components_basis
+        components_basis = self._components_basis
         if components_basis is not None:
             # First fix domain range if not already done
             components_basis = components_basis.copy(
@@ -198,13 +205,13 @@ class FPCA(
         regularization_matrix = compute_penalty_matrix(
             basis_iterable=(components_basis,),
             regularization_parameter=1,
-            regularization=self.regularization,
+            regularization=self._regularization,
         )
 
         # apply regularization
         if regularization_matrix is not None:
             # using += would have a different behavior
-            g_matrix = (g_matrix + regularization_matrix)  # noqa: WPS350
+            g_matrix = g_matrix + regularization_matrix  # noqa: WPS350
 
         # obtain triangulation using cholesky
         l_matrix = np.linalg.cholesky(g_matrix)
@@ -220,12 +227,10 @@ class FPCA(
         )
 
         # the final matrix, C(L-1Jt)t for svd or (L-1Jt)-1CtC(L-1Jt)t for PCA
-        final_matrix = (
-            X.coefficients @ np.transpose(l_inv_j_t)
-        )
+        final_matrix = X.coefficients @ np.transpose(l_inv_j_t)
 
         # initialize the pca module provided by scikit-learn
-        pca = PCA(n_components=self.n_components)
+        pca = PCA(n_components=self._n_components)
         pca.fit(final_matrix)
 
         # we choose solve to obtain the component coefficients for the
@@ -242,7 +247,7 @@ class FPCA(
         self.components_ = X.copy(
             basis=components_basis,
             coefficients=component_coefficients.T,
-            sample_names=(None,) * self.n_components,
+            sample_names=(None,) * self._n_components,
         )
 
         return self
@@ -270,8 +275,7 @@ class FPCA(
 
         # in this case it is the inner product of our data with the components
         return (
-            X.coefficients @ self._j_matrix
-            @ self.components_.coefficients.T
+            X.coefficients @ self._j_matrix @ self.components_.coefficients.T
         )
 
     def _fit_grid(
@@ -306,7 +310,7 @@ class FPCA(
 
         """
         # check that the number of components is smaller than the sample size
-        if self.n_components > X.n_samples:
+        if self._n_components > X.n_samples:
             raise AttributeError(
                 "The sample size must be bigger than the "
                 "number of components",
@@ -314,7 +318,7 @@ class FPCA(
 
         # check that we do not exceed limits for n_components as it should
         # be smaller than the number of attributes of the funcional data object
-        if self.n_components > X.data_matrix.shape[1]:
+        if self._n_components > X.data_matrix.shape[1]:
             raise AttributeError(
                 "The number of components should be "
                 "smaller than the number of discretization "
@@ -335,21 +339,18 @@ class FPCA(
         X = self._center_if_necessary(X)
 
         # establish weights for each point of discretization
-        if not self.weights:
+        if not self._weights:
             # grid_points is a list with one array in the 1D case
-            # in trapezoidal rule, suppose \deltax_k = x_k - x_{k-1}, the
-            # weight vector is as follows: [\deltax_1/2, \deltax_1/2 +
-            # \deltax_2/2, \deltax_2/2 + \deltax_3/2, ... , \deltax_n/2]
             identity = np.eye(len(X.grid_points[0]))
-            self.weights = scipy.integrate.simps(identity, X.grid_points[0])
-        elif callable(self.weights):
-            self.weights = self.weights(X.grid_points[0])
+            self._weights = scipy.integrate.simps(identity, X.grid_points[0])
+        elif callable(self._weights):
+            self._weights = self._weights(X.grid_points[0])
             # if its a FDataGrid then we need to reduce the dimension to 1-D
             # array
-            if isinstance(self.weights, FDataGrid):
-                self.weights = np.squeeze(self.weights.data_matrix)
+            if isinstance(self._weights, FDataGrid):
+                self._weights = np.squeeze(self._weights.data_matrix)
 
-        weights_matrix = np.diag(self.weights)
+        weights_matrix = np.diag(self._weights)
 
         basis = FDataGrid(
             data_matrix=np.identity(n_points_discretization),
@@ -359,12 +360,12 @@ class FPCA(
         regularization_matrix = compute_penalty_matrix(
             basis_iterable=(basis,),
             regularization_parameter=1,
-            regularization=self.regularization,
+            regularization=self._regularization,
         )
 
         basis_matrix = basis.data_matrix[..., 0]
         if regularization_matrix is not None:
-            basis_matrix = basis_matrix + regularization_matrix
+            basis_matrix += regularization_matrix
 
         fd_data = np.linalg.solve(
             basis_matrix.T,
@@ -374,7 +375,7 @@ class FPCA(
         # see docstring for more information
         final_matrix = fd_data @ np.sqrt(weights_matrix)
 
-        pca = PCA(n_components=self.n_components)
+        pca = PCA(n_components=self._n_components)
         pca.fit(final_matrix)
         self.components_ = X.copy(
             data_matrix=np.transpose(
@@ -383,7 +384,7 @@ class FPCA(
                     np.transpose(pca.components_),
                 ),
             ),
-            sample_names=(None,) * self.n_components,
+            sample_names=(None,) * self._n_components,
         )
 
         self.explained_variance_ratio_ = pca.explained_variance_ratio_
@@ -413,7 +414,7 @@ class FPCA(
 
         return (
             X.data_matrix.reshape(X.data_matrix.shape[:-1])
-            * self.weights
+            * self._weights
             @ np.transpose(
                 self.components_.data_matrix.reshape(
                     self.components_.data_matrix.shape[:-1],
@@ -513,7 +514,7 @@ class FPCA(
             if pc_scores.ndim == 1:
                 pc_scores = pc_scores[np.newaxis, :]
 
-            if pc_scores.shape[1] != self.n_components:
+            if pc_scores.shape[1] != self._n_components:
                 raise AttributeError(
                     "pc_scores must be a numpy array "
                     "with n_samples rows and n_components columns.",
@@ -528,7 +529,7 @@ class FPCA(
 
             additional_args = {
                 "data_matrix": np.einsum(
-                    'nc,c...->n...',
+                    "nc,c...->n...",
                     pc_scores,
                     self.components_.data_matrix,
                 ),
@@ -540,7 +541,10 @@ class FPCA(
                 "coefficients": pc_scores @ self.components_.coefficients,
             }
 
-        return self.mean_.copy(
-            **additional_args,
-            sample_names=(None,) * len(pc_scores),
-        ) + self.mean_
+        return (
+            self.mean_.copy(
+                **additional_args,
+                sample_names=(None,) * len(pc_scores),
+            )
+            + self.mean_
+        )

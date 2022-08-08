@@ -1,4 +1,4 @@
-from typing import Callable, Optional, TypeVar, Union
+from typing import Callable, Optional, TypeVar
 
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
@@ -8,7 +8,6 @@ from sklearn.utils.validation import check_is_fitted
 from ...misc.regularization import L2Regularization
 from ...preprocessing.dim_reduction import FPCA
 from ...representation import FData
-from ...representation._typing import ArrayLike
 from ...representation.basis import Basis
 
 Function = TypeVar("Function", bound=FData)
@@ -32,9 +31,6 @@ class FPCARegression(
         regularization: Regularization parameter for the principal component
             analysis. If None then no regularization is applied. Defaults to
             None.
-        weights: The weights used for discrete integration in the principal
-            component analysis. If None then the weights are calculated using
-            the trapezoidal rule. Defaults to None.
         components_basis: Basis used for the principal components. If None
             then the basis of the input data is used. Defaults to None.
             It is only used if the input data is a FDataBasis object.
@@ -72,13 +68,11 @@ class FPCARegression(
         n_components: int = 2,
         intercept: bool = True,
         regularization: Optional[L2Regularization[FData]] = None,
-        weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
     ) -> None:
         self.n_components = n_components
         self.intercept = intercept
         self.regularization = regularization
-        self.weights = weights
         self.components_basis = components_basis
 
     def fit(
@@ -100,7 +94,6 @@ class FPCARegression(
             n_components=self.n_components,
             centering=True,
             regularization=self.regularization,
-            weights=self.weights,
             components_basis=self.components_basis,
         )
 

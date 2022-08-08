@@ -44,7 +44,6 @@ plt.show()
 # In order to compute functional linear regression we first convert the data
 # to a basis expansion.
 basis = BSpline(
-    domain_range=X.domain_range,
     n_basis=10,
 )
 X_der_basis = X_der.to_basis(basis)

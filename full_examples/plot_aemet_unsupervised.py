@@ -130,7 +130,15 @@ fda_color_map = {
     2: "green",
     3: "red",
     4: "orange",
-    5: "cyan",
+}
+
+# Names of each climate (for this particular seed)
+climate_names = {
+    0: "Cold climate",
+    1: "Mediterranean",
+    2: "Atlantic",
+    3: "Subtropical",
+    4: "Continental",
 }
 
 ##############################################################################
@@ -199,10 +207,12 @@ for cluster in range(n_clusters):
         X_red[selection, 0],
         X_red[selection, 1],
         color=fda_color_map[cluster],
+        label=climate_names[cluster],
     )
 
 ax.set_xlabel('First principal component')
 ax.set_ylabel('Second principal component')
+ax.legend()
 plt.show()
 
 ##############################################################################
@@ -224,7 +234,6 @@ mv_color_map = {
     2: "yellow",
     3: "green",
     4: "orange",
-    5: "cyan",
 }
 
 # Mainland

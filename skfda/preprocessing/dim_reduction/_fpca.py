@@ -52,7 +52,7 @@ class FPCA(
             sample points of the passed FDataGrid object in the fit method.
             This parameter is only used when fitting a FDataGrid.
 
-            ..deprecated:: 0.7.2
+            .. deprecated:: 0.7.2
 
     Attributes:
         components\_ (FData): this contains the principal components.
@@ -101,6 +101,20 @@ class FPCA(
         weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
     ) -> None:
+        """
+        Initialize the FPCA object.
+
+        Args:
+            n_components: Number of principal components
+            centering: If False, the data is assumed to be centered.
+            regularization: Regularization object to be applied.
+            components_basis: The basis in which we want the principal
+                components
+            weights: The weights vector used for discrete integration.
+
+                .. deprecated:: 0.7.2
+
+        """
         self._n_components = n_components
         self._centering = centering
         self._regularization = regularization

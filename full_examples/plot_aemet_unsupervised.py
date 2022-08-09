@@ -134,7 +134,7 @@ fda_color_map = {
 
 # Names of each climate (for this particular seed)
 climate_names = {
-    0: "Cold climate",
+    0: "Cold-mountain",
     1: "Mediterranean",
     2: "Atlantic",
     3: "Subtropical",

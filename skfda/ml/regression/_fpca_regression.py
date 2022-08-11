@@ -1,46 +1,44 @@
 from typing import Callable, Optional, TypeVar
+from __future__ import annotations
 
 import numpy as np
-from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.linear_model import LinearRegression
 from sklearn.utils.validation import check_is_fitted
 
+from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
 from ...misc.regularization import L2Regularization
 from ...preprocessing.dim_reduction import FPCA
 from ...representation import FData
 from ...representation.basis import Basis
 
-Function = TypeVar("Function", bound=FData)
-WeightsCallable = Callable[[np.ndarray], np.ndarray]
-
 
 class FPCARegression(
-    BaseEstimator,      # type: ignore
-    RegressorMixin,     # type: ignore
+    BaseEstimator,
+    RegressorMixin,
 ):
     r"""Regression using Functional Principal Components Analysis.
 
-    Performs Functional Principal Components Analysis to reduce the dimension
+    It performs Functional Principal Components Analysis to reduce the dimension
     of the functional data, and then uses a linear regression model to
     relate the transformed data to a scalar value.
 
     Args:
         n_components: Number of principal components to keep.
         intercept: If True, the linear model is calculated with an intercept.
-            Defaults to True.
+            Defaults to ``True``.
         regularization: Regularization parameter for the principal component
             analysis. If None then no regularization is applied. Defaults to
-            None.
+            ``None``.
         components_basis: Basis used for the principal components. If None
             then the basis of the input data is used. Defaults to None.
             It is only used if the input data is a FDataBasis object.
 
     Attributes:
-        n\_components\_: (int) Number of principal components used.
-        components\_: (FData) Principal components.
-        explained\_variance\_: (array_like) Amount of variance explained by
+        n\_components\_: Number of principal components used.
+        components\_: Principal components.
+        explained\_variance\_: Amount of variance explained by
             each of the selected components.
-        explained\_variance\_ratio\_: (array_like) Percentage of variance
+        explained\_variance\_ratio\_: Percentage of variance
             explained by each of the selected components.
         singular\_values\_: Singular values associated to each
             of the selected components.
@@ -67,8 +65,8 @@ class FPCARegression(
         self,
         n_components: int = 2,
         intercept: bool = True,
-        regularization: Optional[L2Regularization[FData]] = None,
-        components_basis: Optional[Basis] = None,
+        regularization: L2Regularization[FData] | None = None,
+        components_basis: Basis | None = None,
     ) -> None:
         self.n_components = n_components
         self.intercept = intercept
@@ -97,12 +95,12 @@ class FPCARegression(
             components_basis=self.components_basis,
         )
 
-        self._fpca.fit(X)
+        X_transformed = self._fpca.fit_transform(X)
 
         # If the variables are not centered, an intercept term has to be
         # calculated
         self._linear_model = LinearRegression(fit_intercept=self.intercept)
-        self._linear_model.fit(self._fpca.transform(X), y)
+        self._linear_model.fit(X_transformed, y)
 
         self.n_components_ = self.n_components
         self.components_ = self._fpca.components_

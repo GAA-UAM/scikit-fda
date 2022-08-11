@@ -33,6 +33,7 @@ y = y["fat"].values
 # (yellow) to highest (red).
 
 X.plot(gradient_criteria=y, legend=True)
+plt.show()
 
 ##############################################################################
 # In order to evaluate the performance of the model, we will split the data
@@ -55,7 +56,7 @@ reg.fit(X_train, y_train)
 print(reg.score(X_test, y_test))
 
 ##############################################################################
-# We have obtained a score of 0.906, which is a good result considering that
+# We have obtained a pretty good result considering that
 # the model has only used 5 components. That is to say, the dimensionality of
 # the problem has been reduced from 100 (each spectrum has 100 points) to 5.
 #

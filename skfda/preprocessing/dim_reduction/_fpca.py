@@ -101,20 +101,6 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         weights: Optional[Union[ArrayLike, WeightsCallable]] = None,
         components_basis: Optional[Basis] = None,
     ) -> None:
-        """
-        Initialize the FPCA object.
-
-        Args:
-            n_components: Number of principal components
-            centering: If False, the data is assumed to be centered.
-            regularization: Regularization object to be applied.
-            components_basis: The basis in which we want the principal
-                components
-            weights: The weights vector used for discrete integration.
-
-                .. deprecated:: 0.7.2
-
-        """
         self.n_components = n_components
         self.centering = centering
         self.regularization = regularization

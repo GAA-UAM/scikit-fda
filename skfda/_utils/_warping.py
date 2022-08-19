@@ -110,7 +110,8 @@ def normalize_scale(
 
     """
     t = t.T  # Broadcast to normalize multiple arrays
-    t1 = (t - t[0]).astype(float)  # Translation to [0, t[-1] - t[0]]
+    t1 = np.array(t, copy=True)
+    t1 -= t[0]  # Translation to [0, t[-1] - t[0]]
     t1 *= (b - a) / (t[-1] - t[0])  # Scale to [0, b-a]
     t1 += a  # Translation to [a, b]
     t1[0] = a  # Fix possible round errors

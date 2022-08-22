@@ -8,7 +8,7 @@ import numpy as np
 try:
     from numpy.typing import ArrayLike
 except ImportError:
-    ArrayLike = np.ndarray  # type:ignore
+    ArrayLike = np.ndarray  # type:ignore[misc]
 
 try:
     from numpy.typing import NDArray
@@ -17,11 +17,11 @@ try:
     NDArrayFloat = NDArray[np.float_]
     NDArrayBool = NDArray[np.bool_]
 except ImportError:
-    NDArray = np.ndarray  # type:ignore
-    NDArrayAny = np.ndarray  # type:ignore
-    NDArrayInt = np.ndarray  # type:ignore
-    NDArrayFloat = np.ndarray  # type:ignore
-    NDArrayBool = np.ndarray  # type:ignore
+    NDArray = np.ndarray  # type:ignore[misc]
+    NDArrayAny = np.ndarray  # type:ignore[misc]
+    NDArrayInt = np.ndarray  # type:ignore[misc]
+    NDArrayFloat = np.ndarray  # type:ignore[misc]
+    NDArrayBool = np.ndarray  # type:ignore[misc]
 
 VectorType = TypeVar("VectorType")
 

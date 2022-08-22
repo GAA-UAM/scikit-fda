@@ -5,7 +5,7 @@ from typing import Any, Generic, TypeVar, overload
 
 import sklearn.base
 
-from ..representation._typing import NDArrayFloat
+from ..representation._typing import NDArrayFloat, NDArrayInt
 
 SelfType = TypeVar("SelfType")
 TransformerNoTarget = TypeVar(
@@ -22,7 +22,7 @@ class BaseEstimator(  # noqa: D101
     ABC,
     sklearn.base.BaseEstimator,  # type: ignore[misc]
 ):
-    pass
+    pass  # noqa: WPS604
 
 
 class TransformerMixin(  # noqa: D101
@@ -97,6 +97,20 @@ class InductiveTransformerMixin(  # noqa: D101
         X: Input,
     ) -> Output:
         pass
+
+
+class OutlierMixin(  # noqa: D101
+    ABC,
+    Generic[Input],
+    sklearn.base.OutlierMixin,  # type: ignore[misc]
+):
+
+    def fit_predict(  # noqa: D102
+        self,
+        X: Input,
+        y: object = None,
+    ) -> NDArrayInt:
+        return self.fit(X, y).predict(X)  # type: ignore[no-any-return]
 
 
 class ClassifierMixin(  # noqa: D101

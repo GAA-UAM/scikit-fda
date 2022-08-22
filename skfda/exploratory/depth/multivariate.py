@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import abc
 import math
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 import numpy as np
 import scipy.stats
@@ -77,7 +77,7 @@ class _DepthOrOutlyingness(
         self,
         X: Input,
         *,
-        distribution: Optional[Input] = None,
+        distribution: Input | None = None,
     ) -> NDArrayFloat:
         """
         Allow the depth or outlyingness to be used as a function.

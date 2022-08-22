@@ -8,7 +8,7 @@ from the center (larger values) outwards(smaller ones).
 from __future__ import annotations
 
 import itertools
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 import numpy as np
 import scipy.integrate
@@ -58,7 +58,7 @@ class IntegratedDepth(Depth[FDataGrid]):
     def __init__(
         self,
         *,
-        multivariate_depth: Optional[Depth[NDArrayFloat]] = None,
+        multivariate_depth: Depth[NDArrayFloat] | None = None,
     ) -> None:
         self.multivariate_depth = multivariate_depth
 

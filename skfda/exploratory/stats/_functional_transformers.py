@@ -2,19 +2,34 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Tuple, TypeVar, Union
+
+from typing_extensions import Protocol
 
 import numpy as np
 
 from ..._utils import check_is_univariate, nquad_vec
 from ...representation import FData, FDataBasis, FDataGrid
-from ...representation._typing import NDArrayFloat, NDArrayInt
+from ...representation._typing import (
+    ArrayLike,
+    NDArrayBool,
+    NDArrayFloat,
+    NDArrayInt,
+)
+
+T = TypeVar("T", bound=Union[NDArrayFloat, FDataGrid])
+
+
+class _BasicUfuncProtocol(Protocol):
+
+    def __call__(self, __arg: T) -> T:  # noqa: WPS112
+        pass
 
 
 def local_averages(
     data: Union[FDataGrid, FDataBasis],
     n_intervals: int,
-) -> np.ndarray:
+) -> NDArrayFloat:
     r"""
     Calculate the local averages of a given data.
 
@@ -111,7 +126,7 @@ def _calculate_curves_occupation(
         * intervals_x_axis[:, np.newaxis]
     )
 
-    return np.sum(intervals_x_inside, axis=1)
+    return np.sum(intervals_x_inside, axis=1)  # type: ignore[no-any-return]
 
 
 def occupation_measure(
@@ -216,7 +231,7 @@ def occupation_measure(
 
 def number_up_crossings(
     data: FDataGrid,
-    levels: NDArrayFloat,
+    levels: ArrayLike,
 ) -> NDArrayInt:
     r"""
     Calculate the number of up crossings to a level of a FDataGrid.
@@ -234,9 +249,10 @@ def number_up_crossings(
 
         Args:
             data: FDataGrid where we want to calculate
-            the number of up crossings.
+                the number of up crossings.
             levels: sequence of numbers including the levels
-            we want to consider for the crossings.
+                we want to consider for the crossings.
+
         Returns:
             ndarray of shape (n_samples, len(levels))\
             with the values of the counters.
@@ -279,25 +295,21 @@ def number_up_crossings(
         >>> number_up_crossings(fd_grid, np.asarray([0]))
         array([[2]])
     """
+    levels = np.asarray(levels)
     curves = data.data_matrix[:, :, 0]
 
-    distances = np.asarray([
-        level - curves
-        for level in levels
-    ])
+    distances = np.subtract.outer(levels, curves)
 
     points_greater = distances >= 0
     points_smaller = distances <= 0
-    points_smaller_rotated = np.concatenate(
-        [
-            points_smaller[:, :, 1:],
-            points_smaller[:, :, :1],
-        ],
-        axis=2,
+
+    growing = distances[:, :, :-1] < points_greater[:, :, 1:]
+    upcrossing_positions: NDArrayBool = (
+        points_smaller[:, :, :-1] & points_greater[:, :, 1:] & growing
     )
 
-    return np.sum(
-        points_greater & points_smaller_rotated,
+    return np.sum(  # type: ignore[no-any-return]
+        upcrossing_positions,
         axis=2,
     ).T
 
@@ -409,7 +421,7 @@ def unconditional_moments(
 
 def unconditional_expected_value(
     data: FData,
-    function: Callable[[np.ndarray], np.ndarray],
+    function: _BasicUfuncProtocol,
 ) -> NDArrayFloat:
     r"""
     Calculate the unconditional expected value of a function.
@@ -460,7 +472,7 @@ def unconditional_expected_value(
     if isinstance(data, FDataGrid):
         return function(data).integrate() / lebesgue_measure
 
-    def integrand(*args: NDArrayFloat):
+    def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
         f1 = data(args)[:, 0, :]
         return function(f1)
 

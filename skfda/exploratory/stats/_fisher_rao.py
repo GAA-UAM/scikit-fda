@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import scipy.integrate
@@ -45,7 +45,7 @@ def _elastic_alignment_array(
         the functions aligned to the template(s).
 
     """
-    return optimum_reparam(
+    return optimum_reparam(  # type: ignore[no-any-return]
         np.ascontiguousarray(template_data.T),
         np.ascontiguousarray(eval_points),
         np.ascontiguousarray(q_data.T),
@@ -186,7 +186,7 @@ def fisher_rao_karcher_mean(
     center: bool = True,
     max_iter: int = 20,
     tol: float = 1e-3,
-    initial: Optional[float] = None,
+    initial: float | None = None,
     grid_dim: int = 7,
     **kwargs: Any,
 ) -> FDataGrid:

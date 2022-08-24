@@ -84,7 +84,7 @@ class TestNeighbors(unittest.TestCase):
             np.testing.assert_array_equal(
                 pred,
                 self.y,
-                err_msg=f'fail in {type(neigh)}',  # noqa: WPS237
+                err_msg=f'fail in {type(neigh)}',
             )
 
     def test_predict_proba_classifier(self) -> None:

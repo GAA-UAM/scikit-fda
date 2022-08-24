@@ -1,9 +1,8 @@
 """Common types."""
 from typing import Any, Optional, Sequence, Tuple, TypeVar, Union
 
-from typing_extensions import Protocol
-
 import numpy as np
+from typing_extensions import Protocol
 
 try:
     from numpy.typing import ArrayLike
@@ -16,12 +15,14 @@ try:
     NDArrayInt = NDArray[np.int_]
     NDArrayFloat = NDArray[np.float_]
     NDArrayBool = NDArray[np.bool_]
+    NDArrayObject = NDArray[np.object_]
 except ImportError:
     NDArray = np.ndarray  # type:ignore[misc]
     NDArrayAny = np.ndarray  # type:ignore[misc]
     NDArrayInt = np.ndarray  # type:ignore[misc]
     NDArrayFloat = np.ndarray  # type:ignore[misc]
     NDArrayBool = np.ndarray  # type:ignore[misc]
+    NDArrayObject = np.ndarray  # type:ignore[misc]
 
 VectorType = TypeVar("VectorType")
 

@@ -143,12 +143,10 @@ class FDataGrid(FData):  # noqa: WPS214
         *,
         sample_points: Optional[GridPointsLike] = None,
         domain_range: Optional[DomainRangeLike] = None,
-        dataset_label: Optional[str] = None,
         dataset_name: Optional[str] = None,
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
-        axes_labels: Optional[LabelTupleLike] = None,
         extrapolation: Optional[ExtrapolationLike] = None,
         interpolation: Optional[Evaluator] = None,
     ):
@@ -219,9 +217,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
         super().__init__(
             extrapolation=extrapolation,
-            dataset_label=dataset_label,
             dataset_name=dataset_name,
-            axes_labels=axes_labels,
             argument_names=argument_names,
             coordinate_names=coordinate_names,
             sample_names=sample_names,
@@ -1000,7 +996,7 @@ class FDataGrid(FData):  # noqa: WPS214
         )
 
         return self.copy(
-            data_matrix=self.evaluate(grid_points, grid=True),
+            data_matrix=self(grid_points, grid=True),
             grid_points=grid_points,
         )
 

@@ -3,6 +3,7 @@ from typing import Tuple, TypeVar
 import numpy as np
 import scipy.linalg
 
+from .._typing import NDArrayFloat
 from ._basis import Basis
 
 T = TypeVar("T", bound='Monomial')
@@ -67,7 +68,7 @@ class Monomial(Basis):
                 [ 2.]]])
     """
 
-    def _evaluate(self, eval_points: np.ndarray) -> np.ndarray:
+    def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
 
         # Input is scalar
         eval_points = eval_points[..., 0]
@@ -79,9 +80,9 @@ class Monomial(Basis):
 
     def _derivative_basis_and_coefs(
         self: T,
-        coefs: np.ndarray,
+        coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, np.ndarray]:
+    ) -> Tuple[T, NDArrayFloat]:
         if order >= self.n_basis:
             return (
                 type(self)(domain_range=self.domain_range, n_basis=1),
@@ -96,7 +97,7 @@ class Monomial(Basis):
             np.array([np.polyder(x[::-1], order)[::-1] for x in coefs]),
         )
 
-    def _gram_matrix(self) -> np.ndarray:
+    def _gram_matrix(self) -> NDArrayFloat:
         integral_coefs = np.polyint(np.ones(2 * self.n_basis - 1))
 
         # We obtain the powers of both extremes in the domain range
@@ -117,7 +118,7 @@ class Monomial(Basis):
         ordered_evaluated_points = evaluated_points[-2::-1]
 
         # Build the matrix
-        return scipy.linalg.hankel(
+        return scipy.linalg.hankel(  # type: ignore[no-any-return]
             ordered_evaluated_points[:self.n_basis],
             ordered_evaluated_points[self.n_basis - 1:],
         )

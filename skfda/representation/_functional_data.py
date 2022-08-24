@@ -22,11 +22,10 @@ from typing import (
     overload,
 )
 
-from typing_extensions import Literal
-
 import numpy as np
 import pandas.api.extensions
 from matplotlib.figure import Figure
+from typing_extensions import Literal
 
 from .._utils import _evaluate_grid, _reshape_eval_points, _to_grid_points
 from ._typing import (
@@ -38,6 +37,7 @@ from ._typing import (
     NDArrayBool,
     NDArrayFloat,
     NDArrayInt,
+    NDArrayObject,
 )
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike, _parse_extrapolation
@@ -58,7 +58,7 @@ EvalPointsType = Union[
 
 class FData(  # noqa: WPS214
     ABC,
-    pandas.api.extensions.ExtensionArray,  # type: ignore
+    pandas.api.extensions.ExtensionArray,  # type: ignore[misc]
 ):
     """Defines the structure of a functional data object.
 
@@ -80,42 +80,17 @@ class FData(  # noqa: WPS214
         *,
         extrapolation: Optional[ExtrapolationLike] = None,
         dataset_name: Optional[str] = None,
-        dataset_label: Optional[str] = None,
-        axes_labels: Optional[LabelTupleLike] = None,
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
     ) -> None:
 
-        self.extrapolation = extrapolation  # type: ignore
+        self.extrapolation = extrapolation  # type: ignore[assignment]
         self.dataset_name = dataset_name
 
-        if dataset_label is not None:
-            self.dataset_label = dataset_label
-
-        self.argument_names = argument_names  # type: ignore
-        self.coordinate_names = coordinate_names  # type: ignore
-        if axes_labels is not None:
-            self.axes_labels = axes_labels  # type: ignore
-        self.sample_names = sample_names  # type: ignore
-
-    @property
-    def dataset_label(self) -> Optional[str]:
-        warnings.warn(
-            "Parameter dataset_label is deprecated. Use the "
-            "parameter dataset_name instead.",
-            DeprecationWarning,
-        )
-        return self.dataset_name
-
-    @dataset_label.setter
-    def dataset_label(self, name: Optional[str]) -> None:
-        warnings.warn(
-            "Parameter dataset_label is deprecated. Use the "
-            "parameter dataset_name instead.",
-            DeprecationWarning,
-        )
-        self.dataset_name = name
+        self.argument_names = argument_names  # type: ignore[assignment]
+        self.coordinate_names = coordinate_names  # type: ignore[assignment]
+        self.sample_names = sample_names  # type: ignore[assignment]
 
     @property
     def argument_names(self) -> LabelTuple:
@@ -158,45 +133,6 @@ class FData(  # noqa: WPS214
                 )
 
         self._coordinate_names = names
-
-    @property
-    def axes_labels(self) -> LabelTuple:
-        warnings.warn(
-            "Parameter axes_labels is deprecated. Use the "
-            "parameters argument_names and "
-            "coordinate_names instead.",
-            DeprecationWarning,
-        )
-
-        return self.argument_names + self.coordinate_names
-
-    @axes_labels.setter
-    def axes_labels(self, labels: LabelTupleLike) -> None:
-        """Set the list of labels."""
-        if labels is not None:
-
-            warnings.warn(
-                "Parameter axes_labels is deprecated. Use the "
-                "parameters argument_names and "
-                "coordinate_names instead.",
-                DeprecationWarning,
-            )
-
-            labels_array = np.asarray(labels)
-            if len(labels_array) > (self.dim_domain + self.dim_codomain):
-                raise ValueError(
-                    "There must be a label for each of the "
-                    "dimensions of the domain and the image.",
-                )
-            if len(labels_array) < (self.dim_domain + self.dim_codomain):
-                diff = (
-                    (self.dim_domain + self.dim_codomain)
-                    - len(labels_array)
-                )
-                labels_array = np.concatenate((labels_array, diff * [None]))
-
-            self.argument_names = labels_array[:self.dim_domain]
-            self.coordinate_names = labels_array[self.dim_domain:]
 
     @property
     def sample_names(self) -> LabelTuple:
@@ -436,7 +372,11 @@ class FData(  # noqa: WPS214
         grid: bool = False,
         aligned: bool = True,
     ) -> NDArrayFloat:
-        """Evaluate the object at a list of values or a grid.
+        """
+        Evaluate the object at a list of values or a grid.
+
+        ..  deprecated:: 0.8
+            Use normal calling notation instead.
 
         Args:
             eval_points: List of points where the functions are
@@ -464,96 +404,19 @@ class FData(  # noqa: WPS214
             function at the values specified in eval_points.
 
         """
-        if derivative != 0:
-            warnings.warn(
-                "Parameter derivative is deprecated. Use the "
-                "derivative function instead.",
-                DeprecationWarning,
-            )
-            return self.derivative(order=derivative)(  # type: ignore
-                eval_points,
-                extrapolation=extrapolation,
-                grid=grid,
-                aligned=aligned,
-            )
-
-        if grid:  # Evaluation of a grid performed in auxiliar function
-
-            return _evaluate_grid(  # type: ignore
-                eval_points,
-                evaluate_method=self.evaluate,
-                n_samples=self.n_samples,
-                dim_domain=self.dim_domain,
-                dim_codomain=self.dim_codomain,
-                extrapolation=extrapolation,
-                aligned=aligned,
-            )
-
-        eval_points = cast(Union[ArrayLike, Iterable[ArrayLike]], eval_points)
-
-        if extrapolation is None:
-            extrapolation = self.extrapolation
-        else:
-            # Gets the function to perform extrapolation or None
-            extrapolation = _parse_extrapolation(extrapolation)
-
-        eval_points = cast(
-            Union[ArrayLike, Sequence[ArrayLike]],
-            eval_points,
+        warnings.warn(
+            "The method 'evaluate' is deprecated. "
+            "Please use the normal calling notation on the functional data "
+            "object instead.",
+            DeprecationWarning,
+            stacklevel=2,
         )
 
-        # Convert to array and check dimensions of eval points
-        eval_points = _reshape_eval_points(
-            eval_points,
-            aligned=aligned,
-            n_samples=self.n_samples,
-            dim_domain=self.dim_domain,
-        )
-
-        if extrapolation is not None:
-
-            index_matrix = self._extrapolation_index(eval_points)
-
-            if index_matrix.any():
-
-                # Partition of eval points
-                if aligned:
-
-                    index_ext = index_matrix
-                    index_ev = ~index_matrix
-
-                    eval_points_extrapolation = eval_points[index_ext]
-                    eval_points_evaluation = eval_points[index_ev]
-
-                else:
-                    index_ext = np.logical_or.reduce(index_matrix, axis=0)
-                    eval_points_extrapolation = eval_points[:, index_ext]
-
-                    index_ev = np.logical_or.reduce(~index_matrix, axis=0)
-                    eval_points_evaluation = eval_points[:, index_ev]
-
-                # Direct evaluation
-                res_evaluation = self._evaluate(
-                    eval_points_evaluation,
-                    aligned=aligned,
-                )
-
-                res_extrapolation = extrapolation(  # type: ignore
-                    self,
-                    eval_points_extrapolation,
-                    aligned=aligned,
-                )
-
-                return self._join_evaluation(
-                    index_matrix,
-                    index_ext,
-                    index_ev,
-                    res_extrapolation,
-                    res_evaluation,
-                )
-
-        return self._evaluate(
-            eval_points,
+        return self(
+            eval_points=eval_points,
+            derivative=derivative,
+            extrapolation=extrapolation,
+            grid=grid,
             aligned=aligned,
         )
 
@@ -626,7 +489,8 @@ class FData(  # noqa: WPS214
         grid: bool = False,
         aligned: bool = True,
     ) -> NDArrayFloat:
-        """Evaluate the :term:`functional object`.
+        """
+        Evaluate the :term:`functional object`.
 
         Evaluate the object or its derivatives at a list of values or a
         grid. This method is a wrapper of :meth:`evaluate`.
@@ -656,11 +520,96 @@ class FData(  # noqa: WPS214
             function at the values specified in eval_points.
 
         """
-        return self.evaluate(  # type: ignore
+        if derivative != 0:
+            warnings.warn(
+                "Parameter derivative is deprecated. Use the "
+                "derivative function instead.",
+                DeprecationWarning,
+            )
+            return self.derivative(order=derivative)(
+                eval_points,
+                extrapolation=extrapolation,
+                grid=grid,
+                aligned=aligned,
+            )
+
+        if grid:  # Evaluation of a grid performed in auxiliar function
+
+            return _evaluate_grid(
+                eval_points,
+                evaluate_method=self,
+                n_samples=self.n_samples,
+                dim_domain=self.dim_domain,
+                dim_codomain=self.dim_codomain,
+                extrapolation=extrapolation,
+                aligned=aligned,
+            )
+
+        eval_points = cast(Union[ArrayLike, Iterable[ArrayLike]], eval_points)
+
+        if extrapolation is None:
+            extrapolation = self.extrapolation
+        else:
+            # Gets the function to perform extrapolation or None
+            extrapolation = _parse_extrapolation(extrapolation)
+
+        eval_points = cast(
+            Union[ArrayLike, Sequence[ArrayLike]],
             eval_points,
-            derivative=derivative,
-            extrapolation=extrapolation,
-            grid=grid,
+        )
+
+        # Convert to array and check dimensions of eval points
+        eval_points = _reshape_eval_points(
+            eval_points,
+            aligned=aligned,
+            n_samples=self.n_samples,
+            dim_domain=self.dim_domain,
+        )
+
+        if extrapolation is not None:
+
+            index_matrix = self._extrapolation_index(eval_points)
+
+            if index_matrix.any():
+
+                # Partition of eval points
+                if aligned:
+
+                    index_ext = index_matrix
+                    index_ev = ~index_matrix
+
+                    eval_points_extrapolation = eval_points[index_ext]
+                    eval_points_evaluation = eval_points[index_ev]
+
+                else:
+                    index_ext = np.logical_or.reduce(index_matrix, axis=0)
+                    eval_points_extrapolation = eval_points[:, index_ext]
+
+                    index_ev = np.logical_or.reduce(~index_matrix, axis=0)
+                    eval_points_evaluation = eval_points[:, index_ev]
+
+                # Direct evaluation
+                res_evaluation = self._evaluate(
+                    eval_points_evaluation,
+                    aligned=aligned,
+                )
+
+                res_extrapolation = extrapolation(
+                    self,
+                    eval_points_extrapolation,
+                    aligned=aligned,
+                )
+
+                return self._join_evaluation(
+                    index_matrix,
+                    index_ext,
+                    index_ev,
+                    res_extrapolation,
+                    res_evaluation,
+                )
+
+        return self._evaluate(
+            eval_points,
             aligned=aligned,
         )
 
@@ -1104,7 +1053,7 @@ class FData(  # noqa: WPS214
     # Numpy methods
     #####################################################################
 
-    def __array__(self, *args: Any, **kwargs: Any) -> np.ndarray:
+    def __array__(self, *args: Any, **kwargs: Any) -> NDArrayObject:
         """Return a numpy array with the objects."""
         # This is to prevent numpy to access inner dimensions
         array = np.empty(shape=len(self), dtype=np.object_)
@@ -1190,7 +1139,7 @@ class FData(  # noqa: WPS214
     ) -> T:
         pass
 
-    def take(
+    def take(  # noqa: WPS238
         self: T,
         indices: Union[int, Sequence[int], NDArrayInt],
         allow_fill: bool = False,

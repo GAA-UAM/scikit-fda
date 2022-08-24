@@ -231,7 +231,7 @@ class BasisSmoother(_LinearSmoother):
         """Get the matrix that gives the coefficients."""
         from ...misc.regularization import compute_penalty_matrix
 
-        basis_values_input = self.basis.evaluate(
+        basis_values_input = self.basis(
             _cartesian_product(_to_grid_points(input_points)),
         ).reshape((self.basis.n_basis, -1)).T
 
@@ -259,7 +259,7 @@ class BasisSmoother(_LinearSmoother):
         input_points: GridPointsLike,
         output_points: GridPointsLike,
     ) -> NDArrayFloat:
-        basis_values_output = self.basis.evaluate(
+        basis_values_output = self.basis(
             _cartesian_product(
                 _to_grid_points(output_points),
             ),

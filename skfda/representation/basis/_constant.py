@@ -2,7 +2,7 @@ from typing import Optional, Tuple, TypeVar
 
 import numpy as np
 
-from .._typing import DomainRangeLike
+from .._typing import DomainRangeLike, NDArrayFloat
 from ._basis import Basis
 
 T = TypeVar("T", bound='Constant')
@@ -29,20 +29,20 @@ class Constant(Basis):
         """Constant basis constructor."""
         super().__init__(domain_range=domain_range, n_basis=1)
 
-    def _evaluate(self, eval_points: np.ndarray) -> np.ndarray:
+    def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
         return np.ones((1, len(eval_points)))
 
     def _derivative_basis_and_coefs(
         self: T,
-        coefs: np.ndarray,
+        coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, np.ndarray]:
+    ) -> Tuple[T, NDArrayFloat]:
         return (
             (self.copy(), coefs.copy()) if order == 0
             else (self.copy(), np.zeros(coefs.shape))
         )
 
-    def _gram_matrix(self) -> np.ndarray:
+    def _gram_matrix(self) -> NDArrayFloat:
         return np.array(
             [[self.domain_range[0][1] - self.domain_range[0][0]]],
         )

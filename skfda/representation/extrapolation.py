@@ -19,7 +19,7 @@ from typing import (
 import numpy as np
 from typing_extensions import Literal
 
-from ._typing import ArrayLike
+from ._typing import ArrayLike, NDArrayFloat
 from .evaluator import Evaluator
 
 if TYPE_CHECKING:
@@ -69,7 +69,7 @@ class PeriodicExtrapolation(Evaluator):
         eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
         domain_range = np.asarray(fdata.domain_range)
 
@@ -78,7 +78,7 @@ class PeriodicExtrapolation(Evaluator):
         eval_points %= domain_range[:, 1] - domain_range[:, 0]
         eval_points += domain_range[:, 0]
 
-        return fdata(eval_points, aligned=aligned)  # type: ignore
+        return fdata(eval_points, aligned=aligned)
 
 
 class BoundaryExtrapolation(Evaluator):
@@ -119,7 +119,7 @@ class BoundaryExtrapolation(Evaluator):
         eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
         domain_range = fdata.domain_range
 
@@ -142,7 +142,7 @@ class BoundaryExtrapolation(Evaluator):
                     points_per_sample[points_per_sample[..., i] < a, i] = a
                     points_per_sample[points_per_sample[..., i] > b, i] = b
 
-        return fdata(eval_points, aligned=aligned)  # type: ignore
+        return fdata(eval_points, aligned=aligned)
 
 
 class ExceptionExtrapolation(Evaluator):
@@ -223,7 +223,7 @@ class FillExtrapolation(Evaluator):
     def __init__(self, fill_value: float) -> None:
         self.fill_value = fill_value
 
-    def _fill(self, fdata: FData, eval_points: ArrayLike) -> np.ndarray:
+    def _fill(self, fdata: FData, eval_points: ArrayLike) -> NDArrayFloat:
         eval_points = np.asarray(eval_points)
 
         shape = (
@@ -239,7 +239,7 @@ class FillExtrapolation(Evaluator):
         eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         from .._utils import _to_array_maybe_ragged
 
         if aligned:

@@ -23,7 +23,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.pipeline import FeatureUnion, make_pipeline
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ..._utils import _classifier_fit_depth_methods, _classifier_get_classes
+from ..._utils import _classifier_get_classes
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...preprocessing.feature_construction._per_class_transformer import (
     PerClassTransformer,
@@ -32,6 +32,33 @@ from ...representation._typing import NDArrayFloat, NDArrayInt
 from ...representation.grid import FData
 
 T = TypeVar("T", bound=FData)
+
+
+def _classifier_get_depth_methods(
+    classes: NDArrayInt,
+    X: T,
+    y_ind: NDArrayInt,
+    depth_methods: Sequence[Depth[T]],
+) -> Sequence[Depth[T]]:
+    return [
+        clone(depth_method).fit(X[y_ind == cur_class])
+        for cur_class in range(classes.size)
+        for depth_method in depth_methods
+    ]
+
+
+def _classifier_fit_depth_methods(
+    X: T,
+    y: NDArrayInt,
+    depth_methods: Sequence[Depth[T]],
+) -> Tuple[NDArrayInt, Sequence[Depth[T]]]:
+    classes, y_ind = _classifier_get_classes(y)
+
+    class_depth_methods_ = _classifier_get_depth_methods(
+        classes, X, y_ind, depth_methods,
+    )
+
+    return classes, class_depth_methods_
 
 
 class DDClassifier(

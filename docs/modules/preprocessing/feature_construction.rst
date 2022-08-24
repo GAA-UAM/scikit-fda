@@ -7,8 +7,8 @@ The expectation is that these features make explicit characteristics that
 facilitate the learning process.
 
 
-FDA Feature union
------------------
+Feature union
+-------------
 
 This transformer defines a way of extracting a high number of distinct
 features in parallel.
@@ -31,3 +31,19 @@ data of a particular class.
    :toctree: autosummary
 
    skfda.preprocessing.feature_construction.PerClassTransformer
+   
+
+Functional features
+-------------------
+
+The following transformers can be used to extract specific functional features
+for each functional datum, which can then be used for prediction.
+
+.. autosummary::
+   :toctree: autosummary
+   
+   skfda.preprocessing.feature_construction.LocalAveragesTransformer
+   skfda.preprocessing.feature_construction.OccupationMeasureTransformer
+   skfda.preprocessing.feature_construction.NumberUpCrossingsTransformer
+   
+   

@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, Tuple, TypeVar, Union
+import itertools
+from typing import Optional, Sequence, Tuple, TypeVar, Union, cast
 
-from typing_extensions import Protocol
+from typing_extensions import Protocol, TypeGuard
 
 import numpy as np
 
-from ..._utils import check_is_univariate, nquad_vec
+from ..._utils import _to_domain_range, check_is_univariate, nquad_vec
 from ...representation import FData, FDataBasis, FDataGrid
 from ...representation._typing import (
     ArrayLike,
+    DomainRangeLike,
     NDArrayBool,
     NDArrayFloat,
     NDArrayInt,
@@ -26,31 +28,42 @@ class _BasicUfuncProtocol(Protocol):
         pass
 
 
+def _sequence_of_ints(data: Sequence[object]) -> TypeGuard[Sequence[int]]:
+    """Check that every element is an integer."""
+    return all(isinstance(d, int) for d in data)
+
+
 def local_averages(
-    data: Union[FDataGrid, FDataBasis],
-    n_intervals: int,
+    data: FData,
+    *,
+    domains: int | Sequence[int] | Sequence[DomainRangeLike],
 ) -> NDArrayFloat:
     r"""
-    Calculate the local averages of a given data.
+    Calculate the local averages of given data in the desired domains.
 
-    Take functional data as a grid or a basis and performs
-    the following map:
+    It takes functional data and performs the following map:
 
     .. math::
         f_1(X) = \frac{1}{|T_1|} \int_{T_1} X(t) dt,\dots, \\
         f_p(X) = \frac{1}{|T_p|} \int_{T_p} X(t) dt
 
-    where {T_1,\dots,T_p} are disjoint intervals of the interval [a,b]
+    where :math:`T_1, \dots, T_p` are subregions of the original
+    :term:`domain`.
 
-    It is calculated for a given number of intervals,
-    which are of equal sizes.
     Args:
         data: FDataGrid or FDataBasis where we want to
-        calculate the local averages.
-        n_intervals: number of intervals we want to consider.
+            calculate the local averages.
+        domains: Domains for each local average. It is possible to
+            pass a number or a list of numbers to automatically split
+            each dimension in that number of intervals and use them for
+            the averages.
+
     Returns:
-        ndarray of shape (n_samples, n_intervals, n_dimensions) with
+        ndarray of shape (n_samples, n_domains, codomain_dimension) with
         the transformed data.
+
+    See also:
+        :class:`~skfda.preprocessing.feature_construction.LocalAveragesTransformer`
 
     Examples:
         We import the Berkeley Growth Study dataset.
@@ -61,12 +74,35 @@ def local_averages(
         >>> dataset = fetch_growth(return_X_y=True)[0]
         >>> X = dataset[:3]
 
-        Then we decide how many intervals we want to consider (in our case 2)
-        and call the function with the dataset.
+        We can choose the intervals used for the local averages. For example,
+        we could in this case use the averages at different stages of
+        development of the child: from 1 to 3 years, from 3 to 10 and from
+        10 to 18:
 
         >>> import numpy as np
         >>> from skfda.exploratory.stats import local_averages
-        >>> np.around(local_averages(X, 2), decimals=2)
+        >>> averages = local_averages(
+        ...     X,
+        ...     domains=[(1, 3), (3, 10), (10, 18)],
+        ... )
+        >>> np.around(averages, decimals=2)
+        array([[[  91.37],
+                [ 126.52],
+                [ 179.02]],
+               [[  87.51],
+                [ 120.71],
+                [ 158.81]],
+               [[  86.36],
+                [ 115.04],
+                [ 156.37]]])
+
+        A different possibility is to decide how many intervals we want to
+        consider.  For example, we could want to split the domain in 2
+        intervals of the same length.
+
+        >>> import numpy as np
+        >>> from skfda.exploratory.stats import local_averages
+        >>> np.around(local_averages(X, domains=2), decimals=2)
         array([[[ 116.94],
                 [ 177.26]],
                [[ 111.86],
@@ -74,18 +110,36 @@ def local_averages(
                [[ 107.29],
                 [ 154.97]]])
     """
-    left, right = data.domain_range[0]
+    if isinstance(domains, int):
+        domains = [domains] * data.dim_domain
 
-    intervals, step = np.linspace(
-        left,
-        right,
-        num=n_intervals + 1,
-        retstep=True,
-    )
+    if _sequence_of_ints(domains):
+        # Get a list of arrays with the interval endpoints
+        interval_endpoints = [
+            np.linspace(
+                domain_range[0],
+                domain_range[1],
+                num=n_intervals + 1,
+            )
+            for n_intervals, domain_range in zip(domains, data.domain_range)
+        ]
+
+        # Get all combinations of intervals as ranges
+        domains = list(
+            itertools.product(
+                *[zip(p, p[1:]) for p in interval_endpoints],
+            ),
+        )
+
+    domains = cast(Sequence[DomainRangeLike], domains)
 
     integrated_data = [
-        data.integrate(interval=((intervals[i], intervals[i + 1]))) / step
-        for i in range(n_intervals)
+        unconditional_expected_value(
+            data,
+            lambda x: x,
+            domain=domain,
+        )
+        for domain in domains
     ]
     return np.swapaxes(integrated_data, 0, 1)
 
@@ -314,12 +368,14 @@ def number_up_crossings(
     ).T
 
 
-def unconditional_central_moments(
+def unconditional_central_moment(
     data: FDataGrid,
     n: int,
+    *,
+    domain: DomainRangeLike | None = None,
 ) -> NDArrayFloat:
     r"""
-    Calculate the unconditional central moments of a dataset.
+    Calculate a specified unconditional central moment.
 
     The unconditional central moments are defined as the unconditional
     moments where the mean is subtracted from each sample before the
@@ -334,49 +390,57 @@ def unconditional_central_moments(
 
         Args:
             data: FDataGrid where we want to calculate
-            a particular unconditional central moment.
+                a particular unconditional central moment.
             n: order of the moment.
+            domain: Integration domain. By default, the whole domain is used.
 
         Returns:
             ndarray of shape (n_dimensions, n_samples) with the values of the
             specified moment.
 
     Example:
+        We will calculate the first unconditional central moment of the
+        Canadian Weather data set. In order to simplify the example, we will
+        use only the first five samples.
+        First we proceed to import the data set.
 
-    We will calculate the first unconditional central moment of the Canadian
-    Weather data set. In order to simplify the example, we will use only the
-    first five samples.
-    First we proceed to import the data set.
-    >>> from skfda.datasets import fetch_weather
-    >>> X = fetch_weather(return_X_y=True)[0]
+        >>> from skfda.datasets import fetch_weather
+        >>> X = fetch_weather(return_X_y=True)[0]
 
-    Then we call the function with the samples that we want to consider and the
-    specified moment order.
-    >>> import numpy as np
-    >>> from skfda.exploratory.stats import unconditional_central_moments
-    >>> np.around(unconditional_central_moments(X[:5], 1), decimals=2)
-    array([[ 0.01,  0.01],
-           [ 0.02,  0.01],
-           [ 0.02,  0.01],
-           [ 0.02,  0.01],
-           [ 0.01,  0.01]])
+        Then we call the function with the samples that we want to consider and
+        the specified moment order.
+
+        >>> import numpy as np
+        >>> from skfda.exploratory.stats import unconditional_central_moment
+        >>> np.around(unconditional_central_moment(X[:5], 1), decimals=2)
+        array([[ 0.01,  0.01],
+               [ 0.02,  0.01],
+               [ 0.02,  0.01],
+               [ 0.02,  0.01],
+               [ 0.01,  0.01]])
+
     """
-    mean = data.integrate() / (
-        data.domain_range[0][1] - data.domain_range[0][0]
+    mean = unconditional_expected_value(
+        data,
+        lambda x: x,
+        domain=domain,
     )
 
     return unconditional_expected_value(
         data,
         lambda x: np.power(x - mean, n),
+        domain=domain,
     )
 
 
-def unconditional_moments(
+def unconditional_moment(
     data: Union[FDataBasis, FDataGrid],
     n: int,
+    *,
+    domain: DomainRangeLike | None = None,
 ) -> NDArrayFloat:
     r"""
-    Calculate the specified unconditional moment of a dataset.
+    Calculate a specified unconditional moment.
 
     The n-th unconditional moments of p real-valued continuous functions
     are calculated as:
@@ -386,91 +450,110 @@ def unconditional_moments(
         f_p(x(t))=\frac{1}{\left( b-a\right)}\int_a^b  \left(x_p(t)\right)^n dt
         Args:
             data: FDataGrid or FDataBasis where we want to calculate
-            a particular unconditional moment.
-            n: order of the moment.
+                a particular unconditional moment.
+            n: Order of the moment.
+            domain: Integration domain. By default, the whole domain is used.
 
         Returns:
             ndarray of shape (n_dimensions, n_samples) with the values of the
             specified moment.
 
-    Example:
+    Examples:
+        We will calculate the first unconditional moment of the Canadian
+        Weather data set. In order to simplify the example, we will use only
+        the first five samples.
+        First we proceed to import the data set.
 
-    We will calculate the first unconditional moment of the Canadian Weather
-    data set. In order to simplify the example, we will use only the first
-    five samples.
-    First we proceed to import the data set.
-    >>> from skfda.datasets import fetch_weather
-    >>> X = fetch_weather(return_X_y=True)[0]
+        >>> from skfda.datasets import fetch_weather
+        >>> X = fetch_weather(return_X_y=True)[0]
 
-    Then we call the function with the samples that we want to consider and the
-    specified moment order.
-    >>> import numpy as np
-    >>> from skfda.exploratory.stats import unconditional_moments
-    >>> np.around(unconditional_moments(X[:5], 1), decimals=2)
-    array([[ 4.7 ,  4.03],
-           [ 6.16,  3.96],
-           [ 5.52,  4.01],
-           [ 6.82,  3.44],
-           [ 5.25,  3.29]])
+        Then we call the function with the samples that we want to consider and
+        the specified moment order.
+
+        >>> import numpy as np
+        >>> from skfda.exploratory.stats import unconditional_moment
+        >>> np.around(unconditional_moment(X[:5], 1), decimals=2)
+        array([[ 4.7 ,  4.03],
+               [ 6.16,  3.96],
+               [ 5.52,  4.01],
+               [ 6.82,  3.44],
+               [ 5.25,  3.29]])
+
     """
     return unconditional_expected_value(
         data,
         lambda x: np.power(x, n),
+        domain=domain,
     )
 
 
 def unconditional_expected_value(
     data: FData,
     function: _BasicUfuncProtocol,
+    *,
+    domain: DomainRangeLike | None = None,
 ) -> NDArrayFloat:
     r"""
     Calculate the unconditional expected value of a function.
 
     Next formula shows for a defined transformation :math: `g(x(t))`
     and p observations, how the unconditional expected values are calculated:
+
     .. math::
             f_1(x(t))=\frac{1}{\left( b-a\right)}\int_a^b g
             \left(x_1(t)\right)dt,\dots,
             f_p(x(t))=\frac{1}{\left( b-a\right)}\int_a^b g
             \left(x_p(t)\right) dt
+
         Args:
             data: FDataGrid or FDataBasis where we want to calculate
-            the expected value.
-            f: function that specifies how the expected value to is calculated.
-            It has to be a function of X(t).
+                the expected value.
+            function: function that specifies how the expected value to is
+                calculated. It has to be a function of X(t).
+            domain: Integration domain. By default, the whole domain is used.
+
         Returns:
             ndarray of shape (n_dimensions, n_samples) with the values of the
             expectations.
 
-    Example:
-    We will use this funtion to calculate the logarithmic first moment
-    of the first 5 samples of the Berkeley Growth dataset.
-    We will start by importing it.
-    >>> from skfda.datasets import fetch_growth
-    >>> X = fetch_growth(return_X_y=True)[0]
+    Examples:
+        We will use this funtion to calculate the logarithmic first moment
+        of the first 5 samples of the Berkeley Growth dataset.
+        We will start by importing it.
 
-    We will define a function that calculates the inverse first moment.
-    >>> import numpy as np
-    >>> f = lambda x: np.power(np.log(x), 1)
+        >>> from skfda.datasets import fetch_growth
+        >>> X = fetch_growth(return_X_y=True)[0]
 
-    Then we call the function with the dataset and the function.
-    >>> from skfda.exploratory.stats import unconditional_expected_value
-    >>> np.around(unconditional_expected_value(X[:5], f), decimals=2)
-        array([[ 4.96],
-               [ 4.88],
-               [ 4.85],
-               [ 4.9 ],
-               [ 4.84]])
+        We will define a function that calculates the inverse first moment.
+
+        >>> import numpy as np
+        >>> f = lambda x: np.power(np.log(x), 1)
+
+        Then we call the function with the dataset and the function.
+
+        >>> from skfda.exploratory.stats import unconditional_expected_value
+        >>> np.around(unconditional_expected_value(X[:5], f), decimals=2)
+            array([[ 4.96],
+                   [ 4.88],
+                   [ 4.85],
+                   [ 4.9 ],
+                   [ 4.84]])
+
     """
+    if domain is None:
+        domain = data.domain_range
+    else:
+        domain = _to_domain_range(domain)
+
     lebesgue_measure = np.prod(
         [
             (iterval[1] - iterval[0])
-            for iterval in data.domain_range
+            for iterval in domain
         ],
     )
 
     if isinstance(data, FDataGrid):
-        return function(data).integrate() / lebesgue_measure
+        return function(data).integrate(domain=domain) / lebesgue_measure
 
     def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
         f1 = data(args)[:, 0, :]
@@ -478,5 +561,5 @@ def unconditional_expected_value(
 
     return nquad_vec(
         integrand,
-        data.domain_range,
+        domain,
     ) / lebesgue_measure

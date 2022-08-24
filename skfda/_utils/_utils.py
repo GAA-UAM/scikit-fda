@@ -19,6 +19,8 @@ from typing import (
     overload,
 )
 
+from typing_extensions import Literal, Protocol
+
 import numpy as np
 import scipy.integrate
 from numpy import ndarray
@@ -26,9 +28,7 @@ from pandas.api.indexers import check_array_indexer
 from sklearn.base import clone
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
-from typing_extensions import Literal, Protocol
 
-from .._utils._sklearn_adapter import TransformerMixin
 from ..representation._typing import (
     ArrayLike,
     DomainRange,

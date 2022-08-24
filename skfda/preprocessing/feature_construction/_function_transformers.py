@@ -1,64 +1,105 @@
 """Function transformers for feature construction techniques."""
+from __future__ import annotations
+
 from typing import Optional, Sequence, Tuple
 
-from sklearn.base import BaseEstimator
-
-from ..._utils import TransformerMixin
+from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from ...exploratory.stats._functional_transformers import (
     local_averages,
     number_up_crossings,
     occupation_measure,
 )
-from ...representation._typing import NDArrayFloat, Union
+from ...representation import FData
+from ...representation._typing import DomainRangeLike, NDArrayFloat, Union
 from ...representation.basis import FDataBasis
 from ...representation.grid import FDataGrid
 
 
-class LocalAveragesTransformer(BaseEstimator, TransformerMixin):
-    """
-    Transformer that works as an adapter for the local_averages function.
+class LocalAveragesTransformer(
+    BaseEstimator,
+    TransformerMixin[FData, NDArrayFloat, object],
+):
+    r"""
+    Transforms functional data to its local averages.
+
+    It takes functional data and performs the following map:
+
+    .. math::
+        f_1(X) = \frac{1}{|T_1|} \int_{T_1} X(t) dt,\dots, \\
+        f_p(X) = \frac{1}{|T_p|} \int_{T_p} X(t) dt
+
+    where :math:`T_1, \dots, T_p` are subregions of the original
+    :term:`domain`.
 
     Args:
-        n_intervals: number of intervals we want to consider.
+        domains: Domains for each local average. It is possible to
+            pass a number or a list of numbers to automatically split
+            each dimension in that number of intervals and use them for
+            the averages.
 
-    Example:
+    See also:
+        :func:`local_averages`
+
+    Examples:
         We import the Berkeley Growth Study dataset.
         We will use only the first 3 samples to make the
         example easy.
+
         >>> from skfda.datasets import fetch_growth
         >>> dataset = fetch_growth(return_X_y=True)[0]
         >>> X = dataset[:3]
 
-        Then we decide how many intervals we want to consider (in our case 2)
-        and call the function with the dataset.
+        We can choose the intervals used for the local averages. For example,
+        we could in this case use the averages at different stages of
+        development of the child: from 1 to 3 years, from 3 to 10 and from
+        10 to 18:
+
         >>> import numpy as np
         >>> from skfda.preprocessing.feature_construction import (
         ...     LocalAveragesTransformer,
         ... )
-        >>> local_averages = LocalAveragesTransformer(2)
+        >>> local_averages = LocalAveragesTransformer(
+        ...     domains=[(1, 3), (3, 10), (10, 18)],
+        ... )
+        >>> np.round(local_averages.fit_transform(X), decimals=2)
+        array([[  91.37,  126.52,  179.02],
+               [  87.51,  120.71,  158.81],
+               [  86.36,  115.04,  156.37]])
+
+        A different possibility is to decide how many intervals we want to
+        consider.  For example, we could want to split the domain in 2
+        intervals of the same length.
+
+        >>> local_averages = LocalAveragesTransformer(domains=2)
         >>> np.around(local_averages.fit_transform(X), decimals=2)
         array([[ 116.94,  177.26],
                [ 111.86,  157.62],
                [ 107.29,  154.97]])
     """
 
-    def __init__(self, n_intervals: int):
-        self.n_intervals = n_intervals
+    def __init__(
+        self,
+        *,
+        domains: int | Sequence[int] | Sequence[DomainRangeLike],
+    ) -> None:
+        self.domains = domains
 
-    def transform(self, X: Union[FDataGrid, FDataBasis]) -> NDArrayFloat:
+    def transform(self, X: FData, y: object = None) -> NDArrayFloat:
         """
-        Transform the provided data using the local_averages function.
+        Transform the provided data to its local averages.
 
         Args:
             X: FDataGrid with the samples that are going to be transformed.
+            y: Unused.
 
         Returns:
             Array of shape (n_samples, n_intervals) including
             the transformed data.
+
         """
         return local_averages(
             X,
-            self.n_intervals,
+            domains=self.domains,
         ).reshape(X.data_matrix.shape[0], -1)
 
 

@@ -17,7 +17,6 @@ from typing import (
 
 import numpy as np
 import pandas.api.extensions
-
 from skfda._utils._utils import _to_array_maybe_ragged
 
 from ..._utils import _check_array_key, _int_to_real, constants, nquad_vec
@@ -361,7 +360,7 @@ class FDataBasis(FData):  # noqa: WPS214
     def integrate(
         self: T,
         *,
-        interval: Optional[DomainRange] = None,
+        domain: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
         """
         Integration of the FData object.
@@ -373,8 +372,8 @@ class FDataBasis(FData):  # noqa: WPS214
         returned.
 
         Args:
-            interval: domain range where we want to integrate.
-            By default is None as we integrate on the whole domain.
+            domain: Domain range where we want to integrate.
+                By default is None as we integrate on the whole domain.
 
         Returns:
             NumPy array of size (``n_samples``, ``dim_codomain``)
@@ -392,16 +391,16 @@ class FDataBasis(FData):  # noqa: WPS214
                 array([[ 2.625]])
 
             Or we can do it on a given domain.
-                >>> fdata.integrate(interval = ((0.5, 1),))
+                >>> fdata.integrate(domain=((0.5, 1),))
                 array([[ 1.8671875]])
 
         """
-        if interval is None:
-            interval = self.basis.domain_range
+        if domain is None:
+            domain = self.basis.domain_range
 
         integrated = nquad_vec(
             self,
-            interval,
+            domain,
         )
 
         return integrated[0]

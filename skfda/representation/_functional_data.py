@@ -22,10 +22,11 @@ from typing import (
     overload,
 )
 
+from typing_extensions import Literal
+
 import numpy as np
 import pandas.api.extensions
 from matplotlib.figure import Figure
-from typing_extensions import Literal
 
 from .._utils import _evaluate_grid, _reshape_eval_points, _to_grid_points
 from ._typing import (
@@ -680,7 +681,7 @@ class FData(  # noqa: WPS214
     def integrate(
         self: T,
         *,
-        interval: Optional[DomainRange] = None,
+        domain: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
         """
         Integration of the FData object.
@@ -692,8 +693,8 @@ class FData(  # noqa: WPS214
         returned.
 
         Args:
-            interval: domain range where we want to integrate.
-            By default is None as we integrate on the whole domain.
+            domain: Domain range where we want to integrate.
+                By default is None as we integrate on the whole domain.
 
         Returns:
             NumPy array of size (``n_samples``, ``dim_codomain``)

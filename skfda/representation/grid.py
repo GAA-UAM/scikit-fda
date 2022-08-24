@@ -494,7 +494,7 @@ class FDataGrid(FData):  # noqa: WPS214
     def integrate(
         self: T,
         *,
-        interval: Optional[DomainRange] = None,
+        domain: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
         """
         Integration of the FData object.
@@ -506,8 +506,8 @@ class FDataGrid(FData):  # noqa: WPS214
         returned.
 
         Args:
-            interval: domain range where we want to integrate.
-            By default is None as we integrate on the whole domain.
+            domain: Domain range where we want to integrate.
+                By default is None as we integrate on the whole domain.
 
         Returns:
             NumPy array of size (``n_samples``, ``dim_codomain``)
@@ -518,8 +518,8 @@ class FDataGrid(FData):  # noqa: WPS214
             >>> fdata.integrate()
             array([[ 15.]])
         """
-        if interval is not None:
-            data = self.restrict(interval)
+        if domain is not None:
+            data = self.restrict(domain)
         else:
             data = self
 

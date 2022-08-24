@@ -4,9 +4,9 @@ from ._functional_transformers import (
     local_averages,
     number_up_crossings,
     occupation_measure,
-    unconditional_central_moments,
+    unconditional_central_moment,
     unconditional_expected_value,
-    unconditional_moments,
+    unconditional_moment,
 )
 from ._stats import (
     cov,

@@ -6,15 +6,14 @@ from typing import Callable, Union
 import numpy as np
 import scipy.signal
 import sklearn.utils
+from dcor import u_distance_correlation_sqr
 from sklearn.base import clone
 
-from dcor import u_distance_correlation_sqr
-from skfda._utils._sklearn_adapter import (
+from ...._utils import _compute_dependence, _DependenceMeasure
+from ...._utils._sklearn_adapter import (
     BaseEstimator,
     InductiveTransformerMixin,
 )
-
-from ...._utils import _compute_dependence, _DependenceMeasure
 from ....representation import FDataGrid
 from ....representation._typing import NDArrayFloat, NDArrayInt
 

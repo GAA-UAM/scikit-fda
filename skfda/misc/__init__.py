@@ -7,6 +7,7 @@ from . import (
     metrics,
     operators,
     regularization,
+    validation,
 )
 from ._math import (
     cosine_similarity,

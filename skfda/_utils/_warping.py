@@ -10,7 +10,7 @@ import numpy as np
 from scipy.interpolate import PchipInterpolator
 
 from ..representation._typing import ArrayLike, DomainRangeLike, NDArrayFloat
-from ._utils import _to_domain_range, check_is_univariate
+from ._utils import _to_domain_range
 
 if TYPE_CHECKING:
     from ..representation import FDataGrid
@@ -74,7 +74,13 @@ def invert_warping(
                 [ 1.  ]]])
 
     """
-    check_is_univariate(warping)
+    from ..misc.validation import check_fdata_dimensions
+
+    check_fdata_dimensions(
+        warping,
+        dim_domain=1,
+        dim_codomain=1,
+    )
 
     output_points = (
         warping.grid_points[0]

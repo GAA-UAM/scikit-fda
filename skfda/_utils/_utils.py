@@ -54,63 +54,6 @@ if TYPE_CHECKING:
     Target = TypeVar("Target", bound=NDArrayInt)
 
 
-def check_is_univariate(fd: FData) -> None:
-    """Check if an FData is univariate and raises an error.
-
-    Args:
-        fd: Functional object to check if is univariate.
-
-    Raises:
-        ValueError: If it is not univariate, i.e., `fd.dim_domain != 1` or
-            `fd.dim_codomain != 1`.
-
-    """
-    if fd.dim_domain != 1 or fd.dim_codomain != 1:
-        domain_str = (
-            "" if fd.dim_domain == 1
-            else f"(currently is {fd.dim_domain}) "
-        )
-
-        codomain_str = (
-            "" if fd.dim_codomain == 1
-            else f"(currently is  {fd.dim_codomain})"
-        )
-
-        raise ValueError(
-            f"The functional data must be univariate, i.e., "
-            f"with dim_domain=1 {domain_str}"
-            f"and dim_codomain=1 {codomain_str}",
-        )
-
-
-def _check_compatible_fdata(fdata1: FData, fdata2: FData) -> None:
-    """Check that two FData are compatible."""
-    if (fdata1.dim_domain != fdata2.dim_domain):
-        raise ValueError(
-            f"Functional data has incompatible domain dimensions: "
-            f"{fdata1.dim_domain} != {fdata2.dim_domain}",
-        )
-
-    if (fdata1.dim_codomain != fdata2.dim_codomain):
-        raise ValueError(
-            f"Functional data has incompatible codomain dimensions: "
-            f"{fdata1.dim_codomain} != {fdata2.dim_codomain}",
-        )
-
-
-def _check_compatible_fdatagrid(fdata1: FDataGrid, fdata2: FDataGrid) -> None:
-    """Check that two FDataGrid are compatible."""
-    _check_compatible_fdata(fdata1, fdata2)
-    if not all(
-        np.array_equal(g1, g2)
-        for g1, g2 in zip(fdata1.grid_points, fdata2.grid_points)
-    ):
-        raise ValueError(
-            f"Incompatible grid points between template and "
-            f"data: {fdata1.grid_points} != {fdata2.grid_points}",
-        )
-
-
 def _to_grid(
     X: FData,
     y: FData,

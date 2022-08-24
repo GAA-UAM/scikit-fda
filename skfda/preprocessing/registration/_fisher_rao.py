@@ -7,15 +7,11 @@ from typing import Callable, Optional, TypeVar, Union
 from sklearn.utils.validation import check_is_fitted
 
 from ... import FDataGrid
-from ..._utils import (
-    _check_compatible_fdatagrid,
-    check_is_univariate,
-    invert_warping,
-    normalize_scale,
-)
+from ..._utils import invert_warping, normalize_scale
 from ...exploratory.stats import fisher_rao_karcher_mean
 from ...exploratory.stats._fisher_rao import _elastic_alignment_array
 from ...misc.operators import SRSF
+from ...misc.validation import check_fdata_dimensions, check_fdata_same_kind
 from ...representation._typing import ArrayLike
 from ...representation.basis import Basis
 from ...representation.interpolation import SplineInterpolation
@@ -145,7 +141,7 @@ class FisherRaoElasticRegistration(
         else:
             self.template_ = self.template(X)
 
-        _check_compatible_fdatagrid(X, self.template_)
+        check_fdata_same_kind(X, self.template_)
 
         # Constructs the SRSF of the template
         self._srsf = SRSF(
@@ -160,8 +156,12 @@ class FisherRaoElasticRegistration(
     def transform(self, X: FDataGrid, y: None = None) -> FDataGrid:
 
         check_is_fitted(self)
-        check_is_univariate(X)
-        _check_compatible_fdatagrid(X, self.template_)
+        check_fdata_dimensions(
+            X,
+            dim_domain=1,
+            dim_codomain=1,
+        )
+        check_fdata_same_kind(X, self.template_)
 
         if (
             len(self._template_srsf) != 1

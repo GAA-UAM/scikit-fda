@@ -5,11 +5,11 @@ from __future__ import annotations
 import itertools
 from typing import Optional, Sequence, Tuple, TypeVar, Union, cast
 
+import numpy as np
 from typing_extensions import Protocol, TypeGuard
 
-import numpy as np
-
-from ..._utils import _to_domain_range, check_is_univariate, nquad_vec
+from ..._utils import _to_domain_range, nquad_vec
+from ...misc.validation import check_fdata_dimensions
 from ...representation import FData, FDataBasis, FDataGrid
 from ...representation._typing import (
     ArrayLike,
@@ -184,7 +184,7 @@ def _calculate_curves_occupation(
 
 
 def occupation_measure(
-    data: Union[FDataGrid, FDataBasis],
+    data: FData,
     intervals: Sequence[Tuple[float, float]],
     *,
     n_points: Optional[int] = None,
@@ -192,34 +192,33 @@ def occupation_measure(
     r"""
     Calculate the occupation measure of a grid.
 
-    It performs the following map.
-        ..math:
-            :math:`f_1(X) = |t: X(t)\in T_p|,\dots,|t: X(t)\in T_p|`
+    It performs the following map:
 
-        where :math:`{T_1,\dots,T_p}` are disjoint intervals in
-        :math:`\mathbb{R}` and | | stands for the Lebesgue measure.
+    ..math:
+        :math:`f_1(X) = |t: X(t)\in T_p|,\dots,|t: X(t)\in T_p|`
 
-    The calculations are based on the grid of points of the x axis. In case of
-    FDataGrid the original grid is taken unless n_points is specified. In case
-    of FDataBasis the number of points of the x axis to be considered is passed
-    through the n_points parameter compulsory.
-    If the result of this function is not accurate enough try to increase the
-    grid of points of the x axis. Either by increasing n_points or passing a
-    FDataGrid with more x grid points per curve.
+    where :math:`{T_1,\dots,T_p}` are disjoint intervals in
+    :math:`\mathbb{R}` and | | stands for the Lebesgue measure.
 
+    The calculations are based on evaluation at a grid of points. In case of
+    :class:`FDataGrid` the original grid is taken unless ``n_points`` is
+    specified. In case of :class:`FDataBasis` it is mandatory to pass the
+    number of points. If the result of this function is not accurate enough
+    try to increase the grid of points.
 
-        Args:
-            data: FDataGrid or FDataBasis where we want to calculate
-                the occupation measure.
-            intervals: ndarray of tuples containing the
-                intervals we want to consider. The shape should be
-                (n_sequences,2)
-            n_points: Number of points to evaluate in the domain.
-                By default will be used the points defined on the FDataGrid.
-                On a FDataBasis this value should be specified.
-        Returns:
-            ndarray of shape (n_samples, n_intervals)
-            with the transformed data.
+    Args:
+        data: Functional data where we want to calculate the occupation
+            measure.
+        intervals: ndarray of tuples containing the
+            intervals we want to consider. The shape should be
+            (n_sequences,2)
+        n_points: Number of points to evaluate in the domain.
+            By default will be used the points defined on the FDataGrid.
+            On a FDataBasis this value should be specified.
+
+    Returns:
+        ndarray of shape (n_samples, n_intervals)
+        with the transformed data.
 
     Examples:
         We will create the FDataGrid that we will use to extract
@@ -263,7 +262,11 @@ def occupation_measure(
             + " as an argument for a FDataBasis. Instead None was passed.",
         )
 
-    check_is_univariate(data)
+    check_fdata_dimensions(
+        data,
+        dim_domain=1,
+        dim_codomain=1,
+    )
 
     if n_points is None:
         function_x_coordinates = data.grid_points[0]

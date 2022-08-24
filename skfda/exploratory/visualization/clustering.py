@@ -18,7 +18,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 from typing_extensions import Protocol
 
-from ..._utils import _check_compatible_fdata
+from ...misc.validation import check_fdata_same_dimensions
 from ...representation import FData, FDataGrid
 from ...representation._typing import NDArrayFloat, NDArrayInt
 from ._baseplot import BasePlot
@@ -325,7 +325,7 @@ class ClusterPlot(BasePlot):
 
         try:
             check_is_fitted(self.estimator)
-            _check_compatible_fdata(
+            check_fdata_same_dimensions(
                 self.estimator.cluster_centers_,
                 self.fdata,
             )
@@ -414,7 +414,7 @@ class ClusterMembershipLinesPlot(BasePlot):
 
         try:
             check_is_fitted(self.estimator)
-            _check_compatible_fdata(
+            check_fdata_same_dimensions(
                 self.estimator.cluster_centers_,
                 self.fdata,
             )
@@ -565,7 +565,7 @@ class ClusterMembershipPlot(BasePlot):
 
         try:
             check_is_fitted(self.estimator)
-            _check_compatible_fdata(
+            check_fdata_same_dimensions(
                 self.estimator.cluster_centers_,
                 self.fdata,
             )

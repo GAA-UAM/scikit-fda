@@ -6,7 +6,7 @@ import numpy as np
 import scipy.integrate
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from ..._utils import check_is_univariate
+from ...misc.validation import check_fdata_dimensions
 from ...representation import FDataGrid
 from ...representation._typing import ArrayLike
 from ...representation.basis import Basis
@@ -150,7 +150,11 @@ class SRSF(
             ValueError: If functions are not univariate.
 
         """
-        check_is_univariate(X)
+        check_fdata_dimensions(
+            X,
+            dim_domain=1,
+            dim_codomain=1,
+        )
 
         if self.output_points is None:
             output_points = X.grid_points[0]
@@ -200,7 +204,11 @@ class SRSF(
         Raises:
             ValueError: If functions are multidimensional.
         """
-        check_is_univariate(X)
+        check_fdata_dimensions(
+            X,
+            dim_domain=1,
+            dim_codomain=1,
+        )
 
         stored_initial_value = getattr(self, 'initial_value_', None)
 

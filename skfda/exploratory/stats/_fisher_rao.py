@@ -6,8 +6,9 @@ import numpy as np
 import scipy.integrate
 from fdasrsf.utility_functions import optimum_reparam
 
-from ..._utils import check_is_univariate, invert_warping, normalize_scale
+from ..._utils import invert_warping, normalize_scale
 from ...misc.operators import SRSF
+from ...misc.validation import check_fdata_dimensions
 from ...representation import FDataGrid
 from ...representation._typing import NDArrayFloat
 from ...representation.interpolation import SplineInterpolation
@@ -239,7 +240,11 @@ def fisher_rao_karcher_mean(
         .. footbibliography::
 
     """
-    check_is_univariate(fdatagrid)
+    check_fdata_dimensions(
+        fdatagrid,
+        dim_domain=1,
+        dim_codomain=1,
+    )
 
     srsf_transformer = SRSF(initial_value=0)
     fdatagrid_srsf = srsf_transformer.fit_transform(fdatagrid)

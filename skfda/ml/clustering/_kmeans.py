@@ -11,8 +11,9 @@ from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_is_fitted
 
-from ..._utils import RandomStateLike, _check_compatible_fdata
+from ..._utils import RandomStateLike
 from ...misc.metrics import Metric, PairwiseMetric, l2_distance
+from ...misc.validation import check_fdata_same_dimensions
 from ...representation import FDataGrid
 from ...representation._typing import NDArrayAny, NDArrayFloat, NDArrayInt
 
@@ -364,7 +365,7 @@ class BaseKMeans(
 
         """
         check_is_fitted(self)
-        _check_compatible_fdata(self.cluster_centers_, X)
+        check_fdata_same_dimensions(self.cluster_centers_, X)
 
         membership_matrix = self._create_membership(X.n_samples)
         centroids = self.cluster_centers_.copy()
@@ -421,7 +422,7 @@ class BaseKMeans(
 
         """
         check_is_fitted(self)
-        _check_compatible_fdata(self.cluster_centers_, X)
+        check_fdata_same_dimensions(self.cluster_centers_, X)
         return self._distances_to_centers
 
     def fit_transform(
@@ -464,7 +465,7 @@ class BaseKMeans(
 
         """
         check_is_fitted(self)
-        _check_compatible_fdata(self.cluster_centers_, X)
+        check_fdata_same_dimensions(self.cluster_centers_, X)
         return -self.inertia_
 
 

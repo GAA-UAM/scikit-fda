@@ -4,12 +4,10 @@ import numbers
 from typing import Callable, Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
-from numpy import polyder, polyint, polymul, polyval
-
 import scipy.integrate
+from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
 
-from ..._utils import _same_domain
 from ...representation import FData, FDataGrid
 from ...representation._typing import DomainRangeLike
 from ...representation.basis import (

@@ -12,10 +12,11 @@ import multimethod
 import numpy as np
 import scipy.integrate
 
-from .._utils import _same_domain, nquad_vec
+from .._utils import nquad_vec
 from ..representation import FData, FDataBasis, FDataGrid
 from ..representation._typing import ArrayLike, DomainRange, NDArrayFloat
 from ..representation.basis import Basis
+from .validation import check_fdata_same_dimensions
 
 Vector = TypeVar(
     "Vector",
@@ -385,8 +386,7 @@ def _inner_product_fdatabasis(
     force_numerical: bool = False,
 ) -> NDArrayFloat:
 
-    if not _same_domain(arg1, arg2):
-        raise ValueError("Both Objects should have the same domain_range")
+    check_fdata_same_dimensions(arg1, arg2)
 
     if isinstance(arg1, Basis):
         arg1 = arg1.to_basis()

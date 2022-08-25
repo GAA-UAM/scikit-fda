@@ -208,39 +208,6 @@ def _same_domain(fd: Union[Basis, FData], fd2: Union[Basis, FData]) -> bool:
     return np.array_equal(fd.domain_range, fd2.domain_range)
 
 
-@overload
-def _reshape_eval_points(
-    eval_points: ArrayLike,
-    *,
-    aligned: Literal[True],
-    n_samples: int,
-    dim_domain: int,
-) -> NDArrayFloat:
-    pass
-
-
-@overload
-def _reshape_eval_points(
-    eval_points: Sequence[ArrayLike],
-    *,
-    aligned: Literal[False],
-    n_samples: int,
-    dim_domain: int,
-) -> NDArrayFloat | NDArrayObject:
-    pass
-
-
-@overload
-def _reshape_eval_points(
-    eval_points: Union[ArrayLike, Sequence[ArrayLike]],
-    *,
-    aligned: bool,
-    n_samples: int,
-    dim_domain: int,
-) -> NDArrayFloat | NDArrayObject:
-    pass
-
-
 def _reshape_eval_points(
     eval_points: ArrayLike,
     *,

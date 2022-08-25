@@ -78,6 +78,12 @@ def check_fdata_same_dimensions(
             f"{fdata1.dim_codomain} != {fdata2.dim_codomain}",
         )
 
+    if (fdata1.domain_range != fdata2.domain_range):
+        raise ValueError(
+            f"Functional data has incompatible domain range: "
+            f"{fdata1.domain_range} != {fdata2.domain_range}",
+        )
+
 
 @functools.singledispatch
 def _check_fdata_same_kind_specific(

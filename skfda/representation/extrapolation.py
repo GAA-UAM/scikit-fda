@@ -240,7 +240,6 @@ class FillExtrapolation(Evaluator):
         *,
         aligned: bool = True,
     ) -> NDArrayFloat:
-        from .._utils import _to_array_maybe_ragged
 
         if aligned:
             eval_points = cast(ArrayLike, eval_points)
@@ -250,7 +249,7 @@ class FillExtrapolation(Evaluator):
 
         res_list = [self._fill(fdata, p) for p in eval_points]
 
-        return _to_array_maybe_ragged(res_list)
+        return np.asarray(res_list)
 
     def __repr__(self) -> str:
         return (

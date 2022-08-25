@@ -16,7 +16,6 @@ from typing import (
 )
 
 import numpy as np
-
 from scipy.interpolate import (
     PchipInterpolator,
     RectBivariateSpline,
@@ -24,7 +23,6 @@ from scipy.interpolate import (
     UnivariateSpline,
 )
 
-from .._utils import _to_array_maybe_ragged
 from ._typing import ArrayLike
 from .evaluator import Evaluator
 
@@ -107,7 +105,7 @@ class _SplineList(abc.ABC):
         else:
             eval_points = cast(Iterable[ArrayLike], eval_points)
 
-            res = _to_array_maybe_ragged([
+            res = np.asarray([
                 self._evaluate_codomain(s, np.asarray(e))
                 for s, e in zip(self.splines, eval_points)
             ])

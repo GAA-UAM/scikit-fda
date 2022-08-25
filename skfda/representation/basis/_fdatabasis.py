@@ -18,8 +18,6 @@ from typing import (
 import numpy as np
 import pandas.api.extensions
 
-from skfda._utils._utils import _to_array_maybe_ragged
-
 from ..._utils import _check_array_key, _int_to_real, constants, nquad_vec
 from .. import grid
 from .._functional_data import FData
@@ -256,7 +254,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
     def _evaluate(
         self,
-        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        eval_points: ArrayLike,
         *,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -274,14 +272,12 @@ class FDataBasis(FData):  # noqa: WPS214
                 (self.n_samples, len(eval_points), self.dim_codomain),
             )
 
-        eval_points = cast(Iterable[ArrayLike], eval_points)
-
         res_list = [
             np.sum((c * self.basis(np.asarray(p)).T).T, axis=0)
             for c, p in zip(self.coefficients, eval_points)
         ]
 
-        return _to_array_maybe_ragged(res_list)
+        return np.asarray(res_list)
 
     def shift(
         self,

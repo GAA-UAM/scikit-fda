@@ -17,7 +17,6 @@ from ._utils import (
     _pairwise_symmetric,
     _reshape_eval_points,
     _same_domain,
-    _to_array_maybe_ragged,
     _to_domain_range,
     _to_grid,
     _to_grid_points,

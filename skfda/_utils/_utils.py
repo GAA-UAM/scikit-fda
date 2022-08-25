@@ -123,40 +123,6 @@ def _to_domain_range(sequence: DomainRangeLike) -> DomainRange:
     return cast(DomainRange, tuple_aux)
 
 
-def _to_array_maybe_ragged(
-    array: Iterable[ArrayLike],
-    *,
-    row_shape: Optional[Sequence[int]] = None,
-) -> NDArrayFloat | NDArrayObject:
-    """
-    Convert to an array where each element may or may not be of equal length.
-
-    If each element is of equal length the array is multidimensional.
-    Otherwise it is a ragged array.
-
-    """
-    def convert_row(row: ArrayLike) -> NDArrayFloat:
-        r = np.array(row)
-
-        if row_shape is not None:
-            r = r.reshape(row_shape)
-
-        return r
-
-    array_list = [convert_row(a) for a in array]
-    shapes = [a.shape for a in array_list]
-
-    if all(s == shapes[0] for s in shapes):
-        return np.array(array_list)
-
-    res = np.empty(len(array_list), dtype=np.object_)
-
-    for i, a in enumerate(array_list):
-        res[i] = a
-
-    return res
-
-
 @overload
 def _cartesian_product(
     axes: Sequence[ArrayT],
@@ -276,7 +242,7 @@ def _reshape_eval_points(
 
 
 def _reshape_eval_points(
-    eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+    eval_points: ArrayLike,
     *,
     aligned: bool,
     n_samples: int,
@@ -302,11 +268,9 @@ def _reshape_eval_points(
     if aligned:
         eval_points = np.asarray(eval_points)
     else:
-        eval_points = cast(Iterable[ArrayLike], eval_points)
-
-        eval_points = _to_array_maybe_ragged(
-            eval_points,
-            row_shape=(-1, dim_domain),
+        eval_points = np.asarray(eval_points)
+        eval_points = eval_points.reshape(
+            (eval_points.shape[0], -1, dim_domain),
         )
 
     # Case evaluation of a single value, i.e., f(0)
@@ -500,7 +464,7 @@ def _evaluate_grid(  # noqa: WPS234
                 "Should be provided a list of axis per sample",
             )
 
-        eval_points = _to_array_maybe_ragged(eval_points_tuple)
+        eval_points = np.asarray(eval_points_tuple)
 
     # Evaluate the points
     evaluated = evaluate_method(
@@ -518,7 +482,7 @@ def _evaluate_grid(  # noqa: WPS234
 
     else:
 
-        res = _to_array_maybe_ragged([
+        res = np.asarray([
             r.reshape(list(s) + [dim_codomain])
             for r, s in zip(evaluated, shape_tuple)
         ])

@@ -36,7 +36,6 @@ from ..representation._typing import (
     NDArrayAny,
     NDArrayFloat,
     NDArrayInt,
-    NDArrayObject,
 )
 from ..representation.extrapolation import ExtrapolationLike
 
@@ -214,7 +213,7 @@ def _reshape_eval_points(
     aligned: bool,
     n_samples: int,
     dim_domain: int,
-) -> NDArrayFloat | NDArrayObject:
+) -> NDArrayFloat:
     """Convert and reshape the eval_points to ndarray.
 
     Args:
@@ -328,7 +327,7 @@ def _evaluate_grid(
     dim_codomain: int,
     extrapolation: Optional[ExtrapolationLike] = None,
     aligned: Literal[False],
-) -> NDArrayFloat | NDArrayObject:
+) -> NDArrayFloat:
     pass
 
 
@@ -342,7 +341,7 @@ def _evaluate_grid(
     dim_codomain: int,
     extrapolation: Optional[ExtrapolationLike] = None,
     aligned: bool,
-) -> NDArrayFloat | NDArrayObject:
+) -> NDArrayFloat:
     pass
 
 
@@ -355,7 +354,7 @@ def _evaluate_grid(  # noqa: WPS234
     dim_codomain: int,
     extrapolation: Optional[ExtrapolationLike] = None,
     aligned: bool = True,
-) -> NDArrayFloat | NDArrayObject:
+) -> NDArrayFloat:
     """
     Evaluate the functional object in the cartesian grid.
 

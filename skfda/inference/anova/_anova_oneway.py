@@ -8,7 +8,7 @@ from typing_extensions import Literal
 
 from ... import concatenate
 from ..._utils import RandomStateLike
-from ...datasets import make_gaussian_process
+from ...datasets import make_gaussian
 from ...misc.metrics import lp_distance
 from ...representation import FData, FDataGrid
 from ...representation._typing import ArrayLike, NDArrayFloat
@@ -92,7 +92,36 @@ def v_sample_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
     ))
 
 
-def v_asymptotic_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
+def _v_asymptotic_stat_with_reps(
+    *fds: FData,
+    weights: ArrayLike,
+    p: int = 2,
+) -> float:
+    """Vectorized version of v_asymptotic_stat for repetitions."""
+    weights = np.asarray(weights)
+    if len(weights) != len(fds):
+        raise ValueError("Number of weights must match number of groups.")
+    if np.count_nonzero(weights) != len(weights):
+        raise ValueError("All weights must be non-zero.")
+
+    t_ind = np.tril_indices(len(fds), -1)
+
+    results = np.zeros(shape=(len(t_ind[0]), fds[0].n_samples))
+    for i, pair in enumerate(zip(*t_ind)):
+        left_fd = fds[pair[1]]
+        coef = np.sqrt(weights[pair[1]] / weights[pair[0]])
+        right_fd = fds[pair[0]] * coef
+        results[i] = lp_distance(left_fd, right_fd, p=p) ** p
+
+    return np.sum(results, axis=0)
+
+
+def v_asymptotic_stat(
+    fd: FData,
+    *,
+    weights: ArrayLike,
+    p: int = 2,
+) -> float:
     r"""
     Compute asymptitic statistic.
 
@@ -146,26 +175,14 @@ def v_asymptotic_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
 
         Finally the value of the statistic is calculated:
 
-        >>> v_asymptotic_stat(fd, weights)
+        >>> v_asymptotic_stat(fd, weights=weights)
         0.0018159320335885969
 
     References:
         .. footbibliography::
 
     """
-    weights = np.asarray(weights)
-    if not isinstance(fd, FData):
-        raise ValueError("Argument type must inherit FData.")
-    if len(weights) != fd.n_samples:
-        raise ValueError("Number of weights must match number of samples.")
-    if np.count_nonzero(weights) != len(weights):
-        raise ValueError("All weights must be non-zero.")
-
-    t_ind = np.tril_indices(fd.n_samples, -1)
-    coef = np.sqrt(weights[t_ind[1]] / weights[t_ind[0]])
-    left_fd = fd[t_ind[1]]
-    right_fd = fd[t_ind[0]] * coef
-    return float(np.sum(lp_distance(left_fd, right_fd, p=p) ** p))
+    return float(_v_asymptotic_stat_with_reps(*fd, weights=weights, p=p))
 
 
 def _anova_bootstrap(
@@ -186,8 +203,6 @@ def _anova_bootstrap(
                 "Domain range must match for every FData in fd_grouped.",
             )
 
-    start, stop = fd_grouped[0].domain_range[0]
-
     # List with sizes of each group
     sizes = [fd.n_samples for fd in fd_grouped]
 
@@ -201,18 +216,18 @@ def _anova_bootstrap(
         # Estimating covariances for each group
         k_est = [fd.cov().data_matrix[0, ..., 0] for fd in fd_grouped]
 
-    # Number of sample points for gaussian processes have to match
-    # the features of the covariances.
-    n_features = k_est[0].shape[0]
-
     # Simulating n_reps observations for each of the n_groups gaussian
     # processes
+    grid_points = getattr(fd_grouped[0], "grid_points", None)
+    if grid_points is None:
+        start, stop = fd_grouped[0].domain_range[0]
+        n_features = k_est[0].shape[0]
+        grid_points = np.linspace(start, stop, n_features)
+
     sim = [
-        make_gaussian_process(
+        make_gaussian(
             n_reps,
-            n_features=n_features,
-            start=start,
-            stop=stop,
+            grid_points=grid_points,
             cov=k_est[i],
             random_state=random_state,
         )
@@ -220,10 +235,7 @@ def _anova_bootstrap(
     ]
 
     v_samples = np.empty(n_reps)
-    for i in range(n_reps):
-        fdatagrid = FDataGrid([s.data_matrix[i, ..., 0] for s in sim])
-        v_samples[i] = v_asymptotic_stat(fdatagrid, sizes, p=p)
-    return v_samples
+    return _v_asymptotic_stat_with_reps(*sim, weights=sizes, p=p)
 
 
 T = TypeVar("T", bound=FData)
@@ -324,13 +336,13 @@ def oneway_anova(
         >>> fd = fetch_gait()["data"].coordinates[1]
         >>> fd1, fd2, fd3 = fd[:13], fd[13:26], fd[26:]
         >>> oneway_anova(fd1, fd2, fd3, random_state=RandomState(42))
-        (179.52499999999998, 0.5945)
+        (179.52499999999998, 0.56)
         >>> _, _, dist = oneway_anova(fd1, fd2, fd3, n_reps=3,
         ...     random_state=RandomState(42),
         ...     return_dist=True)
         >>> with printoptions(precision=4):
         ...     print(dist)
-        [ 184.0698 212.7395  195.3663]
+        [ 174.8663  202.1025  185.598 ]
 
     References:
         .. footbibliography::

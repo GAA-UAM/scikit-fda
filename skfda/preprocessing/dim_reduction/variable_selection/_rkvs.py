@@ -146,7 +146,7 @@ class RKHSVariableSelection(
         other with a peak-like mean. Both have Brownian covariance.
 
         >>> n_samples = 10000
-        >>> n_features = 1000
+        >>> n_features = 200
         >>>
         >>> def mean_1(t):
         ...     return (np.abs(t - 0.25)
@@ -179,7 +179,7 @@ class RKHSVariableSelection(
 
         >>> X_dimred = rkvs.transform(X)
         >>> len(X.grid_points[0])
-        1000
+        200
         >>> X_dimred.shape
         (10000, 3)
 

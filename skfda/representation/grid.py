@@ -13,7 +13,6 @@ import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
-    Iterable,
     Optional,
     Sequence,
     Type,
@@ -213,7 +212,7 @@ class FDataGrid(FData):  # noqa: WPS214
         if self.data_matrix.ndim == 1 + self.dim_domain:
             self.data_matrix = self.data_matrix[..., np.newaxis]
 
-        self.interpolation = interpolation  # type: ignore
+        self.interpolation = interpolation  # type: ignore[assignment]
 
         super().__init__(
             extrapolation=extrapolation,
@@ -398,12 +397,12 @@ class FDataGrid(FData):  # noqa: WPS214
 
     def _evaluate(
         self,
-        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        eval_points: NDArrayFloat,
         *,
         aligned: bool = True,
     ) -> NDArrayFloat:
 
-        return self.interpolation(  # type: ignore
+        return self.interpolation(
             self,
             eval_points,
             aligned=aligned,
@@ -680,26 +679,9 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self.interpolation == other.interpolation
 
-    def __eq__(self, other: object) -> NDArrayBool:  # type: ignore[override]
+    def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
         """Elementwise equality of FDataGrid."""
-        if not isinstance(other, type(self)) or self.dtype != other.dtype:
-            if other is pandas.NA:
-                return self.isna()
-            if pandas.api.types.is_list_like(other) and not isinstance(
-                other, (pandas.Series, pandas.Index, pandas.DataFrame),
-            ):
-                return np.concatenate([x == y for x, y in zip(self, other)])
-
-            return NotImplemented
-
-        if len(self) != len(other) and len(self) != 1 and len(other) != 1:
-            raise ValueError(
-                f"Different lengths: "
-                f"len(self)={len(self)} and "
-                f"len(other)={len(other)}",
-            )
-
-        return np.all(
+        return np.all(  # type: ignore[no-any-return]
             self.data_matrix == other.data_matrix,
             axis=tuple(range(1, self.data_matrix.ndim)),
         )
@@ -1113,7 +1095,7 @@ class FDataGrid(FData):  # noqa: WPS214
                 grid_points[keep_index],
             )
 
-        data_matrix = self.data_matrix[tuple([slice(None)] + index_list)]
+        data_matrix = self.data_matrix[(slice(None),) + tuple(index_list)]
 
         return self.copy(
             domain_range=domain_range,
@@ -1170,7 +1152,7 @@ class FDataGrid(FData):  # noqa: WPS214
             >>>
             >>> t = np.linspace(0, 1, 6)
             >>> x = np.array([t, t**2, t**3])
-            >>> fd = FDataGrid(x, t)
+            >>> fd = skfda.FDataGrid(x, t)
             >>> fd.domain_range[0]
             (0.0, 1.0)
             >>> fd.grid_points[0]
@@ -1275,8 +1257,11 @@ class FDataGrid(FData):  # noqa: WPS214
                 aligned=False,
             )
         else:
-            if eval_points is None:
-                eval_points = fd.grid_points
+            eval_points = (
+                fd.grid_points
+                if eval_points is None
+                else _to_grid_points(eval_points)
+            )
 
             grid_transformation = fd(eval_points, grid=True)
 
@@ -1339,7 +1324,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
         return self.copy(
             data_matrix=self.data_matrix[key],
-            sample_names=np.array(self.sample_names)[key],
+            sample_names=list(np.array(self.sample_names)[key]),
         )
 
     #####################################################################
@@ -1442,13 +1427,15 @@ class FDataGrid(FData):  # noqa: WPS214
         Returns:
             na_values: Positions of NA.
         """
-        return np.all(
+        return np.all(  # type: ignore[no-any-return]
             np.isnan(self.data_matrix),
             axis=tuple(range(1, self.data_matrix.ndim)),
         )
 
 
-class FDataGridDType(pandas.api.extensions.ExtensionDtype):  # type: ignore
+class FDataGridDType(
+    pandas.api.extensions.ExtensionDtype,  # type: ignore[misc]
+):
     """DType corresponding to FDataGrid in Pandas."""
 
     name = 'FDataGrid'

@@ -10,17 +10,16 @@ import abc
 from typing import Any, Mapping, Optional
 
 import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin
 
 from ... import FDataGrid
 from ..._utils import _to_grid_points
+from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from ...representation._typing import GridPointsLike
 
 
 class _LinearSmoother(
-    abc.ABC,
-    BaseEstimator,  # type: ignore
-    TransformerMixin,  # type: ignore
+    BaseEstimator,
+    TransformerMixin,
 ):
     """Linear smoother.
 

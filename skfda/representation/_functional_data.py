@@ -287,7 +287,7 @@ class FData(  # noqa: WPS214
     @abstractmethod
     def _evaluate(
         self,
-        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        eval_points: NDArrayFloat,
         *,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -946,8 +946,31 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def __eq__(self, other: object) -> NDArrayBool:  # type: ignore[override]
+    def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
+        """Elementwise equality."""
         pass
+
+    def __eq__(self, other: object) -> NDArrayBool:  # type: ignore[override]
+        """Elementwise equality, as with arrays."""
+        if not isinstance(other, type(self)) or self.dtype != other.dtype:
+            if other is pandas.NA:
+                return self.isna()
+            if pandas.api.types.is_list_like(other) and not isinstance(
+                other, (pandas.Series, pandas.Index, pandas.DataFrame),
+            ):
+                other = cast(Iterable[object], other)
+                return np.concatenate([x == y for x, y in zip(self, other)])
+
+            return NotImplemented
+
+        if len(self) != len(other) and len(self) != 1 and len(other) != 1:
+            raise ValueError(
+                f"Different lengths: "
+                f"len(self)={len(self)} and "
+                f"len(other)={len(other)}",
+            )
+
+        return self._eq_elemenwise(other)
 
     def __ne__(self, other: object) -> NDArrayBool:  # type: ignore[override]
         """Return for `self != other` (element-wise in-equality)."""
@@ -1124,6 +1147,10 @@ class FData(  # noqa: WPS214
         indices: NDArrayInt,
         fill_value: T,
     ) -> T:
+        pass
+
+    @abstractmethod
+    def isna(self) -> NDArrayBool:  # noqa: D102
         pass
 
     def take(  # noqa: WPS238

@@ -21,14 +21,12 @@ from typing import (
 
 import numpy as np
 import scipy.integrate
-from numpy import ndarray
 from pandas.api.indexers import check_array_indexer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
 from typing_extensions import Literal, Protocol
 
 from ..representation._typing import (
-    ArrayLike,
     DomainRange,
     DomainRangeLike,
     GridPoints,
@@ -36,12 +34,14 @@ from ..representation._typing import (
     NDArrayAny,
     NDArrayFloat,
     NDArrayInt,
+    NDArrayStr,
 )
 from ..representation.extrapolation import ExtrapolationLike
+from ._sklearn_adapter import BaseEstimator
 
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
 
-ArrayT = TypeVar("ArrayT", bound=NDArrayAny)
+ArrayDTypeT = TypeVar("ArrayDTypeT", bound="np.generic")
 
 if TYPE_CHECKING:
     from ..representation import FData, FDataGrid
@@ -124,30 +124,33 @@ def _to_domain_range(sequence: DomainRangeLike) -> DomainRange:
 
 @overload
 def _cartesian_product(
-    axes: Sequence[ArrayT],
+    axes: Sequence[np.typing.NDArray[ArrayDTypeT]],
     *,
     flatten: bool = True,
     return_shape: Literal[False] = False,
-) -> ArrayT:
+) -> np.typing.NDArray[ArrayDTypeT]:
     pass
 
 
 @overload
 def _cartesian_product(
-    axes: Sequence[ArrayT],
+    axes: Sequence[np.typing.NDArray[ArrayDTypeT]],
     *,
     flatten: bool = True,
     return_shape: Literal[True],
-) -> Tuple[ArrayT, Tuple[int, ...]]:
+) -> Tuple[np.typing.NDArray[ArrayDTypeT], Tuple[int, ...]]:
     pass
 
 
 def _cartesian_product(  # noqa: WPS234
-    axes: Sequence[ArrayT],
+    axes: Sequence[np.typing.NDArray[ArrayDTypeT]],
     *,
     flatten: bool = True,
     return_shape: bool = False,
-) -> Union[ArrayT, Tuple[ArrayT, Tuple[int, ...]]]:
+) -> (
+    np.typing.NDArray[ArrayDTypeT]
+    | Tuple[np.typing.NDArray[ArrayDTypeT], Tuple[int, ...]]
+):
     """
     Compute the cartesian product of the axes.
 
@@ -205,63 +208,6 @@ def _cartesian_product(  # noqa: WPS234
 def _same_domain(fd: Union[Basis, FData], fd2: Union[Basis, FData]) -> bool:
     """Check if the domain range of two objects is the same."""
     return np.array_equal(fd.domain_range, fd2.domain_range)
-
-
-def _reshape_eval_points(
-    eval_points: ArrayLike,
-    *,
-    aligned: bool,
-    n_samples: int,
-    dim_domain: int,
-) -> NDArrayFloat:
-    """Convert and reshape the eval_points to ndarray.
-
-    Args:
-        eval_points: Evaluation points to be reshaped.
-        aligned: Boolean flag. True if all the samples
-            will be evaluated at the same evaluation_points.
-        n_samples: Number of observations.
-        dim_domain: Dimension of the domain.
-
-    Returns:
-        Numpy array with the eval_points, if
-        evaluation_aligned is True with shape `number of evaluation points`
-        x `dim_domain`. If the points are not aligned the shape of the
-        points will be `n_samples` x `number of evaluation points`
-        x `dim_domain`.
-
-    """
-    if aligned:
-        eval_points = np.asarray(eval_points)
-    else:
-        eval_points = np.asarray(eval_points)
-        eval_points = eval_points.reshape(
-            (eval_points.shape[0], -1, dim_domain),
-        )
-
-    # Case evaluation of a single value, i.e., f(0)
-    # Only allowed for aligned evaluation
-    if aligned and (
-        eval_points.shape == (dim_domain,)
-        or (eval_points.ndim == 0 and dim_domain == 1)
-    ):
-        eval_points = np.array([eval_points])
-
-    if aligned:  # Samples evaluated at same eval points
-        eval_points = eval_points.reshape(
-            (eval_points.shape[0], dim_domain),
-        )
-
-    else:  # Different eval_points for each sample
-
-        if eval_points.shape[0] != n_samples:
-            raise ValueError(
-                f"eval_points should be a list "
-                f"of length {n_samples} with the "
-                f"evaluation points for each sample.",
-            )
-
-    return eval_points
 
 
 def _one_grid_to_points(
@@ -479,12 +425,12 @@ def nquad_vec(
 
 
 def _map_in_batches(
-    function: Callable[..., ArrayT],
+    function: Callable[..., np.typing.NDArray[ArrayDTypeT]],
     arguments: Tuple[Union[FData, NDArrayAny], ...],
     indexes: Tuple[NDArrayInt, ...],
     memory_per_batch: Optional[int] = None,
     **kwargs: Any,
-) -> ArrayT:
+) -> np.typing.NDArray[ArrayDTypeT]:
     """
     Map a function over samples of FData or ndarray tuples efficiently.
 
@@ -505,7 +451,7 @@ def _map_in_batches(
 
     assert all(n_indexes == len(i) for i in indexes)
 
-    batches: List[ArrayT] = []
+    batches: List[np.typing.NDArray[ArrayDTypeT]] = []
 
     for pos in range(0, n_indexes, n_elements_per_batch_allowed):
         batch_args = tuple(
@@ -515,25 +461,25 @@ def _map_in_batches(
 
         batches.append(function(*batch_args, **kwargs))
 
-    return np.concatenate(batches, axis=0)  # type: ignore[return-value]
+    return np.concatenate(batches, axis=0)
 
 
 def _pairwise_symmetric(
-    function: Callable[..., ArrayT],
+    function: Callable[..., np.typing.NDArray[ArrayDTypeT]],
     arg1: Union[FData, NDArrayAny],
     arg2: Optional[Union[FData, NDArrayAny]] = None,
     memory_per_batch: Optional[int] = None,
     **kwargs: Any,
-) -> ArrayT:
+) -> np.typing.NDArray[ArrayDTypeT]:
     """Compute pairwise a commutative function."""
     dim1 = len(arg1)
     if arg2 is None or arg2 is arg1:
-        indices = np.triu_indices(dim1)
+        triu_indices = np.triu_indices(dim1)
 
         triang_vec = _map_in_batches(
             function,
             (arg1, arg1),
-            indices,
+            triu_indices,
             memory_per_batch=memory_per_batch,
             **kwargs,
         )
@@ -541,10 +487,10 @@ def _pairwise_symmetric(
         matrix = np.empty((dim1, dim1), dtype=triang_vec.dtype)
 
         # Set upper matrix
-        matrix[indices] = triang_vec
+        matrix[triu_indices] = triang_vec
 
         # Set lower matrix
-        matrix[(indices[1], indices[0])] = triang_vec
+        matrix[(triu_indices[1], triu_indices[0])] = triang_vec
 
         return matrix
 
@@ -559,7 +505,7 @@ def _pairwise_symmetric(
         **kwargs,
     )
 
-    return vec.reshape((dim1, dim2))
+    return np.reshape(vec, (dim1, dim2))
 
 
 def _int_to_real(array: Union[NDArrayInt, NDArrayFloat]) -> NDArrayFloat:
@@ -589,7 +535,7 @@ def _check_array_key(array: NDArrayAny, key: Any) -> Any:
     return key
 
 
-def _check_estimator(estimator):
+def _check_estimator(estimator: BaseEstimator) -> None:
     from sklearn.utils.estimator_checks import (
         check_get_params_invariance,
         check_set_params,
@@ -601,7 +547,9 @@ def _check_estimator(estimator):
     check_set_params(name, instance)
 
 
-def _classifier_get_classes(y: ndarray) -> Tuple[ndarray, NDArrayInt]:
+def _classifier_get_classes(
+    y: NDArrayStr | NDArrayInt,
+) -> Tuple[NDArrayStr | NDArrayInt, NDArrayInt]:
 
     check_classification_targets(y)
 

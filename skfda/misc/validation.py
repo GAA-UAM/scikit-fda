@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import functools
-from typing import Container
+from typing import Container, Sequence
 
 import numpy as np
 
 from ..representation import FData, FDataBasis, FDataGrid
+from ..representation._typing import ArrayLike, NDArrayFloat
 
 
 def check_fdata_dimensions(
@@ -157,3 +158,73 @@ def check_fdata_same_kind(
     # If there is no subclassing, execute both checks
     if not isinstance(fdata1, type(fdata2)):
         _check_fdata_same_kind_specific(fdata2, fdata1)
+
+
+def _valid_eval_points_shape(
+    shape: Sequence[int],
+    *,
+    dim_domain: int,
+) -> bool:
+    """Check that the shape for aligned evaluation points is ok."""
+    return (
+        (len(shape) == 2 and shape[-1] == dim_domain)  # noqa: WPS222
+        or (len(shape) <= 1 and dim_domain == 1)  # Domain ommited
+        or (len(shape) == 1 and shape == (dim_domain,))  # Num. points ommited
+    )
+
+
+def validate_evaluation_points(
+    eval_points: ArrayLike,
+    *,
+    aligned: bool,
+    n_samples: int,
+    dim_domain: int,
+) -> NDArrayFloat:
+    """Convert and reshape the eval_points to ndarray.
+
+    Args:
+        eval_points: Evaluation points to be reshaped.
+        aligned: Boolean flag. True if all the samples
+            will be evaluated at the same evaluation_points.
+        n_samples: Number of observations.
+        dim_domain: Dimension of the domain.
+
+    Returns:
+        Numpy array with the eval_points, if
+        evaluation_aligned is True with shape `number of evaluation points`
+        x `dim_domain`. If the points are not aligned the shape of the
+        points will be `n_samples` x `number of evaluation points`
+        x `dim_domain`.
+
+    """
+    eval_points = np.asarray(eval_points)
+
+    shape: Sequence[int]
+    if aligned:
+        if _valid_eval_points_shape(eval_points.shape, dim_domain=dim_domain):
+            shape = (-1, dim_domain)
+        else:
+            raise ValueError(
+                "Invalid shape for evaluation points."
+                f"An array with size (n_points, dim_domain (={dim_domain})) "
+                "was expected (both can be ommited if they are 1)."
+                "Instead, the received evaluation points have shape "
+                f"{eval_points.shape}.",
+            )
+    else:
+        if eval_points.shape[0] == n_samples and _valid_eval_points_shape(
+            eval_points.shape[1:],
+            dim_domain=dim_domain,
+        ):
+            shape = (n_samples, -1, dim_domain)
+        else:
+            raise ValueError(
+                "Invalid shape for unaligned evaluation points."
+                f"An array with size (n_samples (={n_samples}), "
+                f"n_points, dim_domain (={dim_domain})) "
+                "was expected (the last two can be ommited if they are 1)."
+                "Instead, the received evaluation points have shape "
+                f"{eval_points.shape}.",
+            )
+
+    return eval_points.reshape(shape)

@@ -15,6 +15,7 @@ try:
     NDArrayInt = NDArray[np.int_]
     NDArrayFloat = NDArray[np.float_]
     NDArrayBool = NDArray[np.bool_]
+    NDArrayStr = NDArray[np.str_]
     NDArrayObject = NDArray[np.object_]
 except ImportError:
     NDArray = np.ndarray  # type:ignore[misc]
@@ -22,6 +23,7 @@ except ImportError:
     NDArrayInt = np.ndarray  # type:ignore[misc]
     NDArrayFloat = np.ndarray  # type:ignore[misc]
     NDArrayBool = np.ndarray  # type:ignore[misc]
+    NDArrayStr = np.ndarray  # type:ignore[misc]
     NDArrayObject = np.ndarray  # type:ignore[misc]
 
 VectorType = TypeVar("VectorType")

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Tuple, TypeVar
 import numpy as np
 from matplotlib.figure import Figure
 
-from ..._utils import _reshape_eval_points, _same_domain, _to_domain_range
+from ..._utils import _same_domain, _to_domain_range
 from .._typing import ArrayLike, DomainRange, DomainRangeLike, NDArrayFloat
 
 if TYPE_CHECKING:
@@ -74,6 +74,8 @@ class Basis(ABC):
             eval_points.
 
         """
+        from ...misc.validation import validate_evaluation_points
+
         if derivative < 0:
             raise ValueError("derivative only takes non-negative values.")
         elif derivative != 0:
@@ -84,7 +86,7 @@ class Basis(ABC):
             )
             return self.derivative(order=derivative)(eval_points)
 
-        eval_points = _reshape_eval_points(
+        eval_points = validate_evaluation_points(
             eval_points,
             aligned=True,
             n_samples=self.n_basis,

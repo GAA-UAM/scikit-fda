@@ -27,7 +27,7 @@ import pandas.api.extensions
 from matplotlib.figure import Figure
 from typing_extensions import Literal
 
-from .._utils import _evaluate_grid, _reshape_eval_points, _to_grid_points
+from .._utils import _evaluate_grid, _to_grid_points
 from ._typing import (
     ArrayLike,
     DomainRange,
@@ -50,7 +50,6 @@ T = TypeVar('T', bound='FData')
 
 EvalPointsType = Union[
     ArrayLike,
-    Iterable[ArrayLike],
     GridPointsLike,
     Iterable[GridPointsLike],
 ]
@@ -428,19 +427,7 @@ class FData(  # noqa: WPS214
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[False] = False,
-        aligned: Literal[True] = True,
-    ) -> NDArrayFloat:
-        pass
-
-    @overload
-    def __call__(
-        self,
-        eval_points: Iterable[ArrayLike],
-        *,
-        derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
-        grid: Literal[False] = False,
-        aligned: Literal[False],
+        aligned: bool = True,
     ) -> NDArrayFloat:
         pass
 
@@ -520,6 +507,8 @@ class FData(  # noqa: WPS214
             function at the values specified in eval_points.
 
         """
+        from ..misc.validation import validate_evaluation_points
+
         if derivative != 0:
             warnings.warn(
                 "Parameter derivative is deprecated. Use the "
@@ -545,8 +534,6 @@ class FData(  # noqa: WPS214
                 aligned=aligned,
             )
 
-        eval_points = cast(Union[ArrayLike, Iterable[ArrayLike]], eval_points)
-
         if extrapolation is None:
             extrapolation = self.extrapolation
         else:
@@ -554,12 +541,12 @@ class FData(  # noqa: WPS214
             extrapolation = _parse_extrapolation(extrapolation)
 
         eval_points = cast(
-            Union[ArrayLike, Sequence[ArrayLike]],
+            ArrayLike,
             eval_points,
         )
 
         # Convert to array and check dimensions of eval points
-        eval_points = _reshape_eval_points(
+        eval_points = validate_evaluation_points(
             eval_points,
             aligned=aligned,
             n_samples=self.n_samples,

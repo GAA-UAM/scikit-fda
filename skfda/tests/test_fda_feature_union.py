@@ -23,21 +23,26 @@ class TestFDAFeatureUnion(unittest.TestCase):
         self.X = fetch_growth(return_X_y=True)[0]
 
     def test_incompatible_fdatagrid_output(self) -> None:
-        """Check that the transformer returns a fdatagrid."""
+        """Check that array_output fails for FData features."""
         u = FDAFeatureUnion(
             [("eval", EvaluationTransformer(None)), ("srsf", SRSF())],
             array_output=True,
         )
-        self.assertRaises(TypeError, u.fit_transform, self.X)
+
+        with self.assertRaises(TypeError):
+            u.fit_transform(self.X)
 
     def test_correct_transformation_concat(self) -> None:
         """Check that the transformation is done correctly."""
         u = FDAFeatureUnion(
             [
                 ("srsf1", SRSF()),
-                ("smooth", KernelSmoother(
-                    kernel_estimator=NadarayaWatsonHatMatrix(),
-                )),  # type: ignore
+                (
+                    "smooth",
+                    KernelSmoother(
+                        kernel_estimator=NadarayaWatsonHatMatrix(),
+                    ),
+                ),
             ],
         )
         created_frame = u.fit_transform(self.X)
@@ -45,7 +50,7 @@ class TestFDAFeatureUnion(unittest.TestCase):
         t1 = SRSF().fit_transform(self.X)
         t2 = KernelSmoother(
             kernel_estimator=NadarayaWatsonHatMatrix(),
-        ).fit_transform(self.X)  # type: ignore
+        ).fit_transform(self.X)
 
         true_frame = pd.concat(
             [

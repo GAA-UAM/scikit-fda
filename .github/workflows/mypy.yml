@@ -9,7 +9,7 @@ jobs:
     name: Mypy
     steps:
     - uses: actions/checkout@v2
-    - uses: tsuyoshicho/action-mypy@v1
+    - uses: tsuyoshicho/action-mypy@v3
       with:
         github_token: ${{ secrets.github_token }}
         # Change reviewdog reporter if you need [github-pr-check,github-check,github-pr-review].

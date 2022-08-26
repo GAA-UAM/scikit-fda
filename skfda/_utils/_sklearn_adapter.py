@@ -1,33 +1,34 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Optional, TypeVar, overload
+from typing import Any, Generic, TypeVar, overload
 
 import sklearn.base
 
-from ..representation._typing import NDArrayFloat
+from ..representation._typing import NDArrayFloat, NDArrayInt
 
 SelfType = TypeVar("SelfType")
 TransformerNoTarget = TypeVar(
     "TransformerNoTarget",
     bound="TransformerMixin[Any, Any, None]",
 )
-Input = TypeVar("Input")
-Output = TypeVar("Output")
+Input = TypeVar("Input", contravariant=True)
+Output = TypeVar("Output", covariant=True)
 Target = TypeVar("Target", contravariant=True)
+TargetPrediction = TypeVar("TargetPrediction")
 
 
-class BaseEstimator(
+class BaseEstimator(  # noqa: D101
     ABC,
     sklearn.base.BaseEstimator,  # type: ignore[misc]
 ):
-    pass
+    pass  # noqa: WPS604
 
 
-class TransformerMixin(
+class TransformerMixin(  # noqa: D101
     ABC,
     Generic[Input, Output, Target],
-    # sklearn.base.TransformerMixin, # Inherit in the future
+    sklearn.base.TransformerMixin,  # type: ignore[misc]
 ):
 
     @overload
@@ -45,10 +46,10 @@ class TransformerMixin(
     ) -> SelfType:
         pass
 
-    def fit(
+    def fit(  # noqa: D102
         self: SelfType,
         X: Input,
-        y: Optional[Target] = None,
+        y: Target | None = None,
     ) -> SelfType:
         return self
 
@@ -67,39 +68,110 @@ class TransformerMixin(
     ) -> Output:
         pass
 
-    def fit_transform(
+    def fit_transform(  # noqa: D102
         self,
         X: Input,
-        y: Optional[Target] = None,
+        y: Target | None = None,
         **fit_params: Any,
     ) -> Output:
         if y is None:
-            return self.fit(X, **fit_params).transform(X)  # type: ignore
-        else:
-            return self.fit(X, y, **fit_params).transform(X)  # type: ignore
+            return self.fit(  # type: ignore[no-any-return]
+                X,
+                **fit_params,
+            ).transform(X)
+
+        return self.fit(  # type: ignore[no-any-return]
+            X,
+            y,
+            **fit_params,
+        ).transform(X)
 
 
-class InductiveTransformerMixin(
+class InductiveTransformerMixin(  # noqa: D101
     TransformerMixin[Input, Output, Target],
 ):
 
     @abstractmethod
-    def transform(
+    def transform(  # noqa: D102
         self: SelfType,
         X: Input,
     ) -> Output:
         pass
 
 
-class ClassifierMixin(
+class OutlierMixin(  # noqa: D101
     ABC,
-    Generic[Input, Target],
+    Generic[Input],
+    sklearn.base.OutlierMixin,  # type: ignore[misc]
+):
+
+    def fit_predict(  # noqa: D102
+        self,
+        X: Input,
+        y: object = None,
+    ) -> NDArrayInt:
+        return self.fit(X, y).predict(X)  # type: ignore[no-any-return]
+
+
+class ClassifierMixin(  # noqa: D101
+    ABC,
+    Generic[Input, TargetPrediction],
     sklearn.base.ClassifierMixin,  # type: ignore[misc]
 ):
-    def score(
+    def fit(  # noqa: D102
+        self: SelfType,
+        X: Input,
+        y: TargetPrediction,
+    ) -> SelfType:
+        return self
+
+    @abstractmethod
+    def predict(  # noqa: D102
+        self: SelfType,
+        X: Input,
+    ) -> TargetPrediction:
+        pass
+
+    def score(  # noqa: D102
         self,
         X: Input,
         y: Target,
         sample_weight: NDArrayFloat | None = None,
-    ) -> NDArrayFloat:
-        return super().score(X, y, sample_weight=sample_weight)
+    ) -> float:
+        return super().score(  # type: ignore[no-any-return]
+            X,
+            y,
+            sample_weight=sample_weight,
+        )
+
+
+class RegressorMixin(  # noqa: D101
+    ABC,
+    Generic[Input, TargetPrediction],
+    sklearn.base.RegressorMixin,  # type: ignore[misc]
+):
+    def fit(  # noqa: D102
+        self: SelfType,
+        X: Input,
+        y: TargetPrediction,
+    ) -> SelfType:
+        return self
+
+    @abstractmethod
+    def predict(  # noqa: D102
+        self: SelfType,
+        X: Input,
+    ) -> TargetPrediction:
+        pass
+
+    def score(  # noqa: D102
+        self,
+        X: Input,
+        y: TargetPrediction,
+        sample_weight: NDArrayFloat | None = None,
+    ) -> float:
+        return super().score(  # type: ignore[no-any-return]
+            X,
+            y,
+            sample_weight=sample_weight,
+        )

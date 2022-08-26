@@ -143,12 +143,10 @@ class FDataGrid(FData):  # noqa: WPS214
         *,
         sample_points: Optional[GridPointsLike] = None,
         domain_range: Optional[DomainRangeLike] = None,
-        dataset_label: Optional[str] = None,
         dataset_name: Optional[str] = None,
         argument_names: Optional[LabelTupleLike] = None,
         coordinate_names: Optional[LabelTupleLike] = None,
         sample_names: Optional[LabelTupleLike] = None,
-        axes_labels: Optional[LabelTupleLike] = None,
         extrapolation: Optional[ExtrapolationLike] = None,
         interpolation: Optional[Evaluator] = None,
     ):
@@ -219,9 +217,7 @@ class FDataGrid(FData):  # noqa: WPS214
 
         super().__init__(
             extrapolation=extrapolation,
-            dataset_label=dataset_label,
             dataset_name=dataset_name,
-            axes_labels=axes_labels,
             argument_names=argument_names,
             coordinate_names=coordinate_names,
             sample_names=sample_names,
@@ -494,7 +490,7 @@ class FDataGrid(FData):  # noqa: WPS214
     def integrate(
         self: T,
         *,
-        interval: Optional[DomainRange] = None,
+        domain: Optional[DomainRange] = None,
     ) -> NDArrayFloat:
         """
         Integration of the FData object.
@@ -506,8 +502,8 @@ class FDataGrid(FData):  # noqa: WPS214
         returned.
 
         Args:
-            interval: domain range where we want to integrate.
-            By default is None as we integrate on the whole domain.
+            domain: Domain range where we want to integrate.
+                By default is None as we integrate on the whole domain.
 
         Returns:
             NumPy array of size (``n_samples``, ``dim_codomain``)
@@ -518,8 +514,8 @@ class FDataGrid(FData):  # noqa: WPS214
             >>> fdata.integrate()
             array([[ 15.]])
         """
-        if interval is not None:
-            data = self.restrict(interval)
+        if domain is not None:
+            data = self.restrict(domain)
         else:
             data = self
 
@@ -1000,7 +996,7 @@ class FDataGrid(FData):  # noqa: WPS214
         )
 
         return self.copy(
-            data_matrix=self.evaluate(grid_points, grid=True),
+            data_matrix=self(grid_points, grid=True),
             grid_points=grid_points,
         )
 
@@ -1529,7 +1525,10 @@ class _CoordinateIterator(Sequence[T]):
         """Create an iterator through the image coordinates."""
         self._fdatagrid = fdatagrid
 
-    def __getitem__(self, key: Union[int, slice]) -> T:
+    def __getitem__(
+        self,
+        key: Union[int, slice, NDArrayInt, NDArrayBool],
+    ) -> T:
         """Get a specific coordinate."""
         s_key = key
         if isinstance(s_key, int):
@@ -1539,7 +1538,7 @@ class _CoordinateIterator(Sequence[T]):
 
         return self._fdatagrid.copy(
             data_matrix=self._fdatagrid.data_matrix[..., key],
-            coordinate_names=coordinate_names,
+            coordinate_names=tuple(coordinate_names),
         )
 
     def __len__(self) -> int:

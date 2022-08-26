@@ -1,19 +1,44 @@
 """Maxima Hunting dimensionality reduction and related methods."""
 from __future__ import annotations
 
-from typing import Callable, Optional, Union
+from typing import Callable, Union
 
 import numpy as np
 import scipy.signal
-import sklearn.base
 import sklearn.utils
 from dcor import u_distance_correlation_sqr
+from sklearn.base import clone
 
 from ...._utils import _compute_dependence, _DependenceMeasure
+from ...._utils._sklearn_adapter import (
+    BaseEstimator,
+    InductiveTransformerMixin,
+)
 from ....representation import FDataGrid
 from ....representation._typing import NDArrayFloat, NDArrayInt
 
 _LocalMaximaSelector = Callable[[FDataGrid], NDArrayInt]
+
+
+def _select_relative_maxima(X: FDataGrid, *, order: int = 1) -> NDArrayInt:
+
+    X_array = X.data_matrix[0, ..., 0]
+
+    indexes = scipy.signal.argrelextrema(
+        X_array,
+        comparator=np.greater_equal,
+        order=order,
+    )[0]
+
+    # Discard flat
+    maxima = X_array[indexes]
+
+    left_points = np.take(X_array, indexes - 1, mode='clip')
+    right_points = np.take(X_array, indexes + 1, mode='clip')
+
+    is_not_flat = (maxima > left_points) | (maxima > right_points)
+
+    return indexes[is_not_flat]  # type: ignore [no-any-return]
 
 
 def select_local_maxima(X: FDataGrid, *, order: int = 1) -> NDArrayInt:
@@ -52,28 +77,44 @@ def select_local_maxima(X: FDataGrid, *, order: int = 1) -> NDArrayInt:
         array([ 0,  5, 10])
 
     """
-    X_array = X.data_matrix[0, ..., 0]
+    return _select_relative_maxima(X, order=order)
 
-    indexes = scipy.signal.argrelextrema(
-        X_array,
-        comparator=np.greater_equal,
-        order=order,
-    )[0]
 
-    # Discard flat
-    maxima = X_array[indexes]
+class RelativeLocalMaximaSelector(BaseEstimator):
 
-    left_points = np.take(X_array, indexes - 1, mode='clip')
-    right_points = np.take(X_array, indexes + 1, mode='clip')
+    def __init__(
+        self,
+        smoothing_parameter: int = 1,
+        max_points: int | None = None,
+    ):
+        self.smoothing_parameter = smoothing_parameter
+        self.max_points = max_points
 
-    is_not_flat = (maxima > left_points) | (maxima > right_points)
+    def __call__(self, X: FDataGrid) -> NDArrayInt:
+        indexes = _select_relative_maxima(
+            X,
+            order=self.smoothing_parameter,
+        )
 
-    return indexes[is_not_flat]
+        if self.max_points is not None:
+            values = X.data_matrix[:, indexes]
+            partition_indexes = np.argpartition(
+                values,
+                -self.max_points,
+                axis=None,
+            )
+            indexes = indexes[np.sort(partition_indexes[-self.max_points:])]
+
+        return indexes
 
 
 class MaximaHunting(
-    sklearn.base.BaseEstimator,  # type: ignore
-    sklearn.base.TransformerMixin,  # type: ignore
+    BaseEstimator,
+    InductiveTransformerMixin[
+        FDataGrid,
+        NDArrayFloat,
+        Union[NDArrayInt, NDArrayFloat],
+    ],
 ):
     r"""
     Maxima Hunting variable selection.
@@ -105,7 +146,7 @@ class MaximaHunting(
     Examples:
         >>> from skfda.preprocessing.dim_reduction import variable_selection
         >>> from skfda.preprocessing.dim_reduction.variable_selection.\
-        ...     maxima_hunting import select_local_maxima
+        ...     maxima_hunting import RelativeLocalMaximaSelector
         >>> from skfda.datasets import make_gaussian_process
         >>> from functools import partial
         >>> import skfda
@@ -122,13 +163,17 @@ class MaximaHunting(
         ...             - 2 * np.abs(t - 0.5)
         ...             + np.abs(t - 0.75))
         >>>
-        >>> X_0 = make_gaussian_process(n_samples=n_samples // 2,
-        ...                             n_features=n_features,
-        ...                             random_state=0)
-        >>> X_1 = make_gaussian_process(n_samples=n_samples // 2,
-        ...                             n_features=n_features,
-        ...                             mean=mean_1,
-        ...                             random_state=1)
+        >>> X_0 = make_gaussian_process(
+        ...     n_samples=n_samples // 2,
+        ...     n_features=n_features,
+        ...     random_state=0,
+        ... )
+        >>> X_1 = make_gaussian_process(
+        ...     n_samples=n_samples // 2,
+        ...     n_features=n_features,
+        ...     mean=mean_1,
+        ...     random_state=1,
+        ... )
         >>> X = skfda.concatenate((X_0, X_1))
         >>>
         >>> y = np.zeros(n_samples)
@@ -136,9 +181,12 @@ class MaximaHunting(
 
         Select the relevant points to distinguish the two classes
 
-        >>> local_maxima_selector = partial(select_local_maxima, order=10)
+        >>> local_maxima_selector = RelativeLocalMaximaSelector(
+        ...     smoothing_parameter=10,
+        ... )
         >>> mh = variable_selection.MaximaHunting(
-        ...            local_maxima_selector=local_maxima_selector)
+        ...            local_maxima_selector=local_maxima_selector,
+        ... )
         >>> _ = mh.fit(X, y)
         >>> point_mask = mh.get_support()
         >>> points = X.grid_points[0][point_mask]
@@ -161,7 +209,7 @@ class MaximaHunting(
     def __init__(
         self,
         dependence_measure: _DependenceMeasure = u_distance_correlation_sqr,
-        local_maxima_selector: _LocalMaximaSelector = select_local_maxima,
+        local_maxima_selector: _LocalMaximaSelector | None = None,
     ) -> None:
         self.dependence_measure = dependence_measure
         self.local_maxima_selector = local_maxima_selector
@@ -169,24 +217,32 @@ class MaximaHunting(
     def fit(  # noqa: D102
         self,
         X: FDataGrid,
-        y: Union[NDArrayInt, NDArrayFloat],
+        y: NDArrayInt | NDArrayFloat,
     ) -> MaximaHunting:
 
+        self._maxima_selector = (
+            RelativeLocalMaximaSelector()
+            if self.local_maxima_selector is None
+            else clone(self.local_maxima_selector, safe=False)
+        )
+
         self.features_shape_ = X.data_matrix.shape[1:]
-        self.dependence_ = _compute_dependence(
-            X.data_matrix,
-            y,
-            dependence_measure=self.dependence_measure,
-        )
-
-        self.indexes_ = self.local_maxima_selector(
-            FDataGrid(
-                self.dependence_,
-                grid_points=X.grid_points,
+        self.dependence_ = FDataGrid(
+            data_matrix=_compute_dependence(
+                X.data_matrix,
+                y,
+                dependence_measure=self.dependence_measure,
             ),
+            grid_points=X.grid_points,
+            domain_range=X.domain_range,
         )
 
-        sorting_indexes = np.argsort(self.dependence_[self.indexes_])[::-1]
+        self.indexes_ = self._maxima_selector(
+            self.dependence_,
+        )
+
+        sorting_indexes = np.argsort(
+            self.dependence_.data_matrix[0, self.indexes_, 0])[::-1]
         self.sorted_indexes_ = self.indexes_[sorting_indexes]
 
         return self
@@ -202,7 +258,7 @@ class MaximaHunting(
     def transform(  # noqa: D102
         self,
         X: FDataGrid,
-        y: Optional[Union[NDArrayInt, NDArrayFloat]] = None,
+        y: NDArrayInt | NDArrayFloat | None = None,
     ) -> NDArrayFloat:
 
         sklearn.utils.validation.check_is_fitted(self)

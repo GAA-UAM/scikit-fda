@@ -2,16 +2,16 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 
+from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from .._typing import NDArrayFloat
 from ._fdatabasis import FDataBasis
 
 
 class CoefficientsTransformer(
-    BaseEstimator,  # type:ignore
-    TransformerMixin,  # type:ignore
+    BaseEstimator,
+    TransformerMixin[FDataBasis, NDArrayFloat, object],
 ):
     r"""
     Transformer returning the coefficients of FDataBasis objects as a matrix.
@@ -44,7 +44,7 @@ class CoefficientsTransformer(
     def fit(  # noqa: D102
         self,
         X: FDataBasis,
-        y: None = None,
+        y: object = None,
     ) -> CoefficientsTransformer:
 
         self.basis_ = X.basis
@@ -54,7 +54,7 @@ class CoefficientsTransformer(
     def transform(  # noqa: D102
         self,
         X: FDataBasis,
-        y: None = None,
+        y: object = None,
     ) -> NDArrayFloat:
 
         check_is_fitted(self)

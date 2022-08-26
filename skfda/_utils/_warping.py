@@ -10,7 +10,7 @@ import numpy as np
 from scipy.interpolate import PchipInterpolator
 
 from ..representation._typing import ArrayLike, DomainRangeLike, NDArrayFloat
-from ._utils import _to_domain_range, check_is_univariate
+from ._utils import _to_domain_range
 
 if TYPE_CHECKING:
     from ..representation import FDataGrid
@@ -74,7 +74,13 @@ def invert_warping(
                 [ 1.  ]]])
 
     """
-    check_is_univariate(warping)
+    from ..misc.validation import check_fdata_dimensions
+
+    check_fdata_dimensions(
+        warping,
+        dim_domain=1,
+        dim_codomain=1,
+    )
 
     output_points = (
         warping.grid_points[0]
@@ -110,7 +116,8 @@ def normalize_scale(
 
     """
     t = t.T  # Broadcast to normalize multiple arrays
-    t1 = (t - t[0]).astype(float)  # Translation to [0, t[-1] - t[0]]
+    t1 = np.array(t, copy=True)
+    t1 -= t[0]  # Translation to [0, t[-1] - t[0]]
     t1 *= (b - a) / (t[-1] - t[0])  # Scale to [0, b-a]
     t1 += a  # Translation to [a, b]
     t1[0] = a  # Fix possible round errors

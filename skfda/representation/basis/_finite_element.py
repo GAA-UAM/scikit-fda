@@ -2,7 +2,7 @@ from typing import Optional, TypeVar
 
 import numpy as np
 
-from .._typing import ArrayLike, DomainRangeLike
+from .._typing import ArrayLike, DomainRangeLike, NDArrayFloat
 from ._basis import Basis
 
 T = TypeVar("T", bound='FiniteElement')
@@ -71,18 +71,20 @@ class FiniteElement(Basis):
         cells: ArrayLike,
         domain_range: Optional[DomainRangeLike] = None,
     ) -> None:
+        vertices = np.asarray(vertices)
+
         super().__init__(
             domain_range=domain_range,
             n_basis=len(vertices),
         )
-        self.vertices = np.asarray(vertices)
+        self.vertices = vertices
         self.cells = np.asarray(cells)
 
     @property
     def dim_domain(self) -> int:
         return self.vertices.shape[-1]
 
-    def _barycentric_coords(self, points: np.ndarray) -> np.ndarray:
+    def _barycentric_coords(self, points: NDArrayFloat) -> NDArrayFloat:
         """
         Find the barycentric coordinates of each point in each cell.
 
@@ -110,7 +112,7 @@ class FiniteElement(Basis):
 
         return np.swapaxes(coords, -2, -1)
 
-    def _cell_points_values(self, points: np.ndarray) -> np.ndarray:
+    def _cell_points_values(self, points: NDArrayFloat) -> NDArrayFloat:
         """
         Compute the values of each point in each of the vertices of each cell.
 
@@ -136,7 +138,7 @@ class FiniteElement(Basis):
 
         return barycentric_coords
 
-    def _evaluate(self, eval_points: np.ndarray) -> np.ndarray:
+    def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
 
         points_values_per_cell = self._cell_points_values(eval_points)
 

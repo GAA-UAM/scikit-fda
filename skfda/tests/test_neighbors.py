@@ -1,26 +1,29 @@
 """Test neighbors classifiers and regressors."""
+from __future__ import annotations
 
 import unittest
+from typing import Any, Sequence
 
 import numpy as np
+from sklearn.neighbors._base import KNeighborsMixin, RadiusNeighborsMixin
 
 from skfda.datasets import make_multimodal_samples, make_sinusoidal_process
 from skfda.exploratory.outliers import LocalOutlierFactor  # Pending theory
-from skfda.exploratory.stats import mean
 from skfda.misc.metrics import PairwiseMetric, l2_distance
 from skfda.ml.classification import (
     KNeighborsClassifier,
-    NearestCentroid,
     RadiusNeighborsClassifier,
 )
 from skfda.ml.clustering import NearestNeighbors
 from skfda.ml.regression import KNeighborsRegressor, RadiusNeighborsRegressor
+from skfda.representation import FDataBasis, FDataGrid
 from skfda.representation.basis import Fourier
 
 
 class TestNeighbors(unittest.TestCase):
+    """Tests for neighbors methods."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Create test data."""
         random_state = np.random.RandomState(0)
         modes_location = np.concatenate((
@@ -65,15 +68,17 @@ class TestNeighbors(unittest.TestCase):
         )
         self.fd_lof = fd_outliers.concatenate(fd_clean)
 
-    def test_predict_classifier(self):
+    def test_predict_classifier(self) -> None:
         """Tests predict for neighbors classifier."""
-        for neigh in (
+        classifiers: Sequence[
+            KNeighborsClassifier[FDataGrid]
+            | RadiusNeighborsClassifier[FDataGrid]
+        ] = (
             KNeighborsClassifier(),
             RadiusNeighborsClassifier(radius=0.1),
-            NearestCentroid(),
-            NearestCentroid(metric=l2_distance, centroid=mean),
-        ):
+        )
 
+        for neigh in classifiers:
             neigh.fit(self.X, self.y)
             pred = neigh.predict(self.X)
             np.testing.assert_array_equal(
@@ -82,7 +87,7 @@ class TestNeighbors(unittest.TestCase):
                 err_msg=f'fail in {type(neigh)}',
             )
 
-    def test_predict_proba_classifier(self):
+    def test_predict_proba_classifier(self) -> None:
         """Tests predict proba for k neighbors classifier."""
         neigh = KNeighborsClassifier(metric=l2_distance)
 
@@ -91,12 +96,20 @@ class TestNeighbors(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(probs, self.probs)
 
-    def test_predict_regressor(self):
+    def test_predict_regressor(self) -> None:
         """Test scalar regression, predicts mode location."""
         # Dummy test, with weight = distance, only the sample with distance 0
         # will be returned, obtaining the exact location
-        knnr = KNeighborsRegressor(weights='distance')
-        rnnr = RadiusNeighborsRegressor(weights='distance', radius=0.1)
+        knnr = KNeighborsRegressor[FDataGrid, np.typing.NDArray[np.float_]](
+            weights='distance',
+        )
+        rnnr = RadiusNeighborsRegressor[
+            FDataGrid,
+            np.typing.NDArray[np.float_],
+        ](
+            weights='distance',
+            radius=0.1,
+        )
 
         knnr.fit(self.X, self.modes_location)
         rnnr.fit(self.X, self.modes_location)
@@ -110,7 +123,7 @@ class TestNeighbors(unittest.TestCase):
             self.modes_location,
         )
 
-    def test_kneighbors(self):
+    def test_kneighbors(self) -> None:
         """Test k neighbor searches for all k-neighbors estimators."""
         nn = NearestNeighbors()
         nn.fit(self.X)
@@ -121,9 +134,10 @@ class TestNeighbors(unittest.TestCase):
         knn = KNeighborsClassifier()
         knn.fit(self.X, self.y)
 
-        knnr = KNeighborsRegressor()
+        knnr = KNeighborsRegressor[FDataGrid, np.typing.NDArray[np.float_]]()
         knnr.fit(self.X, self.modes_location)
 
+        neigh: KNeighborsMixin[FDataGrid, Any]
         for neigh in (nn, knn, knnr, lof):
 
             dist, links = neigh.kneighbors(self.X[:4])
@@ -144,10 +158,10 @@ class TestNeighbors(unittest.TestCase):
             np.testing.assert_array_almost_equal(dist[0, 1], dist_kneigh)
 
             for i in range(30):
-                self.assertEqual(graph[0, i] == 1.0, i in links[0])
-                self.assertEqual(graph[0, i] == 0.0, i not in links[0])
+                self.assertEqual(graph[0, i] == 1, i in links[0])
+                self.assertEqual(graph[0, i] == 0, i not in links[0])
 
-    def test_radius_neighbors(self):
+    def test_radius_neighbors(self) -> None:
         """Test query with radius."""
         nn = NearestNeighbors(radius=0.1)
         nn.fit(self.X)
@@ -155,9 +169,13 @@ class TestNeighbors(unittest.TestCase):
         knn = RadiusNeighborsClassifier(radius=0.1)
         knn.fit(self.X, self.y)
 
-        knnr = RadiusNeighborsRegressor(radius=0.1)
+        knnr = RadiusNeighborsRegressor[
+            FDataGrid,
+            np.typing.NDArray[np.float_],
+        ](radius=0.1)
         knnr.fit(self.X, self.modes_location)
 
+        neigh: RadiusNeighborsMixin[FDataGrid, Any]
         for neigh in (nn, knn, knnr):
 
             dist, links = neigh.radius_neighbors(self.X[:4])
@@ -174,11 +192,12 @@ class TestNeighbors(unittest.TestCase):
             graph = neigh.radius_neighbors_graph(self.X[:4])
 
             for i in range(30):
-                self.assertEqual(graph[0, i] == 1.0, i in links[0])
-                self.assertEqual(graph[0, i] == 0.0, i not in links[0])
+                self.assertEqual(graph[0, i] == 1, i in links[0])
+                self.assertEqual(graph[0, i] == 0, i not in links[0])
 
-    def test_knn_functional_response(self):
-        knnr = KNeighborsRegressor(n_neighbors=1)
+    def test_knn_functional_response(self) -> None:
+        """Test prediction of functional response."""
+        knnr = KNeighborsRegressor[FDataGrid, FDataGrid](n_neighbors=1)
 
         knnr.fit(self.X, self.X)
 
@@ -188,23 +207,12 @@ class TestNeighbors(unittest.TestCase):
             self.X.data_matrix,
         )
 
-    def test_knn_functional_response_sklearn(self):
-        # Check sklearn metric
-        knnr = KNeighborsRegressor(
-            n_neighbors=1,
-            metric='euclidean',
-            multivariate_metric=True,
-        )
-        knnr.fit(self.X, self.X)
-
-        res = knnr.predict(self.X)
-        np.testing.assert_array_almost_equal(
-            res.data_matrix,
-            self.X.data_matrix,
-        )
-
-    def test_knn_functional_response_precomputed(self):
-        knnr = KNeighborsRegressor(
+    def test_knn_functional_response_precomputed(self) -> None:
+        """Test that precomputed distances work for functional response."""
+        knnr = KNeighborsRegressor[
+            np.typing.NDArray[np.float_],
+            FDataGrid,
+        ](
             n_neighbors=4,
             weights='distance',
             metric='precomputed',
@@ -219,8 +227,12 @@ class TestNeighbors(unittest.TestCase):
             res.data_matrix, self.X[:4].data_matrix,
         )
 
-    def test_radius_functional_response(self):
-        knnr = RadiusNeighborsRegressor(
+    def test_radius_functional_response(self) -> None:
+        """Test that radius regression work with functional response."""
+        knnr = RadiusNeighborsRegressor[
+            FDataGrid,
+            FDataGrid,
+        ](
             metric=l2_distance,
             weights='distance',
         )
@@ -232,21 +244,28 @@ class TestNeighbors(unittest.TestCase):
             res.data_matrix, self.X.data_matrix,
         )
 
-    def test_functional_response_custom_weights(self):
-
-        knnr = KNeighborsRegressor(weights=self._weights, n_neighbors=5)
+    def test_functional_response_custom_weights(self) -> None:
+        """Test that custom weights work with functional response."""
+        knnr = KNeighborsRegressor[
+            FDataGrid,
+            FDataGrid,
+        ](weights=self._weights, n_neighbors=5)
         response = self.X.to_basis(Fourier(domain_range=(-1, 1), n_basis=10))
         knnr.fit(self.X, response)
 
         res = knnr.predict(self.X)
-        np.testing.assert_array_almost_equal(
+        np.testing.assert_allclose(
             res.coefficients, response.coefficients,
         )
 
-    def test_functional_regression_distance_weights(self):
-
-        knnr = KNeighborsRegressor(
-            weights='distance', n_neighbors=10,
+    def test_functional_response_distance_weights(self) -> None:
+        """Test that distance weights work with functional response."""
+        knnr = KNeighborsRegressor[
+            FDataGrid,
+            FDataGrid,
+        ](
+            weights='distance',
+            n_neighbors=10,
         )
         knnr.fit(self.X[:10], self.X[:10])
         res = knnr.predict(self.X[11])
@@ -262,8 +281,12 @@ class TestNeighbors(unittest.TestCase):
             res.data_matrix, response.data_matrix,
         )
 
-    def test_functional_response_basis(self):
-        knnr = KNeighborsRegressor(weights='distance', n_neighbors=5)
+    def test_functional_response_basis(self) -> None:
+        """Test FDataBasis response."""
+        knnr = KNeighborsRegressor[
+            FDataGrid,
+            FDataBasis,
+        ](weights='distance', n_neighbors=5)
         response = self.X.to_basis(Fourier(domain_range=(-1, 1), n_basis=10))
         knnr.fit(self.X, response)
 
@@ -272,45 +295,34 @@ class TestNeighbors(unittest.TestCase):
             res.coefficients, response.coefficients,
         )
 
-    def test_radius_outlier_functional_response(self):
-        knnr = RadiusNeighborsRegressor(radius=0.001)
-        knnr.fit(self.X[3:6], self.X[3:6])
-
-        # No value given
-        with np.testing.assert_raises(ValueError):
-            knnr.predict(self.X[:10])
-
+    def test_radius_outlier_functional_response(self) -> None:
+        """Test response with no neighbors."""
         # Test response
-        knnr = RadiusNeighborsRegressor(
-            radius=0.001, outlier_response=self.X[0],
+        knnr = RadiusNeighborsRegressor[
+            FDataGrid,
+            FDataGrid,
+        ](
+            radius=0.001,
         )
         knnr.fit(self.X[:6], self.X[:6])
 
         res = knnr.predict(self.X[:7])
         np.testing.assert_array_almost_equal(
-            self.X[0].data_matrix, res[6].data_matrix,
+            res[6].data_matrix, np.nan,
         )
 
-    def test_nearest_centroids_exceptions(self):
-
-        # Test more than one class
-        nn = NearestCentroid()
-        with np.testing.assert_raises(ValueError):
-            nn.fit(self.X[:3], 3 * [0])
-
-        # Precomputed not supported
-        nn = NearestCentroid(metric='precomputed')
-        with np.testing.assert_raises(ValueError):
-            nn.fit(self.X[:3], 3 * [0])
-
-    def test_functional_regressor_exceptions(self):
-
-        knnr = RadiusNeighborsRegressor()
+    def test_functional_regressor_exceptions(self) -> None:
+        """Test exception with unequal sizes."""
+        knnr = RadiusNeighborsRegressor[
+            FDataGrid,
+            FDataBasis,
+        ]()
 
         with np.testing.assert_raises(ValueError):
             knnr.fit(self.X[:3], self.X[:4])
 
-    def test_search_neighbors_precomputed(self):
+    def test_search_neighbors_precomputed(self) -> None:
+        """Test search neighbors with precomputed distances."""
         d = PairwiseMetric(l2_distance)
         distances = d(self.X[:4], self.X[:4])
 
@@ -324,33 +336,23 @@ class TestNeighbors(unittest.TestCase):
             np.array([[0, 3], [1, 2], [2, 1], [3, 0]]),
         )
 
-    def test_search_neighbors_sklearn(self):
-
-        nn = NearestNeighbors(
-            metric='euclidean',
-            multivariate_metric=True,
-            n_neighbors=2,
-        )
-        nn.fit(self.X[:4], self.y[:4])
-
-        _, neighbors = nn.kneighbors(self.X[:4])
-
-        np.testing.assert_array_almost_equal(
-            neighbors,
-            np.array([[0, 3], [1, 2], [2, 1], [3, 0]]),
-        )
-
-    def test_score_scalar_response(self):
-
-        neigh = KNeighborsRegressor()
+    def test_score_scalar_response(self) -> None:
+        """Test regression with scalar response."""
+        neigh = KNeighborsRegressor[
+            FDataGrid,
+            np.typing.NDArray[np.float_],
+        ]()
 
         neigh.fit(self.X, self.modes_location)
         r = neigh.score(self.X, self.modes_location)
         np.testing.assert_almost_equal(r, 0.9975889963743335)
 
-    def test_score_functional_response(self):
-
-        neigh = KNeighborsRegressor()
+    def test_score_functional_response(self) -> None:
+        """Test functional score."""
+        neigh = KNeighborsRegressor[
+            FDataGrid,
+            FDataGrid,
+        ]()
 
         y = 5 * self.X + 1
         neigh.fit(self.X, y)
@@ -364,20 +366,27 @@ class TestNeighbors(unittest.TestCase):
         r = neigh.score(
             self.X[:7],
             y[:7],
-            sample_weight=4 * [1.0 / 5] + 3 * [1.0 / 15],
+            sample_weight=np.array(4 * [1.0 / 5] + 3 * [1.0 / 15]),
         )
         np.testing.assert_almost_equal(r, 0.9982527586114364)
 
-    def test_score_functional_response_exceptions(self):
-        neigh = RadiusNeighborsRegressor()
+    def test_score_functional_response_exceptions(self) -> None:
+        """Test weights with invalid length."""
+        neigh = RadiusNeighborsRegressor[
+            FDataGrid,
+            FDataGrid,
+        ]()
         neigh.fit(self.X, self.X)
 
         with np.testing.assert_raises(ValueError):
-            neigh.score(self.X, self.X, sample_weight=[1, 2, 3])
+            neigh.score(self.X, self.X, sample_weight=np.array([1, 2, 3]))
 
-    def test_multivariate_response_score(self):
-
-        neigh = RadiusNeighborsRegressor()
+    def test_multivariate_response_score(self) -> None:
+        """Test multivariate score."""
+        neigh = RadiusNeighborsRegressor[
+            FDataGrid,
+            np.typing.NDArray[np.float_],
+        ]()
         y = make_multimodal_samples(n_samples=5, dim_domain=2, random_state=0)
         neigh.fit(self.X[:5], y)
 
@@ -385,7 +394,7 @@ class TestNeighbors(unittest.TestCase):
         with np.testing.assert_raises(ValueError):
             neigh.score(self.X[:5], y)
 
-    def test_lof_fit_predict(self):
+    def test_lof_fit_predict(self) -> None:
         """Test same results with different forms to call fit_predict."""
         # Outliers
         expected = np.ones(len(self.fd_lof))
@@ -408,16 +417,6 @@ class TestNeighbors(unittest.TestCase):
         lof3 = LocalOutlierFactor(metric='precomputed')
         res3 = lof3.fit_predict(distances)
         np.testing.assert_array_equal(expected, res3)
-
-        # With multivariate sklearn
-        lof4 = LocalOutlierFactor(metric='euclidean', multivariate_metric=True)
-        res4 = lof4.fit_predict(self.fd_lof)
-        np.testing.assert_array_equal(expected, res4)
-
-        # Other way of call fit_predict, undocumented in sklearn
-        lof5 = LocalOutlierFactor(novelty=True)
-        res5 = lof5.fit(self.fd_lof).predict()
-        np.testing.assert_array_equal(expected, res5)
 
         # Check values of negative outlier factor
         negative_lof = [  # noqa: WPS317
@@ -447,7 +446,7 @@ class TestNeighbors(unittest.TestCase):
             lof3.negative_outlier_factor_,
         )
 
-    def test_lof_decision_function(self):
+    def test_lof_decision_function(self) -> None:
         """Test decision function and score samples of LOF."""
         lof = LocalOutlierFactor(novelty=True)
         lof.fit(self.fd_lof[5:])
@@ -467,7 +466,7 @@ class TestNeighbors(unittest.TestCase):
             err_msg='Error in LocalOutlierFactor.decision_function',
         )
 
-    def test_lof_exceptions(self):
+    def test_lof_exceptions(self) -> None:
         """Test error due to novelty attribute."""
         lof = LocalOutlierFactor(novelty=True)
 
@@ -482,8 +481,11 @@ class TestNeighbors(unittest.TestCase):
         with np.testing.assert_raises(AttributeError):
             lof.predict(self.fd_lof[5:])
 
-    def _weights(self, weights_):
-        return np.array([w == 0 for w in weights_], dtype=float)
+    def _weights(
+        self,
+        weights: np.typing.NDArray[np.float_],
+    ) -> np.typing.NDArray[np.float_]:
+        return np.array([w == np.min(weights) for w in weights], dtype=float)
 
 
 if __name__ == '__main__':

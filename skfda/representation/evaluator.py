@@ -10,10 +10,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Iterable, Union, overload
 
-import numpy as np
 from typing_extensions import Literal, Protocol
 
-from ._typing import ArrayLike
+from ._typing import ArrayLike, NDArrayFloat
 
 if TYPE_CHECKING:
     from . import FData
@@ -40,7 +39,7 @@ class Evaluator(ABC):
         eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         """
         Evaluate the samples at evaluation points.
 
@@ -56,7 +55,7 @@ class Evaluator(ABC):
         eval_points: ArrayLike,
         *,
         aligned: Literal[True] = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     @overload
@@ -66,7 +65,17 @@ class Evaluator(ABC):
         eval_points: Iterable[ArrayLike],
         *,
         aligned: Literal[False],
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
+        pass
+
+    @overload
+    def __call__(
+        self,
+        fdata: FData,
+        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        *,
+        aligned: bool,
+    ) -> NDArrayFloat:
         pass
 
     def __call__(
@@ -75,7 +84,7 @@ class Evaluator(ABC):
         eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         """
         Evaluate the samples at evaluation points.
 
@@ -123,7 +132,7 @@ class EvaluateFunction(Protocol):
         eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         """
         Evaluate the samples at evaluation points.
 
@@ -169,6 +178,6 @@ class GenericEvaluator(Evaluator):
         eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
         return self.evaluate_function(fdata, eval_points, aligned=aligned)

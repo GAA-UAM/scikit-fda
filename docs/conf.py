@@ -269,9 +269,9 @@ branch = "master" if rtd_version == "stable" else "develop"
 
 sphinx_gallery_conf = {
     # path to your examples scripts
-    'examples_dirs': ['../examples', '../tutorial'],
+    'examples_dirs': ['../examples', '../tutorial', '../full_examples'],
     # path where to save gallery generated examples
-    'gallery_dirs': ['auto_examples', 'auto_tutorial'],
+    'gallery_dirs': ['auto_examples', 'auto_tutorial', 'auto_full_examples'],
     'reference_url': {
         # The module you locally document uses None
         'skfda': None,

@@ -9,9 +9,9 @@ from sklearn.utils.validation import check_is_fitted
 from typing_extensions import Literal
 
 from ... import FData, FDataGrid
-from ..._utils import check_is_univariate
 from ...misc._math import inner_product
 from ...misc.metrics._lp_norms import l2_norm
+from ...misc.validation import check_fdata_dimensions
 from ...representation._typing import ArrayLike, GridPointsLike, NDArrayFloat
 from ...representation.extrapolation import ExtrapolationLike
 from .base import InductiveRegistrationTransformer
@@ -173,7 +173,11 @@ class LeastSquaresShiftRegistration(
             A tuple with an array of deltas and an FDataGrid with the template.
 
         """
-        check_is_univariate(fd)
+        check_fdata_dimensions(
+            fd,
+            dim_domain=1,
+            dim_codomain=1,
+        )
 
         domain_range = fd.domain_range[0]
 

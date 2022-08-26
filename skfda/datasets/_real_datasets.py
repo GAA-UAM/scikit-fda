@@ -256,16 +256,16 @@ _phoneme_descr = """
 
     The data were extracted from the TIMIT database (TIMIT
     Acoustic-Phonetic Continuous Speech Corpus, NTIS, US Dept of Commerce)
-    which is a widely used resource for research in speech recognition.  A
+    which is a widely used resource for research in speech recognition. A
     dataset was formed by selecting five phonemes for
-    classification based on digitized speech from this database.  The
+    classification based on digitized speech from this database.   
     phonemes are transcribed as follows: "sh" as in "she", "dcl" as in
     "dark", "iy" as the vowel in "she", "aa" as the vowel in "dark", and
-    "ao" as the first vowel in "water".  From continuous speech of 50 male
+    "ao" as the first vowel in "water". From continuous speech of 50 male
     speakers, 4509 speech frames of 32 msec duration were selected,
     approximately 2 examples of each phoneme from each speaker.  Each
     speech frame is represented by 512 samples at a 16kHz sampling rate,
-    and each frame represents one of the above five phonemes.  The
+    and each frame represents one of the above five phonemes. The
     breakdown of the 4509 speech frames into phoneme frequencies is as
     follows:
 
@@ -277,13 +277,13 @@ _phoneme_descr = """
 
     From each speech frame, a log-periodogram was computed, which is one of
     several widely used methods for casting speech data in a form suitable
-    for speech recognition.  Thus the data used in what follows consist of
+    for speech recognition. Thus the data used in what follows consist of
     4509 log-periodograms of length 256, with known class (phoneme)
     memberships.
 
     The data contain curves sampled at 256 points, a response
     variable, and a column labelled "speaker" identifying the
-    diffferent speakers.
+    different speakers.
 
     References:
         Hastie, Trevor; Buja, Andreas; Tibshirani, Robert. Penalized
@@ -945,7 +945,7 @@ def fetch_aemet(  # noqa: WPS210
         data_matrix=data_matrix,
         grid_points=np.arange(0, days_in_year) + 0.5,
         domain_range=(0, days_in_year),
-        dataset_name="aemet",
+        dataset_name="AEMET",
         sample_names=data["df"].iloc[:, 1],
         argument_names=("day",),
         coordinate_names=(

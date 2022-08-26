@@ -7,7 +7,8 @@ from typing import Optional
 
 import numpy as np
 
-from ..._utils import _to_grid, check_is_univariate
+from ..._utils import _to_grid
+from ...misc.validation import check_fdata_dimensions
 from ...representation import FData
 from .base import RegistrationTransformer
 
@@ -272,8 +273,16 @@ class AmplitudePhaseDecomposition(
         """
         from ...misc.metrics import l2_distance, l2_norm
 
-        check_is_univariate(X)
-        check_is_univariate(y)
+        check_fdata_dimensions(
+            X,
+            dim_domain=1,
+            dim_codomain=1,
+        )
+        check_fdata_dimensions(
+            y,
+            dim_domain=1,
+            dim_codomain=1,
+        )
 
         if len(y) != len(X):
             raise ValueError(
@@ -410,8 +419,16 @@ class LeastSquares(RegistrationScorer):
         """
         from ...misc.metrics import l2_distance
 
-        check_is_univariate(X)
-        check_is_univariate(y)
+        check_fdata_dimensions(
+            X,
+            dim_domain=1,
+            dim_codomain=1,
+        )
+        check_fdata_dimensions(
+            y,
+            dim_domain=1,
+            dim_codomain=1,
+        )
 
         # Instead of compute f_i - 1/(N-1) sum(j!=i)f_j for each i = 1 ... N
         # It is used (1 + 1/(N-1))f_i - 1/(N-1) sum(j=1 ... N) f_j =
@@ -523,8 +540,16 @@ class SobolevLeastSquares(RegistrationScorer):
         """
         from ...misc.metrics import l2_distance
 
-        check_is_univariate(X)
-        check_is_univariate(y)
+        check_fdata_dimensions(
+            X,
+            dim_domain=1,
+            dim_codomain=1,
+        )
+        check_fdata_dimensions(
+            y,
+            dim_domain=1,
+            dim_codomain=1,
+        )
 
         # Compute derivative
         X = X.derivative()
@@ -619,8 +644,16 @@ class PairwiseCorrelation(RegistrationScorer):
             float: Score of the transformation.
 
         """
-        check_is_univariate(X)
-        check_is_univariate(y)
+        check_fdata_dimensions(
+            X,
+            dim_domain=1,
+            dim_codomain=1,
+        )
+        check_fdata_dimensions(
+            y,
+            dim_domain=1,
+            dim_codomain=1,
+        )
 
         # Discretize functional data if needed
         X, y = _to_grid(X, y, eval_points=self.eval_points)

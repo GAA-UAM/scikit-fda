@@ -4,7 +4,6 @@ import unittest
 import numpy as np
 from sklearn.decomposition import PCA
 
-import skfda
 from skfda import FDataBasis, FDataGrid
 from skfda.datasets import fetch_weather
 from skfda.misc.operators import LinearDifferentialOperator
@@ -176,21 +175,21 @@ class FPCATestCase(unittest.TestCase):
 
         Replication code:
 
-            # library(fda)
-            #
-            # data("CanadianWeather")
-            # temp = CanadianWeather$dailyAv[,,1]
-            #
-            # basis = create.fourier.basis(c(0,365), 9)
-            # fdata_temp = Data2fd(1:365, temp, basis)
-            # fpca = pca.fd(fdata_temp, nharm = 3)
-            #
-            # paste(
-            #     round(fpca$harmonics$coefs[,1], 8),
-            #     collapse=", "
-            # ) # first component, others are analogous
-            #
-            # fpca$varprop # explained variance ratio
+            ... library(fda)
+            ...
+            ... data("CanadianWeather")
+            ...  temp = CanadianWeather$dailyAv[,,1]
+            ...
+            ...  basis = create.fourier.basis(c(0,365), 9)
+            ...  fdata_temp = Data2fd(1:365, temp, basis)
+            ...  fpca = pca.fd(fdata_temp, nharm = 3)
+            ...
+            ...  paste(
+            ...      round(fpca$harmonics$coefs[,1], 8),
+            ...      collapse=", "
+            ...  ) # first component, others are analogous
+            ...
+            ...  fpca$varprop # explained variance ratio
 
         """
         n_basis = 9
@@ -274,24 +273,24 @@ class FPCATestCase(unittest.TestCase):
 
         Replication code:
 
-            # library(fda)
-            # library(fda.usc)
-            #
-            # data("CanadianWeather")
-            # temp = CanadianWeather$dailyAv[,,1]
-            #
-            # fdata_temp = fdata(t(temp))
-            # fpca = fdata2pc(fdata_temp, ncomp = 1)
-            #
-            # paste(
-            #     round(fpca$rotation$data[1,], 8),
-            #     collapse=", "
-            # ) # components
-            # fpca$d[1] # singular value
-            # paste(
-            #     round(fpca$x[,1], 8),
-            #     collapse=", "
-            # ) # transform
+            ... library(fda)
+            ... library(fda.usc)
+            ...
+            ... data("CanadianWeather")
+            ... temp = CanadianWeather$dailyAv[,,1]
+            ...
+            ... fdata_temp = fdata(t(temp))
+            ... fpca = fdata2pc(fdata_temp, ncomp = 1)
+            ...
+            ... paste(
+            ...     round(fpca$rotation$data[1,], 8),
+            ...     collapse=", "
+            ... ) # components
+            ... fpca$d[1] # singular value
+            ... paste(
+            ...     round(fpca$x[,1], 8),
+            ...     collapse=", "
+            ... ) # transform
 
         """
         n_components = 1
@@ -549,46 +548,48 @@ class FPCATestCase(unittest.TestCase):
             coefficients=coef,
         )
 
+    def _test_vs_dim_grid(
+        self,
+        random_state: np.random.RandomState,
+        n_samples: int,
+        n_grid: int,
+        base_fun: FDataBasis,
+    ) -> None:
+        """Test function w.r.t n_samples, n_grid."""
+        # Random offsetting base_fun and form dataset fd_random
+        offset = random_state.uniform(-5, 5, size=n_samples)
+
+        fd_random = FDataBasis(
+            basis=base_fun.basis,
+            coefficients=base_fun.coefficients * offset[:, np.newaxis],
+        ).to_grid(np.linspace(0, 1, n_grid))
+
+        # Take the allowed maximum number of components
+        # In almost high dimension: n_components=n_samples-1 < n_samples
+        # In low dimension: n_components=n_grid << n_samples
+        fpca = FPCA(
+            n_components=min(n_samples - 1, n_grid),
+        )
+
+        # Project the non-random dataset on FPCs
+        pc_scores_fd_random_all_equal = fpca.fit_transform(
+            fd_random,
+        )
+
+        # Project the pc scores back to the input functional space
+        fd_random_hat = fpca.inverse_transform(
+            pc_scores_fd_random_all_equal,
+        )
+
+        # Compare fitting data to the reconstructed ones
+        np.testing.assert_allclose(
+            fd_random.data_matrix,
+            fd_random_hat.data_matrix,
+        )
+
     def test_grid_fpca_inverse_transform(self) -> None:
         """Compare the reconstructions.data_matrix to fitting data."""
         random_state = np.random.RandomState(seed=42)
-
-        def test_vs_dim(
-            n_samples: int,
-            n_grid: int,
-            base_fun: FDataBasis,
-        ) -> None:
-            """Test function w.r.t n_samples, n_grid."""
-            # Random offsetting base_fun and form dataset fd_random
-            offset = random_state.uniform(-5, 5, size=n_samples)
-
-            fd_random = FDataBasis(
-                basis=base_fun.basis,
-                coefficients=base_fun.coefficients * offset[:, np.newaxis],
-            ).to_grid(np.linspace(0, 1, n_grid))
-
-            # Take the allowed maximum number of components
-            # In almost high dimension: n_components=n_samples-1 < n_samples
-            # In low dimension: n_components=n_grid << n_samples
-            fpca = FPCA(
-                n_components=min(n_samples - 1, n_grid),
-            )
-
-            # Project the non-random dataset on FPCs
-            pc_scores_fd_random_all_equal = fpca.fit_transform(
-                fd_random,
-            )
-
-            # Project the pc scores back to the input functional space
-            fd_random_hat = fpca.inverse_transform(
-                pc_scores_fd_random_all_equal,
-            )
-
-            # Compare fitting data to the reconstructed ones
-            np.testing.assert_allclose(
-                fd_random.data_matrix,
-                fd_random_hat.data_matrix,
-            )
 
         # Low dimensional case (n_samples>n_grid)
         n_samples = 1000
@@ -599,7 +600,12 @@ class FPCATestCase(unittest.TestCase):
             order=3,
         )
         true_fun = self.draw_one_random_fun(bsp, random_state)
-        test_vs_dim(n_samples=n_samples, n_grid=n_grid, base_fun=true_fun)
+        self._test_vs_dim_grid(
+            random_state=random_state,
+            n_samples=n_samples,
+            n_grid=n_grid,
+            base_fun=true_fun,
+        )
 
         # (almost) High dimensional case (n_samples<n_grid)
         n_samples = 100
@@ -610,38 +616,48 @@ class FPCATestCase(unittest.TestCase):
             order=3,
         )
         true_fun = self.draw_one_random_fun(bsp, random_state)
-        test_vs_dim(n_samples=n_samples, n_grid=n_grid, base_fun=true_fun)
+        self._test_vs_dim_grid(
+            random_state=random_state,
+            n_samples=n_samples,
+            n_grid=n_grid,
+            base_fun=true_fun,
+        )
+
+    def _test_vs_dim_basis(
+        self,
+        random_state: np.random.RandomState,
+        n_samples: int,
+        base_fun: FDataBasis,
+    ) -> None:
+        """Test function w.t.t n_samples and basis."""
+        # Random offsetting base_fun and form dataset fd_random
+        offset = random_state.uniform(-5, 5, size=n_samples)
+
+        fd_random = FDataBasis(
+            basis=base_fun.basis,
+            coefficients=base_fun.coefficients * offset[:, np.newaxis],
+        )
+
+        # Take the allowed maximum number of components
+        # In almost high dimension: n_components=n_samples-1 < n_samples
+        # In low dimension: n_components=n_basis<<n_samples
+        fpca = FPCA(n_components=min(n_samples - 1, base_fun.n_basis))
+
+        # Project non-random dataset on fitted FPCs
+        pc_scores = fpca.fit_transform(fd_random)
+
+        # Project back pc_scores to functional input space
+        fd_random_hat = fpca.inverse_transform(pc_scores)
+
+        # Compare fitting data to the reconstructed ones
+        np.testing.assert_allclose(
+            fd_random.coefficients,
+            fd_random_hat.coefficients,
+        )
 
     def test_basis_fpca_inverse_transform(self) -> None:
         """Compare the coef reconstructions to fitting data."""
         random_state = np.random.RandomState(seed=42)
-
-        def test_vs_dim(n_samples: int, base_fun: FDataBasis) -> None:
-            """Test function w.t.t n_samples and basis."""
-            # Random offsetting base_fun and form dataset fd_random
-            offset = random_state.uniform(-5, 5, size=n_samples)
-
-            fd_random = FDataBasis(
-                basis=base_fun.basis,
-                coefficients=base_fun.coefficients * offset[:, np.newaxis],
-            )
-
-            # Take the allowed maximum number of components
-            # In almost high dimension: n_components=n_samples-1 < n_samples
-            # In low dimension: n_components=n_basis<<n_samples
-            fpca = FPCA(n_components=min(n_samples - 1, base_fun.n_basis))
-
-            # Project non-random dataset on fitted FPCs
-            pc_scores = fpca.fit_transform(fd_random)
-
-            # Project back pc_scores to functional input space
-            fd_random_hat = fpca.inverse_transform(pc_scores)
-
-            # Compare fitting data to the reconstructed ones
-            np.testing.assert_allclose(
-                fd_random.coefficients,
-                fd_random_hat.coefficients,
-            )
 
         # Low dimensional case: n_basis<<n_samples
         n_samples = 1000
@@ -652,7 +668,11 @@ class FPCATestCase(unittest.TestCase):
             order=3,
         )
         true_fun = self.draw_one_random_fun(bsp, random_state)
-        test_vs_dim(n_samples=n_samples, base_fun=true_fun)
+        self._test_vs_dim_basis(
+            random_state=random_state,
+            n_samples=n_samples,
+            base_fun=true_fun,
+        )
 
         # Case n_samples<n_basis
         n_samples = 10
@@ -663,7 +683,11 @@ class FPCATestCase(unittest.TestCase):
             order=3,
         )
         true_fun = self.draw_one_random_fun(bsp, random_state)
-        test_vs_dim(n_samples=n_samples, base_fun=true_fun)
+        self._test_vs_dim_basis(
+            random_state=random_state,
+            n_samples=n_samples,
+            base_fun=true_fun,
+        )
 
 
 if __name__ == '__main__':

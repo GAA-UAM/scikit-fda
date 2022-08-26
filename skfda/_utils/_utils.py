@@ -23,12 +23,10 @@ import numpy as np
 import scipy.integrate
 from numpy import ndarray
 from pandas.api.indexers import check_array_indexer
-from sklearn.base import clone
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
 from typing_extensions import Literal, Protocol
 
-from .._utils._sklearn_adapter import TransformerMixin
 from ..representation._typing import (
     ArrayLike,
     DomainRange,
@@ -38,13 +36,15 @@ from ..representation._typing import (
     NDArrayAny,
     NDArrayFloat,
     NDArrayInt,
+    NDArrayObject,
 )
 from ..representation.extrapolation import ExtrapolationLike
 
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
 
+ArrayT = TypeVar("ArrayT", bound=NDArrayAny)
+
 if TYPE_CHECKING:
-    from ..exploratory.depth import Depth
     from ..representation import FData, FDataGrid
     from ..representation.basis import Basis
     T = TypeVar("T", bound=FData)
@@ -52,63 +52,6 @@ if TYPE_CHECKING:
     Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
     Output = TypeVar("Output", bound=Union[FData, NDArrayFloat])
     Target = TypeVar("Target", bound=NDArrayInt)
-
-
-def check_is_univariate(fd: FData) -> None:
-    """Check if an FData is univariate and raises an error.
-
-    Args:
-        fd: Functional object to check if is univariate.
-
-    Raises:
-        ValueError: If it is not univariate, i.e., `fd.dim_domain != 1` or
-            `fd.dim_codomain != 1`.
-
-    """
-    if fd.dim_domain != 1 or fd.dim_codomain != 1:
-        domain_str = (
-            "" if fd.dim_domain == 1
-            else f"(currently is {fd.dim_domain}) "
-        )
-
-        codomain_str = (
-            "" if fd.dim_codomain == 1
-            else f"(currently is  {fd.dim_codomain})"
-        )
-
-        raise ValueError(
-            f"The functional data must be univariate, i.e., "
-            f"with dim_domain=1 {domain_str}"
-            f"and dim_codomain=1 {codomain_str}",
-        )
-
-
-def _check_compatible_fdata(fdata1: FData, fdata2: FData) -> None:
-    """Check that two FData are compatible."""
-    if (fdata1.dim_domain != fdata2.dim_domain):
-        raise ValueError(
-            f"Functional data has incompatible domain dimensions: "
-            f"{fdata1.dim_domain} != {fdata2.dim_domain}",
-        )
-
-    if (fdata1.dim_codomain != fdata2.dim_codomain):
-        raise ValueError(
-            f"Functional data has incompatible codomain dimensions: "
-            f"{fdata1.dim_codomain} != {fdata2.dim_codomain}",
-        )
-
-
-def _check_compatible_fdatagrid(fdata1: FDataGrid, fdata2: FDataGrid) -> None:
-    """Check that two FDataGrid are compatible."""
-    _check_compatible_fdata(fdata1, fdata2)
-    if not all(
-        np.array_equal(g1, g2)
-        for g1, g2 in zip(fdata1.grid_points, fdata2.grid_points)
-    ):
-        raise ValueError(
-            f"Incompatible grid points between template and "
-            f"data: {fdata1.grid_points} != {fdata2.grid_points}",
-        )
 
 
 def _to_grid(
@@ -184,7 +127,7 @@ def _to_array_maybe_ragged(
     array: Iterable[ArrayLike],
     *,
     row_shape: Optional[Sequence[int]] = None,
-) -> np.ndarray:
+) -> NDArrayFloat | NDArrayObject:
     """
     Convert to an array where each element may or may not be of equal length.
 
@@ -192,7 +135,7 @@ def _to_array_maybe_ragged(
     Otherwise it is a ragged array.
 
     """
-    def convert_row(row: ArrayLike) -> np.ndarray:
+    def convert_row(row: ArrayLike) -> NDArrayFloat:
         r = np.array(row)
 
         if row_shape is not None:
@@ -216,30 +159,30 @@ def _to_array_maybe_ragged(
 
 @overload
 def _cartesian_product(
-    axes: Sequence[np.ndarray],
+    axes: Sequence[ArrayT],
     *,
     flatten: bool = True,
     return_shape: Literal[False] = False,
-) -> np.ndarray:
+) -> ArrayT:
     pass
 
 
 @overload
 def _cartesian_product(
-    axes: Sequence[np.ndarray],
+    axes: Sequence[ArrayT],
     *,
     flatten: bool = True,
     return_shape: Literal[True],
-) -> Tuple[np.ndarray, Tuple[int, ...]]:
+) -> Tuple[ArrayT, Tuple[int, ...]]:
     pass
 
 
 def _cartesian_product(  # noqa: WPS234
-    axes: Sequence[np.ndarray],
+    axes: Sequence[ArrayT],
     *,
     flatten: bool = True,
     return_shape: bool = False,
-) -> Union[np.ndarray, Tuple[np.ndarray, Tuple[int, ...]]]:
+) -> Union[ArrayT, Tuple[ArrayT, Tuple[int, ...]]]:
     """
     Compute the cartesian product of the axes.
 
@@ -291,7 +234,7 @@ def _cartesian_product(  # noqa: WPS234
     if return_shape:
         return cartesian, shape
 
-    return cartesian
+    return cartesian  # type: ignore[no-any-return]
 
 
 def _same_domain(fd: Union[Basis, FData], fd2: Union[Basis, FData]) -> bool:
@@ -314,10 +257,10 @@ def _reshape_eval_points(
 def _reshape_eval_points(
     eval_points: Sequence[ArrayLike],
     *,
-    aligned: Literal[True],
+    aligned: Literal[False],
     n_samples: int,
     dim_domain: int,
-) -> NDArrayFloat:
+) -> NDArrayFloat | NDArrayObject:
     pass
 
 
@@ -328,7 +271,7 @@ def _reshape_eval_points(
     aligned: bool,
     n_samples: int,
     dim_domain: int,
-) -> NDArrayFloat:
+) -> NDArrayFloat | NDArrayObject:
     pass
 
 
@@ -338,7 +281,7 @@ def _reshape_eval_points(
     aligned: bool,
     n_samples: int,
     dim_domain: int,
-) -> NDArrayFloat:
+) -> NDArrayFloat | NDArrayObject:
     """Convert and reshape the eval_points to ndarray.
 
     Args:
@@ -454,7 +397,21 @@ def _evaluate_grid(
     dim_codomain: int,
     extrapolation: Optional[ExtrapolationLike] = None,
     aligned: Literal[False],
-) -> NDArrayFloat:
+) -> NDArrayFloat | NDArrayObject:
+    pass
+
+
+@overload
+def _evaluate_grid(
+    axes: Union[GridPointsLike, Iterable[GridPointsLike]],
+    *,
+    evaluate_method: EvaluateMethod,
+    n_samples: int,
+    dim_domain: int,
+    dim_codomain: int,
+    extrapolation: Optional[ExtrapolationLike] = None,
+    aligned: bool,
+) -> NDArrayFloat | NDArrayObject:
     pass
 
 
@@ -467,7 +424,7 @@ def _evaluate_grid(  # noqa: WPS234
     dim_codomain: int,
     extrapolation: Optional[ExtrapolationLike] = None,
     aligned: bool = True,
-) -> NDArrayFloat:
+) -> NDArrayFloat | NDArrayObject:
     """
     Evaluate the functional object in the cartesian grid.
 
@@ -583,12 +540,12 @@ def nquad_vec(
         else:
             f = functools.partial(integrate, *args, depth=depth - 1)
 
-        return scipy.integrate.quad_vec(f, *ranges[initial_depth - depth])[0]
+        return scipy.integrate.quad_vec(  # type: ignore[no-any-return]
+            f,
+            *ranges[initial_depth - depth],
+        )[0]
 
     return integrate(depth=initial_depth)
-
-
-ArrayT = TypeVar("ArrayT", bound=NDArrayAny)
 
 
 def _map_in_batches(
@@ -628,7 +585,7 @@ def _map_in_batches(
 
         batches.append(function(*batch_args, **kwargs))
 
-    return np.concatenate(batches, axis=0)
+    return np.concatenate(batches, axis=0)  # type: ignore[return-value]
 
 
 def _pairwise_symmetric(
@@ -643,8 +600,6 @@ def _pairwise_symmetric(
     if arg2 is None or arg2 is arg1:
         indices = np.triu_indices(dim1)
 
-        matrix = np.empty((dim1, dim1))
-
         triang_vec = _map_in_batches(
             function,
             (arg1, arg1),
@@ -652,6 +607,8 @@ def _pairwise_symmetric(
             memory_per_batch=memory_per_batch,
             **kwargs,
         )
+
+        matrix = np.empty((dim1, dim1), dtype=triang_vec.dtype)
 
         # Set upper matrix
         matrix[indices] = triang_vec
@@ -731,58 +688,12 @@ def _classifier_get_classes(y: ndarray) -> Tuple[ndarray, NDArrayInt]:
     return classes, y_ind
 
 
-def _classifier_get_depth_methods(
-    classes: ndarray,
-    X: T,
-    y_ind: ndarray,
-    depth_methods: Sequence[Depth[T]],
-) -> Sequence[Depth[T]]:
-    return [
-        clone(depth_method).fit(X[y_ind == cur_class])
-        for cur_class in range(classes.size)
-        for depth_method in depth_methods
-    ]
-
-
-def _classifier_fit_depth_methods(
-    X: T,
-    y: ndarray,
-    depth_methods: Sequence[Depth[T]],
-) -> Tuple[ndarray, Sequence[Depth[T]]]:
-    classes, y_ind = _classifier_get_classes(y)
-
-    class_depth_methods_ = _classifier_get_depth_methods(
-        classes, X, y_ind, depth_methods,
-    )
-
-    return classes, class_depth_methods_
-
-
-def _fit_feature_transformer(  # noqa: WPS320 WPS234
-    X: Input,
-    y: Target,
-    transformer: TransformerMixin[Input, Output, Target],
-) -> Tuple[
-    Union[NDArrayInt, NDArrayFloat],
-    Sequence[TransformerMixin[Input, Output, Target]],
-]:
-
-    classes, y_ind = _classifier_get_classes(y)
-
-    class_feature_transformers = [
-        clone(transformer).fit(X[y_ind == cur_class], y[y_ind == cur_class])
-        for cur_class, _ in enumerate(classes)
-    ]
-
-    return classes, class_feature_transformers
-
-
 _DependenceMeasure = Callable[[np.ndarray, np.ndarray], np.ndarray]
 
 
 def _compute_dependence(
-    X: Union[NDArrayInt, NDArrayFloat],
-    y: Union[NDArrayInt, NDArrayFloat],
+    X: NDArrayFloat,
+    y: NDArrayFloat,
     *,
     dependence_measure: _DependenceMeasure,
 ) -> NDArrayFloat:
@@ -810,4 +721,6 @@ def _compute_dependence(
 
     dependence_results = rowwise(dependence_measure, X, Y)
 
-    return dependence_results.reshape(input_shape)
+    return dependence_results.reshape(  # type: ignore[no-any-return]
+        input_shape,
+    )

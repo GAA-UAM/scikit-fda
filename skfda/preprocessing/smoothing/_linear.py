@@ -14,12 +14,12 @@ import numpy as np
 from ... import FDataGrid
 from ..._utils import _to_grid_points
 from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
-from ...representation._typing import GridPointsLike
+from ...representation._typing import GridPointsLike, NDArrayFloat
 
 
 class _LinearSmoother(
     BaseEstimator,
-    TransformerMixin,
+    TransformerMixin[FDataGrid, FDataGrid, object],
 ):
     """Linear smoother.
 
@@ -39,7 +39,7 @@ class _LinearSmoother(
         self,
         input_points: Optional[GridPointsLike] = None,
         output_points: Optional[GridPointsLike] = None,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
         # Use the fitted points if they are not provided
         if input_points is None:
@@ -57,7 +57,7 @@ class _LinearSmoother(
         self,
         input_points: GridPointsLike,
         output_points: GridPointsLike,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         pass
 
     def _more_tags(self) -> Mapping[str, Any]:
@@ -68,7 +68,7 @@ class _LinearSmoother(
     def fit(
         self,
         X: FDataGrid,
-        y: None = None,
+        y: object = None,
     ) -> _LinearSmoother:
         """Compute the hat matrix for the desired output points.
 
@@ -94,7 +94,7 @@ class _LinearSmoother(
     def transform(
         self,
         X: FDataGrid,
-        y: None = None,
+        y: object = None,
     ) -> FDataGrid:
         """Multiply the hat matrix with the function values to smooth them.
 

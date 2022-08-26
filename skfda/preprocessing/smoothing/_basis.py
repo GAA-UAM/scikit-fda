@@ -270,7 +270,7 @@ class BasisSmoother(_LinearSmoother):
     def fit(
         self,
         X: FDataGrid,
-        y: None = None,
+        y: object = None,
     ) -> BasisSmoother:
         """Compute the hat matrix for the desired output points.
 
@@ -297,7 +297,7 @@ class BasisSmoother(_LinearSmoother):
     def transform(
         self,
         X: FDataGrid,
-        y: None = None,
+        y: object = None,
     ) -> FData:
         """
         Smooth the data.

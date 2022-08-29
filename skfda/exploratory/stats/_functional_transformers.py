@@ -251,7 +251,7 @@ def occupation_measure(
         ...     ),
         ...     decimals=2,
         ... )
-        array([[ 0.98,  1.02],
+        array([[ 0.98,  1.  ],
                [ 0.5 ,  0.52],
                [ 6.28,  0.  ]])
 

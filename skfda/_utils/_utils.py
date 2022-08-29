@@ -36,7 +36,6 @@ from ..representation._typing import (
     NDArrayInt,
     NDArrayStr,
 )
-from ..representation.extrapolation import ExtrapolationLike
 from ._sklearn_adapter import BaseEstimator
 
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
@@ -46,6 +45,7 @@ ArrayDTypeT = TypeVar("ArrayDTypeT", bound="np.generic")
 if TYPE_CHECKING:
     from ..representation import FData, FDataGrid
     from ..representation.basis import Basis
+    from ..representation.extrapolation import ExtrapolationLike
     T = TypeVar("T", bound=FData)
 
     Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])

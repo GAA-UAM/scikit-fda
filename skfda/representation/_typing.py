@@ -1,5 +1,5 @@
 """Common types."""
-from typing import Any, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Any, NewType, Optional, Sequence, Tuple, TypeVar, Union
 
 import numpy as np
 from typing_extensions import Protocol
@@ -40,6 +40,8 @@ LabelTupleLike = Sequence[Optional[str]]
 
 GridPoints = Tuple[np.ndarray, ...]
 GridPointsLike = Union[ArrayLike, Sequence[ArrayLike]]
+
+EvaluationPoints = NDArrayFloat
 
 
 class Vector(Protocol):

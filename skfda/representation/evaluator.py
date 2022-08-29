@@ -8,11 +8,11 @@ evaluation of FDataGrids.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Iterable, Union, overload
+from typing import TYPE_CHECKING, Any
 
-from typing_extensions import Literal, Protocol
+from typing_extensions import Protocol
 
-from ._typing import ArrayLike, NDArrayFloat
+from ._typing import ArrayLike, EvaluationPoints, NDArrayFloat
 
 if TYPE_CHECKING:
     from . import FData
@@ -36,7 +36,7 @@ class Evaluator(ABC):
     def _evaluate(
         self,
         fdata: FData,
-        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        eval_points: EvaluationPoints,
         *,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -48,40 +48,10 @@ class Evaluator(ABC):
         """
         pass
 
-    @overload
     def __call__(
         self,
         fdata: FData,
         eval_points: ArrayLike,
-        *,
-        aligned: Literal[True] = True,
-    ) -> NDArrayFloat:
-        pass
-
-    @overload
-    def __call__(
-        self,
-        fdata: FData,
-        eval_points: Iterable[ArrayLike],
-        *,
-        aligned: Literal[False],
-    ) -> NDArrayFloat:
-        pass
-
-    @overload
-    def __call__(
-        self,
-        fdata: FData,
-        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
-        *,
-        aligned: bool,
-    ) -> NDArrayFloat:
-        pass
-
-    def __call__(
-        self,
-        fdata: FData,
-        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
         *,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -109,6 +79,15 @@ class Evaluator(ABC):
                 j-th evaluation point.
 
         """
+        from ..misc.validation import validate_evaluation_points
+
+        eval_points = validate_evaluation_points(
+            eval_points,
+            aligned=aligned,
+            n_samples=fdata.n_samples,
+            dim_domain=fdata.dim_domain,
+        )
+
         return self._evaluate(
             fdata=fdata,
             eval_points=eval_points,
@@ -129,7 +108,7 @@ class EvaluateFunction(Protocol):
     def __call__(
         self,
         fdata: FData,
-        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        eval_points: EvaluationPoints,
         *,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -175,7 +154,7 @@ class GenericEvaluator(Evaluator):
     def _evaluate(  # noqa: D102
         self,
         fdata: FData,
-        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        eval_points: EvaluationPoints,
         *,
         aligned: bool = True,
     ) -> NDArrayFloat:

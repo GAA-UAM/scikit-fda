@@ -11,19 +11,20 @@ smoothing methods. It also shows examples of undersmoothing and oversmoothing.
 # Author: Miguel Carbajo Berrocal
 # Modified: Elena Petrunina
 # License: MIT
+import math
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 import skfda
 import skfda.preprocessing.smoothing.validation as val
-from skfda.preprocessing.smoothing import KernelSmoother
-from skfda.misc.kernels import uniform
 from skfda.misc.hat_matrix import (
-    NadarayaWatsonHatMatrix,
-    LocalLinearRegressionHatMatrix,
     KNeighborsHatMatrix,
+    LocalLinearRegressionHatMatrix,
+    NadarayaWatsonHatMatrix,
 )
+from skfda.misc.kernels import uniform
+from skfda.preprocessing.smoothing import KernelSmoother
 
 ##############################################################################
 # This dataset contains the log-periodograms of several phoneme pronunciations.
@@ -130,8 +131,8 @@ n_neighbors = np.arange(2, 24)
 dist = fd.grid_points[0][1] - fd.grid_points[0][0]
 bandwidth = np.linspace(
     dist,
-    dist*((n_neighbors[-1] - 1)//2),
-    len(n_neighbors)
+    dist * (math.ceil((n_neighbors[-1] - 1) / 2)),
+    len(n_neighbors),
 )
 
 # K-nearest neighbours kernel smoothing.
@@ -171,7 +172,7 @@ nw_fd = nw.transform(fd)
 # The plot of the mean test scores for all smoothers is shown below.
 # As the X axis we will use the neighbors for all the smoothers in order
 # to compare k-NN with the others, but remember that the bandwidth for the
-# other two estimators is the distance to the k-th neighbor.
+# other two estimators is related to the distance to the k-th neighbor.
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)

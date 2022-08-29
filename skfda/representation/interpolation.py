@@ -23,7 +23,7 @@ from scipy.interpolate import (
     UnivariateSpline,
 )
 
-from ._typing import ArrayLike
+from ._typing import ArrayLike, NDArrayFloat
 from .evaluator import Evaluator
 
 if TYPE_CHECKING:
@@ -58,16 +58,16 @@ class _SplineList(abc.ABC):
     def _evaluate_one(
         self,
         spline: SplineCallable,
-        eval_points: np.ndarray,
-    ) -> np.ndarray:
+        eval_points: NDArrayFloat,
+    ) -> NDArrayFloat:
         """Evaluate one spline of the list."""
         pass
 
     def _evaluate_codomain(
         self,
         spline_list: Sequence[SplineCallable],
-        eval_points: np.ndarray,
-    ) -> np.ndarray:
+        eval_points: NDArrayFloat,
+    ) -> NDArrayFloat:
         """Evaluate a multidimensional sample."""
         return np.array([
             self._evaluate_one(spl, eval_points)
@@ -77,12 +77,12 @@ class _SplineList(abc.ABC):
     def evaluate(
         self,
         fdata: FData,
-        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        eval_points: ArrayLike,
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
-        res: np.ndarray
+        res: NDArrayFloat
 
         if aligned:
 
@@ -199,7 +199,7 @@ class _SplineList1D(_SplineList):
 
         if monotone:
             def constructor(  # noqa: WPS430
-                data: np.ndarray,
+                data: NDArrayFloat,
             ) -> SplineCallable:
                 """Construct an unidimensional cubic monotone interpolation."""
                 return PchipInterpolator(grid_points, data)
@@ -207,7 +207,7 @@ class _SplineList1D(_SplineList):
         else:
 
             def constructor(  # noqa: WPS430, WPS440
-                data: np.ndarray,
+                data: NDArrayFloat,
             ) -> SplineCallable:
                 """Construct an unidimensional interpolation."""
                 return UnivariateSpline(
@@ -226,8 +226,8 @@ class _SplineList1D(_SplineList):
     def _evaluate_one(
         self,
         spline: SplineCallable,
-        eval_points: np.ndarray,
-    ) -> np.ndarray:
+        eval_points: NDArrayFloat,
+    ) -> NDArrayFloat:
         try:
             return spline(eval_points)[:, 0]
         except ValueError:
@@ -405,8 +405,8 @@ class _SplineListND(_SplineList):
     def _evaluate_one(
         self,
         spline: SplineCallable,
-        eval_points: np.ndarray,
-    ) -> np.ndarray:
+        eval_points: NDArrayFloat,
+    ) -> NDArrayFloat:
 
         return spline(eval_points)
 
@@ -505,10 +505,10 @@ class SplineInterpolation(Evaluator):
     def _evaluate(  # noqa: D102
         self,
         fdata: FData,
-        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        eval_points: ArrayLike,
         *,
         aligned: bool = True,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
         spline_list = self._build_interpolator(fdata)
 

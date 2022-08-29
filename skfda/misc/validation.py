@@ -8,7 +8,7 @@ from typing import Container, Sequence
 import numpy as np
 
 from ..representation import FData, FDataBasis, FDataGrid
-from ..representation._typing import ArrayLike, NDArrayFloat
+from ..representation._typing import ArrayLike, EvaluationPoints
 
 
 def check_fdata_dimensions(
@@ -179,7 +179,7 @@ def validate_evaluation_points(
     aligned: bool,
     n_samples: int,
     dim_domain: int,
-) -> NDArrayFloat:
+) -> EvaluationPoints:
     """Convert and reshape the eval_points to ndarray.
 
     Args:

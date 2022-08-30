@@ -41,13 +41,13 @@ from ._typing import (
     NDArrayFloat,
     NDArrayInt,
 )
-from .basis import Basis
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike
 from .interpolation import SplineInterpolation
 
 if TYPE_CHECKING:
     from . import FDataBasis
+    from .basis import Basis
 
 T = TypeVar("T", bound='FDataGrid')
 

@@ -111,7 +111,7 @@ class Basis(ABC):
     @property
     def domain_range(self) -> DomainRange:
         if self._domain_range is None:
-            return ((0, 1),) * self.dim_domain
+            return ((0.0, 1.0),) * self.dim_domain
 
         return self._domain_range
 

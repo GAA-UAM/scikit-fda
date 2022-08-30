@@ -94,15 +94,15 @@ class LinearDifferentialOperator(
         >>> LinearDifferentialOperator(weights=fdlist)
         LinearDifferentialOperator(
         weights=(FDataBasis(
-                basis=Constant(domain_range=((0, 1),), n_basis=1),
+                basis=Constant(domain_range=((0.0, 1.0),), n_basis=1),
                 coefficients=[[ 0.]],
                 ...),
             FDataBasis(
-                basis=Constant(domain_range=((0, 1),), n_basis=1),
+                basis=Constant(domain_range=((0.0, 1.0),), n_basis=1),
                 coefficients=[[ 0.]],
                 ...),
             FDataBasis(
-                basis=Monomial(domain_range=((0, 1),), n_basis=3),
+                basis=Monomial(domain_range=((0.0, 1.0),), n_basis=3),
                 coefficients=[[ 1. 2. 3.]],
                 ...)),
         )

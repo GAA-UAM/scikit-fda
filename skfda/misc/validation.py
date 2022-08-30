@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import functools
-from typing import TYPE_CHECKING, Container, Sequence, Tuple, cast
+import numbers
+from typing import Container, Sequence, Tuple, cast
 
 import numpy as np
 
@@ -246,12 +247,12 @@ def _validate_domain_range_limits(
         )
 
     lower, upper = limits
-    return (lower, upper)  # noqa: WPS331
+    return (float(lower), float(upper))
 
 
 def validate_domain_range(domain_range: DomainRangeLike) -> DomainRange:
     """Convert sequence to a proper domain range."""
-    if isinstance(domain_range[0], (int, float)):
+    if isinstance(domain_range[0], numbers.Real):
         domain_range = cast(Sequence[float], domain_range)
         domain_range = (domain_range,)
 

@@ -104,10 +104,10 @@ fd.scatter(fig=fig)
 plt.show()
 
 ##############################################################################
-# In the following figure it is shown the result of the cubic interpolation
-# applied to the surface (requires SciPy >= 1.9).
+# In the following figure it is shown the result of the constant interpolation
+# applied to the surface.
 
-fd.interpolation = SplineInterpolation(interpolation_order=3)
+fd.interpolation = SplineInterpolation(interpolation_order=0)
 
 fig = fd.plot()
 fd.scatter(fig=fig)

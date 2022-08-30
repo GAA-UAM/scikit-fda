@@ -40,11 +40,6 @@ grid_points = [X[0, :], Y[:, 0]]
 
 g = skfda.FDataGrid(data_matrix, grid_points)
 
-# Sets cubic interpolation
-g.interpolation = skfda.representation.interpolation.SplineInterpolation(
-    interpolation_order=3,
-)
-
 # Plots the surface
 g.plot()
 

@@ -222,7 +222,7 @@ class TestEvaluationSplineUnivariate(unittest.TestCase):
 
     def test_evaluation_nodes(self) -> None:
         """Test interpolation in nodes for all dimensions."""
-        for degree in range(1, 6):
+        for degree in range(1, 6, 2):
             interpolation = SplineInterpolation(degree)
 
             f = FDataGrid(
@@ -381,7 +381,7 @@ class TestEvaluationSplineArbitraryImage(unittest.TestCase):
 
     def test_evaluation_nodes(self) -> None:
         """Test interpolation in nodes for all dimensions."""
-        for degree in range(1, 6):
+        for degree in range(1, 6, 2):
             interpolation = SplineInterpolation(degree)
 
             f = FDataGrid(

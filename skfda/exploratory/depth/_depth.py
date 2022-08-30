@@ -13,11 +13,10 @@ from typing import TypeVar
 import numpy as np
 import scipy.integrate
 
-from ... import FDataGrid
 from ..._utils._sklearn_adapter import BaseEstimator
 from ...misc.metrics import Metric, l2_distance
 from ...misc.metrics._utils import _fit_metric
-from ...representation import FData
+from ...representation import FData, FDataGrid
 from ...representation._typing import NDArrayFloat
 from .multivariate import Depth, SimplicialDepth, _UnivariateFraimanMuniz
 

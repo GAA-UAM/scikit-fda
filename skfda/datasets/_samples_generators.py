@@ -6,7 +6,6 @@ import scipy.integrate
 import sklearn.utils
 from scipy.stats import multivariate_normal
 
-from .. import FDataGrid
 from .._utils import (
     RandomStateLike,
     _cartesian_product,
@@ -14,6 +13,7 @@ from .._utils import (
     normalize_warping,
 )
 from ..misc import covariances
+from ..representation import FDataGrid
 from ..representation._typing import (
     DomainRangeLike,
     GridPointsLike,

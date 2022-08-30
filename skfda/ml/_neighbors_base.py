@@ -12,7 +12,6 @@ from typing_extensions import Literal
 
 from skfda.misc.metrics._utils import PairwiseMetric
 
-from .. import FData, FDataGrid, concatenate
 from .._utils._sklearn_adapter import (
     BaseEstimator,
     ClassifierMixin,
@@ -21,6 +20,7 @@ from .._utils._sklearn_adapter import (
 from ..misc.metrics import l2_distance
 from ..misc.metrics._typing import Metric
 from ..misc.metrics._utils import _fit_metric
+from ..representation import FData, FDataGrid, concatenate
 from ..representation._typing import NDArrayFloat, NDArrayInt
 
 FDataType = TypeVar("FDataType", bound="FData")

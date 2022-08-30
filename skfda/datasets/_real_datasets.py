@@ -10,7 +10,7 @@ from typing_extensions import Literal
 
 import rdata
 
-from .. import FDataGrid
+from ..representation import FDataGrid
 
 
 def _get_skdatasets_repositories() -> Any:

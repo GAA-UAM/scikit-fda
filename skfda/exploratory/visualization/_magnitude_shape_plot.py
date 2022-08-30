@@ -18,7 +18,7 @@ from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from matplotlib.patches import Ellipse
 
-from ... import FDataGrid
+from ...representation import FDataGrid
 from ...representation._typing import NDArrayFloat, NDArrayInt
 from ..depth import Depth
 from ..outliers import MSPlotOutlierDetector

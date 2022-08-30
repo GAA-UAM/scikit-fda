@@ -20,7 +20,7 @@ from matplotlib.figure import Figure
 
 from skfda.exploratory.depth.multivariate import Depth
 
-from ... import FData, FDataGrid
+from ...representation import FData, FDataGrid
 from ...representation._typing import NDArrayBool, NDArrayFloat
 from ..depth import ModifiedBandDepth
 from ..outliers import _envelopes

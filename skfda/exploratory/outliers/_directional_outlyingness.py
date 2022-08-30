@@ -10,9 +10,9 @@ from numpy import linalg as la
 from sklearn.covariance import MinCovDet
 from sklearn.utils.validation import check_random_state
 
-from ... import FDataGrid
 from ..._utils import RandomStateLike
 from ..._utils._sklearn_adapter import BaseEstimator, OutlierMixin
+from ...representation import FDataGrid
 from ...representation._typing import NDArrayFloat, NDArrayInt
 from ..depth.multivariate import Depth, ProjectionDepth
 from . import _directional_outlyingness_experiment_results as experiments

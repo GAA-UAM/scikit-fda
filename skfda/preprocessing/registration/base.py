@@ -9,12 +9,12 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Any, TypeVar, overload
 
-from ... import FData
 from ..._utils import (
     BaseEstimator,
     InductiveTransformerMixin,
     TransformerMixin,
 )
+from ...representation import FData
 
 SelfType = TypeVar("SelfType")
 Input = TypeVar("Input", bound=FData)

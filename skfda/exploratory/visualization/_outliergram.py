@@ -14,7 +14,7 @@ from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from ... import FDataGrid
+from ...representation import FDataGrid
 from ..outliers import OutliergramOutlierDetector
 from ._baseplot import BasePlot
 

@@ -11,9 +11,9 @@ from typing import Any, Mapping, Optional
 
 import numpy as np
 
-from ... import FDataGrid
 from ..._utils import _to_grid_points
 from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
+from ...representation import FDataGrid
 from ...representation._typing import GridPointsLike, NDArrayFloat
 
 

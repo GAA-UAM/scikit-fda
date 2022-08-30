@@ -6,12 +6,12 @@ from typing import Callable, Optional, TypeVar, Union
 
 from sklearn.utils.validation import check_is_fitted
 
-from ... import FDataGrid
 from ..._utils import invert_warping, normalize_scale
 from ...exploratory.stats import fisher_rao_karcher_mean
 from ...exploratory.stats._fisher_rao import _elastic_alignment_array
 from ...misc.operators import SRSF
 from ...misc.validation import check_fdata_dimensions, check_fdata_same_kind
+from ...representation import FDataGrid
 from ...representation._typing import ArrayLike
 from ...representation.basis import Basis
 from ...representation.interpolation import SplineInterpolation

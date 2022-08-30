@@ -5,8 +5,8 @@ import numpy as np
 import sklearn
 from sklearn.model_selection import GridSearchCV
 
-from skfda import FDataGrid
-from skfda.preprocessing.smoothing._linear import _LinearSmoother
+from ...representation import FDataGrid
+from ._linear import _LinearSmoother
 
 
 def _get_input_estimation_and_matrix(

@@ -6,11 +6,10 @@ import numpy as np
 from sklearn.utils import check_random_state
 from typing_extensions import Literal
 
-from ... import concatenate
 from ..._utils import RandomStateLike
 from ...datasets import make_gaussian
 from ...misc.metrics import lp_distance
-from ...representation import FData, FDataGrid
+from ...representation import FData, FDataGrid, concatenate
 from ...representation._typing import ArrayLike, NDArrayFloat
 
 

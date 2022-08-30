@@ -18,8 +18,8 @@ from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from typing_extensions import Protocol
 
-from ... import FDataGrid
 from ..._utils import _to_domain_range, _to_grid_points, constants
+from ...representation import FDataGrid
 from ...representation._functional_data import FData
 from ...representation._typing import DomainRangeLike, GridPointsLike
 from ._baseplot import BasePlot

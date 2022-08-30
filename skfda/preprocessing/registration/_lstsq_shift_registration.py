@@ -8,10 +8,10 @@ import numpy as np
 from sklearn.utils.validation import check_is_fitted
 from typing_extensions import Literal
 
-from ... import FData, FDataGrid
 from ...misc._math import inner_product
 from ...misc.metrics._lp_norms import l2_norm
 from ...misc.validation import check_fdata_dimensions
+from ...representation import FData, FDataGrid
 from ...representation._typing import ArrayLike, GridPointsLike, NDArrayFloat
 from ...representation.extrapolation import ExtrapolationLike
 from .base import InductiveRegistrationTransformer

@@ -9,7 +9,6 @@ from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
 
 from ...representation import FData, FDataGrid
-from ...representation._typing import DomainRangeLike
 from ...representation.basis import (
     BSpline,
     Constant,
@@ -17,6 +16,7 @@ from ...representation.basis import (
     Fourier,
     Monomial,
 )
+from ...typing._base import DomainRangeLike
 from ._operators import Operator, gramian_matrix_optimization
 
 Order = int

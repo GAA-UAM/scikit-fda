@@ -14,8 +14,9 @@ import scipy.integrate
 
 from .._utils import nquad_vec
 from ..representation import FData, FDataBasis, FDataGrid
-from ..representation._typing import ArrayLike, DomainRange, NDArrayFloat
 from ..representation.basis import Basis
+from ..typing._base import DomainRange
+from ..typing._numpy import ArrayLike, NDArrayFloat
 from .validation import check_fdata_same_dimensions
 
 Vector = TypeVar(

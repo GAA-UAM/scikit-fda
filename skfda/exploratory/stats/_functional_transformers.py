@@ -11,13 +11,8 @@ from typing_extensions import Protocol, TypeGuard
 from ..._utils import nquad_vec
 from ...misc.validation import check_fdata_dimensions, validate_domain_range
 from ...representation import FData, FDataBasis, FDataGrid
-from ...representation._typing import (
-    ArrayLike,
-    DomainRangeLike,
-    NDArrayBool,
-    NDArrayFloat,
-    NDArrayInt,
-)
+from ...typing._base import DomainRangeLike
+from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 
 T = TypeVar("T", bound=Union[NDArrayFloat, FDataGrid])
 

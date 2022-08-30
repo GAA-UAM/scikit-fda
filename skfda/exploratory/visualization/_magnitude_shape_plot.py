@@ -19,7 +19,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Ellipse
 
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 from ..depth import Depth
 from ..outliers import MSPlotOutlierDetector
 from ._baseplot import BasePlot

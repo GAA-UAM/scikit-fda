@@ -10,11 +10,12 @@ from typing import TYPE_CHECKING, Any, NoReturn, Optional, Union, overload
 import numpy as np
 from typing_extensions import Literal
 
-from ._typing import ArrayLike, EvaluationPoints, NDArrayFloat
+from ..typing._base import EvaluationPoints
+from ..typing._numpy import NDArrayFloat
 from .evaluator import Evaluator
 
 if TYPE_CHECKING:
-    from . import FData
+    from ._functional_data import FData
 
 ExtrapolationLike = Union[
     Evaluator,

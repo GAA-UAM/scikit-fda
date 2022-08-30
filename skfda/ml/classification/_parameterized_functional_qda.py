@@ -11,7 +11,7 @@ from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _classifier_get_classes
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 
 class ParameterizedFunctionalQDA(

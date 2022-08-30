@@ -10,7 +10,7 @@ from ..._utils import RandomStateLike
 from ...datasets import make_gaussian
 from ...misc.metrics import lp_distance
 from ...representation import FData, FDataGrid, concatenate
-from ...representation._typing import ArrayLike, NDArrayFloat
+from ...typing._numpy import ArrayLike, NDArrayFloat
 
 
 def v_sample_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:

@@ -10,8 +10,8 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
 from ...representation import FData
-from ...representation._typing import ArrayLike, NDArrayFloat
 from ...representation.basis import Basis
+from ...typing._numpy import ArrayLike, NDArrayFloat
 from .._math import inner_product_matrix
 from ..regularization._regularization import TikhonovRegularization
 

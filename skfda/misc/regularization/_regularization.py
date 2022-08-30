@@ -11,8 +11,8 @@ from sklearn.base import BaseEstimator
 from skfda.misc.operators import Identity, gramian_matrix
 
 from ...representation import FData
-from ...representation._typing import NDArrayFloat
 from ...representation.basis import Basis
+from ...typing._numpy import NDArrayFloat
 from ..operators import Operator
 from ..operators._operators import OperatorInput
 

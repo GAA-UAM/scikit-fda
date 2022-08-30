@@ -17,14 +17,14 @@ from typing import (
     overload,
 )
 
-import dcor
 import numpy as np
 import numpy.linalg as linalg
 import numpy.ma as ma
 import scipy.stats
 import sklearn.utils
-from numpy.typing import ArrayLike
 from typing_extensions import Literal
+
+import dcor
 
 from ...._utils import _compute_dependence
 from ...._utils._sklearn_adapter import (
@@ -32,7 +32,7 @@ from ...._utils._sklearn_adapter import (
     InductiveTransformerMixin,
 )
 from ....representation import FDataGrid
-from ....representation._typing import NDArrayBool, NDArrayFloat, NDArrayInt
+from ....typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 
 if TYPE_CHECKING:
     from ....misc.covariances import CovarianceLike

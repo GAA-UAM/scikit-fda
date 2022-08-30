@@ -12,9 +12,9 @@ from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 from ..._utils import _classifier_get_classes
 from ..._utils._sklearn_adapter import TransformerMixin
 from ...representation import FData
-from ...representation._typing import NDArrayFloat, NDArrayInt
 from ...representation.basis import FDataBasis
 from ...representation.grid import FDataGrid
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
 Output = TypeVar("Output", bound=Union[pd.DataFrame, NDArrayFloat])

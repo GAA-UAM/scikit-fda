@@ -6,7 +6,8 @@ from typing import Any, TypeVar, Union, overload
 
 from typing_extensions import Final, Literal, Protocol
 
-from ...representation._typing import NDArrayFloat, Vector
+from ...typing._base import Vector
+from ...typing._numpy import NDArrayFloat
 
 VectorType = TypeVar("VectorType", contravariant=True, bound=Vector)
 MetricElementType = TypeVar("MetricElementType", contravariant=True)

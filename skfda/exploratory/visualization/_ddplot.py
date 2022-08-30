@@ -15,7 +15,7 @@ from matplotlib.figure import Figure
 
 from ...exploratory.depth.multivariate import Depth
 from ...representation._functional_data import FData
-from ...representation._typing import NDArrayInt
+from ...typing._numpy import NDArrayInt
 from ._baseplot import BasePlot
 
 T = TypeVar('T', bound=FData)

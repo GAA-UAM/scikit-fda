@@ -7,10 +7,8 @@ import numpy as np
 import scipy.integrate
 from typing_extensions import Final
 
-from skfda.representation._typing import NDArrayFloat
-
 from ...representation import FData, FDataBasis
-from ...representation._typing import NDArrayFloat
+from ...typing._numpy import NDArrayFloat
 from ._typing import Norm
 
 

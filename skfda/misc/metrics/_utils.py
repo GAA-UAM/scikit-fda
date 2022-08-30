@@ -6,7 +6,8 @@ import numpy as np
 
 from ..._utils import _pairwise_symmetric
 from ...representation import FData, FDataGrid
-from ...representation._typing import NDArrayFloat, Vector
+from ...typing._base import Vector
+from ...typing._numpy import NDArrayFloat
 from ._typing import Metric, MetricElementType, Norm, VectorType
 
 T = TypeVar("T", bound=FData)

@@ -10,7 +10,7 @@ from typing_extensions import Literal
 
 from ..._utils import RandomStateLike
 from ...representation import FData, FDataBasis
-from ...representation._typing import NDArrayFloat
+from ...typing._numpy import NDArrayFloat
 
 
 def hotelling_t2(

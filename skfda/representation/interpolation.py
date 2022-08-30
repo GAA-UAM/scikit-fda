@@ -13,11 +13,12 @@ from scipy.interpolate import (
     make_interp_spline,
 )
 
-from ._typing import ArrayLike, EvaluationPoints, NDArrayFloat
+from ..typing._base import EvaluationPoints
+from ..typing._numpy import ArrayLike, NDArrayFloat
 from .evaluator import Evaluator
 
 if TYPE_CHECKING:
-    from . import FDataGrid
+    from .grid import FDataGrid
 
 
 class _BaseInterpolation(Evaluator):

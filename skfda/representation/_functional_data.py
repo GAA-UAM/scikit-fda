@@ -28,12 +28,14 @@ from matplotlib.figure import Figure
 from typing_extensions import Literal
 
 from .._utils import _evaluate_grid, _to_grid_points
-from ._typing import (
-    ArrayLike,
+from ..typing._base import (
     DomainRange,
     GridPointsLike,
     LabelTuple,
     LabelTupleLike,
+)
+from ..typing._numpy import (
+    ArrayLike,
     NDArrayBool,
     NDArrayFloat,
     NDArrayInt,
@@ -43,8 +45,8 @@ from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike, _parse_extrapolation
 
 if TYPE_CHECKING:
-    from . import FDataBasis, FDataGrid
-    from .basis import Basis
+    from .grid import FDataGrid
+    from .basis import Basis, FDataBasis
 
 T = TypeVar('T', bound='FData')
 

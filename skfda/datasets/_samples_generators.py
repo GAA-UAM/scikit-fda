@@ -14,12 +14,9 @@ from .._utils import (
 )
 from ..misc import covariances
 from ..representation import FDataGrid
-from ..representation._typing import (
-    DomainRangeLike,
-    GridPointsLike,
-    NDArrayFloat,
-)
 from ..representation.interpolation import SplineInterpolation
+from ..typing._base import DomainRangeLike, GridPointsLike
+from ..typing._numpy import NDArrayFloat
 
 MeanCallable = Callable[[np.ndarray], np.ndarray]
 CovarianceCallable = Callable[[np.ndarray, np.ndarray], np.ndarray]

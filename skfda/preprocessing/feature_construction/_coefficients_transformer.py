@@ -6,7 +6,7 @@ from sklearn.utils.validation import check_is_fitted
 
 from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from ...representation import FDataBasis
-from ...representation._typing import NDArrayFloat
+from ...typing._numpy import NDArrayFloat
 
 
 class CoefficientsTransformer(

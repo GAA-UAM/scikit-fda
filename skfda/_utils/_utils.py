@@ -36,13 +36,15 @@ if TYPE_CHECKING:
     from ..representation import FData, FDataGrid
     from ..representation.basis import Basis
     from ..representation.extrapolation import ExtrapolationLike
-    from ..representation._typing import (
-        GridPoints,
-        GridPointsLike,
+    from ..typing._numpy import (
         NDArrayAny,
         NDArrayFloat,
         NDArrayInt,
         NDArrayStr,
+    )
+    from ..typing._base import (
+        GridPoints,
+        GridPointsLike,
     )
     T = TypeVar("T", bound=FData)
 
@@ -331,7 +333,7 @@ def _evaluate_grid(  # noqa: WPS234
             dimension.
 
     """
-    from ..representation._typing import GridPointsLike
+    from ..typing._base import GridPointsLike
 
     # Compute intersection points and resulting shapes
     if aligned:

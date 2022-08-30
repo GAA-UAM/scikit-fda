@@ -18,17 +18,10 @@ import numpy as np
 import pandas.api.extensions
 
 from ..._utils import _check_array_key, _int_to_real, constants, nquad_vec
+from ...typing._base import DomainRange, GridPointsLike, LabelTupleLike
+from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from .. import grid
 from .._functional_data import FData
-from .._typing import (
-    ArrayLike,
-    DomainRange,
-    GridPointsLike,
-    LabelTupleLike,
-    NDArrayBool,
-    NDArrayFloat,
-    NDArrayInt,
-)
 from ..extrapolation import ExtrapolationLike
 
 if TYPE_CHECKING:

@@ -17,7 +17,7 @@ from ..._utils._sklearn_adapter import BaseEstimator
 from ...misc.metrics import Metric, l2_distance
 from ...misc.metrics._utils import _fit_metric
 from ...representation import FData, FDataGrid
-from ...representation._typing import NDArrayFloat
+from ...typing._numpy import NDArrayFloat
 from .multivariate import Depth, SimplicialDepth, _UnivariateFraimanMuniz
 
 T = TypeVar("T", bound=FData)

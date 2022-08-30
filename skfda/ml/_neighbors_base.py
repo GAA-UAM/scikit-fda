@@ -21,7 +21,7 @@ from ..misc.metrics import l2_distance
 from ..misc.metrics._typing import Metric
 from ..misc.metrics._utils import _fit_metric
 from ..representation import FData, FDataGrid, concatenate
-from ..representation._typing import NDArrayFloat, NDArrayInt
+from ..typing._numpy import NDArrayFloat, NDArrayInt
 
 FDataType = TypeVar("FDataType", bound="FData")
 SelfType = TypeVar("SelfType", bound="NeighborsBase[Any, Any]")

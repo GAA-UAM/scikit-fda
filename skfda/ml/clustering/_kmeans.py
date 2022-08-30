@@ -15,7 +15,7 @@ from ..._utils import RandomStateLike
 from ...misc.metrics import Metric, PairwiseMetric, l2_distance
 from ...misc.validation import check_fdata_same_dimensions
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayAny, NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt
 
 SelfType = TypeVar("SelfType", bound="BaseKMeans[Any]")
 MembershipType = TypeVar("MembershipType", bound=NDArrayAny)

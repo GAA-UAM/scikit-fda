@@ -12,9 +12,9 @@ from ...exploratory.stats._fisher_rao import _elastic_alignment_array
 from ...misc.operators import SRSF
 from ...misc.validation import check_fdata_dimensions, check_fdata_same_kind
 from ...representation import FDataGrid
-from ...representation._typing import ArrayLike
 from ...representation.basis import Basis
 from ...representation.interpolation import SplineInterpolation
+from ...typing._numpy import ArrayLike
 from .base import InductiveRegistrationTransformer
 
 _MeanType = Callable[[FDataGrid], FDataGrid]

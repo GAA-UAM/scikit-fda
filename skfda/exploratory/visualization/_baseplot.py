@@ -19,7 +19,7 @@ from matplotlib.figure import Figure
 from matplotlib.text import Annotation
 
 from ...representation import FData
-from ...representation._typing import NDArrayInt
+from ...typing._numpy import NDArrayInt
 from ._utils import _figure_to_svg, _get_figure_and_axes, _set_figure_layout
 
 

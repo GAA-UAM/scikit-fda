@@ -14,7 +14,8 @@ import numpy as np
 from ..._utils import _to_grid_points
 from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from ...representation import FDataGrid
-from ...representation._typing import GridPointsLike, NDArrayFloat
+from ...typing._base import GridPointsLike
+from ...typing._numpy import NDArrayFloat
 
 
 class _LinearSmoother(

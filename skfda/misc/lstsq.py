@@ -3,12 +3,11 @@ from __future__ import annotations
 
 from typing import Callable, Optional, Union
 
-from typing_extensions import Final, Literal
-
 import numpy as np
 import scipy.linalg
+from typing_extensions import Final, Literal
 
-from ..representation._typing import NDArrayFloat
+from ..typing._numpy import NDArrayFloat
 
 LstsqMethodCallable = Callable[[np.ndarray, np.ndarray], np.ndarray]
 LstsqMethodName = Literal["cholesky", "qr", "svd"]

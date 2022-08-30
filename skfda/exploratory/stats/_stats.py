@@ -10,7 +10,7 @@ from scipy.stats import rankdata
 
 from ...misc.metrics import Metric, l2_distance
 from ...representation import FData, FDataGrid
-from ...representation._typing import NDArrayFloat
+from ...typing._numpy import NDArrayFloat
 from ..depth import Depth, ModifiedBandDepth
 
 F = TypeVar('F', bound=FData)

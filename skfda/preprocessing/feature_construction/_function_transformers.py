@@ -10,9 +10,10 @@ from ...exploratory.stats._functional_transformers import (
     occupation_measure,
 )
 from ...representation import FData
-from ...representation._typing import DomainRangeLike, NDArrayFloat, Union
 from ...representation.basis import FDataBasis
 from ...representation.grid import FDataGrid
+from ...typing._base import DomainRangeLike, NDArrayFloat
+from ...typing._numpy import NDArrayFloat
 
 
 class LocalAveragesTransformer(
@@ -158,7 +159,7 @@ class OccupationMeasureTransformer(BaseEstimator, TransformerMixin):
         self.intervals = intervals
         self.n_points = n_points
 
-    def transform(self, X: Union[FDataGrid, FDataBasis]) -> NDArrayFloat:
+    def transform(self, X: FData) -> NDArrayFloat:
         """
         Transform the provided data using the occupation_measure function.
 

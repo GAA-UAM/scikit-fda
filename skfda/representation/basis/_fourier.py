@@ -3,7 +3,8 @@ from typing import Any, Optional, Sequence, Tuple, TypeVar
 import numpy as np
 from typing_extensions import Protocol
 
-from .._typing import DomainRangeLike, NDArrayFloat
+from ...typing._base import DomainRangeLike
+from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
 T = TypeVar("T", bound='Fourier')

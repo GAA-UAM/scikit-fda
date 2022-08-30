@@ -6,8 +6,9 @@ from typing import Callable, Union
 import numpy as np
 import scipy.signal
 import sklearn.utils
-from dcor import u_distance_correlation_sqr
 from sklearn.base import clone
+
+from dcor import u_distance_correlation_sqr
 
 from ...._utils import _compute_dependence, _DependenceMeasure
 from ...._utils._sklearn_adapter import (
@@ -15,7 +16,7 @@ from ...._utils._sklearn_adapter import (
     InductiveTransformerMixin,
 )
 from ....representation import FDataGrid
-from ....representation._typing import NDArrayFloat, NDArrayInt
+from ....typing._numpy import NDArrayFloat, NDArrayInt
 
 _LocalMaximaSelector = Callable[[FDataGrid], NDArrayInt]
 

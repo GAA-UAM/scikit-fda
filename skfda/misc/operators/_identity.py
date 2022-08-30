@@ -5,8 +5,8 @@ from typing import Any, TypeVar
 import numpy as np
 
 from ...representation import FDataGrid
-from ...representation._typing import Vector
 from ...representation.basis import Basis
+from ...typing._base import Vector
 from ._operators import Operator, gramian_matrix_optimization
 
 T = TypeVar("T", bound=Vector)

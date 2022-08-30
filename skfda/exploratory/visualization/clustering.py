@@ -20,7 +20,7 @@ from typing_extensions import Protocol
 
 from ...misc.validation import check_fdata_same_dimensions
 from ...representation import FData, FDataGrid
-from ...representation._typing import NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 from ._baseplot import BasePlot
 from ._utils import ColorLike, _darken, _set_labels
 

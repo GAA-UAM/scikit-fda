@@ -29,25 +29,21 @@ import scipy.stats.mstats
 from matplotlib.figure import Figure
 
 from .._utils import _check_array_key, _int_to_real, _to_grid_points, constants
-from ._functional_data import FData
-from ._typing import (
-    ArrayLike,
+from ..typing._base import (
     DomainRange,
     DomainRangeLike,
     GridPoints,
     GridPointsLike,
     LabelTupleLike,
-    NDArrayBool,
-    NDArrayFloat,
-    NDArrayInt,
 )
+from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
+from ._functional_data import FData
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike
 from .interpolation import SplineInterpolation
 
 if TYPE_CHECKING:
-    from . import FDataBasis
-    from .basis import Basis
+    from .basis import Basis, FDataBasis
 
 T = TypeVar("T", bound='FDataGrid')
 

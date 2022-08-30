@@ -22,7 +22,7 @@ from ..._utils import _to_grid_points, constants
 from ...misc.validation import validate_domain_range
 from ...representation import FDataGrid
 from ...representation._functional_data import FData
-from ...representation._typing import DomainRangeLike, GridPointsLike
+from ...typing._base import DomainRangeLike, GridPointsLike
 from ._baseplot import BasePlot
 from ._utils import ColorLike, _set_labels
 

@@ -12,8 +12,9 @@ from ...misc._math import inner_product
 from ...misc.metrics._lp_norms import l2_norm
 from ...misc.validation import check_fdata_dimensions
 from ...representation import FData, FDataGrid
-from ...representation._typing import ArrayLike, GridPointsLike, NDArrayFloat
 from ...representation.extrapolation import ExtrapolationLike
+from ...typing._base import GridPointsLike
+from ...typing._numpy import ArrayLike, NDArrayFloat
 from .base import InductiveRegistrationTransformer
 
 SelfType = TypeVar("SelfType", bound="LeastSquaresShiftRegistration[FData]")

@@ -8,7 +8,7 @@ from typing_extensions import Final
 
 from ..._utils import normalize_scale, normalize_warping
 from ...representation import FData, FDataGrid
-from ...representation._typing import NDArrayFloat
+from ...typing._numpy import NDArrayFloat
 from ..operators import SRSF
 from ._lp_distances import l2_distance
 from ._utils import PairwiseMetric, _cast_to_grid, pairwise_metric_optimization

@@ -9,12 +9,13 @@ from typing import Container, Sequence, Tuple, cast
 import numpy as np
 
 from ..representation import FData, FDataBasis, FDataGrid
-from ..representation._typing import (
+from ..typing._base import (
     ArrayLike,
     DomainRange,
     DomainRangeLike,
     EvaluationPoints,
 )
+from ..typing._numpy import ArrayLike
 
 
 def check_fdata_dimensions(

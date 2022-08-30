@@ -5,7 +5,7 @@ from typing import Any, Iterable, Tuple, TypeVar, Union
 import numpy as np
 import scipy.linalg
 
-from .._typing import NDArrayFloat
+from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
 T = TypeVar("T", bound='VectorValued')

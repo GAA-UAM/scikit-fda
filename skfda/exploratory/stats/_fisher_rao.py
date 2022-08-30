@@ -10,8 +10,8 @@ from ..._utils import invert_warping, normalize_scale
 from ...misc.operators import SRSF
 from ...misc.validation import check_fdata_dimensions
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayFloat
 from ...representation.interpolation import SplineInterpolation
+from ...typing._numpy import NDArrayFloat
 
 ###############################################################################
 # Based on the original implementation of J. Derek Tucker in                  #

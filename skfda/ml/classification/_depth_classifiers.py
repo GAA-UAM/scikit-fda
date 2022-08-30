@@ -28,8 +28,8 @@ from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...preprocessing.feature_construction._per_class_transformer import (
     PerClassTransformer,
 )
-from ...representation._typing import NDArrayFloat, NDArrayInt
 from ...representation.grid import FData
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 T = TypeVar("T", bound=FData)
 

@@ -10,10 +10,11 @@ from typing import TYPE_CHECKING, Any, Tuple, TypeVar
 import numpy as np
 from matplotlib.figure import Figure
 
-from .._typing import ArrayLike, DomainRange, DomainRangeLike, NDArrayFloat
+from ...typing._base import DomainRange, DomainRangeLike
+from ...typing._numpy import ArrayLike, NDArrayFloat
 
 if TYPE_CHECKING:
-    from . import FDataBasis
+    from ._fdatabasis import FDataBasis
 
 T = TypeVar("T", bound='Basis')
 

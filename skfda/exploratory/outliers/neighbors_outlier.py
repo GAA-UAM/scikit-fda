@@ -7,12 +7,11 @@ from sklearn.base import OutlierMixin
 from sklearn.neighbors import LocalOutlierFactor as _LocalOutlierFactor
 from typing_extensions import Literal
 
-from skfda.misc.metrics._typing import Metric
-
 from ...misc.metrics import PairwiseMetric, l2_distance
+from ...misc.metrics._typing import Metric
 from ...ml._neighbors_base import AlgorithmType, KNeighborsMixin
 from ...representation import FData
-from ...representation._typing import NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 SelfType = TypeVar("SelfType", bound="LocalOutlierFactor[Any]")
 InputBound = Union[NDArrayFloat, FData]

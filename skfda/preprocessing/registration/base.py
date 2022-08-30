@@ -9,7 +9,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Any, TypeVar, overload
 
-from ..._utils import (
+from ..._utils._sklearn_adapter import (
     BaseEstimator,
     InductiveTransformerMixin,
     TransformerMixin,

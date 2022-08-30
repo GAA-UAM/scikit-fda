@@ -12,7 +12,7 @@ from ...exploratory.stats import mean, trim_mean
 from ...misc.metrics import Metric, PairwiseMetric, l2_distance
 from ...misc.metrics._utils import _fit_metric
 from ...representation import FData
-from ...representation._typing import NDArrayInt
+from ...typing._numpy import NDArrayInt
 
 T = TypeVar("T", bound=FData)
 

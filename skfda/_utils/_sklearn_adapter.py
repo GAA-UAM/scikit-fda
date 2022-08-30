@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
 import sklearn.base
 
 if TYPE_CHECKING:
-    from ..representation._typing import NDArrayFloat, NDArrayInt
+    from ..typing._numpy import NDArrayFloat, NDArrayInt
 
 SelfType = TypeVar("SelfType")
 TransformerNoTarget = TypeVar(

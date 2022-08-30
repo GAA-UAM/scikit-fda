@@ -4,9 +4,10 @@ from typing import Any, Sequence, Tuple, Type, TypeVar
 
 import numpy as np
 from numpy import polyint, polymul, polyval
-from scipy.interpolate import BSpline as SciBSpline, PPoly, splev
+from scipy.interpolate import BSpline as SciBSpline, PPoly
 
-from .._typing import DomainRangeLike, NDArrayFloat
+from ...typing._base import DomainRangeLike
+from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
 T = TypeVar("T", bound='BSpline')

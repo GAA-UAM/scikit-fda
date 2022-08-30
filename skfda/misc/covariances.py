@@ -9,7 +9,7 @@ import sklearn.gaussian_process.kernels as sklearn_kern
 from matplotlib.figure import Figure
 from scipy.special import gamma, kv
 
-from ..representation._typing import ArrayLike, NDArrayFloat
+from ..typing._numpy import ArrayLike, NDArrayFloat
 
 
 def _squared_norms(x: NDArrayFloat, y: NDArrayFloat) -> NDArrayFloat:

@@ -22,8 +22,8 @@ from sklearn.feature_selection import (
 from typing_extensions import Final, Literal
 
 from ...._utils import RandomStateLike, _compute_dependence, _DependenceMeasure
-from ....representation._typing import NDArrayFloat, NDArrayInt
 from ....representation.grid import FDataGrid
+from ....typing._numpy import NDArrayFloat, NDArrayInt
 
 _Criterion = Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]
 _CriterionLike = Union[

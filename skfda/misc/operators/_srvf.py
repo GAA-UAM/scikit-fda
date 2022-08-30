@@ -8,8 +8,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 from ...misc.validation import check_fdata_dimensions
 from ...representation import FDataGrid
-from ...representation._typing import ArrayLike
 from ...representation.basis import Basis
+from ...typing._numpy import ArrayLike
 from ._operators import Operator
 
 

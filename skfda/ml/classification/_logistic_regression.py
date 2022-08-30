@@ -10,7 +10,7 @@ from typing_extensions import Literal
 from ..._utils import _classifier_get_classes
 from ..._utils._sklearn_adapter import BaseEstimator, ClassifierMixin
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayAny, NDArrayInt
+from ...typing._numpy import NDArrayAny, NDArrayInt
 
 Solver = Literal["newton-cg", "lbfgs", "liblinear", "sag", "saga"]
 

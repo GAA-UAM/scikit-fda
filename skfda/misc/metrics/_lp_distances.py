@@ -9,7 +9,7 @@ import numpy as np
 from typing_extensions import Final
 
 from ...representation import FData
-from ...representation._typing import NDArrayFloat
+from ...typing._numpy import NDArrayFloat
 from ._lp_norms import LpNorm
 from ._typing import Norm
 from ._utils import NormInducedMetric, pairwise_metric_optimization

@@ -1,0 +1,27 @@
+"""NumPy aliases for compatibility."""
+
+from typing import Any
+
+import numpy as np
+
+try:
+    from numpy.typing import ArrayLike
+except ImportError:
+    ArrayLike = np.ndarray  # type:ignore[misc]
+
+try:
+    from numpy.typing import NDArray
+    NDArrayAny = NDArray[Any]
+    NDArrayInt = NDArray[np.int_]
+    NDArrayFloat = NDArray[np.float_]
+    NDArrayBool = NDArray[np.bool_]
+    NDArrayStr = NDArray[np.str_]
+    NDArrayObject = NDArray[np.object_]
+except ImportError:
+    NDArray = np.ndarray  # type:ignore[misc]
+    NDArrayAny = np.ndarray  # type:ignore[misc]
+    NDArrayInt = np.ndarray  # type:ignore[misc]
+    NDArrayFloat = np.ndarray  # type:ignore[misc]
+    NDArrayBool = np.ndarray  # type:ignore[misc]
+    NDArrayStr = np.ndarray  # type:ignore[misc]
+    NDArrayObject = np.ndarray  # type:ignore[misc]

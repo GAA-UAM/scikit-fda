@@ -18,7 +18,8 @@ from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from typing_extensions import Protocol
 
-from ..._utils import _to_domain_range, _to_grid_points, constants
+from ..._utils import _to_grid_points, constants
+from ...misc.validation import validate_domain_range
 from ...representation import FDataGrid
 from ...representation._functional_data import FData
 from ...representation._typing import DomainRangeLike, GridPointsLike
@@ -258,7 +259,7 @@ class GraphPlot(BasePlot):
         if domain_range is None:
             self.domain_range = self.fdata.domain_range
         else:
-            self.domain_range = _to_domain_range(domain_range)
+            self.domain_range = validate_domain_range(domain_range)
 
         if self.gradient_list is None:
             sample_colors, patches = _get_color_info(
@@ -463,7 +464,7 @@ class ScatterPlot(BasePlot):
         if self.domain_range is None:
             self.domain_range = self.fdata.domain_range
         else:
-            self.domain_range = _to_domain_range(self.domain_range)
+            self.domain_range = validate_domain_range(self.domain_range)
 
         sample_colors, patches = _get_color_info(
             self.fdata,

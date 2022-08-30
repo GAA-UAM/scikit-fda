@@ -10,7 +10,6 @@ import numpy as np
 from scipy.interpolate import PchipInterpolator
 
 from ..representation._typing import ArrayLike, DomainRangeLike, NDArrayFloat
-from ._utils import _to_domain_range
 
 if TYPE_CHECKING:
     from ..representation import FDataGrid
@@ -147,10 +146,12 @@ def normalize_warping(
         Normalized warpings.
 
     """
+    from ..misc.validation import validate_domain_range
+
     domain_range_tuple = (
         warping.domain_range[0]
         if domain_range is None
-        else _to_domain_range(domain_range)[0]
+        else validate_domain_range(domain_range)[0]
     )
 
     data_matrix = normalize_scale(

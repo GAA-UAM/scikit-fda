@@ -26,16 +26,6 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
 from typing_extensions import Literal, Protocol
 
-from ..representation._typing import (
-    DomainRange,
-    DomainRangeLike,
-    GridPoints,
-    GridPointsLike,
-    NDArrayAny,
-    NDArrayFloat,
-    NDArrayInt,
-    NDArrayStr,
-)
 from ._sklearn_adapter import BaseEstimator
 
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
@@ -46,6 +36,14 @@ if TYPE_CHECKING:
     from ..representation import FData, FDataGrid
     from ..representation.basis import Basis
     from ..representation.extrapolation import ExtrapolationLike
+    from ..representation._typing import (
+        GridPoints,
+        GridPointsLike,
+        NDArrayAny,
+        NDArrayFloat,
+        NDArrayInt,
+        NDArrayStr,
+    )
     T = TypeVar("T", bound=FData)
 
     Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
@@ -102,24 +100,6 @@ def _to_grid_points(grid_points_like: GridPointsLike) -> GridPoints:
         return (_int_to_real(np.asarray(grid_points_like)),)
 
     return tuple(_int_to_real(np.asarray(i)) for i in grid_points_like)
-
-
-def _to_domain_range(sequence: DomainRangeLike) -> DomainRange:
-    """Convert sequence to a proper domain range."""
-    seq_aux = cast(
-        Sequence[Sequence[float]],
-        (sequence,) if isinstance(sequence[0], numbers.Real) else sequence,
-    )
-
-    tuple_aux = tuple(tuple(s) for s in seq_aux)
-
-    if not all(len(s) == 2 and s[0] <= s[1] for s in tuple_aux):
-        raise ValueError(
-            "Domain intervals should have 2 bounds for "
-            "dimension: (lower, upper).",
-        )
-
-    return cast(DomainRange, tuple_aux)
 
 
 @overload
@@ -351,6 +331,8 @@ def _evaluate_grid(  # noqa: WPS234
             dimension.
 
     """
+    from ..representation._typing import GridPointsLike
+
     # Compute intersection points and resulting shapes
     if aligned:
 

@@ -16,7 +16,6 @@ from ._utils import (
     _int_to_real,
     _pairwise_symmetric,
     _same_domain,
-    _to_domain_range,
     _to_grid,
     _to_grid_points,
     nquad_vec,

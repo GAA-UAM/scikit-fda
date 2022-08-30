@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import functools
-from typing import Container, Sequence
+from typing import TYPE_CHECKING, Container, Sequence, Tuple, cast
 
 import numpy as np
 
 from ..representation import FData, FDataBasis, FDataGrid
-from ..representation._typing import ArrayLike, EvaluationPoints
+from ..representation._typing import (
+    ArrayLike,
+    DomainRange,
+    DomainRangeLike,
+    EvaluationPoints,
+)
 
 
 def check_fdata_dimensions(
@@ -228,3 +233,28 @@ def validate_evaluation_points(
             )
 
     return eval_points.reshape(shape)
+
+
+def _validate_domain_range_limits(
+    limits: Sequence[float],
+) -> Tuple[float, float]:
+    if len(limits) != 2 or limits[0] > limits[1]:
+        raise ValueError(
+            f"Invalid domain interval {limits}. "
+            "Domain intervals should have 2 bounds for "
+            "dimension: (lower, upper).",
+        )
+
+    lower, upper = limits
+    return (lower, upper)  # noqa: WPS331
+
+
+def validate_domain_range(domain_range: DomainRangeLike) -> DomainRange:
+    """Convert sequence to a proper domain range."""
+    if isinstance(domain_range[0], (int, float)):
+        domain_range = cast(Sequence[float], domain_range)
+        domain_range = (domain_range,)
+
+    domain_range = cast(Sequence[Sequence[float]], domain_range)
+
+    return tuple(_validate_domain_range_limits(s) for s in domain_range)

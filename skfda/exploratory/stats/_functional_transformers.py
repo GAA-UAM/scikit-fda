@@ -8,8 +8,8 @@ from typing import Optional, Sequence, Tuple, TypeVar, Union, cast
 import numpy as np
 from typing_extensions import Protocol, TypeGuard
 
-from ..._utils import _to_domain_range, nquad_vec
-from ...misc.validation import check_fdata_dimensions
+from ..._utils import nquad_vec
+from ...misc.validation import check_fdata_dimensions, validate_domain_range
 from ...representation import FData, FDataBasis, FDataGrid
 from ...representation._typing import (
     ArrayLike,
@@ -546,7 +546,7 @@ def unconditional_expected_value(
     if domain is None:
         domain = data.domain_range
     else:
-        domain = _to_domain_range(domain)
+        domain = validate_domain_range(domain)
 
     lebesgue_measure = np.prod(
         [

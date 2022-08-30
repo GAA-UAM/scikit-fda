@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
 
 import sklearn.base
 
-from ..representation._typing import NDArrayFloat, NDArrayInt
+if TYPE_CHECKING:
+    from ..representation._typing import NDArrayFloat, NDArrayInt
 
 SelfType = TypeVar("SelfType")
 TransformerNoTarget = TypeVar(

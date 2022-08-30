@@ -3,7 +3,6 @@ from typing import Any, Optional, Sequence, Tuple, TypeVar
 import numpy as np
 from typing_extensions import Protocol
 
-from ..._utils import _to_domain_range
 from .._typing import DomainRangeLike, NDArrayFloat
 from ._basis import Basis
 
@@ -106,8 +105,10 @@ class Fourier(Basis):
                 define the basis.
 
         """
+        from ...misc.validation import validate_domain_range
+
         if domain_range is not None:
-            domain_range = _to_domain_range(domain_range)
+            domain_range = validate_domain_range(domain_range)
 
             if len(domain_range) != 1:
                 raise ValueError("Domain range should be unidimensional.")

@@ -5,11 +5,11 @@ from typing import Any
 import numpy as np
 
 try:
-    from numpy.typing import ArrayLike
+    from numpy.typing import ArrayLike as ArrayLike  # noqa: WPS113
 except ImportError:
-    ArrayLike = np.ndarray  # type:ignore[misc]
+    ArrayLike = np.ndarray  # type:ignore[misc] # noqa: WPS440
 
-try:
+try:  # noqa: WPS229
     from numpy.typing import NDArray
     NDArrayAny = NDArray[Any]
     NDArrayInt = NDArray[np.int_]
@@ -18,7 +18,7 @@ try:
     NDArrayStr = NDArray[np.str_]
     NDArrayObject = NDArray[np.object_]
 except ImportError:
-    NDArray = np.ndarray  # type:ignore[misc]
+    NDArray = np.ndarray  # type:ignore[misc] # noqa: WPS440
     NDArrayAny = np.ndarray  # type:ignore[misc]
     NDArrayInt = np.ndarray  # type:ignore[misc]
     NDArrayFloat = np.ndarray  # type:ignore[misc]

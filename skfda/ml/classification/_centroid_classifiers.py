@@ -9,9 +9,10 @@ from sklearn.utils.validation import check_is_fitted
 from ..._utils import _classifier_get_classes
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...exploratory.stats import mean, trim_mean
-from ...misc.metrics import Metric, PairwiseMetric, l2_distance
+from ...misc.metrics import PairwiseMetric, l2_distance
 from ...misc.metrics._utils import _fit_metric
 from ...representation import FData
+from ...typing._metric import Metric
 from ...typing._numpy import NDArrayInt
 
 T = TypeVar("T", bound=FData)

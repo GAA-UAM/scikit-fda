@@ -21,7 +21,11 @@ def lstsq_cholesky(
     """Solve OLS problem using a Cholesky decomposition."""
     left = coefs.T @ coefs
     right = coefs.T @ result
-    return scipy.linalg.solve(left, right, assume_a="pos")
+    return scipy.linalg.solve(  # type: ignore[no-any-return]
+        left,
+        right,
+        assume_a="pos",
+    )
 
 
 def lstsq_qr(
@@ -29,7 +33,11 @@ def lstsq_qr(
     result: NDArrayFloat,
 ) -> NDArrayFloat:
     """Solve OLS problem using a QR decomposition."""
-    return scipy.linalg.lstsq(coefs, result, lapack_driver="gelsy")[0]
+    return scipy.linalg.lstsq(  # type: ignore[no-any-return]
+        coefs,
+        result,
+        lapack_driver="gelsy",
+    )[0]
 
 
 def lstsq_svd(
@@ -37,7 +45,11 @@ def lstsq_svd(
     result: NDArrayFloat,
 ) -> NDArrayFloat:
     """Solve OLS problem using a SVD decomposition."""
-    return scipy.linalg.lstsq(coefs, result, lapack_driver="gelsd")[0]
+    return scipy.linalg.lstsq(  # type: ignore[no-any-return]
+        coefs,
+        result,
+        lapack_driver="gelsd",
+    )[0]
 
 
 method_dict: Final = {
@@ -103,4 +115,8 @@ def solve_regularized_weighted_lstsq(
     if penalty_matrix is not None:
         left += penalty_matrix
 
-    return scipy.linalg.solve(left, right, assume_a="pos")
+    return scipy.linalg.solve(  # type: ignore[no-any-return]
+        left,
+        right,
+        assume_a="pos",
+    )

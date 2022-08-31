@@ -9,9 +9,10 @@ import sklearn.cluster
 from sklearn.base import BaseEstimator, ClusterMixin
 from typing_extensions import Literal
 
-from ...misc.metrics import PRECOMPUTED, Metric, PairwiseMetric, l2_distance
-from ...misc.metrics._typing import _parse_metric, _PrecomputedTypes
+from ...misc.metrics import PRECOMPUTED, PairwiseMetric, l2_distance
+from ...misc.metrics._parse import _parse_metric, _PrecomputedTypes
 from ...representation import FData
+from ...typing._metric import Metric
 
 kk = ["ward", "average", "complete"]
 

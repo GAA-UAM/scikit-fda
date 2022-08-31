@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Protocol
 
-from ..typing._base import ArrayLike, EvaluationPoints
-from ..typing._numpy import NDArrayFloat
+from ..typing._base import EvaluationPoints
+from ..typing._numpy import ArrayLike, NDArrayFloat
 
 if TYPE_CHECKING:
     from ._functional_data import FData

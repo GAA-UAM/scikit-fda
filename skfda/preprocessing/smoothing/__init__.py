@@ -16,8 +16,8 @@ _normal_getattr, __dir__, __all__ = lazy.attach(
 )
 
 if TYPE_CHECKING:
-    from ._basis import BasisSmoother
-    from ._kernel_smoothers import KernelSmoother
+    from ._basis import BasisSmoother as BasisSmoother
+    from ._kernel_smoothers import KernelSmoother as KernelSmoother
 
 __kernel_smoothers__imported__ = False
 

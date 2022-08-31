@@ -19,6 +19,6 @@ __getattr__, __dir__, __all__ = lazy.attach(
 )
 
 if TYPE_CHECKING:
-    from ._functional_data import FData, concatenate
-    from .basis import FDataBasis
-    from .grid import FDataGrid
+    from ._functional_data import FData as FData, concatenate as concatenate
+    from .basis import FDataBasis as FDataBasis
+    from .grid import FDataGrid as FDataGrid

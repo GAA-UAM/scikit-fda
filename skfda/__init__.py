@@ -1,6 +1,7 @@
 """scikit-fda package."""
 import errno as _errno
 import os as _os
+from typing import TYPE_CHECKING
 
 import lazy_loader as lazy
 
@@ -21,6 +22,13 @@ __getattr__, __dir__, __all__ = lazy.attach(
     },
 )
 
+if TYPE_CHECKING:
+    from .representation import (
+        FData as FData,
+        FDataBasis as FDataBasis,
+        FDataGrid as FDataGrid,
+        concatenate as concatenate,
+    )
 
 try:
     with open(

@@ -8,8 +8,9 @@ import numpy as np
 from scipy import integrate
 from scipy.stats import rankdata
 
-from ...misc.metrics import Metric, l2_distance
+from ...misc.metrics import l2_distance
 from ...representation import FData, FDataGrid
+from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
 from ..depth import Depth, ModifiedBandDepth
 

@@ -19,12 +19,15 @@ __getattr__, __dir__, __all__ = lazy.attach(
 )
 
 if TYPE_CHECKING:
-    from ._basis import Basis
-    from ._bspline import BSpline
-    from ._constant import Constant
-    from ._fdatabasis import FDataBasis, FDataBasisDType
-    from ._finite_element import FiniteElement
-    from ._fourier import Fourier
-    from ._monomial import Monomial
-    from ._tensor_basis import Tensor
-    from ._vector_basis import VectorValued
+    from ._basis import Basis as Basis
+    from ._bspline import BSpline as BSpline
+    from ._constant import Constant as Constant
+    from ._fdatabasis import (
+        FDataBasis as FDataBasis,
+        FDataBasisDType as FDataBasisDType,
+    )
+    from ._finite_element import FiniteElement as FiniteElement
+    from ._fourier import Fourier as Fourier
+    from ._monomial import Monomial as Monomial
+    from ._tensor_basis import Tensor as Tensor
+    from ._vector_basis import VectorValued as VectorValued

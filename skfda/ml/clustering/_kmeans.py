@@ -12,9 +12,10 @@ from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import RandomStateLike
-from ...misc.metrics import Metric, PairwiseMetric, l2_distance
+from ...misc.metrics import PairwiseMetric, l2_distance
 from ...misc.validation import check_fdata_same_dimensions
 from ...representation import FDataGrid
+from ...typing._metric import Metric
 from ...typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt
 
 SelfType = TypeVar("SelfType", bound="BaseKMeans[Any]")

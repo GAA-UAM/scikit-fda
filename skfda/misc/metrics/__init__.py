@@ -16,7 +16,7 @@ from ._lp_distances import (
 )
 from ._lp_norms import LpNorm, l1_norm, l2_norm, linf_norm, lp_norm
 from ._mahalanobis import MahalanobisDistance
-from ._typing import PRECOMPUTED, Metric, Norm
+from ._parse import PRECOMPUTED
 from ._utils import (
     NormInducedMetric,
     PairwiseMetric,

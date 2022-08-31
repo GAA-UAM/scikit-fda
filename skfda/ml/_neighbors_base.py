@@ -18,9 +18,9 @@ from .._utils._sklearn_adapter import (
     RegressorMixin,
 )
 from ..misc.metrics import l2_distance
-from ..misc.metrics._typing import Metric
 from ..misc.metrics._utils import _fit_metric
 from ..representation import FData, FDataGrid, concatenate
+from ..typing._metric import Metric
 from ..typing._numpy import NDArrayFloat, NDArrayInt
 
 FDataType = TypeVar("FDataType", bound="FData")

@@ -34,14 +34,14 @@ __getattr__, __dir__, __all__ = lazy.attach(
 if TYPE_CHECKING:
 
     from ._math import (
-        cosine_similarity,
-        cosine_similarity_matrix,
-        cumsum,
-        exp,
-        inner_product,
-        inner_product_matrix,
-        log,
-        log2,
-        log10,
-        sqrt,
+        cosine_similarity as cosine_similarity,
+        cosine_similarity_matrix as cosine_similarity_matrix,
+        cumsum as cumsum,
+        exp as exp,
+        inner_product as inner_product,
+        inner_product_matrix as inner_product_matrix,
+        log as log,
+        log2 as log2,
+        log10 as log10,
+        sqrt as sqrt,
     )

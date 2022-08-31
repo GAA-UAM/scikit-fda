@@ -12,6 +12,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Sized,
     Tuple,
     TypeVar,
     Union,
@@ -24,8 +25,10 @@ import scipy.integrate
 from pandas.api.indexers import check_array_indexer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
-from typing_extensions import Literal, Protocol
+from typing_extensions import Literal, ParamSpec, Protocol
 
+from ..typing._base import GridPoints, GridPointsLike
+from ..typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt, NDArrayStr
 from ._sklearn_adapter import BaseEstimator
 
 RandomStateLike = Optional[Union[int, np.random.RandomState]]
@@ -36,21 +39,63 @@ if TYPE_CHECKING:
     from ..representation import FData, FDataGrid
     from ..representation.basis import Basis
     from ..representation.extrapolation import ExtrapolationLike
-    from ..typing._numpy import (
-        NDArrayAny,
-        NDArrayFloat,
-        NDArrayInt,
-        NDArrayStr,
-    )
-    from ..typing._base import (
-        GridPoints,
-        GridPointsLike,
-    )
+
     T = TypeVar("T", bound=FData)
 
     Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
     Output = TypeVar("Output", bound=Union[FData, NDArrayFloat])
     Target = TypeVar("Target", bound=NDArrayInt)
+
+
+_MapAcceptableSelf = TypeVar(
+    "_MapAcceptableSelf",
+    bound="_MapAcceptable",
+)
+
+
+class _MapAcceptable(Protocol, Sized):
+
+    def __getitem__(
+        self: _MapAcceptableSelf,
+        __key: Union[slice, NDArrayInt],  # noqa: WPS112
+    ) -> _MapAcceptableSelf:
+        pass
+
+    @property
+    def nbytes(self) -> int:
+        pass
+
+
+_MapAcceptableT = TypeVar(
+    "_MapAcceptableT",
+    bound=_MapAcceptable,
+    contravariant=True,
+)
+MapFunctionT = TypeVar("MapFunctionT", covariant=True)
+P = ParamSpec("P")
+
+
+class _MapFunction(Protocol[_MapAcceptableT, P, MapFunctionT]):
+    """Protocol for functions that can be mapped over several arrays."""
+
+    def __call__(
+        self,
+        *args: _MapAcceptableT,
+        **kwargs: P.kwargs,
+    ) -> MapFunctionT:
+        pass
+
+
+class _PairwiseFunction(Protocol[_MapAcceptableT, P, MapFunctionT]):
+    """Protocol for pairwise array functions."""
+
+    def __call__(
+        self,
+        __arg1: _MapAcceptableT,  # noqa: WPS112
+        __arg2: _MapAcceptableT,  # noqa: WPS112
+        **kwargs: P.kwargs,  # type: ignore[name-defined]
+    ) -> MapFunctionT:
+        pass
 
 
 def _to_grid(
@@ -333,7 +378,6 @@ def _evaluate_grid(  # noqa: WPS234
             dimension.
 
     """
-    from ..typing._base import GridPointsLike
 
     # Compute intersection points and resulting shapes
     if aligned:
@@ -409,11 +453,11 @@ def nquad_vec(
 
 
 def _map_in_batches(
-    function: Callable[..., np.typing.NDArray[ArrayDTypeT]],
-    arguments: Tuple[Union[FData, NDArrayAny], ...],
+    function: _MapFunction[_MapAcceptableT, P, np.typing.NDArray[ArrayDTypeT]],
+    arguments: Tuple[_MapAcceptableT, ...],
     indexes: Tuple[NDArrayInt, ...],
     memory_per_batch: Optional[int] = None,
-    **kwargs: Any,
+    **kwargs: P.kwargs,  # type: ignore[name-defined]
 ) -> np.typing.NDArray[ArrayDTypeT]:
     """
     Map a function over samples of FData or ndarray tuples efficiently.
@@ -449,19 +493,30 @@ def _map_in_batches(
 
 
 def _pairwise_symmetric(
-    function: Callable[..., np.typing.NDArray[ArrayDTypeT]],
-    arg1: Union[FData, NDArrayAny],
-    arg2: Optional[Union[FData, NDArrayAny]] = None,
+    function: _PairwiseFunction[
+        _MapAcceptableT,
+        P,
+        np.typing.NDArray[ArrayDTypeT],
+    ],
+    arg1: _MapAcceptableT,
+    arg2: Optional[_MapAcceptableT] = None,
     memory_per_batch: Optional[int] = None,
-    **kwargs: Any,
+    **kwargs: P.kwargs,  # type: ignore[name-defined]
 ) -> np.typing.NDArray[ArrayDTypeT]:
     """Compute pairwise a commutative function."""
+    def map_function(
+        *args: _MapAcceptableT,
+        **kwargs: P.kwargs,  # type: ignore[name-defined]
+    ) -> np.typing.NDArray[ArrayDTypeT]:
+        """Just to keep Mypy happy."""
+        return function(args[0], args[1], **kwargs)
+
     dim1 = len(arg1)
     if arg2 is None or arg2 is arg1:
         triu_indices = np.triu_indices(dim1)
 
         triang_vec = _map_in_batches(
-            function,
+            map_function,
             (arg1, arg1),
             triu_indices,
             memory_per_batch=memory_per_batch,
@@ -482,7 +537,7 @@ def _pairwise_symmetric(
     indices = np.indices((dim1, dim2))
 
     vec = _map_in_batches(
-        function,
+        map_function,
         (arg1, arg2),
         (indices[0].ravel(), indices[1].ravel()),
         memory_per_batch=memory_per_batch,

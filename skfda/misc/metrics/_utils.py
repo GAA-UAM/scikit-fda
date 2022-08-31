@@ -7,8 +7,8 @@ import numpy as np
 from ..._utils import _pairwise_symmetric
 from ...representation import FData, FDataGrid
 from ...typing._base import Vector
+from ...typing._metric import Metric, MetricElementType, Norm, VectorType
 from ...typing._numpy import NDArrayFloat
-from ._typing import Metric, MetricElementType, Norm, VectorType
 
 T = TypeVar("T", bound=FData)
 
@@ -141,7 +141,7 @@ def pairwise_metric_optimization(
     elem1: Any,
     elem2: Optional[Any],
 ) -> NDArrayFloat:
-    r"""
+    """
     Optimized computation of a pairwise metric.
 
     This is a generic function that can be subclassed for different
@@ -152,7 +152,8 @@ def pairwise_metric_optimization(
 
 
 class PairwiseMetric(Generic[MetricElementType]):
-    r"""Pairwise metric function.
+    """
+    Pairwise metric function.
 
     Computes a given metric pairwise. The matrix returned by the pairwise
     metric is a matrix with as many rows as observations in the first object

@@ -19,7 +19,11 @@ __getattr__, __dir__, __all__ = lazy.attach(
 )
 
 if TYPE_CHECKING:
-    from ._rkvs import RKHSVariableSelection
-    from .maxima_hunting import MaximaHunting
-    from .mrmr import MinimumRedundancyMaximumRelevance
-    from .recursive_maxima_hunting import RecursiveMaximaHunting
+    from ._rkvs import RKHSVariableSelection as RKHSVariableSelection
+    from .maxima_hunting import MaximaHunting as MaximaHunting
+    from .mrmr import (
+        MinimumRedundancyMaximumRelevance as MinimumRedundancyMaximumRelevance
+    )
+    from .recursive_maxima_hunting import (
+        RecursiveMaximaHunting as RecursiveMaximaHunting
+    )

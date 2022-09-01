@@ -16,7 +16,7 @@ from .._utils import nquad_vec
 from ..representation import FData, FDataBasis, FDataGrid
 from ..representation.basis import Basis
 from ..typing._base import DomainRange
-from ..typing._numpy import ArrayLike, NDArrayFloat
+from ..typing._numpy import NDArrayFloat
 from .validation import check_fdata_same_dimensions
 
 Vector = TypeVar(
@@ -447,8 +447,8 @@ def _inner_product_fdatabasis(
 
 
 def _inner_product_integrate(
-    arg1: Callable[[ArrayLike], NDArrayFloat],
-    arg2: Callable[[ArrayLike], NDArrayFloat],
+    arg1: Callable[[NDArrayFloat], NDArrayFloat],
+    arg2: Callable[[NDArrayFloat], NDArrayFloat],
     *,
     _matrix: bool = False,
     _domain_range: Optional[DomainRange] = None,
@@ -476,7 +476,7 @@ def _inner_product_integrate(
         len_arg1 = len(arg1(left_domain))
         len_arg2 = len(arg2(left_domain))
 
-    def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
+    def integrand(args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
         f1 = arg1(args)[:, 0, :]
         f2 = arg2(args)[:, 0, :]
 

@@ -10,9 +10,11 @@ from ...representation import FData
 from ...representation.basis import Basis
 from ...typing._numpy import NDArrayFloat
 
+InputType = Union[NDArrayFloat, FData, Basis]
+
 OperatorInput = TypeVar(
     "OperatorInput",
-    bound=Union[NDArrayFloat, FData, Basis],
+    bound=InputType,
     contravariant=True,
 )
 

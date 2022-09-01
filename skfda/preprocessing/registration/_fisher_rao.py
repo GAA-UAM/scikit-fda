@@ -4,6 +4,7 @@ from __future__ import annotations
 import warnings
 from typing import Callable, Optional, TypeVar, Union
 
+import numpy as np
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import invert_warping, normalize_scale
@@ -113,6 +114,9 @@ class FisherRaoElasticRegistration(
 
     """
 
+    template_: FDataGrid
+    warping_: FDataGrid
+
     def __init__(
         self,
         *,
@@ -131,10 +135,11 @@ class FisherRaoElasticRegistration(
     def fit(self: SelfType, X: FDataGrid, y: None = None) -> SelfType:
 
         # Points of discretization
-        if self.output_points is None:
-            self._output_points = X.grid_points[0]
-        else:
-            self._output_points = self.output_points
+        self._output_points = (
+            X.grid_points[0]
+            if self.output_points is None
+            else np.asarray(self.output_points)
+        )
 
         if isinstance(self.template, FDataGrid):
             self.template_ = self.template  # Template already constructed
@@ -177,10 +182,7 @@ class FisherRaoElasticRegistration(
         fdatagrid_srsf = self._srsf.fit_transform(X)
 
         # Points of discretization
-        if self.output_points is None:
-            output_points = fdatagrid_srsf.grid_points[0]
-        else:
-            output_points = self.output_points
+        output_points = self._output_points
 
         # Discretizacion in evaluation points
         q_data = fdatagrid_srsf(output_points)[..., 0]

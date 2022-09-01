@@ -19,12 +19,18 @@ __getattr__, __dir__, __all__ = lazy.attach(
 )
 
 if TYPE_CHECKING:
-    from ._coefficients_transformer import CoefficientsTransformer
-    from ._evaluation_trasformer import EvaluationTransformer
-    from ._fda_feature_union import FDAFeatureUnion
-    from ._function_transformers import (
-        LocalAveragesTransformer,
-        NumberUpCrossingsTransformer,
-        OccupationMeasureTransformer,
+    from ._coefficients_transformer import (
+        CoefficientsTransformer as CoefficientsTransformer
     )
-    from ._per_class_transformer import PerClassTransformer
+    from ._evaluation_trasformer import (
+        EvaluationTransformer as EvaluationTransformer
+    )
+    from ._fda_feature_union import FDAFeatureUnion as FDAFeatureUnion
+    from ._function_transformers import (
+        LocalAveragesTransformer as LocalAveragesTransformer,
+        NumberUpCrossingsTransformer as NumberUpCrossingsTransformer,
+        OccupationMeasureTransformer as OccupationMeasureTransformer,
+    )
+    from ._per_class_transformer import (
+        PerClassTransformer as PerClassTransformer
+    )

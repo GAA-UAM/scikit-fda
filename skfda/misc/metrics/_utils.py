@@ -4,12 +4,13 @@ from typing import Any, Callable, Generic, Optional, Tuple, TypeVar
 import multimethod
 import numpy as np
 
-from ..._utils import _pairwise_symmetric
+from ..._utils import _MapAcceptable, _pairwise_symmetric
 from ...representation import FData, FDataGrid
 from ...typing._base import Vector
-from ...typing._metric import Metric, MetricElementType, Norm, VectorType
+from ...typing._metric import Metric, Norm, VectorType
 from ...typing._numpy import NDArrayFloat
 
+_MapAcceptableT = TypeVar("_MapAcceptableT", bound=_MapAcceptable)
 T = TypeVar("T", bound=FData)
 
 
@@ -151,7 +152,7 @@ def pairwise_metric_optimization(
     return NotImplemented
 
 
-class PairwiseMetric(Generic[MetricElementType]):
+class PairwiseMetric(Generic[_MapAcceptableT]):
     """
     Pairwise metric function.
 
@@ -169,20 +170,24 @@ class PairwiseMetric(Generic[MetricElementType]):
 
     def __init__(
         self,
-        metric: Metric[MetricElementType],
+        metric: Metric[_MapAcceptableT],
     ):
         self.metric = metric
 
     def __call__(
         self,
-        elem1: MetricElementType,
-        elem2: Optional[MetricElementType] = None,
+        elem1: _MapAcceptableT,
+        elem2: Optional[_MapAcceptableT] = None,
     ) -> NDArrayFloat:
         """Evaluate the pairwise metric."""
         optimized = pairwise_metric_optimization(self.metric, elem1, elem2)
 
         return (
-            _pairwise_symmetric(self.metric, elem1, elem2)
+            _pairwise_symmetric(
+                self.metric,  # type: ignore[arg-type]
+                elem1,
+                elem2,
+            )
             if optimized is NotImplemented
             else optimized
         )
@@ -255,7 +260,7 @@ class TransformationMetric(Generic[Original, Transformed], Metric[Original]):
 
 
 @pairwise_metric_optimization.register
-def _pairwise_metric_optimization_transformation_distance(
+def _pairwise_metric_optimization_transformation_dist(
     metric: TransformationMetric[Any, Any],
     e1: T,
     e2: Optional[T],

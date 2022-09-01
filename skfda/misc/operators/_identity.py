@@ -6,10 +6,10 @@ import numpy as np
 
 from ...representation import FDataGrid
 from ...representation.basis import Basis
-from ...typing._base import Vector
-from ._operators import Operator, gramian_matrix_optimization
+from ...typing._numpy import NDArrayFloat
+from ._operators import InputType, Operator, gramian_matrix_optimization
 
-T = TypeVar("T", bound=Vector)
+T = TypeVar("T", bound=InputType)
 
 
 class Identity(Operator[T, T]):
@@ -32,7 +32,7 @@ class Identity(Operator[T, T]):
 def basis_penalty_matrix_optimized(
     linear_operator: Identity[Any],
     basis: Basis,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """Optimized version of the penalty matrix for Basis."""
     return basis.gram_matrix()
 
@@ -41,7 +41,7 @@ def basis_penalty_matrix_optimized(
 def fdatagrid_penalty_matrix_optimized(
     linear_operator: Identity[Any],
     basis: FDataGrid,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """Optimized version of the penalty matrix for FDataGrid."""
     from ..metrics import l2_norm
 

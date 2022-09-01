@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 from scipy.interpolate import PchipInterpolator
 
-from ..typing._base import ArrayLike, DomainRangeLike
-from ..typing._numpy import NDArrayFloat
+from ..typing._base import DomainRangeLike
+from ..typing._numpy import ArrayLike, NDArrayFloat
 
 if TYPE_CHECKING:
     from ..representation import FDataGrid

@@ -18,7 +18,7 @@ DomainRangeLike = Union[
 LabelTuple = Tuple[Optional[str], ...]
 LabelTupleLike = Sequence[Optional[str]]
 
-GridPoints = Tuple[np.ndarray, ...]
+GridPoints = Tuple[NDArrayFloat, ...]
 GridPointsLike = Union[ArrayLike, Sequence[ArrayLike]]
 
 EvaluationPoints = NDArrayFloat

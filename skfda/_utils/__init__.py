@@ -18,6 +18,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "_DependenceMeasure",
             "_evaluate_grid",
             "_int_to_real",
+            "_MapAcceptable",
             "_pairwise_symmetric",
             "_same_domain",
             "_to_grid",
@@ -44,6 +45,7 @@ if TYPE_CHECKING:
         _DependenceMeasure as _DependenceMeasure,
         _evaluate_grid as _evaluate_grid,
         _int_to_real as _int_to_real,
+        _MapAcceptable as _MapAcceptable,
         _pairwise_symmetric as _pairwise_symmetric,
         _same_domain as _same_domain,
         _to_grid as _to_grid,
@@ -51,4 +53,8 @@ if TYPE_CHECKING:
         nquad_vec as nquad_vec,
     )
 
-    from ._warping import invert_warping, normalize_scale, normalize_warping
+    from ._warping import (
+        invert_warping as invert_warping,
+        normalize_scale as normalize_scale,
+        normalize_warping as normalize_warping,
+    )

@@ -457,7 +457,8 @@ def _map_in_batches(
     arguments: Tuple[_MapAcceptableT, ...],
     indexes: Tuple[NDArrayInt, ...],
     memory_per_batch: Optional[int] = None,
-    **kwargs: P.kwargs,  # type: ignore[name-defined]
+    *args: P.args,  # Should be empty
+    **kwargs: P.kwargs,
 ) -> np.typing.NDArray[ArrayDTypeT]:
     """
     Map a function over samples of FData or ndarray tuples efficiently.
@@ -501,12 +502,13 @@ def _pairwise_symmetric(
     arg1: _MapAcceptableT,
     arg2: Optional[_MapAcceptableT] = None,
     memory_per_batch: Optional[int] = None,
-    **kwargs: P.kwargs,  # type: ignore[name-defined]
+    *args: P.args,  # Should be empty
+    **kwargs: P.kwargs,
 ) -> np.typing.NDArray[ArrayDTypeT]:
     """Compute pairwise a commutative function."""
     def map_function(
         *args: _MapAcceptableT,
-        **kwargs: P.kwargs,  # type: ignore[name-defined]
+        **kwargs: P.kwargs,
     ) -> np.typing.NDArray[ArrayDTypeT]:
         """Just to keep Mypy happy."""
         return function(args[0], args[1], **kwargs)
@@ -519,8 +521,8 @@ def _pairwise_symmetric(
             map_function,
             (arg1, arg1),
             triu_indices,
-            memory_per_batch=memory_per_batch,
-            **kwargs,
+            memory_per_batch,
+            **kwargs,  # type: ignore[arg-type]
         )
 
         matrix = np.empty((dim1, dim1), dtype=triang_vec.dtype)
@@ -541,7 +543,7 @@ def _pairwise_symmetric(
         (arg1, arg2),
         (indices[0].ravel(), indices[1].ravel()),
         memory_per_batch=memory_per_batch,
-        **kwargs,
+        **kwargs,  # type: ignore[arg-type]
     )
 
     return np.reshape(vec, (dim1, dim2))

@@ -17,7 +17,7 @@ _normal_getattr, __dir__, __all__ = lazy.attach(
 )
 
 if TYPE_CHECKING:
-    from ._fpca import FPCA
+    from ._fpca import FPCA as FPCA
 
 
 def __getattr__(name: str) -> Any:

@@ -6,17 +6,17 @@ import numpy as np
 from GPy.kern import Kern
 from GPy.models import GPRegression
 from scipy.linalg import logm
-from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _classifier_get_classes
+from ..._utils._sklearn_adapter import BaseEstimator, ClassifierMixin
 from ...representation import FDataGrid
 from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 
 class ParameterizedFunctionalQDA(
-    BaseEstimator,  # type: ignore
-    ClassifierMixin,  # type: ignore
+    BaseEstimator,
+    ClassifierMixin[FDataGrid, NDArrayInt],
 ):
     """Parameterized functional quadratic discriminant analysis.
 
@@ -100,7 +100,7 @@ class ParameterizedFunctionalQDA(
         self.kernel = kernel
         self.regularizer = regularizer
 
-    def fit(self, X: FDataGrid, y: np.ndarray) -> ParameterizedFunctionalQDA:
+    def fit(self, X: FDataGrid, y: NDArrayInt) -> ParameterizedFunctionalQDA:
         """
         Fit the model using X as training data and y as target values.
 
@@ -147,12 +147,12 @@ class ParameterizedFunctionalQDA(
         """
         check_is_fitted(self)
 
-        return np.argmax(
+        return np.argmax(  # type: ignore[no-any-return]
             self._calculate_log_likelihood(X.data_matrix),
             axis=1,
         )
 
-    def _calculate_priors(self, y: np.ndarray) -> NDArrayFloat:
+    def _calculate_priors(self, y: NDArrayInt) -> NDArrayFloat:
         """
         Calculate the prior probability of each class.
 
@@ -208,7 +208,7 @@ class ParameterizedFunctionalQDA(
 
         return np.asarray(kernels), np.asarray(means)
 
-    def _calculate_log_likelihood(self, X: np.ndarray) -> NDArrayFloat:
+    def _calculate_log_likelihood(self, X: NDArrayFloat) -> NDArrayFloat:
         """
         Calculate the log likelihood quadratic discriminant analysis.
 

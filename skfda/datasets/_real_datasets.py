@@ -1198,7 +1198,9 @@ def fetch_gait(
     data_matrix = np.asarray(data)
     data_matrix = np.transpose(data_matrix, axes=(1, 0, 2))
     grid_points = np.asarray(data.coords.get('dim_0'), dtype=np.float64)
-    sample_names = data.coords.get('dim_1')
+    sample_names = list(
+        np.asarray(data.coords.get('dim_1'), dtype=np.str_),
+    )
     feature_name = 'gait'
 
     curves = FDataGrid(
@@ -1294,7 +1296,9 @@ def fetch_handwriting(
     data_matrix = np.asarray(data)
     data_matrix = np.transpose(data_matrix, axes=(1, 0, 2))
     grid_points = np.asarray(data.coords.get('dim_0'), dtype=np.float64)
-    sample_names = data.coords.get('dim_1')
+    sample_names = list(
+        np.asarray(data.coords.get('dim_1'), dtype=np.str_),
+    )
     feature_name = 'handwrit'
 
     curves = FDataGrid(

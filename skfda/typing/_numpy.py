@@ -1,6 +1,6 @@
 """NumPy aliases for compatibility."""
 
-from typing import Any
+from typing import Any, Union
 
 import numpy as np
 
@@ -14,6 +14,7 @@ try:  # noqa: WPS229
     NDArrayAny = NDArray[Any]
     NDArrayInt = NDArray[np.int_]
     NDArrayFloat = NDArray[np.float_]
+    NDArrayReal = NDArray[Union[np.float_, np.int_]]
     NDArrayBool = NDArray[np.bool_]
     NDArrayStr = NDArray[np.str_]
     NDArrayObject = NDArray[np.object_]
@@ -22,6 +23,7 @@ except ImportError:
     NDArrayAny = np.ndarray  # type:ignore[misc]
     NDArrayInt = np.ndarray  # type:ignore[misc]
     NDArrayFloat = np.ndarray  # type:ignore[misc]
+    NDArrayReal = np.ndarray  # type:ignore[misc]
     NDArrayBool = np.ndarray  # type:ignore[misc]
     NDArrayStr = np.ndarray  # type:ignore[misc]
     NDArrayObject = np.ndarray  # type:ignore[misc]

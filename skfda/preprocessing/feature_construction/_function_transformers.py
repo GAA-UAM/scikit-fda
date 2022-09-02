@@ -10,10 +10,9 @@ from ...exploratory.stats._functional_transformers import (
     occupation_measure,
 )
 from ...representation import FData
-from ...representation.basis import FDataBasis
 from ...representation.grid import FDataGrid
-from ...typing._base import DomainRangeLike, NDArrayFloat
-from ...typing._numpy import NDArrayFloat
+from ...typing._base import DomainRangeLike
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 
 class LocalAveragesTransformer(
@@ -104,7 +103,10 @@ class LocalAveragesTransformer(
         ).reshape(X.data_matrix.shape[0], -1)
 
 
-class OccupationMeasureTransformer(BaseEstimator, TransformerMixin):
+class OccupationMeasureTransformer(
+    BaseEstimator,
+    TransformerMixin[FData, NDArrayFloat, object],
+):
     """
     Transformer that works as an adapter for the occupation_measure function.
 
@@ -159,7 +161,7 @@ class OccupationMeasureTransformer(BaseEstimator, TransformerMixin):
         self.intervals = intervals
         self.n_points = n_points
 
-    def transform(self, X: FData) -> NDArrayFloat:
+    def transform(self, X: FData, y: object = None) -> NDArrayFloat:
         """
         Transform the provided data using the occupation_measure function.
 
@@ -174,7 +176,10 @@ class OccupationMeasureTransformer(BaseEstimator, TransformerMixin):
         return occupation_measure(X, self.intervals, n_points=self.n_points)
 
 
-class NumberUpCrossingsTransformer(BaseEstimator, TransformerMixin):
+class NumberUpCrossingsTransformer(
+    BaseEstimator,
+    TransformerMixin[FDataGrid, NDArrayInt, object],
+):
     """
     Transformer that works as an adapter for the number_up_crossings function.
 
@@ -224,7 +229,7 @@ class NumberUpCrossingsTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, levels: NDArrayFloat):
         self.levels = levels
 
-    def transform(self, X: FDataGrid) -> NDArrayFloat:
+    def transform(self, X: FDataGrid, y: object = None) -> NDArrayInt:
         """
         Transform the provided data using the number_up_crossings function.
 

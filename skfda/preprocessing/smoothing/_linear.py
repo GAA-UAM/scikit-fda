@@ -14,7 +14,7 @@ import numpy as np
 from ..._utils import _to_grid_points
 from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from ...representation import FDataGrid
-from ...typing._base import GridPointsLike
+from ...typing._base import GridPoints, GridPointsLike
 from ...typing._numpy import NDArrayFloat
 
 
@@ -28,6 +28,8 @@ class _LinearSmoother(
     ``hat_matrix`` to define the smoothing or 'hat' matrix.
 
     """
+    input_points_: GridPoints
+    output_points_: GridPoints
 
     def __init__(
         self,

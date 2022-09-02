@@ -20,10 +20,10 @@ __getattr__, __dir__, __all__ = lazy.attach(
 
 if TYPE_CHECKING:
     from ._coefficients_transformer import (
-        CoefficientsTransformer as CoefficientsTransformer
+        CoefficientsTransformer as CoefficientsTransformer,
     )
     from ._evaluation_trasformer import (
-        EvaluationTransformer as EvaluationTransformer
+        EvaluationTransformer as EvaluationTransformer,
     )
     from ._fda_feature_union import FDAFeatureUnion as FDAFeatureUnion
     from ._function_transformers import (
@@ -32,5 +32,5 @@ if TYPE_CHECKING:
         OccupationMeasureTransformer as OccupationMeasureTransformer,
     )
     from ._per_class_transformer import (
-        PerClassTransformer as PerClassTransformer
+        PerClassTransformer as PerClassTransformer,
     )

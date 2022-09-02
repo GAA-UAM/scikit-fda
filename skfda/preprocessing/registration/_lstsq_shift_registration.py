@@ -227,8 +227,8 @@ class LeastSquaresShiftRegistration(
             # Updates the limits for non periodic functions ignoring the ends
             if self.restrict_domain:
                 # Calculates the new limits
-                a = domain_range[0] - min(np.min(delta), 0)
-                b = domain_range[1] - max(np.max(delta), 0)
+                a = domain_range[0] - min(float(np.min(delta)), 0)
+                b = domain_range[1] - max(float(np.max(delta)), 0)
 
                 restricted_domain = (
                     max(a, template_iter.domain_range[0][0]),
@@ -259,7 +259,7 @@ class LeastSquaresShiftRegistration(
 
         return delta, template_iter
 
-    def fit_transform(self, X: T, y: None = None) -> T:
+    def fit_transform(self, X: T, y: object = None) -> T:
 
         deltas, template = self._compute_deltas(X, self.template)
 
@@ -272,13 +272,13 @@ class LeastSquaresShiftRegistration(
             extrapolation=self.extrapolation,
             grid_points=self.grid_points,
         )
-        shifted.argument_names = None
+        shifted.argument_names = None  # type: ignore[assignment]
         return shifted
 
     def fit(
         self: SelfType,
         X: FData,
-        y: None = None,
+        y: object = None,
     ) -> SelfType:
 
         # If the template is an FData, fit doesnt learn anything
@@ -292,7 +292,7 @@ class LeastSquaresShiftRegistration(
 
         return self
 
-    def transform(self, X: FData, y: None = None) -> FDataGrid:
+    def transform(self, X: FData, y: object = None) -> FDataGrid:
 
         if self.restrict_domain:
             raise AttributeError(
@@ -315,10 +315,10 @@ class LeastSquaresShiftRegistration(
             extrapolation=self.extrapolation,
             grid_points=self.grid_points,
         )
-        shifted.argument_names = None
+        shifted.argument_names = None  # type: ignore[assignment]
         return shifted
 
-    def inverse_transform(self, X: FData, y: None = None) -> FDataGrid:
+    def inverse_transform(self, X: FData, y: object = None) -> FDataGrid:
         """
         Apply the inverse transformation.
 

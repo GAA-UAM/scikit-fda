@@ -5,15 +5,15 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generic,
     NamedTuple,
-    Optional,
     Tuple,
+    TypeVar,
     Union,
     overload,
 )
 
 import numpy as np
-import sklearn.base
 import sklearn.utils.validation
 from sklearn.feature_selection import (
     mutual_info_classif,
@@ -22,8 +22,12 @@ from sklearn.feature_selection import (
 from typing_extensions import Final, Literal
 
 from ...._utils import RandomStateLike, _compute_dependence, _DependenceMeasure
+from ...._utils._sklearn_adapter import (
+    BaseEstimator,
+    InductiveTransformerMixin,
+)
 from ....representation.grid import FDataGrid
-from ....typing._numpy import NDArrayFloat, NDArrayInt
+from ....typing._numpy import NDArrayFloat, NDArrayInt, NDArrayReal
 
 _Criterion = Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]
 _CriterionLike = Union[
@@ -31,19 +35,38 @@ _CriterionLike = Union[
     Literal["difference", "quotient"],
 ]
 
+SelfType = TypeVar(
+    "SelfType",
+    bound="MinimumRedundancyMaximumRelevance[Any]",
+)
 
-class Method(NamedTuple):
+dtype_X_T = TypeVar("dtype_X_T", bound=np.float_, covariant=True)
+dtype_y_T = TypeVar(
+    "dtype_y_T",
+    bound=Union[np.int_, np.float_],
+    covariant=True,
+)
+
+
+class Method(NamedTuple, Generic[dtype_y_T]):
     """Predefined mRMR method."""
 
-    relevance_dependence_measure: _DependenceMeasure
-    redundancy_dependence_measure: _DependenceMeasure
+    relevance_dependence_measure: _DependenceMeasure[
+        NDArrayFloat,
+        np.typing.NDArray[dtype_y_T],
+    ]
+    redundancy_dependence_measure: _DependenceMeasure[
+        NDArrayFloat,
+        NDArrayFloat,
+    ]
     criterion: _Criterion
 
 
 def mutual_information(
     x: NDArrayFloat,
-    y: Union[NDArrayInt, NDArrayFloat],
-    n_neighbors: Optional[int] = None,
+    y: NDArrayReal,
+    *,
+    n_neighbors: int | None = None,
     random_state: RandomStateLike = None,
 ) -> NDArrayFloat:
     """Compute mutual information."""
@@ -58,7 +81,12 @@ def mutual_information(
     if n_neighbors is not None:
         extra_args['n_neighbors'] = n_neighbors
 
-    return method(x, y, random_state=random_state, **extra_args)
+    return method(  # type: ignore[no-any-return]
+        x,
+        y,
+        random_state=random_state,
+        **extra_args,
+    )
 
 
 MID: Final = Method(
@@ -86,11 +114,17 @@ def _parse_method(name: MethodName) -> Method:
 
 
 def _mrmr(
-    X: NDArrayFloat,
-    Y: Union[NDArrayInt, NDArrayFloat],
+    X: np.typing.NDArray[dtype_X_T],
+    Y: np.typing.NDArray[dtype_y_T],
     n_features_to_select: int = 1,
-    relevance_dependence_measure: _DependenceMeasure = mutual_information,
-    redundancy_dependence_measure: _DependenceMeasure = mutual_information,
+    relevance_dependence_measure: _DependenceMeasure[
+        np.typing.NDArray[dtype_X_T],
+        np.typing.NDArray[dtype_y_T],
+    ] = mutual_information,
+    redundancy_dependence_measure: _DependenceMeasure[
+        np.typing.NDArray[dtype_X_T],
+        np.typing.NDArray[dtype_X_T],
+    ] = mutual_information,
     criterion: _Criterion = operator.truediv,
 ) -> Tuple[NDArrayInt, NDArrayFloat, NDArrayFloat]:
     indexes = list(range(X.shape[1]))
@@ -149,8 +183,13 @@ def _mrmr(
 
 
 class MinimumRedundancyMaximumRelevance(
-    sklearn.base.BaseEstimator,  # type: ignore
-    sklearn.base.TransformerMixin,  # type: ignore
+    BaseEstimator,
+    InductiveTransformerMixin[
+        FDataGrid,
+        NDArrayFloat,
+        Union[NDArrayInt, NDArrayFloat],
+    ],
+    Generic[dtype_y_T],
 ):
     r"""
     Minimum redundancy maximum relevance (mRMR) method.
@@ -194,7 +233,6 @@ class MinimumRedundancyMaximumRelevance(
         >>> from skfda.datasets import make_gaussian_process
         >>> import skfda
         >>> import numpy as np
-        >>> import operator
         >>> import dcor
 
         We create trajectories from two classes, one with zero mean and the
@@ -286,7 +324,7 @@ class MinimumRedundancyMaximumRelevance(
         self,
         *,
         n_features_to_select: int = 1,
-        method: Union[Method, MethodName],
+        method: Method | MethodName,
     ) -> None:
         pass
 
@@ -295,7 +333,10 @@ class MinimumRedundancyMaximumRelevance(
         self,
         *,
         n_features_to_select: int = 1,
-        dependence_measure: _DependenceMeasure,
+        dependence_measure: _DependenceMeasure[
+            np.typing.NDArray[np.float_],
+            np.typing.NDArray[np.float_ | dtype_y_T],
+        ],
         criterion: _CriterionLike,
     ) -> None:
         pass
@@ -305,8 +346,14 @@ class MinimumRedundancyMaximumRelevance(
         self,
         *,
         n_features_to_select: int = 1,
-        relevance_dependence_measure: _DependenceMeasure,
-        redundancy_dependence_measure: _DependenceMeasure,
+        relevance_dependence_measure: _DependenceMeasure[
+            np.typing.NDArray[np.float_],
+            np.typing.NDArray[dtype_y_T],
+        ],
+        redundancy_dependence_measure: _DependenceMeasure[
+            np.typing.NDArray[np.float_],
+            np.typing.NDArray[np.float_],
+        ],
         criterion: _CriterionLike,
     ) -> None:
         pass
@@ -315,11 +362,20 @@ class MinimumRedundancyMaximumRelevance(
         self,
         *,
         n_features_to_select: int = 1,
-        method: Union[Method, MethodName, None] = None,
-        dependence_measure: Optional[_DependenceMeasure] = None,
-        relevance_dependence_measure: Optional[_DependenceMeasure] = None,
-        redundancy_dependence_measure: Optional[_DependenceMeasure] = None,
-        criterion: Optional[_CriterionLike] = None,
+        method: Method | MethodName | None = None,
+        dependence_measure: _DependenceMeasure[
+            np.typing.NDArray[np.float_],
+            np.typing.NDArray[np.float_ | dtype_y_T],
+        ] | None = None,
+        relevance_dependence_measure: _DependenceMeasure[
+            np.typing.NDArray[np.float_],
+            np.typing.NDArray[dtype_y_T],
+        ] | None = None,
+        redundancy_dependence_measure: _DependenceMeasure[
+            np.typing.NDArray[np.float_],
+            np.typing.NDArray[np.float_],
+        ] | None = None,
+        criterion: _CriterionLike | None = None,
     ) -> None:
         self.n_features_to_select = n_features_to_select
         self.method = method
@@ -358,8 +414,11 @@ class MinimumRedundancyMaximumRelevance(
                 if isinstance(method, str) else method
             )
 
-            self.relevance_dependence_measure_ = (
-                method.relevance_dependence_measure
+            self.relevance_dependence_measure_: _DependenceMeasure[
+                np.typing.NDArray[np.float_],
+                np.typing.NDArray[dtype_y_T],
+            ] = (
+                method.relevance_dependence_measure  # type: ignore[assignment]
             )
             self.redundancy_dependence_measure_ = (
                 method.redundancy_dependence_measure
@@ -413,11 +472,11 @@ class MinimumRedundancyMaximumRelevance(
                     self.redundancy_dependence_measure
                 )
 
-    def fit(
-        self,
+    def fit(  # type: ignore[override] # noqa: D102
+        self: SelfType,
         X: FDataGrid,
-        y: Union[NDArrayInt, NDArrayFloat],
-    ) -> MinimumRedundancyMaximumRelevance:
+        y: np.typing.NDArray[dtype_y_T],
+    ) -> SelfType:
 
         self._validate_parameters()
 
@@ -441,7 +500,7 @@ class MinimumRedundancyMaximumRelevance(
     def transform(
         self,
         X: FDataGrid,
-        y: None = None,
+        y: NDArrayInt | NDArrayFloat | None = None,
     ) -> NDArrayFloat:
 
         X_array = X.data_matrix[..., 0]

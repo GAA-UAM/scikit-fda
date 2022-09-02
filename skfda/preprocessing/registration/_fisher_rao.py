@@ -132,7 +132,7 @@ class FisherRaoElasticRegistration(
         self.grid_dim = grid_dim
         self.derivative_method = derivative_method
 
-    def fit(self: SelfType, X: FDataGrid, y: None = None) -> SelfType:
+    def fit(self: SelfType, X: FDataGrid, y: object = None) -> SelfType:
 
         # Points of discretization
         self._output_points = (
@@ -158,7 +158,7 @@ class FisherRaoElasticRegistration(
 
         return self
 
-    def transform(self, X: FDataGrid, y: None = None) -> FDataGrid:
+    def transform(self, X: FDataGrid, y: object = None) -> FDataGrid:
 
         check_is_fitted(self)
         check_fdata_dimensions(
@@ -224,7 +224,7 @@ class FisherRaoElasticRegistration(
 
         return X.compose(self.warping_, eval_points=output_points)
 
-    def inverse_transform(self, X: FDataGrid, y: None = None) -> FDataGrid:
+    def inverse_transform(self, X: FDataGrid, y: object = None) -> FDataGrid:
         r"""
         Reverse the registration procedure previosly applied.
 

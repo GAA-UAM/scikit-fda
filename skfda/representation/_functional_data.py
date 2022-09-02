@@ -75,6 +75,7 @@ class FData(  # noqa: WPS214
             coordinate functions.
 
     """
+    dataset_name: Optional[str]
 
     def __init__(
         self,

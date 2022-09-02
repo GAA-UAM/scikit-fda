@@ -22,8 +22,8 @@ if TYPE_CHECKING:
     from ._rkvs import RKHSVariableSelection as RKHSVariableSelection
     from .maxima_hunting import MaximaHunting as MaximaHunting
     from .mrmr import (
-        MinimumRedundancyMaximumRelevance as MinimumRedundancyMaximumRelevance
+        MinimumRedundancyMaximumRelevance as MinimumRedundancyMaximumRelevance,
     )
     from .recursive_maxima_hunting import (
-        RecursiveMaximaHunting as RecursiveMaximaHunting
+        RecursiveMaximaHunting as RecursiveMaximaHunting,
     )

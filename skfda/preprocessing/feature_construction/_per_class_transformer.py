@@ -14,7 +14,7 @@ from ..._utils._sklearn_adapter import TransformerMixin
 from ...representation import FData
 from ...representation.basis import FDataBasis
 from ...representation.grid import FDataGrid
-from ...typing._numpy import NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt
 
 Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
 Output = TypeVar("Output", bound=Union[pd.DataFrame, NDArrayFloat])
@@ -28,7 +28,7 @@ def _fit_feature_transformer(  # noqa: WPS320 WPS234
     y: Target,
     transformer: TransformerMixin[Input, Output, Target],
 ) -> Tuple[
-    Union[NDArrayInt, NDArrayFloat],
+    Union[NDArrayAny, NDArrayFloat],
     Sequence[TransformerMixin[Input, Output, Target]],
 ]:
 
@@ -276,9 +276,10 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
                         "FDataBasis that can't be concatenated on a NumPy "
                         "array.",
                     )
-            return np.hstack(transformed_data)
 
-        return pd.concat(
+            return np.hstack(transformed_data)  # type: ignore[return-value]
+
+        return pd.concat(  # type: ignore[no-any-return]
             [
                 pd.DataFrame({'0': data})  # noqa: WPS441
                 for data in transformed_data

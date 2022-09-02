@@ -1,16 +1,17 @@
 """Feature extraction union for dimensionality reduction."""
 from __future__ import annotations
 
-from typing import Union
+from typing import Any, Mapping, Sequence, Union
 
 import pandas as pd
-from numpy import ndarray
 from sklearn.pipeline import FeatureUnion
 
+from ..._utils._sklearn_adapter import TransformerMixin
 from ...representation import FData
+from ...typing._numpy import NDArrayAny
 
 
-class FDAFeatureUnion(FeatureUnion):  # type: ignore
+class FDAFeatureUnion(FeatureUnion):  # type: ignore[misc]
     """Concatenates results of multiple functional transformer objects.
 
     This estimator applies a list of transformer objects in parallel to the
@@ -90,10 +91,10 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
 
     def __init__(
         self,
-        transformer_list: list,  # type: ignore
+        transformer_list: Sequence[TransformerMixin[Any, Any, Any]],
         *,
         n_jobs: int = 1,
-        transformer_weights: dict = None,  # type: ignore
+        transformer_weights: Mapping[str, float] | None = None,
         verbose: bool = False,
         array_output: bool = False,
     ) -> None:
@@ -105,7 +106,7 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore
             verbose=verbose,
         )
 
-    def _hstack(self, Xs: ndarray) -> Union[pd.DataFrame, ndarray]:
+    def _hstack(self, Xs: NDArrayAny) -> Union[pd.DataFrame, NDArrayAny]:
 
         if self.array_output:
             for i in Xs:

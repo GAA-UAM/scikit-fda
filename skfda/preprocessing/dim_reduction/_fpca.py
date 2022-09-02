@@ -269,7 +269,7 @@ class FPCA(
             )
 
         # in this case it is the inner product of our data with the components
-        return (
+        return (  # type: ignore[no-any-return]
             X.coefficients @ self._j_matrix
             @ self.components_.coefficients.T
         )

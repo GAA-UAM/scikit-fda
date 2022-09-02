@@ -607,14 +607,27 @@ def _classifier_get_classes(
     return classes, y_ind
 
 
-_DependenceMeasure = Callable[[np.ndarray, np.ndarray], np.ndarray]
+dtype_bound = np.number
+dtype_X_T = TypeVar("dtype_X_T", bound="dtype_bound[Any]")
+dtype_y_T = TypeVar("dtype_y_T", bound="dtype_bound[Any]")
+
+depX_T = TypeVar("depX_T", bound=NDArrayAny)
+depy_T = TypeVar("depy_T", bound=NDArrayAny)
+
+_DependenceMeasure = Callable[
+    [depX_T, depy_T],
+    NDArrayFloat,
+]
 
 
 def _compute_dependence(
-    X: NDArrayFloat,
-    y: NDArrayFloat,
+    X: np.typing.NDArray[dtype_X_T],
+    y: np.typing.NDArray[dtype_y_T],
     *,
-    dependence_measure: _DependenceMeasure,
+    dependence_measure: _DependenceMeasure[
+        np.typing.NDArray[dtype_X_T],
+        np.typing.NDArray[dtype_y_T],
+    ],
 ) -> NDArrayFloat:
     """
     Compute dependence between points and target.
@@ -638,7 +651,11 @@ def _compute_dependence(
         y = np.atleast_2d(y).T
     Y = np.array([y] * len(X))
 
-    dependence_results = rowwise(dependence_measure, X, Y)
+    dependence_results = rowwise(  # type: ignore[no-untyped-call]
+        dependence_measure,
+        X,
+        Y,
+    )
 
     return dependence_results.reshape(  # type: ignore[no-any-return]
         input_shape,

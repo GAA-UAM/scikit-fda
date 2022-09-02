@@ -1,7 +1,7 @@
 """Maxima Hunting dimensionality reduction and related methods."""
 from __future__ import annotations
 
-from typing import Callable, Union
+from typing import Callable
 
 import numpy as np
 import scipy.signal
@@ -16,7 +16,7 @@ from ...._utils._sklearn_adapter import (
     InductiveTransformerMixin,
 )
 from ....representation import FDataGrid
-from ....typing._numpy import NDArrayFloat, NDArrayInt
+from ....typing._numpy import NDArrayFloat, NDArrayInt, NDArrayReal
 
 _LocalMaximaSelector = Callable[[FDataGrid], NDArrayInt]
 
@@ -114,7 +114,7 @@ class MaximaHunting(
     InductiveTransformerMixin[
         FDataGrid,
         NDArrayFloat,
-        Union[NDArrayInt, NDArrayFloat],
+        NDArrayReal,
     ],
 ):
     r"""
@@ -149,7 +149,6 @@ class MaximaHunting(
         >>> from skfda.preprocessing.dim_reduction.variable_selection.\
         ...     maxima_hunting import RelativeLocalMaximaSelector
         >>> from skfda.datasets import make_gaussian_process
-        >>> from functools import partial
         >>> import skfda
         >>> import numpy as np
 
@@ -209,19 +208,22 @@ class MaximaHunting(
 
     def __init__(
         self,
-        dependence_measure: _DependenceMeasure = u_distance_correlation_sqr,
+        dependence_measure: _DependenceMeasure[
+            NDArrayFloat,
+            NDArrayFloat,
+        ] = u_distance_correlation_sqr,
         local_maxima_selector: _LocalMaximaSelector | None = None,
     ) -> None:
         self.dependence_measure = dependence_measure
         self.local_maxima_selector = local_maxima_selector
 
-    def fit(  # noqa: D102
+    def fit(  # type: ignore[override] # noqa: D102
         self,
         X: FDataGrid,
-        y: NDArrayInt | NDArrayFloat,
+        y: NDArrayReal,
     ) -> MaximaHunting:
 
-        self._maxima_selector = (
+        self._maxima_selector: Callable[[NDArrayFloat], NDArrayInt] = (
             RelativeLocalMaximaSelector()
             if self.local_maxima_selector is None
             else clone(self.local_maxima_selector, safe=False)
@@ -231,7 +233,7 @@ class MaximaHunting(
         self.dependence_ = FDataGrid(
             data_matrix=_compute_dependence(
                 X.data_matrix,
-                y,
+                y.astype(np.float_),
                 dependence_measure=self.dependence_measure,
             ),
             grid_points=X.grid_points,

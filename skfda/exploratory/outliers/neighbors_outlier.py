@@ -308,11 +308,12 @@ class LocalOutlierFactor(
         # In this estimator fit_predict cannot be wrapped as fit().predict()
 
         self._estimator = self._init_estimator()
+        metric = self.metric
 
-        if self.metric == 'precomputed':
+        if metric == 'precomputed':
             res = self._estimator.fit_predict(X, y)
         else:
-            X_dist = PairwiseMetric(self.metric)(X)
+            X_dist = PairwiseMetric(metric)(X)
             res = self._estimator.fit_predict(X_dist, y)
 
         self._store_fit_data()

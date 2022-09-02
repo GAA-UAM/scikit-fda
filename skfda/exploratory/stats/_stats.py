@@ -8,7 +8,7 @@ import numpy as np
 from scipy import integrate
 from scipy.stats import rankdata
 
-from ...misc.metrics import l2_distance
+from ...misc.metrics._lp_distances import l2_distance
 from ...representation import FData, FDataGrid
 from ...typing._metric import Metric
 from ...typing._numpy import NDArrayFloat
@@ -46,7 +46,7 @@ def var(X: FData) -> FDataGrid:
         :term:`functional data object` with just one sample.
 
     """
-    return X.var()
+    return X.var()  # type: ignore[no-any-return]
 
 
 def gmean(X: FDataGrid) -> FDataGrid:
@@ -79,7 +79,7 @@ def cov(X: FData) -> FDataGrid:
         :term:`functional data object` with just one sample.
 
     """
-    return X.cov()
+    return X.cov()  # type: ignore[no-any-return]
 
 
 def modified_epigraph_index(X: FDataGrid) -> NDArrayFloat:

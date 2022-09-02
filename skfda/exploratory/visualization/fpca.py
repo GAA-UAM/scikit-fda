@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Optional, Sequence, Union
+from typing import Sequence
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -37,11 +37,11 @@ class FPCAPlot(BasePlot):
         *,
         factor: float = 1,
         multiple: float | None = None,
-        chart: Union[Figure, Axes, None] = None,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        n_rows: Optional[int] = None,
-        n_cols: Optional[int] = None,
+        chart: Figure | Axes | None = None,
+        fig: Figure | None = None,
+        axes: Axes | None = None,
+        n_rows: int | None = None,
+        n_cols: int | None = None,
     ):
         super().__init__(
             chart,

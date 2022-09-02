@@ -1,7 +1,6 @@
 """Common types."""
 from typing import Optional, Sequence, Tuple, TypeVar, Union
 
-import numpy as np
 from typing_extensions import Protocol
 
 from ._numpy import ArrayLike, NDArrayFloat

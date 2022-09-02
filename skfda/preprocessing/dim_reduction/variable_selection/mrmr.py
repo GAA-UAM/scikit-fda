@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import operator
+from dataclasses import dataclass
 from typing import (
     Any,
     Callable,
     Dict,
     Generic,
-    NamedTuple,
     Tuple,
     TypeVar,
     Union,
@@ -48,7 +48,8 @@ dtype_y_T = TypeVar(
 )
 
 
-class Method(NamedTuple, Generic[dtype_y_T]):
+@dataclass
+class Method(Generic[dtype_y_T]):
     """Predefined mRMR method."""
 
     relevance_dependence_measure: _DependenceMeasure[
@@ -106,7 +107,7 @@ MIQ: Final = Method(
 MethodName = Literal["MID", "MIQ"]
 
 
-def _parse_method(name: MethodName) -> Method:
+def _parse_method(name: MethodName) -> Method[Union[np.int_, np.float_]]:
     if name == "MID":
         return MID
     elif name == "MIQ":
@@ -324,7 +325,7 @@ class MinimumRedundancyMaximumRelevance(
         self,
         *,
         n_features_to_select: int = 1,
-        method: Method | MethodName,
+        method: Method[dtype_y_T] | MethodName,
     ) -> None:
         pass
 
@@ -362,7 +363,7 @@ class MinimumRedundancyMaximumRelevance(
         self,
         *,
         n_features_to_select: int = 1,
-        method: Method | MethodName | None = None,
+        method: Method[dtype_y_T] | MethodName | None = None,
         dependence_measure: _DependenceMeasure[
             np.typing.NDArray[np.float_],
             np.typing.NDArray[np.float_ | dtype_y_T],
@@ -418,7 +419,7 @@ class MinimumRedundancyMaximumRelevance(
                 np.typing.NDArray[np.float_],
                 np.typing.NDArray[dtype_y_T],
             ] = (
-                method.relevance_dependence_measure  # type: ignore[assignment]
+                method.relevance_dependence_measure
             )
             self.redundancy_dependence_measure_ = (
                 method.redundancy_dependence_measure

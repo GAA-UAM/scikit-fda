@@ -146,6 +146,19 @@ class ClassifierMixin(  # noqa: D101
         )
 
 
+class ClusterMixin(  # noqa: D101
+    ABC,
+    Generic[Input],
+    sklearn.base.ClusterMixin,  # type: ignore[misc]
+):
+    def fit_predict(  # noqa: D102
+        self,
+        X: Input,
+        y: object = None,
+    ) -> NDArrayInt:
+        pass
+
+
 class RegressorMixin(  # noqa: D101
     ABC,
     Generic[Input, TargetPrediction],

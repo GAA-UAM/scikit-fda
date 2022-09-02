@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 import itertools
-from typing import Callable, Optional, Sequence, Union
+from typing import Callable, Sequence, Union
 
 import numpy as np
 import scipy.integrate
 from scipy.stats import multivariate_normal
 
 from .._utils import _cartesian_product, _to_grid_points, normalize_warping
-from ..misc import covariances
+from ..misc.covariances import Brownian, CovarianceLike, _execute_covariance
 from ..misc.validation import validate_random_state
 from ..representation import FDataGrid
 from ..representation.interpolation import SplineInterpolation
@@ -16,17 +18,16 @@ from ..typing._numpy import NDArrayFloat
 MeanCallable = Callable[[np.ndarray], np.ndarray]
 CovarianceCallable = Callable[[np.ndarray, np.ndarray], np.ndarray]
 
-MeanLike = Union[float, np.ndarray, MeanCallable]
-CovarianceLike = Union[None, np.ndarray, CovarianceCallable]
+MeanLike = Union[float, NDArrayFloat, MeanCallable]
 
 
 def make_gaussian(
     n_samples: int = 100,
     *,
     grid_points: GridPointsLike,
-    domain_range: Optional[DomainRangeLike] = None,
+    domain_range: DomainRangeLike | None = None,
     mean: MeanLike = 0,
-    cov: CovarianceLike = None,
+    cov: CovarianceLike | None = None,
     noise: float = 0,
     random_state: RandomStateLike = None,
 ) -> FDataGrid:
@@ -60,14 +61,17 @@ def make_gaussian(
     random_state = validate_random_state(random_state)
 
     if cov is None:
-        cov = covariances.Brownian()
+        cov = Brownian()
 
     grid_points = _to_grid_points(grid_points)
 
     input_points = _cartesian_product(grid_points)
 
-    covariance = covariances._execute_covariance(
-        cov, input_points, input_points)
+    covariance = _execute_covariance(
+        cov,
+        input_points,
+        input_points,
+    )
 
     if noise:
         covariance += np.eye(len(covariance)) * noise ** 2
@@ -102,7 +106,7 @@ def make_gaussian_process(
     start: float = 0,
     stop: float = 1,
     mean: MeanLike = 0,
-    cov: CovarianceLike = None,
+    cov: CovarianceLike | None = None,
     noise: float = 0,
     random_state: RandomStateLike = None,
 ) -> FDataGrid:
@@ -220,7 +224,7 @@ def make_multimodal_landmarks(
     stop: float = 1,
     std: float = 0.05,
     random_state: RandomStateLike = None,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """Generate landmarks points.
 
     Used by :func:`make_multimodal_samples` to generate the location of the
@@ -281,7 +285,7 @@ def make_multimodal_samples(
     std: float = 0.05,
     mode_std: float = 0.02,
     noise: float = 0,
-    modes_location: Optional[Union[Sequence[float], NDArrayFloat]] = None,
+    modes_location: Sequence[float] | NDArrayFloat | None = None,
     random_state: RandomStateLike = None,
 ) -> FDataGrid:
     r"""

@@ -1,6 +1,7 @@
 """Common types."""
 from typing import Optional, Sequence, Tuple, TypeVar, Union
 
+import numpy as np
 from typing_extensions import Protocol
 
 from ._numpy import ArrayLike, NDArrayFloat
@@ -21,6 +22,10 @@ GridPoints = Tuple[NDArrayFloat, ...]
 GridPointsLike = Union[ArrayLike, Sequence[ArrayLike]]
 
 EvaluationPoints = NDArrayFloat
+
+
+RandomStateLike = Union[int, np.random.RandomState, np.random.Generator, None]
+RandomState = Union[np.random.RandomState, np.random.Generator]
 
 
 class Vector(Protocol):

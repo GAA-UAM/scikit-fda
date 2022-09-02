@@ -31,8 +31,6 @@ from ..typing._base import GridPoints, GridPointsLike
 from ..typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt, NDArrayStr
 from ._sklearn_adapter import BaseEstimator
 
-RandomStateLike = Optional[Union[int, np.random.RandomState]]
-
 ArrayDTypeT = TypeVar("ArrayDTypeT", bound="np.generic")
 
 if TYPE_CHECKING:

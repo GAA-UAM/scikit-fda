@@ -8,11 +8,11 @@ import scipy.integrate
 import scipy.stats
 from numpy import linalg as la
 from sklearn.covariance import MinCovDet
-from sklearn.utils.validation import check_random_state
 
-from ..._utils import RandomStateLike
 from ..._utils._sklearn_adapter import BaseEstimator, OutlierMixin
+from ...misc.validation import validate_random_state
 from ...representation import FDataGrid
+from ...typing._base import RandomStateLike
 from ...typing._numpy import NDArrayFloat, NDArrayInt
 from ..depth.multivariate import Depth, ProjectionDepth
 from . import _directional_outlyingness_experiment_results as experiments
@@ -495,7 +495,7 @@ class MSPlotOutlierDetector(  # noqa: WPS230
         y: object = None,
     ) -> NDArrayInt:
 
-        self.random_state_ = check_random_state(self.random_state)
+        self.random_state_ = validate_random_state(self.random_state)
         self.points_ = self._compute_points(X)
 
         # The square mahalanobis distances of the samples are

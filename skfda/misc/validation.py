@@ -7,9 +7,16 @@ import numbers
 from typing import Container, Sequence, Tuple, cast
 
 import numpy as np
+from sklearn.utils import check_random_state as _check_random_state
 
 from ..representation import FData, FDataBasis, FDataGrid
-from ..typing._base import DomainRange, DomainRangeLike, EvaluationPoints
+from ..typing._base import (
+    DomainRange,
+    DomainRangeLike,
+    EvaluationPoints,
+    RandomState,
+    RandomStateLike,
+)
 from ..typing._numpy import ArrayLike
 
 
@@ -255,3 +262,11 @@ def validate_domain_range(domain_range: DomainRangeLike) -> DomainRange:
     domain_range = cast(Sequence[Sequence[float]], domain_range)
 
     return tuple(_validate_domain_range_limits(s) for s in domain_range)
+
+
+def validate_random_state(random_state: RandomStateLike) -> RandomState:
+    """Validate random state or seed."""
+    if isinstance(random_state, np.random.Generator):
+        return random_state
+
+    return _check_random_state(random_state)  # type: ignore[no-any-return]

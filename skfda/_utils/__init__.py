@@ -9,7 +9,6 @@ __getattr__, __dir__, __all__ = lazy.attach(
     ],
     submod_attrs={
         "_utils": [
-            "RandomStateLike",
             "_cartesian_product",
             "_check_array_key",
             "_check_estimator",
@@ -36,7 +35,6 @@ __getattr__, __dir__, __all__ = lazy.attach(
 if TYPE_CHECKING:
 
     from ._utils import (
-        RandomStateLike as RandomStateLike,
         _cartesian_product as _cartesian_product,
         _check_array_key as _check_array_key,
         _check_estimator as _check_estimator,

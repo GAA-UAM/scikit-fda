@@ -21,12 +21,13 @@ from sklearn.feature_selection import (
 )
 from typing_extensions import Final, Literal
 
-from ...._utils import RandomStateLike, _compute_dependence, _DependenceMeasure
+from ...._utils import _compute_dependence, _DependenceMeasure
 from ...._utils._sklearn_adapter import (
     BaseEstimator,
     InductiveTransformerMixin,
 )
 from ....representation.grid import FDataGrid
+from ....typing._base import RandomStateLike
 from ....typing._numpy import NDArrayFloat, NDArrayInt, NDArrayReal
 
 _Criterion = Callable[[NDArrayFloat, NDArrayFloat], NDArrayFloat]

@@ -3,19 +3,14 @@ from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
 import scipy.integrate
-import sklearn.utils
 from scipy.stats import multivariate_normal
 
-from .._utils import (
-    RandomStateLike,
-    _cartesian_product,
-    _to_grid_points,
-    normalize_warping,
-)
+from .._utils import _cartesian_product, _to_grid_points, normalize_warping
 from ..misc import covariances
+from ..misc.validation import validate_random_state
 from ..representation import FDataGrid
 from ..representation.interpolation import SplineInterpolation
-from ..typing._base import DomainRangeLike, GridPointsLike
+from ..typing._base import DomainRangeLike, GridPointsLike, RandomStateLike
 from ..typing._numpy import NDArrayFloat
 
 MeanCallable = Callable[[np.ndarray], np.ndarray]
@@ -62,7 +57,7 @@ def make_gaussian(
         Gaussian processes.
 
     """
-    random_state = sklearn.utils.check_random_state(random_state)
+    random_state = validate_random_state(random_state)
 
     if cov is None:
         cov = covariances.Brownian()
@@ -193,7 +188,7 @@ def make_sinusoidal_process(
         :class:`FDataGrid` object comprising all the samples.
 
     """
-    random_state = sklearn.utils.check_random_state(random_state)
+    random_state = validate_random_state(random_state)
 
     t = np.linspace(start, stop, n_features)
 
@@ -256,7 +251,7 @@ def make_multimodal_landmarks(
         sample i.
 
     """
-    random_state = sklearn.utils.check_random_state(random_state)
+    random_state = validate_random_state(random_state)
 
     modes_location = np.linspace(start, stop, n_modes + 2)[1:-1]
     modes_location = np.repeat(
@@ -329,7 +324,7 @@ def make_multimodal_samples(
         :class:`FDataGrid` object comprising all the samples.
 
     """
-    random_state = sklearn.utils.check_random_state(random_state)
+    random_state = validate_random_state(random_state)
 
     if modes_location is None:
 
@@ -446,7 +441,7 @@ def make_random_warping(
     # Based on the original implementation of J. D. Tucker in the
     # package python_fdasrsf <https://github.com/jdtuck/fdasrsf_python>.
 
-    random_state = sklearn.utils.check_random_state(random_state)
+    random_state = validate_random_state(random_state)
 
     freq = shape_parameter + 1
 

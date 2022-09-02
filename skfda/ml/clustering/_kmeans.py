@@ -8,13 +8,15 @@ from typing import Any, Generic, Optional, Tuple, TypeVar
 
 import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
-from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_is_fitted
 
-from ..._utils import RandomStateLike
 from ...misc.metrics import PairwiseMetric, l2_distance
-from ...misc.validation import check_fdata_same_dimensions
+from ...misc.validation import (
+    check_fdata_same_dimensions,
+    validate_random_state,
+)
 from ...representation import FDataGrid
+from ...typing._base import RandomStateLike
 from ...typing._metric import Metric
 from ...typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt
 
@@ -309,7 +311,7 @@ class BaseKMeans(
 
         """
         fdata = self._check_clustering(X)
-        random_state = check_random_state(self.random_state)
+        random_state = validate_random_state(self.random_state)
 
         self._check_params()
 

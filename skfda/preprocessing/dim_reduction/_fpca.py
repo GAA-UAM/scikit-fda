@@ -21,7 +21,7 @@ Function = TypeVar("Function", bound=FData)
 WeightsCallable = Callable[[np.ndarray], np.ndarray]
 
 
-class FPCA( # noqa: WPS230 (too many public attributes)
+class FPCA(  # noqa: WPS230 (too many public attributes)
     BaseEstimator,
     InductiveTransformerMixin[FData, NDArrayFloat, object],
 ):

@@ -2,23 +2,44 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Mapping, TypeVar, Union
+from typing import Any, Mapping, Sequence, Tuple, TypeVar, Union
 
 import numpy as np
 import pandas as pd
+from sklearn.base import clone
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ..._utils import TransformerMixin, _fit_feature_transformer
+from ..._utils import _classifier_get_classes
+from ..._utils._sklearn_adapter import TransformerMixin
 from ...representation import FData
-from ...representation._typing import NDArrayFloat, NDArrayInt
 from ...representation.basis import FDataBasis
 from ...representation.grid import FDataGrid
+from ...typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt
 
 Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
 Output = TypeVar("Output", bound=Union[pd.DataFrame, NDArrayFloat])
 Target = TypeVar("Target", bound=NDArrayInt)
 
 TransformerOutput = Union[FData, NDArrayFloat]
+
+
+def _fit_feature_transformer(  # noqa: WPS320 WPS234
+    X: Input,
+    y: Target,
+    transformer: TransformerMixin[Input, Output, Target],
+) -> Tuple[
+    Union[NDArrayAny, NDArrayFloat],
+    Sequence[TransformerMixin[Input, Output, Target]],
+]:
+
+    classes, y_ind = _classifier_get_classes(y)
+
+    class_feature_transformers = [
+        clone(transformer).fit(X[y_ind == cur_class], y[y_ind == cur_class])
+        for cur_class, _ in enumerate(classes)
+    ]
+
+    return classes, class_feature_transformers
 
 
 class PerClassTransformer(TransformerMixin[Input, Output, Target]):
@@ -187,7 +208,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
         if tags['stateless']:
             warnings.warn(
-                f"Parameter 'transformer' with type "  # noqa:WPS237
+                f"Parameter 'transformer' with type "
                 f"{type(self.transformer)} should use the data for "
                 f" fitting."
                 f"It should have the 'stateless' tag set to 'False'",
@@ -195,7 +216,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
         if tags['requires_y']:
             warnings.warn(
-                f"Parameter 'transformer' with type "  # noqa: WPS237
+                f"Parameter 'transformer' with type "
                 f"{type(self.transformer)} should not use the class label."
                 f"It should have the 'requires_y' tag set to 'False'",
             )
@@ -255,9 +276,10 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
                         "FDataBasis that can't be concatenated on a NumPy "
                         "array.",
                     )
-            return np.hstack(transformed_data)
 
-        return pd.concat(
+            return np.hstack(transformed_data)  # type: ignore[return-value]
+
+        return pd.concat(  # type: ignore[no-any-return]
             [
                 pd.DataFrame({'0': data})  # noqa: WPS441
                 for data in transformed_data

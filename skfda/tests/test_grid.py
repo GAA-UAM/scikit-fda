@@ -313,25 +313,6 @@ class TestEvaluateFDataGrid(unittest.TestCase):
 
         np.testing.assert_allclose(res, expected)
 
-    def test_evaluate_unaligned_ragged(self) -> None:
-        """Check evaluation with different number of points per curve."""
-        res = self.fd(
-            [
-                [(0, 0), (1, 1), (2, 2), (3, 3)],
-                [(1, 7), (5, 2), (3, 4)],
-            ],
-            aligned=False,
-        )
-        expected = ([
-            np.tile([0, 1, 2], (4, 1)),
-            np.tile([3, 4, 5], (3, 1)),
-        ])
-
-        self.assertEqual(len(res), self.fd.n_samples)
-
-        for r, e in zip(res, expected):
-            np.testing.assert_allclose(r, e)
-
     def test_evaluate_grid_aligned(self) -> None:
         """Test evaluation in aligned grid."""
         res = self.fd([[0, 1], [1, 2]], grid=True)
@@ -355,21 +336,6 @@ class TestEvaluateFDataGrid(unittest.TestCase):
         ])
 
         np.testing.assert_allclose(res, expected)
-
-    def test_evaluate_grid_unaligned_ragged(self) -> None:
-        """Test different grid points per curve."""
-        res = self.fd(
-            [[[0, 1], [1, 2]], [[3, 4], [5]]],
-            grid=True,
-            aligned=False,
-        )
-        expected = ([
-            np.tile([0, 1, 2], (2, 2, 1)),
-            np.tile([3, 4, 5], (2, 1, 1)),
-        ])
-
-        for r, e in zip(res, expected):
-            np.testing.assert_allclose(r, e)
 
 
 if __name__ == '__main__':

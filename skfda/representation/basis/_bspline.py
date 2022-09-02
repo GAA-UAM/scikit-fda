@@ -1,12 +1,13 @@
-from typing import Any, Optional, Sequence, Tuple, Type, TypeVar
+from __future__ import annotations
+
+from typing import Any, Sequence, Tuple, Type, TypeVar
 
 import numpy as np
-import scipy.interpolate
 from numpy import polyint, polymul, polyval
 from scipy.interpolate import BSpline as SciBSpline, PPoly
 
-from ..._utils import _to_domain_range
-from .._typing import DomainRangeLike
+from ...typing._base import DomainRangeLike
+from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
 T = TypeVar("T", bound='BSpline')
@@ -88,16 +89,18 @@ class BSpline(Basis):
 
     """
 
-    def __init__(
+    def __init__(  # noqa: WPS238
         self,
-        domain_range: Optional[DomainRangeLike] = None,
-        n_basis: Optional[int] = None,
+        domain_range: DomainRangeLike | None = None,
+        n_basis: int | None = None,
         order: int = 4,
-        knots: Optional[Sequence[float]] = None,
+        knots: Sequence[float] | None = None,
     ) -> None:
         """Bspline basis constructor."""
+        from ...misc.validation import validate_domain_range
+
         if domain_range is not None:
-            domain_range = _to_domain_range(domain_range)
+            domain_range = validate_domain_range(domain_range)
 
             if len(domain_range) != 1:
                 raise ValueError("Domain range should be unidimensional.")
@@ -174,68 +177,40 @@ class BSpline(Basis):
             + (self.knots[-1],) * (self.order - 1),
         )
 
-    def _evaluate(self, eval_points: np.ndarray) -> np.ndarray:
+    def _evaluate(self, eval_points: NDArrayFloat) -> NDArrayFloat:
 
         # Input is scalar
         eval_points = eval_points[..., 0]
 
-        # Places m knots at the boundaries
-        knots = self._evaluation_knots()
-
-        # c is used the select which spline the function splev below computes
-        c = np.zeros(len(knots))
-
-        # Initialise empty matrix
-        mat = np.empty((self.n_basis, len(eval_points)))
-
-        # For each basis computes its value for each evaluation point
-        for i in range(self.n_basis):
-            # write a 1 in c in the position of the spline calculated in each
-            # iteration
-            c[i] = 1
-            # compute the spline
-            mat[i] = scipy.interpolate.splev(
-                eval_points,
-                (knots, c, self.order - 1),
-            )
-            c[i] = 0
-
-        return mat
+        return self._to_scipy_bspline(  # type: ignore[no-any-return]
+            np.eye(self.n_basis),
+        )(eval_points).T
 
     def _derivative_basis_and_coefs(
         self: T,
-        coefs: np.ndarray,
+        coefs: NDArrayFloat,
         order: int = 1,
-    ) -> Tuple[T, np.ndarray]:
+    ) -> Tuple[T, NDArrayFloat]:
+
         if order >= self.order:
             return (
                 type(self)(n_basis=1, domain_range=self.domain_range, order=1),
                 np.zeros((len(coefs), 1)),
             )
 
-        deriv_splines = [
-            self._to_scipy_bspline(coefs[i]).derivative(order)
-            for i in range(coefs.shape[0])
-        ]
-
-        deriv_coefs = [
-            self._from_scipy_bspline(spline)[1]
-            for spline in deriv_splines
-        ]
-
-        deriv_basis = self._from_scipy_bspline(deriv_splines[0])[0]
-
-        return deriv_basis, np.array(deriv_coefs)[:, 0:deriv_basis.n_basis]
+        deriv_splines = self._to_scipy_bspline(coefs).derivative(order)
+        return self._from_scipy_bspline(deriv_splines)
 
     def rescale(  # noqa: D102
         self: T,
-        domain_range: Optional[DomainRangeLike] = None,
+        domain_range: DomainRangeLike | None = None,
     ) -> T:
+        from ...misc.validation import validate_domain_range
 
         knots = np.array(self.knots, dtype=np.dtype('float'))
 
         if domain_range is not None:  # Rescales the knots
-            domain_range = _to_domain_range(domain_range)[0]
+            domain_range = validate_domain_range(domain_range)[0]
             knots -= knots[0]
             knots *= (
                 (domain_range[1] - domain_range[0])
@@ -251,7 +226,7 @@ class BSpline(Basis):
             # TODO: Allow multiple dimensions
             domain_range = self.domain_range[0]
 
-        return type(self)(domain_range, self.n_basis, self.order, knots)
+        return type(self)(domain_range, self.n_basis, self.order, tuple(knots))
 
     def __repr__(self) -> str:
         """Representation of a BSpline basis."""
@@ -261,7 +236,7 @@ class BSpline(Basis):
             f"knots={self.knots})"
         )
 
-    def _gram_matrix(self) -> np.ndarray:
+    def _gram_matrix(self) -> NDArrayFloat:
         # Places m knots at the boundaries
         knots = self._evaluation_knots()
 
@@ -339,21 +314,31 @@ class BSpline(Basis):
 
         return matrix
 
-    def _to_scipy_bspline(self, coefs: np.ndarray) -> SciBSpline:
+    def _to_scipy_bspline(self, coefs: NDArrayFloat) -> SciBSpline:
 
-        knots = np.concatenate((
-            np.repeat(self.knots[0], self.order - 1),
-            self.knots,
-            np.repeat(self.knots[-1], self.order - 1),
+        repeated_initial: NDArrayFloat = np.repeat(
+            self.knots[0],
+            self.order - 1,
+        )
+        knots_array = np.asarray(self.knots)
+        repeated_final: NDArrayFloat = np.repeat(
+            self.knots[-1],
+            self.order - 1,
+        )
+
+        knots: NDArrayFloat = np.concatenate((
+            repeated_initial,
+            knots_array,
+            repeated_final,
         ))
 
-        return SciBSpline(knots, coefs, self.order - 1)
+        return SciBSpline(knots, coefs.T, self.order - 1)
 
     @classmethod
     def _from_scipy_bspline(
         cls: Type[T],
         bspline: SciBSpline,
-    ) -> Tuple[T, np.ndarray]:
+    ) -> Tuple[T, NDArrayFloat]:
         order = bspline.k
         knots = bspline.t
 
@@ -363,6 +348,9 @@ class BSpline(Basis):
 
         coefs = bspline.c
         domain_range = [knots[0], knots[-1]]
+
+        n_basis = len(knots) + order - 1
+        coefs = coefs[:n_basis, ...].T
 
         return cls(domain_range, order=order + 1, knots=knots), coefs
 

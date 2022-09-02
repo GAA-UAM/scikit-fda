@@ -661,7 +661,7 @@ class FPCATestCase(unittest.TestCase):
 
         # Low dimensional case: n_basis<<n_samples
         n_samples = 1000
-        n_basis = 100
+        n_basis = 20
         bsp = BSpline(
             domain_range=(0, 50),
             n_basis=n_basis,
@@ -676,7 +676,7 @@ class FPCATestCase(unittest.TestCase):
 
         # Case n_samples<n_basis
         n_samples = 10
-        n_basis = 100
+        n_basis = 20
         bsp = BSpline(
             domain_range=(0, 50),
             n_basis=n_basis,

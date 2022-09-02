@@ -15,8 +15,9 @@ from ..._utils import _cartesian_product, _to_grid_points
 from ...misc.lstsq import LstsqMethod, solve_regularized_weighted_lstsq
 from ...misc.regularization import L2Regularization
 from ...representation import FData, FDataBasis, FDataGrid
-from ...representation._typing import GridPointsLike, NDArrayFloat
 from ...representation.basis import Basis
+from ...typing._base import GridPointsLike
+from ...typing._numpy import NDArrayFloat
 from ._linear import _LinearSmoother
 
 
@@ -231,7 +232,7 @@ class BasisSmoother(_LinearSmoother):
         """Get the matrix that gives the coefficients."""
         from ...misc.regularization import compute_penalty_matrix
 
-        basis_values_input = self.basis.evaluate(
+        basis_values_input = self.basis(
             _cartesian_product(_to_grid_points(input_points)),
         ).reshape((self.basis.n_basis, -1)).T
 
@@ -259,7 +260,7 @@ class BasisSmoother(_LinearSmoother):
         input_points: GridPointsLike,
         output_points: GridPointsLike,
     ) -> NDArrayFloat:
-        basis_values_output = self.basis.evaluate(
+        basis_values_output = self.basis(
             _cartesian_product(
                 _to_grid_points(output_points),
             ),
@@ -270,7 +271,7 @@ class BasisSmoother(_LinearSmoother):
     def fit(
         self,
         X: FDataGrid,
-        y: None = None,
+        y: object = None,
     ) -> BasisSmoother:
         """Compute the hat matrix for the desired output points.
 
@@ -297,7 +298,7 @@ class BasisSmoother(_LinearSmoother):
     def transform(
         self,
         X: FDataGrid,
-        y: None = None,
+        y: object = None,
     ) -> FData:
         """
         Smooth the data.

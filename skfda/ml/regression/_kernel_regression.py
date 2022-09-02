@@ -8,8 +8,8 @@ from sklearn.utils.validation import check_is_fitted
 
 from ...misc.hat_matrix import HatMatrix, NadarayaWatsonHatMatrix
 from ...misc.metrics import PairwiseMetric, l2_distance
-from ...misc.metrics._typing import Metric
 from ...representation._functional_data import FData
+from ...typing._metric import Metric
 
 
 class KernelRegression(

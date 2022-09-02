@@ -8,22 +8,22 @@ from typing import Callable, Optional, TypeVar, Union
 import numpy as np
 import scipy.integrate
 from scipy.linalg import solve_triangular
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
+from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData
-from ...representation._typing import ArrayLike
 from ...representation.basis import Basis, FDataBasis
 from ...representation.grid import FDataGrid
+from ...typing._numpy import ArrayLike, NDArrayFloat
 
 Function = TypeVar("Function", bound=FData)
 WeightsCallable = Callable[[np.ndarray], np.ndarray]
 
 
-class FPCA(  # noqa: WPS230 (too many public attributes)
-    BaseEstimator,  # type: ignore
-    TransformerMixin,  # type: ignore
+class FPCA( # noqa: WPS230 (too many public attributes)
+    BaseEstimator,
+    InductiveTransformerMixin[FData, NDArrayFloat, object],
 ):
     r"""
     Principal component analysis.
@@ -127,7 +127,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     def _fit_basis(
         self,
         X: FDataBasis,
-        y: None = None,
+        y: object = None,
     ) -> FPCA:
         """
         Compute the first n_components principal components and saves them.
@@ -241,10 +241,12 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             lower=False,
         )
 
-        self.explained_variance_ratio_ = pca.explained_variance_ratio_
-        self.explained_variance_ = pca.explained_variance_
-        self.singular_values_ = pca.singular_values_
-        self.components_ = X.copy(
+        self.explained_variance_ratio_: NDArrayFloat = (
+            pca.explained_variance_ratio_
+        )
+        self.explained_variance_: NDArrayFloat = pca.explained_variance_
+        self.singular_values_: NDArrayFloat = pca.singular_values_
+        self.components_: FData = X.copy(
             basis=components_basis,
             coefficients=component_coefficients.T,
             sample_names=(None,) * self.n_components,
@@ -255,8 +257,8 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     def _transform_basis(
         self,
         X: FDataBasis,
-        y: None = None,
-    ) -> np.ndarray:
+        y: object = None,
+    ) -> NDArrayFloat:
         """Compute the n_components first principal components score.
 
         Args:
@@ -274,14 +276,15 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             )
 
         # in this case it is the inner product of our data with the components
-        return (
-            X.coefficients @ self._j_matrix @ self.components_.coefficients.T
+        return (  # type: ignore[no-any-return]
+            X.coefficients @ self._j_matrix
+            @ self.components_.coefficients.T
         )
 
     def _fit_grid(
         self,
         X: FDataGrid,
-        y: None = None,
+        y: object = None,
     ) -> FPCA:
         r"""
         Compute the n_components first principal components and saves them.
@@ -339,18 +342,20 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         X = self._center_if_necessary(X)
 
         # establish weights for each point of discretization
-        if not self.weights:
+        if self.weights is None:
             # grid_points is a list with one array in the 1D case
             identity = np.eye(len(X.grid_points[0]))
-            self.weights = scipy.integrate.simps(identity, X.grid_points[0])
+            self.weights_ = scipy.integrate.simps(identity, X.grid_points[0])
         elif callable(self.weights):
-            self.weights = self.weights(X.grid_points[0])
+            self.weights_ = self.weights(X.grid_points[0])
             # if its a FDataGrid then we need to reduce the dimension to 1-D
             # array
             if isinstance(self.weights, FDataGrid):
-                self.weights = np.squeeze(self.weights.data_matrix)
+                self.weights_ = np.squeeze(self.weights.data_matrix)
+        else:
+            self.weights_ = self.weights
 
-        weights_matrix = np.diag(self.weights)
+        weights_matrix = np.diag(self.weights_)
 
         basis = FDataGrid(
             data_matrix=np.identity(n_points_discretization),
@@ -387,7 +392,9 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
             sample_names=(None,) * self.n_components,
         )
 
-        self.explained_variance_ratio_ = pca.explained_variance_ratio_
+        self.explained_variance_ratio = (
+            pca.explained_variance_ratio_
+        )
         self.explained_variance_ = pca.explained_variance_
         self.singular_values_ = pca.singular_values_
 
@@ -396,8 +403,8 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     def _transform_grid(
         self,
         X: FDataGrid,
-        y: None = None,
-    ) -> np.ndarray:
+        y: object = None,
+    ) -> NDArrayFloat:
         """
         Compute the ``n_components`` first principal components score.
 
@@ -412,9 +419,9 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
         # in this case its the coefficient matrix multiplied by the principal
         # components as column vectors
 
-        return (
+        return (  # type: ignore[no-any-return]
             X.data_matrix.reshape(X.data_matrix.shape[:-1])
-            * self.weights
+            * self.weights_
             @ np.transpose(
                 self.components_.data_matrix.reshape(
                     self.components_.data_matrix.shape[:-1],
@@ -425,7 +432,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     def fit(
         self,
         X: FData,
-        y: None = None,
+        y: object = None,
     ) -> FPCA:
         """
         Compute the n_components first principal components and saves them.
@@ -448,8 +455,8 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     def transform(
         self,
         X: FData,
-        y: None = None,
-    ) -> np.ndarray:
+        y: object = None,
+    ) -> NDArrayFloat:
         """
         Compute the ``n_components`` first principal components scores.
 
@@ -473,8 +480,8 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
     def fit_transform(
         self,
         X: FData,
-        y: None = None,
-    ) -> np.ndarray:
+        y: object = None,
+    ) -> NDArrayFloat:
         """
         Compute the n_components first principal components and their scores.
 
@@ -490,7 +497,7 @@ class FPCA(  # noqa: WPS230 (too many public attributes)
 
     def inverse_transform(
         self,
-        pc_scores: np.ndarray,
+        pc_scores: NDArrayFloat,
     ) -> FData:
         """
         Compute the recovery from the fitted principal components scores.

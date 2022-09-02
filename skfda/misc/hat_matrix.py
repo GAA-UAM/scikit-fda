@@ -7,22 +7,24 @@ Local Linear Regression and K-Nearest Neighbours hat matrices used in
 kernel smoothing and kernel regression.
 
 """
+from __future__ import annotations
 
 import abc
-from typing import Callable, Optional, Union
+import math
+from typing import Callable
 
 import numpy as np
-from sklearn.base import BaseEstimator, RegressorMixin
 
+from .._utils._sklearn_adapter import BaseEstimator
 from ..representation._functional_data import FData
-from ..representation._typing import GridPoints, GridPointsLike, NDArrayFloat
 from ..representation.basis import FDataBasis
+from ..typing._base import GridPointsLike
+from ..typing._numpy import NDArrayFloat
 from . import kernels
 
 
 class HatMatrix(
     BaseEstimator,
-    RegressorMixin,
 ):
     """
     Hat Matrix.
@@ -38,20 +40,18 @@ class HatMatrix(
     def __init__(
         self,
         *,
-        bandwidth: Optional[float] = None,
         kernel: Callable[[NDArrayFloat], NDArrayFloat] = kernels.normal,
     ):
-        self.bandwidth = bandwidth
         self.kernel = kernel
 
     def __call__(
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: Optional[Union[FData, GridPointsLike]] = None,
-        X: Optional[Union[FData, GridPointsLike]] = None,
-        y_train: Optional[NDArrayFloat] = None,
-        weights: Optional[NDArrayFloat] = None,
+        X_train: FData | GridPointsLike | None = None,
+        X: FData | GridPointsLike | None = None,
+        y_train: NDArrayFloat | None = None,
+        weights: NDArrayFloat | None = None,
         _cv: bool = False,
     ) -> NDArrayFloat:
         r"""
@@ -141,17 +141,28 @@ class NadarayaWatsonHatMatrix(HatMatrix):
 
     """
 
+    def __init__(
+        self,
+        *,
+        bandwidth: float | None = None,
+        kernel: Callable[[NDArrayFloat], NDArrayFloat] = kernels.normal,
+    ):
+        super().__init__(kernel=kernel)
+        self.bandwidth = bandwidth
+
     def _hat_matrix_function_not_normalized(
         self,
         *,
         delta_x: NDArrayFloat,
     ) -> NDArrayFloat:
 
-        if self.bandwidth is None:
-            percentage = 15
-            self.bandwidth = np.percentile(np.abs(delta_x), percentage)
+        bandwidth = (
+            np.percentile(np.abs(delta_x), 15)
+            if self.bandwidth is None
+            else self.bandwidth
+        )
 
-        return self.kernel(delta_x / self.bandwidth)
+        return self.kernel(delta_x / bandwidth)
 
 
 class LocalLinearRegressionHatMatrix(HatMatrix):
@@ -224,23 +235,40 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
 
     """
 
+    def __init__(
+        self,
+        *,
+        bandwidth: float | None = None,
+        kernel: Callable[[NDArrayFloat], NDArrayFloat] = kernels.normal,
+    ):
+        super().__init__(kernel=kernel)
+        self.bandwidth = bandwidth
+
     def __call__(  # noqa: D102
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: Optional[Union[FDataBasis, GridPoints]] = None,
-        X: Optional[Union[FDataBasis, GridPoints]] = None,
-        y_train: Optional[NDArrayFloat] = None,
-        weights: Optional[NDArrayFloat] = None,
+        X_train: FData | GridPointsLike | None = None,
+        X: FData | GridPointsLike | None = None,
+        y_train: NDArrayFloat | None = None,
+        weights: NDArrayFloat | None = None,
         _cv: bool = False,
     ) -> NDArrayFloat:
 
-        if self.bandwidth is None:
-            percentage = 15
-            self.bandwidth = np.percentile(np.abs(delta_x), percentage)
+        bandwidth = (
+            np.percentile(np.abs(delta_x), 15)
+            if self.bandwidth is None
+            else self.bandwidth
+        )
 
         # Regression
-        if isinstance(X_train, FDataBasis):
+        if isinstance(X_train, FData) and isinstance(X, FData):
+
+            if not (
+                isinstance(X_train, FDataBasis)
+                and isinstance(X, FDataBasis)
+            ):
+                raise ValueError("Only FDataBasis is supported for now.")
 
             if y_train is None:
                 y_train = np.identity(X_train.n_samples)
@@ -266,6 +294,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
                 delta_x=delta_x,
                 coefs=C,
                 y_train=y_train,
+                bandwidth=bandwidth,
             )
 
         # Smoothing
@@ -285,9 +314,11 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         delta_x: NDArrayFloat,
         coefs: NDArrayFloat,
         y_train: NDArrayFloat,
+        *,
+        bandwidth: float,
     ) -> NDArrayFloat:
 
-        W = np.sqrt(self.kernel(delta_x / self.bandwidth))
+        W = np.sqrt(self.kernel(delta_x / bandwidth))
 
         # A x = b
         # Where x = (a, b_1, ..., b_J).
@@ -302,7 +333,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         uTbs = (uTb.T / s.T).T
         x = np.einsum('ijk,ij...->ik...', vT, uTbs)
 
-        return x[:, 0]
+        return x[:, 0]  # type: ignore[no-any-return]
 
     def _hat_matrix_function_not_normalized(
         self,
@@ -320,7 +351,7 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         s2 = np.sum(k * delta_x ** 2, axis=1, keepdims=True)  # S_n_2
         b = (k * (s2 - delta_x * s1))  # b_i(x_j)
 
-        return b  # noqa: WPS331
+        return b  # type: ignore[no-any-return] # noqa: WPS331
 
 
 class KNeighborsHatMatrix(HatMatrix):
@@ -363,7 +394,7 @@ class KNeighborsHatMatrix(HatMatrix):
     def __init__(
         self,
         *,
-        n_neighbors: Optional[int] = None,
+        n_neighbors: int | None = None,
         kernel: Callable[[NDArrayFloat], NDArrayFloat] = kernels.uniform,
     ):
         self.n_neighbors = n_neighbors
@@ -377,14 +408,18 @@ class KNeighborsHatMatrix(HatMatrix):
 
         input_points_len = delta_x.shape[1]
 
-        if self.n_neighbors is None:
-            self.n_neighbors = np.floor(
+        n_neighbors = (
+            math.floor(
                 np.percentile(
                     range(1, input_points_len),
                     5,
                 ),
             )
-        elif self.n_neighbors <= 0:
+            if self.n_neighbors is None
+            else self.n_neighbors
+        )
+
+        if n_neighbors <= 0:
             raise ValueError('h must be greater than 0')
 
         # Tolerance to avoid points landing outside the kernel window due to
@@ -393,11 +428,9 @@ class KNeighborsHatMatrix(HatMatrix):
 
         # For each row in the distances matrix, it calculates the furthest
         # point within the k nearest neighbours
-        vec = np.percentile(
+        vec = np.sort(
             np.abs(delta_x),
-            self.n_neighbors / input_points_len * 100,
             axis=1,
-            interpolation='lower',
-        ) + tol
+        )[:, n_neighbors - 1] + tol
 
         return self.kernel((delta_x.T / vec).T)

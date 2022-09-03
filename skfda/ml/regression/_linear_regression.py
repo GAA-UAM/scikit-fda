@@ -5,13 +5,14 @@ import warnings
 from typing import Any, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
+from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
 from ...misc.lstsq import solve_regularized_weighted_lstsq
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData
 from ...representation.basis import Basis
+from ...typing._numpy import NDArrayFloat
 from ._coefficients import CoefficientInfo, coefficient_info_from_covariate
 
 RegularizationType = Union[
@@ -28,27 +29,28 @@ RegularizationIterableType = Union[
 
 AcceptedDataType = Union[
     FData,
-    np.ndarray,
+    NDArrayFloat,
 ]
 
 AcceptedDataCoefsType = Union[
     CoefficientInfo[FData],
-    CoefficientInfo[np.ndarray],
+    CoefficientInfo[NDArrayFloat],
 ]
 
 BasisCoefsType = Sequence[Optional[Basis]]
 
+
 ArgcheckResultType = Tuple[
-    List[AcceptedDataType],
-    np.ndarray,
-    Optional[np.ndarray],
-    List[AcceptedDataCoefsType],
+    Sequence[AcceptedDataType],
+    NDArrayFloat,
+    Optional[NDArrayFloat],
+    Sequence[AcceptedDataCoefsType],
 ]
 
 
 class LinearRegression(
-    BaseEstimator,  # type: ignore
-    RegressorMixin,  # type: ignore
+    BaseEstimator,
+    RegressorMixin[AcceptedDataType, NDArrayFloat],
 ):
     r"""Linear regression with multivariate response.
 
@@ -165,9 +167,9 @@ class LinearRegression(
 
     def fit(  # noqa: D102
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
-        y: np.ndarray,
-        sample_weight: Optional[np.ndarray] = None,
+        X: AcceptedDataType,
+        y: NDArrayFloat,
+        sample_weight: Optional[NDArrayFloat] = None,
     ) -> LinearRegression:
 
         X_new, y, sample_weight, coef_info = self._argcheck_X_y(
@@ -181,8 +183,11 @@ class LinearRegression(
 
         if self.fit_intercept:
             new_x = np.ones((len(y), 1))
-            X_new = [new_x] + X_new
-            coef_info = [coefficient_info_from_covariate(new_x, y)] + coef_info
+            X_new = [new_x] + list(X_new)
+            new_coef_info_list: List[AcceptedDataCoefsType] = [
+                coefficient_info_from_covariate(new_x, y),
+            ]
+            coef_info = new_coef_info_list + list(coef_info)
 
             if isinstance(regularization, Iterable):
                 regularization = itertools.chain([None], regularization)
@@ -190,7 +195,7 @@ class LinearRegression(
                 regularization = (None, regularization)
 
         inner_products_list = [
-            c.regression_matrix(x, y)
+            c.regression_matrix(x, y)  # type: ignore[arg-type]
             for x, c in zip(X_new, coef_info)
         ]
 
@@ -242,14 +247,14 @@ class LinearRegression(
     def predict(  # noqa: D102
         self,
         X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
         check_is_fitted(self)
         X = self._argcheck_X(X)
 
         result = np.sum(
             [
-                coef_info.inner_product(coef, x)
+                coef_info.inner_product(coef, x)  # type: ignore[arg-type]
                 for coef, x, coef_info
                 in zip(self.coef_, X, self._coef_info)
             ],
@@ -261,7 +266,7 @@ class LinearRegression(
         if self._target_ndim == 1:
             result = result.ravel()
 
-        return result
+        return result  # type: ignore[no-any-return]
 
     def _argcheck_X(
         self,
@@ -279,9 +284,9 @@ class LinearRegression(
 
     def _argcheck_X_y(
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
-        y: np.ndarray,
-        sample_weight: Optional[np.ndarray] = None,
+        X: AcceptedDataType,
+        y: NDArrayFloat,
+        sample_weight: Optional[NDArrayFloat] = None,
         coef_basis: Optional[BasisCoefsType] = None,
     ) -> ArgcheckResultType:
         """Do some checks to types and shapes."""

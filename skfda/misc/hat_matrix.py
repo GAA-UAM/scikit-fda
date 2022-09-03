@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import abc
 import math
-from typing import Callable
+from typing import Callable, TypeVar, Union, overload
 
 import numpy as np
 
@@ -21,6 +21,9 @@ from ..representation.basis import FDataBasis
 from ..typing._base import GridPointsLike
 from ..typing._numpy import NDArrayFloat
 from . import kernels
+
+Input = TypeVar("Input", bound=Union[FData, GridPointsLike])
+Prediction = TypeVar("Prediction", bound=Union[NDArrayFloat, FData])
 
 
 class HatMatrix(
@@ -44,16 +47,42 @@ class HatMatrix(
     ):
         self.kernel = kernel
 
+    @overload
     def __call__(
         self,
         *,
         delta_x: NDArrayFloat,
-        X_train: FData | GridPointsLike | None = None,
-        X: FData | GridPointsLike | None = None,
-        y_train: NDArrayFloat | None = None,
+        X_train: Input | None = None,
+        X: Input | None = None,
+        y_train: None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
     ) -> NDArrayFloat:
+        pass
+
+    @overload
+    def __call__(
+        self,
+        *,
+        delta_x: NDArrayFloat,
+        X_train: Input | None = None,
+        X: Input | None = None,
+        y_train: Prediction | None = None,
+        weights: NDArrayFloat | None = None,
+        _cv: bool = False,
+    ) -> Prediction:
+        pass
+
+    def __call__(
+        self,
+        *,
+        delta_x: NDArrayFloat,
+        X_train: Input | None = None,
+        X: Input | None = None,
+        y_train: NDArrayFloat | FData | None = None,
+        weights: NDArrayFloat | None = None,
+        _cv: bool = False,
+    ) -> NDArrayFloat | FData:
         r"""
         Calculate the hat matrix or the prediction.
 
@@ -244,16 +273,42 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         super().__init__(kernel=kernel)
         self.bandwidth = bandwidth
 
+    @overload
+    def __call__(
+        self,
+        *,
+        delta_x: NDArrayFloat,
+        X_train: FData | GridPointsLike | None = None,
+        X: FData | GridPointsLike | None = None,
+        y_train: None = None,
+        weights: NDArrayFloat | None = None,
+        _cv: bool = False,
+    ) -> NDArrayFloat:
+        pass
+
+    @overload
+    def __call__(
+        self,
+        *,
+        delta_x: NDArrayFloat,
+        X_train: FData | GridPointsLike | None = None,
+        X: FData | GridPointsLike | None = None,
+        y_train: Prediction | None = None,
+        weights: NDArrayFloat | None = None,
+        _cv: bool = False,
+    ) -> Prediction:
+        pass
+
     def __call__(  # noqa: D102
         self,
         *,
         delta_x: NDArrayFloat,
         X_train: FData | GridPointsLike | None = None,
         X: FData | GridPointsLike | None = None,
-        y_train: NDArrayFloat | None = None,
+        y_train: NDArrayFloat | FData | None = None,
         weights: NDArrayFloat | None = None,
         _cv: bool = False,
-    ) -> NDArrayFloat:
+    ) -> NDArrayFloat | FData:
 
         bandwidth = (
             np.percentile(np.abs(delta_x), 15)
@@ -262,7 +317,8 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         )
 
         # Regression
-        if isinstance(X_train, FData) and isinstance(X, FData):
+        if isinstance(X_train, FData):
+            assert isinstance(X, FData)
 
             if not (
                 isinstance(X_train, FDataBasis)
@@ -300,11 +356,11 @@ class LocalLinearRegressionHatMatrix(HatMatrix):
         # Smoothing
         else:
 
-            return super().__call__(  # noqa: WPS503
+            return super().__call__(  # type: ignore[misc, type-var] # noqa: WPS503
                 delta_x=delta_x,
                 X_train=X_train,
                 X=X,
-                y_train=y_train,
+                y_train=y_train,  # type: ignore[arg-type]
                 weights=weights,
                 _cv=_cv,
             )

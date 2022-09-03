@@ -777,12 +777,11 @@ class NeighborsRegressorMixin(
             if len(sample_weight) != len(y):
                 raise ValueError("Must be a weight for each sample.")
 
-            sample_weight = np.asarray(sample_weight)
-            sample_weight = sample_weight / sample_weight.sum()
+            normalized_sample_weight = sample_weight / sample_weight.sum()
             data_u_t = data_u.T
-            data_u_t *= sample_weight
+            data_u_t *= normalized_sample_weight
             data_v_t = data_v.T
-            data_v_t *= sample_weight
+            data_v_t *= normalized_sample_weight
 
         # Sum and integrate
         sum_u = np.sum(data_u, axis=0)
@@ -791,4 +790,4 @@ class NeighborsRegressorMixin(
         int_u = simps(sum_u, x=u.grid_points[0])
         int_v = simps(sum_v, x=v.grid_points[0])
 
-        return 1 - int_u / int_v
+        return float(1 - int_u / int_v)

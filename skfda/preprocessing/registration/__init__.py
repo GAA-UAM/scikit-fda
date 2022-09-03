@@ -7,6 +7,11 @@ from typing import TYPE_CHECKING
 
 import lazy_loader as lazy
 
+from ..._utils import (
+    invert_warping as invert_warping,
+    normalize_warping as normalize_warping,
+)
+
 __getattr__, __dir__, __all__ = lazy.attach(
     __name__,
     submodules=[

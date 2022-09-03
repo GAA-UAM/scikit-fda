@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Callable, Optional, TypeVar, Union
 
 import numpy as np
@@ -20,7 +21,7 @@ Function = TypeVar("Function", bound=FData)
 WeightsCallable = Callable[[np.ndarray], np.ndarray]
 
 
-class FPCA(
+class FPCA(  # noqa: WPS230 (too many public attributes)
     BaseEstimator,
     InductiveTransformerMixin[FData, NDArrayFloat, object],
 ):
@@ -35,30 +36,33 @@ class FPCA(
     Parameters:
         n_components: Number of principal components to keep from
             functional principal component analysis. Defaults to 3.
-        centering: If ``True`` then calculate the mean of the functional
-            data object and center the data first. Defaults to ``True``.
+        centering: Set to ``False`` when the functional data is already known
+            to be centered and there is no need to center it. Otherwise,
+            the mean of the functional data object is calculated and the data
+            centered before fitting . Defaults to ``True``.
         regularization: Regularization object to be applied.
         components_basis: The basis in which we want the principal
             components. We can use a different basis than the basis contained
             in the passed FDataBasis object. This parameter is only used when
             fitting a FDataBasis.
         weights: the weights vector used for
-            discrete integration. If none then the trapezoidal rule is used for
+            discrete integration. If none then Simpson's rule is used for
             computing the weights. If a callable object is passed, then the
             weight vector will be obtained by evaluating the object at the
             sample points of the passed FDataGrid object in the fit method.
             This parameter is only used when fitting a FDataGrid.
 
+            .. deprecated:: 0.7.2
+
     Attributes:
-        components\_ (FData): this contains the principal components in a
-            basis representation.
-        explained_variance\_ (array_like): The amount of variance explained by
+        components\_: this contains the principal components.
+        explained_variance\_ : The amount of variance explained by
             each of the selected components.
-        explained_variance_ratio\_ (array_like): this contains the percentage
+        explained_variance_ratio\_ : this contains the percentage
             of variance explained by each principal component.
         singular_values\_: The singular values corresponding to each of the
             selected components.
-        mean\_ (FData): mean of the train data.
+        mean\_: mean of the train data.
 
     Examples:
         Construct an artificial FDataBasis object and run FPCA with this
@@ -102,6 +106,11 @@ class FPCA(
         self.regularization = regularization
         self.weights = weights
         self.components_basis = components_basis
+        if weights is not None:
+            warnings.warn(
+                "The 'weights' parameter is deprecated and will be removed.",
+                DeprecationWarning,
+            )
 
     def _center_if_necessary(
         self,
@@ -202,7 +211,7 @@ class FPCA(
         # apply regularization
         if regularization_matrix is not None:
             # using += would have a different behavior
-            g_matrix = (g_matrix + regularization_matrix)  # noqa: WPS350
+            g_matrix = g_matrix + regularization_matrix  # noqa: WPS350
 
         # obtain triangulation using cholesky
         l_matrix = np.linalg.cholesky(g_matrix)
@@ -218,9 +227,7 @@ class FPCA(
         )
 
         # the final matrix, C(L-1Jt)t for svd or (L-1Jt)-1CtC(L-1Jt)t for PCA
-        final_matrix = (
-            X.coefficients @ np.transpose(l_inv_j_t)
-        )
+        final_matrix = X.coefficients @ np.transpose(l_inv_j_t)
 
         # initialize the pca module provided by scikit-learn
         pca = PCA(n_components=self.n_components)
@@ -337,9 +344,6 @@ class FPCA(
         # establish weights for each point of discretization
         if self.weights is None:
             # grid_points is a list with one array in the 1D case
-            # in trapezoidal rule, suppose \deltax_k = x_k - x_{k-1}, the
-            # weight vector is as follows: [\deltax_1/2, \deltax_1/2 +
-            # \deltax_2/2, \deltax_2/2 + \deltax_3/2, ... , \deltax_n/2]
             identity = np.eye(len(X.grid_points[0]))
             self.weights_ = scipy.integrate.simps(identity, X.grid_points[0])
         elif callable(self.weights):
@@ -366,7 +370,7 @@ class FPCA(
 
         basis_matrix = basis.data_matrix[..., 0]
         if regularization_matrix is not None:
-            basis_matrix = basis_matrix + regularization_matrix
+            basis_matrix += regularization_matrix
 
         fd_data = np.linalg.solve(
             basis_matrix.T,
@@ -532,7 +536,7 @@ class FPCA(
 
             additional_args = {
                 "data_matrix": np.einsum(
-                    'nc,c...->n...',
+                    "nc,c...->n...",
                     pc_scores,
                     self.components_.data_matrix,
                 ),
@@ -544,7 +548,10 @@ class FPCA(
                 "coefficients": pc_scores @ self.components_.coefficients,
             }
 
-        return self.mean_.copy(
-            **additional_args,
-            sample_names=(None,) * len(pc_scores),
-        ) + self.mean_
+        return (
+            self.mean_.copy(
+                **additional_args,
+                sample_names=(None,) * len(pc_scores),
+            )
+            + self.mean_
+        )

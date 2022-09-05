@@ -14,6 +14,7 @@ from typing import (
     Sequence,
     Sized,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -574,7 +575,7 @@ def _check_array_key(array: NDArrayAny, key: Any) -> Any:
     return key
 
 
-def _check_estimator(estimator: BaseEstimator) -> None:
+def _check_estimator(estimator: Type[BaseEstimator]) -> None:
     from sklearn.utils.estimator_checks import (
         check_get_params_invariance,
         check_set_params,

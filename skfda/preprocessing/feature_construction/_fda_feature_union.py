@@ -1,7 +1,7 @@
 """Feature extraction union for dimensionality reduction."""
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence, Union
+from typing import Any, Mapping, Sequence, Tuple, Union
 
 import pandas as pd
 from sklearn.pipeline import FeatureUnion
@@ -91,7 +91,9 @@ class FDAFeatureUnion(FeatureUnion):  # type: ignore[misc]
 
     def __init__(
         self,
-        transformer_list: Sequence[TransformerMixin[Any, Any, Any]],
+        transformer_list: Sequence[
+            Tuple[str, TransformerMixin[Any, Any, Any]],
+        ],
         *,
         n_jobs: int = 1,
         transformer_weights: Mapping[str, float] | None = None,

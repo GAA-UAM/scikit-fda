@@ -9,7 +9,7 @@ from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
 
 from ...representation import FData, FDataGrid
-from ...representation.basis import BSpline, Constant, Fourier, Monomial
+from ...representation.basis import Basis, BSpline, Constant, Fourier, Monomial
 from ...typing._base import DomainRangeLike
 from ...typing._numpy import NDArrayFloat
 from ._operators import Operator, gramian_matrix_optimization
@@ -25,7 +25,7 @@ WeightSequence = Sequence[
 
 
 class LinearDifferentialOperator(
-    Operator[FData, Callable[[NDArrayFloat], NDArrayFloat]],
+    Operator[Union[FData, Basis], Callable[[NDArrayFloat], NDArrayFloat]],
 ):
     r"""
     Defines the structure of a linear differential operator function system.
@@ -186,7 +186,10 @@ class LinearDifferentialOperator(
 
         return None if weights.dtype == np.object_ else weights
 
-    def __call__(self, f: FData) -> Callable[[NDArrayFloat], NDArrayFloat]:
+    def __call__(
+        self,
+        f: FData | Basis,
+    ) -> Callable[[NDArrayFloat], NDArrayFloat]:
         """Return the function that results of applying the operator."""
         function_derivatives = [
             f.derivative(order=i) for i, _ in enumerate(self.weights)

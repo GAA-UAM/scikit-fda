@@ -50,7 +50,10 @@ ArgcheckResultType = Tuple[
 
 class LinearRegression(
     BaseEstimator,
-    RegressorMixin[AcceptedDataType, NDArrayFloat],
+    RegressorMixin[
+        Union[AcceptedDataType, Sequence[AcceptedDataType]],
+        NDArrayFloat,
+    ],
 ):
     r"""Linear regression with multivariate response.
 
@@ -167,7 +170,7 @@ class LinearRegression(
 
     def fit(  # noqa: D102
         self,
-        X: AcceptedDataType,
+        X: AcceptedDataType | Sequence[AcceptedDataType],
         y: NDArrayFloat,
         sample_weight: Optional[NDArrayFloat] = None,
     ) -> LinearRegression:
@@ -284,7 +287,7 @@ class LinearRegression(
 
     def _argcheck_X_y(
         self,
-        X: AcceptedDataType,
+        X: AcceptedDataType | Sequence[AcceptedDataType],
         y: NDArrayFloat,
         sample_weight: Optional[NDArrayFloat] = None,
         coef_basis: Optional[BasisCoefsType] = None,

@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-import skfda
+import skfda.misc.covariances
 
 
 class TestsSklearn(unittest.TestCase):

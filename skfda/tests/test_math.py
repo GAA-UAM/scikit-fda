@@ -6,6 +6,8 @@ import numpy as np
 
 import skfda
 from skfda._utils import _pairwise_symmetric
+from skfda.datasets import make_gaussian_process
+from skfda.misc.covariances import Gaussian
 from skfda.representation.basis import Monomial, Tensor, VectorValued
 
 
@@ -111,16 +113,16 @@ class InnerProductTest(unittest.TestCase):
         """Test inner_product_matrix function."""
         basis = skfda.representation.basis.BSpline(n_basis=12)
 
-        X = skfda.datasets.make_gaussian_process(
+        X = make_gaussian_process(
             n_samples=10,
             n_features=20,
-            cov=skfda.misc.covariances.Gaussian(),
+            cov=Gaussian(),
             random_state=0,
         )
-        Y = skfda.datasets.make_gaussian_process(
+        Y = make_gaussian_process(
             n_samples=10,
             n_features=20,
-            cov=skfda.misc.covariances.Gaussian(),
+            cov=Gaussian(),
             random_state=1,
         )
 

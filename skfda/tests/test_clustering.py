@@ -77,7 +77,7 @@ class TestFuzzyCMeans(unittest.TestCase):
         ]
         grid_points = [0, 2, 4, 6, 8, 10]
         fd = FDataGrid(data_matrix, grid_points)
-        fuzzy_kmeans = FuzzyCMeans()
+        fuzzy_kmeans = FuzzyCMeans[FDataGrid]()
         fuzzy_kmeans.fit(fd)
         np.testing.assert_array_equal(
             fuzzy_kmeans.predict_proba(fd).round(3),

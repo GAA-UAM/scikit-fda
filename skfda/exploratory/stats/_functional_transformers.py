@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import itertools
-from typing import Optional, Sequence, Tuple, TypeVar, Union, cast
+from typing import Optional, Sequence, Tuple, TypeVar, Union, cast, overload
 
 import numpy as np
 from typing_extensions import Protocol, TypeGuard
@@ -18,6 +18,14 @@ T = TypeVar("T", bound=Union[NDArrayFloat, FDataGrid])
 
 
 class _BasicUfuncProtocol(Protocol):
+
+    @overload
+    def __call__(self, __arg: FDataGrid) -> FDataGrid:  # noqa: WPS112
+        pass
+
+    @overload
+    def __call__(self, __arg: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS112
+        pass
 
     def __call__(self, __arg: T) -> T:  # noqa: WPS112
         pass

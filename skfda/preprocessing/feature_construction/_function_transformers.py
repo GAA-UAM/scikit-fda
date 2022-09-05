@@ -3,16 +3,18 @@ from __future__ import annotations
 
 from typing import Optional, Sequence, Tuple
 
+from typing_extensions import Literal
+
 from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
 from ...exploratory.stats._functional_transformers import (
     local_averages,
-    number_up_crossings,
+    number_crossings,
     occupation_measure,
 )
 from ...representation import FData
 from ...representation.grid import FDataGrid
 from ...typing._base import DomainRangeLike
-from ...typing._numpy import NDArrayFloat, NDArrayInt
+from ...typing._numpy import ArrayLike, NDArrayFloat, NDArrayInt
 
 
 class LocalAveragesTransformer(
@@ -176,7 +178,7 @@ class OccupationMeasureTransformer(
         return occupation_measure(X, self.intervals, n_points=self.n_points)
 
 
-class NumberUpCrossingsTransformer(
+class NumberCrossingsTransformer(
     BaseEstimator,
     TransformerMixin[FDataGrid, NDArrayInt, object],
 ):
@@ -184,50 +186,61 @@ class NumberUpCrossingsTransformer(
     Transformer that works as an adapter for the number_up_crossings function.
 
     Args:
-        levels: sequence of numbers including the levels
-            we want to consider for the crossings.
-    Example:
-    For this example we will use a well known function so the correct
-    functioning of this method can be checked.
-    We will create and use a DataFrame with a sample extracted from
-    the Bessel Function of first type and order 0.
-    First of all we import the Bessel Function and create the X axis
-    data grid. Then we create the FdataGrid.
-    >>> from skfda.preprocessing.feature_construction import (
-    ...     NumberUpCrossingsTransformer,
-    ... )
-    >>> from scipy.special import jv
-    >>> from skfda.representation import FDataGrid
-    >>> import numpy as np
-    >>> x_grid = np.linspace(0, 14, 14)
-    >>> fd_grid = FDataGrid(
-    ...     data_matrix=[jv([0], x_grid)],
-    ...     grid_points=x_grid,
-    ... )
-    >>> fd_grid.data_matrix
-    array([[[ 1.        ],
-            [ 0.73041066],
-            [ 0.13616752],
-            [-0.32803875],
-            [-0.35967936],
-            [-0.04652559],
-            [ 0.25396879],
-            [ 0.26095573],
-            [ 0.01042895],
-            [-0.22089135],
-            [-0.2074856 ],
-            [ 0.0126612 ],
-            [ 0.20089319],
-            [ 0.17107348]]])
+        levels: Sequence of numbers including the levels
+            we want to consider for the crossings. By
+            default it calculates zero-crossings.
+        direction: Whether to consider only up-crossings,
+            down-crossings or both.
 
-    Finally we evaluate the number of up crossings method with the FDataGrid
-    created.
-    >>> NumberUpCrossingsTransformer(np.asarray([0])).fit_transform(fd_grid)
-    array([[2]])
+    Example:
+        For this example we will use a well known function so the correct
+        functioning of this method can be checked.
+        We will create and use a DataFrame with a sample extracted from
+        the Bessel Function of first type and order 0.
+        First of all we import the Bessel Function and create the X axis
+        data grid. Then we create the FdataGrid.
+        >>> from skfda.preprocessing.feature_construction import (
+        ...     NumberCrossingsTransformer,
+        ... )
+        >>> from scipy.special import jv
+        >>> from skfda.representation import FDataGrid
+        >>> import numpy as np
+        >>> x_grid = np.linspace(0, 14, 14)
+        >>> fd_grid = FDataGrid(
+        ...     data_matrix=[jv([0], x_grid)],
+        ...     grid_points=x_grid,
+        ... )
+        >>> fd_grid.data_matrix
+        array([[[ 1.        ],
+                [ 0.73041066],
+                [ 0.13616752],
+                [-0.32803875],
+                [-0.35967936],
+                [-0.04652559],
+                [ 0.25396879],
+                [ 0.26095573],
+                [ 0.01042895],
+                [-0.22089135],
+                [-0.2074856 ],
+                [ 0.0126612 ],
+                [ 0.20089319],
+                [ 0.17107348]]])
+
+        Finally we evaluate the number of zero-upcrossings method with the
+        FDataGrid created.
+        >>> tf = NumberCrossingsTransformer(levels=0, direction="up")
+        >>> tf.fit_transform(fd_grid)
+        array([[2]])
     """
 
-    def __init__(self, levels: NDArrayFloat):
+    def __init__(
+        self,
+        *,
+        levels: ArrayLike = 0,
+        direction: Literal["up", "down", "all"] = "all",
+    ):
         self.levels = levels
+        self.direction = direction
 
     def transform(self, X: FDataGrid, y: object = None) -> NDArrayInt:
         """
@@ -240,4 +253,8 @@ class NumberUpCrossingsTransformer(
             Array of shape (n_samples, len(levels)) including the transformed
             data.
         """
-        return number_up_crossings(X, self.levels)
+        return number_crossings(
+            X,
+            levels=self.levels,
+            direction=self.direction,
+        )

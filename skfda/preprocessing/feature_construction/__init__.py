@@ -11,7 +11,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
         "_fda_feature_union": ["FDAFeatureUnion"],
         "_function_transformers": [
             "LocalAveragesTransformer",
-            "NumberUpCrossingsTransformer",
+            "NumberCrossingsTransformer",
             "OccupationMeasureTransformer",
         ],
         "_per_class_transformer": ["PerClassTransformer"],
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from ._fda_feature_union import FDAFeatureUnion as FDAFeatureUnion
     from ._function_transformers import (
         LocalAveragesTransformer as LocalAveragesTransformer,
-        NumberUpCrossingsTransformer as NumberUpCrossingsTransformer,
+        NumberCrossingsTransformer as NumberCrossingsTransformer,
         OccupationMeasureTransformer as OccupationMeasureTransformer,
     )
     from ._per_class_transformer import (

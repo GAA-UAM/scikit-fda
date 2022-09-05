@@ -13,7 +13,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
         ],
         "_functional_transformers": [
             "local_averages",
-            "number_up_crossings",
+            "number_crossings",
             "occupation_measure",
             "unconditional_central_moment",
             "unconditional_expected_value",
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     )
     from ._functional_transformers import (
         local_averages as local_averages,
-        number_up_crossings as number_up_crossings,
+        number_crossings as number_crossings,
         occupation_measure as occupation_measure,
         unconditional_central_moment as unconditional_central_moment,
         unconditional_expected_value as unconditional_expected_value,

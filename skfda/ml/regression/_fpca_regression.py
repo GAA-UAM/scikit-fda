@@ -1,5 +1,5 @@
-from typing import Callable, Optional, TypeVar
 from __future__ import annotations
+
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -18,9 +18,9 @@ class FPCARegression(
 ):
     r"""Regression using Functional Principal Components Analysis.
 
-    It performs Functional Principal Components Analysis to reduce the dimension
-    of the functional data, and then uses a linear regression model to
-    relate the transformed data to a scalar value.
+    It performs Functional Principal Components Analysis to reduce the
+    dimension of the functional data, and then uses a linear regression model
+    to relate the transformed data to a scalar value.
 
     Args:
         n_components: Number of principal components to keep.

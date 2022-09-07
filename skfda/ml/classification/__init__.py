@@ -21,7 +21,7 @@ __getattr__, __dir__, __all__ = lazy.attach(
             "KNeighborsClassifier",
             "RadiusNeighborsClassifier",
         ],
-        "_parameterized_functional_qda": ["ParameterizedFunctionalQDA"],
+        "_qda": ["QuadraticDiscriminantAnalysis"],
     },
 )
 
@@ -40,6 +40,6 @@ if TYPE_CHECKING:
         KNeighborsClassifier as KNeighborsClassifier,
         RadiusNeighborsClassifier as RadiusNeighborsClassifier,
     )
-    from ._parameterized_functional_qda import (
-        ParameterizedFunctionalQDA as ParameterizedFunctionalQDA,
+    from ._qda import (
+        QuadraticDiscriminantAnalysis as QuadraticDiscriminantAnalysis,
     )

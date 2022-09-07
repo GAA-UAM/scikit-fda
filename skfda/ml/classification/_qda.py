@@ -3,9 +3,8 @@ from __future__ import annotations
 from typing import Tuple
 
 import numpy as np
-from GPy.kern import Kern
-from GPy.models import GPRegression
 from scipy.linalg import logm
+from sklearn.base import clone
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _classifier_get_classes
@@ -14,11 +13,12 @@ from ...representation import FDataGrid
 from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 
-class ParameterizedFunctionalQDA(
+class QuadraticDiscriminantAnalysis(
     BaseEstimator,
     ClassifierMixin[FDataGrid, NDArrayInt],
 ):
-    """Parameterized functional quadratic discriminant analysis.
+    """
+    Functional quadratic discriminant analysis.
 
     It is based on the assumption that the data is part of a Gaussian process
     and depending on the output label, the covariance and mean parameters are
@@ -73,34 +73,50 @@ class ParameterizedFunctionalQDA(
         We will use random values such as 1 for the mean and 6 for the
         variance.
 
+        >>> from skfda.exploratory.stats.covariance import (
+        ...     ParametricGaussianCovariance
+        ... )
+        >>> from skfda.ml.classification import QuadraticDiscriminantAnalysis
         >>> from GPy.kern import RBF
         >>> rbf = RBF(input_dim=1, variance=6, lengthscale=1)
 
         We will fit the ParameterizedFunctionalQDA with training data. We
         use as regularizer parameter a low value such as 0.05.
 
-        >>> pfqda = ParameterizedFunctionalQDA(rbf, 0.05)
-        >>> pfqda = pfqda.fit(X_train, y_train)
+        >>> qda = QuadraticDiscriminantAnalysis(
+        ...     ParametricGaussianCovariance(rbf),
+        ...     regularizer=0.05,
+        ... )
+        >>> qda = qda.fit(X_train, y_train)
 
 
         We can predict the class of new samples.
 
-        >>> list(pfqda.predict(X_test))
+        >>> list(qda.predict(X_test))
         [0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1,
          1, 0, 1, 0, 1, 0, 1, 1]
 
         Finally, we calculate the mean accuracy for the test data.
 
-        >>> round(pfqda.score(X_test, y_test), 2)
+        >>> round(qda.score(X_test, y_test), 2)
         0.96
 
     """
 
-    def __init__(self, kernel: Kern, regularizer: float) -> None:
-        self.kernel = kernel
+    def __init__(
+        self,
+        cov_estimator,
+        *,
+        regularizer: float = 0,
+    ) -> None:
+        self.cov_estimator = cov_estimator
         self.regularizer = regularizer
 
-    def fit(self, X: FDataGrid, y: NDArrayInt) -> ParameterizedFunctionalQDA:
+    def fit(
+        self,
+        X: FDataGrid,
+        y: NDArrayInt,
+    ) -> QuadraticDiscriminantAnalysis:
         """
         Fit the model using X as training data and y as target values.
 
@@ -115,8 +131,7 @@ class ParameterizedFunctionalQDA(
         self.classes = classes
         self.y_ind = y_ind
 
-        cov_kernels, means = self._fit_gaussian_process(X)
-        self.cov_kernels_ = cov_kernels
+        _, means = self._fit_gaussian_process(X)
         self.means_ = means
 
         self.priors_ = self._calculate_priors(y)
@@ -182,31 +197,20 @@ class ParameterizedFunctionalQDA(
             Tuple containing a ndarray of fitted kernels and
             another ndarray with the means of each class.
         """
-        grid = X.grid_points[0][:, np.newaxis]
-        kernels = []
+        cov_estimators = []
         means = []
         covariance = []
         for class_index, _ in enumerate(self.classes):
             X_class = X[self.y_ind == class_index]
-            X_class_mean = X_class.mean()
-            X_class_centered = X_class - X_class_mean
+            cov_estimator = clone(self.cov_estimator).fit(X_class)
 
-            data_matrix = X_class_centered.data_matrix[:, :, 0]
-
-            grid_points = X_class.grid_points[0][:, np.newaxis]
-
-            regressor = GPRegression(grid, data_matrix.T, kernel=self.kernel)
-            regressor.optimize()
-
-            kernels += [regressor.kern]
-            means += [X_class_mean.data_matrix[0]]
-            covariance += [
-                regressor.kern.K(grid_points),
-            ]
+            cov_estimators.append(cov_estimator)
+            means.append(cov_estimator.location_.data_matrix[0])
+            covariance.append(cov_estimator.covariance_.data_matrix[0, ..., 0])
 
         self._covariances = np.asarray(covariance)
 
-        return np.asarray(kernels), np.asarray(means)
+        return np.asarray(cov_estimators), np.asarray(means)
 
     def _calculate_log_likelihood(self, X: NDArrayFloat) -> NDArrayFloat:
         """

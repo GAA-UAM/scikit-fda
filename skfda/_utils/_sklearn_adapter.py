@@ -156,7 +156,7 @@ class ClusterMixin(  # noqa: D101
         X: Input,
         y: object = None,
     ) -> NDArrayInt:
-        pass
+        return super().fit_predict(X, y)  # type: ignore[no-any-return]
 
 
 class RegressorMixin(  # noqa: D101

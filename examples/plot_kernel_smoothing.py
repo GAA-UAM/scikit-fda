@@ -90,7 +90,7 @@ fd_us[10].plot(fig=fig)
 plt.show()
 
 #############################################################################
-# The same could be done, for example, with different kernel. For example,
+# The same could be done with different kernel. For example,
 # over-smoothed case with uniform kernel:
 
 fd_os = KernelSmoother(
@@ -177,7 +177,8 @@ nw_fd = nw.transform(fd)
 # The plot of the mean test scores for all smoothers is shown below.
 # As the X axis we will use the neighbors for all the smoothers in order
 # to compare k-NN with the others, but remember that the bandwidth for the
-# other two estimators is related to the distance to the k-th neighbor.
+# other two estimators, in this case, is related to the distance to the k-th
+# neighbor.
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
@@ -196,7 +197,8 @@ ax.plot(
     nw.cv_results_['mean_test_score'],
     label='Nadaraya-Watson',
 )
-out = ax.legend()
+ax.legend()
+plt.show()
 
 ##############################################################################
 # We can plot the smoothed curves corresponding to the 11th element of the

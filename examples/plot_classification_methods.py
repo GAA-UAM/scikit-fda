@@ -19,12 +19,12 @@ The Berkeley Growth Study dataset is used as input data.
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from GPy.kern import RBF
 from sklearn.model_selection import train_test_split
 
 from skfda.datasets import fetch_growth
 from skfda.exploratory.depth import ModifiedBandDepth
 from skfda.exploratory.stats.covariance import ParametricGaussianCovariance
+from skfda.misc.covariances import Gaussian
 from skfda.ml.classification import (
     KNeighborsClassifier,
     MaximumDepthClassifier,
@@ -121,7 +121,7 @@ print('The score of Nearest Centroid Classifier is {0:2.2%}'.format(
 
 qda = QuadraticDiscriminantAnalysis(
     ParametricGaussianCovariance(
-        RBF(input_dim=1, variance=6, lengthscale=1),
+        Gaussian(variance=6, length_scale=1),
     ),
     regularizer=0.05,
 )

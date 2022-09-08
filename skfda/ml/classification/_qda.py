@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Sequence
 
 import numpy as np
 from scipy.linalg import logm
@@ -9,6 +9,7 @@ from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _classifier_get_classes
 from ..._utils._sklearn_adapter import BaseEstimator, ClassifierMixin
+from ...exploratory.stats.covariance import CovarianceEstimator
 from ...representation import FDataGrid
 from ...typing._numpy import NDArrayFloat, NDArrayInt
 
@@ -77,8 +78,8 @@ class QuadraticDiscriminantAnalysis(
         ...     ParametricGaussianCovariance
         ... )
         >>> from skfda.ml.classification import QuadraticDiscriminantAnalysis
-        >>> from GPy.kern import RBF
-        >>> rbf = RBF(input_dim=1, variance=6, lengthscale=1)
+        >>> from skfda.misc.covariances import Gaussian
+        >>> rbf = Gaussian(variance=6, length_scale=1)
 
         We will fit the ParameterizedFunctionalQDA with training data. We
         use as regularizer parameter a low value such as 0.05.
@@ -102,10 +103,11 @@ class QuadraticDiscriminantAnalysis(
         0.96
 
     """
+    means_: Sequence[FDataGrid]
 
     def __init__(
         self,
-        cov_estimator,
+        cov_estimator: CovarianceEstimator[FDataGrid],
         *,
         regularizer: float = 0,
     ) -> None:
@@ -131,8 +133,7 @@ class QuadraticDiscriminantAnalysis(
         self.classes = classes
         self.y_ind = y_ind
 
-        _, means = self._fit_gaussian_process(X)
-        self.means_ = means
+        self._fit_gaussian_process(X)
 
         self.priors_ = self._calculate_priors(y)
         self._log_priors = np.log(self.priors_)
@@ -183,7 +184,7 @@ class QuadraticDiscriminantAnalysis(
     def _fit_gaussian_process(
         self,
         X: FDataGrid,
-    ) -> Tuple[NDArrayFloat, NDArrayFloat]:
+    ) -> None:
         """
         Fit the kernel to the data in each class.
 
@@ -193,9 +194,6 @@ class QuadraticDiscriminantAnalysis(
         Args:
             X: FDataGrid with the training data.
 
-        Returns:
-            Tuple containing a ndarray of fitted kernels and
-            another ndarray with the means of each class.
         """
         cov_estimators = []
         means = []
@@ -205,12 +203,11 @@ class QuadraticDiscriminantAnalysis(
             cov_estimator = clone(self.cov_estimator).fit(X_class)
 
             cov_estimators.append(cov_estimator)
-            means.append(cov_estimator.location_.data_matrix[0])
+            means.append(cov_estimator.location_)
             covariance.append(cov_estimator.covariance_.data_matrix[0, ..., 0])
 
+        self.means_ = means
         self._covariances = np.asarray(covariance)
-
-        return np.asarray(cov_estimators), np.asarray(means)
 
     def _calculate_log_likelihood(self, X: NDArrayFloat) -> NDArrayFloat:
         """
@@ -224,7 +221,12 @@ class QuadraticDiscriminantAnalysis(
             output classes.
         """
         # Calculates difference wrt. the mean (x - un)
-        X_centered = X[:, np.newaxis, :, :] - self.means_[np.newaxis, :, :, :]
+        mean_values = np.array([m.data_matrix[0] for m in self.means_])
+
+        X_centered = (
+            X[:, np.newaxis, :, :]
+            - mean_values[np.newaxis, :, :, :]
+        )
 
         # Calculates mahalanobis distance (-1/2*(x - un).T*inv(sum)*(x - un))
         mahalanobis_distances = np.reshape(

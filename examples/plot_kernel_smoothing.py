@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import skfda
-import skfda.preprocessing.smoothing.validation as val
 from skfda.misc.hat_matrix import (
     KNeighborsHatMatrix,
     LocalLinearRegressionHatMatrix,
@@ -25,6 +24,7 @@ from skfda.misc.hat_matrix import (
 )
 from skfda.misc.kernels import uniform
 from skfda.preprocessing.smoothing import KernelSmoother
+from skfda.preprocessing.smoothing.validation import SmoothingParameterSearch
 
 ##############################################################################
 # This dataset contains the log-periodograms of several phoneme pronunciations.
@@ -142,7 +142,7 @@ bandwidth = np.linspace(
 
 # K-nearest neighbours kernel smoothing.
 
-knn = val.SmoothingParameterSearch(
+knn = SmoothingParameterSearch(
     KernelSmoother(kernel_estimator=KNeighborsHatMatrix()),
     n_neighbors,
     param_name='kernel_estimator__n_neighbors',
@@ -151,7 +151,7 @@ knn.fit(fd)
 knn_fd = knn.transform(fd)
 
 # Local linear regression kernel smoothing.
-llr = val.SmoothingParameterSearch(
+llr = SmoothingParameterSearch(
     KernelSmoother(kernel_estimator=LocalLinearRegressionHatMatrix()),
     bandwidth,
     param_name='kernel_estimator__bandwidth',
@@ -160,7 +160,7 @@ llr.fit(fd)
 llr_fd = llr.transform(fd)
 
 # Nadaraya-Watson kernel smoothing.
-nw = val.SmoothingParameterSearch(
+nw = SmoothingParameterSearch(
     KernelSmoother(kernel_estimator=NadarayaWatsonHatMatrix()),
     bandwidth,
     param_name='kernel_estimator__bandwidth',

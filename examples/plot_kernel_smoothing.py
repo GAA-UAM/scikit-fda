@@ -37,7 +37,8 @@ from skfda.preprocessing.smoothing import KernelSmoother
 dataset = skfda.datasets.fetch_phoneme()
 fd = dataset['data'][:300]
 
-out = fd[:5].plot()
+fd[:5].plot()
+plt.show()
 
 #############################################################################
 # To better illustrate the smoothing effects and the influence of different
@@ -49,7 +50,8 @@ out = fd[:5].plot()
 # We will take the curve found at index 10 (a random choice).
 # Below the original (without any smoothing) curve is plotted.
 
-out = fd[10].plot()
+fd[10].plot()
+plt.show()
 
 #############################################################################
 # The library currently has three smoothing methods available:
@@ -77,13 +79,15 @@ fd_us = KernelSmoother(
 # Over-smoothed
 
 fig = fd[10].plot()
-out = fd_os[10].plot(fig=fig)
+fd_os[10].plot(fig=fig)
+plt.show()
 
 ##############################################################################
 # Under-smoothed
 
 fig = fd[10].plot()
-out = fd_us[10].plot(fig=fig)
+fd_us[10].plot(fig=fig)
+plt.show()
 
 #############################################################################
 # The same could be done, for example, with different kernel. For example,
@@ -94,7 +98,8 @@ fd_os = KernelSmoother(
 ).fit_transform(fd)
 
 fig = fd[10].plot()
-out = fd_os[10].plot(fig=fig)
+fd_os[10].plot(fig=fig)
+plt.show()
 
 ##############################################################################
 # The values for which the undersmoothing and oversmoothing occur are different
@@ -207,7 +212,7 @@ fd[10].plot(fig=fig)
 knn_fd[10].plot(fig=fig)
 llr_fd[10].plot(fig=fig)
 nw_fd[10].plot(fig=fig)
-out = ax.legend(
+ax.legend(
     [
         'original data',
         'k-nearest neighbors',
@@ -216,6 +221,7 @@ out = ax.legend(
     ],
     title='Smoothing method',
 )
+plt.show()
 
 
 ##############################################################################
@@ -228,4 +234,5 @@ fd[:5].plot(ax[0])
 nw_fd[:5].plot(ax[1])
 # Disable xticks and xlabel of first image
 ax[0].set_xticks([])
-out = ax[0].set_xlabel('')
+ax[0].set_xlabel('')
+plt.show()

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from skfda.representation._typing import NDArrayInt
-
 from ..._utils._sklearn_adapter import BaseEstimator, OutlierMixin
 from ...representation import FDataGrid
+from ...typing._numpy import NDArrayInt
 from ..depth import Depth, ModifiedBandDepth
 from . import _envelopes
 

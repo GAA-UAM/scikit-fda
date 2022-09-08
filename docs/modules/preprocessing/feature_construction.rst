@@ -44,6 +44,6 @@ for each functional datum, which can then be used for prediction.
    
    skfda.preprocessing.feature_construction.LocalAveragesTransformer
    skfda.preprocessing.feature_construction.OccupationMeasureTransformer
-   skfda.preprocessing.feature_construction.NumberUpCrossingsTransformer
+   skfda.preprocessing.feature_construction.NumberCrossingsTransformer
    
    

@@ -134,10 +134,10 @@ class TestFDataGrid(unittest.TestCase):
 
         # Testing labels
         self.assertEqual(("y", "t"), fd.coordinate_names)
-        fd2.coordinate_names = None
+        fd2.coordinate_names = None  # type: ignore[assignment]
         fd = fd1.concatenate(fd2, as_coordinates=True)
         self.assertEqual(("y", None), fd.coordinate_names)
-        fd1.coordinate_names = None
+        fd1.coordinate_names = None  # type: ignore[assignment]
         fd = fd1.concatenate(fd2, as_coordinates=True)
         self.assertEqual((None, None), fd.coordinate_names)
 

@@ -1,24 +1,23 @@
 """Defines the most commonly used kernels."""
 import math
-from scipy import stats
+
 import numpy as np
+from scipy import stats
+
+from ..typing._numpy import NDArrayFloat
 
 
-__author__ = "Miguel Carbajo Berrocal"
-__email__ = "miguel.carbajo@estudiante.uam.es"
-
-
-def normal(u):
+def normal(u: NDArrayFloat) -> NDArrayFloat:
     r"""Evaluate a normal kernel.
 
     .. math::
         K(x) = \frac{1}{\sqrt{2\pi}}e^{-\frac{x^2}{2}}
 
     """
-    return stats.norm.pdf(u)
+    return stats.norm.pdf(u)  # type: ignore[no-any-return]
 
 
-def cosine(u):
+def cosine(u: NDArrayFloat) -> NDArrayFloat:
     r"""Cosine kernel.
 
     .. math::
@@ -32,15 +31,16 @@ def cosine(u):
     """
     if isinstance(u, np.ndarray):
         res = np.zeros(u.shape)
-        res[abs(u) <= 1] = math.pi / 4 * (math.cos(math.pi * u[abs(u) <= 1]
-                                                   / 2))
+        res[abs(u) <= 1] = math.pi / 4 * (
+            math.cos(math.pi * u[abs(u) <= 1] / 2)
+        )
         return res
     if abs(u) <= 1:
         return math.pi / 4 * (math.cos(math.pi * u / 2))
     return 0
 
 
-def epanechnikov(u):
+def epanechnikov(u: NDArrayFloat) -> NDArrayFloat:
     r"""Epanechnikov kernel.
 
     .. math::
@@ -60,7 +60,7 @@ def epanechnikov(u):
     return 0
 
 
-def tri_weight(u):
+def tri_weight(u: NDArrayFloat) -> NDArrayFloat:
     r"""Tri-weight kernel.
 
     .. math::
@@ -80,7 +80,7 @@ def tri_weight(u):
     return 0
 
 
-def quartic(u):
+def quartic(u: NDArrayFloat) -> NDArrayFloat:
     r"""Quartic kernel.
 
     .. math::
@@ -100,7 +100,7 @@ def quartic(u):
     return 0
 
 
-def uniform(u):
+def uniform(u: NDArrayFloat) -> NDArrayFloat:
     r"""Uniform kernel.
 
     .. math::

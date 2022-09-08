@@ -7,11 +7,9 @@ import numpy as np
 import scipy.integrate
 from typing_extensions import Final
 
-from skfda.representation._typing import NDArrayFloat
-
 from ...representation import FData, FDataBasis
-from ...representation._typing import NDArrayFloat
-from ._typing import Norm
+from ...typing._metric import Norm
+from ...typing._numpy import NDArrayFloat
 
 
 class LpNorm():
@@ -110,7 +108,11 @@ class LpNorm():
         from ...misc import inner_product
 
         if isinstance(vector, np.ndarray):
-            return np.linalg.norm(vector, ord=self.p, axis=-1)
+            return np.linalg.norm(  # type: ignore[no-any-return]
+                vector,
+                ord=self.p,
+                axis=-1,
+            )
 
         vector_norm = self.vector_norm
 
@@ -169,9 +171,9 @@ class LpNorm():
                 return NotImplemented
 
         if len(res) == 1:
-            return res[0]
+            return res[0]  # type: ignore[no-any-return]
 
-        return res
+        return res  # type: ignore[no-any-return]
 
 
 l1_norm: Final = LpNorm(1)

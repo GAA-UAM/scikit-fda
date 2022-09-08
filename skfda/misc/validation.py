@@ -3,12 +3,21 @@
 from __future__ import annotations
 
 import functools
-from typing import Container, Sequence
+import numbers
+from typing import Container, Sequence, Tuple, cast
 
 import numpy as np
+from sklearn.utils import check_random_state as _check_random_state
 
 from ..representation import FData, FDataBasis, FDataGrid
-from ..representation._typing import ArrayLike, EvaluationPoints
+from ..typing._base import (
+    DomainRange,
+    DomainRangeLike,
+    EvaluationPoints,
+    RandomState,
+    RandomStateLike,
+)
+from ..typing._numpy import ArrayLike
 
 
 def check_fdata_dimensions(
@@ -228,3 +237,36 @@ def validate_evaluation_points(
             )
 
     return eval_points.reshape(shape)
+
+
+def _validate_domain_range_limits(
+    limits: Sequence[float],
+) -> Tuple[float, float]:
+    if len(limits) != 2 or limits[0] > limits[1]:
+        raise ValueError(
+            f"Invalid domain interval {limits}. "
+            "Domain intervals should have 2 bounds for "
+            "dimension: (lower, upper).",
+        )
+
+    lower, upper = limits
+    return (float(lower), float(upper))
+
+
+def validate_domain_range(domain_range: DomainRangeLike) -> DomainRange:
+    """Convert sequence to a proper domain range."""
+    if isinstance(domain_range[0], numbers.Real):
+        domain_range = cast(Sequence[float], domain_range)
+        domain_range = (domain_range,)
+
+    domain_range = cast(Sequence[Sequence[float]], domain_range)
+
+    return tuple(_validate_domain_range_limits(s) for s in domain_range)
+
+
+def validate_random_state(random_state: RandomStateLike) -> RandomState:
+    """Validate random state or seed."""
+    if isinstance(random_state, np.random.Generator):
+        return random_state
+
+    return _check_random_state(random_state)  # type: ignore[no-any-return]

@@ -12,7 +12,9 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Sized,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -24,21 +26,11 @@ import scipy.integrate
 from pandas.api.indexers import check_array_indexer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
-from typing_extensions import Literal, Protocol
+from typing_extensions import Literal, ParamSpec, Protocol
 
-from ..representation._typing import (
-    DomainRange,
-    DomainRangeLike,
-    GridPoints,
-    GridPointsLike,
-    NDArrayAny,
-    NDArrayFloat,
-    NDArrayInt,
-    NDArrayStr,
-)
+from ..typing._base import GridPoints, GridPointsLike
+from ..typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt, NDArrayStr
 from ._sklearn_adapter import BaseEstimator
-
-RandomStateLike = Optional[Union[int, np.random.RandomState]]
 
 ArrayDTypeT = TypeVar("ArrayDTypeT", bound="np.generic")
 
@@ -46,11 +38,63 @@ if TYPE_CHECKING:
     from ..representation import FData, FDataGrid
     from ..representation.basis import Basis
     from ..representation.extrapolation import ExtrapolationLike
+
     T = TypeVar("T", bound=FData)
 
     Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
     Output = TypeVar("Output", bound=Union[FData, NDArrayFloat])
     Target = TypeVar("Target", bound=NDArrayInt)
+
+
+_MapAcceptableSelf = TypeVar(
+    "_MapAcceptableSelf",
+    bound="_MapAcceptable",
+)
+
+
+class _MapAcceptable(Protocol, Sized):
+
+    def __getitem__(
+        self: _MapAcceptableSelf,
+        __key: Union[slice, NDArrayInt],  # noqa: WPS112
+    ) -> _MapAcceptableSelf:
+        pass
+
+    @property
+    def nbytes(self) -> int:
+        pass
+
+
+_MapAcceptableT = TypeVar(
+    "_MapAcceptableT",
+    bound=_MapAcceptable,
+    contravariant=True,
+)
+MapFunctionT = TypeVar("MapFunctionT", covariant=True)
+P = ParamSpec("P")
+
+
+class _MapFunction(Protocol[_MapAcceptableT, P, MapFunctionT]):
+    """Protocol for functions that can be mapped over several arrays."""
+
+    def __call__(
+        self,
+        *args: _MapAcceptableT,
+        **kwargs: P.kwargs,
+    ) -> MapFunctionT:
+        pass
+
+
+class _PairwiseFunction(Protocol[_MapAcceptableT, P, MapFunctionT]):
+    """Protocol for pairwise array functions."""
+
+    def __call__(
+        self,
+        __arg1: _MapAcceptableT,  # noqa: WPS112
+        __arg2: _MapAcceptableT,  # noqa: WPS112
+        **kwargs: P.kwargs,  # type: ignore[name-defined]
+    ) -> MapFunctionT:
+        pass
 
 
 def _to_grid(
@@ -102,24 +146,6 @@ def _to_grid_points(grid_points_like: GridPointsLike) -> GridPoints:
         return (_int_to_real(np.asarray(grid_points_like)),)
 
     return tuple(_int_to_real(np.asarray(i)) for i in grid_points_like)
-
-
-def _to_domain_range(sequence: DomainRangeLike) -> DomainRange:
-    """Convert sequence to a proper domain range."""
-    seq_aux = cast(
-        Sequence[Sequence[float]],
-        (sequence,) if isinstance(sequence[0], numbers.Real) else sequence,
-    )
-
-    tuple_aux = tuple(tuple(s) for s in seq_aux)
-
-    if not all(len(s) == 2 and s[0] <= s[1] for s in tuple_aux):
-        raise ValueError(
-            "Domain intervals should have 2 bounds for "
-            "dimension: (lower, upper).",
-        )
-
-    return cast(DomainRange, tuple_aux)
 
 
 @overload
@@ -351,6 +377,7 @@ def _evaluate_grid(  # noqa: WPS234
             dimension.
 
     """
+
     # Compute intersection points and resulting shapes
     if aligned:
 
@@ -425,11 +452,12 @@ def nquad_vec(
 
 
 def _map_in_batches(
-    function: Callable[..., np.typing.NDArray[ArrayDTypeT]],
-    arguments: Tuple[Union[FData, NDArrayAny], ...],
+    function: _MapFunction[_MapAcceptableT, P, np.typing.NDArray[ArrayDTypeT]],
+    arguments: Tuple[_MapAcceptableT, ...],
     indexes: Tuple[NDArrayInt, ...],
     memory_per_batch: Optional[int] = None,
-    **kwargs: Any,
+    *args: P.args,  # Should be empty
+    **kwargs: P.kwargs,
 ) -> np.typing.NDArray[ArrayDTypeT]:
     """
     Map a function over samples of FData or ndarray tuples efficiently.
@@ -465,23 +493,35 @@ def _map_in_batches(
 
 
 def _pairwise_symmetric(
-    function: Callable[..., np.typing.NDArray[ArrayDTypeT]],
-    arg1: Union[FData, NDArrayAny],
-    arg2: Optional[Union[FData, NDArrayAny]] = None,
+    function: _PairwiseFunction[
+        _MapAcceptableT,
+        P,
+        np.typing.NDArray[ArrayDTypeT],
+    ],
+    arg1: _MapAcceptableT,
+    arg2: Optional[_MapAcceptableT] = None,
     memory_per_batch: Optional[int] = None,
-    **kwargs: Any,
+    *args: P.args,  # Should be empty
+    **kwargs: P.kwargs,
 ) -> np.typing.NDArray[ArrayDTypeT]:
     """Compute pairwise a commutative function."""
+    def map_function(
+        *args: _MapAcceptableT,
+        **kwargs: P.kwargs,
+    ) -> np.typing.NDArray[ArrayDTypeT]:
+        """Just to keep Mypy happy."""
+        return function(args[0], args[1], **kwargs)
+
     dim1 = len(arg1)
     if arg2 is None or arg2 is arg1:
         triu_indices = np.triu_indices(dim1)
 
         triang_vec = _map_in_batches(
-            function,
+            map_function,
             (arg1, arg1),
             triu_indices,
-            memory_per_batch=memory_per_batch,
-            **kwargs,
+            memory_per_batch,
+            **kwargs,  # type: ignore[arg-type]
         )
 
         matrix = np.empty((dim1, dim1), dtype=triang_vec.dtype)
@@ -498,11 +538,11 @@ def _pairwise_symmetric(
     indices = np.indices((dim1, dim2))
 
     vec = _map_in_batches(
-        function,
+        map_function,
         (arg1, arg2),
         (indices[0].ravel(), indices[1].ravel()),
         memory_per_batch=memory_per_batch,
-        **kwargs,
+        **kwargs,  # type: ignore[arg-type]
     )
 
     return np.reshape(vec, (dim1, dim2))
@@ -535,7 +575,7 @@ def _check_array_key(array: NDArrayAny, key: Any) -> Any:
     return key
 
 
-def _check_estimator(estimator: BaseEstimator) -> None:
+def _check_estimator(estimator: Type[BaseEstimator]) -> None:
     from sklearn.utils.estimator_checks import (
         check_get_params_invariance,
         check_set_params,
@@ -566,14 +606,27 @@ def _classifier_get_classes(
     return classes, y_ind
 
 
-_DependenceMeasure = Callable[[np.ndarray, np.ndarray], np.ndarray]
+dtype_bound = np.number
+dtype_X_T = TypeVar("dtype_X_T", bound="dtype_bound[Any]")
+dtype_y_T = TypeVar("dtype_y_T", bound="dtype_bound[Any]")
+
+depX_T = TypeVar("depX_T", bound=NDArrayAny)
+depy_T = TypeVar("depy_T", bound=NDArrayAny)
+
+_DependenceMeasure = Callable[
+    [depX_T, depy_T],
+    NDArrayFloat,
+]
 
 
 def _compute_dependence(
-    X: NDArrayFloat,
-    y: NDArrayFloat,
+    X: np.typing.NDArray[dtype_X_T],
+    y: np.typing.NDArray[dtype_y_T],
     *,
-    dependence_measure: _DependenceMeasure,
+    dependence_measure: _DependenceMeasure[
+        np.typing.NDArray[dtype_X_T],
+        np.typing.NDArray[dtype_y_T],
+    ],
 ) -> NDArrayFloat:
     """
     Compute dependence between points and target.
@@ -597,7 +650,11 @@ def _compute_dependence(
         y = np.atleast_2d(y).T
     Y = np.array([y] * len(X))
 
-    dependence_results = rowwise(dependence_measure, X, Y)
+    dependence_results = rowwise(  # type: ignore[no-untyped-call]
+        dependence_measure,
+        X,
+        Y,
+    )
 
     return dependence_results.reshape(  # type: ignore[no-any-return]
         input_shape,

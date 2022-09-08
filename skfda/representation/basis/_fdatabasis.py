@@ -18,22 +18,15 @@ import numpy as np
 import pandas.api.extensions
 
 from ..._utils import _check_array_key, _int_to_real, constants, nquad_vec
+from ...typing._base import DomainRange, GridPointsLike, LabelTupleLike
+from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from .. import grid
 from .._functional_data import FData
-from .._typing import (
-    ArrayLike,
-    DomainRange,
-    GridPointsLike,
-    LabelTupleLike,
-    NDArrayBool,
-    NDArrayFloat,
-    NDArrayInt,
-)
 from ..extrapolation import ExtrapolationLike
-from . import Basis
 
 if TYPE_CHECKING:
     from .. import FDataGrid
+    from . import Basis
 
 T = TypeVar('T', bound='FDataBasis')
 
@@ -78,7 +71,7 @@ class FDataBasis(FData):  # noqa: WPS214
         >>> coefficients = [1, 1, 3, .5]
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
-            basis=Monomial(domain_range=((0, 1),), n_basis=4),
+            basis=Monomial(domain_range=((0.0, 1.0),), n_basis=4),
             coefficients=[[ 1.   1.   3.   0.5]],
             ...)
 
@@ -421,7 +414,7 @@ class FDataBasis(FData):  # noqa: WPS214
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
             >>> FDataBasis(basis, coefficients).sum()
             FDataBasis(
-                basis=Monomial(domain_range=((0, 1),), n_basis=4),
+                basis=Monomial(domain_range=((0.0, 1.0),), n_basis=4),
                 coefficients=[[ 2.  2.  6.  1.]],
                 ...)
 
@@ -520,7 +513,7 @@ class FDataBasis(FData):  # noqa: WPS214
                         [ 2.],
                         [ 5.]]]),
                 grid_points=(array([ 0., 1., 2.]),),
-                domain_range=((0, 5),),
+                domain_range=((0.0, 5.0),),
                 ...)
 
         """

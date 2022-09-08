@@ -12,10 +12,11 @@ from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Protocol
 
-from ._typing import ArrayLike, EvaluationPoints, NDArrayFloat
+from ..typing._base import EvaluationPoints
+from ..typing._numpy import ArrayLike, NDArrayFloat
 
 if TYPE_CHECKING:
-    from . import FData
+    from ._functional_data import FData
 
 
 class Evaluator(ABC):

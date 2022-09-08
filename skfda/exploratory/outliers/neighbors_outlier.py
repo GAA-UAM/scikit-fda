@@ -7,12 +7,11 @@ from sklearn.base import OutlierMixin
 from sklearn.neighbors import LocalOutlierFactor as _LocalOutlierFactor
 from typing_extensions import Literal
 
-from skfda.misc.metrics._typing import Metric
-
 from ...misc.metrics import PairwiseMetric, l2_distance
 from ...ml._neighbors_base import AlgorithmType, KNeighborsMixin
 from ...representation import FData
-from ...representation._typing import NDArrayFloat, NDArrayInt
+from ...typing._metric import Metric
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 SelfType = TypeVar("SelfType", bound="LocalOutlierFactor[Any]")
 InputBound = Union[NDArrayFloat, FData]
@@ -309,11 +308,12 @@ class LocalOutlierFactor(
         # In this estimator fit_predict cannot be wrapped as fit().predict()
 
         self._estimator = self._init_estimator()
+        metric = self.metric
 
-        if self.metric == 'precomputed':
+        if metric == 'precomputed':
             res = self._estimator.fit_predict(X, y)
         else:
-            X_dist = PairwiseMetric(self.metric)(X)
+            X_dist = PairwiseMetric(metric)(X)
             res = self._estimator.fit_predict(X_dist, y)
 
         self._store_fit_data()

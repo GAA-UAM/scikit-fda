@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-import skfda
+from skfda.datasets import fetch_phoneme, fetch_tecator, fetch_weather
 from skfda.exploratory.stats import geometric_median, modified_epigraph_index
 
 
@@ -16,7 +16,7 @@ class TestGeometricMedian(unittest.TestCase):
         The R package used is the Gmedian package.
 
         """
-        X, _ = skfda.datasets.fetch_tecator(return_X_y=True)
+        X, _ = fetch_tecator(return_X_y=True)
 
         r_res = [  # noqa: WPS317
             2.74083, 2.742715, 2.744627, 2.74659, 2.748656,
@@ -54,7 +54,7 @@ class TestGeometricMedian(unittest.TestCase):
 
     def test_big(self) -> None:
         """Test a bigger dataset."""
-        X, _ = skfda.datasets.fetch_phoneme(return_X_y=True)
+        X, _ = fetch_phoneme(return_X_y=True)
 
         res = np.array([  # noqa: WPS317
             10.87814495, 12.10539654, 15.19841961, 16.29929599, 15.52206033,
@@ -128,7 +128,7 @@ class TestMEI(unittest.TestCase):
 
     def test_mei(self) -> None:
         """Test modified epigraph index."""
-        fd, _ = skfda.datasets.fetch_weather(return_X_y=True)
+        fd, _ = fetch_weather(return_X_y=True)
         fd_temperatures = fd.coordinates[0]
         mei = modified_epigraph_index(fd_temperatures)
         np.testing.assert_allclose(

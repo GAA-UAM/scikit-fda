@@ -29,7 +29,7 @@ class TestRMH(unittest.TestCase):
             t: np.typing.NDArray[np.float_],
         ) -> np.typing.NDArray[np.float_]:
 
-            return (
+            return (  # type: ignore[no-any-return]
                 np.abs(t - 0.25)
                 - 2 * np.abs(t - 0.5)
                 + np.abs(t - 0.75)

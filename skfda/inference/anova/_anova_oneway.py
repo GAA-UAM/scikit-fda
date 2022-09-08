@@ -3,15 +3,14 @@ from __future__ import annotations
 from typing import Sequence, Tuple, TypeVar, overload
 
 import numpy as np
-from sklearn.utils import check_random_state
 from typing_extensions import Literal
 
-from ... import concatenate
-from ..._utils import RandomStateLike
 from ...datasets import make_gaussian
 from ...misc.metrics import lp_distance
-from ...representation import FData, FDataGrid
-from ...representation._typing import ArrayLike, NDArrayFloat
+from ...misc.validation import validate_random_state
+from ...representation import FData, FDataGrid, concatenate
+from ...typing._base import RandomStateLike
+from ...typing._numpy import ArrayLike, NDArrayFloat
 
 
 def v_sample_stat(fd: FData, weights: ArrayLike, p: int = 2) -> float:
@@ -96,7 +95,7 @@ def _v_asymptotic_stat_with_reps(
     *fds: FData,
     weights: ArrayLike,
     p: int = 2,
-) -> float:
+) -> NDArrayFloat:
     """Vectorized version of v_asymptotic_stat for repetitions."""
     weights = np.asarray(weights)
     if len(weights) != len(fds):
@@ -113,7 +112,7 @@ def _v_asymptotic_stat_with_reps(
         right_fd = fds[pair[0]] * coef
         results[i] = lp_distance(left_fd, right_fd, p=p) ** p
 
-    return np.sum(results, axis=0)
+    return np.sum(results, axis=0)  # type: ignore[no-any-return]
 
 
 def v_asymptotic_stat(
@@ -207,7 +206,7 @@ def _anova_bootstrap(
     sizes = [fd.n_samples for fd in fd_grouped]
 
     # Instance a random state object in case random_state is an int
-    random_state = check_random_state(random_state)
+    random_state = validate_random_state(random_state)
 
     if equal_var:
         k_est = concatenate(fd_grouped).cov().data_matrix[0, ..., 0]
@@ -234,7 +233,6 @@ def _anova_bootstrap(
         for i in range(n_groups)
     ]
 
-    v_samples = np.empty(n_reps)
     return _v_asymptotic_stat_with_reps(*sim, weights=sizes, p=p)
 
 
@@ -386,7 +384,7 @@ def oneway_anova(
         equal_var=equal_var,
     )
 
-    p_value = np.sum(simulation > vn) / len(simulation)
+    p_value = float(np.sum(simulation > vn) / len(simulation))
 
     if return_dist:
         return vn, p_value, simulation

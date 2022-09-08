@@ -151,7 +151,7 @@ class TestKernelRegression(unittest.TestCase):
         fd_train_grid, fd_test_grid, y_train_grid = _create_data_grid()
 
         # Test NW method with basis representation and bandwidth=1
-        nw_basis = KernelRegression(
+        nw_basis = KernelRegression[FDataBasis, np.typing.NDArray[np.float_]](
             kernel_estimator=NadarayaWatsonHatMatrix(bandwidth=1),
         )
         nw_basis.fit(fd_train_basis, y_train_basis)
@@ -168,7 +168,7 @@ class TestKernelRegression(unittest.TestCase):
         )
 
         # Test NW method with grid representation and bandwidth=1
-        nw_grid = KernelRegression(
+        nw_grid = KernelRegression[FDataGrid, np.typing.NDArray[np.float_]](
             kernel_estimator=NadarayaWatsonHatMatrix(bandwidth=1),
         )
         nw_grid.fit(fd_train_grid, y_train_grid)
@@ -192,7 +192,7 @@ class TestKernelRegression(unittest.TestCase):
 
         # Test KNN method with basis representation, n_neighbours=3 and
         # uniform kernel
-        knn_basis = KernelRegression(
+        knn_basis = KernelRegression[FDataBasis, np.typing.NDArray[np.float_]](
             kernel_estimator=KNeighborsHatMatrix(n_neighbors=3),
         )
         knn_basis.fit(fd_train_basis, y_train_basis)
@@ -210,7 +210,7 @@ class TestKernelRegression(unittest.TestCase):
 
         # Test KNN method with grid representation, n_neighbours=3 and
         # uniform kernel
-        knn_grid = KernelRegression(
+        knn_grid = KernelRegression[FDataGrid, np.typing.NDArray[np.float_]](
             kernel_estimator=KNeighborsHatMatrix(n_neighbors=3),
         )
         knn_grid.fit(fd_train_grid, y_train_grid)
@@ -253,7 +253,7 @@ class TestKernelRegression(unittest.TestCase):
         # Creating data
         fd_train_basis, fd_test_basis, y_train_basis = _create_data_basis()
 
-        llr_basis = KernelRegression(
+        llr_basis = KernelRegression[FDataBasis, np.typing.NDArray[np.float_]](
             kernel_estimator=LocalLinearRegressionHatMatrix(bandwidth=1),
         )
         llr_basis.fit(fd_train_basis, y_train_basis)
@@ -273,7 +273,7 @@ class TestKernelRegression(unittest.TestCase):
         """Comparison of NW's results with results from fda.usc."""
         X_train, X_test, y_train = _create_data_r()
 
-        nw = KernelRegression(
+        nw = KernelRegression[FDataGrid, np.typing.NDArray[np.float_]](
             kernel_estimator=NadarayaWatsonHatMatrix(bandwidth=1),
         )
         nw.fit(X_train, y_train)
@@ -298,7 +298,7 @@ class TestKernelRegression(unittest.TestCase):
         """Comparison of NW's results with results from fda.usc."""
         X_train, X_test, y_train = _create_data_r()
 
-        knn = KernelRegression(
+        knn = KernelRegression[FDataGrid, np.typing.NDArray[np.float_]](
             kernel_estimator=KNeighborsHatMatrix(n_neighbors=3),
         )
         knn.fit(X_train, y_train)
@@ -337,6 +337,8 @@ class TestNonOthonormalBasisLLR(unittest.TestCase):
             bandwidth=100,
             kernel=uniform,
         )
-        kr = KernelRegression(kernel_estimator=llr)
+        kr = KernelRegression[FDataBasis, np.typing.NDArray[np.float_]](
+            kernel_estimator=llr,
+        )
         kr.fit(X_train, y_train)
         np.testing.assert_almost_equal(kr.predict(X), 4.35735166)

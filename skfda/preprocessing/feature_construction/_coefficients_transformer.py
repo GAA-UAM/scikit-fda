@@ -5,8 +5,8 @@ from typing import Optional
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils._sklearn_adapter import BaseEstimator, TransformerMixin
-from .._typing import NDArrayFloat
-from ._fdatabasis import FDataBasis
+from ...representation import FDataBasis
+from ...typing._numpy import NDArrayFloat
 
 
 class CoefficientsTransformer(
@@ -20,9 +20,13 @@ class CoefficientsTransformer(
         basis\_ (tuple): Basis used.
 
     Examples:
-        >>> from skfda.representation.basis import (FDataBasis, Monomial,
-        ...                                         CoefficientsTransformer)
-        >>>
+        >>> from skfda.preprocessing.feature_construction import (
+        ...     CoefficientsTransformer,
+        ... )
+        >>> from skfda.representation.basis import (
+        ...     FDataBasis,
+        ...     Monomial,
+        ... )
         >>> basis = Monomial(n_basis=4)
         >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
         >>> fd = FDataBasis(basis, coefficients)

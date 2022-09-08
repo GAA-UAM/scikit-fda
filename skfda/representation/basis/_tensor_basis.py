@@ -4,7 +4,7 @@ from typing import Any, Iterable, Tuple
 
 import numpy as np
 
-from .._typing import NDArrayFloat
+from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
 

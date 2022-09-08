@@ -77,13 +77,13 @@ class TestExtrapolation(unittest.TestCase):
         a.extrapolation = PeriodicExtrapolation()
         self.assertEqual(a.extrapolation, PeriodicExtrapolation())
 
-        a.extrapolation = "bounds"
+        a.extrapolation = "bounds"  # type: ignore[assignment]
         self.assertEqual(a.extrapolation, BoundaryExtrapolation())
 
         a.extrapolation = ExceptionExtrapolation()
         self.assertEqual(a.extrapolation, ExceptionExtrapolation())
 
-        a.extrapolation = "zeros"
+        a.extrapolation = "zeros"  # type: ignore[assignment]
         self.assertEqual(a.extrapolation, FillExtrapolation(0))
 
         self.assertNotEqual(a.extrapolation, FillExtrapolation(1))
@@ -102,7 +102,7 @@ class TestExtrapolation(unittest.TestCase):
             rtol=1e-6,
         )
 
-        self.basis.extrapolation = "periodic"
+        self.basis.extrapolation = "periodic"  # type: ignore[assignment]
         data = self.basis([-0.5, 0, 1.5])
 
         np.testing.assert_allclose(
@@ -116,7 +116,7 @@ class TestExtrapolation(unittest.TestCase):
 
     def test_boundary(self) -> None:
         """Test boundary-copying extrapolation."""
-        self.grid.extrapolation = "bounds"
+        self.grid.extrapolation = "bounds"  # type: ignore[assignment]
         data = self.grid([-0.5, 0, 1.5])
 
         np.testing.assert_allclose(
@@ -128,7 +128,7 @@ class TestExtrapolation(unittest.TestCase):
             rtol=1e-6,
         )
 
-        self.basis.extrapolation = "bounds"
+        self.basis.extrapolation = "bounds"  # type: ignore[assignment]
         data = self.basis([-0.5, 0, 1.5])
 
         np.testing.assert_allclose(
@@ -142,19 +142,19 @@ class TestExtrapolation(unittest.TestCase):
 
     def test_exception(self) -> None:
         """Test no extrapolation (exception)."""
-        self.grid.extrapolation = "exception"
+        self.grid.extrapolation = "exception"  # type: ignore[assignment]
 
         with np.testing.assert_raises(ValueError):
             self.grid([-0.5, 0, 1.5])
 
-        self.basis.extrapolation = "exception"
+        self.basis.extrapolation = "exception"  # type: ignore[assignment]
 
         with np.testing.assert_raises(ValueError):
             self.basis([-0.5, 0, 1.5])
 
     def test_zeros(self) -> None:
         """Test zeros extrapolation."""
-        self.grid.extrapolation = "zeros"
+        self.grid.extrapolation = "zeros"  # type: ignore[assignment]
         data = self.grid([-0.5, 0, 1.5])
 
         np.testing.assert_allclose(
@@ -166,7 +166,7 @@ class TestExtrapolation(unittest.TestCase):
             rtol=1e-6,
         )
 
-        self.basis.extrapolation = "zeros"
+        self.basis.extrapolation = "zeros"  # type: ignore[assignment]
         data = self.basis([-0.5, 0, 1.5])
 
         np.testing.assert_allclose(
@@ -180,7 +180,7 @@ class TestExtrapolation(unittest.TestCase):
 
     def test_nan(self) -> None:
         """Test nan extrapolation."""
-        self.grid.extrapolation = "nan"
+        self.grid.extrapolation = "nan"  # type: ignore[assignment]
         data = self.grid([-0.5, 0, 1.5])
 
         np.testing.assert_allclose(
@@ -192,7 +192,7 @@ class TestExtrapolation(unittest.TestCase):
             rtol=1e-6,
         )
 
-        self.basis.extrapolation = "nan"
+        self.basis.extrapolation = "nan"  # type: ignore[assignment]
         data = self.basis([-0.5, 0, 1.5])
 
         np.testing.assert_allclose(

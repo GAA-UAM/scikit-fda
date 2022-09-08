@@ -2,7 +2,8 @@ from typing import Optional, TypeVar
 
 import numpy as np
 
-from .._typing import ArrayLike, DomainRangeLike, NDArrayFloat
+from ...typing._base import DomainRangeLike
+from ...typing._numpy import ArrayLike, NDArrayFloat
 from ._basis import Basis
 
 T = TypeVar("T", bound='FiniteElement')

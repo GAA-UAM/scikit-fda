@@ -28,32 +28,22 @@ import scipy.integrate
 import scipy.stats.mstats
 from matplotlib.figure import Figure
 
-from .._utils import (
-    _check_array_key,
-    _int_to_real,
-    _to_domain_range,
-    _to_grid_points,
-    constants,
-)
-from ._functional_data import FData
-from ._typing import (
-    ArrayLike,
+from .._utils import _check_array_key, _int_to_real, _to_grid_points, constants
+from ..typing._base import (
     DomainRange,
     DomainRangeLike,
     GridPoints,
     GridPointsLike,
     LabelTupleLike,
-    NDArrayBool,
-    NDArrayFloat,
-    NDArrayInt,
 )
-from .basis import Basis
+from ..typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
+from ._functional_data import FData
 from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike
 from .interpolation import SplineInterpolation
 
 if TYPE_CHECKING:
-    from .. import FDataBasis
+    from .basis import Basis, FDataBasis
 
 T = TypeVar("T", bound='FDataGrid')
 
@@ -150,6 +140,8 @@ class FDataGrid(FData):  # noqa: WPS214
         interpolation: Optional[Evaluator] = None,
     ):
         """Construct a FDataGrid object."""
+        from ..misc.validation import validate_domain_range
+
         if sample_points is not None:
             warnings.warn(
                 "Parameter sample_points is deprecated. Use the "
@@ -191,7 +183,7 @@ class FDataGrid(FData):  # noqa: WPS214
             # Default value for domain_range is a list of tuples with
             # the first and last element of each list of the grid_points.
 
-        self._domain_range = _to_domain_range(domain_range)
+        self._domain_range = validate_domain_range(domain_range)
 
         if len(self._domain_range) != self.dim_domain:
             raise ValueError("Incorrect shape of domain_range.")
@@ -1070,7 +1062,9 @@ class FDataGrid(FData):  # noqa: WPS214
             Restricted function.
 
         """
-        domain_range = _to_domain_range(domain_range)
+        from ..misc.validation import validate_domain_range
+
+        domain_range = validate_domain_range(domain_range)
         assert all(
             c <= a < b <= d  # noqa: WPS228
             for ((a, b), (c, d)) in zip(domain_range, self.domain_range)
@@ -1449,6 +1443,8 @@ class FDataGridDType(
         dim_codomain: int,
         domain_range: Optional[DomainRangeLike] = None,
     ) -> None:
+        from ..misc.validation import validate_domain_range
+
         grid_points = _to_grid_points(grid_points)
 
         self.grid_points = tuple(tuple(s) for s in grid_points)
@@ -1456,7 +1452,7 @@ class FDataGridDType(
         if domain_range is None:
             domain_range = tuple((s[0], s[-1]) for s in self.grid_points)
 
-        self.domain_range = _to_domain_range(domain_range)
+        self.domain_range = validate_domain_range(domain_range)
         self.dim_codomain = dim_codomain
 
     @classmethod

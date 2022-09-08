@@ -19,7 +19,7 @@ class FPCATestCase(unittest.TestCase):
         """Check that invalid arguments in fit raise exception for basis."""
         fpca = FPCA()
         with self.assertRaises(AttributeError):
-            fpca.fit(None)  # type: ignore
+            fpca.fit(None)  # type: ignore[arg-type]
 
         basis = Fourier(n_basis=1)
         # Check that if n_components is bigger than the number of samples then
@@ -38,7 +38,7 @@ class FPCATestCase(unittest.TestCase):
         """Check that invalid arguments in fit raise exception for grid."""
         fpca = FPCA()
         with self.assertRaises(AttributeError):
-            fpca.fit(None)  # type: ignore
+            fpca.fit(None)  # type: ignore[arg-type]
 
         # Check that if n_components is bigger than the number of samples then
         # an exception should be thrown

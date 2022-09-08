@@ -4,19 +4,21 @@ import abc
 from typing import Any, Callable, TypeVar, Union
 
 import multimethod
-import numpy as np
 from typing_extensions import Protocol
 
 from ...representation import FData
 from ...representation.basis import Basis
+from ...typing._numpy import NDArrayFloat
+
+InputType = Union[NDArrayFloat, FData, Basis]
 
 OperatorInput = TypeVar(
     "OperatorInput",
-    bound=Union[np.ndarray, FData, Basis],
+    bound=InputType,
     contravariant=True,
 )
 
-OutputType = Union[np.ndarray, Callable[[np.ndarray], np.ndarray]]
+OutputType = Union[NDArrayFloat, Callable[[NDArrayFloat], NDArrayFloat]]
 
 OperatorOutput = TypeVar(
     "OperatorOutput",
@@ -38,7 +40,7 @@ class Operator(Protocol[OperatorInput, OperatorOutput]):
 def gramian_matrix_optimization(
     linear_operator: Any,
     basis: OperatorInput,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """
     Efficient implementation of gramian_matrix.
 
@@ -52,7 +54,7 @@ def gramian_matrix_optimization(
 def gramian_matrix_numerical(
     linear_operator: Operator[OperatorInput, OutputType],
     basis: OperatorInput,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """
     Return the gramian matrix given a basis, computed numerically.
 
@@ -71,7 +73,7 @@ def gramian_matrix_numerical(
 def gramian_matrix(
     linear_operator: Operator[OperatorInput, OutputType],
     basis: OperatorInput,
-) -> np.ndarray:
+) -> NDArrayFloat:
     r"""
     Return the gramian matrix given a basis.
 
@@ -96,7 +98,7 @@ def gramian_matrix(
     return gramian_matrix_numerical(linear_operator, basis)
 
 
-class MatrixOperator(Operator[np.ndarray, np.ndarray]):
+class MatrixOperator(Operator[NDArrayFloat, NDArrayFloat]):
     """Linear operator for finite spaces.
 
     Between finite dimensional spaces, every linear operator can be expressed
@@ -107,8 +109,8 @@ class MatrixOperator(Operator[np.ndarray, np.ndarray]):
 
     """
 
-    def __init__(self, matrix: np.ndarray) -> None:
+    def __init__(self, matrix: NDArrayFloat) -> None:
         self.matrix = matrix
 
-    def __call__(self, f: np.ndarray) -> np.ndarray:  # noqa: D102
+    def __call__(self, f: NDArrayFloat) -> NDArrayFloat:  # noqa: D102
         return self.matrix @ f

@@ -4,10 +4,10 @@ from typing import Any, Sequence, Tuple, Type, TypeVar
 
 import numpy as np
 from numpy import polyint, polymul, polyval
-from scipy.interpolate import BSpline as SciBSpline, PPoly, splev
+from scipy.interpolate import BSpline as SciBSpline, PPoly
 
-from ..._utils import _to_domain_range
-from .._typing import DomainRangeLike, NDArrayFloat
+from ...typing._base import DomainRangeLike
+from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
 T = TypeVar("T", bound='BSpline')
@@ -97,8 +97,10 @@ class BSpline(Basis):
         knots: Sequence[float] | None = None,
     ) -> None:
         """Bspline basis constructor."""
+        from ...misc.validation import validate_domain_range
+
         if domain_range is not None:
-            domain_range = _to_domain_range(domain_range)
+            domain_range = validate_domain_range(domain_range)
 
             if len(domain_range) != 1:
                 raise ValueError("Domain range should be unidimensional.")
@@ -203,11 +205,12 @@ class BSpline(Basis):
         self: T,
         domain_range: DomainRangeLike | None = None,
     ) -> T:
+        from ...misc.validation import validate_domain_range
 
         knots = np.array(self.knots, dtype=np.dtype('float'))
 
         if domain_range is not None:  # Rescales the knots
-            domain_range = _to_domain_range(domain_range)[0]
+            domain_range = validate_domain_range(domain_range)[0]
             knots -= knots[0]
             knots *= (
                 (domain_range[1] - domain_range[0])

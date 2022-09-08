@@ -3,17 +3,21 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
+from typing import Generic, TypeVar
 
 import numpy as np
 
 from ..._utils import _to_grid
 from ...misc.validation import check_fdata_dimensions
 from ...representation import FData
+from ...typing._numpy import NDArrayFloat
 from .base import RegistrationTransformer
 
+Input = TypeVar("Input", bound=FData)
+Output = TypeVar("Output", bound=FData)
 
-class RegistrationScorer(ABC):
+
+class RegistrationScorer(ABC, Generic[Input, Output]):
     """Cross validation scoring for registration procedures.
 
     It calculates the score of a registration procedure, used to perform
@@ -48,9 +52,9 @@ class RegistrationScorer(ABC):
 
     def __call__(
         self,
-        estimator: RegistrationTransformer,
-        X: FData,
-        y: Optional[FData] = None,
+        estimator: RegistrationTransformer[Input, Output],
+        X: Input,
+        y: Output | None = None,
     ) -> float:
         """Compute the score of the transformation.
 
@@ -75,8 +79,8 @@ class RegistrationScorer(ABC):
     @abstractmethod
     def score_function(
         self,
-        X: FData,
-        y: FData,
+        X: Input,
+        y: Output,
     ) -> float:
         """Compute the score of the transformation performed.
 
@@ -114,7 +118,7 @@ class AmplitudePhaseDecompositionStats():
 
 
 class AmplitudePhaseDecomposition(
-    RegistrationScorer,
+    RegistrationScorer[FData, FData],
 ):
     r"""Compute mean square error measures for amplitude and phase variation.
 
@@ -329,7 +333,7 @@ class AmplitudePhaseDecomposition(
         return float(self.stats(X, y).r_squared)
 
 
-class LeastSquares(RegistrationScorer):
+class LeastSquares(RegistrationScorer[FData, FData]):
     r"""Cross-validated measure of the registration procedure.
 
     Computes a cross-validated measure of the level of synchronization
@@ -453,7 +457,7 @@ class LeastSquares(RegistrationScorer):
         return float(1 - np.mean(quotient))
 
 
-class SobolevLeastSquares(RegistrationScorer):
+class SobolevLeastSquares(RegistrationScorer[FData, FData]):
     r"""Cross-validated measure of the registration procedure.
 
     Computes a cross-validated measure of the level of synchronization
@@ -562,7 +566,7 @@ class SobolevLeastSquares(RegistrationScorer):
         return float(1 - sls_y.sum() / sls_x.sum())
 
 
-class PairwiseCorrelation(RegistrationScorer):
+class PairwiseCorrelation(RegistrationScorer[FData, FData]):
     r"""Cross-validated measure of pairwise correlation between functions.
 
     Computes a cross-validated pairwise correlation between functions
@@ -630,7 +634,7 @@ class PairwiseCorrelation(RegistrationScorer):
 
     """
 
-    def __init__(self, eval_points: Optional[np.ndarray] = None) -> None:
+    def __init__(self, eval_points: NDArrayFloat | None = None) -> None:
         self.eval_points = eval_points
 
     def score_function(self, X: FData, y: FData) -> float:

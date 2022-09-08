@@ -12,24 +12,23 @@ from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 from ..._utils import _classifier_get_classes
 from ..._utils._sklearn_adapter import TransformerMixin
 from ...representation import FData
-from ...representation._typing import NDArrayFloat, NDArrayInt
 from ...representation.basis import FDataBasis
 from ...representation.grid import FDataGrid
+from ...typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt
 
 Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
 Output = TypeVar("Output", bound=Union[pd.DataFrame, NDArrayFloat])
-Target = TypeVar("Target", bound=NDArrayInt)
 
 TransformerOutput = Union[FData, NDArrayFloat]
 
 
 def _fit_feature_transformer(  # noqa: WPS320 WPS234
     X: Input,
-    y: Target,
-    transformer: TransformerMixin[Input, Output, Target],
+    y: NDArrayInt,
+    transformer: TransformerMixin[Input, Output, object],
 ) -> Tuple[
-    Union[NDArrayInt, NDArrayFloat],
-    Sequence[TransformerMixin[Input, Output, Target]],
+    Union[NDArrayAny, NDArrayFloat],
+    Sequence[TransformerMixin[Input, Output, object]],
 ]:
 
     classes, y_ind = _classifier_get_classes(y)
@@ -42,7 +41,7 @@ def _fit_feature_transformer(  # noqa: WPS320 WPS234
     return classes, class_feature_transformers
 
 
-class PerClassTransformer(TransformerMixin[Input, Output, Target]):
+class PerClassTransformer(TransformerMixin[Input, Output, NDArrayInt]):
     r"""Per class feature transformer for functional data.
 
     This class takes a transformer and performs the following map:
@@ -156,7 +155,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
     def __init__(
         self,
-        transformer: TransformerMixin[Input, TransformerOutput, Target],
+        transformer: TransformerMixin[Input, TransformerOutput, object],
         *,
         array_output: bool = False,
     ) -> None:
@@ -224,8 +223,8 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
     def fit(  # type: ignore[override]
         self,
         X: Input,
-        y: Target,
-    ) -> PerClassTransformer[Input, Output, Target]:
+        y: NDArrayInt,
+    ) -> PerClassTransformer[Input, Output]:
         """
         Fit the model on each class.
 
@@ -250,7 +249,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
 
         return self
 
-    def transform(self, X: Input) -> Output:
+    def transform(self, X: Input, y: object = None) -> Output:
         """
         Transform the provided data using the already fitted transformer.
 
@@ -276,9 +275,10 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
                         "FDataBasis that can't be concatenated on a NumPy "
                         "array.",
                     )
-            return np.hstack(transformed_data)
 
-        return pd.concat(
+            return np.hstack(transformed_data)  # type: ignore[return-value]
+
+        return pd.concat(  # type: ignore[no-any-return]
             [
                 pd.DataFrame({'0': data})  # noqa: WPS441
                 for data in transformed_data
@@ -289,7 +289,7 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
     def fit_transform(  # type: ignore[override]
         self,
         X: Input,
-        y: Target,
+        y: NDArrayInt,
     ) -> Output:
         """
         Fits and transforms the provided data.
@@ -304,4 +304,4 @@ class PerClassTransformer(TransformerMixin[Input, Output, Target]):
             Eiter array of shape (n_samples, G) or a Data Frame \
             including the transformed data.
         """
-        return self.fit(X, y).transform(X)
+        return self.fit(X, y).transform(X, y)

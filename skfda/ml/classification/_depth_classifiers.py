@@ -5,8 +5,8 @@ from collections import defaultdict
 from contextlib import suppress
 from itertools import combinations
 from typing import (
-    Any,
-    Generic,
+    DefaultDict,
+    Dict,
     Mapping,
     Optional,
     Sequence,
@@ -18,26 +18,53 @@ from typing import (
 import numpy as np
 import pandas as pd
 from scipy.interpolate import lagrange
-from sklearn.base import BaseEstimator, ClassifierMixin, clone
+from sklearn.base import clone
 from sklearn.metrics import accuracy_score
 from sklearn.pipeline import FeatureUnion, make_pipeline
 from sklearn.utils.validation import check_is_fitted as sklearn_check_is_fitted
 
-from ..._utils import _classifier_fit_depth_methods, _classifier_get_classes
+from ..._utils import _classifier_get_classes
+from ..._utils._sklearn_adapter import BaseEstimator, ClassifierMixin
 from ...exploratory.depth import Depth, ModifiedBandDepth
 from ...preprocessing.feature_construction._per_class_transformer import (
     PerClassTransformer,
 )
-from ...representation._typing import NDArrayFloat, NDArrayInt
-from ...representation.grid import FData
+from ...representation import FData
+from ...typing._numpy import NDArrayFloat, NDArrayInt, NDArrayStr
 
-T = TypeVar("T", bound=FData)
+Input = TypeVar("Input", bound=FData)
+
+
+def _classifier_get_depth_methods(
+    classes: NDArrayInt | NDArrayStr,
+    X: Input,
+    y_ind: NDArrayInt,
+    depth_methods: Sequence[Depth[Input]],
+) -> Sequence[Depth[Input]]:
+    return [
+        clone(depth_method).fit(X[y_ind == cur_class])
+        for cur_class in range(len(classes))
+        for depth_method in depth_methods
+    ]
+
+
+def _classifier_fit_depth_methods(
+    X: Input,
+    y: NDArrayInt,
+    depth_methods: Sequence[Depth[Input]],
+) -> Tuple[NDArrayStr | NDArrayInt, Sequence[Depth[Input]]]:
+    classes, y_ind = _classifier_get_classes(y)
+
+    class_depth_methods_ = _classifier_get_depth_methods(
+        classes, X, y_ind, depth_methods,
+    )
+
+    return classes, class_depth_methods_
 
 
 class DDClassifier(
-    BaseEstimator,  # type: ignore
-    ClassifierMixin,  # type: ignore
-    Generic[T],
+    BaseEstimator,
+    ClassifierMixin[Input, NDArrayInt],
 ):
     """Depth-versus-depth (DD) classifer for functional data.
 
@@ -98,12 +125,12 @@ class DDClassifier(
     def __init__(
         self,
         degree: int,
-        depth_method: Optional[Depth[T]] = None,
+        depth_method: Optional[Depth[Input]] = None,
     ) -> None:
         self.depth_method = depth_method
         self.degree = degree
 
-    def fit(self, X: T, y: NDArrayInt) -> DDClassifier[T]:
+    def fit(self, X: Input, y: NDArrayInt) -> DDClassifier[Input]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -161,7 +188,7 @@ class DDClassifier(
 
         return self
 
-    def predict(self, X: T) -> NDArrayInt:
+    def predict(self, X: Input) -> NDArrayInt:
         """Predict the class labels for the provided data.
 
         Args:
@@ -180,16 +207,15 @@ class DDClassifier(
 
         predicted_values = np.polyval(self.poly_, dd_coordinates[0])
 
-        return self._classes[(
+        return self._classes[(  # type: ignore[no-any-return]
             dd_coordinates[1] > predicted_values
         ).astype(int)
         ]
 
 
 class DDGClassifier(
-    BaseEstimator,  # type: ignore
-    ClassifierMixin,  # type: ignore
-    Generic[T],
+    BaseEstimator,
+    ClassifierMixin[Input, NDArrayInt],
 ):
     r"""Generalized depth-versus-depth (DD) classifer for functional data.
 
@@ -294,13 +320,18 @@ class DDGClassifier(
     def __init__(  # noqa: WPS234
         self,
         *,
-        multivariate_classifier: ClassifierMixin = None,
-        depth_method: Union[Depth[T], Sequence[Tuple[str, Depth[T]]], None] = None,
+        multivariate_classifier: ClassifierMixin[
+            NDArrayFloat,
+            NDArrayInt,
+        ] | None = None,
+        depth_method: Depth[Input] | Sequence[
+            Tuple[str, Depth[Input]]
+        ] | None = None,
     ) -> None:
         self.multivariate_classifier = multivariate_classifier
         self.depth_method = depth_method
 
-    def get_params(self, deep: bool = True) -> Mapping[str, Any]:
+    def get_params(self, deep: bool = True) -> Mapping[str, object]:
         params = BaseEstimator.get_params(self, deep=deep)
         if deep and isinstance(self.depth_method, Sequence):
             for name, depth in self.depth_method:
@@ -309,10 +340,10 @@ class DDGClassifier(
                 for key, value in depth_params.items():
                     params[f"depth_method__{name}__{key}"] = value
 
-        return params
+        return params  # type: ignore[no-any-return]
 
     # Copied from scikit-learn's _BaseComposition with minor modifications
-    def _set_params(self, attr, **params):
+    def _set_params(self, attr: str, **params: object) -> DDGClassifier[Input]:
         # Ensure strict ordering of parameter setting:
         # 1. All steps
         if attr in params:
@@ -325,7 +356,10 @@ class DDGClassifier(
             # elements of length 2
             with suppress(TypeError):
                 item_names, _ = zip(*items)
-                item_params = defaultdict(dict)
+                item_params: DefaultDict[
+                    str,
+                    Dict[str, object],
+                ] = defaultdict(dict)
                 for name in list(params.keys()):
                     if name.startswith(f"{attr}__"):
                         key, delim, sub_key = name.partition("__")
@@ -347,7 +381,12 @@ class DDGClassifier(
         return self
 
     # Copied from scikit-learn's _BaseComposition
-    def _replace_estimator(self, attr, name, new_val):
+    def _replace_estimator(
+        self,
+        attr: str,
+        name: str,
+        new_val: object,
+    ) -> None:
         # assumes `name` is a valid estimator name
         new_estimators = list(getattr(self, attr))
         for i, (estimator_name, _) in enumerate(new_estimators):
@@ -356,11 +395,14 @@ class DDGClassifier(
                 break
         setattr(self, attr, new_estimators)
 
-    def set_params(self, **params: Mapping[str, Any]):
+    def set_params(
+        self,
+        **params: object,
+    ) -> DDGClassifier[Input]:
 
         return self._set_params("depth_method", **params)
 
-    def fit(self, X: T, y: NDArrayInt) -> DDGClassifier[T]:
+    def fit(self, X: Input, y: NDArrayInt) -> DDGClassifier[Input]:
         """Fit the model using X as training data and y as target values.
 
         Args:
@@ -393,7 +435,7 @@ class DDGClassifier(
 
         return self
 
-    def predict(self, X: T) -> NDArrayInt:
+    def predict(self, X: Input) -> NDArrayInt:
         """Predict the class labels for the provided data.
 
         Args:
@@ -403,12 +445,12 @@ class DDGClassifier(
             Array of shape (n_samples) with class labels
                 for each data sample.
         """
-        return self._pipeline.predict(X)
+        return self._pipeline.predict(X)  # type: ignore[no-any-return]
 
 
 class _ArgMaxClassifier(
-    BaseEstimator,  # type: ignore
-    ClassifierMixin,  # type: ignore
+    BaseEstimator,
+    ClassifierMixin[NDArrayFloat, NDArrayInt],
 ):
     r"""Arg max classifier for multivariate data.
 
@@ -460,10 +502,12 @@ class _ArgMaxClassifier(
         """
         if isinstance(X, pd.DataFrame):
             X = X.to_numpy()
-        return self._classes[np.argmax(X, axis=1)]
+        return self._classes[  # type: ignore[no-any-return]
+            np.argmax(X, axis=1)
+        ]
 
 
-class MaximumDepthClassifier(DDGClassifier[T]):
+class MaximumDepthClassifier(DDGClassifier[Input]):
     """Maximum depth classifier for functional data.
 
     Test samples are classified to the class where they are deeper.
@@ -511,7 +555,7 @@ class MaximumDepthClassifier(DDGClassifier[T]):
         related classifiers. Scandinavian Journal of Statistics, 32, 327–350.
     """
 
-    def __init__(self, depth_method: Optional[Depth[T]] = None) -> None:
+    def __init__(self, depth_method: Depth[Input] | None = None) -> None:
         super().__init__(
             multivariate_classifier=_ArgMaxClassifier(),
             depth_method=depth_method,

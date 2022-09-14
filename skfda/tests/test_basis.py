@@ -7,6 +7,7 @@ import numpy as np
 
 import skfda
 from skfda import concatenate
+from skfda.datasets import fetch_weather
 from skfda.misc import inner_product_matrix
 from skfda.representation.basis import (
     BSpline,
@@ -323,7 +324,7 @@ class TestFDataBasisOperations(unittest.TestCase):
         )
 
         self.assertTrue(
-            (monomial2 * [1, 2]).equals(
+            (monomial2 * np.array([1, 2])).equals(
                 FDataBasis(
                     basis,
                     [[1, 2, 3], [6, 8, 10]],
@@ -332,7 +333,7 @@ class TestFDataBasisOperations(unittest.TestCase):
         )
 
         self.assertTrue(
-            ([1, 2] * monomial2).equals(
+            (np.array([1, 2]) * monomial2).equals(
                 FDataBasis(
                     basis,
                     [[1, 2, 3], [6, 8, 10]],
@@ -620,7 +621,7 @@ class TestVectorValuedBasis(unittest.TestCase):
 
     def test_vector_valued(self) -> None:
         """Test vector valued basis."""
-        X, _ = skfda.datasets.fetch_weather(return_X_y=True)
+        X, _ = fetch_weather(return_X_y=True)
 
         basis_dim = skfda.representation.basis.Fourier(
             n_basis=7,

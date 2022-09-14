@@ -6,11 +6,14 @@ import numpy as np
 
 import skfda
 from skfda._utils import _pairwise_symmetric
-from skfda.representation._typing import NDArrayFloat
+from skfda.datasets import make_gaussian_process
+from skfda.misc.covariances import Gaussian
 from skfda.representation.basis import Monomial, Tensor, VectorValued
 
 
-def _ndm(*args: NDArrayFloat) -> Sequence[NDArrayFloat]:
+def _ndm(
+    *args: np.typing.NDArray[np.float_],
+) -> Sequence[np.typing.NDArray[np.float_]]:
     return [
         x[(None,) * i + (slice(None),) + (None,) * (len(args) - i - 1)]
         for i, x in enumerate(args)
@@ -23,10 +26,10 @@ class InnerProductTest(unittest.TestCase):
     def test_several_variables(self) -> None:
         """Test inner_product with functions of several variables."""
         def f(  # noqa: WPS430
-            x: NDArrayFloat,
-            y: NDArrayFloat,
-            z: NDArrayFloat,
-        ) -> NDArrayFloat:
+            x: np.typing.NDArray[np.float_],
+            y: np.typing.NDArray[np.float_],
+            z: np.typing.NDArray[np.float_],
+        ) -> np.typing.NDArray[np.float_]:
             return x * y * z
 
         t = np.linspace(0, 1, 30)
@@ -65,10 +68,14 @@ class InnerProductTest(unittest.TestCase):
 
     def test_vector_valued(self) -> None:
         """Test inner_product with vector valued functions."""
-        def f(x: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
+        def f(  # noqa: WPS430
+            x: np.typing.NDArray[np.float_],
+        ) -> np.typing.NDArray[np.float_]:
             return x**2
 
-        def g(y: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
+        def g(  # noqa: WPS430
+            y: np.typing.NDArray[np.float_],
+        ) -> np.typing.NDArray[np.float_]:
             return 3 * y
 
         t = np.linspace(0, 1, 100)
@@ -106,16 +113,16 @@ class InnerProductTest(unittest.TestCase):
         """Test inner_product_matrix function."""
         basis = skfda.representation.basis.BSpline(n_basis=12)
 
-        X = skfda.datasets.make_gaussian_process(
+        X = make_gaussian_process(
             n_samples=10,
             n_features=20,
-            cov=skfda.misc.covariances.Gaussian(),
+            cov=Gaussian(),
             random_state=0,
         )
-        Y = skfda.datasets.make_gaussian_process(
+        Y = make_gaussian_process(
             n_samples=10,
             n_features=20,
-            cov=skfda.misc.covariances.Gaussian(),
+            cov=Gaussian(),
             random_state=1,
         )
 

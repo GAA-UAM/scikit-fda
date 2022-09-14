@@ -11,7 +11,8 @@ import numpy as np
 
 from ..._utils._utils import _to_grid_points
 from ...misc.hat_matrix import HatMatrix, NadarayaWatsonHatMatrix
-from ...representation._typing import GridPointsLike, NDArrayFloat
+from ...typing._base import GridPointsLike
+from ...typing._numpy import NDArrayFloat
 from ._linear import _LinearSmoother
 
 

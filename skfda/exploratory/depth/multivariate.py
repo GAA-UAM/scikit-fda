@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import abc
 import math
-from typing import Generic, Optional, TypeVar
+from typing import TypeVar
 
 import numpy as np
 import scipy.stats
@@ -12,19 +12,22 @@ import sklearn
 from scipy.special import comb
 from typing_extensions import Literal
 
+from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
+from ...typing._numpy import NDArrayFloat, NDArrayInt
+
 T = TypeVar("T", contravariant=True)
 SelfType = TypeVar("SelfType")
 _Side = Literal["left", "right"]
+Input = TypeVar("Input", contravariant=True)
 
 
 class _DepthOrOutlyingness(
-    abc.ABC,
-    sklearn.base.BaseEstimator,  # type: ignore
-    Generic[T],
+    BaseEstimator,
+    InductiveTransformerMixin[Input, NDArrayFloat, object],
 ):
     """Abstract class representing a depth or outlyingness function."""
 
-    def fit(self: SelfType, X: T, y: None = None) -> SelfType:
+    def fit(self: SelfType, X: Input, y: object = None) -> SelfType:
         """
         Learn the distribution from the observations.
 
@@ -40,7 +43,7 @@ class _DepthOrOutlyingness(
         return self
 
     @abc.abstractmethod
-    def transform(self, X: T) -> np.ndarray:
+    def transform(self, X: Input) -> NDArrayFloat:
         """
         Compute the depth or outlyingness inside the learned distribution.
 
@@ -53,7 +56,7 @@ class _DepthOrOutlyingness(
         """
         pass
 
-    def fit_transform(self, X: T, y: None = None) -> np.ndarray:
+    def fit_transform(self, X: Input, y: object = None) -> NDArrayFloat:
         """
         Compute the depth or outlyingness of each observation.
 
@@ -71,10 +74,10 @@ class _DepthOrOutlyingness(
 
     def __call__(
         self,
-        X: T,
+        X: Input,
         *,
-        distribution: Optional[T] = None,
-    ) -> np.ndarray:
+        distribution: Input | None = None,
+    ) -> NDArrayFloat:
         """
         Allow the depth or outlyingness to be used as a function.
 
@@ -87,15 +90,15 @@ class _DepthOrOutlyingness(
             Depth of each observation.
 
         """
-        copy = sklearn.base.clone(self)
+        copy: _DepthOrOutlyingness[Input] = sklearn.base.clone(self)
 
         if distribution is None:
             return copy.fit_transform(X)
 
         return copy.fit(distribution).transform(X)
 
-    @property  # noqa: WPS125
-    def max(self) -> float:  # noqa: WPS125
+    @property
+    def max(self) -> float:
         """
         Maximum (or supremum if there is no maximum) of the possibly predicted
         values.
@@ -103,8 +106,8 @@ class _DepthOrOutlyingness(
         """
         return 1
 
-    @property  # noqa: WPS125
-    def min(self) -> float:  # noqa: WPS125
+    @property
+    def min(self) -> float:
         """
         Minimum (or infimum if there is no maximum) of the possibly predicted
         values.
@@ -122,11 +125,11 @@ class Outlyingness(_DepthOrOutlyingness[T]):
 
 
 def _searchsorted_one_dim(
-    array: np.ndarray,
-    values: np.ndarray,
+    array: NDArrayFloat,
+    values: NDArrayFloat,
     *,
     side: _Side = 'left',
-) -> np.ndarray:
+) -> NDArrayInt:
     return np.searchsorted(array, values, side=side)
 
 
@@ -138,24 +141,29 @@ _searchsorted_vectorized = np.vectorize(
 
 
 def _searchsorted_ordered(
-    array: np.ndarray,
-    values: np.ndarray,
+    array: NDArrayFloat,
+    values: NDArrayFloat,
     *,
     side: _Side = 'left',
-) -> np.ndarray:
-    return _searchsorted_vectorized(array, values, side=side)
+) -> NDArrayInt:
+    return _searchsorted_vectorized(  # type: ignore[no-any-return]
+        array,
+        values,
+        side=side,
+    )
 
 
-def _cumulative_distribution(column: np.ndarray) -> np.ndarray:
-    """Calculate the cumulative distribution function at each point.
+def _cumulative_distribution(column: NDArrayFloat) -> NDArrayFloat:
+    """
+    Calculate the cumulative distribution function at each point.
 
     Args:
-        column (numpy.darray): Array containing the values over which the
+        column: Array containing the values over which the
             distribution function is calculated.
 
     Returns:
-        numpy.darray: Array containing the evaluation at each point of the
-            distribution function.
+        Array containing the evaluation at each point of the
+        distribution function.
 
     Examples:
         >>> _cumulative_distribution(np.array([1, 4, 5, 1, 2, 2, 4, 1, 1, 3]))
@@ -169,7 +177,7 @@ def _cumulative_distribution(column: np.ndarray) -> np.ndarray:
     ) / len(column)
 
 
-class _UnivariateFraimanMuniz(Depth[np.ndarray]):
+class _UnivariateFraimanMuniz(Depth[NDArrayFloat]):
     r"""
     Univariate depth used to compute the Fraiman an Muniz depth.
 
@@ -185,26 +193,30 @@ class _UnivariateFraimanMuniz(Depth[np.ndarray]):
 
     """
 
-    def fit(self: SelfType, X: np.ndarray, y: None = None) -> SelfType:
+    def fit(self: SelfType, X: NDArrayFloat, y: object = None) -> SelfType:
         self._sorted_values = np.sort(X, axis=0)
         return self
 
-    def transform(self, X: np.ndarray) -> np.ndarray:
+    def transform(self, X: NDArrayFloat) -> NDArrayFloat:
         cum_dist = _searchsorted_ordered(
             np.moveaxis(self._sorted_values, 0, -1),
             np.moveaxis(X, 0, -1),
             side='right',
-        ) / len(self._sorted_values)
+        ).astype(X.dtype) / len(self._sorted_values)
 
         assert cum_dist.shape[-2] == 1
-        return 1 - np.abs(0.5 - np.moveaxis(cum_dist, -1, 0)[..., 0])
+        ret = 0.5 - np.moveaxis(cum_dist, -1, 0)[..., 0]
+        ret = - np.abs(ret)
+        ret += 1
 
-    @property  # noqa: WPS125
-    def min(self) -> float:  # noqa: WPS125
+        return ret
+
+    @property
+    def min(self) -> float:
         return 1 / 2
 
 
-class SimplicialDepth(Depth[np.ndarray]):
+class SimplicialDepth(Depth[NDArrayFloat]):
     r"""
     Simplicial depth.
 
@@ -221,8 +233,8 @@ class SimplicialDepth(Depth[np.ndarray]):
 
     def fit(  # noqa: D102
         self,
-        X: np.ndarray,
-        y: None = None,
+        X: NDArrayFloat,
+        y: object = None,
     ) -> SimplicialDepth:
         self._dim = X.shape[-1]
 
@@ -236,7 +248,7 @@ class SimplicialDepth(Depth[np.ndarray]):
 
         return self
 
-    def transform(self, X: np.ndarray) -> np.ndarray:  # noqa: D102
+    def transform(self, X: NDArrayFloat) -> NDArrayFloat:  # noqa: D102
 
         assert self._dim == X.shape[-1]
 
@@ -261,7 +273,7 @@ class SimplicialDepth(Depth[np.ndarray]):
 
             total_pairs = comb(len(self.sorted_values), 2)
 
-        return (
+        return (  # type: ignore[no-any-return]
             total_pairs - comb(num_strictly_below, 2)
             - comb(num_strictly_above, 2)
         ) / total_pairs
@@ -301,13 +313,13 @@ class OutlyingnessBasedDepth(Depth[T]):
     def fit(  # noqa: D102
         self,
         X: T,
-        y: None = None,
+        y: object = None,
     ) -> OutlyingnessBasedDepth[T]:
         self.outlyingness.fit(X)
 
         return self
 
-    def transform(self, X: np.ndarray) -> np.ndarray:  # noqa: D102
+    def transform(self, X: T) -> NDArrayFloat:  # noqa: D102
         outlyingness_values = self.outlyingness.transform(X)
 
         min_val = self.outlyingness.min
@@ -319,7 +331,7 @@ class OutlyingnessBasedDepth(Depth[T]):
         return 1 - (outlyingness_values - min_val) / (max_val - min_val)
 
 
-class StahelDonohoOutlyingness(Outlyingness[np.ndarray]):
+class StahelDonohoOutlyingness(Outlyingness[NDArrayFloat]):
     r"""
     Computes Stahel-Donoho outlyingness.
 
@@ -341,8 +353,8 @@ class StahelDonohoOutlyingness(Outlyingness[np.ndarray]):
 
     def fit(  # noqa: D102
         self,
-        X: np.ndarray,
-        y: None = None,
+        X: NDArrayFloat,
+        y: object = None,
     ) -> StahelDonohoOutlyingness:
 
         dim = X.shape[-1]
@@ -355,26 +367,25 @@ class StahelDonohoOutlyingness(Outlyingness[np.ndarray]):
 
         return self
 
-    def transform(self, X: np.ndarray) -> np.ndarray:  # noqa: D102
+    def transform(self, X: NDArrayFloat) -> NDArrayFloat:  # noqa: D102
 
         dim = X.shape[-1]
 
         if dim == 1:
             # Special case, can be computed exactly
-            return (
-                np.abs(X - self._location)
-                / self._scale
-            )[..., 0]
+            diff: NDArrayFloat = np.abs(X - self._location) / self._scale
+
+            return diff[..., 0]
 
         raise NotImplementedError("Only implemented for one dimension")
 
-    @property  # noqa: WPS125
-    def max(self) -> float:  # noqa: WPS125
+    @property
+    def max(self) -> float:
         return math.inf
 
 
-class ProjectionDepth(OutlyingnessBasedDepth[np.ndarray]):
-    r"""
+class ProjectionDepth(OutlyingnessBasedDepth[NDArrayFloat]):
+    """
     Computes Projection depth.
 
     It is defined as the depth induced by the

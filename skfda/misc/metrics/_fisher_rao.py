@@ -1,6 +1,7 @@
 """Elastic metrics."""
+from __future__ import annotations
 
-from typing import Any, Optional, Tuple, TypeVar, Union
+from typing import Any, Optional, Tuple, TypeVar
 
 import numpy as np
 import scipy.integrate
@@ -8,7 +9,7 @@ from typing_extensions import Final
 
 from ..._utils import normalize_scale, normalize_warping
 from ...representation import FData, FDataGrid
-from ...representation._typing import NDArrayFloat
+from ...typing._numpy import NDArrayFloat
 from ..operators import SRSF
 from ._lp_distances import l2_distance
 from ._utils import PairwiseMetric, _cast_to_grid, pairwise_metric_optimization
@@ -20,7 +21,7 @@ def _transformation_for_fisher_rao(
     fdata1: T,
     fdata2: T,
     *,
-    eval_points: Optional[NDArrayFloat] = None,
+    eval_points: NDArrayFloat | None = None,
     _check: bool = True,
 ) -> Tuple[FDataGrid, FDataGrid]:
     fdata1, fdata2 = _cast_to_grid(
@@ -92,7 +93,7 @@ class FisherRaoDistance():
         fdata1: T,
         fdata2: T,
         *,
-        eval_points: Optional[NDArrayFloat] = None,
+        eval_points: NDArrayFloat | None = None,
         _check: bool = True,
     ) -> NDArrayFloat:
         """Compute the distance."""
@@ -137,7 +138,7 @@ def fisher_rao_amplitude_distance(
     fdata2: T,
     *,
     lam: float = 0,
-    eval_points: Optional[NDArrayFloat] = None,
+    eval_points: NDArrayFloat | None = None,
     _check: bool = True,
     **kwargs: Any,
 ) -> NDArrayFloat:
@@ -245,7 +246,7 @@ def fisher_rao_phase_distance(
     fdata2: T,
     *,
     lam: float = 0,
-    eval_points: Optional[NDArrayFloat] = None,
+    eval_points: NDArrayFloat | None = None,
     _check: bool = True,
 ) -> NDArrayFloat:
     r"""
@@ -324,14 +325,14 @@ def fisher_rao_phase_distance(
     d = scipy.integrate.simps(derivative_warping, x=eval_points_normalized)
     d = np.clip(d, -1, 1)
 
-    return np.arccos(d)
+    return np.arccos(d)  # type: ignore[no-any-return]
 
 
 def _fisher_rao_warping_distance(
     warping1: T,
     warping2: T,
     *,
-    eval_points: Optional[NDArrayFloat] = None,
+    eval_points: NDArrayFloat | None = None,
     _check: bool = True,
 ) -> NDArrayFloat:
     r"""
@@ -396,4 +397,4 @@ def _fisher_rao_warping_distance(
     d = scipy.integrate.simps(product, x=warping1.grid_points[0])
     d = np.clip(d, -1, 1)
 
-    return np.arccos(d)
+    return np.arccos(d)  # type: ignore[no-any-return]

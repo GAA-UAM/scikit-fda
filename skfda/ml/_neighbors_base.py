@@ -12,16 +12,16 @@ from typing_extensions import Literal
 
 from skfda.misc.metrics._utils import PairwiseMetric
 
-from .. import FData, FDataGrid, concatenate
 from .._utils._sklearn_adapter import (
     BaseEstimator,
     ClassifierMixin,
     RegressorMixin,
 )
 from ..misc.metrics import l2_distance
-from ..misc.metrics._typing import Metric
 from ..misc.metrics._utils import _fit_metric
-from ..representation._typing import NDArrayFloat, NDArrayInt
+from ..representation import FData, FDataGrid, concatenate
+from ..typing._metric import Metric
+from ..typing._numpy import NDArrayFloat, NDArrayInt
 
 FDataType = TypeVar("FDataType", bound="FData")
 SelfType = TypeVar("SelfType", bound="NeighborsBase[Any, Any]")
@@ -777,12 +777,11 @@ class NeighborsRegressorMixin(
             if len(sample_weight) != len(y):
                 raise ValueError("Must be a weight for each sample.")
 
-            sample_weight = np.asarray(sample_weight)
-            sample_weight = sample_weight / sample_weight.sum()
+            normalized_sample_weight = sample_weight / sample_weight.sum()
             data_u_t = data_u.T
-            data_u_t *= sample_weight
+            data_u_t *= normalized_sample_weight
             data_v_t = data_v.T
-            data_v_t *= sample_weight
+            data_v_t *= normalized_sample_weight
 
         # Sum and integrate
         sum_u = np.sum(data_u, axis=0)
@@ -791,4 +790,4 @@ class NeighborsRegressorMixin(
         int_u = simps(sum_u, x=u.grid_points[0])
         int_v = simps(sum_v, x=v.grid_points[0])
 
-        return 1 - int_u / int_v
+        return float(1 - int_u / int_v)

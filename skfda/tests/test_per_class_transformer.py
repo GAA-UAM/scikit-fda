@@ -11,6 +11,7 @@ from skfda.preprocessing.dim_reduction.variable_selection import (
     RecursiveMaximaHunting,
 )
 from skfda.preprocessing.feature_construction import PerClassTransformer
+from skfda.representation import FDataGrid
 
 
 class TestPerClassTransformer(unittest.TestCase):
@@ -24,8 +25,8 @@ class TestPerClassTransformer(unittest.TestCase):
 
     def test_transform(self) -> None:
         """Check the data transformation is done correctly."""
-        t = PerClassTransformer(
-            RecursiveMaximaHunting(),  # type: ignore
+        t = PerClassTransformer[FDataGrid, np.typing.NDArray[np.float_]](
+            RecursiveMaximaHunting(),
             array_output=True,
         )
         t.fit_transform(self.X, self.y)
@@ -45,7 +46,9 @@ class TestPerClassTransformer(unittest.TestCase):
 
     def test_not_transformer_argument(self) -> None:
         """Check that invalid arguments in fit raise exception."""
-        t = PerClassTransformer(KNeighborsClassifier())  # type: ignore
+        t = PerClassTransformer[FDataGrid, np.typing.NDArray[np.float_]](
+            KNeighborsClassifier(),
+        )
         self.assertRaises(
             TypeError,
             t.fit,

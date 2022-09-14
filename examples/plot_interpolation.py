@@ -61,35 +61,6 @@ fd.scatter(fig=fig)
 plt.show()
 
 ##############################################################################
-# Smooth interpolation could be performed with the attribute
-# ``smoothness_parameter`` of the spline interpolation.
-
-# Sample with noise
-fd_smooth = skfda.datasets.make_sinusoidal_process(
-    n_samples=1,
-    n_features=30,
-    random_state=1,
-    error_std=0.3,
-)
-
-# Cubic interpolation
-fd_smooth.interpolation = SplineInterpolation(interpolation_order=3)
-
-fig = fd_smooth.plot(label="Cubic")
-
-# Smooth interpolation
-fd_smooth.interpolation = SplineInterpolation(
-    interpolation_order=3,
-    smoothness_parameter=1.5,
-)
-
-fd_smooth.plot(fig=fig, label="Cubic smoothed")
-
-fd_smooth.scatter(fig=fig)
-fig.legend()
-plt.show()
-
-##############################################################################
 # Sometimes our samples are required to be monotone, in these cases it is
 # possible to use monotone cubic interpolation with the attribute
 # ``monotone``. A piecewise cubic hermite interpolating polynomial (PCHIP)
@@ -133,31 +104,11 @@ fd.scatter(fig=fig)
 plt.show()
 
 ##############################################################################
-# In the following figure it is shown the result of the cubic interpolation
+# In the following figure it is shown the result of the constant interpolation
 # applied to the surface.
-#
-# The degree of the interpolation polynomial does not have to coincide in both
-# directions, for example, cubic interpolation in the first
-# component and quadratic in the second one could be defined using a tuple
-# with the values (3,2).
 
-fd.interpolation = SplineInterpolation(interpolation_order=3)
+fd.interpolation = SplineInterpolation(interpolation_order=0)
 
 fig = fd.plot()
 fd.scatter(fig=fig)
 plt.show()
-
-##############################################################################
-# The following table shows the interpolation methods available by the class
-# :class:`~skfda.representation.interpolation.SplineInterpolation` depending
-# on the domain dimension.
-#
-# +------------------+--------+----------------+----------+-------------+
-# | Domain dimension | Linear | Up to degree 5 | Monotone |  Smoothing  |
-# +==================+========+================+==========+=============+
-# |         1        |   ✔    |       ✔        |    ✔     |      ✔      |
-# +------------------+--------+----------------+----------+-------------+
-# |         2        |   ✔    |       ✔        |    ✖     |      ✔      |
-# +------------------+--------+----------------+----------+-------------+
-# |     3 or more    |   ✔    |       ✖        |    ✖     |      ✖      |
-# +------------------+--------+----------------+----------+-------------+

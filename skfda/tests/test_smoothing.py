@@ -1,13 +1,16 @@
 """Test smoothing methods."""
 import unittest
+from typing import Tuple
 
 import numpy as np
 import sklearn
+from typing_extensions import Literal
 
 import skfda
 import skfda.preprocessing.smoothing as smoothing
 import skfda.preprocessing.smoothing.validation as validation
 from skfda._utils import _check_estimator
+from skfda.datasets import fetch_weather
 from skfda.misc.hat_matrix import (
     HatMatrix,
     KNeighborsHatMatrix,
@@ -37,14 +40,16 @@ class _LinearSmootherLeaveOneOutScorerAlternative:
         estimator: KernelSmoother,
         X: FDataGrid,
         y: FDataGrid,
-    ) -> None:
+    ) -> float:
         """Calculate Leave-One-Out score."""
         estimator_clone = sklearn.base.clone(estimator)
 
         estimator_clone._cv = True  # noqa: WPS437
         y_est = estimator_clone.fit_transform(X)
 
-        return -np.mean((y.data_matrix[..., 0] - y_est.data_matrix[..., 0])**2)
+        return float(
+            -np.mean((y.data_matrix[..., 0] - y_est.data_matrix[..., 0])**2),
+        )
 
 
 class TestLeaveOneOut(unittest.TestCase):
@@ -116,7 +121,7 @@ class TestKernelSmoother(unittest.TestCase):
     def _test_hat_matrix(
         self,
         kernel_estimator: HatMatrix,
-    ) -> np.ndarray:
+    ) -> np.typing.NDArray[np.float_]:
         return KernelSmoother(  # noqa: WPS437
             kernel_estimator=kernel_estimator,
         )._hat_matrix(
@@ -250,7 +255,7 @@ class TestBasisSmoother(unittest.TestCase):
 
     def test_vector_valued_smoothing(self) -> None:
         """Test Basis Smoother for vector values functions."""
-        X, _ = skfda.datasets.fetch_weather(return_X_y=True)
+        X, _ = fetch_weather(return_X_y=True)
 
         basis_dim = skfda.representation.basis.Fourier(
             n_basis=7, domain_range=X.domain_range,
@@ -260,7 +265,12 @@ class TestBasisSmoother(unittest.TestCase):
             [basis_dim] * 2,
         )
 
-        for method in ('cholesky', 'qr', 'svd'):
+        method_set: Tuple[Literal['cholesky', 'qr', 'svd'], ...] = (
+            'cholesky',
+            'qr',
+            'svd',
+        )
+        for method in method_set:
             with self.subTest(method=method):
 
                 basis_smoother = smoothing.BasisSmoother(

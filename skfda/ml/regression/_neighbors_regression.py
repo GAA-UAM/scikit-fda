@@ -10,11 +10,10 @@ from sklearn.neighbors import (
 )
 from typing_extensions import Literal
 
-from skfda.misc.metrics._typing import Metric
-
 from ...misc.metrics import l2_distance
 from ...representation import FData
-from ...representation._typing import NDArrayFloat, NDArrayInt
+from ...typing._metric import Metric
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 from .._neighbors_base import (
     AlgorithmType,
     KNeighborsMixin,

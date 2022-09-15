@@ -5,8 +5,9 @@ two different functions as coordinates, this can be done giving
 one FData, with domain 1 and codomain 2, or giving two FData, both
 of them with domain 1 and codomain 1.
 """
+from __future__ import annotations
 
-from typing import Mapping, Optional, Sequence, TypeVar, Union
+from typing import Dict, Sequence, TypeVar
 
 import numpy as np
 from matplotlib.artist import Artist
@@ -47,14 +48,14 @@ class ParametricPlot(BasePlot):
     def __init__(
         self,
         fdata1: FData,
-        fdata2: Optional[FData] = None,
-        chart: Union[Figure, Axes, None] = None,
+        fdata2: FData | None = None,
+        chart: Figure | Axes | None = None,
         *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        group: Optional[Sequence[K]] = None,
-        group_colors: Optional[Indexable[K, ColorLike]] = None,
-        group_names: Optional[Indexable[K, str]] = None,
+        fig: Figure | None = None,
+        axes: Axes | None = None,
+        group: Sequence[K] | None = None,
+        group_colors: Indexable[K, ColorLike] | None = None,
+        group_names: Indexable[K, str] | None = None,
         legend: bool = False,
     ) -> None:
         BasePlot.__init__(
@@ -98,7 +99,7 @@ class ParametricPlot(BasePlot):
             self.legend,
         )
 
-        color_dict: Mapping[str, Union[ColorLike, None]] = {}
+        color_dict: Dict[str, ColorLike | None] = {}
 
         if (
             self.fd_final.dim_domain == 1

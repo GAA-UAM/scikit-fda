@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING, Any, Tuple, TypeVar
 import numpy as np
 from matplotlib.figure import Figure
 
-from ..._utils import _reshape_eval_points, _same_domain, _to_domain_range
-from .._typing import ArrayLike, DomainRange, DomainRangeLike, NDArrayFloat
+from ...typing._base import DomainRange, DomainRangeLike
+from ...typing._numpy import ArrayLike, NDArrayFloat
 
 if TYPE_CHECKING:
-    from . import FDataBasis
+    from ._fdatabasis import FDataBasis
 
 T = TypeVar("T", bound='Basis')
 
@@ -36,9 +36,11 @@ class Basis(ABC):
         n_basis: int = 1,
     ) -> None:
         """Basis constructor."""
+        from ...misc.validation import validate_domain_range
+
         if domain_range is not None:
 
-            domain_range = _to_domain_range(domain_range)
+            domain_range = validate_domain_range(domain_range)
 
         if n_basis < 1:
             raise ValueError(
@@ -74,6 +76,8 @@ class Basis(ABC):
             eval_points.
 
         """
+        from ...misc.validation import validate_evaluation_points
+
         if derivative < 0:
             raise ValueError("derivative only takes non-negative values.")
         elif derivative != 0:
@@ -84,7 +88,7 @@ class Basis(ABC):
             )
             return self.derivative(order=derivative)(eval_points)
 
-        eval_points = _reshape_eval_points(
+        eval_points = validate_evaluation_points(
             eval_points,
             aligned=True,
             n_samples=self.n_basis,
@@ -108,7 +112,7 @@ class Basis(ABC):
     @property
     def domain_range(self) -> DomainRange:
         if self._domain_range is None:
-            return ((0, 1),) * self.dim_domain
+            return ((0.0, 1.0),) * self.dim_domain
 
         return self._domain_range
 
@@ -309,10 +313,12 @@ class Basis(ABC):
 
     def copy(self: T, domain_range: DomainRangeLike | None = None) -> T:
         """Basis copy."""
+        from ...misc.validation import validate_domain_range
+
         new_copy = copy.deepcopy(self)
 
         if domain_range is not None:
-            domain_range = _to_domain_range(domain_range)
+            domain_range = validate_domain_range(domain_range)
 
             new_copy._domain_range = domain_range  # noqa: WPS437
 
@@ -427,6 +433,7 @@ class Basis(ABC):
 
     def __eq__(self, other: Any) -> bool:
         """Test equality of Basis."""
+        from ..._utils import _same_domain
         return (
             isinstance(other, type(self))
             and _same_domain(self, other)

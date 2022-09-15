@@ -1,28 +1,10 @@
 """Common types."""
-from typing import Any, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Optional, Sequence, Tuple, TypeVar, Union
 
 import numpy as np
 from typing_extensions import Protocol
 
-try:
-    from numpy.typing import ArrayLike
-except ImportError:
-    ArrayLike = np.ndarray  # type:ignore[misc]
-
-try:
-    from numpy.typing import NDArray
-    NDArrayAny = NDArray[Any]
-    NDArrayInt = NDArray[np.int_]
-    NDArrayFloat = NDArray[np.float_]
-    NDArrayBool = NDArray[np.bool_]
-    NDArrayObject = NDArray[np.object_]
-except ImportError:
-    NDArray = np.ndarray  # type:ignore[misc]
-    NDArrayAny = np.ndarray  # type:ignore[misc]
-    NDArrayInt = np.ndarray  # type:ignore[misc]
-    NDArrayFloat = np.ndarray  # type:ignore[misc]
-    NDArrayBool = np.ndarray  # type:ignore[misc]
-    NDArrayObject = np.ndarray  # type:ignore[misc]
+from ._numpy import ArrayLike, NDArrayFloat
 
 VectorType = TypeVar("VectorType")
 
@@ -36,8 +18,14 @@ DomainRangeLike = Union[
 LabelTuple = Tuple[Optional[str], ...]
 LabelTupleLike = Sequence[Optional[str]]
 
-GridPoints = Tuple[np.ndarray, ...]
+GridPoints = Tuple[NDArrayFloat, ...]
 GridPointsLike = Union[ArrayLike, Sequence[ArrayLike]]
+
+EvaluationPoints = NDArrayFloat
+
+
+RandomStateLike = Union[int, np.random.RandomState, np.random.Generator, None]
+RandomState = Union[np.random.RandomState, np.random.Generator]
 
 
 class Vector(Protocol):

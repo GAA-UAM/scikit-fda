@@ -27,13 +27,15 @@ import pandas.api.extensions
 from matplotlib.figure import Figure
 from typing_extensions import Literal
 
-from .._utils import _evaluate_grid, _reshape_eval_points, _to_grid_points
-from ._typing import (
-    ArrayLike,
+from .._utils import _evaluate_grid, _to_grid_points
+from ..typing._base import (
     DomainRange,
     GridPointsLike,
     LabelTuple,
     LabelTupleLike,
+)
+from ..typing._numpy import (
+    ArrayLike,
     NDArrayBool,
     NDArrayFloat,
     NDArrayInt,
@@ -43,14 +45,13 @@ from .evaluator import Evaluator
 from .extrapolation import ExtrapolationLike, _parse_extrapolation
 
 if TYPE_CHECKING:
-    from . import FDataBasis, FDataGrid
-    from .basis import Basis
+    from .grid import FDataGrid
+    from .basis import Basis, FDataBasis
 
 T = TypeVar('T', bound='FData')
 
 EvalPointsType = Union[
     ArrayLike,
-    Iterable[ArrayLike],
     GridPointsLike,
     Iterable[GridPointsLike],
 ]
@@ -74,6 +75,7 @@ class FData(  # noqa: WPS214
             coordinate functions.
 
     """
+    dataset_name: Optional[str]
 
     def __init__(
         self,
@@ -288,7 +290,7 @@ class FData(  # noqa: WPS214
     @abstractmethod
     def _evaluate(
         self,
-        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        eval_points: NDArrayFloat,
         *,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -428,19 +430,7 @@ class FData(  # noqa: WPS214
         derivative: int = 0,
         extrapolation: Optional[ExtrapolationLike] = None,
         grid: Literal[False] = False,
-        aligned: Literal[True] = True,
-    ) -> NDArrayFloat:
-        pass
-
-    @overload
-    def __call__(
-        self,
-        eval_points: Iterable[ArrayLike],
-        *,
-        derivative: int = 0,
-        extrapolation: Optional[ExtrapolationLike] = None,
-        grid: Literal[False] = False,
-        aligned: Literal[False],
+        aligned: bool = True,
     ) -> NDArrayFloat:
         pass
 
@@ -520,6 +510,8 @@ class FData(  # noqa: WPS214
             function at the values specified in eval_points.
 
         """
+        from ..misc.validation import validate_evaluation_points
+
         if derivative != 0:
             warnings.warn(
                 "Parameter derivative is deprecated. Use the "
@@ -545,8 +537,6 @@ class FData(  # noqa: WPS214
                 aligned=aligned,
             )
 
-        eval_points = cast(Union[ArrayLike, Iterable[ArrayLike]], eval_points)
-
         if extrapolation is None:
             extrapolation = self.extrapolation
         else:
@@ -554,12 +544,12 @@ class FData(  # noqa: WPS214
             extrapolation = _parse_extrapolation(extrapolation)
 
         eval_points = cast(
-            Union[ArrayLike, Sequence[ArrayLike]],
+            ArrayLike,
             eval_points,
         )
 
         # Convert to array and check dimensions of eval points
-        eval_points = _reshape_eval_points(
+        eval_points = validate_evaluation_points(
             eval_points,
             aligned=aligned,
             n_samples=self.n_samples,
@@ -959,8 +949,31 @@ class FData(  # noqa: WPS214
         )
 
     @abstractmethod
-    def __eq__(self, other: object) -> NDArrayBool:  # type: ignore[override]
+    def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
+        """Elementwise equality."""
         pass
+
+    def __eq__(self, other: object) -> NDArrayBool:  # type: ignore[override]
+        """Elementwise equality, as with arrays."""
+        if not isinstance(other, type(self)) or self.dtype != other.dtype:
+            if other is pandas.NA:
+                return self.isna()
+            if pandas.api.types.is_list_like(other) and not isinstance(
+                other, (pandas.Series, pandas.Index, pandas.DataFrame),
+            ):
+                other = cast(Iterable[object], other)
+                return np.concatenate([x == y for x, y in zip(self, other)])
+
+            return NotImplemented
+
+        if len(self) != len(other) and len(self) != 1 and len(other) != 1:
+            raise ValueError(
+                f"Different lengths: "
+                f"len(self)={len(self)} and "
+                f"len(other)={len(other)}",
+            )
+
+        return self._eq_elemenwise(other)
 
     def __ne__(self, other: object) -> NDArrayBool:  # type: ignore[override]
         """Return for `self != other` (element-wise in-equality)."""
@@ -1137,6 +1150,10 @@ class FData(  # noqa: WPS214
         indices: NDArrayInt,
         fill_value: T,
     ) -> T:
+        pass
+
+    @abstractmethod
+    def isna(self) -> NDArrayBool:  # noqa: D102
         pass
 
     def take(  # noqa: WPS238

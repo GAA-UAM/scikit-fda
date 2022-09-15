@@ -8,9 +8,10 @@ from typing_extensions import Literal
 
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...representation._functional_data import FData
-from ...representation._typing import ArrayLike, GridPointsLike, NDArrayFloat
 from ...representation.extrapolation import ExtrapolationLike
 from ...representation.grid import FDataGrid
+from ...typing._base import GridPointsLike
+from ...typing._numpy import ArrayLike, NDArrayFloat
 
 Input = TypeVar("Input", bound=FData)
 SelfType = TypeVar(

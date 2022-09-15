@@ -6,15 +6,14 @@ Modified Band Depth and Modified Epigraph Index, that will help us detect
 these outliers. The motivation of the method is that it is easy to find
 magnitude outliers, but there is a necessity of capturing this other type.
 """
-
-from typing import Optional, Sequence, Union
+from __future__ import annotations
 
 import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from ... import FDataGrid
+from ...representation import FDataGrid
 from ..outliers import OutliergramOutlierDetector
 from ._baseplot import BasePlot
 
@@ -63,10 +62,10 @@ class Outliergram(BasePlot):
     def __init__(
         self,
         fdata: FDataGrid,
-        chart: Union[Figure, Axes, None] = None,
+        chart: Figure | Axes | None = None,
         *,
-        fig: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
+        fig: Figure | None = None,
+        axes: Axes | None = None,
         factor: float = 1.5,
     ) -> None:
         BasePlot.__init__(

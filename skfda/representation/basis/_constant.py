@@ -2,7 +2,8 @@ from typing import Optional, Tuple, TypeVar
 
 import numpy as np
 
-from .._typing import DomainRangeLike, NDArrayFloat
+from ...typing._base import DomainRangeLike
+from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
 T = TypeVar("T", bound='Constant')

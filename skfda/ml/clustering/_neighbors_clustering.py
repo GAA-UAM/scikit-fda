@@ -5,11 +5,10 @@ from typing import Any, TypeVar, Union, overload
 
 from typing_extensions import Literal
 
-from skfda.misc.metrics._typing import Metric
-
 from ...misc.metrics import l2_distance
 from ...representation import FData
-from ...representation._typing import NDArrayFloat
+from ...typing._metric import Metric
+from ...typing._numpy import NDArrayFloat
 from .._neighbors_base import (
     AlgorithmType,
     KNeighborsMixin,

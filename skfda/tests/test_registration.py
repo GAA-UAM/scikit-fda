@@ -249,7 +249,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
             error_std=0,
             random_state=1,
         )
-        self.fd.extrapolation = "periodic"
+        self.fd.extrapolation = "periodic"  # type: ignore[assignment]
 
     def test_fit_transform(self) -> None:
 
@@ -281,7 +281,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
             random_state=10,
         )
 
-        reg = LeastSquaresShiftRegistration()
+        reg = LeastSquaresShiftRegistration[FDataGrid]()
         response = reg.fit(self.fd)
 
         # Check attributes and returned value
@@ -294,7 +294,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
 
     def test_inverse_transform(self) -> None:
 
-        reg = LeastSquaresShiftRegistration()
+        reg = LeastSquaresShiftRegistration[FDataGrid]()
         fd = reg.fit_transform(self.fd)
         fd = reg.inverse_transform(fd)
 
@@ -306,7 +306,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
 
     def test_raises(self) -> None:
 
-        reg = LeastSquaresShiftRegistration()
+        reg = LeastSquaresShiftRegistration[FDataGrid]()
 
         # Test not fitted
         with np.testing.assert_raises(NotFittedError):
@@ -342,16 +342,18 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
 
     def test_template(self) -> None:
 
-        reg = LeastSquaresShiftRegistration()
+        reg = LeastSquaresShiftRegistration[FDataGrid]()
         fd_registered_1 = reg.fit_transform(self.fd)
 
-        reg_2 = LeastSquaresShiftRegistration(template=reg.template_)
+        reg_2 = LeastSquaresShiftRegistration[FDataGrid](
+            template=reg.template_)
         fd_registered_2 = reg_2.fit_transform(self.fd)
 
-        reg_3 = LeastSquaresShiftRegistration(template=mean)
+        reg_3 = LeastSquaresShiftRegistration[FDataGrid](template=mean)
         fd_registered_3 = reg_3.fit_transform(self.fd)
 
-        reg_4 = LeastSquaresShiftRegistration(template=reg.template_)
+        reg_4 = LeastSquaresShiftRegistration[FDataGrid](
+            template=reg.template_)
         fd_registered_4 = reg_4.fit(self.fd).transform(self.fd)
 
         np.testing.assert_array_almost_equal(
@@ -372,7 +374,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         )
 
     def test_restrict_domain(self) -> None:
-        reg = LeastSquaresShiftRegistration(restrict_domain=True)
+        reg = LeastSquaresShiftRegistration[FDataGrid](restrict_domain=True)
         fd_registered_1 = reg.fit_transform(self.fd)
 
         np.testing.assert_array_almost_equal(
@@ -380,7 +382,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
             [[0.022, 0.969]],
         )
 
-        reg2 = LeastSquaresShiftRegistration(
+        reg2 = LeastSquaresShiftRegistration[FDataGrid](
             restrict_domain=True,
             template=reg.template_.copy(domain_range=self.fd.domain_range),
         )
@@ -392,7 +394,7 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
             decimal=3,
         )
 
-        reg3 = LeastSquaresShiftRegistration(
+        reg3 = LeastSquaresShiftRegistration[FDataGrid](
             restrict_domain=True,
             template=mean,
         )
@@ -404,14 +406,18 @@ class TestLeastSquaresShiftRegistration(unittest.TestCase):
         )
 
     def test_initial_estimation(self) -> None:
-        reg = LeastSquaresShiftRegistration(initial=[-0.02161235, 0.03032652])
+        reg = LeastSquaresShiftRegistration[FDataGrid](
+            initial=[-0.02161235, 0.03032652],
+        )
         reg.fit_transform(self.fd)
 
         # Only needed 1 iteration until convergence
         self.assertEqual(reg.n_iter_, 1)
 
     def test_custom_grid_points(self) -> None:
-        reg = LeastSquaresShiftRegistration(grid_points=np.linspace(0, 1, 50))
+        reg = LeastSquaresShiftRegistration[FDataGrid](
+            grid_points=np.linspace(0, 1, 50),
+        )
         reg.fit_transform(self.fd)
 
 
@@ -421,7 +427,8 @@ class TestRegistrationValidation(unittest.TestCase):
     def setUp(self) -> None:
         """Initialize the samples."""
         self.X = make_sinusoidal_process(error_std=0, random_state=0)
-        self.shift_registration = LeastSquaresShiftRegistration().fit(self.X)
+        self.shift_registration = LeastSquaresShiftRegistration[FDataGrid]()
+        self.shift_registration.fit(self.X)
 
     def test_amplitude_phase_score(self) -> None:
         """Test basic usage of AmplitudePhaseDecomposition."""

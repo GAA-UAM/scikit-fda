@@ -5,8 +5,7 @@ from typing import Any, Iterable, Tuple, TypeVar, Union
 import numpy as np
 import scipy.linalg
 
-from ..._utils import _same_domain
-from .._typing import NDArrayFloat
+from ...typing._numpy import NDArrayFloat
 from ._basis import Basis
 
 T = TypeVar("T", bound='VectorValued')
@@ -65,6 +64,7 @@ class VectorValued(Basis):
     """
 
     def __init__(self, basis_list: Iterable[Basis]) -> None:
+        from ..._utils import _same_domain
 
         basis_list = tuple(basis_list)
 

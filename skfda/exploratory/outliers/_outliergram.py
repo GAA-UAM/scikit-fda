@@ -4,7 +4,7 @@ import numpy as np
 
 from ..._utils._sklearn_adapter import BaseEstimator, OutlierMixin
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 from ..depth._depth import ModifiedBandDepth
 from ..stats import modified_epigraph_index
 

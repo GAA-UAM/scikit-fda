@@ -10,9 +10,10 @@ from typing import Any, Callable, Optional, Sequence, Union
 import numpy as np
 
 from ...representation import FData, FDataGrid
-from ...representation._typing import ArrayLike, GridPointsLike, NDArrayFloat
 from ...representation.extrapolation import ExtrapolationLike
 from ...representation.interpolation import SplineInterpolation
+from ...typing._base import GridPointsLike
+from ...typing._numpy import ArrayLike, NDArrayFloat
 
 _FixedLocation = Union[float, Sequence[float]]
 _LocationCallable = Callable[[np.ndarray], _FixedLocation]

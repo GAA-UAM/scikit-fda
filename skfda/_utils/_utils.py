@@ -12,7 +12,9 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Sized,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -21,37 +23,78 @@ from typing import (
 
 import numpy as np
 import scipy.integrate
-from numpy import ndarray
 from pandas.api.indexers import check_array_indexer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.multiclass import check_classification_targets
-from typing_extensions import Literal, Protocol
+from typing_extensions import Literal, ParamSpec, Protocol
 
-from ..representation._typing import (
-    ArrayLike,
-    DomainRange,
-    DomainRangeLike,
-    GridPoints,
-    GridPointsLike,
-    NDArrayAny,
-    NDArrayFloat,
-    NDArrayInt,
-    NDArrayObject,
-)
-from ..representation.extrapolation import ExtrapolationLike
+from ..typing._base import GridPoints, GridPointsLike
+from ..typing._numpy import NDArrayAny, NDArrayFloat, NDArrayInt, NDArrayStr
+from ._sklearn_adapter import BaseEstimator
 
-RandomStateLike = Optional[Union[int, np.random.RandomState]]
-
-ArrayT = TypeVar("ArrayT", bound=NDArrayAny)
+ArrayDTypeT = TypeVar("ArrayDTypeT", bound="np.generic")
 
 if TYPE_CHECKING:
     from ..representation import FData, FDataGrid
     from ..representation.basis import Basis
+    from ..representation.extrapolation import ExtrapolationLike
+
     T = TypeVar("T", bound=FData)
 
     Input = TypeVar("Input", bound=Union[FData, NDArrayFloat])
     Output = TypeVar("Output", bound=Union[FData, NDArrayFloat])
     Target = TypeVar("Target", bound=NDArrayInt)
+
+
+_MapAcceptableSelf = TypeVar(
+    "_MapAcceptableSelf",
+    bound="_MapAcceptable",
+)
+
+
+class _MapAcceptable(Protocol, Sized):
+
+    def __getitem__(
+        self: _MapAcceptableSelf,
+        __key: Union[slice, NDArrayInt],  # noqa: WPS112
+    ) -> _MapAcceptableSelf:
+        pass
+
+    @property
+    def nbytes(self) -> int:
+        pass
+
+
+_MapAcceptableT = TypeVar(
+    "_MapAcceptableT",
+    bound=_MapAcceptable,
+    contravariant=True,
+)
+MapFunctionT = TypeVar("MapFunctionT", covariant=True)
+P = ParamSpec("P")
+
+
+class _MapFunction(Protocol[_MapAcceptableT, P, MapFunctionT]):
+    """Protocol for functions that can be mapped over several arrays."""
+
+    def __call__(
+        self,
+        *args: _MapAcceptableT,
+        **kwargs: P.kwargs,
+    ) -> MapFunctionT:
+        pass
+
+
+class _PairwiseFunction(Protocol[_MapAcceptableT, P, MapFunctionT]):
+    """Protocol for pairwise array functions."""
+
+    def __call__(
+        self,
+        __arg1: _MapAcceptableT,  # noqa: WPS112
+        __arg2: _MapAcceptableT,  # noqa: WPS112
+        **kwargs: P.kwargs,  # type: ignore[name-defined]
+    ) -> MapFunctionT:
+        pass
 
 
 def _to_grid(
@@ -105,84 +148,35 @@ def _to_grid_points(grid_points_like: GridPointsLike) -> GridPoints:
     return tuple(_int_to_real(np.asarray(i)) for i in grid_points_like)
 
 
-def _to_domain_range(sequence: DomainRangeLike) -> DomainRange:
-    """Convert sequence to a proper domain range."""
-    seq_aux = cast(
-        Sequence[Sequence[float]],
-        (sequence,) if isinstance(sequence[0], numbers.Real) else sequence,
-    )
-
-    tuple_aux = tuple(tuple(s) for s in seq_aux)
-
-    if not all(len(s) == 2 and s[0] <= s[1] for s in tuple_aux):
-        raise ValueError(
-            "Domain intervals should have 2 bounds for "
-            "dimension: (lower, upper).",
-        )
-
-    return cast(DomainRange, tuple_aux)
-
-
-def _to_array_maybe_ragged(
-    array: Iterable[ArrayLike],
-    *,
-    row_shape: Optional[Sequence[int]] = None,
-) -> NDArrayFloat | NDArrayObject:
-    """
-    Convert to an array where each element may or may not be of equal length.
-
-    If each element is of equal length the array is multidimensional.
-    Otherwise it is a ragged array.
-
-    """
-    def convert_row(row: ArrayLike) -> NDArrayFloat:
-        r = np.array(row)
-
-        if row_shape is not None:
-            r = r.reshape(row_shape)
-
-        return r
-
-    array_list = [convert_row(a) for a in array]
-    shapes = [a.shape for a in array_list]
-
-    if all(s == shapes[0] for s in shapes):
-        return np.array(array_list)
-
-    res = np.empty(len(array_list), dtype=np.object_)
-
-    for i, a in enumerate(array_list):
-        res[i] = a
-
-    return res
-
-
 @overload
 def _cartesian_product(
-    axes: Sequence[ArrayT],
+    axes: Sequence[np.typing.NDArray[ArrayDTypeT]],
     *,
     flatten: bool = True,
     return_shape: Literal[False] = False,
-) -> ArrayT:
+) -> np.typing.NDArray[ArrayDTypeT]:
     pass
 
 
 @overload
 def _cartesian_product(
-    axes: Sequence[ArrayT],
+    axes: Sequence[np.typing.NDArray[ArrayDTypeT]],
     *,
     flatten: bool = True,
     return_shape: Literal[True],
-) -> Tuple[ArrayT, Tuple[int, ...]]:
+) -> Tuple[np.typing.NDArray[ArrayDTypeT], Tuple[int, ...]]:
     pass
 
 
 def _cartesian_product(  # noqa: WPS234
-    axes: Sequence[ArrayT],
+    axes: Sequence[np.typing.NDArray[ArrayDTypeT]],
     *,
     flatten: bool = True,
     return_shape: bool = False,
-) -> Union[ArrayT, Tuple[ArrayT, Tuple[int, ...]]]:
+) -> (
+    np.typing.NDArray[ArrayDTypeT]
+    | Tuple[np.typing.NDArray[ArrayDTypeT], Tuple[int, ...]]
+):
     """
     Compute the cartesian product of the axes.
 
@@ -240,98 +234,6 @@ def _cartesian_product(  # noqa: WPS234
 def _same_domain(fd: Union[Basis, FData], fd2: Union[Basis, FData]) -> bool:
     """Check if the domain range of two objects is the same."""
     return np.array_equal(fd.domain_range, fd2.domain_range)
-
-
-@overload
-def _reshape_eval_points(
-    eval_points: ArrayLike,
-    *,
-    aligned: Literal[True],
-    n_samples: int,
-    dim_domain: int,
-) -> NDArrayFloat:
-    pass
-
-
-@overload
-def _reshape_eval_points(
-    eval_points: Sequence[ArrayLike],
-    *,
-    aligned: Literal[False],
-    n_samples: int,
-    dim_domain: int,
-) -> NDArrayFloat | NDArrayObject:
-    pass
-
-
-@overload
-def _reshape_eval_points(
-    eval_points: Union[ArrayLike, Sequence[ArrayLike]],
-    *,
-    aligned: bool,
-    n_samples: int,
-    dim_domain: int,
-) -> NDArrayFloat | NDArrayObject:
-    pass
-
-
-def _reshape_eval_points(
-    eval_points: Union[ArrayLike, Iterable[ArrayLike]],
-    *,
-    aligned: bool,
-    n_samples: int,
-    dim_domain: int,
-) -> NDArrayFloat | NDArrayObject:
-    """Convert and reshape the eval_points to ndarray.
-
-    Args:
-        eval_points: Evaluation points to be reshaped.
-        aligned: Boolean flag. True if all the samples
-            will be evaluated at the same evaluation_points.
-        n_samples: Number of observations.
-        dim_domain: Dimension of the domain.
-
-    Returns:
-        Numpy array with the eval_points, if
-        evaluation_aligned is True with shape `number of evaluation points`
-        x `dim_domain`. If the points are not aligned the shape of the
-        points will be `n_samples` x `number of evaluation points`
-        x `dim_domain`.
-
-    """
-    if aligned:
-        eval_points = np.asarray(eval_points)
-    else:
-        eval_points = cast(Iterable[ArrayLike], eval_points)
-
-        eval_points = _to_array_maybe_ragged(
-            eval_points,
-            row_shape=(-1, dim_domain),
-        )
-
-    # Case evaluation of a single value, i.e., f(0)
-    # Only allowed for aligned evaluation
-    if aligned and (
-        eval_points.shape == (dim_domain,)
-        or (eval_points.ndim == 0 and dim_domain == 1)
-    ):
-        eval_points = np.array([eval_points])
-
-    if aligned:  # Samples evaluated at same eval points
-        eval_points = eval_points.reshape(
-            (eval_points.shape[0], dim_domain),
-        )
-
-    else:  # Different eval_points for each sample
-
-        if eval_points.shape[0] != n_samples:
-            raise ValueError(
-                f"eval_points should be a list "
-                f"of length {n_samples} with the "
-                f"evaluation points for each sample.",
-            )
-
-    return eval_points
 
 
 def _one_grid_to_points(
@@ -397,7 +299,7 @@ def _evaluate_grid(
     dim_codomain: int,
     extrapolation: Optional[ExtrapolationLike] = None,
     aligned: Literal[False],
-) -> NDArrayFloat | NDArrayObject:
+) -> NDArrayFloat:
     pass
 
 
@@ -411,7 +313,7 @@ def _evaluate_grid(
     dim_codomain: int,
     extrapolation: Optional[ExtrapolationLike] = None,
     aligned: bool,
-) -> NDArrayFloat | NDArrayObject:
+) -> NDArrayFloat:
     pass
 
 
@@ -424,7 +326,7 @@ def _evaluate_grid(  # noqa: WPS234
     dim_codomain: int,
     extrapolation: Optional[ExtrapolationLike] = None,
     aligned: bool = True,
-) -> NDArrayFloat | NDArrayObject:
+) -> NDArrayFloat:
     """
     Evaluate the functional object in the cartesian grid.
 
@@ -475,6 +377,7 @@ def _evaluate_grid(  # noqa: WPS234
             dimension.
 
     """
+
     # Compute intersection points and resulting shapes
     if aligned:
 
@@ -500,7 +403,7 @@ def _evaluate_grid(  # noqa: WPS234
                 "Should be provided a list of axis per sample",
             )
 
-        eval_points = _to_array_maybe_ragged(eval_points_tuple)
+        eval_points = np.asarray(eval_points_tuple)
 
     # Evaluate the points
     evaluated = evaluate_method(
@@ -518,7 +421,7 @@ def _evaluate_grid(  # noqa: WPS234
 
     else:
 
-        res = _to_array_maybe_ragged([
+        res = np.asarray([
             r.reshape(list(s) + [dim_codomain])
             for r, s in zip(evaluated, shape_tuple)
         ])
@@ -549,12 +452,13 @@ def nquad_vec(
 
 
 def _map_in_batches(
-    function: Callable[..., ArrayT],
-    arguments: Tuple[Union[FData, NDArrayAny], ...],
+    function: _MapFunction[_MapAcceptableT, P, np.typing.NDArray[ArrayDTypeT]],
+    arguments: Tuple[_MapAcceptableT, ...],
     indexes: Tuple[NDArrayInt, ...],
     memory_per_batch: Optional[int] = None,
-    **kwargs: Any,
-) -> ArrayT:
+    *args: P.args,  # Should be empty
+    **kwargs: P.kwargs,
+) -> np.typing.NDArray[ArrayDTypeT]:
     """
     Map a function over samples of FData or ndarray tuples efficiently.
 
@@ -575,7 +479,7 @@ def _map_in_batches(
 
     assert all(n_indexes == len(i) for i in indexes)
 
-    batches: List[ArrayT] = []
+    batches: List[np.typing.NDArray[ArrayDTypeT]] = []
 
     for pos in range(0, n_indexes, n_elements_per_batch_allowed):
         batch_args = tuple(
@@ -585,36 +489,48 @@ def _map_in_batches(
 
         batches.append(function(*batch_args, **kwargs))
 
-    return np.concatenate(batches, axis=0)  # type: ignore[return-value]
+    return np.concatenate(batches, axis=0)
 
 
 def _pairwise_symmetric(
-    function: Callable[..., ArrayT],
-    arg1: Union[FData, NDArrayAny],
-    arg2: Optional[Union[FData, NDArrayAny]] = None,
+    function: _PairwiseFunction[
+        _MapAcceptableT,
+        P,
+        np.typing.NDArray[ArrayDTypeT],
+    ],
+    arg1: _MapAcceptableT,
+    arg2: Optional[_MapAcceptableT] = None,
     memory_per_batch: Optional[int] = None,
-    **kwargs: Any,
-) -> ArrayT:
+    *args: P.args,  # Should be empty
+    **kwargs: P.kwargs,
+) -> np.typing.NDArray[ArrayDTypeT]:
     """Compute pairwise a commutative function."""
+    def map_function(
+        *args: _MapAcceptableT,
+        **kwargs: P.kwargs,
+    ) -> np.typing.NDArray[ArrayDTypeT]:
+        """Just to keep Mypy happy."""
+        return function(args[0], args[1], **kwargs)
+
     dim1 = len(arg1)
     if arg2 is None or arg2 is arg1:
-        indices = np.triu_indices(dim1)
+        triu_indices = np.triu_indices(dim1)
 
         triang_vec = _map_in_batches(
-            function,
+            map_function,
             (arg1, arg1),
-            indices,
-            memory_per_batch=memory_per_batch,
-            **kwargs,
+            triu_indices,
+            memory_per_batch,
+            **kwargs,  # type: ignore[arg-type]
         )
 
         matrix = np.empty((dim1, dim1), dtype=triang_vec.dtype)
 
         # Set upper matrix
-        matrix[indices] = triang_vec
+        matrix[triu_indices] = triang_vec
 
         # Set lower matrix
-        matrix[(indices[1], indices[0])] = triang_vec
+        matrix[(triu_indices[1], triu_indices[0])] = triang_vec
 
         return matrix
 
@@ -622,14 +538,14 @@ def _pairwise_symmetric(
     indices = np.indices((dim1, dim2))
 
     vec = _map_in_batches(
-        function,
+        map_function,
         (arg1, arg2),
         (indices[0].ravel(), indices[1].ravel()),
         memory_per_batch=memory_per_batch,
-        **kwargs,
+        **kwargs,  # type: ignore[arg-type]
     )
 
-    return vec.reshape((dim1, dim2))
+    return np.reshape(vec, (dim1, dim2))
 
 
 def _int_to_real(array: Union[NDArrayInt, NDArrayFloat]) -> NDArrayFloat:
@@ -659,7 +575,7 @@ def _check_array_key(array: NDArrayAny, key: Any) -> Any:
     return key
 
 
-def _check_estimator(estimator):
+def _check_estimator(estimator: Type[BaseEstimator]) -> None:
     from sklearn.utils.estimator_checks import (
         check_get_params_invariance,
         check_set_params,
@@ -671,7 +587,9 @@ def _check_estimator(estimator):
     check_set_params(name, instance)
 
 
-def _classifier_get_classes(y: ndarray) -> Tuple[ndarray, NDArrayInt]:
+def _classifier_get_classes(
+    y: NDArrayStr | NDArrayInt,
+) -> Tuple[NDArrayStr | NDArrayInt, NDArrayInt]:
 
     check_classification_targets(y)
 
@@ -688,14 +606,27 @@ def _classifier_get_classes(y: ndarray) -> Tuple[ndarray, NDArrayInt]:
     return classes, y_ind
 
 
-_DependenceMeasure = Callable[[np.ndarray, np.ndarray], np.ndarray]
+dtype_bound = np.number
+dtype_X_T = TypeVar("dtype_X_T", bound="dtype_bound[Any]")
+dtype_y_T = TypeVar("dtype_y_T", bound="dtype_bound[Any]")
+
+depX_T = TypeVar("depX_T", bound=NDArrayAny)
+depy_T = TypeVar("depy_T", bound=NDArrayAny)
+
+_DependenceMeasure = Callable[
+    [depX_T, depy_T],
+    NDArrayFloat,
+]
 
 
 def _compute_dependence(
-    X: NDArrayFloat,
-    y: NDArrayFloat,
+    X: np.typing.NDArray[dtype_X_T],
+    y: np.typing.NDArray[dtype_y_T],
     *,
-    dependence_measure: _DependenceMeasure,
+    dependence_measure: _DependenceMeasure[
+        np.typing.NDArray[dtype_X_T],
+        np.typing.NDArray[dtype_y_T],
+    ],
 ) -> NDArrayFloat:
     """
     Compute dependence between points and target.
@@ -719,7 +650,11 @@ def _compute_dependence(
         y = np.atleast_2d(y).T
     Y = np.array([y] * len(X))
 
-    dependence_results = rowwise(dependence_measure, X, Y)
+    dependence_results = rowwise(  # type: ignore[no-untyped-call]
+        dependence_measure,
+        X,
+        Y,
+    )
 
     return dependence_results.reshape(  # type: ignore[no-any-return]
         input_shape,

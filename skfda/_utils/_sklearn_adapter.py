@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, overload
 
 import sklearn.base
 
-from ..representation._typing import NDArrayFloat, NDArrayInt
+if TYPE_CHECKING:
+    from ..typing._numpy import NDArrayFloat, NDArrayInt
 
 SelfType = TypeVar("SelfType")
 TransformerNoTarget = TypeVar(
@@ -143,6 +144,19 @@ class ClassifierMixin(  # noqa: D101
             y,
             sample_weight=sample_weight,
         )
+
+
+class ClusterMixin(  # noqa: D101
+    ABC,
+    Generic[Input],
+    sklearn.base.ClusterMixin,  # type: ignore[misc]
+):
+    def fit_predict(  # noqa: D102
+        self,
+        X: Input,
+        y: object = None,
+    ) -> NDArrayInt:
+        return super().fit_predict(X, y)  # type: ignore[no-any-return]
 
 
 class RegressorMixin(  # noqa: D101

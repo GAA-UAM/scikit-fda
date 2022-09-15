@@ -6,7 +6,6 @@ from builtins import isinstance
 from typing import (
     TYPE_CHECKING,
     Any,
-    Iterable,
     Optional,
     Sequence,
     Type,
@@ -18,25 +17,16 @@ from typing import (
 import numpy as np
 import pandas.api.extensions
 
-from skfda._utils._utils import _to_array_maybe_ragged
-
 from ..._utils import _check_array_key, _int_to_real, constants, nquad_vec
+from ...typing._base import DomainRange, GridPointsLike, LabelTupleLike
+from ...typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 from .. import grid
 from .._functional_data import FData
-from .._typing import (
-    ArrayLike,
-    DomainRange,
-    GridPointsLike,
-    LabelTupleLike,
-    NDArrayBool,
-    NDArrayFloat,
-    NDArrayInt,
-)
 from ..extrapolation import ExtrapolationLike
-from . import Basis
 
 if TYPE_CHECKING:
     from .. import FDataGrid
+    from . import Basis
 
 T = TypeVar('T', bound='FDataBasis')
 
@@ -81,7 +71,7 @@ class FDataBasis(FData):  # noqa: WPS214
         >>> coefficients = [1, 1, 3, .5]
         >>> FDataBasis(basis, coefficients)
         FDataBasis(
-            basis=Monomial(domain_range=((0, 1),), n_basis=4),
+            basis=Monomial(domain_range=((0.0, 1.0),), n_basis=4),
             coefficients=[[ 1.   1.   3.   0.5]],
             ...)
 
@@ -210,13 +200,6 @@ class FDataBasis(FData):  # noqa: WPS214
             )
             grid_points = sample_points
 
-        # n is the samples
-        # m is the observations
-        # k is the number of elements of the basis
-
-        # Each sample in a column (m x n)
-        data_matrix = np.atleast_2d(data_matrix)
-
         fd = grid.FDataGrid(data_matrix=data_matrix, grid_points=grid_points)
 
         return fd.to_basis(basis=basis, method=method)
@@ -256,7 +239,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
     def _evaluate(
         self,
-        eval_points: Union[ArrayLike, Iterable[ArrayLike]],
+        eval_points: NDArrayFloat,
         *,
         aligned: bool = True,
     ) -> NDArrayFloat:
@@ -274,14 +257,12 @@ class FDataBasis(FData):  # noqa: WPS214
                 (self.n_samples, len(eval_points), self.dim_codomain),
             )
 
-        eval_points = cast(Iterable[ArrayLike], eval_points)
-
         res_list = [
             np.sum((c * self.basis(np.asarray(p)).T).T, axis=0)
             for c, p in zip(self.coefficients, eval_points)
         ]
 
-        return _to_array_maybe_ragged(res_list)
+        return np.asarray(res_list)
 
     def shift(
         self,
@@ -433,7 +414,7 @@ class FDataBasis(FData):  # noqa: WPS214
             >>> coefficients = [[0.5, 1, 2, .5], [1.5, 1, 4, .5]]
             >>> FDataBasis(basis, coefficients).sum()
             FDataBasis(
-                basis=Monomial(domain_range=((0, 1),), n_basis=4),
+                basis=Monomial(domain_range=((0.0, 1.0),), n_basis=4),
                 coefficients=[[ 2.  2.  6.  1.]],
                 ...)
 
@@ -532,7 +513,7 @@ class FDataBasis(FData):  # noqa: WPS214
                         [ 2.],
                         [ 5.]]]),
                 grid_points=(array([ 0., 1., 2.]),),
-                domain_range=((0, 5),),
+                domain_range=((0.0, 5.0),),
                 ...)
 
         """
@@ -699,26 +680,12 @@ class FDataBasis(FData):  # noqa: WPS214
             and np.array_equal(self.coefficients, other.coefficients)
         )
 
-    def __eq__(self, other: object) -> NDArrayBool:  # type: ignore[override]
+    def _eq_elemenwise(self: T, other: T) -> NDArrayBool:
         """Elementwise equality of FDataBasis."""
-        if not isinstance(other, type(self)) or self.dtype != other.dtype:
-            if other is pandas.NA:
-                return self.isna()
-            if pandas.api.types.is_list_like(other) and not isinstance(
-                other, (pandas.Series, pandas.Index, pandas.DataFrame),
-            ):
-                return np.concatenate([x == y for x, y in zip(self, other)])
-
-            return NotImplemented
-
-        if len(self) != len(other) and len(self) != 1 and len(other) != 1:
-            raise ValueError(
-                f"Different lengths: "
-                f"len(self)={len(self)} and "
-                f"len(other)={len(other)}",
-            )
-
-        return np.all(self.coefficients == other.coefficients, axis=1)
+        return np.all(  # type: ignore[no-any-return]
+            self.coefficients == other.coefficients,
+            axis=1,
+        )
 
     def concatenate(
         self: T,
@@ -778,9 +745,9 @@ class FDataBasis(FData):  # noqa: WPS214
         compute the composition.
 
         Args:
-            fd (:class:`FData`): FData object to make the composition. Should
+            fd: FData object to make the composition. Should
                 have the same number of samples and image dimension equal to 1.
-            eval_points (array_like): Points to perform the evaluation.
+            eval_points: Points to perform the evaluation.
              kwargs: Named arguments to be passed to :func:`from_data`.
 
         Returns:
@@ -807,7 +774,7 @@ class FDataBasis(FData):  # noqa: WPS214
 
         return self.copy(
             coefficients=self.coefficients[key],
-            sample_names=np.array(self.sample_names)[key],
+            sample_names=list(np.array(self.sample_names)[key]),
         )
 
     def __add__(
@@ -971,10 +938,15 @@ class FDataBasis(FData):  # noqa: WPS214
         Returns:
             na_values (np.ndarray): Positions of NA.
         """
-        return np.all(np.isnan(self.coefficients), axis=1)
+        return np.all(  # type: ignore[no-any-return]
+            np.isnan(self.coefficients),
+            axis=1,
+        )
 
 
-class FDataBasisDType(pandas.api.extensions.ExtensionDtype):  # type: ignore
+class FDataBasisDType(
+    pandas.api.extensions.ExtensionDtype,  # type: ignore[misc]
+):
     """DType corresponding to FDataBasis in Pandas."""
 
     kind = 'O'

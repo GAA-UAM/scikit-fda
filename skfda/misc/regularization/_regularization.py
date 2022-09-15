@@ -6,19 +6,17 @@ from typing import Any, Generic, Iterable, Optional, Union
 
 import numpy as np
 import scipy.linalg
-from sklearn.base import BaseEstimator
 
-from skfda.misc.operators import Identity, gramian_matrix
-
+from ..._utils._sklearn_adapter import BaseEstimator
 from ...representation import FData
-from ...representation._typing import NDArrayFloat
 from ...representation.basis import Basis
-from ..operators import Operator
+from ...typing._numpy import NDArrayFloat
+from ..operators import Identity, Operator, gramian_matrix
 from ..operators._operators import OperatorInput
 
 
 class L2Regularization(
-    BaseEstimator,  # type: ignore
+    BaseEstimator,
     Generic[OperatorInput],
 ):
     r"""
@@ -174,4 +172,6 @@ def compute_penalty_matrix(
             regularization_parameter,
         )]
 
-    return scipy.linalg.block_diag(*penalty_blocks)
+    return scipy.linalg.block_diag(  # type: ignore[no-any-return]
+        *penalty_blocks,
+    )

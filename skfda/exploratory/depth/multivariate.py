@@ -12,9 +12,8 @@ import sklearn
 from scipy.special import comb
 from typing_extensions import Literal
 
-from skfda.representation._typing import NDArrayFloat, NDArrayInt
-
 from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 T = TypeVar("T", contravariant=True)
 SelfType = TypeVar("SelfType")

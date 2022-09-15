@@ -6,7 +6,7 @@ from typing import Tuple
 import numpy as np
 
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayBool, NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayBool, NDArrayFloat, NDArrayInt
 
 
 def compute_region(

@@ -179,7 +179,7 @@ class LinearRegression(
         >>> _ = linear.fit(df, y)
         >>> linear.coef_[0]
         FDataBasis(
-            basis=Monomial(domain_range=((0, 1),), n_basis=3),
+            basis=Monomial(domain_range=((0.0, 1.0),), n_basis=3),
             coefficients=[[-15.  96. -90.]],
             ...)
         >>> linear.intercept_

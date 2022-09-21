@@ -202,7 +202,7 @@ class LinearRegression(
         >>> df = pd.DataFrame(cov_dict)
         >>> y = [11, 10, 12, 6, 10, 13]
         >>> linear = LinearRegression(
-        ...              coef_basis=[None, Constant()])
+        ...              coef_basis=[None, Constant(), Constant()])
         >>> _ = linear.fit(df, y)
         >>> linear.coef_[0]
         array([2.])

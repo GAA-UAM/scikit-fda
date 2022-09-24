@@ -79,7 +79,7 @@ def data_missing() -> ExtensionArray:
 
 @pytest.fixture(params=["data", "data_missing"])
 def all_data(
-    request,
+    request: Any,
     data: ExtensionArray,
     data_missing: ExtensionArray,
 ) -> ExtensionArray:
@@ -174,7 +174,7 @@ def data_for_grouping() -> NoReturn:
 
 
 @pytest.fixture(params=[True, False])
-def box_in_series(request) -> bool:
+def box_in_series(request: Any) -> Any:
     """Whether to box the data in a Series."""
     return request.param
 
@@ -188,25 +188,25 @@ def box_in_series(request) -> bool:
     ],
     ids=["scalar", "list", "series", "object"],
 )
-def groupby_apply_op(request) -> Callable[[FDataGrid], Any]:
+def groupby_apply_op(request: Any) -> Any:
     """Functions to test groupby.apply()."""
     return request.param
 
 
 @pytest.fixture(params=[True, False])
-def as_frame(request) -> bool:
+def as_frame(request: Any) -> Any:
     """Whether to support Series and Series.to_frame() comparison testing."""
     return request.param
 
 
 @pytest.fixture(params=[True, False])
-def as_series(request) -> bool:
+def as_series(request: Any) -> Any:
     """Boolean fixture to support arr and Series(arr) comparison testing."""
     return request.param
 
 
 @pytest.fixture(params=[True, False])
-def use_numpy(request) -> bool:
+def use_numpy(request: Any) -> Any:
     """
     Compare ExtensionDtype and numpy.
 
@@ -217,7 +217,7 @@ def use_numpy(request) -> bool:
 
 
 @pytest.fixture(params=["ffill", "bfill"])
-def fillna_method(request) -> str:
+def fillna_method(request: Any) -> Any:
     """
     Series.fillna parameter fixture.
 
@@ -228,7 +228,7 @@ def fillna_method(request) -> str:
 
 
 @pytest.fixture(params=[True, False])
-def as_array(request) -> bool:
+def as_array(request: Any) -> Any:
     """Whether to support ExtensionDtype _from_sequence method testing."""
     return request.param
 
@@ -252,7 +252,7 @@ _all_arithmetic_operators = [
 
 
 @pytest.fixture(params=_all_arithmetic_operators)
-def all_arithmetic_operators(request) -> Callable[..., Any]:
+def all_arithmetic_operators(request: Any) -> Any:
     """
     Fixture for dunder names for common arithmetic operations.
     """
@@ -262,7 +262,7 @@ def all_arithmetic_operators(request) -> Callable[..., Any]:
 @pytest.fixture(params=["__eq__", "__ne__",
                         # "__le__", "__lt__", "__ge__", "__gt__"
                         ])
-def all_compare_operators(request) -> Callable[..., Any]:
+def all_compare_operators(request: Any) -> Any:
     """
     Fixture for dunder names for common compare operations
     """
@@ -284,7 +284,7 @@ _all_numeric_reductions = [
 
 
 @pytest.fixture(params=_all_numeric_reductions)
-def all_numeric_reductions(request):
+def all_numeric_reductions(request: Any) -> Any:
     """
     Fixture for numeric reduction names.
     """
@@ -295,7 +295,7 @@ def all_numeric_reductions(request):
 ##############################################################################
 
 
-class TestCasting(base.BaseCastingTests):
+class TestCasting(base.BaseCastingTests):  # type: ignore[misc]
 
     # Tries to construct dtype from string
     @pytest.mark.skip(reason="Unsupported")
@@ -308,7 +308,7 @@ class TestCasting(base.BaseCastingTests):
         pass
 
 
-class TestConstructors(base.BaseConstructorsTests):
+class TestConstructors(base.BaseConstructorsTests):  # type: ignore[misc]
 
     # Does not support scalars which are also ExtensionArrays
     @pytest.mark.skip(reason="Unsupported")
@@ -321,7 +321,7 @@ class TestConstructors(base.BaseConstructorsTests):
         pass
 
 
-class TestDtype(base.BaseDtypeTests):
+class TestDtype(base.BaseDtypeTests):  # type: ignore[misc]
 
     # Tries to construct dtype from string
     @pytest.mark.skip(reason="Unsupported")
@@ -347,11 +347,11 @@ class TestDtype(base.BaseDtypeTests):
         pass
 
 
-class TestGetitem(base.BaseGetitemTests):
+class TestGetitem(base.BaseGetitemTests):  # type: ignore[misc]
     pass
 
 
-class TestInterface(base.BaseInterfaceTests):
+class TestInterface(base.BaseInterfaceTests):  # type: ignore[misc]
 
     # Does not support scalars which are also array_like
     @pytest.mark.skip(reason="Unsupported")
@@ -384,7 +384,7 @@ class TestInterface(base.BaseInterfaceTests):
         pass
 
 
-class TestArithmeticOps(base.BaseArithmeticOpsTests):
+class TestArithmeticOps(base.BaseArithmeticOpsTests):  # type: ignore[misc]
 
     series_scalar_exc = None
 
@@ -414,7 +414,7 @@ class TestArithmeticOps(base.BaseArithmeticOpsTests):
         pass
 
 
-class TestComparisonOps(base.BaseComparisonOpsTests):
+class TestComparisonOps(base.BaseComparisonOpsTests):  # type: ignore[misc]
 
     # Cannot be compared with 0
     @pytest.mark.skip(reason="Unsupported")
@@ -435,7 +435,7 @@ class TestComparisonOps(base.BaseComparisonOpsTests):
         pass
 
 
-class TestNumericReduce(base.BaseNumericReduceTests):
+class TestNumericReduce(base.BaseNumericReduceTests):  # type: ignore[misc]
 
     def check_reduce(
         self,

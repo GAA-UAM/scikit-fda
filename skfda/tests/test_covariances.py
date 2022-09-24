@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-import skfda
+import skfda.misc.covariances
 
 
 class TestsSklearn(unittest.TestCase):
@@ -33,8 +33,9 @@ class TestsSklearn(unittest.TestCase):
 
     def test_polynomial(self) -> None:
 
-        for variance in (1, 2):
-            for intercept in (0, 1, 2):
+        # Test a couple of non-default parameters only for speed
+        for variance in (2,):
+            for intercept in (0, 2):
                 for slope in (1, 2):
                     for degree in (1, 2, 3):
                         with self.subTest(
@@ -81,9 +82,10 @@ class TestsSklearn(unittest.TestCase):
 
     def test_matern(self) -> None:
 
-        for variance in (1, 2):
-            for length_scale in (0.5, 1, 2):
-                for nu in (0.5, 1, 1.5, 2, 2.5, 3.5, 4.5, np.inf):
+        # Test a couple of non-default parameters only for speed
+        for variance in (2,):
+            for length_scale in (0.5,):
+                for nu in (0.5, 1, 1.5, 2.5, 3.5, np.inf):
                     with self.subTest(
                         variance=variance,
                         length_scale=length_scale,

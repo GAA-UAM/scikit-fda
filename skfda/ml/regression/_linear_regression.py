@@ -4,13 +4,14 @@ import itertools
 from typing import Any, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_is_fitted
 
+from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
 from ...misc.lstsq import solve_regularized_weighted_lstsq
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData
 from ...representation.basis import Basis
+from ...typing._numpy import NDArrayFloat
 from ._coefficients import CoefficientInfo, coefficient_info_from_covariate
 
 RegularizationType = Union[
@@ -27,12 +28,12 @@ RegularizationIterableType = Union[
 
 AcceptedDataType = Union[
     FData,
-    np.ndarray,
+    NDArrayFloat,
 ]
 
 AcceptedDataCoefsType = Union[
     CoefficientInfo[FData],
-    CoefficientInfo[np.ndarray],
+    CoefficientInfo[NDArrayFloat],
 ]
 
 BasisCoefsType = Union[
@@ -40,11 +41,12 @@ BasisCoefsType = Union[
     Sequence[Optional[Basis]],
 ]
 
+
 ArgcheckResultType = Tuple[
-    List[AcceptedDataType],
-    np.ndarray,
-    Optional[np.ndarray],
-    List[AcceptedDataCoefsType],
+    Sequence[AcceptedDataType],
+    NDArrayFloat,
+    Optional[NDArrayFloat],
+    Sequence[AcceptedDataCoefsType],
 ]
 
 CheckRegularizationResultType = Tuple[
@@ -60,8 +62,11 @@ ConcatenateInterceptResultType = Tuple[
 
 
 class LinearRegression(
-    BaseEstimator,  # type: ignore
-    RegressorMixin,  # type: ignore
+    BaseEstimator,
+    RegressorMixin[
+        Union[AcceptedDataType, Sequence[AcceptedDataType]],
+        NDArrayFloat,
+    ],
 ):
     r"""Linear regression with multivariate and functional response.
 
@@ -151,7 +156,7 @@ class LinearRegression(
         >>> _ = linear.fit(x_fd, y)
         >>> linear.coef_[0]
         FDataBasis(
-            basis=Monomial(domain_range=((0, 1),), n_basis=3),
+            basis=Monomial(domain_range=((0.0, 1.0),), n_basis=3),
             coefficients=[[-15.  96. -90.]],
             ...)
         >>> linear.intercept_
@@ -177,7 +182,7 @@ class LinearRegression(
         array([ 2.,  1.])
         >>> linear.coef_[1]
         FDataBasis(
-        basis=Constant(domain_range=((0, 1),), n_basis=1),
+        basis=Constant(domain_range=((0.0, 1.0),), n_basis=1),
         coefficients=[[ 1.]],
         ...)
         >>> linear.intercept_
@@ -200,20 +205,14 @@ class LinearRegression(
         >>> _ = funct_linear.fit(X, y)
         >>> funct_linear.coef_[0]
         FDataBasis(
-        basis=Monomial(domain_range=((0, 1),), n_basis=3),
+        basis=Monomial(domain_range=((0.0, 1.0),), n_basis=3),
         coefficients=[[ 6.  3.  1.]],
-        dataset_name=None,
-        argument_names=(None,),
-        coordinate_names=(None,),
-        extrapolation=None)
-        >>> funct_linear.predict([[3,4,1]])
+        ...)
+        >>> funct_linear.predict([[3, 4, 1]])
         [FDataBasis(
-        basis=Monomial(domain_range=((0, 1),), n_basis=3),
+        basis=Monomial(domain_range=((0.0, 1.0),), n_basis=3),
         coefficients=[[ 47.  22.  24.]],
-        dataset_name=None,
-        argument_names=(None,),
-        coordinate_names=(None,),
-        extrapolation=None)]
+        ...)]
 
     """
 
@@ -232,9 +231,9 @@ class LinearRegression(
 
     def fit(  # noqa: D102, WPS210
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
-        y: np.ndarray,
-        sample_weight: Optional[np.ndarray] = None,
+        X: AcceptedDataType | Sequence[AcceptedDataType],
+        y: NDArrayFloat,
+        sample_weight: Optional[NDArrayFloat] = None,
     ) -> LinearRegression:
 
         X_new, y, sample_weight, coef_info = self._argcheck_X_y(
@@ -302,7 +301,7 @@ class LinearRegression(
             )
         else:
             inner_products_list = [
-                c.regression_matrix(x, y)
+                c.regression_matrix(x, y)  # type: ignore[arg-type]
                 for x, c in zip(X_new, coef_info)
             ]
             # This is C @ J
@@ -345,7 +344,7 @@ class LinearRegression(
     def predict(  # noqa: D102
         self,
         X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
 
         check_is_fitted(self)
         X = self._argcheck_X(X)
@@ -373,7 +372,7 @@ class LinearRegression(
         if self._target_ndim == 1 and not self.functional_response:
             result = result.ravel()
 
-        return result
+        return result  # type: ignore[no-any-return]
 
     def _check_regularization(
         self,
@@ -436,9 +435,9 @@ class LinearRegression(
 
     def _argcheck_X_y(  # noqa: N802, WPS238
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
-        y: Union[AcceptedDataType, Sequence[AcceptedDataType]],
-        sample_weight: Optional[np.ndarray] = None,
+        X: AcceptedDataType | Sequence[AcceptedDataType],
+        y: NDArrayFloat,
+        sample_weight: Optional[NDArrayFloat] = None,
         coef_basis: Optional[BasisCoefsType] = None,
     ) -> ArgcheckResultType:
         """Do some checks to types and shapes."""

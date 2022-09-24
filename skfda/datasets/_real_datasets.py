@@ -1,16 +1,18 @@
+from __future__ import annotations
+
 import warnings
-from typing import Any, Mapping, Optional, Tuple, Union, overload
+from typing import Any, Mapping, Tuple, overload
 
 import numpy as np
 import pandas as pd
-from numpy import ndarray
 from pandas import DataFrame, Series
 from sklearn.utils import Bunch
 from typing_extensions import Literal
 
 import rdata
 
-from .. import FDataGrid
+from ..representation import FDataGrid
+from ..typing._numpy import NDArrayFloat, NDArrayInt
 
 
 def _get_skdatasets_repositories() -> Any:
@@ -25,7 +27,7 @@ def _get_skdatasets_repositories() -> Any:
 
 def fdata_constructor(
     obj: Any,
-    attrs: Mapping[Union[str, bytes], Any],
+    attrs: Mapping[str | bytes, Any],
 ) -> FDataGrid:
     """
     Construct a :func:`FDataGrid` objet from a R `fdata` object.
@@ -49,8 +51,8 @@ def fdata_constructor(
 
 def functional_constructor(
     obj: Any,
-    attrs: Mapping[Union[str, bytes], Any],
-) -> FDataGrid:
+    attrs: Mapping[str | bytes, Any],
+) -> Tuple[FDataGrid, NDArrayInt]:
     """
     Construct a :func:`FDataGrid` objet from a R `functional` object.
 
@@ -95,7 +97,7 @@ def fetch_cran(
     name: str,
     package_name: str,
     *,
-    converter: Optional[rdata.conversion.Converter] = None,
+    converter: rdata.conversion.Converter | None = None,
     **kwargs: Any,
 ) -> Any:
     """
@@ -131,7 +133,7 @@ def fetch_cran(
     )
 
 
-def _ucr_to_fdatagrid(name: str, data: np.ndarray) -> FDataGrid:
+def _ucr_to_fdatagrid(name: str, data: NDArrayFloat) -> FDataGrid:
     if data.dtype == np.object_:
         data = np.array(data.tolist())
 
@@ -162,7 +164,7 @@ def fetch_ucr(
     *,
     return_X_y: Literal[True],
     **kwargs: Any,
-) -> Tuple[FDataGrid, ndarray]:
+) -> Tuple[FDataGrid, NDArrayInt]:
     pass
 
 
@@ -171,7 +173,7 @@ def fetch_ucr(
     *,
     return_X_y: bool = False,
     **kwargs: Any,
-) -> Union[Bunch, Tuple[FDataGrid, ndarray]]:
+) -> Bunch | Tuple[FDataGrid, NDArrayInt]:
     """
     Fetch a dataset from the UCR.
 
@@ -256,16 +258,16 @@ _phoneme_descr = """
 
     The data were extracted from the TIMIT database (TIMIT
     Acoustic-Phonetic Continuous Speech Corpus, NTIS, US Dept of Commerce)
-    which is a widely used resource for research in speech recognition.  A
+    which is a widely used resource for research in speech recognition. A
     dataset was formed by selecting five phonemes for
-    classification based on digitized speech from this database.  The
+    classification based on digitized speech from this database.   
     phonemes are transcribed as follows: "sh" as in "she", "dcl" as in
     "dark", "iy" as the vowel in "she", "aa" as the vowel in "dark", and
-    "ao" as the first vowel in "water".  From continuous speech of 50 male
+    "ao" as the first vowel in "water". From continuous speech of 50 male
     speakers, 4509 speech frames of 32 msec duration were selected,
     approximately 2 examples of each phoneme from each speaker.  Each
     speech frame is represented by 512 samples at a 16kHz sampling rate,
-    and each frame represents one of the above five phonemes.  The
+    and each frame represents one of the above five phonemes. The
     breakdown of the 4509 speech frames into phoneme frequencies is as
     follows:
 
@@ -277,13 +279,13 @@ _phoneme_descr = """
 
     From each speech frame, a log-periodogram was computed, which is one of
     several widely used methods for casting speech data in a form suitable
-    for speech recognition.  Thus the data used in what follows consist of
+    for speech recognition. Thus the data used in what follows consist of
     4509 log-periodograms of length 256, with known class (phoneme)
     memberships.
 
     The data contain curves sampled at 256 points, a response
     variable, and a column labelled "speaker" identifying the
-    diffferent speakers.
+    different speakers.
 
     References:
         Hastie, Trevor; Buja, Andreas; Tibshirani, Robert. Penalized
@@ -307,7 +309,7 @@ def fetch_phoneme(
     *,
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, ndarray]:
+) -> Tuple[FDataGrid, NDArrayInt]:
     pass
 
 
@@ -324,7 +326,7 @@ def fetch_phoneme(
     *,
     return_X_y: bool = False,
     as_frame: bool = False,
-) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
     """
     Load the phoneme dataset.
 
@@ -417,7 +419,7 @@ def fetch_growth(
     *,
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, ndarray]:
+) -> Tuple[FDataGrid, NDArrayInt]:
     pass
 
 
@@ -433,7 +435,7 @@ def fetch_growth(
 def fetch_growth(
     return_X_y: bool = False,
     as_frame: bool = False,
-) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
     """
     Load the Berkeley Growth Study dataset.
 
@@ -543,7 +545,7 @@ def fetch_tecator(
     *,
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, ndarray]:
+) -> Tuple[FDataGrid, NDArrayFloat]:
     pass
 
 
@@ -559,7 +561,7 @@ def fetch_tecator(
 def fetch_tecator(
     return_X_y: bool = False,
     as_frame: bool = False,
-) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, DataFrame]]:
+) -> Bunch | Tuple[FDataGrid, NDArrayFloat] | Tuple[DataFrame, DataFrame]:
     """
     Load the Tecator dataset.
 
@@ -655,7 +657,7 @@ def fetch_medflies(
     *,
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, ndarray]:
+) -> Tuple[FDataGrid, NDArrayInt]:
     pass
 
 
@@ -671,7 +673,7 @@ def fetch_medflies(
 def fetch_medflies(
     return_X_y: bool = False,
     as_frame: bool = False,
-) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
     """
     Load the Medflies dataset.
 
@@ -751,7 +753,7 @@ def fetch_weather(
     *,
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, ndarray]:
+) -> Tuple[FDataGrid, NDArrayInt]:
     pass
 
 
@@ -767,7 +769,7 @@ def fetch_weather(
 def fetch_weather(
     return_X_y: bool = False,
     as_frame: bool = False,
-) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
     """
     Load the Canadian Weather dataset.
 
@@ -923,7 +925,7 @@ def fetch_aemet(
 def fetch_aemet(  # noqa: WPS210
     return_X_y: bool = False,
     as_frame: bool = False,
-) -> Union[Bunch, Tuple[FDataGrid, None], Tuple[DataFrame, None]]:
+) -> Bunch | Tuple[FDataGrid, None] | Tuple[DataFrame, None]:
     """
     Load the Spanish Weather dataset.
 
@@ -945,7 +947,7 @@ def fetch_aemet(  # noqa: WPS210
         data_matrix=data_matrix,
         grid_points=np.arange(0, days_in_year) + 0.5,
         domain_range=(0, days_in_year),
-        dataset_name="aemet",
+        dataset_name="AEMET",
         sample_names=data["df"].iloc[:, 1],
         argument_names=("day",),
         coordinate_names=(
@@ -1048,7 +1050,7 @@ def fetch_octane(
     *,
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, ndarray]:
+) -> Tuple[FDataGrid, NDArrayInt]:
     pass
 
 
@@ -1064,7 +1066,7 @@ def fetch_octane(
 def fetch_octane(
     return_X_y: bool = False,
     as_frame: bool = False,
-) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, Series]]:
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, Series]:
     """Load near infrared spectra of gasoline samples.
 
     This function fetchs the octane dataset from the R package 'mrfDepth'
@@ -1180,7 +1182,7 @@ def fetch_gait(
 def fetch_gait(
     return_X_y: bool = False,
     as_frame: bool = False,
-) -> Union[Bunch, Tuple[FDataGrid, None], Tuple[DataFrame, None]]:
+) -> Bunch | Tuple[FDataGrid, None] | Tuple[DataFrame, None]:
     """
     Load the GAIT dataset.
 
@@ -1195,8 +1197,10 @@ def fetch_gait(
 
     data_matrix = np.asarray(data)
     data_matrix = np.transpose(data_matrix, axes=(1, 0, 2))
-    grid_points = np.asarray(data.coords.get('dim_0'), np.float64)
-    sample_names = np.asarray(data.coords.get('dim_1'))
+    grid_points = np.asarray(data.coords.get('dim_0'), dtype=np.float64)
+    sample_names = list(
+        np.asarray(data.coords.get('dim_1'), dtype=np.str_),
+    )
     feature_name = 'gait'
 
     curves = FDataGrid(
@@ -1276,7 +1280,7 @@ def fetch_handwriting(
 def fetch_handwriting(
     return_X_y: bool = False,
     as_frame: bool = False,
-) -> Union[Bunch, Tuple[FDataGrid, None], Tuple[DataFrame, None]]:
+) -> Bunch | Tuple[FDataGrid, None] | Tuple[DataFrame, None]:
     """
     Load the HANDWRIT dataset.
 
@@ -1291,8 +1295,10 @@ def fetch_handwriting(
 
     data_matrix = np.asarray(data)
     data_matrix = np.transpose(data_matrix, axes=(1, 0, 2))
-    grid_points = np.asarray(data.coords.get('dim_0'), np.float64)
-    sample_names = np.asarray(data.coords.get('dim_1'))
+    grid_points = np.asarray(data.coords.get('dim_0'), dtype=np.float64)
+    sample_names = list(
+        np.asarray(data.coords.get('dim_1'), dtype=np.str_),
+    )
     feature_name = 'handwrit'
 
     curves = FDataGrid(
@@ -1362,7 +1368,7 @@ def fetch_nox(
     *,
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, ndarray]:
+) -> Tuple[FDataGrid, NDArrayInt]:
     pass
 
 
@@ -1378,7 +1384,7 @@ def fetch_nox(
 def fetch_nox(
     return_X_y: bool = False,
     as_frame: bool = False,
-) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, DataFrame]]:
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, DataFrame]:
     """
     Load the NOx dataset.
 
@@ -1471,7 +1477,7 @@ def fetch_mco(
     *,
     return_X_y: Literal[True],
     as_frame: Literal[False] = False,
-) -> Tuple[FDataGrid, ndarray]:
+) -> Tuple[FDataGrid, NDArrayInt]:
     pass
 
 
@@ -1487,7 +1493,7 @@ def fetch_mco(
 def fetch_mco(
     return_X_y: bool = False,
     as_frame: bool = False,
-) -> Union[Bunch, Tuple[FDataGrid, ndarray], Tuple[DataFrame, DataFrame]]:
+) -> Bunch | Tuple[FDataGrid, NDArrayInt] | Tuple[DataFrame, DataFrame]:
     """
     Load the mithochondiral calcium overload (MCO) dataset.
 

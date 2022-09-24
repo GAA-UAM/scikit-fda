@@ -5,20 +5,20 @@ from __future__ import annotations
 from typing import Callable, Optional, Union
 
 import numpy as np
-from sklearn.base import BaseEstimator
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
 
+from ..._utils._sklearn_adapter import BaseEstimator
 from ...representation import FData
-from ...representation._typing import ArrayLike, NDArrayFloat
 from ...representation.basis import Basis
+from ...typing._numpy import ArrayLike, NDArrayFloat
 from .._math import inner_product_matrix
 from ..regularization._regularization import TikhonovRegularization
 
 WeightsCallable = Callable[[np.ndarray], np.ndarray]
 
 
-class MahalanobisDistance(BaseEstimator):  # type: ignore
+class MahalanobisDistance(BaseEstimator):
     """Functional Mahalanobis distance.
 
     Class that implements functional Mahalanobis distance for both
@@ -145,7 +145,7 @@ class MahalanobisDistance(BaseEstimator):  # type: ignore
             else:
                 raise
 
-        return np.sum(
+        return np.sum(  # type: ignore[no-any-return]
             eigenvalues
             * inner_product_matrix(e1 - e2, eigenvectors) ** 2
             / (eigenvalues + self.alpha)**2,

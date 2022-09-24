@@ -26,9 +26,10 @@ class OnewayAnovaTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             v_sample_stat(FDataGrid([0]), [0, 1])
         with self.assertRaises(ValueError):
-            v_asymptotic_stat(FDataGrid([0]), [0, 1])
+            v_asymptotic_stat(FDataGrid([0]), weights=[0, 1])
         with self.assertRaises(ValueError):
-            v_asymptotic_stat(FDataGrid([[1, 1, 1], [1, 1, 1]]), [0, 0])
+            v_asymptotic_stat(
+                FDataGrid([[1, 1, 1], [1, 1, 1]]), weights=[0, 0])
 
     def test_v_stats(self) -> None:
         """Test statistic behaviour."""
@@ -52,11 +53,11 @@ class OnewayAnovaTests(unittest.TestCase):
             + (1 - 3 * np.sqrt(1 / 3)) ** 2
             + (2 - 3 * np.sqrt(2 / 3)) ** 2
         )
-        self.assertAlmostEqual(v_asymptotic_stat(fd, weights), res)
+        self.assertAlmostEqual(v_asymptotic_stat(fd, weights=weights), res)
         self.assertAlmostEqual(
             v_asymptotic_stat(
                 fd.to_basis(Fourier(n_basis=5)),
-                weights,
+                weights=weights,
             ),
             res,
         )

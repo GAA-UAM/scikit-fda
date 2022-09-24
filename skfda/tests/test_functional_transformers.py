@@ -16,7 +16,10 @@ class TestUnconditionalExpectedValues(unittest.TestCase):
         """Compare results with grid and basis representations."""
         X = fetch_growth(return_X_y=True)[0]
 
-        data_grid = unconditional_expected_value(X[:5], np.log)
+        data_grid = unconditional_expected_value(
+            X[:5],
+            np.log,
+        )
         data_basis = unconditional_expected_value(
             X[:5].to_basis(basis.BSpline(n_basis=7)),
             np.log,

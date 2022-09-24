@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import abc
 import copy
-import numbers
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -17,31 +16,30 @@ from typing import (
     overload,
 )
 
-import dcor
 import numpy as np
 import numpy.linalg as linalg
 import numpy.ma as ma
 import scipy.stats
 import sklearn.utils
-from numpy.typing import ArrayLike
 from typing_extensions import Literal
 
-from ...._utils import _compute_dependence
+import dcor
+
+from ...._utils import _compute_dependence, _DependenceMeasure as _DepMeasure
 from ...._utils._sklearn_adapter import (
     BaseEstimator,
     InductiveTransformerMixin,
 )
 from ....representation import FDataGrid
-from ....representation._typing import NDArrayBool, NDArrayFloat, NDArrayInt
+from ....typing._numpy import ArrayLike, NDArrayBool, NDArrayFloat, NDArrayInt
 
 if TYPE_CHECKING:
     from ....misc.covariances import CovarianceLike
     import GPy
-    from .maxima_hunting import _DependenceMeasure as _DepMeasure
 
 
 def _transform_to_2d(t: ArrayLike) -> NDArrayFloat:
-    t = np.asarray(t)
+    t = np.asfarray(t)
 
     dim = len(t.shape)
     assert dim <= 2
@@ -89,7 +87,7 @@ class _PicklableKernel():
         self.__kernel.param_array[...] = state['values']
 
     def __call__(self, *args: Any, **kwargs: Any) -> NDArrayFloat:
-        return self.__kernel.K(*args, **kwargs)
+        return self.__kernel.K(*args, **kwargs)  # type: ignore[no-any-return]
 
 
 def make_kernel(k: CovarianceLike) -> CovarianceLike:
@@ -123,7 +121,10 @@ def _absolute_argmax(
         Index of the absolute maximum.
 
     """
-    masked_function = ma.array(function, mask=mask)
+    masked_function = ma.array(  # type: ignore[no-untyped-call]
+        function,
+        mask=mask,
+    )
 
     t_max = ma.argmax(masked_function)
 
@@ -268,6 +269,7 @@ class GaussianCorrection(ConditionalMeanCorrection):
 
     def begin(self, X: FDataGrid, y: NDArrayFloat) -> None:
         if self.fit_hyperparameters:
+            # TODO: Migrate this to scikit-learn
             import GPy
 
             T = X.grid_points[0]
@@ -280,9 +282,13 @@ class GaussianCorrection(ConditionalMeanCorrection):
                 mean = np.mean(trajectories, axis=0)
                 X_copy[y == class_label, :] -= mean
 
+            gpy_kernel = getattr(self.cov, "_PicklableKernel__kernel")
+
             m = GPy.models.GPRegression(
-                T[:, None], X_copy.T,
-                kernel=self.cov._PicklableKernel__kernel)
+                T[:, None],
+                X_copy.T,
+                kernel=gpy_kernel,
+            )
             m.constrain_positive('')
             m.optimize()
 
@@ -292,7 +298,7 @@ class GaussianCorrection(ConditionalMeanCorrection):
 
         mean = self.mean
 
-        if isinstance(mean, numbers.Number):
+        if isinstance(mean, (int, float)):
             expectation = np.ones_like(t, dtype=float) * mean
         else:
             expectation = mean(t)
@@ -365,7 +371,7 @@ class GaussianCorrection(ConditionalMeanCorrection):
             * (x_0.T - t_0_expectation)
         ) if var else expectation + np.zeros_like(x_0.T)
 
-        return cond_expectation
+        return cond_expectation  # type: ignore[no-any-return]
 
 
 class GaussianConditionedCorrection(GaussianCorrection):
@@ -470,7 +476,7 @@ class GaussianConditionedCorrection(GaussianCorrection):
         expectation = original_expect + modified_expect
         assert expectation.shape == t.shape
 
-        return expectation
+        return expectation  # type: ignore[no-any-return]
 
     def _evaluate_cov(
         self,
@@ -529,7 +535,9 @@ class GaussianSampleCorrection(ConditionalMeanCorrection):
         i_r = np.ravel(i)
         j_r = np.ravel(j)
 
-        return self.cov_matrix_[np.ix_(i_r, j_r)]
+        return self.cov_matrix_[  # type: ignore[no-any-return]
+            np.ix_(i_r, j_r)
+        ]
 
     def conditioned(
         self,
@@ -651,7 +659,7 @@ class ScoreThresholdStop(StoppingCondition):
 
         score = dependences[selected_index]
 
-        return score < self.threshold
+        return score < self.threshold  # type: ignore[no-any-return]
 
 
 class AsymptoticIndependenceTestStop(StoppingCondition):
@@ -701,7 +709,7 @@ class AsymptoticIndependenceTestStop(StoppingCondition):
 
         chi_quant = scipy.stats.chi2.ppf(1 - significance, df=1)
 
-        return chi_quant * t2 / x_dist.shape[0]
+        return float(chi_quant * t2 / x_dist.shape[0])
 
     def __call__(
         self,
@@ -713,7 +721,9 @@ class AsymptoticIndependenceTestStop(StoppingCondition):
 
         bound = self.chi_bound(selected_variable, y, self.significance)
 
-        return dcor.u_distance_covariance_sqr(selected_variable, y) < bound
+        return bool(
+            dcor.u_distance_covariance_sqr(selected_variable, y) < bound,
+        )
 
 
 class RedundancyCondition(BaseEstimator):
@@ -757,7 +767,10 @@ class DependenceThresholdRedundancy(RedundancyCondition):
         self,
         threshold: float = 0.9,
         *,
-        dependence_measure: _DepMeasure = dcor.u_distance_correlation_sqr,
+        dependence_measure: _DepMeasure[
+            NDArrayFloat,
+            NDArrayFloat,
+        ] = dcor.u_distance_correlation_sqr,
     ) -> None:
         super().__init__()
         self.threshold = threshold
@@ -842,8 +855,8 @@ def _get_influence_mask(
             index = indexes.pop()
             # Check if it wasn't masked before
             if (
-                not old_mask[index] and not new_mask[index] and
-                is_redundant(index)
+                not old_mask[index] and not new_mask[index]
+                and is_redundant(index)
             ):
                 new_mask[index] = True
                 for i in adjacent_indexes(index):
@@ -863,7 +876,10 @@ def _rec_maxima_hunting_gen_no_copy(
     X: FDataGrid,
     y: Union[NDArrayInt, NDArrayFloat],
     *,
-    dependence_measure: _DepMeasure = dcor.u_distance_correlation_sqr,
+    dependence_measure: _DepMeasure[
+        NDArrayFloat,
+        NDArrayFloat,
+    ] = dcor.u_distance_correlation_sqr,
     correction: Optional[Correction] = None,
     redundancy_condition: Optional[RedundancyCondition] = None,
     stopping_condition: Optional[StoppingCondition] = None,
@@ -1091,7 +1107,10 @@ class RecursiveMaximaHunting(
     def __init__(
         self,
         *,
-        dependence_measure: _DepMeasure = dcor.u_distance_correlation_sqr,
+        dependence_measure: _DepMeasure[
+            NDArrayFloat,
+            NDArrayFloat,
+        ] = dcor.u_distance_correlation_sqr,
         max_features: Optional[int] = None,
         correction: Optional[Correction] = None,
         redundancy_condition: Optional[RedundancyCondition] = None,
@@ -1103,7 +1122,7 @@ class RecursiveMaximaHunting(
         self.redundancy_condition = redundancy_condition
         self.stopping_condition = stopping_condition
 
-    def fit(
+    def fit(  # type: ignore[override] # noqa: D102
         self,
         X: FDataGrid,
         y: Union[NDArrayInt, NDArrayFloat],
@@ -1146,7 +1165,10 @@ class RecursiveMaximaHunting(
 
         output = X_matrix[(slice(None),) + self.indexes_]
 
-        return output.reshape(X.n_samples, -1)
+        return output.reshape(  # type: ignore[no-any-return]
+            X.n_samples,
+            -1,
+        )
 
     @overload
     def get_support(

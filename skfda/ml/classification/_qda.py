@@ -1,24 +1,25 @@
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Sequence
 
 import numpy as np
-from GPy.kern import Kern
-from GPy.models import GPRegression
 from scipy.linalg import logm
-from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.base import clone
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils import _classifier_get_classes
+from ..._utils._sklearn_adapter import BaseEstimator, ClassifierMixin
+from ...exploratory.stats.covariance import CovarianceEstimator
 from ...representation import FDataGrid
-from ...representation._typing import NDArrayFloat, NDArrayInt
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 
 
-class ParameterizedFunctionalQDA(
-    BaseEstimator,  # type: ignore
-    ClassifierMixin,  # type: ignore
+class QuadraticDiscriminantAnalysis(
+    BaseEstimator,
+    ClassifierMixin[FDataGrid, NDArrayInt],
 ):
-    """Parameterized functional quadratic discriminant analysis.
+    """
+    Functional quadratic discriminant analysis.
 
     It is based on the assumption that the data is part of a Gaussian process
     and depending on the output label, the covariance and mean parameters are
@@ -73,34 +74,51 @@ class ParameterizedFunctionalQDA(
         We will use random values such as 1 for the mean and 6 for the
         variance.
 
-        >>> from GPy.kern import RBF
-        >>> rbf = RBF(input_dim=1, variance=6, lengthscale=1)
+        >>> from skfda.exploratory.stats.covariance import (
+        ...     ParametricGaussianCovariance
+        ... )
+        >>> from skfda.ml.classification import QuadraticDiscriminantAnalysis
+        >>> from skfda.misc.covariances import Gaussian
+        >>> rbf = Gaussian(variance=6, length_scale=1)
 
         We will fit the ParameterizedFunctionalQDA with training data. We
         use as regularizer parameter a low value such as 0.05.
 
-        >>> pfqda = ParameterizedFunctionalQDA(rbf, 0.05)
-        >>> pfqda = pfqda.fit(X_train, y_train)
+        >>> qda = QuadraticDiscriminantAnalysis(
+        ...     ParametricGaussianCovariance(rbf),
+        ...     regularizer=0.05,
+        ... )
+        >>> qda = qda.fit(X_train, y_train)
 
 
         We can predict the class of new samples.
 
-        >>> list(pfqda.predict(X_test))
+        >>> list(qda.predict(X_test))
         [0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1,
          1, 0, 1, 0, 1, 0, 1, 1]
 
         Finally, we calculate the mean accuracy for the test data.
 
-        >>> round(pfqda.score(X_test, y_test), 2)
+        >>> round(qda.score(X_test, y_test), 2)
         0.96
 
     """
+    means_: Sequence[FDataGrid]
 
-    def __init__(self, kernel: Kern, regularizer: float) -> None:
-        self.kernel = kernel
+    def __init__(
+        self,
+        cov_estimator: CovarianceEstimator[FDataGrid],
+        *,
+        regularizer: float = 0,
+    ) -> None:
+        self.cov_estimator = cov_estimator
         self.regularizer = regularizer
 
-    def fit(self, X: FDataGrid, y: np.ndarray) -> ParameterizedFunctionalQDA:
+    def fit(
+        self,
+        X: FDataGrid,
+        y: NDArrayInt,
+    ) -> QuadraticDiscriminantAnalysis:
         """
         Fit the model using X as training data and y as target values.
 
@@ -115,9 +133,7 @@ class ParameterizedFunctionalQDA(
         self.classes = classes
         self.y_ind = y_ind
 
-        cov_kernels, means = self._fit_gaussian_process(X)
-        self.cov_kernels_ = cov_kernels
-        self.means_ = means
+        self._fit_gaussian_process(X)
 
         self.priors_ = self._calculate_priors(y)
         self._log_priors = np.log(self.priors_)
@@ -147,12 +163,12 @@ class ParameterizedFunctionalQDA(
         """
         check_is_fitted(self)
 
-        return np.argmax(
+        return np.argmax(  # type: ignore[no-any-return]
             self._calculate_log_likelihood(X.data_matrix),
             axis=1,
         )
 
-    def _calculate_priors(self, y: np.ndarray) -> NDArrayFloat:
+    def _calculate_priors(self, y: NDArrayInt) -> NDArrayFloat:
         """
         Calculate the prior probability of each class.
 
@@ -168,7 +184,7 @@ class ParameterizedFunctionalQDA(
     def _fit_gaussian_process(
         self,
         X: FDataGrid,
-    ) -> Tuple[NDArrayFloat, NDArrayFloat]:
+    ) -> None:
         """
         Fit the kernel to the data in each class.
 
@@ -178,37 +194,22 @@ class ParameterizedFunctionalQDA(
         Args:
             X: FDataGrid with the training data.
 
-        Returns:
-            Tuple containing a ndarray of fitted kernels and
-            another ndarray with the means of each class.
         """
-        grid = X.grid_points[0][:, np.newaxis]
-        kernels = []
+        cov_estimators = []
         means = []
         covariance = []
         for class_index, _ in enumerate(self.classes):
             X_class = X[self.y_ind == class_index]
-            X_class_mean = X_class.mean()
-            X_class_centered = X_class - X_class_mean
+            cov_estimator = clone(self.cov_estimator).fit(X_class)
 
-            data_matrix = X_class_centered.data_matrix[:, :, 0]
+            cov_estimators.append(cov_estimator)
+            means.append(cov_estimator.location_)
+            covariance.append(cov_estimator.covariance_.data_matrix[0, ..., 0])
 
-            grid_points = X_class.grid_points[0][:, np.newaxis]
-
-            regressor = GPRegression(grid, data_matrix.T, kernel=self.kernel)
-            regressor.optimize()
-
-            kernels += [regressor.kern]
-            means += [X_class_mean.data_matrix[0]]
-            covariance += [
-                regressor.kern.K(grid_points),
-            ]
-
+        self.means_ = means
         self._covariances = np.asarray(covariance)
 
-        return np.asarray(kernels), np.asarray(means)
-
-    def _calculate_log_likelihood(self, X: np.ndarray) -> NDArrayFloat:
+    def _calculate_log_likelihood(self, X: NDArrayFloat) -> NDArrayFloat:
         """
         Calculate the log likelihood quadratic discriminant analysis.
 
@@ -220,7 +221,12 @@ class ParameterizedFunctionalQDA(
             output classes.
         """
         # Calculates difference wrt. the mean (x - un)
-        X_centered = X[:, np.newaxis, :, :] - self.means_[np.newaxis, :, :, :]
+        mean_values = np.array([m.data_matrix[0] for m in self.means_])
+
+        X_centered = (
+            X[:, np.newaxis, :, :]
+            - mean_values[np.newaxis, :, :, :]
+        )
 
         # Calculates mahalanobis distance (-1/2*(x - un).T*inv(sum)*(x - un))
         mahalanobis_distances = np.reshape(

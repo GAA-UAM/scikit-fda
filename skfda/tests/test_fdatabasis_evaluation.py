@@ -161,7 +161,6 @@ class TestBasisEvaluationFourier(unittest.TestCase):
         ])[..., np.newaxis]
 
         np.testing.assert_allclose(f(t), res, atol=1e-2)
-        np.testing.assert_allclose(f.evaluate(t), res, atol=1e-2)
 
     def test_evaluation_derivative(self) -> None:
         """Test the evaluation of the derivative of Fourier."""
@@ -221,7 +220,6 @@ class TestBasisEvaluationBSpline(unittest.TestCase):
         ])[..., np.newaxis]
 
         np.testing.assert_allclose(f(t), res, atol=1e-2)
-        np.testing.assert_allclose(f.evaluate(t), res, atol=1e-2)
 
     def test_evaluation_derivative(self) -> None:
         """Test the evaluation of the derivative of BSpline."""
@@ -282,7 +280,6 @@ class TestBasisEvaluationMonomial(unittest.TestCase):
         ])[..., np.newaxis]
 
         np.testing.assert_allclose(f(t), res, atol=1e-2)
-        np.testing.assert_allclose(f.evaluate(t), res, atol=1e-2)
 
     def test_evaluation_derivative(self) -> None:
         """Test the evaluation of the derivative of Monomial."""

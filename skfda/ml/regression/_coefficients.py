@@ -8,6 +8,7 @@ import numpy as np
 
 from ...misc._math import inner_product
 from ...representation.basis import Basis, FDataBasis
+from ...typing._numpy import NDArrayFloat
 
 CovariateType = TypeVar("CovariateType")
 
@@ -33,8 +34,8 @@ class CoefficientInfo(abc.ABC, Generic[CovariateType]):
     def regression_matrix(
         self,
         X: CovariateType,
-        y: np.ndarray,
-    ) -> np.ndarray:
+        y: NDArrayFloat,
+    ) -> NDArrayFloat:
         """
         Return the constant coefficients matrix for regression.
 
@@ -51,7 +52,7 @@ class CoefficientInfo(abc.ABC, Generic[CovariateType]):
     @abc.abstractmethod
     def convert_from_constant_coefs(
         self,
-        coefs: np.ndarray,
+        coefs: NDArrayFloat,
     ) -> CovariateType:
         """
         Return the coefficients object from the constant coefs.
@@ -70,7 +71,7 @@ class CoefficientInfo(abc.ABC, Generic[CovariateType]):
         self,
         coefs: CovariateType,
         X: CovariateType,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         """
         Inner product.
 
@@ -81,20 +82,20 @@ class CoefficientInfo(abc.ABC, Generic[CovariateType]):
         pass
 
 
-class CoefficientInfoNdarray(CoefficientInfo[np.ndarray]):
+class CoefficientInfoNdarray(CoefficientInfo[NDArrayFloat]):
 
     def regression_matrix(  # noqa: D102
         self,
-        X: np.ndarray,
-        y: np.ndarray,
-    ) -> np.ndarray:
+        X: NDArrayFloat,
+        y: NDArrayFloat,
+    ) -> NDArrayFloat:
 
         return np.atleast_2d(X)
 
     def convert_from_constant_coefs(  # noqa: D102
         self,
-        coefs: np.ndarray,
-    ) -> np.ndarray | FDataBasis:
+        coefs: NDArrayFloat,
+    ) -> NDArrayFloat | FDataBasis:
 
         if self.y_basis is not None:
             return FDataBasis(self.basis.basis, coefs)
@@ -103,9 +104,9 @@ class CoefficientInfoNdarray(CoefficientInfo[np.ndarray]):
 
     def inner_product(  # noqa: D102
         self,
-        coefs: np.ndarray,
-        X: np.ndarray,
-    ) -> np.ndarray:
+        coefs: NDArrayFloat,
+        X: NDArrayFloat,
+    ) -> NDArrayFloat:
 
         return inner_product(coefs, X)
 
@@ -122,8 +123,8 @@ class CoefficientInfoFDataBasis(CoefficientInfo[FDataBasis]):
     def regression_matrix(  # noqa: D102
         self,
         X: FDataBasis,
-        y: np.ndarray,
-    ) -> np.ndarray:
+        y: NDArrayFloat,
+    ) -> NDArrayFloat:
         # The matrix is the matrix of coefficients multiplied by
         # the matrix of inner products.
 
@@ -133,7 +134,7 @@ class CoefficientInfoFDataBasis(CoefficientInfo[FDataBasis]):
 
     def convert_from_constant_coefs(  # noqa: D102
         self,
-        coefs: np.ndarray,
+        coefs: NDArrayFloat,
     ) -> FDataBasis:
         return FDataBasis(self.basis.basis, coefs.T)
 
@@ -141,7 +142,7 @@ class CoefficientInfoFDataBasis(CoefficientInfo[FDataBasis]):
         self,
         coefs: FDataBasis,
         X: FDataBasis,
-    ) -> np.ndarray:
+    ) -> NDArrayFloat:
         # Efficient implementation of the inner product using the
         # inner product matrix previously computed
         return inner_product(coefs, X, inner_product_matrix=self.inner_basis.T)
@@ -150,7 +151,7 @@ class CoefficientInfoFDataBasis(CoefficientInfo[FDataBasis]):
 @singledispatch
 def coefficient_info_from_covariate(
     X: CovariateType,
-    y: np.ndarray | FDataBasis,
+    y: NDArrayFloat | FDataBasis,
     **_: Any,
 ) -> CoefficientInfo[CovariateType]:
     """Make a coefficient info object from a covariate."""
@@ -159,12 +160,12 @@ def coefficient_info_from_covariate(
 
 
 @coefficient_info_from_covariate.register(np.ndarray)
-def _coefficient_info_from_covariate_ndarray(
-    X: np.ndarray,
-    y: np.ndarray | FDataBasis,
+def _coefficient_info_from_covariate_ndarray(  # type: ignore[misc]
+    X: NDArrayFloat,
+    y: NDArrayFloat | FDataBasis,
     basis: Basis | None = None,
     **_: Any,
-) -> CoefficientInfo[np.ndarray]:
+) -> CoefficientInfo[NDArrayFloat]:
 
     y_basis = None
 
@@ -192,7 +193,7 @@ def _coefficient_info_from_covariate_ndarray(
 @coefficient_info_from_covariate.register(FDataBasis)
 def _coefficient_info_from_covariate_fdatabasis(
     X: FDataBasis,
-    y: np.ndarray,
+    y: NDArrayFloat,
     *,
     basis: Basis,
     **_: Any,

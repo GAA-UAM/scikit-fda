@@ -2,29 +2,28 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Callable, Optional, TypeVar, Union
 
 import numpy as np
 import scipy.integrate
 from scipy.linalg import solve_triangular
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
-from ...misc import inner_product_matrix
-from ...misc.metrics import l2_norm
+from ..._utils._sklearn_adapter import BaseEstimator, InductiveTransformerMixin
 from ...misc.regularization import L2Regularization, compute_penalty_matrix
 from ...representation import FData
-from ...representation._typing import ArrayLike
 from ...representation.basis import Basis, FDataBasis
 from ...representation.grid import FDataGrid
+from ...typing._numpy import ArrayLike, NDArrayFloat
 
 Function = TypeVar("Function", bound=FData)
 WeightsCallable = Callable[[np.ndarray], np.ndarray]
 
 
-class FPCA(
-    BaseEstimator,  # type: ignore
-    TransformerMixin,  # type: ignore
+class FPCA(  # noqa: WPS230 (too many public attributes)
+    BaseEstimator,
+    InductiveTransformerMixin[FData, NDArrayFloat, object],
 ):
     r"""
     Principal component analysis.
@@ -37,30 +36,33 @@ class FPCA(
     Parameters:
         n_components: Number of principal components to keep from
             functional principal component analysis. Defaults to 3.
-        centering: If ``True`` then calculate the mean of the functional
-            data object and center the data first. Defaults to ``True``.
+        centering: Set to ``False`` when the functional data is already known
+            to be centered and there is no need to center it. Otherwise,
+            the mean of the functional data object is calculated and the data
+            centered before fitting . Defaults to ``True``.
         regularization: Regularization object to be applied.
         components_basis: The basis in which we want the principal
             components. We can use a different basis than the basis contained
             in the passed FDataBasis object. This parameter is only used when
             fitting a FDataBasis.
         weights: the weights vector used for
-            discrete integration. If none then the trapezoidal rule is used for
+            discrete integration. If none then Simpson's rule is used for
             computing the weights. If a callable object is passed, then the
             weight vector will be obtained by evaluating the object at the
             sample points of the passed FDataGrid object in the fit method.
             This parameter is only used when fitting a FDataGrid.
 
+            .. deprecated:: 0.7.2
+
     Attributes:
-        components\_ (FData): this contains the principal components in a
-            basis representation.
-        explained_variance\_ (array_like): The amount of variance explained by
+        components\_: this contains the principal components.
+        explained_variance\_ : The amount of variance explained by
             each of the selected components.
-        explained_variance_ratio\_ (array_like): this contains the percentage
+        explained_variance_ratio\_ : this contains the percentage
             of variance explained by each principal component.
         singular_values\_: The singular values corresponding to each of the
             selected components.
-        mean\_ (FData): mean of the train data.
+        mean\_: mean of the train data.
 
     Examples:
         Construct an artificial FDataBasis object and run FPCA with this
@@ -104,6 +106,11 @@ class FPCA(
         self.regularization = regularization
         self.weights = weights
         self.components_basis = components_basis
+        if weights is not None:
+            warnings.warn(
+                "The 'weights' parameter is deprecated and will be removed.",
+                DeprecationWarning,
+            )
 
     def _center_if_necessary(
         self,
@@ -120,7 +127,7 @@ class FPCA(
     def _fit_basis(
         self,
         X: FDataBasis,
-        y: None = None,
+        y: object = None,
     ) -> FPCA:
         """
         Compute the first n_components principal components and saves them.
@@ -204,7 +211,7 @@ class FPCA(
         # apply regularization
         if regularization_matrix is not None:
             # using += would have a different behavior
-            g_matrix = (g_matrix + regularization_matrix)  # noqa: WPS350
+            g_matrix = g_matrix + regularization_matrix  # noqa: WPS350
 
         # obtain triangulation using cholesky
         l_matrix = np.linalg.cholesky(g_matrix)
@@ -220,9 +227,7 @@ class FPCA(
         )
 
         # the final matrix, C(L-1Jt)t for svd or (L-1Jt)-1CtC(L-1Jt)t for PCA
-        final_matrix = (
-            X.coefficients @ np.transpose(l_inv_j_t)
-        )
+        final_matrix = X.coefficients @ np.transpose(l_inv_j_t)
 
         # initialize the pca module provided by scikit-learn
         pca = PCA(n_components=self.n_components)
@@ -236,10 +241,12 @@ class FPCA(
             lower=False,
         )
 
-        self.explained_variance_ratio_ = pca.explained_variance_ratio_
-        self.explained_variance_ = pca.explained_variance_
-        self.singular_values_ = pca.singular_values_
-        self.components_ = X.copy(
+        self.explained_variance_ratio_: NDArrayFloat = (
+            pca.explained_variance_ratio_
+        )
+        self.explained_variance_: NDArrayFloat = pca.explained_variance_
+        self.singular_values_: NDArrayFloat = pca.singular_values_
+        self.components_: FData = X.copy(
             basis=components_basis,
             coefficients=component_coefficients.T,
             sample_names=(None,) * self.n_components,
@@ -250,8 +257,8 @@ class FPCA(
     def _transform_basis(
         self,
         X: FDataBasis,
-        y: None = None,
-    ) -> np.ndarray:
+        y: object = None,
+    ) -> NDArrayFloat:
         """Compute the n_components first principal components score.
 
         Args:
@@ -269,7 +276,7 @@ class FPCA(
             )
 
         # in this case it is the inner product of our data with the components
-        return (
+        return (  # type: ignore[no-any-return]
             X.coefficients @ self._j_matrix
             @ self.components_.coefficients.T
         )
@@ -277,7 +284,7 @@ class FPCA(
     def _fit_grid(
         self,
         X: FDataGrid,
-        y: None = None,
+        y: object = None,
     ) -> FPCA:
         r"""
         Compute the n_components first principal components and saves them.
@@ -335,21 +342,20 @@ class FPCA(
         X = self._center_if_necessary(X)
 
         # establish weights for each point of discretization
-        if not self.weights:
+        if self.weights is None:
             # grid_points is a list with one array in the 1D case
-            # in trapezoidal rule, suppose \deltax_k = x_k - x_{k-1}, the
-            # weight vector is as follows: [\deltax_1/2, \deltax_1/2 +
-            # \deltax_2/2, \deltax_2/2 + \deltax_3/2, ... , \deltax_n/2]
             identity = np.eye(len(X.grid_points[0]))
-            self.weights = scipy.integrate.simps(identity, X.grid_points[0])
+            self.weights_ = scipy.integrate.simps(identity, X.grid_points[0])
         elif callable(self.weights):
-            self.weights = self.weights(X.grid_points[0])
+            self.weights_ = self.weights(X.grid_points[0])
             # if its a FDataGrid then we need to reduce the dimension to 1-D
             # array
             if isinstance(self.weights, FDataGrid):
-                self.weights = np.squeeze(self.weights.data_matrix)
+                self.weights_ = np.squeeze(self.weights.data_matrix)
+        else:
+            self.weights_ = self.weights
 
-        weights_matrix = np.diag(self.weights)
+        weights_matrix = np.diag(self.weights_)
 
         basis = FDataGrid(
             data_matrix=np.identity(n_points_discretization),
@@ -364,7 +370,7 @@ class FPCA(
 
         basis_matrix = basis.data_matrix[..., 0]
         if regularization_matrix is not None:
-            basis_matrix = basis_matrix + regularization_matrix
+            basis_matrix += regularization_matrix
 
         fd_data = np.linalg.solve(
             basis_matrix.T,
@@ -386,7 +392,9 @@ class FPCA(
             sample_names=(None,) * self.n_components,
         )
 
-        self.explained_variance_ratio_ = pca.explained_variance_ratio_
+        self.explained_variance_ratio = (
+            pca.explained_variance_ratio_
+        )
         self.explained_variance_ = pca.explained_variance_
         self.singular_values_ = pca.singular_values_
 
@@ -395,8 +403,8 @@ class FPCA(
     def _transform_grid(
         self,
         X: FDataGrid,
-        y: None = None,
-    ) -> np.ndarray:
+        y: object = None,
+    ) -> NDArrayFloat:
         """
         Compute the ``n_components`` first principal components score.
 
@@ -411,9 +419,9 @@ class FPCA(
         # in this case its the coefficient matrix multiplied by the principal
         # components as column vectors
 
-        return (
+        return (  # type: ignore[no-any-return]
             X.data_matrix.reshape(X.data_matrix.shape[:-1])
-            * self.weights
+            * self.weights_
             @ np.transpose(
                 self.components_.data_matrix.reshape(
                     self.components_.data_matrix.shape[:-1],
@@ -424,7 +432,7 @@ class FPCA(
     def fit(
         self,
         X: FData,
-        y: None = None,
+        y: object = None,
     ) -> FPCA:
         """
         Compute the n_components first principal components and saves them.
@@ -447,8 +455,8 @@ class FPCA(
     def transform(
         self,
         X: FData,
-        y: None = None,
-    ) -> np.ndarray:
+        y: object = None,
+    ) -> NDArrayFloat:
         """
         Compute the ``n_components`` first principal components scores.
 
@@ -472,8 +480,8 @@ class FPCA(
     def fit_transform(
         self,
         X: FData,
-        y: None = None,
-    ) -> np.ndarray:
+        y: object = None,
+    ) -> NDArrayFloat:
         """
         Compute the n_components first principal components and their scores.
 
@@ -489,7 +497,7 @@ class FPCA(
 
     def inverse_transform(
         self,
-        pc_scores: np.ndarray,
+        pc_scores: NDArrayFloat,
     ) -> FData:
         """
         Compute the recovery from the fitted principal components scores.
@@ -528,7 +536,7 @@ class FPCA(
 
             additional_args = {
                 "data_matrix": np.einsum(
-                    'nc,c...->n...',
+                    "nc,c...->n...",
                     pc_scores,
                     self.components_.data_matrix,
                 ),
@@ -540,7 +548,10 @@ class FPCA(
                 "coefficients": pc_scores @ self.components_.coefficients,
             }
 
-        return self.mean_.copy(
-            **additional_args,
-            sample_names=(None,) * len(pc_scores),
-        ) + self.mean_
+        return (
+            self.mean_.copy(
+                **additional_args,
+                sample_names=(None,) * len(pc_scores),
+            )
+            + self.mean_
+        )

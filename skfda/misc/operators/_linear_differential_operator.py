@@ -1,24 +1,17 @@
 from __future__ import annotations
 
 import numbers
-from typing import Callable, Optional, Sequence, Tuple, Union, cast
+from typing import Callable, Sequence, Union
 
 import numpy as np
-from numpy import polyder, polyint, polymul, polyval
-
 import scipy.integrate
+from numpy import polyder, polyint, polymul, polyval
 from scipy.interpolate import PPoly
 
-from ..._utils import _same_domain
 from ...representation import FData, FDataGrid
-from ...representation._typing import DomainRangeLike
-from ...representation.basis import (
-    BSpline,
-    Constant,
-    FDataBasis,
-    Fourier,
-    Monomial,
-)
+from ...representation.basis import Basis, BSpline, Constant, Fourier, Monomial
+from ...typing._base import DomainRangeLike
+from ...typing._numpy import NDArrayFloat
 from ._operators import Operator, gramian_matrix_optimization
 
 Order = int
@@ -26,20 +19,20 @@ Order = int
 WeightSequence = Sequence[
     Union[
         float,
-        Callable[[np.ndarray], np.ndarray],
+        Callable[[NDArrayFloat], NDArrayFloat],
     ],
 ]
 
 
 class LinearDifferentialOperator(
-    Operator[FData, Callable[[np.ndarray], np.ndarray]],
+    Operator[Union[FData, Basis], Callable[[NDArrayFloat], NDArrayFloat]],
 ):
     r"""
     Defines the structure of a linear differential operator function system.
 
     .. math::
-        Lx(t) = b_0(t) x(t) + b_1(t) x'(x) +
-                \dots + b_{n-1}(t) d^{n-1}(x(t)) + b_n(t) d^n(x(t))
+        Lx(t) = b_0(t) x(t) + b_1(t) x'(t) +
+                \dots + b_{n-1}(t) D^{n-1}(x(t)) + b_n(t) D^n(x(t))
 
     Can only be applied to functional data, as multivariate data has no
     derivatives.
@@ -50,17 +43,13 @@ class LinearDifferentialOperator(
     order if it is an integral type and the weights otherwise.
 
     Parameters:
-        order (int, optional): the order of the operator. It's the highest
-                derivative order of the operator
-
-        weights (list, optional): A FDataBasis objects list of length
-                order + 1 items
-
-        domain_range (tuple or list of tuples, optional): Definition
-                     of the interval where the weight functions are
-                     defined. If the functional weights are specified
-                     and this is not, takes the domain range from them.
-                     Otherwise, defaults to (0,1).
+        order: the order of the operator. It's the highest derivative order
+            of the operator.
+        weights: A FDataBasis objects list of length order + 1 items.
+        domain_range: Definition of the interval where the weight functions
+            are defined. If the functional weights are specified and this is
+            not, takes the domain range from them. Otherwise, defaults to
+            (0,1).
 
     Attributes:
         weights (list):  A list of callables.
@@ -96,15 +85,15 @@ class LinearDifferentialOperator(
         >>> LinearDifferentialOperator(weights=fdlist)
         LinearDifferentialOperator(
         weights=(FDataBasis(
-                basis=Constant(domain_range=((0, 1),), n_basis=1),
+                basis=Constant(domain_range=((0.0, 1.0),), n_basis=1),
                 coefficients=[[ 0.]],
                 ...),
             FDataBasis(
-                basis=Constant(domain_range=((0, 1),), n_basis=1),
+                basis=Constant(domain_range=((0.0, 1.0),), n_basis=1),
                 coefficients=[[ 0.]],
                 ...),
             FDataBasis(
-                basis=Monomial(domain_range=((0, 1),), n_basis=3),
+                basis=Monomial(domain_range=((0.0, 1.0),), n_basis=3),
                 coefficients=[[ 1. 2. 3.]],
                 ...)),
         )
@@ -113,11 +102,11 @@ class LinearDifferentialOperator(
 
     def __init__(
         self,
-        order_or_weights: Union[Order, WeightSequence, None] = None,
+        order_or_weights: Order | WeightSequence | None = None,
         *,
-        order: Optional[int] = None,
-        weights: Optional[WeightSequence] = None,
-        domain_range: Optional[DomainRangeLike] = None,
+        order: int | None = None,
+        weights: WeightSequence | None = None,
+        domain_range: DomainRangeLike | None = None,
     ) -> None:
 
         num_args = sum(
@@ -180,7 +169,7 @@ class LinearDifferentialOperator(
             and self.weights == other.weights
         )
 
-    def constant_weights(self) -> Optional[np.ndarray]:
+    def constant_weights(self) -> NDArrayFloat | None:
         """
         Return constant weights.
 
@@ -197,20 +186,25 @@ class LinearDifferentialOperator(
 
         return None if weights.dtype == np.object_ else weights
 
-    def __call__(self, f: FData) -> Callable[[np.ndarray], np.ndarray]:
+    def __call__(
+        self,
+        f: FData | Basis,
+    ) -> Callable[[NDArrayFloat], NDArrayFloat]:
         """Return the function that results of applying the operator."""
         function_derivatives = [
             f.derivative(order=i) for i, _ in enumerate(self.weights)
         ]
 
         def applied_linear_diff_op(
-            t: np.ndarray,
-        ) -> np.ndarray:
-            return sum(
-                (w(t) if callable(w) else w)
+            t: NDArrayFloat,
+        ) -> NDArrayFloat:
+            result = sum(
+                (w(t) if callable(w) else np.asarray(w))
                 * function_derivatives[i](t)
                 for i, w in enumerate(self.weights)
             )
+            assert not isinstance(result, int)
+            return result
 
         return applied_linear_diff_op
 
@@ -226,7 +220,7 @@ class LinearDifferentialOperator(
 def constant_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     basis: Constant,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """Optimized version for Constant basis."""
     coefs = linear_operator.constant_weights()
     if coefs is None:
@@ -240,8 +234,8 @@ def constant_penalty_matrix_optimized(
 
 def _monomial_evaluate_constant_linear_diff_op(
     basis: Monomial,
-    weights: np.ndarray,
-) -> np.ndarray:
+    weights: NDArrayFloat,
+) -> NDArrayFloat:
     """Evaluate constant weights over the monomial basis."""
     max_derivative = len(weights) - 1
 
@@ -295,14 +289,14 @@ def _monomial_evaluate_constant_linear_diff_op(
     # that is the result of applying the linear differential operator
     # to each element of the basis
 
-    return polynomials
+    return polynomials  # type: ignore[no-any-return]
 
 
 @gramian_matrix_optimization.register
 def monomial_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     basis: Monomial,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """Optimized version for Monomial basis."""
     weights = linear_operator.constant_weights()
     if weights is None:
@@ -365,8 +359,8 @@ def monomial_penalty_matrix_optimized(
 
 def _fourier_penalty_matrix_optimized_orthonormal(
     basis: Fourier,
-    weights: np.ndarray,
-) -> np.ndarray:
+    weights: NDArrayFloat,
+) -> NDArrayFloat:
     """Return the penalty when the basis is orthonormal."""
     signs = np.array([1, 1, -1, -1])
     signs_expanded = np.tile(signs, len(weights) // 4 + 1)
@@ -430,7 +424,7 @@ def _fourier_penalty_matrix_optimized_orthonormal(
 def fourier_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     basis: Fourier,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """Optimized version for Fourier basis."""
     weights = linear_operator.constant_weights()
     if weights is None:
@@ -448,7 +442,7 @@ def fourier_penalty_matrix_optimized(
 def bspline_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     basis: BSpline,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """Optimized version for BSpline basis."""
     coefs = linear_operator.constant_weights()
     if coefs is None:
@@ -478,7 +472,9 @@ def bspline_penalty_matrix_optimized(
         constants = basis_deriv(mid_inter)[..., 0].T
         knots_intervals = np.diff(basis.knots)
         # Integration of product of constants
-        return constants.T @ np.diag(knots_intervals) @ constants
+        return (  # type: ignore[no-any-return]
+            constants.T @ np.diag(knots_intervals) @ constants
+        )
 
     # We only deal with the case without zero length intervals
     # for now
@@ -542,7 +538,7 @@ def bspline_penalty_matrix_optimized(
             penalty_matrix[i, i] += np.diff(
                 polyval(
                     integral,
-                    basis.knots[interval: interval + 2]
+                    np.asarray(basis.knots[interval: interval + 2])
                     - basis.knots[interval],
                 ),
             )[0]
@@ -565,7 +561,7 @@ def bspline_penalty_matrix_optimized(
                 penalty_matrix[i, j] += np.diff(
                     polyval(
                         integral,
-                        basis.knots[interval: interval + 2]
+                        np.asarray(basis.knots[interval: interval + 2])
                         - basis.knots[interval],
                     ),
                 )[0]
@@ -577,13 +573,14 @@ def bspline_penalty_matrix_optimized(
 def fdatagrid_penalty_matrix_optimized(
     linear_operator: LinearDifferentialOperator,
     basis: FDataGrid,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """Optimized version for FDatagrid."""
     evaluated_basis = sum(
         w(basis.grid_points[0]) if callable(w) else w
         * basis.derivative(order=i)(basis.grid_points[0])
         for i, w in enumerate(linear_operator.weights)
     )
+    assert not isinstance(evaluated_basis, int)
 
     indices = np.triu_indices(basis.n_samples)
     product = evaluated_basis[indices[0]] * evaluated_basis[indices[1]]

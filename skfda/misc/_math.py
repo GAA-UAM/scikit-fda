@@ -14,12 +14,14 @@ import scipy.integrate
 
 from .._utils import _same_domain, nquad_vec
 from ..representation import FData, FDataBasis, FDataGrid
-from ..representation._typing import ArrayLike, DomainRange, NDArrayFloat
 from ..representation.basis import Basis
+from ..typing._base import DomainRange
+from ..typing._numpy import NDArrayFloat
+from .validation import check_fdata_same_dimensions
 
 Vector = TypeVar(
     "Vector",
-    bound=Union[NDArrayFloat, Basis, Callable[[ArrayLike], NDArrayFloat]],
+    bound=Union[NDArrayFloat, Basis, Callable[[NDArrayFloat], NDArrayFloat]],
 )
 
 
@@ -323,10 +325,15 @@ def inner_product(
             _matrix=_matrix,
             _domain_range=_domain_range,
         )
+    elif isinstance(arg1, np.ndarray) and isinstance(arg2, np.ndarray):
+        return (  # type: ignore[no-any-return]
+            np.einsum('n...,m...->nm...', arg1, arg2).sum(axis=-1)
+            if _matrix else (arg1 * arg2).sum(axis=-1)
+        )
 
-    return (
-        np.einsum('n...,m...->nm...', arg1, arg2).sum(axis=-1)
-        if _matrix else (arg1 * arg2).sum(axis=-1)
+    raise ValueError(
+        "Cannot compute inner product between "
+        f"{type(arg1)} and {type(arg2)}",
     )
 
 
@@ -360,7 +367,7 @@ def _inner_product_fdatagrid(
             index = (slice(None),) + (np.newaxis,) * (i + 1)
             d1 *= weights[index]
 
-        return np.einsum(
+        return np.einsum(  # type: ignore[call-overload, no-any-return]
             d1,
             [0] + einsum_broadcast_list,
             d2,
@@ -369,7 +376,7 @@ def _inner_product_fdatagrid(
         )
 
     integrand = arg1 * arg2
-    return integrand.integrate().sum(axis=-1)
+    return integrand.integrate().sum(axis=-1)  # type: ignore[no-any-return]
 
 
 @inner_product.register(FDataBasis, FDataBasis)
@@ -397,6 +404,8 @@ def _inner_product_fdatabasis(
 
     if isinstance(arg2, Basis):
         arg2 = arg2.to_basis()
+
+    check_fdata_same_dimensions(arg1, arg2)
 
     # Now several cases where computing the matrix is preferrable
     #
@@ -428,14 +437,14 @@ def _inner_product_fdatabasis(
         coef2 = arg2.coefficients
 
         if _matrix:
-            return np.einsum(
+            return np.einsum(  # type: ignore[no-any-return]
                 'nb,bc,mc->nm',
                 coef1,
                 inner_product_matrix,
                 coef2,
             )
 
-        return (
+        return (  # type: ignore[no-any-return]
             coef1
             @ inner_product_matrix
             * coef2
@@ -445,8 +454,8 @@ def _inner_product_fdatabasis(
 
 
 def _inner_product_integrate(
-    arg1: Callable[[ArrayLike], NDArrayFloat],
-    arg2: Callable[[ArrayLike], NDArrayFloat],
+    arg1: Callable[[NDArrayFloat], NDArrayFloat],
+    arg2: Callable[[NDArrayFloat], NDArrayFloat],
     *,
     _matrix: bool = False,
     _domain_range: Optional[DomainRange] = None,
@@ -474,13 +483,15 @@ def _inner_product_integrate(
         len_arg1 = len(arg1(left_domain))
         len_arg2 = len(arg2(left_domain))
 
-    def integrand(*args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
+    def integrand(args: NDArrayFloat) -> NDArrayFloat:  # noqa: WPS430
         f1 = arg1(args)[:, 0, :]
         f2 = arg2(args)[:, 0, :]
 
         if _matrix:
             ret = np.einsum('n...,m...->nm...', f1, f2)
-            return ret.reshape((-1,) + ret.shape[2:])
+            return ret.reshape(  # type: ignore[no-any-return]
+                (-1,) + ret.shape[2:],
+            )
 
         return f1 * f2
 
@@ -494,7 +505,7 @@ def _inner_product_integrate(
     if _matrix:
         summation = summation.reshape((len_arg1, len_arg2))
 
-    return summation
+    return summation  # type: ignore[no-any-return]
 
 
 def inner_product_matrix(

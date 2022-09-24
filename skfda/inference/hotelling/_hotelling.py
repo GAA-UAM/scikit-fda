@@ -5,12 +5,12 @@ from typing import Tuple, overload
 
 import numpy as np
 import scipy.special
-from sklearn.utils import check_random_state
 from typing_extensions import Literal
 
-from ..._utils import RandomStateLike
+from ...misc.validation import validate_random_state
 from ...representation import FData, FDataBasis
-from ...representation._typing import NDArrayFloat
+from ...typing._base import RandomStateLike
+from ...typing._numpy import NDArrayFloat
 
 
 def hotelling_t2(
@@ -188,8 +188,8 @@ def hotelling_test_ind(
         TypeError: In case of bad arguments.
 
     Examples:
-        >>> from skfda.inference.hotelling import hotelling_t2
-        >>> from skfda.representation import FDataGrid, basis
+        >>> from skfda.inference.hotelling import hotelling_test_ind
+        >>> from skfda.representation import FDataGrid
         >>> from numpy import printoptions
 
         >>> fd1 = FDataGrid([[1, 1, 1], [3, 3, 3]])
@@ -223,7 +223,7 @@ def hotelling_test_ind(
     indices = np.arange(n)
 
     if n_reps is not None:  # Computing n_reps random permutations
-        random_state = check_random_state(random_state)
+        random_state = validate_random_state(random_state)
         dist = np.empty(n_reps)
         for i in range(n_reps):
             random_state.shuffle(indices)
@@ -238,7 +238,7 @@ def hotelling_test_ind(
             sample1, sample2 = sample[sample1_i], sample[sample2_i]
             dist[i] = hotelling_t2(sample1, sample2)
 
-    p_value = np.sum(dist > t2_0) / len(dist)
+    p_value = float(np.sum(dist > t2_0) / len(dist))
 
     if return_dist:
         return t2_0, p_value, dist

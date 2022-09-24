@@ -1,13 +1,21 @@
 """Tests of compatibility between numpy ufuncs and FDataGrid."""
 
 import unittest
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, Protocol, TypeVar
 
 import numpy as np
 import pytest
 
-import skfda
 from skfda import FDataGrid
+from skfda.representation.basis import Fourier
+
+T = TypeVar("T", "np.typing.NDArray[Any]", FDataGrid)
+
+
+class _MonaryUfuncProtocol(Protocol):
+
+    def __call__(self, __arg: T) -> T:  # noqa: WPS112
+        pass
 
 
 @pytest.fixture(params=[
@@ -29,10 +37,7 @@ def monary(request: Any) -> Any:
     return request.param
 
 
-T = TypeVar("T", np.ndarray, FDataGrid)
-
-
-def test_monary_ufuncs(monary: Callable[[T], T]) -> None:
+def test_monary_ufuncs(monary: _MonaryUfuncProtocol) -> None:
     """Test that unary ufuncs can be applied to FDataGrid."""
     data_matrix = np.arange(15).reshape(3, 5) + 1
 
@@ -88,7 +93,7 @@ class TestOperators(unittest.TestCase):
         """Test that operations with numpy arrays for basis commute."""
         X = FDataGrid([[1, 2, 3], [4, 5, 6]])
         arr = np.array([1, 2])
-        basis = skfda.representation.basis.Fourier(n_basis=5)
+        basis = Fourier(n_basis=5)
 
         X_basis = X.to_basis(basis)
 

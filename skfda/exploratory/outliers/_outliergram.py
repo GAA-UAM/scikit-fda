@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 import numpy as np
-from sklearn.base import BaseEstimator, OutlierMixin
 
+from ..._utils._sklearn_adapter import BaseEstimator, OutlierMixin
 from ...representation import FDataGrid
+from ...typing._numpy import NDArrayFloat, NDArrayInt
 from ..depth._depth import ModifiedBandDepth
 from ..stats import modified_epigraph_index
 
 
 class OutliergramOutlierDetector(
-    BaseEstimator,  # type: ignore
-    OutlierMixin,  # type: ignore
+    BaseEstimator,
+    OutlierMixin[FDataGrid],
 ):
-    r"""Outlier detector using the relation between MEI and MBD.
+    r"""
+    Outlier detector using the relation between MEI and MBD.
 
     Detects as outliers functions that have the vertical distance to the
     outliergram parabola greater than ``factor`` times the interquartile
@@ -52,7 +54,7 @@ class OutliergramOutlierDetector(
     def __init__(self, *, factor: float = 1.5) -> None:
         self.factor = factor
 
-    def _compute_parabola(self, X: FDataGrid) -> np.ndarray:
+    def _compute_parabola(self, X: FDataGrid) -> NDArrayFloat:
         """Compute the parabola in which pairs (mei, mbd) should lie."""
         a_0 = -2 / (X.n_samples * (X.n_samples - 1))
         a_1 = (2 * (X.n_samples + 1)) / (X.n_samples - 1)
@@ -63,14 +65,21 @@ class OutliergramOutlierDetector(
             + X.n_samples**2 * a_2 * self.mei_**2
         )
 
-    def _compute_maximum_inlier_distance(self, distances: np.ndarray) -> float:
+    def _compute_maximum_inlier_distance(
+        self,
+        distances: NDArrayFloat,
+    ) -> float:
         """Compute the distance above which data are considered outliers."""
         first_quartile = np.percentile(distances, 25)  # noqa: WPS432
         third_quartile = np.percentile(distances, 75)  # noqa: WPS432
         iqr = third_quartile - first_quartile
-        return third_quartile + self.factor * iqr
+        return float(third_quartile + self.factor * iqr)
 
-    def fit(self, X: FDataGrid, y: None = None) -> OutliergramOutlierDetector:
+    def fit(  # noqa: D102
+        self,
+        X: FDataGrid,
+        y: object = None,
+    ) -> OutliergramOutlierDetector:
         self.mbd_ = ModifiedBandDepth()(X)
         self.mei_ = modified_epigraph_index(X)
         self.parabola_ = self._compute_parabola(X)
@@ -81,12 +90,14 @@ class OutliergramOutlierDetector(
 
         return self
 
-    def fit_predict(self, X: FDataGrid, y: None = None) -> np.ndarray:
+    def fit_predict(  # noqa: D102
+        self,
+        X: FDataGrid,
+        y: object = None,
+    ) -> NDArrayInt:
         self.fit(X, y)
 
         outliers = self.distances_ > self.max_inlier_distance_
 
         # Predict as scikit-learn outlier detectors
-        predicted = ~outliers + outliers * -1
-
-        return predicted
+        return ~outliers + outliers * -1

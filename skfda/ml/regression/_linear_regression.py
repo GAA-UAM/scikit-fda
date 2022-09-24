@@ -198,21 +198,21 @@ class LinearRegression(
         ...                             [2, 2]])
         >>> mult1 = np.asarray([1, 2, 4, 1, 3, 2])
         >>> mult2 = np.asarray([7, 3, 2, 1, 1, 5])
-        >>> cov_dict = {"fd": x_fd, "m1": mult1, "m2": mult2}
+        >>> cov_dict = {"m1": mult1, "m2": mult2, "fd": x_fd}
         >>> df = pd.DataFrame(cov_dict)
         >>> y = [11, 10, 12, 6, 10, 13]
         >>> linear = LinearRegression(
         ...              coef_basis=[None, Constant(), Constant()])
         >>> _ = linear.fit(df, y)
         >>> linear.coef_[0]
-        array([2.])
+        array([ 2.])
         >>> linear.coef_[1]
-        array([1.])
+        array([ 1.])
         >>> linear.coef_[2]
         FDataBasis(
-        basis=Constant(domain_range=((0, 1),), n_basis=1),
-        coefficients=[[1.]],
-        ...)
+            basis=Constant(domain_range=((0.0, 1.0),), n_basis=1),
+            coefficients=[[ 1.]],
+            ...)
         >>> linear.intercept_
         array([ 1.])
         >>> linear.predict(df)

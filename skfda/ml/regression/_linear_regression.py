@@ -417,19 +417,25 @@ class LinearRegression(
         ]
 
         if sample_weight is not None:
-
-            if len(sample_weight) != len(y):
-                raise ValueError(
-                    "The number of sample weights should be "
-                    "equal to the number of samples.",
-                )
-
-            if np.any(np.array(sample_weight) < 0):
-                raise ValueError(
-                    "The sample weights should be non negative values",
-                )
+            self._sample_weight_check(sample_weight, y)
 
         return new_X, y, sample_weight, coef_info
+
+    def _sample_weight_check(
+        self,
+        sample_weight: Optional[NDArrayFloat],
+        y: NDArrayFloat,
+    ):
+        if len(sample_weight) != len(y):
+            raise ValueError(
+                "The number of sample weights should be "
+                "equal to the number of samples.",
+            )
+
+        if np.any(np.array(sample_weight) < 0):
+            raise ValueError(
+                "The sample weights should be non negative values",
+            )
 
     def _dataframe_conversion(
         self,

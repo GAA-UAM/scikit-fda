@@ -6,7 +6,6 @@ from typing import Any, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
-
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
@@ -334,7 +333,7 @@ class LinearRegression(
 
         return result  # type: ignore[no-any-return]
 
-    def _argcheck_X(
+    def _argcheck_X(  # noqa: N802
         self,
         X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
     ) -> Sequence[AcceptedDataType]:
@@ -380,7 +379,7 @@ class LinearRegression(
             new_X = new_X[:, np.newaxis]
         return new_X
 
-    def _argcheck_X_y(
+    def _argcheck_X_y(  # noqa: N802
         self,
         X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
         y: NDArrayFloat,
@@ -388,7 +387,6 @@ class LinearRegression(
         coef_basis: Optional[BasisCoefsType] = None,
     ) -> ArgcheckResultType:
         """Do some checks to types and shapes."""
-
         new_X = self._argcheck_X(X)
 
         if any(isinstance(i, FData) for i in y):

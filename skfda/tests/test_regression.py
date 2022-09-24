@@ -12,7 +12,13 @@ from skfda.misc.covariances import Gaussian
 from skfda.misc.operators import LinearDifferentialOperator
 from skfda.misc.regularization import L2Regularization
 from skfda.ml.regression import HistoricalLinearRegression, LinearRegression
-from skfda.representation.basis import BSpline, FDataBasis, Fourier, Monomial, Constant
+from skfda.representation.basis import (
+    BSpline,
+    Constant,
+    FDataBasis,
+    Fourier,
+    Monomial,
+)
 from skfda.representation.grid import FDataGrid
 
 

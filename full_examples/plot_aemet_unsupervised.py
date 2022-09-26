@@ -31,8 +31,7 @@ from skfda.preprocessing.dim_reduction import FPCA
 ##############################################################################
 # We will first load the AEMET dataset and plot it.
 dataset = fetch_aemet()
-X = dataset["data"]
-X = X.coordinates[0]
+X, _ = fetch_aemet(return_X_y=True)
 
 X.plot()
 plt.show()

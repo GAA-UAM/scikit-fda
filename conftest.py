@@ -1,9 +1,10 @@
 import pytest
 import sys
 import asyncio
+import numpy as np
 
 # https://github.com/scikit-learn/scikit-learn/issues/8959
-import numpy as np
+
 try:
     np.set_printoptions(sign=' ')
 except TypeError:

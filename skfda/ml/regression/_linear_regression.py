@@ -5,6 +5,7 @@ import warnings
 from typing import Any, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 from sklearn.utils.validation import check_is_fitted
 
 from ..._utils._sklearn_adapter import BaseEstimator, RegressorMixin
@@ -70,6 +71,11 @@ class LinearRegression(
     where the covariates can be either multivariate or functional and the
     response is multivariate.
 
+    .. deprecated:: 0.8.
+        Usage of arguments of type sequence of FData, ndarray is deprecated
+        in methods fit, predict.
+        Use covariate parameters of type pandas.DataFrame instead.
+
     .. warning::
         For now, only scalar responses are supported.
 
@@ -107,6 +113,7 @@ class LinearRegression(
         >>> from skfda.ml.regression import LinearRegression
         >>> from skfda.representation.basis import (FDataBasis, Monomial,
         ...                                         Constant)
+        >>> import pandas as pd
 
         Multivariate linear regression can be used with functions expressed in
         a basis. Also, a functional basis for the weights can be specified:
@@ -155,6 +162,61 @@ class LinearRegression(
         >>> linear.predict([x, x_fd])
         array([ 11.,  10.,  12.,   6.,  10.,  13.])
 
+        Funcionality with pandas Dataframe.
+
+        First example:
+
+        >>> x_basis = Monomial(n_basis=3)
+        >>> x_fd = FDataBasis(x_basis, [[0, 0, 1],
+        ...                             [0, 1, 0],
+        ...                             [0, 1, 1],
+        ...                             [1, 0, 1]])
+        >>> cov_dict = { "fd": x_fd }
+        >>> y = [2, 3, 4, 5]
+        >>> df = pd.DataFrame(cov_dict)
+        >>> linear = LinearRegression()
+        >>> _ = linear.fit(df, y)
+        >>> linear.coef_[0]
+        FDataBasis(
+            basis=Monomial(domain_range=((0.0, 1.0),), n_basis=3),
+            coefficients=[[-15.  96. -90.]],
+            ...)
+        >>> linear.intercept_
+        array([ 1.])
+        >>> linear.predict(df)
+        array([ 2.,  3.,  4.,  5.])
+
+        Second example:
+
+        >>> x_basis = Monomial(n_basis=2)
+        >>> x_fd = FDataBasis(x_basis, [[0, 2],
+        ...                             [0, 4],
+        ...                             [1, 0],
+        ...                             [2, 0],
+        ...                             [1, 2],
+        ...                             [2, 2]])
+        >>> mult1 = np.asarray([1, 2, 4, 1, 3, 2])
+        >>> mult2 = np.asarray([7, 3, 2, 1, 1, 5])
+        >>> cov_dict = {"m1": mult1, "m2": mult2, "fd": x_fd}
+        >>> df = pd.DataFrame(cov_dict)
+        >>> y = [11, 10, 12, 6, 10, 13]
+        >>> linear = LinearRegression(
+        ...              coef_basis=[None, Constant(), Constant()])
+        >>> _ = linear.fit(df, y)
+        >>> linear.coef_[0]
+        array([ 2.])
+        >>> linear.coef_[1]
+        array([ 1.])
+        >>> linear.coef_[2]
+        FDataBasis(
+            basis=Constant(domain_range=((0.0, 1.0),), n_basis=1),
+            coefficients=[[ 1.]],
+            ...)
+        >>> linear.intercept_
+        array([ 1.])
+        >>> linear.predict(df)
+        array([ 11.,  10.,  12.,   6.,  10.,  13.])
+
     """
 
     def __init__(
@@ -170,7 +232,7 @@ class LinearRegression(
 
     def fit(  # noqa: D102
         self,
-        X: AcceptedDataType | Sequence[AcceptedDataType],
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
         y: NDArrayFloat,
         sample_weight: Optional[NDArrayFloat] = None,
     ) -> LinearRegression:
@@ -249,7 +311,7 @@ class LinearRegression(
 
     def predict(  # noqa: D102
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
     ) -> NDArrayFloat:
 
         check_is_fitted(self)
@@ -271,30 +333,60 @@ class LinearRegression(
 
         return result  # type: ignore[no-any-return]
 
-    def _argcheck_X(
+    def _argcheck_X(  # noqa: N802
         self,
-        X: Union[AcceptedDataType, Sequence[AcceptedDataType]],
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
     ) -> Sequence[AcceptedDataType]:
+
+        if isinstance(X, List) and any(isinstance(x, FData) for x in X):
+            warnings.warn(
+                "Usage of arguments of type sequence of "
+                "FData, ndarray is deprecated (fit, predict). "
+                "Use pandas DataFrame instead",
+                DeprecationWarning,
+            )
+
         if isinstance(X, (FData, np.ndarray)):
             X = [X]
 
-        X = [x if isinstance(x, FData) else np.asarray(x) for x in X]
+        elif isinstance(X, pd.DataFrame):
+            X = self._dataframe_conversion(X)
+
+        X = [
+            x if isinstance(x, FData)
+            else self._check_and_convert(x) for x in X
+        ]
 
         if all(not isinstance(i, FData) for i in X):
             warnings.warn("All the covariates are scalar.")
 
         return X
 
-    def _argcheck_X_y(
+    def _check_and_convert(
         self,
-        X: AcceptedDataType | Sequence[AcceptedDataType],
+        X: AcceptedDataType,
+    ) -> np.ndarray:
+        """Check if the input array is 1D and converts it to a 2D array.
+
+        Args:
+            X: multivariate array to check and convert.
+
+        Returns:
+            np.ndarray: numpy 2D array.
+        """
+        new_X = np.asarray(X)
+        if len(new_X.shape) == 1:
+            new_X = new_X[:, np.newaxis]
+        return new_X
+
+    def _argcheck_X_y(  # noqa: N802
+        self,
+        X: Union[AcceptedDataType, Sequence[AcceptedDataType], pd.DataFrame],
         y: NDArrayFloat,
         sample_weight: Optional[NDArrayFloat] = None,
         coef_basis: Optional[BasisCoefsType] = None,
     ) -> ArgcheckResultType:
         """Do some checks to types and shapes."""
-        # TODO: Add support for Dataframes
-
         new_X = self._argcheck_X(X)
 
         if any(isinstance(i, FData) for i in y):
@@ -325,16 +417,36 @@ class LinearRegression(
         ]
 
         if sample_weight is not None:
-
-            if len(sample_weight) != len(y):
-                raise ValueError(
-                    "The number of sample weights should be "
-                    "equal to the number of samples.",
-                )
-
-            if np.any(np.array(sample_weight) < 0):
-                raise ValueError(
-                    "The sample weights should be non negative values",
-                )
+            self._sample_weight_check(sample_weight, y)
 
         return new_X, y, sample_weight, coef_info
+
+    def _sample_weight_check(
+        self,
+        sample_weight: Optional[NDArrayFloat],
+        y: NDArrayFloat,
+    ):
+        if len(sample_weight) != len(y):
+            raise ValueError(
+                "The number of sample weights should be "
+                "equal to the number of samples.",
+            )
+
+        if np.any(np.array(sample_weight) < 0):
+            raise ValueError(
+                "The sample weights should be non negative values",
+            )
+
+    def _dataframe_conversion(
+        self,
+        X: pd.DataFrame,
+    ) -> List[AcceptedDataType]:
+        """Convert DataFrames to a list with input columns.
+
+        Args:
+            X: pandas DataFrame to convert.
+
+        Returns:
+            List: list which elements are the input DataFrame columns.
+        """
+        return [v.values for k, v in X.items()]

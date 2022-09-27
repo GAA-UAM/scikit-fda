@@ -269,7 +269,7 @@ def _set_labels(
     elif patches is not None:
         axes[0].legend(handles=patches)
 
-    assert len(axes) == fdata.dim_codomain
+    assert len(axes) >= fdata.dim_codomain
 
     # Axis labels
     if axes[0].name == '3d':

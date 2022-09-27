@@ -1181,7 +1181,7 @@ class FData(  # noqa: WPS214
 
                 This may be ``None``, in which case the default NA value for
                 the type, ``self.dtype.na_value``, is used.
-               
+
                 For many ExtensionArrays, there will be two representations of
                 `fill_value`: a user-facing "boxed" scalar, and a low-level
                 physical NA value. `fill_value` should be the user-facing
